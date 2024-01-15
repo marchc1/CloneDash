@@ -12,6 +12,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
+
+    - name: Set short git commit SHA
+      id: vars
+      run: |
+        calculatedSha=$(git rev-parse --short ${{ github.sha }})
+        echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+    
+    - name: Confirm git commit SHA output
+      run: echo ${{ env.COMMIT_SHORT_SHA }}
+
     - name: Checkout Repo
       uses: actions/checkout@v3
     
@@ -35,7 +45,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: ${{ env.COMMIT_SHORT_SHA }}
         release_name: Release ${{ github.sha }}
         draft: false
         prerelease: false
