@@ -5,7 +5,7 @@ This is a WIP open-source clone of 'Muse Dash', a parkour-rhythm game combinatio
 It currently implements:
  - All basic implementations of the games enemies, single hits, double hits ("geminis"), sustain notes, mashers, boss, etc...
  - Console-based searching for songs (you'll need to know the song name as it is stored in the files, and this is a temporary solution)
- - Pausing/resuming the song (using the ESC key, note that it does not tell you visually when it's paused right now, and unpausing gives you 3 seconds before it resumes game playback. Haven't figured out a good UI solution yet)
+ - Pausing/resuming the song (using the ESC key, note that it does not tell you visually when it's paused right now, and unpausing gives you 3 seconds before it resumes game playback. Haven't figured out a good UI solution yet
 
 ![clonedash_screenshot](https://github.com/marchc1/CloneDash/assets/106459595/71e79231-f632-4f38-afee-3e1f0ca891f1)
 
