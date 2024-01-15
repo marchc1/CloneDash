@@ -31,7 +31,7 @@ jobs:
       run: dotnet build --no-restore
       
     - name: Package
-      run: dotnet publish ./CloneDash/CloneDash.csproj -c Release --output ./publish --framework net8.0
+      run: dotnet publish -c Release --output ./publish --framework net8.0
 
     - name: Zip for Release
       shell: powershell
