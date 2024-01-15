@@ -14,7 +14,7 @@ This is a hastily-put-together alpha of game functionality. It kind of matches t
 There are still a lot of things I'd like to implement that are currently missing, for starters, custom levels. It would be nice to provide a lot of customizability and accessibility options the base game does not allow for as well.
 
 ## Building
-You should be able to just clone the repository, open it in Visual Studio 2022, and build the game. If there's any issues, let me know and I'll try to resolve them. I don't have other machines to get Mac/Linux support working at the moment.
+You should be able to just clone the repository, open it in Visual Studio 2022, and build the game. If there's any issues, let me know and I'll try to resolve them. I don't have other machines to get Mac/Linux support working at the moment, and there is a  bit of a reliance on some Windows functionality, but it is a goal to be compatible with other operating systems.
 
 ## Credits/Attribution
 
@@ -29,3 +29,7 @@ https://github.com/raysan5/raylib
 https://github.com/ChrisDill/Raylib-cs
 
 punch.wav: Cartoon_Punch_05.wav by RSilveira_88 -- https://freesound.org/s/216199/ -- License: Attribution 4.0
+
+AssetStudio is licensed under the MIT license: https://github.com/Perfare/AssetStudio
+
+All image assets were made by me and are placeholder assets.
