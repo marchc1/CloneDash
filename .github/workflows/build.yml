@@ -20,6 +20,10 @@ jobs:
       with:
           length: 8
           
+    - run: echo $SHA
+      env:
+        SHA: ${{ steps.short-sha.outputs.sha }}
+          
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -40,7 +44,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.short-sha.outputs.sha }}
+        tag_name: ${{ env.SHA }}
         release_name: Release ${{ github.sha }}
         draft: false
         prerelease: false
