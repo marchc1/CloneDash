@@ -15,15 +15,11 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v3
 
-    - name: short-sha
-      uses: benjlevesque/short-sha@v2.2
-      with:
-          length: 8
-          
-    - run: echo $SHA
-      env:
-        SHA: ${{ steps.short-sha.outputs.sha }}
-          
+    - name: Set SHORT Sha
+      shell: bash
+      run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
+
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -44,7 +40,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.SHA }}
+        tag_name: ${{ env.SHORT_SHA }}
         release_name: Release ${{ github.sha }}
         draft: false
         prerelease: false
