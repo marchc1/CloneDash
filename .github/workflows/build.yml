@@ -50,3 +50,4 @@ jobs:
         asset_path: ./publish/*  # path to your compiled output
         asset_name: CloneDash-Game.zip  # choose a suitable name for your release asset
         asset_content_type: application/zip
+        
