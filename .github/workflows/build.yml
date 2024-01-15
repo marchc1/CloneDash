@@ -6,7 +6,7 @@ name: Build Release
 on:
   push:
     branches: [ "main" ]
-
+    
 jobs:
   build:
     runs-on: windows-latest
@@ -19,7 +19,6 @@ jobs:
       shell: bash
       run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
 
-    
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -32,8 +31,12 @@ jobs:
       run: dotnet build --no-restore
       
     - name: Package
-      run: dotnet publish -c Release --output ./publish --framework net8.0
-      
+      run: dotnet publish ./CloneDash/CloneDash.csproj -c Release --output ./publish --framework net8.0
+
+    - name: Zip for Release
+      shell: powershell
+      run: Compress-Archive -Path ./CloneDash/bin/Release/net8.0/* -Destination ./CloneDash-Game.zip
+    
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -52,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./publish/*  # path to your compiled output
+        asset_path: ./*  # path to your compiled output
         asset_name: CloneDash-Game.zip  # choose a suitable name for your release asset
         asset_content_type: application/zip
         
