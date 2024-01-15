@@ -20,10 +20,10 @@ namespace CloneDash
             the_89s_momentum_map3
         */
         
-        public static void Startup() {
+        public static void Startup(string mapname) {
 
-            game = DashGame.LoadSheet(DashSheet.LoadFromMuseDash("the_89s_momentum_map3"));
-            game.AutoPlayer.Enabled = true;
+            game = DashGame.LoadSheet(DashSheet.LoadFromMuseDash(mapname));
+            game.AutoPlayer.Enabled = false;
             game.Music.Volume = 0.15f;
         }
         public static void Tick() {
