@@ -27,7 +27,8 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="xcopy &quot;$(SolutionDir)BuildAssets&quot; &quot;$(OutDir)&quot; /Y /E" />
+    <Exec Condition=" $(OS) == 'Windows_NT' " Command="xcopy &quot;$(SolutionDir)BuildAssets&quot; &quot;$(OutDir)&quot; /Y /E" />
+    <Exec Condition=" $(OS) != 'Windows_NT' " Command="cp -rf &quot;$(SolutionDir)BuildAssets&quot; &quot;$(OutDir)&quot;" />
   </Target>
 
 </Project>
