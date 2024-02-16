@@ -54,7 +54,7 @@ namespace CloneDash.Game.Components
         /// How much fever needs to be obtained until entering fever state<br></br>
         /// Default: 100
         /// </summary>
-        public float MaxFever { get; set; } = 100;
+        public float MaxFever { get; set; } = 120;
 
         /// <summary>
         /// How much fever, in seconds, does a full fever bar provide?<br></br>
