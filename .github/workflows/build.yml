@@ -9,7 +9,15 @@ on:
     
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    outputs:
+      tag: ${{ env.SHORT_SHA }}
 
     steps:
     - name: Checkout Repo
@@ -33,29 +41,53 @@ jobs:
     - name: Package
       run: dotnet publish -c Release --output ./publish --framework net8.0
 
-    - name: Zip for Release
+    - name: Zip for Release (Windows)
+      if: matrix.os == 'windows-latest'
       shell: powershell
-      run: Compress-Archive -Path ./CloneDash/bin/Release/net8.0/* -Destination ./CloneDash-Game.zip
-    
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.SHORT_SHA }}
-        release_name: Release ${{ github.sha }}
-        draft: false
-        prerelease: false
+      run: Compress-Archive -Path ./CloneDash/bin/Release/net8.0/* -Destination ./CloneDash-Game-Windows.zip
 
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Zip for Release (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: tar -cf ./CloneDash-Game-Linux.zip ./CloneDash/bin/Release/net8.0/*
+
+    - name: Zip for Release (macOS)
+      if: matrix.os == 'macos-latest'
+      run: tar -cf ./CloneDash-Game-macOS.zip ./CloneDash/bin/Release/net8.0/*
+
+    - name: Upload artifacts (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./CloneDash-Game.Zip  # path to your compiled output
-        asset_name: CloneDash-Game.zip  # choose a suitable name for your release asset
-        asset_content_type: application/zip
-        
+        path: ./CloneDash-Game-Windows.zip
+        name: CloneDash-Game-Windows
+
+    - name: Upload artifacts (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./CloneDash-Game-Linux.zip
+        name: CloneDash-Game-Linux
+
+    - name: Upload artifacts (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./CloneDash-Game-macOS.zip
+        name: CloneDash-Game-macOS
+  
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Get artifacts 
+      uses: actions/download-artifact@v4
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          CloneDash-Game-Windows/CloneDash-Game-Windows.zip
+          CloneDash-Game-Linux/CloneDash-Game-Linux.zip
+          CloneDash-Game-macOS/CloneDash-Game-macOS.zip
+        tag_name: ${{ needs.build.outputs.tag }}
+        fail_on_unmatched_files: true
