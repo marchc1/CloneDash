@@ -15,23 +15,11 @@ namespace CloneDash
     }
     public static class DashVars
     {
-        public static readonly GameVersion Version = new GameVersion(0, 0, 2);
+        public static readonly GameVersion Version = new GameVersion(0, 2, 0);
 
         public static readonly Color TopPathwayColor = new Color(178, 255, 252, 120);
         public static readonly Color BottomPathwayColor = new Color(248, 178, 255, 120);
         public static readonly Color MultiColor = new Color(220, 160, 140, 255);
-
-        /// <summary>
-        /// When the game started.
-        /// </summary>
-        public static DateTime Startup { get; set; } = DateTime.Now;
-
-        /// <summary>
-        /// <b>Should NOT be used for game events.</b> This value will CONSTANTLY update, regardless of lag spikes, game pausing, etc... <br></br>
-        /// See Game.Conductor.Time for a musically-aligned version of this function<br></br><br></br>
-        /// Returns the time (in seconds) since the game started.
-        /// </summary>
-        public static double Curtime => (DateTime.Now - Startup).TotalSeconds;
 
         /// <summary>
         /// The distance (scrw * this) where the pathway meets notes
