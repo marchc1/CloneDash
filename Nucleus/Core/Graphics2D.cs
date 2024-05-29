@@ -21,7 +21,7 @@ namespace Nucleus.Core
         });
         private static Vector2F __offset = new Vector2F(0, 0);
         private static Color __drawColor = Color.WHITE;
-        public static Shader shader_hsvtransform = Raylib.LoadShader("", Filesystem.Resolve("change_color.fs", "shaders"));
+        public static Shader shader_hsvtransform = Raylib.LoadShader("", Filesystem.Resolve("change_color.fshader", "shaders"));
         public static float Hue { get; set; } = 0;
         public static float Saturation { get; set; } = 1;
         public static float Value { get; set; } = 1;

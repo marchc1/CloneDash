@@ -73,7 +73,7 @@ namespace Nucleus.Core
                         };
                     }
 
-                    m.Shader = Raylib.LoadShader(Filesystem.Resolve("model3.vs", "shaders"), Filesystem.Resolve("model3.fs", "shaders"));
+                    m.Shader = Raylib.LoadShader(Filesystem.Resolve("model3.vshader", "shaders"), Filesystem.Resolve("model3.fshader", "shaders"));
 
                     materialPairs.Add(new() {
                         Material = m
