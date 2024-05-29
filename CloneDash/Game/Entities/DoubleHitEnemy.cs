@@ -1,40 +1,49 @@
-﻿using CloneDash.Systems;
+﻿using Nucleus;
+using Nucleus.Types;
+using Raylib_cs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace CloneDash.Game.Entities
 {
-    public class DoubleHitEnemy : MapEntity
+    public class DoubleHitEnemy : CD_BaseEnemy
     {
-        public DoubleHitEnemy(DashGame game) : base(game, EntityType.Double) {
-            TextureSize = new(160);
+        public DoubleHitEnemy() : base(EntityType.Double) {
             Interactivity = EntityInteractivity.Hit;
             DoesDamagePlayer = true;
+        }
+        public override void Initialize() {
+            base.Initialize();
+            SetModel("doublehit.glb", "Idle", true);
+            Model.HSV = new(37, 1.24f, 1);
         }
 
         protected override void OnHit(PathwaySide side) {
             Kill();
         }
 
-        // because the double enemies are attached to each other, damage the player if they miss the entity
         protected override void OnMiss() {
             DamagePlayer();
         }
 
-        public override void Draw(Vector2F idealPosition) {
-            if (this.Dead)
+        public override void Render(FrameState frameState) {
+            if (Dead)
                 return;
 
-            Graphics.SetDrawColor(255, 255, 255);
-            var p = (idealPosition).X;
+            var game = Level.As<CD_GameLevel>();
+            var YPos = Game.Pathway.ValueDependantOnPathway(Pathway, game.TopPathway.Position.Y, game.BottomPathway.Position.Y);
 
-            if (this.Pathway == PathwaySide.Top) {
-                Graphics.DrawImage(TextureSystem.fightable_double, RectangleF.FromPosAndSize(new(p, Game.TopPathway.Position.Y), TextureSize), TextureSize / 2, 0, new(30, 1.5f, 1));
-            }
-            if (this.Pathway == PathwaySide.Bottom) {
-                Graphics.DrawImage(TextureSystem.fightable_double, RectangleF.FromPosAndSize(new(p, Game.BottomPathway.Position.Y), TextureSize), TextureSize / 2, 180, new(30, 1.5f, 1));
-            }
+            Model.Position = new((float)XPos, YPos, 0);
+            Model.Rotation = Pathway == PathwaySide.Top ? new(0, 0, -180) : new(0, 0, 0);
+            Model.Render();
 
-            Graphics.SetDrawColor(220, 135, 70, 90);
-            Graphics.DrawLine(p, Game.TopPathway.Position.Y, p, Game.BottomPathway.Position.Y, 60 * Game.ScreenManager.ScrHRatio);
+            for (int i = 64 - 1; i >= 0; i -= 4) {
+                var size = Math.Abs(YPos)/ 4;
+                Raylib.DrawCubeV(new((float)XPos, (float)YPos + ((size / 2) * (Pathway == PathwaySide.Top ? 1 : -1)), 10), new(i/1.4f, size, 10), new Color(255, 193, 92, 15));
+            }
         }
     }
 }

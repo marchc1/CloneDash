@@ -1,16 +1,18 @@
 ﻿using CloneDash.Systems;
+using NAudio.Wave;
+using Nucleus;
+using Nucleus.Engine;
+using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-    public class SingleHitEnemy : MapEntity
+    public class SingleHitEnemy : CD_BaseEnemy
     {
-        public SingleHitEnemy(DashGame game) : base(game, EntityType.Single) {
-            TextureSize = new(148);
+        public SingleHitEnemy() : base(EntityType.Single) {
             Interactivity = EntityInteractivity.Hit;
-            DoesDamagePlayer = true;
-            Texture = TextureSystem.fightable_ball;
         }
 
+        // needs overhaul !!!
         bool applyvel = false;
         float acceleration = 0.000f;
         float velocity = 0;
@@ -20,51 +22,55 @@ namespace CloneDash.Game.Entities
             Kill();
             applyvel = true;
             acceleration = 0.006f;
-            velocity = Pathway == PathwaySide.Top ? -1.48f : 0.82f;
+            velocity = Pathway == PathwaySide.Top ? -4.48f : -2.48f;
         }
 
         protected override void OnMiss() {
             PunishPlayer();
-            if (Game.PlayerController.Pathway == this.Pathway) {
+            if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
                 DamagePlayer();
             }
         }
 
         public override void ChangePosition(ref Vector2F pos) {
-            var scrw = Game.ScreenManager.ScrWidth;
+            var scrw = Raylib_cs.Raylib.GetScreenWidth();
             if (RelatedToBoss) {
 
             }
             else {
-                var yOff = Ease.InCubic(Math.Clamp((float)DashMath.Remap(pos.X, scrw / 2, scrw, 0f, 1), 0f, 1f));
+                var yOff = NMath.Ease.InCubic(Math.Clamp((float)NMath.Remap(pos.X, scrw / 2, scrw, 0f, 1), 0f, 1f));
                 switch (EnterDirection) {
                     case EntityEnterDirection.RightSide:
                         // no modification occurs
                         break;
+
                     case EntityEnterDirection.TopDown:
-                        pos.y = (float)DashMath.Remap(yOff, 0, 1, pos.Y, (-Game.ScreenManager.ScrHeight / 2) - TextureSize.Y);
+                        pos.y = (float)NMath.Remap(yOff, 0, 1, pos.Y, (-Raylib_cs.Raylib.GetScreenHeight() / 2) * 2);
                         break;
+
                     case EntityEnterDirection.BottomUp:
-                        pos.y = (float)DashMath.Remap(yOff, 0, 1, pos.Y, (Game.ScreenManager.ScrHeight / 2) + TextureSize.Y);
+                        pos.y = (float)NMath.Remap(yOff, 0, 1, pos.Y, (Raylib_cs.Raylib.GetScreenHeight() / 2) * 2);
                         break;
                 }
             }
 
-            if (applyvel) {
+            if (applyvel) { // needs to be dependent on frametime later
                 position += velocity;
-                velocity += acceleration;
+                velocity += acceleration * 6;
 
                 pos.y += position;
+                acceleration += 0.00000001f;
             }
 
         }
-
-        public override void Draw(Vector2F idealPosition) {
-            DrawSpriteBasedOnPathway(Texture, RectangleF.FromPosAndSize(idealPosition, TextureSize), TextureSize / 2);
+        public override void Initialize() {
+            base.Initialize();
+            SetModel("singlehit.glb", "SingleHitIdle", true);
         }
 
         public override void Build() {
-            Texture = RelatedToBoss ? TextureSystem.boss_projectile : TextureSystem.fightable_ball;
+            HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
+            //Texture = RelatedToBoss ? TextureSystem.LoadTexture("boss_projectile.png") : TextureSystem.LoadTexture("fightable_ball.png");
         }
     }
 }

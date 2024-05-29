@@ -1,44 +1,48 @@
 ﻿using CloneDash.Systems;
+using Nucleus;
+using Nucleus.Types;
 using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
-    public class Hammer : MapEntity
+    public class Hammer : CD_BaseEnemy
     {
-        public Hammer(DashGame game) : base(game, EntityType.Hammer) {
-            TextureSize = new(1024, 1024);
+        public Hammer() : base(EntityType.Hammer) {
             Interactivity = EntityInteractivity.Hit;
             DoesDamagePlayer = true;
         }
 
         protected override void OnHit(PathwaySide side) {
             Kill();
+            whenDidHammerHit = Level.RealtimeF;
         }
 
         protected override void OnMiss() {
             PunishPlayer();
-            if(Game.PlayerController.Pathway == this.Pathway) {
+            if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
                 DamagePlayer();
             }
         }
 
-        public override void Draw(Vector2F idealPosition) {
-            var pathwayY = CloneDash.Game.Components.Pathway.ValueDependantOnPathway(Pathway, Game.TopPathway.Position.Y, Game.BottomPathway.Position.Y); // Pathway == PathwaySide.Top ? DashVars.UpPathway.Position.Y : DashVars.DownPathway.Position.Y;
+        public override void Initialize() {
+            base.Initialize();
+            SetModel("hammer.glb");
+        }
+        float whenDidHammerHit = -1;
+        public override void ChangePosition(ref Vector2F pos) {
+            var level = Level.As<CD_GameLevel>();
+
+            var pathwayY = Game.Pathway.ValueDependantOnPathway(Pathway, level.TopPathway.Position.Y, level.BottomPathway.Position.Y); // Pathway == PathwaySide.Top ? DashVars.UpPathway.Position.Y : DashVars.DownPathway.Position.Y;
             var timeToHit = (float)(HitTime - ShowTime);
 
-            // to do: make this not look horrible
-            if (EnterDirection == EntityEnterDirection.TopDown) {
-                DrawSpriteBasedOnPathway(
-                    TextureSystem.fightable_hammer,
-                    RectangleF.FromPosAndSize(new(!Dead ? idealPosition.X : (DashVars.PATHWAY_XDISTANCE * Game.ScreenManager.ScrWidth) + (Raymath.Remap(SinceDeath, 0, timeToHit, 0, 1) * -100), //DashVars.PATHWAY_XDISTANCE * DashVars.GAMEWIDTH) + 64,
-                    (pathwayY - TextureSize.Y) + 64), TextureSize),
-                    new(TextureSize.X / 2, 0),
-                    !Dead ? Raymath.Remap((float)Game.Conductor.Time, (float)ShowTime, (float)HitTime, -100, 0) : (Raymath.Remap(SinceDeath, 0, timeToHit, 0, 1) * -100)
-                );
-            }
-            else {
+            pos.Y = pathwayY;
+            var bone = this.Model.GetBoneByName("Bone");
 
-            }
+            bone.Rotation = new(0, 0, -(float)(whenDidHammerHit == -1 ? NMath.Remap(level.Conductor.Time, HitTime - 2, HitTime, 100, 0) : NMath.Remap(Level.RealtimeF - whenDidHammerHit, 0, timeToHit, 0, 100)));
+        }
+
+        public override void Build() {
+            HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
         }
     }
 }

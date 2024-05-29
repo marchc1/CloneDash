@@ -1,14 +1,21 @@
-﻿using CloneDash.Game.Components;
-using CloneDash.Systems;
+﻿using CloneDash.Systems;
+using Nucleus;
+using Nucleus.Core;
+using Nucleus.Engine;
+using Nucleus.Types;
+using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
-    public class SustainBeam : MapEntity
+    public class SustainBeam : CD_BaseEnemy
     {
-        public SustainBeam(DashGame game) : base(game, EntityType.SustainBeam) {
-            TextureSize = new(96, 96);
+        public SustainBeam() : base(EntityType.SustainBeam) {
             Interactivity = EntityInteractivity.Hit;
             DoesDamagePlayer = true;
+        }
+        public override void Initialize() {
+            base.Initialize();
+            SetModel("sustainbeam.glb", "Idle", true);
         }
 
         public bool HeldState { get; private set; } = false;
@@ -22,43 +29,51 @@ namespace CloneDash.Game.Entities
             if (StopAcceptingInput == true)
                 return;
 
-            PathwayCheck = Game.GetPathway(attackedPath); ;
+            PathwayCheck = Level.As<CD_GameLevel>().GetPathway(attackedPath);
             HeldState = true;
             ForceDraw = true;
-            Game.PlayerController.AddCombo();
+            Level.As<CD_GameLevel>().SetSustain(Pathway, this);
+            PlayAnimation("Open", loop: false);
+            Level.As<CD_GameLevel>().AddCombo();
+            Level.As<CD_GameLevel>().AddFever(FeverGiven);
         }
 
         protected override void OnMiss() {
-            if (HeldState == false)
+            if (HeldState == false) {
+                Level.As<CD_GameLevel>().SetSustain(Pathway, null);
                 PunishPlayer();
+            }
         }
 
         public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
-            return xPosition >= -TextureSize.X && xPosition <= gamewidth; // does this even need to be changed right now
+            return xPosition >= -96 && xPosition <= gamewidth; // does this even need to be changed right now
         }
 
-        public override void WhenFrame() {
+        public override void Think(FrameState frameState) {
             if (HeldState) {
                 var endPos = DistanceToEnd;
 
                 // check if sustain complete
 
                 var sustainComplete = PathwayCheck.IsPressed && endPos <= 0;
-                var sustainEarlyButStillSuccess = !PathwayCheck.IsPressed && DashMath.InRange(endPos, -0.05f, 0.05f);
+                var sustainEarlyButStillSuccess = !PathwayCheck.IsPressed && NMath.InRange(endPos, -0.05f, 0.05f);
 
                 if (sustainComplete || sustainEarlyButStillSuccess) {
                     HeldState = false;
                     StopAcceptingInput = true;
                     ShouldDraw = false;
                     RewardPlayer();
-                    Game.PlayerController.AddCombo();
-                    AudioSystem.PlaySound($"{Filesystem.Audio}punch.wav", 0.24f);
+                    Level.As<CD_GameLevel>().AddCombo();
+                    Level.As<CD_GameLevel>().AddFever(FeverGiven);
+                    Level.As<CD_GameLevel>().SetSustain(Pathway, null);
+                    AudioSystem.PlaySound(Filesystem.Resolve("punch.wav", "audio"), 0.24f);
                 }
                 // check if pathway being held
                 else if (!PathwayCheck.IsPressed) {
                     HeldState = false;
                     StopAcceptingInput = true;
                     ShouldDraw = false;
+                    Level.As<CD_GameLevel>().SetSustain(Pathway, null);
                     PunishPlayer();
                 }
             }
@@ -66,21 +81,41 @@ namespace CloneDash.Game.Entities
 
         public float StartPosition { get; private set; }
 
-        public override void Draw(Vector2F idealPosition) {
+        public override void Render(FrameState frameState) {
+            var game = Level.As<CD_GameLevel>();
+
             if (!HeldState)
                 StartPosition = (float)XPos;
             else if (!StopAcceptingInput)
                 StartPosition = PathwayCheck.Position.X;
 
-            float startPos = StartPosition, endPos = (float)XPosFromTimeOffset((float)Length);
-            var YPos = CloneDash.Game.Components.Pathway.ValueDependantOnPathway(Pathway, Game.TopPathway.Position.Y, Game.BottomPathway.Position.Y);
+            float startPos = StartPosition, endPos = (float)XPosFromTimeOffset(frameState, (float)Length);
+            var YPos = Game.Pathway.ValueDependantOnPathway(Pathway, game.TopPathway.Position.Y, game.BottomPathway.Position.Y);
 
-            Graphics.SetDrawColor(CloneDash.Game.Components.Pathway.GetColor(Pathway), HeldState ? 230 : 127);
-            Graphics.DrawLine(startPos, YPos, endPos, YPos, 28);
-            Graphics.SetDrawColor(255, 255, 255, 255);
+            //Graphics.SetDrawColor(Game.Pathway.GetColor(Pathway), HeldState ? 230 : 127);
+            //Graphics.DrawLine(startPos, YPos, endPos, YPos, 28);
+            //Graphics.SetDrawColor(255, 255, 255, 255);
 
-            DrawSpriteBasedOnPathway(TextureSystem.fightable_beam, RectangleF.FromPosAndSize(new(startPos, YPos), TextureSize), TextureSize / 2, 0);
-            DrawSpriteBasedOnPathway(TextureSystem.fightable_beam, RectangleF.FromPosAndSize(new(endPos, YPos), TextureSize), TextureSize / 2, 180);
+            for (int i = 64 - 1; i >= 0; i -= 4) {
+                Raylib.DrawCubeV(new((startPos + endPos) / 2f, YPos, 10), new(endPos - startPos, i, 0.2f), Game.Pathway.GetColor(Pathway, HeldState ? 9 : 5));
+            }
+
+            var mS = Model.Model;
+
+            Model.Position = new(startPos, YPos, 0);
+            Model.Rotation = new(0, 0, 0);
+            Model.Render();
+
+            Model.Position = new(endPos, YPos, 0);
+            Model.Rotation = new(0, 0, 180);
+            Model.Render();
+
+            //Console.WriteLine($"AnimationFrame {AnimationFrame} CurrentAnimation.HasValue {CurrentAnimation.HasValue}");
+            //DrawSpriteBasedOnPathway(TextureSystem.LoadTexture("fightable_beam"), RectangleF.FromPosAndSize(new(startPos, YPos), TextureSize), TextureSize / 2, 0);
+            //DrawSpriteBasedOnPathway(TextureSystem.fightable_beam, RectangleF.FromPosAndSize(new(endPos, YPos), TextureSize), TextureSize / 2, 180);
+        }
+        public override void Build() {
+            HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
         }
     }
 }
