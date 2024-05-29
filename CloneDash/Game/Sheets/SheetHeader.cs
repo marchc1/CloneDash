@@ -1,8 +1,7 @@
-﻿using CloneDash.Game.Components;
-
-namespace CloneDash.Game.Sheets
+﻿namespace CloneDash.Game.Sheets
 {
-    public struct SheetHeader {
+    public struct SheetHeader
+    {
         public SheetVersion SheetVersion;
 
         public string Title;
@@ -13,7 +12,8 @@ namespace CloneDash.Game.Sheets
 
         public List<TempoChange> TempoChanges;
 
-        public SheetHeader() {
+        public SheetHeader()
+        {
             SheetVersion = SheetVersion.Version0_0_1;
             Title = "Unknown Track";
             Author = "Unknown Author";

@@ -3,7 +3,8 @@
     /// <summary>
     /// Where music comes from
     /// </summary>
-    public enum MusicType {
+    public enum MusicType
+    {
         /// <summary>
         /// Unknown/not set for some reason
         /// </summary>

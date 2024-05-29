@@ -2,7 +2,8 @@
 
 namespace CloneDash.Game.Sheets
 {
-    public struct SheetEntity {
+    public struct SheetEntity
+    {
         public EntityType Type;
         public PathwaySide Pathway;
         public EntityEnterDirection EnterDirection;

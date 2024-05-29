@@ -10,10 +10,11 @@
         public List<SheetEvent> Events { get; private set; } = [];
         public List<SheetEntity> Entities { get; private set; } = [];
 
-        public static DashSheet LoadFromString(string data) {
+        public static DashSheet LoadFromString(string data)
+        {
             throw new Exception();
         }
         public static DashSheet LoadFromFile(string filepath) => LoadFromString(File.ReadAllText(filepath));
-        public static DashSheet LoadFromMuseDash(string mapname) => MuseDashCompatibility.ConvertAssetBundleToDashSheet(mapname);
+        //public static DashSheet LoadFromMuseDash(string mapname) => MuseDashCompatibility.ConvertAssetBundleToDashSheet(mapname);
     }
 }

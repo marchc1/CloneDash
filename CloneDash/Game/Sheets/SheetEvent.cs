@@ -1,6 +1,6 @@
-﻿using CloneDash.Game.Events;
+﻿using CloneDash.Game.Enumerations;
 
-namespace CloneDash.Game.Sheets
+namespace CloneDash.Game
 {
     public struct SheetEvent
     {
