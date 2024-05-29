@@ -10,9 +10,11 @@
   <ItemGroup>
     <PackageReference Include="Fmod5Sharp" Version="3.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Nucleus\Nucleus.csproj" />
     <ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
@@ -21,8 +23,17 @@
     <Reference Include="AssetStudio">
       <HintPath>..\BuildAssets\AssetStudio.dll</HintPath>
     </Reference>
+    <Reference Include="AssetStudio.PInvoke">
+      <HintPath>..\BuildAssets\AssetStudio.PInvoke.dll</HintPath>
+    </Reference>
+    <Reference Include="AssetStudioUtility">
+      <HintPath>..\BuildAssets\AssetStudioUtility.dll</HintPath>
+    </Reference>
     <Reference Include="K4os.Compression.LZ4">
       <HintPath>..\BuildAssets\K4os.Compression.LZ4.dll</HintPath>
+    </Reference>
+    <Reference Include="Texture2DDecoderWrapper">
+      <HintPath>..\BuildAssets\Texture2DDecoderWrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 
