@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Game.Input
+﻿using Nucleus.Types;
+
+namespace CloneDash.Game.Input
 {
     /// <summary>
     /// Player input interface. Allows for easily defining different input types, all that needs to be done is implementing this interface and modifying the <see cref="InputState"/> from <see cref="Poll(ref InputState)"/>
@@ -12,6 +14,6 @@
         /// So instead, you would want to do <c><see cref="InputState.TopClicked"/> += 2</c>, <c><see cref="InputState.PauseButton"/> |= false</c>, etc...
         /// </summary>
         /// <param name="input"></param>
-        public abstract void Poll(ref InputState input);
+        public abstract void Poll(ref FrameState frameState, ref InputState inputState);
     }
 }

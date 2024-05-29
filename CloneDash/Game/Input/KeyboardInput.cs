@@ -1,27 +1,27 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Types;
 
 namespace CloneDash.Game.Input
 {
     public class KeyboardInput : IPlayerInput
     {
-        public static KeyboardKey[] TopKeys = [KeyboardKey.KEY_S, KeyboardKey.KEY_D, KeyboardKey.KEY_F, KeyboardKey.KEY_G];
-        public static KeyboardKey[] BottomKeys = [KeyboardKey.KEY_H, KeyboardKey.KEY_J, KeyboardKey.KEY_K, KeyboardKey.KEY_L];
-        public static KeyboardKey StartFever = KeyboardKey.KEY_SPACE;
-        public static KeyboardKey Pause = KeyboardKey.KEY_ESCAPE;
+        public static KeyboardKey[] TopKeys = [KeyboardLayout.USA.S, KeyboardLayout.USA.D, KeyboardLayout.USA.F, KeyboardLayout.USA.G];
+        public static KeyboardKey[] BottomKeys = [KeyboardLayout.USA.H, KeyboardLayout.USA.J, KeyboardLayout.USA.K, KeyboardLayout.USA.L];
+        public static KeyboardKey StartFever = KeyboardLayout.USA.Space;
+        public static KeyboardKey Pause = KeyboardLayout.USA.Escape;
 
-        public void Poll(ref InputState state) {
+        public void Poll(ref FrameState frameState, ref InputState inputState) {
             foreach (var key in TopKeys) {
-                state.TopClicked += Raylib.IsKeyPressed(key) ? 1 : 0;
-                state.TopHeld |= Raylib.IsKeyDown(key);
+                inputState.TopClicked += frameState.KeyboardState.KeyPressed(key) ? 1 : 0;
+                inputState.TopHeld |= frameState.KeyboardState.KeyDown(key);
             }
 
             foreach (var key in BottomKeys) {
-                state.BottomClicked += Raylib.IsKeyPressed(key) ? 1 : 0;
-                state.BottomHeld |= Raylib.IsKeyDown(key);
+                inputState.BottomClicked += frameState.KeyboardState.KeyPressed(key) ? 1 : 0;
+                inputState.BottomHeld |= frameState.KeyboardState.KeyDown(key);
             }
 
-            state.TryFever |= Raylib.IsKeyPressed(StartFever);
-            state.PauseButton |= Raylib.IsKeyPressed(Pause);
+            inputState.TryFever |= frameState.KeyboardState.KeyPressed(StartFever);
+            inputState.PauseButton |= frameState.KeyboardState.KeyPressed(Pause);
         }
     }
 }
