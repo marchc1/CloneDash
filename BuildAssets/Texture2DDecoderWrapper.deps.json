@@ -1,0 +1,36 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Texture2DDecoderWrapper/0.16.0.0": {
+        "dependencies": {
+          "AssetStudio.PInvoke": "0.16.0"
+        },
+        "runtime": {
+          "Texture2DDecoderWrapper.dll": {}
+        }
+      },
+      "AssetStudio.PInvoke/0.16.0": {
+        "runtime": {
+          "AssetStudio.PInvoke.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Texture2DDecoderWrapper/0.16.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AssetStudio.PInvoke/0.16.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
