@@ -7,7 +7,11 @@ namespace Nucleus.Types
     /// <summary>
     /// Two-dimesional floating point vector.
     /// </summary>
+#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
+#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
     public struct Vector2F
+#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
+#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
     {
         public float x;
         public float y;
@@ -108,13 +112,6 @@ namespace Nucleus.Types
         public Vector2F YY => new(Y, Y);
 
         public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
-
-        public override bool Equals([NotNullWhen(true)] object? obj) {
-            if (obj == null) return false;
-            if(obj is Vector2F v2) return this.X == v2.X && this.Y == v2.Y;
-
-            return false;
-        }
     }
     public static class VectorConverters
     {
