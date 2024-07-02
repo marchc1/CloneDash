@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+
+    <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+    <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,4 +20,11 @@
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(IsWindows)'=='true'">
+    <DefineConstants>COMPILED_WINDOWS</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(IsLinux)'=='true'">
+    <DefineConstants>COMPILED_LINUX</DefineConstants>
+  </PropertyGroup>
 </Project>
