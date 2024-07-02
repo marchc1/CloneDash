@@ -43,8 +43,8 @@ namespace Nucleus.UI
             if (delta.Y != 0)
                 VerticalScrollbar.MouseScrolled(null, state, delta);
         }
-        public override T Add<T>() {
-            var ret = base.Add<T>();
+        public override T Add<T>(T? toAdd = null) where T : class {
+            var ret = base.Add<T>(toAdd);
             ret.MouseScrollEvent += ScrollPanel_MouseScrollEvent;
             return ret;
         }
@@ -81,7 +81,7 @@ namespace Nucleus.UI
             }
             MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
         }
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
             VerticalScrollbar.Scroll = 5;
             Graphics2D.SetDrawColor(ForegroundColor);
             Graphics2D.DrawRectangleOutline(0, 0, width, height, 1);

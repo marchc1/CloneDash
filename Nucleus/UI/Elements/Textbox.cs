@@ -83,7 +83,7 @@ namespace Nucleus.UI
 
         public DateTime LastKeyboardInteraction { get; private set; } = DateTime.Now;
 
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
             BackgroundColor = KeyboardFocused ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
             ForegroundColor = KeyboardFocused ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
 

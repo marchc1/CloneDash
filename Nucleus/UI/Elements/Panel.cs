@@ -10,7 +10,7 @@ namespace Nucleus.UI
             this.DockPadding = RectangleF.TLRB(2);
         }
 
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
             Graphics2D.SetDrawColor(BackgroundColor);
             Graphics2D.DrawRectangle(0, 0, width, height);
             ImageDrawing();

@@ -122,7 +122,7 @@ namespace Nucleus.UI.Elements
         }
 
 
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
 
         }
     }

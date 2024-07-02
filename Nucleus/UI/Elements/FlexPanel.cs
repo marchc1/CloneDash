@@ -36,11 +36,11 @@ namespace Nucleus.UI
         protected override void Initialize() {
             base.Initialize();
         }
-        public override T Add<T>() {
+        public override T Add<T>(T? toAdd = null) where T : class {
             InvalidateChildren(self: true, recursive: true);
-            return base.Add<T>();
+            return base.Add<T>(toAdd);
         }
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
 
         }
         protected override void PostLayoutChildren() {

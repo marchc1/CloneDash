@@ -37,7 +37,7 @@ namespace Nucleus.UI
                 renderBounds.H += (Parent.DockPadding.Y + Parent.DockPadding.H) * 2;
             }
         }
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
             Vector2F textDrawingPosition = Anchor.CalculatePosition(new Vector2F(0, 0), new Vector2F(width, height), TextAlignment);
             var textDrawingAlignment = TextAlignment.ToTextAlignment();
 

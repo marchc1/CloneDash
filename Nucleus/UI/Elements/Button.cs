@@ -7,7 +7,7 @@ namespace Nucleus.UI
         protected override void Initialize() {
             base.Initialize();
         }
-        protected override void Paint(float width, float height) {
+        public override void Paint(float width, float height) {
             var back = MixColorBasedOnMouseState(this, BackgroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
             var fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 
