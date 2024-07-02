@@ -585,11 +585,11 @@ namespace Nucleus.Engine
 
             for (int i = 0; i < fields.Count; i++) {
                 var tx = 12;
-                var ty = (frameState.WindowHeight - 32) - ((fields.Count - i) * 16);
+                var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 16);
 
                 var t = fields[i].ToString();
                 Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-                Graphics2D.DrawText(frameState.WindowWidth - tx, ty, t, "Consolas", 14, Anchor.TopRight);
+                Graphics2D.DrawText(tx, ty, t, "Consolas", 14, Anchor.TopLeft);
             }
 
             ConsoleSystem.Draw();
