@@ -42,8 +42,7 @@ namespace CloneDash
             Filesystem.AddPath("models", Filesystem.Resolve("game") + "assets\\scenes\\default\\models\\");
             Filesystem.AddPath("scripts", Filesystem.Resolve("game") + "assets\\scenes\\default\\scripts\\");
 
-            while (!EngineCore.Closing) 
-                EngineCore.Frame();
+            EngineCore.Start();
         }
     }
 }

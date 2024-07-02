@@ -44,7 +44,7 @@ namespace CloneDash.Game
         {
             public float Completion { get; set; }
 
-            protected override void Paint(float width, float height) {
+            public override void Paint(float width, float height) {
                 Graphics2D.SetDrawColor(230, 235, 255);
                 Graphics2D.DrawRectangle(0, 0, width * Completion, height);
             }

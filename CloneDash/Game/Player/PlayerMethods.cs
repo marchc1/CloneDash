@@ -250,7 +250,7 @@ namespace CloneDash.Game
                 base.Initialize();
                 Dock = Dock.Bottom;
             }
-            protected override void Paint(float width, float height) {
+            public override void Paint(float width, float height) {
                 Graphics2D.SetDrawColor(255, 60, 42);
                 Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (Level.Health / Level.MaxHealth), 24);
                 Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
