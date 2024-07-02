@@ -1,11 +1,17 @@
 ﻿using Raylib_cs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-// All of the stuff to support "custom keyboard layouts" is probably organized horribly and needs work...
+// All of the stuff to support "custom keyboard layouts" is probably organized horribly and needs work
 // Help would be appreciated from someone with more experience with this kind of thing
 
 namespace Nucleus.Types
 {
-    public enum CharacterType {
+    public enum CharacterType
+    {
         NoAction,
         VisibleCharacter,
         DeleteBackwards,
@@ -13,13 +19,15 @@ namespace Nucleus.Types
         Enter,
         Arrow
     }
-    public record KeyAction(CharacterType Type, string? Extra = null) {
+    public record KeyAction(CharacterType Type, string? Extra = null)
+    {
         public static implicit operator KeyAction(CharacterType t) => new KeyAction(t);
         public static implicit operator KeyAction(string s) => new KeyAction(CharacterType.VisibleCharacter, s);
         public static implicit operator string(KeyAction s) => s.Extra ?? "?";
     }
     public record KeyboardKey(string Name, int Key);
-    public abstract class KeyboardLayout {
+    public abstract class KeyboardLayout
+    {
         public static USKeyboard USA { get; private set; } = new();
 
         private Dictionary<string, int> KeyStrToKey = new();
@@ -55,7 +63,8 @@ namespace Nucleus.Types
         public abstract bool ShiftDown(KeyboardState state);
     }
 
-    public class USKeyboard : KeyboardLayout {
+    public class USKeyboard : KeyboardLayout
+    {
         public KeyboardKey Apostrophe { get; private set; }
         public KeyboardKey Comma { get; private set; }
         public KeyboardKey Minus { get; private set; }
@@ -282,24 +291,24 @@ namespace Nucleus.Types
             bool caps = false;
             bool numpad = false;
 
-            switch (key.Key) {  
-                case 39: return !shift ? "'" : "\""; // Apostrophe
-                case 44: return !shift ? "," : "<"; // Comma
-                case 45: return !shift ? "-" : "_"; // Minus
-                case 46: return !shift ? "." : ">"; // Period
-                case 47: return !shift ? "/" : "?"; // Slash
-                case 48: return !shift ? "0" : ")"; // Zero
-                case 49: return !shift ? "1" : "!"; // One
-                case 50: return !shift ? "2" : "@"; // Two
-                case 51: return !shift ? "3" : "#"; // Three
-                case 52: return !shift ? "4" : "$"; // Four
-                case 53: return !shift ? "5" : "%"; // Five
-                case 54: return !shift ? "6" : "^"; // Six
-                case 55: return !shift ? "7" : "&"; // Seven
-                case 56: return !shift ? "8" : "*"; // Eight
-                case 57: return !shift ? "9" : "("; // Nine
-                case 59: return !shift ? ";" : ":"; // Semicolon
-                case 61: return !shift ? "=" : "+"; // Equal
+            switch (key.Key) {
+                case 39: return !(shift || caps) ? "'" : "\""; // Apostrophe
+                case 44: return !(shift || caps) ? "," : "<"; // Comma
+                case 45: return !(shift || caps) ? "-" : "_"; // Minus
+                case 46: return !(shift || caps) ? "." : ">"; // Period
+                case 47: return !(shift || caps) ? "/" : "?"; // Slash
+                case 48: return !(shift || caps) ? "0" : ")"; // Zero
+                case 49: return !(shift || caps) ? "1" : "!"; // One
+                case 50: return !(shift || caps) ? "2" : "@"; // Two
+                case 51: return !(shift || caps) ? "3" : "#"; // Three
+                case 52: return !(shift || caps) ? "4" : "$"; // Four
+                case 53: return !(shift || caps) ? "5" : "%"; // Five
+                case 54: return !(shift || caps) ? "6" : "^"; // Six
+                case 55: return !(shift || caps) ? "7" : "&"; // Seven
+                case 56: return !(shift || caps) ? "8" : "*"; // Eight
+                case 57: return !(shift || caps) ? "9" : "("; // Nine
+                case 59: return !(shift || caps) ? ";" : ":"; // Semicolon
+                case 61: return !(shift || caps) ? "=" : "+"; // Equal
                 case 65: return !(shift || caps) ? "a" : "A"; // A
                 case 66: return !(shift || caps) ? "b" : "B"; // B
                 case 67: return !(shift || caps) ? "c" : "C"; // C
@@ -327,31 +336,31 @@ namespace Nucleus.Types
                 case 89: return !(shift || caps) ? "y" : "Y"; // Y
                 case 90: return !(shift || caps) ? "z" : "Z"; // Z
                 case 32: return " ";
-                case 91: return !shift ? "[" : "{"; // LeftBracket
-                case 92: return !shift ? "\\" : "|"; // Backslash
-                case 93: return !shift ? "]" : "}"; // RightBracket
-                case 96: return !shift ? "`" : "~"; // Grave
+                case 91: return !(shift || caps) ? "[" : "{"; // LeftBracket
+                case 92: return !(shift || caps) ? "\\" : "|"; // Backslash
+                case 93: return !(shift || caps) ? "]" : "}"; // RightBracket
+                case 96: return !(shift || caps) ? "`" : "~"; // Grave
                 case 259: return CharacterType.DeleteBackwards; // Numpad0
                 case 262: return new(CharacterType.Arrow, "RIGHT");
                 case 263: return new(CharacterType.Arrow, "LEFT");
                 case 264: return new(CharacterType.Arrow, "DOWN");
                 case 265: return new(CharacterType.Arrow, "UP");
-                case 320: return numpad ? "0" : CharacterType.NoAction; // Numpad0
-                case 321: return numpad ? "1" : CharacterType.NoAction; // Numpad1
-                case 322: return numpad ? "2" : CharacterType.NoAction; // Numpad2
-                case 323: return numpad ? "3" : CharacterType.NoAction; // Numpad3
-                case 324: return numpad ? "4" : CharacterType.NoAction; // Numpad4
-                case 325: return numpad ? "5" : CharacterType.NoAction; // Numpad5
-                case 326: return numpad ? "6" : CharacterType.NoAction; // Numpad6
-                case 327: return numpad ? "7" : CharacterType.NoAction; // Numpad7
-                case 328: return numpad ? "8" : CharacterType.NoAction; // Numpad8
-                case 329: return numpad ? "9" : CharacterType.NoAction; // Numpad9
-                case 330: return numpad ? "." : CharacterType.NoAction; // NumpadDecimal
-                case 331: return numpad ? "/" : CharacterType.NoAction; // NumpadDivide
-                case 332: return numpad ? "*" : CharacterType.NoAction; // NumpadMultiply
-                case 333: return numpad ? "-" : CharacterType.NoAction; // NumpadSubtract
-                case 334: return numpad ? "+" : CharacterType.NoAction; // NumpadAdd
-                case 336: return numpad ? "=" : CharacterType.NoAction; // NumpadEqual
+                case 320: return numpad ? "0" : null; // Numpad0
+                case 321: return numpad ? "1" : null; // Numpad1
+                case 322: return numpad ? "2" : null; // Numpad2
+                case 323: return numpad ? "3" : null; // Numpad3
+                case 324: return numpad ? "4" : null; // Numpad4
+                case 325: return numpad ? "5" : null; // Numpad5
+                case 326: return numpad ? "6" : null; // Numpad6
+                case 327: return numpad ? "7" : null; // Numpad7
+                case 328: return numpad ? "8" : null; // Numpad8
+                case 329: return numpad ? "9" : null; // Numpad9
+                case 330: return numpad ? "." : null; // NumpadDecimal
+                case 331: return numpad ? "/" : null; // NumpadDivide
+                case 332: return numpad ? "*" : null; // NumpadMultiply
+                case 333: return numpad ? "-" : null; // NumpadSubtract
+                case 334: return numpad ? "+" : null; // NumpadAdd
+                case 336: return numpad ? "=" : null; // NumpadEqual
             }
 
             return CharacterType.NoAction;
@@ -377,7 +386,7 @@ namespace Nucleus.Types
 
         public override string ToString() {
             List<string> keys = [];
-            foreach(var key in KeysHeld) {
+            foreach (var key in KeysHeld) {
                 keys.Add(KeyboardLayout.USA.FromInt(key).Name);
             }
             return $"Held [{string.Join(", ", keys)}]";
