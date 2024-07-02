@@ -3,8 +3,8 @@ using Nucleus.Engine;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using MouseButton = Nucleus.Types.MouseButton;
-
 
 namespace Nucleus.UI
 {
@@ -17,14 +17,20 @@ namespace Nucleus.UI
         Bottom,
         Fill
     }
-    public abstract class Element : IValidatable
+    public class Element : IValidatable
     {
         public UserInterface UI { get; internal set; }
 
         private Vector2F _position = new(0, 0);
+        public float BorderSize { get; set; } = 2;
         public Vector2F Position {
             get { return _position; }
-            set { _position = value; InvalidateLayout(); }
+            set {
+                if (value == _position)
+                    return;
+
+                _position = value; InvalidateLayout();
+            }
         }
 
         private Vector2F _size = new(32, 32);
@@ -129,7 +135,7 @@ namespace Nucleus.UI
 
         private RectangleF __renderbounds = RectangleF.Zero;
 
-        public RectangleF RenderBounds {
+        public virtual RectangleF RenderBounds {
             get {
                 return __renderbounds;
             }
@@ -164,20 +170,20 @@ namespace Nucleus.UI
         }
 
         // Avoid overriding this unless needed
-        public virtual T Add<T>() where T : Element, new() {
-            return Create<T>(AddParent);
+        public virtual T Add<T>(T? toAdd = null) where T : Element {
+            return Create<T>(AddParent, toAdd);
         }
 
-        public static T Create<T>(Element? parent = null) where T : Element, new() {
-            T ret = new();
+        public static T Create<T>(Element? parent = null, T? ret = null) where T : Element {
+            ret = ret ?? (T)Activator.CreateInstance(typeof(T));
 
             if (parent == null) {
                 ret.Initialize();
                 return ret;
             }
 
-            parent.AddChild(ret);
             ret.UI = parent.UI;
+            parent.AddChild(ret);
             ret.Initialize();
             ret.UI.Elements.Add(ret);
             return ret;
@@ -196,6 +202,9 @@ namespace Nucleus.UI
             Removed?.Invoke(this);
 
             __markedForRemoval = true;
+            if (IsPopup) {
+                UI.RemovePopup(this);
+            }
 
             UI.Elements.Remove(this);
             foreach (Element element in this.Children)
@@ -287,7 +296,8 @@ namespace Nucleus.UI
         protected virtual void ModifyRenderBounds(ref RectangleF renderBounds) { }
 
         private bool __usesRenderTarget = false;
-        private RenderTexture2D? __RT = null;
+        private RenderTexture2D? __RT1 = null;
+        private RenderTexture2D? __RT2 = null;
         private bool UseRT2 = false;
         private RectangleF? __lastRTSize = null;
 
@@ -305,10 +315,10 @@ namespace Nucleus.UI
 
                 __usesRenderTarget = value;
                 if (value == false) {
-                    if (__RT.HasValue)
-                        Raylib.UnloadRenderTexture(__RT.Value);
+                    if (__RT1.HasValue)
+                        Raylib.UnloadRenderTexture(__RT1.Value);
 
-                    __RT = null;
+                    __RT1 = null;
                     __lastRTSize = null;
                 }
                 else {
@@ -339,7 +349,7 @@ namespace Nucleus.UI
 
             __renderbounds = RectangleF.FromPosAndSize(_position, _size);
             ModifyRenderBounds(ref __renderbounds);
-            PerformLayout(_size.w, _size.h);
+            //PerformLayout(_size.w, _size.h); used to be here...
 
             RectangleF currentBounds = __renderbounds;
             if (Dock != Dock.None) {
@@ -457,23 +467,31 @@ namespace Nucleus.UI
                     }
                 }
             }
-            else if (Origin != Anchor.TopLeft) {
+            else if (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft) {
                 var np = Anchor.CalculatePosition(currentBounds.Pos, currentBounds.Size, Origin, true);
-                currentBounds.Pos = np;
+                var npO = Anchor.CalculatePosition(new(0, 0), Parent.RenderBounds.Size, Anchor, false);
+                currentBounds.Pos = npO + np;
             }
             RenderBounds = currentBounds;
 
             LayoutInvalidated = false;
+            PerformLayout(RenderBounds.Width, RenderBounds.Height);
         }
 
         public bool Parented => Parent != null;
         public bool HasChildren => Children.Count > 0;
 
+        public bool IsPopup { get; private set; }
+        public void MakePopup() {
+            IsPopup = true;
+            UI.Popups.Add(this);
+        }
+
         public void MoveToFront() => throw new NotImplementedException();
         public void MoveToBack() => throw new NotImplementedException();
         #endregion
         #region Rendering/visuals
-        protected virtual void Paint(float width, float height) {
+        public virtual void Paint(float width, float height) {
             ImageDrawing();
         }
         public delegate void PaintEvent(Element self, float width, float height);
@@ -542,13 +560,26 @@ namespace Nucleus.UI
 
             return returning;
         }
-        public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, Element? lastHovered = null) {
+        public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, Element? lastHovered = null, bool popupActive = false) {
             if (!element.Enabled) return lastHovered;
             if (!element.Visible) return lastHovered;
             if (element.InputDisabled) return lastHovered;
 
             if (element.Parent != null)
                 offset += element.Parent.ChildRenderOffset;
+
+            if (popupActive || (element is UserInterface && (element as UserInterface).PopupActive)) {
+                if (element == element.UI.Popups.Last())
+                    popupActive = false;
+                else
+                    popupActive = true;
+
+                offset += element.RenderBounds.Pos;
+                foreach (Element child in element.Children)
+                    lastHovered = ResolveElementHoveringState(child, frameState, offset, lastHovered, popupActive);
+
+                return lastHovered;
+            }
 
             if (element.RenderBounds.AddPosition(offset).ContainsPoint(frameState.MouseState.MousePos))
                 lastHovered = element;
@@ -574,28 +605,45 @@ namespace Nucleus.UI
                 ThinkRecursive(child, frameState);
         }
 
+        ~Element() {
+            if (__RT1.HasValue) {
+                MainThread.RunASAP(() => {
+                    Raylib.UnloadRenderTexture(__RT1.Value);
+                });
+            }
+            //OnRemoval();
+        }
+
+        public virtual string TooltipText { get; set; }
+
         public virtual void PreRender() { }
         public virtual void PostRender() { }
         public virtual void PostRenderChildren() { }
+        public virtual bool PostRenderChildRT(Element element) => true;
 
         public float Opacity { get; set; } = 1.0f;
 
         public static void DrawRecursive(Element element, int iteration = 0) {
             if (!element.Enabled) return;
             if (!element.Visible) return;
-
+            if (element.IsPopup) {
+                Raylib.DrawRectangle(0, 0, (int)element.UI.Size.X, (int)element.UI.Size.Y, new(0, 0, 0,
+                    (int)NMath.Remap(element.Lifetime, 0, 0.2f, 0, 100, clampOutput: true)
+                    ));
+            }
             if (element.UsesRenderTarget) {
                 // quick check if needing to create a new RT
                 if (!element.__lastRTSize.HasValue || element.RenderBounds != element.__lastRTSize) {
-                    if (element.__RT.HasValue) Raylib.UnloadRenderTexture(element.__RT.Value);
+                    if (element.__RT1.HasValue) Raylib.UnloadRenderTexture(element.__RT1.Value);
+                    if (element.__RT2.HasValue) Raylib.UnloadRenderTexture(element.__RT2.Value);
 
-                    element.__RT = Graphics2D.CreateRenderTarget(element.RenderBounds.W, element.RenderBounds.H);
+                    element.__RT1 = Graphics2D.CreateRenderTarget(element.RenderBounds.W, element.RenderBounds.H);
                     element.__lastRTSize = element.RenderBounds;
                 }
-                if (element.__RT.HasValue) {
+                if (element.__RT1.HasValue) {
                     var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
                     Graphics2D.ResetDrawingOffset();
-                    Graphics2D.BeginRenderTarget(element.__RT.Value);
+                    Graphics2D.BeginRenderTarget(element.__RT1.Value);
 
                     if (element.PaintOverride != null)
                         element.PaintOverride.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
@@ -607,19 +655,20 @@ namespace Nucleus.UI
 
                     Graphics2D.EndRenderTarget();
                     Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
-                    if (IValidatable.IsValid(element.Parent))
+                    if (IValidatable.IsValid(element.Parent)) {
                         Graphics2D.OffsetDrawing(element.ChildRenderOffset);
 
-                    Graphics2D.OffsetDrawing(element.RenderBounds.Pos);
-                    element.PreRender();
-                    var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
-                    Graphics2D.SetDrawColor(t, t, t, t);
-                    Graphics2D.DrawRenderTexture(element.__RT.Value, element.RenderBounds.Size);
-                    element.PostRender();
+                        if (element.Parent.PostRenderChildRT(element) == true) {
+                            Graphics2D.OffsetDrawing(element.RenderBounds.Pos);
+                            element.PreRender();
+                            var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
+                            Graphics2D.SetDrawColor(t, t, t, t);
+                            Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
+                            element.PostRender();
+                        }
 
-                    if (IValidatable.IsValid(element.Parent))
                         Graphics2D.OffsetDrawing(-element.ChildRenderOffset);
-
+                    }
                     Graphics2D.OffsetDrawing(-element.RenderBounds.Pos);
                 }
                 else
@@ -693,10 +742,10 @@ namespace Nucleus.UI
             MouseClick(state, button);
             MouseClickEvent?.Invoke(this, state, button);
         }
-        internal void MouseReleaseOccur(FrameState state, MouseButton button) {
+        internal void MouseReleaseOccur(FrameState state, MouseButton button, bool forced = false) {
             Depressed = false;
 
-            if (!Hovered)
+            if (!Hovered && !forced)
                 return;
 
             MouseRelease(this, state, button);
@@ -732,7 +781,7 @@ namespace Nucleus.UI
         public DateTime Birth { get; } = DateTime.Now;
         public float Lifetime => (float)(DateTime.Now - Birth).TotalSeconds;
 
-        public void Center() {
+        public virtual void Center() {
             ValidateLayout();
             var parentBounds = Parent.RenderBounds;
             var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
@@ -756,16 +805,29 @@ namespace Nucleus.UI
         /// </summary>
         public void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
         /// <summary>
-        /// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br><br></br>
-        /// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs
-        /// keyboard focus, you dont want hovering over something else to cause the textbox to lose focus; in this case, you'd demand keyboard focus from the textbox to avoid that.<br></br><br></br>
-        /// Note that demands don't respect demands, ie. demanding keyboard focus will take away keyboard focus from another element that demanded it previously.
+        /// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br>
+        /// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs <br></br>
+        /// keyboard focus, you dont want hovering over something else to cause the textbox to lose focus; in this case, you'd demand keyboard focus from the textbox to avoid that.<br></br>
+        /// Note that demands don't respect demands.
         /// </summary>
         public void DemandKeyboardFocus() => EngineCore.DemandKeyboardFocus(this);
         public void KeyboardUnfocus() => EngineCore.KeyboardUnfocus(this);
 
+        public void KeyPressedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
+            KeyPressed(keyboardState, key);
+            OnKeyPressed?.Invoke(this, keyboardState, key);
+        }
+        public void KeyReleasedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
+            KeyReleased(keyboardState, key);
+            OnKeyReleased?.Invoke(this, keyboardState, key);
+        }
+
         public virtual void KeyPressed(KeyboardState keyboardState, Types.KeyboardKey key) { }
         public virtual void KeyReleased(KeyboardState keyboardState, Types.KeyboardKey key) { }
+
+        public delegate void KeyDelegate(Element self, KeyboardState state, Types.KeyboardKey key);
+        public event KeyDelegate? OnKeyPressed;
+        public event KeyDelegate? OnKeyReleased;
 
         public bool IsIndirectChildOf(Element parent) {
             var p = this;
@@ -782,18 +844,36 @@ namespace Nucleus.UI
         public bool KeyboardFocused => EngineCore.KeyboardFocusedElement == this;
 
         public KeybindSystem Keybinds { get; } = new();
+        public Anchor Anchor { get; set; } = Anchor.TopLeft;
         public Anchor Origin { get; set; } = Anchor.TopLeft;
 
         public Texture2D? Image { get; set; }
         public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
-        protected void ImageDrawing() {
+        public Vector2F GetGlobalPosition() {
+            Vector2F ret = new Vector2F(0, 0);
+            Element? t = this;
+            while (true) {
+                ret += t.RenderBounds.Pos;
+                t = t.Parent;
+                if (t == null || t == t.UI) {
+                    break;
+                }
+            }
+            return ret;
+        }
+
+        protected void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
             if (!Image.HasValue)
                 return;
 
-            var offset = Graphics2D.Offset;
+            var offset = Graphics2D.Offset + (pos ?? new Vector2F(0));
             var tex = Image.Value;
             var bounds = RenderBounds;
+            if (size != null) {
+                bounds.W = size.Value.X;
+                bounds.H = size.Value.Y;
+            }
 
             Rectangle sourceRect = new(0, 0, tex.Width, tex.Height);
             Rectangle destRect = new(offset.X, offset.Y, tex.Width, tex.Height);
@@ -850,6 +930,22 @@ namespace Nucleus.UI
             }
 
             Raylib.DrawTexturePro(tex, sourceRect, destRect, new(0, 0), 0, TextColor);
+        }
+
+        public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
+
+        public void AddAndInitializeIncompleteElement<T>(T? element) where T : Element {
+            if (element == null)
+                return;
+            if (element.UI != null) {
+                //Logs.Info("Tried to initialize a supposedly incomplete element, but it was complete. Ignoring.");
+                return;
+            }
+            Add(element);
+        }
+
+        public Vector2F CursorPos() {
+            return EngineCore.CurrentFrameState.MouseState.MousePos - GetGlobalPosition();
         }
     }
 }
