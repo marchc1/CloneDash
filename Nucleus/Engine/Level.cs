@@ -1,11 +1,24 @@
-﻿using Nucleus.Core;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.Engine
 {
+    /// <summary>
+    /// Game level, powers *everything*, including menus.
+    /// Which means while designing this, it needs to be kept in mind that menus are just game levels.
+    /// <br></br>
+    /// Remember: levels store LOGIC, and, when needed, game-level-specific data. But any data such as entities, UI panels, textures etc. should remain within the engine core
+    /// </summary>
     public abstract class Level
     {
         public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
@@ -15,7 +28,7 @@ namespace Nucleus.Engine
         private bool __viewDirty = true;
 
         /// <summary>
-        /// Specifies a viewing rectangle for this level. If null, scales to the screen. Currently not functional...
+        /// Specifies a viewing rectangle for this level. If null, scales to the screen. Currently not functional
         /// </summary>
         public RectangleF? View {
             get {
@@ -26,7 +39,9 @@ namespace Nucleus.Engine
                 __viewDirty = true;
             }
         }
-
+        public void ResetUI() {
+            UI = Element.Create<UserInterface>();
+        }
         public virtual void PreThink(ref FrameState frameState) { }
         public virtual void ModifyMouseState(ref MouseState mouseState) { }
         public virtual void ModifyKeyboardState(ref KeyboardState keyboardState) { }
@@ -38,6 +53,7 @@ namespace Nucleus.Engine
         public virtual void Render(FrameState frameState) { }
         public virtual void Render2D(FrameState frameState) { }
         public virtual void PostRender(FrameState frameState) { }
+        public virtual void ShouldEngineClose() { }
 
         public void RunEventPreThink(ref FrameState frameState) {
             PreThink(ref frameState);
@@ -106,11 +122,14 @@ namespace Nucleus.Engine
             EntityHash.Clear();
 
             OnUnload();
+            if (RenderTarget.HasValue) {
+                Raylib.UnloadRenderTexture(RenderTarget.Value);
+            }
         }
         public virtual void OnUnload() { }
 
         /// <summary>
-        /// Called when the engine begins loading a level.
+        /// Called when the engine begins loading a level. If the level needs to do work for an extended period of time, return true
         /// <br>todo: proper async loading</br>
         /// </summary>
         public virtual void Initialize(params object[] args) {
@@ -120,6 +139,11 @@ namespace Nucleus.Engine
         // ------------------------------------------------------------------------------------------ //
         // Entity system
         // ------------------------------------------------------------------------------------------ //
+
+        // These are separate for two reasons:
+        // 1. IsValid checks on entities can be done with the HashSet
+        // 3. Finding entities by their unique properties/for the sake of execution can be done with the List
+        // Basically just trying to cover every possible
 
         /// <summary>
         /// A hashset of all currently available entities.
@@ -135,7 +159,7 @@ namespace Nucleus.Engine
 
         public Entity[] Entities => EntityList.ToArray();
 
-        public UserInterface UI { get; } = Element.Create<UserInterface>();
+        public UserInterface UI { get; private set; } = Element.Create<UserInterface>();
 
         private void __addEntity(Entity ent) {
             EntityHash.Add(ent);
@@ -181,14 +205,14 @@ namespace Nucleus.Engine
                 throw new Exception("instance == null");
 
             T ent = (T)instance;
-            //Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
+            Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
 
             __initializeEntity(ent);
             return ent;
         }
 
         public T Add<T>(T ent) where T : Entity {
-            //Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
+            Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
             if (!IValidatable.IsValid(ent))
                 throw new ArgumentNullException("ent");
 
@@ -199,7 +223,7 @@ namespace Nucleus.Engine
         public void Remove(Entity ent) {
             if (!IValidatable.IsValid(ent))
                 return;
-            //Logs.Debug($"Level.Remove call bufferLock = {__lockedBuffer} ent {ent}");
+            Logs.Debug($"Level.Remove call bufferLock = {__lockedBuffer} ent {ent}");
 
             if (__lockedBuffer) {
                 __removeBuffer.Add(ent);
@@ -238,10 +262,50 @@ namespace Nucleus.Engine
         public KeybindSystem Keybinds { get; private set; } = new();
 
         public bool DrawDebuggingGrid { get; private set; } = false;
+
+        public struct DebugRecord(bool containsValue, string key, string? value = null)
+        {
+            public static implicit operator DebugRecord(string from) {
+                bool containsValue = false;
+                string key = "";
+                string? value = null;
+
+                var colon = from.IndexOf(':');
+                if (colon == -1) {
+                    containsValue = false;
+                }
+                else {
+                    if (colon == from.Length - 1) {
+                        containsValue = false;
+                    }
+                    else
+                        containsValue = true;
+                }
+
+                if (containsValue) {
+                    key = from.Substring(0, colon);
+                    value = from.Substring(colon + 1).Trim();
+                }
+                else {
+                    key = from;
+                }
+
+                return new(containsValue, key, value);
+            }
+
+            public override string ToString() {
+                return $"{key}{(containsValue ? $": {value}" : "")}";
+            }
+        }
+
+        Stopwatch profiler = new();
         /// <summary>
         /// Call this every frame.
         /// </summary>
         public void Frame() {
+            profiler.Reset();
+            profiler.Start();
+            MainThread.Run(ThreadExecutionTime.BeforeFrame);
             LastFrameState = FrameState;
 
             LastRealtime = Realtime;
@@ -256,7 +320,6 @@ namespace Nucleus.Engine
 
             // Construct a FrameState from inputs
             UnlockEntityBuffer(); LockEntityBuffer();
-
             FrameDebuggingStrings = [];
             EngineCore.CurrentFrameState = new();
             FrameState frameState = new();
@@ -272,8 +335,8 @@ namespace Nucleus.Engine
             else {
                 x = 0;
                 y = 0;
-                width = Raylib.GetScreenWidth();
-                height = Raylib.GetScreenHeight();
+                width = EngineCore.GetScreenBounds().X;
+                height = EngineCore.GetScreenBounds().Y;
             }
 
             frameState.WindowX = x;
@@ -317,7 +380,7 @@ namespace Nucleus.Engine
             if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_BACK)) mouseState.Mouse4Released = true;
             if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_FORWARD)) mouseState.Mouse5Released = true;
 
-            mouseState.MousePos = Raylib.GetMousePosition().ToNucleus();
+            mouseState.MousePos = EngineCore.MousePos;
             mouseState.MouseDelta = Raylib.GetMouseDelta().ToNucleus();
             mouseState.MouseScroll = Raylib.GetMouseWheelMoveV().ToNucleus();
 
@@ -357,10 +420,12 @@ namespace Nucleus.Engine
                 if (!ranKeybinds) {
                     ranKeybinds = UI.Keybinds.TestKeybinds(keyboardState);
                     if (!ranKeybinds) {
-                        foreach (var keyPress in keyboardState.KeysPressed)
-                            EngineCore.KeyboardFocusedElement.KeyPressed(keyboardState, KeyboardLayout.USA.FromInt(keyPress));
-                        foreach (var keyRelease in keyboardState.KeysReleased)
-                            EngineCore.KeyboardFocusedElement.KeyReleased(keyboardState, KeyboardLayout.USA.FromInt(keyRelease));
+                        foreach (var keyPress in keyboardState.KeysPressed) {
+                            EngineCore.KeyboardFocusedElement.KeyPressedOccur(keyboardState, KeyboardLayout.USA.FromInt(keyPress));
+                        }
+                        foreach (var keyRelease in keyboardState.KeysReleased) {
+                            EngineCore.KeyboardFocusedElement.KeyReleasedOccur(keyboardState, KeyboardLayout.USA.FromInt(keyRelease));
+                        }
                     }
                 }
             }
@@ -369,10 +434,11 @@ namespace Nucleus.Engine
             // UI thinking should happen here because if a popup UI element exists, we need to block input to the game. Don't just block Think though
             int rebuilds = Element.LayoutRecursive(UI, frameState);
 
-            Element? hoveredElement = Element.ResolveElementHoveringState(UI, frameState, new(0));
+            Element? hoveredElement = Element.ResolveElementHoveringState(UI, frameState, EngineCore.GetGlobalScreenOffset());
             frameState.HoveredUIElement = hoveredElement;
             UI.Hovered = hoveredElement;
 
+            EngineCore.CurrentFrameState = frameState;
             if (frameState.MouseState.MouseClicked) {
                 if (UI.Hovered != null) {
                     UI.Depressed = frameState.HoveredUIElement;
@@ -384,10 +450,13 @@ namespace Nucleus.Engine
                     if (frameState.MouseState.Mouse5Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse5);
                 }
             }
+
+            EngineCore.CurrentFrameState = frameState;
             if (frameState.MouseState.MouseReleased) {
                 if (UI.Depressed != null) {
                     if (UI.Hovered == UI.Depressed) {
-                        if (frameState.MouseState.Mouse1Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
+                        if (frameState.MouseState.Mouse1Released)
+                            UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
                         if (frameState.MouseState.Mouse2Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
                         if (frameState.MouseState.Mouse3Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
                         if (frameState.MouseState.Mouse4Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
@@ -397,6 +466,7 @@ namespace Nucleus.Engine
                     UI.Depressed = null;
                 }
             }
+            EngineCore.CurrentFrameState = frameState;
             if (!mouseState.MouseScroll.IsZero()) {
                 if (IValidatable.IsValid(UI.Hovered) && UI.Hovered.InputDisabled == false) {
                     UI.Hovered.MouseScrollOccur(frameState, mouseState.MouseScroll);
@@ -416,6 +486,7 @@ namespace Nucleus.Engine
             // The frame state is basically complete after PreThink and UI layout/hover resolving, so it should be stored
             // Last change will be after element thinking
             EngineCore.CurrentFrameState = frameState; FrameState = frameState;
+            MainThread.Run(ThreadExecutionTime.AfterFrameStateConstructed);
 
             if (!ranKeybinds)
                 ranKeybinds = Keybinds.TestKeybinds(frameState.KeyboardState);
@@ -423,6 +494,7 @@ namespace Nucleus.Engine
             RunEventThink(frameState);
             RunEventPostThink(frameState);
 
+            MainThread.Run(ThreadExecutionTime.AfterThink);
             if (false) {
                 var size = 16;
                 for (int gx = 0; gx < 100; gx++) {
@@ -475,26 +547,31 @@ namespace Nucleus.Engine
             // Only really exists for REALLY late rendering
             RunEventPostRender(frameState);
             UnlockEntityBuffer();
-
             var FPS = Raylib.GetFPS();
-            List<string> fields = [
-                $"Nucleus Level / {EngineCore.GameInfo} - Debugger",
-                "",
-                $"Window",
-                $"    Resolution        : {frameState.WindowWidth}x{frameState.WindowHeight}",
-                $"    FPS               : {FPS} ({1000f / FPS}ms render time)",
-                $"Level",
-                $"    Level Classname   : {this.GetType().Name}",
-                $"    Level Entities    : {EntityList.Count}",
-                $"User Interface",
-                $"    UI Elements       : {UI.Elements.Count}",
-                $"    UI Rebuilds       : {rebuilds}",
-                $"    Hovered Element   : {(UI.Hovered == null ? "<null>" : UI.Hovered)}",
-                $"    Depressed Element : {(UI.Depressed == null ? "<null>" : UI.Depressed)}",
-                $"State",
-                $"    Mouse State       : {frameState.MouseState}",
-                $"    Keyboard State    : {frameState.KeyboardState}",
-            ];
+            List<DebugRecord> fields;
+            if (EngineCore.ShowDebuggingInfo)
+                fields = [
+                    $"Nucleus Level / {EngineCore.GameInfo} - Debugger",
+                    "",
+                    $"Window",
+                    $"    Resolution        : {frameState.WindowWidth}x{frameState.WindowHeight}",
+                    $"    FPS               : {FPS} ({Raylib.GetFrameTime()}ms render time)",
+                    $"Level",
+                    $"    Level Classname   : {this.GetType().Name}",
+                    $"    Level Entities    : {EntityList.Count}",
+                    $"User Interface",
+                    $"    UI Elements       : {UI.Elements.Count}",
+                    $"    UI Rebuilds       : {rebuilds}",
+                    $"    Hovered Element   : {(UI.Hovered == null ? "<null>" : UI.Hovered)}",
+                    $"    Depressed Element : {(UI.Depressed == null ? "<null>" : UI.Depressed)}",
+                    $"State",
+                    $"    Mouse State       : {frameState.MouseState}",
+                    $"    Keyboard State    : {frameState.KeyboardState}",
+                ];
+            else
+                fields = [
+                    //$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"
+                ];
 
             if (FrameDebuggingStrings.Count > 0) {
                 fields.Add("");
@@ -503,15 +580,36 @@ namespace Nucleus.Engine
                     fields.Add("    " + s);
             }
 
+            int maxKey = 0;
+            int maxValue = 0;
+
             for (int i = 0; i < fields.Count; i++) {
                 var tx = 12;
-                var ty = (frameState.WindowHeight - 12) - ((fields.Count - i) * 16);
+                var ty = (frameState.WindowHeight - 32) - ((fields.Count - i) * 16);
 
+                var t = fields[i].ToString();
                 Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-                Graphics2D.DrawText(tx, ty, fields[i], "Consolas", 14);
+                Graphics2D.DrawText(frameState.WindowWidth - tx, ty, t, "Consolas", 14, Anchor.TopRight);
             }
 
             ConsoleSystem.Draw();
+
+            MainThread.Run(ThreadExecutionTime.AfterFrame);
+            profiler.Stop();
+            EngineCore.FrameCostMS = (float)profiler.Elapsed.TotalMilliseconds;
+            var nanoseconds = (float)profiler.Elapsed.TotalNanoseconds;
+
+            if (nanoseconds < 1000) // less than 1 microsecond
+                EngineCore.FrameCost = $"{nanoseconds} ns";
+            else if (nanoseconds < 2000) // between 1 and 2 microseconds
+                EngineCore.FrameCost = $"{nanoseconds / 1000.0} us";
+            else if (nanoseconds < 100_000) // less than 0.1 milliseconds
+                EngineCore.FrameCost = $"{nanoseconds / 1000.0} us";
+            else if (nanoseconds < 2_000_000) // between 0.1 and 2 milliseconds
+                EngineCore.FrameCost = $"{nanoseconds / 1_000_000.0} ms";
+            else // greater than or equal to 2 milliseconds
+                EngineCore.FrameCost = $"{nanoseconds / 1_000_000_000.0} s";
+
         }
 
         public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
