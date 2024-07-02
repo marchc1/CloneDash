@@ -1,4 +1,6 @@
-﻿namespace Nucleus.Types
+﻿using Raylib_cs;
+
+namespace Nucleus.Types
 {
     public record MouseButton(int Button)
     {
@@ -44,6 +46,11 @@
         public bool MouseHeld => Mouse1Held || Mouse2Held || Mouse3Held || Mouse4Held || Mouse5Held;
         public bool MouseReleased => Mouse1Released || Mouse2Released || Mouse3Released || Mouse4Released || Mouse5Released;
 
+        public Vector2F GlobalMousePos {
+            get {
+                return Raylib.GetWindowPosition().ToNucleus() + MousePos;
+            }
+        }
         public bool Clicked(MouseButton button) {
             switch (button.Button) {
                 case 1: return Mouse1Clicked;
@@ -88,7 +95,7 @@
 
         public override string ToString() {
             return $"Clicked [{(Mouse1Clicked ? "^" : "_")} {(Mouse2Clicked ? "^" : "_")} {(Mouse3Clicked ? "^" : "_")} {(Mouse4Clicked ? "^" : "_")} {(Mouse5Clicked ? "^" : "_")}] " +
-                $"Held [{(Mouse1Held ? "^" : "_")} {(Mouse2Held ? "^" : "_")} {(Mouse3Held ? "^" : "_")} {(Mouse4Held ? "^" : "_")} {(Mouse5Held ? "^" : "_")}] " + 
+                $"Held [{(Mouse1Held ? "^" : "_")} {(Mouse2Held ? "^" : "_")} {(Mouse3Held ? "^" : "_")} {(Mouse4Held ? "^" : "_")} {(Mouse5Held ? "^" : "_")}] " +
                 $"Released [{(Mouse1Released ? "^" : "_")} {(Mouse2Released ? "^" : "_")} {(Mouse3Released ? "^" : "_")} {(Mouse4Released ? "^" : "_")} {(Mouse5Released ? "^" : "_")}] " +
                 $"[pos: {MousePos}] [delta: {MouseDelta}] [scroll: {MouseScroll}]";
         }
