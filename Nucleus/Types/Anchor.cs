@@ -68,5 +68,42 @@
 
             throw new NotImplementedException();
         }
+
+        public float Horizontal {
+            get {
+                switch (Anchoring) {
+                    case 1: return 0f;
+                    case 2: return 0.5f;
+                    case 3: return 1f;
+
+                    case 4: return 0f;
+                    case 5: return 0.5f;
+                    case 6: return 1f;
+
+                    case 7: return 0f;
+                    case 8: return 0.5f;
+                    case 9: return 1f;
+                }
+                throw new NotImplementedException();
+            }
+        }
+        public float Vertical {
+            get {
+                switch (Anchoring) {
+                    case 1: return 0f;
+                    case 2: return 0f;
+                    case 3: return 0f;
+
+                    case 4: return 0.5f;
+                    case 5: return 0.5f;
+                    case 6: return 0.5f;
+
+                    case 7: return 1f;
+                    case 8: return 15f;
+                    case 9: return 1f;
+                }
+                throw new NotImplementedException();
+            }
+        }
     }
 }
