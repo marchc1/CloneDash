@@ -217,5 +217,16 @@ namespace Nucleus.UI.Elements
                 InputDisabled = false;
             };
         }
+
+        public void HideNonCloseButtons() {
+            Titlebar.MaximizeButton.Visible = false;
+            Titlebar.MinimizeButton.Visible = false;
+        }
+
+        public void HideAllButtons() {
+            Titlebar.MaximizeButton.Visible = false;
+            Titlebar.MinimizeButton.Visible = false;
+            Titlebar.CloseButton.Visible = false;
+        }
     }
 }

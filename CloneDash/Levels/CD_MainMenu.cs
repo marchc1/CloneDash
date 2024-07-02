@@ -73,6 +73,7 @@ namespace CloneDash.Game
             //test.Title = "Non-Rendertexture Window";
             MDLevelWindow.Size = new Vector2F(360, 600);
             MDLevelWindow.DockPadding = RectangleF.TLRB(4);
+            MDLevelWindow.HideNonCloseButtons();
             MDLevelWindow.Center();
 
             var txt = MDLevelWindow.Add<Textbox>();
@@ -107,6 +108,8 @@ namespace CloneDash.Game
             var song = self.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
 
             Window levelSelector = UI.Add<Window>();
+            levelSelector.HideNonCloseButtons();
+            levelSelector.MakePopup();
             levelSelector.Title = $"\"{song.Name}\" by {song.Author} - Level Selection";
             //test.Title = "Non-Rendertexture Window";
             levelSelector.Size = new Vector2F(650, 320);

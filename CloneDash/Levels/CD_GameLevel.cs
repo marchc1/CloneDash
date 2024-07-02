@@ -206,6 +206,7 @@ namespace CloneDash.Game
                     PauseWindow.Title = "Paused";
                     PauseWindow.Size = new(700, 200);
                     PauseWindow.Center();
+                    PauseWindow.HideAllButtons();
                     PauseWindow.Removed += delegate (Element self) {
                         startUnpause();
                     };
