@@ -146,7 +146,7 @@ namespace Nucleus.Core
     {
         public static Dictionary<string, Sound> LoadedSounds { get; private set; } = new();
 
-        public static void Reset() {
+        public static void Unload() {
             foreach (var kvp in LoadedSounds)
                 Raylib.UnloadSound(kvp.Value);
             LoadedSounds.Clear();
