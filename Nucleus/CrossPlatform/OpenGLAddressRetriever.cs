@@ -32,5 +32,9 @@ namespace Nucleus.CrossPlatform
             return ret;
         }
 #endif
+
+#if COMPILED_LINUX
+#error No support for OpenGL function address retrieval on Linux (for now...)
+#endif
     }
 }
