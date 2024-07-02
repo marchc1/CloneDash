@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using Newtonsoft.Json;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace Nucleus.Types
 {
@@ -15,35 +17,36 @@ namespace Nucleus.Types
 
         public Vector2F(float X, float Y) { this.x = X; this.y = Y; }
         public Vector2F(float Both) { this.x = Both; this.y = Both; }
+        public static Vector2F FromXY(Vector3 xyz) => new(xyz.X, xyz.Y);
 
         // Aliases to X, Y, W, H to the internal value
 
         /// <summary>
         /// Convenience property, internally equivalant to <see cref="x"/>
         /// </summary>
-        public float X { get { return x; } set { x = value; } }
+        [JsonIgnore] public float X { get { return x; } set { x = value; } }
         /// <summary>
         /// Convenience property, internally equivalant to <see cref="y"/>
         /// </summary>
-        public float Y { get { return y; } set { y = value; } }
+        [JsonIgnore] public float Y { get { return y; } set { y = value; } }
 
         /// <summary>
         /// Convenience property, internally equivalent to <see cref="x"/>
         /// </summary>
-        public float w { get { return x; } set { x = value; } }
+        [JsonIgnore] public float w { get { return x; } set { x = value; } }
         /// <summary>
         /// Convenience property, internally equivalent to <see cref="y"/>
         /// </summary>
-        public float h { get { return y; } set { y = value; } }
+        [JsonIgnore] public float h { get { return y; } set { y = value; } }
 
         /// <summary>
         /// Convenience property, internally equivalent to <see cref="x"/>
         /// </summary>
-        public float W { get { return x; } set { x = value; } }
+        [JsonIgnore] public float W { get { return x; } set { x = value; } }
         /// <summary>
         /// Convenience property, internally equivalent to <see cref="y"/>
         /// </summary>
-        public float H { get { return y; } set { y = value; } }
+        [JsonIgnore] public float H { get { return y; } set { y = value; } }
 
         public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
         public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
@@ -67,7 +70,7 @@ namespace Nucleus.Types
                 return true;
             return false;
         }
-        
+
         public static bool operator ==(Vector2F a, Vector2F b) => CompareVector2F(a, b);
         public static bool operator !=(Vector2F a, Vector2F b) => !CompareVector2F(a, b);
 
@@ -79,8 +82,42 @@ namespace Nucleus.Types
             return new((float)Math.Round(X, digits), (float)Math.Round(Y, digits));
         }
         public bool IsZero() => X == 0 && Y == 0;
+
+        public Vector2F DownscaleRatio() {
+            if (X == Y) return new(1, 1);
+            else if (X > Y) return new(Y / X, 1);
+            else return new(1, X / Y);
+        }
+        public Vector2F UpscaleRatio() {
+            if (X == Y) return new(1, 1);
+            else if (X > Y) return new(X / Y, 1);
+            else return new(1, Y / X);
+        }
+
+        public float Distance(Vector2F other) => MathF.Sqrt(MathF.Pow(other.X - X, 2) + MathF.Pow(other.Y - Y, 2));
+        public bool InRadiusOfCircle(Vector2F focus, float radius) {
+            var dist = this.Distance(focus);
+            return dist < radius;
+        }
+
+        [JsonIgnore]
+        public Vector2F XX => new(X, X);
+        [JsonIgnore]
+        public Vector2F YX => new(Y, X);
+        [JsonIgnore]
+        public Vector2F YY => new(Y, Y);
+
+        public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
+
+        public override bool Equals([NotNullWhen(true)] object? obj) {
+            if (obj == null) return false;
+            if(obj is Vector2F v2) return this.X == v2.X && this.Y == v2.Y;
+
+            return false;
+        }
     }
-    public static class VectorConverters {
+    public static class VectorConverters
+    {
         public static Vector2F ToNucleus(this Vector2 vector) => new Vector2F(vector.X, vector.Y);
         public static Vector2 ToNumerics(this Vector2F vector) => new Vector2(vector.X, vector.Y);
     }
