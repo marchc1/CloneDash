@@ -199,6 +199,26 @@
             };
         }
 
+        public RectangleF FitInto(RectangleF cropRect) {
+            RectangleF newR = this;
 
+            if(newR.X < cropRect.X) {
+                newR.W -= (cropRect.X - newR.X);
+                newR.X = cropRect.X;
+            }
+            if((newR.X + newR.W) > (cropRect.X + cropRect.W)) {
+                newR.W -= (newR.X + newR.W) - (cropRect.X + cropRect.W);
+            }
+
+            if (newR.Y < cropRect.Y) {
+                newR.H -= (cropRect.Y - newR.Y);
+                newR.Y = cropRect.Y;
+            }
+            if ((newR.Y + newR.H) > (cropRect.Y + cropRect.H)) {
+                newR.H -= (newR.Y + newR.H) - (cropRect.Y + cropRect.H);
+            }
+
+            return newR;
+        }
     }
 }
