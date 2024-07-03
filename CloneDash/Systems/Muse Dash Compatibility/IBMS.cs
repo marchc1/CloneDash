@@ -14,6 +14,7 @@ using Raylib_cs;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -129,7 +130,8 @@ namespace CloneDash
             public byte[] MusicStream;
         }
 
-        public class StageDemo {
+        public class StageDemo
+        {
             public MusicTrack Track { get; set; }
             public Raylib_cs.Texture2D Cover { get; set; }
         }
@@ -537,7 +539,7 @@ namespace CloneDash
                             sheet.Entities.Add(ent);
                         }
                         else {
-                            
+
                         }
                     }
                 }
@@ -581,33 +583,38 @@ namespace CloneDash
             return sheet;
         }
 
-        public enum MuseDashDifficulty {
+        public enum MuseDashDifficulty
+        {
             Unknown = 0,
             Easy = 1,
             Normal = 2,
             Hard = 3,
             Hidden = 4
         }
-        
-        public class MuseDashAlbum {
+
+        public class MuseDashAlbum
+        {
             [JsonPropertyName("uid")] public string UID { get; set; } = "";
             [JsonPropertyName("title")] public string Title { get; set; } = "";
             [JsonPropertyName("tag")] public string Tag { get; set; } = "";
             [JsonPropertyName("jsonName")] public string JsonName { get; set; } = "";
             [JsonPropertyName("prefabsName")] public string PrefabsName { get; set; } = "";
 
-            public List<MuseDashSong> Songs { get; set;  } = [];
+            public List<MuseDashSong> Songs { get; set; } = [];
 
             public override string ToString() => $"{Title} [{Songs.Count} songs]";
         }
 
-        public class MuseDashSong {
-            public string GetAssetsFilepath() {
-                return StreamingFiles.FirstOrDefault(x => x.Contains($"music_{BaseName}_assets_all")) ?? throw new Exception($"No assets file for {BaseName}");
+        public class MuseDashSong
+        {
+            public static string GetFixedFilename(string givenBase, string fileName) {
+                return 
+                    StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
+                    ?? StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase.Replace("_music", ""))))
+                    ?? throw new Exception($"Tried to find {givenBase}, could not find a match even with fixes applied");
             }
-            public string GetDemoFilepath() {
-                return StreamingFiles.FirstOrDefault(x => x.Contains($"song_{BaseName}_assets_all")) ?? throw new Exception($"No demo file for {BaseName}");
-            }
+            public string GetAssetsFilepath() => GetFixedFilename(BaseName, "music_{name}_assets_all.bundle");
+            public string GetDemoFilepath() => GetFixedFilename(BaseName, "song_{name}_assets_all");
 
             public MuseDashAlbum Album { get; set; }
 
@@ -770,7 +777,8 @@ namespace CloneDash
             }
         }
 
-        private struct __musedashSong {
+        private struct __musedashSong
+        {
             public string name;
             public string author;
         }
@@ -791,7 +799,7 @@ namespace CloneDash
                     songs[i].Author = songsEN[i].author;
                     songs[i].Album = album;
                 }
-                
+
                 Songs.AddRange(songs);
             }
 
