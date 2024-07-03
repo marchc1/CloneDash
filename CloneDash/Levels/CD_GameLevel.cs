@@ -25,7 +25,7 @@ namespace CloneDash.Game
         public const string STRING_FEVERN = "FEVER: {0}/{1}";
         public const string STRING_COMBO = "COMBO";
         public const string STRING_SCORE = "SCORE";
-        public const string FONT = "Arial";
+        public const string FONT = "Noto Sans";
 
         public bool InHit { get; private set; } = false;
 
