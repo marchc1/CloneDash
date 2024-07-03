@@ -682,7 +682,7 @@ namespace Nucleus.UI
             Graphics2D.OffsetDrawing(element.RenderBounds.Pos);
 
             if (element.Clipping)
-                Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset, element.RenderBounds.Size)); // ?
+                Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, element.RenderBounds.Size)); // ?
                                                                                                                  //else
                                                                                                                  //Graphics2D.ScissorRect();
 
@@ -692,12 +692,14 @@ namespace Nucleus.UI
             else
                 element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
             element.PostRender();
-            if (element.Clipping)
-                Graphics2D.ScissorRect();
+            
 
             foreach (Element child in element.Children)
                 DrawRecursive(child, iteration + 1);
             element.PostRenderChildren();
+
+            if (element.Clipping)
+                Graphics2D.ScissorRect();
 
             //Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", "Arial", 20);
 
