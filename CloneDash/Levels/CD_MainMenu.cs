@@ -16,6 +16,7 @@ using static System.Net.Mime.MediaTypeNames;
 using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Sheets;
 using CloneDash.Systems;
+using CloneDash.Levels;
 
 namespace CloneDash.Game
 {
@@ -34,6 +35,13 @@ namespace CloneDash.Game
             loadMDLevel.DockMargin = RectangleF.TLRB(4);
             loadMDLevel.MouseReleaseEvent += LoadMDLevel_MouseReleaseEvent;
 
+            var loadModelViewer = header.Add<Button>();
+            loadModelViewer.Size = new Vector2F(158, 32);
+            loadModelViewer.Dock = Dock.Right;
+            loadModelViewer.Text = "Load Model Editor";
+            loadModelViewer.DockMargin = RectangleF.TLRB(4);
+            loadModelViewer.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
+
             var test2 = header.Add<Label>();
             test2.Size = new Vector2F(158, 32);
             test2.Dock = Dock.Left;
@@ -42,6 +50,11 @@ namespace CloneDash.Game
             test2.AutoSize = true;
             test2.DockMargin = RectangleF.TLRB(4);
         }
+
+        private void LoadModelViewer_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+            EngineCore.LoadLevel(new CD_ModelEditor());
+        }
+
         public record MuseDashMap(string map_first, List<string> maps);
 
         public Window MDLevelWindow { get; set; }
@@ -205,6 +218,10 @@ namespace CloneDash.Game
                 var lvl = new CD_GameLevel(sheet);
                 EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
             };
+        }
+
+        public override void PreRenderBackground(FrameState frameState) {
+            base.PreRenderBackground(frameState);
         }
     }
 }
