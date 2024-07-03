@@ -18,6 +18,7 @@ namespace Nucleus.Core
             { "Arial", "C:\\Windows\\Fonts\\arial.ttf" },
             { "Consolas", "C:\\Windows\\Fonts\\consola.ttf" },
             { "Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf" },
+            { "Open Sans", Filesystem.Resolve("open-sans.ttf", "fonts") },
         });
         private static Vector2F __offset = new Vector2F(0, 0);
         private static Color __drawColor = Color.WHITE;
