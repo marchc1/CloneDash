@@ -521,7 +521,7 @@ namespace Nucleus.UI
         public delegate void TextChangedDelegate(Element self, string oldText, string newText);
         public event TextChangedDelegate TextChangedEvent;
 
-        public string Font { get; set; } = "Open Sans";
+        public string Font { get; set; } = "Noto Sans";
         public float TextSize { set; get; } = 18;
 
         public bool Clipping { get; set; } = true;
@@ -560,13 +560,15 @@ namespace Nucleus.UI
 
             return returning;
         }
-        public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, Element? lastHovered = null, bool popupActive = false) {
+        public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool popupActive = false) {
             if (!element.Enabled) return lastHovered;
             if (!element.Visible) return lastHovered;
             if (element.InputDisabled) return lastHovered;
 
             if (element.Parent != null)
                 offset += element.Parent.ChildRenderOffset;
+
+            var boundsOfSelf = lastBounds.FitInto(element.RenderBounds.AddPosition(offset));
 
             if (popupActive || (element is UserInterface && (element as UserInterface).PopupActive)) {
                 if (element == element.UI.Popups.Last())
@@ -575,19 +577,20 @@ namespace Nucleus.UI
                     popupActive = true;
 
                 offset += element.RenderBounds.Pos;
+
                 foreach (Element child in element.Children)
-                    lastHovered = ResolveElementHoveringState(child, frameState, offset, lastHovered, popupActive);
+                    lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered, popupActive);
 
                 return lastHovered;
             }
 
-            if (element.RenderBounds.AddPosition(offset).ContainsPoint(frameState.MouseState.MousePos))
+            if (element.RenderBounds.AddPosition(offset).ContainsPoint(frameState.MouseState.MousePos) && lastBounds.ContainsPoint(frameState.MouseState.MousePos))
                 lastHovered = element;
 
             offset += element.RenderBounds.Pos;
 
             foreach (Element child in element.Children)
-                lastHovered = ResolveElementHoveringState(child, frameState, offset, lastHovered);
+                lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered);
 
             return lastHovered;
         }
