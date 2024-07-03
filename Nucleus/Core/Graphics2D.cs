@@ -220,13 +220,22 @@ namespace Nucleus.Core
                 __drawColor); //=> Raylib.DrawTextureRec(__texture, new Rectangle(x + __offset.X, y + __offset.Y, width, height), new Vector2(x, y), __drawColor);
 
         private static RectangleF __scissorRect;
+        private static Stack<RectangleF> ScissorRects = [];
         public static void ScissorRect() {
             Raylib.EndScissorMode();
-            __scissorRect = RectangleF.XYWH(0, 0, 0, 0);
+            if (ScissorRects.Count > 0) {
+                var sR = ScissorRects.Pop();
+                __scissorRect = sR;
+            }
+            else {
+                __scissorRect = RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenBounds());
+            }
         }
         public static void ScissorRect(RectangleF rect) {
-            Raylib.BeginScissorMode((int)rect.X, (int)rect.Y, (int)rect.W, (int)rect.H);
-            __scissorRect = RectangleF.XYWH(rect.X, rect.Y, rect.W, rect.H);
+            var r = rect.FitInto(ScissorRects.Count == 0 ? RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenBounds()) : ScissorRects.Peek());
+            ScissorRects.Push(r);
+            Raylib.BeginScissorMode((int)r.X, (int)r.Y, (int)r.W, (int)r.H);
+            __scissorRect = RectangleF.XYWH(r.X, r.Y, rect.W, r.H);
         }
         public static RectangleF GetScissorRect() => __scissorRect;
 
