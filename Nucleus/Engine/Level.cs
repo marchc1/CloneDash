@@ -159,7 +159,11 @@ namespace Nucleus.Engine
 
         public Entity[] Entities => EntityList.ToArray();
 
-        public UserInterface UI { get; private set; } = Element.Create<UserInterface>();
+        public UserInterface UI { get; private set; }
+        public void InitializeUI() {
+            if (UI != null) return;
+            UI = Element.Create<UserInterface>();
+        }
 
         private void __addEntity(Entity ent) {
             EntityHash.Add(ent);

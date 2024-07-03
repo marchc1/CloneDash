@@ -261,6 +261,7 @@ namespace Nucleus
 
             Level = level;
             LoadingLevel = true;
+            level.InitializeUI();
             Level.Initialize(args);
             Level.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], new Action(() => {
                 OpenConsole();

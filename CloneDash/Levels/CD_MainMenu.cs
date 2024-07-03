@@ -120,7 +120,9 @@ namespace CloneDash.Game
         private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
             var song = self.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
 
+            // Load all slow-to-get info now before the Window loads
             MusicTrack track = song.GetDemoMusic();
+            song.GetCover();
 
             Window levelSelector = UI.Add<Window>();
             levelSelector.HideNonCloseButtons();
@@ -175,8 +177,8 @@ namespace CloneDash.Game
         }
 
         private static void CreateDifficulty(Window levelSelector, MuseDashCompatibility.MuseDashSong song, int difficulty, string difficultyLevel) {
-            if (difficultyLevel == "")
-                return;
+            if (difficultyLevel == "") return;
+            if (difficultyLevel == "0") return;
 
             Button play = levelSelector.Add<Button>();
             play.AutoSize = true;

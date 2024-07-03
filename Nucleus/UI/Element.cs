@@ -780,8 +780,8 @@ namespace Nucleus.UI
             return NMath.LerpColor(depressedRatio, NMath.LerpColor(hoverRatio, original, hoveredColor), depressedColor);
         }
 
-        public DateTime Birth { get; } = DateTime.Now;
-        public float Lifetime => (float)(DateTime.Now - Birth).TotalSeconds;
+        public double Birth { get; } = EngineCore.Level.Realtime;
+        public float Lifetime => (float)(EngineCore.Level.Realtime - Birth);
 
         public virtual void Center() {
             ValidateLayout();
