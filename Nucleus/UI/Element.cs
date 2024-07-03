@@ -521,8 +521,8 @@ namespace Nucleus.UI
         public delegate void TextChangedDelegate(Element self, string oldText, string newText);
         public event TextChangedDelegate TextChangedEvent;
 
-        public string Font { get; set; } = "Arial";
-        public float TextSize { set; get; } = 15;
+        public string Font { get; set; } = "Open Sans";
+        public float TextSize { set; get; } = 18;
 
         public bool Clipping { get; set; } = true;
         #endregion
