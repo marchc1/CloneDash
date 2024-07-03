@@ -254,6 +254,9 @@ namespace Nucleus
                 LoadingLevel = false;
                 return;
             }
+            if(Level != null) {
+                UnloadLevel();
+            }
 
             Model3AnimationChannel.GlobalPause = false;
             AudioSystem.Unload();
@@ -295,11 +298,11 @@ namespace Nucleus
             if (Level != null) {
                 Level.Unload();
                 Level.UI.Remove();
-                LoadingScreen.Unload();
+                LoadingScreen?.Unload();
             }
 
             TextureSystem.Unload();
-
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
             LoadingLevel = false;
         }
 

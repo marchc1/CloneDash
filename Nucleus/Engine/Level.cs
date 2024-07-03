@@ -114,7 +114,8 @@ namespace Nucleus.Engine
         }
 
         public void Unload() {
-            foreach (Entity ent in EntityList) {
+            Entity[] dead = EntityList.ToArray();
+            foreach (Entity ent in dead) {
                 ent.Remove();
             }
 
