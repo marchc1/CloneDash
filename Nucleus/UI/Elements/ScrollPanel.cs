@@ -54,6 +54,14 @@ namespace Nucleus.UI
         public virtual bool ShouldItemBeVisible(Element e) {
             return true;
         }
+
+        public override void PreRender() {
+            base.PreRender();
+        }
+        public override void PostRenderChildren() {
+            base.PostRenderChildren();
+        }
+
         protected override void OnThink(FrameState frameState) {
             base.OnThink(frameState);
             HorizontalScrollbar.Enabled = MainPanel.SizeOfAllChildren.W > this.RenderBounds.Size.W;
@@ -71,9 +79,9 @@ namespace Nucleus.UI
                 else {
                     child.Enabled = true;
 
-                    if ((child.RenderBounds.Y + child.RenderBounds.H) < VerticalScrollbar.Scroll)
+                    if ((child.RenderBounds.Y) < VerticalScrollbar.Scroll - RenderBounds.H)
                         child.Visible = false;
-                    else if (child.RenderBounds.Y > VerticalScrollbar.Scroll + RenderBounds.H)
+                    else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + child.RenderBounds.H) + RenderBounds.H)
                         child.Visible = false;
                     else
                         child.Visible = true;

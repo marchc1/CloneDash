@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
+using Raylib_cs;
 
 namespace Nucleus.UI
 {
@@ -36,17 +37,23 @@ namespace Nucleus.UI
             get => __isLVIVisible;
             set => __isLVIVisible = value;
         }
+
         protected override void Initialize() {
             base.Initialize();
             BackgroundColor = new(0, 0, 0, 0);
             ForegroundColor = new(0, 0, 0, 0);
+            this.Clipping = false;
         }
 
         protected override void OnThink(FrameState frameState) {
-            if (Hovered)
+            if (Depressed) {
                 BackgroundColor = new(30, 35, 45, 65);
-            else if (Hovered)
+                EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
+            }
+            else if (Hovered) {
                 BackgroundColor = new(200, 210, 230, 50);
+                EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
+            }
             else
                 BackgroundColor = new(0, 0, 0, 0);
         }
