@@ -107,6 +107,8 @@ namespace CloneDash.Game
         private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
             var song = self.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
 
+            MusicTrack track = song.GetDemoMusic();
+
             Window levelSelector = UI.Add<Window>();
             levelSelector.HideNonCloseButtons();
             levelSelector.MakePopup();
@@ -115,7 +117,7 @@ namespace CloneDash.Game
             levelSelector.Size = new Vector2F(650, 320);
             levelSelector.DockPadding = RectangleF.TLRB(8);
             levelSelector.Center();
-            MusicTrack track = song.GetDemoMusic();
+            
             track.Playhead = 0;
             track.Volume = 0.4f;
             track.Playing = true;
