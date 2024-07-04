@@ -349,7 +349,7 @@ namespace Nucleus.Engine
             frameState.WindowWidth = width;
             frameState.WindowHeight = height;
 
-            RunEventPreThink(ref frameState);
+            if(!Paused) RunEventPreThink(ref frameState);
 
             if (frameState.WindowWidth != LastFrameState.WindowWidth || frameState.WindowHeight != LastFrameState.WindowHeight) {
                 __viewDirty = true;
@@ -496,8 +496,8 @@ namespace Nucleus.Engine
             if (!ranKeybinds)
                 ranKeybinds = Keybinds.TestKeybinds(frameState.KeyboardState);
 
-            RunEventThink(frameState);
-            RunEventPostThink(frameState);
+            if (!Paused) RunEventThink(frameState);
+            if (!Paused) RunEventPostThink(frameState);
 
             MainThread.Run(ThreadExecutionTime.AfterThink);
             if (false) {
