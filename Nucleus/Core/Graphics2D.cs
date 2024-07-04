@@ -93,14 +93,14 @@ namespace Nucleus.Core
         }
 
         public static Vector2F GetTextSize(string message, string font, float fontSize) {
-            var s = Raylib.MeasureTextEx(FontManager[font, (int)fontSize], message, (int)fontSize, 0);
+            var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);
             return new(s.X, s.Y);
         }
-        public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-        public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
+        public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+        public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
         public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
             int fontSizeI = (int)fontSize;
-            var size = Raylib.MeasureTextEx(FontManager[font, fontSizeI], message, fontSize, 0);
+            var size = Raylib.MeasureTextEx(FontManager[message, font, fontSizeI], message, fontSize, 0);
             float xOffset = 0f, yOffset = 0f;
 
             switch (horizontal.Alignment) {
