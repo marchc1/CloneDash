@@ -112,7 +112,7 @@ namespace Nucleus.UI.Elements
                 pnt.X += 32;
             }
 
-            Graphics2D.DrawText(pnt.X, pnt.Y, Title, "Noto Sans", TextSize, TitlePos);
+            Graphics2D.DrawText(pnt.X, pnt.Y, Title, "Noto Sans", 24, TitlePos);
         }
     }
     public class Taskbar : Element

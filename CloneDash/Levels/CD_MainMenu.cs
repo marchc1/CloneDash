@@ -29,16 +29,18 @@ namespace CloneDash.Game
             header.Dock = Dock.Top;
 
             var loadMDLevel = header.Add<Button>();
-            loadMDLevel.Size = new Vector2F(158, 32);
+            loadMDLevel.AutoSize = true;
             loadMDLevel.Dock = Dock.Right;
             loadMDLevel.Text = "Load Muse Dash Level";
+            loadMDLevel.TextSize = 21;
             loadMDLevel.DockMargin = RectangleF.TLRB(4);
             loadMDLevel.MouseReleaseEvent += LoadMDLevel_MouseReleaseEvent;
 
             var loadModelViewer = header.Add<Button>();
-            loadModelViewer.Size = new Vector2F(158, 32);
+            loadModelViewer.AutoSize = true;
             loadModelViewer.Dock = Dock.Right;
             loadModelViewer.Text = "Load Model Editor";
+            loadModelViewer.TextSize = 21;
             loadModelViewer.DockMargin = RectangleF.TLRB(4);
             loadModelViewer.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
 
@@ -46,7 +48,7 @@ namespace CloneDash.Game
             test2.Size = new Vector2F(158, 32);
             test2.Dock = Dock.Left;
             test2.Text = "Clone Dash [Alpha]";
-            test2.TextSize = 22;
+            test2.TextSize = 30;
             test2.AutoSize = true;
             test2.DockMargin = RectangleF.TLRB(4);
         }
