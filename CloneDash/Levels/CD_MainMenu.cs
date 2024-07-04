@@ -25,24 +25,34 @@ namespace CloneDash.Game
         public override void Initialize(params object[] args) {
             var header = UI.Add<Panel>();
             header.Position = new Vector2F(0);
-            header.Size = new Vector2F(256, 48);
+            header.Size = new Vector2F(256, 64);
             header.Dock = Dock.Top;
 
             var loadMDLevel = header.Add<Button>();
-            loadMDLevel.AutoSize = true;
+            loadMDLevel.AutoSize = false;
+            loadMDLevel.Size = new Vector2F(64);
+            loadMDLevel.Text = "";
+            loadMDLevel.ImageOrientation = ImageOrientation.Zoom;
             loadMDLevel.Dock = Dock.Right;
-            loadMDLevel.Text = "Load Muse Dash Level";
+            loadMDLevel.Image = TextureSystem.LoadTexture("ui\\mainmenu_play.png");
             loadMDLevel.TextSize = 21;
-            loadMDLevel.DockMargin = RectangleF.TLRB(4);
+            loadMDLevel.DockMargin = RectangleF.TLRB(0);
+            loadMDLevel.BorderSize = 0;
             loadMDLevel.MouseReleaseEvent += LoadMDLevel_MouseReleaseEvent;
+            loadMDLevel.TooltipText = "Load Muse Dash Level";
 
-            var loadModelViewer = header.Add<Button>();
-            loadModelViewer.AutoSize = true;
-            loadModelViewer.Dock = Dock.Right;
-            loadModelViewer.Text = "Load Model Editor";
-            loadModelViewer.TextSize = 21;
-            loadModelViewer.DockMargin = RectangleF.TLRB(4);
-            loadModelViewer.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
+            var loadModdingTools = header.Add<Button>();
+            loadModdingTools.AutoSize = false;
+            loadModdingTools.Size = new Vector2F(64);
+            loadModdingTools.Text = "";
+            loadModdingTools.ImageOrientation = ImageOrientation.Zoom;
+            loadModdingTools.Dock = Dock.Right;
+            loadModdingTools.Image = TextureSystem.LoadTexture("ui\\mainmenu_soldermod.png");
+            loadModdingTools.TextSize = 21;
+            loadModdingTools.DockMargin = RectangleF.TLRB(0);
+            loadModdingTools.BorderSize = 0;
+            loadModdingTools.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
+            loadModdingTools.TooltipText = "Modding Tools";
 
             var test2 = header.Add<Label>();
             test2.Size = new Vector2F(158, 32);

@@ -50,13 +50,21 @@ namespace Nucleus.UI
                 var font = "Noto Sans";
                 var fontsize = 20;
                 var size = Graphics2D.GetTextSize(text, font, fontsize) + new Vector2F(8, 4);
-                var mousepos = EngineCore.CurrentFrameState.MouseState.MousePos + new Vector2F(8);
+                var mousepos = EngineCore.CurrentFrameState.MouseState.MousePos + new Vector2F(8, 8 + 16);
+                
+                // determine if tooltip goes over screen bounds and fix it if so
+                var drawingOffset = Vector2F.Zero;
+                var whereIsEnd = mousepos + size + new Vector2F(4, 4);
+
+                if (whereIsEnd.X > EngineCore.GetScreenSize().W) drawingOffset.X -= (size.X) + 4;
+                if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24;
+
                 Graphics2D.SetDrawColor(50, 57, 65, 120);
-                Graphics2D.DrawRectangle(mousepos, size);
+                Graphics2D.DrawRectangle(mousepos + drawingOffset, size);
                 Graphics2D.SetDrawColor(10, 15, 25, 225);
                 Graphics2D.SetDrawColor(235, 235, 235, 255);
-                Graphics2D.DrawRectangleOutline(mousepos, size + new Vector2F(4, 4), 1);
-                Graphics2D.DrawText(mousepos + new Vector2F(6, 4), text, font, fontsize);
+                Graphics2D.DrawRectangleOutline(mousepos + drawingOffset, size + new Vector2F(4, 4), 1);
+                Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, font, fontsize);
             }
         }
 
