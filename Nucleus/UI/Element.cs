@@ -218,7 +218,7 @@ namespace Nucleus.UI
         public void Think(FrameState frameState) {
             if (_firstThink) {
                 _firstThink = false;
-                this.Birth = DateTime.Now;
+                Birth = DateTime.Now;
             }
 
             OnThink(frameState);
@@ -789,7 +789,7 @@ namespace Nucleus.UI
             return NMath.LerpColor(depressedRatio, NMath.LerpColor(hoverRatio, original, hoveredColor), depressedColor);
         }
 
-        public DateTime Birth { get; set; } = DateTime.Now;
+        public DateTime Birth { get; private set; } = DateTime.Now;
         public float Lifetime => (float)(DateTime.Now - Birth).TotalSeconds;
 
         public virtual void Center() {

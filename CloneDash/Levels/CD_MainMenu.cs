@@ -178,7 +178,6 @@ namespace CloneDash.Game
             CreateDifficulty(levelSelector, song, 1, song.Difficulty1);
 
             MDLevelWindow.AttachWindowAndLockInput(levelSelector);
-            levelSelector.Birth = DateTime.Now;
         }
 
         private static void CreateDifficulty(Window levelSelector, MuseDashCompatibility.MuseDashSong song, int difficulty, string difficultyLevel) {
