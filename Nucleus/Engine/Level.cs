@@ -340,8 +340,8 @@ namespace Nucleus.Engine
             else {
                 x = 0;
                 y = 0;
-                width = EngineCore.GetScreenBounds().X;
-                height = EngineCore.GetScreenBounds().Y;
+                width = EngineCore.GetScreenSize().X;
+                height = EngineCore.GetScreenSize().Y;
             }
 
             frameState.WindowX = x;
@@ -439,7 +439,7 @@ namespace Nucleus.Engine
             // UI thinking should happen here because if a popup UI element exists, we need to block input to the game. Don't just block Think though
             int rebuilds = Element.LayoutRecursive(UI, frameState);
 
-            Element? hoveredElement = Element.ResolveElementHoveringState(UI, frameState, EngineCore.GetGlobalScreenOffset());
+            Element? hoveredElement = Element.ResolveElementHoveringState(UI, frameState, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
             frameState.HoveredUIElement = hoveredElement;
             UI.Hovered = hoveredElement;
 
