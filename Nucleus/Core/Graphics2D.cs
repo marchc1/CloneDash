@@ -14,11 +14,12 @@ namespace Nucleus.Core
     }
     public static class Graphics2D
     {
-        private static FontManager fontManager = new(new() {
+        public static FontManager FontManager { get; private set; } = new(new() {
             { "Arial", "C:\\Windows\\Fonts\\arial.ttf" },
             { "Consolas", "C:\\Windows\\Fonts\\consola.ttf" },
             { "Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf" },
             { "Open Sans", Filesystem.Resolve("open-sans.ttf", "fonts") },
+            { "Noto Sans", Filesystem.Resolve("noto-sans-en-jp.ttf", "fonts") },
         });
         private static Vector2F __offset = new Vector2F(0, 0);
         private static Color __drawColor = Color.WHITE;
@@ -37,6 +38,12 @@ namespace Nucleus.Core
 
             }
         }
+        
+        /// <summary>
+        /// This should be done before starting EngineCore or loading a level.
+        /// </summary>
+        /// <param name="codepointsStr"></param>
+        public static void RegisterCodepoints(string codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
 
         private static void beginShading() {
             if (HSV.Equals(new(0, 1, 1)))
@@ -82,18 +89,18 @@ namespace Nucleus.Core
         public static void SetOffset(Vector2F offset) => __offset = offset;
 
         public static void AssociateFont(string filepath, string nickname) {
-            fontManager.FontNameToFilepath[nickname] = filepath;
+            FontManager.FontNameToFilepath[nickname] = filepath;
         }
 
         public static Vector2F GetTextSize(string message, string font, float fontSize) {
-            var s = Raylib.MeasureTextEx(fontManager[font, (int)fontSize], message, (int)fontSize, 0);
+            var s = Raylib.MeasureTextEx(FontManager[font, (int)fontSize], message, (int)fontSize, 0);
             return new(s.X, s.Y);
         }
-        public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(fontManager[font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-        public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(fontManager[font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
+        public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+        public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
         public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
             int fontSizeI = (int)fontSize;
-            var size = Raylib.MeasureTextEx(fontManager[font, fontSizeI], message, fontSize, 0);
+            var size = Raylib.MeasureTextEx(FontManager[font, fontSizeI], message, fontSize, 0);
             float xOffset = 0f, yOffset = 0f;
 
             switch (horizontal.Alignment) {
@@ -222,6 +229,9 @@ namespace Nucleus.Core
 
         private static RectangleF __scissorRect;
         private static Stack<RectangleF> ScissorRects = [];
+
+        public static RectangleF ActiveScissorRect => ScissorRects.Count == 0 ? RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize()) : ScissorRects.Peek();
+
         public static void ScissorRect() {
             Raylib.EndScissorMode();
             if (ScissorRects.Count > 0) {
@@ -229,11 +239,11 @@ namespace Nucleus.Core
                 __scissorRect = sR;
             }
             else {
-                __scissorRect = RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenBounds());
+                __scissorRect = RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize());
             }
         }
         public static void ScissorRect(RectangleF rect) {
-            var r = rect.FitInto(ScissorRects.Count == 0 ? RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenBounds()) : ScissorRects.Peek());
+            var r = rect.FitInto(ActiveScissorRect);
             ScissorRects.Push(r);
             Raylib.BeginScissorMode((int)r.X, (int)r.Y, (int)r.W, (int)r.H);
             __scissorRect = RectangleF.XYWH(r.X, r.Y, rect.W, r.H);
