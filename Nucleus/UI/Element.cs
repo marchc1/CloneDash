@@ -214,7 +214,13 @@ namespace Nucleus.UI
         public bool IsValid() => !__markedForRemoval;
 
         protected virtual void OnThink(FrameState frameState) { }
+        private bool _firstThink = true;
         public void Think(FrameState frameState) {
+            if (_firstThink) {
+                _firstThink = false;
+                this.Birth = DateTime.Now;
+            }
+
             OnThink(frameState);
         }
         #endregion
