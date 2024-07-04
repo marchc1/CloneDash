@@ -111,7 +111,8 @@ namespace Nucleus.UI.Elements
                 ImageDrawing(new(4, 4), new(height - 8, height - 8));
                 pnt.X += 32;
             }
-            Graphics2D.DrawText(pnt.X, pnt.Y, Title, "Arial", TextSize, TitlePos);
+
+            Graphics2D.DrawText(pnt.X, pnt.Y, Title, "Noto Sans", TextSize, TitlePos);
         }
     }
     public class Taskbar : Element

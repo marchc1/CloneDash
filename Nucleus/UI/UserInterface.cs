@@ -47,7 +47,7 @@ namespace Nucleus.UI
         public override void PostRenderChildren() {
             var text = TooltipText;
             if (text != "" && text != null) {
-                var font = "Open Sans";
+                var font = "Noto Sans";
                 var fontsize = 20;
                 var size = Graphics2D.GetTextSize(text, font, fontsize) + new Vector2F(8, 4);
                 var mousepos = EngineCore.CurrentFrameState.MouseState.MousePos + new Vector2F(8);
