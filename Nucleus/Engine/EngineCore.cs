@@ -197,6 +197,14 @@ namespace Nucleus
             if (icon != null) Raylib.SetWindowIcon(Raylib.LoadImage(Filesystem.Resolve(icon, "images")));
             OpenGL.Import(OpenGLAddressRetriever.GetProc);
             Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);
+
+            // English language
+            Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
+            //Graphics2D.RegisterCodepoints(@"`1234567890");
+
+            // Japanese (hiragana, katakana)
+            Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
+            Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
         }
 
         private static Window console;
@@ -254,7 +262,7 @@ namespace Nucleus
                 LoadingLevel = false;
                 return;
             }
-            if(Level != null) {
+            if (Level != null) {
                 UnloadLevel();
             }
 
@@ -339,12 +347,15 @@ namespace Nucleus
             }
         }
 
-        public static Vector2F GetScreenBounds() {
+        public static Vector2F GetScreenSize() {
             Vector2F ret = new Vector2F(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
             if (IsUndecorated && !Maximized)
                 ret -= new Vector2F(8);
             return ret;
         }
+
+        public static RectangleF GetScreenBounds() => RectangleF.FromPosAndSize(new(0, 0), GetScreenSize());
+
         public static Vector2F GetGlobalScreenOffset() {
             if (!IsUndecorated || Maximized)
                 return Vector2F.Zero;
@@ -369,7 +380,7 @@ namespace Nucleus
             Raylib.ClearBackground(new Color(0, 0, 0, 255));
             Graphics2D.SetOffset(GetGlobalScreenOffset());
 
-            var screenBounds = GetScreenBounds();
+            var screenBounds = GetScreenSize();
 
             InLevelFrame = true;
             if (LoadingLevel) {
