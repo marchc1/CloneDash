@@ -99,11 +99,13 @@ namespace CloneDash.Game
             txt.TextChangedEvent += delegate (Element self, string oldT, string newT) {
                 foreach(Element e in list.MainPanel.GetChildren()) {
                     ListViewItem item = e as ListViewItem;
-                    var name = item.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song").Name;
-                    if (name.ToLower().Contains(txt.Text.ToLower()))
-                        item.ShowLVItem = true;
-                    else
-                        item.ShowLVItem = false;
+
+                    var song = item.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
+
+                    if (song.Name.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+                    else if (song.BaseName.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+                    else if (song.Author.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+                    else item.ShowLVItem = false;
                 }
                 list.InvalidateChildren(self: true, recursive: true);
             };
@@ -209,13 +211,30 @@ namespace CloneDash.Game
             }
             play.BackgroundColor = buttonColor;
             play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
-            play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
+            //play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
+            play.Text = "";
+            play.TextAlignment = Anchor.CenterLeft;
+            play.TextPadding = new(8, 0);
+            play.TextSize = 28;
+
+            play.BorderSize = 2;
+            play.PaintOverride += delegate (Element self, float w, float h) {
+                var btn = self as Button;
+                btn.Paint(w, h);
+
+
+                Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(Anchor.CenterRight, btn.RenderBounds.Size, btn.TextPadding);
+                Graphics2D.SetDrawColor(btn.TextColor);
+                Graphics2D.DrawText(textDrawingPosition, $"{difficultyLevel}", btn.Font, btn.TextSize, Anchor.CenterRight);
+            };
 
             play.Thinking += delegate (Element self) {
-                if (EngineCore.CurrentFrameState.KeyboardState.AltDown)
-                    play.Text = $"[AUTOPLAY] Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
-                else
-                    play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
+                if (EngineCore.CurrentFrameState.KeyboardState.AltDown) {
+                    play.Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
+                }
+                else {
+                    play.Text = $"{difficultyName.ToUpper()}";
+                }
             };
 
             play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {

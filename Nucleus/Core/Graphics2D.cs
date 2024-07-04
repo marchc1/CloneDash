@@ -255,7 +255,7 @@ namespace Nucleus.Core
                 SetHSV(hsvTransform.Value);
             beginShading();
 
-            Raylib.DrawTexturePro(__texture, new Rectangle(0, 0, __texture.Width, __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : new Vector2F(0, 0)), rotation, __drawColor);
+            Raylib.DrawTexturePro(__texture, new Rectangle(0, 0, __texture.Width, __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero), rotation, __drawColor);
 
             if (hsvTransform.HasValue)
                 SetHSV(0, 1, 1);

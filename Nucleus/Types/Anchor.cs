@@ -69,6 +69,27 @@
             throw new NotImplementedException();
         }
 
+        public static Vector2F CornerEdgeOffset(Anchor anchor, Vector2F textPadding) {
+            var offset = Vector2F.Zero;
+            switch (anchor.Horizontal) {
+                case 0: offset.X = textPadding.X; break;
+                case 1: offset.X = -textPadding.X; break;
+            }
+            switch (anchor.Vertical) {
+                case 0: offset.Y = textPadding.Y; break;
+                case 1: offset.Y = -textPadding.Y; break;
+            }
+            return offset;
+        }
+
+        public static Vector2F GetPositionGivenAlignment(Anchor alignment, RectangleF bounds, Vector2F padding) {
+            Vector2F drawPos = CalculatePosition(bounds.Pos, bounds.Size, alignment);
+            var offset = CornerEdgeOffset(alignment, padding);
+
+            return drawPos + offset;
+        }
+        public static Vector2F GetPositionGivenAlignment(Anchor alignment, Vector2F bounds, Vector2F padding) => GetPositionGivenAlignment(alignment, RectangleF.FromPosAndSize(new(0), bounds), padding);
+
         public float Horizontal {
             get {
                 switch (Anchoring) {

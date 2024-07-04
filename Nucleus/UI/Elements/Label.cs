@@ -38,11 +38,9 @@ namespace Nucleus.UI
             }
         }
         public override void Paint(float width, float height) {
-            Vector2F textDrawingPosition = Anchor.CalculatePosition(new Vector2F(0, 0), new Vector2F(width, height), TextAlignment);
-            var textDrawingAlignment = TextAlignment.ToTextAlignment();
-
+            Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(TextAlignment, RenderBounds.Size, TextPadding);
             Graphics2D.SetDrawColor(TextColor);
-            Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, textDrawingAlignment.horizontal, textDrawingAlignment.vertical);
+            Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, TextAlignment);
         }
     }
 }
