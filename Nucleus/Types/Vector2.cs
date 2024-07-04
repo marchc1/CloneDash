@@ -112,6 +112,15 @@ namespace Nucleus.Types
         public Vector2F YY => new(Y, Y);
 
         public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
+
+        public Vector2F FitInto(RectangleF cropRect) {
+            Vector2F newR = this;
+
+            newR.X = Math.Clamp(newR.X, cropRect.X, cropRect.X + cropRect.W);
+            newR.Y = Math.Clamp(newR.Y, cropRect.Y, cropRect.Y + cropRect.H);
+
+            return newR;
+        }
     }
     public static class VectorConverters
     {
