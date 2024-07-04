@@ -516,6 +516,7 @@ namespace CloneDash.Game
             ent.RelatedToBoss = sheetEntity.RelatedToBoss;
 
             ent.RendersItself = false;
+            ent.DebuggingInfo = sheetEntity.DebuggingInfo;
             ent.Build();
         }
 
@@ -544,6 +545,18 @@ namespace CloneDash.Game
             }
 
             FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
+        }
+
+        public override void Render2D(FrameState frameState) {
+            base.Render2D(frameState);
+
+            foreach (Entity ent in VisibleEntities) {
+                if (ent is not CD_BaseEnemy)
+                    continue;
+
+                var entCD = (CD_BaseEnemy)ent;
+                Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
+            }
         }
     }
 }

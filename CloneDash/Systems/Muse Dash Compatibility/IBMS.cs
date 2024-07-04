@@ -535,7 +535,7 @@ namespace CloneDash
                             ent.Score = s.noteData.score;
 
                             ent.RelatedToBoss = IsBoss;
-
+                            ent.DebuggingInfo = $"ib.code: {ib.code}";
                             sheet.Entities.Add(ent);
                         }
                         else {

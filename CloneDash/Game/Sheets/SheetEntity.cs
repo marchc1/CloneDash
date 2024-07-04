@@ -18,5 +18,7 @@ namespace CloneDash.Game.Sheets
         internal double Length;
 
         public bool RelatedToBoss;
+
+        public string DebuggingInfo { get; internal set; }
     }
 }

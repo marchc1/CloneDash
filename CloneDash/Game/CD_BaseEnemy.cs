@@ -19,6 +19,8 @@ namespace CloneDash.Game
             Type = type;
         }
 
+        public string DebuggingInfo { get; internal set; }
+
         public static CD_BaseEnemy CreateFromType(CD_GameLevel game, EntityType type) {
             return game.Add((CD_BaseEnemy)Activator.CreateInstance(TypeConvert[type]));
         }
