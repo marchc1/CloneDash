@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using glTFLoader.Schema;
+using Newtonsoft.Json.Linq;
 using Nucleus.Core;
+using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -21,6 +23,10 @@ namespace Nucleus.Engine
     /// </summary>
     public abstract class Level
     {
+        // Managed memory
+        public TextureManagement Textures { get; } = new();
+        public SoundManagement Sounds { get; } = new();
+
         public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
         public T As<T>() where T : Level => (T)this;
 
@@ -114,6 +120,9 @@ namespace Nucleus.Engine
         }
 
         public void Unload() {
+            Textures.Dispose();
+            Sounds.Dispose();
+
             Entity[] dead = EntityList.ToArray();
             foreach (Entity ent in dead) {
                 ent.Remove();
@@ -164,6 +173,7 @@ namespace Nucleus.Engine
         public void InitializeUI() {
             if (UI != null) return;
             UI = Element.Create<UserInterface>();
+            UI.EngineLevel = this;
         }
 
         private void __addEntity(Entity ent) {

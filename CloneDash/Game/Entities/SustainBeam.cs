@@ -1,4 +1,4 @@
-﻿using CloneDash.Systems;
+﻿
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -66,7 +66,7 @@ namespace CloneDash.Game.Entities
                     Level.As<CD_GameLevel>().AddCombo();
                     Level.As<CD_GameLevel>().AddFever(FeverGiven);
                     Level.As<CD_GameLevel>().SetSustain(Pathway, null);
-                    AudioSystem.PlaySound(Filesystem.Resolve("punch.wav", "audio"), 0.24f);
+                    Level.Sounds.PlaySound("punch.wav", true, 0.24f);
                 }
                 // check if pathway being held
                 else if (!PathwayCheck.IsPressed) {

@@ -1,5 +1,4 @@
-﻿using CloneDash.Systems;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 using Nucleus.CrossPlatform;
 using Nucleus.Engine;
 using Nucleus.Types;
@@ -45,6 +44,7 @@ namespace Nucleus
         public static void Run(ThreadExecutionTime when) {
             lock (Actions) {
                 List<MainThreadExecutionTask> putBack = [];
+
                 while (Actions.TryDequeue(out var task)) {
                     if (task.When == when)
                         task.Action();
@@ -267,8 +267,6 @@ namespace Nucleus
             }
 
             Model3AnimationChannel.GlobalPause = false;
-            AudioSystem.Unload();
-            TextureSystem.Unload();
 
             Level = level;
             LoadingLevel = true;
@@ -309,7 +307,6 @@ namespace Nucleus
                 LoadingScreen?.Unload();
             }
 
-            TextureSystem.Unload();
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
             LoadingLevel = false;
         }

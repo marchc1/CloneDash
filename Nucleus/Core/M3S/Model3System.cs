@@ -23,10 +23,6 @@ namespace Nucleus.Core
     /// </summary>
     public static class Model3System
     {
-        public static void Restart() {
-            Cache.Clear();
-        }
-
         internal static Dictionary<string, Model3Cache> Cache { get; } = new();
 
         public static Model3 Load(string modelname, bool nocache = false) {

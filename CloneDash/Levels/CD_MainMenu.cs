@@ -15,8 +15,8 @@ using static AssetStudio.BundleFile;
 using static System.Net.Mime.MediaTypeNames;
 using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Sheets;
-using CloneDash.Systems;
 using CloneDash.Levels;
+using Nucleus.ManagedMemory;
 
 namespace CloneDash.Game
 {
@@ -34,7 +34,7 @@ namespace CloneDash.Game
             loadMDLevel.Text = "";
             loadMDLevel.ImageOrientation = ImageOrientation.Zoom;
             loadMDLevel.Dock = Dock.Right;
-            loadMDLevel.Image = TextureSystem.LoadTexture("ui\\mainmenu_play.png");
+            loadMDLevel.Image = Textures.LoadTextureFromFile("ui\\mainmenu_play.png");
             loadMDLevel.TextSize = 21;
             loadMDLevel.DockMargin = RectangleF.TLRB(0);
             loadMDLevel.BorderSize = 0;
@@ -47,7 +47,7 @@ namespace CloneDash.Game
             loadModdingTools.Text = "";
             loadModdingTools.ImageOrientation = ImageOrientation.Zoom;
             loadModdingTools.Dock = Dock.Right;
-            loadModdingTools.Image = TextureSystem.LoadTexture("ui\\mainmenu_soldermod.png");
+            loadModdingTools.Image = Textures.LoadTextureFromFile("ui\\mainmenu_soldermod.png");
             loadModdingTools.TextSize = 21;
             loadModdingTools.DockMargin = RectangleF.TLRB(0);
             loadModdingTools.BorderSize = 0;
@@ -135,7 +135,7 @@ namespace CloneDash.Game
             var song = self.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
 
             // Load all slow-to-get info now before the Window loads
-            MusicTrack track = song.GetDemoMusic();
+            MusicTrack? track = song.GetDemoMusic();
             song.GetCover();
 
             Window levelSelector = UI.Add<Window>();
@@ -146,17 +146,19 @@ namespace CloneDash.Game
             levelSelector.Size = new Vector2F(650, 320);
             levelSelector.DockPadding = RectangleF.TLRB(8);
             levelSelector.Center();
-            
-            track.Playhead = 0;
-            track.Volume = 0.4f;
-            track.Playing = true;
-            levelSelector.Thinking += delegate (Element self) {
-                track.Update();
-            };
 
-            levelSelector.Removed += delegate (Element self) {
-                track.Paused = true;
-            };
+            if (track != null) {
+                track.Playhead = 0;
+                track.Volume = 0.4f;
+                track.Playing = true;
+                levelSelector.Thinking += delegate (Element self) {
+                    track.Update();
+                };
+
+                levelSelector.Removed += delegate (Element self) {
+                    track.Paused = true;
+                };
+            }
 
             Panel imageCanvas = levelSelector.Add<Panel>();
             imageCanvas.Dock = Dock.Right;

@@ -120,7 +120,7 @@ namespace CloneDash.Game
         private void EnterFever() {
             InFever = true;
             WhenDidFeverStart = Conductor.Time;
-            AudioSystem.PlaySound(Filesystem.Resolve("fever.wav", "audio"), 0.8f, 1.1f);
+            Sounds.PlaySound("fever.wav", true, 0.8f, 1.1f);
         }
         /// <summary>
         /// Exits fever.

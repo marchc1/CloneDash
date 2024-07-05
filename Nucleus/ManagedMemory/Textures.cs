@@ -1,0 +1,186 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Nucleus.Core;
+using Raylib_cs;
+
+namespace Nucleus.ManagedMemory
+{
+    public interface ITexture : IManagedMemory {
+        public int Width { get; }
+        public int Height { get; }
+        public PixelFormat Format { get; }
+    }
+
+    public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true) : ITexture
+    {
+        public int Width => underlying.Width;
+        public int Height => underlying.Height;
+        public PixelFormat Format => underlying.Format;
+
+        private Texture2D Underlying => underlying;
+        private bool disposedValue;
+        public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
+
+        public bool IsValid() => !disposedValue;
+
+        protected virtual void Dispose(bool disposing) {
+            if (!disposedValue && selfDisposing) {
+                MainThread.RunASAP(() => {
+                    Raylib.UnloadTexture(underlying);
+                    parent?.EnsureTextureRemoved(this);
+                }, ThreadExecutionTime.BeforeFrame);
+                disposedValue = true;
+            }
+        }
+        ~Texture() { if (selfDisposing) Dispose(disposing: false); }
+        public void Dispose() {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        public static implicit operator Texture2D(Texture self) => self.Underlying;
+    }
+    public class TextureManagement : IManagedMemory
+    {
+        private List<ITexture> Textures = [];
+        private bool disposedValue;
+        public ulong UsedBits {
+            get {
+                ulong ret = 0;
+
+                foreach (var tex in Textures) {
+                    ret += tex.UsedBits;
+                }
+
+                return ret;
+            }
+        }
+
+        public static int GetBitsPerPixel(PixelFormat format) {
+            switch (format) {
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:
+                    return 8;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:
+                    return 16;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G6B5:
+                    return 16;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8:
+                    return 24;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
+                    return 16;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
+                    return 16;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
+                    return 32;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32:
+                    return 32;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32:
+                    return 96;
+
+                case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
+                    return 128;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_DXT1_RGB:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_DXT1_RGBA:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_DXT3_RGBA:
+                    return 8;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA:
+                    return 8;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_ETC1_RGB:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_ETC2_RGB:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:
+                    return 8;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_PVRT_RGB:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_PVRT_RGBA:
+                    return 4;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:
+                    return 8;
+
+                case PixelFormat.PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:
+                    return 2;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format), format, null);
+            }
+        }
+        public static int GetBytesPerPixel(PixelFormat format) => (int)Math.Ceiling(GetBitsPerPixel(format) / 8d);
+        public bool IsValid() => !disposedValue;
+
+        protected virtual void Dispose(bool disposing) {
+            if (!disposedValue) {
+                lock (Textures) {
+                    foreach (ITexture t in Textures) {
+                        t.Dispose();
+                    }
+                    disposedValue = true;
+                }
+            }
+        }
+
+        // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        ~TextureManagement() {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+        }
+
+        public void Dispose() {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        private Dictionary<string, Texture> LoadedTexturesFromFile = [];
+        private Dictionary<Texture, string> LoadedFilesFromTexture = [];
+
+        public Texture LoadTextureFromFile(string filepath, bool localToImages = true) {
+            filepath = localToImages ? Filesystem.Resolve(filepath, "images") : filepath;
+
+            if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
+
+            Texture tex = new(this, Raylib.LoadTexture(filepath), true);
+            LoadedTexturesFromFile.Add(filepath, tex);
+            LoadedFilesFromTexture.Add(tex, filepath);
+            Textures.Add(tex);
+
+            return tex;
+        }
+
+        public void EnsureTextureRemoved(ITexture itex) {
+            if(itex is Texture tex) {
+                if(LoadedFilesFromTexture.TryGetValue(tex, out var filepath)) {
+                    LoadedTexturesFromFile.Remove(filepath);
+                    LoadedFilesFromTexture.Remove(tex);
+                    Textures.Remove(tex);
+
+                    tex.Dispose();
+                }
+            }
+        }
+    }
+}

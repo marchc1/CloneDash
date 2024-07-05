@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Numerics;
@@ -858,7 +859,7 @@ namespace Nucleus.UI
         public Anchor Anchor { get; set; } = Anchor.TopLeft;
         public Anchor Origin { get; set; } = Anchor.TopLeft;
 
-        public Texture2D? Image { get; set; }
+        public Texture? Image { get; set; }
         public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
         public Vector2F GetGlobalPosition() {
@@ -875,19 +876,18 @@ namespace Nucleus.UI
         }
 
         protected void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
-            if (!Image.HasValue)
+            if (Image == null)
                 return;
 
             var offset = Graphics2D.Offset + (pos ?? new Vector2F(0));
-            var tex = Image.Value;
             var bounds = RenderBounds;
             if (size != null) {
                 bounds.W = size.Value.X;
                 bounds.H = size.Value.Y;
             }
 
-            Rectangle sourceRect = new(0, 0, tex.Width, tex.Height);
-            Rectangle destRect = new(offset.X, offset.Y, tex.Width, tex.Height);
+            Rectangle sourceRect = new(0, 0, Image.Width, Image.Height);
+            Rectangle destRect = new(offset.X, offset.Y, Image.Width, Image.Height);
             var scldiv2 = RenderBounds.Size / 2;
 
             var width = RenderBounds.Size.W;
@@ -897,8 +897,8 @@ namespace Nucleus.UI
                 case ImageOrientation.None:
                     break;
                 case ImageOrientation.Centered:
-                    var x = (bounds.Width / 2) - (tex.Width / 2);
-                    var y = (bounds.Height / 2) - (tex.Height / 2);
+                    var x = (bounds.Width / 2) - (Image.Width / 2);
+                    var y = (bounds.Height / 2) - (Image.Height / 2);
                     destRect.X += x;
                     destRect.Y += y;
                     break;
@@ -908,13 +908,13 @@ namespace Nucleus.UI
                     break;
                 case ImageOrientation.Zoom:
                     if (width <= height) { // Width is the bottleneck
-                        var ratio = tex.Height / tex.Width;
+                        var ratio = Image.Height / Image.Width;
                         destRect.Width = width;
                         destRect.Height = width * ratio;
                         destRect.Y += (height / 2) - (width / 2);
                     }
                     else {
-                        var ratio = tex.Width / tex.Height;
+                        var ratio = Image.Width / Image.Height;
                         destRect.Height = height;
                         destRect.Width = height * ratio;
                         destRect.X += (width / 2) - (height / 2);
@@ -922,16 +922,16 @@ namespace Nucleus.UI
 
                     break;
                 case ImageOrientation.Fit:
-                    var clampWidth = Math.Clamp(width, 0, tex.Width);
-                    var clampHeight = Math.Clamp(height, 0, tex.Height);
+                    var clampWidth = Math.Clamp(width, 0, Image.Width);
+                    var clampHeight = Math.Clamp(height, 0, Image.Height);
                     if (clampWidth <= clampHeight) { // Width is the bottleneck
-                        var ratio = tex.Height / tex.Width;
+                        var ratio = Image.Height / Image.Width;
                         destRect.Width = clampWidth;
                         destRect.Height = clampWidth * ratio;
                         destRect.Y += (height / 2) - (width / 2);
                     }
                     else {
-                        var ratio = tex.Width / tex.Height;
+                        var ratio = Image.Width / Image.Height;
                         destRect.Height = clampHeight;
                         destRect.Width = clampHeight * ratio;
                         destRect.X += (width / 2) - (height / 2);
@@ -940,8 +940,10 @@ namespace Nucleus.UI
                     break;
             }
 
-            Raylib.DrawTexturePro(tex, sourceRect, destRect, new(0, 0), 0, TextColor);
+            Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, TextColor);
         }
+
+        public Level Level => UI.EngineLevel;
 
         public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
 

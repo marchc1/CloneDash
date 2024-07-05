@@ -11,10 +11,10 @@ using Raylib_cs;
 using System.ComponentModel;
 using Nucleus.UI.Elements;
 using Nucleus.UI;
-using CloneDash.Systems;
 using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Logic;
 using CloneDash.Levels;
+using Nucleus.ManagedMemory;
 
 namespace CloneDash.Game
 {
@@ -103,7 +103,7 @@ namespace CloneDash.Game
             UnpauseTime = 0;
         }
         private void startUnpause() {
-            AudioSystem.PlaySound(Filesystem.Resolve("321.wav", "audio"), 0.8f, 1f);
+            Sounds.PlaySound("321.wav", true, 0.8f, 1f);
             UnpauseTime = Realtime;
         }
         private void fullUnpause() {
@@ -149,10 +149,10 @@ namespace CloneDash.Game
 
             switch (Sheet.Music.StoredAs) {
                 case MusicType.FromByteArray:
-                    Music = MusicTrack.LoadFromMemory(Sheet.Music.Data, true);
+                    Music = Sounds.LoadMusicFromMemory(Sheet.Music.Data, true);
                     break;
                 case MusicType.FromFile:
-                    Music = MusicTrack.LoadFromFile(Sheet.Music.Filepath, true);
+                    Music = Sounds.LoadMusicFromFile(Sheet.Music.Filepath, true);
                     break;
             }
             Music.Volume = 0.25f;
@@ -163,7 +163,7 @@ namespace CloneDash.Game
             UIBar.Level = this;
             UIBar.Size = new(0, 64);
 
-            AudioSystem.PlaySound(Filesystem.Resolve("readygo.wav", "audio"), 0.8f, 1.0f);
+            Sounds.PlaySound("readygo.wav", true, 0.8f, 1.0f);
         }
         public bool Debug { get; set; } = true;
         public Window PauseWindow { get; private set; }
@@ -215,28 +215,28 @@ namespace CloneDash.Game
 
                     var back2menu = flex.Add<Button>();
                     back2menu.Text = "";
-                    back2menu.Image = TextureSystem.LoadTexture("ui/pause_exit.png");
+                    back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
                     back2menu.ImageOrientation = ImageOrientation.Fit;
                     back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
                         EngineCore.LoadLevel(new CD_MainMenu());
                     };
                     var settings = flex.Add<Button>();
                     settings.Text = "";
-                    settings.Image = TextureSystem.LoadTexture("ui/pause_settings.png");
+                    settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
                     settings.ImageOrientation = ImageOrientation.Fit;
                     settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
 
                     };
                     var restart = flex.Add<Button>();
                     restart.Text = "";
-                    restart.Image = TextureSystem.LoadTexture("ui/pause_restart.png");
+                    restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
                     restart.ImageOrientation = ImageOrientation.Fit;
                     restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
                         EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
                     };
                     var play = flex.Add<Button>();
                     play.Text = "";
-                    play.Image = TextureSystem.LoadTexture("ui/pause_play.png");
+                    play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
                     play.ImageOrientation = ImageOrientation.Fit;
                     play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
                         PauseWindow.Remove();
@@ -301,7 +301,7 @@ namespace CloneDash.Game
                 lastNoteHit = true;
                 if (Stats.Misses == 0) {
                     Logs.Info("Full combo achieved.");
-                    AudioSystem.PlaySound(Filesystem.Resolve("fullcombo.wav", "audio"), 0.8f, 1f);
+                    Sounds.PlaySound("fullcombo.wav", true, 0.8f, 1f);
                 }
             }
 
@@ -521,7 +521,7 @@ namespace CloneDash.Game
         }
 
         public override void PreRenderBackground(FrameState frameState) {
-            Graphics2D.SetTexture(TextureSystem.LoadTexture("backgroundscroll.png"));
+            Graphics2D.SetTexture(Textures.LoadTextureFromFile("backgroundscroll.png"));
             var offset = ((float)Curtime * -600f) % frameState.WindowWidth;
             Graphics2D.SetDrawColor(255, 255, 255, 127);
             Graphics2D.DrawTexture(new(offset, 0), new(frameState.WindowWidth, frameState.WindowHeight));

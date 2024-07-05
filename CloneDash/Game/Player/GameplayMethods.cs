@@ -45,7 +45,7 @@ namespace CloneDash.Game
 
                     if (poll.Hit) {
                         poll.HitEntity.Hit(pathway);
-                        AudioSystem.PlaySound(Filesystem.Resolve("punch.wav", "audio"), 0.24f);
+                        Sounds.PlaySound("punch.wav", true, 0.24f);
 
                         if (SuppressHitMessages == false) {
                             Color c = poll.HitEntity.HitColor;

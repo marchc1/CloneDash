@@ -9,6 +9,8 @@ using Microsoft.Win32;
 using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Core;
+using Nucleus.Engine;
+using Nucleus.ManagedMemory;
 using OdinSerializer;
 using Raylib_cs;
 using System.Collections.Specialized;
@@ -607,14 +609,15 @@ namespace CloneDash
 
         public class MuseDashSong
         {
-            public static string GetFixedFilename(string givenBase, string fileName) {
-                return 
+
+            public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
+                return
                     StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
                     ?? StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase.Replace("_music", ""))))
-                    ?? throw new Exception($"Tried to find {givenBase}, could not find a match even with fixes applied");
+                    ?? (throwExp ? throw new Exception($"Tried to find {givenBase}, could not find a match even with fixes applied") : null);
             }
-            public string GetAssetsFilepath() => GetFixedFilename(BaseName, "music_{name}_assets_all.bundle");
-            public string GetDemoFilepath() => GetFixedFilename(BaseName, "song_{name}_assets_all");
+            public string GetAssetsFilepath() => GetFixedFilename(BaseName, "music_{name}_assets_all.bundle", true) ?? throw new Exception();
+            public string? GetDemoFilepath() => GetFixedFilename(BaseName, "song_{name}_assets_all", false);
 
             public MuseDashAlbum Album { get; set; }
 
@@ -650,9 +653,11 @@ namespace CloneDash
                     AssetsFile.LoadFiles(filepath);
                 }
                 if (DemoFile == null) {
-                    DemoFile = new();
-                    string filepath = GetDemoFilepath();
-                    DemoFile.LoadFiles(filepath);
+                    string? filepath = GetDemoFilepath();
+                    if (filepath != null) {
+                        DemoFile = new();
+                        DemoFile.LoadFiles(filepath);
+                    }
                 }
             }
 
@@ -673,10 +678,12 @@ namespace CloneDash
                 return tex;
             }
 
-            public MusicTrack GetDemoMusic() {
+            public MusicTrack? GetDemoMusic() {
                 LoadAssetFile();
-                if (__demotrack != null)
+                if (IValidatable.IsValid(__demotrack))
                     return __demotrack;
+                if (DemoFile == null)
+                    return null;
 
                 AudioClip audioClip = (AudioClip)DemoFile.assetsFileList[0].Objects.First(x => x is AudioClip audio && audio.m_Name.EndsWith("_demo"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
                 byte[] musicStream;
@@ -686,7 +693,7 @@ namespace CloneDash
                     FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
                     bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
 
-                    __demotrack = MusicTrack.LoadFromMemory(musicStream);
+                    __demotrack = EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream);
                     return __demotrack;
                 }
 
@@ -766,7 +773,7 @@ namespace CloneDash
                         FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
                         bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
 
-                        return MusicTrack.LoadFromMemory(musicStream) as ReturnStructure;
+                        return EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream) as ReturnStructure;
                     }
 
                     throw new Exception("Something went wrong loading an AudioClip");

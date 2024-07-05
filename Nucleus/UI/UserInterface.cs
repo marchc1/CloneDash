@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Engine;
 using Nucleus.Types;
 using Raylib_cs;
 
@@ -57,7 +58,7 @@ namespace Nucleus.UI
                 var whereIsEnd = mousepos + size + new Vector2F(4, 4);
 
                 if (whereIsEnd.X > EngineCore.GetScreenSize().W) drawingOffset.X -= (size.X) + 4;
-                if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24;
+                if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24 + 24;
 
                 Graphics2D.SetDrawColor(50, 57, 65, 120);
                 Graphics2D.DrawRectangle(mousepos + drawingOffset, size);
@@ -108,5 +109,7 @@ namespace Nucleus.UI
         ~UserInterface() {
             MainThread.RunASAP(Remove);
         }
+
+        public Level? EngineLevel { get; set; }
     }
 }

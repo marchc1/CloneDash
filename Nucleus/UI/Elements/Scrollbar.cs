@@ -1,5 +1,4 @@
-﻿using CloneDash.Systems;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 
 namespace Nucleus.UI.Elements
 {
@@ -116,8 +115,8 @@ namespace Nucleus.UI.Elements
 
             Graphics2D.SetDrawColor(fore, self.Hovered ? 220 : 200);
             Graphics2D.SetTexture(Alignment == ScrollbarAlignment.Vertical ?
-                (down ? TextureSystem.LoadTexture("ui/down32.png") : TextureSystem.LoadTexture("ui/up32.png")) :
-                (down ? TextureSystem.LoadTexture("ui/right32.png") : TextureSystem.LoadTexture("ui/left32.png")));
+                (down ? Level.Textures.LoadTextureFromFile("ui/down32.png") : Level.Textures.LoadTextureFromFile("ui/up32.png")) :
+                (down ? Level.Textures.LoadTextureFromFile("ui/right32.png") : Level.Textures.LoadTextureFromFile("ui/left32.png")));
             Graphics2D.DrawImage(new(2), new(width - 4, height - 4));
         }
 
