@@ -64,6 +64,7 @@ namespace Nucleus.Engine
                 return;
 
             Model.Position = new(Position.X, Position.Y, 0);
+            Model.Rotation = Rotation;
             Model.Render();
         }
     }

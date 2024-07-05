@@ -8,21 +8,16 @@ namespace CloneDash.Game.Entities
 {
     public class SingleHitEnemy : CD_BaseEnemy
     {
+        private EnemyPostHitPhysicsController postHitPhysics;
         public SingleHitEnemy() : base(EntityType.Single) {
+            postHitPhysics = new(this);
             Interactivity = EntityInteractivity.Hit;
         }
 
-        // needs overhaul !!!
-        bool applyvel = false;
-        float acceleration = 0.000f;
-        float velocity = 0;
-        float position = 0;
 
         protected override void OnHit(PathwaySide side) {
             Kill();
-            applyvel = true;
-            acceleration = 0.006f;
-            velocity = Pathway == PathwaySide.Top ? -4.48f : -2.48f;
+            postHitPhysics.Hit(NMath.Random.Vec2(new(-120, -210), new(-100, -180)), NMath.Random.Single(12.5f, 22.5f));
         }
 
         protected override void OnMiss() {
@@ -54,14 +49,7 @@ namespace CloneDash.Game.Entities
                 }
             }
 
-            if (applyvel) { // needs to be dependent on frametime later
-                position += velocity;
-                velocity += acceleration * 6;
-
-                pos.y += position;
-                acceleration += 0.00000001f;
-            }
-
+            postHitPhysics.PassthroughPosition(ref pos);
         }
         public override void Initialize() {
             base.Initialize();

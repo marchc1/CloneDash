@@ -1,4 +1,5 @@
 ﻿using Nucleus.Types;
+using System.Numerics;
 
 namespace Nucleus.Engine
 {
@@ -42,6 +43,7 @@ namespace Nucleus.Engine
         public bool RendersItself { get; set; } = true;
 
         public Vector2F Position { get; set; } = Vector2F.Zero;
+        public Vector3 Rotation { get; set; } = Vector3.Zero;
         public Vector2F Scale { get; set; } = Vector2F.One;
     }
 }
