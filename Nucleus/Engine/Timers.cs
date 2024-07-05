@@ -1,0 +1,57 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static Nucleus.Core.FileIO;
+
+namespace Nucleus.Engine
+{
+    public class Timer {
+        public double LastRun { get; set; }
+        public double Delay { get; set; }
+        public int MaxRepetitions { get; set; }
+        public int Repetitions { get; set; } = 0;
+        public Action? Method { get; set; }
+    }
+    public class TimerManagement(Level level)
+    {
+        private Dictionary<ThreadExecutionTime, List<Timer>> Timers = [];
+
+        public Timer Simple(float delay, Action on, ThreadExecutionTime exTime = ThreadExecutionTime.BeforeFrame) {
+            Timer t = new Timer();
+
+            t.LastRun = level.Realtime;
+            t.Delay = delay;
+            t.MaxRepetitions = 1;
+            t.Method = on;
+
+            Timers.TryAdd(exTime, []);
+            Timers[exTime].Add(t);
+
+            return t;
+        }
+
+        public void Run(ThreadExecutionTime exTime) {
+            var now = level.Realtime;
+            List<Timer> toRemove = [];
+
+            Timers.TryGetValue(exTime, out var timers);
+            if (timers == null) return;
+
+            foreach (Timer timer in timers) {
+                if(now - timer.LastRun > timer.Delay) {
+                    timer.Method?.Invoke();
+                    timer.Repetitions += 1;
+                    timer.LastRun = now;
+
+                    if (timer.Repetitions >= timer.MaxRepetitions)
+                        toRemove.Add(timer);
+                }
+            }
+
+            foreach (var t in toRemove)
+                timers.Remove(t);
+        }
+    }
+}

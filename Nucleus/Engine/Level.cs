@@ -26,6 +26,11 @@ namespace Nucleus.Engine
         // Managed memory
         public TextureManagement Textures { get; } = new();
         public SoundManagement Sounds { get; } = new();
+        public TimerManagement Timers { get; }
+
+        public Level() {
+            Timers = new(this);
+        }
 
         public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
         public T As<T>() where T : Level => (T)this;
@@ -227,7 +232,7 @@ namespace Nucleus.Engine
         }
 
         public T Add<T>(T ent) where T : Entity {
-            Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
+            //Logs.Debug($"Level.Add call bufferLock = {__lockedBuffer} ent {ent}");
             if (!IValidatable.IsValid(ent))
                 throw new ArgumentNullException("ent");
 
@@ -238,7 +243,7 @@ namespace Nucleus.Engine
         public void Remove(Entity ent) {
             if (!IValidatable.IsValid(ent))
                 return;
-            Logs.Debug($"Level.Remove call bufferLock = {__lockedBuffer} ent {ent}");
+            //Logs.Debug($"Level.Remove call bufferLock = {__lockedBuffer} ent {ent}");
 
             if (__lockedBuffer) {
                 __removeBuffer.Add(ent);
@@ -313,6 +318,11 @@ namespace Nucleus.Engine
             }
         }
 
+        private void RunThreadExecutionTimeMethods(ThreadExecutionTime t) {
+            MainThread.Run(t);
+            Timers.Run(t);
+        }
+
         Stopwatch profiler = new();
         /// <summary>
         /// Call this every frame.
@@ -320,7 +330,8 @@ namespace Nucleus.Engine
         public void Frame() {
             profiler.Reset();
             profiler.Start();
-            MainThread.Run(ThreadExecutionTime.BeforeFrame);
+            RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
+
             LastFrameState = FrameState;
 
             LastRealtime = Realtime;
@@ -501,7 +512,7 @@ namespace Nucleus.Engine
             // The frame state is basically complete after PreThink and UI layout/hover resolving, so it should be stored
             // Last change will be after element thinking
             EngineCore.CurrentFrameState = frameState; FrameState = frameState;
-            MainThread.Run(ThreadExecutionTime.AfterFrameStateConstructed);
+            RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrameStateConstructed);
 
             if (!ranKeybinds)
                 ranKeybinds = Keybinds.TestKeybinds(frameState.KeyboardState);
@@ -509,7 +520,7 @@ namespace Nucleus.Engine
             if (!Paused) RunEventThink(frameState);
             if (!Paused) RunEventPostThink(frameState);
 
-            MainThread.Run(ThreadExecutionTime.AfterThink);
+            RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterThink);
             if (false) {
                 var size = 16;
                 for (int gx = 0; gx < 100; gx++) {
@@ -609,7 +620,7 @@ namespace Nucleus.Engine
 
             ConsoleSystem.Draw();
 
-            MainThread.Run(ThreadExecutionTime.AfterFrame);
+            RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrame);
             profiler.Stop();
             EngineCore.FrameCostMS = (float)profiler.Elapsed.TotalMilliseconds;
             var nanoseconds = (float)profiler.Elapsed.TotalNanoseconds;

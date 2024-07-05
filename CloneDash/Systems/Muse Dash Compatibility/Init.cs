@@ -47,7 +47,7 @@ namespace CloneDash
             }
 
             BuildDashStructures();
-
+            manager.Clear();
             Initialized = true;
             return result;
         }

@@ -105,6 +105,9 @@ namespace CloneDash.Game
         private void startUnpause() {
             Sounds.PlaySound("321.wav", true, 0.8f, 1f);
             UnpauseTime = Realtime;
+            Timers.Simple(3, () => {
+                fullUnpause();
+            });
         }
         private void fullUnpause() {
             Music.Paused = false;
@@ -173,9 +176,6 @@ namespace CloneDash.Game
                 EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
                 return;
             }
-
-            if (UnpauseTime != 0 && DeltaUnpauseTime >= 3)
-                fullUnpause();
 
             if (ShouldExitFever && InFever)
                 ExitFever();
