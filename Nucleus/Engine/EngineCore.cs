@@ -14,9 +14,21 @@ namespace Nucleus
 {
     public enum ThreadExecutionTime
     {
+        /// <summary>
+        /// The function will run before any frame-code.
+        /// </summary>
         BeforeFrame,
+        /// <summary>
+        /// The function will run after a FrameState is constructed, and before <see cref="Level.Think"/> happens.
+        /// </summary>
         AfterFrameStateConstructed,
+        /// <summary>
+        /// The function will run after <see cref="Level.Think"/> executes.
+        /// </summary>
         AfterThink,
+        /// <summary>
+        /// The function will run after frame-code is complete.
+        /// </summary>
         AfterFrame
     }
     public record MainThreadExecutionTask(Action Action, ThreadExecutionTime When);

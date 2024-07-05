@@ -18,6 +18,18 @@ namespace Nucleus.Engine
     {
         private Dictionary<ThreadExecutionTime, List<Timer>> Timers = [];
 
+        /// <summary>
+        /// Creates a simple timer, which executes in <paramref name="delay"/> seconds.
+        /// <br></br>
+        /// <br></br>
+        /// This is thread-safe; operates similarly to 
+        /// <see cref="MainThread.RunASAP(Action, ThreadExecutionTime)"/> where a <see cref="ThreadExecutionTime"/> 
+        /// (by default, <see cref="ThreadExecutionTime.BeforeFrame"/>) controls where in the game loop this timer will be ran.
+        /// </summary>
+        /// <param name="delay"></param>
+        /// <param name="on"></param>
+        /// <param name="exTime"></param>
+        /// <returns></returns>
         public Timer Simple(float delay, Action on, ThreadExecutionTime exTime = ThreadExecutionTime.BeforeFrame) {
             Timer t = new Timer();
 
