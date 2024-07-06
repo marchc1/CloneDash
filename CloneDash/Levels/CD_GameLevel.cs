@@ -532,6 +532,12 @@ namespace CloneDash.Game
             Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, 0), new(frameState.WindowWidth, frameState.WindowHeight)); ;
         }
         public override void Render(FrameState frameState) {
+            Rlgl.DrawRenderBatchActive();
+            Rlgl.SetLineWidth(5);
+            Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
+            Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
+            Rlgl.DrawRenderBatchActive();
+            Rlgl.SetLineWidth(1);
             foreach (Entity ent in VisibleEntities) {
                 if (ent is not CD_BaseEnemy)
                     continue;
@@ -559,7 +565,7 @@ namespace CloneDash.Game
                     continue;
 
                 var entCD = (CD_BaseEnemy)ent;
-                Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
+                //Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
             }
         }
     }
