@@ -24,6 +24,7 @@ namespace CloneDash.Game
             this.pos = enemy.Position;
             this.vel = velocity;
             this.angVel = angularVelocity;
+            this.ang = enemy.Rotation.Z;
             lastCurtime = enemy.Level.CurtimeF;
         }
 
