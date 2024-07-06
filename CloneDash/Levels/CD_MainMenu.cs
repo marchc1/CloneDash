@@ -96,7 +96,7 @@ namespace CloneDash.Game
             MDLevelWindow = UI.Add<Window>();
             MDLevelWindow.Title = "Open Muse Dash Level";
             //test.Title = "Non-Rendertexture Window";
-            MDLevelWindow.Size = new Vector2F(360, 600);
+            MDLevelWindow.Size = new Vector2F(600, 600);
             MDLevelWindow.DockPadding = RectangleF.TLRB(4);
             MDLevelWindow.HideNonCloseButtons();
             MDLevelWindow.Center();

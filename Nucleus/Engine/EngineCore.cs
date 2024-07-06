@@ -133,7 +133,9 @@ namespace Nucleus
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
         private static unsafe void LogCustom(int logLevel, sbyte* text, sbyte* args) {
             var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
+            if (message == "FILEIO: [] Failed to open text file") return;
             Logs.Source = " raylib";
+
             switch ((TraceLogLevel)logLevel) {
                 case TraceLogLevel.LOG_ALL:
                 case TraceLogLevel.LOG_NONE:

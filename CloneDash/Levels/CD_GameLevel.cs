@@ -166,6 +166,10 @@ namespace CloneDash.Game
             UIBar.Level = this;
             UIBar.Size = new(0, 64);
 
+            Scorebar = this.UI.Add<CD_Player_Scorebar>();
+            Scorebar.Level = this;
+            Scorebar.Size = new(0, 128);
+
             Sounds.PlaySound("readygo.wav", true, 0.8f, 1.0f);
         }
         public bool Debug { get; set; } = true;

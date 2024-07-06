@@ -581,7 +581,7 @@ namespace Nucleus.Engine
                     "",
                     $"Window",
                     $"    Resolution        : {frameState.WindowWidth}x{frameState.WindowHeight}",
-                    $"    FPS               : {FPS} ({MathF.Round(Raylib.GetFrameTime() * 1000, 2)}ms render time)",
+                    $"    FPS               : {FPS} ({Raylib.GetFrameTime() * 1000:0.##}ms render time)",
                     $"Level",
                     $"    Level Classname   : {this.GetType().Name}",
                     $"    Level Entities    : {EntityList.Count}",

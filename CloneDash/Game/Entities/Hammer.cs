@@ -14,7 +14,7 @@ namespace CloneDash.Game.Entities
 
         protected override void OnHit(PathwaySide side) {
             Kill();
-            whenDidHammerHit = Level.RealtimeF;
+            whenDidHammerHit = Level.CurtimeF;
         }
 
         protected override void OnMiss() {
@@ -38,7 +38,7 @@ namespace CloneDash.Game.Entities
             pos.Y = pathwayY;
             var bone = this.Model.GetBoneByName("Bone");
 
-            bone.Rotation = new(0, 0, -(float)(whenDidHammerHit == -1 ? NMath.Remap(level.Conductor.Time, HitTime - 2, HitTime, 100, 0) : NMath.Remap(Level.RealtimeF - whenDidHammerHit, 0, timeToHit, 0, 100)));
+            bone.Rotation = new(0, 0, -(float)(whenDidHammerHit == -1 ? NMath.Remap(level.Conductor.Time, HitTime - 2, HitTime, 100, 0) : NMath.Remap(Level.CurtimeF - whenDidHammerHit, 0, 0.55f, 0, 100)));
         }
 
         public override void Build() {

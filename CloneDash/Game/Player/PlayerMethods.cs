@@ -6,6 +6,7 @@ using System.Numerics;
 using Nucleus.Types;
 using CloneDash.Game.Entities;
 using Nucleus.UI;
+using Nucleus;
 
 namespace CloneDash.Game
 {
@@ -239,6 +240,8 @@ namespace CloneDash.Game
         public int Combo { get; private set; } = 0;
         private double __lastCombo = -2000; // Last time a combo occured in game-time
 
+        public double LastCombo => __lastCombo;
+
         internal CD_Player_UIBar UIBar;
         internal class CD_Player_UIBar : Element
         {
@@ -269,6 +272,30 @@ namespace CloneDash.Game
                 Graphics2D.DrawRectangleOutline(width / 4f, 32, (width / 2f), 24, 2);
                 Graphics2D.SetDrawColor(200, 220, 255);
                 Graphics2D.DrawText(width / 2f, 32 + 13, Level.InFever ? $"FEVER! {Math.Round(Level.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((Level.Fever / Level.MaxFever) * 100)}%", "Arial", 18, Anchor.Center);
+            }
+        }
+
+        internal CD_Player_Scorebar Scorebar;
+        internal class CD_Player_Scorebar : Element
+        {
+            internal CD_GameLevel Level;
+            public CD_Player_Scorebar() {
+
+            }
+            protected override void Initialize() {
+                base.Initialize();
+                Dock = Dock.Top;
+            }
+            public override void Paint(float width, float height) {
+                Graphics2D.SetDrawColor(255, 255, 255, 255);
+                if (Level.AutoPlayer.Enabled)
+                    Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Arial", 32, Anchor.Center);
+                
+                Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{Level.Combo}", "Arial", (int)NMath.Remap(Level.Conductor.Time - Level.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
+                Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Arial", 24, Anchor.Center);
+
+                Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{Level.Score}", "Arial", 32, Anchor.Center);
+                Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", "Arial", 24, Anchor.Center);
             }
         }
     }
