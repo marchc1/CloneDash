@@ -281,6 +281,9 @@ namespace Nucleus
             }
 
             Model3AnimationChannel.GlobalPause = false;
+            Logs.Info($"Loading level {level.GetType().Name}...");
+            Stopwatch s = new Stopwatch();
+            s.Start();
 
             Level = level;
             LoadingLevel = true;
@@ -294,6 +297,9 @@ namespace Nucleus
             LoadingScreen?.Unload();
             __nextFrameLevel = null;
             __nextFrameArgs = null;
+            s.Stop();
+
+            Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
             //GC.Collect();
             //GC.WaitForPendingFinalizers();
         }
