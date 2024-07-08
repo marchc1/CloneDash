@@ -21,25 +21,28 @@
 
   <ItemGroup>
     <Reference Include="AssetStudio">
-      <HintPath>..\BuildAssets\AssetStudio.dll</HintPath>
+      <HintPath>..\BuildAssets\universal\AssetStudio.dll</HintPath>
     </Reference>
     <Reference Include="AssetStudio.PInvoke">
-      <HintPath>..\BuildAssets\AssetStudio.PInvoke.dll</HintPath>
+      <HintPath>..\BuildAssets\universal\AssetStudio.PInvoke.dll</HintPath>
     </Reference>
     <Reference Include="AssetStudioUtility">
-      <HintPath>..\BuildAssets\AssetStudioUtility.dll</HintPath>
+      <HintPath>..\BuildAssets\universal\AssetStudioUtility.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Compression.LZ4">
-      <HintPath>..\BuildAssets\K4os.Compression.LZ4.dll</HintPath>
+      <HintPath>..\BuildAssets\universal\K4os.Compression.LZ4.dll</HintPath>
     </Reference>
     <Reference Include="Texture2DDecoderWrapper">
-      <HintPath>..\BuildAssets\Texture2DDecoderWrapper.dll</HintPath>
+      <HintPath>..\BuildAssets\universal\Texture2DDecoderWrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Condition=" $(OS) == 'Windows_NT' " Command="xcopy &quot;$(SolutionDir)BuildAssets&quot; &quot;$(OutDir)&quot; /Y /E" />
-    <Exec Condition=" $(OS) != 'Windows_NT' " Command="cp -rf &quot;$(SolutionDir)BuildAssets&quot; &quot;$(OutDir)&quot;" />
+    <Exec Condition=" $(OS) == 'Windows_NT' " Command="xcopy &quot;$(SolutionDir)BuildAssets/universal/.&quot; &quot;$(OutDir)&quot; /Y /E" />
+    <Exec Condition=" $(OS) == 'Unix' " Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/universal/.&quot; &quot;$(OutDir)&quot;" />
+
+    <Exec Condition=" $(OS) == 'Windows_NT' " Command="xcopy &quot;$(SolutionDir)BuildAssets/winnt/.&quot; &quot;$(OutDir)&quot; /Y /E" />
+    <Exec Condition=" $(OS) == 'Unix' " Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/linux/.&quot; &quot;$(OutDir)&quot;" />
   </Target>
 
 </Project>

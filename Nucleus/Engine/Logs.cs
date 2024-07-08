@@ -1,5 +1,5 @@
 ﻿using Raylib_cs;
-using TrueColorConsole;
+using Nucleus.CrossPlatform;
 
 namespace Nucleus
 {
@@ -65,9 +65,7 @@ namespace Nucleus
         public static event LogWrittenTextDelegate LogWrittenText;
         public static void Log(LogLevel level, bool printColor = true, bool newlineAfter = true, params object[] items) {
             if (!_initializedColorConsole) {
-                VTConsole.Enable();
-                VTConsole.SetColorBackground(RLCToSDC(_defaultBackground));
-                VTConsole.SetColorForeground(RLCToSDC(_defaultForeground));
+                ConsoleMethods.Initialize(RLCToSDC(_defaultBackground), RLCToSDC(_defaultForeground));
                 _initializedColorConsole = true;
             }
 
@@ -75,30 +73,27 @@ namespace Nucleus
                 return;
 
             if (LogTime)
-                VTConsole.Write($"[{DateTime.Now.ToString(TimeFormat)}] ");
+                ConsoleMethods.Write($"[{DateTime.Now.ToString(TimeFormat)}] ", RLCToSDC(_defaultForeground));
 
             if (ShowLevel) {
+                System.Drawing.Color toShow = RLCToSDC(_defaultForeground);
                 if (PrintColor)
-                    VTConsole.SetColorForeground(RLCToSDC(LevelToColor(level)));
+                    toShow = RLCToSDC(LevelToColor(level));
 
-                VTConsole.Write($"[{Source}/{LevelToConsoleString(level)}] ");
-
-                if (PrintColor)
-                    VTConsole.SetColorForeground(RLCToSDC(_defaultForeground));
+                ConsoleMethods.Write($"[{Source}/{LevelToConsoleString(level)}] ", toShow);
             }
 
 
+            var current = RLCToSDC(_defaultForeground);
             for (int i = 0; i < items.Length; i++) {
                 object item = items[i];
 
                 // if printing with colors, and item is color, and this isn't the last item in the array, use it for vtconsole
                 if (printColor && item is Color && i != items.Length - 1)
-                    VTConsole.SetColorForeground(RLCToSDC((Color)item));
+                    current = RLCToSDC((Color)item);
                 else
-                    VTConsole.Write(item == null ? "null" : item.ToString());
+                    ConsoleMethods.Write(item == null ? "<null>" : item.ToString() ?? "<null-str>", current);
             }
-
-            VTConsole.SetColorForeground(RLCToSDC(_defaultForeground));
 
             List<string> data = [];
             foreach (object o in items)
@@ -110,7 +105,7 @@ namespace Nucleus
             LogWrittenText?.Invoke(level, string.Join("", data));
 
             if (newlineAfter)
-                VTConsole.WriteLine();
+                ConsoleMethods.WriteLine();
         }
 
         public static string Source { get; internal set; } = "nucleus";

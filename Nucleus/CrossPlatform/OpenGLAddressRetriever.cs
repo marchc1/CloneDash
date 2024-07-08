@@ -34,7 +34,39 @@ namespace Nucleus.CrossPlatform
 #endif
 
 #if COMPILED_LINUX
-#error No support for OpenGL function address retrieval on Linux (for now...)
+        // equivalent of LoadLibrary
+        [DllImport("dl")]
+        private static extern IntPtr dlopen(string filename, int flags);
+
+        // equivalent of GetProcAddress
+        [DllImport("dl")]
+        private static extern IntPtr dlsym(IntPtr handle, string symbol);
+
+        public static IntPtr GetProc(string funcName)
+        {
+            var ret = dlsym(IntPtr.Zero, funcName);
+
+            if (ret == IntPtr.Zero)
+            {
+                IntPtr libHandle = dlopen("libGL.so", RTLD_NOW | RTLD_GLOBAL);
+                if (libHandle != IntPtr.Zero)
+                {
+                    ret = dlsym(libHandle, funcName);
+                    dlclose(libHandle); 
+                }
+            }
+
+            if (ret == IntPtr.Zero)
+                throw new Exception($"Failed to retrieve function address for {funcName}");
+
+            return ret;
+        }
+
+        private const int RTLD_NOW = 2;
+        private const int RTLD_GLOBAL = 0x100;
+
+        [DllImport("dl")]
+        private static extern int dlclose(IntPtr handle);
 #endif
     }
 }
