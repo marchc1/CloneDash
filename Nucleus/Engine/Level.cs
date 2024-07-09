@@ -615,7 +615,7 @@ namespace Nucleus.Engine
 
                 var t = fields[i].ToString();
                 Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-                Graphics2D.DrawText(tx, ty, t, "Consolas", 14, Anchor.TopLeft);
+                Graphics2D.DrawText(tx, ty, t, "Consolas", 16, Anchor.TopLeft);
             }
 
             ConsoleSystem.Draw();

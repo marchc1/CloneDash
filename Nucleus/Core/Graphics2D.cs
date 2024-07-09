@@ -15,9 +15,7 @@ namespace Nucleus.Core
     public static class Graphics2D
     {
         public static FontManager FontManager { get; private set; } = new(new() {
-            { "Arial", "C:\\Windows\\Fonts\\arial.ttf" },
-            { "Consolas", "C:\\Windows\\Fonts\\consola.ttf" },
-            { "Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf" },
+            { "Consolas", Filesystem.Resolve("firacode.ttf", "fonts") },
             { "Open Sans", Filesystem.Resolve("open-sans.ttf", "fonts") },
             { "Noto Sans", Filesystem.Resolve("noto-sans-en-jp.ttf", "fonts") },
         });

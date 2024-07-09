@@ -52,11 +52,11 @@ namespace Nucleus
                 float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime*DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 
                 var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
-                var textSize = Graphics2D.GetTextSize(text, "Consolas", 11);
+                var textSize = Graphics2D.GetTextSize(text, "Consolas", 15);
                 Graphics2D.SetDrawColor(30, 30, 30, (int)(110 * fade));
                 Graphics2D.DrawRectangle(2, 2 + (i * 14), textSize.W + 4, textSize.H + 4);
                 Graphics2D.SetDrawColor(Logs.LevelToColor(message.Level), (int)(fade * 255));
-                Graphics2D.DrawText(new(4, 4 + (i * 14)), text, "Consolas", 12);
+                Graphics2D.DrawText(new(4, 4 + (i * 14)), text, "Consolas", 14);
                 i++;
             }
         }
