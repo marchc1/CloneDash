@@ -21,6 +21,8 @@ namespace CloneDash
 
             if (OperatingSystem.IsWindows())
                 result = INIT_WINDOWS();
+            if(OperatingSystem.IsLinux())
+                result = INIT_LINUX();
 
             if (result != MDCompatLayerInitResult.OK)
                 return result;

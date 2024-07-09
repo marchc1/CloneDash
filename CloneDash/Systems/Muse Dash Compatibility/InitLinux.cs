@@ -1,4 +1,3 @@
-﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +8,14 @@ namespace CloneDash
 {
     public static partial class MuseDashCompatibility
     {
-        private static MDCompatLayerInitResult INIT_WINDOWS() {
-            if (!OperatingSystem.IsWindows())
+        private static MDCompatLayerInitResult INIT_LINUX() {
+            if (!OperatingSystem.IsLinux())
                 return MDCompatLayerInitResult.OperatingSystemNotCompatible;
 
             // Where is Steam installed?
-            string steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) as string;
-            if (steamInstallPath == null) { // Sometimes the install path will be here instead
-                steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432NODE\\Valve\\Steam", "InstallPath", null) as string;
-                if (steamInstallPath == null)
-                    return MDCompatLayerInitResult.SteamNotInstalled;
-            }
-
+            string steamInstallPath = Environment.GetEnvironmentVariable("HOME") + "/.local/share/Steam/";
             // Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
-            ValveDataFile games = ValveDataFile.FromFile(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
+            ValveDataFile games = ValveDataFile.FromFile(steamInstallPath + "steamapps/libraryfolders.vdf");
             string musedash_appid = "" + MUSEDASH_APPID;
             string musedash_installdir = "";
             bool musedash_installed = false;
@@ -30,9 +23,9 @@ namespace CloneDash
             foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
                 var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
                 if (apps.Contains(musedash_appid)) {
-                    ValveDataFile appManifest = ValveDataFile.FromFile(vdfItemPair.Value.GetString("path") + $"\\steamapps\\appmanifest_{musedash_appid}.acf");
+                    ValveDataFile appManifest = ValveDataFile.FromFile(vdfItemPair.Value.GetString("path") + $"/steamapps/appmanifest_{musedash_appid}.acf");
                     musedash_installed = true;
-                    musedash_installdir = vdfItemPair.Value.GetString("path") + "\\steamapps\\common\\" + appManifest["AppState"].GetString("installdir");
+                    musedash_installdir = vdfItemPair.Value.GetString("path") + "/steamapps/common/" + appManifest["AppState"].GetString("installdir");
                 }
             }
 
@@ -44,7 +37,7 @@ namespace CloneDash
             // The bundle is named globalconfigs_assets_notedatamananger
 
             string platform = "StandaloneWindows64";
-            string musedash_streamingassets = musedash_installdir + $"\\MuseDash_Data\\StreamingAssets\\aa\\{platform}\\"; // TODO: support multiple platforms
+            string musedash_streamingassets = musedash_installdir + $"/MuseDash_Data/StreamingAssets/aa/{platform}/"; // TODO: support multiple platforms
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;
 
