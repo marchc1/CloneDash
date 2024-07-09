@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Raylib_cs;
 
 namespace Nucleus.CrossPlatform
 {
@@ -77,7 +78,7 @@ namespace Nucleus.CrossPlatform
 #endif
 #if COMPILED_LINUX
             var ret = GetMousePosX11();
-            return new(ret.X, ret.Y);
+            return new Vector2F(ret.X, ret.Y) - Raylib.GetWindowPosition().ToNucleus();
 #endif
         }
     }
