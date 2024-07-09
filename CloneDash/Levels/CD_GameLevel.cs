@@ -266,7 +266,7 @@ namespace CloneDash.Game
 
                 float a = (float)(animation.AnimationPlayhead / animation.AnimationData.AnimationLength);
                 HologramPlayer.Visible = true;
-                var alpha = NMath.Ease.InQuad(1 - a) * 255;
+                var alpha = Math.Clamp(NMath.Ease.InQuad(1 - a) * 255, 0, 255);
                 HologramPlayer.Color = new(150, 206, 255, (int)alpha);
                 FrameDebuggingStrings.Add("PlayerAlpha = " + alpha);
             }
