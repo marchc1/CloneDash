@@ -131,7 +131,7 @@ namespace CloneDash
         public class StageDemo
         {
             public MusicTrack Track { get; set; }
-            public Raylib_cs.Texture2D Cover { get; set; }
+            public Raylib_cs.Texture2D? Cover { get; set; }
         }
 
         public static StageDemo GetStageDemo(MuseDashSong song) {
@@ -140,7 +140,8 @@ namespace CloneDash
 
             StageDemo demo = new StageDemo();
             //demo.Track = LoadAssetEasyC<AudioClip, MusicTrack>(song.Demo.Replace("_demo", "") + "_assets_all");
-            demo.Cover = song.GetCover();
+            var c = song.GetCover();
+            demo.Cover = c;
             song.DemoObject = demo;
 
             return demo;
@@ -660,7 +661,9 @@ namespace CloneDash
             private Raylib_cs.Texture2D? __cover;
             private MusicTrack? __demotrack;
 
-            public Raylib_cs.Texture2D GetCover() {
+            public Raylib_cs.Texture2D? GetCover() {
+                if(OperatingSystem.IsLinux()) return null;
+
                 LoadAssetFile();
                 if (__cover.HasValue)
                     return __cover.Value;

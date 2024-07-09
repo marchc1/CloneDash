@@ -164,8 +164,10 @@ namespace CloneDash.Game
             imageCanvas.Dock = Dock.Right;
             imageCanvas.Size = new Vector2F(320 - 36);
             imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
+                var c = song.GetCover();
+                if(c == null) return;
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
-                Graphics2D.SetTexture(song.GetCover());
+                Graphics2D.SetTexture(c.Value);
                 var distance = 16;
                 Graphics2D.DrawImage(new(distance, distance), new(width - (distance * 2), height - (distance * 2)));
             };

@@ -37,9 +37,9 @@ namespace CloneDash
 
             EngineCore.LoadLevel(new CD_MainMenu());
             // need a better way to implement custom scenes
-            Filesystem.AddPath("audio", Filesystem.Resolve("game") + "assets\\scenes\\default\\audio\\");
-            Filesystem.AddPath("models", Filesystem.Resolve("game") + "assets\\scenes\\default\\models\\");
-            Filesystem.AddPath("scripts", Filesystem.Resolve("game") + "assets\\scenes\\default\\scripts\\");
+            Filesystem.AddPath("audio", Filesystem.Resolve("game") + "assets/scenes/default/audio/");
+            Filesystem.AddPath("models", Filesystem.Resolve("game") + "assets/scenes/default/models/");
+            Filesystem.AddPath("scripts", Filesystem.Resolve("game") + "assets/scenes/default/scripts/");
 
             EngineCore.Start();
         }
