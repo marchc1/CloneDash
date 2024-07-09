@@ -1,4 +1,4 @@
-using CloneDash.Game.Entities;
+﻿using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 using Nucleus;
 using Nucleus.Core;
