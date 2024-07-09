@@ -259,7 +259,7 @@ namespace CloneDash.Game
                 Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
                 Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
                 Graphics2D.SetDrawColor(255, 220, 200);
-                Graphics2D.DrawText(width / 2f, 13, $"HP: {Level.Health}/{Level.MaxHealth}", "Arial", 18, Anchor.Center);
+                Graphics2D.DrawText(width / 2f, 13, $"HP: {Level.Health}/{Level.MaxHealth}", "Noto Sans", 18, Anchor.Center);
                 float feverRatio;
                 if (Level.InFever)
                     feverRatio = (float)Level.FeverTimeLeft / Level.FeverTime;
@@ -271,7 +271,7 @@ namespace CloneDash.Game
                 Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
                 Graphics2D.DrawRectangleOutline(width / 4f, 32, (width / 2f), 24, 2);
                 Graphics2D.SetDrawColor(200, 220, 255);
-                Graphics2D.DrawText(width / 2f, 32 + 13, Level.InFever ? $"FEVER! {Math.Round(Level.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((Level.Fever / Level.MaxFever) * 100)}%", "Arial", 18, Anchor.Center);
+                Graphics2D.DrawText(width / 2f, 32 + 13, Level.InFever ? $"FEVER! {Math.Round(Level.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((Level.Fever / Level.MaxFever) * 100)}%", "Noto Sans", 18, Anchor.Center);
             }
         }
 
@@ -289,13 +289,13 @@ namespace CloneDash.Game
             public override void Paint(float width, float height) {
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
                 if (Level.AutoPlayer.Enabled)
-                    Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Arial", 32, Anchor.Center);
+                    Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
                 
-                Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{Level.Combo}", "Arial", (int)NMath.Remap(Level.Conductor.Time - Level.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
-                Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Arial", 24, Anchor.Center);
+                Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{Level.Combo}", "Noto Sans", (int)NMath.Remap(Level.Conductor.Time - Level.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
+                Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Noto Sans", 24, Anchor.Center);
 
-                Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{Level.Score}", "Arial", 32, Anchor.Center);
-                Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", "Arial", 24, Anchor.Center);
+                Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{Level.Score}", "Noto Sans", 32, Anchor.Center);
+                Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", "Noto Sans", 24, Anchor.Center);
             }
         }
     }

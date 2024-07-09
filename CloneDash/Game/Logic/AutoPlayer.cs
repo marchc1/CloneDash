@@ -1,4 +1,4 @@
-﻿using CloneDash.Game.Entities;
+using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 using Nucleus;
 using Nucleus.Core;
@@ -144,7 +144,7 @@ namespace CloneDash.Game.Logic
         public override void Render2D(FrameState frameState) {
             if (Enabled) {
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
-                Graphics2D.DrawText((frameState.WindowWidth / 2), frameState.WindowHeight * 0.07f, STRING_AUTO, "Arial", 30, Anchor.Center);
+                Graphics2D.DrawText((frameState.WindowWidth / 2), frameState.WindowHeight * 0.07f, STRING_AUTO, "Noto Sans", 30, Anchor.Center);
             }
         }
     }

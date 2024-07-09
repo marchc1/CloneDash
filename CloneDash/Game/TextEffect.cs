@@ -1,4 +1,4 @@
-﻿using Nucleus;
+using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Types;
@@ -40,7 +40,7 @@ namespace CloneDash.Game
             var pos = pos0to1 * frameState.WindowHeight * 0.2f;
 
             Graphics2D.SetDrawColor(Color, (int)(Color.A * Raymath.Remap((float)lifetime, 0, ageToDie, 1, 0)));
-            Graphics2D.DrawText(Position - new Vector2F(0, pos), Text, "Arial", (int)NMath.Remap(NMath.Ease.InExpo(NMath.Remap(lifetime, 0, ageToDie, 0, 1)), 0, 1, 34, 6), TextAlignment.Center, TextAlignment.Center);
+            Graphics2D.DrawText(Position - new Vector2F(0, pos), Text, "Noto Sans", (int)NMath.Remap(NMath.Ease.InExpo(NMath.Remap(lifetime, 0, ageToDie, 0, 1)), 0, 1, 34, 6), TextAlignment.Center, TextAlignment.Center);
         }
     }
 }
