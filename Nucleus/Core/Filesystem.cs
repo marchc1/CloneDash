@@ -24,11 +24,11 @@ namespace Nucleus.Core
             { "game", [$"{AppContext.BaseDirectory}"] },
             { "assets", [$"{AppContext.BaseDirectory}assets"] },
 
-            { "audio", [$"{AppContext.BaseDirectory}assets\\audio"] },
-            { "fonts", [$"{AppContext.BaseDirectory}assets\\fonts"] },
-            { "images", [$"{AppContext.BaseDirectory}assets\\images"] },
-            { "models", [$"{AppContext.BaseDirectory}assets\\models"] },
-            { "shaders", [$"{AppContext.BaseDirectory}assets\\shaders"] },
+            { "audio", [$"{AppContext.BaseDirectory}assets/audio"] },
+            { "fonts", [$"{AppContext.BaseDirectory}assets/fonts"] },
+            { "images", [$"{AppContext.BaseDirectory}assets/images"] },
+            { "models", [$"{AppContext.BaseDirectory}assets/models"] },
+            { "shaders", [$"{AppContext.BaseDirectory}assets/shaders"] },
         };
 
         public static void AddPath(string pathIdentifier, string absolutePath) {
@@ -45,6 +45,7 @@ namespace Nucleus.Core
 
         private static bool __firstResolve = true;
         public static string Resolve(string localFilepath, string path = null, bool catchMissing = true) {
+            localFilepath = localFilepath.Replace("\\", "/");
             if (__firstResolve) {
                 foreach (var kvp in Path)
                     foreach (var dir in kvp.Value)
@@ -55,8 +56,8 @@ namespace Nucleus.Core
             if (path == null) {
                 foreach (var KVP in Path)
                     foreach (var dir in KVP.Value)
-                        if (File.Exists(dir + "" + localFilepath))
-                            return KVP.Value + "\\" + localFilepath;
+                        if (File.Exists(System.IO.Path.Combine(dir, localFilepath)))
+                            return System.IO.Path.Combine(dir, localFilepath);
 
                 return Path[localFilepath][0];
                 //throw new FileNotFoundException($"File '{localFilepath}' not found anywhere in the Filesystem's path.");
@@ -67,7 +68,8 @@ namespace Nucleus.Core
                     throw new NotImplementedException($"Mode '{path}' not found in Filesystem.Path");
 
                 foreach (var folderPath in Path[path]) {
-                    string realFilepath = folderPath + "\\" + localFilepath;
+                    string realFilepath = System.IO.Path.Combine(folderPath, localFilepath);
+
                     if (!File.Exists(realFilepath) && catchMissing)
                         continue;
 
