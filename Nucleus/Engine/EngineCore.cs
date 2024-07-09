@@ -179,6 +179,9 @@ namespace Nucleus
 
         public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string? icon = null, ConfigFlags[]? flags = null) {
             MainThread.Thread = Thread.CurrentThread;
+
+            Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
+
             // check build number, 3rd part is days since jan 1st, 2000
             ConsoleSystem.Initialize();
             Console.Title = windowName;
@@ -405,7 +408,7 @@ namespace Nucleus
                     Graphics2D.SetDrawColor(10, 15, 20);
                     Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
                     Graphics2D.SetDrawColor(240, 245, 255);
-                    Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", "Arial", 24, TextAlignment.Center, TextAlignment.Top);
+                    Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Top);
                 }
                 else {
                     LoadingScreen.Frame();
@@ -418,8 +421,8 @@ namespace Nucleus
                 Graphics2D.SetDrawColor(30, 5, 0);
                 Graphics2D.DrawRectangle(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
                 Graphics2D.SetDrawColor(240, 70, 60);
-                Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Arial", 24, TextAlignment.Center, TextAlignment.Bottom);
-                Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Arial", 18, TextAlignment.Center, TextAlignment.Top);
+                Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
+                Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
             }
             if (!EngineCore.Running) {
                 Raylib.CloseWindow();
