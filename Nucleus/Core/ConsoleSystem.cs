@@ -46,7 +46,9 @@ namespace Nucleus
             int i = 0;
             ScreenMessages.RemoveAll(x => x.Age > MaxMessageTime);
 
-            foreach(ConsoleMessage message in ScreenMessages) {
+            while(i < ScreenMessages.Count){
+                ConsoleMessage message = ScreenMessages[i];
+                
                 float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime*DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 
                 var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
