@@ -35,11 +35,11 @@ namespace Nucleus.CrossPlatform
 
 #if COMPILED_LINUX
         // equivalent of LoadLibrary
-        [DllImport("dl")]
+        [DllImport("libc")]
         private static extern IntPtr dlopen(string filename, int flags);
 
         // equivalent of GetProcAddress
-        [DllImport("dl")]
+        [DllImport("libc")]
         private static extern IntPtr dlsym(IntPtr handle, string symbol);
 
         public static IntPtr GetProc(string funcName)
@@ -57,7 +57,7 @@ namespace Nucleus.CrossPlatform
             }
 
             if (ret == IntPtr.Zero)
-                throw new Exception($"Failed to retrieve function address for {funcName}");
+                Logs.Debug($"Failed to retrieve function address for {funcName}. While the engine will continue to boot, calls to this method will crash the engine.");
 
             return ret;
         }
