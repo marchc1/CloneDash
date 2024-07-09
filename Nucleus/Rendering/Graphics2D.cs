@@ -81,7 +81,6 @@ namespace Nucleus.Core
         private static int offsetX(float input) => (int)(input + __offset.X);
         private static int offsetY(float input) => (int)(input + __offset.Y);
 
-
         public static void ResetDrawingOffset() => __offset = new Vector2F(0, 0);
         public static void OffsetDrawing(Vector2F by) => __offset = __offset + by;
         public static void SetOffset(Vector2F offset) => __offset = offset;
