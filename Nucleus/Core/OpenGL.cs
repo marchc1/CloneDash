@@ -3,6 +3,8 @@
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Reflection;
+using System.Linq.Expressions;
 
 namespace Nucleus
 {
@@ -2433,14 +2435,6 @@ namespace Nucleus
         /// <param name="index">Specify the index of the binding point within the array specified by target.</param>
         /// <param name="buffer">The name of a buffer object to bind to the specified binding point.</param>
         public static void BindBufferBase(int target, uint index, uint buffer) => _glBindBufferBase(target, index, buffer);
-
-        /// <summary>
-        ///     Record the GL time into a query object after all previous commands have reached the GL server but have not yet
-        ///     necessarily executed.
-        /// </summary>
-        /// <param name="id">Specify the name of a query object into which to record the GL time.</param>
-        /// <param name="target">Specify the counter to query. must be TIMESTAMP.</param>
-        public static void QueryCounter(uint id, int target) => _glQueryCounter(id, target);
 
         /// <summary>
         ///     Set the value of a sub-word of the sample mask.
@@ -8705,9 +8699,6 @@ namespace Nucleus
         private delegate void PFNGLGETSAMPLERPARAMETERIUIVPROC(uint sampler, int pname, uint* args);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate void PFNGLQUERYCOUNTERPROC(uint id, int target);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void PFNGLGETQUERYOBJECTI64VPROC(uint id, int pname, long* args);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -9163,7 +9154,6 @@ namespace Nucleus
         private static PFNGLGETSAMPLERPARAMETERIIVPROC _glGetSamplerParameterIiv;
         private static PFNGLGETSAMPLERPARAMETERFVPROC _glGetSamplerParameterfv;
         private static PFNGLGETSAMPLERPARAMETERIUIVPROC _glGetSamplerParameterIuiv;
-        private static PFNGLQUERYCOUNTERPROC _glQueryCounter;
         private static PFNGLGETQUERYOBJECTI64VPROC _glGetQueryObjecti64v;
         private static PFNGLGETQUERYOBJECTUI64VPROC _glGetQueryObjectui64v;
         private static PFNGLVERTEXATTRIBDIVISORPROC _glVertexAttribDivisor;
@@ -9206,12 +9196,10 @@ namespace Nucleus
         private static PFNGLSECONDARYCOLORP3UIPROC _glSecondaryColorP3ui;
         private static PFNGLSECONDARYCOLORP3UIVPROC _glSecondaryColorP3uiv;
 
-
         private static T GetDelegateForFunctionPointer<T>(IntPtr ptr) {
-            if (ptr == IntPtr.Zero)
-                throw new Exception("Wtf?");
-            //return default;
-
+            if(ptr == IntPtr.Zero){
+                return default;
+            }
             return Marshal.GetDelegateForFunctionPointer<T>(ptr);
         }
 
@@ -9556,7 +9544,6 @@ namespace Nucleus
             _glGetSamplerParameterIiv = GetDelegateForFunctionPointer<PFNGLGETSAMPLERPARAMETERIIVPROC>(loader.Invoke("glGetSamplerParameterIiv"));
             _glGetSamplerParameterfv = GetDelegateForFunctionPointer<PFNGLGETSAMPLERPARAMETERFVPROC>(loader.Invoke("glGetSamplerParameterfv"));
             _glGetSamplerParameterIuiv = GetDelegateForFunctionPointer<PFNGLGETSAMPLERPARAMETERIUIVPROC>(loader.Invoke("glGetSamplerParameterIuiv"));
-            _glQueryCounter = GetDelegateForFunctionPointer<PFNGLQUERYCOUNTERPROC>(loader.Invoke("glQueryCounter"));
             _glGetQueryObjecti64v = GetDelegateForFunctionPointer<PFNGLGETQUERYOBJECTI64VPROC>(loader.Invoke("glGetQueryObjecti64v"));
             _glGetQueryObjectui64v = GetDelegateForFunctionPointer<PFNGLGETQUERYOBJECTUI64VPROC>(loader.Invoke("glGetQueryObjectui64v"));
             _glVertexAttribDivisor = GetDelegateForFunctionPointer<PFNGLVERTEXATTRIBDIVISORPROC>(loader.Invoke("glVertexAttribDivisor"));
