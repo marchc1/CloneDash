@@ -575,10 +575,13 @@ namespace Nucleus.Engine
             UnlockEntityBuffer();
             var FPS = Raylib.GetFPS();
             List<DebugRecord> fields;
-            if (EngineCore.ShowDebuggingInfo)
+            if (EngineCore.ShowDebuggingInfo){
                 fields = [
                     $"Nucleus Level / {EngineCore.GameInfo} - Debugger",
                     "",
+                    $"Engine",
+                    $"    Sound Memory: {Sounds.UsedBits / 8 / 1024}kb",
+                    $"    Texture Memory: {Textures.UsedBits / 8 / 1024}kb",
                     $"Window",
                     $"    Resolution        : {frameState.WindowWidth}x{frameState.WindowHeight}",
                     $"    FPS               : {FPS} ({Raylib.GetFrameTime() * 1000:0.##}ms render time)",
@@ -594,6 +597,7 @@ namespace Nucleus.Engine
                     $"    Mouse State       : {frameState.MouseState}",
                     $"    Keyboard State    : {frameState.KeyboardState}",
                 ];
+            }
             else
                 fields = [
                     //$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"

@@ -34,7 +34,7 @@ namespace Nucleus.ManagedMemory
         public ulong UsedBits =>
             // size * rate * channels = bits per second
             (ulong)((underlying.Stream.SampleSize * underlying.Stream.SampleRate * underlying.Stream.Channels)
-            / Raylib.GetMusicTimeLength(underlying));
+            * Raylib.GetMusicTimeLength(underlying));
 
         private unsafe byte* __isMemoryBound = null;
 
