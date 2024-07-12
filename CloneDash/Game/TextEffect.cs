@@ -38,9 +38,13 @@ namespace CloneDash.Game
 
             var pos0to1 = Ease.OutExpo(Raymath.Remap((float)lifetime, 0, ageToDie, 0, 1));
             var pos = pos0to1 * frameState.WindowHeight * 0.2f;
-
+            var size = 1f - (float)Ease.InExpo(Remap(lifetime, 0, ageToDie, 0, 1));
+            Rlgl.PushMatrix();
+            Rlgl.Translatef(Position.X, Position.Y - pos, 0);
+            Rlgl.Scalef(size, size, size);
             Graphics2D.SetDrawColor(Color, (int)(Color.A * Raymath.Remap((float)lifetime, 0, ageToDie, 1, 0)));
-            Graphics2D.DrawText(Position - new Vector2F(0, pos), Text, "Noto Sans", (int)NMath.Remap(NMath.Ease.InExpo(NMath.Remap(lifetime, 0, ageToDie, 0, 1)), 0, 1, 34, 6), TextAlignment.Center, TextAlignment.Center);
+            Graphics2D.DrawText(new(0), Text, "Noto Sans", 42, TextAlignment.Center, TextAlignment.Center);
+            Rlgl.PopMatrix();
         }
     }
 }
