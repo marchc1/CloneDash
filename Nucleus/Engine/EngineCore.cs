@@ -176,9 +176,10 @@ namespace Nucleus
             MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
             MouseCursor_Persist = null;
         }
-
-        public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string? icon = null, ConfigFlags[]? flags = null) {
+        public static CommandLineArguments CommandLineArguments { get; private set; } 
+        public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
             MainThread.Thread = Thread.CurrentThread;
+            CommandLineArguments = CommandLineArguments.FromArgs(args ?? []);
 
             Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
 

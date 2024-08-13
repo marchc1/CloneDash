@@ -10,7 +10,6 @@ using Raylib_cs;
 
 namespace CloneDash
 {
-
     // I've been testing with these levels:
     /*
         8bit_adventurer_map3
@@ -30,7 +29,7 @@ namespace CloneDash
         static void Main(string[] args) {
             MuseDashCompatibility.InitializeCompatibilityLayer();
 
-            EngineCore.Initialize(1600, 900, "Clone Dash");
+            EngineCore.Initialize(1600, 900, "Clone Dash", args);
             EngineCore.GameInfo = new() {
                 GameName = "Clone Dash"
             };
