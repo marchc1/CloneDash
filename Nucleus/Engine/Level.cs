@@ -370,7 +370,7 @@ namespace Nucleus.Engine
             frameState.WindowWidth = width;
             frameState.WindowHeight = height;
 
-            if(!Paused) RunEventPreThink(ref frameState);
+            if (!Paused) RunEventPreThink(ref frameState);
 
             if (frameState.WindowWidth != LastFrameState.WindowWidth || frameState.WindowHeight != LastFrameState.WindowHeight) {
                 __viewDirty = true;
@@ -575,7 +575,7 @@ namespace Nucleus.Engine
             UnlockEntityBuffer();
             var FPS = Raylib.GetFPS();
             List<DebugRecord> fields;
-            if (EngineCore.ShowDebuggingInfo){
+            if (EngineCore.ShowDebuggingInfo) {
                 fields = [
                     $"Nucleus Level / {EngineCore.GameInfo} - Debugger",
                     "",
@@ -622,7 +622,8 @@ namespace Nucleus.Engine
                 Graphics2D.DrawText(tx, ty, t, "Consolas", 16, Anchor.TopLeft);
             }
 
-            ConsoleSystem.Draw();
+            if (EngineCore.ShowDebuggingInfo)
+                ConsoleSystem.Draw();
 
             RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrame);
             profiler.Stop();

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CloneDash": {
+      "commandName": "Project",
+      "commandLineArgs": "-debug"
+    }
+  }
+}

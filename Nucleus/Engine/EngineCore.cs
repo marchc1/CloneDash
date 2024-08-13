@@ -179,7 +179,9 @@ namespace Nucleus
         public static CommandLineArguments CommandLineArguments { get; private set; } 
         public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
             MainThread.Thread = Thread.CurrentThread;
+
             CommandLineArguments = CommandLineArguments.FromArgs(args ?? []);
+            ShowDebuggingInfo = CommandLineArguments.IsFlagSet("debug");
 
             Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
 
@@ -390,7 +392,7 @@ namespace Nucleus
         public static float FrameTime => Raylib.GetFrameTime();
 
         public static bool ShowConsoleLogsInCorner { get; set; } = true;
-        public static bool ShowDebuggingInfo { get; set; } = true;
+        public static bool ShowDebuggingInfo { get; set; } = false;
         public static string FrameCost { get; set; }
         public static float FrameCostMS { get; set; }
         public static float FPS => Raylib.GetFPS();
