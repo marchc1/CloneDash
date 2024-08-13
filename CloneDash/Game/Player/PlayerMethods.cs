@@ -288,8 +288,8 @@ namespace CloneDash.Game
             }
             public override void Paint(float width, float height) {
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
-                if (Level.AutoPlayer.Enabled)
-                    Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
+                //if (Level.AutoPlayer.Enabled)
+                    //Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
                 
                 Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{Level.Combo}", "Noto Sans", (int)NMath.Remap(Level.Conductor.Time - Level.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
                 Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Noto Sans", 24, Anchor.Center);

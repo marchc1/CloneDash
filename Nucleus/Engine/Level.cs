@@ -603,7 +603,7 @@ namespace Nucleus.Engine
                     //$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"
                 ];
 
-            if (FrameDebuggingStrings.Count > 0) {
+            if (EngineCore.ShowDebuggingInfo && FrameDebuggingStrings.Count > 0) {
                 fields.Add("");
                 fields.Add("Game-specific Debug Fields:");
                 foreach (string s in FrameDebuggingStrings)
