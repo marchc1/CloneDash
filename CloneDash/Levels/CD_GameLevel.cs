@@ -534,8 +534,8 @@ namespace CloneDash.Game
         public override void Render(FrameState frameState) {
             Rlgl.DrawRenderBatchActive();
             Rlgl.SetLineWidth(5);
-            Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
-            Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
+            //Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
+            //Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
             Rlgl.DrawRenderBatchActive();
             Rlgl.SetLineWidth(1);
             foreach (Entity ent in VisibleEntities) {
