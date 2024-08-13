@@ -1,5 +1,9 @@
 # Clone Dash
- 
+
+## Notes about "Engine Restructure"
+The core of the game was redone from the ground up. Now uses a lot more of a coherent system. There's still work to do, but this will be merged into main soon.
+If you're looking to contribute, please contribute to this branch,
+
 This is a WIP open-source clone of 'Muse Dash', a parkour-rhythm game combination. It can currently load the base game levels and provides the core gameplay functionality.
 
 It currently implements:
