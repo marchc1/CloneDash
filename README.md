@@ -1,4 +1,6 @@
 # Clone Dash
+
+## NOTE: Please look at the 'engine-restructuree' branch!
  
 This is a WIP open-source clone of 'Muse Dash', a parkour-rhythm game combination. It can currently load the base game levels and provides the core gameplay functionality.
 
