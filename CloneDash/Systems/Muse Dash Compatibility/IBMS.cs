@@ -643,7 +643,10 @@ namespace CloneDash
             public AssetsManager AssetsFile { get; private set; } = null;
             public AssetsManager DemoFile { get; private set; } = null;
 
+            public bool Unmanaged { get; set; } = false;
+
             private void LoadAssetFile() {
+                if (Unmanaged) return;
                 if (AssetsFile == null) {
                     AssetsFile = new();
                     string filepath = GetAssetsFilepath();
@@ -660,6 +663,14 @@ namespace CloneDash
 
             private Raylib_cs.Texture2D? __cover;
             private MusicTrack? __demotrack;
+
+            public Raylib_cs.Texture2D CoverTextureOverride {
+                set => __cover = value;
+            }
+            public MusicTrack DemoTrackOverride {
+                set => __demotrack = value;
+            }
+            public MusicTrack? MusicTrackOverride { get; set; }
 
             public Raylib_cs.Texture2D? GetCover() {
                 if(OperatingSystem.IsLinux()) return null;
@@ -699,7 +710,12 @@ namespace CloneDash
                 throw new Exception("Something went wrong loading an AudioClip");
             }
 
+            public Dictionary<int, DashSheet> DashSheetOverrides { get; set; } = [];
+
             public DashSheet GetDashSheet(int mapID) {
+                if (DashSheetOverrides.TryGetValue(mapID, out DashSheet? sheet))
+                    return sheet;
+
                 MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
                 var obj = map.ToType();
                 var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented);

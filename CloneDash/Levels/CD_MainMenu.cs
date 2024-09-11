@@ -17,6 +17,8 @@ using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Sheets;
 using CloneDash.Levels;
 using Nucleus.ManagedMemory;
+using Nucleus.CrossPlatform;
+using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash.Game
 {
@@ -54,6 +56,19 @@ namespace CloneDash.Game
             loadModdingTools.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
             loadModdingTools.TooltipText = "Modding Tools";
 
+            var loadMDCC = header.Add<Button>();
+            loadMDCC.AutoSize = false;
+            loadMDCC.Size = new Vector2F(64);
+            loadMDCC.Text = "";
+            loadMDCC.ImageOrientation = ImageOrientation.Zoom;
+            loadMDCC.Dock = Dock.Right;
+            loadMDCC.Image = Textures.LoadTextureFromFile("ui\\mainmenu_play.png");
+            loadMDCC.TextSize = 21;
+            loadMDCC.DockMargin = RectangleF.TLRB(0);
+            loadMDCC.BorderSize = 0;
+            loadMDCC.MouseReleaseEvent += LoadMDCC_MouseReleaseEvent;
+            loadMDCC.TooltipText = "Load CustomAlbums .mdm File";
+
             var test2 = header.Add<Label>();
             test2.Size = new Vector2F(158, 32);
             test2.Dock = Dock.Left;
@@ -61,6 +76,13 @@ namespace CloneDash.Game
             test2.TextSize = 30;
             test2.AutoSize = true;
             test2.DockMargin = RectangleF.TLRB(4);
+        }
+
+        private void LoadMDCC_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+            var result = TinyFileDialogs.OpenFileDialog(".mdm file", "", ["*.mdm"], "Muse Dash Custom Album Chart", false);
+            if (!result.Cancelled) {
+                LoadSongSelector(GetCustomAlbumsSong(result.Result));
+            }
         }
 
         private void LoadModelViewer_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
@@ -131,9 +153,7 @@ namespace CloneDash.Game
             }
         }
 
-        private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-            var song = self.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
-
+        private void LoadSongSelector(MuseDashSong song) {
             // Load all slow-to-get info now before the Window loads
             MusicTrack? track = song.GetDemoMusic();
             song.GetCover();
@@ -165,7 +185,7 @@ namespace CloneDash.Game
             imageCanvas.Size = new Vector2F(320 - 36);
             imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
                 var c = song.GetCover();
-                if(c == null) return;
+                if (c == null) return;
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
                 Graphics2D.SetTexture(c.Value);
                 var distance = 16;
@@ -191,7 +211,12 @@ namespace CloneDash.Game
             CreateDifficulty(levelSelector, song, 2, song.Difficulty2);
             CreateDifficulty(levelSelector, song, 1, song.Difficulty1);
 
-            MDLevelWindow.AttachWindowAndLockInput(levelSelector);
+            MDLevelWindow?.AttachWindowAndLockInput(levelSelector);
+        }
+        private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+            var song = self.GetTag<MuseDashSong>("musedash_song");
+
+            LoadSongSelector(song);
         }
 
         private static void CreateDifficulty(Window levelSelector, MuseDashCompatibility.MuseDashSong song, int difficulty, string difficultyLevel) {
