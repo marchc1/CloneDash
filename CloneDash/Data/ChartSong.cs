@@ -1,5 +1,7 @@
-﻿using Nucleus.Engine;
+﻿using Nucleus;
+using Nucleus.Engine;
 using Nucleus.ManagedMemory;
+using Raylib_cs;
 
 namespace CloneDash.Data
 {
@@ -73,6 +75,17 @@ namespace CloneDash.Data
 
             Sheets[difficulty] = ProduceSheet(difficulty);
             return Sheets[difficulty];
+        }
+
+        ~ChartSong() {
+            MainThread.RunASAP(() => {
+                if (__gotCover && CoverTexture != null) 
+                    Raylib.UnloadTexture(CoverTexture.Texture);
+                
+                if(AudioTrack != null) AudioTrack.Dispose();
+                if(DemoTrack != null) DemoTrack.Dispose();
+                
+            });
         }
     }
 }

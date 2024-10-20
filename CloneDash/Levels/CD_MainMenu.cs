@@ -157,6 +157,7 @@ namespace CloneDash.Game
         private void LoadSongSelector(ChartSong song) {
             // Load all slow-to-get info now before the Window loads
             MusicTrack? track = song.GetDemoTrack();
+            song.GetInfo();
             song.GetCover();
 
             Window levelSelector = UI.Add<Window>();
