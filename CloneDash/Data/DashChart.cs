@@ -1,5 +1,6 @@
 ﻿using Nucleus.Engine;
 using Nucleus.ManagedMemory;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,18 +29,19 @@ namespace CloneDash.Data
     public abstract class ChartSong
     {
         public MusicTrack? Track;
-        protected abstract MusicTrack ProduceTrack();
-        public MusicTrack GetTrack() {
+
+        protected abstract MusicTrack ProduceAudioTrack();
+        protected abstract MusicTrack? ProduceDemoTrack();
+        protected abstract Texture2D? ProduceCover();
+        protected abstract ChartSheet ProduceSheet(int difficulty);
+
+        public MusicTrack GetAudioTrack() {
             if (Track != null && IValidatable.IsValid(Track))
                 return Track;
 
-            Track = ProduceTrack();
+            Track = ProduceAudioTrack();
             return Track;
         }
-    }
-    public class MuseDashSong : ChartSong
-    {
-
     }
 
     public class ChartCover;
