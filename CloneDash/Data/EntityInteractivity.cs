@@ -1,4 +1,4 @@
-﻿namespace CloneDash.Game.Entities
+﻿namespace CloneDash
 {
     /// <summary>
     /// Defines how the player and an entity will interact with each other

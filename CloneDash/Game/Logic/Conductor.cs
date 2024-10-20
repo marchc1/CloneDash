@@ -15,7 +15,7 @@ namespace CloneDash.Game
         public double Time;
         public double BPM;
 
-        public TempoChange(double time, float bpm) {
+        public TempoChange(double time, double bpm) {
             this.Time = time;
             this.BPM = bpm;
         }

@@ -1,4 +1,4 @@
-﻿namespace CloneDash.Game.Entities
+﻿namespace CloneDash
 {
     /// <summary>
     /// The default entity types.<br></br>

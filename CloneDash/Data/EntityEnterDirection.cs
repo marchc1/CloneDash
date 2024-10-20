@@ -1,4 +1,4 @@
-﻿namespace CloneDash.Game.Entities
+﻿namespace CloneDash
 {
     /// <summary>
     /// Defines which direction the entity comes in from.<br></br>

@@ -1,22 +1,19 @@
 ﻿using AssetStudio;
+using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Game.Entities;
-using CloneDash.Game.Enumerations;
-using CloneDash.Game.Sheets;
+
+
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Nucleus;
-using Nucleus.Engine;
 using Nucleus.ManagedMemory;
-using OdinSerializer;
 using Raylib_cs;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash
@@ -134,33 +131,6 @@ namespace CloneDash
             public Raylib_cs.Texture2D? Cover { get; set; }
         }
 
-        public static StageDemo GetStageDemo(MuseDashSong song) {
-            if (song.DemoObject != null)
-                return song.DemoObject;
-
-            StageDemo demo = new StageDemo();
-            //demo.Track = LoadAssetEasyC<AudioClip, MusicTrack>(song.Demo.Replace("_demo", "") + "_assets_all");
-            var c = song.GetCover();
-            demo.Cover = c;
-            song.DemoObject = demo;
-
-            return demo;
-        }
-
-
-        private static void FillInTheBlankAudio(MuseDashSong song, StageInfo stage) {
-            Stopwatch measureFunctionTime = Stopwatch.StartNew();
-
-            var audioclip = song.AssetsFile.assetsFileList[0].Objects.First(x => x.type == ClassIDType.AudioClip) as AudioClip;
-            var audiodata = audioclip.m_AudioData.GetData();
-
-            if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
-                FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-                bank.Samples[0].RebuildAsStandardFileFormat(out stage.MusicStream, out var fileExtension);
-            }
-
-            Logs.Info($"STOPWATCH: FillInTheBlankAudio: {measureFunctionTime.Elapsed.TotalSeconds} seconds");
-        }
         private static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
             foreach (var md in stage.musicDatas) {
                 if (md.noteData == null && md.configData.note_uid != null) {
@@ -356,26 +326,22 @@ namespace CloneDash
         /// </summary>
         /// <param name="bundlename"></param>
         /// <returns></returns>
-        public static DashSheet ConvertStageInfoToDashSheet(StageInfo MDinfo) {
+        public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo) {
             Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
-            DashSheet sheet = new();
-
-            sheet.Header.TempoChanges.Add(new(0, MDinfo.bpm));
-            sheet.Music = SheetMusic.FromMemory(MDinfo.MusicStream);
-            var sheetHeader = sheet.Header;
+            ChartSheet sheet = new(song);
 
             bool first = true;
             Dictionary<int, List<MusicData>> LongPresses = new();
             foreach (var s in MDinfo.musicDatas) {
                 if (s.noteData == null && first) {
-                    sheetHeader.StartOffset = (float)s.tick;
+                    sheet.StartOffset = (float)s.tick;
                 }
 
                 if (s.noteData != null) {
                     var ib = MuseDashCompatibility.ConvertIBMSCode(s.noteData.ibms_id);
                     var tick_hit = (float)s.configData.time;
-                    var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - sheetHeader.StartOffset)) / (double)s.dt);
+                    var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - sheet.StartOffset)) / (double)s.dt);
 
                     PathwaySide pathwayType = PathwaySide.Both;
 
@@ -487,19 +453,19 @@ namespace CloneDash
 
 
                     if (Event != null) {
-                        SheetEvent sheetEvent = new();
-                        sheetEvent.Type = Event.Value;
-                        sheetEvent.Time = tick_hit;
-                        sheetEvent.Length = (double)s.configData.length;
+                        ChartEvent ChartEvent = new();
+                        ChartEvent.Type = Event.Value;
+                        ChartEvent.Time = tick_hit;
+                        ChartEvent.Length = (double)s.configData.length;
 
                         if (s.noteData.damage > 0)
-                            sheetEvent.Damage = s.noteData.damage;
+                            ChartEvent.Damage = s.noteData.damage;
                         if (s.noteData.fever > 0)
-                            sheetEvent.Fever = s.noteData.fever;
+                            ChartEvent.Fever = s.noteData.fever;
                         if (s.noteData.score > 0)
-                            sheetEvent.Score = s.noteData.score;
+                            ChartEvent.Score = s.noteData.score;
 
-                        sheet.Events.Add(sheetEvent);
+                        sheet.Events.Add(ChartEvent);
                     }
                     else {
                         //Switch case for direction type
@@ -521,7 +487,7 @@ namespace CloneDash
                         }
 
                         if (type != EntityType.Unknown) {
-                            SheetEntity ent = new SheetEntity();
+                            ChartEntity ent = new ChartEntity();
                             ent.Type = type;
                             ent.Pathway = pathwayType;
                             ent.EnterDirection = dir;
@@ -555,14 +521,14 @@ namespace CloneDash
 
                 double length = 0;
                 if (firstItem != lastItem)
-                    length = ((double)lastItem.tick + sheetHeader.StartOffset) - ((double)firstItem.tick + sheetHeader.StartOffset);
+                    length = ((double)lastItem.tick + sheet.StartOffset) - ((double)firstItem.tick + sheet.StartOffset);
 
                 var HitTime = (double)firstItem.configData.time;
-                var ShowTime = (float)firstItem.showTick - sheetHeader.StartOffset;
+                var ShowTime = (float)firstItem.showTick - sheet.StartOffset;
                 var transform1 = (HitTime - ShowTime) / (double)firstItem.dt;
                 ShowTime = HitTime - transform1;
 
-                sheet.Entities.Add(new SheetEntity() {
+                sheet.Entities.Add(new ChartEntity() {
                     Type = EntityType.SustainBeam,
                     Pathway = firstItem.noteData.pathway == 0 ? PathwaySide.Bottom : PathwaySide.Top,
                     EnterDirection = EntityEnterDirection.RightSide,
@@ -575,7 +541,6 @@ namespace CloneDash
                 });
             }
 
-            sheet.Header = sheetHeader;
             sheet.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
 
             Console.WriteLine($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
@@ -602,136 +567,6 @@ namespace CloneDash
             public List<MuseDashSong> Songs { get; set; } = [];
 
             public override string ToString() => $"{Title} [{Songs.Count} songs]";
-        }
-
-        public class MuseDashSong
-        {
-
-            public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
-                return
-                    StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
-                    ?? StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase.Replace("_music", ""))))
-                    ?? (throwExp ? throw new Exception($"Tried to find {givenBase}, could not find a match even with fixes applied") : null);
-            }
-            public string GetAssetsFilepath() => GetFixedFilename(BaseName, "music_{name}_assets_all.bundle", true) ?? throw new Exception();
-            public string? GetDemoFilepath() => GetFixedFilename(BaseName, "song_{name}_assets_all", false);
-
-            public MuseDashAlbum Album { get; set; }
-
-            [JsonPropertyName("uid")] public string UID { get; set; } = "";
-            [JsonPropertyName("name")] public string Name { get; set; } = "";
-            [JsonPropertyName("author")] public string Author { get; set; } = "";
-            [JsonPropertyName("bpm")] public string BPM { get; set; } = "";
-            [JsonPropertyName("music")] public string Music { get; set; } = "";
-            [JsonPropertyName("demo")] public string Demo { get; set; } = "";
-            [JsonPropertyName("cover")] public string Cover { get; set; } = "";
-            [JsonPropertyName("noteJson")] public string NoteJSON { get; set; } = "";
-            [JsonPropertyName("scene")] public string Scene { get; set; } = "";
-            [JsonPropertyName("levelDesigner")] public string LevelDesigner { get; set; } = "";
-
-            [JsonPropertyName("difficulty1")] public string Difficulty1 { get; set; } = "";
-            [JsonPropertyName("difficulty2")] public string Difficulty2 { get; set; } = "";
-            [JsonPropertyName("difficulty3")] public string Difficulty3 { get; set; } = "";
-            [JsonPropertyName("difficulty4")] public string Difficulty4 { get; set; } = "";
-            public StageDemo? DemoObject { get; internal set; }
-
-            [JsonIgnore]
-            public string BaseName => Music.Substring(0, Music.Length - 6);
-            public override string ToString() => $"{Name} by {Author}";
-
-
-            public AssetsManager AssetsFile { get; private set; } = null;
-            public AssetsManager DemoFile { get; private set; } = null;
-
-            public bool Unmanaged { get; set; } = false;
-
-            private void LoadAssetFile() {
-                if (Unmanaged) return;
-                if (AssetsFile == null) {
-                    AssetsFile = new();
-                    string filepath = GetAssetsFilepath();
-                    AssetsFile.LoadFiles(filepath);
-                }
-                if (DemoFile == null) {
-                    string? filepath = GetDemoFilepath();
-                    if (filepath != null) {
-                        DemoFile = new();
-                        DemoFile.LoadFiles(filepath);
-                    }
-                }
-            }
-
-            private Raylib_cs.Texture2D? __cover;
-            private MusicTrack? __demotrack;
-
-            public Raylib_cs.Texture2D CoverTextureOverride {
-                set => __cover = value;
-            }
-            public MusicTrack DemoTrackOverride {
-                set => __demotrack = value;
-            }
-            public MusicTrack? MusicTrackOverride { get; set; }
-
-            public Raylib_cs.Texture2D? GetCover() {
-                if(OperatingSystem.IsLinux()) return null;
-
-                LoadAssetFile();
-                if (__cover.HasValue)
-                    return __cover.Value;
-
-                Texture2D tex2D = (Texture2D)DemoFile.assetsFileList[0].Objects.First(x => x is Texture2D tex2D && tex2D.m_Name.EndsWith("_cover"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-                var imgData = AssetStudio.Texture2DExtensions.ConvertToStream(tex2D, ImageFormat.Png, true).ToArray();
-                var img = Raylib.LoadImageFromMemory(".png", imgData);
-                var tex = Raylib.LoadTextureFromImage(img);
-                Raylib.UnloadImage(img);
-                __cover = tex;
-                return tex;
-            }
-
-            public MusicTrack? GetDemoMusic() {
-                LoadAssetFile();
-                if (IValidatable.IsValid(__demotrack))
-                    return __demotrack;
-                if (DemoFile == null)
-                    return null;
-
-                AudioClip audioClip = (AudioClip)DemoFile.assetsFileList[0].Objects.First(x => x is AudioClip audio && audio.m_Name.EndsWith("_demo"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-                byte[] musicStream;
-                var audiodata = audioClip.m_AudioData.GetData();
-
-                if (audioClip.m_Type == FMODSoundType.UNKNOWN) {
-                    FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-                    bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
-
-                    __demotrack = EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream);
-                    return __demotrack;
-                }
-
-                throw new Exception("Something went wrong loading an AudioClip");
-            }
-
-            public Dictionary<int, DashSheet> DashSheetOverrides { get; set; } = [];
-
-            public DashSheet GetDashSheet(int mapID) {
-                if (DashSheetOverrides.TryGetValue(mapID, out DashSheet? sheet))
-                    return sheet;
-
-                MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
-                var obj = map.ToType();
-                var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented);
-
-                var rr = InitializeCompatibilityLayer();
-                if (rr != MDCompatLayerInitResult.OK)
-                    throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
-
-                StageInfo stage = JsonConvert.DeserializeObject<StageInfo>(rawData);
-                stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary);
-
-                FillInTheBlankAudio(this, stage);
-                FillInTheBlankNotes(this, stage);
-
-                return ConvertStageInfoToDashSheet(stage);
-            }
         }
 
         public static List<MuseDashAlbum> Albums { get; private set; } = [];
@@ -813,16 +648,19 @@ namespace CloneDash
             Albums.RemoveAll(x => x.JsonName == "");
 
             foreach (var album in Albums) {
-                var songs = LoadAssetEasyC<TextAsset, List<MuseDashSong>>($"config_others_assets_{album.JsonName.ToLower()}_");
+                var songs = LoadAssetEasyC<TextAsset, List<MuseDashSongInfoJSON>>($"config_others_assets_{album.JsonName.ToLower()}_");
                 var songsEN = LoadAssetEasyC<TextAsset, __musedashSong[]>($"config_others_assets_{album.JsonName.ToLower()}_");
 
+                var songsFinal = new MuseDashSong[songs.Count];
+
                 for (int i = 0; i < songs.Count; i++) {
-                    songs[i].Name = songsEN[i].name;
-                    songs[i].Author = songsEN[i].author;
-                    songs[i].Album = album;
+                    songsFinal[i] = new MuseDashSong(songs[i]);
+                    songsFinal[i].Name = songsEN[i].name;
+                    songsFinal[i].Author = songsEN[i].author;
+                    songsFinal[i].Album = album;
                 }
 
-                Songs.AddRange(songs);
+                Songs.AddRange(songsFinal);
             }
 
             Songs.Sort((x, y) => x.Name.CompareTo(y.Name));

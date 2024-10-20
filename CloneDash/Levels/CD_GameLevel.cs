@@ -1,11 +1,10 @@
 ﻿using Nucleus.Engine;
 using Nucleus.Core;
 using CloneDash.Game.Input;
-using CloneDash.Game.Sheets;
+
 using System.Numerics;
 using Nucleus.Types;
 using CloneDash.Game.Entities;
-using CloneDash.Game.Enumerations;
 using Nucleus;
 using Raylib_cs;
 using System.ComponentModel;
@@ -15,10 +14,11 @@ using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Logic;
 using CloneDash.Levels;
 using Nucleus.ManagedMemory;
+using CloneDash.Data;
 
 namespace CloneDash.Game
 {
-    public partial class CD_GameLevel(DashSheet Sheet) : Level
+    public partial class CD_GameLevel(ChartSheet Sheet) : Level
     {
         public const string STRING_HP = "HP: {0}";
         public const string STRING_FEVERY = "FEVER! {0}s";
@@ -142,25 +142,19 @@ namespace CloneDash.Game
             TopPathway = Add<Pathway>(PathwaySide.Top);
             BottomPathway = Add<Pathway>(PathwaySide.Bottom);
 
-            foreach (SheetEntity sheetEntity in Sheet.Entities)
-                LoadEntity(sheetEntity);
+            foreach (ChartEntity ChartEntity in Sheet.Entities)
+                LoadEntity(ChartEntity);
 
             Conductor = Add<Conductor>();
 
-            foreach (var tempoChange in Sheet.Header.TempoChanges)
-                Conductor.TempoChanges.Add(tempoChange);
+            //foreach (var tempoChange in Sheet)
+            Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
 
-            switch (Sheet.Music.StoredAs) {
-                case MusicType.FromByteArray:
-                    Music = Sounds.LoadMusicFromMemory(Sheet.Music.Data, true);
-                    break;
-                case MusicType.FromFile:
-                    Music = Sounds.LoadMusicFromFile(Sheet.Music.Filepath, true);
-                    break;
-            }
+            Music = Sheet.Song.GetAudioTrack();
             Music.Volume = 0.25f;
 
             Music.Loops = false;
+            Music.Playing = true;
 
             UIBar = this.UI.Add<CD_Player_UIBar>();
             UIBar.Level = this;
@@ -477,18 +471,18 @@ namespace CloneDash.Game
         }
 
         /// <summary>
-        /// Loads an event from a <see cref="SheetEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
+        /// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
         /// </summary>
-        /// <param name="sheetEvent"></param>
-        public void LoadEvent(SheetEvent sheetEvent) {
-            /*var ev = MapEvent.CreateFromType(this.Game, sheetEvent.Type);
+        /// <param name="ChartEvent"></param>
+        public void LoadEvent(ChartEvent ChartEvent) {
+            /*var ev = MapEvent.CreateFromType(this.Game, ChartEvent.Type);
 
-            ev.Time = sheetEvent.Time;
-            ev.Length = sheetEvent.Length;
+            ev.Time = ChartEvent.Time;
+            ev.Length = ChartEvent.Length;
 
-            ev.Score = sheetEvent.Score;
-            ev.Fever = sheetEvent.Fever;
-            ev.Damage = sheetEvent.Damage;
+            ev.Score = ChartEvent.Score;
+            ev.Fever = ChartEvent.Fever;
+            ev.Damage = ChartEvent.Damage;
 
             ev.Build();
 
@@ -496,31 +490,31 @@ namespace CloneDash.Game
         }
 
         /// <summary>
-        /// Loads an entity from a <see cref="SheetEntity"/> representation, builds a <see cref="MapEntity"/> out of it, and adds it to <see cref="GameplayManager.Entities"/>.
+        /// Loads an entity from a <see cref="ChartEntity"/> representation, builds a <see cref="MapEntity"/> out of it, and adds it to <see cref="GameplayManager.Entities"/>.
         /// </summary>
-        /// <param name="sheetEntity"></param>
-        public void LoadEntity(SheetEntity sheetEntity) {
-            if (!CD_BaseEnemy.TypeConvert.ContainsKey(sheetEntity.Type)) {
-                Console.WriteLine("No load entity handler for type " + sheetEntity.Type);
+        /// <param name="ChartEntity"></param>
+        public void LoadEntity(ChartEntity ChartEntity) {
+            if (!CD_BaseEnemy.TypeConvert.ContainsKey(ChartEntity.Type)) {
+                Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
                 return;
             }
-            var ent = CD_BaseEnemy.CreateFromType(this, sheetEntity.Type);
+            var ent = CD_BaseEnemy.CreateFromType(this, ChartEntity.Type);
 
-            ent.Pathway = sheetEntity.Pathway;
-            ent.EnterDirection = sheetEntity.EnterDirection;
+            ent.Pathway = ChartEntity.Pathway;
+            ent.EnterDirection = ChartEntity.EnterDirection;
 
-            ent.HitTime = sheetEntity.HitTime;
-            ent.ShowTime = sheetEntity.ShowTime;
-            ent.Length = sheetEntity.Length;
+            ent.HitTime = ChartEntity.HitTime;
+            ent.ShowTime = ChartEntity.ShowTime;
+            ent.Length = ChartEntity.Length;
 
-            ent.FeverGiven = sheetEntity.Fever;
-            ent.DamageTaken = sheetEntity.Damage;
-            ent.ScoreGiven = sheetEntity.Score;
+            ent.FeverGiven = ChartEntity.Fever;
+            ent.DamageTaken = ChartEntity.Damage;
+            ent.ScoreGiven = ChartEntity.Score;
 
-            ent.RelatedToBoss = sheetEntity.RelatedToBoss;
+            ent.RelatedToBoss = ChartEntity.RelatedToBoss;
 
             ent.RendersItself = false;
-            ent.DebuggingInfo = sheetEntity.DebuggingInfo;
+            ent.DebuggingInfo = ChartEntity.DebuggingInfo;
             ent.Build();
         }
 

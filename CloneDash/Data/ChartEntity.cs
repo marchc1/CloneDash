@@ -1,8 +1,6 @@
-﻿using CloneDash.Game.Entities;
-
-namespace CloneDash.Game.Sheets
+﻿namespace CloneDash.Data
 {
-    public struct SheetEntity
+    public struct ChartEntity
     {
         public EntityType Type;
         public PathwaySide Pathway;

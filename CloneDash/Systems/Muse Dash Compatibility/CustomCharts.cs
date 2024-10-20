@@ -1,4 +1,4 @@
-﻿using CloneDash.Game.Sheets;
+﻿
 using Fmod5Sharp.FmodTypes;
 using Fmod5Sharp;
 using Newtonsoft.Json;
@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
+using CloneDash.Data;
 namespace CloneDash
 {
     public static partial class MuseDashCompatibility
@@ -50,63 +51,60 @@ namespace CloneDash
                 return mem.ToArray();
             }
         }
-        private static void BuildMap(MuseDashSong song, ZipArchiveEntry? entry, int lvl) {
-            if (entry == null) return;
 
-            DashSheet sheet = new DashSheet();
-        }
-        public static MuseDashSong GetCustomAlbumsSong(string filepath) {
-            var archive = ZipFile.Open(filepath, ZipArchiveMode.Read);
-            var info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(archive, "info.json")) ?? throw new Exception("Bad info.json!");
+        public class CustomChartsSong : ChartSong
+        {
+            public string Filepath { get; private set; }
+            public ZipArchive Archive { get; private set; }
+            public CustomChartsSong(string filepath) {
+                Filepath = filepath;
+                Archive = ZipFile.Open(filepath, ZipArchiveMode.Read);
+                
+            }
+            protected override MusicTrack ProduceAudioTrack() {
+                var demoBytes = GetByteArray(Archive, "music.ogg");
+                return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
+            }
 
-            var song = new MuseDashSong();
-            song.Unmanaged = true;
-            song.Author = info.author;
-            song.Name = info.name;
-            song.Music = "music.ogg";
+            protected override ChartCover? ProduceCover() {
+                var coverBytes = GetByteArray(Archive, "cover.png");
+                var img = Raylib.LoadImageFromMemory(".png", coverBytes);
+                var tex = Raylib.LoadTextureFromImage(img);
+                Raylib.UnloadImage(img);
 
-            List<string> parts = [];
-            if (info.levelDesigner != "?") parts.Add(info.levelDesigner);
-            if (info.levelDesigner1 != "?") parts.Add(info.levelDesigner1);
-            if (info.levelDesigner2 != "?") parts.Add(info.levelDesigner2);
-            if (info.levelDesigner3 != "?") parts.Add(info.levelDesigner3);
-            if (info.levelDesigner4 != "?") parts.Add(info.levelDesigner4);
-            song.LevelDesigner = string.Join(", ", parts);
+                return new() {
+                    Texture = tex
+                };
+            }
 
-            song.Difficulty1 = info.difficulty1;
-            song.Difficulty2 = info.difficulty2;
-            song.Difficulty3 = info.difficulty3;
-            song.Difficulty4 = info.difficulty4;
+            protected override MusicTrack? ProduceDemoTrack() {
+                var demoBytes = GetByteArray(Archive, "demo.ogg");
+                return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
+            }
 
-            song.Scene = info.scene;
-            song.BPM = info.bpm;
+            protected override ChartInfo? ProduceInfo() {
+                var info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(Archive, "info.json")) ?? throw new Exception("Bad info.json!");
+                Name = info.name;
+                Author = info.author;
+                ChartInfo ret = new() {
+                    BPM = decimal.Parse(info.bpm),
+                    LevelDesigners = [info.levelDesigner1, info.levelDesigner2, info.levelDesigner3, info.levelDesigner4],
+                    Scene = info.scene,
+                    SearchTags = info.searchTags.ToArray(),
+                    Difficulty1 = info.difficulty1,
+                    Difficulty2 = info.difficulty2,
+                    Difficulty3 = info.difficulty3,
+                    Difficulty4 = info.difficulty4,
+                };
 
-            // Read and load demo audio
-            var demoBytes = GetByteArray(archive, "demo.ogg");
-            song.DemoTrackOverride = EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
+                return ret;
+            }
 
-            // Read and load demo cover
-            var coverBytes = GetByteArray(archive, "cover.png");
-            var img = Raylib.LoadImageFromMemory(".png", coverBytes);
-            var tex = Raylib.LoadTextureFromImage(img);
-            Raylib.UnloadImage(img);
-            song.CoverTextureOverride = tex;
+            protected override ChartSheet ProduceSheet(int id) {
+                var map = Archive.Entries.FirstOrDefault(x => x.Name == $"map{id}.bms");
 
-            // Read and load main audio
-            var musicBytes = GetByteArray(archive, "demo.ogg");
-            song.MusicTrackOverride = EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
-
-            var map1 = archive.Entries.FirstOrDefault(x => x.Name == "map1.bms");
-            var map2 = archive.Entries.FirstOrDefault(x => x.Name == "map1.bms");
-            var map3 = archive.Entries.FirstOrDefault(x => x.Name == "map1.bms");
-            var map4 = archive.Entries.FirstOrDefault(x => x.Name == "map1.bms");
-
-            BuildMap(song, map1, 1);
-            BuildMap(song, map2, 2);
-            BuildMap(song, map3, 3);
-            BuildMap(song, map4, 4);
-
-            return song;
+                throw new Exception("BMS parsing is not yet implemented");
+            }
         }
     }
 }

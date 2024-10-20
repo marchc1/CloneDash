@@ -1,8 +1,6 @@
-﻿using CloneDash.Game.Enumerations;
-
-namespace CloneDash.Game
+﻿namespace CloneDash.Data
 {
-    public struct SheetEvent
+    public struct ChartEvent
     {
         public float Time;
         public double Length;

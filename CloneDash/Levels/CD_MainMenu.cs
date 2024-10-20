@@ -14,11 +14,12 @@ using Raylib_cs;
 using static AssetStudio.BundleFile;
 using static System.Net.Mime.MediaTypeNames;
 using MouseButton = Nucleus.Types.MouseButton;
-using CloneDash.Game.Sheets;
+
 using CloneDash.Levels;
 using Nucleus.ManagedMemory;
 using Nucleus.CrossPlatform;
 using static CloneDash.MuseDashCompatibility;
+using CloneDash.Data;
 
 namespace CloneDash.Game
 {
@@ -81,7 +82,7 @@ namespace CloneDash.Game
         private void LoadMDCC_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
             var result = TinyFileDialogs.OpenFileDialog(".mdm file", "", ["*.mdm"], "Muse Dash Custom Album Chart", false);
             if (!result.Cancelled) {
-                LoadSongSelector(GetCustomAlbumsSong(result.Result));
+                LoadSongSelector(new CustomChartsSong(result.Result));
             }
         }
 
@@ -153,9 +154,9 @@ namespace CloneDash.Game
             }
         }
 
-        private void LoadSongSelector(MuseDashSong song) {
+        private void LoadSongSelector(ChartSong song) {
             // Load all slow-to-get info now before the Window loads
-            MusicTrack? track = song.GetDemoMusic();
+            MusicTrack? track = song.GetDemoTrack();
             song.GetCover();
 
             Window levelSelector = UI.Add<Window>();
@@ -187,7 +188,7 @@ namespace CloneDash.Game
                 var c = song.GetCover();
                 if (c == null) return;
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
-                Graphics2D.SetTexture(c.Value);
+                Graphics2D.SetTexture(c.Texture);
                 var distance = 16;
                 Graphics2D.DrawImage(new(distance, distance), new(width - (distance * 2), height - (distance * 2)));
             };
@@ -219,7 +220,7 @@ namespace CloneDash.Game
             LoadSongSelector(song);
         }
 
-        private static void CreateDifficulty(Window levelSelector, MuseDashCompatibility.MuseDashSong song, int difficulty, string difficultyLevel) {
+        private static void CreateDifficulty(Window levelSelector, ChartSong song, int difficulty, string difficultyLevel) {
             if (difficultyLevel == "") return;
             if (difficultyLevel == "0") return;
 
@@ -276,7 +277,7 @@ namespace CloneDash.Game
             };
 
             play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
-                var sheet = song.GetDashSheet(difficulty);
+                var sheet = song.GetSheet(difficulty);
                 var lvl = new CD_GameLevel(sheet);
                 EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
             };
