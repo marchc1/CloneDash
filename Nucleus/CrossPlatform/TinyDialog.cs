@@ -13,6 +13,9 @@ namespace Nucleus.CrossPlatform
 #if COMPILED_WINDOWS
         public const string mDllLocation = "tinyfiledialogs64.dll";
 #endif
+#if COMPILED_OSX
+        public const string mDllLocation = "tinyfiledialogs64.dll";
+#endif
         [DllImport(mDllLocation, EntryPoint = "tinyfd_beep", CallingConvention = CallingConvention.Cdecl)]
         public static extern void Beep();
 

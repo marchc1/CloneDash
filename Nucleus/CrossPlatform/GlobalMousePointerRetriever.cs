@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Raylib_cs;
 
 namespace Nucleus.CrossPlatform
 {
@@ -26,8 +25,13 @@ namespace Nucleus.CrossPlatform
 #if COMPILED_WINDOWS
         [DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
         [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
-#endif
-#if COMPILED_LINUX
+#elif COMPILED_OSX
+        private static POINT GetCursorPos()
+        {
+            var t = Raylib.GetMousePosition();
+            return new((int)t.X, (int)t.Y);
+        }
+#elif COMPILED_LINUX
         [DllImport("libX11.so")] private static extern IntPtr XOpenDisplay(IntPtr display);
         [DllImport("libX11.so")] private static extern int XQueryPointer(
             IntPtr display, IntPtr w, out IntPtr root_return, out IntPtr child_return, out int root_x_return, out int root_y_return,
@@ -75,8 +79,10 @@ namespace Nucleus.CrossPlatform
             GetCursorPos(out var pt);
             ScreenToClient((nint)Raylib.GetWindowHandle(), ref pt);
             return new Vector2F(pt.X, pt.Y);
-#endif
-#if COMPILED_LINUX
+#elif COMPILED_OSX
+            var ret = GetCursorPos();
+            return new Vector2F(ret.X, ret.Y);
+#elif COMPILED_LINUX
             var ret = GetMousePosX11();
             return new Vector2F(ret.X, ret.Y) - Raylib.GetWindowPosition().ToNucleus();
 #endif

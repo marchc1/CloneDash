@@ -21,6 +21,8 @@ namespace CloneDash
 
             if (OperatingSystem.IsWindows())
                 result = INIT_WINDOWS();
+            if(OperatingSystem.IsMacOS())
+                result = INIT_OSX();
             if(OperatingSystem.IsLinux())
                 result = INIT_LINUX();
 

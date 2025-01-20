@@ -33,6 +33,33 @@ namespace Nucleus.CrossPlatform
         }
 #endif
 
+#if COMPILED_OSX
+    // DllImport to load dynamic libraries in macOS
+        [DllImport("libdl.dylib", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr dlopen(string fileName, int flags);
+
+        [DllImport("libdl.dylib", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr dlsym(IntPtr handle, string symbol);
+
+        // Constants for dlopen flags
+        private const int RTLD_NOW = 2;
+
+        public static IntPtr GetProc(string funcName)
+        {
+            IntPtr handle = dlopen("/System/Library/Frameworks/OpenGL.framework/OpenGL", RTLD_NOW);
+            if (handle == IntPtr.Zero)
+                throw new Exception("Failed to load OpenGL framework.");
+
+            IntPtr ret = dlsym(handle, funcName);
+
+            // If function still not found, throw an exception
+            if (ret == IntPtr.Zero)
+                throw new Exception($"Function {funcName} not found in OpenGL.");
+
+            return ret;
+        }
+#endif
+
 #if COMPILED_LINUX
         // equivalent of LoadLibrary
         [DllImport("libc")]

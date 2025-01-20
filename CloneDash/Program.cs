@@ -2,6 +2,7 @@
     A *LOT* of this is subject to change. This is a prototype, and just a testbed of basic game functionality.
 */
 
+using System.Runtime.InteropServices;
 using CloneDash.Game;
 
 using Nucleus;
@@ -28,7 +29,6 @@ namespace CloneDash
     {
         static void Main(string[] args) {
             MuseDashCompatibility.InitializeCompatibilityLayer();
-
             EngineCore.Initialize(1600, 900, "Clone Dash", args);
             EngineCore.GameInfo = new() {
                 GameName = "Clone Dash"

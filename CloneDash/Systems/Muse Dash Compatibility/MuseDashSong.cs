@@ -130,7 +130,7 @@ namespace CloneDash
             protected override ChartCover? ProduceCover() {
                 // The Texture2D stuff doesnt exist in any form for Linux (its a Windows-specific binary)
                 // todo; if Muse Dash only stores textures in one or two particular formats, perhaps use/make a C# parser for the texture data?
-                if (OperatingSystem.IsLinux()) return null;
+                if (!OperatingSystem.IsWindows()) return null;
 
                 LoadAssetFile();
                 if (CoverTexture != null)
