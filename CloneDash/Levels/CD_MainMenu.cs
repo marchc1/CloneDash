@@ -20,6 +20,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.CrossPlatform;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Data;
+using CloneDash.Animation;
 
 namespace CloneDash.Game
 {
@@ -133,7 +134,7 @@ namespace CloneDash.Game
                 foreach(Element e in list.MainPanel.GetChildren()) {
                     ListViewItem item = e as ListViewItem;
 
-                    var song = item.GetTag<MuseDashCompatibility.MuseDashSong>("musedash_song");
+                    var song = item.GetTag<MuseDashSong>("musedash_song");
 
                     if (song.Name.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
                     else if (song.BaseName.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
@@ -145,7 +146,7 @@ namespace CloneDash.Game
 
             list.Dock = Dock.Fill;
 
-            foreach (var item in MuseDashCompatibility.Songs) {
+            foreach (var item in Songs) {
                 var lvitem = list.Add<ListViewItem>();
 
                 lvitem.SetTag("musedash_song", item);
@@ -169,20 +170,10 @@ namespace CloneDash.Game
             levelSelector.DockPadding = RectangleF.TLRB(8);
             levelSelector.Center();
 
-            if (track != null) {
-                track.Playhead = 0;
-                track.Volume = 0.4f;
-                track.Playing = true;
-                levelSelector.Thinking += delegate (Element self) {
-                    track.Update();
-                };
+			float currentAvgVolume = 0;
+			SecondOrderSystem animationSmoother = new SecondOrderSystem(5.4f, 0.5f, 1f, 1);
 
-                levelSelector.Removed += delegate (Element self) {
-                    track.Paused = true;
-                };
-            }
-
-            Panel imageCanvas = levelSelector.Add<Panel>();
+			Panel imageCanvas = levelSelector.Add<Panel>();
             imageCanvas.Dock = Dock.Right;
             imageCanvas.Size = new Vector2F(320 - 36);
             imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
@@ -191,10 +182,43 @@ namespace CloneDash.Game
                 Graphics2D.SetDrawColor(255, 255, 255, 255);
                 Graphics2D.SetTexture(c.Texture);
                 var distance = 16;
-                Graphics2D.DrawImage(new(distance, distance), new(width - (distance * 2), height - (distance * 2)));
+				var size = new Vector2F(width - (distance * 2) - (animationSmoother.Update(currentAvgVolume) * 90));
+				//Rlgl.Rotatef(EngineCore.Level.CurtimeF * 90, 0, 0, 1);
+				var offset = Graphics2D.Offset;
+				Graphics2D.ResetDrawingOffset();
+				Rlgl.PushMatrix();
+				//Rlgl.Translatef(offset.X, offset.Y, 0);
+				Rlgl.Translatef(offset.X + (width / 2), offset.Y + (height / 2), 0);
+				Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
+				Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
+				Graphics2D.DrawImage(new(0, 0), size);
+				Graphics2D.OffsetDrawing(offset);
+				Rlgl.PopMatrix();
             };
 
-            Label bpm = levelSelector.Add<Label>();
+			if (track != null) {
+				track.Playhead = 0;
+				track.Volume = 0.4f;
+				track.Playing = true;
+
+				levelSelector.Thinking += delegate (Element self) {
+					track.Update();
+				};
+
+				levelSelector.Removed += delegate (Element self) {
+					track.Paused = true;
+				};
+
+				track.Processing += (self, frames) => {
+					currentAvgVolume = 0;
+					for (int i = 0; i < frames.Length; i++) {
+						currentAvgVolume += frames[i];
+					}
+					currentAvgVolume /= frames.Length;
+				};
+			}
+
+			Label bpm = levelSelector.Add<Label>();
             bpm.AutoSize = true;
             bpm.Text = $"BPM: {song.BPM}";
             bpm.TextSize = 18;
