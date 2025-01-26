@@ -15,7 +15,7 @@ namespace Nucleus.Core
     public static class Graphics2D
     {
         public static FontManager FontManager { get; private set; } = new(new() {
-            { "Consolas", Filesystem.Resolve("firacode.ttf", "fonts") },
+            { "Consolas", Filesystem.Resolve("MonaspaceNeon-Regular.otf", "fonts") },
             { "Open Sans", Filesystem.Resolve("open-sans.ttf", "fonts") },
             { "Noto Sans", Filesystem.Resolve("noto-sans-en-jp.ttf", "fonts") },
         });
