@@ -4,8 +4,8 @@ using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Nucleus;
+using Nucleus.Audio;
 using Nucleus.Engine;
-using Nucleus.ManagedMemory;
 using OdinSerializer;
 using Raylib_cs;
 using System.Diagnostics;
@@ -17,7 +17,7 @@ using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash
 {
-    public static partial class MuseDashCompatibility
+	public static partial class MuseDashCompatibility
     {
         public class MuseDashSongInfoJSON {
             [JsonPropertyName("uid")] public string UID { get; set; } = "";

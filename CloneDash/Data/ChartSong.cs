@@ -1,11 +1,11 @@
 ﻿using Nucleus;
+using Nucleus.Audio;
 using Nucleus.Engine;
-using Nucleus.ManagedMemory;
 using Raylib_cs;
 
 namespace CloneDash.Data
 {
-    public abstract class ChartSong {
+	public abstract class ChartSong {
         private bool __gotDemoTrack = false;
         private bool __gotCover = false;
         // Data cache, produced objects get stored here

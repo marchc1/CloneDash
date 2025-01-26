@@ -8,7 +8,7 @@ using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Nucleus;
-using Nucleus.ManagedMemory;
+using Nucleus.Audio;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Text;
@@ -18,10 +18,10 @@ using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash
 {
-    /// <summary>
-    /// Muse Dash style level converter
-    /// </summary>
-    public static partial class MuseDashCompatibility
+	/// <summary>
+	/// Muse Dash style level converter
+	/// </summary>
+	public static partial class MuseDashCompatibility
     {
         public static string NoteManagerAssetBundle { get; private set; } = "";
         private static Dictionary<string, List<string>> IBMSToDesc { get; set; } = new();

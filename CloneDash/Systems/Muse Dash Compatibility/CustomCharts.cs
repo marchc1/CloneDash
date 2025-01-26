@@ -3,7 +3,6 @@ using Fmod5Sharp.FmodTypes;
 using Fmod5Sharp;
 using Newtonsoft.Json;
 using Nucleus;
-using Nucleus.ManagedMemory;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -14,9 +13,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using CloneDash.Data;
+using Nucleus.Audio;
 namespace CloneDash
 {
-    public static partial class MuseDashCompatibility
+	public static partial class MuseDashCompatibility
     {
         public class CustomChartInfoJSON {
             public string name { get; set; } = "";
