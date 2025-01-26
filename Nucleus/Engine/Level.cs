@@ -442,15 +442,16 @@ namespace Nucleus.Engine
 
             bool ranKeybinds = false;
             if (EngineCore.KeyboardFocusedElement != null) {
-                ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(keyboardState);
+				KeyboardState emulatedState = EngineCore.KeyboardFocusedElement.KeyboardInputMarshal.State(keyboardState);
+				ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(emulatedState);
                 if (!ranKeybinds) {
-                    ranKeybinds = UI.Keybinds.TestKeybinds(keyboardState);
+                    ranKeybinds = UI.Keybinds.TestKeybinds(emulatedState);
                     if (!ranKeybinds) {
-                        foreach (var keyPress in keyboardState.KeysPressed) {
-                            EngineCore.KeyboardFocusedElement.KeyPressedOccur(keyboardState, KeyboardLayout.USA.FromInt(keyPress));
+                        foreach (var keyPress in emulatedState.KeysPressed) {
+                            EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyPress));
                         }
-                        foreach (var keyRelease in keyboardState.KeysReleased) {
-                            EngineCore.KeyboardFocusedElement.KeyReleasedOccur(keyboardState, KeyboardLayout.USA.FromInt(keyRelease));
+                        foreach (var keyRelease in emulatedState.KeysReleased) {
+                            EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyRelease));
                         }
                     }
                 }
