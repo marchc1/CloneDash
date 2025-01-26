@@ -94,7 +94,7 @@ namespace CloneDash
                     Difficulty1 = info.difficulty1,
                     Difficulty2 = info.difficulty2,
                     Difficulty3 = info.difficulty3,
-                    Difficulty4 = info.difficulty4,
+                    Difficulty4 = info.difficulty4
                 };
 
                 return ret;
