@@ -90,6 +90,11 @@ namespace Nucleus.UI
 		}
 		public DateTime LastKeyboardInteraction { get; private set; } = DateTime.Now;
 
+		public void DeleteSelection() {
+			Text = Caret.RemoveStringSelection(Text);
+			Caret.Pointer = Math.Clamp(Caret.End ?? Text.Length - 1, 0, Text.Length - 1);
+			Caret.ClearSelection();
+		}
 		public override void Paint(float width, float height) {
 			BackgroundColor = KeyboardFocused ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
 			ForegroundColor = KeyboardFocused ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
@@ -194,6 +199,10 @@ namespace Nucleus.UI
 			var vischar = state.GetKeyActionFromKey(key);
 			if (vischar.Type == CharacterType.NoAction)
 				return;
+
+			if (Caret.HasSelection) {
+				DeleteSelection();
+			}
 
 			LastKeyboardInteraction = DateTime.Now;
 			if (vischar.Type == CharacterType.VisibleCharacter) {
