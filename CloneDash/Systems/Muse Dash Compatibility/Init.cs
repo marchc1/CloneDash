@@ -17,14 +17,16 @@ namespace CloneDash
             if (Initialized)
                 return MDCompatLayerInitResult.OK;
 
-            MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
 
-            if (OperatingSystem.IsWindows())
-                result = INIT_WINDOWS();
-            if(OperatingSystem.IsMacOS())
-                result = INIT_OSX();
-            if(OperatingSystem.IsLinux())
-                result = INIT_LINUX();
+#if COMPILED_WINDOWS
+			MDCompatLayerInitResult result = INIT_WINDOWS();
+#elif COMPILED_OSX
+            MDCompatLayerInitResult result = INIT_OSX();
+#elif COMPILED_LINUX
+            MDCompatLayerInitResult result = INIT_LINUX();
+#else
+			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
+#endif
 
             if (result != MDCompatLayerInitResult.OK)
                 return result;

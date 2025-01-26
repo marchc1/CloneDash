@@ -51,4 +51,15 @@
     <Exec Condition=" $(IsLinux) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/linux/.&quot; &quot;$(OutDir)&quot;" />
   </Target>
 
+  <PropertyGroup Condition="'$(IsWindows)'=='true'">
+    <DefineConstants>COMPILED_WINDOWS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsOSX)'=='true'">
+    <DefineConstants>COMPILED_OSX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsLinux)'=='true'">
+    <DefineConstants>COMPILED_LINUX</DefineConstants>
+  </PropertyGroup>
 </Project>
