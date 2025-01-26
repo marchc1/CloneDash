@@ -13,9 +13,9 @@ namespace CloneDash
                 return MDCompatLayerInitResult.OperatingSystemNotCompatible;
 
             // Where is Steam installed?
-            string steamInstallPath = Environment.GetEnvironmentVariable("HOME") + "/.local/share/Steam/";
+            string steamInstallPath = Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".local", "share", "Steam");
             // Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
-            ValveDataFile games = ValveDataFile.FromFile(steamInstallPath + "steamapps/libraryfolders.vdf");
+            ValveDataFile games = ValveDataFile.FromFile(Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf"));
             string musedash_appid = "" + MUSEDASH_APPID;
             string musedash_installdir = "";
             bool musedash_installed = false;
@@ -23,9 +23,9 @@ namespace CloneDash
             foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
                 var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
                 if (apps.Contains(musedash_appid)) {
-                    ValveDataFile appManifest = ValveDataFile.FromFile(vdfItemPair.Value.GetString("path") + $"/steamapps/appmanifest_{musedash_appid}.acf");
+                    ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "appmanifest_{musedash_appid}.acf"));
                     musedash_installed = true;
-                    musedash_installdir = vdfItemPair.Value.GetString("path") + "/steamapps/common/" + appManifest["AppState"].GetString("installdir");
+                    musedash_installdir = Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "common", appManifest["AppState"].GetString("installdir"));
                 }
             }
 
@@ -37,7 +37,7 @@ namespace CloneDash
             // The bundle is named globalconfigs_assets_notedatamananger
 
             string platform = "StandaloneWindows64";
-            string musedash_streamingassets = musedash_installdir + $"/MuseDash_Data/StreamingAssets/aa/{platform}/"; // TODO: support multiple platforms
+            string musedash_streamingassets = Path.Combine(musedash_installdir, "MuseDash_Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;
 
