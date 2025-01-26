@@ -2,8 +2,7 @@
 using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Game.Entities;
-
-
+using CloneDash.Systems;
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
@@ -358,12 +357,12 @@ namespace CloneDash
             Stopwatch s = new Stopwatch();
             s.Start();
 
-            Albums = LoadAssetEasyC<TextAsset, List<MuseDashAlbum>>("config_others_assets_albums_");
+            Albums = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashAlbum>>(StreamingFiles, "config_others_assets_albums_");
             Albums.RemoveAll(x => x.JsonName == "");
 
             foreach (var album in Albums) {
-                var songs = LoadAssetEasyC<TextAsset, List<MuseDashSongInfoJSON>>($"config_others_assets_{album.JsonName.ToLower()}_");
-                var songsEN = LoadAssetEasyC<TextAsset, __musedashSong[]>($"config_others_assets_{album.JsonName.ToLower()}_");
+                var songs = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashSongInfoJSON>>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
+                var songsEN = UnityAssetUtils.LoadAssetEasyC<TextAsset, __musedashSong[]>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
 
                 var songsFinal = new MuseDashSong[songs.Count];
 
