@@ -17,7 +17,8 @@ namespace Nucleus.Types
         DeleteBackwards,
         DeleteForwards,
         Enter,
-        Arrow
+        Arrow,
+		Tab
     }
     public record KeyAction(CharacterType Type, string? Extra = null)
     {

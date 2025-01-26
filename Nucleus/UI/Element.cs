@@ -772,7 +772,10 @@ namespace Nucleus.UI
             MouseScrollEvent?.Invoke(this, state, delta);
         }
 
-        public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
+		public bool ConsumedScrollEvent { get; internal set; }
+		public void ConsumeScrollEvent() => ConsumedScrollEvent = true;
+
+		public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
             return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
         }
         /// <summary>
@@ -815,15 +818,15 @@ namespace Nucleus.UI
 		/// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
 		/// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
 		/// </summary>
-		public void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
+		public virtual void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
         /// <summary>
         /// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br>
         /// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs <br></br>
         /// keyboard focus, you dont want hovering over something else to cause the textbox to lose focus; in this case, you'd demand keyboard focus from the textbox to avoid that.<br></br>
         /// Note that demands don't respect demands.
         /// </summary>
-        public void DemandKeyboardFocus() => EngineCore.DemandKeyboardFocus(this);
-        public void KeyboardUnfocus() => EngineCore.KeyboardUnfocus(this);
+        public virtual void DemandKeyboardFocus() => EngineCore.DemandKeyboardFocus(this);
+        public virtual void KeyboardUnfocus() => EngineCore.KeyboardUnfocus(this);
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
@@ -962,6 +965,17 @@ namespace Nucleus.UI
         public Vector2F CursorPos() {
             return EngineCore.CurrentFrameState.MouseState.MousePos - GetGlobalPosition();
         }
+
+		public bool ShouldDrawImage { get; set; } = true;
+
+		public static void PaintBackground(Element e, float width, float height) {
+			Graphics2D.SetDrawColor(e.BackgroundColor);
+			Graphics2D.DrawRectangle(0, 0, width, height);
+			if (e.ShouldDrawImage)
+				e.ImageDrawing();
+			Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : e.ForegroundColor);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, e.BorderSize);
+		}
 
 		public Vector2F GetMousePos() {
 			return EngineCore.MousePos - this.GetGlobalPosition();

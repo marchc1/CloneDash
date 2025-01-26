@@ -1,98 +1,90 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI.Elements;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
-    public class ScrollPanel : Panel
-    {
-        public Scrollbar VerticalScrollbar { get; private set; }
-        public Scrollbar HorizontalScrollbar { get; private set; }
-        public Panel MainPanel { get; private set; }
+	public class ScrollPanel : Panel
+	{
+		public Scrollbar VerticalScrollbar { get; private set; }
+		public Scrollbar HorizontalScrollbar { get; private set; }
+		public Panel MainPanel { get; private set; }
 
-        protected override void Initialize() {
-            base.Initialize();
-            VerticalScrollbar = base.Add<Scrollbar>();
-            VerticalScrollbar.Alignment = ScrollbarAlignment.Vertical;
-            VerticalScrollbar.Enabled = true;
+		protected override void Initialize() {
+			base.Initialize();
+			VerticalScrollbar = base.Add<Scrollbar>();
+			VerticalScrollbar.Alignment = ScrollbarAlignment.Vertical;
+			VerticalScrollbar.Enabled = true;
 
-            HorizontalScrollbar = base.Add<Scrollbar>();
-            HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
-            HorizontalScrollbar.Enabled = true;
+			HorizontalScrollbar = base.Add<Scrollbar>();
+			HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
+			HorizontalScrollbar.Enabled = true;
 
-            MainPanel = this.Add<Panel>();
-            MainPanel.Dock = Dock.Fill;
-            MainPanel.PaintOverride += delegate (Element self, float width, float height) {
+			MainPanel = this.Add<Panel>();
+			MainPanel.Dock = Dock.Fill;
+			MainPanel.PaintOverride += delegate (Element self, float width, float height) {
 
-            };
-            MainPanel.DockMargin = RectangleF.TLRB(4);
-            AddParent = MainPanel;
+			};
+			MainPanel.DockMargin = RectangleF.TLRB(4);
+			AddParent = MainPanel;
+			MainPanel.Clipping = false;
 
-            VerticalScrollbar.MinScroll = 5;
-            VerticalScrollbar.MaxScroll = 20;
+			MouseScrollEvent += ScrollPanel_MouseScrollEvent;
+		}
 
-            HorizontalScrollbar.MinScroll = 5;
-            HorizontalScrollbar.MaxScroll = 20;
+		protected override void PostLayoutChildren() {
 
-            MouseScrollEvent += ScrollPanel_MouseScrollEvent;
-        }
+		}
 
-        private void ScrollPanel_MouseScrollEvent(Element self, FrameState state, Vector2F delta) {
-            if (delta.X != 0)
-                HorizontalScrollbar.MouseScrolled(null, state, delta);
-            if (delta.Y != 0)
-                VerticalScrollbar.MouseScrolled(null, state, delta);
-        }
-        public override T Add<T>(T? toAdd = null) where T : class {
-            var ret = base.Add<T>(toAdd);
-            ret.MouseScrollEvent += ScrollPanel_MouseScrollEvent;
-            return ret;
-        }
-        protected override void PerformLayout(float width, float height) {
-            base.PerformLayout(width, height);
-        }
-        public virtual bool ShouldItemBeVisible(Element e) {
-            return true;
-        }
+		private void ScrollPanel_MouseScrollEvent(Element self, FrameState state, Vector2F delta) {
+			ConsumeScrollEvent();
 
-        public override void PreRender() {
-            base.PreRender();
-        }
-        public override void PostRenderChildren() {
-            base.PostRenderChildren();
-        }
+			if (delta.X != 0)
+				HorizontalScrollbar.MouseScrolled(HorizontalScrollbar, state, delta);
+			if (delta.Y != 0)
+				VerticalScrollbar.MouseScrolled(VerticalScrollbar, state, delta);
+		}
+		public override T Add<T>(T? toAdd = default) where T : class {
+			var ret = base.Add<T>(toAdd);
+			return ret;
+		}
+		protected override void PerformLayout(float width, float height) {
+			base.PerformLayout(width, height);
+		}
+		public virtual bool ShouldItemBeVisible(Element e) {
+			return true;
+		}
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
 
-        protected override void OnThink(FrameState frameState) {
-            base.OnThink(frameState);
-            HorizontalScrollbar.Enabled = MainPanel.SizeOfAllChildren.W > this.RenderBounds.Size.W;
-            VerticalScrollbar.Enabled = MainPanel.SizeOfAllChildren.H > this.RenderBounds.Size.H;
+			VerticalScrollbar.PageContents = AddParent.SizeOfAllChildren;
+			VerticalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			HorizontalScrollbar.PageContents = AddParent.SizeOfAllChildren;
+			HorizontalScrollbar.PageSize = AddParent.RenderBounds.Size;
 
-            HorizontalScrollbar.MinScroll = this.RenderBounds.Size.W;
-            HorizontalScrollbar.MaxScroll = MainPanel.SizeOfAllChildren.W;
+			VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
-            VerticalScrollbar.MinScroll = this.RenderBounds.Size.H;
-            VerticalScrollbar.MaxScroll = MainPanel.SizeOfAllChildren.H;
+			foreach (Element child in MainPanel.Children) {
+				if (ShouldItemBeVisible(child)) {
+					if ((child.RenderBounds.Y + child.RenderBounds.H) < VerticalScrollbar.Scroll)
+						child.Visible = false;
+					else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + RenderBounds.H) - child.RenderBounds.H)
+						child.Visible = false;
+					else
+						child.Visible = true;
+				}
+			}
 
-            foreach (Element child in MainPanel.Children) {
-                if (!ShouldItemBeVisible(child))
-                    child.Enabled = false;
-                else {
-                    child.Enabled = true;
-
-                    if ((child.RenderBounds.Y) < VerticalScrollbar.Scroll - RenderBounds.H)
-                        child.Visible = false;
-                    else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + child.RenderBounds.H) + RenderBounds.H)
-                        child.Visible = false;
-                    else
-                        child.Visible = true;
-                }
-            }
-            MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
-        }
-        public override void Paint(float width, float height) {
-            VerticalScrollbar.Scroll = 5;
-            Graphics2D.SetDrawColor(ForegroundColor);
-            Graphics2D.DrawRectangleOutline(0, 0, width, height, 1);
-        }
-    }
+			MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
+		}
+		public override void Paint(float width, float height) {
+			Graphics2D.SetDrawColor(ForegroundColor);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, 1);
+		}
+	}
 }

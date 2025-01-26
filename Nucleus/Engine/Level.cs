@@ -494,14 +494,25 @@ namespace Nucleus.Engine
                     UI.Depressed = null;
                 }
             }
-            EngineCore.CurrentFrameState = frameState;
-            if (!mouseState.MouseScroll.IsZero()) {
-                if (IValidatable.IsValid(UI.Hovered) && UI.Hovered.InputDisabled == false) {
-                    UI.Hovered.MouseScrollOccur(frameState, mouseState.MouseScroll);
-                }
-            }
 
-            if (LastFrameState.MouseState.MouseHeld && FrameState.MouseState.MouseHeld && !FrameState.MouseState.MouseDelta.IsZero() && IValidatable.IsValid(UI.Depressed) && UI.Depressed.InputDisabled == false)
+			if (!mouseState.MouseScroll.IsZero()) {
+				if (IValidatable.IsValid(UI.Hovered) && UI.Hovered.InputDisabled == false) {
+					Element e = UI.Hovered;
+					for (int i = 0; i < 1000; i++) {
+						if (!IValidatable.IsValid(e))
+							break;
+
+						e.ConsumedScrollEvent = false;
+						e.MouseScrollOccur(frameState, mouseState.MouseScroll);
+						if (e.ConsumedScrollEvent)
+							break;
+
+						e = e.Parent;
+					}
+				}
+			}
+
+			if (LastFrameState.MouseState.MouseHeld && FrameState.MouseState.MouseHeld && !FrameState.MouseState.MouseDelta.IsZero() && IValidatable.IsValid(UI.Depressed) && UI.Depressed.InputDisabled == false)
                 UI.Depressed.MouseDragOccur(frameState, FrameState.MouseState.MouseDelta);
 
             EngineCore.CurrentFrameState = frameState; FrameState = frameState;

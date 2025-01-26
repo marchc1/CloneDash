@@ -1,21 +1,26 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
+using Raylib_cs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
-    public class Panel : Element
-    {
-        protected override void Initialize() {
-            base.Initialize();
-            this.DockPadding = RectangleF.TLRB(2);
-        }
+	public class Panel : Element
+	{
+		public bool DrawPanelBackground { get; set; } = true;
+		protected override void Initialize() {
+			base.Initialize();
+			this.DockPadding = RectangleF.TLRB(2);
+		}
 
-        public override void Paint(float width, float height) {
-            Graphics2D.SetDrawColor(BackgroundColor);
-            Graphics2D.DrawRectangle(0, 0, width, height);
-            ImageDrawing();
-            Graphics2D.SetDrawColor(ForegroundColor);
-            Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
-        }
-    }
+		public override void Paint(float width, float height) {
+			if (!DrawPanelBackground) return;
+
+			PaintBackground(this, width, height);
+		}
+	}
 }
