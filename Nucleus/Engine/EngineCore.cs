@@ -8,11 +8,17 @@ using Raylib_cs;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Nucleus
 {
-    public enum ThreadExecutionTime
+	/// <summary>
+	/// Marks the class as needing to be statically constructed during the engine initialization. Will fix most convar/concommand issues.
+	/// </summary>
+	public class MarkForStaticConstructionAttribute : Attribute;
+
+	public enum ThreadExecutionTime
     {
         /// <summary>
         /// The function will run before any frame-code.
@@ -229,52 +235,6 @@ namespace Nucleus
         private static Window console;
         private static Textbox lines;
 
-        private static void OpenConsole() {
-            if (IValidatable.IsValid(console)) {
-                console.Remove();
-                return;
-            }
-            console = Level.UI.Add<Window>();
-            console.Title = "Developer Console";
-            console.Size = new(500, 700);
-            console.Position = new(1000, 100);
-            console.DockPadding = RectangleF.TLRB(4);
-
-            var input = console.Add<Textbox>();
-            input.Dock = Dock.Bottom;
-            input.Font = "Consolas";
-            input.TextAlignment = Anchor.MiddleLeft;
-            input.HelperText = "";
-
-            lines = console.Add<Textbox>();
-            lines.ReadOnly = true;
-            lines.Dock = Dock.Fill;
-            lines.Font = "Consolas";
-            lines.TextAlignment = Anchor.TopLeft;
-            lines.HelperText = "";
-            lines.ReadOnly = true;
-            lines.MultiLine = true;
-            lines.AutoSize = false;
-
-            ConsoleSystem.ConsoleMessageWrittenEvent += ConsoleSystem_ConsoleMessageWrittenEvent;
-
-            lines.Text = "";
-            foreach (ConsoleMessage message in ConsoleSystem.GetMessages()) {
-                lines.Text += message.Message + "\n";
-            }
-
-            console.Removed += delegate (Element self) {
-                ConsoleSystem.ConsoleMessageWrittenEvent -= ConsoleSystem_ConsoleMessageWrittenEvent;
-            };
-        }
-
-        private static void ConsoleSystem_ConsoleMessageWrittenEvent(LogLevel level, string text) {
-            if (!IValidatable.IsValid(console))
-                return;
-
-            lines.Text += text + "\n";
-        }
-
         private static void __loadLevel(Level level, object[] args) {
             if (level == null) {
                 Level = null;
@@ -294,9 +254,6 @@ namespace Nucleus
             LoadingLevel = true;
             level.InitializeUI();
             Level.Initialize(args);
-            Level.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], new Action(() => {
-                OpenConsole();
-            }));
             LoadingLevel = false;
 
             LoadingScreen?.Unload();
@@ -484,7 +441,15 @@ namespace Nucleus
         }
 
         public static void Start() {
-            Started = true;
+			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
+							  from t in a.GetTypes()
+							  let attributes = t.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true)
+							  where attributes != null && attributes.Length > 0
+							  select t) {
+				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			}
+
+			Started = true;
             LoadingScreen?.Initialize([]);
             while (Running) {
                 Frame();
