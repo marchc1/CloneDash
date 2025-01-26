@@ -2,10 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.UI;
 using Raylib_cs;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -22,13 +24,33 @@ namespace Nucleus.ManagedMemory
         Music underlying;
         bool selfDisposing = true;
 
-        public unsafe MusicTrack(SoundManagement? parent, Music underlying, bool selfDisposing = true, byte* memoryBound = null) {
+		/// <summary>
+		/// Note: If anything ever becomes multithreaded and uses this stuff it will all crash and burn
+		/// </summary>
+		public static MusicTrack? Current { get; private set; }
+
+		public delegate void OnProcessDelegate(MusicTrack self, Span<float> frames);
+		public event OnProcessDelegate? Processing;
+
+		[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+		private static unsafe void FUCKFUCKFUCKFUCK(void* buffer, uint frames) {
+			float* floatBuffer = (float*)buffer;
+			Span<float> stackAllocatedBuffer = stackalloc float[(int)frames];
+			for (int i = 0; i < frames; i++) {
+				stackAllocatedBuffer[i] = floatBuffer[i];
+			}
+
+			Current?.Processing?.Invoke(Current, stackAllocatedBuffer);
+		}
+
+		public unsafe MusicTrack(SoundManagement? parent, Music underlying, bool selfDisposing = true, byte* memoryBound = null) {
             this.parent = parent;
             this.underlying = underlying;
             this.selfDisposing = selfDisposing;
             __isMemoryBound = memoryBound;
             Raylib.PlayMusicStream(underlying);
-        }
+			Raylib.AttachAudioStreamProcessor(underlying.Stream, &FUCKFUCKFUCKFUCK);
+		}
         private bool disposedValue;
         public bool IsValid() => !disposedValue;
         public ulong UsedBits =>
@@ -130,33 +152,43 @@ namespace Nucleus.ManagedMemory
         /// </summary>
         public bool Complete => Playhead == Length;
 
-        public void Update() => Raylib.UpdateMusicStream(underlying);
+		public void Update() {
+			Current = this;
+			Raylib.UpdateMusicStream(underlying);
+		}
     }
-    public class Sound(SoundManagement? parent, Raylib_cs.Sound underlying, bool selfDisposing = true) : ISound
-    {
-        private bool disposedValue;
+    public class Sound : ISound
+	{
+		SoundManagement? Parent;
+		Raylib_cs.Sound Underlying;
+		bool SelfDisposing;
+		public Sound(SoundManagement? parent, Raylib_cs.Sound underlying, bool selfDisposing = true) {
+			Parent = parent;
+			Underlying = underlying;
+			SelfDisposing = selfDisposing;
+		}
+		private bool disposedValue;
         public bool IsValid() => !disposedValue;
         public ulong UsedBits =>
             // size * rate * channels = bits per second
-            (underlying.Stream.SampleSize * underlying.Stream.SampleRate * underlying.Stream.Channels)
-            / underlying.FrameCount; // this is wrong...
+            (Underlying.Stream.SampleSize * Underlying.Stream.SampleRate * Underlying.Stream.Channels)
+            / Underlying.FrameCount; // this is wrong...
 
         protected virtual void Dispose(bool disposing) {
-            if (!disposedValue && selfDisposing) {
+            if (!disposedValue && SelfDisposing) {
                 MainThread.RunASAP(() => {
-                    Raylib.UnloadSound(underlying);
-                    parent?.EnsureISoundRemoved(this);
+                    Raylib.UnloadSound(Underlying);
+                    Parent?.EnsureISoundRemoved(this);
                 }, ThreadExecutionTime.BeforeFrame);
                 disposedValue = true;
             }
         }
-        ~Sound() { if (selfDisposing) Dispose(false); }
+        ~Sound() { if (SelfDisposing) Dispose(false); }
         public void Dispose() {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
 
-        private Raylib_cs.Sound Underlying => underlying;
         public static implicit operator Raylib_cs.Sound(Sound self) => self.Underlying;
     }
     public class SoundManagement : IManagedMemory
