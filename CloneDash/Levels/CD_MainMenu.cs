@@ -178,7 +178,7 @@ namespace CloneDash.Game
 				for (int i = 0; i < length; i++) {
 					float sample = framesOverTime[i];
 					var x = (i / (float)framesOverTime.Capacity) * w;
-					var y = (h / 2) + (h * .45f * sample);
+					var y = (h / 2) + (h * .25f * sample);
 					lineparts[i] = new(x, y);
 				}
 				Graphics2D.SetDrawColor(50, 50, 50);
