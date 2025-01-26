@@ -825,7 +825,9 @@ namespace Nucleus.UI
         public void DemandKeyboardFocus() => EngineCore.DemandKeyboardFocus(this);
         public void KeyboardUnfocus() => EngineCore.KeyboardUnfocus(this);
 
-        public void KeyPressedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
+		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
+
+		public void KeyPressedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
             KeyPressed(keyboardState, key);
             OnKeyPressed?.Invoke(this, keyboardState, key);
         }
@@ -960,5 +962,9 @@ namespace Nucleus.UI
         public Vector2F CursorPos() {
             return EngineCore.CurrentFrameState.MouseState.MousePos - GetGlobalPosition();
         }
-    }
+
+		public Vector2F GetMousePos() {
+			return EngineCore.MousePos - this.GetGlobalPosition();
+		}
+	}
 }
