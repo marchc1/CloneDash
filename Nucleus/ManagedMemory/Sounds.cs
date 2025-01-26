@@ -191,6 +191,7 @@ namespace Nucleus.ManagedMemory
 
         public static implicit operator Raylib_cs.Sound(Sound self) => self.Underlying;
     }
+	[Nucleus.MarkForStaticConstruction]
     public class SoundManagement : IManagedMemory
     {
         private List<ISound> Sounds = [];
@@ -338,5 +339,8 @@ namespace Nucleus.ManagedMemory
             }
         }
 
-    }
+		public static ConVar snd_volume = ConVar.Register("snd_volume", "1.0", ConsoleFlags.Saved, "Overall sound volume.", 0, 10f, (cv, o, n) => {
+			Raylib.SetMasterVolume(n.AsFloat ?? 1);
+		});
+	}
 }
