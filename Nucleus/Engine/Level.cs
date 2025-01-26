@@ -579,7 +579,7 @@ namespace Nucleus.Engine
             List<DebugRecord> fields;
             if (EngineCore.ShowDebuggingInfo) {
                 fields = [
-                    $"Nucleus Level / {EngineCore.GameInfo} - Debugger",
+                    $"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
                     "",
                     $"Engine",
                     $"    [CPU] Sound Memory: {IManagedMemory.NiceBytes(Sounds)}",
@@ -617,11 +617,11 @@ namespace Nucleus.Engine
 
             for (int i = 0; i < fields.Count; i++) {
                 var tx = 12;
-                var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 13);
+                var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 14);
 
                 var t = fields[i].ToString();
                 Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-                Graphics2D.DrawText(tx, ty, t, "Consolas", 13, Anchor.TopLeft);
+                Graphics2D.DrawText(tx, ty, t, "Consolas", 12, Anchor.TopLeft);
             }
 
             if (EngineCore.ShowDebuggingInfo)
