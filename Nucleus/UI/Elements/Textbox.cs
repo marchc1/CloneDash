@@ -92,7 +92,7 @@ namespace Nucleus.UI
 
 		public void DeleteSelection() {
 			Text = Caret.RemoveStringSelection(Text);
-			Caret.Pointer = Math.Clamp(Caret.End ?? Text.Length - 1, 0, Text.Length - 1);
+			Caret.Pointer = Math.Clamp(Caret.End ?? Text.Length - 1, 0, Math.Max(0, Text.Length - 1));
 			Caret.ClearSelection();
 		}
 		public override void Paint(float width, float height) {
