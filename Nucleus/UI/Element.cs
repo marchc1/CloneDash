@@ -803,19 +803,19 @@ namespace Nucleus.UI
             //InvalidateChildren(self: true, recursive: true);
         }
 
-        public virtual void KeyboardFocusGained() {
+        public virtual void KeyboardFocusGained(bool demanded) {
 
         }
 
-        public virtual void KeyboardFocusLost(Element self) {
+		public virtual void KeyboardFocusLost(Element lostTo, bool demanded) {
 
-        }
+		}
 
-        /// <summary>
-        /// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
-        /// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
-        /// </summary>
-        public void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
+		/// <summary>
+		/// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
+		/// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
+		/// </summary>
+		public void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
         /// <summary>
         /// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br>
         /// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs <br></br>

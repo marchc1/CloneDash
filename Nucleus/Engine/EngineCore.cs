@@ -96,42 +96,42 @@ namespace Nucleus
 
         public static Element? KeyboardFocusedElement { get; internal set; } = null;
         public static bool DemandedFocus { get; private set; } = false;
-        public static void RequestKeyboardFocus(Element self) {
-            if (!IValidatable.IsValid(self))
-                return;
+		public static void RequestKeyboardFocus(Element self) {
+			if (!IValidatable.IsValid(self))
+				return;
 
-            if (IValidatable.IsValid(KeyboardFocusedElement)) {
-                if (DemandedFocus)
-                    return;
+			if (IValidatable.IsValid(KeyboardFocusedElement)) {
+				if (DemandedFocus)
+					return;
 
-                KeyboardFocusedElement.KeyboardFocusLost(self);
-            }
+				KeyboardFocusedElement.KeyboardFocusLost(self, true);
+			}
 
-            KeyboardFocusedElement = self;
-            self.KeyboardFocusGained();
-        }
-        public static void DemandKeyboardFocus(Element self) {
+			KeyboardFocusedElement = self;
+			self.KeyboardFocusGained(DemandedFocus);
+		}
+		public static void DemandKeyboardFocus(Element self) {
             DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
             RequestKeyboardFocus(self);
             DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
         }
         internal static void KeyboardUnfocus(Element self, bool force = false) {
-            if (!IValidatable.IsValid(KeyboardFocusedElement))
-                return;
-            if (!IValidatable.IsValid(self))
-                return;
-            if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
-                KeyboardFocusedElement = null;
-                self.KeyboardFocusLost(self);
+			if (!IValidatable.IsValid(KeyboardFocusedElement))
+				return;
+			if (!IValidatable.IsValid(self))
+				return;
+			if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
+				KeyboardFocusedElement.KeyboardFocusLost(self, false);
+				KeyboardFocusedElement = null;
 
-                return;
-            }
-            if (self != KeyboardFocusedElement && force == false)
-                return;
+				return;
+			}
+			if (self != KeyboardFocusedElement && force == false)
+				return;
 
-            KeyboardFocusedElement = null;
-            self.KeyboardFocusLost(self);
-        }
+			KeyboardFocusedElement.KeyboardFocusLost(self, false);
+			KeyboardFocusedElement = null;
+		}
         public static bool IsAssemblyDebugBuild(Assembly assembly) {
             return assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled);
         }

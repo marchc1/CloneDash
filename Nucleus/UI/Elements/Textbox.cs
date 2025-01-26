@@ -186,8 +186,8 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void KeyboardFocusLost(Element self) {
-			base.KeyboardFocusLost(self);
+		public override void KeyboardFocusLost(Element self, bool demanded) {
+			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
 		public override void KeyPressed(KeyboardState state, KeyboardKey key) {
