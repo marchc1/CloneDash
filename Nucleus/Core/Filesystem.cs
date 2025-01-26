@@ -25,6 +25,7 @@ namespace Nucleus.Core
             { "assets", [$"{AppContext.BaseDirectory}assets"] },
 
             { "audio", [$"{AppContext.BaseDirectory}assets/audio"] },
+            { "cfg", [$"{AppContext.BaseDirectory}cfg"] },
             { "fonts", [$"{AppContext.BaseDirectory}assets/fonts"] },
             { "images", [$"{AppContext.BaseDirectory}assets/images"] },
             { "models", [$"{AppContext.BaseDirectory}assets/models"] },
