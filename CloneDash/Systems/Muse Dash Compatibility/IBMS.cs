@@ -12,7 +12,6 @@ using Nucleus.Audio;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Texture2D = AssetStudio.Texture2D;
 
@@ -29,107 +28,9 @@ namespace CloneDash
         private static Dictionary<string, NoteConfigData> IBMSToNote { get; set; } = new();
         private static Dictionary<string, NoteConfigData> UIDToNote { get; set; } = new();
 
-        private static List<NoteConfigData> NoteDataManager { get; set; }
+        public static List<NoteConfigData> NoteDataManager { get; set; }
 
         public static string[] StreamingFiles { get; private set; }
-
-        public class MusicConfigData
-        {
-            public int id;
-            public decimal time;
-            public string note_uid;
-            public decimal length;
-            public bool blood;
-            public int pathway;
-        }
-        public class NoteConfigData
-        {
-            public string id;
-            public string ibms_id;
-            public string uid;
-            public string mirror_uid;
-            public string scene;
-            public string des;
-            public string prefab_name;
-            public uint type;
-            public string effect;
-            public string key_audio;
-            public string boss_action;
-            public List<string> sceneChangeNames;
-            public decimal left_perfect_range;
-            public decimal left_great_range;
-            public decimal right_perfect_range;
-            public decimal right_great_range;
-            public int damage;
-            public int pathway;
-            public int speed;
-            public int score;
-            public int fever;
-            public bool missCombo;
-            public bool addCombo;
-            public bool jumpNote;
-            public bool isShowPlayEffect;
-        }
-        public class MusicData
-        {
-            public short objId;
-            public decimal tick;
-            public MusicConfigData configData;
-            public NoteConfigData? noteData;
-            public bool isLongPressing;
-            public int doubleIdx;
-            public bool isDouble;
-            public bool isLongPressEnd;
-            public decimal longPressPTick;
-            public int endIndex;
-            public decimal dt;
-            public int longPressNum;
-            public decimal showTick;
-        }
-        public class SceneEvent
-        {
-            public string uid;
-            public decimal time;
-        }
-        public class GameDialogArgs
-        {
-            public int index;
-            public decimal time;
-            public int dialogType;
-            public int dialogIndex;
-            public string text;
-            public float speed;
-            public int fontSize;
-            public int dialogState;
-            public int alignment;
-        }
-        public class SerializationData
-        {
-            public int SerializedFormat = 0;
-            public byte[] SerializedBytes;
-        }
-        public class StageInfo
-        {
-            public List<MusicData> musicDatas = new();
-            public decimal delay;
-            public string mapName;
-            public string music;
-            public string scene;
-            public int difficulty;
-            public string md5;
-            public float bpm;
-            public List<SceneEvent> sceneEvents = new();
-            public Dictionary<string, List<GameDialogArgs>> dialogEvents = new();
-
-            public SerializationData serializationData = new();
-            public byte[] MusicStream;
-        }
-
-        public class StageDemo
-        {
-            public MusicTrack Track { get; set; }
-            public Raylib_cs.Texture2D? Cover { get; set; }
-        }
 
         private static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
             foreach (var md in stage.musicDatas) {
@@ -196,120 +97,6 @@ namespace CloneDash
             }
 
             return sb.ToString();
-        }
-        /// <summary>
-        /// Muse Dash's IBMS codes, which defines behavior of certain entities
-        /// </summary>
-        public enum IBMSCode
-        {
-            None,
-            SmallNormal,
-            SmallUp,
-            SmallDown,
-            Medium1Normal,
-            Medium1Up,
-            Medium1Down,
-            Medium2Normal,
-            Medium2Up,
-            Medium2Down,
-            Large1,
-            Large2,
-            Raider,
-            Hammer,
-            Gemini,
-            LongPress,
-            Mul,
-            Block,
-            RaiderFlip,
-            HammerFlip,
-            DoubleSpeed1 = 24,
-            DoubleSpeed2,
-            DoubleSpeed3,
-            RoadSpeed1,
-            RoadSpeed2,
-            RoadSpeed3,
-            AirSpeed1,
-            AirSpeed2,
-            AirSpeed3,
-            BossNear1 = 37,
-            BossNear2,
-            BossAttack1,
-            BossAttack2_1,
-            BossAttack2_2,
-            BossMul1,
-            BossMul2,
-            BossBlock,
-            BossIn = 46,
-            BossOut,
-            BossFar1Start,
-            BossFar1End,
-            BossFar2Start,
-            BossFar2End,
-            BossFar1To2,
-            BossFar2To1,
-            NoteHide = 55,
-            NoteShow,
-            BossHide,
-            BossShow,
-            ToggleScene1 = 60,
-            ToggleScene2,
-            ToggleScene3,
-            ToggleScene4,
-            ToggleScene5,
-            ToggleScene6,
-            ToggleScene7,
-            ToggleScene8,
-            ToggleScene9,
-            ToggleScene10,
-            TouhouRedPoint = 72,
-            Ghost,
-            Hp,
-            Music,
-            SceneHide = 77,
-            SceneShow,
-            CanvasUpScroll,
-            CanvasDownScroll,
-            CanvasScrollOver,
-            RandomWave,
-            RandomWaveOver,
-            RgbSplit,
-            RgbSplitOver,
-            ShadowEdgeIn,
-            ShadowEdgeOut,
-            OldTv,
-            OldTvOver,
-            FlashStart,
-            FlashHigh,
-            FlashEnd,
-            NoteFreeze,
-            NoteUnfreeze,
-            BgFreeze,
-            BgUnfreeze,
-            PixelStart,
-            PixelEnd,
-            GrayScaleStart,
-            GrayScaleEnd,
-            OpenAuto = 106,
-            CloseAuto,
-            TouhouLightNormal,
-            TouhouLightUp,
-            TouhouLightDown,
-            TouhouLightCross,
-            TouhouStarNormal,
-            TouhouStarUp,
-            TouhouStarDown,
-            TouhouStarCross,
-            TouhouBigNormal,
-            TouhouBigUp,
-            TouhouBigDown,
-            TouhouBigCross,
-            TouhouScalyNormal,
-            TouhouScalyCross,
-            TouhouKnifeNormal,
-            TouhouKnifeCross,
-            TouhouDivideDanmaku1,
-            TouhouDivideDanmaku2,
-            TouhouDivideDanmaku3
         }
 
         /// <summary>
@@ -556,83 +343,10 @@ namespace CloneDash
             Hidden = 4
         }
 
-        public class MuseDashAlbum
-        {
-            [JsonPropertyName("uid")] public string UID { get; set; } = "";
-            [JsonPropertyName("title")] public string Title { get; set; } = "";
-            [JsonPropertyName("tag")] public string Tag { get; set; } = "";
-            [JsonPropertyName("jsonName")] public string JsonName { get; set; } = "";
-            [JsonPropertyName("prefabsName")] public string PrefabsName { get; set; } = "";
-
-            public List<MuseDashSong> Songs { get; set; } = [];
-
-            public override string ToString() => $"{Title} [{Songs.Count} songs]";
-        }
-
         public static List<MuseDashAlbum> Albums { get; private set; } = [];
         public static List<MuseDashSong> Songs { get; private set; } = [];
 
-        private static ClassIDType GetClassIDFromType(Type t) {
-            switch (t.Name) {
-                case "AudioClip": return ClassIDType.AudioClip;
-                case "TextAsset": return ClassIDType.TextAsset;
-                case "Texture2D": return ClassIDType.Texture2D;
-            }
-            return ClassIDType.UnknownType;
-        }
-
-        private static AssetType __internalLoadAsset<AssetType>(string query, bool regex = false) {
-            AssetsManager manager = new();
-            string? filepath = StreamingFiles.First(x => regex ? Regex.IsMatch(x, query) : x.Contains(query));
-            if (filepath == null)
-                throw new FileNotFoundException($"No file matched the regular expression/query for \"{query}\"");
-            manager.LoadFiles(filepath);
-
-            AssetType item = (AssetType)(object)manager.assetsFileList[0].Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-            if (item == null)
-                throw new NotImplementedException($"Could not convert! Is there a type conversion definition for {typeof(AssetType).Name}?");
-
-            return item;
-        }
-
-
-        public static ReturnStructure LoadAssetEasyS<AssetType, ReturnStructure>(string query, bool regex = false) where AssetType : class where ReturnStructure : struct {
-            AssetType item = __internalLoadAsset<AssetType>(query, regex);
-
-            switch (item) {
-                case Texture2D texture2D:
-                    var imgData = AssetStudio.Texture2DExtensions.ConvertToStream(texture2D, ImageFormat.Png, true).ToArray();
-                    var img = Raylib.LoadImageFromMemory(".png", imgData);
-                    var tex = Raylib.LoadTextureFromImage(img);
-                    return (ReturnStructure)(object)tex;
-                default:
-                    throw new NotImplementedException($"There is not a struct ReturnStructure generator for {typeof(AssetType).Name}!");
-            }
-        }
-        public static ReturnStructure LoadAssetEasyC<AssetType, ReturnStructure>(string query, bool regex = false) where AssetType : class where ReturnStructure : class {
-            AssetType item = __internalLoadAsset<AssetType>(query, regex);
-
-            switch (item) {
-                case AudioClip audioClip:
-                    if (typeof(ReturnStructure) != typeof(MusicTrack)) throw new NotImplementedException("AudioClip returns a MusicTrack and cannot return a different type.");
-
-                    byte[] musicStream;
-                    var audiodata = audioClip.m_AudioData.GetData();
-
-                    if (audioClip.m_Type == FMODSoundType.UNKNOWN) {
-                        FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-                        bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
-
-                        return EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream) as ReturnStructure;
-                    }
-
-                    throw new Exception("Something went wrong loading an AudioClip");
-                case TextAsset textAsset:
-                    return JsonConvert.DeserializeObject<ReturnStructure>(Encoding.UTF8.GetString(textAsset.m_Script));
-                default:
-                    throw new NotImplementedException($"There is not a class ReturnStructure generator for {typeof(AssetType).Name}!");
-            }
-        }
+        
 
         private struct __musedashSong
         {
