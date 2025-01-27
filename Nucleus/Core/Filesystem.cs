@@ -87,8 +87,8 @@ namespace Nucleus.Core
         public static string[] ReadAllLines(string localFilepath, string path = null, Encoding encoding = null) => File.ReadAllLines(Resolve(localFilepath, path), encoding == null ? Encoding.UTF8 : encoding);
         public static byte[] ReadAllBytes(string localFilepath, string path = null) => File.ReadAllBytes(Resolve(localFilepath, path));
 
-        public static void WriteAllText(string localFilepath, string path, string data, Encoding encoding = null) => File.WriteAllText(Resolve(localFilepath, path), data, encoding == null ? Encoding.UTF8 : encoding);
-        public static void WriteAllLines(string localFilepath, string path, string[] data, Encoding encoding = null) => File.WriteAllLines(Resolve(localFilepath, path), data, encoding == null ? Encoding.UTF8 : encoding);
-        public static void WriteAllBytes(string localFilepath, string path, byte[] data) => File.WriteAllBytes(Resolve(localFilepath, path), data);
+        public static void WriteAllText(string localFilepath, string path, string data, Encoding encoding = null) => File.WriteAllText(Resolve(localFilepath, path, false), data, encoding == null ? Encoding.UTF8 : encoding);
+        public static void WriteAllLines(string localFilepath, string path, string[] data, Encoding encoding = null) => File.WriteAllLines(Resolve(localFilepath, path, false), data, encoding == null ? Encoding.UTF8 : encoding);
+        public static void WriteAllBytes(string localFilepath, string path, byte[] data) => File.WriteAllBytes(Resolve(localFilepath, path, false), data);
     }
 }
