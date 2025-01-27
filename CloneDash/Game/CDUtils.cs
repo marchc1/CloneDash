@@ -24,7 +24,7 @@ namespace CloneDash
 				baseScore *= 1.5f;
 
 			if (accuracy >= 25)
-				baseScore *= .5f;
+				baseScore *= (inFever ? 0.66666666666f : .5f);
 
 			return (int)MathF.Round(baseScore);
 		}
