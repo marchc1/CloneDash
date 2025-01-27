@@ -46,19 +46,6 @@ namespace CloneDash.Game
 			loadMDLevel.MouseReleaseEvent += LoadMDLevel_MouseReleaseEvent;
 			loadMDLevel.TooltipText = "Load Muse Dash Level";
 
-			var loadModdingTools = header.Add<Button>();
-			loadModdingTools.AutoSize = false;
-			loadModdingTools.Size = new Vector2F(64);
-			loadModdingTools.Text = "";
-			loadModdingTools.ImageOrientation = ImageOrientation.Zoom;
-			loadModdingTools.Dock = Dock.Right;
-			loadModdingTools.Image = Textures.LoadTextureFromFile("ui\\mainmenu_soldermod.png");
-			loadModdingTools.TextSize = 21;
-			loadModdingTools.DockMargin = RectangleF.TLRB(0);
-			loadModdingTools.BorderSize = 0;
-			loadModdingTools.MouseReleaseEvent += LoadModelViewer_MouseReleaseEvent;
-			loadModdingTools.TooltipText = "Modding Tools";
-
 			var loadMDCC = header.Add<Button>();
 			loadMDCC.AutoSize = false;
 			loadMDCC.Size = new Vector2F(64);
@@ -88,10 +75,6 @@ namespace CloneDash.Game
 			if (!result.Cancelled) {
 				LoadSongSelector(new CustomChartsSong(result.Result));
 			}
-		}
-
-		private void LoadModelViewer_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			EngineCore.LoadLevel(new CD_ModelEditor());
 		}
 
 		public record MuseDashMap(string map_first, List<string> maps);
