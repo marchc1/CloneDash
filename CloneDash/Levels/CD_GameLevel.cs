@@ -425,12 +425,13 @@ namespace CloneDash.Game
             return e;
         }*/
 
-        /// <summary>
-        /// Polling function which figures out the closest, potentially-hit entity and returns the result.
-        /// </summary>
-        /// <param name="pathway"></param>
-        /// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
-        public PollResult Poll(PathwaySide pathway) {
+		public PollResult LastPollResult { get; private set; } = PollResult.Empty;
+		/// <summary>
+		/// Polling function which figures out the closest, potentially-hit entity and returns the result.
+		/// </summary>
+		/// <param name="pathway"></param>
+		/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
+		public PollResult Poll(PathwaySide pathway) {
             foreach (CD_BaseMEntity entity in VisibleEntities) {
                 // If the entity has no interactivity, ignore it in the poll
                 if (!entity.Interactive)
@@ -449,15 +450,18 @@ namespace CloneDash.Game
                             double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
                             if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured
                                 var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
-                                return PollResult.Create(entity, distance, greatness);
-                            }
+								LastPollResult = PollResult.Create(entity, distance, greatness);
+								return LastPollResult;
+
+							}
                         }
                         break;
                 }
             }
 
-            return PollResult.Empty;
-        }
+			LastPollResult = PollResult.Empty;
+			return LastPollResult;
+		}
 
         /// <summary>
         /// Spawns a <see cref="TextEffect"/> into the game and adds it to the game.
