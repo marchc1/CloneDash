@@ -174,7 +174,22 @@ namespace Nucleus.Core
         public static void DrawLine(Vector2F start, Vector2F end) => Raylib.DrawLineV(AFV2ToSNV2(start), AFV2ToSNV2(end), __drawColor);
         public static void DrawLine(Vector2F start, Vector2F end, float width) => Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
 
-        public static void DrawLineStrip(Vector2F[] points) => Raylib.DrawLineStrip(Array.ConvertAll<Vector2F, Vector2>(points, AFV2ToSNV2), points.Length, __drawColor);
+		public static void DrawLine(Vector2F startPos, Color startColor, Vector2F endPos, Color endColor, float width = 1) {
+			var _startPos = AFV2ToSNV2(startPos.Round());
+			var _endPos = AFV2ToSNV2(endPos.Round());
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(width);
+			Rlgl.Begin(DrawMode.LINES);
+			Rlgl.Color4ub(startColor.R, startColor.G, startColor.B, startColor.A);
+			Rlgl.Vertex2f(_startPos.X + 0.5f, _startPos.Y + 0.5f);
+			Rlgl.Color4ub(endColor.R, endColor.G, endColor.B, startColor.A);
+			Rlgl.Vertex2f(_endPos.X + 0.5f, _endPos.Y + 0.5f);
+			Rlgl.End();
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(1);
+		}
+
+		public static void DrawLineStrip(Vector2F[] points) => Raylib.DrawLineStrip(Array.ConvertAll<Vector2F, Vector2>(points, AFV2ToSNV2), points.Length, __drawColor);
 
         public static void DrawLineBezier(Vector2F start, Vector2F end, float width = 1f) => Raylib.DrawLineBezier(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
 
