@@ -231,6 +231,9 @@ namespace Nucleus
             Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
             Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
         }
+
+		public static PerfGraph CPUGraph;
+		public static PerfGraph MemGraph;
         private static void __loadLevel(Level level, object[] args) {
             if (level == null) {
                 Level = null;
@@ -255,7 +258,24 @@ namespace Nucleus
             LoadingScreen?.Unload();
             __nextFrameLevel = null;
             __nextFrameArgs = null;
-            s.Stop();
+			if (EngineCore.ShowDebuggingInfo) {
+				CPUGraph = Level.UI.Add(new PerfGraph() {
+					Anchor = Anchor.BottomRight,
+					Origin = Anchor.BottomRight,
+					Position = new(-8, -8 + -32 + -8),
+					Size = new(400, 32),
+					Mode = PerfGraphMode.CPU_Frametime
+				});
+				MemGraph = Level.UI.Add(new PerfGraph() {
+					Anchor = Anchor.BottomRight,
+					Origin = Anchor.BottomRight,
+					Position = new(-8, -8),
+					Size = new(400, 32),
+					Mode = PerfGraphMode.RAM_Usage
+				});
+			}
+
+			s.Stop();
 
             Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
             //GC.Collect();
