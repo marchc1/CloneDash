@@ -65,8 +65,8 @@ namespace CloneDash.Game
 
                 ExitHitState();
 
-                if (Debug)
-                    Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
+                //if (Debug)
+                    //Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
             }
         }
     }
