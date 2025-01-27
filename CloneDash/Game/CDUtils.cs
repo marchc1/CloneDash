@@ -12,10 +12,10 @@ namespace CloneDash
 	{
 		public static int DetermineScoreMultiplied(float baseScore, bool inFever, int combo, double accuracy) {
 			if (combo <= 9) baseScore *= 1.0f;
-			else if (combo >= 19) baseScore *= 1.1f;
-			else if (combo >= 29) baseScore *= 1.2f;
-			else if (combo >= 39) baseScore *= 1.3f;
-			else if (combo >= 49) baseScore *= 1.4f;
+			else if (combo <= 19) baseScore *= 1.1f;
+			else if (combo <= 29) baseScore *= 1.2f;
+			else if (combo <= 39) baseScore *= 1.3f;
+			else if (combo <= 49) baseScore *= 1.4f;
 			else baseScore *= 1.5f;
 
 			accuracy = Math.Abs(accuracy);
