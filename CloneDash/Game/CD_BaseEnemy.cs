@@ -11,7 +11,7 @@ namespace CloneDash.Game
             // { EntityType.Masher, typeof(Masher) },
             { EntityType.Gear, typeof(Gear) },
             // { EntityType.Ghost, typeof(Ghost) },
-            // { EntityType.Raider, typeof(Raider) },
+            { EntityType.Raider, typeof(Raider) },
             // { EntityType.Heart, typeof(Health) },
             { EntityType.SustainBeam, typeof(SustainBeam) },
         };

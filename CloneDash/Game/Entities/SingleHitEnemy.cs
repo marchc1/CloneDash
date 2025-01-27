@@ -1,6 +1,4 @@
-﻿
-using NAudio.Wave;
-using Nucleus;
+﻿using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Types;
 

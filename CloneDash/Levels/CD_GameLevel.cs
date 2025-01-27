@@ -165,7 +165,9 @@ namespace CloneDash.Game
             Scorebar.Size = new(0, 128);
 
             Sounds.PlaySound("readygo.wav", true, 0.8f, 1.0f);
-        }
+
+			CloneDashConsole.HookToLevel(this);
+		}
         public bool Debug { get; set; } = true;
         public Window PauseWindow { get; private set; }
         private bool lastNoteHit = false;
