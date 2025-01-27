@@ -333,11 +333,14 @@ namespace Nucleus
 			if (changed)
 				OnChange?.Invoke(this, old, value);
 
-			if (!init && (Flags & ConsoleFlags.Saved) == ConsoleFlags.Saved)
+			if (!init && (Flags & ConsoleFlags.Saved) == ConsoleFlags.Saved) {
 				if (!IsDefault)
 					Host.SetConfigCVar(Name, input);
 				else
 					Host.SetConfigCVar(Name, null);
+
+				Host.MarkDirty();
+			}
 		}
 		private void Clamp() {
 			var old = value;

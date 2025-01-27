@@ -371,7 +371,7 @@ namespace Nucleus
 
         public static void Frame() {
             MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-            Raylib.BeginDrawing();
+			Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(0, 0, 0, 255));
             Graphics2D.SetOffset(GetGlobalScreenOffset());
 
@@ -412,7 +412,9 @@ namespace Nucleus
             Raylib.EndDrawing();
             Raylib.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
-            if (Raylib.WindowShouldClose()) {
+			Host.CheckDirty();
+
+			if (Raylib.WindowShouldClose()) {
                 Close();
             }
         }

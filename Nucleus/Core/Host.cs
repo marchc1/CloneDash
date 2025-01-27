@@ -18,6 +18,8 @@ namespace Nucleus.Core
 	{
 		public static HostConfig Config { get; private set; }
 		public static bool Initialized { get; private set; } = false;
+		public static bool IsDirty { get; private set; } = false;
+		public static DateTime LastWriteTime { get; private set; } = DateTime.MinValue;
 
 		public static T? GetDataStore<T>(string key) => Config.DataStore.TryGetValue(key, out var str) ? JsonConvert.DeserializeObject<T>(str) : default;
 		public static void SetDataStore<T>(string key, T? value) {
@@ -59,9 +61,27 @@ namespace Nucleus.Core
 			Config.CVars[cvar] = val;
 		}
 
+		/// <summary>
+		/// Marks the configuration data as outdated and needing to be re-written to disk.
+		/// </summary>
+		public static void MarkDirty() {
+			IsDirty = true;
+		}
+		public static void CheckDirty() {
+			if (!IsDirty)
+				return;
+
+			if ((DateTime.Now - LastWriteTime).TotalMilliseconds < 1000)
+				return;
+
+			WriteConfig();
+			IsDirty = false;
+		}
+
 		public static void WriteConfig() {
 			Filesystem.WriteAllText("config.cfg", "cfg", JsonConvert.SerializeObject(Config));
-			Logs.Info("Host: Wrote config to config.cfg");
+			Logs.Debug("Host: Wrote config to config.cfg");
+			LastWriteTime = DateTime.Now;
 		}
 
 		public static ConCommand host_writeconfig = ConCommand.Register("host_writeconfig", (_, args) => WriteConfig(), "Writes the current configuration to config.cfg");
