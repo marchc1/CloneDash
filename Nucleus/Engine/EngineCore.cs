@@ -196,7 +196,7 @@ namespace Nucleus
 
             var version = new DateTime(2000, 1, 1) + TimeSpan.FromDays(typeof(EngineCore).Assembly.GetName().Version.Build);
             var isDebug = IsAssemblyDebugBuild(typeof(EngineCore).Assembly);
-            Logs.Info($"Nucleus Engine, Build {(isDebug ? "[DEBUG]" : "[RELEASE]")} {version.Month}-{version.Day}-{version.Year}.");
+            Logs.Info($"Nucleus Engine, BuildConfig {(isDebug ? "DEBUG" : "RELEASE")}.");
             Logs.Info("Initializing...");
             unsafe {
                 Raylib.SetTraceLogCallback(&LogCustom);
@@ -231,10 +231,6 @@ namespace Nucleus
             Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
             Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
         }
-
-        private static Window console;
-        private static Textbox lines;
-
         private static void __loadLevel(Level level, object[] args) {
             if (level == null) {
                 Level = null;
