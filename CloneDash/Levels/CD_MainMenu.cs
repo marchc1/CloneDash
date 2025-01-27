@@ -79,6 +79,8 @@ namespace CloneDash.Game
 			test2.TextSize = 30;
 			test2.AutoSize = true;
 			test2.DockMargin = RectangleF.TLRB(4);
+
+			CloneDashConsole.HookToLevel(this);
 		}
 
 		private void LoadMDCC_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {

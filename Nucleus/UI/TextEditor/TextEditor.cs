@@ -106,7 +106,7 @@ namespace Nucleus.UI
 
 			var s = Graphics2D.GetTextSize("W", Font, TextSize);
 			FontWidth = s.X;
-			FontHeight = s.Y;
+			FontHeight = s.Y + 2;
 
 			MaxVisibleRows = MathF.Floor(Height / FontHeight);
 			MaxVisibleCols = MathF.Floor(Width / FontWidth);

@@ -71,12 +71,17 @@ namespace Nucleus.UI
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
-					if ((child.RenderBounds.Y + child.RenderBounds.H) < VerticalScrollbar.Scroll)
+					child.Enabled = true;
+
+					if ((child.RenderBounds.Y) < VerticalScrollbar.Scroll)
 						child.Visible = false;
 					else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + RenderBounds.H) - child.RenderBounds.H)
 						child.Visible = false;
 					else
 						child.Visible = true;
+				}
+				else {
+					child.Enabled = false;
 				}
 			}
 
