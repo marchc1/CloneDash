@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Types
 {
-	public class ConstantLengthNumericalQueue<T>(int capacity)
+
+	public class ConstantLengthNumericalQueue<T>(int capacity) where T : IFloatingPoint<T>
 	{
+		public int Capacity => capacity;
 		int pointer = 0;
 		int length = 0;
 		T[] backing = new T[capacity];
-
-		public int Capacity => capacity;
-		
 		public void Add(T item) {
 			if (length < capacity)
 				length++;
@@ -35,6 +34,20 @@ namespace Nucleus.Types
 
 		int startat = 0;
 		public int Start => startat;
+
+		public T Min() {
+			T ret = T.CreateSaturating(10000);
+			for (int i = 0; i < length; i++)
+				ret = T.Min(ret, this[i]);
+			return ret;
+		}
+
+		public T Max() {
+			T ret = T.CreateSaturating(-10000);
+			for (int i = 0; i < length; i++)
+				ret = T.Max(ret, this[i]);
+			return ret;
+		}
 
 		public T[] ToArray() {
 			T[] ret = new T[capacity];
