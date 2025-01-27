@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Authors>Khronos Group</Authors>
     <Description>C# reference loader for glTF 2.0</Description>
     <Product>glTF2Loader</Product>
@@ -14,11 +13,7 @@
     <PackageTags>glTF loader C#</PackageTags>
     <Version>1.1.4-alpha</Version>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
-
 </Project>
