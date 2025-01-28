@@ -56,7 +56,7 @@ namespace Nucleus.Core
 
             DateTime now = DateTime.Now;
             double delta = EngineCore.Level.RealtimeDelta;
-            delta *= Speed;
+            delta *= Math.Max(0, Speed);
 
             AnimationPlayhead += delta;
 
