@@ -77,10 +77,10 @@ namespace Nucleus.Types
         public MouseState() { }
 
         public override string ToString() {
-            return $"Clicked [{(Mouse1Clicked ? "^" : "_")} {(Mouse2Clicked ? "^" : "_")} {(Mouse3Clicked ? "^" : "_")} {(Mouse4Clicked ? "^" : "_")} {(Mouse5Clicked ? "^" : "_")}] " +
-                $"Held [{(Mouse1Held ? "^" : "_")} {(Mouse2Held ? "^" : "_")} {(Mouse3Held ? "^" : "_")} {(Mouse4Held ? "^" : "_")} {(Mouse5Held ? "^" : "_")}] " +
-                $"Released [{(Mouse1Released ? "^" : "_")} {(Mouse2Released ? "^" : "_")} {(Mouse3Released ? "^" : "_")} {(Mouse4Released ? "^" : "_")} {(Mouse5Released ? "^" : "_")}] " +
-                $"[pos: {MousePos}] [delta: {MouseDelta}] [scroll: {MouseScroll}]";
+            return $"C [{(Mouse1Clicked ? "^" : "_")}{(Mouse2Clicked ? "^" : "_")}{(Mouse3Clicked ? "^" : "_")}{(Mouse4Clicked ? "^" : "_")}{(Mouse5Clicked ? "^" : "_")}] " +
+                $"H [{(Mouse1Held ? "^" : "_")}{(Mouse2Held ? "^" : "_")}{(Mouse3Held ? "^" : "_")}{(Mouse4Held ? "^" : "_")}{(Mouse5Held ? "^" : "_")}] " +
+                $"R [{(Mouse1Released ? "^" : "_")}{(Mouse2Released ? "^" : "_")}{(Mouse3Released ? "^" : "_")}{(Mouse4Released ? "^" : "_")}{(Mouse5Released ? "^" : "_")}] " +
+                $"P [{MousePos}] D [{MouseDelta}] S [{MouseScroll}]";
         }
     }
 }
