@@ -18,6 +18,8 @@ namespace Nucleus.Core
 		public Bone3Cache[] RootBones { get; set; } = [];
 
 		public List<(Mesh mesh, int material)> MeshMaterialPairs { get; private set; } = [];
+		public Dictionary<string, Mesh> NamedMeshPairs { get; private set; } = [];
+		public Dictionary<uint, string> MeshNamePairs { get; private set; } = [];
 		public Dictionary<int, int> JointIDToNewID { get; internal set; }
 		public Dictionary<int, int> NodeIDToJointID { get; internal set; }
 
