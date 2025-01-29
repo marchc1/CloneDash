@@ -147,6 +147,7 @@ namespace Nucleus.Core
 
         internal void CreateBoneFromCache(Bone3Cache boneCacheStore) {
             Model3Bone bone = new Model3Bone();
+			bone.Cache = boneCacheStore;
             bone.Root = this.Root;
             bone.Parent = this;
             bone.Root.Bones.Add(bone);
