@@ -14,11 +14,15 @@ namespace glTFLoader.Schema {
     
     
     public class Animation {
-        
-        /// <summary>
-        /// Backing field for Channels.
-        /// </summary>
-        private AnimationChannel[] m_channels;
+
+		public override string ToString() {
+			return $"GLTF Animation [name: {Name}]";
+		}
+
+		/// <summary>
+		/// Backing field for Channels.
+		/// </summary>
+		private AnimationChannel[] m_channels;
         
         /// <summary>
         /// Backing field for Samplers.

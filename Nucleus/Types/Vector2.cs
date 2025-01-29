@@ -111,9 +111,75 @@ namespace Nucleus.Types
         [JsonIgnore]
         public Vector2F YY => new(Y, Y);
 
-        public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
+		public float Length => MathF.Sqrt(x * x + y * y);
 
-        public Vector2F FitInto(RectangleF cropRect) {
+		public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
+
+		/// <summary>
+		/// Performs linear interpolation where ratio (0 -> 1) is translated to a -> b
+		/// </summary>
+		/// <param name="ratio"></param>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static Vector2F Lerp(float ratio, Vector2F a, Vector2F b) {
+			return new(
+				NMath.Lerp(ratio, a.X, b.X),
+				NMath.Lerp(ratio, a.Y, b.Y)
+				);
+		}
+		/// <summary>
+		/// Return a normalized <see cref="Vector2F"/> with a <see cref="Length"/> of 1.
+		/// </summary>
+		/// <returns></returns>
+		public Vector2F Normalize() {
+			return new(X / Length, Y / Length);
+		}
+
+		/// <summary>
+		/// Rotates a Vector2F around a center by a rotation specified in degrees.
+		/// </summary>
+		/// <param name="center"></param>
+		/// <param name="degrees">Rotation in degrees</param>
+		/// <returns></returns>
+		public Vector2F RotateAroundPoint(Vector2F center, float degrees) {
+			float radians = degrees / (180f / MathF.PI);
+			float s = MathF.Sin(radians);
+			float c = MathF.Cos(radians);
+
+			Vector2F p = new(this.X, this.Y);
+
+			// translate point back to origin:
+			p.x -= center.X;
+			p.y -= center.Y;
+
+			// rotate point
+			float xnew = p.x * c - p.y * s;
+			float ynew = p.x * s + p.y * c;
+
+			// translate point back:
+			p.x = xnew + center.Y;
+			p.y = ynew + center.X;
+
+			return p;
+		}
+		/// <summary>
+		/// Get the rotation of this point in degrees. Zero means straight Y up, no X.
+		/// </summary>
+		/// <param name="center"></param>
+		/// <returns></returns>
+		public float GetRotationFromCenter(Vector2F center) {
+			var normalized = (this - center).Normalize();
+
+			return 360 - (((MathF.Atan2(normalized.X, normalized.Y) * NMath.DEG2RAD) + 180) % 360);
+		}
+
+		public bool InRing(Vector2F focus, float outerRing, float innerRing) {
+			// in the outer ring radius but not in the inner ring radius
+			return InRadiusOfCircle(focus, outerRing) && !InRadiusOfCircle(focus, innerRing);
+		}
+
+		public Vector2F FitInto(RectangleF cropRect) {
             Vector2F newR = this;
 
             newR.X = Math.Clamp(newR.X, cropRect.X, cropRect.X + cropRect.W);

@@ -116,6 +116,8 @@ namespace glTFLoader.Schema {
             scale,
             
             weights,
+
+			pointer
         }
     }
 }

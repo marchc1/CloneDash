@@ -190,8 +190,37 @@ namespace Nucleus.Core
 		}
 
 		public static void DrawLineStrip(Vector2F[] points) => Raylib.DrawLineStrip(Array.ConvertAll<Vector2F, Vector2>(points, AFV2ToSNV2), points.Length, __drawColor);
+		public static void DrawLineStrip(Vector2F[] points, float ratio = 1) {
+			if (points.Length <= 1) {
+				Logs.Warn("DrawLineStrip: expected point array of length > 1, ignoring.");
+				return;
+			}
+			if (ratio <= 0)
+				return;
+			if (ratio >= 1) {
+				Raylib.DrawLineStrip(Array.ConvertAll(points, AFV2ToSNV2), points.Length, __drawColor);
+				return;
+			}
+			float length = ratio * (points.Length - 1);
+			int pointsNeeded = (int)MathF.Max(MathF.Ceiling(ratio * points.Length), 2);
 
-        public static void DrawLineBezier(Vector2F start, Vector2F end, float width = 1f) => Raylib.DrawLineBezier(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
+			Vector2[] finalPoints = new Vector2[pointsNeeded];
+			finalPoints[0] = AFV2ToSNV2(points[0]);
+			for (int i = 1; i < pointsNeeded; i++) {
+				var lastPoint = points[i - 1];
+				var currPoint = points[i];
+
+				var r = (float)Math.Clamp(NMath.Remap(length, i - 1, i, 0, 1), 0, 1);
+
+				finalPoints[i] = AFV2ToSNV2(Vector2F.Lerp(
+					r, lastPoint, currPoint
+					));
+			}
+
+			Raylib.DrawLineStrip(finalPoints, finalPoints.Length, __drawColor);
+		}
+
+		public static void DrawLineBezier(Vector2F start, Vector2F end, float width = 1f) => Raylib.DrawLineBezier(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
 
         public static void DrawCircle(int centerX, int centerY, float radius) => Raylib.DrawCircle(offsetX(centerX), offsetY(centerY), radius, __drawColor);
         public static void DrawCircle(Vector2F pos, float radius) => Raylib.DrawCircleV(AFV2ToSNV2(pos), radius, __drawColor);

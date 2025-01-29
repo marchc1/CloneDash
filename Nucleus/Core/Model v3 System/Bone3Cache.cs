@@ -3,13 +3,16 @@ using System.Numerics;
 
 namespace Nucleus.Core
 {
-    public class Bone3Cache
+
+	public class Bone3Cache
     {
         public int ID { get; set; }
         /// <summary>
         /// A -1 points to being parented to the Model
         /// </summary>
         public int Parent { get; set; } = -1;
+
+		public List<string> Slots { get; set; } = [];
 
         public TransformVQV BindPose { get; set; } = new();
         public string Name { get; internal set; }

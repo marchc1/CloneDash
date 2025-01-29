@@ -1,6 +1,7 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Types;
+using Nucleus.UI.Elements;
 using Raylib_cs;
 
 namespace Nucleus.UI
@@ -110,6 +111,14 @@ namespace Nucleus.UI
             MainThread.RunASAP(Remove);
         }
 
-        public Level? EngineLevel { get; set; }
+		public event MouseEventDelegate? OnElementClicked;
+		public event MouseEventDelegate? OnElementReleased;
+
+		public void TriggerElementClicked(Element e, FrameState fs, Types.MouseButton mb) => OnElementClicked?.Invoke(e, fs, mb);
+		public void TriggerElementReleased(Element e, FrameState fs, Types.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
+		public Menu Menu() {
+			return this.Add<Menu>();
+		}
+		public Level? EngineLevel { get; set; }
     }
 }

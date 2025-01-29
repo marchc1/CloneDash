@@ -94,27 +94,47 @@ namespace Nucleus.Core
             foreach(var mapair in Animations) {
                 mapair.Value.Process();
             }
-            foreach (var mmpair in Model.MeshMaterialPairs) {
+
+			foreach (var mmpair in Model.MeshMaterialPairs) {
                 var materialCache = Model.Materials[mmpair.material];
                 var mat = materialCache.Material;
+				var mesh = mmpair.mesh;
+				var meshName = Model.MeshNamePairs[mesh.VaoId];
 
                 var shader = mat.Shader;
 
-                var cd = shader.GetShaderLocation($"colorMult");
-                shader.SetShaderValue($"colorMult", new Vector4(__color.R / 255f, __color.G / 255f, __color.B / 255f, __color.A / 255f), ShaderUniformDataType.SHADER_UNIFORM_VEC4);
-                shader.SetShaderValue($"inputHSV", __hsv, ShaderUniformDataType.SHADER_UNIFORM_VEC3);
-                
+                var cd = shader.GetShaderLocation("colorMult");
+                shader.SetShaderValue("colorMult", new Vector4(__color.R / 255f, __color.G / 255f, __color.B / 255f, __color.A / 255f), ShaderUniformDataType.SHADER_UNIFORM_VEC4);
+                shader.SetShaderValue("inputHSV", __hsv, ShaderUniformDataType.SHADER_UNIFORM_VEC3);
+				
                 CalculateBoneTransforms();
+
+				bool doRender = true;
 
                 for (int i = 0; i < Bones.Count; i++) {
                     var bone = Bones[i];
                     shader.SetShaderValueMatrix($"bones[{i}].final", FinalBoneTransforms[i]);
+					if(bone.ActiveSlot != 0) {
+						var slots = bone.Cache.Slots;
+						for (int i2 = 0; i2 < slots.Count; i2++) {
+							var realIndex = i2 + 1;
+							var isActive = realIndex == bone.ActiveSlot;
+							var slotTarget = slots[i2];
+							if(slotTarget == meshName && !isActive) {
+								doRender = false;
+								break;
+							}
+						}
+					}
                 }
 
+				if (!doRender)
+					continue;
+
                 var transformDefault = Matrix4x4.CreateTranslation(0, 0, 0) * Matrix4x4.CreateFromQuaternion(Quaternion.Identity) * Matrix4x4.CreateScale(1);
-                Raylib.DrawMesh(mmpair.mesh, mat, transformDefault);
+                Raylib.DrawMesh(mesh, mat, transformDefault);
             }
-        }
+		}
 
         public override string ToString() {
             return $"Model V3 #{ID}";

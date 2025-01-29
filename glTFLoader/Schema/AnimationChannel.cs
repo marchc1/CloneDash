@@ -14,11 +14,14 @@ namespace glTFLoader.Schema {
     
     
     public class AnimationChannel {
-        
-        /// <summary>
-        /// Backing field for Sampler.
-        /// </summary>
-        private int m_sampler;
+		public override string ToString() {
+			return $"GLTF Animation Channel [sampler: {m_sampler}, target: {m_target.Path}]";
+		}
+
+		/// <summary>
+		/// Backing field for Sampler.
+		/// </summary>
+		private int m_sampler;
         
         /// <summary>
         /// Backing field for Target.

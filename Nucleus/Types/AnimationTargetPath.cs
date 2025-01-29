@@ -4,6 +4,7 @@
     {
         Position,
         Rotation,
-        Scale
+        Scale,
+		ActiveSlot
     }
 }

@@ -270,14 +270,6 @@ namespace CloneDash.Game
                 HologramPlayer.Visible = false;
             }
 
-            /*if (frameState.KeyboardState.KeyPressed(KeyboardLayout.US.F)) {
-                Player.PlayAnimation("HitTop.1", loop: false, fallback: "Walk");
-            }
-
-            if (frameState.KeyboardState.KeyPressed(KeyboardLayout.US.J)) {
-                Player.PlayAnimation("HitBottom.1", loop: false, fallback: "Walk");
-            }*/
-
             VisibleEntities.Clear();
 
             foreach (var entity in Entities) {

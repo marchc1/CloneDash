@@ -59,7 +59,37 @@ public partial struct Color
         this.A = Convert.ToByte(a);
     }
 
-    public override string ToString()
+	// Helper initializers so you dont have to specify everything
+	public Color(byte rgb) {
+		this.R = this.G = this.B = rgb;
+		this.A = 255;
+	}
+	public Color(int rgb) {
+		this.R = this.G = this.B = Convert.ToByte(rgb);
+		this.A = 255;
+	}
+	public Color(byte rgb, byte a) {
+		this.R = this.G = this.B = rgb;
+		this.A = a;
+	}
+	public Color(int rgb, int a) {
+		this.R = this.G = this.B = Convert.ToByte(rgb);
+		this.A = Convert.ToByte(a);
+	}
+	public Color(byte r, byte g, byte b) {
+		this.R = r;
+		this.G = g;
+		this.B = b;
+		this.A = 255;
+	}
+	public Color(int r, int g, int b) {
+		this.R = Convert.ToByte(r);
+		this.G = Convert.ToByte(g);
+		this.B = Convert.ToByte(b);
+		this.A = 255;
+	}
+
+	public override string ToString()
     {
         return $"{{R:{R} G:{G} B:{B} A:{A}}}";
     }

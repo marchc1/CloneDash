@@ -753,7 +753,8 @@ namespace Nucleus.UI
             Depressed = true;
             MouseClick(state, button);
             MouseClickEvent?.Invoke(this, state, button);
-        }
+			UI.TriggerElementClicked(this, state, button);
+		}
         internal void MouseReleaseOccur(FrameState state, MouseButton button, bool forced = false) {
             Depressed = false;
 
@@ -762,7 +763,8 @@ namespace Nucleus.UI
 
             MouseRelease(this, state, button);
             MouseReleaseEvent?.Invoke(this, state, button);
-        }
+			UI.TriggerElementReleased(this, state, button);
+		}
         internal void MouseDragOccur(FrameState state, Vector2F delta) {
             MouseDrag(this, state, delta);
             MouseDragEvent?.Invoke(this, state, delta);

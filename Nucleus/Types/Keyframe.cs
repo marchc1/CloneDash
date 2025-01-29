@@ -36,13 +36,15 @@ namespace Nucleus.Types
 
             var ratio = (float)NMath.Remap(curtime, L.Time, R.Time, 0, 1);
             switch (L) {
-                case Keyframe<Vector3> clv:
-                    Keyframe<Vector3> crv = R;
-                    return (vector3LinearInterpolation(clv.Value, crv.Value, ratio) as T?).Value;
-                case Keyframe<Quaternion> clq:
+				case Keyframe<float> clv:
+					Keyframe<float> crf = (Keyframe<float>)(object)R;
+					return (NMath.Lerp(ratio, clv.Value, crf.Value) as T?).Value;
+				case Keyframe<Vector3> clv:
+					Keyframe<Vector3> crv = R;
+					return (vector3LinearInterpolation(clv.Value, crv.Value, ratio) as T?).Value;
+				case Keyframe<Quaternion> clq:
                     Keyframe<Quaternion> crq = R;
                     return (quaternionLinearInterpolation(clq.Value, crq.Value, ratio) as T?).Value;
-                    break;
                 default:
                     throw new NotImplementedException($"No linear interpolation function for {typeof(T).Name}");
             }
