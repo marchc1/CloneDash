@@ -13,8 +13,15 @@ namespace Nucleus.ModelViewer
 		Checkbox visBones;
 		ModelEntity? Entity;
 		static string? LastFile;
+		static DateTime LastFileWriteTime;
+
+		public static Vector2F CamOffset = Vector2F.Zero;
+		public static float CamZoom = 1;
+
 		public override void Initialize(params object[] args) {
 			base.Initialize(args);
+			CamOffset = Vector2F.Zero;
+			CamZoom = 1;
 			EngineCore.ShowDebuggingInfo = true;
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => {
 				EngineCore.LoadLevel(new Model3Viewer());
@@ -37,7 +44,6 @@ namespace Nucleus.ModelViewer
 			hardReload.TextPadding = new(8);
 			hardReload.AutoSize = true;
 			hardReload.Text = "Reload Model3 Data";
-
 			hardReload.MouseReleaseEvent += HardReload_MouseReleaseEvent;
 
 			Button changeAnimation = UI.Add<Button>();
@@ -73,6 +79,17 @@ namespace Nucleus.ModelViewer
 			if (LastFile != null) {
 				Entity = ModelEntity.Create(LastFile, true);
 			}
+
+			UI.MouseDragEvent += UI_MouseDragEvent;
+			UI.MouseScrollEvent += UI_MouseScrollEvent;
+		}
+
+		private void UI_MouseScrollEvent(Element self, FrameState state, Vector2F delta) {
+			CamZoom += (delta.Y / -10f);
+		}
+
+		private void UI_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+			CamOffset += (delta * -0.5f);
 		}
 
 		double animationSpeed = 1;
@@ -109,6 +126,7 @@ namespace Nucleus.ModelViewer
 			if (LastFile == null) return;
 			Entity?.Remove();
 			Entity = ModelEntity.Create(LastFile, true);
+			LastFileWriteTime = File.GetLastWriteTime(LastFile);
 		}
 
 		private void OpenFile_MouseReleaseEvent(Element self, FrameState state, Types.MouseButton button) {
@@ -123,16 +141,20 @@ namespace Nucleus.ModelViewer
 				var file = result.Files[0];
 				LastFile = file;
 				Entity = ModelEntity.Create(file, true);
+				LastFileWriteTime = File.GetLastWriteTime(LastFile);
 			}
 		}
 		List<StringData> strings = [];
 		public override void Render(FrameState frameState) {
+			Raylib.ClearBackground(new(30));
 			strings.Clear();
 			base.Render(frameState);
 
-			if (IValidatable.IsValid(Entity)) {
+			if (IValidatable.IsValid(Entity) && LastFile != null) {
 				Entity.Render(frameState);
 				strings.Add(new("Model", Path.GetFileName(LastFile)));
+				strings.Add(new("Write Time", LastFileWriteTime));
+				strings.Add(new("Model3Cache outdated?", (LastFileWriteTime != File.GetLastWriteTime(LastFile)) ? "Yes" : "No"));
 				strings.Add(new("", null));
 				strings.Add(new("Vertices", Entity.Model.Model.Vertices));
 				strings.Add(new("Triangles", Entity.Model.Model.Triangles));
@@ -179,8 +201,9 @@ namespace Nucleus.ModelViewer
 				bool valueless = valuelessness[i];
 				if (labelless && value == null && !valueless) continue;
 
-				Graphics2D.DrawText(new(frameState.WindowWidth - 8, 78 + (i * 16)), $"{label}" + (valueless ? new string(' ', maxStrLen + 1) : $"{(labelless || label.EndsWith("?") ? "" : ":")}{new string(' ', maxStrLen - value.Length)} {value ?? " <null>"}"), "Consolas", 14, Anchor.TopRight);
+				Graphics2D.DrawText(new(frameState.WindowWidth - 8, 120 + (i * 16)), $"{label}" + (valueless ? new string(' ', maxStrLen + 1) : $"{(labelless || label.EndsWith("?") ? "" : ":")}{new string(' ', maxStrLen - value.Length)} {value ?? " <null>"}"), "Consolas", 14, Anchor.TopRight);
 			}
+
 			if (IValidatable.IsValid(Entity)) {
 				if (IValidatable.IsValid(visBones) && visBones.Checked) {
 					foreach (var bone in Entity.Model.Bones) {
@@ -189,7 +212,7 @@ namespace Nucleus.ModelViewer
 
 						Graphics2D.SetDrawColor(255, 50, 50);
 						Graphics2D.DrawCircle(screenPos.ToNucleus(), 4);
-						if(bone.Parent != null) {
+						if(bone.Parent != null && !bone.Parent.IsRoot) {
 							var parentWorldPos = bone.Parent.LocalToWorld(new(0, 0, 0));
 							var parentScreenPos = Raylib.GetWorldToScreen(parentWorldPos, frameState.Camera);
 							Graphics2D.DrawLine(screenPos.ToNucleus(), parentScreenPos.ToNucleus(), 2);
@@ -201,19 +224,21 @@ namespace Nucleus.ModelViewer
 							Graphics2D.DrawLine(screenPos.ToNucleus(), outwardScreenPos.ToNucleus(), 2);
 						}
 
-						var text = bone.Name;
-						var ts = Graphics2D.GetTextSize(text, "Consolas", 12) + new Vector2F(4);
+						var text = $"name: {bone.Name}, ActiveSlot: {bone.ActiveSlot}";
+						var ts = Graphics2D.GetTextSize(text, "Consolas", 10) + new Vector2F(4);
 						Graphics2D.SetDrawColor(30, 30, 30, 200);
 						Graphics2D.DrawRectangle(screenPos.X - (ts.X / 2), screenPos.Y - (ts.Y / 2), ts.X, ts.Y);
 						Graphics2D.SetDrawColor(255, 255, 255);
-						Graphics2D.DrawText(screenPos.ToNucleus(), text, "Consolas", 12, Anchor.Center);
+						Graphics2D.DrawText(screenPos.ToNucleus(), text, "Consolas", 10, Anchor.Center);
 					}
 				}
 			}
 		}
 
 		public override void CalcView(FrameState frameState, ref Camera3D cam) {
-			cam.FovY = 340;
+			cam.FovY = CamZoom * 340;
+			cam.Position = new(CamOffset.X, CamOffset.Y, -500);
+			cam.Target = new(CamOffset.X, CamOffset.Y, 0);
 			base.CalcView(frameState, ref cam);
 		}
 	}
