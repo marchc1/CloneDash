@@ -69,8 +69,9 @@ namespace Nucleus.Core
 
 				MainThread.RunASAP(() => {
 					for (int i = 0; i < Materials.Count; i++) {
-						var material = Materials[i];
-						Raylib.UnloadTexture(material.Material.Maps[0].Texture);
+						Material material = Materials[i].Material;
+						Raylib.UnloadShader(material.Shader);
+						Raylib.UnloadTexture(material.Maps[0].Texture);
 					}
 				});
 			}
