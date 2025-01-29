@@ -194,10 +194,10 @@ namespace CloneDash.Game
                     Player.PlayAnimation("Holding", loop: true);
                 else if (IsSustaining()) {
                     HologramPlayer.Visible = true;
-                    HologramPlayer.PlayAnimation("HitTop.1");
+                    HologramPlayer.PlayAnimation("Jump");
                 }
                 else {
-                    Player.PlayAnimation("HitTop.1", fallback: "Walk");
+                    Player.PlayAnimation("Jump", fallback: "Walk");
                 }
 
                 return true;
@@ -213,10 +213,10 @@ namespace CloneDash.Game
                 Player.PlayAnimation("Holding", loop: true);
             else if (IsSustaining()) {
                 HologramPlayer.Visible = true;
-                HologramPlayer.PlayAnimation("HitBottom.1");
+                HologramPlayer.PlayAnimation("Punch");
             }
             else {
-                Player.PlayAnimation("HitBottom.1", fallback: "Walk");
+                Player.PlayAnimation("Punch", fallback: "Walk");
             }
         }
         /// <summary>
