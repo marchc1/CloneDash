@@ -5,6 +5,9 @@ using Image = Raylib_cs.Image;
 using static Nucleus.Core.GLTFHelpers;
 using Nucleus.Types;
 using Nucleus.Util;
+using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
+using System.Linq;
 
 namespace Nucleus.Core
 {
@@ -57,6 +60,7 @@ namespace Nucleus.Core
 
 					Image i = Raylib.LoadImageFromMemory(GLTFHelpers.MIMEToRaylib(imageInfo.MimeType ?? glTFLoader.Schema.Image.MimeTypeEnum.image_png), data);
 					Texture2D t = Raylib.LoadTextureFromImage(i);
+					Raylib.SetTextureFilter(t, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
 					Raylib.UnloadImage(i);
 
@@ -130,7 +134,6 @@ namespace Nucleus.Core
 						for (int i = 0; i < cfinal.Length; i++) {
 							cfinal[i] = 255;
 						}
-
 
 						unsafe {
 							float* jPtr = Raylib.New<float>(joints.Count);
@@ -213,6 +216,8 @@ namespace Nucleus.Core
 						}
 						cache.Meshes.Add(mesh);
 						cache.MeshMaterialPairs.Add((mesh, primitiveData.Material ?? 0));
+						cache.NamedMeshPairs[meshData.Name] = mesh;
+						cache.MeshNamePairs.Add(mesh.VaoId, meshData.Name);
 
 						index += 1;
 					}
@@ -223,7 +228,7 @@ namespace Nucleus.Core
 				// Throw errors if more than one skin; currently only supports single-armatures for models
 
 				if (schema.Skins.Length > 1)
-					throw new Exception("Multi-skeletal models arent supported");
+					throw new Exception("Multi-skeletal models aren't supported. Please export with the proper Nucleus Blender tools (which should have stopped this from even happening!)");
 				else if (schema.Skins.Length == 1) {
 					var skin = schema.Skins[0];
 					var ibmID = skin.InverseBindMatrices;
@@ -248,6 +253,12 @@ namespace Nucleus.Core
 							JointIDToNewID[joint.ID] = newIndexBasedID;
 							joint.Name = jointData.Name;
 							joint.InverseBindMatrix = ibm[newIndexBasedID];
+
+							if (jointData.Extensions != null) {
+								if (jointData.Extensions.TryGetValue("NUCLEUS_model3_slots", out object? slotData) && slotData is JObject obj) {
+									joint.Slots = obj["slots"].Value<JArray>().Values<string>().ToList();
+								}
+							}
 
 							if (jointData.Children != null)
 								foreach (var childID in jointData.Children)
@@ -309,12 +320,24 @@ namespace Nucleus.Core
 								case glTFLoader.Schema.AnimationChannelTarget.PathEnum.weights:
 									Logs.Warn("The GLTF loader is currently unable to load weight animation data; some animations may not work as expected");
 									break;
+								case glTFLoader.Schema.AnimationChannelTarget.PathEnum.pointer:
+									string pointTo = (channel.Target.Extensions["KHR_animation_pointer"] as JObject)["pointer"].Value<string>();
+									switch (pointTo) {
+										case "M3B.ActiveSlot":
+											channelObj = new AnimationChannelData<float>();
+											channelObj.Path = AnimationTargetPath.ActiveSlot;
+											break;
+									}
+									break;
 							}
 
 							if (channelObj == null) // Weights arent supported and it would be null here 
 								continue;
 
-							channelObj.Target = cache.NodeIDToJointID[channel.Target.Node.Value];
+							if (cache.NodeIDToJointID.TryGetValue(channel.Target.Node.Value, out var target))
+								channelObj.Target = target;
+							else
+								continue;
 
 							var sampler = animation.Samplers[channel.Sampler];
 							switch (sampler.Interpolation) {
@@ -331,6 +354,17 @@ namespace Nucleus.Core
 							var outputs = new AccessorReader(schema, buffer, sampler.Output).ReadFloatArray();
 
 							switch (channelObj) {
+								case AnimationChannelData<float> float1:
+									if (inputs.Count != outputs.Count)
+										throw new Exception($"Mismatch: {inputs.Count} inputs, {outputs.Count} outputs, expected inputs * 4 == outputs");
+
+									for (int i = 0; i < inputs.Count; i++) {
+										if (inputs[i] > animCache.AnimationLength) // does this even do anything??
+											animCache.AnimationLength = inputs[i];
+
+										float1.Keyframes.Add(new(inputs[i], outputs[i]));
+									}
+									break;
 								case AnimationChannelData<Vector3> vec3:
 									if (inputs.Count * 3 != outputs.Count)
 										throw new Exception($"Mismatch: {inputs.Count} inputs, {outputs.Count} outputs, expected inputs * 3 == outputs");
