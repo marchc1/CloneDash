@@ -22,6 +22,7 @@ namespace Nucleus.Core
 	/// <br></br>    - GPU-powered mesh skinning
 	/// <br></br>    - Animation importing &amp; animation channels (WIP)
 	/// <br></br>    - Dynamically-poseable bones
+	/// <br></br>    - (with Blender development tools) The ability to create and animate "bone slots", which turn on/off specific meshes
 	/// <br></br>
 	/// <br></br>This system is not meant to be interfaced with directly, use ModelEntity's in the engine unless absolutely necessary
 	/// </summary>
