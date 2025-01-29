@@ -5,9 +5,12 @@
     /// </summary>
     public class Model3Bone : Model3Component, IEquatable<Model3Bone>, IComparable<Model3Bone>
     {
+		public Bone3Cache Cache { get; internal set; }
         public int ID { get; internal set; }
+		public int ActiveSlot { get; internal set; }
 
-        public int CompareTo(Model3Bone other) {
+
+		public int CompareTo(Model3Bone other) {
             return ID.CompareTo(other.ID);
         }
 
