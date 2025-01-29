@@ -61,6 +61,9 @@ void main()
 
     float m = value - chroma;
     rgb += m;
-
+	
+	if (texelColor.a <= 0.05)
+		discard;
+		
     finalColor = vec4(rgb, texelColor.a);
 }
