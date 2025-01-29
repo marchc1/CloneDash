@@ -14,11 +14,14 @@ namespace glTFLoader.Schema {
     
     
     public class AnimationSampler {
-        
-        /// <summary>
-        /// Backing field for Input.
-        /// </summary>
-        private int m_input;
+		public override string ToString() {
+			return $"GLTF Animation Sampler [input: {Input}, output: {Output}, interpolation: {Interpolation}]";
+		}
+
+		/// <summary>
+		/// Backing field for Input.
+		/// </summary>
+		private int m_input;
         
         /// <summary>
         /// Backing field for Interpolation.
