@@ -41,9 +41,11 @@ namespace Nucleus.Core
 					var BoneIds = mesh.BoneIds;
 					MainThread.RunASAP(() => {
 						unsafe {
-							// UnloadMesh doesn't work here. My guess; we do everything from scratch and that results in
-							// the RL_FREE calls failing somewhere. So I'm just going to manually free what I know Nucleus
-							// does for Model3Cache's and call it a day.
+							// UnloadMesh didn't work here; because previously, we would pass model data pointers thru
+							// a fixed statement into the Model's buffers. At the time, I thought it was moreso that
+							// a call was failing somewhere because we do everything from scratch. So we probably *could*
+							// use UnloadMesh here, but then we would also need a pointer to the mesh to even call UnloadMesh,
+							// and I don't want to deal with that... 
 
 							Rlgl.UnloadVertexArray(VaoId);
 							if (VboId != null)
