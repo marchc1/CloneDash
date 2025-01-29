@@ -10,5 +10,6 @@ namespace Nucleus.Core
         public AnimationChannelData<Vector3>? Position;
         public AnimationChannelData<Quaternion>? Rotation;
         public AnimationChannelData<Vector3>? Scale;
+        public AnimationChannelData<float>? ActiveSlot;
     }
 }

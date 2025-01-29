@@ -20,10 +20,18 @@ namespace Nucleus.Core
                     BoneIDToChannels[channel.Target] = new();
 
                 switch (channel) {
-                    case AnimationChannelData<Vector3> ch:
+					case AnimationChannelData<float> ch:
+						switch (channel.Path) {
+							case AnimationTargetPath.ActiveSlot: 
+								BoneIDToChannels[channel.Target].ActiveSlot = ch; break;
+						}
+						break;
+					case AnimationChannelData<Vector3> ch:
                         switch (channel.Path) {
-                            case AnimationTargetPath.Position: BoneIDToChannels[channel.Target].Position = ch; break;
-                            case AnimationTargetPath.Scale: BoneIDToChannels[channel.Target].Scale = ch; break;
+                            case AnimationTargetPath.Position: 
+								BoneIDToChannels[channel.Target].Position = ch; break;
+                            case AnimationTargetPath.Scale: 
+								BoneIDToChannels[channel.Target].Scale = ch; break;
                         }
                         break;
                     case AnimationChannelData<Quaternion> ch:

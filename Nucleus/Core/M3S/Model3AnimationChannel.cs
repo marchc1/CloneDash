@@ -69,20 +69,25 @@ namespace Nucleus.Core
             __lastProcess = now;
         }
 
-        internal TransformVQV GetCurrentTransform(Model3Bone bone) {
-            BoneAnimationChannels positionData = AnimationData.BoneIDToChannels[bone.ID];
+
+		internal TransformVQV GetCurrentTransform(BoneAnimationChannels animData, Model3Bone bone) {
             TransformVQV transform = new TransformVQV();
 
-            if (positionData.Position != null) transform.Position = positionData.Position.LinearInterpolation(AnimationPlayhead);
-            if (positionData.Rotation != null) transform.Rotation = positionData.Rotation.LinearInterpolation(AnimationPlayhead);
-            if (positionData.Scale != null) transform.Scale = positionData.Scale.LinearInterpolation(AnimationPlayhead);
+            if (animData.Position != null) transform.Position = animData.Position.LinearInterpolation(AnimationPlayhead);
+            if (animData.Rotation != null) transform.Rotation = animData.Rotation.LinearInterpolation(AnimationPlayhead);
+            if (animData.Scale != null) transform.Scale = animData.Scale.LinearInterpolation(AnimationPlayhead);
 
             return transform;
         }
 
         internal void ApplyPoses(Model3Bone bone, Matrix4x4 parentTransform) {
-            TransformVQV current = GetCurrentTransform(bone);
-            current.TransformOrder = TransformOrder.PosRotScale;
+			BoneAnimationChannels animData = AnimationData.BoneIDToChannels[bone.ID];
+			TransformVQV current = GetCurrentTransform(animData, bone);
+
+			if (animData.ActiveSlot != null) 
+				bone.ActiveSlot = (int)animData.ActiveSlot.LinearInterpolation(AnimationPlayhead);
+
+			current.TransformOrder = TransformOrder.PosRotScale;
             //current.Scale = new Vector3(6.5f, 1f, 2f);
             Matrix4x4 poseTransform = current.Matrix.Transpose();
             //TransformVQV test1 = TransformVQV.DecomposeMatrix(poseTransform);
