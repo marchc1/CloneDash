@@ -1,0 +1,10 @@
+{
+	"Animation_WalkCycle": "Walk",
+
+	"Animation_AirAttacks_Failed": ["Jump"],
+	"Animation_GroundAttacks_Failed": ["Punch"],
+	
+	"Animation_Attacks": ["Hit1", "Hit2", "Hit3"],
+	
+	"Animation_Holding": "Holding"
+}
