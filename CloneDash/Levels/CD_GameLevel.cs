@@ -213,7 +213,7 @@ namespace CloneDash.Game
 			CloneDashConsole.HookToLevel(this);
 		}
 		public bool Debug { get; set; } = true;
-		public Window PauseWindow { get; private set; }
+		public Panel PauseWindow { get; private set; }
 		private bool lastNoteHit = false;
 		public override void PreThink(ref FrameState frameState) {
 			if (lastNoteHit && Music.Paused) {
@@ -246,46 +246,61 @@ namespace CloneDash.Game
 				else {
 					startPause();
 
-					PauseWindow = this.UI.Add<Window>();
-					PauseWindow.Title = "Paused";
-					PauseWindow.Size = new(700, 200);
+					PauseWindow = this.UI.Add<Panel>();
+					PauseWindow.Size = new(300, 400);
 					PauseWindow.Center();
-					PauseWindow.HideAllButtons();
 
 					var flex = PauseWindow.Add<FlexPanel>();
 					flex.Dock = Dock.Fill;
+					flex.Direction = FlexDirection.Vertical;
 					flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 					flex.DockPadding = RectangleF.TLRB(4);
 
-					var back2menu = flex.Add<Button>();
-					back2menu.Text = "";
-					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
-					back2menu.ImageOrientation = ImageOrientation.Fit;
-					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						EngineCore.LoadLevel(new CD_MainMenu());
-					};
-					var settings = flex.Add<Button>();
-					settings.Text = "";
-					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
-					settings.ImageOrientation = ImageOrientation.Fit;
-					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-
-					};
-					var restart = flex.Add<Button>();
-					restart.Text = "";
-					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
-					restart.ImageOrientation = ImageOrientation.Fit;
-					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
-					};
 					var play = flex.Add<Button>();
-					play.Text = "";
+					play.BorderSize = 0;
+					play.Text = "Return to Game";
+					play.TextSize = 24;
 					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 					play.ImageOrientation = ImageOrientation.Fit;
 					play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
 						PauseWindow.Remove();
 						startUnpause();
 					};
+					play.PaintOverride += Button_PaintOverride;
+
+					var restart = flex.Add<Button>();
+					restart.BorderSize = 0;
+					restart.Text = "Restart Level";
+					restart.TextSize = 24;
+					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
+					restart.ImageOrientation = ImageOrientation.Fit;
+					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+						EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
+					};
+					restart.PaintOverride += Button_PaintOverride;
+
+					var settings = flex.Add<Button>();
+					settings.BorderSize = 0;
+					settings.Text = "Open Preferences...";
+					settings.TextSize = 24;
+					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
+					settings.ImageOrientation = ImageOrientation.Fit;
+					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+
+					};
+					settings.PaintOverride += Button_PaintOverride;
+
+					var back2menu = flex.Add<Button>();
+					back2menu.BorderSize = 0;
+					back2menu.Text = "Exit to Menu";
+					back2menu.TextSize = 24;
+					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
+					back2menu.ImageOrientation = ImageOrientation.Fit;
+					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+						EngineCore.LoadLevel(new CD_MainMenu());
+					};
+					back2menu.PaintOverride += Button_PaintOverride;
+
 				}
 				return;
 			}
@@ -414,6 +429,23 @@ namespace CloneDash.Game
 			FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {(HoldingTopPathwaySustain == null ? "<null>" : HoldingTopPathwaySustain)}");
 			FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {(HoldingBottomPathwaySustain == null ? "<null>" : HoldingBottomPathwaySustain)}");
 		}
+
+		private void Button_PaintOverride(Element self, float width, float height) {
+			Button b = self as Button;
+			var backpre = self.BackgroundColor;
+
+			var back = Element.MixColorBasedOnMouseState(self, backpre, new(0, 0.8f, 2.4f, 1f), new(0, 1.2f, 0.6f, 1f));
+			var fore = Element.MixColorBasedOnMouseState(self, self.ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+
+			Graphics2D.SetDrawColor(back);
+			Graphics2D.DrawRectangle(0, 0, width, height);
+			var text = b.Text;
+			var tSize = Graphics2D.GetTextSize(text, b.Font, b.TextSize);
+			b.ImageDrawing(new((height / -4) + (tSize.X / -2), 0), new(height, height));
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, b.Font, b.TextSize, Anchor.Center);
+		}
+
 		public override void Think(FrameState frameState) {
 
 		}
