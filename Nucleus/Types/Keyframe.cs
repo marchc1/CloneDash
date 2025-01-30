@@ -22,6 +22,20 @@ namespace Nucleus.Types
 		private static Quaternion quaternionLinearInterpolation(Quaternion l, Quaternion r, double ratio) => Quaternion.Slerp(l, r, (float)ratio);
 		private static Vector3 vector3LinearInterpolation(Vector3 l, Vector3 r, double ratio) => Vector3.Lerp(l, r, (float)ratio);
 
+		public static T ConstantInterpolation(List<Keyframe<T>> keyframes, double curtime) {
+			Keyframe<T> V = new();
+			for (int i = 0; i < keyframes.Count; i++) {
+				if (keyframes[i].Time >= curtime) {
+					if(i == 0)
+						V = keyframes[i];
+					else
+						V = keyframes[i - 1];
+					break;
+				}
+			}
+			return V.Value;
+		}
+
 		public static T LinearInterpolation(List<Keyframe<T>> keyframes, double curtime) {
 			Keyframe<T> L = new();
 			Keyframe<T> R = new();

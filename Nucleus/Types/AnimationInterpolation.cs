@@ -2,7 +2,7 @@
 {
     public enum AnimationInterpolation
     {
-        Step,
+		Constant,
         Linear,
         Bezier
     }
