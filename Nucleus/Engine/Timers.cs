@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Nucleus.Core.FileIO;
-
-namespace Nucleus.Engine
+﻿namespace Nucleus.Engine
 {
     public class Timer {
         public double LastRun { get; set; }
