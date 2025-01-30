@@ -85,7 +85,7 @@ namespace Nucleus.ModelViewer
 			speed.OnValueChanged += Speed_OnValueChanged;
 
 			if (LastFile != null) {
-				Entity = ModelEntity.Create(LastFile, true);
+				Entity = ModelEntity.Create(LastFile, nocache: true);
 			}
 
 			UI.MouseDragEvent += UI_MouseDragEvent;
@@ -133,7 +133,7 @@ namespace Nucleus.ModelViewer
 		private void HardReload_MouseReleaseEvent(Element self, FrameState state, Types.MouseButton button) {
 			if (LastFile == null) return;
 			Entity?.Remove();
-			Entity = ModelEntity.Create(LastFile, true);
+			Entity = ModelEntity.Create(LastFile, nocache: true);
 			LastFileWriteTime = File.GetLastWriteTime(LastFile);
 		}
 
@@ -148,7 +148,7 @@ namespace Nucleus.ModelViewer
 			if (!result.Cancelled) {
 				var file = result.Files[0];
 				LastFile = file;
-				Entity = ModelEntity.Create(file, true);
+				Entity = ModelEntity.Create(file, nocache: true);
 				LastFileWriteTime = File.GetLastWriteTime(LastFile);
 			}
 		}
