@@ -882,7 +882,7 @@ namespace Nucleus.UI
             return ret;
         }
 
-        protected void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
+        public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
             if (Image == null)
                 return;
 
