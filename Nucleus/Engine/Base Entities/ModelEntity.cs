@@ -45,10 +45,10 @@ namespace Nucleus.Engine
 
         public bool Visible { get; set; } = true;
 
-        public unsafe static ModelEntity Create(string model, bool nocache = false) {
+        public unsafe static ModelEntity Create(string model, bool resolvePath = true, bool nocache = false) {
             ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
-            entity.__model = Model3System.Load(model, nocache);
+            entity.__model = Model3System.Load(model, resolveFilepath: resolvePath, nocache: nocache);
             return entity;
         }
 

@@ -30,8 +30,8 @@ namespace Nucleus.Core
 	{
 		internal static Dictionary<string, Model3Cache> Cache { get; } = new();
 
-		public static unsafe Model3 Load(string modelname, bool nocache = false) {
-			var modelAbsPath = Filesystem.Resolve(modelname, "models");
+		public static unsafe Model3 Load(string modelname, bool resolveFilepath = true, bool nocache = false) {
+			var modelAbsPath = resolveFilepath ? Filesystem.Resolve(modelname, "models") : modelname;
 
 			Model3 model = new Model3();
 			if (!Cache.ContainsKey(modelAbsPath) || nocache) {
