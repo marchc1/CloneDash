@@ -15,6 +15,8 @@ using CloneDash.Game.Logic;
 using CloneDash.Levels;
 using CloneDash.Data;
 using Nucleus.Audio;
+using CloneDash.Modding.Descriptors;
+using CloneDash.Modding.Settings;
 
 namespace CloneDash.Game
 {
@@ -116,8 +118,45 @@ namespace CloneDash.Game
             UnpauseTime = 0;
         }
 
-        private StatisticsData Stats { get; } = new();
+		int attackP = 0;
+		int failP = 0;
 
+		public enum CharacterAnimation {
+			Walk,
+			AirFail,
+			GroundFail,
+			AirHit,
+			GroundHit,
+			Hold
+		}
+
+		public string GetCharacterAnimation(CharacterAnimation animation) {
+			switch (animation) {
+				case CharacterAnimation.Walk: 
+					return CharacterDescriptor.Animation_WalkCycle;
+
+				case CharacterAnimation.AirFail:
+					return CharacterDescriptor.Animation_AirAttacks_Failed[failP++ % CharacterDescriptor.Animation_AirAttacks_Failed.Length];
+				case CharacterAnimation.GroundFail:
+					return CharacterDescriptor.Animation_GroundAttacks_Failed[failP++ % CharacterDescriptor.Animation_GroundAttacks_Failed.Length];
+
+				case CharacterAnimation.AirHit:
+					var airs = CharacterDescriptor.GetAirAttacks();
+					return airs[attackP++ % airs.Length];
+				case CharacterAnimation.GroundHit:
+					var grounds = CharacterDescriptor.GetAirAttacks();
+					return grounds[attackP++ % grounds.Length];
+
+				case CharacterAnimation.Hold:
+					return CharacterDescriptor.Animation_Holding;
+
+				default:
+					throw new Exception("Unknown CharacterAnimation value.");
+			}
+		}
+
+        private StatisticsData Stats { get; } = new();
+		private CharacterDescriptor CharacterDescriptor; 
         public override void Initialize(params object[] args) {
             Health = MaxHealth;
             Draw3DCoordinateStart = Draw3DCoordinateStart.TopLeft0_0;
@@ -132,9 +171,13 @@ namespace CloneDash.Game
             foreach (object input in inputs)
                 InputReceivers.Add((IPlayerInput)input);
 
-            Player = Add(ModelEntity.Create("cdmodeltest.glb"));
-            HologramPlayer = Add(ModelEntity.Create("cdmodeltest.glb"));
-            Player.PlayAnimation("Walk", loop: true);
+			var info = CharacterMod.GetCharacterData();
+			CharacterDescriptor = info.Descriptor;
+			var filename = Filesystem.Resolve($"{info.Name}.glb", "chars");
+
+			Player = Add(ModelEntity.Create(filename, resolvePath: false));
+            HologramPlayer = Add(ModelEntity.Create(filename, resolvePath: false));
+            Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
             HologramPlayer.Visible = false;
             AutoPlayer = Add<AutoPlayer>();

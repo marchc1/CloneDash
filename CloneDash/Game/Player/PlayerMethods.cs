@@ -172,7 +172,7 @@ namespace CloneDash.Game
                 HoldingBottomPathwaySustain = entity;
 
             if (wasSustaining && !IsSustaining(PathwaySide.Top) && !IsSustaining(PathwaySide.Bottom))
-                Player.PlayAnimation("Walk", loop: true);
+                Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
         }
         /// <summary>
         /// Returns if the jump was successful. Mostly returns this for the sake of animation.
@@ -191,13 +191,13 @@ namespace CloneDash.Game
                 OnAirAttack?.Invoke(this, PathwaySide.Top);
 
                 if (entity is SustainBeam)
-                    Player.PlayAnimation("Holding", loop: true);
+                    Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
                 else if (IsSustaining()) {
                     HologramPlayer.Visible = true;
-                    HologramPlayer.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Top));
+                    HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Top));
                 }
                 else {
-                    Player.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Top), fallback: "Walk");
+                    Player.PlayAnimation(GetHitAnimation(entity, PathwaySide.Top), fallback: GetCharacterAnimation(CharacterAnimation.Walk));
                 }
 
                 return true;
@@ -205,15 +205,12 @@ namespace CloneDash.Game
             return false;
         }
 
-		int lastAnim = 1;
-		public string GetRandomHitAnim(CD_BaseMEntity? entity, PathwaySide? side) {
+		public string GetHitAnimation(CD_BaseMEntity? entity, PathwaySide? side) {
 			if (!IValidatable.IsValid(entity)) {
-				return side == PathwaySide.Top ? "Jump" : "Punch";
+				return side == PathwaySide.Top ? GetCharacterAnimation(CharacterAnimation.AirFail) : GetCharacterAnimation(CharacterAnimation.GroundFail);
 			}
-			lastAnim += 1;
-			if (lastAnim > 3)
-				lastAnim = 1;
-			return $"Hit{lastAnim}";
+
+			return side == PathwaySide.Top ? GetCharacterAnimation(CharacterAnimation.AirHit) : GetCharacterAnimation(CharacterAnimation.GroundHit);
 		}
 
         public void AttackGround(CD_BaseMEntity entity) {
@@ -221,13 +218,13 @@ namespace CloneDash.Game
             OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
 
             if (entity is SustainBeam)
-                Player.PlayAnimation("Holding", loop: true);
+                Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
             else if (IsSustaining()) {
                 HologramPlayer.Visible = true;
-                HologramPlayer.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Bottom));
+                HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom));
             }
             else {
-                Player.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Bottom), fallback: "Walk");
+                Player.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom), fallback: GetCharacterAnimation(CharacterAnimation.Walk));
             }
         }
         /// <summary>

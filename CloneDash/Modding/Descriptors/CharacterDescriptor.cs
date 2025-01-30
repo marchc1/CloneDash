@@ -6,6 +6,7 @@ namespace CloneDash.Modding.Descriptors
 	{
 		[JsonIgnore] private static readonly string[] Attacks = ["Hit1", "Hit2", "Hit3"];
 
+		public string Animation_WalkCycle = "Walk";
 		public string[] Animation_AirAttacks_Failed = ["Jump"];
 		public string[] Animation_GroundAttacks_Failed = ["Punch"];
 
