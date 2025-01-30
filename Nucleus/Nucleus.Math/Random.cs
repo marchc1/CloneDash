@@ -8,6 +8,7 @@ namespace Nucleus
         public static class Random
         {
             private static System.Random Instance = new System.Random();
+            public static int Int32(int minValue, int maxValue) => (int)Math.Round(NMath.Lerp(Instance.NextSingle(), minValue, maxValue));
             public static float Single(float minValue, float maxValue) => NMath.Lerp(Instance.NextSingle(), minValue, maxValue);
             public static float Float(float minValue, float maxValue) => Single(minValue, maxValue);
             public static double Double(double minValue, double maxValue) => NMath.Lerp(Instance.NextDouble(), minValue, maxValue);

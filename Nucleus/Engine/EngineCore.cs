@@ -479,6 +479,9 @@ namespace Nucleus
             return new(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
         }
 
+		public static float GetWindowWidth() => Raylib.GetScreenWidth();
+		public static float GetWindowHeight() => Raylib.GetScreenHeight();
+
         public static void SetWindowPosition(Vector2F mposFinal) {
             Raylib.SetWindowPosition((int)mposFinal.X, (int)mposFinal.Y);
         }

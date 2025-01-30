@@ -194,16 +194,27 @@ namespace CloneDash.Game
                     Player.PlayAnimation("Holding", loop: true);
                 else if (IsSustaining()) {
                     HologramPlayer.Visible = true;
-                    HologramPlayer.PlayAnimation("Jump");
+                    HologramPlayer.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Top));
                 }
                 else {
-                    Player.PlayAnimation("Jump", fallback: "Walk");
+                    Player.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Top), fallback: "Walk");
                 }
 
                 return true;
             }
             return false;
         }
+
+		int lastAnim = 1;
+		public string GetRandomHitAnim(CD_BaseMEntity? entity, PathwaySide? side) {
+			if (!IValidatable.IsValid(entity)) {
+				return side == PathwaySide.Top ? "Jump" : "Punch";
+			}
+			lastAnim += 1;
+			if (lastAnim > 3)
+				lastAnim = 1;
+			return $"Hit{lastAnim}";
+		}
 
         public void AttackGround(CD_BaseMEntity entity) {
             __whenjump = -2000000000000d;
@@ -213,10 +224,10 @@ namespace CloneDash.Game
                 Player.PlayAnimation("Holding", loop: true);
             else if (IsSustaining()) {
                 HologramPlayer.Visible = true;
-                HologramPlayer.PlayAnimation("Punch");
+                HologramPlayer.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Bottom));
             }
             else {
-                Player.PlayAnimation("Punch", fallback: "Walk");
+                Player.PlayAnimation(GetRandomHitAnim(entity, PathwaySide.Bottom), fallback: "Walk");
             }
         }
         /// <summary>

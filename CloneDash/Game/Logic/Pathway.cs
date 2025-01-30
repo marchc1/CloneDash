@@ -1,4 +1,5 @@
 ﻿using CloneDash.Animation;
+using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Types;
@@ -8,13 +9,32 @@ namespace CloneDash.Game
 {
     public class Pathway : LogicalEntity
     {
+		/// <summary>
+		/// Top pathway will be placed at Y 0 + (H * PATHWAY_TOP_PERCENTAGE)
+		/// </summary>
+		public static float PATHWAY_TOP_PERCENTAGE => .346f;
+		/// <summary>
+		/// Top pathway will be placed at Y H - (H * PATHWAY_BOTTOM_PERCENTAGE)
+		/// </summary>
+		public static float PATHWAY_BOTTOM_PERCENTAGE => .3722f;
+		/// <summary>
+		/// Both pathway will be placed at X 0 + (H * PATHWAY_LEFT_PERCENTAGE)
+		/// </summary>
+		public static float PATHWAY_LEFT_PERCENTAGE => .3722f;
         public bool IsClicked => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopClicked > 0, Level.As<CD_GameLevel>().InputState.BottomClicked > 0);
         public bool IsPressed => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeld, Level.As<CD_GameLevel>().InputState.BottomHeld);
 
-        /// <summary>
-        /// The half of the screen the pathway resides on.
-        /// </summary>
-        public PathwaySide Side { get; set; } = PathwaySide.None;
+		public static float GetPathwayY(PathwaySide side) =>
+			side == PathwaySide.Both 
+				? (GetPathwayY(PathwaySide.Top) + GetPathwayY(PathwaySide.Bottom)) / 2
+				: side == PathwaySide.Top
+					? EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE
+					: EngineCore.GetWindowHeight() - (EngineCore.GetWindowHeight() * PATHWAY_BOTTOM_PERCENTAGE);
+
+		/// <summary>
+		/// The half of the screen the pathway resides on.
+		/// </summary>
+		public PathwaySide Side { get; set; } = PathwaySide.None;
 
         private bool checkSide(PathwaySide side) {
             if (Side == PathwaySide.None || Side == PathwaySide.Both)
@@ -65,7 +85,7 @@ namespace CloneDash.Game
         public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
         public Vector2F Position { get; private set; }
         public override void Think(FrameState frameState) {
-            Position = new Vector2F(frameState.WindowWidth * DashVars.PATHWAY_XDISTANCE, (frameState.WindowHeight / 2) + (frameState.WindowHeight / 2) * ValueDependantOnPathway(Side, -DashVars.PATHWAY_YDISTANCE, DashVars.PATHWAY_YDISTANCE));
+            Position = new Vector2F(frameState.WindowHeight * PATHWAY_LEFT_PERCENTAGE, GetPathwayY(Side));
         }
         public override void PostRender(FrameState frameState) {
             var beatInfluence = 1 - Level.As<CD_GameLevel>().Conductor.NoteDivisorRealtime(4);

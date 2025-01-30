@@ -246,15 +246,20 @@ namespace CloneDash.Game
                 return;
             }
 
-            float yoff = 0;
+            float? yoff = null;
+			
+			bool holdingTop = HoldingTopPathwaySustain != null, holdingBottom = HoldingBottomPathwaySustain != null;
+			bool holding = holdingTop || holdingBottom;
+			if (holdingTop && holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
+			else if (holdingTop) yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
+			else if (holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
-            if (HoldingTopPathwaySustain != null)
-                yoff -= frameState.WindowHeight * DashVars.PATHWAY_YDISTANCE / 2;
-            if(HoldingBottomPathwaySustain != null)
-                yoff += frameState.WindowHeight * DashVars.PATHWAY_YDISTANCE / 2;
+			float playerOffsetX = 0.225f;
+			float playerOffsetY = 0.64f;
 
-            Player.Position = new Vector2F(frameState.WindowWidth * 0.15f, frameState.WindowHeight * 0.55f + yoff);
-            HologramPlayer.Position = new Vector2F(frameState.WindowWidth * 0.15f, frameState.WindowHeight * 0.55f);
+			Player.Position = new Vector2F(frameState.WindowHeight * playerOffsetX, yoff ?? (frameState.WindowHeight * playerOffsetY));
+			Player.Scale = new(0.9f);
+			HologramPlayer.Position = new Vector2F(frameState.WindowWidth * 0.15f, frameState.WindowHeight * 0.55f);
 
             if (HologramPlayer.PlayingAnimation) {
                 var animator = HologramPlayer.Model;
@@ -520,8 +525,9 @@ namespace CloneDash.Game
             Graphics2D.SetTexture(Textures.LoadTextureFromFile("backgroundscroll.png"));
             var offset = ((float)Curtime * -600f) % frameState.WindowWidth;
             Graphics2D.SetDrawColor(255, 255, 255, 127);
-            Graphics2D.DrawTexture(new(offset, 0), new(frameState.WindowWidth, frameState.WindowHeight));
-            Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, 0), new(frameState.WindowWidth, frameState.WindowHeight)); ;
+			var offset2 = frameState.WindowHeight * 0.06f;
+            Graphics2D.DrawTexture(new(offset, offset2), new(frameState.WindowWidth, frameState.WindowHeight));
+            Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, offset2), new(frameState.WindowWidth, frameState.WindowHeight)); ;
         }
         public override void Render(FrameState frameState) {
             Rlgl.DrawRenderBatchActive();
@@ -531,13 +537,10 @@ namespace CloneDash.Game
             Rlgl.DrawRenderBatchActive();
             Rlgl.SetLineWidth(1);
             foreach (Entity ent in VisibleEntities) {
-                if (ent is not CD_BaseEnemy)
+                if (ent is not CD_BaseEnemy entCD)
                     continue;
 
-                var entCD = (CD_BaseEnemy)ent;
-
-                float yPosReal = frameState.WindowHeight / 2 * DashVars.PATHWAY_YDISTANCE;
-                float yPosition = Game.Pathway.ValueDependantOnPathway(entCD.Pathway, -yPosReal, yPosReal);
+                float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
 
                 Graphics2D.SetDrawColor(255, 255, 255);
                 var p = new Vector2F((float)entCD.XPos, (frameState.WindowHeight / 2) + yPosition); // Calculate the final beat position on the track
