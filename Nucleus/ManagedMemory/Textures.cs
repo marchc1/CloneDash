@@ -164,6 +164,7 @@ namespace Nucleus.ManagedMemory
             if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
 
             Texture tex = new(this, Raylib.LoadTexture(filepath), true);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
             LoadedTexturesFromFile.Add(filepath, tex);
             LoadedFilesFromTexture.Add(tex, filepath);
             Textures.Add(tex);
