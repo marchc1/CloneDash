@@ -4,6 +4,8 @@ namespace CloneDash.Modding.Descriptors
 {
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
+		public CharacterDescriptor() : base(CloneDashDescriptorType.Character) { }
+
 		[JsonIgnore] private static readonly string[] Attacks = ["Hit1", "Hit2", "Hit3"];
 
 		public string Animation_WalkCycle = "Walk";
