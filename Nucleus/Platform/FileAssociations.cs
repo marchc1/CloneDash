@@ -8,10 +8,10 @@ namespace Nucleus.Platform
 	public static class FileAssoc
 	{
 		public static void Register(string extension, string progId, string description, string? openWith = null) {
-			// if the folder path contains .dll this doesn't work... but that shouldn't happen
-			string appPath = openWith ?? (Assembly.GetEntryAssembly()?.Location.Replace(".dll", ".exe")) ?? throw new Exception("Wtf");
 
 #if COMPILED_WINDOWS
+			// TODO: if the folder path contains .dll this doesn't work... fix that
+			string appPath = openWith ?? (Assembly.GetEntryAssembly()?.Location.Replace(".dll", ".exe")) ?? throw new Exception("Wtf");
 			if (!extension.StartsWith("."))
 				extension = "." + extension;
 
