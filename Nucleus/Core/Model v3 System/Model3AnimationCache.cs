@@ -22,8 +22,10 @@ namespace Nucleus.Core
                 switch (channel) {
 					case AnimationChannelData<float> ch:
 						switch (channel.Path) {
-							case AnimationTargetPath.ActiveSlot: 
+							case AnimationTargetPath.ActiveSlot:
 								BoneIDToChannels[channel.Target].ActiveSlot = ch; break;
+							case AnimationTargetPath.ActiveSlotAlpha:
+								BoneIDToChannels[channel.Target].ActiveSlotAlpha = ch; break;
 						}
 						break;
 					case AnimationChannelData<Vector3> ch:

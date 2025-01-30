@@ -33,6 +33,8 @@ def setBoneSlotStates(override = None):
                         if name not in bone: break
                         
                         object = bone[name]
+                        if object == None:
+                            raise Exception(f"Wtf? We looked for {name} in {bone.name}; found it; but the return was *still* None???")
                         if override != None:
                             object.hide_viewport = override
                         else:
@@ -208,44 +210,46 @@ class glTF2ExportUserExtension:
 
         nodes = export_settings['vtree'].nodes
         for sampler in extra_samplers:
-            match = re.match(r"pose\.bones\[\"(.*?(?=\"))\"\]\[\"(.*?(?=\"))\"\]", sampler[0])
-            node = next(filter(lambda x: x[1].blender_type == 3 and x[1].blender_bone.name == match.group(1), nodes.items()))[1]
+            regexMatch = re.match(r"pose\.bones\[\"(.*?(?=\"))\"\]\[\"(.*?(?=\"))\"\]", sampler[0])
+            node = next(filter(lambda x: x[1].blender_type == 3 and x[1].blender_bone.name == regexMatch.group(1), nodes.items()))[1]
 
             blender_bone = node.blender_bone
-            if "M3B.ActiveSlot" in blender_bone:
-                if "NUCLEUS_model3_slots" not in node.node.extensions:
-                    howmanyslots = 0
-                    slotnodes = []
-                    while True:
-                        index = howmanyslots + 1
-                        name = "M3B.Slot" + str(index)
-                        if name not in blender_bone: break
-                        
-                        object = blender_bone[name]
-                        object_node = next(filter(lambda x: x[1].blender_type == 1 and x[1].blender_object.name == object.name, nodes.items()))
-                        slotnodes.append(object_node[1].node.mesh.name)
-                        howmanyslots += 1
+            match regexMatch.group(2):
+                case "M3B.ActiveSlot":
+                    if "NUCLEUS_model3_slots" not in node.node.extensions:
+                        howmanyslots = 0
+                        slotnodes = []
+                        while True:
+                            index = howmanyslots + 1
+                            name = "M3B.Slot" + str(index)
+                            if name not in blender_bone: break
+                            
+                            object = blender_bone[name]
+                            object_node = next(filter(lambda x: x[1].blender_type == 1 and x[1].blender_object.name == object.name, nodes.items()))
+                            slotnodes.append(object_node[1].node.mesh.name)
+                            howmanyslots += 1
 
-                    node.node.extensions["NUCLEUS_model3_slots"] = {
-                        "slots": slotnodes
-                    }
+                        node.node.extensions["NUCLEUS_model3_slots"] = {
+                            "slots": slotnodes
+                        }
 
-                channel = AnimationChannel(
-                    extensions = {}, 
+            channel = AnimationChannel(
+                extensions = {}, 
+                extras = None, 
+                sampler = sampler[1], 
+                target = AnimationChannelTarget(
+                    extensions = {
+                        "KHR_animation_pointer": {
+                            "pointer": regexMatch.group(2)
+                        }
+                    }, 
                     extras = None, 
-                    sampler = sampler[1], 
-                    target = AnimationChannelTarget(
-                        extensions = {
-                            "KHR_animation_pointer": {
-                                "pointer": match.group(2)
-                            }
-                        }, 
-                        extras = None, 
-                        node = node.node, 
-                        path = "pointer"
-                    )
+                    node = node.node, 
+                    path = "pointer"
                 )
-                gltf_animation.channels.append(channel)
+            )
+
+            gltf_animation.channels.append(channel)
 
 def append_function_unique(fn_list, fn):
     fn_name = fn.__name__

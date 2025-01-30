@@ -9,7 +9,11 @@
         public int ID { get; internal set; }
 		public int ActiveSlot { get; internal set; }
 
-
+		private float __activeSlotAlpha = 1f;
+		public float ActiveSlotAlpha {
+			get => __activeSlotAlpha;
+			set => __activeSlotAlpha = value;
+		}
 		public int CompareTo(Model3Bone other) {
             return ID.CompareTo(other.ID);
         }

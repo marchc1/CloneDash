@@ -328,6 +328,12 @@ namespace Nucleus.Core
 											channelObj = new AnimationChannelData<float>();
 											channelObj.Path = AnimationTargetPath.ActiveSlot;
 											break;
+										case "M3B.ActiveSlotAlpha":
+											channelObj = new AnimationChannelData<float>();
+											channelObj.Path = AnimationTargetPath.ActiveSlotAlpha;
+											break;
+										default:
+											throw new NotSupportedException($"A GLTF animation channel was typeof pointer and pointed to '{pointTo}'; no handler exists for this animation path in Model3System");
 									}
 									break;
 							}
@@ -357,7 +363,7 @@ namespace Nucleus.Core
 							switch (channelObj) {
 								case AnimationChannelData<float> float1:
 									if (inputs.Count != outputs.Count)
-										throw new Exception($"Mismatch: {inputs.Count} inputs, {outputs.Count} outputs, expected inputs * 4 == outputs");
+										throw new Exception($"Mismatch: {inputs.Count} inputs, {outputs.Count} outputs, expected inputs == outputs");
 
 									for (int i = 0; i < inputs.Count; i++) {
 										if (inputs[i] > animCache.AnimationLength) // does this even do anything??

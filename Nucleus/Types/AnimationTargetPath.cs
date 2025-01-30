@@ -5,6 +5,8 @@
         Position,
         Rotation,
         Scale,
-		ActiveSlot
-    }
+
+		ActiveSlot,
+		ActiveSlotAlpha
+	}
 }

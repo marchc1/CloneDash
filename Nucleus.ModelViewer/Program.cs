@@ -18,6 +18,8 @@ namespace Nucleus.ModelViewer
 		public static Vector2F CamOffset = Vector2F.Zero;
 		public static float CamZoom = 1;
 
+		Textbox fallbackAnimation;
+
 		public override void Initialize(params object[] args) {
 			base.Initialize(args);
 			CamOffset = Vector2F.Zero;
@@ -53,20 +55,26 @@ namespace Nucleus.ModelViewer
 			changeAnimation.Text = "Play Animation";
 			changeAnimation.MouseReleaseEvent += ChangeAnimation_MouseReleaseEvent;
 
+			fallbackAnimation = UI.Add<Textbox>();
+			fallbackAnimation.Position = new(8, 384 + (1 * 32));
+			fallbackAnimation.TextPadding = new(8);
+			fallbackAnimation.Size = new(256, 28);
+			fallbackAnimation.HelperText = "Fallback animation...";
+
 			loop = UI.Add<Checkbox>();
-			loop.Position = new(8, 384 + (1 * 32));
+			loop.Position = new(8, 384 + (2 * 32));
 			loop.Size = new Vector2F(24);
 			loop.TextPadding = new(8);
 			loop.TooltipText = "Loop the animation?";
 
 			visBones = UI.Add<Checkbox>();
-			visBones.Position = new(8, 384 + (2 * 32));
+			visBones.Position = new(8, 384 + (3 * 32));
 			visBones.Size = new Vector2F(24);
 			visBones.TextPadding = new(8);
 			visBones.TooltipText = "Visualize bones?";
 
 			var speed = UI.Add<NumSlider>();
-			speed.Position = new(8, 384 + (3 * 32));
+			speed.Position = new(8, 384 + (4 * 32));
 			speed.Size = new Vector2F(256, 24);
 			speed.TextPadding = new(8);
 			speed.TooltipText = "Animation speed";
@@ -110,7 +118,7 @@ namespace Nucleus.ModelViewer
 
 			foreach (var animation in Entity.Model.Animations) {
 				menu.AddButton(animation.Key, null, () => {
-					Entity.PlayAnimation(animation.Key, loop?.Checked ?? false);
+					Entity.PlayAnimation(animation.Key, loop?.Checked ?? false, fallbackAnimation.Text.Length > 0 ? fallbackAnimation.Text : null);
 					foreach (var animation in Entity.Model.Animations) {
 						if (animation.Value.Playing) {
 							animation.Value.Speed = animationSpeed;
@@ -224,7 +232,7 @@ namespace Nucleus.ModelViewer
 							Graphics2D.DrawLine(screenPos.ToNucleus(), outwardScreenPos.ToNucleus(), 2);
 						}
 
-						var text = $"name: {bone.Name}, ActiveSlot: {bone.ActiveSlot}";
+						var text = $"name: {bone.Name}, ActiveSlotAlpha: {bone.ActiveSlotAlpha}";
 						var ts = Graphics2D.GetTextSize(text, "Consolas", 10) + new Vector2F(4);
 						Graphics2D.SetDrawColor(30, 30, 30, 200);
 						Graphics2D.DrawRectangle(screenPos.X - (ts.X / 2), screenPos.Y - (ts.Y / 2), ts.X, ts.Y);

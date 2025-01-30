@@ -84,9 +84,12 @@ namespace Nucleus.Core
 			BoneAnimationChannels animData = AnimationData.BoneIDToChannels[bone.ID];
 			TransformVQV current = GetCurrentTransform(animData, bone);
 
-			if (animData.ActiveSlot != null) 
+			if (animData.ActiveSlot != null)
 				bone.ActiveSlot = (int)animData.ActiveSlot.LinearInterpolation(AnimationPlayhead);
 
+			if (animData.ActiveSlotAlpha != null) {
+				bone.ActiveSlotAlpha = animData.ActiveSlotAlpha.LinearInterpolation(AnimationPlayhead);
+			}
 			current.TransformOrder = TransformOrder.PosRotScale;
             //current.Scale = new Vector3(6.5f, 1f, 2f);
             Matrix4x4 poseTransform = current.Matrix.Transpose();
