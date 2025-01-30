@@ -525,7 +525,7 @@ namespace CloneDash.Game
             Graphics2D.SetTexture(Textures.LoadTextureFromFile("backgroundscroll.png"));
             var offset = ((float)Curtime * -600f) % frameState.WindowWidth;
             Graphics2D.SetDrawColor(255, 255, 255, 127);
-			var offset2 = frameState.WindowHeight * 0.06f;
+			var offset2 = frameState.WindowHeight * 0.1f;
             Graphics2D.DrawTexture(new(offset, offset2), new(frameState.WindowWidth, frameState.WindowHeight));
             Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, offset2), new(frameState.WindowWidth, frameState.WindowHeight)); ;
         }
