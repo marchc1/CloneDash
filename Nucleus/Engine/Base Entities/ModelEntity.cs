@@ -17,7 +17,10 @@ namespace Nucleus.Engine
             }
         }
 
-        public bool PlayingAnimation => Model.PlayingAnimation;
+		public double GetAnimationLength(string animation) => (float)(Model.Model.FindAnimation(animation)?.AnimationLength ?? 0);
+
+
+		public bool PlayingAnimation => Model.PlayingAnimation;
 
         public void SetModel(string modelname, string? animation = null, bool loopAnimation = false, string? fallback = null) {
             __model = Model3System.Load(modelname);

@@ -16,6 +16,8 @@ namespace Nucleus.Core
 		public List<Model3AnimationCache> Animations { get; set; } = [];
 		public Bone3Cache[] AllBones { get; set; } = [];
 		public Bone3Cache[] RootBones { get; set; } = [];
+		
+		public Model3AnimationCache? FindAnimation(string name) => Animations.FirstOrDefault(x => x.Name == name);
 
 		public List<(Mesh mesh, int material)> MeshMaterialPairs { get; private set; } = [];
 		public Dictionary<string, Mesh> NamedMeshPairs { get; private set; } = [];

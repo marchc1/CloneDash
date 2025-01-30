@@ -82,13 +82,20 @@ namespace CloneDash.Game
         /// Is the player in the air right now?
         /// </summary>
         public bool InAir => Conductor.Time - __whenjump < __jumpmax;
-        /// <summary>
-        /// Can the player jump right now?
-        /// </summary>
-        public bool CanJump => !InAir;
+		public double AirTime => (Conductor.Time - __whenjump);
+		public double TimeToAnimationEnds => __jumpAnimationStops - (Conductor.Time - __whenjump);
+		public double Hologram_AirTime => (Conductor.Time - __whenHjump);
+		public double Hologram_TimeToAnimationEnds => __jumpAnimationHStops - (Conductor.Time - __whenHjump);
+		/// <summary>
+		/// Can the player jump right now?
+		/// </summary>
+		public bool CanJump => !InAir;
 
         private double __jumpmax = 0.5d;
+        private double __jumpAnimationStops = 0.5d;
+        private double __jumpAnimationHStops = 0.5d;
         private double __whenjump = -2000000000000d;
+        private double __whenHjump = -2000000000000d;
 
         public void Heal(float health) {
             Health = Math.Clamp(Health + health, 0, MaxHealth);
@@ -185,7 +192,23 @@ namespace CloneDash.Game
         public event AttackEvent? OnAirAttack;
         public event AttackEvent? OnGroundAttack;
 
-        public bool AttackAir(CD_BaseMEntity entity, bool force) {
+		public float CharacterYRatio {
+			get {
+				return (float)(
+					Math.Clamp(NMath.Ease.OutExpo(AirTime * 10), 0, 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1))
+				);
+			}
+		}
+
+		public float HologramCharacterYRatio {
+			get {
+				return (float)(
+					Math.Clamp(NMath.Ease.OutExpo(Hologram_AirTime * 10), 0, 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1))
+				);
+			}
+		}
+
+		public bool AttackAir(CD_BaseMEntity entity, bool force) {
             if (CanJump || force) {
                 __whenjump = Conductor.Time;
                 OnAirAttack?.Invoke(this, PathwaySide.Top);
@@ -194,10 +217,15 @@ namespace CloneDash.Game
                     Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
                 else if (IsSustaining()) {
                     HologramPlayer.Visible = true;
-                    HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Top));
+					var airAnim = GetHitAnimation(entity, PathwaySide.Top);
+					__whenHjump = Conductor.Time;
+					__jumpAnimationHStops = HologramPlayer.GetAnimationLength(airAnim);
+					HologramPlayer.PlayAnimation(airAnim);
                 }
                 else {
-                    Player.PlayAnimation(GetHitAnimation(entity, PathwaySide.Top), fallback: GetCharacterAnimation(CharacterAnimation.Walk));
+					var airAnim = GetHitAnimation(entity, PathwaySide.Top);
+					__jumpAnimationStops = Player.GetAnimationLength(airAnim);
+					Player.PlayAnimation(airAnim, fallback: GetCharacterAnimation(CharacterAnimation.Walk));
                 }
 
                 return true;
@@ -221,7 +249,7 @@ namespace CloneDash.Game
                 Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
             else if (IsSustaining()) {
                 HologramPlayer.Visible = true;
-                HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom));
+				HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom));
             }
             else {
                 Player.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom), fallback: GetCharacterAnimation(CharacterAnimation.Walk));
