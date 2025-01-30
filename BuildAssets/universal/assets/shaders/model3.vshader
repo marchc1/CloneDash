@@ -1,7 +1,6 @@
 #version 330
 
 struct Bone{
-	mat4 local;
 	mat4 final;
 };
 
@@ -15,7 +14,7 @@ layout(location = 5) in vec4 weights;
 out vec2 fragTexCoord;
 out vec4 fragColor;
 
-const int MAX_BONES = 125;
+const int MAX_BONES = 250;
 const int MAX_BONE_INFLUENCE = 4;
 
 uniform Bone bones[MAX_BONES];
