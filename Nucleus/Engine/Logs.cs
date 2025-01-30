@@ -1,5 +1,5 @@
 ﻿using Raylib_cs;
-using Nucleus.CrossPlatform;
+using Nucleus.Platform;
 
 namespace Nucleus
 {

@@ -16,7 +16,7 @@ using static System.Net.Mime.MediaTypeNames;
 using MouseButton = Nucleus.Types.MouseButton;
 
 using CloneDash.Levels;
-using Nucleus.CrossPlatform;
+using Nucleus.Platform;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Data;
 using CloneDash.Animation;
