@@ -92,6 +92,7 @@ namespace CloneDash.Game
 		public bool CanJump => !InAir;
 
         private double __jumpmax = 0.5d;
+		private bool __firstJump = false;
         private double __jumpAnimationStops = 0.5d;
         private double __jumpAnimationHStops = 0.5d;
         private double __whenjump = -2000000000000d;
@@ -195,7 +196,7 @@ namespace CloneDash.Game
 		public float CharacterYRatio {
 			get {
 				return (float)(
-					Math.Clamp(NMath.Ease.OutExpo(AirTime * 10), 0, 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1))
+					(__firstJump ? Math.Clamp(NMath.Ease.OutExpo(AirTime * 10), 0, 1) : 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1))
 				);
 			}
 		}
@@ -224,6 +225,7 @@ namespace CloneDash.Game
                 }
                 else {
 					var airAnim = GetHitAnimation(entity, PathwaySide.Top);
+					__firstJump = !InAir;
 					__jumpAnimationStops = Player.GetAnimationLength(airAnim);
 					Player.PlayAnimation(airAnim, fallback: GetCharacterAnimation(CharacterAnimation.Walk));
                 }
