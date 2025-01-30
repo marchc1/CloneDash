@@ -8,6 +8,7 @@ using Nucleus.Util;
 using Newtonsoft.Json.Linq;
 using System.Text.Json.Nodes;
 using System.Linq;
+using Nucleus.ManagedMemory;
 
 namespace Nucleus.Core
 {
@@ -29,6 +30,46 @@ namespace Nucleus.Core
 	public static class Model3System
 	{
 		internal static Dictionary<string, Model3Cache> Cache { get; } = new();
+
+		public static ulong UsedTextureBits {
+			get {
+				ulong buildup = 0;
+				foreach(var m3cache in Cache.Values) {
+					foreach (var material in m3cache.Materials) {
+						unsafe {
+							Texture2D tex = material.Material.Maps[0].Texture;
+							buildup += (ulong)(TextureManagement.GetBitsPerPixel(tex.Format) * tex.Width * tex.Height);
+						}
+					}
+				}
+				return buildup;
+			}
+		}
+		public static ulong UsedMeshBytes {
+			get {
+				ulong buildup = 0;
+
+				foreach (var m3cache in Cache.Values) {
+					foreach (var mesh in m3cache.Meshes) {
+						unsafe {
+							ulong vertices = (ulong)mesh.VertexCount;
+							ulong triangles = (ulong)mesh.TriangleCount;
+							buildup += 
+								(vertices * (sizeof(float) * 3)) +
+								(vertices * (sizeof(float) * 2)) +
+								(vertices * (sizeof(float) * 3)) +
+								(vertices * (sizeof(byte) * 4)) +
+								(vertices * (sizeof(float) * 4)) +
+								(triangles * (sizeof(ushort) * 3))
+								;
+							// this is missing joints!
+						}
+					}
+				}
+
+				return buildup;
+			}
+		}
 
 		public static unsafe Model3 Load(string modelname, bool resolveFilepath = true, bool nocache = false) {
 			var modelAbsPath = resolveFilepath ? Filesystem.Resolve(modelname, "models") : modelname;
@@ -349,7 +390,7 @@ namespace Nucleus.Core
 							var sampler = animation.Samplers[channel.Sampler];
 							switch (sampler.Interpolation) {
 								case glTFLoader.Schema.AnimationSampler.InterpolationEnum.STEP:
-									channelObj.Interpolation = AnimationInterpolation.Step; break;
+									channelObj.Interpolation = AnimationInterpolation.Constant; break;
 								case glTFLoader.Schema.AnimationSampler.InterpolationEnum.LINEAR:
 									channelObj.Interpolation = AnimationInterpolation.Linear; break;
 								case glTFLoader.Schema.AnimationSampler.InterpolationEnum.CUBICSPLINE:

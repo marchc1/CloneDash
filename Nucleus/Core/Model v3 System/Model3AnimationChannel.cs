@@ -73,9 +73,9 @@ namespace Nucleus.Core
 		internal TransformVQV GetCurrentTransform(BoneAnimationChannels animData, Model3Bone bone) {
             TransformVQV transform = new TransformVQV();
 
-            if (animData.Position != null) transform.Position = animData.Position.LinearInterpolation(AnimationPlayhead);
-            if (animData.Rotation != null) transform.Rotation = animData.Rotation.LinearInterpolation(AnimationPlayhead);
-            if (animData.Scale != null) transform.Scale = animData.Scale.LinearInterpolation(AnimationPlayhead);
+            if (animData.Position != null) transform.Position = animData.Position.Interpolate(AnimationPlayhead);
+            if (animData.Rotation != null) transform.Rotation = animData.Rotation.Interpolate(AnimationPlayhead);
+            if (animData.Scale != null) transform.Scale = animData.Scale.Interpolate(AnimationPlayhead);
 
             return transform;
         }
@@ -85,10 +85,10 @@ namespace Nucleus.Core
 			TransformVQV current = GetCurrentTransform(animData, bone);
 
 			if (animData.ActiveSlot != null)
-				bone.ActiveSlot = (int)animData.ActiveSlot.LinearInterpolation(AnimationPlayhead);
+				bone.ActiveSlot = (int)animData.ActiveSlot.Interpolate(AnimationPlayhead);
 
 			if (animData.ActiveSlotAlpha != null) {
-				bone.ActiveSlotAlpha = animData.ActiveSlotAlpha.LinearInterpolation(AnimationPlayhead);
+				bone.ActiveSlotAlpha = animData.ActiveSlotAlpha.Interpolate(AnimationPlayhead);
 			}
 			current.TransformOrder = TransformOrder.PosRotScale;
             //current.Scale = new Vector3(6.5f, 1f, 2f);
