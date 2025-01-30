@@ -12,8 +12,10 @@ namespace CloneDash.Modding.Descriptors
 	{
 		[JsonConverter(typeof(StringEnumConverter))] 
 		public CloneDashDescriptorType Type { get; private set; }
-		public CloneDashDescriptor(CloneDashDescriptorType type) => Type = type;
-
+		public CloneDashDescriptor(CloneDashDescriptorType type, int version = 1) {
+			Type = type;
+			Version = version;
+		}
 		public int Version;
 		public static T ParseFile<T>(string filepath) where T : CloneDashDescriptor => JsonConvert.DeserializeObject<T>(File.ReadAllText(filepath)) ?? throw new Exception("Could not parse the file.");
 	

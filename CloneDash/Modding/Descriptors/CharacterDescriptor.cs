@@ -4,7 +4,8 @@ namespace CloneDash.Modding.Descriptors
 {
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
-		public CharacterDescriptor() : base(CloneDashDescriptorType.Character) { }
+		// version 3 since we're using Model v3
+		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, 3) { }
 
 		[JsonIgnore] private static readonly string[] Attacks = ["Hit1", "Hit2", "Hit3"];
 

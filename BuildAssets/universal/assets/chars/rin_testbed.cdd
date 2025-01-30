@@ -1,4 +1,5 @@
 {
+	"Version": 3,
 	"Animation_WalkCycle": "Walk",
 
 	"Animation_AirAttacks_Failed": ["Jump"],
