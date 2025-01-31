@@ -7,9 +7,16 @@ namespace Nucleus.ModelEditor
 {
 	public class ModelEditor : Level
 	{
+
+		public EditorPanel Editor;
+		public OutlinerPanel Outliner;
+		public PropertiesPanel Properties;
+
 		public override void Initialize(params object[] args) {
 			Menubar menubar = UI.Add<Menubar>();
 			Keybinds.AddKeybind([KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
+
+			UI.Add(out Outliner);
 		}
 	}
 
