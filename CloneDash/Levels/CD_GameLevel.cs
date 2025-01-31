@@ -252,7 +252,7 @@ namespace CloneDash.Game
 
 					var flex = PauseWindow.Add<FlexPanel>();
 					flex.Dock = Dock.Fill;
-					flex.Direction = FlexDirection.Vertical;
+					flex.Direction = Directional180.Vertical;
 					flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 					flex.DockPadding = RectangleF.TLRB(4);
 

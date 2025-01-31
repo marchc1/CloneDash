@@ -2,15 +2,10 @@
 
 namespace Nucleus.UI
 {
-    public enum FlexDirection
-    {
-        Horizontal,
-        Vertical
-    }
-    /// <summary>
-    /// FlexPanel's resizing mode. Todo: better explanations
-    /// </summary>
-    public enum FlexChildrenResizingMode
+	/// <summary>
+	/// FlexPanel's resizing mode. Todo: better explanations
+	/// </summary>
+	public enum FlexChildrenResizingMode
     {
         /// <summary>
         /// Does not perform a resizing operation on the children of the FlexPanel.
@@ -31,7 +26,7 @@ namespace Nucleus.UI
     }
     public class FlexPanel : Panel
     {
-        public FlexDirection Direction { get; set; } = FlexDirection.Horizontal;
+        public Directional180 Direction { get; set; } = Directional180.Horizontal;
         public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
         protected override void Initialize() {
             base.Initialize();
@@ -58,7 +53,7 @@ namespace Nucleus.UI
                     case FlexChildrenResizingMode.DoNotResize:
                     case FlexChildrenResizingMode.FitToOppositeDirection:
                     case FlexChildrenResizingMode.StretchToOppositeDirection:
-                        if (Direction == FlexDirection.Horizontal)
+                        if (Direction == Directional180.Horizontal)
                             child.Position = new(chF1 * ourBounds.Width, ourBounds.Height / 2);
                         else
                             child.Position = new(ourBounds.Width / 2, chF1 * ourBounds.Height);
@@ -67,7 +62,7 @@ namespace Nucleus.UI
                         child.Origin = Anchor.Center;
                         break;
                     case FlexChildrenResizingMode.StretchToFit:
-                        if (Direction == FlexDirection.Horizontal)
+                        if (Direction == Directional180.Horizontal)
                             child.Position = new(chF0 * ourBounds.Width, 0);
                         else
                             child.Position = new(0, chF0 * ourBounds.Height);
@@ -81,19 +76,19 @@ namespace Nucleus.UI
                     case FlexChildrenResizingMode.DoNotResize:
                         break;
                     case FlexChildrenResizingMode.FitToOppositeDirection:
-                        if (Direction == FlexDirection.Horizontal)
+                        if (Direction == Directional180.Horizontal)
                             child.Size = new(child.RenderBounds.Width, ourBounds.Height);
                         else
                             child.Size = new(ourBounds.Width, child.RenderBounds.Height);
                         break;
                     case FlexChildrenResizingMode.StretchToOppositeDirection:
-                        if (Direction == FlexDirection.Horizontal)
+                        if (Direction == Directional180.Horizontal)
                             child.Size = new(ourBounds.Height, ourBounds.Height);
                         else
                             child.Size = new(ourBounds.Width, ourBounds.Width);
                         break;
                     case FlexChildrenResizingMode.StretchToFit:
-                        if (Direction == FlexDirection.Horizontal)
+                        if (Direction == Directional180.Horizontal)
                             child.Size = new(ourBounds.Width / childrenCount, ourBounds.Height);
                         else
                             child.Size = new(ourBounds.Width, ourBounds.Height / childrenCount);

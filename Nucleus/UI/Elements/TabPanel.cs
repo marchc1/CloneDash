@@ -24,7 +24,7 @@ namespace Nucleus.UI.Elements
 			Icon = newIcon; // unimplemented; but prob should invalidate parent etc here
 		}
 	}
-	public class TabsPanel : Panel
+	public class TabView : Panel
 	{
 		public List<Tab> Tabs = [];
 
@@ -91,7 +91,7 @@ namespace Nucleus.UI.Elements
 			TabContainer.DockMargin = RectangleF.TLRB(-4, 8, 8, 8);
 		}
 
-		public delegate void OnTabChangedDelegate(TabsPanel self, Tab? tab);
+		public delegate void OnTabChangedDelegate(TabView self, Tab? tab);
 		public event OnTabChangedDelegate? OnTabChanged;
 
 		public static readonly Color SWITCHER_INACTIVE = new(30, 35, 42, 200);
