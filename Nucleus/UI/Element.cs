@@ -998,10 +998,9 @@ namespace Nucleus.UI
 				where typeof(Element).IsAssignableFrom(type) && type.Name != "Element"
 				select type).ToArray();
 
-			foreach (var nodeType in listOfElements) {
+			foreach (var elementType in listOfElements) {
 				//var instance = (Element)
-				//NodeKeyToType[instance.NodeSetup.Key] = nodeType;
-				Logs.Debug(nodeType.Name);
+				Logs.Debug(elementType.Name);
 			}
 
 			return examples;
@@ -1010,8 +1009,6 @@ namespace Nucleus.UI
 
 	[Nucleus.MarkForStaticConstruction]
 	public static class ElementConsoleInfo {
-		public static ConCommand nucleus_ui_examples = ConCommand.Register("nucleus_ui_examples", (_, _) => {
-			Element.CreateExampleWindow();
-		});
+		public static ConCommand nucleus_ui_examples = ConCommand.Register("nucleus_ui_examples", (_, _) => Element.CreateExampleWindow());
 	}
 }
