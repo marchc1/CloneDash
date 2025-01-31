@@ -25,7 +25,7 @@ namespace Nucleus.UI
             if (TriggeredWhenEnterPressed) {
                 backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(Lifetime * 6) * 1.3));
             }
-            var back = MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 4.5f, 1f), new(0, 1.2f, 0.6f, 1f));
+            var back = MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.5f, 1f), new(0, 1.2f, 0.6f, 1f));
             var fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 
             Graphics2D.SetDrawColor(back);
