@@ -12,6 +12,9 @@ namespace Nucleus.UI.Elements
 	public class Menu : Panel
 	{
 		private List<IMenuItem> items = [];
+		public void AddItem(IMenuItem item) {
+			items.Add(item);
+		}
 		public void AddButton(string text, string? icon = null, Action? invoke = null) {
 			items.Add(new MenuButton(text, icon, invoke));
 		}

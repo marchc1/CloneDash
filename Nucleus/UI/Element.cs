@@ -4,7 +4,6 @@ using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.UI
@@ -982,5 +981,37 @@ namespace Nucleus.UI
 		public Vector2F GetMousePos() {
 			return EngineCore.MousePos - this.GetGlobalPosition();
 		}
+
+		public virtual void ProvideExample(Panel buildHere) { }
+
+		public static Elements.Window CreateExampleWindow() {
+			UserInterface UI = EngineCore.Level.UI;
+
+			var examples = UI.Add<Elements.Window>();
+			examples.Size = new(1280, 720);
+			examples.Center();
+			examples.Title = "Nucleus - UI Element Examples";
+
+			var listOfElements = (
+				from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+				from type in domainAssembly.GetTypes()
+				where typeof(Element).IsAssignableFrom(type) && type.Name != "Element"
+				select type).ToArray();
+
+			foreach (var nodeType in listOfElements) {
+				//var instance = (Element)
+				//NodeKeyToType[instance.NodeSetup.Key] = nodeType;
+				Logs.Debug(nodeType.Name);
+			}
+
+			return examples;
+		}
+	}
+
+	[Nucleus.MarkForStaticConstruction]
+	public static class ElementConsoleInfo {
+		public static ConCommand nucleus_ui_examples = ConCommand.Register("nucleus_ui_examples", (_, _) => {
+			Element.CreateExampleWindow();
+		});
 	}
 }
