@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\glTFLoader\glTFLoader.csproj" />
+    <ProjectReference Include="..\Nucleus.ModelSystem\Nucleus.ModelSystem.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
 
