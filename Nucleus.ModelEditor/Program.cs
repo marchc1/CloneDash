@@ -8,6 +8,7 @@ namespace Nucleus.ModelEditor
 	{
 		public override void Initialize(params object[] args) {
 			Menubar menubar = UI.Add<Menubar>();
+			Keybinds.AddKeybind([KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
 		}
 	}
 
