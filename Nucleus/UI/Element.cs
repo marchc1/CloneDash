@@ -174,6 +174,8 @@ namespace Nucleus.UI
             return Create<T>(AddParent, toAdd);
         }
 
+		public virtual void Add<T>(out T addInto) where T : Element => addInto = Add<T>();
+
         public static T Create<T>(Element? parent = null, T? ret = null) where T : Element {
             ret = ret ?? (T)Activator.CreateInstance(typeof(T));
 
