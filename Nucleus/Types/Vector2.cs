@@ -128,6 +128,27 @@ namespace Nucleus.Types
 				NMath.Lerp(ratio, a.Y, b.Y)
 				);
 		}
+
+		public static Vector2F Lerp(Vector2F ratio, Vector2F a, Vector2F b) {
+			return new(
+				NMath.Lerp(ratio.X, a.X, b.X),
+				NMath.Lerp(ratio.Y, a.Y, b.Y)
+				);
+		}
+
+		public static Vector2F Remap(float ratio, Vector2F iMi, Vector2F iMa, Vector2F oMi, Vector2F oMa) {
+			return new(
+				(float)NMath.Remap(ratio, iMi.X, iMa.X, oMi.X, oMa.X),
+				(float)NMath.Remap(ratio, iMi.Y, iMa.Y, oMi.Y, oMa.Y)
+				);
+		}
+		public static Vector2F Remap(Vector2F ratio, Vector2F iMi, Vector2F iMa, Vector2F oMi, Vector2F oMa) {
+			return new(
+				(float)NMath.Remap(ratio.X, iMi.X, iMa.X, oMi.X, oMa.X),
+				(float)NMath.Remap(ratio.Y, iMi.Y, iMa.Y, oMi.Y, oMa.Y)
+				);
+		}
+
 		/// <summary>
 		/// Return a normalized <see cref="Vector2F"/> with a <see cref="Length"/> of 1.
 		/// </summary>

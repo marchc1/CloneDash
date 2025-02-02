@@ -37,6 +37,9 @@ namespace Nucleus.UI
 		public Vector2F Size {
 			get { return _size; }
 			set {
+				if (value == _size)
+					return;
+
 				_size = value;
 				if (Dock != Dock.None)
 					InvalidateParentAndItsChildren();
@@ -64,14 +67,16 @@ namespace Nucleus.UI
 			get => __engineDisabled;
 			set {
 				__engineDisabled = value;
-				if (__engineDisabled != value) InvalidateParentAndItsChildren();
+				if (__engineDisabled != value) 
+					InvalidateParentAndItsChildren();
 			}
 		}
 		public bool EngineInvisible {
 			get => __engineInvisible;
 			set {
 				__engineInvisible = value;
-				if (__engineInvisible != value) InvalidateParentAndItsChildren();
+				if (__engineInvisible != value) 
+					InvalidateParentAndItsChildren();
 			}
 		}
 
@@ -143,10 +148,42 @@ namespace Nucleus.UI
 			}
 		}
 
+		// These store an internal value for when we're setting up children for the first time/after a full-child update.
+		// The elements individual value is stored in the equiv. Self value.
+		protected float ChildrensDockingLayoutTop = 0;
+		protected float ChildrensDockingLayoutLeft = 0;
+		protected float ChildrensDockingLayoutRight = 0;
+		protected float ChildrensDockingLayoutBottom = 0;
+
+		// These store the internal value so when rebuilds happen they can use an old value.
+		// They will be reset on full child updates (ie. InvalidateChildren)
+		protected float? SelfDockingLayoutTop = null;
+		protected float? SelfDockingLayoutLeft = null;
+		protected float? SelfDockingLayoutRight = null;
+		protected float? SelfDockingLayoutBottom = null;
+
+		/// <summary>
+		/// Resets the docking layout. This resets all ChildrensDockingLayout values on this element, and resets all childrens SelfDockingLayout values.
+		/// </summary>
+		public void ResetDockingLayout() {
+			ChildrensDockingLayoutTop = 0;
+			ChildrensDockingLayoutLeft = 0;
+			ChildrensDockingLayoutRight = 0;
+			ChildrensDockingLayoutBottom = 0;
+
+			foreach (var child in Children) {
+				child.SelfDockingLayoutTop = null;
+				child.SelfDockingLayoutLeft = null;
+				child.SelfDockingLayoutRight = null;
+				child.SelfDockingLayoutBottom = null;
+			}
+		}
+
 		protected float DockingLayoutTop = 0;
 		protected float DockingLayoutLeft = 0;
 		protected float DockingLayoutRight = 0;
 		protected float DockingLayoutBottom = 0;
+
 
 		public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
 		public Vector2F ChildRenderOffset { get; internal set; } = Vector2F.Zero;
@@ -220,6 +257,7 @@ namespace Nucleus.UI
 			parent.AddChild(ret);
 			ret.Initialize();
 			ret.UI.Elements.Add(ret);
+			parent.TriggerOnChildParented(parent, ret);
 			return ret;
 		}
 
@@ -257,6 +295,14 @@ namespace Nucleus.UI
 
 		public bool IsValid() => !__markedForRemoval;
 
+		public delegate void ChildParentedDelegate(Element parent, Element child);
+		public event ChildParentedDelegate? OnChildParented;
+		public virtual void ChildParented(Element parent, Element child) { }
+		public void TriggerOnChildParented(Element parent, Element child) {
+			ChildParented(parent, child);
+			OnChildParented?.Invoke(parent, child);	
+		}
+
 		protected virtual void OnThink(FrameState frameState) { }
 		private bool _firstThink = true;
 		public void Think(FrameState frameState) {
@@ -291,7 +337,8 @@ namespace Nucleus.UI
 				InvalidateLayout();
 			}
 
-			p.InvalidateLayout();
+			p?.InvalidateLayout();
+			p?.Parent?.TriggerOnChildParented(p.Parent, p);
 		}
 
 		public void SetParent(Element p) {
@@ -306,6 +353,7 @@ namespace Nucleus.UI
 			}
 
 			InvalidateLayout();
+			p?.TriggerOnChildParented(p, this);
 		}
 		#endregion
 		#region Layout control
@@ -319,14 +367,13 @@ namespace Nucleus.UI
 					e.InvalidateChildren(immediate, recursive);
 			}
 		}
+		/// <summary>
+		/// Invalidates the layout, registering it for a rebuild with the layout system.
+		/// </summary>
+		/// <param name="immediate"></param>
 		public void InvalidateLayout(bool immediate = false) {
-			DockingLayoutTop = DockingLayoutLeft = DockingLayoutRight = DockingLayoutBottom = 0;
-			if (IValidatable.IsValid(Parent)) {
-				/*Parent.DockingLayoutTop = 0;
-                Parent.DockingLayoutLeft = 0;
-                Parent.DockingLayoutRight = 0;
-                Parent.DockingLayoutBottom = 0;*/
-			}
+			ChildrensDockingLayoutTop = ChildrensDockingLayoutLeft = ChildrensDockingLayoutRight = ChildrensDockingLayoutBottom = 0;
+
 			if (immediate) {
 				LayoutRecursive(this);
 			}
@@ -340,6 +387,10 @@ namespace Nucleus.UI
 
 			LayoutInvalidated = false;
 		}
+		/// <summary>
+		/// Alias of calling <see cref="InvalidateLayout(bool)"/> on <seealso cref="Parent"/>
+		/// </summary>
+		/// <param name="immediate"></param>
 		public void InvalidateParent(bool immediate = false) {
 			if (Parent != null)
 				Parent.InvalidateLayout(immediate);
@@ -350,10 +401,25 @@ namespace Nucleus.UI
 			Parent.InvalidateChildren(immediate, true, true);
 		}
 		protected virtual void PerformLayout(float width, float height) { }
-		protected virtual void PostLayoutChildren() { }
 		public delegate void PostLayoutChildrenD(Element self);
 		public event PostLayoutChildrenD? OnPostLayoutChildren;
-		protected virtual void ModifyRenderBounds(ref RectangleF renderBounds) { }
+		protected virtual void PostLayoutChildren() { }
+		/// <summary>
+		/// Called before calculating a childs layout.
+		/// </summary>
+		/// <param name="element"></param>
+		protected virtual void PreLayoutChild(Element element) { }
+		/// <summary>
+		/// Called when a childs layout is complete.
+		/// </summary>
+		/// <param name="element"></param>
+		protected virtual void PostLayoutChild(Element element) { }
+		/// <summary>
+		/// Called before calculating childrens layout.
+		/// </summary>
+		protected virtual void PreLayoutChildren() { }
+		protected virtual void ModifyLayout(ref RectangleF renderBounds) { }
+
 
 		private bool __usesRenderTarget = false;
 		private RenderTexture2D? __RT1 = null;
@@ -402,21 +468,26 @@ namespace Nucleus.UI
 		/// It's only exposed for elements (such as the root UserInterface) to modify their logic.
 		/// </summary>
 		internal virtual void SetupLayout() {
-			DockingLayoutTop = 0;
-			DockingLayoutLeft = 0;
-			DockingLayoutRight = 0;
-			DockingLayoutBottom = 0;
+			ChildrensDockingLayoutTop = 0;
+			ChildrensDockingLayoutLeft = 0;
+			ChildrensDockingLayoutRight = 0;
+			ChildrensDockingLayoutBottom = 0;
 
 			__renderbounds = RectangleF.FromPosAndSize(_position, _size);
-			ModifyRenderBounds(ref __renderbounds);
+			ModifyLayout(ref __renderbounds);
 			//PerformLayout(_size.w, _size.h); used to be here...
 
 			RectangleF currentBounds = __renderbounds;
 			if (Dock != Dock.None) {
-				var dT = Parent.DockingLayoutTop;
-				var dL = Parent.DockingLayoutLeft;
-				var dR = Parent.DockingLayoutRight;
-				var dB = Parent.DockingLayoutBottom;
+				var dT = SelfDockingLayoutTop ?? Parent.ChildrensDockingLayoutTop;
+				var dL = SelfDockingLayoutLeft ?? Parent.ChildrensDockingLayoutLeft;
+				var dR = SelfDockingLayoutRight ?? Parent.ChildrensDockingLayoutRight;
+				var dB = SelfDockingLayoutBottom ?? Parent.ChildrensDockingLayoutBottom;
+
+				SelfDockingLayoutTop = dT;
+				SelfDockingLayoutLeft = dL;
+				SelfDockingLayoutRight = dR;
+				SelfDockingLayoutBottom = dB;
 
 				float parentWidth = 0, parentHeight = 0;
 				float childWidth = currentBounds.W, childHeight = currentBounds.H;
@@ -436,28 +507,28 @@ namespace Nucleus.UI
 						currentBounds.Y = dT;
 						currentBounds.W = (parentWidth - dR) - dL;
 						currentBounds.H = childHeight;
-						Parent.DockingLayoutTop += childHeight;
+						Parent.ChildrensDockingLayoutTop += childHeight;
 						break;
 					case Dock.Left:
 						currentBounds.X = dL;
 						currentBounds.Y = dT;
 						currentBounds.W = childWidth;
 						currentBounds.H = (parentHeight - dT) - dB;
-						Parent.DockingLayoutLeft += childWidth;
+						Parent.ChildrensDockingLayoutLeft += childWidth;
 						break;
 					case Dock.Right:
 						currentBounds.X = (parentWidth - childWidth) - dR;
 						currentBounds.Y = dT;
 						currentBounds.W = childWidth;
 						currentBounds.H = (parentHeight - dB) - dT;
-						Parent.DockingLayoutRight += childWidth;
+						Parent.ChildrensDockingLayoutRight += childWidth;
 						break;
 					case Dock.Bottom:
 						currentBounds.X = dL;
 						currentBounds.Y = (parentHeight - childHeight) - dB;
 						currentBounds.W = (parentWidth - dL) - dR;
 						currentBounds.H = childHeight;
-						Parent.DockingLayoutBottom += childHeight;
+						Parent.ChildrensDockingLayoutBottom += childHeight;
 						break;
 					case Dock.Fill:
 						currentBounds.X = dL;
@@ -532,6 +603,14 @@ namespace Nucleus.UI
 				var npO = Anchor.CalculatePosition(new(0, 0), Parent.RenderBounds.Size, Anchor, false);
 				currentBounds.Pos = npO + np;
 			}
+
+			if (_fitToParent) {
+				var parentBounds = Parent?.RenderBounds ?? UI.RenderBounds;
+				var overflow = parentBounds.GetOverflow(currentBounds, fitPadding);
+				currentBounds.Pos += overflow;
+				_fitToParent = false;
+			}
+
 			RenderBounds = currentBounds;
 
 			LayoutInvalidated = false;
@@ -801,7 +880,13 @@ namespace Nucleus.UI
 		public event MouseV2Delegate MouseScrollEvent;
 		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { }
 
-
+		public void ClearChildren() {
+			foreach (var child in this.AddParent.Children.ToArray()) {
+				child.Remove();
+			}
+			this.AddParent.Children.Clear();
+			InvalidateLayout();
+		}
 		public bool Hovered => UI.Hovered == this;
 		public bool Depressed { get; internal set; }
 		internal void MouseClickOccur(FrameState state, MouseButton button) {
@@ -1066,6 +1151,14 @@ namespace Nucleus.UI
 			}
 
 			return examples;
+		}
+
+		private bool _fitToParent = false;
+		private float fitPadding = 0;
+		public void FitToParent(float? padding = null) {
+			fitPadding = padding ?? 0;
+			_fitToParent = true;
+			InvalidateLayout();
 		}
 	}
 
