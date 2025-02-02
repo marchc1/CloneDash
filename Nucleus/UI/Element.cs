@@ -361,6 +361,7 @@ namespace Nucleus.UI
 		public void InvalidateChildren(bool immediate = false, bool recursive = false, bool self = false) {
 			if (self)
 				InvalidateLayout(immediate);
+			ResetDockingLayout();
 			foreach (Element e in Children) {
 				e.InvalidateLayout(immediate);
 				if (recursive)
@@ -701,6 +702,12 @@ namespace Nucleus.UI
 
 			return returning;
 		}
+
+		public delegate bool HoverTestDelegate(Element self, RectangleF bounds, Vector2F mousePos);
+		public event HoverTestDelegate? OnHoverTest;
+		public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
+			return bounds.ContainsPoint(mousePos);
+		}
 		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool popupActive = false) {
 			if (!element.Enabled) return lastHovered;
 			if (!element.Visible) return lastHovered;
@@ -725,7 +732,13 @@ namespace Nucleus.UI
 				return lastHovered;
 			}
 
-			if (element.RenderBounds.AddPosition(offset).ContainsPoint(frameState.MouseState.MousePos) && lastBounds.ContainsPoint(frameState.MouseState.MousePos))
+			var bounds = element.RenderBounds.AddPosition(offset);
+
+			if (element.OnHoverTest == null) {
+				if (element.HoverTest(bounds, frameState.MouseState.MousePos))
+					lastHovered = element;
+			}
+			else if (element.OnHoverTest(element, bounds, frameState.MouseState.MousePos))
 				lastHovered = element;
 
 			offset += element.RenderBounds.Pos;

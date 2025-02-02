@@ -113,7 +113,7 @@ namespace Nucleus.UI
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, width, height);
 			Graphics2D.SetDrawColor(fore);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
 			bool replaceTextForDrawing = false;
 			if (Text == "")

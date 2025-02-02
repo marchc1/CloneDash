@@ -224,7 +224,9 @@ namespace Nucleus.Core
 
         public static void DrawCircle(int centerX, int centerY, float radius) => Raylib.DrawCircle(offsetX(centerX), offsetY(centerY), radius, __drawColor);
         public static void DrawCircle(Vector2F pos, float radius) => Raylib.DrawCircleV(AFV2ToSNV2(pos), radius, __drawColor);
-
+		public static void DrawTriangle(Vector2F v1, Vector2F v2, Vector2F v3) {
+			Raylib.DrawTriangle(AFV2ToSNV2(v1), AFV2ToSNV2(v2), AFV2ToSNV2(v3), __drawColor);
+		}
         public static void DrawCircleSector(int centerX, int centerY, float radius, float startAngle, float endAngle, int segments = 32) => Raylib.DrawCircleSector(new Vector2(offsetX(centerX), offsetY(centerY)), radius, startAngle, endAngle, segments, __drawColor);
         public static void DrawCircleSector(float centerX, float centerY, float radius, float startAngle, float endAngle, int segments = 32) => Raylib.DrawCircleSector(new Vector2(offsetXF(centerX), offsetYF(centerY)), radius, startAngle, endAngle, segments, __drawColor);
         public static void DrawCircleSector(Vector2F pos, float radius, float startAngle, float endAngle, int segments = 32) => Raylib.DrawCircleSector(AFV2ToSNV2(pos), radius, startAngle, endAngle, segments, __drawColor);
@@ -240,7 +242,7 @@ namespace Nucleus.Core
 
         public static void DrawRectangle(int x, int y, int width, int height) => Raylib.DrawRectangle(offsetX(x), offsetY(y), width, height, __drawColor);
         public static void DrawRectangle(float x, float y, float width, float height) => Raylib.DrawRectangle(offsetX(x), offsetY(y), (int)width, (int)height, __drawColor);
-        public static void DrawRectangle(Vector2F pos, Vector2F size) => Raylib.DrawRectangleV(AFV2ToSNV2(pos), AFV2ToSNV2(size), __drawColor);
+        public static void DrawRectangle(Vector2F pos, Vector2F size) => Raylib.DrawRectangleV(AFV2ToSNV2(pos), NoOffset_AFV2ToSNV2(size), __drawColor);
         public static void DrawRectangle(RectangleF rect) => Raylib.DrawRectangleRec(AFRToRLR(rect), __drawColor);
         public static void DrawRectangle(RectangleF rect, Vector2F origin, float rotation) => Raylib.DrawRectanglePro(NoOffset_AFRToRLR(rect), AFV2ToSNV2(origin), rotation, __drawColor);
 

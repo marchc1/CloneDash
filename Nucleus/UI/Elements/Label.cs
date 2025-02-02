@@ -19,7 +19,7 @@ namespace Nucleus.UI
         protected override void Initialize() {
             base.Initialize();
         }
-        protected override void ModifyRenderBounds(ref RectangleF renderBounds) {
+        protected override void ModifyLayout(ref RectangleF renderBounds) {
             if (!AutoSize)
                 return;
 

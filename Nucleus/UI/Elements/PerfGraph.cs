@@ -117,5 +117,9 @@ namespace Nucleus.UI.Elements
 
 			DrawGraph(90, width - 90, height, MillisecondsOverTime, MAX_PERFGRAPH_ITEMS, color1, color2, 1000f / 60f);
 		}
+
+		public override bool HoverTest(RectangleF bounds, Vector2F mousePos) {
+			return false;
+		}
 	}
 }

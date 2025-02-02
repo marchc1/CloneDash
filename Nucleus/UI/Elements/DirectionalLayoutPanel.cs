@@ -16,6 +16,8 @@ namespace Nucleus.UI.Elements
 			}
 		}
 
+		public float WidthOffset { get; set; } = 0;
+
 		private float padding = 4;
 		public float Padding {
 			get => padding;
@@ -37,6 +39,12 @@ namespace Nucleus.UI.Elements
 
 		protected override void Initialize() {
 			base.Initialize();
+
+			MainPanel.OnChildParented += MainPanel_OnChildParented;
+		}
+
+		private void MainPanel_OnChildParented(Element parent, Element child) {
+			child.Dock = Dock.Top;
 		}
 
 		private bool autosize = false;
@@ -62,47 +70,16 @@ namespace Nucleus.UI.Elements
 		}
 
 		protected override void PostLayoutChildren() {
-			var childrenCount = AddParent.Children.Count;
-			var addOffset = 0f;
-			for (int i = 0; i < childrenCount; i++) {
-				Element child = AddParent.Children[i];
-				switch (Direction) {
-					case Directional180.Vertical:
-						child.Position = new Vector2F(child.Position.X, addOffset);
-						addOffset += child.Size.H + padding;
-						break;
-					case Directional180.Horizontal:
-						child.Position = new Vector2F(addOffset, child.Position.Y);
-						addOffset += child.RenderBounds.W + padding;
-						break;
-				}
+			base.PostLayoutChildren();
+			float size = 0;
 
-				if (SizeChildrensOppositeSideToEdge) {
-					switch (Direction) {
-						case Directional180.Vertical:
-							var x = child.RenderBounds.X;
-							var uW = AddParent.RenderBounds.W;
-							child.Size = new Vector2F(uW - x, child.Size.H);
-							break;
-						case Directional180.Horizontal:
-							var y = child.RenderBounds.Y;
-							var uH = AddParent.RenderBounds.H;
-							child.Size = new Vector2F(child.Size.W, uH - y);
-							break;
-					}
-				}
+			foreach(var child in AddParent.Children) {
+				size = MathF.Max(size, child.RenderBounds.Y + child.RenderBounds.H + 8);
 			}
+
 			if (AutoSize) {
-				switch (Direction) {
-					case Directional180.Vertical:
-						SetRenderBounds(h: addOffset);
-						this.Size = new(this.Size.W, addOffset);
-						break;
-
-					case Directional180.Horizontal:
-
-						break;
-				}
+				this.SetRenderBounds(h: size + 8);
+				this.MainPanel.SetRenderBounds(h: size + 8);
 			}
 		}
 	}

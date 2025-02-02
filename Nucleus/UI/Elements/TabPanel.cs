@@ -38,8 +38,8 @@ namespace Nucleus.UI.Elements
 				foreach (var tab in Tabs) {
 					if (tab != activeTab) {
 						tab.Switcher.BackgroundColor = SWITCHER_INACTIVE;
-						tab.Panel.Visible = true;
-						tab.Panel.Enabled = true;
+						tab.Panel.Visible = false;
+						tab.Panel.Enabled = false;
 					}
 				}
 
@@ -119,8 +119,9 @@ namespace Nucleus.UI.Elements
 			// No tabs? Set active tab
 			int tabCount = Tabs.Count;
 			Tabs.Add(newTab);
-			if (tabCount <= 0)
-				ActiveTab = newTab;
+			if (tabCount <= 0) {
+				MainThread.RunASAP(() => ActiveTab = newTab);
+			}
 
 			switcher.MouseReleaseEvent += (_, _, _) => ActiveTab = newTab;
 
