@@ -2,7 +2,6 @@
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
-using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -175,40 +174,64 @@ namespace Nucleus.ModelEditor
 			File.NewFile();
 
 			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
-			Keybinds.AddKeybind([KeyboardLayout.USA.F2], AttemptRename);
+			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
 		}
 
-		private void AttemptRename() {
+		private void AttemptRename(object? item = null) {
 			var determinations = GetDeterminations();
 
-			if (determinations.Count != 1)
+			if (item == null && determinations.Count != 1)
 				return;
 
 			// This is... a weird way of doing it...
 			// but I want to minimize how much code we write here...
 
-			Action<string>? callback = null;
+			Func<string, bool>? sanityCallback = null;
+			Action<string>? renameCallback = null;
 			string typeName = "";
-			string currentText = "";
+			string currentName = "";
 
-			switch (determinations.Last) {
+			switch (item ?? determinations.Last) {
 				case EditorBone bone:
 					typeName = "bone";
-					currentText = bone.Name;
-					callback = (text) => File.RenameBone(bone, text);
+					currentName = bone.Name;
+					sanityCallback = (text) => bone.Model.FindBone(text) == null;
+					renameCallback = (text) => File.RenameBone(bone, text);
+					break;
+				case EditorSlot slot:
+					typeName = "slot";
+					currentName = slot.Name;
+					sanityCallback = (text) => slot.Bone.Model.FindSlot(text) == null;
+					renameCallback = (text) => File.RenameSlot(slot, text);
 					break;
 			}
 
 			// cannot rename
-			if (callback == null)
+			if (renameCallback == null)
 				return;
 
 			EditorDialogs.TextInput(
 				$"Rename {typeName.CapitalizeFirstCharacter()}",
 				$"Enter the new name for this {typeName}",
-				currentText,
+				currentName,
 				true,
-				callback,
+				(text) => {
+					// No rename will be performed
+					if (text == currentName)
+						return;
+
+					if(sanityCallback?.Invoke(text) ?? true) {
+						renameCallback(text);
+					}
+					else {
+						EditorDialogs.ConfirmAction(
+							"Bad name", 
+							$"A {typeName} named '{text}' already exists. Choose a different name.", 
+							true, 
+							() => AttemptRename(item ?? determinations.Last)
+						);
+					}
+				},
 				null
 			);
 		}

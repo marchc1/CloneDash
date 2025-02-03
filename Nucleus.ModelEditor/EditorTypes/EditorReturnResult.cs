@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Nucleus.Models
+namespace Nucleus.ModelEditor
 {
 	public struct EditorResult
 	{

@@ -1,5 +1,4 @@
-﻿using Nucleus.Models;
-using static Nucleus.ModelEditor.EditorFile;
+﻿using static Nucleus.ModelEditor.EditorFile;
 
 namespace Nucleus.ModelEditor
 {

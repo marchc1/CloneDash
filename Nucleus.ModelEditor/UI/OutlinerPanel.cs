@@ -2,7 +2,6 @@
 using Microsoft.VisualBasic;
 using Nucleus.Core;
 using Nucleus.Engine;
-using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using static System.Net.Mime.MediaTypeNames;
@@ -95,7 +94,7 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		private void File_ModelAdded(EditorFile file, Models.EditorModel model) {
+		private void File_ModelAdded(EditorFile file, EditorModel model) {
 			OutlinerNode modelNode = AddNode(model.Name, "models/model.png");
 			modelNode.SetRepresentingObject(model);
 			RegisterBoneEvents(modelNode, model.Root);

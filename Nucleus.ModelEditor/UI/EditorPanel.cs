@@ -1,5 +1,4 @@
 ﻿using Nucleus.Core;
-using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -9,7 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Model = Nucleus.Models.EditorModel;
+using Model = Nucleus.ModelEditor.EditorModel;
 
 namespace Nucleus.ModelEditor
 {

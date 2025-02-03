@@ -1,6 +1,5 @@
 ﻿using Nucleus.Core;
 using Nucleus.ModelEditor.UI;
-using Nucleus.Models;
 using Nucleus.Platform;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -32,6 +31,7 @@ namespace Nucleus.ModelEditor
 					case EditorModel model: text = count > 1 ? $"{count} models selected" : $"Model '{model.Name}'"; break;
 					case EditorBone bone: text = count > 1 ? $"{count} bones selected" : $"Bone '{bone.Name}'"; break;
 					case EditorSlot slot: text = count > 1 ? $"{count} slots selected" : $"Slot '{slot.Name}'"; break;
+					case ModelImages images: text = $"Image files"; break;
 				}
 			}
 			else text = $"{determinations.Count} items selected";
@@ -97,6 +97,14 @@ namespace Nucleus.ModelEditor
 						new("Slot", () => NewSlotDialog(file, bone)),
 					]);
 					break;
+				case ModelImages images:
+					var refreshBtn = buttons.Add<Button>();
+					refreshBtn.Text = "Refresh";
+					refreshBtn.Size = new(96);
+					var openDirBtn = buttons.Add<Button>();
+					openDirBtn.Text = "Open Directory";
+					openDirBtn.Size = new(128);
+					break;
 			}
 		}
 
@@ -121,7 +129,9 @@ namespace Nucleus.ModelEditor
 
 			var buttons = Add<CenteredObjectsPanel>();
 			buttons.Dock = Dock.Top;
-			buttons.Size = new(32);
+			buttons.Size = new(48);
+			buttons.XSeparation = 8;
+			buttons.YSeparation = 16;
 			DetermineOperators(buttons, determinations);
 		}
 

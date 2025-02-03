@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.Models
+namespace Nucleus.ModelEditor
 {
 	public class ModelImages(EditorModel Model)
 	{

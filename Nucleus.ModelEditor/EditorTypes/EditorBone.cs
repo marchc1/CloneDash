@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.Models
+namespace Nucleus.ModelEditor
 {
-	public class EditorBone : IValidatable
+	public class EditorBone
 	{
 		[JsonIgnore] private float __length = 0;
 		public float Length{
@@ -43,10 +43,6 @@ namespace Nucleus.Models
 		}
 		public List<EditorBone> Children { get; set; } = [];
 		public List<EditorSlot> Slots { get; set; } = [];
-
-		private bool __isvalid = true;
-		public void Invaldiate() => __isvalid = false;
-		public bool IsValid() => __isvalid && IValidatable.IsValid(Model);
 
 		public float Rotation { get; set; } = 0;
 		public Vector2F Translation { get; set; } = Vector2F.Zero;

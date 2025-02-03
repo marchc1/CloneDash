@@ -3,13 +3,14 @@ using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.Models
+namespace Nucleus.ModelEditor
 {
-	public class EditorModel : IValidatable
+	public class EditorModel
 	{
 		public string Name { get; set; }
 		public EditorBone Root { get; set; }
@@ -35,30 +36,18 @@ namespace Nucleus.Models
 
 			return allbones;
 		}
-		public bool TryFindBone(string name, out EditorBone? oBone) {
-			foreach (var bone in GetAllBones()) {
-				if (bone.Name == name) {
-					oBone = bone;
-					return true;
-				}
-			}
 
-			oBone = null;
-			return false;
+		public EditorBone? FindBone(string name) => GetAllBones().FirstOrDefault(x => x.Name == name);
+		public EditorSlot? FindSlot(string name) => Slots.FirstOrDefault(x => x.Name == name);
+
+		public bool TryFindBone(string name, [NotNullWhen(true)] out EditorBone? bone) {
+			bone = FindBone(name);
+			return bone != null;
 		}
 
-		public EditorBone? FindBone(string name) => TryFindBone(name, out var bone) ? bone : null;
-
-		public bool TryFindSlot(string name, out EditorSlot? oSlot) {
-			foreach (var slot in Slots) {
-				if (slot.Name == name) {
-					oSlot = slot;
-					return true;
-				}
-			}
-
-			oSlot = null;
-			return false;
+		public bool TryFindSlot(string name, [NotNullWhen(true)] out EditorSlot? slot) {
+			slot = FindSlot(name);
+			return slot != null;
 		}
 
 		private ModelImages? images;
@@ -73,10 +62,5 @@ namespace Nucleus.Models
 			set => images = value;
 		}
 
-		public EditorSlot? FindSlot(string name) => TryFindSlot(name, out var slot) ? slot : null;
-
-		private bool __isvalid = true;
-		public void Invaldiate() => __isvalid = false;
-		public bool IsValid() => __isvalid;
 	}
 }
