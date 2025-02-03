@@ -217,7 +217,7 @@ namespace Nucleus.UI
 
 		protected Element() { }
 
-		private Element __parentToAddTo = null;
+		private Element? __parentToAddTo = null;
 
 		/// <summary>
 		/// The element which Add<>() adds to. Can be used to defer add operations to a different part of the element.<br></br>
@@ -246,7 +246,7 @@ namespace Nucleus.UI
 		public virtual void Add<T>(out T addInto) where T : Element => addInto = Add<T>();
 
 		public static T Create<T>(Element? parent = null, T? ret = null) where T : Element {
-			ret = ret ?? (T)Activator.CreateInstance(typeof(T));
+			ret = ret ?? (T?)Activator.CreateInstance(typeof(T)) ?? throw new Exception("A fatal exception occured during element creation.");
 
 			if (parent == null) {
 				ret.Initialize();
@@ -266,7 +266,7 @@ namespace Nucleus.UI
 		private bool __markedForRemoval = false;
 		public virtual void OnRemoval() { }
 		public delegate void RemoveDelegate(Element e);
-		public event RemoveDelegate Removed;
+		public event RemoveDelegate? Removed;
 
 		private void REMOVE() {
 			if (__markedForRemoval == true)
@@ -641,7 +641,7 @@ namespace Nucleus.UI
 			ImageDrawing();
 		}
 		public delegate void PaintEvent(Element self, float width, float height);
-		public event PaintEvent PaintOverride;
+		public event PaintEvent? PaintOverride;
 
 		private string __text = "Panel";
 		public string TextNocall {
@@ -665,7 +665,7 @@ namespace Nucleus.UI
 		}
 		public virtual void TextChanged(string oldText, string newText) { }
 		public delegate void TextChangedDelegate(Element self, string oldText, string newText);
-		public event TextChangedDelegate TextChangedEvent;
+		public event TextChangedDelegate? TextChangedEvent;
 
 		public string Font { get; set; } = "Noto Sans";
 		public float TextSize { set; get; } = 18;
@@ -680,8 +680,8 @@ namespace Nucleus.UI
 
 			int returning = 0;
 
-			if (element is UserInterface && frameState.HasValue)
-				(element as UserInterface).Preprocess(frameState.Value);
+			if (element is UserInterface ui && frameState.HasValue)
+				ui.Preprocess(frameState.Value);
 
 			element.SizeOfAllChildren = Vector2F.Zero;
 			var wasInvalid = element.LayoutInvalidated;
@@ -724,7 +724,7 @@ namespace Nucleus.UI
 
 			var boundsOfSelf = lastBounds.FitInto(element.RenderBounds.AddPosition(offset));
 
-			if (popupActive || (element is UserInterface && (element as UserInterface).PopupActive)) {
+			if (popupActive || (element is UserInterface ui && ui.PopupActive)) {
 				if (element == element.UI.Popups.Last())
 					popupActive = false;
 				else
@@ -755,7 +755,7 @@ namespace Nucleus.UI
 			return lastHovered;
 		}
 		public delegate void ElementSingleArg(Element self);
-		public event ElementSingleArg Thinking;
+		public event ElementSingleArg? Thinking;
 
 		public static void ThinkRecursive(Element element, FrameState frameState) {
 			if (!element.Enabled) return;
@@ -880,7 +880,7 @@ namespace Nucleus.UI
 		public delegate void MouseEventDelegate(Element self, FrameState state, MouseButton button);
 		public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
 
-		public event MouseEventDelegate MouseClickEvent;
+		public event MouseEventDelegate? MouseClickEvent;
 		public virtual void MouseClick(FrameState state, MouseButton button) { EngineCore.KeyboardUnfocus(this, true); }
 
 		public Dictionary<string, object> Tags { get; } = [];
@@ -890,13 +890,13 @@ namespace Nucleus.UI
 		public void UnsetTag<T>(string key) => Tags.Remove(key);
 
 
-		public event MouseEventDelegate MouseReleaseEvent;
+		public event MouseEventDelegate? MouseReleaseEvent;
 		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { }
 
-		public event MouseV2Delegate MouseDragEvent;
+		public event MouseV2Delegate? MouseDragEvent;
 		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { }
 
-		public event MouseV2Delegate MouseScrollEvent;
+		public event MouseV2Delegate? MouseScrollEvent;
 		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { }
 
 		public void ClearChildren() {
@@ -1113,7 +1113,7 @@ namespace Nucleus.UI
 			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, TextColor);
 		}
 
-		public Level Level => UI.EngineLevel;
+		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");
 
 		public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
 

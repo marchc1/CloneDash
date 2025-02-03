@@ -536,7 +536,7 @@ namespace Nucleus.Engine
 			if (!Paused) RunEventPostThink(frameState);
 
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterThink);
-			if (false) {
+			/*if (false) {
 				var size = 16;
 				for (int gx = 0; gx < 100; gx++) {
 					for (int gy = 0; gy < 100; gy++) {
@@ -545,7 +545,7 @@ namespace Nucleus.Engine
 						Graphics2D.DrawRectangle(gx * size, gy * size, size, size);
 					}
 				}
-			}
+			}*/
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
