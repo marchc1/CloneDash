@@ -255,8 +255,8 @@ namespace Nucleus.UI
 
 			ret.UI = parent.UI;
 			parent.AddChild(ret);
-			ret.Initialize();
 			ret.UI.Elements.Add(ret);
+			ret.Initialize();
 			parent.TriggerOnChildParented(parent, ret);
 			return ret;
 		}
@@ -367,6 +367,12 @@ namespace Nucleus.UI
 				if (recursive)
 					e.InvalidateChildren(immediate, recursive);
 			}
+		}
+		/// <summary>
+		/// Internal method to cancel any layout invalidations.
+		/// </summary>
+		protected void RevalidateLayout() {
+			LayoutInvalidated = false;
 		}
 		/// <summary>
 		/// Invalidates the layout, registering it for a rebuild with the layout system.
@@ -638,7 +644,7 @@ namespace Nucleus.UI
 		public event PaintEvent PaintOverride;
 
 		private string __text = "Panel";
-		internal string TextNocall {
+		public string TextNocall {
 			set {
 				__text = value;
 			}
@@ -758,7 +764,7 @@ namespace Nucleus.UI
 			element.Thinking?.Invoke(element);
 
 			element.Children.RemoveAll(x => x.__markedForRemoval);
-			foreach (Element child in element.Children)
+			foreach (Element child in element.Children.ToArray())
 				ThinkRecursive(child, frameState);
 		}
 
@@ -897,6 +903,10 @@ namespace Nucleus.UI
 			foreach (var child in this.AddParent.Children.ToArray()) {
 				child.Remove();
 			}
+			this.AddParent.Children.Clear();
+			InvalidateLayout();
+		}
+		public void ClearChildrenNoRemove() {
 			this.AddParent.Children.Clear();
 			InvalidateLayout();
 		}
@@ -1173,6 +1183,15 @@ namespace Nucleus.UI
 			_fitToParent = true;
 			InvalidateLayout();
 		}
+
+		/// <summary>
+		/// Passable static method for <see cref="OnHoverTest"/>. Causes hover/click events to "pass through" the element.
+		/// </summary>
+		/// <param name="self"></param>
+		/// <param name="bounds"></param>
+		/// <param name="mousePos"></param>
+		/// <returns></returns>
+		public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 	}
 
 	[Nucleus.MarkForStaticConstruction]
