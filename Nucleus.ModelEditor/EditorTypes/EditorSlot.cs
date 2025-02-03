@@ -1,4 +1,6 @@
-﻿using Nucleus.Engine;
+﻿using Newtonsoft.Json;
+using Nucleus.Engine;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,9 +12,14 @@ namespace Nucleus.ModelEditor
 {
 	public class EditorSlot
 	{
-		public EditorBone Bone { get; set; }
+		[JsonIgnore] public EditorBone Bone { get; set; }
 		public string Name { get; set; }
 		public List<EditorAttachment> Attachments { get; } = [];
+
+		public Color Color { get; set; } = Color.WHITE;
+		public bool TintBlack { get; set; } = false;
+		public Color DarkColor { get; set; } = Color.BLACK;
+		public BlendMode Blending { get; set; } = BlendMode.Normal;
 
 		public EditorAttachment? FindAttachment(string name) {
 			return Attachments.FirstOrDefault(x => x.Name == name);
@@ -21,7 +28,5 @@ namespace Nucleus.ModelEditor
 			attachment = FindAttachment(name);
 			return attachment != null;
 		}
-
-		private bool __isvalid = true;
 	}
 }

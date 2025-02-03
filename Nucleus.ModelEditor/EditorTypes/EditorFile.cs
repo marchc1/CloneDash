@@ -1,4 +1,6 @@
-﻿using static Nucleus.ModelEditor.EditorFile;
+﻿using Newtonsoft.Json;
+using Raylib_cs;
+using static Nucleus.ModelEditor.EditorFile;
 
 namespace Nucleus.ModelEditor
 {
@@ -9,8 +11,33 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorModel> Models = [];
 
+		public static JsonSerializerSettings SerializerSettings => new JsonSerializerSettings() {
+			PreserveReferencesHandling = PreserveReferencesHandling.All
+		};
+
+		public string Serialize() {
+			return JsonConvert.SerializeObject(this, SerializerSettings);
+		}
+
+		public void Deserialize(string data) {
+			// Clear ourselves of old data (which tells the outliner to clear itself as well)
+			Clear();
+
+			JsonConvert.PopulateObject(data, this);
+
+			foreach(var model in Models) {
+				ModelAdded?.Invoke(this, model);
+				foreach(var bone in model.GetAllBones()) {
+					BoneAdded?.Invoke(this, model, bone);
+					foreach(var slot in bone.Slots) {
+						SlotAdded?.Invoke(this, model, bone, slot);
+					}
+				}
+			}
+		}
+
 		// Event callbacks
-		
+
 		/// <summary>
 		/// Called when the file is cleared.
 		/// </summary>
@@ -39,8 +66,17 @@ namespace Nucleus.ModelEditor
 		/// Called when a bone has been renamed.
 		/// </summary>
 		public event BoneRename? BoneRenamed;
+
+
+
+		public event BoneGeneric? BoneLengthChanged;
+		public event BoneGeneric? BoneColorChanged;
+		public event BoneGeneric? BoneIconChanged;
+
+
 		public delegate void BoneAddRemove(EditorFile file, EditorModel model, EditorBone bone);
 		public delegate void BoneRename(EditorFile file, EditorBone bone, string oldName, string newName);
+		public delegate void BoneGeneric(EditorFile file, EditorBone bone);
 
 		/// <summary>
 		/// Called when a slot is added to a bone.
@@ -108,12 +144,32 @@ namespace Nucleus.ModelEditor
 				return new(null, $"The model already contains a bone named '{name}'.");
 
 			EditorBone bone = new EditorBone();
+			if (parent != null)
+				parent.Children.Add(bone);
 			bone.Parent = parent;
 			bone.Model = model;
 			bone.Name = name;
 
+			model.InvalidateBonesList();
+
 			BoneAdded?.Invoke(this, model, bone);
 			return new(bone);
+		}
+
+		public EditorResult SetBoneLength(EditorBone bone, float length) {
+			bone.Length = length;
+			BoneLengthChanged?.Invoke(this, bone);
+			return EditorResult.OK;
+		}
+		public EditorResult SetBoneColor(EditorBone bone, Color color) {
+			bone.Color = color;
+			BoneColorChanged?.Invoke(this, bone);
+			return EditorResult.OK;
+		}
+		public EditorResult SetBoneIcon(EditorBone bone, string? icon) {
+			bone.Icon = icon;
+			BoneIconChanged?.Invoke(this, bone);
+			return EditorResult.OK;
 		}
 
 		// Renaming bones
@@ -152,6 +208,7 @@ namespace Nucleus.ModelEditor
 					RemoveBone(model, child);
 				}
 				parent.Children.Remove(bone);
+				model.InvalidateBonesList();
 
 				return new();
 			}
@@ -192,6 +249,16 @@ namespace Nucleus.ModelEditor
 			return EditorResult.OK;
 		}
 		public EditorResult RenameSlot(EditorSlot slot, string newName) => RenameSlot(slot.Bone.Model, slot, newName);
+
+		public EditorResult RemoveSlot(EditorModel model, EditorSlot slot) {
+			SlotRemoved?.Invoke(this, model, slot.Bone, slot);
+
+			model.Slots.Remove(slot);
+			slot.Bone.Slots.Remove(slot);
+
+			return EditorResult.OK;
+		}
+		public EditorResult RemoveSlot(EditorSlot slot) => RemoveSlot(slot.Bone.Model, slot);
 
 		public EditorResult SetModelImages(EditorModel model, string filepath) {
 			model.Images.Filepath = filepath;

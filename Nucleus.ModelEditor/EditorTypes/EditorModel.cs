@@ -32,6 +32,7 @@ namespace Nucleus.ModelEditor
 			if (allBonesInvalid) {
 				allbones.Clear();
 				addBoneAndChildrenIntoBones(Root);
+				allBonesInvalid = false;
 			}
 
 			return allbones;

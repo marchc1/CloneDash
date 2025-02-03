@@ -12,7 +12,17 @@ using Model = Nucleus.ModelEditor.EditorModel;
 
 namespace Nucleus.ModelEditor
 {
-	public static class Checkerboard {
+	public enum ViewportSelectMode {
+		None = 0,
+
+		Bones = 1,
+		Images = 2,
+		Other = 4,
+
+		All = Bones | Images | Other
+	}
+	public static class Checkerboard
+	{
 		private static Shader shader = Raylib.LoadShader(null, Filesystem.Resolve("checkerboard.fshader", "shaders"));
 		private static Color defaultLight => new Color(60, 60, 63);
 		private static Color defaultDark => new Color(46, 46, 49);
@@ -47,13 +57,25 @@ namespace Nucleus.ModelEditor
 			Raylib.EndShaderMode();
 		}
 	}
-	public class TransformPanel : Panel {
+	public class TransformPanel : Panel
+	{
 		public delegate void FloatChange(int i, float value);
 		public event FloatChange? FloatChanged;
 
 		public event Element.MouseEventDelegate? OnSelected;
 		private NumSlider[] sliders;
 
+		private bool enableSliders = true;
+		public bool EnableSliders {
+			get => enableSliders;
+			set {
+				enableSliders = value;
+				foreach (var slider in sliders) {
+					var c = slider.TextColor;
+					slider.TextColor = new(c.R, c.G, c.B, value ? 255 : 0);
+				}
+			}
+		}
 		public NumSlider GetNumSlider(int index) => sliders[index];
 
 		public static TransformPanel New(Element parent, string text, int floats) {
@@ -92,6 +114,8 @@ namespace Nucleus.ModelEditor
 	}
 	public class EditorPanel : Panel
 	{
+		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
+		public ViewportSelectMode SelectMode { get; set; } = ViewportSelectMode.All;
 		protected override void Initialize() {
 			base.Initialize();
 			CenteredObjectsPanel test;
@@ -118,10 +142,43 @@ namespace Nucleus.ModelEditor
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			transformPanel.Size = new(280, 115);
 
-			var currentRotate = TransformPanel.New(transformPanel, "Rotate", 1);
-			var currentTranslate = TransformPanel.New(transformPanel, "Translate", 2);
-			var currentScale = TransformPanel.New(transformPanel, "Scale", 2);
-			var currentShear = TransformPanel.New(transformPanel, "Shear", 2);
+			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1);
+			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2);
+			TransformScale = TransformPanel.New(transformPanel, "Scale", 2);
+			TransformShear = TransformPanel.New(transformPanel, "Shear", 2);
+
+			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
+			Active_SelectedChanged();
+		}
+
+		private void Active_SelectedChanged() {
+			PreUIDeterminations determinations = ModelEditor.Active.GetDeterminations();
+
+			bool supportRotation = false;
+			bool supportTranslation = false;
+			bool supportScale = false;
+			bool supportShear = false;
+
+			if (determinations.Count == 0) {
+				SelectMode = ViewportSelectMode.All;
+				goto end;
+			}
+
+			switch (determinations.Last) {
+				case EditorBone bone:
+					SelectMode = ViewportSelectMode.Bones;
+					break;
+			}
+
+		end:
+			TransformRotation.EnableSliders = supportRotation;
+			TransformRotation.InputDisabled = !supportRotation;
+			TransformTranslation.EnableSliders = supportTranslation;
+			TransformTranslation.InputDisabled = !supportTranslation;
+			TransformScale.EnableSliders = supportScale;
+			TransformScale.InputDisabled = !supportScale;
+			TransformShear.EnableSliders = supportShear;
+			TransformShear.InputDisabled = !supportShear;
 		}
 
 		public override void PreRender() {
@@ -133,8 +190,24 @@ namespace Nucleus.ModelEditor
 		public float CameraZoom { get; set; } = 1;
 
 		public object? HoveredObject { get; private set; }
+		public Vector2F HoverGridPos { get; private set; }
 		protected override void OnThink(FrameState frameState) {
 			// Hover determination
+			HoverGridPos = FromScreenPosToGridPos(GetMousePos());
+
+			bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
+			bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
+
+			object? hovered = null;
+
+			foreach (var model in ModelEditor.Active.File.Models) {
+				if (canHoverTest_Bones) {
+					foreach (var bone in model.GetAllBones()) {
+
+					}
+				}
+			}
+			HoveredObject = hovered;
 		}
 		public Vector2F FromScreenPosToGridPos(Vector2F screenPos) {
 			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), RenderBounds.Size, new(0, 0), EngineCore.GetWindowSize());
@@ -165,8 +238,7 @@ namespace Nucleus.ModelEditor
 		Camera3D cam;
 		float widthMultiplied;
 		public void Draw3DCursor() {
-			var where = FromScreenPosToGridPos(GetMousePos());
-			Raylib.DrawSphere(new(where.X, where.Y, 0), 2, Color.RED);
+			Raylib.DrawSphere(new(HoverGridPos.X, HoverGridPos.Y, 0), 2, Color.RED);
 		}
 		/// <summary>
 		/// Draws a bone and then its children based on its posing
@@ -179,6 +251,8 @@ namespace Nucleus.ModelEditor
 			// Depending on cameraFOV, we shrink this down a bit...
 			var limitBy = 500;
 			var byHowMuch = cameraFOV < limitBy ? 1 - ((limitBy - cameraFOV) / limitBy) : 1;
+
+			var color = bone.Color;
 
 			if (bone.Length <= 0) {
 				var radius = 5f;
@@ -193,13 +267,13 @@ namespace Nucleus.ModelEditor
 					lineSize *= byHowMuch;
 				}
 
-				Raylib.DrawRing(new(0, 0), radius / 1.5f, radius, 0, 360, 16, Color.WHITE);
+				Raylib.DrawRing(new(0, 0), radius / 1.5f, radius, 0, 360, 16, color);
 				radius *= 1.5f;
 
-				Raylib.DrawCube(new(radius + (sizeWhenActiveAxis / 2), 0, 0), sizeWhenActiveAxis, lineSize, 1, Color.WHITE);
-				Raylib.DrawCube(new(-radius - (sizeWhenNotActiveAxis / 2), 0, 0), sizeWhenNotActiveAxis, lineSize, 1, Color.WHITE);
-				Raylib.DrawCube(new(0, radius + (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, Color.WHITE);
-				Raylib.DrawCube(new(0, -radius - (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, Color.WHITE);
+				Raylib.DrawCube(new(radius + (sizeWhenActiveAxis / 2), 0, 0), sizeWhenActiveAxis, lineSize, 1, color);
+				Raylib.DrawCube(new(-radius - (sizeWhenNotActiveAxis / 2), 0, 0), sizeWhenNotActiveAxis, lineSize, 1, color);
+				Raylib.DrawCube(new(0, radius + (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, color);
+				Raylib.DrawCube(new(0, -radius - (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, color);
 			}
 			else {
 				var length = bone.Length;
@@ -211,7 +285,7 @@ namespace Nucleus.ModelEditor
 				var lengthNormalized = lengthClamped / limit;
 
 				Rlgl.TexCoord2f(0, 0);
-				Rlgl.Color4f(1, 1, 1, 1);
+				Rlgl.Color4ub(color.R, color.B, color.G, color.A);
 
 				Rlgl.Vertex3f(0, 0, 0);
 				Rlgl.Vertex3f(lengthNormalized * 25, lengthNormalized * 5 * byHowMuch, 0);
@@ -223,10 +297,10 @@ namespace Nucleus.ModelEditor
 
 				Rlgl.End();
 
-				Raylib.DrawRing(new(0, 0), radius / 1.4f, radius, 0, 360, 16, Color.WHITE);
+				Raylib.DrawRing(new(0, 0), radius / 1.4f, radius, 0, 360, 16, color);
 				Raylib.DrawCircleV(new(0, 0), radius / 1.4f, Color.DARKGRAY);
 			}
-			foreach(var child in bone.Children) {
+			foreach (var child in bone.Children) {
 				DrawBone(child);
 			}
 			Rlgl.PopMatrix();
@@ -235,7 +309,11 @@ namespace Nucleus.ModelEditor
 		/// Draws all models in the working model list
 		/// </summary>
 		public void DrawModels() {
-
+			foreach (var model in ModelEditor.Active.File.Models) {
+				foreach (var bone in model.GetAllBones()) {
+					DrawBone(bone);
+				}
+			}
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
@@ -261,7 +339,10 @@ namespace Nucleus.ModelEditor
 			DrawModels();
 			Draw3DCursor();
 			Raylib.EndMode3D();
+			Graphics2D.SetDrawColor(255, 255, 255);
 
+			Graphics2D.DrawText(new(4, height - 18), $"gridpos:  {HoverGridPos}", "Consolas", 12, Anchor.BottomLeft);
+			Graphics2D.DrawText(new(4, height - 4), $"mousepos: {GetMousePos()}", "Consolas", 12, Anchor.BottomLeft);
 
 			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);
 		}

@@ -148,7 +148,7 @@ namespace Nucleus.ModelEditor
 			base.Paint(width, height);
 			if(Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;
-				bool last = (count == 1 || ParentNode.Children[count - 1] == this);
+				bool last = count == 0 ? true : (count == 1 || ParentNode.Children[count - 1] == this);
 				if (Expanded && Children.Count > 0)
 					last = false;
 				Graphics2D.SetDrawColor(220, 220, 220, 60);

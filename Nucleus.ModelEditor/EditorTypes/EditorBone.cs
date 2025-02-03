@@ -5,11 +5,19 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
+	public enum BlendMode {
+		Normal,
+		Additive,
+		Multiply,
+		Screen
+	}
+
 	public class EditorBone
 	{
 		[JsonIgnore] private float __length = 0;
@@ -19,7 +27,7 @@ namespace Nucleus.ModelEditor
 		}
 		public string Name { get; set; }
 
-		private EditorModel model;
+		[JsonIgnore] private EditorModel model;
 		public EditorModel Model {
 			get => model;
 			set {
@@ -32,15 +40,29 @@ namespace Nucleus.ModelEditor
 		public EditorBone? Parent {
 			get => parent;
 			set {
-				if(parent != value) {
-					if (parent != null)
-						parent.Children.Remove(this);
-					if (value != null)
-						value.Children.Add(this);
-					parent = value;
-				}
+				parent = value;
+				model?.InvalidateBonesList();
 			}
 		}
+
+		/// <summary>
+		/// A null icon means it is automatically decided (lengthless_bone for length <= 0, lengthy_bone otherwise)
+		/// </summary>
+		public string? Icon { get; set; } = null;
+		/// <summary>
+		/// Always show this bones name when rendering in the viewport
+		/// </summary>
+		public bool ViewportShowName { get; set; } = false;
+		/// <summary>
+		/// Can the bone be selected via the viewport?
+		/// </summary>
+		public bool ViewportCanSelect { get; set; } = true;
+
+		/// <summary>
+		/// The color of the bone in the viewport and outliner
+		/// </summary>
+		public Color Color { get; set; } = Color.WHITE;
+
 		public List<EditorBone> Children { get; set; } = [];
 		public List<EditorSlot> Slots { get; set; } = [];
 
@@ -48,6 +70,8 @@ namespace Nucleus.ModelEditor
 		public Vector2F Translation { get; set; } = Vector2F.Zero;
 		public Vector2F Scale { get; set; } = Vector2F.One;
 		public Vector2F Shear { get; set; } = Vector2F.Zero;
+
+		public TransformMode TransformMode { get; set; } = TransformMode.Normal;
 
 		public bool InheritRotation { get; set; } = true;
 		public bool InheritScale { get; set; } = true;

@@ -145,7 +145,8 @@ namespace Nucleus.ModelEditor
 
 			var rightSide = SetupPanel.Add<Panel>();
 			rightSide.Dock = Dock.Right;
-			rightSide.Size = new(384, 0);
+			rightSide.Size = new(464, 0);
+			rightSide.DrawPanelBackground = false;
 
 			rightSide.Add(out Properties);
 			Properties.Size = new(64);
@@ -175,6 +176,21 @@ namespace Nucleus.ModelEditor
 
 			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
 			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
+			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => UnselectAllObjects());
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());
+		}
+
+		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);
+		private void SaveTest() {
+			Logs.Info("SaveTest: executing");
+			System.IO.File.WriteAllText(testPath, File.Serialize());
+			Logs.Info("SaveTest: success");
+		}
+		private void OpenTest() {
+			Logs.Info("OpenTest: executing");
+			File.Deserialize(System.IO.File.ReadAllText(testPath));
+			Logs.Info("OpenTest: success");
 		}
 
 		private void AttemptRename(object? item = null) {
@@ -245,6 +261,8 @@ namespace Nucleus.ModelEditor
 					if (bone.Model.Root == bone)
 						return false;
 					return true;
+				case EditorSlot slot:
+					return true;
 				default:
 					return true;
 			}
@@ -266,6 +284,9 @@ namespace Nucleus.ModelEditor
 					case EditorBone bone:
 						text = plural ? "bones" : $"bone '{bone.Name}'";
 						break;
+					case EditorSlot slot:
+						text = plural ? "slots" : $"slot '{slot.Name}'";
+						break;
 				}
 			}
 			else {
@@ -282,6 +303,9 @@ namespace Nucleus.ModelEditor
 							switch (item) {
 								case EditorBone bone:
 									File.RemoveBone(bone);
+									break;
+								case EditorSlot slot:
+									File.RemoveSlot(slot);
 									break;
 							}
 						}

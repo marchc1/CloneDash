@@ -38,6 +38,12 @@ namespace Nucleus.ModelEditor
 			Right.AddParent.DockPadding = RectangleF.TLRB(0);
 
 			ModelEditor.Active.File.ModelAdded += File_ModelAdded;
+			ModelEditor.Active.File.Cleared += File_Cleared;
+		}
+
+		private void File_Cleared(EditorFile file) {
+			AddParent.ClearChildren();
+			RootNodes.Clear();
 		}
 
 		public delegate void OnNodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn);
@@ -47,9 +53,14 @@ namespace Nucleus.ModelEditor
 			OutlinerNode slotNode = parentNode.AddNode(slot.Name, "models/slot.png");
 			slotNode.SetRepresentingObject(slot);
 
-			ModelEditor.Active.File.SlotRenamed += (file, slotR, oldName, newName) => {
+			ModelEditor.Active.File.SlotRenamed += (_, slotR, _, newName) => {
 				if(slotR == slot) {
 					slotNode.Text = newName;
+				}
+			};
+			ModelEditor.Active.File.SlotRemoved += (_, _, _, slotR) => {
+				if (slotR == slot) {
+					slotNode.Remove();
 				}
 			};
 		}
@@ -78,6 +89,8 @@ namespace Nucleus.ModelEditor
 			};
 
 			boneNode.ChangeChildOrder += (_, children) => {
+				// The ZZZZZZ/AAAAAA is a quick hack to get slots to show before bones in the
+				// child order. This was the best way I could think of to do it at the time
 				children.Sort((x, y) => {
 					string xName = "", yName = "";
 					switch (x.GetRepresentingObject()) {
@@ -125,6 +138,11 @@ namespace Nucleus.ModelEditor
 				ModelEditor.Active.File.SlotRenamed += (file, slotR, oldName, newName) => {
 					if (slotR == slot) {
 						slotNode.Text = newName;
+					}
+				};
+				ModelEditor.Active.File.SlotRemoved += (_, _, _, slotR) => {
+					if (slotR == slot) {
+						slotNode.Remove();
 					}
 				};
 			};
