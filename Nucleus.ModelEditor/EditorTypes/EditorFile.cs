@@ -1,0 +1,216 @@
+﻿using Nucleus.Models;
+using static Nucleus.ModelEditor.EditorFile;
+
+namespace Nucleus.ModelEditor
+{
+	/// <summary>
+	/// The editor interface controller. All editor operations should go through this
+	/// </summary>
+	public class EditorFile
+	{
+		public List<EditorModel> Models = [];
+
+		// Event callbacks
+		
+		/// <summary>
+		/// Called when the file is cleared.
+		/// </summary>
+		public event FileClear? Cleared;
+		public delegate void FileClear(EditorFile file);
+
+		/// <summary>
+		/// Called when a model has been added.
+		/// </summary>
+		public event ModelAddRemove? ModelAdded;
+		/// <summary>
+		/// Called when a model is about to be removed.
+		/// </summary>
+		public event ModelAddRemove? ModelRemoved;
+		public delegate void ModelAddRemove(EditorFile file, EditorModel model);
+
+		/// <summary>
+		/// Called when a bone has been added to a model.
+		/// </summary>
+		public event BoneAddRemove? BoneAdded;
+		/// <summary>
+		/// Called when a bone is about to be removed.
+		/// </summary>
+		public event BoneAddRemove? BoneRemoved;
+		/// <summary>
+		/// Called when a bone has been renamed.
+		/// </summary>
+		public event BoneRename? BoneRenamed;
+		public delegate void BoneAddRemove(EditorFile file, EditorModel model, EditorBone bone);
+		public delegate void BoneRename(EditorFile file, EditorBone bone, string oldName, string newName);
+
+		/// <summary>
+		/// Called when a slot is added to a bone.
+		/// </summary>
+		public event SlotAddRemove? SlotAdded;
+		/// <summary>
+		/// Called when a slot is removed from a bone.
+		/// </summary>
+		public event SlotAddRemove? SlotRemoved;
+		/// <summary>
+		/// Called when a slot is renamed.
+		/// </summary>
+		public event SlotRename? SlotRenamed;
+
+		public delegate void SlotAddRemove(EditorFile file, EditorModel model, EditorBone bone, EditorSlot slot);
+		public delegate void SlotRename(EditorFile file, EditorSlot slot, string oldName, string newName);
+
+		// Adding models
+
+		public EditorReturnResult<EditorModel> AddModel(string name) {
+			if (Models.FirstOrDefault(x => x.Name == name) != null)
+				return new(null, $"The model already contains a bone named '{name}'.");
+
+			var model = new EditorModel();
+			model.Name = name;
+			Models.Add(model);
+
+			model.Root = AddBone(model, null, "root").Result ?? throw new Exception("Wtf?");
+
+			ModelAdded?.Invoke(this, model);
+			return new(model);
+		}
+
+		// Removing models
+
+		public EditorResult RemoveModel(string modelName) {
+			EditorModel? model = Models.FirstOrDefault(x => x.Name == modelName);
+			if (model != null) {
+				Models.Remove(model);
+				ModelRemoved?.Invoke(this, model);
+
+				return new();
+			}
+
+			return new("Model was null.");
+		}
+		public EditorResult RemoveModel(EditorModel model)
+			=> RemoveModel(model.Name);
+
+		// Adding bones
+
+		public EditorReturnResult<EditorBone> AddBone(EditorModel model, EditorBone? parent, string? name) {
+			if (name == null) {
+				// please don't have more than 100,000 unnamed bones!
+				for (int i = 0; i < 100_000; i++) {
+					var newName = $"bone{i + 1}";
+					if (!model.TryFindBone(newName, out EditorBone? _)) {
+						name = newName;
+						break;
+					}
+				}
+			}
+
+			if (model.Root != null && model.TryFindBone(name, out EditorBone? _))
+				return new(null, $"The model already contains a bone named '{name}'.");
+
+			EditorBone bone = new EditorBone();
+			bone.Parent = parent;
+			bone.Model = model;
+			bone.Name = name;
+
+			BoneAdded?.Invoke(this, model, bone);
+			return new(bone);
+		}
+
+		// Renaming bones
+		public EditorResult RenameBone(EditorBone bone, string newName) {
+			if (bone.Model.TryFindBone(newName, out var _))
+				return new($"A bone named '{newName}' already exists.");
+
+			string oldName = bone.Name;
+			bone.Name = newName;
+			BoneRenamed?.Invoke(this, bone, oldName, newName);
+			return EditorResult.OK;
+		}
+		public EditorResult RenameBone(EditorModel model, string oldName, string newName) {
+			if (!model.TryFindBone(oldName, out EditorBone? bone))
+				return new($"No bone named '{oldName}' could be found in the model.");
+
+			return RenameBone(bone, newName);
+		}
+
+		// Removing bones
+
+		public EditorResult RemoveBone(EditorModel model, EditorBone? bone) {
+			if (bone == null)
+				return new("Bone was null.");
+
+			if (model != null) {
+				if (bone == model.Root)
+					return new("Cannot remove the root bone.");
+
+				var parent = bone.Parent;
+				if (parent == null)
+					throw new Exception("Parent should NEVER be null here!");
+
+				BoneRemoved?.Invoke(this, model, bone);
+				foreach (var child in bone.Children.ToArray()) {
+					RemoveBone(model, child);
+				}
+				parent.Children.Remove(bone);
+
+				return new();
+			}
+
+			return new("Model was null.");
+		}
+		public EditorResult RemoveBone(EditorBone bone)
+			=> RemoveBone(bone.Model, bone);
+		public EditorResult RemoveBone(EditorModel model, string boneName)
+			=> model.TryFindBone(boneName, out EditorBone? bone) ? RemoveBone(model, bone) : new($"Bone '{boneName}' not found.");
+
+		// Adding slots
+
+		public EditorReturnResult<EditorSlot> AddSlot(EditorModel model, EditorBone bone, string slotName) {
+			if (model.TryFindSlot(slotName, out var _))
+				return new(null, $"The model already contains a slot with the name '{slotName}'.");
+
+			EditorSlot slot = new EditorSlot();
+			slot.Name = slotName;
+			slot.Bone = bone;
+			model.Slots.Add(slot);
+			bone.Slots.Add(slot);
+
+			SlotAdded?.Invoke(this, model, bone, slot);
+
+			return new(slot);
+		}
+		public EditorReturnResult<EditorSlot> AddSlot(EditorBone bone, string slotName) => AddSlot(bone.Model, bone, slotName);
+
+		public EditorResult RenameSlot(EditorModel model, EditorSlot slot, string newName) {
+			if (model.TryFindSlot(newName, out var _))
+				return new($"The model already contains a slot with the name '{newName}'.");
+
+			var oldName = slot.Name;
+			slot.Name = newName;
+			SlotRenamed?.Invoke(this, slot, oldName, newName);
+
+			return EditorResult.OK;
+		}
+		public EditorResult RenameSlot(EditorSlot slot, string newName) => RenameSlot(slot.Bone.Model, slot, newName);
+
+		public EditorResult SetModelImages(EditorModel model, string filepath) {
+			model.Images.Filepath = filepath;
+			return model.Images.Scan();
+		}
+
+		// Clearing file
+
+		public void Clear() {
+			Models.Clear();
+			Cleared?.Invoke(this);
+		}
+
+		// Making a new file
+
+		public void NewFile() {
+			Clear();
+			AddModel("model");
+		}
+	}
+}

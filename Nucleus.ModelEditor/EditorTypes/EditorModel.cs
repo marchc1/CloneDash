@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Engine;
+using Nucleus.ModelEditor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,22 +9,25 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Models
 {
-	public class Model : IValidatable
+	public class EditorModel : IValidatable
 	{
 		public string Name { get; set; }
-		public Bone Root { get; set; }
+		public EditorBone Root { get; set; }
 
-		[JsonIgnore] private List<Bone> allbones = [];
+		[JsonIgnore] private List<EditorBone> allbones = [];
 		[JsonIgnore] private bool allBonesInvalid = true;
 
-		public List<Slot> Slots { get; } = [];
+		/// <summary>
+		/// A list of slots, in order of drawing order.
+		/// </summary>
+		public List<EditorSlot> Slots { get; } = [];
 
 		public void InvalidateBonesList() => allBonesInvalid = true;
-		private void addBoneAndChildrenIntoBones(Bone bone) {
+		private void addBoneAndChildrenIntoBones(EditorBone bone) {
 			allbones.Add(bone);
 			foreach (var child in bone.Children) addBoneAndChildrenIntoBones(child);
 		}
-		public List<Bone> GetAllBones() {
+		public List<EditorBone> GetAllBones() {
 			if (allBonesInvalid) {
 				allbones.Clear();
 				addBoneAndChildrenIntoBones(Root);
@@ -31,7 +35,7 @@ namespace Nucleus.Models
 
 			return allbones;
 		}
-		public bool TryFindBone(string name, out Bone? oBone) {
+		public bool TryFindBone(string name, out EditorBone? oBone) {
 			foreach (var bone in GetAllBones()) {
 				if (bone.Name == name) {
 					oBone = bone;
@@ -43,9 +47,9 @@ namespace Nucleus.Models
 			return false;
 		}
 
-		public Bone? FindBone(string name) => TryFindBone(name, out var bone) ? bone : null;
+		public EditorBone? FindBone(string name) => TryFindBone(name, out var bone) ? bone : null;
 
-		public bool TryFindSlot(string name, out Slot? oSlot) {
+		public bool TryFindSlot(string name, out EditorSlot? oSlot) {
 			foreach (var slot in Slots) {
 				if (slot.Name == name) {
 					oSlot = slot;
@@ -57,28 +61,22 @@ namespace Nucleus.Models
 			return false;
 		}
 
-		public Slot? FindSlot(string name) => TryFindSlot(name, out var slot) ? slot : null;
+		private ModelImages? images;
+		public ModelImages Images {
+			get {
+				if(images == null) {
+					images = new(this);
+				}
+
+				return images;
+			}
+			set => images = value;
+		}
+
+		public EditorSlot? FindSlot(string name) => TryFindSlot(name, out var slot) ? slot : null;
 
 		private bool __isvalid = true;
 		public void Invaldiate() => __isvalid = false;
 		public bool IsValid() => __isvalid;
-
-		public static Model New() {
-			Model model = new Model();
-			model.Name = "model";
-
-			model.Root = new Bone() {
-				Model = model,
-				Name = "root"
-			};
-
-			model.Root.Rotation = 45;
-
-			var boneTest = model.Root.AddBone("test");
-			boneTest.Result.Translation = new(50, 0);
-			boneTest.Result.Length = 250;
-
-			return model;
-		}
 	}
 }

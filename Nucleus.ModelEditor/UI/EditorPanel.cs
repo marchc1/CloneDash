@@ -9,7 +9,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Model = Nucleus.Models.Model;
+using Model = Nucleus.Models.EditorModel;
 
 namespace Nucleus.ModelEditor
 {
@@ -173,7 +173,7 @@ namespace Nucleus.ModelEditor
 		/// Draws a bone and then its children based on its posing
 		/// </summary>
 		/// <param name="bone"></param>
-		public void DrawBone(Bone bone) {
+		public void DrawBone(EditorBone bone) {
 			Rlgl.PushMatrix();
 			bone.EditMatrix();
 			var cameraFOV = cam.FovY;
@@ -236,9 +236,7 @@ namespace Nucleus.ModelEditor
 		/// Draws all models in the working model list
 		/// </summary>
 		public void DrawModels() {
-			foreach(var model in ModelEditor.Active.File.Models) {
-				DrawBone(model.Root);
-			}
+
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {

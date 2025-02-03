@@ -1,50 +1,25 @@
-﻿using Nucleus.Core;
+﻿using Newtonsoft.Json;
+using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Nucleus.Util;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorFile
-	{
-		public List<Model> Models = [Model.New()];
-	}
 	public class ModelEditor : Level
 	{
-
-		// Boilerplate for state management.
-		// Trying to design it in a way where we can truly add anything without a lot of effort
-		// and also make it so we don't interfere with garbage collection stuff by holding states
-		private ConditionalWeakTable<object, ObjectState> States = [];
-		public class ObjectState
-		{
-			public WeakReference<object> Object;
-			public bool Expanded = true;
-
-			public ObjectState(object reference) {
-				Object = new WeakReference<object>(reference);
-			}
-
-			public T? GetObject<T>() where T : class => Object.TryGetTarget(out object? target) ? (T)target : null;
-		}
-		public ObjectState GetObjectState(object o) {
-			if (States.TryGetValue(o, out ObjectState? state))
-				return state;
-
-			ObjectState objState = new ObjectState(o);
-			States.Add(o, objState);
-			return objState;
-		}
-
 		// Object selection management
 		private List<object> __selectedObjectsL = [];
 		private HashSet<object> __selectedObjects = [];
 		public object? LastSelectedObject => __selectedObjectsL.LastOrDefault();
+		public int SelectedObjectsCount => __selectedObjectsL.Count;
 
 
 		public delegate void OnObjectSelected(object selected);
@@ -106,27 +81,18 @@ namespace Nucleus.ModelEditor
 			if (__selectedObjectsL.Count <= 0)
 				return false;
 
-			foreach(var obj in __selectedObjectsL) {
+			foreach (var obj in __selectedObjectsL) {
 				if (t == null)
 					t = obj.GetType();
-				else if(t != obj.GetType()) {
+				else if (t != obj.GetType()) {
 					t = null;
 					return false;
 				}
 			}
 
-			return true;
+			return t != null; // we could return true here but the compiler isn't recognizing that t would not be null.
 		}
 
-		public bool AreObjectsSelected => __selectedObjects.Count > 0;
-		public int SelectedObjectsCount => __selectedObjects.Count;
-		public object[] SelectedObjects => __selectedObjects.ToArray();
-
-		public bool IsObjectSelected(object o) => __selectedObjects.Contains(o);
-
-		public bool GetExpanded(object o) => GetObjectState(o).Expanded;
-		public void SetExpanded(object o, bool expanded) => GetObjectState(o).Expanded = expanded;
-		public void ToggleExpanded(object o) => GetObjectState(o).Expanded = !GetObjectState(o).Expanded;
 
 		public static ModelEditor Active;
 
@@ -135,6 +101,26 @@ namespace Nucleus.ModelEditor
 		public OutlinerPanel Outliner;
 		public PropertiesPanel Properties;
 		public Button SwitchMode;
+
+		public EditorFile File = new();
+
+		public PreUIDeterminations GetDeterminations() {
+			PreUIDeterminations determinations = new();
+
+			var count = SelectedObjectsCount;
+			var last = LastSelectedObject;
+			if (AreAllSelectedObjectsTheSameType(out Type? type)) {
+				determinations.OnlySelectedOne = count == 1;
+				determinations.AllShareAType = true;
+				determinations.SharedType = type;
+			}
+
+			determinations.Last = LastSelectedObject;
+			determinations.Count = SelectedObjectsCount;
+			determinations.Selected = __selectedObjectsL.ToArray();
+
+			return determinations;
+		}
 
 		public bool AnimationMode { get; private set; } = false;
 		public void ToggleModes() {
@@ -147,10 +133,9 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public EditorFile File { get; set; } = new();
-
 		public override void Initialize(params object[] args) {
 			//EngineCore.ShowDebuggingInfo = true;
+
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
@@ -185,6 +170,107 @@ namespace Nucleus.ModelEditor
 			SwitchMode.TextSize = 20;
 			SwitchMode.Text = "Setup Mode";
 			SwitchMode.MouseReleaseEvent += (_, _, _) => ToggleModes();
+
+			Outliner.NodeClicked += Outliner_NodeClicked;
+			File.NewFile();
+
+			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
+			Keybinds.AddKeybind([KeyboardLayout.USA.F2], AttemptRename);
+		}
+
+		private void AttemptRename() {
+			var determinations = GetDeterminations();
+
+			if (determinations.Count != 1)
+				return;
+
+			// This is... a weird way of doing it...
+			// but I want to minimize how much code we write here...
+
+			Action<string>? callback = null;
+			string typeName = "";
+			string currentText = "";
+
+			switch (determinations.Last) {
+				case EditorBone bone:
+					typeName = "bone";
+					currentText = bone.Name;
+					callback = (text) => File.RenameBone(bone, text);
+					break;
+			}
+
+			// cannot rename
+			if (callback == null)
+				return;
+
+			EditorDialogs.TextInput(
+				$"Rename {typeName.CapitalizeFirstCharacter()}",
+				$"Enter the new name for this {typeName}",
+				currentText,
+				true,
+				callback,
+				null
+			);
+		}
+
+		private bool CanDelete(object? item) {
+			if (item == null)
+				return false;
+
+			switch (item) {
+				case EditorBone bone:
+					if (bone.Model.Root == bone)
+						return false;
+					return true;
+				default:
+					return true;
+			}
+		}
+		private void AttemptDelete() {
+			var determinations = GetDeterminations();
+
+			if (determinations.Count == 0) 
+				return;
+
+			var plural = determinations.Count > 1;
+			if (!plural && !CanDelete(determinations.Last))
+				return;
+
+			var text = "";
+
+			if (determinations.AllShareAType) {
+				switch (determinations.Last) {
+					case EditorBone bone:
+						text = plural ? "bones" : $"bone '{bone.Name}'";
+						break;
+				}
+			}
+			else {
+				text = "items";
+			}
+
+			if (!string.IsNullOrWhiteSpace(text)) {
+				EditorDialogs.ConfirmAction(
+					$"Remove {text}",
+					$"Are you sure you want to remove {(plural ? $"these {text}" : $"the {text}")}?",
+					true,
+					() => {
+						foreach(var item in determinations.Selected) {
+							switch (item) {
+								case EditorBone bone:
+									File.RemoveBone(bone);
+									break;
+							}
+						}
+					}
+				);
+			}
+		}
+
+		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn) {
+			object? o = node.GetRepresentingObject();
+			if (o == null) return;
+			SelectObject(o);
 		}
 	}
 

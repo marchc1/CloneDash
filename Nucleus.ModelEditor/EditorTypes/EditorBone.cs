@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Models
 {
-	public class Bone : IValidatable
+	public class EditorBone : IValidatable
 	{
 		[JsonIgnore] private float __length = 0;
 		public float Length{
@@ -18,10 +18,31 @@ namespace Nucleus.Models
 			set => __length = Math.Max(value, 0);
 		}
 		public string Name { get; set; }
-		public Model Model { get; set; }
-		public Bone? Parent { get; set; }
-		public List<Bone> Children { get; set; } = [];
-		public List<Slot> Slots { get; set; } = [];
+
+		private EditorModel model;
+		public EditorModel Model {
+			get => model;
+			set {
+				model = value;
+				model.InvalidateBonesList();
+			}
+		}
+
+		private EditorBone? parent;
+		public EditorBone? Parent {
+			get => parent;
+			set {
+				if(parent != value) {
+					if (parent != null)
+						parent.Children.Remove(this);
+					if (value != null)
+						value.Children.Add(this);
+					parent = value;
+				}
+			}
+		}
+		public List<EditorBone> Children { get; set; } = [];
+		public List<EditorSlot> Slots { get; set; } = [];
 
 		private bool __isvalid = true;
 		public void Invaldiate() => __isvalid = false;
@@ -39,33 +60,6 @@ namespace Nucleus.Models
 		public void EditMatrix() {
 			Rlgl.Translatef(Translation.X, Translation.Y, 0);
 			Rlgl.Rotatef(Rotation, 0, 0, 1);
-		}
-
-		public ReturnResult<Bone> AddBone(string name) {
-			if (Model.TryFindBone(name, out Bone? bone))
-				return new(null, $"The bone named '{name}' already exists.");
-
-			Bone b = new Bone() {
-				Name = name,
-				Model = Model,
-				Parent = this
-			};
-			Children.Add(b);
-			Model.InvalidateBonesList();
-
-			return new(b);
-		}
-
-		public ReturnResult<Slot> AddSlot(string name) {
-			if (Model.TryFindSlot(name, out Slot? slot))
-				return new(null, $"The slot named '{name}' already exists.");
-
-			Slot s = new Slot();
-			s.Name = name;
-			Slots.Add(s);
-			Model.Slots.Add(s);
-
-			return new(s);
 		}
 	}
 }

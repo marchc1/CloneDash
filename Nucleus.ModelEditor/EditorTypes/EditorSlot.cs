@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Models
 {
-	public class Slot : IValidatable
+	public class EditorSlot : IValidatable
 	{
-		public Bone Bone { get; set; }
+		public EditorBone Bone { get; set; }
 		public string Name { get; set; }
 
 		private bool __isvalid = true;
