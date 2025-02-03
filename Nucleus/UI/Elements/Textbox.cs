@@ -225,7 +225,7 @@ namespace Nucleus.UI
 							}
 
 							Text = Text.Substring(0, Caret.Pointer) + txt + Text.Substring(Caret.Pointer);
-							Caret = new Caret() { Pointer = Caret.Pointer + txt.Length };
+							Caret = new Caret() { Pointer = Caret.Pointer + txt?.Length ?? 0 };
 							Logs.Info("Pasted from clipboard!");
 							break;
 					}

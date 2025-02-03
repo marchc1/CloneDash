@@ -851,7 +851,7 @@ namespace Nucleus.UI
 
 			element.PreRender();
 			if (element.PaintOverride != null)
-				element.PaintOverride.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
+				element.PaintOverride?.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
 			else
 				element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
 			element.PostRender();

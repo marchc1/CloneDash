@@ -12,8 +12,8 @@ namespace Nucleus.UI
 	public interface INumSlider
 	{
 		double Value { get; set; }
-		double MinimumValue { get; set; }
-		double MaximumValue { get; set; }
+		double? MinimumValue { get; set; }
+		double? MaximumValue { get; set; }
 		int Digits { get; set; }
 		string Prefix { get; set; }
 		string Suffix { get; set; }
@@ -24,8 +24,8 @@ namespace Nucleus.UI
 		private NumSlider numslider;
 
 		public double Value { get => numslider.Value; set => numslider.Value = value; }
-		public double MinimumValue { get => numslider.MinimumValue; set => numslider.MinimumValue = value; }
-		public double MaximumValue { get => numslider.MaximumValue; set => numslider.MaximumValue = value; }
+		public double? MinimumValue { get => numslider.MinimumValue; set => numslider.MinimumValue = value; }
+		public double? MaximumValue { get => numslider.MaximumValue; set => numslider.MaximumValue = value; }
 		public int Digits { get => numslider.Digits; set => numslider.Digits = value; }
 		public string Prefix { get => numslider.Prefix; set => numslider.Prefix = value; }
 		public string Suffix { get => numslider.Suffix; set => numslider.Suffix = value; }
@@ -57,14 +57,17 @@ namespace Nucleus.UI
 			set {
 				var oldV = _value;
 				_value = Math.Round(value, Digits);
+				if (MinimumValue.HasValue) _value = Math.Max(MinimumValue.Value, _value);
+				if (MaximumValue.HasValue) _value = Math.Min(MaximumValue.Value, _value);
+
 				OnValueChanged?.Invoke(this, oldV, _value);
 				Text = GetTextVariant();
 			}
 		}
 		public delegate void OnValueChangedDelegate(NumSlider self, double oldValue, double newValue);
 		public event OnValueChangedDelegate? OnValueChanged;
-		public double MinimumValue { get; set; } = 0;
-		public double MaximumValue { get; set; } = 1;
+		public double? MinimumValue { get; set; } = null;
+		public double? MaximumValue { get; set; } = null;
 		private int _digits = 5;
 		public int Digits {
 			get => _digits;
@@ -127,8 +130,10 @@ namespace Nucleus.UI
 		}
 
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
-			didDrag = true;
-			Value += delta.X / (MathF.Pow(10, Digits));
+			if (delta.Length > 2 || didDrag) {
+				didDrag = true;
+				Value += delta.X / (MathF.Pow(1.5f, Digits));
+			}
 		}
 
 		public override void MouseRelease(Element self, FrameState state, Types.MouseButton button) {

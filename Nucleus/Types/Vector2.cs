@@ -195,6 +195,8 @@ namespace Nucleus.Types
 			return 360 - (((MathF.Atan2(normalized.X, normalized.Y) * NMath.DEG2RAD) + 180) % 360);
 		}
 
+		public bool InTriangle(Triangle2D triangle) => triangle.IsPointInTriangle(this);
+
 		public bool InRing(Vector2F focus, float outerRing, float innerRing) {
 			// in the outer ring radius but not in the inner ring radius
 			return InRadiusOfCircle(focus, outerRing) && !InRadiusOfCircle(focus, innerRing);
