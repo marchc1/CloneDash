@@ -23,10 +23,6 @@
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Models\Runtime\" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(IsWindows)'=='true'">
     <DefineConstants>COMPILED_WINDOWS</DefineConstants>
   </PropertyGroup>
