@@ -245,7 +245,7 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		/// <param name="bone"></param>
 		public void DrawBone(EditorBone bone) {
-			Rlgl.PushMatrix();
+			/*Rlgl.PushMatrix();
 			bone.EditMatrix();
 			var cameraFOV = cam.FovY;
 			// Depending on cameraFOV, we shrink this down a bit...
@@ -303,7 +303,7 @@ namespace Nucleus.ModelEditor
 			foreach (var child in bone.Children) {
 				DrawBone(child);
 			}
-			Rlgl.PopMatrix();
+			Rlgl.PopMatrix();*/
 		}
 		/// <summary>
 		/// Draws all models in the working model list
