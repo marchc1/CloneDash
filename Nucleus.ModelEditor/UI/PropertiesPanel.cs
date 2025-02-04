@@ -1,6 +1,7 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
+using Nucleus.Models;
 using Nucleus.Platform;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -42,7 +43,7 @@ namespace Nucleus.ModelEditor
 					case ModelImages images: text = $"Image files"; break;
 				}
 			}
-			else 
+			else
 				text = $"{determinations.Count} items selected";
 
 			return text;
@@ -78,16 +79,16 @@ namespace Nucleus.ModelEditor
 			inner.Dock = Dock.Fill;
 
 			ManagedMemory.Texture? tex = null;
-			if(icon != null) {
+			if (icon != null) {
 				tex = Level.Textures.LoadTextureFromFile(icon);
 			}
 
 			test.PaintOverride += (self, w, h) => {
 				Label l = (self as Label);
-					Graphics2D.SetDrawColor(l.BackgroundColor);
-					Graphics2D.DrawRectangle(0, 0, w, h);
-				
-				if(IValidatable.IsValid(tex)) {
+				Graphics2D.SetDrawColor(l.BackgroundColor);
+				Graphics2D.DrawRectangle(0, 0, w, h);
+
+				if (IValidatable.IsValid(tex)) {
 					Graphics2D.SetTexture(tex);
 					Graphics2D.SetDrawColor(255, 255, 255);
 					Graphics2D.DrawImage(new(2, (h - 24) / 2), new(24, 24));
@@ -156,6 +157,18 @@ namespace Nucleus.ModelEditor
 
 			return selector;
 		}
+
+		private DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
+			var panel = AddInternalPropPanel(prop);
+
+			var selector = panel.Add(DropdownSelector<T>.FromEnum<T>(value ?? default(T)));
+			selector.Dock = Dock.Left;
+			selector.Size = new(96);
+			selector.Selected = value;
+			selector.BorderSize = 0;
+
+			return selector;
+		}
 		private void DetermineProperties(Panel props, PreUIDeterminations determinations) {
 			ModelEditor editor = ModelEditor.Active;
 			EditorFile file = editor.File;
@@ -182,11 +195,34 @@ namespace Nucleus.ModelEditor
 
 					var boneColorRow = NewRow(props, "Color", "models/colorwheel.png");
 					var boneColor = AddColorSelector(boneColorRow, bone.Color);
-				break;
+					break;
 				case EditorSlot slot:
 					var slotColorRow = NewRow(props, "Color", "models/colorwheel.png");
 
+					var slotColorSelector = AddColorSelector(slotColorRow, slot.Color);
+					var slotDarkColorSelector = AddColorSelector(slotColorRow, slot.DarkColor);
+					var slotTintCheck = AddLabeledCheckbox(slotColorRow, "Tint black?", slot.TintBlack);
+
+					slotDarkColorSelector.Parent.EngineDisabled = !slot.TintBlack;
+
+					slotColorSelector.ColorChanged += (_, c) => {
+						slot.Color = c;
+					};
+
+					slotDarkColorSelector.ColorChanged += (_, c) => {
+						slot.DarkColor = c;
+					};
+
+					slotTintCheck.OnCheckedChanged += (s) => {
+						slot.TintBlack = s.Checked;
+						slotDarkColorSelector.Parent.Enabled = slot.TintBlack;
+						slotColorRow.InvalidateLayout();
+					};
+
 					var slotBlendRow = NewRow(props, "Blending", "models/blending.png");
+					var blending = AddEnumComboBox<BlendMode>(slotBlendRow, slot.Blending);
+
+
 					break;
 			}
 		}
