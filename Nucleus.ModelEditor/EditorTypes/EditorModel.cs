@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
+using Nucleus.UI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorModel
+	public class EditorModel : IEditorType
 	{
 		public string Name { get; set; }
 		public EditorBone Root { get; set; }
@@ -51,10 +52,11 @@ namespace Nucleus.ModelEditor
 			return slot != null;
 		}
 
+
 		private ModelImages? images;
 		public ModelImages Images {
 			get {
-				if(images == null) {
+				if (images == null) {
 					images = new(this);
 				}
 
@@ -63,5 +65,17 @@ namespace Nucleus.ModelEditor
 			set => images = value;
 		}
 
+		public string GetName() => Name;
+		public bool IsNameTaken(string name) => ModelEditor.Active.File.Models.FirstOrDefault(x => x.Name == name) != null;
+		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameModel(this, newName);
+		public EditorResult Remove() => ModelEditor.Active.File.RemoveModel(this);
+		public bool CanDelete() => true;
+		public bool HoverTest() => false;
+		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) { }
+		public void BuildProperties(Panel props, PreUIDeterminations determinations) { }
+		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {}
+		public string SingleName => "model";
+		public string PluralName => "models";
+		public ViewportSelectMode SelectMode => ViewportSelectMode.NotApplicable;
 	}
 }

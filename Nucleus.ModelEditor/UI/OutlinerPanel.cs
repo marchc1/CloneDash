@@ -148,7 +148,7 @@ namespace Nucleus.ModelEditor
 
 			//OutlinerNode animationsNode = modelNode.AddNode("Animations", "models/animation.png");
 			OutlinerNode imagesNode = modelNode.AddNode("Images", "models/images.png");
-			imagesNode.SetRepresentingObject(model.Images);
+			//imagesNode.SetRepresentingObject(model.Images);
 		}
 
 

@@ -11,11 +11,11 @@ namespace Nucleus.ModelEditor
 		Button Expander;
 		Panel Image;
 
-		private WeakReference? __represents ;
+		private WeakReference? __represents;
 
-		public object? GetRepresentingObject() => __represents == null ? null : __represents.Target == null ? null : __represents.Target;
+		public IEditorType? GetRepresentingObject() => (IEditorType?)(__represents == null ? null : __represents.Target == null ? null : __represents.Target);
 		public T? GetRepresentingObject<T>() where T : class => __represents == null ? null : __represents.Target == null ? null : (T)__represents.Target;
-		public void SetRepresentingObject<T>(T obj) where T : class => __represents = new(obj);
+		public void SetRepresentingObject(IEditorType obj) => __represents = new(obj);
 
 		public int Layer = 0;
 		public List<OutlinerNode> Children = [];

@@ -36,12 +36,7 @@ namespace Nucleus.ModelEditor
 			if (determinations.AllShareAType) {
 				var count = determinations.Count;
 				var last = determinations.Last;
-				switch (last) {
-					case EditorModel model: text = count > 1 ? $"{count} models selected" : $"Model '{model.Name}'"; break;
-					case EditorBone bone: text = count > 1 ? $"{count} bones selected" : $"Bone '{bone.Name}'"; break;
-					case EditorSlot slot: text = count > 1 ? $"{count} slots selected" : $"Slot '{slot.Name}'"; break;
-					case ModelImages images: text = $"Image files"; break;
-				}
+				text = count > 1 ? $"{count} models selected" : $"{determinations.Last.CapitalizedSingleName} '{determinations.Last.GetName()}'";
 			}
 			else
 				text = $"{determinations.Count} items selected";
@@ -52,7 +47,7 @@ namespace Nucleus.ModelEditor
 			base.Paint(width, height);
 		}
 		Panel Props;
-		private FlexPanel NewRow(Panel props, string label, string? icon = null) {
+		public static FlexPanel NewRow(Panel props, string label, string? icon = null) {
 			Panel p = props.Add(new Panel() {
 				Dock = Dock.Top,
 				Size = new(0, 30),
@@ -80,7 +75,7 @@ namespace Nucleus.ModelEditor
 
 			ManagedMemory.Texture? tex = null;
 			if (icon != null) {
-				tex = Level.Textures.LoadTextureFromFile(icon);
+				tex = props.UI.Level.Textures.LoadTextureFromFile(icon);
 			}
 
 			test.PaintOverride += (self, w, h) => {
@@ -101,7 +96,7 @@ namespace Nucleus.ModelEditor
 
 			return inner;
 		}
-		private Panel AddInternalPropPanel(Panel prop) {
+		public static Panel AddInternalPropPanel(Panel prop) {
 			var first = !prop.AddParent.HasChildren;
 
 			var panel = prop.Add<Panel>();
@@ -118,7 +113,7 @@ namespace Nucleus.ModelEditor
 
 			return panel;
 		}
-		private Checkbox AddLabeledCheckbox(Panel prop, string text, bool @checked = false) {
+		public static Checkbox AddLabeledCheckbox(Panel prop, string text, bool @checked = false) {
 			var panel = AddInternalPropPanel(prop);
 
 			var checkbox = panel.Add<Checkbox>();
@@ -135,7 +130,7 @@ namespace Nucleus.ModelEditor
 
 			return checkbox;
 		}
-		private NumSlider AddNumSlider(Panel prop, float currentValue = 0) {
+		public static NumSlider AddNumSlider(Panel prop, float currentValue = 0) {
 			var panel = AddInternalPropPanel(prop);
 
 			var numslider = panel.Add<NumSlider>();
@@ -146,7 +141,7 @@ namespace Nucleus.ModelEditor
 
 			return numslider;
 		}
-		private ColorSelector AddColorSelector(Panel prop, Color? currentColor = null) {
+		public static ColorSelector AddColorSelector(Panel prop, Color? currentColor = null) {
 			var panel = AddInternalPropPanel(prop);
 
 			var selector = panel.Add<ColorSelector>();
@@ -158,7 +153,7 @@ namespace Nucleus.ModelEditor
 			return selector;
 		}
 
-		private DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
+		public static DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
 			var panel = AddInternalPropPanel(prop);
 
 			var selector = panel.Add(DropdownSelector<T>.FromEnum<T>(value ?? default(T)));
@@ -170,63 +165,9 @@ namespace Nucleus.ModelEditor
 			return selector;
 		}
 		private void DetermineProperties(Panel props, PreUIDeterminations determinations) {
-			ModelEditor editor = ModelEditor.Active;
-			EditorFile file = editor.File;
-			switch (determinations.Last) {
-				case EditorBone bone:
-					var transformRow = NewRow(props, "Transform", "models/bonetransform.png");
-
-					var boneTransformData = bone.TransformMode.Unpack();
-					var boneRotation = AddLabeledCheckbox(transformRow, "Rotation", boneTransformData.Rotation);
-					var boneScale = AddLabeledCheckbox(transformRow, "Scale", boneTransformData.Scale);
-					var boneReflection = AddLabeledCheckbox(transformRow, "Reflection", boneTransformData.Reflection);
-
-					var lengthRow = NewRow(props, "Length", "models/bonelength.png");
-
-					var boneLength = AddNumSlider(lengthRow, bone.Length);
-					boneLength.MinimumValue = 0;
-					boneLength.OnValueChanged += (_, _, v) => file.SetBoneLength(bone, (float)v);
-
-					var viewportRow = NewRow(props, "Viewport", "models/info.png");
-
-					var boneViewportIconContainer = AddInternalPropPanel(viewportRow);
-					var boneViewportName = AddLabeledCheckbox(viewportRow, "Name", bone.ViewportShowName);
-					var boneViewportSelectable = AddLabeledCheckbox(viewportRow, "Selectable", bone.ViewportCanSelect);
-
-					var boneColorRow = NewRow(props, "Color", "models/colorwheel.png");
-					var boneColor = AddColorSelector(boneColorRow, bone.Color);
-					break;
-				case EditorSlot slot:
-					var slotColorRow = NewRow(props, "Color", "models/colorwheel.png");
-
-					var slotColorSelector = AddColorSelector(slotColorRow, slot.Color);
-					var slotDarkColorSelector = AddColorSelector(slotColorRow, slot.DarkColor);
-					var slotTintCheck = AddLabeledCheckbox(slotColorRow, "Tint black?", slot.TintBlack);
-
-					slotDarkColorSelector.Parent.EngineDisabled = !slot.TintBlack;
-
-					slotColorSelector.ColorChanged += (_, c) => {
-						slot.Color = c;
-					};
-
-					slotDarkColorSelector.ColorChanged += (_, c) => {
-						slot.DarkColor = c;
-					};
-
-					slotTintCheck.OnCheckedChanged += (s) => {
-						slot.TintBlack = s.Checked;
-						slotDarkColorSelector.Parent.Enabled = slot.TintBlack;
-						slotColorRow.InvalidateLayout();
-					};
-
-					var slotBlendRow = NewRow(props, "Blending", "models/blending.png");
-					var blending = AddEnumComboBox<BlendMode>(slotBlendRow, slot.Blending);
-
-
-					break;
-			}
+			determinations.Last?.BuildProperties(props, determinations);
 		}
-		private struct NewItemAction
+		public struct NewItemAction
 		{
 			public string Text;
 			public Action OnClicked;
@@ -236,13 +177,13 @@ namespace Nucleus.ModelEditor
 				OnClicked = clicked;
 			}
 		}
-		private void NewMenu(Panel buttons, List<NewItemAction> actions) {
+		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
 			var newBtn = buttons.Add<Button>();
 			newBtn.Text = "New...";
 			newBtn.Size = new(64);
 
 			newBtn.MouseReleaseEvent += (_, fs, _) => {
-				Menu menu = UI.Menu();
+				Menu menu = buttons.UI.Menu();
 
 				foreach (var action in actions) {
 					menu.AddButton(action.Text, null, () => {
@@ -253,7 +194,7 @@ namespace Nucleus.ModelEditor
 				menu.Open(fs.MouseState.MousePos);
 			};
 		}
-		private void NewSlotDialog(EditorFile file, EditorBone bone) {
+		public static void NewSlotDialog(EditorFile file, EditorBone bone) {
 			EditorDialogs.TextInput(
 				"New Slot",
 				"Enter the name for the new slot.",
@@ -267,7 +208,7 @@ namespace Nucleus.ModelEditor
 			);
 		}
 
-		private Button NewTopOperatorButton(Panel props, string icon) {
+		public static Button NewTopOperatorButton(Panel props, string icon) {
 			var btn = props.Add<Button>();
 			btn.Dock = Dock.Right;
 			btn.DockMargin = RectangleF.TLRB(8, 0, 0, 8);
@@ -275,46 +216,31 @@ namespace Nucleus.ModelEditor
 			btn.Text = "";
 			btn.BorderSize = 0;
 			btn.ImageOrientation = ImageOrientation.Centered;
-			btn.Image = Level.Textures.LoadTextureFromFile(icon);
+			btn.Image = props.Level.Textures.LoadTextureFromFile(icon);
 			return btn;
 		}
 
-		private void DeleteOperator(Panel props, PreUIDeterminations determinations) {
+		public static void DeleteOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var btn = NewTopOperatorButton(props, "models/delete.png");
+		}
+		public static void RenameOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var rename = NewTopOperatorButton(props, "models/rename.png");
+		}
+		public static void DuplicateOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var duplicate = NewTopOperatorButton(props, "models/duplicate.png");
 		}
 
 		private void DetermineTopOperators(Panel props, PreUIDeterminations determinations) {
 			if (determinations.AllShareAType) {
-				switch (determinations.Last) {
-					case EditorBone bone:
-						DeleteOperator(props, determinations);
-						break;
-				}
+				if(determinations.Last is IEditorType editorType)
+					editorType.BuildTopOperators(props, determinations);
 			}
 		}
 
 		private void DetermineOperators(Panel buttons, PreUIDeterminations determinations) {
 			ModelEditor editor = ModelEditor.Active;
 			EditorFile file = editor.File;
-
-			switch (determinations.Last) {
-				case EditorBone bone:
-					NewMenu(buttons, [
-						new("Bone", () => file.AddBone(bone.Model, bone, null)),
-						new("Slot", () => NewSlotDialog(file, bone)),
-					]);
-					break;
-				case ModelImages images:
-					var refreshBtn = buttons.Add<Button>();
-					refreshBtn.Text = "Refresh";
-					refreshBtn.Size = new(96);
-					var openDirBtn = buttons.Add<Button>();
-					openDirBtn.Text = "Open Directory";
-					openDirBtn.Size = new(128);
-					break;
-			}
+			determinations.Last?.BuildOperators(buttons, determinations);
 		}
 
 		private void ClearProperties() {

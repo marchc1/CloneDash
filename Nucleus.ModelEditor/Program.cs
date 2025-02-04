@@ -15,20 +15,20 @@ namespace Nucleus.ModelEditor
 	public class ModelEditor : Level
 	{
 		// Object selection management
-		private List<object> __selectedObjectsL = [];
-		private HashSet<object> __selectedObjects = [];
-		public object? LastSelectedObject => __selectedObjectsL.LastOrDefault();
+		private List<IEditorType> __selectedObjectsL = [];
+		private HashSet<IEditorType> __selectedObjects = [];
+		public IEditorType? LastSelectedObject => __selectedObjectsL.LastOrDefault();
 		public int SelectedObjectsCount => __selectedObjectsL.Count;
 
 
-		public delegate void OnObjectSelected(object selected);
+		public delegate void OnObjectSelected(IEditorType selected);
 		public delegate void OnSelectedChanged();
 
 		public event OnObjectSelected? ObjectSelected;
 		public event OnObjectSelected? ObjectUnselected;
 		public event OnSelectedChanged? SelectedChanged;
 
-		public void SelectObject(object o, bool additive = false) {
+		public void SelectObject(IEditorType o, bool additive = false) {
 			if (!additive) {
 				foreach (var obj in __selectedObjects.ToArray()) {
 					__selectedObjects.Remove(obj);
@@ -43,14 +43,14 @@ namespace Nucleus.ModelEditor
 			SelectedChanged?.Invoke();
 		}
 
-		public void UnselectObject(object o) {
+		public void UnselectObject(IEditorType o) {
 			__selectedObjects.Remove(o);
 			__selectedObjectsL.Remove(o);
 			ObjectUnselected?.Invoke(o);
 			SelectedChanged?.Invoke();
 		}
 
-		public void SelectObjects(params object[] os) {
+		public void SelectObjects(params IEditorType[] os) {
 			foreach (var obj in os) {
 				__selectedObjects.Add(obj);
 				__selectedObjectsL.Add(obj);
@@ -193,7 +193,7 @@ namespace Nucleus.ModelEditor
 			Logs.Info("OpenTest: success");
 		}
 
-		private void AttemptRename(object? item = null) {
+		private void AttemptRename(IEditorType? item = null) {
 			var determinations = GetDeterminations();
 
 			if (item == null && determinations.Count != 1)
@@ -202,28 +202,12 @@ namespace Nucleus.ModelEditor
 			// This is... a weird way of doing it...
 			// but I want to minimize how much code we write here...
 
-			Func<string, bool>? sanityCallback = null;
-			Action<string>? renameCallback = null;
-			string typeName = "";
-			string currentName = "";
-
-			switch (item ?? determinations.Last) {
-				case EditorBone bone:
-					typeName = "bone";
-					currentName = bone.Name;
-					sanityCallback = (text) => bone.Model.FindBone(text) == null;
-					renameCallback = (text) => File.RenameBone(bone, text);
-					break;
-				case EditorSlot slot:
-					typeName = "slot";
-					currentName = slot.Name;
-					sanityCallback = (text) => slot.Bone.Model.FindSlot(text) == null;
-					renameCallback = (text) => File.RenameSlot(slot, text);
-					break;
-			}
+			var foundItem = item ?? determinations.Last ?? throw new Exception();
+			string typeName = foundItem.SingleName;
+			string currentName = foundItem.GetName();
 
 			// cannot rename
-			if (renameCallback == null)
+			if (!foundItem.CanRename())
 				return;
 
 			EditorDialogs.TextInput(
@@ -236,8 +220,8 @@ namespace Nucleus.ModelEditor
 					if (text == currentName)
 						return;
 
-					if(sanityCallback?.Invoke(text) ?? true) {
-						renameCallback(text);
+					if(!foundItem.IsNameTaken(text)) {
+						foundItem.Rename(text);
 					}
 					else {
 						EditorDialogs.ConfirmAction(
@@ -252,20 +236,11 @@ namespace Nucleus.ModelEditor
 			);
 		}
 
-		private bool CanDelete(object? item) {
+		private bool CanDelete(IEditorType? item) {
 			if (item == null)
 				return false;
 
-			switch (item) {
-				case EditorBone bone:
-					if (bone.Model.Root == bone)
-						return false;
-					return true;
-				case EditorSlot slot:
-					return true;
-				default:
-					return true;
-			}
+			return item.CanDelete();
 		}
 		private void AttemptDelete() {
 			var determinations = GetDeterminations();
@@ -279,19 +254,11 @@ namespace Nucleus.ModelEditor
 
 			var text = "";
 
-			if (determinations.AllShareAType) {
-				switch (determinations.Last) {
-					case EditorBone bone:
-						text = plural ? "bones" : $"bone '{bone.Name}'";
-						break;
-					case EditorSlot slot:
-						text = plural ? "slots" : $"slot '{slot.Name}'";
-						break;
-				}
-			}
-			else {
+			if (determinations.AllShareAType) 
+				text = plural ? determinations.Last?.PluralName : $"{determinations.Last?.SingleName} '{determinations.Last?.GetName() ?? "<NULL NAME>"}'"; 
+			else 
 				text = "items";
-			}
+			
 
 			if (!string.IsNullOrWhiteSpace(text)) {
 				EditorDialogs.ConfirmAction(
@@ -300,14 +267,7 @@ namespace Nucleus.ModelEditor
 					true,
 					() => {
 						foreach(var item in determinations.Selected) {
-							switch (item) {
-								case EditorBone bone:
-									File.RemoveBone(bone);
-									break;
-								case EditorSlot slot:
-									File.RemoveSlot(slot);
-									break;
-							}
+							item.Remove();
 						}
 					}
 				);
@@ -315,7 +275,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn) {
-			object? o = node.GetRepresentingObject();
+			var o = node.GetRepresentingObject();
 			if (o == null) return;
 			SelectObject(o);
 		}

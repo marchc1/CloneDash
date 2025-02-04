@@ -1,12 +1,17 @@
-﻿namespace Nucleus.ModelEditor
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Nucleus.ModelEditor
 {
-	public struct PreUIDeterminations
+	public struct PreUIDeterminations : IValidatable
 	{
 		public bool OnlySelectedOne;
+
 		public bool AllShareAType;
 		public Type? SharedType;
-		public object[] Selected;
-		public object? Last;
+		public IEditorType[] Selected;
+		public IEditorType? Last;
 		public int Count;
+
+		[MemberNotNullWhen(true, nameof(Last))] public bool IsValid() => Count > 0;
 	}
 }

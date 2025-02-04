@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Raylib_cs;
+using System.Xml.Linq;
 using static Nucleus.ModelEditor.EditorFile;
 
 namespace Nucleus.ModelEditor
@@ -52,7 +53,12 @@ namespace Nucleus.ModelEditor
 		/// Called when a model is about to be removed.
 		/// </summary>
 		public event ModelAddRemove? ModelRemoved;
+		/// <summary>
+		/// Called when a model is renamed.
+		/// </summary>
+		public event ModelRename? ModelRenamed;
 		public delegate void ModelAddRemove(EditorFile file, EditorModel model);
+		public delegate void ModelRename(EditorFile file, EditorModel bone, string oldName, string newName);
 
 		/// <summary>
 		/// Called when a bone has been added to a model.
@@ -109,8 +115,16 @@ namespace Nucleus.ModelEditor
 			ModelAdded?.Invoke(this, model);
 			return new(model);
 		}
+		public EditorResult RenameModel(EditorModel model, string newName) {
+			if (Models.FirstOrDefault(x => x.Name == newName) != null)
+				return new($"The model already contains a bone named '{newName}'.");
 
-		// Removing models
+			var oldName = model.Name;
+			model.Name = newName;
+			ModelRenamed?.Invoke(this, model, oldName, newName);
+
+			return EditorResult.OK;
+		}
 
 		public EditorResult RemoveModel(string modelName) {
 			EditorModel? model = Models.FirstOrDefault(x => x.Name == modelName);

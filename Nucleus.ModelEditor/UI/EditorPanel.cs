@@ -13,6 +13,7 @@ using Model = Nucleus.ModelEditor.EditorModel;
 namespace Nucleus.ModelEditor
 {
 	public enum ViewportSelectMode {
+		NotApplicable = -1,
 		None = 0,
 
 		Bones = 1,
@@ -164,10 +165,8 @@ namespace Nucleus.ModelEditor
 				goto end;
 			}
 
-			switch (determinations.Last) {
-				case EditorBone bone:
-					SelectMode = ViewportSelectMode.Bones;
-					break;
+			if (determinations.Last.SelectMode != ViewportSelectMode.NotApplicable) { 
+				SelectMode = determinations.Last.SelectMode;
 			}
 
 		end:
@@ -189,7 +188,7 @@ namespace Nucleus.ModelEditor
 		public float CameraY { get; set; } = 0;
 		public float CameraZoom { get; set; } = 1;
 
-		public object? HoveredObject { get; private set; }
+		public IEditorType? HoveredObject { get; private set; }
 		public Vector2F HoverGridPos { get; private set; }
 		protected override void OnThink(FrameState frameState) {
 			// Hover determination
@@ -198,7 +197,7 @@ namespace Nucleus.ModelEditor
 			bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
 			bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
 
-			object? hovered = null;
+			IEditorType? hovered = null;
 
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
@@ -207,6 +206,7 @@ namespace Nucleus.ModelEditor
 					}
 				}
 			}
+
 			HoveredObject = hovered;
 		}
 		public Vector2F FromScreenPosToGridPos(Vector2F screenPos) {
