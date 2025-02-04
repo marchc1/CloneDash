@@ -1,4 +1,4 @@
-﻿namespace Nucleus.Engine
+﻿namespace Nucleus
 {
 	public interface IUpdatable
 	{
