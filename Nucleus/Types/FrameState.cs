@@ -1,9 +1,8 @@
-﻿using Nucleus.Engine;
-using Nucleus.UI;
+﻿using Nucleus.UI;
 
 namespace Nucleus.Types
 {
-    public struct FrameState
+	public struct FrameState
     {
         public Element? HoveredUIElement { get; set; }
         public bool HoveringUIElement => IValidatable.IsValid(HoveredUIElement);
