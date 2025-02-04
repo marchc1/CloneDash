@@ -1,4 +1,4 @@
-﻿namespace Nucleus.ModelEditor
+﻿namespace Nucleus.Models
 {
 	/// <summary>
 	/// <code>

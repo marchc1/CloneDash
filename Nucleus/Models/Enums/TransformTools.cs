@@ -1,4 +1,4 @@
-﻿namespace Nucleus.ModelEditor
+﻿namespace Nucleus.Models
 {
 	public static class TransformTools {
 		public static (bool Rotation, bool Scale, bool Reflection) Unpack(this TransformMode transformMode) {
