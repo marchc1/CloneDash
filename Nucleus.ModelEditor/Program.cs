@@ -29,6 +29,12 @@ namespace Nucleus.ModelEditor
 		public event OnObjectSelected? ObjectUnselected;
 		public event OnSelectedChanged? SelectedChanged;
 
+		private void SELECTIONCHANGE() {
+			if (File.ActiveOperator != null)
+				File.DeactivateOperator();
+			SelectedChanged?.Invoke();
+		}
+
 		public void SelectObject(IEditorType o, bool additive = false) {
 			if (!additive) {
 				foreach (var obj in __selectedObjects.ToArray()) {
@@ -43,17 +49,18 @@ namespace Nucleus.ModelEditor
 			}
 			__selectedObjects.Add(o);
 			__selectedObjectsL.Add(o);
-			SelectedChanged?.Invoke();
+			SELECTIONCHANGE();
 
 			o.Selected = true;
 			o.OnSelected();
+			SELECTIONCHANGE();
 		}
 
 		public void UnselectObject(IEditorType o) {
 			__selectedObjects.Remove(o);
 			__selectedObjectsL.Remove(o);
 			ObjectUnselected?.Invoke(o);
-			SelectedChanged?.Invoke();
+			SELECTIONCHANGE();
 
 			o.Selected = false;
 			o.OnUnselected();
@@ -69,7 +76,7 @@ namespace Nucleus.ModelEditor
 				obj.OnSelected();
 			}
 
-			SelectedChanged?.Invoke();
+			SELECTIONCHANGE();
 		}
 
 		public void UnselectAllObjects() {
@@ -82,7 +89,7 @@ namespace Nucleus.ModelEditor
 				obj.Selected = false;
 				obj.OnUnselected();
 			}
-			SelectedChanged?.Invoke();
+			SELECTIONCHANGE();
 		}
 		/// <summary>
 		/// 
@@ -191,7 +198,12 @@ namespace Nucleus.ModelEditor
 
 			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
 			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
-			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => UnselectAllObjects());
+			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => {
+				if (File.ActiveOperator != null)
+					File.DeactivateOperator();
+				else
+					UnselectAllObjects();
+			});
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());
 		}
