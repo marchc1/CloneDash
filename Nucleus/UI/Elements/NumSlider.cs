@@ -4,6 +4,7 @@ using Nucleus.Types;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -83,8 +84,8 @@ namespace Nucleus.UI
 				Math.Round(_value, value);
 			}
 		}
-		public string Prefix { get; set; }
-		public string Suffix { get; set; }
+		public string Prefix { get; set; } = "";
+		public string Suffix { get; set; } = "";
 
 		protected override void Initialize() {
 			base.Initialize();
