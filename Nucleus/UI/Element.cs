@@ -1199,7 +1199,11 @@ namespace Nucleus.UI
 		/// <returns></returns>
 		public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
-		public void PassHoverTo(Element other) {
+		/// <summary>
+		/// Allows you to pass mouse events into another element and make this element passthru instead.
+		/// </summary>
+		/// <param name="other"></param>
+		public void PassMouseTo(Element other) {
 			// mark ourselves as passthru
 			OnHoverTest += Passthru;
 			other.OnHoverTest += (self, bounds, mousePos) => {
