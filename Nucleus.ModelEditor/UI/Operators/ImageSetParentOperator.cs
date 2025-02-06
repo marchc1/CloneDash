@@ -1,5 +1,6 @@
 ﻿
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 namespace Nucleus.ModelEditor.UI.Operators
 {
@@ -9,8 +10,10 @@ namespace Nucleus.ModelEditor.UI.Operators
 		public override bool OverrideSelection => true;
 		public override Type[]? SelectableTypes => [typeof(EditorBone), typeof(EditorSlot)];
 
-		protected override void Activated() {
+		private ModelImage SelectedImage;
 
+		protected override void Activated() {
+			SelectedImage = UIDeterminations.Last as ModelImage ?? throw new Exception("Wtf?");
 		}
 		protected override void Deactivated(bool canceled) {
 
@@ -30,17 +33,36 @@ namespace Nucleus.ModelEditor.UI.Operators
 
 					existingSlotPanel.Checkbox.LinkRadioButton(newSlotPanel.Checkbox);
 
+					if(bone.Slots.Count <= 0) {
+						existingSlotPanel.Panel.Enabled = false;
+						newSlotPanel.Checkbox.Checked = true;
+					}
+					else {
+						var existingSlotSelection = existingSlotPanel.Panel.Add<DropdownSelector<EditorSlot>>();
+						existingSlotSelection.OnToString += (eSlot) => eSlot?.Name ?? "<null slot?>";
+						existingSlotSelection.Dock = Dock.Fill;
+						existingSlotSelection.Items.AddRange(bone.Slots);
+						existingSlotSelection.Selected = bone.Slots[0];
+					}
+					var newSlotName = newSlotPanel.Panel.Add<Textbox>();
+					newSlotName.Dock = Dock.Fill;
+					newSlotName.HelperText = "New slot name...";
+					newSlotName.Text = SelectedImage.Name;
+
 					EditorDialogs.SetupOKCancelButtons(
 						boneDialog, 
 						true, 
 						() => {
+							if (existingSlotPanel.Checkbox.Checked) {
 
+							}
+							else {
+
+							}
 						},
-						() => {
-
-						}
+						null
 					);
-					boneDialog.Size = new(boneDialog.Size.X, 184);
+					boneDialog.Size = new(boneDialog.Size.X, bone.Slots.Count <= 0 ? 158 : 184);
 					break;
 			}
 		}
