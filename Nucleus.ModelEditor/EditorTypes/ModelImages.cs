@@ -19,7 +19,7 @@ namespace Nucleus.ModelEditor
 		public string PluralName => "Image Files";
 		public bool Hovered { get; set; }
 		public bool Selected { get; set; }
-		public bool Visible { get; set; }
+		public bool Hidden { get; set; }
 
 		public string Name { get; set; }
 		public string Filepath { get; set; }
