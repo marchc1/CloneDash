@@ -22,13 +22,15 @@ namespace Nucleus.ModelEditor
 			Visibility.Enabled = obj.CanHide();
 		}
 
+
 		private void SELECTABLECHANGED() {
 			TextColor = GetSelectable() ? Color.WHITE : Color.GRAY;
 		}
+
 		private bool _selectable = true;
 		private bool? _selectableOverride = null;
-		public bool Selectable{
-			get => _selectable; 
+		public bool Selectable {
+			get => _selectable;
 			set { _selectable = value; SELECTABLECHANGED(); }
 		}
 
@@ -132,12 +134,23 @@ namespace Nucleus.ModelEditor
 			Keyframe.PaintOverride += Keyframe_PaintOverride;
 			Expander.PaintOverride += Expander_PaintOverride;
 
+			Visibility.MouseClickEvent += Visibility_MouseClickEvent;
+
 			Expander.MouseReleaseEvent += Expander_MouseReleaseEvent;
 
 			// we want text and label to passthru
 			Image.OnHoverTest += Passthru;
 
 			Dock = Dock.Top;
+		}
+
+		private void Visibility_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+			IEditorType? editorItem = GetRepresentingObject();
+			if (editorItem == null) return;
+			if (editorItem.GetVisible())
+				ModelEditor.Active.File.HideEditorItem(editorItem);
+			else
+				ModelEditor.Active.File.ShowEditorItem(editorItem);
 		}
 
 		private void Expander_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
@@ -215,7 +228,12 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {
-			var c = self.Depressed ? 100 : self.Hovered ? 220 : 170;
+			IEditorType? editorItem = GetRepresentingObject();
+			if (editorItem == null) return;
+
+			var visColor = editorItem.GetVisible() ? 185 : 125;
+
+			var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
 			Graphics2D.SetDrawColor(c, c, c);
 			Graphics2D.DrawCircle(new(width / 2f, (height / 2f) - 2), width / 7);
 		}
