@@ -285,13 +285,7 @@ namespace Nucleus.ModelEditor
 
 		public EditorResult SetModelImages(EditorModel model, string filepath) {
 			model.Images.Filepath = filepath;
-			EditorResult scanResult = model.Images.Scan();
-
-			if (scanResult.Succeeded) {
-				ModelImagesScanned?.Invoke(this, model);
-			}
-
-			return scanResult;
+			return RescanModelImages(model);
 		}
 
 		public EditorResult RotateSelected(float value) {
@@ -342,6 +336,16 @@ namespace Nucleus.ModelEditor
 		public void NewFile() {
 			Clear();
 			AddModel("model");
+		}
+
+		public EditorResult RescanModelImages(EditorModel model) {
+			EditorResult scanResult = model.Images.Scan();
+
+			if (scanResult.Succeeded) {
+				ModelImagesScanned?.Invoke(this, model);
+			}
+
+			return scanResult;
 		}
 	}
 }

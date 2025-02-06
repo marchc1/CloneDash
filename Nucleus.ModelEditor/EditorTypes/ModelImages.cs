@@ -24,6 +24,19 @@ namespace Nucleus.ModelEditor
 		public string Filepath { get; set; }
 
 		public string GetName() => Name;
+
+		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
+
+		}
+		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
+
+		}
+
+		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
+			PropertiesPanel.ButtonIcon(buttons, "Set Parent", "models/setparent.png");
+		}
+
+		public bool CanHide() => false;
 	}
 	public class ModelImages : IEditorType
 	{
@@ -102,10 +115,11 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-
+			PropertiesPanel.ButtonIcon(buttons, "Rescan", "models/search.png", (_, _, _) => ModelEditor.Active.File.RescanModelImages(Model));
 		}
 
 		public string DetermineHeaderText(PreUIDeterminations determinations) => "Image files";
+
 		public bool CanHide() => false;
 	}
 }
