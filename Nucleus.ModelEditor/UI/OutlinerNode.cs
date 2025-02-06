@@ -1,6 +1,8 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
+using Raylib_cs;
+using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.ModelEditor
 {
@@ -19,6 +21,26 @@ namespace Nucleus.ModelEditor
 			__represents = new(obj);
 			Visibility.Enabled = obj.CanHide();
 		}
+
+		private void SELECTABLECHANGED() {
+			TextColor = GetSelectable() ? Color.WHITE : Color.GRAY;
+		}
+		private bool _selectable = true;
+		private bool? _selectableOverride = null;
+		public bool Selectable{
+			get => _selectable; 
+			set { _selectable = value; SELECTABLECHANGED(); }
+		}
+
+		/// <summary>
+		/// Set by the editor; you probably want <see cref="Selectable"/>.
+		/// </summary>
+		public bool? SelectableOverride {
+			get => _selectableOverride;
+			set { _selectableOverride = value; SELECTABLECHANGED(); }
+		}
+
+		public bool GetSelectable() => _selectableOverride ?? _selectable;
 
 		public int Layer = 0;
 		public List<OutlinerNode> Children = [];

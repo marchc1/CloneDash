@@ -41,6 +41,33 @@ namespace Nucleus.ModelEditor
 
 			ModelEditor.Active.File.ModelAdded += File_ModelAdded;
 			ModelEditor.Active.File.Cleared += File_Cleared;
+
+			ModelEditor.Active.File.OperatorActivated += File_OperatorActivated;
+			ModelEditor.Active.File.OperatorDeactivated += File_OperatorDeactivated;
+		}
+
+		private void File_OperatorActivated(EditorFile self, UI.Operator op) {
+			if (op.SelectableTypes == null) return;
+			HashSet<Type> acceptableTypes = op.SelectableTypes.ToHashSet();
+			foreach (var node in Right.AddParent.GetChildren()) {
+				if (node is OutlinerNode outlinerNode) {
+					IEditorType? obj = outlinerNode.GetRepresentingObject();
+
+					// Default behavior: not selectable unless the operator explicitly said so
+					// This includes null items
+					if (obj == null) continue; 
+
+					outlinerNode.SelectableOverride = acceptableTypes.Contains(obj.GetType());
+				}
+			}
+		}
+
+		private void File_OperatorDeactivated(EditorFile self, UI.Operator op) {
+			foreach(var node in Right.AddParent.GetChildren()) {
+				if(node is OutlinerNode outlinerNode) {
+					outlinerNode.SelectableOverride = null;
+				}
+			}
 		}
 
 		private void File_Cleared(EditorFile file) {
