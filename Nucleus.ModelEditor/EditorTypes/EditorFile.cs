@@ -7,11 +7,15 @@ using static Nucleus.ModelEditor.EditorFile;
 namespace Nucleus.ModelEditor
 {
 	/// <summary>
-	/// The editor interface controller. All editor operations should go through this
+	/// The editor interface controller; provides an API for almost all editor operations, with equiv. callbacks for various UI systems.
 	/// </summary>
 	public class EditorFile
 	{
 		public List<EditorModel> Models = [];
+
+		// ============================================================================================== //
+		// Serialization
+		// ============================================================================================== //
 
 		public static JsonSerializerSettings SerializerSettings => new JsonSerializerSettings() {
 			PreserveReferencesHandling = PreserveReferencesHandling.All
@@ -38,10 +42,17 @@ namespace Nucleus.ModelEditor
 						SlotAdded?.Invoke(this, model, bone, slot);
 					}
 				}
+
+				foreach (var skin in model.Skins) {
+					SkinAdded?.Invoke(this, model, skin);
+				}
 			}
 		}
 
-		// Event callbacks
+		// ============================================================================================== //
+		// Events & delegates
+		// ============================================================================================== //
+
 
 		/// <summary>
 		/// Called when the file is cleared.
@@ -83,8 +94,6 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public event BoneRename? BoneRenamed;
 
-
-
 		public event BoneGeneric? BoneLengthChanged;
 		public event BoneGeneric? BoneColorChanged;
 		public event BoneGeneric? BoneIconChanged;
@@ -110,11 +119,37 @@ namespace Nucleus.ModelEditor
 		public delegate void SlotAddRemove(EditorFile file, EditorModel model, EditorBone bone, EditorSlot slot);
 		public delegate void SlotRename(EditorFile file, EditorSlot slot, string oldName, string newName);
 
-		// Adding models
+		/// <summary>
+		/// Called when a skin is added to a model.
+		/// </summary>
+		public event SkinGeneric? SkinAdded;
+		/// <summary>
+		/// Called when a skin is removed from a model.
+		/// </summary>
+		public event SkinGeneric? SkinRemoved;
+		/// <summary>
+		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/>
+		/// </summary>
+		public event SkinGeneric? SkinActivated;
+		/// <summary>
+		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/> to something else (or unsets it entirely), <i>and</i> <see cref="EditorModel.ActiveSkin"/> was equal to this skin
+		/// </summary>
+		public event SkinGeneric? SkinDeactivated;
+		/// <summary>
+		/// Called when a skin is renamed.
+		/// </summary>
+		public event SkinRename? SkinRenamed;
+
+		public delegate void SkinGeneric(EditorFile file, EditorModel model, EditorSkin skin);
+		public delegate void SkinRename(EditorFile file, EditorSkin skin, string oldName, string newName);
+
+		// ============================================================================================== //
+		// Models
+		// ============================================================================================== //
 
 		public EditorReturnResult<EditorModel> AddModel(string name) {
 			if (Models.FirstOrDefault(x => x.Name == name) != null)
-				return new(null, $"The model already contains a bone named '{name}'.");
+				return new(null, $"The file already contains a model named '{name}'.");
 
 			var model = new EditorModel();
 			model.Name = name;
@@ -127,7 +162,7 @@ namespace Nucleus.ModelEditor
 		}
 		public EditorResult RenameModel(EditorModel model, string newName) {
 			if (Models.FirstOrDefault(x => x.Name == newName) != null)
-				return new($"The model already contains a bone named '{newName}'.");
+				return new($"The file already contains a model named '{newName}'.");
 
 			var oldName = model.Name;
 			model.Name = newName;
@@ -150,7 +185,9 @@ namespace Nucleus.ModelEditor
 		public EditorResult RemoveModel(EditorModel model)
 			=> RemoveModel(model.Name);
 
-		// Adding bones
+		// ============================================================================================== //
+		// Bones
+		// ============================================================================================== //
 
 		public EditorReturnResult<EditorBone> AddBone(EditorModel model, EditorBone? parent, string? name) {
 			if (name == null) {
@@ -213,8 +250,6 @@ namespace Nucleus.ModelEditor
 			return RenameBone(bone, newName);
 		}
 
-		// Removing bones
-
 		public EditorResult RemoveBone(EditorModel model, EditorBone? bone) {
 			if (bone == null)
 				return new("Bone was null.");
@@ -244,7 +279,9 @@ namespace Nucleus.ModelEditor
 		public EditorResult RemoveBone(EditorModel model, string boneName)
 			=> model.TryFindBone(boneName, out EditorBone? bone) ? RemoveBone(model, bone) : new($"Bone '{boneName}' not found.");
 
-		// Adding slots
+		// ============================================================================================== //
+		// Slots
+		// ============================================================================================== //
 
 		public EditorReturnResult<EditorSlot> AddSlot(EditorModel model, EditorBone bone, string slotName) {
 			if (model.TryFindSlot(slotName, out var _))
@@ -284,10 +321,89 @@ namespace Nucleus.ModelEditor
 		}
 		public EditorResult RemoveSlot(EditorSlot slot) => RemoveSlot(slot.Bone.Model, slot);
 
+		// ============================================================================================== //
+		// Images
+		// ============================================================================================== //
+
 		public EditorResult SetModelImages(EditorModel model, string filepath) {
 			model.Images.Filepath = filepath;
 			return RescanModelImages(model);
 		}
+
+
+		public EditorResult RescanModelImages(EditorModel model) {
+			EditorResult scanResult = model.Images.Scan();
+
+			if (scanResult.Succeeded) {
+				ModelImagesScanned?.Invoke(this, model);
+			}
+
+			return scanResult;
+		}
+
+		// ============================================================================================== //
+		// Skins
+		// ============================================================================================== //
+
+		public EditorReturnResult<EditorSkin> AddSkin(EditorModel model, string name) {
+			if (model.Skins.FirstOrDefault(x => x.Name == name) != null)
+				return new(null, $"The model already contains a skin named '{name}'.");
+
+			EditorSkin skin = new EditorSkin();
+			skin.Name = name;
+			skin.Model = model;
+			model.Skins.Add(skin);
+
+			SkinAdded?.Invoke(this, model, skin);
+
+			return new(skin);
+		}
+		public EditorResult RenameSkin(EditorModel model, EditorSkin skin, string newName) {
+			if (model.TryFindSkin(newName, out var _))
+				return new($"The model already contains a slot with the name '{newName}'.");
+
+			var oldName = skin.Name;
+			skin.Name = newName;
+			SkinRenamed?.Invoke(this, skin, oldName, newName);
+
+			return EditorResult.OK;
+		}
+		public EditorResult SetActiveSkin(EditorModel model, EditorSkin skin) {
+			UnsetActiveSkin(model);
+
+			model.ActiveSkin = skin;
+			SkinActivated?.Invoke(this, model, skin);
+
+			return EditorResult.OK;
+		}
+		public EditorResult UnsetActiveSkin(EditorModel model, EditorSkin? onlyIfThisSkin = null) {
+			if (model.ActiveSkin == null) return EditorResult.OK;
+			if (onlyIfThisSkin != null && model.ActiveSkin != onlyIfThisSkin) return new("Not the same skin!");
+
+			var skin = model.ActiveSkin;
+			model.ActiveSkin = null;
+			SkinDeactivated?.Invoke(this, model, skin);
+
+			return EditorResult.OK;
+		}
+
+		public EditorResult SetActiveSkin(EditorSkin skin) => SetActiveSkin(skin.Model, skin);
+		public EditorResult UnsetActiveSkin(EditorSkin skin) => UnsetActiveSkin(skin.Model, skin);
+
+		public EditorResult RemoveSkin(EditorModel model, EditorSkin skin) {
+			if (model.ActiveSkin == skin) {
+
+			}
+
+			SkinRemoved?.Invoke(this, model, skin);
+			model.Skins.Remove(skin);
+
+			return EditorResult.OK;
+		}
+
+		// ============================================================================================== //
+		// Selection modification
+		// ============================================================================================== //
 
 		public EditorResult RotateSelected(float value) {
 			var selected = ModelEditor.Active.SelectedObjects;
@@ -325,7 +441,9 @@ namespace Nucleus.ModelEditor
 			return EditorResult.OK;
 		}
 
-		// Clearing file
+		// ============================================================================================== //
+		// General file operations
+		// ============================================================================================== //
 
 		public void Clear() {
 			DeactivateOperator(true);
@@ -333,24 +451,40 @@ namespace Nucleus.ModelEditor
 			Cleared?.Invoke(this);
 		}
 
-		// Making a new file
-
 		public void NewFile() {
 			Clear();
-			AddModel("model");
+			var mdl = AddModel("model");
 		}
 
-		public EditorResult RescanModelImages(EditorModel model) {
-			EditorResult scanResult = model.Images.Scan();
+		public delegate void OnEditorItemVischange(EditorFile self, IEditorType editorItem, bool visible);
+		public event OnEditorItemVischange? EditorItemHidden;
+		public event OnEditorItemVischange? EditorItemShown;
+		public event OnEditorItemVischange? EditorItemVisibilityChanged;
 
-			if (scanResult.Succeeded) {
-				ModelImagesScanned?.Invoke(this, model);
-			}
-
-			return scanResult;
+		public void ShowEditorItem(IEditorType item) {
+			item.Hidden = false;
+			item.OnShown();
+			EditorItemShown?.Invoke(this, item, true);
+			EditorItemVisibilityChanged?.Invoke(this, item, true);
 		}
 
-		// Operator support
+		public void HideEditorItem(IEditorType item) {
+			item.Hidden = true;
+			item.OnHidden();
+			EditorItemHidden?.Invoke(this, item, false);
+			EditorItemVisibilityChanged?.Invoke(this, item, false);
+		}
+
+		public void ToggleEditorItemVisibility(IEditorType item) {
+			if (!item.Hidden) HideEditorItem(item);
+			else ShowEditorItem(item);
+		}
+
+
+		// ============================================================================================== //
+		// Custom operators
+		// ============================================================================================== //
+
 		public delegate void OnOperatorActivated(EditorFile self, Operator op);
 		public delegate void OnOperatorDeactivated(EditorFile self, Operator op, bool canceled);
 
