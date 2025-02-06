@@ -20,6 +20,7 @@ namespace Nucleus.ModelEditor
 		public IEditorType? LastSelectedObject => __selectedObjectsL.LastOrDefault();
 		public int SelectedObjectsCount => __selectedObjectsL.Count;
 
+		public IEnumerable<IEditorType> SelectedObjects => __selectedObjectsL;
 
 		public delegate void OnObjectSelected(IEditorType selected);
 		public delegate void OnSelectedChanged();
@@ -34,13 +35,18 @@ namespace Nucleus.ModelEditor
 					__selectedObjects.Remove(obj);
 					__selectedObjectsL.Remove(obj);
 					ObjectUnselected?.Invoke(obj);
+
+					obj.Selected = false;
+					obj.OnUnselected();
 				}
 				// We don't call UnselectAllObjects because that calls SelectedChanged twice; we don't want that
 			}
-
 			__selectedObjects.Add(o);
 			__selectedObjectsL.Add(o);
 			SelectedChanged?.Invoke();
+
+			o.Selected = true;
+			o.OnSelected();
 		}
 
 		public void UnselectObject(IEditorType o) {
@@ -48,6 +54,9 @@ namespace Nucleus.ModelEditor
 			__selectedObjectsL.Remove(o);
 			ObjectUnselected?.Invoke(o);
 			SelectedChanged?.Invoke();
+
+			o.Selected = false;
+			o.OnUnselected();
 		}
 
 		public void SelectObjects(params IEditorType[] os) {
@@ -55,6 +64,9 @@ namespace Nucleus.ModelEditor
 				__selectedObjects.Add(obj);
 				__selectedObjectsL.Add(obj);
 				ObjectSelected?.Invoke(obj);
+
+				obj.Selected = true;
+				obj.OnSelected();
 			}
 
 			SelectedChanged?.Invoke();
@@ -66,6 +78,9 @@ namespace Nucleus.ModelEditor
 				__selectedObjects.Remove(obj);
 				__selectedObjectsL.Remove(obj);
 				ObjectUnselected?.Invoke(obj);
+
+				obj.Selected = false;
+				obj.OnUnselected();
 			}
 			SelectedChanged?.Invoke();
 		}
