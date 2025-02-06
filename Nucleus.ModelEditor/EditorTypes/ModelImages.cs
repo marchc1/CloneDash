@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.ModelEditor.UI.Operators;
 using Nucleus.Models;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -33,7 +34,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-			PropertiesPanel.ButtonIcon(buttons, "Set Parent", "models/setparent.png");
+			PropertiesPanel.OperatorButton<ImageSetParentOperator>(buttons, "Set Parent", "models/setparent.png");
 		}
 
 		public bool CanHide() => false;

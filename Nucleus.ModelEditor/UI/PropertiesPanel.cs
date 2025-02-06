@@ -227,6 +227,22 @@ namespace Nucleus.ModelEditor
 			newBtn.MouseReleaseEvent += (e, fs, mb) => onClicked?.Invoke(e, fs, mb);
 			return newBtn;
 		}
+		public static void OperatorButton<T>(Panel buttons, string text, string? icon = null) where T : Operator, new() {
+			var btn = ButtonIcon(buttons, text, icon, (el, fs, mb) => {
+				var btn = ((el as Button) ?? throw new Exception("never should happen im lazy"));
+				Operator? ourOperator = el.GetTagSafely<Operator>("op");
+				if (ourOperator != null && ourOperator == ModelEditor.Active.File.ActiveOperator) {
+					ModelEditor.Active.File.DeactivateOperator();
+					btn.Pulsing = false;
+				}
+				else {
+					T op = ModelEditor.Active.File.InstantiateOperator<T>();
+					el.SetTag("op", op);
+					btn.Pulsing = true;
+					op.OnDeactivated += (_, _) => btn.Pulsing = false;
+				}
+			});
+		}
 		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
 			ButtonIcon(buttons, "New...", "models/add.png", (_, fs, _) => {
 				Menu menu = buttons.UI.Menu();
