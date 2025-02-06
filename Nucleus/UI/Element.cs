@@ -1203,7 +1203,7 @@ namespace Nucleus.UI
 			// mark ourselves as passthru
 			OnHoverTest += Passthru;
 			other.OnHoverTest += (self, bounds, mousePos) => {
-				return bounds.ContainsPoint(mousePos) || other.ScreenspaceRenderBounds.ContainsPoint(mousePos);
+				return bounds.ContainsPoint(mousePos) || ScreenspaceRenderBounds.ContainsPoint(mousePos);
 			};
 		}
 	}
