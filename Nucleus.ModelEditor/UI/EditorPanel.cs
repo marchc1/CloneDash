@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -125,17 +126,29 @@ namespace Nucleus.ModelEditor
 	{
 		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
 		Button LocalTransformButton, ParentTransformButton, WorldTransformButton;
+
+		CenteredObjectsPanel MainTransformsPanel;
+		CenteredObjectsPanel OperatorPanel;
+
 		public ViewportSelectMode SelectMode { get; set; } = ViewportSelectMode.All;
 		protected override void Initialize() {
 			base.Initialize();
-			CenteredObjectsPanel test;
-			Add(out test);
-			test.ForceHeight = false;
 
-			test.Dock = Dock.Bottom;
-			test.Size = new(128);
+			Add(out MainTransformsPanel);
+			MainTransformsPanel.ForceHeight = false;
 
-			var modePanel = test.Add<FlexPanel>();
+			MainTransformsPanel.Dock = Dock.Bottom;
+			MainTransformsPanel.Size = new(128);
+
+			Add(out OperatorPanel);
+			OperatorPanel.ForceHeight = false;
+
+			OperatorPanel.Dock = Dock.Bottom;
+			OperatorPanel.DockMargin = RectangleF.TLRB(0, 0, 0, -120); // Silly way to do this, but w/e
+			OperatorPanel.Size = new(128);
+			OperatorPanel.Visible = false;
+
+			var modePanel = MainTransformsPanel.Add<FlexPanel>();
 			modePanel.Direction = Directional180.Vertical;
 			modePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			modePanel.Size = new(98, 90);
@@ -149,7 +162,7 @@ namespace Nucleus.ModelEditor
 			var createBtn = modePanel.Add<Button>();
 			createBtn.Text = "Create";
 
-			var transformPanel = test.Add<FlexPanel>();
+			var transformPanel = MainTransformsPanel.Add<FlexPanel>();
 			transformPanel.Direction = Directional180.Vertical;
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			transformPanel.Size = new(280, 115);
@@ -167,7 +180,7 @@ namespace Nucleus.ModelEditor
 			TransformShear.GetNumSlider(0).OnValueChanged += CHANGE_ShearX;
 			TransformShear.GetNumSlider(1).OnValueChanged += CHANGE_ShearY;
 
-			var transformModePanel = test.Add<FlexPanel>();
+			var transformModePanel = MainTransformsPanel.Add<FlexPanel>();
 			transformModePanel.Direction = Directional180.Vertical;
 			transformModePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			transformModePanel.Size = new(70, 90);
@@ -185,8 +198,26 @@ namespace Nucleus.ModelEditor
 			WorldTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
+			ModelEditor.Active.File.OperatorActivated += File_OperatorActivated;
+			ModelEditor.Active.File.OperatorDeactivated += File_OperatorDeactivated;
 			Active_SelectedChanged();
 			SetTransformMode(EditorTransformMode.ParentCoordinates);
+		}
+
+		HashSet<Type>? SelectableTypes { get; set; } = null;
+
+		private void File_OperatorActivated(EditorFile self, Operator op) {
+			MainTransformsPanel.Visible = false;
+			OperatorPanel.ClearChildren();
+			SelectableTypes = op.SelectableTypes == null ? null : op.SelectableTypes.ToHashSet();
+			op.ChangeEditorProperties(OperatorPanel);
+		}
+
+		private void File_OperatorDeactivated(EditorFile self, Operator op) {
+			MainTransformsPanel.Visible = true;
+			OperatorPanel.ClearChildren();
+			OperatorPanel.Visible = false;
+			SelectableTypes = null;
 		}
 
 		public EditorTransformMode TransformMode { get; private set; }
@@ -314,6 +345,10 @@ namespace Nucleus.ModelEditor
 
 		public IEditorType? HoveredObject { get; private set; }
 		public Vector2F HoverGridPos { get; private set; }
+
+		private bool IsTypeProhibitedByOperator<T>() 
+			=> SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
+		
 		protected override void OnThink(FrameState frameState) {
 			// Hover determination
 			HoverGridPos = FromScreenPosToGridPos(GetMousePos());
@@ -326,7 +361,7 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
-						if (bone.HoverTest(HoverGridPos))
+						if (bone.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator<EditorBone>())
 							hovered = bone;
 					}
 				}
@@ -505,6 +540,11 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.DrawText(new(4, height - 18), $"gridpos:  {HoverGridPos}", "Consolas", 12, Anchor.BottomLeft);
 			Graphics2D.DrawText(new(4, height - 4), $"mousepos: {GetMousePos()}", "Consolas", 12, Anchor.BottomLeft);
+
+			Operator? op = ModelEditor.Active.File.ActiveOperator;
+			if (op != null) {
+				Graphics2D.DrawText(new(width / 2, 32), $"{op.Name ?? "<NULL>"}", "Noto Sans", 32, Anchor.TopCenter);
+			}
 
 
 			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);
