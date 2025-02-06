@@ -3,6 +3,7 @@ using Microsoft.VisualBasic;
 using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
+using static Nucleus.Util.Util;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Nucleus.ModelEditor
@@ -67,6 +68,7 @@ namespace Nucleus.ModelEditor
 		private void RegisterBoneEvents(OutlinerNode parentNode, EditorBone bone) {
 			OutlinerNode boneNode = parentNode.AddNode(bone.Name, "models/bone.png");
 			boneNode.SetRepresentingObject(bone);
+			boneNode.ImageColor = bone.Color;
 
 			ModelEditor.Active.File.BoneAdded += (file, model, boneA) => {
 				if (boneA.Parent == bone) {
@@ -85,6 +87,10 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.SlotAdded += (file, model, _bone, slot) => {
 				if (_bone == bone)
 					RegisterSlotEvents(boneNode, slot);
+			};
+			ModelEditor.Active.File.BoneColorChanged += (file, _bone) => {
+				if (_bone == bone)
+					boneNode.ImageColor = bone.Color;
 			};
 
 			boneNode.ChangeChildOrder += (_, children) => {
@@ -132,6 +138,8 @@ namespace Nucleus.ModelEditor
 				}
 			};
 			ModelEditor.Active.File.SlotAdded += (file, _model, _bone, slot) => {
+				if (_model != model) return;
+
 				OutlinerNode slotNode = drawOrder.AddNode(slot.Name, "models/slot.png");
 				slotNode.SetRepresentingObject(slot);
 				ModelEditor.Active.File.SlotRenamed += (file, slotR, oldName, newName) => {
@@ -148,7 +156,25 @@ namespace Nucleus.ModelEditor
 
 			//OutlinerNode animationsNode = modelNode.AddNode("Animations", "models/animation.png");
 			OutlinerNode imagesNode = modelNode.AddNode("Images", "models/images.png");
-			//imagesNode.SetRepresentingObject(model.Images);
+			imagesNode.SetRepresentingObject(model.Images);
+			AlphanumComparatorFast alphanum = new AlphanumComparatorFast();
+			imagesNode.ChangeChildOrder += (_, children) => {
+				children.Sort((x, y) => {
+					ModelImage xS = x.GetRepresentingObject<ModelImage>() ?? throw new Exception("wtf");
+					ModelImage yS = y.GetRepresentingObject<ModelImage>() ?? throw new Exception("wtf");
+
+					return alphanum.Compare(xS.Name, yS.Name);
+				});
+			};
+
+			ModelEditor.Active.File.ModelImagesScanned += (file, _model) => {
+				if (_model != model) return;
+				imagesNode.ClearChildNodes();
+				foreach (var image in model.Images.Images) {
+					var imageNode = imagesNode.AddNode(image.Name, "models/region.png");
+					imageNode.SetRepresentingObject(image);
+				}
+			};
 		}
 
 

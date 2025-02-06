@@ -42,7 +42,16 @@ namespace Nucleus.ModelEditor
 				}
 			}
 		}
-		public OutlinerPanel? Outliner;
+
+		public void ClearChildNodes() {
+			foreach (var node in Children)
+				node.Remove();
+
+			Outliner.InvalidateLayout();
+			Outliner.InvalidateChildren();
+		}
+
+		public OutlinerPanel Outliner;
 
 		private bool __expanded = true;
 		public bool Expanded {
@@ -60,6 +69,10 @@ namespace Nucleus.ModelEditor
 		public ManagedMemory.Texture? ImageTexture {
 			get => Image.Image;
 			set => Image.Image = value;
+		}
+		public new Raylib_cs.Color ImageColor {
+			get => Image.ImageColor ?? Image.TextColor;
+			set => Image.ImageColor = value;
 		}
 
 		protected override void Initialize() {
@@ -81,6 +94,8 @@ namespace Nucleus.ModelEditor
 			Keyframe.Size = new(23);
 			Expander.Size = new(23);
 			Image.Size = new(16);
+
+			Image.ImageColor = Raylib_cs.Color.WHITE;
 
 			BorderSize = 0;
 			DockMargin = RectangleF.TLRB(0, 2, 2, 0);

@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -12,7 +13,8 @@ using Model = Nucleus.ModelEditor.EditorModel;
 
 namespace Nucleus.ModelEditor
 {
-	public enum ViewportSelectMode {
+	public enum ViewportSelectMode
+	{
 		NotApplicable = -1,
 		None = 0,
 
@@ -21,6 +23,12 @@ namespace Nucleus.ModelEditor
 		Other = 4,
 
 		All = Bones | Images | Other
+	}
+	public enum EditorTransformMode
+	{
+		LocalCoordinates,
+		ParentCoordinates,
+		WorldCoordinates
 	}
 	public static class Checkerboard
 	{
@@ -116,6 +124,7 @@ namespace Nucleus.ModelEditor
 	public class EditorPanel : Panel
 	{
 		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
+		Button LocalTransformButton, ParentTransformButton, WorldTransformButton;
 		public ViewportSelectMode SelectMode { get; set; } = ViewportSelectMode.All;
 		protected override void Initialize() {
 			base.Initialize();
@@ -133,8 +142,10 @@ namespace Nucleus.ModelEditor
 
 			var poseBtn = modePanel.Add<Button>();
 			poseBtn.Text = "Pose";
+
 			var weightsBtn = modePanel.Add<Button>();
 			weightsBtn.Text = "Weights";
+
 			var createBtn = modePanel.Add<Button>();
 			createBtn.Text = "Create";
 
@@ -148,8 +159,79 @@ namespace Nucleus.ModelEditor
 			TransformScale = TransformPanel.New(transformPanel, "Scale", 2);
 			TransformShear = TransformPanel.New(transformPanel, "Shear", 2);
 
+			TransformRotation.GetNumSlider(0).OnValueChanged += CHANGE_Rotation;
+			TransformTranslation.GetNumSlider(0).OnValueChanged += CHANGE_TranslationX;
+			TransformTranslation.GetNumSlider(1).OnValueChanged += CHANGE_TranslationY;
+			TransformScale.GetNumSlider(0).OnValueChanged += CHANGE_ScaleX;
+			TransformScale.GetNumSlider(1).OnValueChanged += CHANGE_ScaleY;
+			TransformShear.GetNumSlider(0).OnValueChanged += CHANGE_ShearX;
+			TransformShear.GetNumSlider(1).OnValueChanged += CHANGE_ShearY;
+
+			var transformModePanel = test.Add<FlexPanel>();
+			transformModePanel.Direction = Directional180.Vertical;
+			transformModePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+			transformModePanel.Size = new(70, 90);
+
+			LocalTransformButton = transformModePanel.Add<Button>();
+			LocalTransformButton.Text = "Local";
+			LocalTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.LocalCoordinates);
+
+			ParentTransformButton = transformModePanel.Add<Button>();
+			ParentTransformButton.Text = "Parent";
+			ParentTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.ParentCoordinates);
+
+			WorldTransformButton = transformModePanel.Add<Button>();
+			WorldTransformButton.Text = "World";
+			WorldTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
+
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 			Active_SelectedChanged();
+			SetTransformMode(EditorTransformMode.ParentCoordinates);
+		}
+
+		public EditorTransformMode TransformMode { get; private set; }
+		private void SetTransformMode(EditorTransformMode mode) {
+			TransformMode = mode;
+
+			switch (TransformMode) {
+				case EditorTransformMode.LocalCoordinates:
+					LocalTransformButton.Pulsing = true;
+					ParentTransformButton.Pulsing = false;
+					WorldTransformButton.Pulsing = false;
+					return;
+				case EditorTransformMode.ParentCoordinates:
+					LocalTransformButton.Pulsing = false;
+					ParentTransformButton.Pulsing = true;
+					WorldTransformButton.Pulsing = false;
+					return;
+				case EditorTransformMode.WorldCoordinates:
+					LocalTransformButton.Pulsing = false;
+					ParentTransformButton.Pulsing = false;
+					WorldTransformButton.Pulsing = true;
+					return;
+			}
+		}
+
+		private void CHANGE_Rotation(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.RotateSelected((float)newValue);
+		}
+		private void CHANGE_TranslationX(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.TranslateXSelected((float)newValue);
+		}
+		private void CHANGE_TranslationY(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.TranslateYSelected((float)newValue);
+		}
+		private void CHANGE_ScaleX(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.ScaleXSelected((float)newValue);
+		}
+		private void CHANGE_ScaleY(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.ScaleYSelected((float)newValue);
+		}
+		private void CHANGE_ShearX(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.ShearXSelected((float)newValue);
+		}
+		private void CHANGE_ShearY(NumSlider self, double oldValue, double newValue) {
+			ModelEditor.Active.File.ShearYSelected((float)newValue);
 		}
 
 		private void Active_SelectedChanged() {
@@ -165,8 +247,50 @@ namespace Nucleus.ModelEditor
 				goto end;
 			}
 
-			if (determinations.Last.SelectMode != ViewportSelectMode.NotApplicable) { 
+			if (determinations.Last.SelectMode != ViewportSelectMode.NotApplicable) {
 				SelectMode = determinations.Last.SelectMode;
+			}
+
+			bool first = true;
+			float rotV = 0f, posX = 0f, posY = 0f, scaX = 0f, scaY = 0f, sheX = 0f, sheY = 0f;
+
+			foreach (var item in determinations.Selected) {
+				if (first) {
+					supportRotation = item.CanRotate();
+					rotV = item.GetRotation();
+					TransformRotation.GetNumSlider(0).Value = rotV;
+
+					supportTranslation = item.CanTranslate();
+					posX = item.GetTranslationX();
+					posY = item.GetTranslationY();
+					TransformTranslation.GetNumSlider(0).Value = posX;
+					TransformTranslation.GetNumSlider(1).Value = posY;
+
+					supportScale = item.CanScale();
+					scaX = item.GetScaleX();
+					scaY = item.GetScaleY();
+					TransformScale.GetNumSlider(0).Value = scaX;
+					TransformScale.GetNumSlider(1).Value = scaY;
+
+					supportShear = item.CanShear();
+					sheX = item.GetShearX();
+					sheY = item.GetShearY();
+					TransformShear.GetNumSlider(0).Value = sheX;
+					TransformShear.GetNumSlider(1).Value = sheY;
+
+					first = false;
+				}
+				else {
+					// When multiple items are selected, disable support if values differ. ie.
+					// 1. unsupported && equals   == don't support
+					// 2. supported && not equals == don't support
+					//        (which leads to the former scenario happening for the rest of the selected items)
+
+					supportRotation = supportRotation && item.GetRotation() == rotV;
+					supportTranslation = supportTranslation && item.GetTranslationX() == posX && item.GetTranslationY() == posY;
+					supportScale = supportScale && item.GetScaleX() == scaX && item.GetScaleY() == scaY;
+					supportShear = supportShear && item.GetShearX() == sheX && item.GetShearY() == sheY;
+				}
 			}
 
 		end:
@@ -202,12 +326,23 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
-
+						if (bone.HoverTest(HoverGridPos))
+							hovered = bone;
 					}
 				}
 			}
 
+			if (HoveredObject != null) {
+				HoveredObject.Hovered = false;
+				HoveredObject.OnMouseLeft();
+			}
+
 			HoveredObject = hovered;
+
+			if (hovered != null) {
+				hovered.Hovered = true;
+				hovered.OnMouseEntered();
+			}
 		}
 		public Vector2F FromScreenPosToGridPos(Vector2F screenPos) {
 			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), RenderBounds.Size, new(0, 0), EngineCore.GetWindowSize());
@@ -222,8 +357,8 @@ namespace Nucleus.ModelEditor
 		public override void MouseClick(FrameState state, Types.MouseButton button) {
 			base.MouseClick(state, button);
 			ClickPos = FromScreenPosToGridPos(GetMousePos());
-			switch (HoveredObject) {
-
+			if (HoveredObject != null && button == Types.MouseButton.Mouse1) {
+				ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 			}
 		}
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
@@ -240,80 +375,96 @@ namespace Nucleus.ModelEditor
 		public void Draw3DCursor() {
 			Raylib.DrawSphere(new(HoverGridPos.X, HoverGridPos.Y, 0), 2, Color.RED);
 		}
+
 		/// <summary>
 		/// Draws a bone and then its children based on its posing
 		/// </summary>
 		/// <param name="bone"></param>
 		public void DrawBone(EditorBone bone) {
-			/*Rlgl.PushMatrix();
-			bone.EditMatrix();
+			var wt = bone.WorldTransform;
+			var wp = wt.Translation.ToNumerics();
 			var cameraFOV = cam.FovY;
 			// Depending on cameraFOV, we shrink this down a bit...
 			var limitBy = 500;
 			var byHowMuch = cameraFOV < limitBy ? 1 - ((limitBy - cameraFOV) / limitBy) : 1;
 
-			var color = bone.Color;
+			var color = bone.Selected ? Color.SKYBLUE : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : bone.Color.Adjust(0, 0, -0.15f);
+			ManagedMemory.Texture boneTex;
 
-			if (bone.Length <= 0) {
-				var radius = 5f;
-				var sizeWhenActiveAxis = 12f;
-				var sizeWhenNotActiveAxis = 5f;
-				var lineSize = 1.5f;
-
-				if (cameraFOV < limitBy) {
-					radius *= byHowMuch;
-					sizeWhenActiveAxis *= byHowMuch;
-					sizeWhenNotActiveAxis *= byHowMuch;
-					lineSize *= byHowMuch;
-				}
-
-				Raylib.DrawRing(new(0, 0), radius / 1.5f, radius, 0, 360, 16, color);
-				radius *= 1.5f;
-
-				Raylib.DrawCube(new(radius + (sizeWhenActiveAxis / 2), 0, 0), sizeWhenActiveAxis, lineSize, 1, color);
-				Raylib.DrawCube(new(-radius - (sizeWhenNotActiveAxis / 2), 0, 0), sizeWhenNotActiveAxis, lineSize, 1, color);
-				Raylib.DrawCube(new(0, radius + (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, color);
-				Raylib.DrawCube(new(0, -radius - (sizeWhenNotActiveAxis / 2), 0), lineSize, sizeWhenNotActiveAxis, 1, color);
+			if (bone.Length > 0) {
+				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
+				var lengthMul = (float)NMath.Remap(bone.Length, 0, 150, 0, 1, true);
+				var r = 7 * lengthMul;
+				var rI = 5 * lengthMul;
+				Raylib.DrawRing(wp, rI * byHowMuch, r * byHowMuch, 0, 360, 32, color);
+				Raylib.DrawCircleV(wp, rI * byHowMuch, color.Adjust(0, 0, -0.8f));
 			}
-			else {
-				var length = bone.Length;
-				var radius = (float)NMath.Remap(length, 0.2f, 150f, 1f, 5f, clampInput: true);
-				radius *= byHowMuch;
+			else
+				boneTex = Level.Textures.LoadTextureFromFile("models/lengthlessbonetex.png");
+
+			bone.GetTexCoords(byHowMuch, out var baseBottom, out var baseTop, out var tipBottom, out var tipTop, out var lengthLimit);
+
+			if (bone.Length > 0) {
 				Rlgl.Begin(DrawMode.TRIANGLES);
-				var limit = 230;
-				var lengthClamped = Math.Clamp(length, 0, limit);
-				var lengthNormalized = lengthClamped / limit;
 
-				Rlgl.TexCoord2f(0, 0);
-				Rlgl.Color4ub(color.R, color.B, color.G, color.A);
+				Rlgl.Color4ub(color.R, color.G, color.B, color.A);
+				Rlgl.SetTexture(((Texture2D)boneTex).Id);
+				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
+				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
+				Rlgl.TexCoord2f(1, 0); Rlgl.Vertex3f(tipBottom.X, tipBottom.Y, 0);
 
-				Rlgl.Vertex3f(0, 0, 0);
-				Rlgl.Vertex3f(lengthNormalized * 25, lengthNormalized * 5 * byHowMuch, 0);
-				Rlgl.Vertex3f(lengthNormalized * 25, lengthNormalized * -5 * byHowMuch, 0);
+				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
+				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
+				Rlgl.TexCoord2f(0, 1); Rlgl.Vertex3f(baseTop.X, baseTop.Y, 0);
 
-				Rlgl.Vertex3f(lengthNormalized * 25, lengthNormalized * -5 * byHowMuch, 0);
-				Rlgl.Vertex3f(lengthNormalized * 25, lengthNormalized * 5 * byHowMuch, 0);
-				Rlgl.Vertex3f(length, 0, 0);
+				// Inverted because for some reason disabling backface culling doesn't want to work
+				// (or maybe something else is going on that I don't understand, regardless, that's
+				// why this is repeated but in reverse)
+
+				Rlgl.TexCoord2f(1, 0); Rlgl.Vertex3f(tipBottom.X, tipBottom.Y, 0);
+				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
+				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
+
+				Rlgl.TexCoord2f(0, 1); Rlgl.Vertex3f(baseTop.X, baseTop.Y, 0);
+				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
+				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
 
 				Rlgl.End();
-
-				Raylib.DrawRing(new(0, 0), radius / 1.4f, radius, 0, 360, 16, color);
-				Raylib.DrawCircleV(new(0, 0), radius / 1.4f, Color.DARKGRAY);
+			}
+			else {
+				var size = 32f * byHowMuch;
+				Rlgl.PushMatrix();
+				var wps = bone.WorldTransform.LocalToWorld(0, 0).ToNumerics();
+				var wd = bone.WorldTransform.LocalToWorld(1, 0).ToNumerics();
+				var dir = (wd - wps);
+				var rot = MathF.Atan2(dir.Y, dir.X).ToDegrees() + 90;
+				Rlgl.Translatef(wps.X, wps.Y, 0);
+				Rlgl.Rotatef(rot, 0, 0, 1);
+				Raylib.DrawTexturePro(
+					boneTex,
+					new(0, 0, boneTex.Width, boneTex.Height),
+					new(-size / 2f, -size / 2f, size, size),
+					new(0),
+					0,
+					color
+				);
+				Rlgl.PopMatrix();
 			}
 			foreach (var child in bone.Children) {
 				DrawBone(child);
 			}
-			Rlgl.PopMatrix();*/
 		}
 		/// <summary>
 		/// Draws all models in the working model list
 		/// </summary>
 		public void DrawModels() {
+			Rlgl.DisableBackfaceCulling();
 			foreach (var model in ModelEditor.Active.File.Models) {
 				foreach (var bone in model.GetAllBones()) {
 					DrawBone(bone);
 				}
 			}
+			Rlgl.EnableBackfaceCulling();
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
@@ -321,7 +472,7 @@ namespace Nucleus.ModelEditor
 				FovY = EngineCore.GetWindowHeight() / CameraZoom,
 				Position = new System.Numerics.Vector3(CameraX, CameraY, -500),
 				Target = new System.Numerics.Vector3(CameraX, CameraY, 0),
-				Up = new(0, -1, 0)
+				Up = new(0, -1, 0),
 			};
 			var globalpos = Graphics2D.Offset;
 			var oldSize = EngineCore.GetScreenSize();
@@ -330,19 +481,22 @@ namespace Nucleus.ModelEditor
 			var accomodation = intendedAspectRatio / currentAspectRatio;
 			widthMultiplied = width * accomodation;
 
-
 			Rlgl.Viewport((int)(globalpos.X - ((widthMultiplied - width) / 2)), (int)(0), (int)(widthMultiplied), (int)height);
 			Raylib.BeginMode3D(cam);
+
 			Checkerboard.Draw();
 			Raylib.DrawLine3D(new(-10000, 0, 0), new(10000, 0, 0), Color.BLACK);
 			Raylib.DrawLine3D(new(0, -10000, 0), new(0, 10000, 0), Color.BLACK);
+
 			DrawModels();
 			Draw3DCursor();
+
 			Raylib.EndMode3D();
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			Graphics2D.DrawText(new(4, height - 18), $"gridpos:  {HoverGridPos}", "Consolas", 12, Anchor.BottomLeft);
 			Graphics2D.DrawText(new(4, height - 4), $"mousepos: {GetMousePos()}", "Consolas", 12, Anchor.BottomLeft);
+
 
 			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);
 		}
