@@ -1,4 +1,6 @@
 ﻿
+using Nucleus.UI;
+
 namespace Nucleus.ModelEditor.UI.Operators
 {
 	public class ImageSetParentOperator : Operator
@@ -15,7 +17,32 @@ namespace Nucleus.ModelEditor.UI.Operators
 		}
 
 		public override void Selected(ModelEditor editor, IEditorType type) {
-			base.Selected(editor, type);
+			switch (type) {
+				case EditorBone bone:
+					var boneDialog = EditorDialogs.CreateDialogWindow("Image: Set Parent");
+					EditorDialogs.SetupDescription(boneDialog, "How should the attachment be parented?");
+
+					var existingSlotPanel = EditorDialogs.CreateOptionPanel(boneDialog, true, "Use an existing slot:");
+					var newSlotPanel = EditorDialogs.CreateOptionPanel(boneDialog, false, "Use a new slot:");
+
+					existingSlotPanel.Checkbox.Radio = true;
+					newSlotPanel.Checkbox.Radio = true;
+
+					existingSlotPanel.Checkbox.LinkRadioButton(newSlotPanel.Checkbox);
+
+					EditorDialogs.SetupOKCancelButtons(
+						boneDialog, 
+						true, 
+						() => {
+
+						},
+						() => {
+
+						}
+					);
+					boneDialog.Size = new(boneDialog.Size.X, 184);
+					break;
+			}
 		}
 	}
 }
