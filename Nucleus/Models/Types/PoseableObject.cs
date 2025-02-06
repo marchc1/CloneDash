@@ -54,7 +54,24 @@ namespace Nucleus.Models
 		[JsonIgnore] public float ShearX { get => shear.X; set { shear.X = value; InvalidateTransform(); } }
 		[JsonIgnore] public float ShearY { get => shear.Y; set { shear.Y = value; InvalidateTransform(); } }
 
-		[JsonIgnore] public Transformation WorldTransform { get; protected set; }
+		protected Transformation worldTransform;
+
+		[JsonIgnore] public Transformation WorldTransform {
+			get {
+				if (!WorldTransformValid) {
+					var parent = GetParent();
+					worldTransform = Transformation.CalculateWorldTransformation(
+						Position,
+						Rotation,
+						Scale,
+						Shear,
+						TransformMode, parent == null ? null : parent.WorldTransform);
+					WorldTransformValid = true;
+				}
+
+				return WorldTransform;
+			}
+		}
 		[JsonIgnore] public bool WorldTransformValid { get; protected set; }
 
 		/// <summary>
@@ -87,21 +104,6 @@ namespace Nucleus.Models
 
 			foreach (var child in children)
 				child.InvalidateTransform();
-		}
-
-		public Transformation GetWorldTransform() {
-			if (!WorldTransformValid) {
-				var parent = GetParent();
-				WorldTransform = Transformation.CalculateWorldTransformation(
-					Position,
-					Rotation,
-					Scale,
-					Shear,
-					TransformMode, parent == null ? null : parent.GetWorldTransform());
-				WorldTransformValid = true;
-			}
-
-			return WorldTransform;
 		}
 	}
 }
