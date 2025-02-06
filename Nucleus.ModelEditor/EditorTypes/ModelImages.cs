@@ -23,8 +23,7 @@ namespace Nucleus.ModelEditor
 		public string Name { get; set; }
 		public string Filepath { get; set; }
 
-		// We don't need to wrap this in a mainthread runASAP call because
-		// textures already do that under the hood in Dispose
+		public string GetName() => Name;
 	}
 	public class ModelImages : IEditorType
 	{
