@@ -538,6 +538,7 @@ namespace Nucleus.ModelEditor
 			Raylib.EndMode3D();
 			Graphics2D.SetDrawColor(255, 255, 255);
 
+			Graphics2D.DrawText(new(4, height - 32), $"fps:  {EngineCore.FPS}", "Consolas", 12, Anchor.BottomLeft);
 			Graphics2D.DrawText(new(4, height - 18), $"gridpos:  {HoverGridPos}", "Consolas", 12, Anchor.BottomLeft);
 			Graphics2D.DrawText(new(4, height - 4), $"mousepos: {GetMousePos()}", "Consolas", 12, Anchor.BottomLeft);
 
