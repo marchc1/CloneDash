@@ -34,21 +34,21 @@ namespace Nucleus.ModelEditor
 		public OutlinerNode? ParentNode {
 			get => parentNode;
 			set {
-				if(parentNode != value) {
+				if (parentNode != value) {
 					if (IValidatable.IsValid(parentNode))
 						parentNode.Children.Remove(this);
 
-					if (IValidatable.IsValid(value)) 
+					if (IValidatable.IsValid(value))
 						value.Children.Add(this);
-					
+
 					parentNode = value;
 				}
 			}
 		}
 
 		public void ClearChildNodes() {
-			foreach (var node in Children)
-				node.Remove();
+			while (Children.Count > 0)
+				Children.RemoveAt(0);
 
 			Outliner.InvalidateLayout();
 			Outliner.InvalidateChildren();
@@ -127,7 +127,7 @@ namespace Nucleus.ModelEditor
 		public override void OnRemoval() {
 			base.OnRemoval();
 			foreach (var child in Children.ToArray()) {
-				if(IValidatable.IsValid(child))
+				if (IValidatable.IsValid(child))
 					child.Remove();
 			}
 			Children.Clear();
@@ -163,7 +163,7 @@ namespace Nucleus.ModelEditor
 
 		public override void Paint(float width, float height) {
 			base.Paint(width, height);
-			if(Layer > 0 && ParentNode != null) {
+			if (Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;
 				bool last = count == 0 ? true : (count == 1 || ParentNode.Children[count - 1] == this);
 				if (Expanded && Children.Count > 0)
@@ -189,7 +189,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
-			
+
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {
