@@ -18,15 +18,35 @@ namespace Nucleus.UI
             }
         }
 
-        public bool TriggeredWhenEnterPressed { get; set; } = false;
+        public bool TriggeredWhenEnterPressed {
+			get => __triggeredWhenEnterPressed;
+			set {
+				__triggeredWhenEnterPressed = value;
+				startPulse = DateTime.UtcNow;
+			}
+		}
+
+		private bool __triggeredWhenEnterPressed = false;
+		private bool __pulsing = false;
+		private DateTime startPulse;
+		public float PulseTime => (float)(DateTime.UtcNow - startPulse).TotalSeconds;
+        public bool Pulsing {
+			get => __pulsing;
+			set {
+				__pulsing = value;
+				startPulse = DateTime.UtcNow;
+			}
+		}
 
         public override void Paint(float width, float height) {
             var backpre = BackgroundColor;
-            if (TriggeredWhenEnterPressed) {
-                backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(Lifetime * 6) * 1.3));
+            var forepre = ForegroundColor;
+            if (TriggeredWhenEnterPressed || Pulsing) {
+                backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 1.9));
+				forepre = forepre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 0.1f));
             }
             var back = MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.5f, 1f), new(0, 1.2f, 0.6f, 1f));
-            var fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+            var fore = MixColorBasedOnMouseState(this, forepre, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 
             Graphics2D.SetDrawColor(back);
             Graphics2D.DrawRectangle(0, 0, width, height);
