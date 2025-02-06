@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.ModelEditor.UI;
 using Raylib_cs;
 using System.Xml.Linq;
 using static Nucleus.ModelEditor.EditorFile;
@@ -327,6 +328,7 @@ namespace Nucleus.ModelEditor
 		// Clearing file
 
 		public void Clear() {
+			DeactivateOperator();
 			Models.Clear();
 			Cleared?.Invoke(this);
 		}
@@ -346,6 +348,40 @@ namespace Nucleus.ModelEditor
 			}
 
 			return scanResult;
+		}
+
+		// Operator support
+		public delegate void OnOperatorActivated(EditorFile self, Operator op);
+		public delegate void OnOperatorDeactivated(EditorFile self, Operator op);
+
+		public event OnOperatorActivated? OperatorActivated;
+		public event OnOperatorDeactivated? OperatorDeactivating;
+		public event OnOperatorDeactivated? OperatorDeactivated;
+		public Operator? ActiveOperator { get; set; }
+		public void ActivateOperator(Operator op) {
+			if (ActiveOperator != null) DeactivateOperator();
+
+			ActiveOperator = op;
+			op.UIDeterminations = ModelEditor.Active.GetDeterminations();
+			op.Activate();
+			OperatorActivated?.Invoke(this, op);
+		}
+		public void DeactivateOperator() {
+			if (ActiveOperator == null) return;
+
+			Operator op = ActiveOperator;
+			OperatorDeactivating?.Invoke(this, op);
+			ActiveOperator.Deactivate();
+			ActiveOperator = null;
+			OperatorDeactivated?.Invoke(this, op);
+		}
+
+		public T InstantiateOperator<T>() where T : Operator, new() {
+			DeactivateOperator();
+
+			T op = new();
+			ActivateOperator(op);
+			return op;
 		}
 	}
 }
