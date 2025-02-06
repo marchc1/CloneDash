@@ -22,6 +22,10 @@ namespace Nucleus
             hsv.X += hue;
             hsv.Y *= 1 + saturation;
             hsv.Z *= 1 + value;
+
+			hsv.Y = Math.Clamp(hsv.Y, 0, 1);
+			hsv.Z = Math.Clamp(hsv.Z, 0, 1);
+
             return hsv.ToRGB((float)color.A / 255f);
         }
 
