@@ -288,7 +288,7 @@ namespace Nucleus.ModelEditor
 			EditorResult scanResult = model.Images.Scan();
 
 			if (scanResult.Succeeded) {
-
+				ModelImagesScanned?.Invoke(this, model);
 			}
 
 			return scanResult;
