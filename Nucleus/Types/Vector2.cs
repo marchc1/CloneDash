@@ -210,7 +210,11 @@ namespace Nucleus.Types
 
             return newR;
         }
-    }
+
+		public bool TestPointInQuad(Vector2F q1, Vector2F q2, Vector2F q3, Vector2F q4) {
+			return InTriangle(new Triangle2D(q1, q2, q3)) || InTriangle(new Triangle2D(q2, q3, q4));
+		}
+	}
     public static class VectorConverters
     {
         public static Vector2F ToNucleus(this Vector2 vector) => new Vector2F(vector.X, vector.Y);
