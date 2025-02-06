@@ -85,7 +85,7 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public bool Hovered { get; set; } = false;
 		[JsonIgnore] public bool Selected { get; set; } = false;
 
-		public bool Visible { get; set; }
+		public bool Hidden { get; set; }
 		public bool CanHide() => true;
 	}
 }

@@ -45,7 +45,7 @@ namespace Nucleus.ModelEditor
 		public string PluralName => "Images";
 		public bool Hovered { get; set; }
 		public bool Selected { get; set; }
-		public bool Visible { get; set; }
+		public bool Hidden { get; set; }
 
 		public EditorModel Model { get; set; }
 		private string? __filepath;

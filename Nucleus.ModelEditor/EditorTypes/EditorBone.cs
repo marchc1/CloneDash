@@ -167,6 +167,6 @@ namespace Nucleus.ModelEditor
 		public void EditShearX(float value) => SetupShearX = value;
 		public void EditShearY(float value) => SetupShearY = value;
 		
-		public bool Visible { get; set; }
+		public bool Hidden { get; set; }
 	}
 }
