@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Engine;
 using Nucleus.Models;
+using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
 using System;
@@ -9,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BlendMode = Nucleus.Models.BlendMode;
 
 namespace Nucleus.ModelEditor
 {
@@ -16,26 +18,20 @@ namespace Nucleus.ModelEditor
 	{
 		[JsonIgnore] public EditorBone Bone { get; set; }
 		public string Name { get; set; }
-		public List<EditorAttachment> Attachments { get; } = [];
 
 		public Color Color { get; set; } = Color.WHITE;
 		public bool TintBlack { get; set; } = false;
 		public Color DarkColor { get; set; } = Color.BLACK;
 		public BlendMode Blending { get; set; } = BlendMode.Normal;
 
-		public EditorAttachment? FindAttachment(string name) {
-			return Attachments.FirstOrDefault(x => x.Name == name);
-		}
-		public bool TryFindAttachment(string name, [NotNullWhen(true)] out EditorAttachment? attachment) {
-			attachment = FindAttachment(name);
-			return attachment != null;
-		}
+		public List<EditorAttachment> AttachmentOrder { get; set; } = [];
+		public string? ActiveAttachment { get; set; } = null;
 
 		public string SingleName => "slot";
 		public string PluralName => "slots";
 		public ViewportSelectMode SelectMode => ViewportSelectMode.NotApplicable;
 		public bool CanDelete() => true;
-		public bool HoverTest() => false;
+		public bool HoverTest(Vector2F gridPos) => false;
 
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
 			PropertiesPanel.DeleteOperator(this, props, determinations);
@@ -71,13 +67,20 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-			throw new NotImplementedException();
+			PropertiesPanel.NewMenu(buttons, []);
+			PropertiesPanel.ButtonIcon(buttons, "Set Parent", "models/setparent.png");
 		}
 
 		public string? GetName() => Name;
 		public bool IsNameTaken(string name) => Bone.Model.FindSlot(name) != null;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameSlot(this, newName);
 		public EditorResult Remove() => ModelEditor.Active.File.RemoveSlot(this);
+
+		[JsonIgnore] public bool Hovered { get; set; } = false;
+		[JsonIgnore] public bool Selected { get; set; } = false;
+
+		public bool Visible { get; set; }
+
 		public bool CanHide() => true;
 	}
 }
