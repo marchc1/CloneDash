@@ -263,7 +263,16 @@ namespace Nucleus.Core
         public static void DrawRectangleRoundedOutline(Vector2F pos, Vector2F size, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), roundness, segments, thickness, __drawColor);
         public static void DrawRectangleRoundedOutline(RectangleF rect, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(rect), roundness, segments, thickness, __drawColor);
 
-        public static void DrawRendertarget(float x, float y, float width, float height, float rotation = 0) => Raylib.DrawTexturePro(__texture,
+		public static void DrawCircle(Vector2F pos, Vector2F size) {
+			var local = AFV2ToSNV2(pos);
+			Raylib.DrawEllipse((int)local.X, (int)local.Y, size.W, size.H, __drawColor);
+		}
+		public static void DrawCircleLines(Vector2F pos, Vector2F size) {
+			var local = AFV2ToSNV2(pos);
+			Raylib.DrawEllipseLines((int)local.X, (int)local.Y, size.W, size.H, __drawColor);
+		}
+
+		public static void DrawRendertarget(float x, float y, float width, float height, float rotation = 0) => Raylib.DrawTexturePro(__texture,
                 new Rectangle(0, 0, __texture.Width, -__texture.Height),
                 new Rectangle(__offset.X + x, __offset.Y + y, width, height),
                 new System.Numerics.Vector2(0, 0),
