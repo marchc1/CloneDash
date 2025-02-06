@@ -27,5 +27,6 @@ namespace Nucleus.ModelEditor
 		void BuildTopOperators(Panel props, PreUIDeterminations determinations);
 		void BuildProperties(Panel props, PreUIDeterminations determinations);
 		void BuildOperators(Panel buttons, PreUIDeterminations determinations);
+		string? DetermineHeaderText(PreUIDeterminations determinations) => null;
 	}
 }

@@ -36,7 +36,9 @@ namespace Nucleus.ModelEditor
 			if (determinations.AllShareAType) {
 				var count = determinations.Count;
 				var last = determinations.Last;
-				text = count > 1 ? $"{count} models selected" : $"{determinations.Last.CapitalizedSingleName} '{determinations.Last.GetName()}'";
+				if (last != null) {
+					text = last.DetermineHeaderText(determinations) ?? (count > 1 ? $"{count} models selected" : $"{last.CapitalizedSingleName} '{last.GetName()}'");
+				}
 			}
 			else
 				text = $"{determinations.Count} items selected";
