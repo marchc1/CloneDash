@@ -69,7 +69,7 @@ namespace Nucleus.Models
 					WorldTransformValid = true;
 				}
 
-				return WorldTransform;
+				return worldTransform;
 			}
 		}
 		[JsonIgnore] public bool WorldTransformValid { get; protected set; }
