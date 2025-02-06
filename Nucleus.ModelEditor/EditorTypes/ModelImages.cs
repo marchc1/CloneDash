@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Core;
 using Nucleus.ModelEditor.UI.Operators;
 using Nucleus.Models;
+using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Raylib_cs;
@@ -35,6 +37,32 @@ namespace Nucleus.ModelEditor
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.OperatorButton<ImageSetParentOperator>(buttons, "Set Parent", "models/setparent.png");
+			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
+				Window imageWindow = EngineCore.Level.UI.Add<Window>();
+				imageWindow.HideNonCloseButtons();
+				imageWindow.Title = $"Image '{Name}'";
+
+				ManagedMemory.Texture tex = new ManagedMemory.Texture(imageWindow.Level.Textures, Raylib.LoadTexture(Filepath), true);
+
+				var imagePanel = imageWindow.Add<Panel>();
+				imagePanel.Image = tex;
+				imagePanel.ImageOrientation = Types.ImageOrientation.Centered;
+				imagePanel.Dock = Dock.Fill;
+
+				imagePanel.PaintOverride += (e, w, h) => {
+					Graphics2D.SetDrawColor(255, 255, 255);
+					e.ImageDrawing(new(0, 0), new(w, h));
+					Graphics2D.SetDrawColor(150, 150, 150);
+					var c = new Vector2F(w / 2, h / 2) - new Vector2F(tex.Width / 2, tex.Height / 2);
+					Graphics2D.DrawRectangleOutline(c - 2, new Vector2F(tex.Width, tex.Height) + 4, 2);
+				};
+
+				imageWindow.Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
+
+				imageWindow.Center();
+
+				imageWindow.Removed += (_) => tex.Dispose();
+			});
 		}
 
 		public bool CanHide() => false;
