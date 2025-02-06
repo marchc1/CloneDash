@@ -269,6 +269,19 @@ namespace Nucleus.ModelEditor
 				}, null
 			);
 		}
+		public static void NewSkinDialog(EditorFile file, EditorModel model) {
+			EditorDialogs.TextInput(
+				"New Slot",
+				"Enter the name for the new slot.",
+				"",
+				true,
+				(name) => {
+					var result = file.AddSkin(model, name);
+					if (result.Failed)
+						EditorDialogs.ConfirmAction("Skin creation error", result.Reason, true, () => NewSkinDialog(file, model));
+				}, null
+			);
+		}
 
 
 
