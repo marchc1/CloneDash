@@ -5,10 +5,10 @@
 		/// <summary>
 		/// (degrees) / DEG2RAD = (radians)
 		/// </summary>
-		public const float DEG2RAD = 180f / 3.141592653589793f;
-		public const float RAD2DEG = 3.141592653589793f / 180f;
+		public const float DEG2RAD = MathF.PI / 180f;
+		public const float RAD2DEG = 180f / MathF.PI;
 
-		public static float ToRadians(float degrees) => degrees * RAD2DEG;
-		public static float ToDegrees(float radians) => radians * DEG2RAD;
+		public static float ToRadians(this float degrees) => degrees * DEG2RAD;
+		public static float ToDegrees(this float radians) => radians * RAD2DEG;
 	}
 }

@@ -192,7 +192,7 @@ namespace Nucleus.Types
 		public float GetRotationFromCenter(Vector2F center) {
 			var normalized = (this - center).Normalize();
 
-			return 360 - (((MathF.Atan2(normalized.X, normalized.Y) * NMath.DEG2RAD) + 180) % 360);
+			return 360 - (((MathF.Atan2(normalized.X, normalized.Y).ToDegrees()) + 180) % 360);
 		}
 
 		public bool InTriangle(Triangle2D triangle) => triangle.IsPointInTriangle(this);

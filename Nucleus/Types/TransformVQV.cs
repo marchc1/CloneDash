@@ -101,7 +101,7 @@ namespace Nucleus.Types
             get {
                 var ret = Raymath.QuaternionToEuler(Rotation);
 
-                ret *= NMath.DEG2RAD;
+                ret *= NMath.RAD2DEG;
                 return ret;
             }
         }
