@@ -48,7 +48,24 @@ namespace Nucleus.UI.Elements
 	{
 		public Color SelectedColor {
 			get => selector.SelectedColor;
-			set => selector.SelectedColor = value;
+			set {
+				selector.SelectedColor = value;
+				UpdateNumsliders();
+			}
+		}
+
+		private void UpdateNumsliders() {
+			var hsv = SelectedColor.ToHSV();
+			HSlider.SetValueNoUpdate(hsv.X);
+			SSlider.SetValueNoUpdate(hsv.Y);
+			VSlider.SetValueNoUpdate(hsv.Z);
+									
+			RSlider.SetValueNoUpdate(SelectedColor.R);
+			GSlider.SetValueNoUpdate(SelectedColor.G);
+			BSlider.SetValueNoUpdate(SelectedColor.B);
+			ASlider.SetValueNoUpdate(SelectedColor.A);
+
+			Hexbox.Text = $"{SelectedColor.ToHex(true)}";
 		}
 
 		Panel ColorWheel;
@@ -72,6 +89,13 @@ namespace Nucleus.UI.Elements
 		}
 
 		public ColorSelectorDragMode DragMode { get; set; } = ColorSelectorDragMode.None;
+
+		private void UpdateHSVValues() {
+			var hsv = SelectedColor.ToHSV();
+			_workingHue = hsv.X;
+			_workingSat = hsv.Y;
+			_workingVal = hsv.Z;
+		}
 
 		public float Hue {
 			get => _workingHue;
@@ -102,7 +126,18 @@ namespace Nucleus.UI.Elements
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
 			_workingVal = hsv.Z;
+			UpdateNumsliders();
 		}
+		NumSlider RSlider;
+		NumSlider GSlider;
+		NumSlider BSlider;
+		NumSlider HSlider;
+		NumSlider SSlider;
+		NumSlider VSlider;
+		NumSlider ASlider;
+		Textbox Hexbox;
+		FlexPanel SepPanel;
+
 		protected override void Initialize() {
 			base.Initialize();
 
@@ -136,6 +171,94 @@ namespace Nucleus.UI.Elements
 			ColorWheel.MouseClickEvent += ColorWheel_MouseClickEvent;
 			ColorWheel.MouseDragEvent += ColorWheel_MouseDragEvent;
 			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
+
+			SepPanel = Add<FlexPanel>();
+			SepPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+			SepPanel.Direction = Directional180.Horizontal;
+
+			var rgbPanel = SepPanel.Add<FlexPanel>();
+			rgbPanel.Direction = Directional180.Vertical;
+			rgbPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+
+			var hsvPanel = SepPanel.Add<FlexPanel>();
+			hsvPanel.Direction = Directional180.Vertical;
+			hsvPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+
+			RSlider = rgbPanel.Add<NumSlider>();
+			GSlider = rgbPanel.Add<NumSlider>();
+			BSlider = rgbPanel.Add<NumSlider>();
+
+			RSlider.MinimumValue = 0; RSlider.MaximumValue = 255; RSlider.Digits = 0;
+			GSlider.MinimumValue = 0; GSlider.MaximumValue = 255; GSlider.Digits = 0;
+			BSlider.MinimumValue = 0; BSlider.MaximumValue = 255; BSlider.Digits = 0;
+			RSlider.Prefix = "R: ";
+			GSlider.Prefix = "G: ";
+			BSlider.Prefix = "B: ";
+			RSlider.Value = 0;
+			GSlider.Value = 0;
+			BSlider.Value = 0;
+
+			HSlider = hsvPanel.Add<NumSlider>();
+			SSlider = hsvPanel.Add<NumSlider>();
+			VSlider = hsvPanel.Add<NumSlider>();
+
+			HSlider.Digits = 3;
+			SSlider.MinimumValue = 0; SSlider.MaximumValue = 1; SSlider.Digits = 3;
+			VSlider.MinimumValue = 0; VSlider.MaximumValue = 1; VSlider.Digits = 3;
+			HSlider.Prefix = "H: ";
+			SSlider.Prefix = "S: ";
+			VSlider.Prefix = "V: ";
+			HSlider.Value = 0;
+			SSlider.Value = 0;
+			VSlider.Value = 0;
+
+			ASlider = Add<NumSlider>();
+			ASlider.MinimumValue = 0;
+			ASlider.MaximumValue = 1;
+			ASlider.Digits = 3;
+			ASlider.Prefix = "Alpha: ";
+			ASlider.Value = 0;
+
+			Hexbox = Add<Textbox>();
+
+			HSlider.OnValueChanged += (_, _, v) => Hue = (float)v;
+			SSlider.OnValueChanged += (_, _, v) => Saturation = (float)Math.Clamp(v, 0, 1);
+			VSlider.OnValueChanged += (_, _, v) => Value = (float)Math.Clamp(v, 0, 1);
+			
+
+			RSlider.OnValueChanged += (_, _, v) => {
+				Color c = SelectedColor;
+				c.R = (byte)(Math.Clamp(v, 0, 255));
+				SelectedColor = c;
+				UpdateHSVValues();
+			};
+
+			GSlider.OnValueChanged += (_, _, v) => {
+				Color c = SelectedColor;
+				c.G = (byte)(Math.Clamp(v, 0, 255));
+				SelectedColor = c;
+				UpdateHSVValues();
+			};
+
+			BSlider.OnValueChanged += (_, _, v) => {
+				Color c = SelectedColor;
+				c.B = (byte)(Math.Clamp(v, 0, 255));
+				SelectedColor = c;
+				UpdateHSVValues();
+			};
+
+			ASlider.OnValueChanged += (_, _, v) => {
+				Color c = SelectedColor;
+				c.A = (byte)(Math.Clamp(v, 0, 1) * 255f);
+				SelectedColor = c;
+			};
+
+			Hexbox.TextChangedEvent += (_, _, txt) => {
+				if (txt.TryParseHexToColor(out Color c))
+					SelectedColor = c;
+			};
+
+			BackgroundColor = new Color(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, (byte)225);
 		}
 
 		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, Types.MouseButton button) {
@@ -293,6 +416,12 @@ namespace Nucleus.UI.Elements
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
 			ColorWheel.Size = new(width, width);
+			SepPanel.Position = new(0, width + 4);
+			SepPanel.Size = new(width, 80);
+			ASlider.Position = new(4, width + 4 + 80);
+			ASlider.Size = new(width - 8, 24);
+			Hexbox.Position = new(4, width + 8 + 104);
+			Hexbox.Size = new(width - 8, 24);
 		}
 	}
 }
