@@ -26,11 +26,14 @@ namespace Nucleus.ModelEditor
 
 			JsonConvert.PopulateObject(data, this);
 
-			foreach(var model in Models) {
+			foreach (var model in Models) {
 				ModelAdded?.Invoke(this, model);
-				foreach(var bone in model.GetAllBones()) {
+				model.Images.Scan();
+				ModelImagesScanned?.Invoke(this, model);
+				foreach (var bone in model.GetAllBones()) {
 					BoneAdded?.Invoke(this, model, bone);
-					foreach(var slot in bone.Slots) {
+					BoneColorChanged?.Invoke(this, bone);
+					foreach (var slot in bone.Slots) {
 						SlotAdded?.Invoke(this, model, bone, slot);
 					}
 				}
@@ -57,8 +60,14 @@ namespace Nucleus.ModelEditor
 		/// Called when a model is renamed.
 		/// </summary>
 		public event ModelRename? ModelRenamed;
+		/// <summary>
+		/// Called when a model's images have completed scanning.
+		/// </summary>
+		public event ModelImagesScannedD? ModelImagesScanned;
 		public delegate void ModelAddRemove(EditorFile file, EditorModel model);
-		public delegate void ModelRename(EditorFile file, EditorModel bone, string oldName, string newName);
+		public delegate void ModelRename(EditorFile file, EditorModel model, string oldName, string newName);
+
+		public delegate void ModelImagesScannedD(EditorFile file, EditorModel model);
 
 		/// <summary>
 		/// Called when a bone has been added to a model.
@@ -276,7 +285,49 @@ namespace Nucleus.ModelEditor
 
 		public EditorResult SetModelImages(EditorModel model, string filepath) {
 			model.Images.Filepath = filepath;
-			return model.Images.Scan();
+			EditorResult scanResult = model.Images.Scan();
+
+			if (scanResult.Succeeded) {
+
+			}
+
+			return scanResult;
+		}
+
+		public EditorResult RotateSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanRotate()) obj.EditRotation(value);
+			return EditorResult.OK;
+		}
+		public EditorResult TranslateXSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanTranslate()) obj.EditTranslationX(value);
+			return EditorResult.OK;
+		}
+		public EditorResult TranslateYSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanTranslate()) obj.EditTranslationY(value);
+			return EditorResult.OK;
+		}
+		public EditorResult ScaleXSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanScale()) obj.EditScaleX(value);
+			return EditorResult.OK;
+		}
+		public EditorResult ScaleYSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanScale()) obj.EditScaleY(value);
+			return EditorResult.OK;
+		}
+		public EditorResult ShearXSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanShear()) obj.EditShearX(value);
+			return EditorResult.OK;
+		}
+		public EditorResult ShearYSelected(float value) {
+			var selected = ModelEditor.Active.SelectedObjects;
+			foreach (IEditorType obj in selected) if (obj.CanShear()) obj.EditShearY(value);
+			return EditorResult.OK;
 		}
 
 		// Clearing file
