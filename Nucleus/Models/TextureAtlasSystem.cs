@@ -38,6 +38,7 @@ namespace Nucleus.Models
 	public class TextureAtlasSystem
 	{
 		public const string VERSION = "TextureAtlasVersion1";
+
 		public static string SerializeAtlas(Dictionary<string, AtlasRegion> regions) {
 			List<string> lines = [];
 
@@ -52,6 +53,7 @@ namespace Nucleus.Models
 
 			return string.Join("\n", lines);
 		}
+
 		public static void PopulateAtlas(string data, Dictionary<string, AtlasRegion> regions) {
 			data = data.ReplaceLineEndings();
 			string[] lines = data.Split(Environment.NewLine);
@@ -93,6 +95,7 @@ namespace Nucleus.Models
 					break;
 			}
 		}
+
 		public static Dictionary<string, AtlasRegion> DeserializeAtlas(string data) {
 			Dictionary<string, AtlasRegion> regions = new();
 			PopulateAtlas(data, regions);
