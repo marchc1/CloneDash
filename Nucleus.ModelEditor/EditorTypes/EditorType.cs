@@ -39,6 +39,8 @@ namespace Nucleus.ModelEditor
 		public bool CanShear() => false;
 		public bool CanHide() => false;
 
+		public bool GetVisible() => !Hidden;
+
 		float GetTranslationX() => 0f;
 		float GetTranslationY() => 0f;
 		float GetRotation() => 0f;
@@ -57,7 +59,7 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public bool Hovered { get; set; }
 		[JsonIgnore] public bool Selected { get; set; }
-		public bool Visible { get; set; }
+		public bool Hidden { get; set; }
 
 		void OnMouseEntered() { }
 		void OnMouseLeft() { }
