@@ -37,6 +37,8 @@ namespace Nucleus.ModelEditor.UI
 			l.Text = label;
 			l.Dock = Dock.Left;
 
+			l.PassHoverTo(c);
+
 			return (p, c);
 		}
 

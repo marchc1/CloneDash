@@ -198,6 +198,11 @@ namespace Nucleus.UI
 				__renderbounds = value;
 			}
 		}
+		public RectangleF ScreenspaceRenderBounds {
+			get {
+				return RectangleF.FromPosAndSize(GetGlobalPosition(), __renderbounds.Size);
+			}
+		}
 
 		/// <summary>
 		/// Not recommended unless your use case involves a post-layout hook such as <see cref="PostLayoutChildren"/>
@@ -1193,6 +1198,14 @@ namespace Nucleus.UI
 		/// <param name="mousePos"></param>
 		/// <returns></returns>
 		public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
+
+		public void PassHoverTo(Element other) {
+			// mark ourselves as passthru
+			OnHoverTest += Passthru;
+			other.OnHoverTest += (self, bounds, mousePos) => {
+				return bounds.ContainsPoint(mousePos) || other.ScreenspaceRenderBounds.ContainsPoint(mousePos);
+			};
+		}
 	}
 
 	[Nucleus.MarkForStaticConstruction]
