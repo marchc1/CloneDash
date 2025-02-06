@@ -130,6 +130,31 @@ namespace Nucleus.ModelEditor
 
 			return checkbox;
 		}
+		public static Textbox AddFilepath(Panel prop, string? currentPath, Action<Textbox, string> chosenPath) {
+			var panel = AddInternalPropPanel(prop);
+
+			var searchBtn = panel.Add<Button>();
+			searchBtn.BorderSize = 0;
+			searchBtn.Dock = Dock.Right;
+			searchBtn.Size = new(24);
+			searchBtn.Text = "";
+			searchBtn.Image = prop.Level.Textures.LoadTextureFromFile("models/search.png");
+
+			var path = panel.Add<Textbox>();
+			path.Dock = Dock.Fill;
+			path.Text = currentPath ?? "<null>";
+			path.TextAlignment = Anchor.Center;
+			path.BorderSize = 0;
+
+			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
+			searchBtn.MouseReleaseEvent += (_, _, _) => {
+				var result = TinyFileDialogs.SelectFolderDialog("Select Images Folder", Filesystem.Path["game"][0]);
+				if (!result.Cancelled) 
+					chosenPath(path, result.Result);
+			};
+
+			return path;
+		}
 		public static NumSlider AddNumSlider(Panel prop, float currentValue = 0) {
 			var panel = AddInternalPropPanel(prop);
 
@@ -207,6 +232,8 @@ namespace Nucleus.ModelEditor
 				}, null
 			);
 		}
+
+
 
 		public static Button NewTopOperatorButton(Panel props, string icon) {
 			var btn = props.Add<Button>();
