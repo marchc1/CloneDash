@@ -206,6 +206,17 @@ namespace Nucleus.ModelEditor
 			});
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());
+
+			File.OperatorActivated += File_OperatorActivated;
+			File.OperatorDeactivated += File_OperatorDeactivated;
+		}
+
+		private void File_OperatorActivated(EditorFile self, Operator op) {
+			op.ModifyEditor(this);
+		}
+
+		private void File_OperatorDeactivated(EditorFile self, Operator op) {
+			op.RestoreEditor(this);
 		}
 
 		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);
