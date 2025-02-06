@@ -36,6 +36,8 @@ namespace Nucleus.ModelEditor
 			AddParent = Right.AddParent;
 			Right.DockPadding = RectangleF.TLRB(0);
 			Right.AddParent.DockPadding = RectangleF.TLRB(0);
+			Right.DockMargin = RectangleF.TLRB(1);
+			Right.AddParent.Clipping = true;
 
 			ModelEditor.Active.File.ModelAdded += File_ModelAdded;
 			ModelEditor.Active.File.Cleared += File_Cleared;
