@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
 using System;
@@ -55,15 +56,21 @@ namespace Nucleus.UI
 		public double Value {
 			get => _value;
 			set {
-				var oldV = _value;
-				_value = Math.Round(value, Digits);
-				if (MinimumValue.HasValue) _value = Math.Max(MinimumValue.Value, _value);
-				if (MaximumValue.HasValue) _value = Math.Min(MaximumValue.Value, _value);
+				if (_value == value)
+					return;
 
+				var oldV = _value;
+				SetValueNoUpdate(value);
 				OnValueChanged?.Invoke(this, oldV, _value);
-				Text = GetTextVariant();
 			}
 		}
+		public void SetValueNoUpdate(double value) {
+			_value = Math.Round(value, Digits);
+			if (MinimumValue.HasValue) _value = Math.Max(MinimumValue.Value, _value);
+			if (MaximumValue.HasValue) _value = Math.Min(MaximumValue.Value, _value);
+			Text = GetTextVariant();
+		}
+
 		public delegate void OnValueChangedDelegate(NumSlider self, double oldValue, double newValue);
 		public event OnValueChangedDelegate? OnValueChanged;
 		public double? MinimumValue { get; set; } = null;
@@ -81,6 +88,7 @@ namespace Nucleus.UI
 
 		protected override void Initialize() {
 			base.Initialize();
+			SetValueNoUpdate(Value);
 		}
 		protected override void OnThink(FrameState frameState) {
 			if (Hovered)
