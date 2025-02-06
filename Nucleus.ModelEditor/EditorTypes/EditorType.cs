@@ -37,6 +37,7 @@ namespace Nucleus.ModelEditor
 		public bool CanRotate() => false;
 		public bool CanScale() => false;
 		public bool CanShear() => false;
+		public bool CanHide() => false;
 
 		float GetTranslationX() => 0f;
 		float GetTranslationY() => 0f;
@@ -62,5 +63,7 @@ namespace Nucleus.ModelEditor
 		void OnMouseLeft() { }
 		void OnSelected() { }
 		void OnUnselected() { }
+		void OnHidden() { }
+		void OnShown() { }
 	}
 }

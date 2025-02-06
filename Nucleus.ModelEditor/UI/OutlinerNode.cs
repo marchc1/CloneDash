@@ -15,7 +15,10 @@ namespace Nucleus.ModelEditor
 
 		public IEditorType? GetRepresentingObject() => (IEditorType?)(__represents == null ? null : __represents.Target == null ? null : __represents.Target);
 		public T? GetRepresentingObject<T>() where T : class => __represents == null ? null : __represents.Target == null ? null : (T)__represents.Target;
-		public void SetRepresentingObject(IEditorType obj) => __represents = new(obj);
+		public void SetRepresentingObject(IEditorType obj) {
+			__represents = new(obj);
+			Visibility.Enabled = obj.CanHide();
+		}
 
 		public int Layer = 0;
 		public List<OutlinerNode> Children = [];
