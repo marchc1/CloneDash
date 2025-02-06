@@ -14,6 +14,9 @@
 	/// ex. Image (the type), Set Parent (the operation) == ImageSetParentOperator
 	/// </summary>
 	public abstract class Operator {
+		public event EditorFile.OnOperatorActivated? OnActivated;
+		public event EditorFile.OnOperatorDeactivated? OnDeactivated;
+		public virtual string Name => "Unknown Operator Name";
 		/// <summary>
 		/// During the lifetime of the operator, the UI determinations (what's selected) shouldn't change.
 		/// <br></br>
@@ -23,7 +26,7 @@
 		/// <summary>
 		/// Called after UI determinations are set.
 		/// </summary>
-		public virtual void Activate() { }
+		protected virtual void Activated() { }
 		/// <summary>
 		/// Called in a few ways:
 		/// <br></br>
@@ -31,8 +34,32 @@
 		/// <br></br>
 		/// - The operation was cancelled due to a UI determinations change
 		/// </summary>
-		public virtual void Deactivate() { }
+		protected virtual void Deactivated() { }
 
-		public virtual void ChangeEditorProperties() { }
+		public virtual void ModifyEditor(ModelEditor editor) { }
+		public virtual void RestoreEditor(ModelEditor editor) { }
+
+		public virtual bool OverrideSelection => false;
+		/// <summary>
+		/// If null; all types are selectable. If empty, no types are selectable.
+		/// </summary>
+		public virtual Type[]? SelectableTypes => null;
+		public virtual void Selected(ModelEditor editor, IEditorType type) { }
+
+		public virtual void ChangeEditorProperties(CenteredObjectsPanel panel) { }
+
+		public void CallActivateSubscriptions(EditorFile file) {
+			Activated();
+			OnActivated?.Invoke(file, this);
+		}
+		public void CallDeactivateSubscriptions(EditorFile file) {
+			Deactivated();
+			OnDeactivated?.Invoke(file, this);
+		}
+
+		/// <summary>
+		/// Deactivate the operator. Should only be called internally; its just a macro.
+		/// </summary>
+		protected void Deactivate() => ModelEditor.Active.File.DeactivateOperator();
 	}
 }
