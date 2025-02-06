@@ -31,28 +31,36 @@ namespace Nucleus.ModelEditor
 
 		private Operator? ActiveOperator => File.ActiveOperator;
 
-		private void SELECTIONCHANGE() {
+		private bool OperatorSelectionBlocks(IEditorType? item) {
 			if (ActiveOperator != null) {
 				// it depends...
 				if (ActiveOperator.OverrideSelection) {
 					if (!ActiveOperator.SelectMultiple) {
-						if (LastSelectedObject == null)
+						if (item == null)
 							File.DeactivateOperator(true);
 						else {
-							ActiveOperator.Selected(this, LastSelectedObject);
+							ActiveOperator.Selected(this, item);
 							File.DeactivateOperator(false);
 						}
 					}
+					return true;
 				}
 				else {
 					File.DeactivateOperator(true);
+					return false;
 				}
 			}
 
+			return false;
+		}
+
+		private void SELECTIONCHANGE() {
 			SelectedChanged?.Invoke();
 		}
 
 		public void SelectObject(IEditorType o, bool additive = false) {
+			if (OperatorSelectionBlocks(o)) return;
+
 			if (!additive) {
 				foreach (var obj in __selectedObjects.ToArray()) {
 					__selectedObjects.Remove(obj);
@@ -84,7 +92,12 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void SelectObjects(params IEditorType[] os) {
+			bool haltActualLogic = false;
 			foreach (var obj in os) {
+				if (OperatorSelectionBlocks(obj))
+					haltActualLogic = true; // Selection is overriden; so don't actually process this stuff
+
+				if (haltActualLogic) continue;
 				__selectedObjects.Add(obj);
 				__selectedObjectsL.Add(obj);
 				ObjectSelected?.Invoke(obj);
@@ -92,7 +105,7 @@ namespace Nucleus.ModelEditor
 				obj.Selected = true;
 				obj.OnSelected();
 			}
-
+			if (haltActualLogic) return;
 			SELECTIONCHANGE();
 		}
 
