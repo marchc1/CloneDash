@@ -69,7 +69,7 @@ namespace Nucleus.ModelEditor
 						case ".jpeg":
 						case ".png":
 							images.Add(new() {
-								Name = nameExt,
+								Name = name,
 								Filepath = file
 							});
 							imageNames.Add(name);
