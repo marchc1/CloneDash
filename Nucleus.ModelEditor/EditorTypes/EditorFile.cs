@@ -357,13 +357,13 @@ namespace Nucleus.ModelEditor
 		public event OnOperatorActivated? OperatorActivated;
 		public event OnOperatorDeactivated? OperatorDeactivating;
 		public event OnOperatorDeactivated? OperatorDeactivated;
-		public Operator? ActiveOperator { get; set; }
+		public Operator? ActiveOperator { get; private set; }
 		public void ActivateOperator(Operator op) {
 			if (ActiveOperator != null) DeactivateOperator();
 
 			ActiveOperator = op;
 			op.UIDeterminations = ModelEditor.Active.GetDeterminations();
-			op.Activate();
+			op.CallActivateSubscriptions(this);
 			OperatorActivated?.Invoke(this, op);
 		}
 		public void DeactivateOperator() {
@@ -371,7 +371,7 @@ namespace Nucleus.ModelEditor
 
 			Operator op = ActiveOperator;
 			OperatorDeactivating?.Invoke(this, op);
-			ActiveOperator.Deactivate();
+			ActiveOperator.CallDeactivateSubscriptions(this);
 			ActiveOperator = null;
 			OperatorDeactivated?.Invoke(this, op);
 		}
