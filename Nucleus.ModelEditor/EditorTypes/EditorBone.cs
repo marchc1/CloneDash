@@ -7,23 +7,22 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
-	public enum BlendMode {
-		Normal,
-		Additive,
-		Multiply,
-		Screen
-	}
-
 	public class EditorBone : IEditorType
 	{
+		[JsonIgnore] public bool Hovered { get; set; } = false;
+		[JsonIgnore] public bool Selected { get; set; } = false;
+
+
 		[JsonIgnore] private float __length = 0;
-		public float Length{
+		public float Length {
 			get => __length;
 			set => __length = Math.Max(value, 0);
 		}
@@ -36,6 +35,30 @@ namespace Nucleus.ModelEditor
 				model = value;
 				model.InvalidateBonesList();
 			}
+		}
+
+		[JsonIgnore] private Vector2F q1, q2, q3, q4;
+
+		public void GetTexCoords(float byHowMuch, out Vector2F baseBottom, out Vector2F baseTop, out Vector2F tipBottom, out Vector2F tipTop, out float lengthLimit) {
+			var length = Length;
+			lengthLimit = Math.Clamp(length, 0f, 230f) / 2f;
+
+			var wt = WorldTransform;
+
+			var xMi = 0f;
+			var xMa = length;
+
+			baseBottom = wt.LocalToWorld(new Vector2F(xMi, lengthLimit * byHowMuch));
+			baseTop = wt.LocalToWorld(new Vector2F(xMi, -lengthLimit * byHowMuch));
+			tipBottom = wt.LocalToWorld(new Vector2F(xMa, lengthLimit * byHowMuch));
+			tipTop = wt.LocalToWorld(new Vector2F(xMa, -lengthLimit * byHowMuch));
+
+			byHowMuch /= 5;
+
+			q1 = wt.LocalToWorld(new Vector2F(xMi, lengthLimit * byHowMuch));
+			q2 = wt.LocalToWorld(new Vector2F(xMi, -lengthLimit * byHowMuch));
+			q3 = wt.LocalToWorld(new Vector2F(xMa, lengthLimit * byHowMuch));
+			q4 = wt.LocalToWorld(new Vector2F(xMa, -lengthLimit * byHowMuch));
 		}
 
 		private EditorBone? parent;
@@ -63,21 +86,59 @@ namespace Nucleus.ModelEditor
 		/// <summary>
 		/// The color of the bone in the viewport and outliner
 		/// </summary>
-		public Color Color { get; set; } = Color.WHITE;
+		public Color Color { get; set; } = new Color(170, 255);
 
 		public List<EditorBone> Children { get; set; } = [];
 		public List<EditorSlot> Slots { get; set; } = [];
 
-		public float Rotation { get; set; } = 0;
-		public Vector2F Translation { get; set; } = Vector2F.Zero;
-		public Vector2F Scale { get; set; } = Vector2F.One;
-		public Vector2F Shear { get; set; } = Vector2F.Zero;
+		private Vector2F pos = Vector2F.Zero, scale = Vector2F.One, shear = Vector2F.Zero;
+		private float rot = 0.0f;
 
-		public TransformMode TransformMode { get; set; } = TransformMode.Normal;
+		public Vector2F Position { get => pos; set { pos = value; InvalidateTransform(); } }
+		[JsonIgnore] public float PositionX { get => pos.X; set { pos.X = value; InvalidateTransform(); } }
+		[JsonIgnore] public float PositionY { get => pos.Y; set { pos.Y = value; InvalidateTransform(); } }
 
-		public bool InheritRotation { get; set; } = true;
-		public bool InheritScale { get; set; } = true;
-		public bool InheritReflection { get; set; } = true;
+		public float Rotation { get => rot; set { rot = value; InvalidateTransform(); } }
+
+		public Vector2F Scale { get => scale; set { scale = value; InvalidateTransform(); } }
+		[JsonIgnore] public float ScaleX { get => scale.X; set { scale.X = value; InvalidateTransform(); } }
+		[JsonIgnore] public float ScaleY { get => scale.Y; set { scale.Y = value; InvalidateTransform(); } }
+
+		public Vector2F Shear { get => shear; set { shear = value; InvalidateTransform(); } }
+		[JsonIgnore] public float ShearX { get => shear.X; set { shear.X = value; InvalidateTransform(); } }
+		[JsonIgnore] public float ShearY { get => shear.Y; set { shear.Y = value; InvalidateTransform(); } }
+
+		private Transformation __worldTransform;
+		private bool __worldTransformInvalid = true;
+
+		public void InvalidateTransform() {
+			__worldTransformInvalid = true;
+			foreach (var child in Children)
+				child.InvalidateTransform();
+		}
+
+		[JsonIgnore]
+		public Transformation WorldTransform {
+			get {
+				if (__worldTransformInvalid) {
+					__worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Shear, TransformMode, Parent == null ? null : Parent.WorldTransform);
+					__worldTransformInvalid = false;
+				}
+
+				return __worldTransform;
+			}
+		}
+
+		private TransformMode __transformMode = TransformMode.Normal;
+		public TransformMode TransformMode {
+			get => __transformMode;
+			set {
+				__transformMode = value;
+				InvalidateTransform();
+			}
+		}
+
+		// Editor support
 
 		public string SingleName => "bone";
 		public string PluralName => "bones";
@@ -87,8 +148,11 @@ namespace Nucleus.ModelEditor
 				return false;
 			return true;
 		}
-		public bool HoverTest() {
-			return false;
+		public bool HoverTest(Vector2F gridPos) {
+			if (Length <= 0)
+				return gridPos.Distance(WorldTransform.Translation) < 16;
+			else
+				return gridPos.TestPointInQuad(q1, q2, q3, q4);
 		}
 
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
@@ -119,6 +183,9 @@ namespace Nucleus.ModelEditor
 
 			var boneColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 			var boneColor = PropertiesPanel.AddColorSelector(boneColorRow, Color);
+			boneColor.ColorChanged += (_, c) => {
+				ModelEditor.Active.File.SetBoneColor(this, c);
+			};
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
@@ -132,5 +199,28 @@ namespace Nucleus.ModelEditor
 		public bool IsNameTaken(string name) => Model.GetAllBones().FirstOrDefault(x => x.Name == name) != null;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameBone(this, newName);
 		public EditorResult Remove() => ModelEditor.Active.File.RemoveBone(this);
+
+		public bool CanTranslate() => true;
+		public bool CanRotate() => true;
+		public bool CanScale() => true;
+		public bool CanShear() => true;
+
+		public float GetTranslationX() => PositionX;
+		public float GetTranslationY() => PositionY;
+		public float GetRotation() => Rotation;
+		public float GetScaleX() => ScaleX;
+		public float GetScaleY() => ScaleY;
+		public float GetShearX() => ShearX;
+		public float GetShearY() => ShearY;
+
+		public void EditTranslationX(float value) => PositionX = value;
+		public void EditTranslationY(float value) => PositionY = value;
+		public void EditRotation(float value) => Rotation = value;
+		public void EditScaleX(float value) => ScaleX = value;
+		public void EditScaleY(float value) => ScaleY = value;
+		public void EditShearX(float value) => ShearX = value;
+		public void EditShearY(float value) => ShearY = value;
+
+		public bool Visible { get; set; }
 	}
 }
