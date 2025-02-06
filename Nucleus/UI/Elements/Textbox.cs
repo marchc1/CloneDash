@@ -191,6 +191,8 @@ namespace Nucleus.UI
 			}
 		}
 
+		public event TextChangedDelegate? OnUserPressedEnter;
+
 		public override void KeyboardFocusLost(Element self, bool demanded) {
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
@@ -264,6 +266,7 @@ namespace Nucleus.UI
 						break;
 					case CharacterType.Enter:
 						KeyboardUnfocus();
+						OnUserPressedEnter?.Invoke(this, "", Text);
 						break;
 				}
 			}
