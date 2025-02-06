@@ -356,7 +356,7 @@ namespace Nucleus.ModelEditor
 			EngineCore.GameInfo = new() {
 				GameName = "Model v4 Editor"
 			};
-			EngineCore.LimitFramerate(60);
+			EngineCore.LimitFramerate(240);
 
 			EngineCore.LoadLevel(new ModelEditor());
 			EngineCore.Start();
