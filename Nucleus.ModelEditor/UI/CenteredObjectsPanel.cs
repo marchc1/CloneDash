@@ -21,8 +21,8 @@ namespace Nucleus.ModelEditor
 			foreach (var child in this.GetChildren()) {
 				var h = MathF.Min(child.Size.Y, this.RenderBounds.H - YSeparation);
 				child.Position = new(center, ForceHeight ? (YSeparation / 2f) : (this.RenderBounds.H - h));
-				child.Size = new(child.Size.X, ForceHeight ? this.RenderBounds.H - YSeparation : h);
-				center += child.Size.X + XSeparation;
+				child.Size = new(child.RenderBounds.W, ForceHeight ? this.RenderBounds.H - YSeparation : h);
+				center += child.RenderBounds.W + XSeparation;
 			}
 		}
 		public override bool HoverTest(RectangleF bounds, Vector2F mousePos) {
