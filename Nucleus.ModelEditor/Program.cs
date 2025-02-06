@@ -29,9 +29,26 @@ namespace Nucleus.ModelEditor
 		public event OnObjectSelected? ObjectUnselected;
 		public event OnSelectedChanged? SelectedChanged;
 
+		private Operator? ActiveOperator => File.ActiveOperator;
+
 		private void SELECTIONCHANGE() {
-			if (File.ActiveOperator != null)
-				File.DeactivateOperator();
+			if (ActiveOperator != null) {
+				// it depends...
+				if (ActiveOperator.OverrideSelection) {
+					if (!ActiveOperator.SelectMultiple) {
+						if (LastSelectedObject == null)
+							File.DeactivateOperator(true);
+						else {
+							ActiveOperator.Selected(this, LastSelectedObject);
+							File.DeactivateOperator(false);
+						}
+					}
+				}
+				else {
+					File.DeactivateOperator(true);
+				}
+			}
+
 			SelectedChanged?.Invoke();
 		}
 
@@ -200,7 +217,7 @@ namespace Nucleus.ModelEditor
 			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
 			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => {
 				if (File.ActiveOperator != null)
-					File.DeactivateOperator();
+					File.DeactivateOperator(true);
 				else
 					UnselectAllObjects();
 			});
@@ -215,7 +232,7 @@ namespace Nucleus.ModelEditor
 			op.ModifyEditor(this);
 		}
 
-		private void File_OperatorDeactivated(EditorFile self, Operator op) {
+		private void File_OperatorDeactivated(EditorFile self, Operator op, bool canceled) {
 			op.RestoreEditor(this);
 		}
 
@@ -258,14 +275,14 @@ namespace Nucleus.ModelEditor
 					if (text == currentName)
 						return;
 
-					if(!foundItem.IsNameTaken(text)) {
+					if (!foundItem.IsNameTaken(text)) {
 						foundItem.Rename(text);
 					}
 					else {
 						EditorDialogs.ConfirmAction(
-							"Bad name", 
-							$"A {typeName} named '{text}' already exists. Choose a different name.", 
-							true, 
+							"Bad name",
+							$"A {typeName} named '{text}' already exists. Choose a different name.",
+							true,
 							() => AttemptRename(item ?? determinations.Last)
 						);
 					}
@@ -283,7 +300,7 @@ namespace Nucleus.ModelEditor
 		private void AttemptDelete() {
 			var determinations = GetDeterminations();
 
-			if (determinations.Count == 0) 
+			if (determinations.Count == 0)
 				return;
 
 			var plural = determinations.Count > 1;
@@ -292,11 +309,11 @@ namespace Nucleus.ModelEditor
 
 			var text = "";
 
-			if (determinations.AllShareAType) 
-				text = plural ? determinations.Last?.PluralName : $"{determinations.Last?.SingleName} '{determinations.Last?.GetName() ?? "<NULL NAME>"}'"; 
-			else 
+			if (determinations.AllShareAType)
+				text = plural ? determinations.Last?.PluralName : $"{determinations.Last?.SingleName} '{determinations.Last?.GetName() ?? "<NULL NAME>"}'";
+			else
 				text = "items";
-			
+
 
 			if (!string.IsNullOrWhiteSpace(text)) {
 				EditorDialogs.ConfirmAction(
@@ -304,7 +321,7 @@ namespace Nucleus.ModelEditor
 					$"Are you sure you want to remove {(plural ? $"these {text}" : $"the {text}")}?",
 					true,
 					() => {
-						foreach(var item in determinations.Selected) {
+						foreach (var item in determinations.Selected) {
 							item.Remove();
 						}
 					}

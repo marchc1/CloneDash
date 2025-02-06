@@ -10,11 +10,12 @@ namespace Nucleus.ModelEditor.UI.Operators
 		protected override void Activated() {
 
 		}
-		protected override void Deactivated() {
+		protected override void Deactivated(bool canceled) {
 
 		}
-		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
 
+		public override void Selected(ModelEditor editor, IEditorType type) {
+			base.Selected(editor, type);
 		}
 	}
 }

@@ -328,7 +328,7 @@ namespace Nucleus.ModelEditor
 		// Clearing file
 
 		public void Clear() {
-			DeactivateOperator();
+			DeactivateOperator(true);
 			Models.Clear();
 			Cleared?.Invoke(this);
 		}
@@ -352,32 +352,32 @@ namespace Nucleus.ModelEditor
 
 		// Operator support
 		public delegate void OnOperatorActivated(EditorFile self, Operator op);
-		public delegate void OnOperatorDeactivated(EditorFile self, Operator op);
+		public delegate void OnOperatorDeactivated(EditorFile self, Operator op, bool canceled);
 
 		public event OnOperatorActivated? OperatorActivated;
 		public event OnOperatorDeactivated? OperatorDeactivating;
 		public event OnOperatorDeactivated? OperatorDeactivated;
 		public Operator? ActiveOperator { get; private set; }
 		public void ActivateOperator(Operator op) {
-			if (ActiveOperator != null) DeactivateOperator();
+			if (ActiveOperator != null) DeactivateOperator(true);
 
 			ActiveOperator = op;
 			op.UIDeterminations = ModelEditor.Active.GetDeterminations();
 			op.CallActivateSubscriptions(this);
 			OperatorActivated?.Invoke(this, op);
 		}
-		public void DeactivateOperator() {
+		public void DeactivateOperator(bool canceled) {
 			if (ActiveOperator == null) return;
 
 			Operator op = ActiveOperator;
-			OperatorDeactivating?.Invoke(this, op);
-			ActiveOperator.CallDeactivateSubscriptions(this);
+			OperatorDeactivating?.Invoke(this, op, canceled);
+			ActiveOperator.CallDeactivateSubscriptions(this, canceled);
 			ActiveOperator = null;
-			OperatorDeactivated?.Invoke(this, op);
+			OperatorDeactivated?.Invoke(this, op, canceled);
 		}
 
 		public T InstantiateOperator<T>() where T : Operator, new() {
-			DeactivateOperator();
+			DeactivateOperator(true);
 
 			T op = new();
 			ActivateOperator(op);

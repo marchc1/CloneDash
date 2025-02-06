@@ -62,7 +62,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		private void File_OperatorDeactivated(EditorFile self, UI.Operator op) {
+		private void File_OperatorDeactivated(EditorFile self, UI.Operator op, bool canceled) {
 			foreach(var node in Right.AddParent.GetChildren()) {
 				if(node is OutlinerNode outlinerNode) {
 					outlinerNode.SelectableOverride = null;

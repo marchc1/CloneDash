@@ -232,14 +232,14 @@ namespace Nucleus.ModelEditor
 				var btn = ((el as Button) ?? throw new Exception("never should happen im lazy"));
 				Operator? ourOperator = el.GetTagSafely<Operator>("op");
 				if (ourOperator != null && ourOperator == ModelEditor.Active.File.ActiveOperator) {
-					ModelEditor.Active.File.DeactivateOperator();
+					ModelEditor.Active.File.DeactivateOperator(true);
 					btn.Pulsing = false;
 				}
 				else {
 					T op = ModelEditor.Active.File.InstantiateOperator<T>();
 					el.SetTag("op", op);
 					btn.Pulsing = true;
-					op.OnDeactivated += (_, _) => btn.Pulsing = false;
+					op.OnDeactivated += (_, _, _) => btn.Pulsing = false;
 				}
 			});
 		}

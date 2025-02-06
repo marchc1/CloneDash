@@ -213,7 +213,7 @@ namespace Nucleus.ModelEditor
 			op.ChangeEditorProperties(OperatorPanel);
 		}
 
-		private void File_OperatorDeactivated(EditorFile self, Operator op) {
+		private void File_OperatorDeactivated(EditorFile self, Operator op, bool canceled) {
 			MainTransformsPanel.Visible = true;
 			OperatorPanel.ClearChildren();
 			OperatorPanel.Visible = false;

@@ -34,16 +34,22 @@
 		/// <br></br>
 		/// - The operation was cancelled due to a UI determinations change
 		/// </summary>
-		protected virtual void Deactivated() { }
+		protected virtual void Deactivated(bool canceled) { }
 
 		public virtual void ModifyEditor(ModelEditor editor) { }
 		public virtual void RestoreEditor(ModelEditor editor) { }
 
 		public virtual bool OverrideSelection => false;
+		public virtual bool SelectMultiple => false;
 		/// <summary>
 		/// If null; all types are selectable. If empty, no types are selectable.
 		/// </summary>
 		public virtual Type[]? SelectableTypes => null;
+		/// <summary>
+		/// Only called if <see cref="OverrideSelection"/> is true (called by <see cref="ModelEditor"/> when selection changes)
+		/// </summary>
+		/// <param name="editor"></param>
+		/// <param name="type"></param>
 		public virtual void Selected(ModelEditor editor, IEditorType type) { }
 
 		public virtual void ChangeEditorProperties(CenteredObjectsPanel panel) { }
@@ -52,14 +58,14 @@
 			Activated();
 			OnActivated?.Invoke(file, this);
 		}
-		public void CallDeactivateSubscriptions(EditorFile file) {
-			Deactivated();
-			OnDeactivated?.Invoke(file, this);
+		public void CallDeactivateSubscriptions(EditorFile file, bool canceled) {
+			Deactivated(canceled);
+			OnDeactivated?.Invoke(file, this, canceled);
 		}
 
 		/// <summary>
 		/// Deactivate the operator. Should only be called internally; its just a macro.
 		/// </summary>
-		protected void Deactivate() => ModelEditor.Active.File.DeactivateOperator();
+		protected void Deactivate(bool cancel = false) => ModelEditor.Active.File.DeactivateOperator(cancel);
 	}
 }
