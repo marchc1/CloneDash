@@ -10,7 +10,7 @@ namespace Nucleus.ModelEditor
 	{
 		[JsonIgnore] public bool Hovered { get; set; } = false;
 		[JsonIgnore] public bool Selected { get; set; } = false;
-
+		public bool CanHide() => true;
 
 		[JsonIgnore] private float __length = 0;
 		public float Length {

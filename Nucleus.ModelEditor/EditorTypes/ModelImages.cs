@@ -106,5 +106,6 @@ namespace Nucleus.ModelEditor
 		}
 
 		public string DetermineHeaderText(PreUIDeterminations determinations) => "Image files";
+		public bool CanHide() => false;
 	}
 }

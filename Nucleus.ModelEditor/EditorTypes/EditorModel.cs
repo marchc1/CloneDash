@@ -86,5 +86,6 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public bool Selected { get; set; } = false;
 
 		public bool Visible { get; set; }
+		public bool CanHide() => true;
 	}
 }

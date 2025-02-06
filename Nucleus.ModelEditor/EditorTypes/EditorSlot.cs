@@ -78,5 +78,6 @@ namespace Nucleus.ModelEditor
 		public bool IsNameTaken(string name) => Bone.Model.FindSlot(name) != null;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameSlot(this, newName);
 		public EditorResult Remove() => ModelEditor.Active.File.RemoveSlot(this);
+		public bool CanHide() => true;
 	}
 }
