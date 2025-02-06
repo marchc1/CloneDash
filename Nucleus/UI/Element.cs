@@ -1045,6 +1045,7 @@ namespace Nucleus.UI
 			return ret;
 		}
 
+		public Color? ImageColor { get; set; } = null;
 		public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
 			if (Image == null)
 				return;
@@ -1110,7 +1111,7 @@ namespace Nucleus.UI
 					break;
 			}
 
-			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, TextColor);
+			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, ImageColor ?? TextColor);
 		}
 
 		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");
