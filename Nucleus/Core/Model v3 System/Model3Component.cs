@@ -9,7 +9,7 @@ namespace Nucleus.Core
         /// <summary>
         /// A static Matrix4x4 used to transform into the engines coordinate system.
         /// </summary>
-        public static Matrix4x4 WorldTransform { get; } = new TransformVQV(new(0, 0, 0), Quaternion.CreateFromYawPitchRoll(0, -90 / NMath.DEG2RAD, 0), new(1, 1, 1), TransformOrder.RotScalePos).Matrix;
+        public static Matrix4x4 WorldTransform { get; } = new TransformVQV(new(0, 0, 0), Quaternion.CreateFromYawPitchRoll(0, (-90f).ToRadians(), 0), new(1, 1, 1), TransformOrder.RotScalePos).Matrix;
 
         /// <summary>
         /// Root of the component, will always be a Model. <br></br>
@@ -123,7 +123,7 @@ namespace Nucleus.Core
         public Vector3 Rotation {
             get { return Raymath.QuaternionToEuler(__pose.Rotation); }
             set {
-                __pose.Rotation = Raymath.QuaternionFromEuler(value.X / NMath.DEG2RAD, value.Y / NMath.DEG2RAD, value.Z / NMath.DEG2RAD);
+                __pose.Rotation = Raymath.QuaternionFromEuler(value.X.ToRadians(), value.Y.ToRadians(), value.Z.ToRadians());
             }
         }
 
