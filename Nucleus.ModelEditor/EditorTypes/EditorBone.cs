@@ -6,8 +6,9 @@ using Raylib_cs;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorBone : IEditorType
+	public class EditorBone : PoseableObject, IEditorType
 	{
+
 		[JsonIgnore] public bool Hovered { get; set; } = false;
 		[JsonIgnore] public bool Selected { get; set; } = false;
 		public bool CanHide() => true;
@@ -61,6 +62,9 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
+		public override PoseableObject? GetParent() => Parent;
+		public override IEnumerable<PoseableObject> GetChildren() => Children;
+
 		/// <summary>
 		/// A null icon means it is automatically decided (lengthless_bone for length <= 0, lengthy_bone otherwise)
 		/// </summary>
@@ -81,55 +85,6 @@ namespace Nucleus.ModelEditor
 
 		public List<EditorBone> Children { get; set; } = [];
 		public List<EditorSlot> Slots { get; set; } = [];
-
-		private Vector2F pos = Vector2F.Zero, scale = Vector2F.One, shear = Vector2F.Zero;
-		private float rot = 0.0f;
-
-		public Vector2F Position { get => pos; set { pos = value; InvalidateTransform(); } }
-		[JsonIgnore] public float PositionX { get => pos.X; set { pos.X = value; InvalidateTransform(); } }
-		[JsonIgnore] public float PositionY { get => pos.Y; set { pos.Y = value; InvalidateTransform(); } }
-
-		public float Rotation { get => rot; set { rot = value; InvalidateTransform(); } }
-
-		public Vector2F Scale { get => scale; set { scale = value; InvalidateTransform(); } }
-		[JsonIgnore] public float ScaleX { get => scale.X; set { scale.X = value; InvalidateTransform(); } }
-		[JsonIgnore] public float ScaleY { get => scale.Y; set { scale.Y = value; InvalidateTransform(); } }
-
-		public Vector2F Shear { get => shear; set { shear = value; InvalidateTransform(); } }
-		[JsonIgnore] public float ShearX { get => shear.X; set { shear.X = value; InvalidateTransform(); } }
-		[JsonIgnore] public float ShearY { get => shear.Y; set { shear.Y = value; InvalidateTransform(); } }
-
-		private Transformation __worldTransform;
-		private bool __worldTransformInvalid = true;
-
-		public void InvalidateTransform() {
-			__worldTransformInvalid = true;
-			foreach (var child in Children)
-				child.InvalidateTransform();
-		}
-
-		[JsonIgnore]
-		public Transformation WorldTransform {
-			get {
-				if (__worldTransformInvalid) {
-					__worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Shear, TransformMode, Parent == null ? null : Parent.WorldTransform);
-					__worldTransformInvalid = false;
-				}
-
-				return __worldTransform;
-			}
-		}
-
-		private TransformMode __transformMode = TransformMode.Normal;
-		public TransformMode TransformMode {
-			get => __transformMode;
-			set {
-				__transformMode = value;
-				InvalidateTransform();
-			}
-		}
-
-		// Editor support
 
 		public string SingleName => "bone";
 		public string PluralName => "bones";
@@ -196,22 +151,22 @@ namespace Nucleus.ModelEditor
 		public bool CanScale() => true;
 		public bool CanShear() => true;
 
-		public float GetTranslationX() => PositionX;
-		public float GetTranslationY() => PositionY;
+		public float GetTranslationX() => Position.X;
+		public float GetTranslationY() => Position.Y;
 		public float GetRotation() => Rotation;
-		public float GetScaleX() => ScaleX;
-		public float GetScaleY() => ScaleY;
-		public float GetShearX() => ShearX;
-		public float GetShearY() => ShearY;
+		public float GetScaleX() => Scale.X;
+		public float GetScaleY() => Scale.Y;
+		public float GetShearX() => Shear.X;
+		public float GetShearY() => Shear.Y;
 
-		public void EditTranslationX(float value) => PositionX = value;
-		public void EditTranslationY(float value) => PositionY = value;
-		public void EditRotation(float value) => Rotation = value;
-		public void EditScaleX(float value) => ScaleX = value;
-		public void EditScaleY(float value) => ScaleY = value;
-		public void EditShearX(float value) => ShearX = value;
-		public void EditShearY(float value) => ShearY = value;
-
+		public void EditTranslationX(float value) => SetupPositionX = value;
+		public void EditTranslationY(float value) => SetupPositionY = value;
+		public void EditRotation(float value) => SetupRotation = value;
+		public void EditScaleX(float value) => SetupScaleX = value;
+		public void EditScaleY(float value) => SetupScaleY = value;
+		public void EditShearX(float value) => SetupShearX = value;
+		public void EditShearY(float value) => SetupShearY = value;
+		
 		public bool Visible { get; set; }
 	}
 }
