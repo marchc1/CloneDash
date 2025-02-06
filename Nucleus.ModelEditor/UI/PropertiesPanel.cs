@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
+using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.ModelEditor
 {
@@ -151,7 +152,7 @@ namespace Nucleus.ModelEditor
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
 			searchBtn.MouseReleaseEvent += (_, _, _) => {
 				var result = TinyFileDialogs.SelectFolderDialog("Select Images Folder", Filesystem.Path["game"][0]);
-				if (!result.Cancelled) 
+				if (!result.Cancelled)
 					chosenPath(path, result.Result);
 			};
 
@@ -204,12 +205,30 @@ namespace Nucleus.ModelEditor
 				OnClicked = clicked;
 			}
 		}
-		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
+		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, MouseButton>? onClicked = null) {
 			var newBtn = buttons.Add<Button>();
-			newBtn.Text = "New...";
-			newBtn.Size = new(64);
+			newBtn.Text = text;
+			newBtn.AutoSize = true;
+			if (icon != null) {
+				var img = newBtn.Add<Panel>();
+				img.OnHoverTest += Element.Passthru;
+				img.DrawPanelBackground = false;
+				img.ShouldDrawImage = true;
+				img.Size = new(32);
+				img.ImageOrientation = ImageOrientation.Fit;
+				img.Dock = Dock.Left;
+				img.DockMargin = RectangleF.TLRB(2);
+				img.Image = buttons.Level.Textures.LoadTextureFromFile(icon);
 
-			newBtn.MouseReleaseEvent += (_, fs, _) => {
+				newBtn.TextPadding = new(34, 0);
+				newBtn.TextAlignment = Anchor.CenterLeft;
+			}
+
+			newBtn.MouseReleaseEvent += (e, fs, mb) => onClicked?.Invoke(e, fs, mb);
+			return newBtn;
+		}
+		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
+			ButtonIcon(buttons, "New...", "models/add.png", (_, fs, _) => {
 				Menu menu = buttons.UI.Menu();
 
 				foreach (var action in actions) {
@@ -219,7 +238,7 @@ namespace Nucleus.ModelEditor
 				}
 
 				menu.Open(fs.MouseState.MousePos);
-			};
+			});
 		}
 		public static void NewSlotDialog(EditorFile file, EditorBone bone) {
 			EditorDialogs.TextInput(
@@ -261,7 +280,7 @@ namespace Nucleus.ModelEditor
 
 		private void DetermineTopOperators(Panel props, PreUIDeterminations determinations) {
 			if (determinations.AllShareAType) {
-				if(determinations.Last is IEditorType editorType)
+				if (determinations.Last is IEditorType editorType)
 					editorType.BuildTopOperators(props, determinations);
 			}
 		}
