@@ -354,18 +354,27 @@ namespace Nucleus.ModelEditor
 			return accountingForCamVars;
 		}
 		Vector2F ClickPos;
+		bool DraggableCamera;
 		public override void MouseClick(FrameState state, Types.MouseButton button) {
 			base.MouseClick(state, button);
 			ClickPos = FromScreenPosToGridPos(GetMousePos());
 			if (HoveredObject != null && button == Types.MouseButton.Mouse1) {
 				ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 			}
+
+			DraggableCamera = button == Types.MouseButton.Mouse2;
 		}
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			base.MouseDrag(self, state, delta);
-			var dragPos = FromScreenPosToGridPos(GetMousePos());
-			CameraX -= dragPos.X - ClickPos.X;
-			CameraY -= dragPos.Y - ClickPos.Y;
+			if (DraggableCamera) {
+				var dragPos = FromScreenPosToGridPos(GetMousePos());
+				CameraX -= dragPos.X - ClickPos.X;
+				CameraY -= dragPos.Y - ClickPos.Y;
+			}
+		}
+		public override void MouseRelease(Element self, FrameState state, Types.MouseButton button) {
+			base.MouseRelease(self, state, button);
+			DraggableCamera = false;
 		}
 		public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
 			CameraZoom = Math.Clamp(CameraZoom + (delta.Y / 5 * CameraZoom), 0.05f, 10);
