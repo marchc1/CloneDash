@@ -8,6 +8,7 @@ namespace Nucleus.ModelEditor
 		public string? Reason;
 
 		public static EditorResult OK => new(true, null);
+		public static EditorResult NotApplicable => new(false, null);
 
 		/// <summary>
 		/// No error occured and the operation completed successfully.
