@@ -44,6 +44,7 @@ namespace Nucleus.ModelEditor
 
 		public EditorBone? FindBone(string name) => GetAllBones().FirstOrDefault(x => x.Name == name);
 		public EditorSlot? FindSlot(string name) => Slots.FirstOrDefault(x => x.Name == name);
+		public EditorSkin? FindSkin(string name) => Skins.FirstOrDefault(x => x.Name == name);
 
 		public bool TryFindBone(string name, [NotNullWhen(true)] out EditorBone? bone) {
 			bone = FindBone(name);
@@ -55,6 +56,22 @@ namespace Nucleus.ModelEditor
 			return slot != null;
 		}
 
+		public bool TryFindSkin(string name, [NotNullWhen(true)] out EditorSkin? skin) {
+			skin = FindSkin(name);
+			return skin != null;
+		}
+
+
+		private EditorSkin? activeSkin = null;
+		public EditorSkin? ActiveSkin {
+			get => activeSkin; 
+			set => activeSkin = value;
+		}
+		public SkinsList Skins { get; set; } = [];
+
+		public EditorModel() {
+			Skins.Model = this;
+		}
 
 		private ModelImages? images;
 		public ModelImages Images {
