@@ -1,17 +1,8 @@
 ﻿using Newtonsoft.Json;
-using Nucleus.Engine;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
