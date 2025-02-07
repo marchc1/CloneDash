@@ -37,7 +37,8 @@ namespace Nucleus.ModelEditor
 			Reason = reason;
 		}
 	}
-	public struct EditorReturnResult<T> {
+	public struct EditorReturnResult<T>
+	{
 		public T? Result;
 		public string? Reason;
 
@@ -49,5 +50,7 @@ namespace Nucleus.ModelEditor
 			Result = result;
 			Reason = reason;
 		}
+
+		public static implicit operator EditorReturnResult<T>(T? result) => result == null ? new(result, "No reason provided.") : new(result);
 	}
 }
