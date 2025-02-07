@@ -37,6 +37,8 @@ namespace Nucleus.Models
 	/// </summary>
 	public class TextureAtlasSystem
 	{
+
+		public bool Debugging => false;
 		public const string VERSION = "TextureAtlasVersion1";
 
 		public static string SerializeAtlas(Dictionary<string, AtlasRegion> regions) {
@@ -152,7 +154,7 @@ namespace Nucleus.Models
 
 			int rw = (int)bounds.Width.RoundUpToPowerOf2();
 			int rh = (int)bounds.Height.RoundUpToPowerOf2();
-			bool testing = false;
+			bool testing = Debugging;
 
 			Image workingImage = Raylib.GenImageColor(rw, rh, testing ? Color.LIGHTGRAY : Color.BLANK);
 
