@@ -16,16 +16,33 @@ namespace Nucleus.ModelEditor
 {
 	public class EditorSlot : IEditorType
 	{
-		[JsonIgnore] public EditorBone Bone { get; set; }
+		public EditorBone Bone { get; set; }
 		public string Name { get; set; }
 
-		public Color Color { get; set; } = Color.WHITE;
+		public Color SetupColor { get; set; } = Color.WHITE;
 		public bool TintBlack { get; set; } = false;
+		public Color SetupDarkColor { get; set; } = Color.BLACK;
+		public BlendMode SetupBlending { get; set; } = BlendMode.Normal;
+		public EditorAttachment? SetupActiveAttachment { get; set; } = null;
+
+		public List<EditorAttachment> Attachments { get; set; } = [];
+		public Color Color { get; set; } = Color.WHITE;
 		public Color DarkColor { get; set; } = Color.BLACK;
 		public BlendMode Blending { get; set; } = BlendMode.Normal;
+		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
-		public List<EditorAttachment> AttachmentOrder { get; set; } = [];
-		public string? ActiveAttachment { get; set; } = null;
+		public EditorAttachment? FindAttachment(string name) => Attachments.FirstOrDefault(x => x.Name == name);
+		public bool TryFindAttachment(string name, out EditorAttachment? attachment) {
+			attachment = FindAttachment(name);
+			return attachment != null;
+		}
+
+		public void ResetToSetupPose() {
+			Color = SetupColor;
+			DarkColor = SetupDarkColor;
+			Blending = SetupBlending;
+			ActiveAttachment = SetupActiveAttachment;
+		}
 
 		public string SingleName => "slot";
 		public string PluralName => "slots";
@@ -39,21 +56,25 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.DuplicateOperator(this, props, determinations);
 		}
 
+		private bool AnimationMode => ModelEditor.Active.AnimationMode;
+
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
 			var slotColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 
-			var slotColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, Color);
-			var slotDarkColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, DarkColor);
+			var slotColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? Color : SetupColor);
+			var slotDarkColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? DarkColor : SetupDarkColor);
 			var slotTintCheck = PropertiesPanel.AddLabeledCheckbox(slotColorRow, "Tint black?", TintBlack);
 
 			slotDarkColorSelector.Parent.EngineDisabled = !TintBlack;
 
 			slotColorSelector.ColorChanged += (_, c) => {
-				Color = c;
+				if(AnimationMode) Color = c;
+				else SetupColor = c;
 			};
 
 			slotDarkColorSelector.ColorChanged += (_, c) => {
-				DarkColor = c;
+				if (AnimationMode) DarkColor = c;
+				else SetupDarkColor = c;
 			};
 
 			slotTintCheck.OnCheckedChanged += (s) => {
@@ -63,7 +84,12 @@ namespace Nucleus.ModelEditor
 			};
 
 			var slotBlendRow = PropertiesPanel.NewRow(props, "Blending", "models/blending.png");
-			var blending = PropertiesPanel.AddEnumComboBox<BlendMode>(slotBlendRow, Blending);
+			var blending = PropertiesPanel.AddEnumComboBox(slotBlendRow, AnimationMode ? Blending : SetupBlending);
+
+			blending.OnSelectionChanged += (_, _, v) => {
+				if (AnimationMode) Blending = v;
+				else SetupBlending = v;
+			};
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
