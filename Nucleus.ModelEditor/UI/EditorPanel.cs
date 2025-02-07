@@ -7,121 +7,12 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Model = Nucleus.ModelEditor.EditorModel;
 
 namespace Nucleus.ModelEditor
 {
-	public enum ViewportSelectMode
-	{
-		NotApplicable = -1,
-		None = 0,
-
-		Bones = 1,
-		Images = 2,
-		Other = 4,
-
-		All = Bones | Images | Other
-	}
-	public enum EditorTransformMode
-	{
-		LocalCoordinates,
-		ParentCoordinates,
-		WorldCoordinates
-	}
-	public static class Checkerboard
-	{
-		private static Shader shader = Raylib.LoadShader(null, Filesystem.Resolve("checkerboard.fshader", "shaders"));
-		private static Color defaultLight => new Color(60, 60, 63);
-		private static Color defaultDark => new Color(46, 46, 49);
-		public static void Draw(float gridSize = 50, float quadSize = 4096, Color? light = null, Color? dark = null) {
-			Color c = light ?? defaultLight, d = dark ?? defaultDark;
-
-			shader.SetShaderValue("scale", quadSize / gridSize);
-			shader.SetShaderValue("lightColor", new Vector3(c.R / 255f, c.G / 255f, c.B / 255f));
-			shader.SetShaderValue("darkColor", new Vector3(d.R / 255f, d.G / 255f, d.B / 255f));
-			Raylib.BeginShaderMode(shader);
-			Rlgl.DisableBackfaceCulling();
-			Rlgl.Begin(DrawMode.QUADS);
-
-			Rlgl.Color4f(1, 1, 1, 1);
-			Rlgl.TexCoord2f(-1, -1);
-			Rlgl.Vertex3f(-quadSize, quadSize, 0);
-
-			Rlgl.Color4f(1, 1, 1, 1);
-			Rlgl.TexCoord2f(1, -1);
-			Rlgl.Vertex3f(quadSize, quadSize, 0);
-
-			Rlgl.Color4f(1, 1, 1, 1);
-			Rlgl.TexCoord2f(1, 1);
-			Rlgl.Vertex3f(quadSize, -quadSize, 0);
-
-			Rlgl.Color4f(1, 1, 1, 1);
-			Rlgl.TexCoord2f(-1, 1);
-			Rlgl.Vertex3f(-quadSize, -quadSize, 0);
-
-			Rlgl.End();
-			Rlgl.EnableBackfaceCulling();
-			Raylib.EndShaderMode();
-		}
-	}
-	public class TransformPanel : Panel
-	{
-		public delegate void FloatChange(int i, float value);
-		public event FloatChange? FloatChanged;
-
-		public event Element.MouseEventDelegate? OnSelected;
-		private NumSlider[] sliders;
-
-		private bool enableSliders = true;
-		public bool EnableSliders {
-			get => enableSliders;
-			set {
-				enableSliders = value;
-				foreach (var slider in sliders) {
-					var c = slider.TextColor;
-					slider.TextColor = new(c.R, c.G, c.B, value ? 255 : 0);
-				}
-			}
-		}
-		public NumSlider GetNumSlider(int index) => sliders[index];
-
-		public static TransformPanel New(Element parent, string text, int floats) {
-			var panel = parent.Add<TransformPanel>();
-			panel.DockPadding = RectangleF.TLRB(2);
-			panel.BorderSize = 2;
-
-			var select = panel.Add<Button>();
-			select.Dock = Dock.Left;
-			select.Text = text;
-			select.Size = new(96);
-			select.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
-			select.BorderSize = 0;
-
-			var floatparts = panel.Add<FlexPanel>();
-			floatparts.Dock = Dock.Fill;
-			floatparts.Direction = Directional180.Horizontal;
-			floatparts.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			floatparts.DockPadding = RectangleF.Zero;
-			floatparts.BorderSize = 0;
-
-			panel.sliders = new NumSlider[floats];
-			for (int i = 0; i < floats; i++) {
-				var floatEdit = floatparts.Add<NumSlider>();
-				panel.sliders[i] = floatEdit;
-				floatEdit.HelperText = "";
-				floatEdit.Value = 0;
-				floatEdit.BorderSize = 0;
-				floatEdit.OnValueChanged += (self, oldV, newV) => {
-					panel.FloatChanged?.Invoke(i, (float)newV);
-				};
-			}
-
-			return panel;
-		}
-	}
 	public class EditorPanel : Panel
 	{
 		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
