@@ -151,22 +151,59 @@ namespace Nucleus.ModelEditor
 		public bool CanScale() => true;
 		public bool CanShear() => true;
 
-		public float GetTranslationX() => Position.X;
-		public float GetTranslationY() => Position.Y;
-		public float GetRotation() => Rotation;
-		public float GetScaleX() => Scale.X;
-		public float GetScaleY() => Scale.Y;
-		public float GetShearX() => Shear.X;
-		public float GetShearY() => Shear.Y;
+		public float GetTranslationX() => SetupPositionX + PositionX;
+		public float GetTranslationY() => SetupPositionY + PositionY;
+		public float GetRotation() => SetupRotation + Rotation;
+		public float GetScaleX() => SetupScaleX * ScaleX;
+		public float GetScaleY() => SetupScaleY * ScaleY;
+		public float GetShearX() => SetupShearX + ShearX;
+		public float GetShearY() => SetupShearY + ShearY;
 
-		public void EditTranslationX(float value) => SetupPositionX = value;
-		public void EditTranslationY(float value) => SetupPositionY = value;
-		public void EditRotation(float value) => SetupRotation = value;
-		public void EditScaleX(float value) => SetupScaleX = value;
-		public void EditScaleY(float value) => SetupScaleY = value;
-		public void EditShearX(float value) => SetupShearX = value;
-		public void EditShearY(float value) => SetupShearY = value;
-		
+		private bool AnimationMode => ModelEditor.Active.AnimationMode;
+
+		public void EditTranslationX(float value) {
+			if(AnimationMode)
+				PositionX = value - SetupPositionX;
+			else
+				SetupPositionX = value;
+		}
+		public void EditTranslationY(float value) {
+			if (AnimationMode)
+				PositionY = value - SetupPositionY;
+			else
+				SetupPositionY = value;
+		}
+		public void EditRotation(float value) {
+			if (AnimationMode)
+				Rotation = value - SetupRotation;
+			else
+				SetupRotation = value;
+		}
+		public void EditScaleX(float value) {
+			if (AnimationMode)
+				ScaleX = value - SetupScaleX;
+			else
+				SetupScaleX = value;
+		}
+		public void EditScaleY(float value) {
+			if (AnimationMode)
+				ScaleY = value - SetupScaleY;
+			else
+				SetupScaleY = value;
+		}
+		public void EditShearX(float value) {
+			if (AnimationMode)
+				ShearX = value - SetupShearX;
+			else
+				SetupShearX = value;
+		}
+		public void EditShearY(float value) {
+			if (AnimationMode)
+				ShearY = value - SetupShearY;
+			else
+				SetupShearY = value;
+		}
+
 		public bool Hidden { get; set; }
 	}
 }
