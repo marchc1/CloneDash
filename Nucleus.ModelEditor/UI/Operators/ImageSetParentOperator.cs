@@ -33,16 +33,17 @@ namespace Nucleus.ModelEditor.UI.Operators
 
 					existingSlotPanel.Checkbox.LinkRadioButton(newSlotPanel.Checkbox);
 
-					if(bone.Slots.Count <= 0) {
+					DropdownSelector<EditorSlot>? dropdownSlot = null;
+					if (bone.Slots.Count <= 0) {
 						existingSlotPanel.Panel.Enabled = false;
 						newSlotPanel.Checkbox.Checked = true;
 					}
 					else {
-						var existingSlotSelection = existingSlotPanel.Panel.Add<DropdownSelector<EditorSlot>>();
-						existingSlotSelection.OnToString += (eSlot) => eSlot?.Name ?? "<null slot?>";
-						existingSlotSelection.Dock = Dock.Fill;
-						existingSlotSelection.Items.AddRange(bone.Slots);
-						existingSlotSelection.Selected = bone.Slots[0];
+						dropdownSlot = existingSlotPanel.Panel.Add<DropdownSelector<EditorSlot>>();
+						dropdownSlot.OnToString += (eSlot) => eSlot?.Name ?? "<null slot?>";
+						dropdownSlot.Dock = Dock.Fill;
+						dropdownSlot.Items.AddRange(bone.Slots);
+						dropdownSlot.Selected = bone.Slots[0];
 					}
 					var newSlotName = newSlotPanel.Panel.Add<Textbox>();
 					newSlotName.Dock = Dock.Fill;
@@ -50,11 +51,18 @@ namespace Nucleus.ModelEditor.UI.Operators
 					newSlotName.Text = SelectedImage.Name;
 
 					EditorDialogs.SetupOKCancelButtons(
-						boneDialog, 
-						true, 
+						boneDialog,
+						true,
 						() => {
-							if (existingSlotPanel.Checkbox.Checked) {
+							var file = ModelEditor.Active.File;
+							if (existingSlotPanel.Checkbox.Checked && dropdownSlot != null && dropdownSlot.Selected != null) {
+								var result = file.AddAttachment<EditorRegionAttachment>(dropdownSlot.Selected, newSlotName.Text);
+								if (result.Failed) {
 
+								}
+								else {
+									result.Result.Path = $"<{SelectedImage.Name}>";
+								}
 							}
 							else {
 
