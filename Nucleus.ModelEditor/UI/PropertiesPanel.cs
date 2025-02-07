@@ -24,6 +24,7 @@ namespace Nucleus.ModelEditor
 			DrawPanelBackground = false;
 
 			ModelEditor.Active.SelectedChanged += ModelEditor_Active_SelectedChanged;
+			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => ModelEditor_Active_SelectedChanged();
 			ModelEditor.Active.File.Cleared += File_Cleared;
 		}
 
