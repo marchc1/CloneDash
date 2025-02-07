@@ -86,6 +86,13 @@ namespace Nucleus.ModelEditor
 			set => images = value;
 		}
 
+		public ModelImage? ResolveImage(string? path) {
+			if (path == null) return null;
+			if (path.StartsWith("<") && path.EndsWith(">"))
+				return Images.ImageLookup.TryGetValue(path.Substring(1, path.Length - 2), out ModelImage? img) ? img : null;
+
+			return null; // eventually; absolute paths?
+		}
 		public string GetName() => Name;
 		public bool IsNameTaken(string name) => ModelEditor.Active.File.Models.FirstOrDefault(x => x.Name == name) != null;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameModel(this, newName);
