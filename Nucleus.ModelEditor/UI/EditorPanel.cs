@@ -198,6 +198,7 @@ namespace Nucleus.ModelEditor
 			WorldTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
+			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.OperatorActivated += File_OperatorActivated;
 			ModelEditor.Active.File.OperatorDeactivated += File_OperatorDeactivated;
 			Active_SelectedChanged();
@@ -503,11 +504,28 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public void DrawModels() {
 			Rlgl.DisableBackfaceCulling();
+			Rlgl.DisableDepthMask();
+			Rlgl.DisableDepthTest();
+			foreach (var model in ModelEditor.Active.File.Models) {
+				foreach (var bone in model.GetAllBones()) {
+					foreach (var slot in bone.Slots) {
+						//slot.ActiveAttachment?.Render();
+						// for debugging:
+						foreach (var attachment in slot.Attachments) {
+							attachment.Render();
+						}
+					}
+				}
+			}
+
 			foreach (var model in ModelEditor.Active.File.Models) {
 				foreach (var bone in model.GetAllBones()) {
 					DrawBone(bone);
 				}
 			}
+
+			Rlgl.EnableDepthMask();
+			Rlgl.EnableDepthTest();
 			Rlgl.EnableBackfaceCulling();
 		}
 		public override void Paint(float width, float height) {
