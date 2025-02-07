@@ -78,12 +78,28 @@ namespace Nucleus.ModelEditor
 		public delegate void OnNodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn);
 		public event OnNodeClicked? NodeClicked;
 
+		private void RegisterAttachmentNode(OutlinerNode parentNode, EditorAttachment attachment) {
+			OutlinerNode attachmentNode = parentNode.AddNode(attachment.Name, attachment.EditorIcon);
+			attachmentNode.SetRepresentingObject(attachment);
+
+			ModelEditor.Active.File.AttachmentRenamed += (_, attachmentR, _, newName) => {
+				if (attachmentR == attachment) {
+					attachmentNode.Text = newName;
+				}
+			};
+			ModelEditor.Active.File.AttachmentRemoved += (_, _, attachmentR) => {
+				if (attachmentR == attachment) {
+					attachmentNode.Remove();
+				}
+			};
+		}
+
 		private void RegisterSlotEvents(OutlinerNode parentNode, EditorSlot slot) {
 			OutlinerNode slotNode = parentNode.AddNode(slot.Name, "models/slot.png");
 			slotNode.SetRepresentingObject(slot);
 
 			ModelEditor.Active.File.SlotRenamed += (_, slotR, _, newName) => {
-				if(slotR == slot) {
+				if (slotR == slot) {
 					slotNode.Text = newName;
 				}
 			};
@@ -91,6 +107,10 @@ namespace Nucleus.ModelEditor
 				if (slotR == slot) {
 					slotNode.Remove();
 				}
+			};
+			ModelEditor.Active.File.AttachmentAdded += (_, slotR, attachment) => {
+				if (slotR == slot)
+					RegisterAttachmentNode(slotNode, attachment);
 			};
 		}
 
