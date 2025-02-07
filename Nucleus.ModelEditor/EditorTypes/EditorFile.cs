@@ -62,6 +62,8 @@ namespace Nucleus.ModelEditor
 					BoneColorChanged?.Invoke(this, bone);
 					foreach (var slot in bone.Slots) {
 						SlotAdded?.Invoke(this, model, bone, slot);
+						foreach (var attachment in slot.Attachments)
+							AttachmentAdded?.Invoke(this, slot, attachment);
 					}
 				}
 
@@ -71,10 +73,6 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		// ============================================================================================== //
-		// Events & delegates
-		// ============================================================================================== //
-
 
 		/// <summary>
 		/// Called when the file is cleared.
@@ -82,6 +80,10 @@ namespace Nucleus.ModelEditor
 		public event FileClear? Cleared;
 		public delegate void FileClear(EditorFile file);
 
+
+		// ============================================================================================== //
+		// Models
+		// ============================================================================================== //
 		/// <summary>
 		/// Called when a model has been added.
 		/// </summary>
@@ -94,80 +96,9 @@ namespace Nucleus.ModelEditor
 		/// Called when a model is renamed.
 		/// </summary>
 		public event ModelRename? ModelRenamed;
-		/// <summary>
-		/// Called when a model's images have completed scanning.
-		/// </summary>
-		public event ModelImagesScannedD? ModelImagesScanned;
+
 		public delegate void ModelAddRemove(EditorFile file, EditorModel model);
 		public delegate void ModelRename(EditorFile file, EditorModel model, string oldName, string newName);
-
-		public delegate void ModelImagesScannedD(EditorFile file, EditorModel model);
-
-		/// <summary>
-		/// Called when a bone has been added to a model.
-		/// </summary>
-		public event BoneAddRemove? BoneAdded;
-		/// <summary>
-		/// Called when a bone is about to be removed.
-		/// </summary>
-		public event BoneAddRemove? BoneRemoved;
-		/// <summary>
-		/// Called when a bone has been renamed.
-		/// </summary>
-		public event BoneRename? BoneRenamed;
-
-		public event BoneGeneric? BoneLengthChanged;
-		public event BoneGeneric? BoneColorChanged;
-		public event BoneGeneric? BoneIconChanged;
-
-
-		public delegate void BoneAddRemove(EditorFile file, EditorModel model, EditorBone bone);
-		public delegate void BoneRename(EditorFile file, EditorBone bone, string oldName, string newName);
-		public delegate void BoneGeneric(EditorFile file, EditorBone bone);
-
-		/// <summary>
-		/// Called when a slot is added to a bone.
-		/// </summary>
-		public event SlotAddRemove? SlotAdded;
-		/// <summary>
-		/// Called when a slot is removed from a bone.
-		/// </summary>
-		public event SlotAddRemove? SlotRemoved;
-		/// <summary>
-		/// Called when a slot is renamed.
-		/// </summary>
-		public event SlotRename? SlotRenamed;
-
-		public delegate void SlotAddRemove(EditorFile file, EditorModel model, EditorBone bone, EditorSlot slot);
-		public delegate void SlotRename(EditorFile file, EditorSlot slot, string oldName, string newName);
-
-		/// <summary>
-		/// Called when a skin is added to a model.
-		/// </summary>
-		public event SkinGeneric? SkinAdded;
-		/// <summary>
-		/// Called when a skin is removed from a model.
-		/// </summary>
-		public event SkinGeneric? SkinRemoved;
-		/// <summary>
-		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/>
-		/// </summary>
-		public event SkinGeneric? SkinActivated;
-		/// <summary>
-		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/> to something else (or unsets it entirely), <i>and</i> <see cref="EditorModel.ActiveSkin"/> was equal to this skin
-		/// </summary>
-		public event SkinGeneric? SkinDeactivated;
-		/// <summary>
-		/// Called when a skin is renamed.
-		/// </summary>
-		public event SkinRename? SkinRenamed;
-
-		public delegate void SkinGeneric(EditorFile file, EditorModel model, EditorSkin skin);
-		public delegate void SkinRename(EditorFile file, EditorSkin skin, string oldName, string newName);
-
-		// ============================================================================================== //
-		// Models
-		// ============================================================================================== //
 
 		public EditorReturnResult<EditorModel> AddModel(string name) {
 			if (Models.FirstOrDefault(x => x.Name == name) != null)
@@ -180,7 +111,7 @@ namespace Nucleus.ModelEditor
 			model.Root = AddBone(model, null, "root").Result ?? throw new Exception("Wtf?");
 
 			ModelAdded?.Invoke(this, model);
-			return new(model);
+			return model;
 		}
 		public EditorResult RenameModel(EditorModel model, string newName) {
 			if (Models.FirstOrDefault(x => x.Name == newName) != null)
@@ -211,6 +142,28 @@ namespace Nucleus.ModelEditor
 		// Bones
 		// ============================================================================================== //
 
+		/// <summary>
+		/// Called when a bone has been added to a model.
+		/// </summary>
+		public event BoneAddRemove? BoneAdded;
+		/// <summary>
+		/// Called when a bone is about to be removed.
+		/// </summary>
+		public event BoneAddRemove? BoneRemoved;
+		/// <summary>
+		/// Called when a bone has been renamed.
+		/// </summary>
+		public event BoneRename? BoneRenamed;
+
+		public event BoneGeneric? BoneLengthChanged;
+		public event BoneGeneric? BoneColorChanged;
+		public event BoneGeneric? BoneIconChanged;
+
+
+		public delegate void BoneAddRemove(EditorFile file, EditorModel model, EditorBone bone);
+		public delegate void BoneRename(EditorFile file, EditorBone bone, string oldName, string newName);
+		public delegate void BoneGeneric(EditorFile file, EditorBone bone);
+
 		public EditorReturnResult<EditorBone> AddBone(EditorModel model, EditorBone? parent, string? name) {
 			if (name == null) {
 				// please don't have more than 100,000 unnamed bones!
@@ -236,7 +189,7 @@ namespace Nucleus.ModelEditor
 			model.InvalidateBonesList();
 
 			BoneAdded?.Invoke(this, model, bone);
-			return new(bone);
+			return bone;
 		}
 
 		public EditorResult SetBoneLength(EditorBone bone, float length) {
@@ -255,7 +208,6 @@ namespace Nucleus.ModelEditor
 			return EditorResult.OK;
 		}
 
-		// Renaming bones
 		public EditorResult RenameBone(EditorBone bone, string newName) {
 			if (bone.Model.TryFindBone(newName, out var _))
 				return new($"A bone named '{newName}' already exists.");
@@ -305,6 +257,22 @@ namespace Nucleus.ModelEditor
 		// Slots
 		// ============================================================================================== //
 
+		/// <summary>
+		/// Called when a slot is added to a bone.
+		/// </summary>
+		public event SlotAddRemove? SlotAdded;
+		/// <summary>
+		/// Called when a slot is removed from a bone.
+		/// </summary>
+		public event SlotAddRemove? SlotRemoved;
+		/// <summary>
+		/// Called when a slot is renamed.
+		/// </summary>
+		public event SlotRename? SlotRenamed;
+
+		public delegate void SlotAddRemove(EditorFile file, EditorModel model, EditorBone bone, EditorSlot slot);
+		public delegate void SlotRename(EditorFile file, EditorSlot slot, string oldName, string newName);
+
 		public EditorReturnResult<EditorSlot> AddSlot(EditorModel model, EditorBone bone, string slotName) {
 			if (model.TryFindSlot(slotName, out var _))
 				return new(null, $"The model already contains a slot with the name '{slotName}'.");
@@ -317,7 +285,7 @@ namespace Nucleus.ModelEditor
 
 			SlotAdded?.Invoke(this, model, bone, slot);
 
-			return new(slot);
+			return slot;
 		}
 		public EditorReturnResult<EditorSlot> AddSlot(EditorBone bone, string slotName) => AddSlot(bone.Model, bone, slotName);
 
@@ -347,11 +315,17 @@ namespace Nucleus.ModelEditor
 		// Images
 		// ============================================================================================== //
 
+		/// <summary>
+		/// Called when a model's images have completed scanning.
+		/// </summary>
+		public event ModelImagesScannedD? ModelImagesScanned;
+
+		public delegate void ModelImagesScannedD(EditorFile file, EditorModel model);
+
 		public EditorResult SetModelImages(EditorModel model, string filepath) {
 			model.Images.Filepath = filepath;
 			return RescanModelImages(model);
 		}
-
 
 		public EditorResult RescanModelImages(EditorModel model) {
 			EditorResult scanResult = model.Images.Scan();
@@ -364,8 +338,65 @@ namespace Nucleus.ModelEditor
 		}
 
 		// ============================================================================================== //
+		// Attachments
+		// ============================================================================================== //
+
+		/// <summary>
+		/// Called when an attachment is added to a slot.
+		/// </summary>
+		public event AttachmentAddRemove? AttachmentAdded;
+		/// <summary>
+		/// Called when an attachment is removed from a slot.
+		/// </summary>
+		public event AttachmentAddRemove? AttachmentRemoved;
+		/// <summary>
+		/// Called when an attachment is renamed.
+		/// </summary>
+		public event AttachmentRename? AttachmentRenamed;
+
+		public delegate void AttachmentAddRemove(EditorFile file, EditorSlot slot, EditorAttachment attachment);
+		public delegate void AttachmentRename(EditorFile file, EditorAttachment attachment, string oldName, string newName);
+
+		public EditorReturnResult<T> AddAttachment<T>(EditorSlot slot, string name) where T : EditorAttachment, new() {
+			if (slot.TryFindAttachment(name, out var _))
+				return new(null, $"An attachment named '{name}' already exists in this slot.");
+
+			T attachment = new T();
+			attachment.Slot = slot;
+			attachment.Name = name;
+			slot.Attachments.Add(attachment);
+			AttachmentAdded?.Invoke(this, slot, attachment);
+
+			return attachment;
+		}
+
+		// ============================================================================================== //
 		// Skins
 		// ============================================================================================== //
+
+		/// <summary>
+		/// Called when a skin is added to a model.
+		/// </summary>
+		public event SkinGeneric? SkinAdded;
+		/// <summary>
+		/// Called when a skin is removed from a model.
+		/// </summary>
+		public event SkinGeneric? SkinRemoved;
+		/// <summary>
+		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/>
+		/// </summary>
+		public event SkinGeneric? SkinActivated;
+		/// <summary>
+		/// Called when a model sets its <see cref="EditorModel.ActiveSkin"/> to something else (or unsets it entirely), <i>and</i> <see cref="EditorModel.ActiveSkin"/> was equal to this skin
+		/// </summary>
+		public event SkinGeneric? SkinDeactivated;
+		/// <summary>
+		/// Called when a skin is renamed.
+		/// </summary>
+		public event SkinRename? SkinRenamed;
+
+		public delegate void SkinGeneric(EditorFile file, EditorModel model, EditorSkin skin);
+		public delegate void SkinRename(EditorFile file, EditorSkin skin, string oldName, string newName);
 
 		public EditorReturnResult<EditorSkin> AddSkin(EditorModel model, string name) {
 			if (model.Skins.FirstOrDefault(x => x.Name == name) != null)
@@ -378,7 +409,7 @@ namespace Nucleus.ModelEditor
 
 			SkinAdded?.Invoke(this, model, skin);
 
-			return new(skin);
+			return skin;
 		}
 		public EditorResult RenameSkin(EditorModel model, EditorSkin skin, string newName) {
 			if (model.TryFindSkin(newName, out var _))
@@ -413,9 +444,7 @@ namespace Nucleus.ModelEditor
 		public EditorResult UnsetActiveSkin(EditorSkin skin) => UnsetActiveSkin(skin.Model, skin);
 
 		public EditorResult RemoveSkin(EditorModel model, EditorSkin skin) {
-			if (model.ActiveSkin == skin) {
-
-			}
+			UnsetActiveSkin(skin);
 
 			SkinRemoved?.Invoke(this, model, skin);
 			model.Skins.Remove(skin);
