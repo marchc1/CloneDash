@@ -153,8 +153,18 @@ namespace Nucleus.ModelEditor
 				ModelEditor.Active.File.ShowEditorItem(editorItem);
 		}
 
+		private void __setExpandedRecursive(bool state) {
+			foreach (var childNode in Children)
+				childNode.__setExpandedRecursive(state);
+
+			Expanded = state;
+		}
+
 		private void Expander_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			Expanded = !Expanded;
+			if (button == MouseButton.Mouse2)
+				__setExpandedRecursive(!Expanded);
+			else
+				Expanded = !Expanded;
 			Outliner.InvalidateLayout();
 			Outliner.InvalidateChildren();
 		}
