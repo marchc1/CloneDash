@@ -91,6 +91,7 @@ namespace Nucleus.ModelEditor.UI
 			textbox.Text = text ?? "";
 			textbox.Size = new(28);
 			textbox.DockMargin = Types.RectangleF.TLRB(0, 32, 32, 0);
+			textbox.DemandKeyboardFocus();
 
 			SetupOKCancelButtons(dialog, preferOK, () => onConfirmed?.Invoke(textbox.Text), onDenied);
 		}
