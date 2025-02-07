@@ -114,6 +114,9 @@ namespace Nucleus.Models
 
 		public void Invalidate() => valid = false;
 
+		public float AcceptableDensity => .5f;
+		public uint StepSize => 1;
+
 		[MemberNotNull(nameof(packedTex))]
 		public void Validate() {
 			if (valid && packedTex != null) return;
@@ -146,8 +149,8 @@ namespace Nucleus.Models
 				rectangles: rects,
 				bounds: out PackingRectangle bounds,
 				packingHint: PackingHints.FindBest,
-				acceptableDensity: 5d,
-				stepSize: 1,
+				acceptableDensity: AcceptableDensity,
+				stepSize: StepSize,
 				maxBoundsWidth: null,
 				maxBoundsHeight: null
 			);
