@@ -51,7 +51,7 @@ namespace Nucleus.ModelEditor
 			// Clear ourselves of old data (which tells the outliner to clear itself as well)
 			Clear();
 
-			JsonConvert.PopulateObject(data, this);
+			JsonConvert.PopulateObject(data, this, SerializerSettings);
 
 			foreach (var model in Models) {
 				ModelAdded?.Invoke(this, model);
