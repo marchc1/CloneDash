@@ -1,11 +1,31 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Nucleus.ModelEditor.UI;
 using Raylib_cs;
-using System.Xml.Linq;
-using static Nucleus.ModelEditor.EditorFile;
 
 namespace Nucleus.ModelEditor
 {
+	public class ModelEditorSerializationBinder : ISerializationBinder
+	{
+		private static HashSet<Type> ApprovedBindables = [
+			typeof(EditorRegionAttachment)
+		];
+		public Type BindToType(string? assemblyName, string typeName) {
+			var resolvedTypeName = $"{typeName}, {assemblyName}";
+
+			var type = Type.GetType(resolvedTypeName, true);
+			if (!ApprovedBindables.Contains(type))
+				throw new JsonSerializationException($"Type is not approved for serialization. Typename: ${resolvedTypeName}");
+
+			return type;
+		}
+
+		public void BindToName(Type serializedType, out string? assemblyName, out string? typeName) {
+			assemblyName = null;
+			typeName = serializedType.AssemblyQualifiedName;
+		}
+	}
 	/// <summary>
 	/// The editor interface controller; provides an API for almost all editor operations, with equiv. callbacks for various UI systems.
 	/// </summary>
@@ -18,7 +38,9 @@ namespace Nucleus.ModelEditor
 		// ============================================================================================== //
 
 		public static JsonSerializerSettings SerializerSettings => new JsonSerializerSettings() {
-			PreserveReferencesHandling = PreserveReferencesHandling.All
+			PreserveReferencesHandling = PreserveReferencesHandling.Objects,
+			SerializationBinder = new ModelEditorSerializationBinder(),
+			TypeNameHandling = TypeNameHandling.Auto,
 		};
 
 		public string Serialize() {
