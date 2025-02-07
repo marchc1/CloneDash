@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static Nucleus.Util.Util;
 
 namespace Nucleus.ModelEditor
@@ -154,6 +155,31 @@ namespace Nucleus.ModelEditor
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.ButtonIcon(buttons, "Rescan", "models/search.png", (_, _, _) => ModelEditor.Active.File.RescanModelImages(Model));
+			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
+				Window imageWindow = EngineCore.Level.UI.Add<Window>();
+				imageWindow.HideNonCloseButtons();
+				imageWindow.Title = $"Texture Atlas";
+
+				ManagedMemory.Texture tex = TextureAtlas.Texture;
+
+				var imagePanel = imageWindow.Add<Panel>();
+				imagePanel.Image = tex;
+				imagePanel.ImageOrientation = Types.ImageOrientation.Centered;
+				imagePanel.Dock = Dock.Fill;
+
+				imagePanel.PaintOverride += (e, w, h) => {
+					Graphics2D.SetDrawColor(255, 255, 255);
+					e.ImageDrawing(new(0, 0), new(w, h));
+					Graphics2D.SetDrawColor(150, 150, 150);
+					var c = new Vector2F(w / 2, h / 2) - new Vector2F(tex.Width / 2, tex.Height / 2);
+					Graphics2D.DrawRectangleOutline(c - 2, new Vector2F(tex.Width, tex.Height) + 4, 2);
+				};
+
+				imageWindow.Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
+
+				imageWindow.Center();
+
+			});
 		}
 
 		public string DetermineHeaderText(PreUIDeterminations determinations) => "Image files";
