@@ -9,6 +9,7 @@ namespace Nucleus.ModelEditor
 		public bool AllShareAType;
 		public Type? SharedType;
 		public IEditorType[] Selected;
+		public IEditorType? First;
 		public IEditorType? Last;
 		public int Count;
 

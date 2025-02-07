@@ -17,6 +17,7 @@ namespace Nucleus.ModelEditor
 		// Object selection management
 		private List<IEditorType> __selectedObjectsL = [];
 		private HashSet<IEditorType> __selectedObjects = [];
+		public IEditorType? FirstSelectedObject => __selectedObjectsL.FirstOrDefault();
 		public IEditorType? LastSelectedObject => __selectedObjectsL.LastOrDefault();
 		public int SelectedObjectsCount => __selectedObjectsL.Count;
 
@@ -166,6 +167,7 @@ namespace Nucleus.ModelEditor
 				determinations.SharedType = type;
 			}
 
+			determinations.First = FirstSelectedObject;
 			determinations.Last = LastSelectedObject;
 			determinations.Count = SelectedObjectsCount;
 			determinations.Selected = __selectedObjectsL.ToArray();
