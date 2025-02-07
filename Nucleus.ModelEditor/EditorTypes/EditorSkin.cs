@@ -16,7 +16,10 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public bool Hidden { get; set; }
 
 		public bool CanHide() => true;
+		public bool CanDelete() => true;
+		public string GetName() => Name;
 
+		public EditorResult Remove() => ModelEditor.Active.File.RemoveSkin(Model, this);
 		public bool GetVisible() => Model.ActiveSkin == this;
 		public void OnShown() => ModelEditor.Active.File.SetActiveSkin(this);
 		public void OnHidden() => ModelEditor.Active.File.UnsetActiveSkin(this);
