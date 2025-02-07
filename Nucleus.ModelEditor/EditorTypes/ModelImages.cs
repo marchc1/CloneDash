@@ -83,12 +83,14 @@ namespace Nucleus.ModelEditor
 		}
 		[JsonIgnore] public ModelImage[] Images { get; private set; } = [];
 		[JsonIgnore] public string[] ImageNames { get; private set; } = [];
+		[JsonIgnore] public Dictionary<string, ModelImage> ImageLookup { get; private set; } = [];
 
 		[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; } = new();
 
 		public EditorResult Scan() {
 			Images = [];
 			ImageNames = [];
+			ImageLookup = [];
 
 			TextureAtlas.ClearTextures();
 
@@ -100,6 +102,7 @@ namespace Nucleus.ModelEditor
 
 			List<ModelImage> images = [];
 			List<string> imageNames = [];
+			Dictionary<string, ModelImage> imageLookup = [];
 			var files = Directory.GetFiles(Filepath);
 			foreach (var file in files) {
 				var nameExt = Path.GetFileName(file);
@@ -110,12 +113,17 @@ namespace Nucleus.ModelEditor
 						case ".jpg":
 						case ".jpeg":
 						case ".png":
-							images.Add(new() {
+							ModelImage img = new() {
 								Name = name,
 								Filepath = file
-							});
+							};
+
+							images.Add(img);
 							imageNames.Add(name);
+							imageLookup[name] = img;
+
 							TextureAtlas.AddTexture(name, file);
+
 							break;
 					}
 				}
@@ -127,6 +135,7 @@ namespace Nucleus.ModelEditor
 
 			Images = images.ToArray();
 			ImageNames = imageNames.ToArray();
+			ImageLookup = imageLookup;
 
 			return new();
 		}
