@@ -174,6 +174,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		public bool AnimationMode { get; private set; } = false;
+		public delegate void ModelEditorChangedSetupAnimateModeD(ModelEditor editor, bool animationMode);
+		public event ModelEditorChangedSetupAnimateModeD? SetupAnimateModeChanged;
 		public void ToggleModes() {
 			AnimationMode = !AnimationMode;
 			if (AnimationMode) {
@@ -182,6 +184,13 @@ namespace Nucleus.ModelEditor
 			else {
 				SwitchMode.Text = "Setup Mode";
 			}
+
+			foreach (var model in File.Models) {
+				foreach (var bone in model.GetAllBones()) bone.ResetToSetupPose();
+				foreach (var slot in model.Slots) slot.ResetToSetupPose();
+			}
+
+			SetupAnimateModeChanged?.Invoke(this, AnimationMode);
 		}
 
 		public override void Initialize(params object[] args) {
