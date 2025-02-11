@@ -10,6 +10,7 @@ namespace Nucleus.ModelEditor
 
 		public event Element.MouseEventDelegate? OnSelected;
 		private NumSlider[] sliders;
+		private Button button;
 
 		private bool enableSliders = true;
 		public bool EnableSliders {
@@ -23,18 +24,19 @@ namespace Nucleus.ModelEditor
 			}
 		}
 		public NumSlider GetNumSlider(int index) => sliders[index];
+		public Button GetButton() => button;
 
 		public static TransformPanel New(Element parent, string text, int floats) {
 			var panel = parent.Add<TransformPanel>();
 			panel.DockPadding = RectangleF.TLRB(2);
 			panel.BorderSize = 2;
 
-			var select = panel.Add<Button>();
-			select.Dock = Dock.Left;
-			select.Text = text;
-			select.Size = new(96);
-			select.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
-			select.BorderSize = 0;
+			panel.button = panel.Add<Button>();
+			panel.button.Dock = Dock.Left;
+			panel.button.Text = text;
+			panel.button.Size = new(96);
+			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
+			panel.button.BorderSize = 0;
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;

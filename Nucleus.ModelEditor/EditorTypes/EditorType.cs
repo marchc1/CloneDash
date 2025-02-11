@@ -13,6 +13,8 @@ namespace Nucleus.ModelEditor
 		string GetName() => "";
 		bool IsNameTaken(string name) => false;
 
+		IEditorType? GetTransformParent() => null;
+
 		EditorResult Rename(string newName) => EditorResult.NotApplicable;
 		EditorResult Remove() => EditorResult.NotApplicable;
 
@@ -41,21 +43,32 @@ namespace Nucleus.ModelEditor
 
 		public bool GetVisible() => !Hidden;
 
-		float GetTranslationX() => 0f;
-		float GetTranslationY() => 0f;
-		float GetRotation() => 0f;
+		float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
+		float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
+		float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
 		float GetScaleX() => 0f;
 		float GetScaleY() => 0f;
 		float GetShearX() => 0f;
 		float GetShearY() => 0f;
 
-		void EditTranslationX(float value) { }
-		void EditTranslationY(float value) { }
-		void EditRotation(float value) { }
+		void EditTranslationX(float value, UserTransformMode transform = UserTransformMode.LocalSpace) { }
+		void EditTranslationY(float value, UserTransformMode transform = UserTransformMode.LocalSpace) { }
+		void EditRotation(float value, bool localTo = true) { }
 		void EditScaleX(float value) { }
 		void EditScaleY(float value) { }
 		void EditShearX(float value) { }
 		void EditShearY(float value) { }
+
+		Vector2F GetWorldPosition() => Vector2F.Zero;
+		void SetWorldPosition(Vector2F pos, bool additive = false) { }
+		float GetWorldRotation() => 0;
+		float GetScreenRotation() => 0;
+
+		/// <summary>
+		/// Overriden if the element doesn't really support transformation; but is the parent of something that does
+		/// </summary>
+		/// <returns></returns>
+		IEditorType? GetTransformableEditorType() => this;
 
 		[JsonIgnore] public bool Hovered { get; set; }
 		[JsonIgnore] public bool Selected { get; set; }

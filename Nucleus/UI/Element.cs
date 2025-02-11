@@ -1210,6 +1210,21 @@ namespace Nucleus.UI
 				return bounds.ContainsPoint(mousePos) || ScreenspaceRenderBounds.ContainsPoint(mousePos);
 			};
 		}
+
+		/// <summary>
+		/// Recursively searches through parents to confirm if input is disabled or not.
+		/// <br></br>
+		/// Returns true if all elements have input enabled; or false if even one parent has input disabled.
+		/// <br></br>
+		/// Also includes the element itself.
+		/// </summary>
+		/// <returns></returns>
+		public bool CanInput() {
+			if (InputDisabled)
+				return false;
+
+			return Parent?.CanInput() ?? true;
+		}
 	}
 
 	[Nucleus.MarkForStaticConstruction]

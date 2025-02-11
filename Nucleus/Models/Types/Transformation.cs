@@ -35,9 +35,6 @@ namespace Nucleus.Models
 
 		public static Transformation CalculateWorldTransformation(Vector2F pos, float rot, Vector2F scale, Vector2F shear, TransformMode transformType = TransformMode.Normal, Transformation? parent = null, bool triggerDebugger = false) {
 			if (triggerDebugger) Debug.Assert(false, "Debugger triggered!");
-			rot = -rot;
-			shear.X = -shear.X;
-			shear.Y = -shear.Y;
 
 			float posX = pos.X, posY = pos.Y;
 			float scaleX = scale.X, scaleY = scale.Y;

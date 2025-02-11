@@ -7,6 +7,8 @@ namespace Nucleus.ModelEditor
 		public EditorModel Model { get; set; }
 		public string Name { get; set; } = "";
 
+		public IEditorType? GetTransformableEditorType() => null;
+
 		[JsonIgnore] public string SingleName => "skin";
 
 		[JsonIgnore] public string PluralName => "skins";

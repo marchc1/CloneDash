@@ -46,6 +46,8 @@ namespace Nucleus.ModelEditor
 		[MemberNotNullWhen(true, nameof(Reason))]
 		public bool Failed => Result == null && Reason != null;
 
+		public T ResultOrThrow => Result ?? throw new NullReferenceException(Reason);
+
 		public EditorReturnResult(T? result, string? reason = null) {
 			Result = result;
 			Reason = reason;

@@ -14,6 +14,7 @@ namespace Nucleus.ModelEditor
 {
 	public class EditorModel : IEditorType
 	{
+		public IEditorType? GetTransformableEditorType() => Root;
 		public string Name { get; set; }
 		public EditorBone Root { get; set; }
 

@@ -96,7 +96,7 @@ namespace Nucleus.ModelEditor
 		}
 		public bool HoverTest(Vector2F gridPos) {
 			if (Length <= 0)
-				return gridPos.Distance(WorldTransform.Translation) < 16;
+				return gridPos.Distance(WorldTransform.Translation) < 9;
 			else
 				return gridPos.TestPointInQuad(q1, q2, q3, q4);
 		}
@@ -105,6 +105,19 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.DeleteOperator(this, props, determinations);
 			PropertiesPanel.RenameOperator(this, props, determinations);
 			PropertiesPanel.DuplicateOperator(this, props, determinations);
+		}
+
+		public Vector2F GetWorldPosition() => WorldTransform.Translation;
+		public void SetWorldPosition(Vector2F pos, bool additive = false) {
+			// Todo: implement
+		}
+		public float GetWorldRotation() => WorldTransform.LocalToWorldRotation(0) + GetRotation();
+		public float GetScreenRotation() {
+			var wp = WorldTransform.Translation;
+			var wl = WorldTransform.LocalToWorld(ScaleX, 0);
+			var d = (wl - wp);
+			var r = MathF.Atan2(d.Y, d.X).ToDegrees();
+			return r;
 		}
 
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
@@ -142,6 +155,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public string? GetName() => Name;
+		IEditorType? IEditorType.GetTransformParent() => Parent;
 		public bool IsNameTaken(string name) => Model.GetAllBones().FirstOrDefault(x => x.Name == name) != null;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameBone(this, newName);
 		public EditorResult Remove() => ModelEditor.Active.File.RemoveBone(this);
@@ -151,9 +165,9 @@ namespace Nucleus.ModelEditor
 		public bool CanScale() => true;
 		public bool CanShear() => true;
 
-		public float GetTranslationX() => SetupPositionX + PositionX;
-		public float GetTranslationY() => SetupPositionY + PositionY;
-		public float GetRotation() => SetupRotation + Rotation;
+		public float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? WorldTransform.LocalToWorld(SetupPositionX + PositionX, SetupPositionY + PositionY).X : SetupPositionX + PositionX;
+		public float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? WorldTransform.LocalToWorld(SetupPositionX + PositionX, SetupPositionY + PositionY).Y : SetupPositionY + PositionY;
+		public float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? GetWorldRotation() : SetupRotation + Rotation;
 		public float GetScaleX() => SetupScaleX * ScaleX;
 		public float GetScaleY() => SetupScaleY * ScaleY;
 		public float GetShearX() => SetupShearX + ShearX;
@@ -161,19 +175,20 @@ namespace Nucleus.ModelEditor
 
 		private bool AnimationMode => ModelEditor.Active.AnimationMode;
 
-		public void EditTranslationX(float value) {
-			if(AnimationMode)
-				PositionX = value - SetupPositionX;
-			else
-				SetupPositionX = value;
+		public void EditTranslationX(float value, UserTransformMode transform = UserTransformMode.LocalSpace) {
+			if (AnimationMode) PositionX = value - SetupPositionX;
+			else SetupPositionX = value;
 		}
-		public void EditTranslationY(float value) {
-			if (AnimationMode)
-				PositionY = value - SetupPositionY;
-			else
-				SetupPositionY = value;
+
+		public void EditTranslationY(float value, UserTransformMode transform = UserTransformMode.LocalSpace) {
+			if (AnimationMode) PositionY = value - SetupPositionY;
+			else SetupPositionY = value;
 		}
-		public void EditRotation(float value) {
+
+		public void EditRotation(float value, bool localCoordinates = true) {
+			if (!localCoordinates)
+				value = WorldTransform.WorldToLocalRotation(value);
+
 			if (AnimationMode)
 				Rotation = value - SetupRotation;
 			else

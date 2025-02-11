@@ -3,7 +3,7 @@
 	/// <summary>
 	/// The current editor mode when no operators are active.
 	/// </summary>
-	public enum Editor_DefaultOperator {
+	public enum EditorDefaultOperator {
 		/// <summary>
 		/// Aim a bone towards your mouse position
 		/// </summary>

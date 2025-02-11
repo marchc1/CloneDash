@@ -43,7 +43,7 @@ namespace Nucleus.UI
 		public override void Paint(float width, float height) {
 			var backpre = BackgroundColor;
 			var forepre = ForegroundColor;
-			if (TriggeredWhenEnterPressed || Pulsing) {
+			if ((TriggeredWhenEnterPressed || Pulsing) && CanInput()) {
 				backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 1.9));
 				forepre = forepre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 0.1f));
 			}

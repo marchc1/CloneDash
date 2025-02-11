@@ -56,6 +56,8 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.DuplicateOperator(this, props, determinations);
 		}
 
+		public IEditorType? GetTransformableEditorType() => Bone;
+
 		private bool AnimationMode => ModelEditor.Active.AnimationMode;
 
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {

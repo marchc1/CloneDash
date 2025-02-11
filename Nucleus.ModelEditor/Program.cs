@@ -122,6 +122,10 @@ namespace Nucleus.ModelEditor
 			}
 			SELECTIONCHANGE();
 		}
+
+		public bool IsObjectSelected(IEditorType? editorObj)
+			=> editorObj == null ? false : __selectedObjects.Contains(editorObj);
+
 		/// <summary>
 		/// 
 		/// </summary>
@@ -173,6 +177,15 @@ namespace Nucleus.ModelEditor
 			determinations.Selected = __selectedObjectsL.ToArray();
 
 			return determinations;
+		}
+
+		public bool TryGetFirstSelected([NotNullWhen(true)] out IEditorType? editorObj) {
+			editorObj = FirstSelectedObject;
+			return editorObj != null;
+		}
+		public bool TryGetLastSelected(out IEditorType? editorObj) {
+			editorObj = LastSelectedObject;
+			return editorObj != null;
 		}
 
 		public bool AnimationMode { get; private set; } = false;
@@ -250,6 +263,11 @@ namespace Nucleus.ModelEditor
 
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
+			File.Cleared += File_Cleared;
+		}
+
+		private void File_Cleared(EditorFile file) {
+			UnselectAllObjects();
 		}
 
 		private void File_OperatorActivated(EditorFile self, Operator op) {

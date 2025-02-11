@@ -2,7 +2,9 @@
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Nucleus.ModelEditor.UI;
+using Nucleus.Types;
 using Raylib_cs;
+using System.Runtime.CompilerServices;
 
 namespace Nucleus.ModelEditor
 {
@@ -164,7 +166,7 @@ namespace Nucleus.ModelEditor
 		public delegate void BoneRename(EditorFile file, EditorBone bone, string oldName, string newName);
 		public delegate void BoneGeneric(EditorFile file, EditorBone bone);
 
-		public EditorReturnResult<EditorBone> AddBone(EditorModel model, EditorBone? parent, string? name) {
+		public EditorReturnResult<EditorBone> AddBone(EditorModel model, EditorBone? parent, string? name = null) {
 			if (name == null) {
 				// please don't have more than 100,000 unnamed bones!
 				for (int i = 0; i < 100_000; i++) {
@@ -456,37 +458,94 @@ namespace Nucleus.ModelEditor
 		// Selection modification
 		// ============================================================================================== //
 
-		public EditorResult RotateSelected(float value) {
-			var selected = ModelEditor.Active.SelectedObjects;
-			foreach (IEditorType obj in selected) if (obj.CanRotate()) obj.EditRotation(value);
+		public delegate void OnTransformed(IEditorType item, bool translation, bool rotation, bool scale, bool shear);
+		public event OnTransformed? ItemTransformed;
+
+		public EditorResult RotateOne(IEditorType item, float rotation, bool localTo = true) {
+			if (item == null) return new("Null item.");
+			if (!item.CanRotate()) return new("Cannot rotate the item; it forbids it.");
+			item.EditRotation(rotation, localTo);
+			ItemTransformed?.Invoke(item, false, true, false, false);
 			return EditorResult.OK;
 		}
-		public EditorResult TranslateXSelected(float value) {
+
+		private enum TRANSFORM_MODE {
+			Rotation = 1,
+			Location = 2,
+			Scale = 4,
+			Shear = 8
+		}
+
+		// lots of avoidable repeatable code
+		private void DoSelectionTransformation(Func<IEditorType, bool> predicate, Action<IEditorType> onEachObject, TRANSFORM_MODE transform) {
 			var selected = ModelEditor.Active.SelectedObjects;
-			foreach (IEditorType obj in selected) if (obj.CanTranslate()) obj.EditTranslationX(value);
+			HashSet<IEditorType> transformed = [];
+			foreach (IEditorType obj in selected) {
+				var transformable = obj.GetTransformableEditorType();
+				if (transformable == null) continue;
+
+				if (predicate(transformable) && !transformed.Contains(transformable)) {
+					onEachObject(transformable);
+					ItemTransformed?.Invoke(
+						obj, 
+						(transform & TRANSFORM_MODE.Location) == TRANSFORM_MODE.Location,
+						(transform & TRANSFORM_MODE.Rotation) == TRANSFORM_MODE.Rotation,
+						(transform & TRANSFORM_MODE.Scale) == TRANSFORM_MODE.Scale,
+						(transform & TRANSFORM_MODE.Shear) == TRANSFORM_MODE.Shear
+					);
+					transformed.Add(transformable);
+				}
+			}
+		}
+
+		public EditorResult RotateSelected(float value, bool additive = false) {
+			DoSelectionTransformation(
+				(editorObj) => editorObj.CanRotate(),
+				(editorObj) => editorObj.EditRotation(additive ? editorObj.GetRotation() + value : value),
+				TRANSFORM_MODE.Rotation
+			);
 			return EditorResult.OK;
 		}
-		public EditorResult TranslateYSelected(float value) {
-			var selected = ModelEditor.Active.SelectedObjects;
-			foreach (IEditorType obj in selected) if (obj.CanTranslate()) obj.EditTranslationY(value);
+		public EditorResult MoveSelectedWorldspace(Vector2F worldOffset) {
+			DoSelectionTransformation(
+				(editorObj) => editorObj.CanTranslate(),
+				(editorObj) => editorObj.SetWorldPosition(worldOffset, true),
+				TRANSFORM_MODE.Location
+			);
 			return EditorResult.OK;
 		}
-		public EditorResult ScaleXSelected(float value) {
+		public EditorResult TranslateXSelected(float value, bool additive = false, UserTransformMode transform = UserTransformMode.LocalSpace) {
+			DoSelectionTransformation(
+				(editorObj) => editorObj.CanTranslate(),
+				(editorObj) => editorObj.EditTranslationX(additive ? editorObj.GetTranslationX(transform) + value : value, transform),
+				TRANSFORM_MODE.Location
+			);
+			return EditorResult.OK;
+		}
+		public EditorResult TranslateYSelected(float value, bool additive = false, UserTransformMode transform = UserTransformMode.LocalSpace) {
+			DoSelectionTransformation(
+				(editorObj) => editorObj.CanTranslate(),
+				(editorObj) => editorObj.EditTranslationY(additive ? editorObj.GetTranslationY(transform) + value : value, transform),
+				TRANSFORM_MODE.Location
+			);
+			return EditorResult.OK;
+		}
+		public EditorResult ScaleXSelected(float value, bool additive = false) {
 			var selected = ModelEditor.Active.SelectedObjects;
 			foreach (IEditorType obj in selected) if (obj.CanScale()) obj.EditScaleX(value);
 			return EditorResult.OK;
 		}
-		public EditorResult ScaleYSelected(float value) {
+		public EditorResult ScaleYSelected(float value, bool additive = false) {
 			var selected = ModelEditor.Active.SelectedObjects;
 			foreach (IEditorType obj in selected) if (obj.CanScale()) obj.EditScaleY(value);
 			return EditorResult.OK;
 		}
-		public EditorResult ShearXSelected(float value) {
+		public EditorResult ShearXSelected(float value, bool additive = false) {
 			var selected = ModelEditor.Active.SelectedObjects;
 			foreach (IEditorType obj in selected) if (obj.CanShear()) obj.EditShearX(value);
 			return EditorResult.OK;
 		}
-		public EditorResult ShearYSelected(float value) {
+		public EditorResult ShearYSelected(float value, bool additive = false) {
 			var selected = ModelEditor.Active.SelectedObjects;
 			foreach (IEditorType obj in selected) if (obj.CanShear()) obj.EditShearY(value);
 			return EditorResult.OK;
@@ -543,6 +602,7 @@ namespace Nucleus.ModelEditor
 		public event OnOperatorDeactivated? OperatorDeactivating;
 		public event OnOperatorDeactivated? OperatorDeactivated;
 		public Operator? ActiveOperator { get; private set; }
+		public bool IsOperatorActive => ActiveOperator != null;
 		public void ActivateOperator(Operator op) {
 			if (ActiveOperator != null) DeactivateOperator(true);
 
