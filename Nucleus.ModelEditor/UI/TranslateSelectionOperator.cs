@@ -9,6 +9,8 @@ namespace Nucleus.ModelEditor
 	public class TranslateSelectionOperator : DefaultOperator
 	{
 		public static void DrawDualAxis(string name, EditorPanel editorPanel, IEditorType target) {
+			if (!target.CanTranslate() && name == "translate") return;
+			if (!target.CanScale() && name == "scale") return;
 			Texture texX = EngineCore.Level.Textures.LoadTextureFromFile($"models/gizmo_{name}_dirX.png");
 			Texture texY = EngineCore.Level.Textures.LoadTextureFromFile($"models/gizmo_{name}_dirY.png");
 			float size = 96f;

@@ -36,6 +36,7 @@ namespace Nucleus.ModelEditor.UI.Operators
 					DropdownSelector<EditorSlot>? dropdownSlot = null;
 					if (bone.Slots.Count <= 0) {
 						existingSlotPanel.Panel.Enabled = false;
+						existingSlotPanel.Checkbox.Checked = false;
 						newSlotPanel.Checkbox.Checked = true;
 					}
 					else {
@@ -55,17 +56,25 @@ namespace Nucleus.ModelEditor.UI.Operators
 						true,
 						() => {
 							var file = ModelEditor.Active.File;
-							if (existingSlotPanel.Checkbox.Checked && dropdownSlot != null && dropdownSlot.Selected != null) {
-								var result = file.AddAttachment<EditorRegionAttachment>(dropdownSlot.Selected, newSlotName.Text);
-								if (result.Failed) {
-
-								}
-								else {
-									result.Result.Path = $"<{SelectedImage.Name}>";
+							EditorSlot? slot = null;
+							if (existingSlotPanel.Checkbox.Checked) {
+								if (dropdownSlot != null && dropdownSlot.Selected != null) {
+									slot = dropdownSlot.Selected;
 								}
 							}
 							else {
+								var slotTest = file.AddSlot(bone, newSlotName.Text);
+								if (slotTest.Failed) return;
+								slot = slotTest.Result;
+							}
+							if (slot == null) return;
 
+							var result = file.AddAttachment<EditorRegionAttachment>(slot, newSlotName.Text);
+							if (result.Failed) {
+
+							}
+							else {
+								result.Result.Path = $"<{SelectedImage.Name}>";
 							}
 						},
 						null

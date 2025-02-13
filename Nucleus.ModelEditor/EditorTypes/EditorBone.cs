@@ -109,7 +109,18 @@ namespace Nucleus.ModelEditor
 
 		public Vector2F GetWorldPosition() => WorldTransform.Translation;
 		public void SetWorldPosition(Vector2F pos, bool additive = false) {
-			// Todo: implement
+			Vector2F posF;
+
+			Transformation? wt = Parent == null ? null : Parent.WorldTransform;
+			if (additive) {
+				var wp = GetWorldPosition();
+				posF = wt == null ? (wp - pos) : (wt ?? throw new Exception()).WorldToLocal(wp - pos);
+			}
+			else posF = wt == null ? pos : (wt ?? throw new Exception()).WorldToLocal(pos);
+
+
+			if (AnimationMode) Position = posF - SetupPosition;
+			else SetupPosition = posF;
 		}
 		public float GetWorldRotation() => WorldTransform.LocalToWorldRotation(0) + GetRotation();
 		public float GetScreenRotation() {

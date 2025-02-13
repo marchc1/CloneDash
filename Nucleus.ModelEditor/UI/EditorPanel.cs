@@ -309,8 +309,8 @@ namespace Nucleus.ModelEditor
 
 		public Vector2F HoverGridPos { get; private set; }
 
-		private bool IsTypeProhibitedByOperator<T>()
-			=> SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
+		private bool IsTypeProhibitedByOperator<T>() => SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
+		private bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
 
 		protected override void OnThink(FrameState frameState) {
 			// Hover determination
@@ -324,6 +324,11 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
+						foreach(var slot in bone.Slots) {
+							foreach(var attachment in slot.Attachments)
+								if (attachment.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator(attachment.GetType()))
+									hovered = attachment;
+						}
 						if (bone.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator<EditorBone>())
 							hovered = bone;
 					}
@@ -446,15 +451,16 @@ namespace Nucleus.ModelEditor
 			CanDragCamera = false;
 			__dragBlocked = false;
 
-			bool allowSelection = DefaultOperator?.GizmoReleased(this, ClickedObject, GetMousePos()) ?? true;
+			if (button == Types.MouseButton.Mouse1) {
+				bool allowSelection = DefaultOperator?.GizmoReleased(this, ClickedObject, GetMousePos()) ?? true;
 
-			if (
-				button == Types.MouseButton.Mouse1
-				&& ClickedObject != null
-				&& !ModelEditor.Active.IsObjectSelected(ClickedObject)
-				&& allowSelection
-			) {
-				ModelEditor.Active.SelectObject(ClickedObject, state.KeyboardState.ShiftDown);
+				if (
+					ClickedObject != null
+					&& !ModelEditor.Active.IsObjectSelected(ClickedObject)
+					&& allowSelection
+				) {
+					ModelEditor.Active.SelectObject(ClickedObject, state.KeyboardState.ShiftDown);
+				}
 			}
 		}
 
@@ -498,11 +504,9 @@ namespace Nucleus.ModelEditor
 
 			if (bone.Length > 0) {
 				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
-				var lengthMul = (float)NMath.Remap(bone.Length, 0, 150, 0, 1, true);
-				var r = 7 * lengthMul;
-				var rI = 5 * lengthMul;
-				Raylib.DrawRing(wp, rI * byHowMuch, r * byHowMuch, 0, 360, 32, color);
-				Raylib.DrawCircleV(wp, rI * byHowMuch, color.Adjust(0, 0, -0.8f));
+				var innerRing = Level.Textures.LoadTextureFromFile("models/bonering.png");
+				var lengthMul = (float)NMath.Remap(bone.Length, 40, 150, 0.38, 1, true) * 11;
+				Raylib.DrawTexturePro(innerRing, new(0, 0, innerRing.Width, innerRing.Height), new(wt.X - (lengthMul / 2), wt.Y - (lengthMul / 2), lengthMul, lengthMul), new(0), 0, color);
 			}
 			else
 				boneTex = Level.Textures.LoadTextureFromFile("models/lengthlessbonetex.png");
@@ -525,7 +529,7 @@ namespace Nucleus.ModelEditor
 				// Inverted because for some reason disabling backface culling doesn't want to work
 				// (or maybe something else is going on that I don't understand, regardless, that's
 				// why this is repeated but in reverse)
-
+				/*
 				Rlgl.TexCoord2f(1, 0); Rlgl.Vertex3f(tipBottom.X, tipBottom.Y, 0);
 				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
 				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
@@ -533,7 +537,7 @@ namespace Nucleus.ModelEditor
 				Rlgl.TexCoord2f(0, 1); Rlgl.Vertex3f(baseTop.X, baseTop.Y, 0);
 				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
 				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
-
+				*/
 				Rlgl.End();
 			}
 			else {

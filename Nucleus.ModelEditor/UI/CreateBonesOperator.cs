@@ -23,7 +23,7 @@ namespace Nucleus.ModelEditor
 		Vector2F gridDragLast;
 
 		public override bool GizmoStartDragging(EditorPanel editorPanel, Vector2F mouseScreenStart, IEditorType? currentSelection, IEditorType? clicked) {
-			if (parentBone == null) throw new Exception("Wtf?");
+			if (parentBone == null) return false;
 			MakeBone();
 			var bonePos = parentBone.WorldTransform.WorldToLocal(editorPanel.ScreenToGrid(mouseScreenStart));
 			ModelEditor.Active.File.TranslateXSelected(bonePos.X);
@@ -33,6 +33,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void GizmoDrag(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenNow, IEnumerable<IEditorType> targets) {
+			if (bone == null) return;
 			var bonePos = bone.WorldTransform.LocalToWorld(0, 0);
 			var boneEnd = editorPanel.ScreenToGrid(mouseScreenNow);
 			var length = boneEnd.Distance(bonePos);

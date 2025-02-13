@@ -19,6 +19,8 @@ namespace Nucleus.ModelEditor
 
 		public abstract string EditorIcon { get; }
 
+		public virtual bool HoverTest(Vector2F gridPos) => false;
+
 		[JsonIgnore] public abstract string SingleName { get; }
 		[JsonIgnore] public abstract string PluralName { get; }
 
@@ -39,21 +41,26 @@ namespace Nucleus.ModelEditor
 
 		public virtual bool GetVisible() => !Hidden;
 
-		public virtual float GetTranslationX() => 0f;
-		public virtual float GetTranslationY() => 0f;
-		public virtual float GetRotation() => 0f;
+		public virtual float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
+		public virtual float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
+		public virtual float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => 0f;
 		public virtual float GetScaleX() => 0f;
 		public virtual float GetScaleY() => 0f;
 		public virtual float GetShearX() => 0f;
 		public virtual float GetShearY() => 0f;
 
-		public virtual void EditTranslationX(float value) { }
-		public virtual void EditTranslationY(float value) { }
-		public virtual void EditRotation(float value) { }
+		public virtual void EditTranslationX(float value, UserTransformMode transform = UserTransformMode.LocalSpace) { }
+		public virtual void EditTranslationY(float value, UserTransformMode transform = UserTransformMode.LocalSpace) { }
+		public virtual void EditRotation(float value, bool localTo = true) { }
 		public virtual void EditScaleX(float value) { }
 		public virtual void EditScaleY(float value) { }
 		public virtual void EditShearX(float value) { }
 		public virtual void EditShearY(float value) { }
+
+		public virtual Vector2F GetWorldPosition() => Vector2F.Zero;
+		public virtual void SetWorldPosition(Vector2F pos, bool additive = false) { }
+		public virtual float GetWorldRotation() => 0;
+		public virtual float GetScreenRotation() => 0;
 
 		public virtual void OnMouseEntered() { }
 		public virtual void OnMouseLeft() { }
