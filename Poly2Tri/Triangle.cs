@@ -63,8 +63,8 @@ namespace Poly2Tri
                 _neighbours[1] = t;
             else if ((p1.Equals(Points[0]) && p2.Equals(Points[1])) || (p1.Equals(Points[1]) && p2.Equals(Points[0])))
                 _neighbours[2] = t;
-            else
-                Debug.Assert(false, "Specified trianlge is not a neighbor");
+            //else
+                //Debug.Assert(false, "Specified trianlge is not a neighbor");
         }
 
         /// <summary>

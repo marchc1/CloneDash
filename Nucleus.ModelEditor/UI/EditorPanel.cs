@@ -399,7 +399,7 @@ namespace Nucleus.ModelEditor
 				ClickedObject = HoveredObject;
 				var operatorActive = ModelEditor.Active.File.ActiveOperator != null;
 				if (operatorActive) {
-					
+
 					ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 				}
 				else {
@@ -448,7 +448,7 @@ namespace Nucleus.ModelEditor
 				DefaultOperator?.GizmoDrag(this, __dragStartScreenspace, pos, ModelEditor.Active.SelectedObjects);
 			}
 			if (ModelEditor.Active.File.IsOperatorActive) {
-				ModelEditor.Active.File.ActiveOperator?.Drag(ModelEditor.Active, __dragStartScreenspace, ClickPos);
+				ModelEditor.Active.File.ActiveOperator?.Drag(ModelEditor.Active, __dragStartScreenspace, GetMousePos());
 			}
 			if (__startedDrag && CanDragCamera) {
 				var dragGridPos = ScreenToGrid(GetMousePos()) - __dragStartGridspace;
@@ -628,8 +628,10 @@ namespace Nucleus.ModelEditor
 			Raylib.DrawLine3D(new(-10000, 0, 0), new(10000, 0, 0), Color.BLACK);
 			Raylib.DrawLine3D(new(0, -10000, 0), new(0, 10000, 0), Color.BLACK);
 
-			DrawModels();
-			Draw3DCursor();
+			if (!(ModelEditor.Active.File.ActiveOperator?.RenderOverride() ?? false)) {
+				DrawModels();
+				Draw3DCursor();
+			}
 
 			Raylib.EndMode3D();
 			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);

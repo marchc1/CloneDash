@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Poly2Tri
@@ -15,7 +14,7 @@ namespace Poly2Tri
 
         public double Y;
 
-        [JsonIgnore] public List<Edge> EdgeList;
+        public List<Edge> EdgeList;
 
         public TriPoint() { }
 
@@ -164,7 +163,7 @@ namespace Poly2Tri
 
         public bool Equals(TriPoint other)
         {
-            return other != null && X == other.X && Y == other.Y;
+            return X == other.X && Y == other.Y;
         }
 
         public static TriPoint operator *(TriPoint a, double scale)

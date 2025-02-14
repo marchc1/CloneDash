@@ -74,5 +74,7 @@ namespace Nucleus.ModelEditor.UI
 		/// Deactivate the operator. Should only be called internally; its just a macro.
 		/// </summary>
 		protected void Deactivate(bool cancel = false) => ModelEditor.Active.File.DeactivateOperator(cancel);
+
+		public virtual bool RenderOverride() => false;
 	}
 }

@@ -49,6 +49,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void GizmoDrag(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenNow, IEnumerable<IEditorType> targets) {
+			if (revolutionManager == null) return;
 			var angDelta = revolutionManager.CalculateDelta(editorPanel.ScreenToGrid(mouseScreenNow));
 			ModelEditor.Active.File.RotateSelected(-angDelta, true);
 			Console.WriteLine($"{angDelta}, {mouseScreenNow}");

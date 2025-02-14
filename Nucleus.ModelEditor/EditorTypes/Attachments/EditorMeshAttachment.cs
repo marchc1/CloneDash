@@ -35,12 +35,14 @@ namespace Nucleus.ModelEditor
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
 
+		List<Vector2F> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
 			CreateButton.Pulsing = CurrentMode == EditMesh_Mode.Create;
 			DeleteButton.Pulsing = CurrentMode == EditMesh_Mode.Delete;
 			NewButton.Pulsing = CurrentMode == EditMesh_Mode.New;
 			ResetButton.Pulsing = CurrentMode == EditMesh_Mode.Reset;
+			WorkingLines.Clear();
 		}
 
 		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
@@ -71,49 +73,179 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		public TriPoint? HoveredVertex;
+		public int HoveredIndex = -1;
+		public int ClickedIndex = -1;
+		public bool isClickedSteiner = false;
+		public bool isSteinerPoint = false;
 
 		public EditorMeshAttachment Attachment => this.UIDeterminations.Last as EditorMeshAttachment ?? throw new Exception("Wtf?");
 
 		public override void Think(ModelEditor editor, Vector2F mousePos) {
 			EditorPanel editorPanel = editor.Editor;
 			float closestVertexDist = 100000000;
-			HoveredVertex = null;
 
+			HoveredIndex = -1;
+
+			PatchAttachmentTransform();
 			System.Numerics.Vector2 mp = (Attachment.WorldTransform.WorldToLocal(mousePos)).ToNumerics();
 
-			foreach (var vertex in Attachment.Shape.Points) {
+			var camsize = ModelEditor.Active.Editor.CameraZoom;
+			var dist = 16f / camsize;
+			var array = (CurrentMode == EditMesh_Mode.New ? WorkingLines : Attachment.ConstrainedEdges);
+			for (int i = 0; i < array.Count; i++) {
+				var vertex = array[i];
 				var vertexDistance = System.Numerics.Vector2.Distance(mp, vertex.ToNumerics());
 				if (vertexDistance < closestVertexDist) {
-					HoveredVertex = vertex;
 					closestVertexDist = vertexDistance;
+					isSteinerPoint = false;
+					HoveredIndex = i;
 				}
 			}
 
-			if (closestVertexDist > 4)
-				HoveredVertex = null;
+			if (closestVertexDist > dist && CurrentMode != EditMesh_Mode.New) {
+				closestVertexDist = 1000000000;
+				for (int i = 0; i < Attachment.SteinerPoints.Count; i++) {
+					var vertex = Attachment.SteinerPoints[i];
+					var vertexDistance = System.Numerics.Vector2.Distance(mp, vertex.ToNumerics());
+					if (vertexDistance < closestVertexDist) {
+						closestVertexDist = vertexDistance;
+						isSteinerPoint = true;
+						HoveredIndex = i;
+					}
+				}
+			}
+
+
+			if (closestVertexDist > dist) {
+				HoveredIndex = -1;
+			}
+
+			RestoreAttachmentTransform();
 		}
+
+		public Vector2F ClampVertexPosition(Vector2F pos) {
+			return new(
+				Math.Clamp(pos.X, Attachment.LocalWidth / -2, Attachment.LocalWidth / 2),
+				Math.Clamp(pos.Y, Attachment.LocalHeight / -2, Attachment.LocalHeight / 2)
+			);
+		}
+
 
 		public override void Clicked(ModelEditor editor, Vector2F mousePos) {
 			base.Clicked(editor, mousePos);
+			PatchAttachmentTransform();
+
 			switch (CurrentMode) {
-				case EditMesh_Mode.Delete:
-					if(HoveredVertex != null) {
-						Attachment.Shape.Points.Remove(HoveredVertex);
-						HoveredVertex = null;
+				case EditMesh_Mode.Create:
+					if (HoveredIndex == -1) {
+						var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
+						Attachment.SteinerPoints.Add(newPoint);
 						Attachment.Invalidate();
 					}
 					break;
+				case EditMesh_Mode.Delete:
+					if (HoveredIndex != -1) {
+						if (isSteinerPoint)
+							Attachment.SteinerPoints.RemoveAt(HoveredIndex);
+						else
+							Attachment.ConstrainedEdges.RemoveAt(HoveredIndex);
+						HoveredIndex = -1;
+						Attachment.Invalidate();
+					}
+					break;
+				case EditMesh_Mode.New:
+					if (HoveredIndex == 0) {
+
+						Attachment.ConstrainedEdges.Clear();
+						RestoreAttachmentTransform();
+						Attachment.ConstrainedEdges.AddRange(WorkingLines);
+						Attachment.Invalidate();
+						SetMode(EditMesh_Mode.Modify);
+					}
+					else {
+						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(mousePos) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation);
+
+						WorkingLines.Add(newClickP);
+					}
+					break;
 			}
+			RestoreAttachmentTransform();
+			ClickedIndex = HoveredIndex;
+			isClickedSteiner = isSteinerPoint;
 		}
 		public override void DragStart(ModelEditor editor, Vector2F mousePos) {
 			base.DragStart(editor, mousePos);
 		}
 		public override void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) {
-			base.Drag(editor, startPos, mousePos);
+			PatchAttachmentTransform();
+			switch (CurrentMode) {
+				case EditMesh_Mode.Modify:
+					if (ClickedIndex != -1) {
+						var mouseGridPos = editor.Editor.ScreenToGrid(mousePos);
+						var localized = Attachment.WorldTransform.WorldToLocal(mouseGridPos);
+						var clamped = ClampVertexPosition(localized);
+
+						if (isClickedSteiner)
+							Attachment.SteinerPoints[ClickedIndex] = clamped;
+						else
+							Attachment.ConstrainedEdges[ClickedIndex] = clamped;
+
+						Attachment.Invalidate();
+					}
+					break;
+			}
+			RestoreAttachmentTransform();
 		}
 		public override void DragRelease(ModelEditor editor, Vector2F mousePos) {
 			base.DragRelease(editor, mousePos);
+			ClickedIndex = -1;
+		}
+
+		private Transformation StoredAttachTransform;
+		private void PatchAttachmentTransform() {
+			if (CurrentMode != EditMesh_Mode.New) return;
+
+			StoredAttachTransform = Attachment.WorldTransform;
+			Attachment.WorldTransform = Transformation.CalculateWorldTransformation(StoredAttachTransform.Translation, 0, Vector2F.One, Vector2F.Zero, TransformMode.Normal);
+			Attachment.SuppressWorldTransform = true;
+		}
+		private void RestoreAttachmentTransform() {
+			if (CurrentMode != EditMesh_Mode.New) return;
+			Attachment.WorldTransform = StoredAttachTransform;
+			Attachment.SuppressWorldTransform = false;
+		}
+		public override bool RenderOverride() {
+			if (CurrentMode == EditMesh_Mode.New) {
+				var camsize = ModelEditor.Active.Editor.CameraZoom;
+
+				PatchAttachmentTransform();
+				Attachment.RenderStandalone();
+
+				var mp = ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos()) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation;
+
+				for (int i = 0; i < WorkingLines.Count; i++) {
+					var edge1 = WorkingLines[i].ToNumerics().ToNucleus();
+					var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToNumerics().ToNucleus();
+
+					edge1 = Attachment.WorldTransform.LocalToWorld(edge1);
+					edge2 = Attachment.WorldTransform.LocalToWorld(edge2);
+
+					Color c = i < WorkingLines.Count - 1 ? new Color(150, 150, 255) : new Color(60, 120, 255, 160);
+						Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
+
+					var isHighlighted = i == HoveredIndex;
+					Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 4.5f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				}
+
+				if (HoveredIndex == -1)
+					Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.LIME);
+
+				RestoreAttachmentTransform();
+
+				return true;
+			}
+
+			return false;
 		}
 	}
 
@@ -132,7 +264,7 @@ namespace Nucleus.ModelEditor
 		public float Rotation { get; set; }
 		public Vector2F Scale { get => scale; set => scale = value; }
 
-		public Shape Shape = new();
+		[JsonIgnore] public Shape Shape;
 
 		public override bool CanTranslate() => true;
 		public override bool CanRotate() => true;
@@ -172,6 +304,9 @@ namespace Nucleus.ModelEditor
 
 		public Color Color { get; set; } = Color.WHITE;
 
+		public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
+		public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
+
 		private (Texture Texture, AtlasRegion Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
 			var model = Slot.Bone.Model;
 
@@ -201,17 +336,71 @@ namespace Nucleus.ModelEditor
 		private List<Triangle> triangles = [];
 		[JsonIgnore] public bool Invalidated { get; set; } = true;
 		public bool Invalidate() => Invalidated = true;
+
+		public List<Vector2F> ConstrainedEdges = [];
+		public List<Vector2F> SteinerPoints = [];
+
 		private void RefreshDelaunator() {
-			if (Invalidated)
+			if (Invalidated) {
+				Span<float> x = stackalloc float[ConstrainedEdges.Count];
+				Span<float> y = stackalloc float[ConstrainedEdges.Count];
+				for (int i = 0; i < ConstrainedEdges.Count; i++) {
+					x[i] = ConstrainedEdges[i].X;
+					y[i] = ConstrainedEdges[i].Y;
+				}
+				triangles.Clear();
+				Shape = new Shape(x, y);
+
+				foreach (var steinerPoint in SteinerPoints)
+					Shape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y));
+
 				Shape.Triangulate(triangles);
-			Invalidated = false;
+				Invalidated = false;
+			}
+		}
+
+		[JsonIgnore] public bool SuppressWorldTransform = false;
+
+		public void RenderStandalone() {
+			// todo ^^ missing texture (prob just purple-black checkerboard)
+			var quadpoints = this.quadpoints();
+
+			AtlasRegion region = quadpoints.Region;
+			Texture tex = quadpoints.Texture;
+			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
+
+			Rlgl.Begin(DrawMode.TRIANGLES);
+			Rlgl.SetTexture(((Texture2D)tex).Id);
+
+			Rlgl.Color4ub(255, 255, 255, 255);
+
+			float uStart, uEnd, vStart, vEnd;
+			uStart = (float)region.X / (float)tex.Width;
+			uEnd = uStart + ((float)region.W / (float)tex.Width);
+
+			vStart = ((float)region.Y / (float)tex.Height);
+			vEnd = vStart + ((float)region.H / (float)tex.Height);
+
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
+			Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex3f(TL.X, TL.Y, 0);
+
+			Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex3f(BR.X, BR.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
+
+			Rlgl.End();
+
+			Rlgl.DrawRenderBatchActive();
 		}
 
 		public override void Render() {
 			// todo ^^ missing texture (prob just purple-black checkerboard)
 			RefreshDelaunator();
 
-			WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+			if (!SuppressWorldTransform)
+				WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
@@ -272,20 +461,25 @@ namespace Nucleus.ModelEditor
 				}
 			}
 
-			for (int i = 0; i < Shape.Points.Count; i++) {
-				var edge1 = Shape.Points[i].ToNumerics().ToNucleus();
-				var edge2 = Shape.Points[(i + 1) % Shape.Points.Count].ToNumerics().ToNucleus();
+			for (int i = 0; i < ConstrainedEdges.Count; i++) {
+				var edge1 = ConstrainedEdges[i].ToNumerics().ToNucleus();
+				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count].ToNumerics().ToNucleus();
 
 				edge1 = WorldTransform.LocalToWorld(edge1);
 				edge2 = WorldTransform.LocalToWorld(edge2);
 
 				Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), new Color(150, 150, 255));
 
-				var isHighlighted = meshOp != null && meshOp.HoveredVertex == Shape.Points[i];
+				var isHighlighted = meshOp != null && meshOp.HoveredIndex == i && !meshOp.isSteinerPoint;
 				Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 
 				if (i != Shape.Points.Count - 1)
 					Raylib.DrawCircleV(edge2.ToNumerics(), 2f / camsize, new Color(200, 200, 255));
+			}
+
+			for (int i = 0; i < SteinerPoints.Count; i++) {
+				var isHighlighted = meshOp != null && meshOp.HoveredIndex == i && meshOp.isSteinerPoint;
+				Raylib.DrawCircleV(WorldTransform.LocalToWorld(SteinerPoints[i]).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 			}
 		}
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Poly2Tri
@@ -17,7 +18,7 @@ namespace Poly2Tri
         /// <summary>
         /// Extra points inserted within the shape's area to control or increase triangulation.
         /// </summary>
-        public readonly List<TriPoint> SteinerPoints;
+        public readonly List<TriPoint> SteinerPoints = new List<TriPoint>();
 
         /// <summary>
         /// A list of subtraction shapes fully contained inside this shape.<para/>
@@ -29,20 +30,25 @@ namespace Poly2Tri
 
         public Shape() { }
 
-        /// <summary>
-        /// Create a polygon from a list of at least 3 points with no duplicates.
-        /// </summary>
-        /// <param name="points">A list of unique points</param>
-        public Shape(IList<TriPoint> points)
-        {
-            Points.AddRange(points);
-        }
+		/// <summary>
+		/// Create a polygon from a list of at least 3 points with no duplicates.
+		/// </summary>
+		/// <param name="points">A list of unique points</param>
+		public Shape(IList<TriPoint> points) {
+			Points.AddRange(points);
+		}
 
-        /// <summary>
-        /// Create a polygon from a list of at least 3 points with no duplicates.
-        /// </summary>
-        /// <param name="points">A list of unique points</param>
-        public Shape(IList<TriPoint> points, Vector2 offset, float scale)
+
+		public Shape(Span<float> x, Span<float> y) {
+			for (int i = 0; i < x.Length; i++) {
+				Points.Add(new(x[i], y[i]));
+			}
+		}
+		/// <summary>
+		 /// Create a polygon from a list of at least 3 points with no duplicates.
+		 /// </summary>
+		 /// <param name="points">A list of unique points</param>
+		public Shape(IList<TriPoint> points, Vector2 offset, float scale)
         {
             for (int i = 0; i < points.Count; i++)
                 Points.Add(new TriPoint(offset + ((Vector2)points[i] * scale)));
@@ -127,6 +133,9 @@ namespace Poly2Tri
             foreach (Shape h in Holes)
                 tcx.AddHole(h.Points);
 
+			foreach (TriPoint t in SteinerPoints)
+				tcx.AddPoint(t);
+
             tcx.InitTriangulation();
             Sweep sweep = new Sweep();
             sweep.Triangulate(tcx);
@@ -134,7 +143,6 @@ namespace Poly2Tri
             List<Triangle> triangles = tcx.GetTriangles();
             foreach (Triangle tri in triangles)
             {
-                //tri.ReversePointFlow();
                 output.Add(((Vector2)tri.Points[0] * scale) + offset);
                 output.Add(((Vector2)tri.Points[2] * scale) + offset);
                 output.Add(((Vector2)tri.Points[1] * scale) + offset);
@@ -153,7 +161,11 @@ namespace Poly2Tri
             foreach (Shape p in Holes)
                 tcx.AddHole(p.Points);
 
-            tcx.InitTriangulation();
+
+			foreach (TriPoint t in SteinerPoints)
+				tcx.AddPoint(t);
+
+			tcx.InitTriangulation();
             Sweep sweep = new Sweep();
             sweep.Triangulate(tcx);
 

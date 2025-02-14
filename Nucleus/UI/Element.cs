@@ -285,7 +285,7 @@ namespace Nucleus.UI
 			}
 
 			UI.Elements.Remove(this);
-			foreach (Element element in this.Children)
+			foreach (Element element in this.Children.ToArray())
 				element.REMOVE();
 		}
 		public void Remove() {
