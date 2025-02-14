@@ -325,15 +325,16 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
-						foreach (var slot in bone.Slots) {
-							foreach (var attachment in slot.Attachments)
-								if (attachment.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator(attachment.GetType()))
-									hovered = attachment;
-						}
 						if (bone.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator<EditorBone>())
 							hovered = bone;
 					}
 				}
+
+
+				foreach (var slot in model.Slots)
+					foreach (var attachment in slot.Attachments)
+						if (attachment.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator(attachment.GetType()))
+							hovered = attachment;
 			}
 
 			if (HoveredObject != null) {

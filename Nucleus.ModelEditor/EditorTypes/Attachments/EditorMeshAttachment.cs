@@ -488,8 +488,21 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override bool HoverTest(Vector2F gridPos) {
-			var quadpoints = this.quadpoints();
-			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
+			RefreshDelaunator();
+
+			var localizedPos = WorldTransform.WorldToLocal(gridPos);
+			foreach (var tri in triangles)
+				if (localizedPos.InTriangle(new(
+						tri.Points[0].ToNumerics().ToNucleus(),
+						tri.Points[1].ToNumerics().ToNucleus(),
+						tri.Points[2].ToNumerics().ToNucleus()
+					)))
+					return true;
+
+			return false;
+
+			// var quadpoints = this.quadpoints();
+			// return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
 		}
 	}
 }
