@@ -1,4 +1,6 @@
-﻿namespace Nucleus.ModelEditor.UI
+﻿using Nucleus.Types;
+
+namespace Nucleus.ModelEditor.UI
 {
 	/// <summary>
 	/// A user operator. 
@@ -27,6 +29,11 @@
 		/// Called after UI determinations are set.
 		/// </summary>
 		protected virtual void Activated() { }
+		public virtual void Think(ModelEditor editor, Vector2F mousePos) { }
+		public virtual void Clicked(ModelEditor editor, Vector2F mousePos) { }
+		public virtual void DragStart(ModelEditor editor, Vector2F mousePos) { }
+		public virtual void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) { }
+		public virtual void DragRelease(ModelEditor editor, Vector2F mousePos) { }
 		/// <summary>
 		/// Called in a few ways:
 		/// <br></br>

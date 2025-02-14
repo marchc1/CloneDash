@@ -202,10 +202,6 @@ namespace Nucleus.UI
 			if (vischar.Type == CharacterType.NoAction)
 				return;
 
-			if (Caret.HasSelection) {
-				DeleteSelection();
-			}
-
 			LastKeyboardInteraction = DateTime.Now;
 			if (vischar.Type == CharacterType.VisibleCharacter) {
 				if (state.ControlDown) {
@@ -233,6 +229,9 @@ namespace Nucleus.UI
 					}
 				}
 				else {
+					if (Caret.HasSelection) {
+						DeleteSelection();
+					}
 					Text = Text.Substring(0, Caret.Pointer) + vischar + Text.Substring(Caret.Pointer);
 					Caret.IncrementPointer(Text);
 				}

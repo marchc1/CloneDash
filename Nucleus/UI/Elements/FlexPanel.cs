@@ -33,7 +33,7 @@ namespace Nucleus.UI
         }
         public override T Add<T>(T? toAdd = null) where T : class {
             InvalidateChildren(self: true, recursive: true);
-            return base.Add<T>(toAdd);
+            return base.Add(toAdd);
         }
         public override void Paint(float width, float height) {
 

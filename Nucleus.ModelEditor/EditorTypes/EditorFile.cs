@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using glTFLoader.Schema;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Nucleus.ModelEditor.UI;
@@ -11,7 +12,8 @@ namespace Nucleus.ModelEditor
 	public class ModelEditorSerializationBinder : ISerializationBinder
 	{
 		private static HashSet<Type> ApprovedBindables = [
-			typeof(EditorRegionAttachment)
+			typeof(EditorRegionAttachment),
+			typeof(EditorMeshAttachment),
 		];
 		public Type BindToType(string? assemblyName, string typeName) {
 			var resolvedTypeName = $"{typeName}, {assemblyName}";
@@ -372,6 +374,17 @@ namespace Nucleus.ModelEditor
 			return attachment;
 		}
 
+		public EditorResult RenameAttachment(EditorAttachment attachment, string newName) {
+			if (attachment.Slot.TryFindAttachment(newName, out var _))
+				return new("An attachment with that name already exists.");
+
+			var oldName = attachment.Name;
+			attachment.Name = newName;
+			AttachmentRenamed?.Invoke(this, attachment, oldName, newName);
+
+			return EditorResult.OK;
+		}
+
 		// ============================================================================================== //
 		// Skins
 		// ============================================================================================== //
@@ -469,7 +482,8 @@ namespace Nucleus.ModelEditor
 			return EditorResult.OK;
 		}
 
-		private enum TRANSFORM_MODE {
+		private enum TRANSFORM_MODE
+		{
 			Rotation = 1,
 			Location = 2,
 			Scale = 4,
@@ -487,7 +501,7 @@ namespace Nucleus.ModelEditor
 				if (predicate(transformable) && !transformed.Contains(transformable)) {
 					onEachObject(transformable);
 					ItemTransformed?.Invoke(
-						obj, 
+						obj,
 						(transform & TRANSFORM_MODE.Location) == TRANSFORM_MODE.Location,
 						(transform & TRANSFORM_MODE.Rotation) == TRANSFORM_MODE.Rotation,
 						(transform & TRANSFORM_MODE.Scale) == TRANSFORM_MODE.Scale,
@@ -627,6 +641,56 @@ namespace Nucleus.ModelEditor
 			T op = new();
 			ActivateOperator(op);
 			return op;
+		}
+
+		internal void ConvertAttachmentTo<T>(EditorAttachment attachment) where T : EditorAttachment {
+			bool selected = attachment.Selected;
+			if (selected)
+				ModelEditor.Active.UnselectObject(attachment);
+			EditorAttachment? newAttachment = null;
+			switch (attachment) {
+				case EditorRegionAttachment regionFrom:
+					switch (typeof(T).Name) {
+						case "EditorMeshAttachment":
+							EditorMeshAttachment meshTo = new EditorMeshAttachment();
+							newAttachment = meshTo;
+
+							meshTo.Path = regionFrom.Path;
+							meshTo.Position = regionFrom.Position;
+							meshTo.Rotation = regionFrom.Rotation;
+							meshTo.Scale = regionFrom.Scale;
+
+							var quadpoints = regionFrom.QuadPoints(localized: false);
+
+							meshTo.Shape.AddPoint(quadpoints.TL.ToNumerics());
+							meshTo.Shape.AddPoint(quadpoints.TR.ToNumerics());
+							meshTo.Shape.AddPoint(quadpoints.BR.ToNumerics());
+							meshTo.Shape.AddPoint(quadpoints.BL.ToNumerics());
+
+							break;
+					}
+					break;
+			}
+
+			if (newAttachment == null)
+				throw new NotImplementedException($"No attachment conversion exists from {attachment.GetType().Name} -> {typeof(T).Name}.");
+
+			// copy mutual properties
+			newAttachment.Slot = attachment.Slot;
+			newAttachment.Name = attachment.Name;
+
+			List<EditorAttachment> attachments = attachment.Slot.Attachments;
+			var index = attachments.IndexOf(attachment);
+
+			if (index == -1)
+				throw new InvalidOperationException("Attachment wasn't a part of the slots attachments, yet was assigned to the slot...?");
+
+			attachments[index] = newAttachment;
+
+			AttachmentRemoved?.Invoke(this, attachment.Slot, attachment);
+			AttachmentAdded?.Invoke(this, newAttachment.Slot, newAttachment);
+			if (selected)
+				ModelEditor.Active.SelectObject(newAttachment);
 		}
 	}
 }

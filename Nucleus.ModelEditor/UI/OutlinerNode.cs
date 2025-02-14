@@ -78,6 +78,11 @@ namespace Nucleus.ModelEditor
 			Outliner.InvalidateChildren();
 		}
 
+		public void InvalidateNode() {
+			Outliner.InvalidateLayout();
+			Outliner.InvalidateChildren();
+		}
+
 		public OutlinerPanel Outliner;
 
 		private bool __expanded = true;

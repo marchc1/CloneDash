@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Colorful.Console" Version="1.2.15" />
+    <PackageReference Include="Delaunator" Version="1.0.11" />
     <PackageReference Include="FftSharp" Version="2.2.0" />
     <PackageReference Include="RectpackSharp" Version="1.2.0" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
@@ -21,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\glTFLoader\glTFLoader.csproj" />
     <ProjectReference Include="..\Nucleus.ModelSystem\Nucleus.ModelSystem.csproj" />
+    <ProjectReference Include="..\Poly2Tri\Poly2Tri.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
 

@@ -12,6 +12,15 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
+	public struct QuadPoints
+	{
+		public Texture Texture;
+		public AtlasRegion Region;
+		public Vector2F TL;
+		public Vector2F TR;
+		public Vector2F BL;
+		public Vector2F BR;
+	}
 	public class EditorRegionAttachment : EditorAttachment
 	{
 		public override string SingleName => "region";
@@ -65,7 +74,7 @@ namespace Nucleus.ModelEditor
 
 		public Color Color { get; set; } = Color.WHITE;
 
-		private (Texture Texture, AtlasRegion Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
+		public QuadPoints QuadPoints(bool localized = true) {
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
@@ -76,19 +85,67 @@ namespace Nucleus.ModelEditor
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
 			Texture tex = model.Images.TextureAtlas.Texture;
 
-			Vector2F TL = WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
-			Vector2F TR = WorldTransform.LocalToWorld(heightDiv2, -widthDiv2);
-			Vector2F BR = WorldTransform.LocalToWorld(heightDiv2, widthDiv2);
-			Vector2F BL = WorldTransform.LocalToWorld(-heightDiv2, widthDiv2);
+			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
+			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
+			Vector2F BR = localized ? WorldTransform.LocalToWorld(heightDiv2, widthDiv2) : new(heightDiv2, widthDiv2);
+			Vector2F BL = localized ? WorldTransform.LocalToWorld(-heightDiv2, widthDiv2) : new(-heightDiv2, widthDiv2);
 
-			return (
-				tex,
-				region,
-				TL,
-				TR,
-				BL,
-				BR
-			);
+			return new() {
+				Texture = tex,
+				Region = region,
+				TL = TL,
+				TR = TR,
+				BL = BL,
+				BR = BR
+			};
+		}
+
+		public override void RenderOverlay() {
+			var quadpoints = this.QuadPoints();
+			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
+
+			if (Selected || Hovered) {
+				Color lineC = new Color(100, 160, 200);
+				Color cornerC = new Color(170, 225, 255);
+
+				var cornerSize = 8;
+
+				Rlgl.SetLineWidth(1);
+				Raylib.DrawLineV(BL.ToNumerics(), BR.ToNumerics(), lineC);
+				Raylib.DrawLineV(BR.ToNumerics(), TR.ToNumerics(), lineC);
+				Raylib.DrawLineV(TR.ToNumerics(), TL.ToNumerics(), lineC);
+				Raylib.DrawLineV(TL.ToNumerics(), BL.ToNumerics(), lineC);
+				Rlgl.DrawRenderBatchActive();
+
+				Rlgl.SetLineWidth(4);
+				Raylib.DrawLineStrip([
+					(BL + ((TL - BL).Normalize() * cornerSize)).ToNumerics(),
+					BL.ToNumerics(),
+					(BL + ((BR - BL).Normalize() * cornerSize)).ToNumerics()
+				], 3, cornerC);
+
+				Raylib.DrawLineStrip([
+					(BR + ((TR - BR).Normalize() * cornerSize)).ToNumerics(),
+					BR.ToNumerics(),
+					(BR + ((BL - BR).Normalize() * cornerSize)).ToNumerics()
+				], 3, cornerC);
+
+				Raylib.DrawLineStrip([
+					(TR + ((BR - TR).Normalize() * cornerSize)).ToNumerics(),
+					TR.ToNumerics(),
+					(TR + ((TL - TR).Normalize() * cornerSize)).ToNumerics()
+				], 3, cornerC);
+
+				Raylib.DrawLineStrip([
+					(TL + ((BL - TL).Normalize() * cornerSize)).ToNumerics(),
+					TL.ToNumerics(),
+					(TL + ((TR - TL).Normalize() * cornerSize)).ToNumerics()
+				], 3, cornerC);
+
+				Rlgl.DrawRenderBatchActive();
+
+				Rlgl.SetLineWidth(1);
+			}
 		}
 
 		public override void Render() {
@@ -96,11 +153,11 @@ namespace Nucleus.ModelEditor
 
 			WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
 
-			var quadpoints = this.quadpoints();
+			var quadpoints = this.QuadPoints();
 
 			AtlasRegion region = quadpoints.Region;
 			Texture tex = quadpoints.Texture;
-			Vector2F ___BL = quadpoints.TL, ___BR = quadpoints.TR, ___TL = quadpoints.BL, ___TR = quadpoints.BR;
+			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
@@ -114,53 +171,40 @@ namespace Nucleus.ModelEditor
 			vStart = ((float)region.Y / (float)tex.Height);
 			vEnd = vStart + ((float)region.H / (float)tex.Height);
 
-			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(___BL.X, ___BL.Y, 0);
-			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(___TR.X, ___TR.Y, 0);
-			Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex3f(___TL.X, ___TL.Y, 0);
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
+			Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex3f(TL.X, TL.Y, 0);
 
-			Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex3f(___BR.X, ___BR.Y, 0);
-			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(___TR.X, ___TR.Y, 0);
-			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(___BL.X, ___BL.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex3f(BR.X, BR.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 
 			Rlgl.End();
 
 			Rlgl.DrawRenderBatchActive();
-			if(Selected || Hovered) {
-				Color lineC = new Color(100, 160, 200);
-				Color cornerC = new Color(170, 225, 255);
-
-				var cornerSize = 8;
-
-				Rlgl.SetLineWidth(1);
-				Raylib.DrawLineV(___BL.ToNumerics(), ___BR.ToNumerics(), lineC);
-				Raylib.DrawLineV(___BR.ToNumerics(), ___TR.ToNumerics(), lineC);
-				Raylib.DrawLineV(___TR.ToNumerics(), ___TL.ToNumerics(), lineC);
-				Raylib.DrawLineV(___TL.ToNumerics(), ___BL.ToNumerics(), lineC);
-				Rlgl.DrawRenderBatchActive();
-				
-				Rlgl.SetLineWidth(4);
-
-				Raylib.DrawLineV(___BL.ToNumerics(), (___BL + ((___BR - ___BL).Normalize() * cornerSize)).ToNumerics(), cornerC);
-				Raylib.DrawLineV(___BL.ToNumerics(), (___BL + ((___TL - ___BL).Normalize() * cornerSize)).ToNumerics(), cornerC);
-
-				Raylib.DrawLineV(___BR.ToNumerics(), (___BR + ((___BL - ___BR).Normalize() * cornerSize)).ToNumerics(), cornerC);
-				Raylib.DrawLineV(___BR.ToNumerics(), (___BR + ((___TR - ___BR).Normalize() * cornerSize)).ToNumerics(), cornerC);
-
-				Raylib.DrawLineV(___TR.ToNumerics(), (___TR + ((___TL - ___TR).Normalize() * cornerSize)).ToNumerics(), cornerC);
-				Raylib.DrawLineV(___TR.ToNumerics(), (___TR + ((___BR - ___TR).Normalize() * cornerSize)).ToNumerics(), cornerC);
-
-				Raylib.DrawLineV(___TL.ToNumerics(), (___TL + ((___TR - ___TL).Normalize() * cornerSize)).ToNumerics(), cornerC);
-				Raylib.DrawLineV(___TL.ToNumerics(), (___TL + ((___BL - ___TL).Normalize() * cornerSize)).ToNumerics(), cornerC);
-
-				Rlgl.DrawRenderBatchActive();
-
-				Rlgl.SetLineWidth(1);
-			}
 		}
 
 		public override bool HoverTest(Vector2F gridPos) {
-			var quadpoints = this.quadpoints();
+			var quadpoints = this.QuadPoints();
 			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
+		}
+
+		public bool Sequence { get; set; }
+
+		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var imagePathRow = PropertiesPanel.NewRow(props, "Image", "models/images.png");
+			var editorRow = PropertiesPanel.NewRow(props, "Editor", "models/images.png");
+
+			var optionsRow = PropertiesPanel.NewRow(props, "Options", "models/images.png");
+			var boneRotation = PropertiesPanel.AddLabeledCheckbox(optionsRow, "Mesh", false);
+			boneRotation.OnCheckedChanged += (_) => {
+				// Convert ourselves to a mesh attachment
+				ModelEditor.Active.File.ConvertAttachmentTo<EditorMeshAttachment>(this);
+			};
+			var boneScale = PropertiesPanel.AddLabeledCheckbox(optionsRow, "Sequence", Sequence);
+
+			var colorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
+
 		}
 	}
 }

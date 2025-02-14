@@ -883,6 +883,7 @@ namespace Nucleus.UI
 		}
 
 		public delegate void MouseEventDelegate(Element self, FrameState state, MouseButton button);
+		public delegate void MouseReleaseDelegate(Element self, FrameState state, MouseButton button, bool lost);
 		public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
 
 		public event MouseEventDelegate? MouseClickEvent;
@@ -895,8 +896,13 @@ namespace Nucleus.UI
 		public void UnsetTag<T>(string key) => Tags.Remove(key);
 
 
-		public event MouseEventDelegate? MouseReleaseEvent;
+		public event MouseEventDelegate MouseReleaseEvent;
 		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { }
+
+		public event MouseEventDelegate? MouseLostEvent;
+		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { }
+		public event MouseReleaseDelegate? MouseReleasedOrLostEvent;
+		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { }
 
 		public event MouseV2Delegate? MouseDragEvent;
 		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { }
@@ -917,6 +923,9 @@ namespace Nucleus.UI
 		}
 		public bool Hovered => UI.Hovered == this;
 		public bool Depressed { get; internal set; }
+		public bool Dragged { get; internal set; } = false;
+		public Vector2F DragVector { get; internal set; } = Vector2F.Zero;
+
 		internal void MouseClickOccur(FrameState state, MouseButton button) {
 			Depressed = true;
 			MouseClick(state, button);
@@ -931,7 +940,25 @@ namespace Nucleus.UI
 
 			MouseRelease(this, state, button);
 			MouseReleaseEvent?.Invoke(this, state, button);
+
+			MouseReleasedOrLost(this, state, button);
+			MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
+
+			Dragged = false;
+			DragVector = Vector2F.Zero;
 			UI.TriggerElementReleased(this, state, button);
+		}
+		internal void MouseLostOccur(FrameState state, MouseButton button, bool forced = false) {
+			Depressed = false;
+
+			MouseLost(this, state, button);
+			MouseLostEvent?.Invoke(this, state, button);
+
+			MouseReleasedOrLost(this, state, button);
+			MouseReleasedOrLostEvent?.Invoke(this, state, button, true);
+
+			Dragged = false;
+			DragVector = Vector2F.Zero;
 		}
 		internal void MouseDragOccur(FrameState state, Vector2F delta) {
 			MouseDrag(this, state, delta);

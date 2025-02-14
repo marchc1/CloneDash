@@ -32,6 +32,7 @@ namespace Nucleus.ModelEditor
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
 
 		}
+
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
 
 		}

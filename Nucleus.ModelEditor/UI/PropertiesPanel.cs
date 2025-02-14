@@ -216,7 +216,7 @@ namespace Nucleus.ModelEditor
 				img.DrawPanelBackground = false;
 				img.ShouldDrawImage = true;
 				img.Size = new(32);
-				img.ImageOrientation = ImageOrientation.Fit;
+				img.ImageOrientation = ImageOrientation.Zoom;
 				img.Dock = Dock.Left;
 				img.DockMargin = RectangleF.TLRB(2);
 				img.Image = buttons.Level.Textures.LoadTextureFromFile(icon);

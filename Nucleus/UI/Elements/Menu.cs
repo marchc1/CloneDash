@@ -90,6 +90,7 @@ namespace Nucleus.UI.Elements
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
 			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
+			this.MakePopup();
 
 			UI.OnElementClicked += UI_OnElementClicked;
 		}

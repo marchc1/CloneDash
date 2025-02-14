@@ -487,13 +487,31 @@ namespace Nucleus.Engine
 					if (UI.Hovered == UI.Depressed) {
 						if (frameState.MouseState.Mouse1Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
-						if (frameState.MouseState.Mouse2Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
-						if (frameState.MouseState.Mouse3Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
-						if (frameState.MouseState.Mouse4Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
-						if (frameState.MouseState.Mouse5Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
+						if (frameState.MouseState.Mouse2Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
+						if (frameState.MouseState.Mouse3Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
+						if (frameState.MouseState.Mouse4Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
+						if (frameState.MouseState.Mouse5Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
 					}
-					UI.Depressed.Depressed = false;
-					UI.Depressed = null;
+					else {
+						if (frameState.MouseState.Mouse1Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse1);
+						if (frameState.MouseState.Mouse2Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse2);
+						if (frameState.MouseState.Mouse3Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse3);
+						if (frameState.MouseState.Mouse4Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse4);
+						if (frameState.MouseState.Mouse5Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse5);
+					}
+					if (UI.Depressed != null) {
+						UI.Depressed.Depressed = false;
+						UI.Depressed = null;
+					}
 				}
 			}
 

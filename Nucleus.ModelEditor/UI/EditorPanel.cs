@@ -125,6 +125,7 @@ namespace Nucleus.ModelEditor
 		private void File_OperatorActivated(EditorFile self, Operator op) {
 			MainTransformsPanel.Visible = false;
 			OperatorPanel.ClearChildren();
+			OperatorPanel.Visible = true;
 			SelectableTypes = op.SelectableTypes == null ? null : op.SelectableTypes.ToHashSet();
 			op.ChangeEditorProperties(OperatorPanel);
 		}
@@ -324,8 +325,8 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
-						foreach(var slot in bone.Slots) {
-							foreach(var attachment in slot.Attachments)
+						foreach (var slot in bone.Slots) {
+							foreach (var attachment in slot.Attachments)
 								if (attachment.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator(attachment.GetType()))
 									hovered = attachment;
 						}
@@ -346,6 +347,8 @@ namespace Nucleus.ModelEditor
 				hovered.Hovered = true;
 				hovered.OnMouseEntered();
 			}
+
+			ModelEditor.Active.File.ActiveOperator?.Think(ModelEditor.Active, HoverGridPos);
 		}
 		public Vector2F ScreenToGrid(Vector2F screenPos) {
 			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), RenderBounds.Size, new(0, 0), EngineCore.GetWindowSize());
@@ -396,12 +399,16 @@ namespace Nucleus.ModelEditor
 				ClickedObject = HoveredObject;
 				var operatorActive = ModelEditor.Active.File.ActiveOperator != null;
 				if (operatorActive) {
+					
 					ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 				}
 				else {
 					//if(ModelEditor.Active.IsObjectSelected(HoveredObject))
 				}
 			}
+
+			if (button == Types.MouseButton.Mouse1)
+				ModelEditor.Active.File.ActiveOperator?.Clicked(ModelEditor.Active, ClickPos);
 
 			__startedDrag = false;
 			__startDraggingOperator = false;
@@ -429,6 +436,7 @@ namespace Nucleus.ModelEditor
 					if (!__startDraggingOperator) {
 						if (HoveredObject != null) {
 							if (!ModelEditor.Active.IsObjectSelected(HoveredObject)) {
+								ModelEditor.Active.File.ActiveOperator?.DragStart(ModelEditor.Active, ClickPos);
 								ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 							}
 						}
@@ -436,8 +444,11 @@ namespace Nucleus.ModelEditor
 				}
 			}
 
-			if (__startedDrag && CanDragObject && ModelEditor.Active.SelectedObjectsCount > 0) {
+			if (CanUseDefaultOperator && __startedDrag && CanDragObject && ModelEditor.Active.SelectedObjectsCount > 0) {
 				DefaultOperator?.GizmoDrag(this, __dragStartScreenspace, pos, ModelEditor.Active.SelectedObjects);
+			}
+			if (ModelEditor.Active.File.IsOperatorActive) {
+				ModelEditor.Active.File.ActiveOperator?.Drag(ModelEditor.Active, __dragStartScreenspace, ClickPos);
 			}
 			if (__startedDrag && CanDragCamera) {
 				var dragGridPos = ScreenToGrid(GetMousePos()) - __dragStartGridspace;
@@ -453,7 +464,7 @@ namespace Nucleus.ModelEditor
 
 			if (button == Types.MouseButton.Mouse1) {
 				bool allowSelection = DefaultOperator?.GizmoReleased(this, ClickedObject, GetMousePos()) ?? true;
-
+				ModelEditor.Active.File.ActiveOperator?.DragRelease(ModelEditor.Active, ClickPos);
 				if (
 					ClickedObject != null
 					&& !ModelEditor.Active.IsObjectSelected(ClickedObject)
@@ -465,12 +476,12 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
-			CameraZoom = Math.Clamp(CameraZoom + (delta.Y / 5 * CameraZoom), 0.05f, 10);
+			CameraZoom = Math.Clamp(CameraZoom + (delta.Y / 5 * CameraZoom), 0.05f, 40);
 		}
 		Camera3D cam;
 		float widthMultiplied;
 		public void Draw3DCursor() {
-			Raylib.DrawSphere(new(HoverGridPos.X, HoverGridPos.Y, 0), 2, Color.RED);
+			//Raylib.DrawSphere(new(HoverGridPos.X, HoverGridPos.Y, 0), 2, Color.RED);
 		}
 
 		/// <summary>
@@ -568,13 +579,9 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public void DrawModels() {
 			foreach (var model in ModelEditor.Active.File.Models) {
-				foreach (var bone in model.GetAllBones()) {
-					foreach (var slot in bone.Slots) {
-						//slot.ActiveAttachment?.Render();
-						// for debugging:
-						foreach (var attachment in slot.Attachments) {
-							attachment.Render();
-						}
+				foreach (var slot in model.Slots) {
+					foreach (var attachment in slot.Attachments) {
+						attachment.Render();
 					}
 				}
 			}
@@ -584,6 +591,17 @@ namespace Nucleus.ModelEditor
 					DrawBone(bone);
 				}
 			}
+
+			bool caughtHovered = false;
+			foreach (var obj in ModelEditor.Active.SelectedObjects) {
+				if (obj is EditorAttachment attachment)
+					attachment.RenderOverlay();
+				if (obj == HoveredObject)
+					caughtHovered = true;
+			}
+
+			if (!caughtHovered && HoveredObject is EditorAttachment hAttachment)
+				hAttachment.RenderOverlay();
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
@@ -616,18 +634,24 @@ namespace Nucleus.ModelEditor
 			Raylib.EndMode3D();
 			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);
 
+			IEditorType? selectedTransformable = null;
 			if (ModelEditor.Active.TryGetFirstSelected(out IEditorType? selected) && !ModelEditor.Active.File.IsOperatorActive) {
-				var selectedTransformable = selected.GetTransformableEditorType();
-				if (selectedTransformable != null) {
+				selectedTransformable = selected.GetTransformableEditorType();
+			}
+			else if (ModelEditor.Active.File.IsOperatorActive) {
+				selectedTransformable = HoveredObject;
+			}
+
+			if (selectedTransformable != null) {
+				if (!ModelEditor.Active.File.IsOperatorActive)
 					DefaultOperator?.GizmoRender(this, selectedTransformable);
-					string font = "Noto Sans", text = $"{selectedTransformable.GetName()}";
-					int fontSize = 20;
-					Vector2F textSize = Graphics2D.GetTextSize(text, font, fontSize) + new Vector2F(6);
-					Graphics2D.SetDrawColor(10, 10, 10, 190);
-					Graphics2D.DrawRectangle((width / 2) - (textSize.W / 2), (height - 140) - (textSize.H / 2), textSize.W, textSize.H);
-					Graphics2D.SetDrawColor(255, 255, 255);
-					Graphics2D.DrawText(width / 2, height - 140, text, font, fontSize, Anchor.Center);
-				}
+				string font = "Noto Sans", text = $"{selectedTransformable.GetName()}";
+				int fontSize = 20;
+				Vector2F textSize = Graphics2D.GetTextSize(text, font, fontSize) + new Vector2F(6);
+				Graphics2D.SetDrawColor(10, 10, 10, 190);
+				Graphics2D.DrawRectangle((width / 2) - (textSize.W / 2), (height - 140) - (textSize.H / 2), textSize.W, textSize.H);
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawText(width / 2, height - 140, text, font, fontSize, Anchor.Center);
 			}
 
 			Rlgl.DrawRenderBatchActive();

@@ -69,11 +69,10 @@ namespace Nucleus.ModelEditor
 		public virtual void OnHidden() { }
 		public virtual void OnShown() { }
 
-		public virtual bool CanRename() => false;
+		public virtual bool CanRename() => true;
 		public virtual bool CanDelete() => false;
-
-		public virtual void Render() {
-
-		}
+		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameAttachment(this, newName);
+		public virtual void Render() { }
+		public virtual void RenderOverlay() { }
 	}
 }

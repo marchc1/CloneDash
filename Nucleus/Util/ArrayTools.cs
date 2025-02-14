@@ -9,6 +9,31 @@ namespace Nucleus.Util
 {
 	public static unsafe partial class Util
 	{
+		public static void MoveListItem<T>(this List<T> list, T item, int newIndex) {
+			var oldIndex = list.IndexOf(item);
+			if (oldIndex == -1) throw new Exception();
+
+			// exit if positions are equal or outside array
+			if ((oldIndex == newIndex) || (0 > oldIndex) || (oldIndex >= list.Count) || (0 > newIndex) ||
+				(newIndex >= list.Count)) return;
+			// local variables
+			var i = 0;
+			T tmp = list[oldIndex];
+			// move element down and shift other elements up
+			if (oldIndex < newIndex) {
+				for (i = oldIndex; i < newIndex; i++) {
+					list[i] = list[i + 1];
+				}
+			}
+			// move element up and shift other elements down
+			else {
+				for (i = oldIndex; i > newIndex; i--) {
+					list[i] = list[i - 1];
+				}
+			}
+			// put element from position 1 to destination
+			list[newIndex] = tmp;
+		}
 		public static int IndexOf<T>(this IList<T> items, Predicate<T> search) {
 			for (int i = 0; i < items.Count; i++) {
 				if (search(items[i]))

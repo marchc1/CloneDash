@@ -18,6 +18,8 @@ namespace Nucleus.Types
 
         public static readonly Vector2F Zero = new(0, 0);
         public static readonly Vector2F One = new(1, 1);
+        public static readonly Vector2F Right = new(1, 0);
+        public static readonly Vector2F Up = new(0, 1);
 
         public Vector2F(float X, float Y) { this.x = X; this.y = Y; }
         public Vector2F(float Both) { this.x = Both; this.y = Both; }

@@ -9,6 +9,7 @@ namespace Nucleus.UI
 	{
 		protected override void Initialize() {
 			base.Initialize();
+			BackgroundColor = new(20, 25, 32, 220); 
 		}
 		protected override void OnThink(FrameState frameState) {
 			if (Hovered)

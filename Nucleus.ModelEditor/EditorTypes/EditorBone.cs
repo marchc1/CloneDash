@@ -160,7 +160,10 @@ namespace Nucleus.ModelEditor
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.NewMenu(buttons, [
-						new("Bone", () => ModelEditor.Active.File.AddBone(Model, this, null)),
+						new("Bone", () => {
+							var bone = ModelEditor.Active.File.AddBone(Model, this, null);
+							ModelEditor.Active.SelectObject(bone.ResultOrThrow);
+						}),
 						new("Slot", () => PropertiesPanel.NewSlotDialog(ModelEditor.Active.File, this)),
 					]);
 		}

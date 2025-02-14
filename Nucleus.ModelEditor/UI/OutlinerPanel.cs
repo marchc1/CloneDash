@@ -3,6 +3,7 @@ using Microsoft.VisualBasic;
 using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.Util;
 using static Nucleus.Util.Util;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -55,7 +56,7 @@ namespace Nucleus.ModelEditor
 
 					// Default behavior: not selectable unless the operator explicitly said so
 					// This includes null items
-					if (obj == null) continue; 
+					if (obj == null) continue;
 
 					outlinerNode.SelectableOverride = acceptableTypes.Contains(obj.GetType());
 				}
@@ -63,8 +64,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void File_OperatorDeactivated(EditorFile self, UI.Operator op, bool canceled) {
-			foreach(var node in Right.AddParent.GetChildren()) {
-				if(node is OutlinerNode outlinerNode) {
+			foreach (var node in Right.AddParent.GetChildren()) {
+				if (node is OutlinerNode outlinerNode) {
 					outlinerNode.SelectableOverride = null;
 				}
 			}
@@ -194,7 +195,7 @@ namespace Nucleus.ModelEditor
 					EditorSlot xS = x.GetRepresentingObject<EditorSlot>() ?? throw new Exception("wtf");
 					EditorSlot yS = y.GetRepresentingObject<EditorSlot>() ?? throw new Exception("wtf");
 
-					return indexOf[xS].CompareTo(indexOf[yS]);
+					return indexOf[yS].CompareTo(indexOf[xS]);
 				});
 			};
 
@@ -216,6 +217,67 @@ namespace Nucleus.ModelEditor
 				ModelEditor.Active.File.SlotRemoved += (_, _, _, slotR) => {
 					if (slotR == slot) {
 						slotNode.Remove();
+					}
+				};
+				bool startDragging = false;
+				Panel? dragPanel = null;
+				slotNode.MouseDragEvent += (s, fs, _) => {
+					startDragging = true;
+
+					if (!IValidatable.IsValid(dragPanel)) {
+						dragPanel = UI.Add<Panel>();
+						dragPanel.BorderSize = 0;
+						dragPanel.BackgroundColor = new(200, 200, 255);
+						dragPanel.Size = new(slotNode.RenderBounds.W, 2);
+						dragPanel.OnHoverTest += Element.Passthru;
+					}
+					var hovered = UI.Hovered;
+					if (hovered is OutlinerNode node && node.ParentNode == drawOrder) {
+						// Determine if placing above or below
+						Vector2F mousePos = fs.MouseState.MousePos;
+						Vector2F nodePos = node.GetGlobalPosition() + AddParent.ChildRenderOffset;
+						float height = node.RenderBounds.Height;
+						bool below = mousePos.Y - nodePos.Y > (height / 2);
+
+						dragPanel.Visible = true;
+						dragPanel.Position = below ? nodePos + new Vector2F(0, height) : nodePos;
+					}
+					else {
+						dragPanel.Visible = false;
+					}
+				};
+				slotNode.MouseReleasedOrLostEvent += (s, fs, _, _) => {
+					startDragging = false;
+					dragPanel?.Remove();
+
+					var hovered = UI.Hovered;
+					if (hovered is OutlinerNode node && node.ParentNode == drawOrder) {
+						var otherslot = node.GetRepresentingObject<EditorSlot>();
+						if (otherslot == null || otherslot == slot) return;
+
+						// Determine if placing above or below
+						Vector2F mousePos = fs.MouseState.MousePos;
+						Vector2F nodePos = node.GetGlobalPosition() + AddParent.ChildRenderOffset;
+						float height = node.RenderBounds.Height;
+						bool below = mousePos.Y - nodePos.Y > (height / 2);
+
+						var drawOrderList = model.Slots;
+						var indexOfSelf = drawOrderList.IndexOf(slot);
+						if (indexOfSelf == -1) throw new Exception("Wtf?");
+
+						var indexOfOther = drawOrderList.IndexOf(otherslot);
+						if (indexOfOther == -1) throw new Exception("Wtf?");
+
+						Console.WriteLine($"Drag completed.");
+						Console.WriteLine($"Draw order length:        {drawOrderList.Count}");
+						Console.WriteLine($"Current slot:             {slot.Name}");
+						Console.WriteLine($"Current position:         {indexOfSelf}");
+						Console.WriteLine($"Target slot:              {otherslot.Name}");
+						Console.WriteLine($"Target position:          {indexOfOther}");
+						Console.WriteLine($"Move current -> target:   {indexOfOther + (below ? -1 : 1)}");
+
+						Util.Util.MoveListItem(drawOrderList, slot, indexOfOther);
+						drawOrder.InvalidateNode();
 					}
 				};
 			};
