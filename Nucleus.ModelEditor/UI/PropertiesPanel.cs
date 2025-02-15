@@ -339,6 +339,7 @@ namespace Nucleus.ModelEditor
 			top.Size = new(48);
 			top.BorderSize = 0;
 			top.Dock = Dock.Top;
+			top.DockMargin = RectangleF.TLRB(4);
 
 			var label = top.Add<Label>();
 			label.Text = DetermineHeaderText(determinations);

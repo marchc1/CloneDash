@@ -219,20 +219,25 @@ namespace Nucleus.ModelEditor
 			SetupPanel.Dock = Dock.Fill;
 			SetupPanel.DrawPanelBackground = false;
 
-			var rightSide = SetupPanel.Add<Panel>();
+			var rightSide = SetupPanel.Add<ResizablePanel>();
 			rightSide.Dock = Dock.Right;
+			rightSide.CanResizeTop = false;
+			rightSide.CanResizeBottom = false;
+			rightSide.CanResizeRight = false;
 			rightSide.Size = new(464, 0);
 			rightSide.DrawPanelBackground = false;
-
-			rightSide.Add(out Properties);
-			Properties.Size = new(64);
-			Properties.Dock = Dock.Bottom;
 
 			var tabOptions = rightSide.Add<TabView>();
 			tabOptions.Dock = Dock.Fill;
 
 			var OutlinerTab = tabOptions.AddTab("Outliner");
 			var StatisticsTab = tabOptions.AddTab("Statistics");
+
+			OutlinerTab.Panel.Add(out Properties);
+			Properties.Size = new(64);
+			Properties.Dock = Dock.Bottom;
+			Properties.DrawPanelBackground = true;
+			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
 
 			OutlinerTab.Panel.Add(out Outliner);
 			Outliner.Dock = Dock.Fill;
