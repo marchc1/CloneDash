@@ -18,6 +18,9 @@ namespace Nucleus.Core
 			_stream = File.Open(Filepath, mode, access);
 		}
 	}
+
+	// This entire system should be redone at some point.
+
 	public static class Filesystem
 	{
 		public static Dictionary<string, List<string>> Path { get; } = new() {
@@ -46,7 +49,9 @@ namespace Nucleus.Core
 
 		private static bool __firstResolve = true;
 		private static Dictionary<string, Dictionary<string, string>> __pathResolves = [];
-		public static string Resolve(string localFilepath, string path, bool catchMissing = true) {
+		public static string Resolve(string localFilepath, string? path = null, bool catchMissing = true) {
+			if (path == null)
+				return Path[localFilepath][0];
 			if (!__pathResolves.ContainsKey(path))
 				__pathResolves[path] = new();
 
