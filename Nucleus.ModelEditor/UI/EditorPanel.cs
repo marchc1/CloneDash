@@ -156,6 +156,7 @@ namespace Nucleus.ModelEditor
 					break;
 				case EditorDefaultOperator.ChangeMeshWeights:
 					WeighVerticesOpBtn.Pulsing = true;
+					DefaultOperator = new VertexWeightOperator();
 					break;
 				case EditorDefaultOperator.CreateNewBones:
 					CreateBonesOpBtn.Pulsing = true;
