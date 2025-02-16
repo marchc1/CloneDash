@@ -1,6 +1,7 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -620,7 +621,7 @@ namespace Nucleus.ModelEditor
 			float accomodation = intendedAspectRatio / currentAspectRatio;
 			widthMultiplied = width * accomodation;
 
-			Rlgl.Viewport((int)(globalpos.X - ((widthMultiplied - width) / 2)), 0, (int)(widthMultiplied), (int)height);
+			Surface.SetViewport((int)(globalpos.X - ((widthMultiplied - width) / 2)), 0, (int)(widthMultiplied), (int)height);
 			Raylib.BeginMode3D(cam);
 			Rlgl.DisableBackfaceCulling();
 			Rlgl.DisableDepthMask();
@@ -635,7 +636,7 @@ namespace Nucleus.ModelEditor
 			}
 
 			Raylib.EndMode3D();
-			Rlgl.Viewport(0, 0, (int)oldSize.W, (int)oldSize.H);
+			Surface.ResetViewport();
 
 			IEditorType? selectedTransformable = null;
 			if (ModelEditor.Active.TryGetFirstSelected(out IEditorType? selected) && !ModelEditor.Active.File.IsOperatorActive) {
