@@ -33,7 +33,7 @@ namespace Nucleus.ModelEditor
 
 		public void GetTexCoords(float byHowMuch, out Vector2F baseBottom, out Vector2F baseTop, out Vector2F tipBottom, out Vector2F tipTop, out float lengthLimit) {
 			var length = Length;
-			lengthLimit = Math.Clamp(length, 0f, 230f) / 2f;
+			lengthLimit = Math.Clamp(length, 0f, 230f) / 1f;
 
 			var wt = WorldTransform;
 

@@ -518,7 +518,7 @@ namespace Nucleus.ModelEditor
 			if (bone.Length > 0) {
 				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
 				var innerRing = Level.Textures.LoadTextureFromFile("models/bonering.png");
-				var lengthMul = (float)NMath.Remap(bone.Length, 40, 150, 0.38, 1, true) * 11;
+				var lengthMul = (float)NMath.Remap(bone.Length, 40, 150, 0.38, 1, true) * 6;
 				Raylib.DrawTexturePro(innerRing, new(0, 0, innerRing.Width, innerRing.Height), new(wt.X - (lengthMul / 2), wt.Y - (lengthMul / 2), lengthMul, lengthMul), new(0), 0, color);
 			}
 			else
