@@ -95,8 +95,9 @@ namespace Nucleus.ModelEditor
 			return true;
 		}
 		public bool HoverTest(Vector2F gridPos) {
+			var zoom = ModelEditor.Active.Editor.CameraZoom;
 			if (Length <= 0)
-				return gridPos.Distance(WorldTransform.Translation) < 9;
+				return gridPos.Distance(WorldTransform.Translation) < 3 * Math.Clamp(zoom, 0, 2);
 			else
 				return gridPos.TestPointInQuad(q1, q2, q3, q4);
 		}
