@@ -615,8 +615,8 @@ namespace Nucleus.ModelEditor
 		public event OnOperatorActivated? OperatorActivated;
 		public event OnOperatorDeactivated? OperatorDeactivating;
 		public event OnOperatorDeactivated? OperatorDeactivated;
-		public Operator? ActiveOperator { get; private set; }
-		public bool IsOperatorActive => ActiveOperator != null;
+		[JsonIgnore] public Operator? ActiveOperator { get; private set; }
+		[JsonIgnore] public bool IsOperatorActive => ActiveOperator != null;
 		public void ActivateOperator(Operator op) {
 			if (ActiveOperator != null) DeactivateOperator(true);
 
