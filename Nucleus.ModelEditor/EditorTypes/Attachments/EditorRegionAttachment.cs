@@ -78,12 +78,15 @@ namespace Nucleus.ModelEditor
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
-			if (image == null || Path == null) throw new Exception(":(");
+			if (Path == null) throw new Exception(":(");
 
-			var region = model.Images.TextureAtlas.GetTextureRegion(image.Name) ?? throw new Exception("No region!");
+			AtlasRegion region = AtlasRegion.MISSING;
+			var succeeded = image != null && model.Images.TextureAtlas.TryGetTextureRegion(image.Name, out region);
+			if (!succeeded) region = AtlasRegion.MISSING;
+
 			float width = region.H, height = region.W;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = model.Images.TextureAtlas.Texture;
+			Texture tex = succeeded ? model.Images.TextureAtlas.Texture : Texture.MISSING;
 
 			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
 			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
