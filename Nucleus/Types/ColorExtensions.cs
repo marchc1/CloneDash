@@ -22,6 +22,10 @@ namespace Nucleus
             hsv.X += hue;
             hsv.Y *= 1 + saturation;
             hsv.Z *= 1 + value;
+
+			hsv.Y = Math.Clamp(hsv.Y, 0, 1);
+			hsv.Z = Math.Clamp(hsv.Z, 0, 1);
+
             return hsv.ToRGB((float)color.A / 255f);
         }
 
@@ -111,5 +115,37 @@ namespace Nucleus
                 alpha
             );
         }
+
+		public static bool TryParseHexToColor(this string hex, out Color col) {
+			col = default;
+
+			if (hex.Length < 6)
+				return false;
+
+			if (hex[0] == '#')
+				hex = hex.Substring(1);
+
+			string rS = hex.Substring(0, 2);
+			string gS = hex.Substring(2, 2);
+			string bS = hex.Substring(4, 2);
+			string aS = "FF";
+			if (hex.Length == 8)
+				aS = hex.Substring(6, 2);
+
+			col = new Color(
+				int.Parse(rS, System.Globalization.NumberStyles.HexNumber),
+				int.Parse(gS, System.Globalization.NumberStyles.HexNumber),
+				int.Parse(bS, System.Globalization.NumberStyles.HexNumber),
+				int.Parse(aS, System.Globalization.NumberStyles.HexNumber)
+			);
+			return true;
+		}
+		public static string ToHex(this Color color, bool includeAlpha) {
+			string hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+			if (includeAlpha)
+				hex += $"{color.A:X2}";
+
+			return hex;
+		}
     }
 }

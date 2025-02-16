@@ -17,6 +17,19 @@ namespace Nucleus.UI
 		public delegate void CheckboxClicked(Checkbox self);
 		public event CheckboxClicked? OnCheckedChanged;
 
+		private HashSet<Checkbox> __otherRadioButtons = [];
+
+		public bool Radio { get; set; } = false;
+		public void LinkRadioButton(Checkbox other) {
+			if (__otherRadioButtons.Contains(other)) return;
+			__otherRadioButtons.Add(other);
+			other.OnCheckedChanged += (e) => {
+				if (other.Checked && other.Radio)
+					this.Checked = false;
+			};
+			other.LinkRadioButton(this);
+		}
+
 		private float? CheckAnim = null;
 
 		public override void Paint(float width, float height) {
@@ -24,16 +37,42 @@ namespace Nucleus.UI
 			c = Math.Clamp(c + (EngineCore.FrameTime * 6f * (Checked ? 1 : -1)), 0, 1);
 			CheckAnim = c;
 
-			base.Paint(width, height);
-			if (c > 0) {
-				c = NMath.Ease.InQuad(c);
-				Graphics2D.SetDrawColor(TextColor);
-				Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
+			DrawAsCircle = Radio;
+			if (Radio) {
+				var smallest = Math.Min(width, height);
+				var largest = Math.Max(width, height);
+				var diff = largest - smallest;
+
+				var offset = new Vector2F(
+					width > height ? diff / 2 : 0,
+					width > height ? 0 : diff / 2
+				);
+				Graphics2D.OffsetDrawing(offset);
+
+				base.Paint(smallest, smallest);
+				if (c > 0) {
+					c = NMath.Ease.OutQuart(c);
+					Graphics2D.SetDrawColor(TextColor);
+					Graphics2D.DrawCircle(new Vector2F(smallest / 2, smallest / 2), new Vector2F((c * smallest) / 5f));
+				}
+
+				Graphics2D.OffsetDrawing(-offset);
+			}
+			else {
+				base.Paint(width, height);
+				if (c > 0) {
+					c = NMath.Ease.InQuad(c);
+					Graphics2D.SetDrawColor(TextColor);
+					Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
+				}
 			}
 		}
 
 		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
-			Checked = !Checked;
+			if (Radio)
+				Checked = true;
+			else
+				Checked = !Checked;
 			OnCheckedChanged?.Invoke(this);
 		}
 	}

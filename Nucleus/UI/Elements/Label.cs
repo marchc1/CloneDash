@@ -5,6 +5,7 @@ namespace Nucleus.UI
 {
     public class Label : Element
     {
+		public bool DrawBackground { get; set; } = false;
         public Anchor TextAlignment { get; set; } = Anchor.Center;
         private bool __autosize = false;
         public bool AutoSize {
@@ -19,7 +20,7 @@ namespace Nucleus.UI
         protected override void Initialize() {
             base.Initialize();
         }
-        protected override void ModifyRenderBounds(ref RectangleF renderBounds) {
+        protected override void ModifyLayout(ref RectangleF renderBounds) {
             if (!AutoSize)
                 return;
 
@@ -38,6 +39,10 @@ namespace Nucleus.UI
             }
         }
         public override void Paint(float width, float height) {
+			if(DrawBackground) {
+				Graphics2D.SetDrawColor(BackgroundColor);
+				Graphics2D.DrawRectangle(0, 0, width, height);
+			}
             Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(TextAlignment, RenderBounds.Size, TextPadding);
             Graphics2D.SetDrawColor(TextColor);
             Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, TextAlignment);

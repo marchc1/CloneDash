@@ -22,7 +22,7 @@ namespace Nucleus.UI.Elements
 			this.Position = pos;
 			this.BorderSize = 1;
 
-			this.BackgroundColor = new Color(30, 40, 55, 220);
+			this.BackgroundColor = new Color(20, 30, 45, 220);
 			this.ForegroundColor = new Color(190, 195, 195, 114);
 
 			var i = 0;
@@ -34,11 +34,11 @@ namespace Nucleus.UI.Elements
 					case MenuButton btn:
 						var b = this.Add<Button>();
 						b.Dock = Dock.Top;
-						b.Size = new Types.Vector2F(0, 38);
+						b.Size = new Types.Vector2F(0, 28);
 						b.Text = btn.text;
 						b.AutoSize = false;
 						b.TextPadding = new(12, 12);
-						b.TextSize = 16;
+						b.TextSize = 18;
 						b.TextAlignment = Anchor.CenterLeft;
 						b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
 						b.BorderSize = 0;
@@ -49,17 +49,8 @@ namespace Nucleus.UI.Elements
 						b.Clipping = false;
 						var mic = MathF.Max(items.Count, 8);
 
-						b.SetTag("starttime", (0 / mic) * i);
-						b.SetTag("realtime", b.GetTag<float>("starttime"));
 						b.PaintOverride += (self, width, height) => {
-							var starttime = self.GetTag<float>("starttime");
-							var realtime = self.GetTag<float>("realtime");
-
-							float x;
-							if (reverse)
-								x = (width * 0.1f * (1 - NMath.Ease.OutBack((float)NMath.Remap(realtime, 0, 3f / mic, 0, 1, true))));
-							else
-								x = -(width * 0.1f * (1 - NMath.Ease.OutBack((float)NMath.Remap(realtime, 0, 3f / mic, 0, 1, true))));
+							float x = 0;
 							var by = new Vector2F(x, 0);
 							Graphics2D.OffsetDrawing(by);
 							if (b.Hovered) {
@@ -68,7 +59,6 @@ namespace Nucleus.UI.Elements
 							}
 							b.Paint(width, height);
 							Graphics2D.OffsetDrawing(-by);
-							self.SetTag("realtime", realtime + EngineCore.FrameTime);
 						};
 						break;
 					default:
@@ -87,7 +77,7 @@ namespace Nucleus.UI.Elements
 				if (newP.Y > pY) pY = newP.Y;
 
 			}
-			this.Size = new(pX, pY);
+			this.Size = new(pX + 12, pY - 4);
 			var whereIsEnd = this.Position + this.Size + new Vector2F(4, 4);
 
 			TextAlignment lr = TextAlignment.Left;
@@ -100,6 +90,7 @@ namespace Nucleus.UI.Elements
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
 			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
+			this.MakePopup();
 
 			UI.OnElementClicked += UI_OnElementClicked;
 		}

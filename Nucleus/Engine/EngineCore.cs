@@ -194,7 +194,6 @@ namespace Nucleus
             ConsoleSystem.Initialize();
             Console.Title = windowName;
 
-            var version = new DateTime(2000, 1, 1) + TimeSpan.FromDays(typeof(EngineCore).Assembly.GetName().Version.Build);
             var isDebug = IsAssemblyDebugBuild(typeof(EngineCore).Assembly);
             Logs.Info($"Nucleus Engine, BuildConfig {(isDebug ? "DEBUG" : "RELEASE")}.");
             Logs.Info("Initializing...");
@@ -282,8 +281,8 @@ namespace Nucleus
             //GC.WaitForPendingFinalizers();
         }
 
-        private static Level __nextFrameLevel;
-        private static object[] __nextFrameArgs;
+        private static Level? __nextFrameLevel;
+        private static object[]? __nextFrameArgs;
         public static bool Started { get; private set; } = false;
         public static bool InLevelFrame { get; private set; } = false;
         public static void LoadLevel(Level level, params object[] args) {
@@ -365,7 +364,7 @@ namespace Nucleus
 
         public static bool ShowConsoleLogsInCorner { get; set; } = true;
         public static bool ShowDebuggingInfo { get; set; } = false;
-        public static string FrameCost { get; set; }
+		public static string FrameCost { get; set; } = "";
         public static float FrameCostMS { get; set; }
         public static float FPS => Raylib.GetFPS();
 

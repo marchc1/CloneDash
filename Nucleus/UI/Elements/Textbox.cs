@@ -113,7 +113,7 @@ namespace Nucleus.UI
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, width, height);
 			Graphics2D.SetDrawColor(fore);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
 			bool replaceTextForDrawing = false;
 			if (Text == "")
@@ -191,6 +191,8 @@ namespace Nucleus.UI
 			}
 		}
 
+		public event TextChangedDelegate? OnUserPressedEnter;
+
 		public override void KeyboardFocusLost(Element self, bool demanded) {
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
@@ -199,10 +201,6 @@ namespace Nucleus.UI
 			var vischar = state.GetKeyActionFromKey(key);
 			if (vischar.Type == CharacterType.NoAction)
 				return;
-
-			if (Caret.HasSelection) {
-				DeleteSelection();
-			}
 
 			LastKeyboardInteraction = DateTime.Now;
 			if (vischar.Type == CharacterType.VisibleCharacter) {
@@ -225,12 +223,15 @@ namespace Nucleus.UI
 							}
 
 							Text = Text.Substring(0, Caret.Pointer) + txt + Text.Substring(Caret.Pointer);
-							Caret = new Caret() { Pointer = Caret.Pointer + txt.Length };
+							Caret = new Caret() { Pointer = Caret.Pointer + txt?.Length ?? 0 };
 							Logs.Info("Pasted from clipboard!");
 							break;
 					}
 				}
 				else {
+					if (Caret.HasSelection) {
+						DeleteSelection();
+					}
 					Text = Text.Substring(0, Caret.Pointer) + vischar + Text.Substring(Caret.Pointer);
 					Caret.IncrementPointer(Text);
 				}
@@ -264,6 +265,7 @@ namespace Nucleus.UI
 						break;
 					case CharacterType.Enter:
 						KeyboardUnfocus();
+						OnUserPressedEnter?.Invoke(this, "", Text);
 						break;
 				}
 			}

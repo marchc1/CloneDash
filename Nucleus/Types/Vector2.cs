@@ -18,6 +18,8 @@ namespace Nucleus.Types
 
         public static readonly Vector2F Zero = new(0, 0);
         public static readonly Vector2F One = new(1, 1);
+        public static readonly Vector2F Right = new(1, 0);
+        public static readonly Vector2F Up = new(0, 1);
 
         public Vector2F(float X, float Y) { this.x = X; this.y = Y; }
         public Vector2F(float Both) { this.x = Both; this.y = Both; }
@@ -128,6 +130,27 @@ namespace Nucleus.Types
 				NMath.Lerp(ratio, a.Y, b.Y)
 				);
 		}
+
+		public static Vector2F Lerp(Vector2F ratio, Vector2F a, Vector2F b) {
+			return new(
+				NMath.Lerp(ratio.X, a.X, b.X),
+				NMath.Lerp(ratio.Y, a.Y, b.Y)
+				);
+		}
+
+		public static Vector2F Remap(float ratio, Vector2F iMi, Vector2F iMa, Vector2F oMi, Vector2F oMa) {
+			return new(
+				(float)NMath.Remap(ratio, iMi.X, iMa.X, oMi.X, oMa.X),
+				(float)NMath.Remap(ratio, iMi.Y, iMa.Y, oMi.Y, oMa.Y)
+				);
+		}
+		public static Vector2F Remap(Vector2F ratio, Vector2F iMi, Vector2F iMa, Vector2F oMi, Vector2F oMa) {
+			return new(
+				(float)NMath.Remap(ratio.X, iMi.X, iMa.X, oMi.X, oMa.X),
+				(float)NMath.Remap(ratio.Y, iMi.Y, iMa.Y, oMi.Y, oMa.Y)
+				);
+		}
+
 		/// <summary>
 		/// Return a normalized <see cref="Vector2F"/> with a <see cref="Length"/> of 1.
 		/// </summary>
@@ -171,8 +194,10 @@ namespace Nucleus.Types
 		public float GetRotationFromCenter(Vector2F center) {
 			var normalized = (this - center).Normalize();
 
-			return 360 - (((MathF.Atan2(normalized.X, normalized.Y) * NMath.DEG2RAD) + 180) % 360);
+			return 360 - (((MathF.Atan2(normalized.X, normalized.Y).ToDegrees()) + 180) % 360);
 		}
+
+		public bool InTriangle(Triangle2D triangle) => triangle.IsPointInTriangle(this);
 
 		public bool InRing(Vector2F focus, float outerRing, float innerRing) {
 			// in the outer ring radius but not in the inner ring radius
@@ -187,7 +212,11 @@ namespace Nucleus.Types
 
             return newR;
         }
-    }
+
+		public bool TestPointInQuad(Vector2F q1, Vector2F q2, Vector2F q3, Vector2F q4) {
+			return InTriangle(new Triangle2D(q1, q2, q3)) || InTriangle(new Triangle2D(q2, q3, q4));
+		}
+	}
     public static class VectorConverters
     {
         public static Vector2F ToNucleus(this Vector2 vector) => new Vector2F(vector.X, vector.Y);

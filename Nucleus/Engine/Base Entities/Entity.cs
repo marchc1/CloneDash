@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace Nucleus.Engine
 {
-    public abstract class Entity : IValidatable
+	public abstract class Entity : IValidatable
     {
         public Level Level { get; set; }
         public T GetLevel<T>() where T : Level => (T)Level;

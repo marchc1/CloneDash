@@ -487,13 +487,31 @@ namespace Nucleus.Engine
 					if (UI.Hovered == UI.Depressed) {
 						if (frameState.MouseState.Mouse1Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
-						if (frameState.MouseState.Mouse2Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
-						if (frameState.MouseState.Mouse3Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
-						if (frameState.MouseState.Mouse4Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
-						if (frameState.MouseState.Mouse5Released) UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
+						if (frameState.MouseState.Mouse2Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
+						if (frameState.MouseState.Mouse3Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
+						if (frameState.MouseState.Mouse4Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
+						if (frameState.MouseState.Mouse5Released)
+							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
 					}
-					UI.Depressed.Depressed = false;
-					UI.Depressed = null;
+					else {
+						if (frameState.MouseState.Mouse1Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse1);
+						if (frameState.MouseState.Mouse2Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse2);
+						if (frameState.MouseState.Mouse3Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse3);
+						if (frameState.MouseState.Mouse4Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse4);
+						if (frameState.MouseState.Mouse5Released)
+							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse5);
+					}
+					if (UI.Depressed != null) {
+						UI.Depressed.Depressed = false;
+						UI.Depressed = null;
+					}
 				}
 			}
 
@@ -536,7 +554,7 @@ namespace Nucleus.Engine
 			if (!Paused) RunEventPostThink(frameState);
 
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterThink);
-			if (false) {
+			/*if (false) {
 				var size = 16;
 				for (int gx = 0; gx < 100; gx++) {
 					for (int gy = 0; gy < 100; gy++) {
@@ -545,7 +563,7 @@ namespace Nucleus.Engine
 						Graphics2D.DrawRectangle(gx * size, gy * size, size, size);
 					}
 				}
-			}
+			}*/
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 

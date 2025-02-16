@@ -18,7 +18,12 @@ namespace Nucleus.UI
 		}
 
 		public override void Paint(float width, float height) {
-			if (!DrawPanelBackground) return;
+			if (!DrawPanelBackground) {
+				if (ShouldDrawImage)
+					ImageDrawing();
+
+				return;
+			}
 
 			PaintBackground(this, width, height);
 		}

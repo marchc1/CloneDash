@@ -10,7 +10,7 @@ using Nucleus;
 
 namespace CloneDash.Game
 {
-    public partial class CD_GameLevel : Level
+	public partial class CD_GameLevel : Level
     {
         /// <summary>
         /// Current health of the player<br></br>

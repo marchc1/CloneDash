@@ -1,13 +1,11 @@
-﻿using Nucleus.Engine;
-
-namespace Nucleus.ManagedMemory
+﻿namespace Nucleus.ManagedMemory
 {
-    /// <summary>
-    /// Represents the multiplier to convert a value of Data Unit into bits. 
-    /// <br></br>
-    /// So Bit == 1, Byte == 8, etc...
-    /// </summary>
-    public enum DataUnit : ulong{
+	/// <summary>
+	/// Represents the multiplier to convert a value of Data Unit into bits. 
+	/// <br></br>
+	/// So Bit == 1, Byte == 8, etc...
+	/// </summary>
+	public enum DataUnit : ulong{
         Bit = 1,
         Byte = 8,
 

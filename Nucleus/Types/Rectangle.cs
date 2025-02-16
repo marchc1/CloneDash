@@ -154,14 +154,18 @@
         /// <returns></returns>
         public static RectangleF FromPosAndSize(Vector2F pos, Vector2F size) => new RectangleF() { top = pos.Y, left = pos.X, right = size.W, bottom = size.H };
 
-        /// <summary>
-        /// Checks if a <see cref="Vector2F"/> <paramref name="point"/> is within the <see cref="RectangleF"/>
-        /// </summary>
-        public bool ContainsPoint(Vector2F point) => point.X >= X && point.X <= X + Width && point.Y >= Y && point.Y <= Y + Height;
-        /// <summary>
-        /// Checks if a <see cref="Vector2F"/> <paramref name="point"/> is within a rectangle from <paramref name="pos"/> and <paramref name="size"/>
-        /// </summary>
-        public static bool ContainsPoint(Vector2F pos, Vector2F size, Vector2F point) => point.X >= pos.X && point.X <= pos.X + size.W && point.Y >= pos.Y && point.Y <= pos.Y + size.H;
+		/// <summary>
+		/// Checks if a <see cref="Vector2F"/> <paramref name="point"/> is within the bounds of x, y, w, h
+		/// </summary>
+		public static bool ContainsPoint(float x, float y, float w, float h, Vector2F point) => point.X >= x && point.X <= x + w && point.Y >= y && point.Y <= y + h;
+		/// <summary>
+		/// Checks if a <see cref="Vector2F"/> <paramref name="point"/> is within the <see cref="RectangleF"/>
+		/// </summary>
+		public bool ContainsPoint(Vector2F point) => ContainsPoint(X, Y, Width, Height, point);
+		/// <summary>
+		/// Checks if a <see cref="Vector2F"/> <paramref name="point"/> is within a rectangle from <paramref name="pos"/> and <paramref name="size"/>
+		/// </summary>
+		public static bool ContainsPoint(Vector2F pos, Vector2F size, Vector2F point) => point.X >= pos.X && point.X <= pos.X + size.W && point.Y >= pos.Y && point.Y <= pos.Y + size.H;
 
         public static RectangleF operator +(RectangleF from, float by) => new RectangleF(from.top + by, from.left + by, from.right + by, from.bottom + by);
         public static RectangleF operator -(RectangleF from, float by) => new RectangleF(from.top - by, from.left - by, from.right - by, from.bottom - by);
@@ -220,5 +224,35 @@
 
             return newR;
         }
-    }
+
+		public RectangleF Inflate(float v) {
+			return new() {
+				X = X - v,
+				Y = Y - v,
+				W = W + v + v,
+				H = H + v + v
+			};
+		}
+		public RectangleF Deflate(float v) {
+			return new() {
+				X = X + v,
+				Y = Y + v,
+				W = W - v - v,
+				H = H - v - v
+			};
+		}
+
+
+		public Vector2F GetOverflow(RectangleF rect, float padding = 0) {
+			Vector2F overflow = new();
+			var thisP = this.Deflate(padding);
+
+			if (rect.X < thisP.X) overflow.X = thisP.X - rect.X;
+			else if ((rect.X + rect.W) > (thisP.X + thisP.W)) overflow.X = (thisP.X + thisP.W) - (rect.X + rect.W);
+			if (rect.Y < thisP.Y) overflow.Y = thisP.Y - rect.Y;
+			else if ((rect.Y + rect.H) > (thisP.Y + thisP.H)) overflow.Y = (thisP.Y + thisP.H) - (rect.Y + rect.H);
+
+			return overflow;
+		}
+	}
 }

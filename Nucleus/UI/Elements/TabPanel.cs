@@ -24,7 +24,7 @@ namespace Nucleus.UI.Elements
 			Icon = newIcon; // unimplemented; but prob should invalidate parent etc here
 		}
 	}
-	public class TabsPanel : Panel
+	public class TabView : Panel
 	{
 		public List<Tab> Tabs = [];
 
@@ -38,8 +38,8 @@ namespace Nucleus.UI.Elements
 				foreach (var tab in Tabs) {
 					if (tab != activeTab) {
 						tab.Switcher.BackgroundColor = SWITCHER_INACTIVE;
-						tab.Panel.Visible = true;
-						tab.Panel.Enabled = true;
+						tab.Panel.Visible = false;
+						tab.Panel.Enabled = false;
 					}
 				}
 
@@ -91,7 +91,7 @@ namespace Nucleus.UI.Elements
 			TabContainer.DockMargin = RectangleF.TLRB(-4, 8, 8, 8);
 		}
 
-		public delegate void OnTabChangedDelegate(TabsPanel self, Tab? tab);
+		public delegate void OnTabChangedDelegate(TabView self, Tab? tab);
 		public event OnTabChangedDelegate? OnTabChanged;
 
 		public static readonly Color SWITCHER_INACTIVE = new(30, 35, 42, 200);
@@ -119,8 +119,9 @@ namespace Nucleus.UI.Elements
 			// No tabs? Set active tab
 			int tabCount = Tabs.Count;
 			Tabs.Add(newTab);
-			if (tabCount <= 0)
-				ActiveTab = newTab;
+			if (tabCount <= 0) {
+				MainThread.RunASAP(() => ActiveTab = newTab);
+			}
 
 			switcher.MouseReleaseEvent += (_, _, _) => ActiveTab = newTab;
 

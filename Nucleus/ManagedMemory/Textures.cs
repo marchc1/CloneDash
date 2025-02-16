@@ -19,6 +19,8 @@ namespace Nucleus.ManagedMemory
     {
         public int Width => underlying.Width;
         public int Height => underlying.Height;
+        public uint UWidth => (uint)underlying.Width;
+        public uint UHeight => (uint)underlying.Height;
         public PixelFormat Format => underlying.Format;
 
         private Texture2D Underlying => underlying;
