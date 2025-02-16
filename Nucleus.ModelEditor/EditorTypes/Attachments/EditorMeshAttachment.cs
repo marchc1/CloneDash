@@ -406,10 +406,15 @@ namespace Nucleus.ModelEditor
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
-			if (image == null || Path == null) throw new Exception(":(");
+			if (Path == null) throw new Exception(":(");
 
-			var region = model.Images.TextureAtlas.GetTextureRegion(image.Name) ?? throw new Exception("No region!");
-			Texture tex = model.Images.TextureAtlas.Texture;
+			AtlasRegion region = AtlasRegion.MISSING;
+			var succeeded = image != null && model.Images.TextureAtlas.TryGetTextureRegion(image.Name, out region);
+			if (!succeeded) region = AtlasRegion.MISSING;
+
+			float width = region.H, height = region.W;
+			float widthDiv2 = width / 2, heightDiv2 = height / 2;
+			Texture tex = succeeded ? model.Images.TextureAtlas.Texture : Texture.MISSING;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
