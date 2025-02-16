@@ -27,6 +27,12 @@ namespace Nucleus.Models
 			W = (int)w;
 			H = (int)h;
 		}
+		public static readonly AtlasRegion MISSING = new AtlasRegion() {
+			X = 0,
+			Y = 0,
+			W = 512,
+			H = 512
+		};
 	}
 
 	/// <summary>

@@ -17,6 +17,9 @@ namespace Nucleus.ManagedMemory
 
     public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true) : ITexture
     {
+		// Unmanaged missing texture; should not be freed...
+		public static readonly Texture MISSING = new Texture(null, Raylib.LoadTexture(Filesystem.Resolve("missing_texture.png", "images")), false);
+
         public int Width => underlying.Width;
         public int Height => underlying.Height;
         public uint UWidth => (uint)underlying.Width;
