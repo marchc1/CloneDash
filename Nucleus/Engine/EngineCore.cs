@@ -215,9 +215,9 @@ namespace Nucleus
             }
 
             Raylib.InitAudioDevice();
-            Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
             Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
             Raylib.InitWindow(windowWidth, windowHeight, windowName);
+            Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
             if (icon != null) Raylib.SetWindowIcon(Raylib.LoadImage(Filesystem.Resolve(icon, "images")));
             OpenGL.Import(OpenGLAddressRetriever.GetProc);
             Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);

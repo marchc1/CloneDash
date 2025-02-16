@@ -363,6 +363,10 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public bool SuppressWorldTransform = false;
 
+		/// <summary>
+		/// This part renders the image, standalone, with no transformation (beyond translation transformation) <br></br>
+		/// It's only used during the Mesh Editor / New operator and nowhere else
+		/// </summary>
 		public void RenderStandalone() {
 			// todo ^^ missing texture (prob just purple-black checkerboard)
 			var quadpoints = this.quadpoints();
