@@ -35,7 +35,7 @@ namespace Nucleus.ModelEditor
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
 
-		List<Vector2F> WorkingLines = [];
+		List<MeshVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
 			CreateButton.Pulsing = CurrentMode == EditMesh_Mode.Create;
@@ -73,18 +73,18 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		public int HoveredIndex = -1;
-		public int ClickedIndex = -1;
-		public bool isClickedSteiner = false;
-		public bool isSteinerPoint = false;
-
+		public MeshVertex? HoveredVertex;
+		public MeshVertex? ClickedVertex;
+		public bool IsHoveredSteinerPoint;
+		public bool IsClickedSteinerPoint;
 		public EditorMeshAttachment Attachment => this.UIDeterminations.Last as EditorMeshAttachment ?? throw new Exception("Wtf?");
 
 		public override void Think(ModelEditor editor, Vector2F mousePos) {
 			EditorPanel editorPanel = editor.Editor;
 			float closestVertexDist = 100000000;
 
-			HoveredIndex = -1;
+			HoveredVertex = null;
+			IsHoveredSteinerPoint = false;
 
 			PatchAttachmentTransform();
 			System.Numerics.Vector2 mp = (Attachment.WorldTransform.WorldToLocal(mousePos)).ToNumerics();
@@ -94,11 +94,11 @@ namespace Nucleus.ModelEditor
 			var array = (CurrentMode == EditMesh_Mode.New ? WorkingLines : Attachment.ConstrainedEdges);
 			for (int i = 0; i < array.Count; i++) {
 				var vertex = array[i];
-				var vertexDistance = System.Numerics.Vector2.Distance(mp, vertex.ToNumerics());
+				var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
 				if (vertexDistance < closestVertexDist) {
 					closestVertexDist = vertexDistance;
-					isSteinerPoint = false;
-					HoveredIndex = i;
+					HoveredVertex = vertex;
+					IsHoveredSteinerPoint = false;
 				}
 			}
 
@@ -106,18 +106,18 @@ namespace Nucleus.ModelEditor
 				closestVertexDist = 1000000000;
 				for (int i = 0; i < Attachment.SteinerPoints.Count; i++) {
 					var vertex = Attachment.SteinerPoints[i];
-					var vertexDistance = System.Numerics.Vector2.Distance(mp, vertex.ToNumerics());
+					var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
 					if (vertexDistance < closestVertexDist) {
 						closestVertexDist = vertexDistance;
-						isSteinerPoint = true;
-						HoveredIndex = i;
+						HoveredVertex = vertex;
+						IsHoveredSteinerPoint = true;
 					}
 				}
 			}
 
 
 			if (closestVertexDist > dist) {
-				HoveredIndex = -1;
+				HoveredVertex = null;
 			}
 
 			RestoreAttachmentTransform();
@@ -137,25 +137,24 @@ namespace Nucleus.ModelEditor
 
 			switch (CurrentMode) {
 				case EditMesh_Mode.Create:
-					if (HoveredIndex == -1) {
+					if (HoveredVertex == null) {
 						var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
 						Attachment.SteinerPoints.Add(newPoint);
 						Attachment.Invalidate();
 					}
 					break;
 				case EditMesh_Mode.Delete:
-					if (HoveredIndex != -1) {
-						if (isSteinerPoint)
-							Attachment.SteinerPoints.RemoveAt(HoveredIndex);
+					if (HoveredVertex != null) {
+						if (Attachment.SteinerPoints.Contains(HoveredVertex))
+							Attachment.SteinerPoints.Remove(HoveredVertex);
 						else
-							Attachment.ConstrainedEdges.RemoveAt(HoveredIndex);
-						HoveredIndex = -1;
+							Attachment.ConstrainedEdges.Remove(HoveredVertex);
+						HoveredVertex = null;
 						Attachment.Invalidate();
 					}
 					break;
 				case EditMesh_Mode.New:
-					if (HoveredIndex == 0) {
-
+					if (WorkingLines.Count > 0 && HoveredVertex == WorkingLines.First()) {
 						Attachment.ConstrainedEdges.Clear();
 						RestoreAttachmentTransform();
 						Attachment.ConstrainedEdges.AddRange(WorkingLines);
@@ -170,8 +169,8 @@ namespace Nucleus.ModelEditor
 					break;
 			}
 			RestoreAttachmentTransform();
-			ClickedIndex = HoveredIndex;
-			isClickedSteiner = isSteinerPoint;
+			ClickedVertex = HoveredVertex;
+			IsClickedSteinerPoint = IsHoveredSteinerPoint;
 		}
 		public override void DragStart(ModelEditor editor, Vector2F mousePos) {
 			base.DragStart(editor, mousePos);
@@ -180,15 +179,12 @@ namespace Nucleus.ModelEditor
 			PatchAttachmentTransform();
 			switch (CurrentMode) {
 				case EditMesh_Mode.Modify:
-					if (ClickedIndex != -1) {
+					if (ClickedVertex != null) {
 						var mouseGridPos = editor.Editor.ScreenToGrid(mousePos);
 						var localized = Attachment.WorldTransform.WorldToLocal(mouseGridPos);
 						var clamped = ClampVertexPosition(localized);
 
-						if (isClickedSteiner)
-							Attachment.SteinerPoints[ClickedIndex] = clamped;
-						else
-							Attachment.ConstrainedEdges[ClickedIndex] = clamped;
+						ClickedVertex.SetPos(clamped);
 
 						Attachment.Invalidate();
 					}
@@ -198,7 +194,8 @@ namespace Nucleus.ModelEditor
 		}
 		public override void DragRelease(ModelEditor editor, Vector2F mousePos) {
 			base.DragRelease(editor, mousePos);
-			ClickedIndex = -1;
+			ClickedVertex = null;
+			IsClickedSteinerPoint = false;
 		}
 
 		private Transformation StoredAttachTransform;
@@ -224,20 +221,20 @@ namespace Nucleus.ModelEditor
 				var mp = ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos()) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation;
 
 				for (int i = 0; i < WorkingLines.Count; i++) {
-					var edge1 = WorkingLines[i].ToNumerics().ToNucleus();
-					var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToNumerics().ToNucleus();
+					var edge1 = WorkingLines[i].ToVector();
+					var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToVector();
 
 					edge1 = Attachment.WorldTransform.LocalToWorld(edge1);
 					edge2 = Attachment.WorldTransform.LocalToWorld(edge2);
 
 					Color c = i < WorkingLines.Count - 1 ? new Color(150, 150, 255) : new Color(60, 120, 255, 160);
-						Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
+					Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
 
-					var isHighlighted = i == HoveredIndex;
+					var isHighlighted = HoveredVertex != null && edge1 == HoveredVertex;
 					Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 4.5f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 				}
 
-				if (HoveredIndex == -1)
+				if (HoveredVertex == null)
 					Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.LIME);
 
 				RestoreAttachmentTransform();
@@ -247,6 +244,26 @@ namespace Nucleus.ModelEditor
 
 			return false;
 		}
+	}
+
+	public class MeshVertex
+	{
+		public float X;
+		public float Y;
+		public Dictionary<EditorBone, float> Weights = [];
+
+		public void SetPos(float x, float y) {
+			X = x;
+			Y = y;
+		}
+
+		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
+
+		public Vector2F ToVector() => new(X, Y);
+		public static MeshVertex FromVector(Vector2F vec) => new() { X = vec.X, Y = vec.Y };
+
+		public static implicit operator Vector2F(MeshVertex v) => v.ToVector();
+		public static implicit operator MeshVertex(Vector2F v) => new() { X = v.X, Y = v.Y };
 	}
 
 	public class EditorMeshAttachment : EditorAttachment
@@ -339,8 +356,8 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public bool Invalidated { get; set; } = true;
 		public bool Invalidate() => Invalidated = true;
 
-		public List<Vector2F> ConstrainedEdges = [];
-		public List<Vector2F> SteinerPoints = [];
+		public List<MeshVertex> ConstrainedEdges = [];
+		public List<MeshVertex> SteinerPoints = [];
 
 		private void RefreshDelaunator() {
 			if (Invalidated) {
@@ -399,6 +416,8 @@ namespace Nucleus.ModelEditor
 
 			Rlgl.DrawRenderBatchActive();
 		}
+
+
 
 		public override void Render() {
 			// todo ^^ missing texture (prob just purple-black checkerboard)
@@ -473,24 +492,25 @@ namespace Nucleus.ModelEditor
 			}
 
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
-				var edge1 = ConstrainedEdges[i].ToNumerics().ToNucleus();
-				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count].ToNumerics().ToNucleus();
+				var edge1 = ConstrainedEdges[i];
+				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count].ToVector();
 
 				edge1 = WorldTransform.LocalToWorld(edge1);
 				edge2 = WorldTransform.LocalToWorld(edge2);
 
-				Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), new Color(150, 150, 255));
+				Raylib.DrawLineV(edge1.ToVector().ToNumerics(), edge2.ToNumerics(), new Color(150, 150, 255));
 
-				var isHighlighted = meshOp != null && meshOp.HoveredIndex == i && !meshOp.isSteinerPoint;
-				Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				var isHighlighted = meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint;
+				Raylib.DrawCircleV(edge1.ToVector().ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 
 				if (i != Shape.Points.Count - 1)
 					Raylib.DrawCircleV(edge2.ToNumerics(), 2f / camsize, new Color(200, 200, 255));
 			}
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
-				var isHighlighted = meshOp != null && meshOp.HoveredIndex == i && meshOp.isSteinerPoint;
-				Raylib.DrawCircleV(WorldTransform.LocalToWorld(SteinerPoints[i]).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				var point = SteinerPoints[i];
+				var isHighlighted = meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint;
+				Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 			}
 		}
 
