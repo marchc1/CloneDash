@@ -93,16 +93,19 @@ namespace CloneDash.Game
 		public int Ticks { get; private set; } = 0;
 
 		// WIP pausing
-		private void startPause() {
+		// return false to not spawn the pause menu
+		private bool startPause() {
 			if (lastNoteHit)
-				return;
+				return false;
 			if (Conductor.Time < 0)
-				return;
+				return false;
 
 			Music.Paused = true;
 			Paused = true;
 			Model3AnimationChannel.GlobalPause = true;
 			UnpauseTime = 0;
+
+			return true;
 		}
 		private void startUnpause() {
 			Sounds.PlaySound("321.wav", true, 0.8f, 1f);
@@ -244,63 +247,63 @@ namespace CloneDash.Game
 						PauseWindow.Remove();
 				}
 				else {
-					startPause();
+					if (startPause()) {
 
-					PauseWindow = this.UI.Add<Panel>();
-					PauseWindow.Size = new(300, 400);
-					PauseWindow.Center();
+						PauseWindow = this.UI.Add<Panel>();
+						PauseWindow.Size = new(300, 400);
+						PauseWindow.Center();
 
-					var flex = PauseWindow.Add<FlexPanel>();
-					flex.Dock = Dock.Fill;
-					flex.Direction = Directional180.Vertical;
-					flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-					flex.DockPadding = RectangleF.TLRB(4);
+						var flex = PauseWindow.Add<FlexPanel>();
+						flex.Dock = Dock.Fill;
+						flex.Direction = Directional180.Vertical;
+						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+						flex.DockPadding = RectangleF.TLRB(4);
 
-					var play = flex.Add<Button>();
-					play.BorderSize = 0;
-					play.Text = "Return to Game";
-					play.TextSize = 24;
-					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
-					play.ImageOrientation = ImageOrientation.Fit;
-					play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						PauseWindow.Remove();
-						startUnpause();
-					};
-					play.PaintOverride += Button_PaintOverride;
+						var play = flex.Add<Button>();
+						play.BorderSize = 0;
+						play.Text = "Return to Game";
+						play.TextSize = 24;
+						play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
+						play.ImageOrientation = ImageOrientation.Fit;
+						play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+							PauseWindow.Remove();
+							startUnpause();
+						};
+						play.PaintOverride += Button_PaintOverride;
 
-					var restart = flex.Add<Button>();
-					restart.BorderSize = 0;
-					restart.Text = "Restart Level";
-					restart.TextSize = 24;
-					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
-					restart.ImageOrientation = ImageOrientation.Fit;
-					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
-					};
-					restart.PaintOverride += Button_PaintOverride;
+						var restart = flex.Add<Button>();
+						restart.BorderSize = 0;
+						restart.Text = "Restart Level";
+						restart.TextSize = 24;
+						restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
+						restart.ImageOrientation = ImageOrientation.Fit;
+						restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+							EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
+						};
+						restart.PaintOverride += Button_PaintOverride;
 
-					var settings = flex.Add<Button>();
-					settings.BorderSize = 0;
-					settings.Text = "Open Preferences...";
-					settings.TextSize = 24;
-					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
-					settings.ImageOrientation = ImageOrientation.Fit;
-					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+						var settings = flex.Add<Button>();
+						settings.BorderSize = 0;
+						settings.Text = "Open Preferences...";
+						settings.TextSize = 24;
+						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
+						settings.ImageOrientation = ImageOrientation.Fit;
+						settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
 
-					};
-					settings.PaintOverride += Button_PaintOverride;
+						};
+						settings.PaintOverride += Button_PaintOverride;
 
-					var back2menu = flex.Add<Button>();
-					back2menu.BorderSize = 0;
-					back2menu.Text = "Exit to Menu";
-					back2menu.TextSize = 24;
-					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
-					back2menu.ImageOrientation = ImageOrientation.Fit;
-					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						EngineCore.LoadLevel(new CD_MainMenu());
-					};
-					back2menu.PaintOverride += Button_PaintOverride;
-
+						var back2menu = flex.Add<Button>();
+						back2menu.BorderSize = 0;
+						back2menu.Text = "Exit to Menu";
+						back2menu.TextSize = 24;
+						back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
+						back2menu.ImageOrientation = ImageOrientation.Fit;
+						back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+							EngineCore.LoadLevel(new CD_MainMenu());
+						};
+						back2menu.PaintOverride += Button_PaintOverride;
+					}
 				}
 				return;
 			}
