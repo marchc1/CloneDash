@@ -74,10 +74,11 @@ namespace CloneDash
                 }
                 if (DemoFile == null) {
                     string? filepath = GetDemoFilepath();
-                    if (filepath != null) {
-                        DemoFile = new();
-                        DemoFile.LoadFiles(filepath);
-                    }
+					if (filepath != null) {
+						DemoFile = new();
+						DemoFile.LoadFiles(filepath);
+					}
+					else Logs.Warn($"CloneDash: MuseDashSong.LoadAssetFile could not generate a demo filepath for {Name}.");
                 }
             }
 
