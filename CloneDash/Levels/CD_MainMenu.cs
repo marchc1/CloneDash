@@ -4,24 +4,13 @@ using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Raylib_cs;
-using static AssetStudio.BundleFile;
-using static System.Net.Mime.MediaTypeNames;
 using MouseButton = Nucleus.Types.MouseButton;
-
-using CloneDash.Levels;
 using Nucleus.Platform;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
-using glTFLoader.Schema;
 
 namespace CloneDash.Game
 {
