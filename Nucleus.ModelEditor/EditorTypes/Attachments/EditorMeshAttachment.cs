@@ -453,7 +453,7 @@ namespace Nucleus.ModelEditor
 
 				bool block = false;
 				foreach (var tri in triangles) {
-					var points = tri.Points.ToArray();
+					var points = tri.Points;
 					Vector2F p1 = new((float)points[0].X, (float)points[0].Y);
 					Vector2F p2 = new((float)points[1].X, (float)points[1].Y);
 					Vector2F p3 = new((float)points[2].X, (float)points[2].Y);
@@ -500,8 +500,6 @@ namespace Nucleus.ModelEditor
 				var vertex2 = WorldTransform.LocalToWorld(edge2);
 
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), new Color(150, 150, 255));
-
-				Console.WriteLine($"{meshOp?.HoveredVertex}, {edge1}");
 				Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 
 				if (i != Shape.Points.Count - 1)
