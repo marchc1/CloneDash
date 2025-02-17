@@ -493,18 +493,19 @@ namespace Nucleus.ModelEditor
 
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
 				var edge1 = ConstrainedEdges[i];
-				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count].ToVector();
-
-				edge1 = WorldTransform.LocalToWorld(edge1);
-				edge2 = WorldTransform.LocalToWorld(edge2);
-
-				Raylib.DrawLineV(edge1.ToVector().ToNumerics(), edge2.ToNumerics(), new Color(150, 150, 255));
-
+				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count];
 				var isHighlighted = meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint;
-				Raylib.DrawCircleV(edge1.ToVector().ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+
+				var vertex1 = WorldTransform.LocalToWorld(edge1);
+				var vertex2 = WorldTransform.LocalToWorld(edge2);
+
+				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), new Color(150, 150, 255));
+
+				Console.WriteLine($"{meshOp?.HoveredVertex}, {edge1}");
+				Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 
 				if (i != Shape.Points.Count - 1)
-					Raylib.DrawCircleV(edge2.ToNumerics(), 2f / camsize, new Color(200, 200, 255));
+					Raylib.DrawCircleV(vertex2.ToNumerics(), 2f / camsize, new Color(200, 200, 255));
 			}
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
