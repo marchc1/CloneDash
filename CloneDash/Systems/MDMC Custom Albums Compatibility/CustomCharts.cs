@@ -4,7 +4,6 @@ using Raylib_cs;
 using System.IO.Compression;
 using CloneDash.Data;
 using Nucleus.Audio;
-using Base36Library;
 using CloneDash.Systems.CustomCharts;
 
 namespace CloneDash
