@@ -205,8 +205,12 @@ namespace CloneDash.Systems.CustomCharts
 				newNote.isLongPressEnd = false;
 				newNote.isLongPressing = false;
 
-				if (MuseDashCompatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData))
+				if (MuseDashCompatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData)) {
 					newNote.noteData = newNoteData;
+					// todo; static scrollspeed
+					// this works to cope with that for now...
+					newNote.dt = newNoteData.speed;
+				}
 
 				MusicDataManager.Add(newNote);
 
@@ -217,14 +221,14 @@ namespace CloneDash.Systems.CustomCharts
 				var endIndex = (int)(Decimal.Round(
 					newNote.tick + newNote.configData.length - newNote.noteData.left_great_range -
 					newNote.noteData.left_perfect_range,
-					3) / (Decimal)0.001f);
+					3) / 0.001m);
 
 				for (var i = 1; i <= newNote.longPressCount; i++) {
 					var holdTick = new MusicData();
 					holdTick.objId = noteId++;
 					holdTick.tick = i == newNote.longPressCount
 						? newNote.tick + newNote.configData.length
-						: newNote.tick + (Decimal)0.1f * i;
+						: newNote.tick + 0.1m * i;
 					holdTick.configData = newNote.configData;
 
 					// ACTUALLY REQUIRED TO WORK
