@@ -153,7 +153,9 @@ namespace CloneDash
                 if (DashSheetOverrides.TryGetValue(mapID, out ChartSheet? sheet))
                     return sheet;
 
-                MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
+				LoadAssetFile();
+
+				MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
                 var obj = map.ToType();
                 var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented);
 
