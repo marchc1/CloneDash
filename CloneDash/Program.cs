@@ -36,17 +36,26 @@ namespace CloneDash
                 GameName = "Clone Dash"
             };
 
-			if (CommandLineArguments.TryGetParam<string>("md_level", out var str)) {
-				CommandLineArguments.TryGetParam<int>("md_difficulty", out var difficulty);
-				MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == str);
+			if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
+				CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+				MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 				var sheet = song.GetSheet(difficulty);
-				var lvl = new CD_GameLevel(sheet);
 
+				var lvl = new CD_GameLevel(sheet);
+				EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
+			}
+			else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
+				CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+				CustomChartsSong song = new CustomChartsSong(cam_level);
+				var sheet = song.GetSheet(difficulty);
+
+				var lvl = new CD_GameLevel(sheet);
 				EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
 			}
 			else {
 				EngineCore.LoadLevel(new CD_MainMenu());
 			}
+
             // need a better way to implement custom scenes
             Filesystem.AddPath("audio", Filesystem.Resolve("game") + "assets/scenes/default/audio/");
             Filesystem.AddPath("models", Filesystem.Resolve("game") + "assets/scenes/default/models/");
