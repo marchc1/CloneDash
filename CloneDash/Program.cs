@@ -9,6 +9,7 @@ using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Raylib_cs;
+using static CloneDash.CustomAlbumsCompatibility;
 using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash

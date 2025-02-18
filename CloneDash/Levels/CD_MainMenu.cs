@@ -11,6 +11,7 @@ using static CloneDash.MuseDashCompatibility;
 using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
+using static CloneDash.CustomAlbumsCompatibility;
 
 namespace CloneDash.Game
 {
