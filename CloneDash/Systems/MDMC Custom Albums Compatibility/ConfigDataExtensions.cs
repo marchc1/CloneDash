@@ -32,5 +32,18 @@ namespace CustomAlbums.Utilities
 			return false;
 			//return config.GetNoteType() == NoteType.Block && config.boss_action.EndsWith("_atk_2");
 		}
+
+		public static MusicConfigData ToMusicConfigData(this JsonNode node) {
+			var config = new MusicConfigData();
+			config.id = node["id"]?.GetValue<int>() ?? -1;
+
+			config.time = node["time"].GetValue<decimal>();
+			config.note_uid = node["note_uid"]?.GetValue<string>() ?? string.Empty;
+			config.length = node["length"].GetValue<decimal>();
+			config.pathway = node["pathway"]?.GetValue<int>() ?? 0;
+			config.blood = node["blood"]?.GetValue<bool>() ?? false;
+
+			return config;
+		}
 	}
 }

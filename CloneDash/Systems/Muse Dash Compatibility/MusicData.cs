@@ -11,8 +11,12 @@
             public bool isLongPressing;
             public int doubleIdx;
             public bool isDouble;
+            public bool isLongPressStart;
             public bool isLongPressEnd;
+            public bool isLongPressType;
+            public bool isAir;
             public decimal longPressPTick;
+            public int longPressCount;
             public int endIndex;
             public decimal dt;
             public int longPressNum;

@@ -1,7 +1,11 @@
 ﻿using AssetStudio;
+using CustomAlbums.Managers;
+using CustomAlbums.Utilities;
 using Nucleus;
+using System.Resources;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash.Systems.CustomCharts
 {
@@ -179,6 +183,143 @@ namespace CloneDash.Systems.CustomCharts
 			Logs.Info($"Loaded bms {bmsName}.");
 
 			return bms;
+		}
+
+		private static decimal _delay;
+		private static void LoadMusicData(JsonArray noteData) {
+			short noteId = 1;
+			foreach (var node in noteData) {
+				if (noteId == short.MaxValue) {
+					Logs.Warn($"Cannot process full chart, there are too many objects. Max objects is {short.MaxValue}.");
+					break;
+				}
+
+				var configData = node.ToMusicConfigData();
+				if (configData.time < 0) continue;
+
+				// Create a new note for each configData
+				var newNote = new MusicData();
+				newNote.objId = noteId++;
+				newNote.tick = Decimal.Round(configData.time, 3);
+				newNote.configData = configData;
+				newNote.isLongPressEnd = false;
+				newNote.isLongPressing = false;
+
+				if (MuseDashCompatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData))
+					newNote.noteData = newNoteData;
+
+				MusicDataManager.Add(newNote);
+
+				// Create ticks for hold notes. If it isn't a hold note, there is no need to continue.
+				if (!newNote.isLongPressStart) continue;
+
+				// Calculate the index in which the hold note ends
+				var endIndex = (int)(Decimal.Round(
+					newNote.tick + newNote.configData.length - newNote.noteData.left_great_range -
+					newNote.noteData.left_perfect_range,
+					3) / (Decimal)0.001f);
+
+				for (var i = 1; i <= newNote.longPressCount; i++) {
+					var holdTick = new MusicData();
+					holdTick.objId = noteId++;
+					holdTick.tick = i == newNote.longPressCount
+						? newNote.tick + newNote.configData.length
+						: newNote.tick + (Decimal)0.1f * i;
+					holdTick.configData = newNote.configData;
+
+					// ACTUALLY REQUIRED TO WORK
+					var dataCopy = holdTick.configData;
+					dataCopy.length = 0;
+					holdTick.configData = dataCopy;
+
+					holdTick.isLongPressing = i != newNote.longPressCount;
+					holdTick.isLongPressEnd = i == newNote.longPressCount;
+					holdTick.noteData = newNote.noteData;
+					holdTick.longPressPTick = newNote.configData.time;
+					holdTick.endIndex = endIndex;
+
+					MusicDataManager.Add(holdTick);
+				}
+			}
+
+			Logs.Info("Loaded music data!");
+		}
+
+		private static void ProcessGeminis() {
+			var geminiCache = new Dictionary<Decimal, List<MusicData>>();
+
+			for (var i = 1; i < MusicDataManager.Data.Count; i++) {
+				var mData = MusicDataManager.Data[i];
+				mData.doubleIdx = -1;
+				MusicDataManager.Set(i, mData);
+
+				// if (mData.noteData.GetNoteType() != NoteType.Monster && mData.noteData.GetNoteType() != NoteType.Hide)
+				//  	continue;
+
+				if (geminiCache.TryGetValue(mData.tick, out var geminiList)) {
+					var isNoteGemini = Bms.BmsIds[mData.noteData.ibms_id ?? "00"] == Bms.BmsId.Gemini;
+					var isTargetGemini = false;
+					var target = new MusicData();
+
+					foreach (var gemini in geminiList.Where(gemini => mData.isAir != gemini.isAir)) {
+						target = gemini;
+						isTargetGemini = Bms.BmsIds[gemini.noteData.ibms_id ?? "00"] == Bms.BmsId.Gemini;
+
+						if (isNoteGemini && isTargetGemini) break;
+						if (!isNoteGemini) break;
+					}
+
+					if (target.objId > 0) {
+						mData.isDouble = isNoteGemini && isTargetGemini;
+						mData.doubleIdx = target.objId;
+						target.isDouble = isNoteGemini && isTargetGemini;
+						target.doubleIdx = mData.objId;
+
+						MusicDataManager.Set(mData.objId, mData);
+						MusicDataManager.Set(target.objId, target);
+					}
+				}
+				else {
+					geminiCache[mData.tick] = new List<MusicData>();
+				}
+
+				geminiCache[mData.tick].Add(mData);
+			}
+
+			Logs.Info("Processed geminis!");
+		}
+
+		internal static StageInfo TransmuteData(Bms bms) {
+			MusicDataManager.Clear();
+			_delay = 0;
+
+			var noteData = bms.GetNoteData();
+			Logs.Info("Got note data");
+
+			LoadMusicData(noteData);
+			MusicDataManager.Sort();
+
+			//ProcessBossData(bms);
+			//ProcessDelay(bms);
+			MusicDataManager.Sort();
+
+			ProcessGeminis();
+
+			// Process the delay for each MusicData
+			foreach (var mData in MusicDataManager.Data) {
+				mData.tick -= _delay;
+				mData.showTick = Decimal.Round(mData.tick - mData.dt, 2);
+				if (mData.isLongPressType)
+					mData.endIndex -= (int)(_delay / (Decimal)0.001f);
+			}
+
+			// Transmute the MusicData to a new StageInfo object
+			var stageInfo = new StageInfo();
+			stageInfo.musicDatas = [.. MusicDataManager.Data];
+			stageInfo.delay = _delay;
+
+			MusicDataManager.Clear();
+			return stageInfo;
 		}
 	}
 }

@@ -447,7 +447,7 @@ namespace CloneDash.Systems.CustomCharts
 				if (!NoteData!.TryGetValue(GetNoteDataKey(bmsKey, pathway, speed, scene), out var configData))
 					continue;
 
-				var time = decimal.TryParse(note["time"].GetValue<string>(), out decimal t) ? t : 0M;
+				var time = Convert.ToDecimal(note["time"].GetValue<float>());
 
 				// Hold note & masher 
 				var holdLength = 0M;

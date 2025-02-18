@@ -22,10 +22,10 @@ namespace CloneDash
 	public static partial class MuseDashCompatibility
     {
         public static string NoteManagerAssetBundle { get; private set; } = "";
-        private static Dictionary<string, List<string>> IBMSToDesc { get; set; } = new();
-        private static Dictionary<string, NoteConfigData> IDToNote { get; set; } = new();
-        private static Dictionary<string, NoteConfigData> IBMSToNote { get; set; } = new();
-        private static Dictionary<string, NoteConfigData> UIDToNote { get; set; } = new();
+		public static Dictionary<string, List<string>> IBMSToDesc { get; private set; } = new();
+		public static Dictionary<string, NoteConfigData> IDToNote { get; private set; } = new();
+		public static Dictionary<string, NoteConfigData> IBMSToNote { get; private set; } = new();
+		public static Dictionary<string, NoteConfigData> UIDToNote { get; private set; } = new();
 
         public static List<NoteConfigData> NoteDataManager { get; set; }
 

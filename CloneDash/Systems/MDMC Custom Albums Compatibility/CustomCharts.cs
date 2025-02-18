@@ -4,11 +4,14 @@ using Raylib_cs;
 using System.IO.Compression;
 using CloneDash.Data;
 using Nucleus.Audio;
+using Base36Library;
+using CloneDash.Systems.CustomCharts;
+
 namespace CloneDash
 {
-	public static partial class MuseDashCompatibility
+	public static partial class CustomAlbumsCompatibility
     {
-        public class CustomChartInfoJSON {
+		public class CustomChartInfoJSON {
             public string name { get; set; } = "";
             public string name_romanized { get; set; } = "";
             public string author { get; set; } = "";
@@ -92,9 +95,17 @@ namespace CloneDash
 
             protected override ChartSheet ProduceSheet(int id) {
                 var map = Archive.Entries.FirstOrDefault(x => x.Name == $"map{id}.bms");
+				if (map == null)
+					throw new Exception("Bad map difficulty.");
 
-                throw new Exception("BMS parsing is not yet implemented");
-            }
+				var bms = BmsLoader.Load(map.Open(), $"map{id}.bms");
+				if (bms == null) throw new Exception("BMS parsing exception");
+
+				var stageInfo = BmsLoader.TransmuteData(bms);
+
+				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
+				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo);
+			}
         }
     }
 }
