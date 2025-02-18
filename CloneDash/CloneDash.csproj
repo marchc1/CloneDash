@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BMSParser\BMSParser.csproj" />
     <ProjectReference Include="..\Nucleus\Nucleus.csproj" />
     <ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
