@@ -131,8 +131,9 @@ namespace CloneDash
                 // The Texture2D stuff doesnt exist in any form for Linux (its a Windows-specific binary)
                 // todo; if Muse Dash only stores textures in one or two particular formats, perhaps use/make a C# parser for the texture data?
                 if (!OperatingSystem.IsWindows()) return null;
+				if (DemoFile == null) return null;
 
-                LoadAssetFile();
+				LoadAssetFile();
                 if (CoverTexture != null)
                     return CoverTexture;
 
