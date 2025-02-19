@@ -10,6 +10,17 @@
             public decimal length;
             public bool blood;
             public int pathway;
+
+			public MusicConfigData Copy() {
+				return new MusicConfigData() {
+					id = id,
+					time = time,
+					note_uid = note_uid,
+					length = length,
+					blood = blood,
+					pathway = pathway
+				};
+			}
         }
     }
 }

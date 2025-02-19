@@ -451,14 +451,14 @@ namespace CloneDash.Systems.CustomCharts
 
 				// Hold note & masher 
 				var holdLength = 0M;
-				var isHold = false; //configData.GetNoteType() is NoteType.Press or NoteType.Mul;
+				var isHold = configData.type == 3U;
 				if (isHold) {
 					if (channelType.HasFlag(ChannelType.SpTapHolds))
 						holdLength = 0.001M;
 					else
 						for (var j = i + 1; j < Notes.Count; j++) {
 							var holdEndNote = Notes[j];
-							var holdEndTime = decimal.TryParse(holdEndNote["time"].GetValue<string>(), out decimal t2) ? t2 : 0M;
+							var holdEndTime = Convert.ToDecimal(holdEndNote["time"].GetValue<float>());
 							var holdEndBmsKey = holdEndNote?["value"]?.GetValue<string>() ?? string.Empty;
 							var holdEndChannel = holdEndNote?["tone"]?.GetValue<string>() ?? string.Empty;
 

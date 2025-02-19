@@ -232,7 +232,7 @@ namespace CloneDash.Systems.CustomCharts
 					holdTick.configData = newNote.configData;
 
 					// ACTUALLY REQUIRED TO WORK
-					var dataCopy = holdTick.configData;
+					var dataCopy = holdTick.configData.Copy();
 					dataCopy.length = 0;
 					holdTick.configData = dataCopy;
 
@@ -311,6 +311,7 @@ namespace CloneDash.Systems.CustomCharts
 
 			// Process the delay for each MusicData
 			foreach (var mData in MusicDataManager.Data) {
+				if (mData.configData == null) continue;
 				mData.tick -= _delay;
 				mData.showTick = Decimal.Round(mData.tick - mData.dt, 2);
 				if (mData.isLongPressType)

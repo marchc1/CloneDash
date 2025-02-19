@@ -1,18 +1,9 @@
 ﻿using AssetStudio;
 using CloneDash.Data;
-using CloneDash.Game;
-using CloneDash.Game.Entities;
 using CloneDash.Systems;
-using Fmod5Sharp;
-using Fmod5Sharp.FmodTypes;
-using Newtonsoft.Json;
 using Nucleus;
-using Nucleus.Audio;
-using Raylib_cs;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
-using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash
 {
@@ -138,29 +129,38 @@ namespace CloneDash
                         case 0:
                             pathwayType = PathwaySide.Bottom;
                             break;
-                    }
+					}
 
-                    if (ib.code == IBMSCode.LongPress) {
-                        if (!LongPresses.ContainsKey(s.configData.id))
-                            LongPresses[s.configData.id] = [];
+					if (s.isLongPressStart) {
+						ChartEntity press = new ChartEntity();
+						press.Type = EntityType.SustainBeam;
+						press.Pathway = pathwayType;
+						press.EnterDirection = EntityEnterDirection.RightSide;
+						press.HitTime = tick_hit;
+						press.ShowTime = tick_show;
 
-                        LongPresses[s.configData.id].Add(s);
+						press.Fever = s.noteData.fever;
+						press.Damage = s.noteData.damage;
+						press.Length = (double)s.configData.length;
+						press.Score = s.noteData.score;
 
-                        continue;
-                    }
+						press.RelatedToBoss = false;
+						press.DebuggingInfo = $"ib.code: {ib.code}";
+						sheet.Entities.Add(press);
 
-                    //Switch case for entity type
-                    EntityType type = EntityType.Unknown;
-                    EventType? Event = null;
+						continue;
+					}
 
-                    bool IsBoss = false;
-
-                    switch (ib.code) {
-                        case IBMSCode.SmallNormal:
-                        case IBMSCode.SmallUp:
-                        case IBMSCode.SmallDown:
-                        case IBMSCode.Medium1Normal:
-                        case IBMSCode.Medium2Normal:
+					//Switch case for entity type
+					EntityType type = EntityType.Unknown;
+					EventType? Event = null;
+					bool IsBoss = false;
+					switch (ib.code) {
+						case IBMSCode.SmallNormal:
+						case IBMSCode.SmallUp:
+						case IBMSCode.SmallDown:
+						case IBMSCode.Medium1Normal:
+						case IBMSCode.Medium2Normal:
                         case IBMSCode.Medium1Down:
                         case IBMSCode.Medium2Down:
                         case IBMSCode.Medium1Up:
@@ -295,36 +295,6 @@ namespace CloneDash
                     }
                 }
                 first = false;
-            }
-
-            foreach (var kvp in LongPresses) {
-                int key = kvp.Key;
-                List<MusicData> musicDatas = kvp.Value;
-                musicDatas.Sort((x, y) => x.configData.id.CompareTo(y.configData.id));
-
-                var firstItem = musicDatas.First();
-                var lastItem = musicDatas.Last();
-
-                double length = 0;
-                if (firstItem != lastItem)
-                    length = ((double)lastItem.tick + sheet.StartOffset) - ((double)firstItem.tick + sheet.StartOffset);
-
-                var HitTime = (double)firstItem.configData.time;
-                var ShowTime = (float)firstItem.showTick - sheet.StartOffset;
-                var transform1 = (HitTime - ShowTime) / (double)firstItem.dt;
-                ShowTime = HitTime - transform1;
-
-                sheet.Entities.Add(new ChartEntity() {
-                    Type = EntityType.SustainBeam,
-                    Pathway = firstItem.noteData.pathway == 0 ? PathwaySide.Bottom : PathwaySide.Top,
-                    EnterDirection = EntityEnterDirection.RightSide,
-                    HitTime = HitTime,
-                    ShowTime = ShowTime,
-                    Fever = firstItem.noteData.fever,
-                    Damage = 0,
-                    Length = (float)length,
-                    Score = firstItem.noteData.score
-                });
             }
 
             sheet.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
