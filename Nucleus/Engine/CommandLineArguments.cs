@@ -67,11 +67,14 @@ namespace Nucleus.Engine
 		private static string readValue(string str, ref int i) {
 			string build = "";
 			bool willBeQuoted = str[i] == '"';
+			if (willBeQuoted) i++;
 
 			while (i < str.Length) {
 				char c = str[i];
-				if ((c == ' ' && !willBeQuoted) || (c == '"' && willBeQuoted && str[i - 1] != '\\'))
+				if ((c == ' ' && !willBeQuoted) || (c == '"' && willBeQuoted && str[i - 1] != '\\')) {
+					i++;
 					return build;
+				}
 				build += c;
 				i++;
 			}
