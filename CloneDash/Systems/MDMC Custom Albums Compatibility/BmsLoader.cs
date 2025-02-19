@@ -2,6 +2,8 @@
 using CustomAlbums.Managers;
 using CustomAlbums.Utilities;
 using Nucleus;
+using System;
+using System.Diagnostics;
 using System.Resources;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
@@ -73,7 +75,9 @@ namespace CloneDash.Systems.CustomCharts
 						for (var i = 0; i < objLength; i++) {
 							var note = value.Substring(i * 2, 2);
 							if (note is "00") continue;
+
 							var tick = (float)i / objLength + beat;
+
 							if (type is Bms.ChannelType.SpBpmDirect or Bms.ChannelType.SpBpmLookup) {
 								// Handle BPM changes
 								var freqDivide = type == Bms.ChannelType.SpBpmLookup &&
@@ -115,8 +119,8 @@ namespace CloneDash.Systems.CustomCharts
 
 									var localOffset = totalOffset; // num7
 									totalOffset += offset;
-									var floorOffset = (int)MathF.Floor(localOffset); // num8
-									var ceilOffset = (int)MathF.Floor(totalOffset); // num9
+									var floorOffset = NMath.FloorToInt(localOffset); // num8
+									var ceilOffset = NMath.CeilToInt(totalOffset); // num9
 
 									for (var k = floorOffset; k < ceilOffset; k++) {
 										var off = 1f; // num10
@@ -130,7 +134,7 @@ namespace CloneDash.Systems.CustomCharts
 
 										notePercents.TryGetValue(k, out var node);
 										var percent = node?["percent"].GetValue<float>() ?? 1f;
-										time += (int)MathF.Round(off * percent * freq / 1E-06f) * 1E-06F;
+										time += NMath.RoundToInt(off * percent * freq / 1E-06f) * 1E-06F;
 									}
 								}
 
