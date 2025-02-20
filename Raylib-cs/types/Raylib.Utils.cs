@@ -137,7 +137,7 @@ public static unsafe partial class Raylib
     }
 
     /// <summary>
-    /// Load image from managed memory, fileType refers to extension: i.e. "png"
+    /// Load image from managed memory, fileType refers to extension: i.e. ".png"
     /// </summary>
     public static Image LoadImageFromMemory(string fileType, byte[] fileData)
     {
