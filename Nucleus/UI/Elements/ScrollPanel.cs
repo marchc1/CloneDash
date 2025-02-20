@@ -73,7 +73,7 @@ namespace Nucleus.UI
 				if (ShouldItemBeVisible(child)) {
 					child.EngineDisabled = false;
 
-					if ((child.RenderBounds.Y + child.RenderBounds.H) < VerticalScrollbar.Scroll)
+					if ((child.RenderBounds.Y + RenderBounds.H) > VerticalScrollbar.Scroll - child.RenderBounds.H)
 						child.EngineInvisible = true;
 					else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + RenderBounds.H) - child.RenderBounds.H)
 						child.EngineInvisible = true;
