@@ -12,6 +12,8 @@ using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
+using CloneDash.Systems.CustomAlbums;
+using System.Diagnostics;
 
 namespace CloneDash.Game
 {
@@ -60,49 +62,182 @@ namespace CloneDash.Game
 			CloneDashConsole.HookToLevel(this);
 		}
 
+		Panel searchPanel;
+		ScrollPanel scrollPanel;
+
+		private void ClearWindow() {
+			scrollPanel.AddParent.ClearChildren();
+		}
+
+		private void AddChartSelector(MDMCChart chart) {
+			Button chartBtn = scrollPanel.Add<Button>();
+			chartBtn.BorderSize = 0;
+			chartBtn.Text = "";
+			chartBtn.Dock = Dock.Top;
+			chartBtn.Dock = Dock.Top;
+			chartBtn.Size = new(96);
+
+			Panel imageRenderer = chartBtn.Add<Panel>();
+			imageRenderer.Size = new(64);
+			imageRenderer.Position = new(4);
+			imageRenderer.PaintOverride += ImageRenderer_PaintOverride;
+
+			chart.GetCoverAsTexture((tex) => {
+				if (IValidatable.IsValid(tex)) {
+					imageRenderer.Image = tex;
+				}
+			});
+
+			Label songAuthor, songName, likeCount, chartAuthor;
+			Panel userIcon, likeIcon;
+			Button playDemo, downloadOrPlay;
+
+			chartBtn.Add(out songAuthor);
+			chartBtn.Add(out songName);
+			chartBtn.Add(out likeCount);
+			chartBtn.Add(out chartAuthor);
+			chartBtn.Add(out userIcon);
+			chartBtn.Add(out likeIcon);
+			chartBtn.Add(out playDemo);
+			chartBtn.Add(out downloadOrPlay);
+
+			userIcon.PaintOverride += ImageRenderer_PaintOverride;
+			likeIcon.PaintOverride += ImageRenderer_PaintOverride;
+			playDemo.PaintOverride += ImageRenderer_PaintOverride;
+			downloadOrPlay.PaintOverride += ImageRenderer_PaintOverride;
+
+			imageRenderer.ImageOrientation = ImageOrientation.Zoom;
+			userIcon.ImageOrientation = ImageOrientation.Zoom;
+			likeIcon.ImageOrientation = ImageOrientation.Zoom;
+			playDemo.ImageOrientation = ImageOrientation.Zoom;
+			downloadOrPlay.ImageOrientation = ImageOrientation.Zoom;
+
+			songAuthor.Text = chart.Artist;
+			songAuthor.AutoSize = true;
+
+			songName.Text = string.IsNullOrEmpty(chart.TitleRomanized) ? chart.Title : chart.TitleRomanized;
+			songName.AutoSize = true;
+
+			likeCount.Text = $"{chart.Likes}";
+			chartAuthor.Text = $"{chart.Charter}";
+
+			userIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/user.png");
+			likeIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/heart.png");
+			playDemo.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/listen.png");
+
+			bool downloaded = false; //todo
+			downloadOrPlay.Image = userIcon.Level.Textures.LoadTextureFromFile(downloaded ? "ui/play.png" : "ui/download.png");
+
+			songAuthor.Position = new(96, 16);
+			songAuthor.TextSize = 20;
+
+			songName.Position = new(96, 32);
+			songName.TextSize = 24;
+
+			userIcon.Anchor = Anchor.BottomLeft;
+			userIcon.Origin = Anchor.BottomLeft;
+			userIcon.Size = new(24);
+
+			chartAuthor.AutoSize = true;
+			chartAuthor.Anchor = Anchor.BottomLeft;
+			chartAuthor.Origin = Anchor.BottomLeft;
+			chartAuthor.Position = new(24 + 2, -1);
+			chartAuthor.TextSize = 22;
+			chartAuthor.Size = new(24);
+
+			downloadOrPlay.Anchor = Anchor.BottomRight;
+			downloadOrPlay.Origin = Anchor.BottomRight;
+			downloadOrPlay.Position = new();
+			downloadOrPlay.Size = new(24);
+
+			playDemo.Anchor = Anchor.BottomRight;
+			playDemo.Origin = Anchor.BottomRight;
+			playDemo.Position = new(-26, 0);
+			playDemo.Size = new(24);
+
+			likeCount.Anchor = Anchor.BottomRight;
+			likeCount.Origin = Anchor.BottomRight;
+			likeCount.Position = new(-58, -3);
+			likeCount.AutoSize = true;
+
+			likeIcon.Anchor = Anchor.BottomRight;
+			likeIcon.Origin = Anchor.BottomRight;
+			likeIcon.Position = new(-58 + -24, 0);
+			likeIcon.Size = new(24);
+
+			imageRenderer.OnHoverTest += Element.Passthru;
+			songAuthor.OnHoverTest += Element.Passthru;
+			songName.OnHoverTest += Element.Passthru;
+			likeCount.OnHoverTest += Element.Passthru;
+			chartAuthor.OnHoverTest += Element.Passthru;
+			userIcon.OnHoverTest += Element.Passthru;
+			likeIcon.OnHoverTest += Element.Passthru;
+		}
+
+		private void ImageRenderer_PaintOverride(Element self, float width, float height) {
+			if (IValidatable.IsValid(self.Image))
+				self.ImageDrawing(new(0), new(width, height));
+		}
+
+		private void PopulateWindow(string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
+			var tempLabel = scrollPanel.Add<Label>();
+			tempLabel.Text = "Loading...";
+			tempLabel.Dock = Dock.Top;
+			tempLabel.TextAlignment = Anchor.Center;
+			tempLabel.AutoSize = true;
+			tempLabel.TextSize = 26;
+
+			MDMCWebAPI.SearchCharts(query, sort, page, onlyRanked).Then((resp) => {
+				tempLabel.Remove();
+				MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
+
+				foreach (MDMCChart chart in charts) {
+					AddChartSelector(chart);
+				}
+			});
+		}
+
 		private void LoadMDCC_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			var result = TinyFileDialogs.OpenFileDialog(".mdm file", "", ["*.mdm"], "Muse Dash Custom Album Chart", false);
+			LevelSelectWindow = UI.Add<Window>();
+			LevelSelectWindow.Title = "Open Custom Albums Chart";
+			//test.Title = "Non-Rendertexture Window";
+			LevelSelectWindow.Size = new Vector2F(600, 600);
+			LevelSelectWindow.DockPadding = RectangleF.TLRB(4);
+			LevelSelectWindow.HideNonCloseButtons();
+			LevelSelectWindow.Center();
+
+			LevelSelectWindow.Add(out searchPanel);
+			LevelSelectWindow.Add(out scrollPanel);
+
+			searchPanel.Dock = Dock.Top;
+			scrollPanel.Dock = Dock.Fill;
+			searchPanel.Size = new Vector2F(96);
+
+			PopulateWindow();
+
+			/*var result = TinyFileDialogs.OpenFileDialog(".mdm file", "", ["*.mdm"], "Muse Dash Custom Album Chart", false);
 			if (!result.Cancelled) {
 				LoadSongSelector(new CustomChartsSong(result.Result));
-			}
+			}*/
 		}
 
 		public record MuseDashMap(string map_first, List<string> maps);
 
-		public Window MDLevelWindow { get; set; }
+		public Window LevelSelectWindow { get; set; }
 		private void LoadMDLevel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			if (IValidatable.IsValid(MDLevelWindow))
-				return;
-			/*
-            var testingImages = UI.Add<Window>();
-            testingImages.Title = "FlexPanel & ImageOrientation Test";
-            testingImages.Size = new(1500, 200); 
-            testingImages.Center();
+			if (IValidatable.IsValid(LevelSelectWindow))
+				LevelSelectWindow.Remove();
 
-            var flexTest = testingImages.Add<FlexPanel>();
-            flexTest.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-            flexTest.Dock = Dock.Fill;
-
-            for (int i = 0; i < 5; i++) {
-                var img = flexTest.Add<Button>();
-                img.TextAlignment = Anchor.TopLeft;
-                img.Text = Enum.GetName(typeof(ImageOrientation), i);
-                img.Image = TextureSystem.LoadTexture("ui/pause_play.png");
-                img.ImageOrientation = (ImageOrientation)i;
-            }
-
-            return;*/
-
-			MDLevelWindow = UI.Add<Window>();
-			MDLevelWindow.Title = "Open Muse Dash Level";
+			LevelSelectWindow = UI.Add<Window>();
+			LevelSelectWindow.Title = "Open Muse Dash Level";
 			//test.Title = "Non-Rendertexture Window";
-			MDLevelWindow.Size = new Vector2F(600, 600);
-			MDLevelWindow.DockPadding = RectangleF.TLRB(4);
-			MDLevelWindow.HideNonCloseButtons();
-			MDLevelWindow.Center();
+			LevelSelectWindow.Size = new Vector2F(600, 600);
+			LevelSelectWindow.DockPadding = RectangleF.TLRB(4);
+			LevelSelectWindow.HideNonCloseButtons();
+			LevelSelectWindow.Center();
 
-			var txt = MDLevelWindow.Add<Textbox>();
-			var list = MDLevelWindow.Add<ListView>();
+			var txt = LevelSelectWindow.Add<Textbox>();
+			var list = LevelSelectWindow.Add<ListView>();
 
 			txt.Dock = Dock.Top;
 			txt.HelperText = "Filter by Level Name...";
@@ -230,7 +365,7 @@ namespace CloneDash.Game
 			CreateDifficulty(levelSelector, song, 2, song.Difficulty2);
 			CreateDifficulty(levelSelector, song, 1, song.Difficulty1);
 
-			MDLevelWindow?.AttachWindowAndLockInput(levelSelector);
+			LevelSelectWindow?.AttachWindowAndLockInput(levelSelector);
 		}
 		private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 			var song = self.GetTag<MuseDashSong>("musedash_song");
