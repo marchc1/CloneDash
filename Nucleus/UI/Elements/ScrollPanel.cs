@@ -74,7 +74,7 @@ namespace Nucleus.UI
 					child.EngineDisabled = false;
 
 					if ((child.RenderBounds.Y + RenderBounds.H) > VerticalScrollbar.Scroll - child.RenderBounds.H)
-						child.EngineInvisible = true;
+						child.EngineInvisible = false;
 					else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + RenderBounds.H) - child.RenderBounds.H)
 						child.EngineInvisible = true;
 					else
