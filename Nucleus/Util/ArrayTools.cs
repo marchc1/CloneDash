@@ -43,6 +43,20 @@ namespace Nucleus.Util
 			return -1;
 		}
 
+		// thanks Ashton
+		public static MemoryStream ToMemoryStream(this Stream stream) {
+			var ms = new MemoryStream();
+			try {
+				stream.CopyTo(ms);
+				ms.Position = 0;
+			}
+			catch (Exception ex) {
+				Logs.Warn(ex.Message);
+			}
+
+			return ms;
+		}
+
 		public class AlphanumComparatorFast : IComparer
 		{
 			public int Compare(object x, object y) {
