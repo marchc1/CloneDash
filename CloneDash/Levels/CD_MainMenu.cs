@@ -29,7 +29,7 @@ namespace CloneDash.Game
 			loadMDLevel.Text = "";
 			loadMDLevel.ImageOrientation = ImageOrientation.Zoom;
 			loadMDLevel.Dock = Dock.Right;
-			loadMDLevel.Image = Textures.LoadTextureFromFile("ui\\mainmenu_play.png");
+			loadMDLevel.Image = Textures.LoadTextureFromFile("ui\\play_md_level.png");
 			loadMDLevel.TextSize = 21;
 			loadMDLevel.DockMargin = RectangleF.TLRB(0);
 			loadMDLevel.BorderSize = 0;
@@ -42,7 +42,7 @@ namespace CloneDash.Game
 			loadMDCC.Text = "";
 			loadMDCC.ImageOrientation = ImageOrientation.Zoom;
 			loadMDCC.Dock = Dock.Right;
-			loadMDCC.Image = Textures.LoadTextureFromFile("ui\\mainmenu_play.png");
+			loadMDCC.Image = Textures.LoadTextureFromFile("ui\\play_cam_level.png");
 			loadMDCC.TextSize = 21;
 			loadMDCC.DockMargin = RectangleF.TLRB(0);
 			loadMDCC.BorderSize = 0;
