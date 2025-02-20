@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace CloneDash.Systems.CustomAlbums
 {
-	public struct MDMCChartSheet
+	public struct MDMCSheet
 	{
 		[JsonProperty("_id")]
 		public string ID;
@@ -80,7 +80,7 @@ namespace CloneDash.Systems.CustomAlbums
 		public int OwnerUID;
 
 		[JsonProperty("sheets")]
-		public MDMCChartSheet[] Sheets;
+		public MDMCSheet[] Sheets;
 
 		[JsonProperty("analytics")]
 		public MDMCChartAnalytics Analytics;
@@ -100,7 +100,7 @@ namespace CloneDash.Systems.CustomAlbums
 		public DateTime TimestampDateTime => DateTime.Parse(Timestamp);
 
 		[JsonProperty("likes")]
-		public int Likes;
+		public int? Likes;
 
 		[JsonProperty("maxDifficulty")]
 		public int MaxDifficulty;
@@ -108,6 +108,8 @@ namespace CloneDash.Systems.CustomAlbums
 		public string CoverURL => $"https://cdn.mdmc.moe/{ID}/cover.png";
 		public string MP3URL => $"https://cdn.mdmc.moe/{ID}/music.mp3";
 		public string OGGURL => $"https://cdn.mdmc.moe/{ID}/music.ogg";
+
+		public int GetLikes() => Likes ?? Analytics.Likes.Length;
 
 		public void GetCoverAsTexture(Action<Texture?> callback) {
 			string coverURL = CoverURL;
@@ -156,6 +158,53 @@ namespace CloneDash.Systems.CustomAlbums
 			});
 		}
 	}
+
+	public struct MDMCProfile
+	{
+		[JsonProperty("bio")] public string Bio;
+		[JsonProperty("badges")] public string[] Badges;
+		[JsonProperty("peropero_id")] public string? PeroperoID;
+		[JsonProperty("avatar")] public string Avatar;
+		[JsonProperty("banner")] public string Banner;
+	}
+
+	public struct MDMCTopScore {
+		[JsonProperty("hash")] public string Hash;
+		[JsonProperty("rankedScore")] public double RankedScore;
+	}
+
+	public struct MDMCRanking
+	{
+		[JsonProperty("ranked_score")] public double RankedScore;
+		[JsonProperty("top_scores")] public MDMCTopScore[] TopScores;
+	}
+
+	public struct MDMCSheetUser
+	{
+		[JsonProperty("_id")] public string ID;
+		[JsonProperty("uid")] public int UserID;
+		[JsonProperty("discord_id")] public string DiscordID;
+		[JsonProperty("username")] public string Username;
+		[JsonProperty("banned")] public bool Banned;
+		[JsonProperty("profile")] public MDMCProfile Profile;
+		[JsonProperty("ranking")] public MDMCRanking Ranking;
+	}
+
+	public struct MDMCScore
+	{
+		[JsonProperty("_id")] public string ID;
+		[JsonProperty("uid")] public int UserID;
+		[JsonProperty("user")] public MDMCSheetUser User;
+		[JsonProperty("hash")] public string Hash;
+		[JsonProperty("sheet")] public string SheetID;
+		[JsonProperty("score")] public int Score;
+		[JsonProperty("acc")] public float Accuracy;
+		[JsonProperty("combo")] public int Combo;
+		[JsonProperty("character_id")] public int CharacterID;
+		[JsonProperty("elfin_id")] public int ElfinID;
+		[JsonProperty("timestamp")] public string Timestamp;
+	}
+
 
 	public class MDMCWebAPIResponse(HttpResponseMessage message)
 	{
@@ -250,5 +299,16 @@ namespace CloneDash.Systems.CustomAlbums
 
 			return new MDMCWebAPIPromise(url);
 		}
+
+		public static MDMCWebAPIPromise ChartInfo(string chartID) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}");
+		public static MDMCWebAPIPromise ChartInfo(MDMCChart chart) => ChartInfo(chart.ID);
+
+		public static MDMCWebAPIPromise ChartSheets(string chartID) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}/sheets");
+		public static MDMCWebAPIPromise ChartSheets(MDMCChart chart) => ChartSheets(chart.ID);
+
+		public static MDMCWebAPIPromise ChartLeaderboards(string chartID, string sheetID, int pageID = 1) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}/sheets/{sheetID}?page={pageID}");
+		public static MDMCWebAPIPromise ChartLeaderboards(MDMCChart chart, string sheetID, int pageID = 1) => ChartLeaderboards(chart.ID, sheetID, pageID);
+		public static MDMCWebAPIPromise ChartLeaderboards(MDMCChart chart, MDMCSheet sheet, int pageID = 1) => ChartLeaderboards(chart.ID, sheet.ID, pageID);
+		public static MDMCWebAPIPromise ChartLeaderboards(MDMCSheet sheet, int pageID = 1) => ChartLeaderboards(sheet.ChartID, sheet.ID, pageID);
 	}
 }
