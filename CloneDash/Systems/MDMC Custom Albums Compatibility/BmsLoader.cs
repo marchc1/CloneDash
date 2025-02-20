@@ -1,4 +1,5 @@
 ﻿using AssetStudio;
+using CloneDash.Systems.Muse_Dash_Compatibility;
 using CustomAlbums.Managers;
 using CustomAlbums.Utilities;
 using Nucleus;
@@ -308,7 +309,6 @@ namespace CloneDash.Systems.CustomCharts
 			MusicDataManager.Sort();
 
 			//ProcessBossData(bms);
-			//ProcessDelay(bms);
 			MusicDataManager.Sort();
 
 			ProcessGeminis();

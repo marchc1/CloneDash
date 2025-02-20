@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using CloneDash.Systems.Muse_Dash_Compatibility;
+using System.Text.Json.Nodes;
 using static CloneDash.MuseDashCompatibility;
 
 namespace CustomAlbums.Utilities
@@ -8,9 +9,10 @@ namespace CustomAlbums.Utilities
 		public static bool IsAprilFools(this NoteConfigData config) {
 			return config.prefab_name.EndsWith("_fool");
 		}
-		//public static IBMSCode GetNoteType(this NoteConfigData config) {
-			//return (NoteType)config.type;
-		//}
+
+		public static NoteType GetNoteType(this NoteConfigData config) {
+			return (NoteType)config.type;
+		}
 
 		public static bool IsAnyScene(this NoteConfigData config) {
 			return config.scene == "0";
@@ -21,16 +23,14 @@ namespace CustomAlbums.Utilities
 		}
 
 		public static bool IsAnySpeed(this NoteConfigData config) {
-			return false;
-			//return config.GetNoteType() == NoteType.Boss
-				   //|| config.GetNoteType() == NoteType.None
-				   //|| config.ibms_id == "16"
-				   //|| config.ibms_id == "17";
+			return config.GetNoteType() == NoteType.Boss
+				   || config.GetNoteType() == NoteType.None
+				   || config.ibms_id == "16"
+				   || config.ibms_id == "17";
 		}
 
 		public static bool IsPhase2BossGear(this NoteConfigData config) {
-			return false;
-			//return config.GetNoteType() == NoteType.Block && config.boss_action.EndsWith("_atk_2");
+			return config.GetNoteType() == NoteType.Block && config.boss_action.EndsWith("_atk_2");
 		}
 
 		public static MusicConfigData ToMusicConfigData(this JsonNode node) {

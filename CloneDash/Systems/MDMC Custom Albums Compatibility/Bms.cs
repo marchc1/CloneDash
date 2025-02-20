@@ -1,4 +1,5 @@
-﻿using CustomAlbums.Utilities;
+﻿using CloneDash.Systems.Muse_Dash_Compatibility;
+using CustomAlbums.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -451,7 +452,7 @@ namespace CloneDash.Systems.CustomCharts
 
 				// Hold note & masher 
 				var holdLength = 0M;
-				var isHold = configData.type == 3U;
+				var isHold = configData.GetNoteType() is NoteType.Press or NoteType.Mul;
 				if (isHold) {
 					if (channelType.HasFlag(ChannelType.SpTapHolds))
 						holdLength = 0.001M;
