@@ -24,7 +24,7 @@ namespace CloneDash.Game
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
 		public static ConCommand clonedash_settime = ConCommand.Register("clonedash_seek", (_, args) => {
-			var level = EngineCore.Level.As<CD_GameLevel>();
+			var level = EngineCore.Level.AsNullable<CD_GameLevel>();
 			if(level == null) {
 				Logs.Warn("Not in game context!");
 				return;

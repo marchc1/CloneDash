@@ -35,6 +35,7 @@ namespace Nucleus.Engine
 
 		public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
 		public T As<T>() where T : Level => (T)this;
+		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
 		private RectangleF? __view = null;
 		private bool __viewDirty = true;
