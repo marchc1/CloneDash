@@ -20,8 +20,48 @@ using CloneDash.Modding.Settings;
 
 namespace CloneDash.Game
 {
+	[Nucleus.MarkForStaticConstruction]
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
+		public static ConCommand clonedash_settime = ConCommand.Register("clonedash_seek", (_, args) => {
+			var level = EngineCore.Level.As<CD_GameLevel>();
+			if(level == null) {
+				Logs.Warn("Not in game context!");
+				return;
+			}
+
+			double? d = args.GetDouble(0);
+			if (!d.HasValue) Logs.Warn("Did not specify a time!");
+			else level.SeekTo(d.Value);
+		});
+
+		public void SeekTo(double time) {
+			Music.Playhead = (float)time;
+			foreach(var entity in Entities) {
+				if (entity is not CD_BaseEnemy entCD)
+					continue;
+
+				entCD.Reset();
+			}
+
+			Combo = 0;
+			Health = 250;
+			InFever = false;
+			lastNoteHit = false;
+			Score = 0;
+			Fever = 0;
+
+			AutoPlayer.Reset();
+
+			foreach (var entity in Entities) {
+				if(entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
+					mEnt.RewardPlayer(true);
+					mEnt.Kill();
+				}
+			}
+
+		}
+
 		public const string STRING_HP = "HP: {0}";
 		public const string STRING_FEVERY = "FEVER! {0}s";
 		public const string STRING_FEVERN = "FEVER: {0}/{1}";
