@@ -17,7 +17,11 @@ namespace CloneDash.Game.Entities
             Interactivity = EntityInteractivity.Hit;
             DoesDamagePlayer = true;
         }
-        public override void Initialize() {
+		public override void OnReset() {
+			base.OnReset();
+			postHitPhysics = new(this);
+		}
+		public override void Initialize() {
             base.Initialize();
             SetModel("doublehit.glb", "Idle", true);
             Model.HSV = new(37, 1.24f, 1);

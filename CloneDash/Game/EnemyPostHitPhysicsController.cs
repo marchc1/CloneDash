@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace CloneDash.Game
 {
-    internal class EnemyPostHitPhysicsController(CD_BaseEnemy enemy)
+    internal class EnemyPostHitPhysicsController
     {
+		public CD_BaseEnemy Enemy;
+		public EnemyPostHitPhysicsController(CD_BaseEnemy enemy) {
+			Enemy = enemy;
+			Enemy.Rotation = new System.Numerics.Vector3(0);
+		}
         private bool hit = false;
 
         private Vector2F pos = Vector2F.Zero;
@@ -21,16 +26,16 @@ namespace CloneDash.Game
             if (hit) return;
 
             hit = true;
-            this.pos = enemy.Position;
+            this.pos = Enemy.Position;
             this.vel = velocity;
             this.angVel = angularVelocity;
-            this.ang = enemy.Rotation.Z;
-            lastCurtime = enemy.Level.CurtimeF;
+            this.ang = Enemy.Rotation.Z;
+            lastCurtime = Enemy.Level.CurtimeF;
         }
 
         public void PassthroughPosition(ref Vector2F vec) {
             if (hit) {
-                var level = enemy.Level;
+                var level = Enemy.Level;
                 var delta = (level.CurtimeF - lastCurtime) * 10;
 
                 vel += new Vector2F(0, 100) * delta;
@@ -41,7 +46,7 @@ namespace CloneDash.Game
 
                 ang += angVel * delta;
 
-                enemy.Rotation = new(0, 0, ang);
+				Enemy.Rotation = new(0, 0, ang);
 
                 lastCurtime = level.CurtimeF;
             }

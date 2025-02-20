@@ -12,8 +12,13 @@ namespace CloneDash.Game.Entities
             Interactivity = EntityInteractivity.Hit;
         }
 
+		public override void OnReset() {
+			base.OnReset();
+			postHitPhysics = new(this);
+		}
 
-        protected override void OnHit(PathwaySide side) {
+
+		protected override void OnHit(PathwaySide side) {
             Kill();
             postHitPhysics.Hit(NMath.Random.Vec2(new(-120, -210), new(-100, -180)), NMath.Random.Single(12.5f, 22.5f));
         }

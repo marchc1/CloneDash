@@ -19,6 +19,11 @@ namespace CloneDash.Game.Entities
 				);
 		}
 
+		public override void OnReset() {
+			base.OnReset();
+			postHitPhysics = new(this);
+		}
+
 
 		protected override void OnHit(PathwaySide side) {
 			Kill();

@@ -29,7 +29,11 @@ namespace CloneDash.Game.Entities
             SetModel("hammer.glb");
         }
         float whenDidHammerHit = -1;
-        public override void ChangePosition(ref Vector2F pos) {
+		public override void OnReset() {
+			base.OnReset();
+			whenDidHammerHit = -1;
+		}
+		public override void ChangePosition(ref Vector2F pos) {
             var level = Level.As<CD_GameLevel>();
 
             var pathwayY = Game.Pathway.ValueDependantOnPathway(Pathway, level.TopPathway.Position.Y, level.BottomPathway.Position.Y); // Pathway == PathwaySide.Top ? DashVars.UpPathway.Position.Y : DashVars.DownPathway.Position.Y;

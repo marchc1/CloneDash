@@ -23,7 +23,13 @@ namespace CloneDash.Game.Entities
 
         public Pathway PathwayCheck;
 
-        protected override void OnHit(PathwaySide attackedPath) {
+		public override void OnReset() {
+			base.OnReset();
+			HeldState = false;
+			StopAcceptingInput = false;
+		}
+
+		protected override void OnHit(PathwaySide attackedPath) {
             if (HeldState == true)
                 return;
             if (StopAcceptingInput == true)

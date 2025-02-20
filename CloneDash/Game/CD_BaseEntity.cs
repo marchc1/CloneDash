@@ -404,5 +404,20 @@ namespace CloneDash.Game
 			set { __hitColor = value; }
 		}
 
+
+		public void Reset() {
+			DidDamagePlayer = false;
+			DidRewardPlayer = false;
+			DidPunishPlayer = false;
+			DidPass = false;
+			Dead = false;
+			Invisible = false;
+			Shown = false;
+			OnReset();
+		}
+
+		public virtual void OnReset() {
+
+		}
 	}
 }
