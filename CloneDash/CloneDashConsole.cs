@@ -105,6 +105,7 @@ namespace CloneDash
 			consoleLogs.AppendLine($"[{message.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Level)}] {message.Message}");
 			if (consoleLogs.Rows.Count > ConsoleSystem.MaxConsoleMessages)
 				consoleLogs.RemoveLine(0);
+			consoleLogs.ScrollToLine(consoleLogs.Rows.Count, 1f);
 		}
 		private void ConsoleSystem_ConsoleMessageWrittenEvent(ref ConsoleMessage message) {
 			SetupRow(message);
