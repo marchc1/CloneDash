@@ -69,7 +69,6 @@ namespace CloneDash.Game.Logic
             // Find the closest interactive entity that hasnt been passed
             var ent = ents.FirstOrDefault(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
 
-
             // Is an entity visible?
             if (ent != default) {
                 var pathway = level.GetPathway(ent);
@@ -147,5 +146,9 @@ namespace CloneDash.Game.Logic
                 Graphics2D.DrawText((frameState.WindowWidth / 2), frameState.WindowHeight * 0.07f, STRING_AUTO, "Noto Sans", 30, Anchor.Center);
             }
         }
+
+		public void Reset() {
+			Passed.Clear();
+		}
     }
 }
