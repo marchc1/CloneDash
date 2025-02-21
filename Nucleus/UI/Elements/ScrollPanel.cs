@@ -67,12 +67,13 @@ namespace Nucleus.UI
 			HorizontalScrollbar.PageContents = AddParent.SizeOfAllChildren;
 			HorizontalScrollbar.PageSize = AddParent.RenderBounds.Size;
 
+			MainPanel.Clipping = true;
+
 			VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
-					child.EngineDisabled = RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(MainPanel.ChildRenderOffset), child.RenderBounds);
-					child.EngineInvisible = child.EngineDisabled;
+					child.EngineInvisible = !RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(-MainPanel.ChildRenderOffset), child.RenderBounds);
 				}
 				else {
 					child.EngineDisabled = true;

@@ -3,7 +3,9 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Numerics;
+using System.Xml.Linq;
 using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.UI
@@ -717,7 +719,13 @@ namespace Nucleus.UI
 		public delegate bool HoverTestDelegate(Element self, RectangleF bounds, Vector2F mousePos);
 		public event HoverTestDelegate? OnHoverTest;
 		public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
-			return bounds.ContainsPoint(mousePos);
+			var containsPoint = bounds.ContainsPoint(mousePos);
+			if (containsPoint && IValidatable.IsValid(Parent)) {
+				var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition(), Parent.RenderBounds.Size);
+				return scissor.ContainsPoint(mousePos);
+			}
+
+			return containsPoint;
 		}
 		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool popupActive = false) {
 			if (!element.Enabled) return lastHovered;
