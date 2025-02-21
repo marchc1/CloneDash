@@ -71,14 +71,8 @@ namespace Nucleus.UI
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
-					child.EngineDisabled = false;
-
-					if ((child.RenderBounds.Y + child.RenderBounds.H) < VerticalScrollbar.Scroll)
-						child.EngineInvisible = true;
-					else if (child.RenderBounds.Y > (VerticalScrollbar.Scroll + RenderBounds.H) - child.RenderBounds.H)
-						child.EngineInvisible = true;
-					else
-						child.EngineInvisible = false;
+					child.EngineDisabled = RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(MainPanel.ChildRenderOffset), child.RenderBounds);
+					child.EngineInvisible = child.EngineDisabled;
 				}
 				else {
 					child.EngineDisabled = true;
@@ -87,6 +81,9 @@ namespace Nucleus.UI
 			}
 
 			MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
+		}
+		protected override void PostLayoutChild(Element element) {
+
 		}
 		public override void Paint(float width, float height) {
 			Graphics2D.SetDrawColor(ForegroundColor);

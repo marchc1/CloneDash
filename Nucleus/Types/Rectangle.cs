@@ -167,7 +167,28 @@
 		/// </summary>
 		public static bool ContainsPoint(Vector2F pos, Vector2F size, Vector2F point) => point.X >= pos.X && point.X <= pos.X + size.W && point.Y >= pos.Y && point.Y <= pos.Y + size.H;
 
-        public static RectangleF operator +(RectangleF from, float by) => new RectangleF(from.top + by, from.left + by, from.right + by, from.bottom + by);
+		/// <summary>
+		/// Tests if <paramref name="subrect"/> is within <paramref name="rect"/> whatsoever.
+		/// </summary>
+		/// <param name="rect"></param>
+		/// <param name="subrect"></param>
+		/// <returns></returns>
+		public static bool IsSubrectangleWithinRectangle(RectangleF rect, RectangleF subrect) {
+			// four points of subrect
+			var TL = new Vector2F(subrect.X, subrect.Y);
+			var TR = new Vector2F(subrect.X + subrect.W, subrect.Y);
+			var BL = new Vector2F(subrect.X, subrect.Y + subrect.H);
+			var BR = new Vector2F(subrect.X + subrect.W, subrect.Y + subrect.H);
+
+			return
+					rect.ContainsPoint(TL) ||
+					rect.ContainsPoint(TR) ||
+					rect.ContainsPoint(BL) ||
+					rect.ContainsPoint(BR);
+		}
+
+
+		public static RectangleF operator +(RectangleF from, float by) => new RectangleF(from.top + by, from.left + by, from.right + by, from.bottom + by);
         public static RectangleF operator -(RectangleF from, float by) => new RectangleF(from.top - by, from.left - by, from.right - by, from.bottom - by);
         public static RectangleF operator *(RectangleF from, float by) => new RectangleF(from.top * by, from.left * by, from.right * by, from.bottom * by);
         public static RectangleF operator /(RectangleF from, float by) => new RectangleF(
