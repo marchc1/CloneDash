@@ -110,6 +110,7 @@ namespace CloneDash
 
             bool first = true;
             Dictionary<int, List<MusicData>> LongPresses = new();
+            HashSet<string> WarnedIBMSPresses = new();
             foreach (var s in MDinfo.musicDatas) {
                 if (s.noteData == null && first) {
                     sheet.StartOffset = (float)s.tick;
@@ -161,78 +162,80 @@ namespace CloneDash
 						case IBMSCode.SmallDown:
 						case IBMSCode.Medium1Normal:
 						case IBMSCode.Medium2Normal:
-                        case IBMSCode.Medium1Down:
-                        case IBMSCode.Medium2Down:
-                        case IBMSCode.Medium1Up:
-                        case IBMSCode.Medium2Up:
-                        case IBMSCode.Large1:
-                        case IBMSCode.Large2:
-                            type = EntityType.Single;
-                            break;
-                        case IBMSCode.Gemini:
-                            type = EntityType.Double;
-                            break;
+						case IBMSCode.Medium1Down:
+						case IBMSCode.Medium2Down:
+						case IBMSCode.Medium1Up:
+						case IBMSCode.Medium2Up:
+						case IBMSCode.Large1:
+						case IBMSCode.Large2:
+							type = EntityType.Single;
+							break;
+						case IBMSCode.Gemini:
+							type = EntityType.Double;
+							break;
 
-                        case IBMSCode.Music:
-                            type = EntityType.Score;
-                            break;
+						case IBMSCode.Music:
+							type = EntityType.Score;
+							break;
 
-                        case IBMSCode.Hammer:
-                            type = EntityType.Hammer;
-                            break;
+						case IBMSCode.Hammer:
+							type = EntityType.Hammer;
+							break;
 
-                        case IBMSCode.Mul:
-                            type = EntityType.Masher;
-                            break;
+						case IBMSCode.Mul:
+							type = EntityType.Masher;
+							break;
 
-                        case IBMSCode.Block:
-                            type = EntityType.Gear;
-                            break;
+						case IBMSCode.Block:
+							type = EntityType.Gear;
+							break;
 
-                        case IBMSCode.Ghost:
-                            type = EntityType.Ghost;
-                            break;
+						case IBMSCode.Ghost:
+							type = EntityType.Ghost;
+							break;
 
-                        case IBMSCode.Raider:
-                            type = EntityType.Raider;
-                            break;
+						case IBMSCode.Raider:
+							type = EntityType.Raider;
+							break;
 
-                        case IBMSCode.BossAttack1:
-                        case IBMSCode.BossAttack2_1:
-                        case IBMSCode.BossAttack2_2:
-                            type = EntityType.Single;
-                            IsBoss = true;
-                            break;
-                        case IBMSCode.BossBlock:
-                            type = EntityType.Gear;
-                            IsBoss = true;
-                            break;
+						case IBMSCode.BossAttack1:
+						case IBMSCode.BossAttack2_1:
+						case IBMSCode.BossAttack2_2:
+							type = EntityType.Single;
+							IsBoss = true;
+							break;
+						case IBMSCode.BossBlock:
+							type = EntityType.Gear;
+							IsBoss = true;
+							break;
 
-                        case IBMSCode.BossIn:
-                            Event = EventType.BossIn;
-                            break;
-                        case IBMSCode.BossOut:
-                            Event = EventType.BossOut;
-                            break;
-                        case IBMSCode.BossNear2:
-                            Event = EventType.BossSingleHit;
-                            break;
-                        case IBMSCode.BossMul2:
-                            Event = EventType.BossMasher;
-                            break;
+						case IBMSCode.BossIn:
+							Event = EventType.BossIn;
+							break;
+						case IBMSCode.BossOut:
+							Event = EventType.BossOut;
+							break;
+						case IBMSCode.BossNear2:
+							Event = EventType.BossSingleHit;
+							break;
+						case IBMSCode.BossMul2:
+							Event = EventType.BossMasher;
+							break;
 
-                        case IBMSCode.Hp:
-                            type = EntityType.Heart;
-                            break;
+						case IBMSCode.Hp:
+							type = EntityType.Heart;
+							break;
 
-                        default:
-                            Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
-                            Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
-                            Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
-                            Logs.Info($"DataObjID: {s.objId}");
-                            Logs.Info($"ConfigID: {s.configData.id}");
-                            Logs.Info($"NoteID: {s.noteData.id}");
-                            Console.WriteLine("");
+						default:
+							if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
+								Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
+								Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
+								Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
+								Logs.Info($"DataObjID: {s.objId}");
+								Logs.Info($"ConfigID: {s.configData.id}");
+								Logs.Info($"NoteID: {s.noteData.id}");
+								Logs.Info("");
+							}
                             //ConsoleSystem.Print($"IBMS code with no translation: {s.noteData.ibms_id} (stored in enum as {ib.name})");
                             break;
                     }
