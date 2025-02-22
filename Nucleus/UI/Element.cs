@@ -21,6 +21,9 @@ namespace Nucleus.UI
 	}
 	public class Element : IValidatable
 	{
+		/// <summary>
+		/// The <see cref="UserInterface"/> the element belongs to.
+		/// </summary>
 		public UserInterface UI { get; internal set; }
 
 		private Vector2F _position = new(0, 0);
