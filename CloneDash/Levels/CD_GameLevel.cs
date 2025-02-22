@@ -662,12 +662,12 @@ namespace CloneDash.Game
 			if (CommandLineArguments.IsParamTrue("debug")) {
 				Rlgl.DrawRenderBatchActive();
 				Rlgl.SetLineWidth(5);
-				Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
-				Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
+				Raylib.DrawLine3D(new(0, 2.5f, 0), new(10000, 2.5f, 0), Color.RED);
+				Raylib.DrawLine3D(new(2.5f, 0, 0), new(2.5f, 10000, 0), Color.GREEN);
 				Rlgl.DrawRenderBatchActive();
 				Rlgl.SetLineWidth(1);
 			}
-			/*
+			
 			foreach (Entity ent in VisibleEntities) {
 				if (ent is not CD_BaseEnemy entCD)
 					continue;
@@ -680,7 +680,7 @@ namespace CloneDash.Game
 				ent.Position = p;
 				ent.Render(frameState);
 			}
-			*/
+			
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
 		}
 
