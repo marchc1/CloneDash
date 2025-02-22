@@ -263,7 +263,7 @@ namespace CloneDash.Game
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.HitTime;
 			var tickShow = this.ShowTime;
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, frameState.WindowWidth * DashVars.PATHWAY_XDISTANCE, frameState.WindowWidth);
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, frameState.WindowWidth);
 
 			return thisPos;
 		}

@@ -25,7 +25,7 @@ namespace CloneDash.Game
 	{
 		public static ConCommand clonedash_settime = ConCommand.Register("clonedash_seek", (_, args) => {
 			var level = EngineCore.Level.AsNullable<CD_GameLevel>();
-			if(level == null) {
+			if (level == null) {
 				Logs.Warn("Not in game context!");
 				return;
 			}
@@ -37,7 +37,7 @@ namespace CloneDash.Game
 
 		public void SeekTo(double time) {
 			Music.Playhead = (float)time;
-			foreach(var entity in Entities) {
+			foreach (var entity in Entities) {
 				if (entity is not CD_BaseEnemy entCD)
 					continue;
 
@@ -54,7 +54,7 @@ namespace CloneDash.Game
 			AutoPlayer.Reset();
 
 			foreach (var entity in Entities) {
-				if(entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
+				if (entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
 					mEnt.RewardPlayer(true);
 					mEnt.Kill();
 				}
@@ -69,6 +69,11 @@ namespace CloneDash.Game
 		public const string STRING_SCORE = "SCORE";
 		public const string FONT = "Noto Sans";
 
+		public const float PLAYER_OFFSET_X = 0.225f;
+		public const float PLAYER_OFFSET_Y = 0.64f;
+		public const float PLAYER_OFFSET_HIT_Y = -0.267f;
+
+
 		public bool InHit { get; private set; } = false;
 
 		public bool SuppressHitMessages { get; set; }
@@ -79,6 +84,8 @@ namespace CloneDash.Game
 		public void ExitHitState() {
 			InHit = false;
 		}
+
+		public float XPos { get; private set; }
 
 		public bool InMashState { get; private set; }
 		public CD_BaseMEntity? MashingEntity;
@@ -259,6 +266,8 @@ namespace CloneDash.Game
 		public Panel PauseWindow { get; private set; }
 		private bool lastNoteHit = false;
 		public override void PreThink(ref FrameState frameState) {
+			XPos = frameState.WindowWidth * PLAYER_OFFSET_X;
+
 			if (lastNoteHit && Music.Paused) {
 				EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
 				return;
@@ -356,13 +365,10 @@ namespace CloneDash.Game
 			else if (holdingTop) yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
 			else if (holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
-			float playerOffsetX = 0.225f;
-			float playerOffsetY = 0.64f;
-			float playerOffsetHitY = -0.267f;
 
-			Player.Position = new Vector2F(frameState.WindowHeight * playerOffsetX, yoff ?? ((frameState.WindowHeight * playerOffsetY) + (frameState.WindowHeight * playerOffsetHitY * CharacterYRatio)));
+			Player.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio)));
 			Player.Scale = new(0.9f);
-			HologramPlayer.Position = new Vector2F(frameState.WindowWidth * 0.15f, ((frameState.WindowHeight * playerOffsetY) + (frameState.WindowHeight * playerOffsetHitY * HologramCharacterYRatio)));
+			HologramPlayer.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio)));
 
 			if (HologramPlayer.PlayingAnimation) {
 				var animator = HologramPlayer.Model;
@@ -649,13 +655,19 @@ namespace CloneDash.Game
 			Graphics2D.DrawTexture(new(offset, offset2), new(frameState.WindowWidth, frameState.WindowHeight));
 			Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, offset2), new(frameState.WindowWidth, frameState.WindowHeight)); ;
 		}
+		public override void CalcView(FrameState frameState, ref Camera3D cam) {
+			base.CalcView(frameState, ref cam);
+		}
 		public override void Render(FrameState frameState) {
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.SetLineWidth(5);
-			//Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
-			//Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.SetLineWidth(1);
+			if (CommandLineArguments.IsParamTrue("debug")) {
+				Rlgl.DrawRenderBatchActive();
+				Rlgl.SetLineWidth(5);
+				Raylib.DrawLine3D(new(0, 2, 0), new(10000, 2, 0), Color.RED);
+				Raylib.DrawLine3D(new(2, 0, 0), new(2, 10000, 0), Color.GREEN);
+				Rlgl.DrawRenderBatchActive();
+				Rlgl.SetLineWidth(1);
+			}
+			/*
 			foreach (Entity ent in VisibleEntities) {
 				if (ent is not CD_BaseEnemy entCD)
 					continue;
@@ -668,7 +680,7 @@ namespace CloneDash.Game
 				ent.Position = p;
 				ent.Render(frameState);
 			}
-
+			*/
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
 		}
 
