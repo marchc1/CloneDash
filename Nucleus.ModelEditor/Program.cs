@@ -12,8 +12,32 @@ using System.Runtime.CompilerServices;
 
 namespace Nucleus.ModelEditor
 {
+	public record ActionStackData(Action Redo, Action Undo);
+	public class ActionStack {
+		private MaxStack<ActionStackData> DidActions = new(256);
+		private Stack<ActionStackData> UndidActions = [];
+		public void Push(Action action, Action undo) {
+			UndidActions.Clear();
+			DidActions.Push(new(action, undo));
+		}
+
+		public void Undo() {
+			if (DidActions.Count <= 0) return;
+			ActionStackData data = DidActions.Pop();
+			data.Undo();
+			UndidActions.Push(data);
+		}
+
+		public void Redo() {
+			if (UndidActions.Count <= 0) return;
+			ActionStackData data = UndidActions.Pop();
+			data.Redo();
+			DidActions.Push(data);
+		}
+	}
 	public class ModelEditor : Level
 	{
+		public ActionStack Actions { get; } = new();
 		// Object selection management
 		private List<IEditorType> __selectedObjectsL = [];
 		private HashSet<IEditorType> __selectedObjects = [];
@@ -214,6 +238,8 @@ namespace Nucleus.ModelEditor
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
 
 			UI.Add(out SetupPanel);
 			SetupPanel.Dock = Dock.Fill;
