@@ -258,6 +258,7 @@ namespace Nucleus.ModelEditor
 
 			var OutlinerTab = tabOptions.AddTab("Outliner");
 			var StatisticsTab = tabOptions.AddTab("Statistics");
+			var WeightsTab = tabOptions.AddTab("Weights");
 
 			OutlinerTab.Panel.Add(out Properties);
 			Properties.Size = new(64);
