@@ -418,9 +418,10 @@ namespace Nucleus.ModelEditor
 		}
 
 
+		public bool RenderTriangles => false;
+
 
 		public override void Render() {
-			// todo ^^ missing texture (prob just purple-black checkerboard)
 			RefreshDelaunator();
 
 			if (!SuppressWorldTransform)
@@ -481,7 +482,7 @@ namespace Nucleus.ModelEditor
 
 			EditMeshOperator? meshOp = ModelEditor.Active.File.ActiveOperator as EditMeshOperator;
 
-			if (triangles.Count > 0) {
+			if (RenderTriangles && triangles.Count > 0) {
 				foreach (var tri in triangles) {
 					Raylib.DrawLineStrip([
 						WorldTransform.LocalToWorld(tri.Points[0].ToNumerics().ToNucleus()).ToNumerics(),
@@ -499,11 +500,12 @@ namespace Nucleus.ModelEditor
 				var vertex1 = WorldTransform.LocalToWorld(edge1);
 				var vertex2 = WorldTransform.LocalToWorld(edge2);
 
-				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), new Color(150, 150, 255));
-				Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), new Color(0, 255, 255));
 
-				if (i != Shape.Points.Count - 1)
-					Raylib.DrawCircleV(vertex2.ToNumerics(), 2f / camsize, new Color(200, 200, 255));
+				if (Selected) {
+					Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 6f : 4f) / camsize, Color.BLACK);
+					Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 5f : 3f) / camsize, new Color(isHighlighted ? 180 : 0, 255, 255));
+				}
 			}
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
