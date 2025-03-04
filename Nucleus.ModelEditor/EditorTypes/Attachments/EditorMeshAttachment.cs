@@ -139,7 +139,7 @@ namespace Nucleus.ModelEditor
 				case EditMesh_Mode.Create:
 					if (HoveredVertex == null) {
 						var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
-						Attachment.SteinerPoints.Add(new() { X = newPoint.X, Y = newPoint.Y });
+						Attachment.SteinerPoints.Add(MeshVertex.FromVector(newPoint));
 						Attachment.Invalidate();
 					}
 					break;
@@ -164,7 +164,7 @@ namespace Nucleus.ModelEditor
 					else {
 						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(mousePos) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation);
 
-						WorkingLines.Add(new() { X = newClickP.X, Y = newClickP.Y });
+						WorkingLines.Add(MeshVertex.FromVector(newClickP));
 					}
 					break;
 			}
@@ -263,7 +263,6 @@ namespace Nucleus.ModelEditor
 		public static MeshVertex FromVector(Vector2F vec) => new() { X = vec.X, Y = vec.Y };
 
 		public static implicit operator Vector2F(MeshVertex v) => v.ToVector();
-		//public static implicit operator MeshVertex(Vector2F v) => new() { X = v.X, Y = v.Y };
 	}
 
 	public class EditorMeshAttachment : EditorAttachment

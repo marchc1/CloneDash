@@ -662,10 +662,10 @@ namespace Nucleus.ModelEditor
 
 							var quadpoints = regionFrom.QuadPoints(localized: false);
 
-							meshTo.ConstrainedEdges.Add(quadpoints.TL);
-							meshTo.ConstrainedEdges.Add(quadpoints.TR);
-							meshTo.ConstrainedEdges.Add(quadpoints.BR);
-							meshTo.ConstrainedEdges.Add(quadpoints.BL);
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TL));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TR));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BR));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BL));
 
 							break;
 					}
