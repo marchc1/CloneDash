@@ -17,6 +17,11 @@ namespace Nucleus.ModelEditor
 	}
 	public class VertexWeightOperator : DefaultOperator
 	{
+		public override bool IsSelectable(IEditorType target) {
+			if (target is EditorMeshAttachment) return true;
+
+			return false;
+		}
 		public override void GizmoRender(EditorPanel editorPanel, IEditorType target) {
 			return; // Placeholder
 		}
@@ -34,11 +39,11 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override bool GizmoClicked(EditorPanel editorPanel, IEditorType? target, Vector2F mouseScreenStart) {
-			return false; // Placeholder
+			return true; // Placeholder
 		}
 
 		public override bool GizmoReleased(EditorPanel editorPanel, IEditorType? target, Vector2F mouseScreenStart) {
-			return false; // Placeholder
+			return true; // Placeholder
 		}
 
 		public override void Activated() {

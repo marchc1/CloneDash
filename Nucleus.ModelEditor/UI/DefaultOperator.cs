@@ -43,5 +43,7 @@ namespace Nucleus.ModelEditor
 		public virtual void GizmoDrag(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenNow, IEnumerable<IEditorType> targets) { }
 		public virtual void GizmoEndDragging(EditorPanel editorPanel, Vector2F mouseScreenEnd, IEditorType target) { }
 		public virtual void GizmoRender(EditorPanel editorPanel, IEditorType target) { }
+
+		public virtual bool IsSelectable(IEditorType target) => true;
 	}
 }

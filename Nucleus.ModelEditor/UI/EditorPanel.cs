@@ -312,8 +312,19 @@ namespace Nucleus.ModelEditor
 
 		public Vector2F HoverGridPos { get; private set; }
 
-		private bool IsTypeProhibitedByOperator<T>() => SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
+		//private bool IsTypeProhibitedByOperator<T>() => SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
 		private bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
+
+		public bool CanSelect(IEditorType type) {
+			if (SelectableTypes != null) 
+				return IsTypeProhibitedByOperator(type.GetType());
+
+			if (DefaultOperator != null)
+				return DefaultOperator.IsSelectable(type);
+
+			return true;
+		}
+
 
 		protected override void OnThink(FrameState frameState) {
 			// Hover determination
@@ -327,12 +338,12 @@ namespace Nucleus.ModelEditor
 			foreach (var model in ModelEditor.Active.File.Models) {
 				foreach (var slot in model.Slots)
 					foreach (var attachment in slot.Attachments)
-						if (attachment.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator(attachment.GetType()))
+						if (attachment.HoverTest(HoverGridPos) && CanSelect(attachment))
 							hovered = attachment;
 
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
-						if (bone.HoverTest(HoverGridPos) && !IsTypeProhibitedByOperator<EditorBone>())
+						if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
 							hovered = bone;
 					}
 				}

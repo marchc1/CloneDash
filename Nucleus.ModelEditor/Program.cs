@@ -266,6 +266,13 @@ namespace Nucleus.ModelEditor
 			Properties.DrawPanelBackground = true;
 			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
 
+			/*var bind = PropertiesPanel.OperatorButton<BindBonesOperator>(WeightsTab.Panel, "Bind Bones");
+			bind.Size = new(32);
+			bind.Dock = Dock.Bottom;
+			bind.MouseReleaseEvent += (_, _, _) => {
+
+			};*/
+
 			OutlinerTab.Panel.Add(out Outliner);
 			Outliner.Dock = Dock.Fill;
 
