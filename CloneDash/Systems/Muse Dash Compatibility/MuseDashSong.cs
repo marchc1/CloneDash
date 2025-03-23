@@ -34,12 +34,14 @@ namespace CloneDash
             [JsonPropertyName("difficulty2")] public string Difficulty2 { get; set; } = "";
             [JsonPropertyName("difficulty3")] public string Difficulty3 { get; set; } = "";
             [JsonPropertyName("difficulty4")] public string Difficulty4 { get; set; } = "";
+            [JsonPropertyName("difficulty5")] public string Difficulty5 { get; set; } = "";
         }
         public class MuseDashSong : ChartSong
         {
             private MuseDashSongInfoJSON __jsonInfo;
             public MuseDashSong(MuseDashSongInfoJSON info) {
                 __jsonInfo = info;
+				// Debug.Assert(info.Difficulty5 == "");
             }
             public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
                 return
@@ -182,6 +184,7 @@ namespace CloneDash
                     Difficulty2 = __jsonInfo.Difficulty2,
                     Difficulty3 = __jsonInfo.Difficulty3,
                     Difficulty4 = __jsonInfo.Difficulty4,
+                    Difficulty5 = __jsonInfo.Difficulty5,
                     Scene = __jsonInfo.Scene,
                     SearchTags = SearchTags.ToArray()
                 };

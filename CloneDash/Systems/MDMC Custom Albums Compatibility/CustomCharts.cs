@@ -25,6 +25,7 @@ namespace CloneDash
             public string difficulty2 { get; set; } = "";
             public string difficulty3 { get; set; } = "";
             public string difficulty4 { get; set; } = "";
+            public string difficulty5 { get; set; } = "";
             public string hideBmsMode { get; set; } = "";
             public string hideBmsDifficulty { get; set; } = "";
             public string hideBmsMessage { get; set; } = "";
@@ -86,7 +87,8 @@ namespace CloneDash
                     Difficulty1 = info.difficulty1,
                     Difficulty2 = info.difficulty2,
                     Difficulty3 = info.difficulty3,
-                    Difficulty4 = info.difficulty4
+                    Difficulty4 = info.difficulty4,
+                    Difficulty5 = info.difficulty5
                 };
 
                 return ret;

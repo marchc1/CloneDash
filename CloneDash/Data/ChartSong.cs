@@ -19,6 +19,7 @@ namespace CloneDash.Data
         public string Difficulty2 => GetInfo().Difficulty2;
         public string Difficulty3 => GetInfo().Difficulty3;
         public string Difficulty4 => GetInfo().Difficulty4;
+        public string Difficulty5 => GetInfo().Difficulty5;
 
         protected MusicTrack? AudioTrack { get; set; }
         protected MusicTrack? DemoTrack { get; set; }

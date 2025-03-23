@@ -360,10 +360,11 @@ namespace CloneDash.Game
 			mapper.Dock = Dock.Top;
 			mapper.TextAlignment = Anchor.TopLeft;
 
-			CreateDifficulty(levelSelector, song, 4, song.Difficulty4);
-			CreateDifficulty(levelSelector, song, 3, song.Difficulty3);
-			CreateDifficulty(levelSelector, song, 2, song.Difficulty2);
-			CreateDifficulty(levelSelector, song, 1, song.Difficulty1);
+			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Touhou, song.Difficulty5);
+			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Hidden, song.Difficulty4);
+			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Hard, song.Difficulty3);
+			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Normal, song.Difficulty2);
+			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Easy, song.Difficulty1);
 
 			LevelSelectWindow?.AttachWindowAndLockInput(levelSelector);
 		}
@@ -373,7 +374,7 @@ namespace CloneDash.Game
 			LoadSongSelector(song);
 		}
 
-		private static void CreateDifficulty(Window levelSelector, ChartSong song, int difficulty, string difficultyLevel) {
+		private static void CreateDifficulty(Window levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel) {
 			if (difficultyLevel == "") return;
 			if (difficultyLevel == "0") return;
 
@@ -381,26 +382,24 @@ namespace CloneDash.Game
 			play.AutoSize = true;
 			play.Dock = Dock.Bottom;
 
-			var difficultyName = "";
-			Color buttonColor = play.BackgroundColor;
-			switch (difficulty) {
-				case 1:
-					difficultyName = "Easy";
-					buttonColor = new Color(88, 199, 76, 60);
-					break;
-				case 2:
-					difficultyName = "Normal";
-					buttonColor = new Color(109, 196, 199, 60);
-					break;
-				case 3:
-					difficultyName = "Hard";
-					buttonColor = new Color(188, 95, 184, 60);
-					break;
-				case 4:
-					difficultyName = "Hidden";
-					buttonColor = new Color(199, 35, 35, 60);
-					break;
-			}
+			var difficultyName = difficulty switch {
+				MuseDashDifficulty.Easy => "Easy",
+				MuseDashDifficulty.Normal => "Normal",
+				MuseDashDifficulty.Hard => "Hard",
+				MuseDashDifficulty.Hidden => "Hidden",
+				MuseDashDifficulty.Touhou => "Touhou",
+				_ => throw new Exception($"Unsupported difficulty level '{difficulty}'")
+			};
+			Color buttonColor = difficulty switch {
+				MuseDashDifficulty.Easy => new Color(88, 199, 76, 60),
+				MuseDashDifficulty.Normal => new Color(109, 196, 199, 60),
+				MuseDashDifficulty.Hard => new Color(188, 95, 184, 60),
+				MuseDashDifficulty.Hidden => new Color(199, 35, 35, 60),
+				MuseDashDifficulty.Touhou => new Color(109, 103, 194, 60),
+				_ => play.BackgroundColor
+			};
+			int mapID = (int)difficulty;
+
 			play.BackgroundColor = buttonColor;
 			play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
 			//play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
@@ -411,9 +410,8 @@ namespace CloneDash.Game
 
 			play.BorderSize = 2;
 			play.PaintOverride += delegate (Element self, float w, float h) {
-				var btn = self as Button;
+				if (self is not Button btn) return; // make nullable happy, it will always be Button
 				btn.Paint(w, h);
-
 
 				Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(Anchor.CenterRight, btn.RenderBounds.Size, btn.TextPadding);
 				Graphics2D.SetDrawColor(btn.TextColor);
@@ -430,7 +428,7 @@ namespace CloneDash.Game
 			};
 
 			play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
-				var sheet = song.GetSheet(difficulty);
+				var sheet = song.GetSheet(mapID);
 				var lvl = new CD_GameLevel(sheet);
 				EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
 			};

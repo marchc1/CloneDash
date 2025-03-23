@@ -11,5 +11,6 @@
         public string Difficulty2 { get; set; } = "0";
         public string Difficulty3 { get; set; } = "0";
         public string Difficulty4 { get; set; } = "0";
+        public string Difficulty5 { get; set; } = "0";
     }
 }

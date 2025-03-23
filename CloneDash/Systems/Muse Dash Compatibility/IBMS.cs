@@ -306,14 +306,6 @@ namespace CloneDash
             return sheet;
         }
 
-        public enum MuseDashDifficulty
-        {
-            Unknown = 0,
-            Easy = 1,
-            Normal = 2,
-            Hard = 3,
-            Hidden = 4
-        }
 
         public static List<MuseDashAlbum> Albums { get; private set; } = [];
         public static List<MuseDashSong> Songs { get; private set; } = [];
@@ -352,4 +344,16 @@ namespace CloneDash
             Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
         }
     }
+
+
+	public enum MuseDashDifficulty
+	{
+		Unknown = 0,
+		Easy = 1,
+		Normal = 2,
+		Hard = 3,
+
+		Hidden = 4,
+		Touhou = 5
+	}
 }
