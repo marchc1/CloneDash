@@ -313,11 +313,11 @@ namespace Nucleus.ModelEditor
 		public Vector2F HoverGridPos { get; private set; }
 
 		//private bool IsTypeProhibitedByOperator<T>() => SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
-		private bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : SelectableTypes.Contains(T);
+		private bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
 
 		public bool CanSelect(IEditorType type) {
 			if (SelectableTypes != null) 
-				return IsTypeProhibitedByOperator(type.GetType());
+				return !IsTypeProhibitedByOperator(type.GetType());
 
 			if (DefaultOperator != null)
 				return DefaultOperator.IsSelectable(type);
@@ -593,9 +593,7 @@ namespace Nucleus.ModelEditor
 		public void DrawModels() {
 			foreach (var model in ModelEditor.Active.File.Models) {
 				foreach (var slot in model.Slots) {
-					foreach (var attachment in slot.Attachments) {
-						attachment.Render();
-					}
+					slot.GetActiveAttachment()?.Render();
 				}
 			}
 

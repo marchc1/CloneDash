@@ -152,6 +152,7 @@ namespace Nucleus.ModelEditor
 		private void Visibility_MouseClickEvent(Element self, FrameState state, MouseButton button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
+
 			if (editorItem.GetVisible())
 				ModelEditor.Active.File.HideEditorItem(editorItem);
 			else
@@ -246,11 +247,21 @@ namespace Nucleus.ModelEditor
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
-			var visColor = editorItem.GetVisible() ? 185 : 125;
+		
+			if (editorItem is EditorAttachment attachment) {
+				var visColor = attachment.Slot.GetActiveAttachment() == attachment ? 185 : 80;
+				var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
+				Graphics2D.SetDrawColor(c, c, c);
+				Graphics2D.SetTexture(UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
+				Graphics2D.DrawImage(RectangleF.XYWH(4, 4, width - 8, height - 8), new(0, 0));
+			}
+			else {
+				var visColor = editorItem.GetVisible() ? 185 : 125;
+				var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
+				Graphics2D.SetDrawColor(c, c, c);
 
-			var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
-			Graphics2D.SetDrawColor(c, c, c);
-			Graphics2D.DrawCircle(new(width / 2f, (height / 2f) - 2), width / 7);
+				Graphics2D.DrawCircle(new(width / 2f, (height / 2f) - 2), width / 7);
+			}
 		}
 
 		protected override void OnThink(FrameState frameState) {

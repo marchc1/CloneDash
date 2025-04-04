@@ -31,6 +31,9 @@ namespace Nucleus.ModelEditor
 		public BlendMode Blending { get; set; } = BlendMode.Normal;
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
+		public EditorAttachment? GetActiveAttachment() 
+			=> (AnimationMode ? (ActiveAttachment ?? SetupActiveAttachment) : SetupActiveAttachment) ?? Attachments.FirstOrDefault();
+
 		public EditorAttachment? FindAttachment(string name) => Attachments.FirstOrDefault(x => x.Name == name);
 		public bool TryFindAttachment(string name, out EditorAttachment? attachment) {
 			attachment = FindAttachment(name);
@@ -41,6 +44,9 @@ namespace Nucleus.ModelEditor
 			Color = SetupColor;
 			DarkColor = SetupDarkColor;
 			Blending = SetupBlending;
+			if (SetupActiveAttachment == null)
+				SetupActiveAttachment = Attachments.FirstOrDefault();
+
 			ActiveAttachment = SetupActiveAttachment;
 		}
 
