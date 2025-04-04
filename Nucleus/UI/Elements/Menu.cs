@@ -96,7 +96,7 @@ namespace Nucleus.UI.Elements
 		}
 
 		private void UI_OnElementClicked(Element el, FrameState fs, Types.MouseButton mb) {
-			if (this.Lifetime > 0.2f && !el.IsIndirectChildOf(this)) {
+			if (this.Lifetime > 0.2f && (el == null || !el.IsIndirectChildOf(this))) {
 				this.Remove();
 				UI.OnElementClicked -= UI_OnElementClicked;
 			}

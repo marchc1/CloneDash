@@ -480,6 +480,13 @@ namespace Nucleus.Engine
 					if (frameState.MouseState.Mouse4Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse4);
 					if (frameState.MouseState.Mouse5Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse5);
 				}
+				else {
+					if (frameState.MouseState.Mouse1Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse1);
+					if (frameState.MouseState.Mouse2Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse2);
+					if (frameState.MouseState.Mouse3Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse3);
+					if (frameState.MouseState.Mouse4Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse4);
+					if (frameState.MouseState.Mouse5Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse5);
+				}
 			}
 
 			EngineCore.CurrentFrameState = frameState;

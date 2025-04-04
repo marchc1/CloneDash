@@ -114,8 +114,8 @@ namespace Nucleus.UI
 		public event MouseEventDelegate? OnElementClicked;
 		public event MouseEventDelegate? OnElementReleased;
 
-		public void TriggerElementClicked(Element e, FrameState fs, Types.MouseButton mb) => OnElementClicked?.Invoke(e, fs, mb);
-		public void TriggerElementReleased(Element e, FrameState fs, Types.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
+		public void TriggerElementClicked(Element? e, FrameState fs, Types.MouseButton mb) => OnElementClicked?.Invoke(e, fs, mb);
+		public void TriggerElementReleased(Element? e, FrameState fs, Types.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
 		public Menu Menu() {
 			return this.Add<Menu>();
 		}
