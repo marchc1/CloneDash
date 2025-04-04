@@ -8,7 +8,7 @@ namespace Nucleus.ModelEditor.UI.Operators
 	{
 		public override string Name => "Image: Set Parent";
 		public override bool OverrideSelection => true;
-		public override Type[]? SelectableTypes => [typeof(EditorBone), typeof(EditorSlot)];
+		public override Type[]? SelectableTypes => [typeof(EditorSlot), typeof(EditorBone)];
 
 		private ModelImage SelectedImage;
 
