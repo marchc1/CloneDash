@@ -1079,7 +1079,7 @@ namespace Nucleus.UI
 			Vector2F ret = new Vector2F(0, 0);
 			Element? t = this;
 			while (true) {
-				ret += t.RenderBounds.Pos;
+				ret += t.RenderBounds.Pos + t.ChildRenderOffset;
 				t = t.Parent;
 				if (t == null || t == t.UI) {
 					break;

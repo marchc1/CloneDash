@@ -613,6 +613,12 @@ namespace Nucleus.Engine
 
 			// Only really exists for REALLY late rendering
 			RunEventPostRender(frameState);
+
+			//if(UI.Hovered != null) {
+			//	Graphics2D.SetDrawColor(255, 255, 255);
+			//	Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
+			//}
+
 			UnlockEntityBuffer();
 			var FPS = Raylib.GetFPS();
 			List<DebugRecord> fields;
