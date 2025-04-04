@@ -26,7 +26,10 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public bool Hovered { get; set; }
 		[JsonIgnore] public bool Selected { get; set; }
-		[JsonIgnore] public bool Hidden { get; set; }
+		public bool Hidden {
+			get => Slot.GetActiveAttachment() != this;
+			set { }
+		}
 
 		public virtual void BuildTopOperators(Panel props, PreUIDeterminations determinations) { }
 		public virtual void BuildProperties(Panel props, PreUIDeterminations determinations) { }
@@ -66,8 +69,12 @@ namespace Nucleus.ModelEditor
 		public virtual void OnMouseLeft() { }
 		public virtual void OnSelected() { }
 		public virtual void OnUnselected() { }
-		public virtual void OnHidden() { }
-		public virtual void OnShown() { }
+		public virtual void OnHidden() {
+			Slot.SetActiveAttachment(null);
+		}
+		public virtual void OnShown() {
+			Slot.SetActiveAttachment(this);
+		}
 
 		public virtual bool CanRename() => true;
 		public virtual bool CanDelete() => false;

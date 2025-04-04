@@ -32,7 +32,16 @@ namespace Nucleus.ModelEditor
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
 		public EditorAttachment? GetActiveAttachment() 
-			=> (AnimationMode ? (ActiveAttachment ?? SetupActiveAttachment) : SetupActiveAttachment) ?? Attachments.FirstOrDefault();
+			=> (AnimationMode ? (ActiveAttachment ?? SetupActiveAttachment) : SetupActiveAttachment);
+
+		public void SetActiveAttachment(EditorAttachment? attachment) {
+			if (AnimationMode) {
+				ActiveAttachment = attachment;
+			}
+			else {
+				SetupActiveAttachment = attachment;
+			}
+		}
 
 		public EditorAttachment? FindAttachment(string name) => Attachments.FirstOrDefault(x => x.Name == name);
 		public bool TryFindAttachment(string name, out EditorAttachment? attachment) {

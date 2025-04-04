@@ -371,6 +371,9 @@ namespace Nucleus.ModelEditor
 			slot.Attachments.Add(attachment);
 			AttachmentAdded?.Invoke(this, slot, attachment);
 
+			// Make the attachment the active attachment
+			slot.SetActiveAttachment(attachment);
+
 			return attachment;
 		}
 
