@@ -326,6 +326,10 @@ namespace Nucleus.ModelEditor
 		private void OpenTest() {
 			Logs.Info("OpenTest: executing");
 			File.Deserialize(System.IO.File.ReadAllText(testPath));
+			Active.Editor.CameraX = File.CameraX;
+			Active.Editor.CameraY = File.CameraY;
+			Active.Editor.CameraZoom = File.CameraZoom;
+
 			Logs.Info("OpenTest: success");
 		}
 

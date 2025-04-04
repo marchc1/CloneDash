@@ -37,6 +37,11 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorModel> Models = [];
 
+		// Camera position and zoom
+		public float CameraX = 0;
+		public float CameraY = 0;
+		public float CameraZoom = 1;
+
 		// ============================================================================================== //
 		// Serialization
 		// ============================================================================================== //

@@ -306,9 +306,34 @@ namespace Nucleus.ModelEditor
 			base.PreRender();
 		}
 
-		public float CameraX { get; set; } = 0;
-		public float CameraY { get; set; } = 0;
-		public float CameraZoom { get; set; } = 1;
+		private float cameraX = 0;
+		private float cameraY = 0;
+		private float cameraZoom = 1;
+
+		public float CameraX {
+			get => cameraX;
+			set {
+				Console.WriteLine(value);
+				cameraX = value;
+				ModelEditor.Active.File.CameraX = value;
+			}
+		}
+
+		public float CameraY {
+			get => cameraY;
+			set {
+				cameraY = value;
+				ModelEditor.Active.File.CameraY = value;
+			}
+		}
+
+		public float CameraZoom {
+			get => cameraZoom;
+			set {
+				cameraZoom = value;
+				ModelEditor.Active.File.CameraZoom = value;
+			}
+		}
 
 		public Vector2F HoverGridPos { get; private set; }
 
