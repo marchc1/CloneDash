@@ -7,7 +7,7 @@ namespace Nucleus.ModelEditor
 		public EditorModel Model { get; set; }
 		public string Name { get; set; } = "";
 
-		public IEditorType? GetTransformableEditorType() => null;
+		public IEditorType? DeferTransformationsTo() => null;
 
 		[JsonIgnore] public string SingleName => "skin";
 

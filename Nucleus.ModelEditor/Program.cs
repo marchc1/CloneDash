@@ -13,7 +13,8 @@ using System.Runtime.CompilerServices;
 namespace Nucleus.ModelEditor
 {
 	public record ActionStackData(Action Redo, Action Undo);
-	public class ActionStack {
+	public class ActionStack
+	{
 		private MaxStack<ActionStackData> DidActions = new(256);
 		private Stack<ActionStackData> UndidActions = [];
 		public void Push(Action action, Action undo) {
@@ -86,6 +87,11 @@ namespace Nucleus.ModelEditor
 		public void SelectObject(IEditorType o, bool additive = false) {
 			if (OperatorSelectionBlocks(o)) return;
 
+			// Check if selectable
+			bool selectable = o.OnSelected();
+			if (!selectable)
+				return; // just cancel out
+
 			if (!additive) {
 				foreach (var obj in __selectedObjects.ToArray()) {
 					__selectedObjects.Remove(obj);
@@ -97,12 +103,13 @@ namespace Nucleus.ModelEditor
 				}
 				// We don't call UnselectAllObjects because that calls SelectedChanged twice; we don't want that
 			}
-			__selectedObjects.Add(o);
-			__selectedObjectsL.Add(o);
+
 			SELECTIONCHANGE();
 
 			o.Selected = true;
-			o.OnSelected();
+			__selectedObjects.Add(o);
+			__selectedObjectsL.Add(o);
+
 			SELECTIONCHANGE();
 		}
 
@@ -123,12 +130,16 @@ namespace Nucleus.ModelEditor
 					haltActualLogic = true; // Selection is overriden; so don't actually process this stuff
 
 				if (haltActualLogic) continue;
+
+				obj.Selected = true;
+				if (!obj.OnSelected()) {
+					obj.Selected = false;
+					continue;
+				}
+
 				__selectedObjects.Add(obj);
 				__selectedObjectsL.Add(obj);
 				ObjectSelected?.Invoke(obj);
-
-				obj.Selected = true;
-				obj.OnSelected();
 			}
 			if (haltActualLogic) return;
 			SELECTIONCHANGE();
@@ -295,10 +306,10 @@ namespace Nucleus.ModelEditor
 				if (File.ActiveOperator != null)
 					File.DeactivateOperator(true);
 				else {
-					if(LastSelectedObject?.OnUnselected() ?? false)
+					if (LastSelectedObject?.OnUnselected() ?? false)
 						UnselectAllObjects();
 				}
-					
+
 			});
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());

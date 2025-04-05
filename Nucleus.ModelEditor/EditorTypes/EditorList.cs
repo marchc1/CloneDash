@@ -33,7 +33,7 @@ namespace Nucleus.ModelEditor
 
 		public virtual void OnMouseEntered() { }
 		public virtual void OnMouseLeft() { }
-		public virtual void OnSelected() { }
+		public virtual bool OnSelected() => true;
 		public virtual void OnUnselected() { }
 		public virtual void OnHidden() { }
 		public virtual void OnShown() { }

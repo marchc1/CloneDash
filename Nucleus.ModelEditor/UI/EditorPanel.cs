@@ -250,7 +250,7 @@ namespace Nucleus.ModelEditor
 			float rotV = 0f, posX = 0f, posY = 0f, scaX = 0f, scaY = 0f, sheX = 0f, sheY = 0f;
 
 			foreach (var selected in determinations.Selected) {
-				var item = selected.GetTransformableEditorType();
+				var item = selected.DeferTransformationsTo();
 				if (item == null) continue;
 
 				if (first) {
@@ -370,12 +370,27 @@ namespace Nucleus.ModelEditor
 
 						switch (attachment) {
 							case EditorRegionAttachment: if (canHoverTest_Images && hovertest) hovered = attachment; break;
-							case EditorMeshAttachment: if (canHoverTest_Meshes && hovertest) hovered = attachment; break;
+							case EditorMeshAttachment meshAttachment: 
+								if (canHoverTest_Meshes && hovertest) 
+									hovered = attachment;
+
+								// Test the vertices, if selected
+								if (meshAttachment.Selected) {
+									foreach (var vertex in meshAttachment.GetVertices()) {
+										if (vertex.HoverTest(HoverGridPos)) {
+											hovered = vertex;
+										}
+									}
+								}
+
+								break;
 						}
 					}
-				}
 
-				if (canHoverTest_Bones) {
+					if (hovered is MeshVertex) break;
+				}
+				
+				if (hovered is not MeshVertex && canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
 						if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
 							hovered = bone;
@@ -446,7 +461,6 @@ namespace Nucleus.ModelEditor
 				ClickedObject = HoveredObject;
 				var operatorActive = ModelEditor.Active.File.ActiveOperator != null;
 				if (operatorActive) {
-
 					ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
 				}
 				else {
@@ -683,7 +697,7 @@ namespace Nucleus.ModelEditor
 
 			IEditorType? selectedTransformable = null;
 			if (ModelEditor.Active.TryGetFirstSelected(out IEditorType? selected) && !ModelEditor.Active.File.IsOperatorActive) {
-				selectedTransformable = selected.GetTransformableEditorType();
+				selectedTransformable = selected.DeferTransformationsTo();
 			}
 			else if (ModelEditor.Active.File.IsOperatorActive) {
 				selectedTransformable = HoveredObject;

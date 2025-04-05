@@ -194,7 +194,7 @@ namespace Nucleus.ModelEditor
 			return selector;
 		}
 		private void DetermineProperties(Panel props, PreUIDeterminations determinations) {
-			determinations.Last?.BuildProperties(props, determinations);
+			determinations.Last?.DeferPropertiesTo()?.BuildProperties(props, determinations);
 		}
 		public struct NewItemAction
 		{
@@ -310,7 +310,8 @@ namespace Nucleus.ModelEditor
 
 		private void DetermineTopOperators(Panel props, PreUIDeterminations determinations) {
 			if (determinations.AllShareAType) {
-				if (determinations.Last is IEditorType editorType)
+				var last = determinations.Last?.DeferPropertiesTo();
+				if (last is IEditorType editorType)
 					editorType.BuildTopOperators(props, determinations);
 			}
 		}
@@ -318,7 +319,8 @@ namespace Nucleus.ModelEditor
 		private void DetermineOperators(Panel buttons, PreUIDeterminations determinations) {
 			ModelEditor editor = ModelEditor.Active;
 			EditorFile file = editor.File;
-			determinations.Last?.BuildOperators(buttons, determinations);
+			var last = determinations.Last?.DeferPropertiesTo();
+			last?.BuildOperators(buttons, determinations);
 		}
 
 		private void ClearProperties() {

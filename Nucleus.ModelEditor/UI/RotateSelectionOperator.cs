@@ -30,8 +30,8 @@ namespace Nucleus.ModelEditor
 		private RevolutionManager revolutionManager;
 
 		public override bool GizmoStartDragging(EditorPanel editorPanel, Vector2F mouseScreenStart, IEditorType? currentSelection, IEditorType? clicked) {
-			currentSelection = currentSelection?.GetTransformableEditorType();
-			clicked = clicked?.GetTransformableEditorType();
+			currentSelection = currentSelection?.DeferTransformationsTo();
+			clicked = clicked?.DeferTransformationsTo();
 
 			if (clicked != null && clicked != currentSelection && clicked.CanRotate()) {
 				ModelEditor.Active.SelectObject(clicked);

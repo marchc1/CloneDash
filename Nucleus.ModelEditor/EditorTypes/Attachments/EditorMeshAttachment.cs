@@ -9,6 +9,7 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Poly2Tri;
 using Raylib_cs;
+using System.Net.Mail;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -25,8 +26,8 @@ namespace Nucleus.ModelEditor
 	{
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";
-		public override bool OverrideSelection => false;
-		public override Type[]? SelectableTypes => [];
+		public override bool OverrideSelection => true;
+		public override Type[]? SelectableTypes => [typeof(MeshVertex)];
 
 		public void SetMode(EditMesh_Mode mode) {
 			CurrentMode = mode;
@@ -130,6 +131,10 @@ namespace Nucleus.ModelEditor
 			);
 		}
 
+		public override bool SelectMultiple => true;
+		public override void Selected(ModelEditor editor, IEditorType type) {
+			base.Selected(editor, type);
+		}
 
 		public override void Clicked(ModelEditor editor, Vector2F mousePos) {
 			base.Clicked(editor, mousePos);
@@ -246,15 +251,32 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
-	public class MeshVertex
+	public class MeshVertex : IEditorType
 	{
+		public IEditorType? DeferPropertiesTo() => Attachment;
+		public IEditorType? DeferTransformationsTo() => Attachment;
+		public IEditorType? GetTransformParent() => Attachment;
 		public float X;
 		public float Y;
+		public EditorMeshAttachment Attachment;
 		public Dictionary<EditorBone, float> Weights = [];
+
+		public string SingleName => "vertex";
+
+		public string PluralName => "vertices";
+
+		public bool Hovered { get; set; }
+		public bool Selected { get; set; }
+		public bool Hidden { get; set; }
 
 		public void SetPos(float x, float y) {
 			X = x;
 			Y = y;
+		}
+
+		public bool HoverTest(Vector2F pos) {
+			var dist = pos.Distance(Attachment.WorldTransform.LocalToWorld(X, Y));
+			return dist < 2;
 		}
 
 		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
@@ -263,6 +285,14 @@ namespace Nucleus.ModelEditor
 		public static MeshVertex FromVector(Vector2F vec) => new() { X = vec.X, Y = vec.Y };
 
 		public static implicit operator Vector2F(MeshVertex v) => v.ToVector();
+
+		public void OnMouseEntered() { }
+		public void OnMouseLeft() { }
+
+		public bool OnSelected() {
+			Attachment.SelectVertex(this);
+			return false;
+		}
 	}
 
 	public class EditorMeshAttachment : EditorAttachment
@@ -276,6 +306,20 @@ namespace Nucleus.ModelEditor
 
 		private Vector2F pos, scale = new(1, 1);
 
+		public void SelectVertex(MeshVertex vertex, bool multiselect = false) {
+			if (multiselect) {
+				bool wasIn = SelectedVertices.Remove(vertex);
+
+				if (!wasIn)
+					SelectedVertices.Add(vertex);
+
+				return;
+			}
+
+			SelectedVertices.Clear();
+			SelectedVertices.Add(vertex);
+		}
+
 		public Vector2F Position { get => pos; set => pos = value; }
 		public float Rotation { get; set; }
 		public Vector2F Scale { get => scale; set => scale = value; }
@@ -288,16 +332,17 @@ namespace Nucleus.ModelEditor
 		public override bool CanShear() => false;
 		public override bool CanHide() => true;
 
-		public List<MeshVertex> SelectedVertices = [];
+		public HashSet<MeshVertex> SelectedVertices = [];
 
 
-		public override void OnSelected() {
+		public override bool OnSelected() {
 			SelectedVertices.Clear();
+			return true;
 		}
 
 		public override bool OnUnselected() {
 			// Allows the ESCAPE key and clicking out-of-bounds to unselect all vertices
-			if(SelectedVertices.Count > 0) {
+			if (SelectedVertices.Count > 0) {
 				SelectedVertices.Clear();
 				return false;
 			}
@@ -374,6 +419,18 @@ namespace Nucleus.ModelEditor
 
 		public List<MeshVertex> ConstrainedEdges = [];
 		public List<MeshVertex> SteinerPoints = [];
+
+		public IEnumerable<MeshVertex> GetVertices() {
+			foreach (var co in ConstrainedEdges) {
+				co.Attachment = this;
+				yield return co;
+			}
+
+			foreach (var sp in SteinerPoints) {
+				sp.Attachment = this;
+				yield return sp;
+			}
+		}
 
 		private void RefreshDelaunator() {
 			if (Invalidated) {
@@ -511,7 +568,7 @@ namespace Nucleus.ModelEditor
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
 				var edge1 = ConstrainedEdges[i];
 				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count];
-				var isHighlighted = meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint;
+				var isHighlighted = (edge1.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint);
 
 				var vertex1 = WorldTransform.LocalToWorld(edge1);
 				var vertex2 = WorldTransform.LocalToWorld(edge2);
@@ -526,7 +583,7 @@ namespace Nucleus.ModelEditor
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
 				var point = SteinerPoints[i];
-				var isHighlighted = meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint;
+				var isHighlighted = (point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint);
 				Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 			}
 		}

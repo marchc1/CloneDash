@@ -71,7 +71,7 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.DuplicateOperator(this, props, determinations);
 		}
 
-		public IEditorType? GetTransformableEditorType() => Bone;
+		public IEditorType? DeferTransformationsTo() => Bone;
 
 		private bool AnimationMode => ModelEditor.Active.AnimationMode;
 

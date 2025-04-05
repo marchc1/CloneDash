@@ -504,7 +504,7 @@ namespace Nucleus.ModelEditor
 			var selected = ModelEditor.Active.SelectedObjects;
 			HashSet<IEditorType> transformed = [];
 			foreach (IEditorType obj in selected) {
-				var transformable = obj.GetTransformableEditorType();
+				var transformable = obj.DeferTransformationsTo();
 				if (transformable == null) continue;
 
 				if (predicate(transformable) && !transformed.Contains(transformable)) {

@@ -68,7 +68,14 @@ namespace Nucleus.ModelEditor
 		/// Overriden if the element doesn't really support transformation; but is the parent of something that does
 		/// </summary>
 		/// <returns></returns>
-		IEditorType? GetTransformableEditorType() => this;
+		IEditorType? DeferTransformationsTo() => this;
+		/// <summary>
+		/// Overriden if the element doesn't really have any properties, but is the parent of something that does. <br/>
+		/// todo: null behavior?
+		/// </summary>
+		/// <returns></returns>
+		IEditorType? DeferPropertiesTo() => this;
+
 
 		[JsonIgnore] public bool Hovered { get; set; }
 		[JsonIgnore] public bool Selected { get; set; }
@@ -76,7 +83,11 @@ namespace Nucleus.ModelEditor
 
 		void OnMouseEntered() { }
 		void OnMouseLeft() { }
-		void OnSelected() { }
+		/// <summary>
+		/// Override and return false if you wish to block selection. Generally respected.
+		/// </summary>
+		/// <returns></returns>
+		bool OnSelected() { return true; }
 		/// <summary>
 		/// Override and return false if you wish to block unselection. Only respects this wish in certain places (ie. pressing the ESCAPE key)
 		/// </summary>
