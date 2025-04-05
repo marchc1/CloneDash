@@ -614,10 +614,10 @@ namespace Nucleus.Engine
 			// Only really exists for REALLY late rendering
 			RunEventPostRender(frameState);
 
-			//if(UI.Hovered != null) {
-			//	Graphics2D.SetDrawColor(255, 255, 255);
-			//	Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
-			//}
+			if (ui_hoverresult.GetBool() && UI.Hovered != null) {
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
+			}
 
 			UnlockEntityBuffer();
 			var FPS = Raylib.GetFPS();
@@ -690,6 +690,8 @@ namespace Nucleus.Engine
 				EngineCore.FrameCost = $"{nanoseconds / 1_000_000_000.0} s";
 
 		}
+
+		public static ConVar ui_hoverresult = ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
 
 		public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
 	}
