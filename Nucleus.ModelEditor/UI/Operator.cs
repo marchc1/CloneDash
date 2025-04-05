@@ -47,7 +47,7 @@ namespace Nucleus.ModelEditor.UI
 		/// <br></br>
 		/// - The operation was cancelled due to a UI determinations change
 		/// </summary>
-		protected virtual void Deactivated(bool canceled) { }
+		protected virtual void Deactivated(bool cancelled) { }
 
 		public virtual bool CanActivate(out string? reason) { reason = null; return true; }
 
@@ -73,9 +73,9 @@ namespace Nucleus.ModelEditor.UI
 			Activated();
 			OnActivated?.Invoke(file, this);
 		}
-		public void CallDeactivateSubscriptions(EditorFile file, bool canceled) {
-			Deactivated(canceled);
-			OnDeactivated?.Invoke(file, this, canceled);
+		public void CallDeactivateSubscriptions(EditorFile file, bool cancelled) {
+			Deactivated(cancelled);
+			OnDeactivated?.Invoke(file, this, cancelled);
 		}
 
 		/// <summary>

@@ -1,9 +1,7 @@
-﻿using DelaunatorSharp;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
-using Nucleus.ModelEditor.UI.Operators;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -11,8 +9,7 @@ using Nucleus.UI.Elements;
 using Poly2Tri;
 using Raylib_cs;
 using System.Buffers;
-using System.Net.Mail;
-using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -322,17 +319,60 @@ namespace Nucleus.ModelEditor
 		public EditorBone Bone;
 		public Dictionary<MeshVertex, float> Weights = [];
 		public Dictionary<MeshVertex, Vector2F> Positions = [];
+
+		/// <summary>
+		/// Defaults to 0
+		/// </summary>
+		/// <param name="vertex"></param>
+		/// <returns></returns>
+		public float TryGetVertexWeight(MeshVertex vertex) 
+			=> Weights.TryGetValue(vertex, out var value) ? value : 0;
+
+		/// <summary>
+		/// Defaults to <see cref="Vector2F.Zero"/>
+		/// </summary>
+		/// <param name="vertex"></param>
+		/// <returns></returns>
+		public Vector2F TryGetVertexPosition(MeshVertex vertex) 
+			=> Positions.TryGetValue(vertex, out var value) ? value : Vector2F.Zero;
+
+		public int Count {
+			get {
+				Debug.Assert(Weights.Count == Positions.Count);
+				return Weights.Count;
+			}
+		}
+
+		public bool IsEmpty => Count <= 0;
+
+		public void Clear() {
+			Weights.Clear();
+			Positions.Clear();
+		}
 	}
 
 	public class EditorMeshAttachment : EditorAttachment
 	{
 		public List<EditorMeshWeights> Weights = [];
 
-		public Vector2F CalculateVertexWorldPosition(MeshVertex vertex) {
-			if (Weights.Count <= 0)
-				return Slot.Bone.WorldTransform.LocalToWorld(vertex.X, vertex.Y);
+		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight) {
+			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
+			Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
+			if (weightData == null) return;
 
-			throw new Exception();
+			weightData.Weights[vertex] = weight;
+		}
+
+		public Vector2F CalculateVertexWorldPosition(Transformation transform, MeshVertex vertex) {
+			Vector2F basePosition = transform.LocalToWorld(vertex.X, vertex.Y);
+			if (Weights.Count <= 0)
+				return basePosition;
+
+			foreach (var weightData in Weights) {
+				if (weightData.IsEmpty) continue;
+			}
+
+			return basePosition;
 		}
 
 		public override string SingleName => "mesh";
@@ -357,6 +397,8 @@ namespace Nucleus.ModelEditor
 			SelectedVertices.Clear();
 			SelectedVertices.Add(vertex);
 		}
+
+		public IEnumerable<MeshVertex> GetSelectedVertices() => SelectedVertices;
 
 		public Vector2F Position { get => pos; set => pos = value; }
 		public float Rotation { get; set; }
@@ -585,6 +627,7 @@ namespace Nucleus.ModelEditor
 				bool block = false;
 				foreach (var tri in triangles) {
 					var points = tri.Points;
+
 					Vector2F p1 = new((float)points[0].X, (float)points[0].Y);
 					Vector2F p2 = new((float)points[1].X, (float)points[1].Y);
 					Vector2F p3 = new((float)points[2].X, (float)points[2].Y);
@@ -593,9 +636,9 @@ namespace Nucleus.ModelEditor
 					float u2 = (float)NMath.Remap(p2.X, -region.W / 2, region.W / 2, uStart, uEnd), v2 = (float)NMath.Remap(p2.Y, -region.H / 2, region.H / 2, vEnd, vStart);
 					float u3 = (float)NMath.Remap(p3.X, -region.W / 2, region.W / 2, uStart, uEnd), v3 = (float)NMath.Remap(p3.Y, -region.H / 2, region.H / 2, vEnd, vStart);
 
-					p1 = WorldTransform.LocalToWorld(p1);
-					p2 = WorldTransform.LocalToWorld(p2);
-					p3 = WorldTransform.LocalToWorld(p3);
+					p1 = CalculateVertexWorldPosition(WorldTransform, points[0].AssociatedObject as MeshVertex);
+					p2 = CalculateVertexWorldPosition(WorldTransform, points[1].AssociatedObject as MeshVertex);
+					p3 = CalculateVertexWorldPosition(WorldTransform, points[2].AssociatedObject as MeshVertex);
 
 					Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, p1.Y, 0);
 					Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, p2.Y, 0);

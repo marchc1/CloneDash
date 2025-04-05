@@ -488,16 +488,51 @@ namespace Nucleus.ModelEditor
 		// Attachment things
 		// ============================================================================================== //
 
+		public void AutoBindVertices(EditorMeshAttachment attachment) {
+			var weights = attachment.Weights;
+			foreach (var weightData in weights)
+				weightData.Clear();
+
+			if (weights.Count <= 0) return;
+			if (weights.Count == 1) {
+				// We don't need to waste time
+				var weight = weights[0];
+				foreach (var vertex in attachment.GetVertices())
+					attachment.SetVertexWeight(vertex, weight.Bone, 1);
+
+				return;
+			}
+
+			throw new Exception();
+		}
+
+		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null) {
+			var weights = attachment.Weights;
+			foreach(var weightData in weights) {
+				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
+					continue;
+
+				foreach(var vertex in attachment.GetVertices()) {
+					weightData.Positions[vertex] = weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(vertex));
+				}
+			}
+		}
+
 		public void AssociateBoneToMesh(EditorMeshAttachment attachment, EditorBone bone) {
 			EditorMeshWeights? weights = attachment.Weights.FirstOrDefault(x => x.Bone == bone);
 			if (weights == null) {
 				weights = new();
+				weights.Bone = bone;
 				attachment.Weights.Add(weights);
 			}
 
 			BoneRemoved += (file, model, bone) => {
 				attachment.Weights.RemoveAll((x) => x.Bone == bone);
 			};
+		}
+
+		public void DisassociateBoneFromMesh(EditorMeshAttachment attachment, EditorBone bone) {
+			attachment.Weights.RemoveAll(x => x.Bone == bone);
 		}
 
 		// ============================================================================================== //
