@@ -15,7 +15,7 @@ namespace Nucleus.ManagedMemory
         public PixelFormat Format { get; }
     }
 
-    public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true) : ITexture
+    public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true, Image? underlyingImage = null) : ITexture
     {
 		// Unmanaged missing texture; should not be freed...
 		public static readonly Texture MISSING = new Texture(null, Raylib.LoadTexture(Filesystem.Resolve("missing_texture.png", "images")), false);
@@ -26,6 +26,7 @@ namespace Nucleus.ManagedMemory
         public uint UHeight => (uint)underlying.Height;
         public PixelFormat Format => underlying.Format;
 
+        public Image? UnderlyingImage => underlyingImage;
         private Texture2D Underlying => underlying;
         private bool disposedValue;
         public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
@@ -36,6 +37,8 @@ namespace Nucleus.ManagedMemory
             if (!disposedValue && selfDisposing) {
                 MainThread.RunASAP(() => {
                     Raylib.UnloadTexture(underlying);
+					if(UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
+
                     parent?.EnsureTextureRemoved(this);
                 }, ThreadExecutionTime.BeforeFrame);
                 disposedValue = true;
