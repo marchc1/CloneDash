@@ -74,9 +74,14 @@ namespace Nucleus.ModelEditor
 		public virtual bool OnUnselected() => true;
 		public virtual void OnHidden() {
 			Slot.SetActiveAttachment(null);
+			// Force selection (pull out of any operators etc)
+			ModelEditor.Active.File.DeactivateOperator(true);
+			ModelEditor.Active.SelectObject(this);
 		}
 		public virtual void OnShown() {
 			Slot.SetActiveAttachment(this);
+			ModelEditor.Active.File.DeactivateOperator(true);
+			ModelEditor.Active.SelectObject(this);
 		}
 
 		public virtual bool CanRename() => true;
