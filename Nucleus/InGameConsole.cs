@@ -1,17 +1,11 @@
-﻿using Nucleus;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CloneDash
+namespace Nucleus
 {
-	public class CloneDashConsoleAutocomplete : Panel
+	public class ConsoleAutocomplete : Panel
 	{
 		public ConCommandBase[]? PotentialMatches;
 		protected override void Initialize() {
@@ -51,11 +45,11 @@ namespace CloneDash
 			return PotentialMatches[0];
 		}
 	}
-	public class CloneDashConsoleWindow : Panel
+	public class ConsoleWindow : Panel
 	{
 		TextEditor consoleLogs;
 		TextEditor consoleInput;
-		CloneDashConsoleAutocomplete? autoComplete;
+		ConsoleAutocomplete? autoComplete;
 		protected override void Initialize() {
 			base.Initialize();
 
@@ -125,7 +119,7 @@ namespace CloneDash
 		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, Nucleus.Types.KeyboardKey key) {
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			if (!IValidatable.IsValid(autoComplete)) {
-				autoComplete = UI.Add<CloneDashConsoleAutocomplete>();
+				autoComplete = UI.Add<ConsoleAutocomplete>();
 				autoComplete.Position = self.GetGlobalPosition() + new Vector2F(0, 40);
 			}
 
@@ -154,16 +148,16 @@ namespace CloneDash
 			base.Paint(width, height);
 		}
 	}
-	public static class CloneDashConsole
+	public static class InGameConsole
 	{
-		private static CloneDashConsoleWindow? inputPanel = null;
+		private static ConsoleWindow? inputPanel = null;
 		private static void OpenConsole(Element parent) {
 			if (IValidatable.IsValid(inputPanel)) {
 				CloseConsole();
 				return;
 			}
 
-			inputPanel = parent.Add<CloneDashConsoleWindow>();
+			inputPanel = parent.Add<ConsoleWindow>();
 
 			ConsoleSystem.AddScreenBlocker(inputPanel);
 			inputPanel.Removed += (self) => OnConsoleClosed();
