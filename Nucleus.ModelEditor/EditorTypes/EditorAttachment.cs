@@ -12,6 +12,7 @@ namespace Nucleus.ModelEditor
 {
 	public abstract class EditorAttachment : IEditorType
 	{
+
 		public string Name { get; set; }
 		public EditorSlot Slot { get; set; }
 
