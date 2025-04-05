@@ -1,5 +1,6 @@
 ﻿using DelaunatorSharp;
 using Newtonsoft.Json;
+using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
 using Nucleus.ModelEditor.UI.Operators;
@@ -574,15 +575,30 @@ namespace Nucleus.ModelEditor
 
 			EditMeshOperator? meshOp = ModelEditor.Active.File.ActiveOperator as EditMeshOperator;
 
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(2);
+
 			if (RenderTriangles && triangles.Count > 0) {
+				Graphics2D.SetDrawColor(140, 140, 160);
 				foreach (var tri in triangles) {
-					Raylib.DrawLineStrip([
-						WorldTransform.LocalToWorld(tri.Points[0].ToNumerics().ToNucleus()).ToNumerics(),
-						WorldTransform.LocalToWorld(tri.Points[1].ToNumerics().ToNucleus()).ToNumerics(),
-						WorldTransform.LocalToWorld(tri.Points[2].ToNumerics().ToNucleus()).ToNumerics()
-					], 3, new Color(140, 140, 160));
+					var v1 = WorldTransform.LocalToWorld(tri.Points[0].ToNumerics().ToNucleus());
+					var v2 = WorldTransform.LocalToWorld(tri.Points[1].ToNumerics().ToNucleus());
+					var v3 = WorldTransform.LocalToWorld(tri.Points[2].ToNumerics().ToNucleus());
+
+					var offset = Graphics2D.Offset;
+
+					Graphics2D.ResetDrawingOffset();
+					
+					Graphics2D.DrawDottedLine(v1, v2, 0.5f);
+					Graphics2D.DrawDottedLine(v2, v3, 0.5f);
+					Graphics2D.DrawDottedLine(v3, v1, 0.5f);
+
+					Graphics2D.OffsetDrawing(offset);
 				}
 			}
+
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(1);
 
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
 				var edge1 = ConstrainedEdges[i];

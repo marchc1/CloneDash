@@ -93,7 +93,18 @@ namespace Nucleus.Core
             var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);
             return new(s.X, s.Y);
         }
-        public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+		public static void DrawDottedLine(Vector2F start, Vector2F end, float segmentLength = 4) {
+			var dist = start.Distance(end);
+			Vector2 v1, v2;
+			for (float i = 0; i < dist; i += (segmentLength * 2)) {
+				v1 = AFV2ToSNV2(Vector2F.Lerp(i / dist, start, end));
+				v2 = AFV2ToSNV2(Vector2F.Lerp(Math.Clamp(i + segmentLength, 0, dist) / dist, start, end));
+
+				Raylib.DrawLineV(v1, v2, __drawColor);
+			}
+		}
+
+		public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
         public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
         public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
             int fontSizeI = (int)fontSize;
