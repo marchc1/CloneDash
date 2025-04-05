@@ -385,8 +385,94 @@ namespace Nucleus.Core
             Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA);
         }
 
-        public static void DrawTexture(Vector2F pos, Vector2F size) {
-            Raylib.DrawTexturePro(__texture, new(0, 0, __texture.Width, __texture.Height), new(pos.X, pos.Y, size.X, size.Y), new(0, 0), 0, __drawColor);
-        }
+		// TODO: ensure non-breaking changes
+		public static void DrawTexture(Vector2F pos, Vector2F size, Vector2F? TL = null, Vector2F? TR = null, Vector2F? BL = null, Vector2F? BR = null) {
+			var texture = __texture;
+			var source = RectangleF.XYWH(0, 0, texture.Width, texture.Height);
+			var dest = RectangleF.FromPosAndSize(new(pos.X, pos.Y), size);
+			float rotation = 0;
+			Vector2F origin = new(0, 0);
+			var tint = __drawColor;
+
+			Vector2F tl = TL ?? new(0, 0);
+			Vector2F tr = TR ?? new(1, 0);
+			Vector2F bl = BL ?? new(0, 1);
+			Vector2F br = BR ?? new(1, 1);
+
+			if (texture.Id > 0) {
+				float width = (float)texture.Width;
+				float height = (float)texture.Height;
+
+				bool flipX = false;
+
+				if (source.Width < 0) { flipX = true; source.Width *= -1; }
+				if (source.Height < 0) source.y -= source.Height;
+
+				Vector2F topLeft = Vector2F.Zero;
+				Vector2F topRight = Vector2F.Zero;
+				Vector2F bottomLeft = Vector2F.Zero;
+				Vector2F bottomRight = Vector2F.Zero;
+
+				if (rotation == 0.0f) {
+					float x = dest.x - origin.x;
+					float y = dest.y - origin.y;
+					topLeft = new Vector2F(x, y);
+					topRight = new Vector2F(x + dest.Width, y);
+					bottomLeft = new Vector2F(x, y + dest.Height);
+					bottomRight = new Vector2F(x + dest.Width, y + dest.Height);
+				}
+				else {
+					float sinRotation = MathF.Sin(rotation * (MathF.PI / 180f));
+					float cosRotation = MathF.Cos(rotation * (MathF.PI / 180f));
+					float x = dest.x;
+					float y = dest.y;
+					float dx = -origin.x;
+					float dy = -origin.y;
+
+					topLeft.x = x + dx * cosRotation - dy * sinRotation;
+					topLeft.y = y + dx * sinRotation + dy * cosRotation;
+
+					topRight.x = x + (dx + dest.Width) * cosRotation - dy * sinRotation;
+					topRight.y = y + (dx + dest.Width) * sinRotation + dy * cosRotation;
+
+					bottomLeft.x = x + dx * cosRotation - (dy + dest.Height) * sinRotation;
+					bottomLeft.y = y + dx * sinRotation + (dy + dest.Height) * cosRotation;
+
+					bottomRight.x = x + (dx + dest.Width) * cosRotation - (dy + dest.Height) * sinRotation;
+					bottomRight.y = y + (dx + dest.Width) * sinRotation + (dy + dest.Height) * cosRotation;
+				}
+
+				Rlgl.SetTexture(texture.Id);
+				Rlgl.Begin(DrawMode.QUADS);
+
+				Rlgl.Color4ub(tint.R, tint.G, tint.B, tint.A);
+				Rlgl.Normal3f(0.0f, 0.0f, 1.0f);                          // Normal vector pointing towards viewer
+
+				// Top-left corner for texture and quad
+				if (flipX) Rlgl.TexCoord2f((source.x + source.Width) / width, source.y / height);
+				else Rlgl.TexCoord2f(tl.X, tl.Y);
+				Rlgl.Vertex2f(topLeft.x, topLeft.y);
+
+				// Bottom-left corner for texture and quad
+				if (flipX) Rlgl.TexCoord2f((source.x + source.Width) / width, (source.y + source.Height) / height);
+				else Rlgl.TexCoord2f(bl.X, bl.Y);
+				Rlgl.Vertex2f(bottomLeft.x, bottomLeft.y);
+
+				// Bottom-right corner for texture and quad
+				if (flipX) Rlgl.TexCoord2f(source.x / width, (source.y + source.Height) / height);
+				else Rlgl.TexCoord2f(br.X, br.Y);
+				Rlgl.Vertex2f(bottomRight.x, bottomRight.y);
+
+				// Top-right corner for texture and quad
+				if (flipX) Rlgl.TexCoord2f(source.x / width, source.y / height);
+				else Rlgl.TexCoord2f(tr.X, tr.Y);
+				Rlgl.Vertex2f(topRight.x, topRight.y);
+
+				Rlgl.End();
+				Rlgl.SetTexture(0);
+
+				//Raylib.DrawTexturePro(__texture, new(0, 0, width, height), new(pos.X, pos.Y, size.X, size.Y), new(0, 0), 0, __drawColor);
+			}
+		}
     }
 }

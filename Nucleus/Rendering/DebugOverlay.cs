@@ -18,12 +18,12 @@ public record DebugOverlayText(string text, Vector2F position, float size, Color
 	}
 }
 
-public record DebugOverlayTexture(Texture texture, Vector2F pos, Vector2F size, Color color, Anchor anchor, Vector2F? uvStart, Vector2F? uvEnd) : IDebugOverlayItem
+public record DebugOverlayTexture(Texture texture, Vector2F pos, Vector2F size, Color color, Anchor anchor, Vector2F? tl, Vector2F? tr, Vector2F? bl, Vector2F? br) : IDebugOverlayItem
 {
 	public void Render() {
 		Graphics2D.SetDrawColor(color);
 		Graphics2D.SetTexture(texture);
-		Graphics2D.DrawTexture(Anchor.CalculatePosition(pos, size, anchor, true), size);
+		Graphics2D.DrawTexture(Anchor.CalculatePosition(pos, size, anchor, true), size, tl, tr, bl, br);
 	}
 }
 
@@ -39,6 +39,7 @@ public static class DebugOverlay
 	}
 	public static ConVar debugoverlay = ConVar.Register("debugoverlay", "0", ConsoleFlags.Saved, "Enables the debugging overlay.");
 	private static ConcurrentQueue<IDebugOverlayItem> items = [];
+	public static bool Enabled => debugoverlay.GetBool();
 
 	// State
 	public static bool UseGraphics2DOffset { get; set; }
@@ -49,12 +50,19 @@ public static class DebugOverlay
 
 	private static Vector2F GetOffset() => UseGraphics2DOffset ? Graphics2D.Offset : Vector2F.Zero;
 
-	public static void Text(string text, Vector2F position, float size = 16, Color? color = null, Anchor? anchor = null)
+	public static void Text(
+							string text, 
+							Vector2F position, 
+							float size = 16, Color? color = null, Anchor? anchor = null)
 		=> items.Enqueue(new DebugOverlayText(text, position + GetOffset(), size, color ?? Color.White, anchor ?? Anchor.TopLeft));
 
-	public static void Texture(Texture texture, Vector2F position, Vector2F? size = null, Vector2F? uvStart = null, Vector2F? uvEnd = null, Color? color = null, Anchor? anchor = null)
+	public static void Texture(
+								Texture texture, 
+								Vector2F position, 	Vector2F? size = null, 
+								Vector2F? tl = null, Vector2F? tr = null, Vector2F? bl = null, Vector2F? br = null, 
+								Color? color = null, Anchor? anchor = null)
 		=> items.Enqueue(new DebugOverlayTexture(
-			texture, position + GetOffset(), size ?? new(texture.Width, texture.Height), color ?? Color.White, anchor ?? Anchor.TopLeft, uvStart, uvEnd
+			texture, position + GetOffset(), size ?? new(texture.Width, texture.Height), color ?? Color.White, anchor ?? Anchor.TopLeft, tl, tr, bl, br
 		));
 
 	/// <summary>
