@@ -12,7 +12,8 @@ namespace Nucleus.ModelEditor
 {
 	public abstract class EditorAttachment : IEditorType
 	{
-
+		public IEditorType? GetTransformParent() => Hidden ? Slot.Bone : this;
+		public IEditorType? DeferTransformationsTo() => GetTransformParent();
 		public string Name { get; set; }
 		public EditorSlot Slot { get; set; }
 

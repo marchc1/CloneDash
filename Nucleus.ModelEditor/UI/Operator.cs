@@ -35,6 +35,12 @@ namespace Nucleus.ModelEditor.UI
 		public virtual void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) { }
 		public virtual void DragRelease(ModelEditor editor, Vector2F mousePos) { }
 		/// <summary>
+		/// Final-say hovertest.
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		public virtual bool HoverTest(IEditorType? type) => true;
+		/// <summary>
 		/// Called in a few ways:
 		/// <br></br>
 		/// - The user completed the operation

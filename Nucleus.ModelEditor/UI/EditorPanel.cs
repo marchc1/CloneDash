@@ -338,10 +338,10 @@ namespace Nucleus.ModelEditor
 		public Vector2F HoverGridPos { get; private set; }
 
 		//private bool IsTypeProhibitedByOperator<T>() => SelectableTypes == null ? false : !SelectableTypes.Contains(typeof(T));
-		private bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
+		public bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
 
 		public bool CanSelect(IEditorType type) {
-			if (SelectableTypes != null) 
+			if (SelectableTypes != null)
 				return !IsTypeProhibitedByOperator(type.GetType());
 
 			if (DefaultOperator != null)
@@ -370,8 +370,8 @@ namespace Nucleus.ModelEditor
 
 						switch (attachment) {
 							case EditorRegionAttachment: if (canHoverTest_Images && hovertest) hovered = attachment; break;
-							case EditorMeshAttachment meshAttachment: 
-								if (canHoverTest_Meshes && hovertest) 
+							case EditorMeshAttachment meshAttachment:
+								if (canHoverTest_Meshes && hovertest)
 									hovered = attachment;
 
 								// Test the vertices, if selected
@@ -389,13 +389,22 @@ namespace Nucleus.ModelEditor
 
 					if (hovered is MeshVertex) break;
 				}
-				
+
 				if (hovered is not MeshVertex && canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {
 						if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
 							hovered = bone;
 					}
 				}
+			}
+
+			var activeOp = ModelEditor.Active.File.ActiveOperator;
+
+			// The active operator has the final say after our determinations were made
+			// If no active operator; default to true
+			// If active operator; default is true, unless operator overrode the method
+			if (!(activeOp?.HoverTest(hovered) ?? true)) {
+				return;
 			}
 
 			if (HoveredObject != null) {
@@ -410,7 +419,7 @@ namespace Nucleus.ModelEditor
 				hovered.OnMouseEntered();
 			}
 
-			ModelEditor.Active.File.ActiveOperator?.Think(ModelEditor.Active, HoverGridPos);
+			activeOp?.Think(ModelEditor.Active, HoverGridPos);
 		}
 		public Vector2F ScreenToGrid(Vector2F screenPos) {
 			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), RenderBounds.Size, new(0, 0), EngineCore.GetWindowSize());

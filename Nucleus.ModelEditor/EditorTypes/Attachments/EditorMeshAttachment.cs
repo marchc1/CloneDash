@@ -614,7 +614,11 @@ namespace Nucleus.ModelEditor
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
 				var edge1 = ConstrainedEdges[i];
 				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count];
-				var isHighlighted = (edge1.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint);
+				var isHighlighted = 
+						((edge1.Hovered && meshOp == null) 
+						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
+
 				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
 
 				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
@@ -638,7 +642,10 @@ namespace Nucleus.ModelEditor
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
 				var point = SteinerPoints[i];
-				var isHighlighted = (point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint);
+				var isHighlighted = 
+					((point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint))
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
+
 				Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 			}
 		}
