@@ -43,7 +43,6 @@ namespace Nucleus.Models
 	/// </summary>
 	public class TextureAtlasSystem
 	{
-
 		public bool Debugging => false;
 		public const string VERSION = "TextureAtlasVersion1";
 
@@ -183,7 +182,7 @@ namespace Nucleus.Models
 			}
 
 			packedImg = workingImage;
-			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(workingImage), true);
+			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(workingImage), true, packedImg);
 
 			valid = true;
 		}
