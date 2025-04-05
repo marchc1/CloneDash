@@ -120,12 +120,25 @@ namespace Nucleus.UI.Elements
 			int tabCount = Tabs.Count;
 			Tabs.Add(newTab);
 			if (tabCount <= 0) {
-				MainThread.RunASAP(() => ActiveTab = newTab);
+				ActiveTab = newTab;
 			}
 
 			switcher.MouseReleaseEvent += (_, _, _) => ActiveTab = newTab;
 
 			return newTab;
+		}
+
+		public void SetActiveTabByName(string name) {
+			foreach(var tab in Tabs) 
+				if (tab.Name.ToLower() == name.ToLower())
+					ActiveTab = tab;
+		}
+
+		public void BindTabNameToConVar(ConVar convar) {
+			SetActiveTabByName(convar.GetString() ?? "");
+			OnTabChanged += (self, tab) => {
+				convar.SetValue(tab?.Name ?? "");
+			};
 		}
 	}
 }

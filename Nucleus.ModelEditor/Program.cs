@@ -187,6 +187,8 @@ namespace Nucleus.ModelEditor
 
 		public static ModelEditor Active;
 
+
+		public static ConVar modeleditor_activetab = ConVar.Register("modeleditor_activetab", "", ConsoleFlags.Saved, "Active model editor tab");
 		public Panel SetupPanel;
 		public EditorPanel Editor;
 		public OutlinerPanel Outliner;
@@ -317,6 +319,8 @@ namespace Nucleus.ModelEditor
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
 			File.Cleared += File_Cleared;
+
+			tabOptions.BindTabNameToConVar(modeleditor_activetab);
 		}
 
 		private void File_Cleared(EditorFile file) {
