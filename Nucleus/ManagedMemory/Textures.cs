@@ -26,12 +26,15 @@ namespace Nucleus.ManagedMemory
         public uint UHeight => (uint)underlying.Height;
         public PixelFormat Format => underlying.Format;
 
-        public Image? UnderlyingImage => underlyingImage;
+		private Image? UnderlyingImage => underlyingImage;
         private Texture2D Underlying => underlying;
         private bool disposedValue;
         public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
 
         public bool IsValid() => !disposedValue;
+
+		public bool HasCPUImage => UnderlyingImage.HasValue;
+		public Image GetCPUImage() => UnderlyingImage ?? throw new Exception("No CPU image available. The texture creation call must store the image.");
 
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue && selfDisposing) {
