@@ -69,6 +69,10 @@ namespace Nucleus.ModelEditor
 							File.DeactivateOperator(false);
 						}
 					}
+					else {
+						if (item != null)
+							ActiveOperator.Selected(this, item);
+					}
 					return true;
 				}
 				else {

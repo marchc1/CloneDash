@@ -15,9 +15,50 @@ public class BindOperator : Operator {
 	public override bool SelectMultiple => true;
 	public override bool OverrideSelection => true;
 	public override Type[]? SelectableTypes => [typeof(EditorBone)];
- 
+
+	public EditorMeshAttachment SelectedAttachment;
+	public HashSet<EditorBone> Bones = [];
+
+	public override bool CanActivate(out string? reason) {
+		reason = null;
+		if (ModelEditor.Active.AreAllSelectedObjectsTheSameType(out Type? t) && t == typeof(EditorMeshAttachment)) {
+			// todo: how to adjust for multiple bones
+			EditorMeshAttachment attachment = ModelEditor.Active.LastSelectedObject as EditorMeshAttachment ?? throw new Exception();
+			this.SelectedAttachment = attachment;
+			foreach (var weightpair in attachment.Weights) {
+				Bones.Add(weightpair.Bone);
+			}
+
+			return true;
+		}
+
+		reason = "Must be selecting a mesh attachment.";
+		return false;
+	}
+	public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
+		base.ChangeEditorProperties(panel);
+	}
+	public override void Clicked(ModelEditor editor, Vector2F mousePos) {
+		base.Clicked(editor, mousePos);
+	}
+	protected override void Deactivated(bool canceled) {
+		base.Deactivated(canceled);
+	}
+	public override bool HoverTest(IEditorType? type) {
+		if (Bones.Contains(type))
+			return false;
+
+		return true;
+	}
+	public override void Think(ModelEditor editor, Vector2F mousePos) {
+		base.Think(editor, mousePos);
+	}
+
 	public override void Selected(ModelEditor editor, IEditorType type) {
-		
+		Logs.Info($"{type}");
+		if (type is not EditorBone bone)
+			return;
+		Bones.Add(bone);
 	}
 }
 

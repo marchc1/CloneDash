@@ -73,6 +73,14 @@ namespace Nucleus.ModelEditor
 						SlotAdded?.Invoke(this, model, bone, slot);
 						foreach (var attachment in slot.Attachments) {
 							AttachmentAdded?.Invoke(this, slot, attachment);
+
+							switch (attachment) {
+								case EditorMeshAttachment meshAttachment:
+									foreach(var weight in meshAttachment.Weights) {
+										AssociateBoneToMesh(meshAttachment, weight.Bone);
+									}
+									break;
+							}
 						}
 					}
 				}
@@ -477,6 +485,22 @@ namespace Nucleus.ModelEditor
 		}
 
 		// ============================================================================================== //
+		// Attachment things
+		// ============================================================================================== //
+
+		public void AssociateBoneToMesh(EditorMeshAttachment attachment, EditorBone bone) {
+			EditorMeshWeights? weights = attachment.Weights.FirstOrDefault(x => x.Bone == bone);
+			if (weights == null) {
+				weights = new();
+				attachment.Weights.Add(weights);
+			}
+
+			BoneRemoved += (file, model, bone) => {
+				attachment.Weights.RemoveAll((x) => x.Bone == bone);
+			};
+		}
+
+		// ============================================================================================== //
 		// Selection modification
 		// ============================================================================================== //
 
@@ -628,6 +652,11 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public bool IsOperatorActive => ActiveOperator != null;
 		public void ActivateOperator(Operator op) {
 			if (ActiveOperator != null) DeactivateOperator(true);
+
+			if (!op.CanActivate(out string? reason)) {
+				Logs.Warn($"Failed to activate operator {op.GetType().Name}: {reason ?? "No reason provided."}");
+				return;
+			}
 
 			ActiveOperator = op;
 			op.UIDeterminations = ModelEditor.Active.GetDeterminations();

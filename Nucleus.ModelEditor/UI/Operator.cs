@@ -49,6 +49,8 @@ namespace Nucleus.ModelEditor.UI
 		/// </summary>
 		protected virtual void Deactivated(bool canceled) { }
 
+		public virtual bool CanActivate(out string? reason) { reason = null; return true; }
+
 		public virtual void ModifyEditor(ModelEditor editor) { }
 		public virtual void RestoreEditor(ModelEditor editor) { }
 

@@ -553,7 +553,10 @@ namespace Nucleus.ModelEditor
 					&& !ModelEditor.Active.IsObjectSelected(ClickedObject)
 					&& allowSelection
 				) {
-					ModelEditor.Active.SelectObject(ClickedObject, state.KeyboardState.ShiftDown);
+					var activeOp = ModelEditor.Active.File.ActiveOperator;
+					if (activeOp == null || !activeOp.SelectMultiple) // Kind of a hack, but the editor would
+																	  // trigger a second selection otherwise
+						ModelEditor.Active.SelectObject(ClickedObject, state.KeyboardState.ShiftDown);
 				}
 			}
 		}

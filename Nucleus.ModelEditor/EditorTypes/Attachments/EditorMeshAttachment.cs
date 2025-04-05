@@ -11,6 +11,7 @@ using Nucleus.UI.Elements;
 using Poly2Tri;
 using Raylib_cs;
 using System.Net.Mail;
+using System.Security.Cryptography.X509Certificates;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -281,7 +282,6 @@ namespace Nucleus.ModelEditor
 		public float X;
 		public float Y;
 		public EditorMeshAttachment Attachment;
-		public Dictionary<EditorBone, float> Weights = [];
 
 		public string SingleName => "vertex";
 
@@ -317,8 +317,16 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
+	public class EditorMeshWeights {
+		public EditorBone Bone;
+		public Dictionary<MeshVertex, float> Weights = [];
+		public Dictionary<MeshVertex, Vector2F> Positions = [];
+	}
+
 	public class EditorMeshAttachment : EditorAttachment
 	{
+		public List<EditorMeshWeights> Weights = [];
+
 		public override string SingleName => "mesh";
 		public override string PluralName => "meshes";
 		public override string EditorIcon => "models/mesh.png";
