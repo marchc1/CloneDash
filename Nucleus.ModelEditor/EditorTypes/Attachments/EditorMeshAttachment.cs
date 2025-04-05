@@ -519,7 +519,6 @@ namespace Nucleus.ModelEditor
 		public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
 		public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
-
 		public override void Render() {
 			RefreshDelaunator();
 
@@ -616,15 +615,24 @@ namespace Nucleus.ModelEditor
 				var edge1 = ConstrainedEdges[i];
 				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count];
 				var isHighlighted = (edge1.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint);
+				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
+
+				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
+
+				float size = (isSelected ? 6f : 4f) + (isHighlighted ? 1f : 0f);
+				var hS = isHighlighted ? 245 : 165;
+				Color color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+
+				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
 
 				var vertex1 = WorldTransform.LocalToWorld(edge1);
 				var vertex2 = WorldTransform.LocalToWorld(edge2);
 
-				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), new Color(0, 255, 255));
+				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
 				if (Selected) {
-					Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 6f : 4f) / camsize, Color.BLACK);
-					Raylib.DrawCircleV(vertex1.ToNumerics(), (isHighlighted ? 5f : 3f) / camsize, new Color(isHighlighted ? 180 : 0, 255, 255));
+					Raylib.DrawCircleV(vertex1.ToNumerics(), (size) / camsize, Color.BLACK);
+					Raylib.DrawCircleV(vertex1.ToNumerics(), (size - 1) / camsize, color);
 				}
 			}
 
