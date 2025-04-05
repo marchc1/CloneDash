@@ -15,6 +15,8 @@ namespace Nucleus.ModelEditor
 		public string Name { get; set; }
 		public EditorSlot Slot { get; set; }
 
+		[JsonIgnore] public virtual ViewportSelectMode SelectMode => ViewportSelectMode.NotApplicable;
+
 		public string GetName() => Name;
 
 		public abstract string EditorIcon { get; }

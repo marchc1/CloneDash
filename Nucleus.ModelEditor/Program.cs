@@ -179,6 +179,7 @@ namespace Nucleus.ModelEditor
 		public Panel SetupPanel;
 		public EditorPanel Editor;
 		public OutlinerPanel Outliner;
+		public WeightsPanel Weights;
 		public PropertiesPanel Properties;
 		public Button SwitchMode;
 
@@ -266,12 +267,11 @@ namespace Nucleus.ModelEditor
 			Properties.DrawPanelBackground = true;
 			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
 
-			/*var bind = PropertiesPanel.OperatorButton<BindBonesOperator>(WeightsTab.Panel, "Bind Bones");
-			bind.Size = new(32);
-			bind.Dock = Dock.Bottom;
-			bind.MouseReleaseEvent += (_, _, _) => {
+			OutlinerTab.Panel.Add(out Outliner);
+			Outliner.Dock = Dock.Fill;
 
-			};*/
+			WeightsTab.Panel.Add(out Weights);
+			Weights.Dock = Dock.Fill;
 
 			OutlinerTab.Panel.Add(out Outliner);
 			Outliner.Dock = Dock.Fill;

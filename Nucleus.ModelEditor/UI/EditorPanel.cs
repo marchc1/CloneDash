@@ -357,6 +357,7 @@ namespace Nucleus.ModelEditor
 
 			bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
 			bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
+			bool canHoverTest_Meshes = (SelectMode & ViewportSelectMode.Meshes) == ViewportSelectMode.Meshes;
 
 			IEditorType? hovered = null;
 
@@ -365,8 +366,12 @@ namespace Nucleus.ModelEditor
 					foreach (var attachment in slot.Attachments) {
 						if (!attachment.GetVisible()) continue;
 
-						if (attachment.HoverTest(HoverGridPos) && CanSelect(attachment))
-							hovered = attachment;
+						bool hovertest = attachment.HoverTest(HoverGridPos) && CanSelect(attachment);
+
+						switch (attachment) {
+							case EditorRegionAttachment: if (canHoverTest_Images && hovertest) hovered = attachment; break;
+							case EditorMeshAttachment: if (canHoverTest_Meshes && hovertest) hovered = attachment; break;
+						}
 					}
 				}
 
