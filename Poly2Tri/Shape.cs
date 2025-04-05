@@ -39,9 +39,9 @@ namespace Poly2Tri
 		}
 
 
-		public Shape(Span<float> x, Span<float> y) {
+		public Shape(Span<float> x, Span<float> y, object[]? z = null) {
 			for (int i = 0; i < x.Length; i++) {
-				Points.Add(new(x[i], y[i]));
+				Points.Add(new(x[i], y[i], z?[i]));
 			}
 		}
 		/// <summary>

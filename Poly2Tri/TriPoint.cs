@@ -13,17 +13,20 @@ namespace Poly2Tri
         public double X;
 
         public double Y;
+		public object? AssociatedObject;
 
         public List<Edge> EdgeList;
 
         public TriPoint() { }
 
-        public TriPoint(double x, double y)
+        public TriPoint(double x, double y, object? associatedObject = null)
         {
             X = x;
             Y = y;
             EdgeList = null;
-        }
+			AssociatedObject = associatedObject;
+
+		}
 
         public TriPoint(Vector2 p)
         {

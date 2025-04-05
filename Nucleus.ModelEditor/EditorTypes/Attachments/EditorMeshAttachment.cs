@@ -10,6 +10,7 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Poly2Tri;
 using Raylib_cs;
+using System.Buffers;
 using System.Net.Mail;
 using System.Security.Cryptography.X509Certificates;
 using Triangle = Poly2Tri.Triangle;
@@ -327,6 +328,13 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorMeshWeights> Weights = [];
 
+		public Vector2F CalculateVertexWorldPosition(MeshVertex vertex) {
+			if (Weights.Count <= 0)
+				return Slot.Bone.WorldTransform.LocalToWorld(vertex.X, vertex.Y);
+
+			throw new Exception();
+		}
+
 		public override string SingleName => "mesh";
 		public override string PluralName => "meshes";
 		public override string EditorIcon => "models/mesh.png";
@@ -462,22 +470,36 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
+		public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
+
 		private void RefreshDelaunator() {
 			if (Invalidated) {
+				triPointToMeshVertex.Clear();
+
 				Span<float> x = stackalloc float[ConstrainedEdges.Count];
 				Span<float> y = stackalloc float[ConstrainedEdges.Count];
+				MeshVertex[] z = ArrayPool<MeshVertex>.Shared.Rent(ConstrainedEdges.Count);
 				for (int i = 0; i < ConstrainedEdges.Count; i++) {
 					x[i] = ConstrainedEdges[i].X;
 					y[i] = ConstrainedEdges[i].Y;
+					z[i] = ConstrainedEdges[i];
 				}
 				triangles.Clear();
-				Shape = new Shape(x, y);
+				Shape = new Shape(x, y, z);
 
 				foreach (var steinerPoint in SteinerPoints)
-					Shape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y));
+					Shape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
 
 				Shape.Triangulate(triangles);
 				Invalidated = false;
+
+				ArrayPool<MeshVertex>.Shared.Return(z, true);
+
+				foreach (var point in Shape.Points)
+					triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
+
+				foreach (var point in Shape.SteinerPoints)
+					triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
 			}
 		}
 
