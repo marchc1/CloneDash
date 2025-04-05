@@ -252,7 +252,8 @@ namespace Nucleus
             LoadingLevel = true;
             level.InitializeUI();
             Level.Initialize(args);
-            LoadingLevel = false;
+			InGameConsole.HookToLevel(Level);
+			LoadingLevel = false;
 
             LoadingScreen?.Unload();
             __nextFrameLevel = null;
