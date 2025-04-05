@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -613,6 +614,8 @@ namespace Nucleus.Engine
 
 			// Only really exists for REALLY late rendering
 			RunEventPostRender(frameState);
+
+			DebugOverlay.Render();
 
 			if (ui_hoverresult.GetBool() && UI.Hovered != null) {
 				Graphics2D.SetDrawColor(255, 255, 255);
