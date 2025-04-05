@@ -361,10 +361,14 @@ namespace Nucleus.ModelEditor
 			IEditorType? hovered = null;
 
 			foreach (var model in ModelEditor.Active.File.Models) {
-				foreach (var slot in model.Slots)
-					foreach (var attachment in slot.Attachments)
+				foreach (var slot in model.Slots) {
+					foreach (var attachment in slot.Attachments) {
+						if (!attachment.GetVisible()) continue;
+
 						if (attachment.HoverTest(HoverGridPos) && CanSelect(attachment))
 							hovered = attachment;
+					}
+				}
 
 				if (canHoverTest_Bones) {
 					foreach (var bone in model.GetAllBones()) {

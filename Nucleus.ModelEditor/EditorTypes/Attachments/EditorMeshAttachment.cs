@@ -288,6 +288,23 @@ namespace Nucleus.ModelEditor
 		public override bool CanShear() => false;
 		public override bool CanHide() => true;
 
+		public List<MeshVertex> SelectedVertices = [];
+
+
+		public override void OnSelected() {
+			SelectedVertices.Clear();
+		}
+
+		public override bool OnUnselected() {
+			// Allows the ESCAPE key and clicking out-of-bounds to unselect all vertices
+			if(SelectedVertices.Count > 0) {
+				SelectedVertices.Clear();
+				return false;
+			}
+
+			return true; // allow modeleditor to unselect
+		}
+
 		public override float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => Position.X;
 		public override float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => Position.Y;
 		public override float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => Rotation;

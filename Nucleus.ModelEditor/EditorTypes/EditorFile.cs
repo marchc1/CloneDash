@@ -71,8 +71,9 @@ namespace Nucleus.ModelEditor
 					BoneColorChanged?.Invoke(this, bone);
 					foreach (var slot in bone.Slots) {
 						SlotAdded?.Invoke(this, model, bone, slot);
-						foreach (var attachment in slot.Attachments)
+						foreach (var attachment in slot.Attachments) {
 							AttachmentAdded?.Invoke(this, slot, attachment);
+						}
 					}
 				}
 

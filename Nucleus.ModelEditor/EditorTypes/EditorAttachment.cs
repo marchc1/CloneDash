@@ -68,7 +68,7 @@ namespace Nucleus.ModelEditor
 		public virtual void OnMouseEntered() { }
 		public virtual void OnMouseLeft() { }
 		public virtual void OnSelected() { }
-		public virtual void OnUnselected() { }
+		public virtual bool OnUnselected() => true;
 		public virtual void OnHidden() {
 			Slot.SetActiveAttachment(null);
 		}

@@ -77,7 +77,11 @@ namespace Nucleus.ModelEditor
 		void OnMouseEntered() { }
 		void OnMouseLeft() { }
 		void OnSelected() { }
-		void OnUnselected() { }
+		/// <summary>
+		/// Override and return false if you wish to block unselection. Only respects this wish in certain places (ie. pressing the ESCAPE key)
+		/// </summary>
+		/// <returns></returns>
+		bool OnUnselected() => true;
 		void OnHidden() { }
 		void OnShown() { }
 	}

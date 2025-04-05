@@ -294,8 +294,11 @@ namespace Nucleus.ModelEditor
 			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => {
 				if (File.ActiveOperator != null)
 					File.DeactivateOperator(true);
-				else
-					UnselectAllObjects();
+				else {
+					if(LastSelectedObject?.OnUnselected() ?? false)
+						UnselectAllObjects();
+				}
+					
 			});
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());
