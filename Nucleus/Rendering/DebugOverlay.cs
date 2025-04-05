@@ -9,9 +9,10 @@ public interface IDebugOverlayItem {
 	public void Render();
 }
 
-public record DebugOverlayText(string text, Vector2F position, float size, Color color) : IDebugOverlayItem {
+public record DebugOverlayText(string text, Vector2F position, float size, Color color, Anchor anchor) : IDebugOverlayItem {
 	public void Render() {
-		Graphics2D.SetDrawColor()
+		Graphics2D.SetDrawColor(color);
+		Graphics2D.DrawText(position, text, "Consolas", size, anchor);
 	}
 }
 
@@ -22,8 +23,8 @@ public static class DebugOverlay
 {
 	private static ConcurrentQueue<IDebugOverlayItem> items = [];
 
-	public static void Text(string text, Vector2F position, float size = 16, Color? color = null)
-		=> items.Enqueue(new DebugOverlayText(text, position, size, color ?? Color.White));
+	public static void Text(string text, Vector2F position, float size = 16, Color? color = null, Anchor? anchor = null)
+		=> items.Enqueue(new DebugOverlayText(text, position, size, color ?? Color.White, anchor ?? Anchor.TopLeft));
 
 	/// <summary>
 	/// Renders and flushes the overlay item queue.
