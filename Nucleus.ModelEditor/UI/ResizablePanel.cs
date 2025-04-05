@@ -47,7 +47,7 @@ namespace Nucleus.ModelEditor.UI
 
 			foreach(Button b in new Button[] { __top, __left, __right, __bottom }) {
 				b.Text = "";
-				b.BackgroundColor = Color.BLANK;
+				b.BackgroundColor = Color.Blank;
 				b.BorderSize = 0;
 			}
 

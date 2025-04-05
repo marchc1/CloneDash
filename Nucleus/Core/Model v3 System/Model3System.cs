@@ -109,7 +109,7 @@ namespace Nucleus.Core
 					Material m = new Material();
 					m.Maps = Raylib.New<MaterialMap>(1); // C++ memory allocator needed here
 					m.Maps[0] = new MaterialMap() {
-						Color = Color.WHITE,
+						Color = Color.White,
 						Texture = t,
 						Value = 1.0f
 					};

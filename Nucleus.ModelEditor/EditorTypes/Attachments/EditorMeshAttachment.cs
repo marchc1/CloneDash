@@ -255,7 +255,7 @@ namespace Nucleus.ModelEditor
 				}
 
 				if (HoveredVertex == null)
-					Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.LIME);
+					Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.Lime);
 
 				RestoreAttachmentTransform();
 
@@ -402,7 +402,7 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public Transformation WorldTransform;
 
-		public Color Color { get; set; } = Color.WHITE;
+		public Color Color { get; set; } = Color.White;
 
 		public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
 		public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
@@ -638,7 +638,7 @@ namespace Nucleus.ModelEditor
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
 				if (Selected) {
-					Raylib.DrawCircleV(vertex1.ToNumerics(), (size) / camsize, Color.BLACK);
+					Raylib.DrawCircleV(vertex1.ToNumerics(), (size) / camsize, Color.Black);
 					Raylib.DrawCircleV(vertex1.ToNumerics(), (size - 1) / camsize, color);
 				}
 			}

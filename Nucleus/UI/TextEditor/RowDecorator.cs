@@ -7,7 +7,7 @@ namespace Nucleus.UI
 		public Color Color { get; set; }
 		public string Text { get; set; }
 		public RowDecorator() {
-			Color = Color.WHITE;
+			Color = Color.White;
 		}
 
 		public override string ToString() {

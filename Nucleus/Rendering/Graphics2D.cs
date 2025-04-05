@@ -20,7 +20,7 @@ namespace Nucleus.Core
             { "Noto Sans", Filesystem.Resolve("noto-sans-en-jp.ttf", "fonts") },
         });
         private static Vector2F __offset = new Vector2F(0, 0);
-        private static Color __drawColor = Color.WHITE;
+        private static Color __drawColor = Color.White;
         public static Shader shader_hsvtransform = Raylib.LoadShader("", Filesystem.Resolve("change_color.fshader", "shaders"));
         public static float Hue { get; set; } = 0;
         public static float Saturation { get; set; } = 1;

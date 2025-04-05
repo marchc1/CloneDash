@@ -39,7 +39,7 @@ namespace Nucleus.UI
 			label.AutoSize = true;
 			label.Text = "Num";
 			label.BorderSize = 0;
-			label.BackgroundColor = Color.BLANK;
+			label.BackgroundColor = Color.Blank;
 			label.DockMargin = RectangleF.XYWH(0, 0, 16, 0);
 
 			numslider = Add<NumSlider>();

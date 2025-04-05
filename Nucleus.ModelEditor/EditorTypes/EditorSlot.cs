@@ -19,15 +19,15 @@ namespace Nucleus.ModelEditor
 		public EditorBone Bone { get; set; }
 		public string Name { get; set; }
 
-		public Color SetupColor { get; set; } = Color.WHITE;
+		public Color SetupColor { get; set; } = Color.White;
 		public bool TintBlack { get; set; } = false;
-		public Color SetupDarkColor { get; set; } = Color.BLACK;
+		public Color SetupDarkColor { get; set; } = Color.Black;
 		public BlendMode SetupBlending { get; set; } = BlendMode.Normal;
 		public EditorAttachment? SetupActiveAttachment { get; set; } = null;
 
 		public List<EditorAttachment> Attachments { get; set; } = [];
-		public Color Color { get; set; } = Color.WHITE;
-		public Color DarkColor { get; set; } = Color.BLACK;
+		public Color Color { get; set; } = Color.White;
+		public Color DarkColor { get; set; } = Color.Black;
 		public BlendMode Blending { get; set; } = BlendMode.Normal;
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 

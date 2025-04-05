@@ -9,7 +9,7 @@ namespace Nucleus.UI
 		public override void Rebuild(SafeArray<string> rows) {
 			Rows.Clear();
 			foreach (var row in rows) {
-				Rows.Add([new RowDecorator() { Color = Color.WHITE, Text = row ?? "" }]);
+				Rows.Add([new RowDecorator() { Color = Color.White, Text = row ?? "" }]);
 			}
 		}
 	}

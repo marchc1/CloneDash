@@ -165,13 +165,13 @@ namespace Nucleus.Models
 			int rh = (int)bounds.Height.RoundUpToPowerOf2();
 			bool testing = Debugging;
 
-			Image workingImage = Raylib.GenImageColor(rw, rh, testing ? Color.LIGHTGRAY : Color.BLANK);
+			Image workingImage = Raylib.GenImageColor(rw, rh, testing ? Color.LightGray : Color.Blank);
 
 			for (int j = 0; j < rects.Length; j++) {
 				PackingRectangle rect = rects[j];
 				string key = keys[rect.Id];
 				Image src = unpacked[key];
-				Raylib.ImageDraw(ref workingImage, src, new(0, 0, src.Width, src.Height), new(rect.X, rect.Y, rect.Width, rect.Height), Color.WHITE);
+				Raylib.ImageDraw(ref workingImage, src, new(0, 0, src.Width, src.Height), new(rect.X, rect.Y, rect.Width, rect.Height), Color.White);
 
 				if (testing) {
 					Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());

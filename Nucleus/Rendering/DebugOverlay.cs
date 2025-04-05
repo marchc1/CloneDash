@@ -23,7 +23,7 @@ public static class DebugOverlay
 	private static ConcurrentQueue<IDebugOverlayItem> items = [];
 
 	public static void Text(string text, Vector2F position, float size = 16, Color? color = null)
-		=> items.Enqueue(new DebugOverlayText(text, position, size, color ?? Color.WHITE));
+		=> items.Enqueue(new DebugOverlayText(text, position, size, color ?? Color.White));
 
 	/// <summary>
 	/// Renders and flushes the overlay item queue.

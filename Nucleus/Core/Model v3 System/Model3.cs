@@ -10,7 +10,7 @@ namespace Nucleus.Core
 
 		public bool RespectsGlobalPause { get; set; } = true;
 
-		private Color __color = Color.WHITE;
+		private Color __color = Color.White;
 		private Vector3 __hsv = new(0, 1, 1);
 
 		public Color Color {

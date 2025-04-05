@@ -7,7 +7,7 @@ namespace Nucleus.UI.Elements
 {
 	public class ColorSelector : Element
 	{
-		private Color selectedColor = Color.WHITE;
+		private Color selectedColor = Color.White;
 		public Color SelectedColor {
 			get => selectedColor;
 			set {

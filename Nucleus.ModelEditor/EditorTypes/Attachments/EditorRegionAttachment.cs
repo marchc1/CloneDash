@@ -72,7 +72,7 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public Transformation WorldTransform;
 
-		public Color Color { get; set; } = Color.WHITE;
+		public Color Color { get; set; } = Color.White;
 
 		public QuadPoints QuadPoints(bool localized = true) {
 			var model = Slot.Bone.Model;

@@ -101,8 +101,8 @@ namespace Nucleus.UI.Elements
 				MSCount = 0;
 				MSMean = 0;
 			}
-			Color color1 = Color.WHITE;
-			Color color2 = Color.WHITE;
+			Color color1 = Color.White;
+			Color color2 = Color.White;
 
 			switch (Mode) {
 				case PerfGraphMode.CPU_Frametime:

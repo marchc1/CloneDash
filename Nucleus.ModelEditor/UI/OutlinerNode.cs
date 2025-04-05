@@ -24,7 +24,7 @@ namespace Nucleus.ModelEditor
 
 
 		private void SELECTABLECHANGED() {
-			TextColor = GetSelectable() ? Color.WHITE : Color.GRAY;
+			TextColor = GetSelectable() ? Color.White : Color.Gray;
 		}
 
 		private bool _selectable = true;
@@ -127,7 +127,7 @@ namespace Nucleus.ModelEditor
 			Expander.Size = new(23);
 			Image.Size = new(16);
 
-			Image.ImageColor = Raylib_cs.Color.WHITE;
+			Image.ImageColor = Raylib_cs.Color.White;
 
 			BorderSize = 0;
 			DockMargin = RectangleF.TLRB(0, 2, 2, 0);

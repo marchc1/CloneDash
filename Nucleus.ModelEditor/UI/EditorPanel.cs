@@ -580,7 +580,7 @@ namespace Nucleus.ModelEditor
 
 			}
 
-			var color = selected ? Color.SKYBLUE : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : bone.Color.Adjust(0, 0, -0.15f);
+			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : bone.Color.Adjust(0, 0, -0.15f);
 			ManagedMemory.Texture boneTex;
 
 			if (bone.Length > 0) {
@@ -693,8 +693,8 @@ namespace Nucleus.ModelEditor
 			Rlgl.DisableDepthMask();
 
 			Checkerboard.Draw();
-			Raylib.DrawLine3D(new(-10000, 0, 0), new(10000, 0, 0), Color.BLACK);
-			Raylib.DrawLine3D(new(0, -10000, 0), new(0, 10000, 0), Color.BLACK);
+			Raylib.DrawLine3D(new(-10000, 0, 0), new(10000, 0, 0), Color.Black);
+			Raylib.DrawLine3D(new(0, -10000, 0), new(0, 10000, 0), Color.Black);
 
 			if (!(ModelEditor.Active.File.ActiveOperator?.RenderOverride() ?? false)) {
 				DrawModels();

@@ -176,7 +176,7 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Left;
 			selector.Size = new(96);
-			selector.SelectedColor = currentColor ?? Color.WHITE;
+			selector.SelectedColor = currentColor ?? Color.White;
 			selector.BorderSize = 0;
 
 			return selector;
