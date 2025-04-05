@@ -482,7 +482,8 @@ namespace Nucleus.ModelEditor
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
 
-			Rlgl.Color4ub(255, 255, 255, 255);
+			var color = (byte)(ShouldDim ? 90 : 255);
+			Rlgl.Color4ub(color, color, color, 255);
 
 			float uStart, uEnd, vStart, vEnd;
 			uStart = (float)region.X / (float)tex.Width;
@@ -504,8 +505,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.DrawRenderBatchActive();
 		}
 
-
-		public bool RenderTriangles => false;
+		public static bool InEditMeshOperator => ModelEditor.Active.File.ActiveOperator is EditMeshOperator;
+		public bool IsActiveAttachment => ModelEditor.Active.File.ActiveOperator is EditMeshOperator op && op.Attachment == this;
+		public static bool RenderTriangles => InEditMeshOperator && EditMeshOperator.meshedit_triangles.GetBool();
+		public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
+		public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
 
 		public override void Render() {
@@ -530,7 +534,8 @@ namespace Nucleus.ModelEditor
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
 
-			Rlgl.Color4ub(255, 255, 255, 255);
+			var color = (byte)((IsActiveAttachment && ShouldDim) ? 90 : 255);
+			Rlgl.Color4ub(color, color, color, 255);
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
 				uStart = (float)region.X / (float)tex.Width;
