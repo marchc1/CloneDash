@@ -520,6 +520,7 @@ namespace Nucleus.ModelEditor
 		public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
 		public override void Render() {
+			if (Hidden) return;
 			RefreshDelaunator();
 
 			if (!SuppressWorldTransform)
@@ -604,6 +605,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void RenderOverlay() {
+			if (Hidden) return;
+
 			base.RenderOverlay();
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
 
