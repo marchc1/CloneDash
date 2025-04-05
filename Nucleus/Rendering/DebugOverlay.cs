@@ -10,6 +10,17 @@ public interface IDebugOverlayItem {
 	public void Render();
 }
 
+public record DebugOverlayCircle(Vector2F pos, float size, Color color, bool lines) : IDebugOverlayItem
+{
+	public void Render() {
+		Graphics2D.SetDrawColor(color);
+		if (lines)
+			Graphics2D.DrawCircle(pos, size);
+		else
+			Graphics2D.DrawCircleLines(pos, new(size));
+	}
+}
+
 public record DebugOverlayText(string text, Vector2F position, float size, Color color, Anchor anchor) : IDebugOverlayItem
 {
 	public void Render() {
@@ -49,6 +60,9 @@ public static class DebugOverlay
 	}
 
 	private static Vector2F GetOffset() => UseGraphics2DOffset ? Graphics2D.Offset : Vector2F.Zero;
+
+	public static void Circle(Vector2F pos, float radius, Color? color = null, bool lines = false)
+		=> items.Enqueue(new DebugOverlayCircle(pos, radius, color ?? Color.White, lines));
 
 	public static void Text(
 							string text, 

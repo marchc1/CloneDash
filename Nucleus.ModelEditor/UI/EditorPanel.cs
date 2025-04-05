@@ -5,6 +5,7 @@ using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
@@ -362,14 +363,18 @@ namespace Nucleus.ModelEditor
 			IEditorType? hovered = null;
 
 			foreach (var model in ModelEditor.Active.File.Models) {
+				EditorAttachment? firstAttachment = null;
 				foreach (var slot in model.Slots) {
 					foreach (var attachment in slot.Attachments) {
+						var lastHovered = hovered;
+
 						if (!attachment.GetVisible()) continue;
 
 						bool hovertest = attachment.HoverTest(HoverGridPos) && CanSelect(attachment);
 
 						switch (attachment) {
-							case EditorRegionAttachment: if (canHoverTest_Images && hovertest) hovered = attachment; break;
+							case EditorRegionAttachment:
+								if (canHoverTest_Images && hovertest) hovered = attachment; break;
 							case EditorMeshAttachment meshAttachment:
 								if (canHoverTest_Meshes && hovertest)
 									hovered = attachment;
@@ -385,8 +390,16 @@ namespace Nucleus.ModelEditor
 
 								break;
 						}
-					}
 
+						if (hovered == attachment) {
+							if (firstAttachment == null)
+								firstAttachment = attachment;
+							else {
+								if (!attachment.HoverTestOpacity(HoverGridPos))
+									hovered = lastHovered; // reset back, only use fallback if needed
+							}
+						}
+					}
 					if (hovered is MeshVertex) break;
 				}
 

@@ -24,6 +24,7 @@ namespace Nucleus.ModelEditor
 		public abstract string EditorIcon { get; }
 
 		public virtual bool HoverTest(Vector2F gridPos) => false;
+		public virtual bool HoverTestOpacity(Vector2F gridPos) => true;
 
 		[JsonIgnore] public abstract string SingleName { get; }
 		[JsonIgnore] public abstract string PluralName { get; }

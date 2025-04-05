@@ -1,11 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.ManagedMemory;
 using Nucleus.Models;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -187,9 +189,66 @@ namespace Nucleus.ModelEditor
 			Rlgl.DrawRenderBatchActive();
 		}
 
+		public bool HoverTestQuad(ref QuadPoints quadpoints, Vector2F gridPos) {
+			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
+		}
+
+		public bool DidPassOpacity { get; private set; } = false;
+		/// <summary>
+		/// Tests the opacity of the image. Should only be called when you 
+		/// </summary>
+		/// <param name="quadpoints"></param>
+		/// <param name="gridPos"></param>
+		/// <returns></returns>
+		public override bool HoverTestOpacity(Vector2F gridPos) {
+			var quadpoints = this.QuadPoints();
+			// Should only be called when the quad test passes, so if no image available,
+			// just return true and throw an assert for debugging
+			Debug.Assert(quadpoints.Texture.HasCPUImage, "No CPU image available!");
+			if (!quadpoints.Texture.HasCPUImage) {
+				DidPassOpacity = true;
+				return true;
+			}
+
+			var image = quadpoints.Texture.GetCPUImage();
+			var region = quadpoints.Region;
+			float width = image.Width, height = image.Height;
+				float regionWidth = region.W, regionHeight = region.H;
+			// translate world gridpos to local pos
+			var localPos = WorldTransform.WorldToLocal(gridPos);
+
+			float trueX = (float)NMath.Remap(localPos.X, -regionWidth / 2, regionWidth / 2, region.X, region.X + regionWidth);
+			float trueY = (float)NMath.Remap(localPos.Y, regionHeight / 2, -regionHeight / 2, region.Y, region.Y + regionHeight);
+
+			bool alphatest = !image.IsTransparent(new(trueX, trueY));
+
+			// don't waste debugoverlay calls
+			/*
+			if (DebugOverlay.Enabled) {
+				DebugOverlay.Text($"Pos:          {localPos}", new(0, 680));
+				DebugOverlay.Text($"Region Pos:   {region.X}, {region.Y}", new(0, 700));
+				DebugOverlay.Text($"Region Size:  {regionWidth}, {regionHeight}", new(0, 720));
+				DebugOverlay.Text($"Remapped Pos: {trueX}, {trueY}", new(0, 740));
+				var drawTextureAt = new Vector2F(32);
+				DebugOverlay.Texture(quadpoints.Texture, drawTextureAt, new Vector2F(image.Width, image.Height) / 2, color: Color.Gray);
+				DebugOverlay.Texture(quadpoints.Texture, drawTextureAt + (new Vector2F(region.X, region.Y) / 2), new Vector2F(region.W, region.H) / 2,
+					new(region.X / width, region.Y / height),
+					new((region.X + region.W) / width, region.Y / height),
+					new(region.X / width, (region.Y + region.H) / height),
+					new((region.X + region.W) / width, (region.Y + region.H) / height)
+				);
+
+				DebugOverlay.Circle(drawTextureAt + (new Vector2F(trueX, trueY) / 2), 4, Color.Red);
+			}*/
+
+			DidPassOpacity = alphatest;
+			return DidPassOpacity;
+		}
+
 		public override bool HoverTest(Vector2F gridPos) {
 			var quadpoints = this.QuadPoints();
-			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
+			
+			return HoverTestQuad(ref quadpoints, gridPos);
 		}
 
 		public bool Sequence { get; set; }
