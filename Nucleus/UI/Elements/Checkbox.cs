@@ -2,13 +2,14 @@
 using Nucleus.Types;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
-	public class Checkbox : Button
+	public class Checkbox : Button, IBindableToConVar
 	{
 		public bool Checked { get; set; } = false;
 		protected override void Initialize() {
@@ -18,6 +19,24 @@ namespace Nucleus.UI
 		public event CheckboxClicked? OnCheckedChanged;
 
 		private HashSet<Checkbox> __otherRadioButtons = [];
+
+		public void BindToConVar(string convar) {
+			ConVar? cv = (ConVar?)ConCommandBase.Get(convar);
+			Debug.Assert(cv != null, "Tried to bind to a non-existant convar");
+			if (cv == null) return;
+
+			BindToConVar(cv);
+		}
+
+		public void BindToConVar(ConVar cv) {
+			Checked = cv.GetBool();
+			OnCheckedChanged += (_) 
+				=> cv.SetValue(Checked);
+		}
+
+		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) {
+			Checked = self.GetBool();
+		}
 
 		public bool Radio { get; set; } = false;
 		public void LinkRadioButton(Checkbox other) {

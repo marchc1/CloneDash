@@ -358,7 +358,7 @@ namespace Nucleus
 		public void SetValue(string str) => Update(str);
 		public void SetValue(int i) => Update(Convert.ToString(i, CultureInfo.InvariantCulture));
 		public void SetValue(double d) => Update(Convert.ToString(d, CultureInfo.InvariantCulture));
-		public void SetValue(bool b) => Update(Convert.ToString(b, CultureInfo.InvariantCulture));
+		public void SetValue(bool b) => Update(b ? "1" : "0");
 		public static ConVar Register(
 			string name,
 			string defaultValue,

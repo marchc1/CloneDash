@@ -24,6 +24,10 @@ namespace Nucleus.ModelEditor
 	}
 	public class EditMeshOperator : Operator
 	{
+		public static ConVar meshedit_triangles = ConVar.Register("meshedit_triangles", "0", ConsoleFlags.Saved, "Visualizes the triangulated mesh attachment when using the Edit Mesh operator.");
+		public static ConVar meshedit_dim = ConVar.Register("meshedit_dim", "0", ConsoleFlags.Saved, "Dims the mesh attachment's texture when using the Edit Mesh operator.");
+		public static ConVar meshedit_isolate = ConVar.Register("meshedit_isolate", "0", ConsoleFlags.Saved, "Isolates the active mesh attachment when using the Edit Mesh operator.");
+
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";
 		public override bool OverrideSelection => true;
@@ -35,7 +39,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
-
+		private Checkbox Triangles, Dim, Isolate;
 		List<MeshVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
@@ -64,6 +68,16 @@ namespace Nucleus.ModelEditor
 
 			NewButton = row2.Add(new Button() { Text = "New", AutoSize = true, TextPadding = new(32, 0) }); NewButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.New);
 			ResetButton = row2.Add(new Button() { Text = "Reset", AutoSize = true, TextPadding = new(32, 0) }); ResetButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.Reset);
+
+			var row3 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
+
+			row3.Add(out Triangles); row3.Add(new Label() { Text = "Triangles", AutoSize = true });
+			row3.Add(out Dim); row3.Add(new Label() { Text = "Dim", AutoSize = true });
+			row3.Add(out Isolate); row3.Add(new Label() { Text = "Isolate", AutoSize = true });
+
+			Triangles.BindToConVar(meshedit_triangles);
+			Dim.BindToConVar(meshedit_dim);
+			Isolate.BindToConVar(meshedit_isolate);
 
 			UpdateButtonState();
 
