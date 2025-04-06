@@ -10,6 +10,7 @@ using Poly2Tri;
 using Raylib_cs;
 using System.Buffers;
 using System.Diagnostics;
+using System.Net.Mail;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -355,7 +356,7 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorMeshWeights> Weights = [];
 
-		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight) {
+		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
 			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
 			Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
 			if (weightData == null) return;
@@ -368,11 +369,15 @@ namespace Nucleus.ModelEditor
 			if (Weights.Count <= 0)
 				return basePosition;
 
+			Vector2F pos = Vector2F.Zero;
 			foreach (var weightData in Weights) {
 				if (weightData.IsEmpty) continue;
+				var vertLocalPos = weightData.TryGetVertexPosition(vertex);
+				var weight = weightData.TryGetVertexWeight(vertex);
+				pos += weightData.Bone.WorldTransform.LocalToWorld(vertLocalPos) * weight;
 			}
 
-			return basePosition;
+			return pos;
 		}
 
 		public override string SingleName => "mesh";

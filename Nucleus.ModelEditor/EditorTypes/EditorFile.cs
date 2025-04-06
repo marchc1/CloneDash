@@ -498,12 +498,18 @@ namespace Nucleus.ModelEditor
 				// We don't need to waste time
 				var weight = weights[0];
 				foreach (var vertex in attachment.GetVertices())
-					attachment.SetVertexWeight(vertex, weight.Bone, 1);
+					attachment.SetVertexWeight(vertex, weight.Bone, 1, false); // skip validation to save time
 
 				return;
 			}
 
-			throw new Exception();
+			// todo: implement *actual* autobinding
+
+			float sharedWeight = 1f / weights.Count;
+			foreach(var weightData in weights) {
+				foreach (var vertex in attachment.GetVertices())
+					attachment.SetVertexWeight(vertex, weightData.Bone, sharedWeight, false); // skip validation to save time
+			}
 		}
 
 		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null) {

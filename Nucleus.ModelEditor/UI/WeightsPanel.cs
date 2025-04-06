@@ -92,7 +92,7 @@ public class WeightsPanel : Panel
 {
 	Panel props;
 	Panel topBtns;
-	Panel bottomBtns;
+	FlexPanel bottomBtns;
 	public ListView BoneOrder;
 	protected override void Initialize() {
 		Add(out props);
@@ -109,6 +109,8 @@ public class WeightsPanel : Panel
 		bottomBtns.Dock = Dock.Bottom;
 		bottomBtns.Size = new(0, 64);
 		bottomBtns.DrawPanelBackground = false;
+		bottomBtns.Direction = Directional180.Horizontal;
+		bottomBtns.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 		props.Add(out BoneOrder);
 		BoneOrder.Dock = Dock.Fill;
@@ -123,6 +125,12 @@ public class WeightsPanel : Panel
 
 		// TODO: flex panel these into rows
 		PropertiesPanel.OperatorButton<BindOperator>(bottomBtns, "Bind", null);
+		PropertiesPanel.ButtonIcon(bottomBtns, "Update", null, (_, _, _) => {
+			if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
+				return;
+
+			ModelEditor.Active.File.UpdateVertexPositions(meshAttachment);
+		});
 
 		ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 	}

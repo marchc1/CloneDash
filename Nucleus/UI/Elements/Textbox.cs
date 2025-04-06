@@ -128,6 +128,7 @@ namespace Nucleus.UI
 
 			if (Caret.HasSelection) {
 				var textSize = Graphics2D.GetTextSize(Text, Font, TextSize);
+
 				var selectionStart = Graphics2D.GetTextSize(Text.Substring(0, Caret.Start ?? 0), Font, TextSize).X;
 				var selectionSize = Graphics2D.GetTextSize(Text.Substring(Caret.Start ?? 0, Caret.End ?? 0), Font, TextSize);
 
