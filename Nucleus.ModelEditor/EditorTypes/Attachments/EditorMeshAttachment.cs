@@ -324,9 +324,9 @@ namespace Nucleus.ModelEditor
 	{
 		public EditorBone Bone;
 
-		private List<MeshVertex> __vertices;
-		private List<float> __weights;
-		private List<Vector2F> __positions;
+		private List<MeshVertex> __vertices = [];
+		private List<float> __weights = [];
+		private List<Vector2F> __positions = [];
 
 		public List<MeshVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
 		public List<float> Weights { get => __weights; set { Invalidated = true; __weights = value; } }
