@@ -519,7 +519,7 @@ namespace Nucleus.ModelEditor
 					continue;
 
 				foreach(var vertex in attachment.GetVertices()) {
-					weightData.Positions[vertex] = weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(vertex));
+					weightData.SetVertexPos(vertex, weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(vertex)));
 				}
 			}
 		}

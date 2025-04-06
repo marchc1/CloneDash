@@ -10,6 +10,7 @@ using Poly2Tri;
 using Raylib_cs;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Mail;
 using Triangle = Poly2Tri.Triangle;
 
@@ -316,26 +317,134 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
-	public class EditorMeshWeights {
+	// So the reason this is structured so weirdly: Newtonsoft.Json doesn't seem to like serializing
+	// MeshVertex types as keys. This weird pseudo-dictionary-only-really-o(1)-during-runtime structure
+	// is *probably* good enough for the editor, but I hate it regardless and it's a mess
+	public class EditorMeshWeights
+	{
 		public EditorBone Bone;
-		public Dictionary<MeshVertex, float> Weights = [];
-		public Dictionary<MeshVertex, Vector2F> Positions = [];
+
+		private List<MeshVertex> __vertices;
+		private List<float> __weights;
+		private List<Vector2F> __positions;
+
+		public List<MeshVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
+		public List<float> Weights { get => __weights; set { Invalidated = true; __weights = value; } }
+		public List<Vector2F> Positions { get => __positions; set { Invalidated = true; __positions = value; } }
+
+		[JsonIgnore] private Dictionary<MeshVertex, float> TrueWeights = [];
+		[JsonIgnore] private Dictionary<MeshVertex, Vector2F> TruePositions = [];
+		[JsonIgnore] public bool Invalidated = true;
+
+		public void SetVertexWeight(MeshVertex vertex, float weight) {
+			bool found = false;
+			for (int i = 0; i < Vertices.Count; i++) {
+				if (Vertices[i] == vertex) {
+					Weights[i] = weight;
+					found = true;
+					break;
+				}
+			}
+
+			if (found == false) {
+				Vertices.Add(vertex);
+				Weights.Add(weight);
+				Positions.Add(Vector2F.Zero);
+			}
+
+
+			Invalidated = true;
+		}
+		public void SetVertexPos(MeshVertex vertex, Vector2F pos) {
+			bool found = false;
+			for (int i = 0; i < Vertices.Count; i++) {
+				if (Vertices[i] == vertex) {
+					Positions[i] = pos;
+					found = true;
+					break;
+				}
+			}
+
+			if (found == false) {
+				Vertices.Add(vertex);
+				Weights.Add(0);
+				Positions.Add(pos);
+			}
+
+			Invalidated = true;
+		}
+
+		public bool AddVertex(MeshVertex vertex, float? weight = null, Vector2F? pos = null) {
+			for (int i = 0; i < Vertices.Count; i++) {
+				if (Vertices[i] == vertex) {
+					Weights[i] = weight ?? Weights[i];
+					Positions[i] = pos ?? Positions[i];
+					Invalidated = true;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public bool RemoveVertex(MeshVertex vertex) {
+			for (int i = 0; i < Vertices.Count; i++) {
+				if (Vertices[i] == vertex) {
+					Vertices.RemoveAt(i);
+					Positions.RemoveAt(i);
+					Weights.RemoveAt(i);
+					Invalidated = true;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public void Validate() {
+			if (!Invalidated) return;
+
+			TrueWeights.Clear();
+			TruePositions.Clear();
+
+			Debug.Assert(Vertices.Count == Weights.Count && Weights.Count == Positions.Count && Vertices.Count == Positions.Count);
+
+			for (int i = 0; i < Vertices.Count; i++) {
+				TrueWeights[Vertices[i]] = Weights[i];
+				TruePositions[Vertices[i]] = Positions[i];
+			}
+
+			Invalidated = false;
+		}
+
 
 		/// <summary>
 		/// Defaults to 0
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public float TryGetVertexWeight(MeshVertex vertex) 
-			=> Weights.TryGetValue(vertex, out var value) ? value : 0;
+		public float TryGetVertexWeight(MeshVertex vertex) {
+			Validate();
+			return TrueWeights.TryGetValue(vertex, out var value) ? value : 0;
+		}
+		public bool TryGetVertexWeight(MeshVertex vertex, [NotNullWhen(true)]out float weight) {
+			Validate();
+			return TrueWeights.TryGetValue(vertex, out weight);
+		}
 
 		/// <summary>
 		/// Defaults to <see cref="Vector2F.Zero"/>
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public Vector2F TryGetVertexPosition(MeshVertex vertex) 
-			=> Positions.TryGetValue(vertex, out var value) ? value : Vector2F.Zero;
+		public Vector2F TryGetVertexPosition(MeshVertex vertex) {
+			Validate();
+			return TruePositions.TryGetValue(vertex, out var value) ? value : Vector2F.Zero;
+		}
+		public bool TryGetVertexPosition(MeshVertex vertex, [NotNullWhen(true)] out Vector2F pos) {
+			Validate();
+			return TruePositions.TryGetValue(vertex, out pos);
+		}
 
 		public int Count {
 			get {
@@ -349,6 +458,7 @@ namespace Nucleus.ModelEditor
 		public void Clear() {
 			Weights.Clear();
 			Positions.Clear();
+			Invalidated = true;
 		}
 	}
 
@@ -361,7 +471,7 @@ namespace Nucleus.ModelEditor
 			Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
 			if (weightData == null) return;
 
-			weightData.Weights[vertex] = weight;
+			weightData.SetVertexWeight(vertex, weight);
 		}
 
 		public Vector2F CalculateVertexWorldPosition(Transformation transform, MeshVertex vertex) {
@@ -517,11 +627,11 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		[JsonIgnore] public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
+		//[JsonIgnore] public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
 
 		private void RefreshDelaunator() {
 			if (Invalidated) {
-				triPointToMeshVertex.Clear();
+				//triPointToMeshVertex.Clear();
 
 				Span<float> x = stackalloc float[ConstrainedEdges.Count];
 				Span<float> y = stackalloc float[ConstrainedEdges.Count];
@@ -542,11 +652,11 @@ namespace Nucleus.ModelEditor
 
 				ArrayPool<MeshVertex>.Shared.Return(z, true);
 
-				foreach (var point in Shape.Points)
-					triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
+				//foreach (var point in Shape.Points)
+				//triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
 
-				foreach (var point in Shape.SteinerPoints)
-					triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
+				//foreach (var point in Shape.SteinerPoints)
+				//triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
 			}
 		}
 
@@ -695,8 +805,8 @@ namespace Nucleus.ModelEditor
 			for (int i = 0; i < ConstrainedEdges.Count; i++) {
 				var edge1 = ConstrainedEdges[i];
 				var edge2 = ConstrainedEdges[(i + 1) % ConstrainedEdges.Count];
-				var isHighlighted = 
-						((edge1.Hovered && meshOp == null) 
+				var isHighlighted =
+						((edge1.Hovered && meshOp == null)
 						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
 					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
 
@@ -723,7 +833,7 @@ namespace Nucleus.ModelEditor
 
 			for (int i = 0; i < SteinerPoints.Count; i++) {
 				var point = SteinerPoints[i];
-				var isHighlighted = 
+				var isHighlighted =
 					((point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint))
 					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
 

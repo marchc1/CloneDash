@@ -164,7 +164,7 @@ public class WeightsPanel : Panel
 		bool sharesWeight = true;
 
 		foreach (var vertex in meshAttachment.GetSelectedVertices()) {
-			var vertexWeight = bonepair.Weights.TryGetValue(vertex, out float _t) ? _t : -1;
+			var vertexWeight = bonepair.TryGetVertexWeight(vertex, out float w) ? w : -1;
 
 			if (!hasWeight && vertexWeight != -1) {
 				weight = vertexWeight;
