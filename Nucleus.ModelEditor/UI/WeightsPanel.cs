@@ -93,6 +93,7 @@ public class WeightsPanel : Panel
 	Panel props;
 	Panel topBtns;
 	FlexPanel bottomBtns;
+	NumSlider numSlider;
 	public ListView BoneOrder;
 	protected override void Initialize() {
 		Add(out props);
@@ -123,6 +124,17 @@ public class WeightsPanel : Panel
 		lblBones.TextSize = 22;
 		lblBones.Dock = Dock.Bottom;
 
+		var numslider = topBtns.Add<NumSlider>();
+		numslider.MinimumValue = 0;
+		numslider.MaximumValue = 100;
+		numslider.AutoSize = true;
+		numslider.TextSize = 22;
+		numslider.Dock = Dock.Bottom;
+		numslider.Digits = 2;
+		numslider.Suffix = "%";
+		numslider.OnValueChanged += Numslider_OnValueChanged;
+		numSlider = numslider;
+
 		// TODO: flex panel these into rows
 		PropertiesPanel.OperatorButton<BindOperator>(bottomBtns, "Bind", null);
 		PropertiesPanel.ButtonIcon(bottomBtns, "Update", null, (_, _, _) => {
@@ -135,18 +147,58 @@ public class WeightsPanel : Panel
 		ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 	}
 
+	MeshVertex? activeVertex;
+	EditorMeshAttachment? activeAttachment;
+	EditorMeshWeights? activeWeights;
+
+	private void Numslider_OnValueChanged(NumSlider self, double oldValue, double newValue) {
+		if (activeVertex == null) return;
+		if (activeWeights == null) return;
+		if (activeAttachment == null) return;
+
+		activeAttachment.SetVertexWeight(activeVertex, activeWeights.Bone, (float)newValue / 100f, true);
+	}
+
 	private void Active_SelectedChanged() {
 		BoneOrder.ClearChildren();
 
+		if (activeAttachment != null)
+			activeAttachment.VertexSelected -= ActiveAttachment_VertexSelected;
+
+		activeAttachment = null;
+		activeVertex = null;
+
 		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
 			return;
+
+		activeAttachment = meshAttachment;
+		activeAttachment.VertexSelected += ActiveAttachment_VertexSelected;
 
 		foreach (var bonepair in meshAttachment.Weights) {
 			var btn = BoneOrder.Add<ListViewItem>();
 			btn.Text = bonepair.Bone.Name;
 			btn.SetTag("bonepair", bonepair);
 			btn.PaintOverride += Btn_PaintOverride;
+			btn.MouseReleaseEvent += Btn_MouseReleaseEvent;
 		}
+	}
+
+	private void ActiveAttachment_VertexSelected(MeshVertex vertex) {
+		activeVertex = vertex;
+	}
+
+	private void Btn_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
+			return;
+
+		var lvi = self as ListViewItem ?? throw new Exception();
+		EditorMeshWeights bonepair = self.GetTag<EditorMeshWeights>("bonepair");
+		activeWeights = bonepair;
+		var vertex = meshAttachment.SelectedVertices.FirstOrDefault();
+
+		if (vertex == null) return;
+
+		numSlider.SetValueNoUpdate(bonepair.TryGetVertexWeight(vertex) * 100);
 	}
 
 	private void Btn_PaintOverride(Element self, float width, float height) {

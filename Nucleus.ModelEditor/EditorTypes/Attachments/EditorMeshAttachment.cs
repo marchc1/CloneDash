@@ -466,10 +466,65 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorMeshWeights> Weights = [];
 
+		public delegate void OnVertexSelected(MeshVertex vertex);
+		public event OnVertexSelected? VertexSelected;
+
+		public static void NormalizeWeights(float[] numbers, int refrainIndex) {
+			if (numbers == null || numbers.Length == 0)
+				throw new ArgumentException("Input array must not be null or empty.");
+			if (refrainIndex < 0 || refrainIndex >= numbers.Length)
+				throw new ArgumentOutOfRangeException(nameof(refrainIndex), "Index out of range.");
+
+			float refrainValue = numbers[refrainIndex];
+			float totalOther = 0f;
+
+			for (int i = 0; i < numbers.Length; i++) {
+				if (i != refrainIndex)
+					totalOther += numbers[i];
+			}
+
+			float targetSum = 1f - refrainValue;
+
+			if (totalOther == 0f) {
+				for (int i = 0; i < numbers.Length; i++) {
+					if (i != refrainIndex)
+						numbers[i] = targetSum / (numbers.Length - 1);
+				}
+			}
+			else {
+				float scale = targetSum / totalOther;
+
+				for (int i = 0; i < numbers.Length; i++) {
+					if (i != refrainIndex)
+						numbers[i] *= scale;
+				}
+			}
+
+			numbers[refrainIndex] = refrainValue;
+		}
+
 		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
 			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
 			Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
 			if (weightData == null) return;
+
+			if (validate) {
+				// Get the delta weight
+				var deltaWeight = weight - weightData.TryGetVertexWeight(vertex);
+				// Add up all weights
+				float[] allWeights = new float[Weights.Count];
+				int refrain = -1;
+				for (int i = 0; i < Weights.Count; i++) {
+					allWeights[i] = Weights[i].TryGetVertexWeight(vertex);
+					if (Weights[i].Bone == bone)
+						refrain = i;
+				}
+				
+				NormalizeWeights(allWeights, refrain);
+				for (int i = 0; i < allWeights.Length; i++) {
+					Weights[i].SetVertexWeight(vertex, allWeights[i]);
+				}
+			}
 
 			weightData.SetVertexWeight(vertex, weight);
 		}
@@ -511,6 +566,7 @@ namespace Nucleus.ModelEditor
 
 			SelectedVertices.Clear();
 			SelectedVertices.Add(vertex);
+			VertexSelected?.Invoke(vertex);
 		}
 
 		public IEnumerable<MeshVertex> GetSelectedVertices() => SelectedVertices;
