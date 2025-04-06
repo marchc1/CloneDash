@@ -620,6 +620,7 @@ namespace Nucleus.Engine
 			if (ui_hoverresult.GetBool() && UI.Hovered != null) {
 				Graphics2D.SetDrawColor(255, 255, 255);
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
+				Graphics2D.DrawText(UI.Hovered.GetGlobalPosition() + new Vector2F(0, UI.Hovered.RenderBounds.H), $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
 			}
 
 			UnlockEntityBuffer();

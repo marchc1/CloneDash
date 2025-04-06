@@ -724,7 +724,7 @@ namespace Nucleus.UI
 		public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
 			var containsPoint = bounds.ContainsPoint(mousePos);
 			if (containsPoint && IValidatable.IsValid(Parent)) {
-				var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition(), Parent.RenderBounds.Size);
+				var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition() + Parent.ChildRenderOffset, Parent.RenderBounds.Size);
 				return scissor.ContainsPoint(mousePos);
 			}
 
