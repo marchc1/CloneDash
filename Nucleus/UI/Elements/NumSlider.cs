@@ -92,7 +92,7 @@ namespace Nucleus.UI
 			SetValueNoUpdate(Value);
 		}
 		protected override void OnThink(FrameState frameState) {
-			if(didDrag)
+			if(didDrag && Depressed)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
 			else if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
