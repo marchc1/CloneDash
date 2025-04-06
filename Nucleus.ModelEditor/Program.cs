@@ -290,9 +290,6 @@ namespace Nucleus.ModelEditor
 			WeightsTab.Panel.Add(out Weights);
 			Weights.Dock = Dock.Fill;
 
-			OutlinerTab.Panel.Add(out Outliner);
-			Outliner.Dock = Dock.Fill;
-
 			SetupPanel.Add(out Editor);
 			Editor.Dock = Dock.Fill;
 
