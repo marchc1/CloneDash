@@ -517,7 +517,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
+		[JsonIgnore] public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
 
 		private void RefreshDelaunator() {
 			if (Invalidated) {
