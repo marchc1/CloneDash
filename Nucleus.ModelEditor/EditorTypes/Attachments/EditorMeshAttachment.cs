@@ -829,9 +829,9 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetDrawColor(140, 140, 160);
 			foreach (var tri in triangles) {
-				var v1 = WorldTransform.LocalToWorld(tri.Points[0].ToNumerics().ToNucleus());
-				var v2 = WorldTransform.LocalToWorld(tri.Points[1].ToNumerics().ToNucleus());
-				var v3 = WorldTransform.LocalToWorld(tri.Points[2].ToNumerics().ToNucleus());
+				var v1 = CalculateVertexWorldPosition(WorldTransform, tri.Points[0].AssociatedObject as MeshVertex);
+				var v2 = CalculateVertexWorldPosition(WorldTransform, tri.Points[1].AssociatedObject as MeshVertex);
+				var v3 = CalculateVertexWorldPosition(WorldTransform, tri.Points[2].AssociatedObject as MeshVertex);
 
 				var offset = Graphics2D.Offset;
 
@@ -876,8 +876,8 @@ namespace Nucleus.ModelEditor
 
 				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
 
-				var vertex1 = WorldTransform.LocalToWorld(edge1);
-				var vertex2 = WorldTransform.LocalToWorld(edge2);
+				var vertex1 = CalculateVertexWorldPosition(WorldTransform, edge1);
+				var vertex2 = CalculateVertexWorldPosition(WorldTransform, edge2);
 
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
