@@ -207,6 +207,7 @@ namespace Nucleus.ModelEditor
 						var clamped = ClampVertexPosition(localized);
 
 						ClickedVertex.SetPos(clamped);
+						ModelEditor.Active.File.UpdateVertexPositions(ClickedVertex.Attachment);
 
 						Attachment.Invalidate();
 					}
