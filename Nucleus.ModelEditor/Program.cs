@@ -234,6 +234,9 @@ namespace Nucleus.ModelEditor
 		public delegate void ModelEditorChangedSetupAnimateModeD(ModelEditor editor, bool animationMode);
 		public event ModelEditorChangedSetupAnimateModeD? SetupAnimateModeChanged;
 		public void ToggleModes() {
+			// Cancel operator
+			File.DeactivateOperator(true);
+
 			AnimationMode = !AnimationMode;
 			if (AnimationMode) {
 				SwitchMode.Text = "Animate Mode";
