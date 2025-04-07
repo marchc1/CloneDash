@@ -730,7 +730,12 @@ namespace Nucleus.ModelEditor
 			float accomodation = intendedAspectRatio / currentAspectRatio;
 			widthMultiplied = width * accomodation;
 
-			Surface.SetViewport((int)(globalpos.X - ((widthMultiplied - width) / 2)), 0, (int)(widthMultiplied), (int)height);
+			Surface.SetViewport(
+				/* X */   (int)(globalpos.X - ((widthMultiplied - width) / 2)),
+				/* Y */   oldSize.H - globalpos.Y - height,
+				/* W */   (int)(widthMultiplied),
+				/* H */   (int)height
+			);
 			Raylib.BeginMode3D(cam);
 			Rlgl.DisableBackfaceCulling();
 			Rlgl.DisableDepthMask();
