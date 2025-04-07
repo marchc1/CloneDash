@@ -839,19 +839,32 @@ namespace Nucleus.ModelEditor
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.SetLineWidth(2);
 
+			Dictionary<TriPoint, HashSet<TriPoint>> avoidDuplicateLineDraws = [];
+
 			Graphics2D.SetDrawColor(140, 140, 160);
 			foreach (var tri in triangles) {
-				var v1 = CalculateVertexWorldPosition(WorldTransform, tri.Points[0].AssociatedObject as MeshVertex);
-				var v2 = CalculateVertexWorldPosition(WorldTransform, tri.Points[1].AssociatedObject as MeshVertex);
-				var v3 = CalculateVertexWorldPosition(WorldTransform, tri.Points[2].AssociatedObject as MeshVertex);
+				var tp1 = tri.Points[0];
+				var tp2 = tri.Points[1];
+				var tp3 = tri.Points[2];
+
+				if (!avoidDuplicateLineDraws.TryGetValue(tp1, out var h1)) { h1 = []; avoidDuplicateLineDraws[tp1] = h1; }
+				if (!avoidDuplicateLineDraws.TryGetValue(tp2, out var h2)) { h2 = []; avoidDuplicateLineDraws[tp2] = h2; }
+				if (!avoidDuplicateLineDraws.TryGetValue(tp3, out var h3)) { h3 = []; avoidDuplicateLineDraws[tp3] = h3; }
+
+				var v1 = CalculateVertexWorldPosition(WorldTransform, tp1.AssociatedObject as MeshVertex ?? throw new Exception());
+				var v2 = CalculateVertexWorldPosition(WorldTransform, tp2.AssociatedObject as MeshVertex ?? throw new Exception());
+				var v3 = CalculateVertexWorldPosition(WorldTransform, tp3.AssociatedObject as MeshVertex ?? throw new Exception());
 
 				var offset = Graphics2D.Offset;
 
 				Graphics2D.ResetDrawingOffset();
 
-				Graphics2D.DrawDottedLine(v1, v2, 0.5f);
-				Graphics2D.DrawDottedLine(v2, v3, 0.5f);
-				Graphics2D.DrawDottedLine(v3, v1, 0.5f);
+				if (h1.Add(tp2) && h2.Add(tp1))
+					Graphics2D.DrawDottedLine(v1, v2, 0.5f);
+				if (h2.Add(tp3) && h3.Add(tp2))
+					Graphics2D.DrawDottedLine(v2, v3, 0.5f);
+				if (h3.Add(tp1) && h1.Add(tp3))
+					Graphics2D.DrawDottedLine(v3, v1, 0.5f);
 
 				Graphics2D.OffsetDrawing(offset);
 			}
@@ -887,7 +900,7 @@ namespace Nucleus.ModelEditor
 					var weightPair = weights[i];
 					bool isSelectedBone = selectedBone == weightPair.Bone;
 					float weight = weightPair.TryGetVertexWeight(vertex);
-					
+
 					Raylib.DrawCircleSector(
 						drawPos,
 						(size + ((isSelectedBone || isSelectedTruly) ? 6 : 0)) / camsize, totalWeight * 360, (totalWeight * 360) + (weight * 360),
