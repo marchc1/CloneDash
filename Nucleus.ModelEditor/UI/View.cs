@@ -10,10 +10,93 @@ using System.Xml.Linq;
 
 namespace Nucleus.ModelEditor.UI;
 
+// Some class 'typedefs' of sorts for switch-case reasons
+public class ViewDividerHeader : Panel;
+public class ViewDivider : Button;
+public class ViewButtonSelector : Button;
+
+
+public struct ViewMoveResult
+{
+	/// <summary>
+	/// The View that is being moved.
+	/// </summary>
+	public View ViewTarget;
+	/// <summary>
+	/// If moving the view is impossible.
+	/// </summary>
+	public bool Failed;
+	/// <summary>
+	/// If false, will create a new sub-view tab within <see cref="DivisionTarget"/> at index <see cref="TabIndex"/>.
+	/// In that case, <see cref="DivisionTarget"/> may be the same division that the <see cref="ViewTarget"/> is apart of (in the case of
+	/// just moving a view from one tab position to another).
+	/// <br/>
+	/// <br/>
+	/// If true, creates a sub-division off of <see cref="DivisionTarget"/> with <see cref="Direction"/>
+	/// </summary>
+	public bool CreatesNewViewDivision;
+	/// <summary>
+	/// This fields purpose depends on <see cref="CreatesNewViewDivision"/>
+	/// </summary>
+	public ViewDivision DivisionTarget;
+	/// <summary>
+	/// Only applicable when <see cref="CreatesNewViewDivision"/> == true.
+	/// </summary>
+	public Dock Direction;
+	/// <summary>
+	/// Only applicable when <see cref="CreatesNewViewDivision"/> == false.
+	/// </summary>
+	public int TabIndex;
+
+	public static ViewMoveResult CreateMoveResult(View target, UserInterface UI) {
+		ViewMoveResult result = new ViewMoveResult();
+		result.ViewTarget = target;
+
+		switch (UI.Hovered) {
+			case ViewButtonSelector buttonSelector:
+				ViewDividerHeader header = buttonSelector.Parent as ViewDividerHeader ?? throw new Exception("Parent mismatch!");
+				result.DivisionTarget = header.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
+				// todo: tab index. Just move it to the furthest side for now
+				result.TabIndex = result.DivisionTarget.Views.Count;
+				break;
+			case ViewDividerHeader divider:
+				result.DivisionTarget = divider.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
+				result.TabIndex = result.DivisionTarget.Views.Count;
+				break;
+			default:
+				// Navigate through the parent chain until we find a ViewDivision (or just break out)
+				Element? element = UI.Hovered;
+				while (IValidatable.IsValid(element)) {
+					if (element is ViewDivision viewDiv) {
+						result.DivisionTarget = viewDiv;
+						result.CreatesNewViewDivision = true;
+						// Figure out direction
+						if (viewDiv.ActiveView != null) {
+							var center = viewDiv.ActiveView.GetGlobalPosition();
+							center += viewDiv.ActiveView.RenderBounds.Size / 2;
+							// TODO: finish implementing this
+						}
+						result.CreatesNewViewDivision = true;
+
+						return result;
+					}
+
+					element = element.Parent;
+				}
+
+				result.Failed = true;
+				break;
+		}
+
+		return result;
+	}
+}
+
+
 public class ViewSplit
 {
 	public ViewDivision Division { get; set; }
-	public Button Divider { get; set; }
+	public ViewDivider Divider { get; set; }
 	public Dock Direction {
 		get => Division.Dock;
 		set => Division.Dock = value;
@@ -28,7 +111,7 @@ public class ViewSplit
 		}
 	}
 
-	public ViewSplit(ViewDivision div, Button divider) {
+	public ViewSplit(ViewDivision div, ViewDivider divider) {
 		Division = div;
 		Divider = divider;
 
@@ -70,8 +153,8 @@ public class ViewDivision : Panel
 	public ViewDivision ParentDivision { get; internal set; }
 
 	List<ViewSplit> splits = [];
-	Panel header;
-	List<Button> buttons = [];
+	ViewDividerHeader header;
+	List<ViewButtonSelector> buttons = [];
 
 	public List<View> Views = [];
 	public int ActiveIndex = -1;
@@ -79,7 +162,7 @@ public class ViewDivision : Panel
 	public void UpdateViewButtonHighlight() {
 		for (int i = 0; i < buttons.Count; i++) {
 			var active = i == ActiveIndex;
-			Button button = buttons[i];
+			ViewButtonSelector button = buttons[i];
 			button.BackgroundColor = new(150, 160, 170, active ? 90 : 35);
 		}
 	}
@@ -89,7 +172,7 @@ public class ViewDivision : Panel
 		header.DockPadding = RectangleF.Zero;
 		buttons.Clear();
 		foreach (var view in Views) {
-			var switcher = header.Add<Button>();
+			var switcher = header.Add<ViewButtonSelector>();
 			switcher.Dock = Dock.Left;
 			switcher.AutoSize = true;
 			switcher.BorderSize = 0;
@@ -98,6 +181,41 @@ public class ViewDivision : Panel
 			switcher.SetTag("view", view);
 			switcher.MouseReleaseEvent += (_, _, _) => {
 				SetActive(view);
+			};
+			Vector2F clickPos = Vector2F.Zero;
+			bool dragging = false;
+			Button? showDraggedTab = null;
+			switcher.MouseClickEvent += (self, state, btn) => {
+				clickPos = state.MouseState.MousePos;
+			};
+			switcher.MouseDragEvent += (self, state, delta) => {
+				if (showDraggedTab != null) {
+					showDraggedTab.Position = state.MouseState.MousePos + new Vector2F(0, -14);
+				}
+
+				if (dragging) return;
+
+				var distance = state.MouseState.MousePos.Distance(clickPos);
+				if (distance > 8) {
+					dragging = true;
+					showDraggedTab = UI.Add<Button>();
+					showDraggedTab.Origin = Anchor.Center;
+					showDraggedTab.Position = state.MouseState.MousePos + new Vector2F(0, -16);
+					showDraggedTab.OnHoverTest += Passthru;
+					showDraggedTab.AutoSize = true;
+				}
+			};
+			switcher.MouseReleasedOrLostEvent += (self, state, btn, lost) => {
+				if (dragging) {
+					Element? hoveredUI = state.HoveredUIElement;
+					int index = 0;
+					ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(view, UI);
+				}
+
+				showDraggedTab?.Remove();
+				showDraggedTab = null;
+				clickPos = Vector2F.Zero;
+				dragging = false;
 			};
 			buttons.Add(switcher);
 		}
@@ -114,8 +232,8 @@ public class ViewDivision : Panel
 		return view;
 	}
 
-	public Button AddDivider() {
-		Button divider = Add<Button>();
+	public ViewDivider AddDivider() {
+		ViewDivider divider = Add<ViewDivider>();
 		divider.Size = new(8);
 		divider.BorderSize = 0;
 		divider.PaintOverride += (e, w, h) => {
@@ -199,6 +317,7 @@ public class ViewDivision : Panel
 
 		View? view = this.ActiveView;
 		if (view == null) return;
+		view.Visible = view.Enabled = true;
 
 		view.SetParent(this);
 		view.MoveToFront();
