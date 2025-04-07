@@ -10,7 +10,25 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.ModelEditor
 {
+	public class OutlinerAndProperties : View
+	{
+		public override string Name => "Outliner";
+		public OutlinerPanel Outliner;
+		public PropertiesPanel Properties;
 
+		protected override void Initialize() {
+			base.Initialize();
+
+			Add(out Properties);
+			Properties.Size = new(64);
+			Properties.Dock = Dock.Bottom;
+			Properties.DrawPanelBackground = true;
+			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
+
+			Add(out Outliner);
+			Outliner.Dock = Dock.Fill;
+		}
+	}
 	public record ActionStackData(Action Redo, Action Undo);
 	public class ActionStack
 	{
@@ -191,12 +209,13 @@ namespace Nucleus.ModelEditor
 		public static ModelEditor Active;
 
 
-		public static ConVar modeleditor_activetab = ConVar.Register("modeleditor_activetab", "", ConsoleFlags.Saved, "Active model editor tab");
+		public ViewPanel View;
 		public Panel SetupPanel;
 		public EditorPanel Editor;
 		public OutlinerPanel Outliner;
-		public WeightsPanel Weights;
 		public PropertiesPanel Properties;
+		public OutlinerAndProperties OutlinerAndProperties;
+		public WeightsPanel Weights;
 		public Button SwitchMode;
 
 		public EditorFile File = new();
@@ -239,9 +258,11 @@ namespace Nucleus.ModelEditor
 			AnimationMode = !AnimationMode;
 			if (AnimationMode) {
 				SwitchMode.Text = "Animate Mode";
+				View.SetActiveWorkspaceByName("Animate");
 			}
 			else {
 				SwitchMode.Text = "Setup Mode";
+				View.SetActiveWorkspaceByName("Setup");
 			}
 
 			foreach (var model in File.Models) {
@@ -253,7 +274,6 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Initialize(params object[] args) {
-			//EngineCore.ShowDebuggingInfo = true;
 
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
@@ -261,42 +281,33 @@ namespace Nucleus.ModelEditor
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
 
-			UI.Add(out SetupPanel);
-			SetupPanel.Dock = Dock.Fill;
-			SetupPanel.DrawPanelBackground = false;
+			UI.Add(out View);
+			View.Dock = Dock.Fill;
 
-			var rightSide = SetupPanel.Add<ResizablePanel>();
-			rightSide.Dock = Dock.Right;
-			rightSide.CanResizeTop = false;
-			rightSide.CanResizeBottom = false;
-			rightSide.CanResizeRight = false;
-			rightSide.Size = new(464, 0);
-			rightSide.DrawPanelBackground = false;
+			{
+				var setupWorkspace = View.AddWorkspace("Setup");
 
-			var tabOptions = rightSide.Add<TabView>();
-			tabOptions.Dock = Dock.Fill;
+				Editor = setupWorkspace.AddView(View.Add<EditorPanel>());
+				var split = setupWorkspace.SplitApart(Dock.Right);
+				split.SizePercentage = 0.25f;
 
-			var OutlinerTab = tabOptions.AddTab("Outliner");
-			var StatisticsTab = tabOptions.AddTab("Statistics");
-			var WeightsTab = tabOptions.AddTab("Weights");
+				OutlinerAndProperties = split.Division.AddView(split.Division.Add<OutlinerAndProperties>());
 
-			OutlinerTab.Panel.Add(out Properties);
-			Properties.Size = new(64);
-			Properties.Dock = Dock.Bottom;
-			Properties.DrawPanelBackground = true;
-			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
+				Outliner = OutlinerAndProperties.Outliner;
+				Properties = OutlinerAndProperties.Properties;
+				Weights = split.Division.AddView(split.Division.Add<WeightsPanel>());
+			}
 
-			OutlinerTab.Panel.Add(out Outliner);
-			Outliner.Dock = Dock.Fill;
+			{
+				var animateWorkspace = View.CopyWorkspace("Setup", "Animate");
 
-			WeightsTab.Panel.Add(out Weights);
-			Weights.Dock = Dock.Fill;
+				var animationTools = animateWorkspace.SplitApart(Dock.Bottom);
+				animationTools.SizePercentage = 0.2f;
+			}
 
-			SetupPanel.Add(out Editor);
-			Editor.Dock = Dock.Fill;
 
-			UI.Add(out SwitchMode);
-			SwitchMode.Position = new Vector2F(8) + new Vector2F(0, 36);
+			Editor.Add(out SwitchMode);
+			SwitchMode.Position = new Vector2F(8);
 			SwitchMode.Size = new(128, 32);
 			SwitchMode.TextSize = 20;
 			SwitchMode.Text = "Setup Mode";
@@ -322,8 +333,6 @@ namespace Nucleus.ModelEditor
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
 			File.Cleared += File_Cleared;
-
-			tabOptions.BindTabNameToConVar(modeleditor_activetab);
 		}
 
 		private void File_Cleared(EditorFile file) {
