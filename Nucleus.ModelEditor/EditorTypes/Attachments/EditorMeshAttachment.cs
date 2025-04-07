@@ -113,7 +113,7 @@ namespace Nucleus.ModelEditor
 			System.Numerics.Vector2 mp = (Attachment.WorldTransform.WorldToLocal(mousePos)).ToNumerics();
 
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
-			var dist = 16f / camsize;
+			var dist = 32f / camsize;
 			var array = (CurrentMode == EditMesh_Mode.New ? WorkingLines : Attachment.ShapeEdges);
 			for (int i = 0; i < array.Count; i++) {
 				var vertex = array[i];
@@ -170,7 +170,11 @@ namespace Nucleus.ModelEditor
 			switch (CurrentMode) {
 				case EditMesh_Mode.Create:
 					var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
-					MeshVertex vertex = MeshVertex.FromVector(newPoint, Attachment);
+
+					// TODO + HACK; the 0.05f thing avoids issues with duplicate points.
+					// Really, I probably should just... wait to start dragging before
+					// creating the vertex... just lazy right now
+					MeshVertex vertex = MeshVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
 					Attachment.SteinerPoints.Add(vertex);
 					Attachment.Invalidate();
 
@@ -306,7 +310,7 @@ namespace Nucleus.ModelEditor
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
 			var mp = ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos());
 
-			Raylib.DrawCircleV(mp.ToNumerics(), 7 / camsize, new(100, 180, 100));
+			Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, new(100, 180, 100));
 		}
 	}
 
@@ -356,6 +360,8 @@ namespace Nucleus.ModelEditor
 
 			if (this.Attachment != other.Attachment)
 				throw new InvalidOperationException("Cannot constrain, or unconstrain, two vertices from two separate mesh attachments. Something has gone horribly wrong.");
+
+			Debug.Assert(this != other, "Can not constrain a vertex to itself...");
 
 			other.ConstrainedHashSet.Add(this);
 			this.ConstrainedHashSet.Add(other);
@@ -978,7 +984,6 @@ namespace Nucleus.ModelEditor
 
 			Dictionary<TriPoint, HashSet<TriPoint>> avoidDuplicateLineDraws = [];
 
-			Graphics2D.SetDrawColor(140, 140, 160);
 			foreach (var tri in triangles) {
 				var tp1 = tri.Points[0];
 				var tp2 = tri.Points[1];
@@ -991,6 +996,13 @@ namespace Nucleus.ModelEditor
 				if (av1 == null || av2 == null || av3 == null)
 					continue;
 
+				bool ic1 = av1.IsConstrainedTo(av2);
+				bool ic2 = av2.IsConstrainedTo(av3);
+				bool ic3 = av3.IsConstrainedTo(av1);
+
+				var offset = Graphics2D.Offset;
+				Graphics2D.ResetDrawingOffset();
+
 				if (!avoidDuplicateLineDraws.TryGetValue(tp1, out var h1)) { h1 = []; avoidDuplicateLineDraws[tp1] = h1; }
 				if (!avoidDuplicateLineDraws.TryGetValue(tp2, out var h2)) { h2 = []; avoidDuplicateLineDraws[tp2] = h2; }
 				if (!avoidDuplicateLineDraws.TryGetValue(tp3, out var h3)) { h3 = []; avoidDuplicateLineDraws[tp3] = h3; }
@@ -999,15 +1011,18 @@ namespace Nucleus.ModelEditor
 				var v2 = CalculateVertexWorldPosition(WorldTransform, av2);
 				var v3 = CalculateVertexWorldPosition(WorldTransform, av3);
 
-				var offset = Graphics2D.Offset;
+				Graphics2D.SetDrawColor(245, 100, 20);
+				if (ic1) Graphics2D.DrawLine(v1, v2, 0.15f);
+				if (ic2) Graphics2D.DrawLine(v2, v3, 0.15f);
+				if (ic3) Graphics2D.DrawLine(v1, v1, 0.15f);
 
-				Graphics2D.ResetDrawingOffset();
+				Graphics2D.SetDrawColor(140, 140, 160);
 
-				if (h1.Add(tp2) && h2.Add(tp1))
+				if (!ic1 && h1.Add(tp2) && h2.Add(tp1))
 					Graphics2D.DrawDottedLine(v1, v2, 0.5f);
-				if (h2.Add(tp3) && h3.Add(tp2))
+				if (!ic2 && h2.Add(tp3) && h3.Add(tp2))
 					Graphics2D.DrawDottedLine(v2, v3, 0.5f);
-				if (h3.Add(tp1) && h1.Add(tp3))
+				if (!ic3 && h3.Add(tp1) && h1.Add(tp3))
 					Graphics2D.DrawDottedLine(v3, v1, 0.5f);
 
 				Graphics2D.OffsetDrawing(offset);
@@ -1116,7 +1131,11 @@ namespace Nucleus.ModelEditor
 			}
 
 			// hack; but has to be done with the current rendering order
-			if (ModelEditor.Active.File.ActiveOperator is EditMeshOperator editMeshOp && editMeshOp.CurrentMode == EditMesh_Mode.Create) {
+			if (
+				ModelEditor.Active.File.ActiveOperator is EditMeshOperator editMeshOp 
+				&& editMeshOp.CurrentMode == EditMesh_Mode.Create
+				&& editMeshOp.HoveredVertex == null
+			) {
 				editMeshOp.DrawCreateGizmo();
 			}
 		}
