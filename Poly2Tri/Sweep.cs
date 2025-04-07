@@ -10,7 +10,7 @@ namespace Poly2Tri
 
         public void Triangulate(SweepContext tcx)
         {
-            _nodes = new List<Node>();
+            _nodes = [];
 
             tcx.InitTriangulation();
             tcx.CreateAdvancingFront(_nodes);

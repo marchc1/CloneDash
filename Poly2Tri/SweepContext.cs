@@ -56,7 +56,12 @@ namespace Poly2Tri
             _points.Add(point);
         }
 
-        public void AddPoints(List<TriPoint> points)
+		public void AddConstrainedEdge(TriPoint from, TriPoint to) {
+			_edge_list.Add(new(from, to));
+		}
+
+
+		public void AddPoints(List<TriPoint> points)
         {
             int first = _points.Count;
             _points.AddRange(points);
