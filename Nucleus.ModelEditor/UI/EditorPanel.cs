@@ -611,6 +611,18 @@ namespace Nucleus.ModelEditor
 			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : bone.Color.Adjust(0, 0, -0.15f);
 			ManagedMemory.Texture boneTex;
 
+			if (ModelEditor.Active.Editor.InWeightsMode
+			 && ModelEditor.Active.LastSelectedObject is EditorMeshAttachment meshAttachment
+			 && meshAttachment.Weights.Count > 0) {
+				// Override the color
+				int boneIndex = meshAttachment.Weights.FindIndex(0, (x) => x.Bone == bone);
+				if (boneIndex == -1)
+					color = new Color(170, 170, 170, 40);
+				else
+					color = EditorMeshAttachment.BoneWeightListIndexToColor(boneIndex, color.A);
+			}
+
+
 			if (bone.Length > 0) {
 				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
 				var innerRing = Level.Textures.LoadTextureFromFile("models/bonering.png");
@@ -626,6 +638,7 @@ namespace Nucleus.ModelEditor
 				Rlgl.Begin(DrawMode.TRIANGLES);
 
 				Rlgl.Color4ub(color.R, color.G, color.B, color.A);
+
 				Rlgl.SetTexture(((Texture2D)boneTex).Id);
 				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
 				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);

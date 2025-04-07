@@ -879,7 +879,7 @@ namespace Nucleus.ModelEditor
 					
 					Raylib.DrawCircleSector(
 						drawPos,
-						(size + ((isSelectedBone && !isSelectedTruly) ? 6 : 0)) / camsize, totalWeight * 360, (totalWeight * 360) + (weight * 360),
+						(size + ((isSelectedBone || isSelectedTruly) ? 6 : 0)) / camsize, totalWeight * 360, (totalWeight * 360) + (weight * 360),
 						32,
 						BoneWeightListIndexToColor(i, (isSelected || isHighlighted) ? 255 : 140)
 						);
