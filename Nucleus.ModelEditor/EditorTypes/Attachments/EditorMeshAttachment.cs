@@ -943,7 +943,8 @@ namespace Nucleus.ModelEditor
 					((point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint))
 					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
 
-				Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				RenderVertex(point, isHighlighted);
+				//Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
 			}
 		}
 
