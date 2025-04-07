@@ -381,7 +381,7 @@ namespace Nucleus.UI
 		/// <summary>
 		/// Internal method to cancel any layout invalidations.
 		/// </summary>
-		protected void RevalidateLayout() {
+		public void RevalidateLayout() {
 			LayoutInvalidated = false;
 		}
 		/// <summary>
@@ -398,6 +398,7 @@ namespace Nucleus.UI
 				LayoutInvalidated = true;
 			}
 		}
+
 		public void ValidateLayout() {
 			if (LayoutInvalidated)
 				SetupLayout();
@@ -643,8 +644,16 @@ namespace Nucleus.UI
 			UI.Popups.Add(this);
 		}
 
-		public void MoveToFront() => throw new NotImplementedException();
-		public void MoveToBack() => throw new NotImplementedException();
+		public void MoveToFront() {
+			Parent.Children.Remove(this);
+			Parent.Children.Add(this);
+			Parent.InvalidateLayout();
+		}
+		public void MoveToBack() {
+			Parent.Children.Remove(this);
+			Parent.Children.Insert(0, this);
+			Parent.InvalidateLayout();
+		}
 		#endregion
 		#region Rendering/visuals
 		public virtual void Paint(float width, float height) {
@@ -700,7 +709,7 @@ namespace Nucleus.UI
 
 				returning += 1;
 			}
-			foreach (Element child in element.Children) {
+			foreach (Element child in element.Children.ToArray()) {
 				returning += LayoutRecursive(child, frameState);
 				if (child.Enabled) {
 					var ps = (child.RenderBounds.Pos + child.RenderBounds.Size);
