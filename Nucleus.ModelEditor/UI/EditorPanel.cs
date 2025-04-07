@@ -12,8 +12,9 @@ using System.Numerics;
 namespace Nucleus.ModelEditor
 {
 
-	public class EditorPanel : Panel
+	public class EditorPanel : View
 	{
+		public override string Name => "Editor";
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
 		Button LocalTransformButton, ParentTransformButton, WorldTransformButton;

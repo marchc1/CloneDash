@@ -89,8 +89,9 @@ public class BindOperator : Operator
 	}
 }
 
-public class WeightsPanel : Panel
+public class WeightsPanel : View
 {
+	public override string Name => "Weights";
 	Panel props;
 	Panel topBtns;
 	FlexPanel bottomBtns;
