@@ -142,14 +142,14 @@ namespace Nucleus.ModelEditor
 		public DefaultOperator? DefaultOperator { get; private set; }
 		public EditorDefaultOperator DefaultOperatorType { get; private set; }
 
-		public bool InPoseMode => DefaultOperatorType == EditorDefaultOperator.PoseBoneToTarget;
-		public bool InWeightsMode => DefaultOperatorType == EditorDefaultOperator.ChangeMeshWeights;
-		public bool InCreateMode => DefaultOperatorType == EditorDefaultOperator.CreateNewBones;
+		public bool InPoseMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.PoseBoneToTarget;
+		public bool InWeightsMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.ChangeMeshWeights;
+		public bool InCreateMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.CreateNewBones;
 
-		public bool InRotateMode => DefaultOperatorType == EditorDefaultOperator.RotateSelection;
-		public bool InTranslateMode => DefaultOperatorType == EditorDefaultOperator.TranslateSelection;
-		public bool InScaleMode => DefaultOperatorType == EditorDefaultOperator.ScaleSelection;
-		public bool InShearMode => DefaultOperatorType == EditorDefaultOperator.ShearSelection;
+		public bool InRotateMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.RotateSelection;
+		public bool InTranslateMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.TranslateSelection;
+		public bool InScaleMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.ScaleSelection;
+		public bool InShearMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.ShearSelection;
 
 		private void SetEditorOperator(EditorDefaultOperator op) {
 			PoseBonesOpBtn.Pulsing = false;
