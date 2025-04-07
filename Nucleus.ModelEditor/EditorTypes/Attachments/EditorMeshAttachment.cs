@@ -92,6 +92,7 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
+		public MeshVertex? AttachedVertex;
 		public MeshVertex? HoveredVertex;
 		/// <summary>
 		/// In the context of <see cref="EditMesh_Mode.Create"/>, this is the created vertex.
@@ -189,6 +190,7 @@ namespace Nucleus.ModelEditor
 
 					if (HoveredVertex != null) {
 						vertex.ConstrainTo(HoveredVertex);
+						AttachedVertex = HoveredVertex;
 					}
 
 					clickVertexOverride = vertex;
@@ -197,10 +199,7 @@ namespace Nucleus.ModelEditor
 					break;
 				case EditMesh_Mode.Delete:
 					if (HoveredVertex != null) {
-						if (Attachment.SteinerPoints.Contains(HoveredVertex))
-							Attachment.SteinerPoints.Remove(HoveredVertex);
-						else
-							Attachment.ShapeEdges.Remove(HoveredVertex);
+						Attachment.RemoveVertex(HoveredVertex);
 						HoveredVertex = null;
 						Attachment.Invalidate();
 					}
@@ -249,6 +248,18 @@ namespace Nucleus.ModelEditor
 		}
 		public override void DragRelease(ModelEditor editor, Vector2F mousePos) {
 			base.DragRelease(editor, mousePos);
+			switch (CurrentMode) {
+				case EditMesh_Mode.Create:
+					if (HoveredVertex != ClickedVertex && HoveredVertex != null && ClickedVertex != null && AttachedVertex != null) {
+						// Remove the clicked vertex
+						ClickedVertex.Attachment.RemoveVertex(ClickedVertex);
+						// Instead, constraint AttachedVertex to HoveredVertex
+						AttachedVertex.ConstrainTo(HoveredVertex);
+					}
+					break;
+			}
+
+			AttachedVertex = null;
 			ClickedVertex = null;
 			IsClickedSteinerPoint = false;
 		}
@@ -662,6 +673,17 @@ namespace Nucleus.ModelEditor
 
 		private Vector2F pos, scale = new(1, 1);
 
+		/// <summary>
+		/// Removes a vertex while ensuring the removal of constraint references.
+		/// </summary>
+		/// <param name="vertex"></param>
+		public bool RemoveVertex(MeshVertex vertex) {
+			while (vertex.HasConstrainedEdges)
+				vertex.UnconstrainFrom(vertex.ConstrainedVertices.First());
+
+			return SteinerPoints.Remove(vertex) || ShapeEdges.Remove(vertex);
+		}
+
 		public void SelectVertex(MeshVertex vertex, bool multiselect = false) {
 			if (multiselect) {
 				bool wasIn = SelectedVertices.Remove(vertex);
@@ -814,14 +836,14 @@ namespace Nucleus.ModelEditor
 					};
 				}
 
-				Shape = new Shape(triPoints);
+				var workingShape = new Shape(triPoints);
 
 				Dictionary<MeshVertex, HashSet<MeshVertex>> avoidDuplicateEdges = [];
 
 				foreach (var steinerPoint in SteinerPoints)
-					Shape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
+					workingShape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
 
-				foreach (var constrainedFromTripoint in Shape.GetAllPoints()) {
+				foreach (var constrainedFromTripoint in workingShape.GetAllPoints()) {
 					var constrainedFrom = constrainedFromTripoint.AssociatedObject as MeshVertex ?? throw new Exception();
 					if (!constrainedFrom.HasConstrainedEdges) continue;
 
@@ -830,7 +852,7 @@ namespace Nucleus.ModelEditor
 						// This entire thing REALLY needs to be fixed up. I'm 
 						// just trying to get it working for the sake of getting
 						// it working, then optimize afterwards if needed
-						var constrainedToTripoint = Shape.GetAllPoints().FirstOrDefault(x => x.AssociatedObject == constrainedTo) ?? throw new Exception();
+						var constrainedToTripoint = workingShape.GetAllPoints().FirstOrDefault(x => x.AssociatedObject == constrainedTo) ?? throw new Exception();
 
 						if (!avoidDuplicateEdges.TryGetValue(constrainedFrom, out var fromHash)) {
 							fromHash = []; avoidDuplicateEdges[constrainedFrom] = fromHash;
@@ -841,12 +863,13 @@ namespace Nucleus.ModelEditor
 						}
 
 						if (fromHash.Add(constrainedFrom) && fromHash.Add(constrainedTo)) {
-							Shape.ConstrainedEdges.Add(new(constrainedFromTripoint, constrainedToTripoint));
+							workingShape.ConstrainedEdges.Add(new(constrainedFromTripoint, constrainedToTripoint));
 						}
 					}
 				}
 
-				Shape.Triangulate(triangles);
+				workingShape.Triangulate(triangles);
+				Shape = workingShape;
 				Invalidated = false;
 
 				//foreach (var point in Shape.Points)
@@ -1035,6 +1058,8 @@ namespace Nucleus.ModelEditor
 
 
 		public void RenderVertex(MeshVertex vertex, bool isHighlighted, Vector2F? pos = null) {
+			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditMeshOperator meshOp && meshOp.CurrentMode == EditMesh_Mode.Delete;
+
 			System.Numerics.Vector2 drawPos = (pos ?? CalculateVertexWorldPosition(WorldTransform, vertex)).ToNumerics();
 			bool inWeightMode = ModelEditor.Active.Editor.InWeightsMode;
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
@@ -1046,7 +1071,12 @@ namespace Nucleus.ModelEditor
 
 			if (!inWeightMode) {
 				float size = (isSelected ? 4f : 2f) + (isHighlighted ? 1f : 0f);
-				Color color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+				Color color;
+				if (isHighlighted && deleteMode)
+					color = new Color(255, 60, 15);
+				else
+					color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+
 				Raylib.DrawCircleV(drawPos, (size) / camsize, Color.Black);
 				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, color);
 			}
@@ -1111,8 +1141,8 @@ namespace Nucleus.ModelEditor
 				bool ic1 = av1.IsConstrainedTo(av2), ic2 = av2.IsConstrainedTo(av3), ic3 = av3.IsConstrainedTo(av1);
 
 				Vector2F v1 = CalculateVertexWorldPosition(WorldTransform, av1),
-				         v2 = CalculateVertexWorldPosition(WorldTransform, av2),
-				         v3 = CalculateVertexWorldPosition(WorldTransform, av3);
+						 v2 = CalculateVertexWorldPosition(WorldTransform, av2),
+						 v3 = CalculateVertexWorldPosition(WorldTransform, av3);
 
 				if (ic1) Graphics2D.DrawLine(v1, v2);
 				if (ic2) Graphics2D.DrawLine(v2, v3);
