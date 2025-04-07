@@ -296,13 +296,17 @@ namespace Nucleus.ModelEditor
 				Outliner = OutlinerAndProperties.Outliner;
 				Properties = OutlinerAndProperties.Properties;
 				Weights = split.Division.AddView(split.Division.Add<WeightsPanel>());
-			}
 
-			{
 				var animateWorkspace = View.CopyWorkspace("Setup", "Animate");
 
 				var animationTools = animateWorkspace.SplitApart(Dock.Bottom);
 				animationTools.SizePercentage = 0.2f;
+				animationTools.Division.AddView<DopesheetView>();
+
+
+				var playback = animationTools.Division.SplitApart(Dock.Right);
+				playback.SizePercentage = 0.2f;
+				playback.Division.AddView<PlaybackView>();
 			}
 
 

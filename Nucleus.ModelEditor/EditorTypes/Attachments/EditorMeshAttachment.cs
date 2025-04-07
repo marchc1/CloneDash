@@ -119,7 +119,7 @@ namespace Nucleus.ModelEditor
 			for (int i = 0; i < array.Count; i++) {
 				var vertex = array[i];
 				var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
-				if (vertexDistance < closestVertexDist) {
+				if (vertexDistance < closestVertexDist && vertex != ClickedVertex) {
 					closestVertexDist = vertexDistance;
 					HoveredVertex = vertex;
 					IsHoveredSteinerPoint = false;
@@ -131,7 +131,7 @@ namespace Nucleus.ModelEditor
 				for (int i = 0; i < Attachment.SteinerPoints.Count; i++) {
 					var vertex = Attachment.SteinerPoints[i];
 					var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
-					if (vertexDistance < closestVertexDist) {
+					if (vertexDistance < closestVertexDist && vertex != ClickedVertex) {
 						closestVertexDist = vertexDistance;
 						HoveredVertex = vertex;
 						IsHoveredSteinerPoint = true;

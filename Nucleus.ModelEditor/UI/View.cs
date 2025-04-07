@@ -222,6 +222,17 @@ public class ViewDivision : Panel
 		UpdateViewButtonHighlight();
 	}
 
+	public T AddView<T>() where T : View {
+		T view = Add<T>();
+		Views.Add(view);
+		view.Dock = Dock.Fill;
+
+		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
+		InvalidateLayout();
+
+		return view;
+	}
+
 	public T AddView<T>(T view) where T : View {
 		Views.Add(view);
 		view.Dock = Dock.Fill;
