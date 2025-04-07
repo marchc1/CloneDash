@@ -161,8 +161,10 @@ namespace Nucleus.ModelEditor
 				case EditMesh_Mode.Create:
 					if (HoveredVertex == null) {
 						var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
-						Attachment.SteinerPoints.Add(MeshVertex.FromVector(newPoint));
+						MeshVertex vertex = MeshVertex.FromVector(newPoint, Attachment);
+						Attachment.SteinerPoints.Add(vertex);
 						Attachment.Invalidate();
+						ModelEditor.Active.File.UpdateVertexPositions(Attachment, onlyThisVertex: vertex);
 					}
 					break;
 				case EditMesh_Mode.Delete:
@@ -186,7 +188,7 @@ namespace Nucleus.ModelEditor
 					else {
 						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(mousePos) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation);
 
-						WorkingLines.Add(MeshVertex.FromVector(newClickP));
+						WorkingLines.Add(MeshVertex.FromVector(newClickP, Attachment));
 					}
 					break;
 			}
@@ -306,7 +308,15 @@ namespace Nucleus.ModelEditor
 		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
 
 		public Vector2F ToVector() => new(X, Y);
-		public static MeshVertex FromVector(Vector2F vec) => new() { X = vec.X, Y = vec.Y };
+		public static MeshVertex FromVector(Vector2F vec, EditorMeshAttachment attachment) {
+			MeshVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
+
+			// Bind *just* this vertex to the bone its parented to
+			// Todo: auto-weigh to the bone somehow?
+			attachment.SetVertexWeight(vertex, attachment.Slot.Bone, 1.0f, false);
+
+			return vertex;
+		}
 
 		public static implicit operator Vector2F(MeshVertex v) => v.ToVector();
 

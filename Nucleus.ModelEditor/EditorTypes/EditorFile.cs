@@ -512,11 +512,16 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null) {
+		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, MeshVertex? onlyThisVertex = null) {
 			var weights = attachment.Weights;
 			foreach(var weightData in weights) {
 				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
 					continue;
+
+				if (onlyThisVertex != null) {
+					weightData.SetVertexPos(onlyThisVertex, weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(onlyThisVertex)));
+					continue;
+				}
 
 				foreach(var vertex in attachment.GetVertices()) {
 					weightData.SetVertexPos(vertex, weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(vertex)));
@@ -741,10 +746,10 @@ namespace Nucleus.ModelEditor
 
 							var quadpoints = regionFrom.QuadPoints(localized: false);
 
-							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TL));
-							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TR));
-							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BR));
-							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BL));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TL, meshTo));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.TR, meshTo));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BR, meshTo));
+							meshTo.ConstrainedEdges.Add(MeshVertex.FromVector(quadpoints.BL, meshTo));
 
 							break;
 					}
