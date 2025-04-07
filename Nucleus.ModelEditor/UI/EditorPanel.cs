@@ -140,6 +140,17 @@ namespace Nucleus.ModelEditor
 		}
 
 		public DefaultOperator? DefaultOperator { get; private set; }
+		public EditorDefaultOperator DefaultOperatorType { get; private set; }
+
+		public bool InPoseMode => DefaultOperatorType == EditorDefaultOperator.PoseBoneToTarget;
+		public bool InWeightsMode => DefaultOperatorType == EditorDefaultOperator.ChangeMeshWeights;
+		public bool InCreateMode => DefaultOperatorType == EditorDefaultOperator.CreateNewBones;
+
+		public bool InRotateMode => DefaultOperatorType == EditorDefaultOperator.RotateSelection;
+		public bool InTranslateMode => DefaultOperatorType == EditorDefaultOperator.TranslateSelection;
+		public bool InScaleMode => DefaultOperatorType == EditorDefaultOperator.ScaleSelection;
+		public bool InShearMode => DefaultOperatorType == EditorDefaultOperator.ShearSelection;
+
 		private void SetEditorOperator(EditorDefaultOperator op) {
 			PoseBonesOpBtn.Pulsing = false;
 			WeighVerticesOpBtn.Pulsing = false;
@@ -151,6 +162,7 @@ namespace Nucleus.ModelEditor
 
 			DefaultOperator?.Deactivated();
 			DefaultOperator = null;
+			DefaultOperatorType = op;
 
 			switch (op) {
 				case EditorDefaultOperator.PoseBoneToTarget:
@@ -660,6 +672,7 @@ namespace Nucleus.ModelEditor
 				DrawBone(child);
 			}
 		}
+
 		/// <summary>
 		/// Draws all models in the working model list
 		/// </summary>

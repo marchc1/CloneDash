@@ -12,6 +12,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Mail;
+using System.Numerics;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -427,7 +428,7 @@ namespace Nucleus.ModelEditor
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out var value) ? value : 0;
 		}
-		public bool TryGetVertexWeight(MeshVertex vertex, [NotNullWhen(true)]out float weight) {
+		public bool TryGetVertexWeight(MeshVertex vertex, [NotNullWhen(true)] out float weight) {
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out weight);
 		}
@@ -519,7 +520,7 @@ namespace Nucleus.ModelEditor
 					if (Weights[i].Bone == bone)
 						refrain = i;
 				}
-				
+
 				NormalizeWeights(allWeights, refrain);
 				for (int i = 0; i < allWeights.Length; i++) {
 					Weights[i].SetVertexWeight(vertex, allWeights[i]);
@@ -848,6 +849,59 @@ namespace Nucleus.ModelEditor
 			Rlgl.SetLineWidth(1);
 		}
 
+
+		public void RenderVertex(MeshVertex vertex, bool isHighlighted, Vector2F? pos = null) {
+			System.Numerics.Vector2 drawPos = (pos ?? CalculateVertexWorldPosition(WorldTransform, vertex)).ToNumerics();
+			bool inWeightMode = ModelEditor.Active.Editor.InWeightsMode;
+			var camsize = ModelEditor.Active.Editor.CameraZoom;
+
+			var isSelectedTruly = SelectedVertices.Contains(vertex);
+			var isSelected = isSelectedTruly || SelectedVertices.Count == 0;
+
+			var hS = isHighlighted ? 245 : 165;
+
+			if (!inWeightMode) {
+				float size = (isSelected ? 6f : 4f) + (isHighlighted ? 1f : 0f);
+				Color color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+				Raylib.DrawCircleV(drawPos, (size) / camsize, Color.Black);
+				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, color);
+			}
+			else {
+				float size = (isSelected ? 9f : 7f) + (isHighlighted ? 1f : 0f);
+				float totalWeight = 0;
+				EditorMeshAttachment attachment = vertex.Attachment;
+				List<EditorMeshWeights> weights = attachment.Weights;
+				EditorBone? selectedBone = ModelEditor.Active.Weights.ActiveWeights?.Bone;
+				for (int i = 0; i < weights.Count; i++) {
+					var weightPair = weights[i];
+					bool isSelectedBone = selectedBone == weightPair.Bone;
+					float weight = weightPair.TryGetVertexWeight(vertex);
+					
+					Raylib.DrawCircleSector(
+						drawPos,
+						(size + ((isSelectedBone && !isSelectedTruly) ? 6 : 0)) / camsize, totalWeight * 360, (totalWeight * 360) + (weight * 360),
+						32,
+						BoneWeightListIndexToColor(i, (isSelected || isHighlighted) ? 255 : 140)
+						);
+					totalWeight += weight;
+				}
+
+
+				if (isHighlighted) {
+					Rlgl.DrawRenderBatchActive();
+					Rlgl.SetLineWidth(3f);
+					Raylib.DrawCircleLinesV(drawPos, 20 / camsize, Color.White);
+					Rlgl.DrawRenderBatchActive();
+					Rlgl.SetLineWidth(1f);
+				}
+			}
+		}
+
+		public static Color BoneWeightListIndexToColor(int index, int alpha = 255) {
+			var baselineHue = 194 + (index * 90);
+			return (new Vector3(baselineHue, 0.78f, 1.00f)).ToRGB((float)(alpha) / 255f);
+		}
+
 		public override void RenderOverlay() {
 			if (Hidden) return;
 
@@ -870,9 +924,6 @@ namespace Nucleus.ModelEditor
 
 				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
 
-				float size = (isSelected ? 6f : 4f) + (isHighlighted ? 1f : 0f);
-				var hS = isHighlighted ? 245 : 165;
-				Color color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
 
 				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
 
@@ -882,8 +933,7 @@ namespace Nucleus.ModelEditor
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
 				if (Selected) {
-					Raylib.DrawCircleV(vertex1.ToNumerics(), (size) / camsize, Color.Black);
-					Raylib.DrawCircleV(vertex1.ToNumerics(), (size - 1) / camsize, color);
+					RenderVertex(edge1, isHighlighted, vertex1);
 				}
 			}
 

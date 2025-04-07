@@ -17,6 +17,15 @@ namespace Nucleus.ModelEditor
 	}
 	public class VertexWeightOperator : DefaultOperator
 	{
+		/// <summary>
+		/// Macro for checking if the last selected object is a mesh with weights.
+		/// </summary>
+		/// <returns></returns>
+		public static bool IsMeshWithWeightsSelected() =>
+			ModelEditor.Active.LastSelectedObject is EditorMeshAttachment meshAttachment
+			&& meshAttachment.Weights != null
+			&& meshAttachment.Weights.Count > 0;
+
 		public override bool IsSelectable(IEditorType target) {
 			if (target is EditorMeshAttachment) return true;
 
