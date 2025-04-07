@@ -10,16 +10,26 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Types
 {
+	/// <summary>
+	/// Enumeration for generic key types. Can be used as a bitfield, if necessary.
+	/// </summary>
     public enum CharacterType
     {
-        NoAction,
-        VisibleCharacter,
-        DeleteBackwards,
-        DeleteForwards,
-        Enter,
-        Arrow,
-		Tab
-    }
+        NoAction = 0,
+        VisibleCharacter = 1 << 0,
+		Delete = 1 << 1,
+        DeleteBackwards = 1 << 2,
+        DeleteForwards = 1 << 3,
+        Enter = 1 << 4,
+        Arrow = 1 << 5,
+		Tab = 1 << 6,
+		Control = 1 << 7,
+		Shift = 1 << 8,
+		Alt = 1 << 9,
+		FunctionNumber = 1 << 10,
+		Function = 1 << 11,
+		Super = 1 << 12
+	}
     public record KeyAction(CharacterType Type, string? Extra = null)
     {
         public static implicit operator KeyAction(CharacterType t) => new KeyAction(t);
@@ -346,6 +356,18 @@ namespace Nucleus.Types
                 case 263: return new(CharacterType.Arrow, "LEFT");
                 case 264: return new(CharacterType.Arrow, "DOWN");
                 case 265: return new(CharacterType.Arrow, "UP");
+
+                case 340: return new(CharacterType.Shift, "LEFT");
+                case 341: return new(CharacterType.Control, "LEFT");
+                case 342: return new(CharacterType.Alt, "LEFT");
+                case 343: return new(CharacterType.Super, "LEFT");
+                
+				case 344: return new(CharacterType.Shift, "RIGHT");
+                case 345: return new(CharacterType.Control, "RIGHT");
+                case 346: return new(CharacterType.Alt, "RIGHT");
+                case 347: return new(CharacterType.Super, "RIGHT");
+
+
                 case 320: return numpad ? "0" : null; // Numpad0
                 case 321: return numpad ? "1" : null; // Numpad1
                 case 322: return numpad ? "2" : null; // Numpad2
