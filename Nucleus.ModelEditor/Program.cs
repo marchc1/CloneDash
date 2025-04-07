@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Types;
@@ -8,10 +7,10 @@ using Nucleus.UI.Elements;
 using Nucleus.Util;
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace Nucleus.ModelEditor
 {
+
 	public record ActionStackData(Action Redo, Action Undo);
 	public class ActionStack
 	{

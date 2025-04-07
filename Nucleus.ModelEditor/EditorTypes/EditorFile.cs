@@ -42,6 +42,8 @@ namespace Nucleus.ModelEditor
 		public float CameraY = 0;
 		public float CameraZoom = 1;
 
+		public TimelineManager Timeline = new();
+
 		// ============================================================================================== //
 		// Serialization
 		// ============================================================================================== //

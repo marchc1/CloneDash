@@ -73,8 +73,8 @@ namespace Nucleus.Models
 			}
 		}
 
-		public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-			var interpolation = leftmostOfTime.Interpolation;
+		public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
+			var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 			switch (interpolation) {
 				case KeyframeInterpolation.Constant: return leftmostOfTime.Value;
 				case KeyframeInterpolation.Linear: return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
