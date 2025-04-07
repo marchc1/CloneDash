@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Mail;
 using System.Numerics;
+using System.Runtime.Intrinsics.X86;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -1012,9 +1013,9 @@ namespace Nucleus.ModelEditor
 				var v3 = CalculateVertexWorldPosition(WorldTransform, av3);
 
 				Graphics2D.SetDrawColor(245, 100, 20);
-				if (ic1) Graphics2D.DrawLine(v1, v2, 0.15f);
-				if (ic2) Graphics2D.DrawLine(v2, v3, 0.15f);
-				if (ic3) Graphics2D.DrawLine(v1, v1, 0.15f);
+				if (ic1) Graphics2D.DrawLine(v1, v2);
+				if (ic2) Graphics2D.DrawLine(v2, v3);
+				if (ic3) Graphics2D.DrawLine(v1, v1);
 
 				Graphics2D.SetDrawColor(140, 140, 160);
 
@@ -1095,6 +1096,31 @@ namespace Nucleus.ModelEditor
 
 			RenderTriangleLines();
 
+			Graphics2D.SetDrawColor(245, 100, 20);
+			var offset = Graphics2D.Offset;
+			Graphics2D.ResetDrawingOffset();
+
+			foreach (var tri in Triangles) {
+				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
+				MeshVertex? av1 = tp1.AssociatedObject as MeshVertex,
+							av2 = tp2.AssociatedObject as MeshVertex,
+							av3 = tp3.AssociatedObject as MeshVertex;
+
+				if (av1 == null || av2 == null || av3 == null) continue;
+
+				bool ic1 = av1.IsConstrainedTo(av2), ic2 = av2.IsConstrainedTo(av3), ic3 = av3.IsConstrainedTo(av1);
+
+				Vector2F v1 = CalculateVertexWorldPosition(WorldTransform, av1),
+				         v2 = CalculateVertexWorldPosition(WorldTransform, av2),
+				         v3 = CalculateVertexWorldPosition(WorldTransform, av3);
+
+				if (ic1) Graphics2D.DrawLine(v1, v2);
+				if (ic2) Graphics2D.DrawLine(v2, v3);
+				if (ic3) Graphics2D.DrawLine(v1, v1);
+			}
+
+			Graphics2D.SetOffset(offset);
+
 			for (int i = 0; i < ShapeEdges.Count; i++) {
 				var edge1 = ShapeEdges[i];
 				var edge2 = ShapeEdges[(i + 1) % ShapeEdges.Count];
@@ -1132,7 +1158,7 @@ namespace Nucleus.ModelEditor
 
 			// hack; but has to be done with the current rendering order
 			if (
-				ModelEditor.Active.File.ActiveOperator is EditMeshOperator editMeshOp 
+				ModelEditor.Active.File.ActiveOperator is EditMeshOperator editMeshOp
 				&& editMeshOp.CurrentMode == EditMesh_Mode.Create
 				&& editMeshOp.HoveredVertex == null
 			) {
