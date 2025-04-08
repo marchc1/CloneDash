@@ -178,6 +178,12 @@ namespace Nucleus.UI
 		}
 
 		public override void Paint(float width, float height) {
+			if(MinimumValue != null && MaximumValue != null) {
+				var padding = 6;
+				var draw = (float)Math.Max(NMath.Remap(Value, MinimumValue.Value, MaximumValue.Value, 0, width - (padding * 2)), padding / 2);
+				Graphics2D.SetDrawColor(100, 149, 237);
+				Graphics2D.DrawRectangle(padding, padding, draw, height - (padding * 2));
+			}
 			base.Paint(width, height);
 		}
 	}

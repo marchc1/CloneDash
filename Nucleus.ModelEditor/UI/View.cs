@@ -324,7 +324,9 @@ public class ViewDivision : Panel
 					Element? hoveredUI = state.HoveredUIElement;
 					int index = 0;
 					ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(view, UI);
-
+					
+					// TODO: Need a solution to black-holing, ie where moving a parent divider into a child or child-child divider etc
+					// causes the removal of the parent divider, and hence the child itself is removed as well.
 					if (!dividerAddingTo.Failed) {
 						if (dividerAddingTo.CreatesNewViewDivision) {
 							var split = dividerAddingTo.DivisionTarget.SplitApart(dividerAddingTo.Direction);
