@@ -152,7 +152,9 @@ namespace Nucleus
 				__raw = value;
 			}
 		}
+#nullable disable
 		private CVValue[] __args;
+#nullable enable
 		public int Length => __args.Length;
 		public string[] AsStringArray {
 			get {
