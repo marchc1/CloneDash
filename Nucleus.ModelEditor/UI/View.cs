@@ -385,7 +385,7 @@ public class ViewDivision : Panel
 	}
 
 	public T AddView<T>(T view, int index) where T : View {
-		Views.Insert(index, view);
+		Views.Insert(Math.Clamp(index, 0, Views.Count), view);
 		view.Dock = Dock.Fill;
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
