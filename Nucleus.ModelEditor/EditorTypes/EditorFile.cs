@@ -332,6 +332,28 @@ namespace Nucleus.ModelEditor
 		public EditorResult RemoveSlot(EditorSlot slot) => RemoveSlot(slot.Bone.Model, slot);
 
 		// ============================================================================================== //
+		// Animations
+		// ============================================================================================== //
+
+		/// <summary>
+		/// Called when a slot is added to a bone.
+		/// </summary>
+		public event AnimationAddRemove? AnimationAdded;
+		/// <summary>
+		/// Called when a slot is removed from a bone.
+		/// </summary>
+		public event AnimationAddRemove? AnimationRemoved;
+		/// <summary>
+		/// Called when a slot is renamed.
+		/// </summary>
+		public event AnimationRename? AnimationRenamed;
+
+
+		public delegate void AnimationAddRemove(EditorFile file, EditorModel model, EditorAnimation animation);
+		public delegate void AnimationRename(EditorFile file, EditorAnimation animation, string oldName, string newName);
+
+
+		// ============================================================================================== //
 		// Images
 		// ============================================================================================== //
 

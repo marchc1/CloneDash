@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {
-	public class SkinsList() : EditorList<EditorSkin>("skins", "skins")
+	public class SkinsList() : EditorList<EditorSkin>("skin", "skins")
 	{
 		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.NewMenu(buttons, [

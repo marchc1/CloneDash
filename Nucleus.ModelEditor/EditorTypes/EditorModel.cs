@@ -69,6 +69,7 @@ namespace Nucleus.ModelEditor
 			set => activeSkin = value;
 		}
 		public SkinsList Skins { get; set; } = [];
+		public AnimationsList Animations { get; set; } = [];
 
 		public EditorModel() {
 			Skins.Model = this;

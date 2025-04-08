@@ -116,6 +116,22 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
+		private void SetupAnimationNode(OutlinerNode skinsNode, EditorModel model, EditorAnimation animation) {
+			OutlinerNode boneNode = skinsNode.AddNode(animation.Name, "models/animation2.png");
+			boneNode.SetRepresentingObject(animation);
+			boneNode.Text = animation.Name;
+
+			ModelEditor.Active.File.AnimationRenamed += (file, animationR, oldName, newName) => {
+				if (animationR == animation)
+					boneNode.Text = newName;
+			};
+
+			ModelEditor.Active.File.AnimationRemoved += (file, model, animationR) => {
+				if (animationR == animation && IValidatable.IsValid(boneNode)) {
+					boneNode.Remove();
+				}
+			};
+		}
 		private void SetupSkinNode(OutlinerNode skinsNode, EditorModel model, EditorSkin skin) {
 			OutlinerNode boneNode = skinsNode.AddNode(skin.Name, "models/skin.png");
 			boneNode.SetRepresentingObject(skin);
@@ -288,6 +304,13 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.SkinAdded += (file, _model, skin) => {
 				if (_model != model) return;
 				SetupSkinNode(skinsNode, _model, skin);
+			};
+
+			OutlinerNode animationsNode = modelNode.AddNode("Animations", "models/animation.png");
+			animationsNode.SetRepresentingObject(model.Animations);
+			ModelEditor.Active.File.AnimationAdded += (file, _model, animation) => {
+				if (_model != model) return;
+				SetupAnimationNode(animationsNode, _model, animation);
 			};
 
 			//OutlinerNode animationsNode = modelNode.AddNode("Animations", "models/animation.png");
