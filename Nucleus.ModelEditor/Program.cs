@@ -303,7 +303,6 @@ namespace Nucleus.ModelEditor
 				animationTools.SizePercentage = 0.2f;
 				animationTools.Division.AddView<DopesheetView>();
 
-
 				var playback = animationTools.Division.SplitApart(Dock.Right);
 				playback.SizePercentage = 0.2f;
 				playback.Division.AddView<PlaybackView>();
