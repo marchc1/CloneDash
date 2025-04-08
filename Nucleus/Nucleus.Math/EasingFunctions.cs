@@ -1,8 +1,33 @@
-﻿namespace Nucleus
+﻿using System.Numerics;
+
+namespace Nucleus
 {
     public static partial class NMath
     {
-        public static class Ease
+		public static void CubicBezier(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y, float p3x, float p3y, float t, out float rx, out float ry) {
+			float u = 1f - t;
+			float t2 = t * t;
+			float u2 = u * u;
+			float u3 = u2 * u;
+			float t3 = t2 * t;
+
+			rx = (u3) * p0x + (3f * u2 * t) * p1x + (3f * u * t2) * p2x + (t3) * p3x;
+			ry = (u3) * p0y + (3f * u2 * t) * p1y + (3f * u * t2) * p2y + (t3) * p3y;
+		}
+
+		public static void CubicBezier(double p0x, double p0y, double p1x, double p1y, double p2x, double p2y, double p3x, double p3y, double t, out double rx, out double ry) {
+			double u = 1d - t;
+			double t2 = t * t;
+			double u2 = u * u;
+			double u3 = u2 * u;
+			double t3 = t2 * t;
+
+			rx = (u3) * p0x + (3d * u2 * t) * p1x + (3d * u * t2) * p2x + (t3) * p3x;
+			ry = (u3) * p0y + (3d * u2 * t) * p1y + (3d * u * t2) * p2y + (t3) * p3y;
+		}
+
+
+		public static class Ease
         {
             public static float Linear(float t) => t;
 

@@ -18,7 +18,31 @@ namespace Nucleus.Models
 			}
 		}
 		private static T BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-			switch (default(T)) {
+			switch (leftmostOfTime) {
+				case Keyframe<float> kfL:
+					Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
+
+					NMath.CubicBezier(
+						kfL.Time,
+						kfL.Value,
+
+						kfL.Time + (kfL.RightHandle?.Time ?? 0),
+						kfL.Value + (kfL.RightHandle?.Time ?? 0),
+
+						kfR.Time + (kfR.LeftHandle?.Time ?? 0),
+						kfR.Value + (kfR.RightHandle?.Time ?? 0),
+
+						kfR.Time,
+						kfR.Value,
+
+						NMath.Remap(time, leftmostOfTime.Time, rightmostOfTime.Time, 0, 1),
+
+						out var rx,
+						out var ry
+						);
+
+					return (T)(object)(float)ry;
+
 				default: return leftmostOfTime.Value;
 			}
 		}
