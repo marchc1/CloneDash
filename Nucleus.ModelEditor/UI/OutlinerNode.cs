@@ -213,6 +213,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Paint(float width, float height) {
+			BackgroundColor = (GetRepresentingObject()?.Selected ?? false) ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor;
 			base.Paint(width, height);
 			if (Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;
