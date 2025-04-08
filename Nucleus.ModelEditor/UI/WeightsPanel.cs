@@ -192,6 +192,11 @@ public class WeightsPanel : View
 
 	private void ActiveAttachment_VertexSelected(MeshVertex vertex) {
 		activeVertex = vertex;
+		// Update numslider
+
+		if (activeWeights == null) return;
+
+		numSlider.SetValueNoUpdate(activeWeights.TryGetVertexWeight(vertex) * 100);
 	}
 
 	private void Btn_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
