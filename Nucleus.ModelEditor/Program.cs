@@ -463,9 +463,9 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			EngineCore.Initialize(1600, 900, "Model v4 Editor", args);
+			EngineCore.Initialize(1600, 900, "Nucleus - Model v4 Editor", args);
 			EngineCore.GameInfo = new() {
-				GameName = "Model v4 Editor"
+				GameName = "Nucleus - Model v4 Editor"
 			};
 			EngineCore.LimitFramerate(60);
 
