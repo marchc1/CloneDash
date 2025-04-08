@@ -57,9 +57,13 @@ namespace Nucleus.UI
 		private RectangleF _dockMargin = RectangleF.Zero;
 		private RectangleF _dockPadding = RectangleF.Zero;
 
-		public Color BackgroundColor { get; set; } = new(20, 25, 32, 127);
-		public Color ForegroundColor { get; set; } = new(85, 95, 110, 255);
-		public Color TextColor { get; set; } = new(230, 236, 255, 255);
+		public static readonly Color DefaultBackgroundColor = new(20, 25, 32, 127);
+		public static readonly Color DefaultForegroundColor = new(85, 95, 110, 255);
+		public static readonly Color DefaultTextColor = new(230, 236, 255, 255);
+
+		public Color BackgroundColor { get; set; } = DefaultBackgroundColor;
+		public Color ForegroundColor { get; set; } = DefaultForegroundColor;
+		public Color TextColor { get; set; } = DefaultTextColor;
 
 		private bool __enabled = true;
 		private bool __visible = true;
