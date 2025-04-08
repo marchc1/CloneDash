@@ -136,7 +136,7 @@ namespace Nucleus
 		}
 
 		private void ConsoleInput_OnExecute(TextEditor self) {
-			Logs.Info("] " + self.GetText());
+			Logs.Print("> " + self.GetText());
 			ConsoleSystem.ParseOneCommand(self.GetText());
 			autoComplete?.Remove();
 			MainThread.RunASAP(() => {

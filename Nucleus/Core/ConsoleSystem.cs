@@ -457,7 +457,6 @@ namespace Nucleus
 					}
 					else {
 						cv.SetValue(usargs);
-						Logs.Info($"  {ccname} {usargs}");
 					}
 					break;
 				case ConCommand cc:
