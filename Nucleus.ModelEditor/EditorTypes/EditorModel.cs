@@ -1,14 +1,7 @@
 ﻿using Newtonsoft.Json;
-using Nucleus.Engine;
-using Nucleus.ModelEditor.UI;
 using Nucleus.Types;
 using Nucleus.UI;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor
 {

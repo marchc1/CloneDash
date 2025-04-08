@@ -2,8 +2,17 @@
 {
 	public class FCurve<T> : IFCurve
 	{
-		public List<Keyframe<T>> Keyframes { get; set; } = [];
+		public List<Keyframe<T>> Keyframes { get; private set; } = [];
 		private bool valid = false;
+
+		public void AddKeyframe(Keyframe<T> keyframe) {
+			Keyframes.Add(keyframe);
+			valid = false;
+		}
+		public void RemoveKeyframe(Keyframe<T> keyframe) {
+			Keyframes.Remove(keyframe);
+			valid = false;
+		}
 
 		public void Recompute() {
 			if (valid == false) {
