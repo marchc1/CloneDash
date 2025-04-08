@@ -216,6 +216,9 @@ namespace Nucleus.ModelEditor
 		public PropertiesPanel Properties;
 		public OutlinerAndProperties OutlinerAndProperties;
 		public WeightsPanel Weights;
+		public AnimationsView Animations;
+		public DopesheetView Dopesheet;
+		public PlaybackView Playback;
 		public Button SwitchMode;
 
 		public EditorFile File = new();
@@ -299,15 +302,18 @@ namespace Nucleus.ModelEditor
 
 				var animateWorkspace = View.CopyWorkspace("Setup", "Animate");
 
+				var splitAn = animateWorkspace.Splits.First();
+				Animations = splitAn.Division.AddView<AnimationsView>();
+
 				var animationTools = animateWorkspace.SplitApart(Dock.Bottom);
+
 				animationTools.SizePercentage = 0.2f;
-				animationTools.Division.AddView<DopesheetView>();
+				Dopesheet = animationTools.Division.AddView<DopesheetView>();
 
 				var playback = animationTools.Division.SplitApart(Dock.Right);
 				playback.SizePercentage = 0.2f;
-				playback.Division.AddView<PlaybackView>();
+				Playback = playback.Division.AddView<PlaybackView>();
 			}
-
 
 			Editor.Add(out SwitchMode);
 			SwitchMode.Position = new Vector2F(8);

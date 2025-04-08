@@ -1,6 +1,4 @@
-﻿using Nucleus.ModelEditor.UI;
-
-namespace Nucleus.ModelEditor
+﻿namespace Nucleus.ModelEditor.UI
 {
 	public class KeyframeGraphView : View
 	{
