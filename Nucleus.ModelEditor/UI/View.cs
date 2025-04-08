@@ -6,6 +6,7 @@ using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -49,6 +50,12 @@ public struct ViewMoveResult
 	/// </summary>
 	public int TabIndex;
 
+	/// <summary>
+	/// Determines the result of a view-dragging operation, separated into a static method for use during rendering + final drag release.
+	/// </summary>
+	/// <param name="target"></param>
+	/// <param name="UI"></param>
+	/// <returns>View move state</returns>
 	public static ViewMoveResult CreateMoveResult(View target, UserInterface UI) {
 		ViewMoveResult result = new ViewMoveResult();
 		result.ViewTarget = target;
@@ -58,7 +65,12 @@ public struct ViewMoveResult
 				ViewDividerHeader header = buttonSelector.Parent as ViewDividerHeader ?? throw new Exception("Parent mismatch!");
 				result.DivisionTarget = header.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
 				// todo: tab index. Just move it to the furthest side for now
-				result.TabIndex = result.DivisionTarget.Views.Count;
+
+				var centerBtn = buttonSelector.GetGlobalPosition() + (buttonSelector.RenderBounds.Size / 2);
+				var rightmost = UI.Level.FrameState.MouseState.MousePos.X > centerBtn.X;
+
+				result.TabIndex = Math.Clamp(result.DivisionTarget.IndexOfButton(buttonSelector) + (rightmost ? 1 : 0), 0, result.DivisionTarget.Views.Count);
+
 				break;
 			case ViewDividerHeader divider:
 				result.DivisionTarget = divider.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
@@ -169,8 +181,12 @@ public class ViewSplit
 		SizePercentage = SizePercentage + delta;
 	}
 }
+
+// I am not the biggest fan of this, but this is the easiest way to
+// set up a post-renderer that takes care of itself when no longer needed...
 public class DragRenderer : LogicalEntity {
 	public View Dragging;
+
 	public override void Initialize() {
 		base.Initialize();
 	}
@@ -184,6 +200,7 @@ public class DragRenderer : LogicalEntity {
 
 		if (dividerAddingTo.CreatesNewViewDivision) {
 			var div = dividerAddingTo.DivisionTarget.ActiveView;
+			Debug.Assert(div != null);
 
 			var divpos = div.GetGlobalPosition();
 			var divsize = div.RenderBounds.Size;
@@ -210,6 +227,21 @@ public class DragRenderer : LogicalEntity {
 			Graphics2D.SetDrawColor(225, 80, 10, 255);
 			Graphics2D.DrawRectangleOutline(divpos, divsize, 2);
 		}
+		else {
+			var divider = dividerAddingTo.DivisionTarget;
+			var header = divider.Header;
+			var index = dividerAddingTo.TabIndex;
+
+			Graphics2D.SetTexture(Level.Textures.LoadTextureFromFile("models/viewheadermovearrow.png"));
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Vector2F pos;
+			if (index == divider.Views.Count)
+				pos = divider.GetButton(index - 1).GetGlobalPosition() + new Vector2F(divider.GetButton(index - 1).RenderBounds.W, 0);
+			else
+				pos = divider.GetButton(index).GetGlobalPosition();
+			pos = pos - new Vector2F(16, 16);
+			Graphics2D.DrawTexture(pos, new(32, 32));
+		}
 	}
 
 	public override void Think(FrameState frameState) {
@@ -227,8 +259,13 @@ public class ViewDivision : Panel
 	ViewDividerHeader header;
 	List<ViewButtonSelector> buttons = [];
 
+	public int IndexOfButton(ViewButtonSelector selector) => buttons.IndexOf(selector);
+	public ViewButtonSelector GetButton(int index) => buttons[index];
+
 	public List<View> Views = [];
 	public int ActiveIndex = -1;
+
+	public ViewDividerHeader Header => header;
 
 	public void UpdateViewButtonHighlight() {
 		for (int i = 0; i < buttons.Count; i++) {
@@ -256,6 +293,7 @@ public class ViewDivision : Panel
 			Vector2F clickPos = Vector2F.Zero;
 			bool dragging = false;
 			Button? showDraggedTab = null;
+			ViewDivider draggingFrom;
 			switcher.MouseClickEvent += (self, state, btn) => {
 				clickPos = state.MouseState.MousePos;
 			};
@@ -293,10 +331,19 @@ public class ViewDivision : Panel
 							split.SizePercentage = 1f / 3f;
 							this.RemoveView(view);
 							split.Division.AddView(view);
+						}
+						else {
+							var divider = dividerAddingTo.DivisionTarget;
+							var header = divider.Header;
+							var setIndex = dividerAddingTo.TabIndex;
 
-							if(this.Views.Count <= 0) {
-								this.ParentDivision.RemoveSplit(this);
-							}
+							this.RemoveView(view);
+							divider.AddView(view, setIndex);
+							divider.SetActive(view);
+						}
+
+						if (this.Views.Count <= 0) {
+							this.ParentDivision.RemoveSplit(this);
 						}
 					}
 				}
@@ -326,6 +373,17 @@ public class ViewDivision : Panel
 
 	public T AddView<T>(T view) where T : View {
 		Views.Add(view);
+		view.Dock = Dock.Fill;
+
+		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
+		InvalidateLayout();
+		InvalidateChildren(false, true);
+
+		return view;
+	}
+
+	public T AddView<T>(T view, int index) where T : View {
+		Views.Insert(index, view);
 		view.Dock = Dock.Fill;
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
