@@ -3,9 +3,7 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
-using System.Diagnostics;
 using System.Numerics;
-using System.Xml.Linq;
 using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.UI
