@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace Nucleus.Types
@@ -158,6 +157,9 @@ namespace Nucleus.Types
 		public Vector2F Normalize() {
 			return new(X / Length, Y / Length);
 		}
+
+		public static float Dot(Vector2F a, Vector2F b)=> a.X * b.X + a.Y * b.Y;
+		public float Dot(Vector2F other) => Dot(this, other);
 
 		/// <summary>
 		/// Rotates a Vector2F around a center by a rotation specified in degrees.
