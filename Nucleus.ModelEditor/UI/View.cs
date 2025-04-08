@@ -2,6 +2,7 @@
 // TODO: cleanup, kind of hastily made
 
 using Nucleus.Core;
+using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -68,6 +69,14 @@ public struct ViewMoveResult
 				Element? element = UI.Hovered;
 				while (IValidatable.IsValid(element)) {
 					if (element is ViewDivision viewDiv) {
+						// If viewdivision == this viewdivision and we only have one view left,
+						// moving the view to a sub-division of that view is going to cause the view
+						// to just "black hole" itself, so this check prevents that
+						if(viewDiv.Views.Count == 1 && viewDiv.Views.Contains(target)) {
+							result.Failed = true;
+							return result;
+						}
+
 						result.DivisionTarget = viewDiv;
 						result.CreatesNewViewDivision = true;
 						// Figure out direction
@@ -75,6 +84,20 @@ public struct ViewMoveResult
 							var center = viewDiv.ActiveView.GetGlobalPosition();
 							center += viewDiv.ActiveView.RenderBounds.Size / 2;
 							// TODO: finish implementing this
+							var dir = (center - EngineCore.Level.FrameState.MouseState.MousePos).Normalize();
+							var dotTB = Vector2F.Dot(dir, Vector2F.Up);
+							var dotLR = Vector2F.Dot(dir, Vector2F.Right);
+
+							bool bottom = dotTB < 0;
+							bool right = dotLR < 0;
+
+							bool weakLR = Math.Abs(dotLR) < 0.45f;
+
+							if (!weakLR)
+								result.Direction = right ? Dock.Right : Dock.Left;
+							else
+								result.Direction = bottom ? Dock.Bottom : Dock.Top;
+
 						}
 						result.CreatesNewViewDivision = true;
 
@@ -146,6 +169,54 @@ public class ViewSplit
 		SizePercentage = SizePercentage + delta;
 	}
 }
+public class DragRenderer : LogicalEntity {
+	public View Dragging;
+	public override void Initialize() {
+		base.Initialize();
+	}
+
+	public override void PostRender(FrameState frameState) {
+		base.PostRender(frameState);
+		var hovered = frameState.HoveredUIElement;
+
+		ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(Dragging, this.Level.UI);
+		if (dividerAddingTo.Failed) return;
+
+		if (dividerAddingTo.CreatesNewViewDivision) {
+			var div = dividerAddingTo.DivisionTarget.ActiveView;
+
+			var divpos = div.GetGlobalPosition();
+			var divsize = div.RenderBounds.Size;
+
+			var dzi = 3;
+			var dzi2 = dzi - 1;
+			switch (dividerAddingTo.Direction) {
+				case Dock.Right:
+					divpos.X += (divsize.W / dzi) * dzi2;
+					goto case Dock.Left;
+				case Dock.Bottom:
+					divpos.Y += (divsize.H / dzi) * dzi2;
+					goto case Dock.Top;
+				case Dock.Left:
+					divsize.W = divsize.W / dzi;
+					break;
+				case Dock.Top:
+					divsize.H = divsize.H / dzi;
+					break;
+			}
+
+			Graphics2D.SetDrawColor(225, 80, 10, 100);
+			Graphics2D.DrawRectangle(divpos, divsize);
+			Graphics2D.SetDrawColor(225, 80, 10, 255);
+			Graphics2D.DrawRectangleOutline(divpos, divsize, 2);
+		}
+	}
+
+	public override void Think(FrameState frameState) {
+		if (!frameState.MouseHeld(MouseButton.Mouse1))
+			this.Remove();
+	}
+}
 public class ViewDivision : Panel
 {
 	public ViewPanel RootViewPanel { get; internal set; }
@@ -203,6 +274,11 @@ public class ViewDivision : Panel
 					showDraggedTab.Position = state.MouseState.MousePos + new Vector2F(0, -16);
 					showDraggedTab.OnHoverTest += Passthru;
 					showDraggedTab.AutoSize = true;
+					showDraggedTab.TextPadding = new(12);
+					showDraggedTab.Text = view.Name;
+
+					var renderer = Level.Add<DragRenderer>();
+					renderer.Dragging = view;
 				}
 			};
 			switcher.MouseReleasedOrLostEvent += (self, state, btn, lost) => {
@@ -210,6 +286,19 @@ public class ViewDivision : Panel
 					Element? hoveredUI = state.HoveredUIElement;
 					int index = 0;
 					ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(view, UI);
+
+					if (!dividerAddingTo.Failed) {
+						if (dividerAddingTo.CreatesNewViewDivision) {
+							var split = dividerAddingTo.DivisionTarget.SplitApart(dividerAddingTo.Direction);
+							split.SizePercentage = 1f / 3f;
+							this.RemoveView(view);
+							split.Division.AddView(view);
+
+							if(this.Views.Count <= 0) {
+								this.ParentDivision.RemoveSplit(this);
+							}
+						}
+					}
 				}
 
 				showDraggedTab?.Remove();
@@ -219,6 +308,7 @@ public class ViewDivision : Panel
 			};
 			buttons.Add(switcher);
 		}
+
 		UpdateViewButtonHighlight();
 	}
 
@@ -229,6 +319,7 @@ public class ViewDivision : Panel
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
+		InvalidateChildren(false, true);
 
 		return view;
 	}
@@ -239,8 +330,32 @@ public class ViewDivision : Panel
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
+		InvalidateChildren(false, true);
 
 		return view;
+	}
+
+	public void RemoveView<T>(T view) where T : View {
+		if (ActiveView == view)
+			ActiveIndex = ActiveIndex - 1;
+
+		Views.Remove(view);
+		SetupViewButtons();
+		InvalidateLayout();
+		InvalidateChildren(false, true);
+	}
+
+	public void RemoveSplit(ViewDivision division) {
+		foreach(var split in splits.Where(x => x.Division == division)) {
+			split.Divider.Remove();
+			// We need to remove the views from the children of the division,
+			// or they'll get cleaned up here, which leads to views being unrecoverable
+			split.Division.ClearChildrenNoRemove();
+			split.Division.Remove();
+		}
+		splits.RemoveAll(x => x.Division == division);
+		InvalidateLayout();
+		InvalidateChildren(false, true);
 	}
 
 	public ViewDivider AddDivider() {
@@ -297,11 +412,15 @@ public class ViewDivision : Panel
 		else
 			return false;
 
-		foreach (var v in Views)
+		foreach (var v in Views) {
 			v.Visible = false;
+			v.Enabled = false;
+		}
 		view.Visible = true;
+		view.Enabled = true;
 		UpdateViewButtonHighlight();
-
+		InvalidateLayout();
+		InvalidateChildren(false, true);
 		return true;
 	}
 
@@ -384,6 +503,8 @@ public class ViewPanel : Panel
 			throw new KeyNotFoundException($"No workspace by the name of '{name}'");
 
 		ActiveWorkspace = workspace;
+		InvalidateLayout();
+		InvalidateChildren(false, true);
 	}
 
 	protected override void Initialize() {
