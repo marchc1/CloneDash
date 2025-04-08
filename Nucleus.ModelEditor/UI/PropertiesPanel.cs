@@ -284,6 +284,19 @@ namespace Nucleus.ModelEditor
 				}, null
 			);
 		}
+		public static void NewAnimationDialog(EditorFile file, AnimationsList anims) {
+			EditorDialogs.TextInput(
+				"New Animation",
+				"Enter the name for the new animation.",
+				"",
+				true,
+				(name) => {
+					var result = file.AddAnimation(anims.Model, name);
+					if (result.Failed)
+						EditorDialogs.ConfirmAction("Animation creation error", result.Reason, true, () => NewAnimationDialog(file, anims));
+				}, null
+			);
+		}
 
 
 

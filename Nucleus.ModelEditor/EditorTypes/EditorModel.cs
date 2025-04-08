@@ -17,7 +17,7 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] private bool allBonesInvalid = true;
 
 		/// <summary>
-		/// A list of slots, in order of drawing order.
+		/// A list of slots, in order of drawing order. Static pose.
 		/// </summary>
 		public List<EditorSlot> Slots { get; } = [];
 
@@ -39,6 +39,7 @@ namespace Nucleus.ModelEditor
 		public EditorBone? FindBone(string name) => GetAllBones().FirstOrDefault(x => x.Name == name);
 		public EditorSlot? FindSlot(string name) => Slots.FirstOrDefault(x => x.Name == name);
 		public EditorSkin? FindSkin(string name) => Skins.FirstOrDefault(x => x.Name == name);
+		public EditorAnimation? FindAnimation(string name) => Animations.FirstOrDefault(x => x.Name == name);
 
 		public bool TryFindBone(string name, [NotNullWhen(true)] out EditorBone? bone) {
 			bone = FindBone(name);
@@ -55,6 +56,11 @@ namespace Nucleus.ModelEditor
 			return skin != null;
 		}
 
+		public bool TryFindAnimation(string name, [NotNullWhen(true)] out EditorAnimation? animation) {
+			animation = FindAnimation(name);
+			return animation != null;
+		}
+
 
 		private EditorSkin? activeSkin = null;
 		public EditorSkin? ActiveSkin {
@@ -66,6 +72,7 @@ namespace Nucleus.ModelEditor
 
 		public EditorModel() {
 			Skins.Model = this;
+			Animations.Model = this;
 		}
 
 		private ModelImages? images;

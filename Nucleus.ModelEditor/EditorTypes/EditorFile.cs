@@ -90,6 +90,10 @@ namespace Nucleus.ModelEditor
 				foreach (var skin in model.Skins) {
 					SkinAdded?.Invoke(this, model, skin);
 				}
+
+				foreach (var animation in model.Animations) {
+					AnimationAdded?.Invoke(this, model, animation);
+				}
 			}
 		}
 
@@ -263,6 +267,8 @@ namespace Nucleus.ModelEditor
 				parent.Children.Remove(bone);
 				model.InvalidateBonesList();
 
+				if (bone.Selected) ModelEditor.Active.UnselectObject(bone);
+
 				return new();
 			}
 
@@ -327,6 +333,8 @@ namespace Nucleus.ModelEditor
 			model.Slots.Remove(slot);
 			slot.Bone.Slots.Remove(slot);
 
+			if (slot.Selected) ModelEditor.Active.UnselectObject(slot);
+
 			return EditorResult.OK;
 		}
 		public EditorResult RemoveSlot(EditorSlot slot) => RemoveSlot(slot.Bone.Model, slot);
@@ -352,6 +360,29 @@ namespace Nucleus.ModelEditor
 		public delegate void AnimationAddRemove(EditorFile file, EditorModel model, EditorAnimation animation);
 		public delegate void AnimationRename(EditorFile file, EditorAnimation animation, string oldName, string newName);
 
+		public EditorReturnResult<EditorAnimation> AddAnimation(EditorModel model, string name) {
+			if (model.Skins.FirstOrDefault(x => x.Name == name) != null)
+				return new(null, $"The model already contains an animation named '{name}'.");
+
+			EditorAnimation animation = new EditorAnimation();
+			animation.Name = name;
+			animation.Model = model;
+			model.Animations.Add(animation);
+
+			AnimationAdded?.Invoke(this, model, animation);
+
+			return animation;
+		}
+		public EditorResult RenameAnimation(EditorModel model, EditorAnimation animation, string newName) {
+			if (model.TryFindSkin(newName, out var _))
+				return new($"The model already contains an animation with the name '{newName}'.");
+
+			var oldName = animation.Name;
+			animation.Name = newName;
+			AnimationRenamed?.Invoke(this, animation, oldName, newName);
+
+			return EditorResult.OK;
+		}
 
 		// ============================================================================================== //
 		// Images

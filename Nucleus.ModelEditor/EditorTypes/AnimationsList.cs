@@ -6,7 +6,7 @@ namespace Nucleus.ModelEditor
 	{
 		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.NewMenu(buttons, [
-				new("Animation", () => {})
+				new("Animation", () => PropertiesPanel.NewAnimationDialog(ModelEditor.Active.File, this)),
 			]);
 		}
 	}
