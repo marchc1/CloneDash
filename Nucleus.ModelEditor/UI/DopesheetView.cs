@@ -366,6 +366,12 @@ namespace Nucleus.ModelEditor.UI
 			self.BorderSize = 0;
 			self.Paint(width, height);
 
+			var curframe = GetCurFrame();
+			float curframeX = (float)FrameToX(curframe);
+
+			Graphics2D.SetDrawColor(FrameMarkerColor);
+			Graphics2D.DrawLine(curframeX, 0, curframeX, height);
+
 			drawGradient(height);
 		}
 

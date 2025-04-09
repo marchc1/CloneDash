@@ -753,7 +753,7 @@ namespace Nucleus.UI
 		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool popupActive = false) {
 			if (!element.Enabled) return lastHovered;
 			if (!element.Visible) return lastHovered;
-			if (element.InputDisabled) return lastHovered;
+			if (!element.CanInput()) return lastHovered;
 
 			if (element.Parent != null)
 				offset += element.Parent.ChildRenderOffset;
