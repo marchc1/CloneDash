@@ -149,15 +149,18 @@ namespace Nucleus.ModelEditor.UI
 
 		private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 			ResetDragDirection(false, Vector2F.Zero);
+			DraggingFrame = false;
 		}
 
 		private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 			ResetDragDirection(false, Vector2F.Zero);
+			DraggingFrame = false;
 		}
 
 		private bool DraggingX = false;
 		private bool DraggingY = false;
 		private bool Dragging = false;
+		private bool DraggingFrame = false;
 		private Vector2F startAt = Vector2F.Zero;
 
 		private float frameAtDragStart = 0;
@@ -176,6 +179,7 @@ namespace Nucleus.ModelEditor.UI
 		}
 
 		private void DetermineDragDirection(Vector2F delta) {
+			if (!Dragging) return;
 			if (ResolvedDraggingDirection) return;
 
 			startAt += delta;
@@ -197,6 +201,7 @@ namespace Nucleus.ModelEditor.UI
 		}
 
 		private void processScroll(Vector2F delta) {
+			if (!Dragging) return;
 			delta.X *= -1;
 			DetermineDragDirection(delta);
 			if (ResolvedDraggingDirection) {
@@ -210,6 +215,8 @@ namespace Nucleus.ModelEditor.UI
 		}
 		private void TimeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 			processScroll(delta);
+			if (DraggingFrame)
+				SetCurFrame();
 		}
 		private void KeyframeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 			processScroll(delta);
@@ -219,13 +226,20 @@ namespace Nucleus.ModelEditor.UI
 
 		private void TimeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
 			ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
+			DraggingFrame = button == MouseButton.Mouse1;
+
+			if (DraggingFrame)
+				SetCurFrame();
 		}
 
 		private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
 			ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		}
 
-
+		public void SetCurFrame() {
+			var xLocal = TimeInfoPanel.GetMousePos();
+			ModelEditor.Active.File.Timeline.Frame = XToFrame(xLocal.X);
+		}
 
 		private void drawGradient(float height) {
 			var r = (float)NMath.Remap(frameOffset, 0f, 30f, 0f, 1f, false, true);
@@ -240,7 +254,7 @@ namespace Nucleus.ModelEditor.UI
 
 		// Shared offset from leftmost -> frame 0.
 		private float defaultXOffset = 22;
-
+		public static Color FrameMarkerColor => new(0, 255, 255);
 		private void TopButtonsAndTimeInfo_PaintOverride(Element self, float width, float height) {
 			var tl = ModelEditor.Active.File.Timeline;
 
@@ -259,20 +273,44 @@ namespace Nucleus.ModelEditor.UI
 			Graphics2D.SetDrawColor(150, 150, 150);
 			var frame = -xMajorDivisions * 2;
 			var widthPer = Zoom * xMajorDivisions;
+			float curframeX = FrameToX(curframe);
+
+			Vector2F frameTextSize = Graphics2D.GetTextSize($"{curframe}", "Noto Sans", 20);
+
 			for (float x = xstart - widthPer; x < width; x += widthPer) {
 				frame += xMajorDivisions;
-				if (x < -widthPer) continue;
-				Graphics2D.DrawLine(x, height / 2, x, height);
-				Graphics2D.DrawText(x, (height / 2) + 2, $"{frame}", "Noto Sans", 20, Anchor.BottomCenter);
+				if (x < -widthPer || frame < 0) continue;
 
-				for (int sx = 0; sx < 4; sx++) {
-					var lx = x + ((sx + 1) * (widthPer / 4));
+				if (curframe != frame) {
+					Graphics2D.DrawLine(x, height / 2, x, height);
+				}
+
+				var closeness = Math.Abs(curframeX - x);
+				if (closeness > (frameTextSize.X * 1.5f))
+					Graphics2D.DrawText(x, (height / 2) + 2, $"{frame}", "Noto Sans", 20, Anchor.BottomCenter);
+
+				var maxMinor = xMajorDivisions == 2 ? 1 : xMajorDivisions == 1 ? 0 : 4;
+				for (int sx = 0; sx < maxMinor; sx++) {
+					var lx = x + ((sx + 1) * (widthPer / (maxMinor + 1)));
 					Graphics2D.DrawLine(lx, (height / 3) * 2, lx, height);
 				}
 			}
 
+			Graphics2D.SetDrawColor(FrameMarkerColor);
+
+			Graphics2D.DrawLine(curframeX, height / 2, curframeX, height);
+			Graphics2D.DrawText(curframeX, (height / 2) + 2, $"{curframe}", "Noto Sans", 20, Anchor.BottomCenter);
+
 			drawGradient(height);
 		}
+
+		public float FrameToX(int frame) {
+			return (defaultXOffset - FrameOffset) + (frame * (Zoom * (CalcXMajorDivisions() / CalcXMajorDivisions())));
+		}
+		public int XToFrame(float x) {
+			return (int)Math.Round((x - defaultXOffset + FrameOffset) / (Zoom / CalcXMajorDivisions()) / CalcXMajorDivisions());
+		}
+
 		public int CalcXMajorDivisions() {
 			if (zoom <= 0.9f) return 200;
 			if (zoom <= 1.25f) return 100;
