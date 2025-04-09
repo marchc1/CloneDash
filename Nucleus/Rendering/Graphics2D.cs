@@ -1,4 +1,5 @@
 ﻿using Nucleus.Types;
+using Nucleus.UI;
 using Raylib_cs;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -135,6 +136,22 @@ namespace Nucleus.Core
         public static void DrawText(float x, float y, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
         public static void DrawText(Vector2F pos, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
 
+		// Untested; need to make sure these all work as expected
+		/// <summary>
+		/// Draws a gradient. Does not use <see cref="SetDrawColor(Color)"/> due to needing two colors.
+		/// </summary>
+		/// <param name="pos"></param>
+		/// <param name="size"></param>
+		/// <param name="direction">The direction the gradient goes from start -> end. So if you chose <see cref="Dock.Left"/>, the gradient will start at <paramref name="start"/> on the right side of the rectangle, and end at <paramref name="end"/> on the left side of the rectangle.</param>
+		public static void DrawGradient(Vector2F pos, Vector2F size, Color start, Color end, Dock direction) {
+			switch (direction) {
+				case Dock.Left: Raylib.DrawRectangleGradientH(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, end, start); break;
+				case Dock.Right: Raylib.DrawRectangleGradientH(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, start, end); break;
+
+				case Dock.Top: Raylib.DrawRectangleGradientV(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, start, end); break;
+				case Dock.Bottom: Raylib.DrawRectangleGradientV(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, end, start); break;
+			}
+		}
 
         private static Texture2D __texture;
         public static Texture2D GetTexture() => __texture;
