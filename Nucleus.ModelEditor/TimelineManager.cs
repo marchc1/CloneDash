@@ -11,7 +11,7 @@ public class TimelineManager
 	/// <summary>
 	/// Current frame.
 	/// </summary>
-	public double Frame { get; set; } = 0;
+	public double Frame { get; private set; } = 0;
 	/// <summary>
 	/// Speed multiplier.
 	/// </summary>
@@ -37,5 +37,14 @@ public class TimelineManager
 		Frame += dt;
 		while (Frame > maxTime)
 			Frame -= maxTime;
+	}
+
+	public delegate void FrameChangedD(TimelineManager timeline, int frame);
+	public event FrameChangedD? FrameChanged;
+
+	public void SetFrame(int frame) {
+		frame = Math.Max(0, frame);
+		Frame = frame;
+		FrameChanged?.Invoke(this, frame);
 	}
 }

@@ -238,7 +238,7 @@ namespace Nucleus.ModelEditor.UI
 
 		public void SetCurFrame() {
 			var xLocal = TimeInfoPanel.GetMousePos();
-			ModelEditor.Active.File.Timeline.Frame = XToFrame(xLocal.X);
+			ModelEditor.Active.File.Timeline.SetFrame(XToFrame(xLocal.X));
 		}
 
 		private void drawGradient(float height) {
@@ -300,6 +300,8 @@ namespace Nucleus.ModelEditor.UI
 
 			Graphics2D.DrawLine(curframeX, height / 2, curframeX, height);
 			Graphics2D.DrawText(curframeX, (height / 2) + 2, $"{curframe}", "Noto Sans", 20, Anchor.BottomCenter);
+			int tX = 4;
+			Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
 
 			drawGradient(height);
 		}

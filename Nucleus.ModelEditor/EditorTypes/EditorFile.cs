@@ -46,6 +46,14 @@ namespace Nucleus.ModelEditor
 	/// </summary>
 	public class EditorFile
 	{
+		public EditorFile() {
+			AnimationActivated += (_, _, _) => {
+				Timeline.SetFrame(0);
+			};
+			AnimationDeactivated += (_, _, _) => {
+				Timeline.SetFrame(0);
+			};
+		}
 		public List<EditorModel> Models = [];
 
 		// Camera position and zoom
