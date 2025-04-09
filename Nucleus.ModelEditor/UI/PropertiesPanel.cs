@@ -246,7 +246,7 @@ namespace Nucleus.ModelEditor
 			});
 		}
 		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
-			ButtonIcon(buttons, "New...", "models/add.png", (_, fs, _) => {
+			var button = ButtonIcon(buttons, "New...", "models/add.png", (_, fs, _) => {
 				Menu menu = buttons.UI.Menu();
 
 				foreach (var action in actions) {
@@ -257,6 +257,9 @@ namespace Nucleus.ModelEditor
 
 				menu.Open(fs.MouseState.MousePos);
 			});
+			button.Thinking += (_) => {
+				button.InputDisabled = ModelEditor.Active.AnimationMode;
+			};
 		}
 		public static void NewSlotDialog(EditorFile file, EditorBone bone) {
 			EditorDialogs.TextInput(
