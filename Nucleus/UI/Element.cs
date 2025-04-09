@@ -24,6 +24,11 @@ namespace Nucleus.UI
 		/// </summary>
 		public UserInterface UI { get; internal set; }
 
+		/// <summary>
+		/// Macros to <see cref="Level.Textures"/>.
+		/// </summary>
+		public TextureManagement Textures => Level.Textures;
+
 		private Vector2F _position = new(0, 0);
 		public float BorderSize { get; set; } = 2;
 		public Vector2F Position {
@@ -366,6 +371,10 @@ namespace Nucleus.UI
 
 			InvalidateLayout();
 			p?.TriggerOnChildParented(p, this);
+		}
+
+		public void SortChildren(Comparison<Element> childSortMethod) {
+			this.AddParent.Children.Sort(childSortMethod);
 		}
 		#endregion
 		#region Layout control
