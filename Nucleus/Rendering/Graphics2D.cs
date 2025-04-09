@@ -268,8 +268,8 @@ namespace Nucleus.Core
         public static void DrawCircleLines(int centerX, int centerY, float radius) => Raylib.DrawCircleLines(offsetX(centerX), offsetY(centerY), radius, __drawColor);
         //draw ellipse, draw ellipse lines, draw ring, draw ring lines need implementations later
 
-        public static void DrawRectangle(int x, int y, int width, int height) => Raylib.DrawRectangle(offsetX(x), offsetY(y), width, height, __drawColor);
-        public static void DrawRectangle(float x, float y, float width, float height) => Raylib.DrawRectangle(offsetX(x), offsetY(y), (int)width, (int)height, __drawColor);
+        public static void DrawRectangle(int x, int y, int width, int height) => Raylib.DrawRectangleV(new(offsetX(x), offsetY(y)), new(width, height), __drawColor);
+        public static void DrawRectangle(float x, float y, float width, float height) => Raylib.DrawRectangleV(new(offsetX(x), offsetY(y)), new((int)width, (int)height), __drawColor);
         public static void DrawRectangle(Vector2F pos, Vector2F size) => Raylib.DrawRectangleV(AFV2ToSNV2(pos), NoOffset_AFV2ToSNV2(size), __drawColor);
         public static void DrawRectangle(RectangleF rect) => Raylib.DrawRectangleRec(AFRToRLR(rect), __drawColor);
         public static void DrawRectangle(RectangleF rect, Vector2F origin, float rotation) => Raylib.DrawRectanglePro(NoOffset_AFRToRLR(rect), AFV2ToSNV2(origin), rotation, __drawColor);
