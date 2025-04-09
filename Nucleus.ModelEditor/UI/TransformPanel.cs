@@ -1,5 +1,6 @@
 ﻿using Nucleus.Types;
 using Nucleus.UI;
+using Raylib_cs;
 
 namespace Nucleus.ModelEditor
 {
@@ -9,8 +10,10 @@ namespace Nucleus.ModelEditor
 		public event FloatChange? FloatChanged;
 
 		public event Element.MouseEventDelegate? OnSelected;
+		public event Element.MouseEventDelegate? OnKeyframe;
 		private NumSlider[] sliders;
 		private Button button;
+		private Button keyframe;
 
 		private bool enableSliders = true;
 		public bool EnableSliders {
@@ -25,6 +28,7 @@ namespace Nucleus.ModelEditor
 		}
 		public NumSlider GetNumSlider(int index) => sliders[index];
 		public Button GetButton() => button;
+		public Button GetKeyframeButton() => keyframe;
 
 		public static TransformPanel New(Element parent, string text, int floats) {
 			var panel = parent.Add<TransformPanel>();
@@ -37,6 +41,33 @@ namespace Nucleus.ModelEditor
 			panel.button.Size = new(96);
 			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
 			panel.button.BorderSize = 0;
+
+			panel.keyframe = panel.Add<Button>();
+			panel.keyframe.Dock = Dock.Right;
+			panel.keyframe.Text = "";
+			panel.keyframe.Image = panel.Textures.LoadTextureFromFile("models/keyframe.png");
+			panel.keyframe.ImageOrientation = ImageOrientation.Centered;
+			panel.keyframe.Size = new(26);
+			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(panel, v2, v3);
+			panel.keyframe.BorderSize = 0;
+			panel.keyframe.PaintOverride += (self, w, h) => {
+				bool canInput = self.CanInput();
+				bool isAnimateMode = ModelEditor.Active.AnimationMode;
+
+				bool canUse = (canInput && isAnimateMode);
+
+				if (canUse) {
+					// todo: determine background color
+					self.BackgroundColor = ModelEditor.KEYFRAME_COLOR_NO_PENDING_KEYFRAME;
+					self.ImageColor = Color.Black;
+				}
+				else {
+					self.BackgroundColor = Element.DefaultBackgroundColor;
+					self.ImageColor = Color.Gray;
+				}
+
+				self.Paint(w, h);
+			};
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;
