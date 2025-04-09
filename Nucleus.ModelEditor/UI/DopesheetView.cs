@@ -9,13 +9,13 @@ namespace Nucleus.ModelEditor.UI
 	{
 		public override string Name => "Dope Sheet";
 
-		private float frameOffset = 0;
+		private double frameOffset = 0;
 		private float scrollOffset = 0;
-		private float zoom = DefaultZoom;
+		private double zoom = DefaultZoom;
 		/// <summary>
 		/// The frame offset. Left == offset.
 		/// </summary>
-		public float FrameOffset {
+		public double FrameOffset {
 			get => frameOffset;
 			set {
 				frameOffset = Math.Max(0, value);
@@ -34,7 +34,7 @@ namespace Nucleus.ModelEditor.UI
 		/// <summary>
 		/// How many pixels per frame
 		/// </summary>
-		public float Zoom {
+		public double Zoom {
 			get => zoom;
 			set {
 				zoom = Math.Clamp(value, MinZoom, MaxZoom);
@@ -96,7 +96,20 @@ namespace Nucleus.ModelEditor.UI
 			ZoomSlider.Dock = Dock.Left;
 			ZoomSlider.Size = new(230);
 			ZoomSlider.BackgroundColor = new(1, 3, 5);
-			ZoomSlider.OnValueChanged += (_, _, v) => Zoom = (float)v;
+			ZoomSlider.OnValueChanged += (_, _, v) => {
+				var oob = FrameOutOfBounds(GetCurFrame());
+				var xpos = oob ? TimeInfoPanel.RenderBounds.W / 2 : FrameToX(GetCurFrame());
+				var centerXBefore = XToFrameExact(xpos);
+				Zoom = v;
+				var centerXAfter = XToFrameExact(xpos);
+				var deltaFrame = centerXAfter - centerXBefore;
+				var frameScaling = centerXAfter / centerXBefore;
+				Console.WriteLine($"{xpos}, {deltaFrame}");
+
+				if (FrameOffset > 0) {
+					FrameOffset = (FrameOffset - deltaFrame) / frameScaling;
+				}
+			};
 
 			Add(out ButtonsAndNames);
 			ButtonsAndNames.Dock = Dock.Left;
@@ -163,7 +176,7 @@ namespace Nucleus.ModelEditor.UI
 		private bool DraggingFrame = false;
 		private Vector2F startAt = Vector2F.Zero;
 
-		private float frameAtDragStart = 0;
+		private double frameAtDragStart = 0;
 		private float scrollAtDragStart = 0;
 
 		private bool ResolvedDraggingDirection => DraggingX || DraggingY;
@@ -236,6 +249,7 @@ namespace Nucleus.ModelEditor.UI
 			ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		}
 
+		public int GetCurFrame() => (int)ModelEditor.Active.File.Timeline.Frame;
 		public void SetCurFrame() {
 			var xLocal = TimeInfoPanel.GetMousePos();
 			ModelEditor.Active.File.Timeline.SetFrame(XToFrame(xLocal.X));
@@ -244,7 +258,7 @@ namespace Nucleus.ModelEditor.UI
 		private void drawGradient(float height) {
 			var r = (float)NMath.Remap(frameOffset, 0f, 30f, 0f, 1f, false, true);
 			var c = new Color(0, 0, 0, (int)(r * 150));
-			Graphics2D.DrawGradient(new(0, 0), new(24, height), c, Color.Blank, Dock.Right);
+			Graphics2D.DrawGradient(new(0, 0), new(12, height), c, Color.Blank, Dock.Right);
 		}
 
 		private void Buttons_PaintOverride(Element self, float width, float height) {
@@ -273,45 +287,66 @@ namespace Nucleus.ModelEditor.UI
 			Graphics2D.SetDrawColor(150, 150, 150);
 			var frame = -xMajorDivisions * 2;
 			var widthPer = Zoom * xMajorDivisions;
-			float curframeX = FrameToX(curframe);
+			float curframeX = (float)FrameToX(curframe);
 
 			Vector2F frameTextSize = Graphics2D.GetTextSize($"{curframe}", "Noto Sans", 20);
 
-			for (float x = xstart - widthPer; x < width; x += widthPer) {
+			for (double x = xstart - widthPer; x < width; x += widthPer) {
 				frame += xMajorDivisions;
 				if (x < -widthPer || frame < 0) continue;
 
+				var xf = (float)x;
+
 				if (curframe != frame) {
-					Graphics2D.DrawLine(x, height / 2, x, height);
+					Graphics2D.DrawLine(xf, height / 2, xf, height);
 				}
 
 				var closeness = Math.Abs(curframeX - x);
 				if (closeness > (frameTextSize.X * 1.5f))
-					Graphics2D.DrawText(x, (height / 2) + 2, $"{frame}", "Noto Sans", 20, Anchor.BottomCenter);
+					Graphics2D.DrawText(xf, (height / 2) + 2, $"{frame}", "Noto Sans", 20, Anchor.BottomCenter);
 
 				var maxMinor = xMajorDivisions == 2 ? 1 : xMajorDivisions == 1 ? 0 : 4;
 				for (int sx = 0; sx < maxMinor; sx++) {
 					var lx = x + ((sx + 1) * (widthPer / (maxMinor + 1)));
-					Graphics2D.DrawLine(lx, (height / 3) * 2, lx, height);
+					Graphics2D.DrawLine((float)lx, (height / 3) * 2, (float)lx, height);
 				}
 			}
+
+			var textX = (float)Math.Clamp(curframeX, 10, width - 10);
+			Graphics2D.SetDrawColor(self.BackgroundColor);
+
+			var rectPos = new Vector2F(textX - (frameTextSize.W / 2), (height / 2) - frameTextSize.H);
+			Graphics2D.DrawRectangle(rectPos, frameTextSize);
+			var colorGradientEnd = new Color(self.BackgroundColor.R, self.BackgroundColor.G, self.BackgroundColor.B, (byte)0);
+			Graphics2D.DrawGradient(rectPos - new Vector2F(12, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Left);
+			Graphics2D.DrawGradient(rectPos + new Vector2F(frameTextSize.W, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Right);
 
 			Graphics2D.SetDrawColor(FrameMarkerColor);
 
 			Graphics2D.DrawLine(curframeX, height / 2, curframeX, height);
-			Graphics2D.DrawText(curframeX, (height / 2) + 2, $"{curframe}", "Noto Sans", 20, Anchor.BottomCenter);
+			Graphics2D.DrawText(textX, (height / 2) + 2, $"{curframe}", "Noto Sans", 20, Anchor.BottomCenter);
 			int tX = 4;
-			Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
+			var oob = FrameOutOfBounds(curframe);
+			if (!oob) {
+				Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
+			}
 
 			drawGradient(height);
 		}
 
-		public float FrameToX(int frame) 
+		public double FrameToX(int frame)
 			=> (defaultXOffset - FrameOffset) + (frame * Zoom);
-		
-		public int XToFrame(float x) 
+
+		public int XToFrame(double x)
 			=> (int)Math.Round((x - defaultXOffset + FrameOffset) / Zoom);
-		
+
+		public double XToFrameExact(double x)
+			=> (x - defaultXOffset + FrameOffset) / Zoom;
+
+		public bool FrameOutOfBounds(int frame) {
+			var x = FrameToX(frame);
+			return x <= 14 || x >= TimeInfoPanel.RenderBounds.W;
+		}
 
 		public int CalcXMajorDivisions() {
 			if (zoom <= 0.9f) return 200;
