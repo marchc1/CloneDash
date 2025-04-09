@@ -306,12 +306,12 @@ namespace Nucleus.ModelEditor.UI
 			drawGradient(height);
 		}
 
-		public float FrameToX(int frame) {
-			return (defaultXOffset - FrameOffset) + (frame * (Zoom * (CalcXMajorDivisions() / CalcXMajorDivisions())));
-		}
-		public int XToFrame(float x) {
-			return (int)Math.Round((x - defaultXOffset + FrameOffset) / (Zoom / CalcXMajorDivisions()) / CalcXMajorDivisions());
-		}
+		public float FrameToX(int frame) 
+			=> (defaultXOffset - FrameOffset) + (frame * Zoom);
+		
+		public int XToFrame(float x) 
+			=> (int)Math.Round((x - defaultXOffset + FrameOffset) / Zoom);
+		
 
 		public int CalcXMajorDivisions() {
 			if (zoom <= 0.9f) return 200;
