@@ -217,6 +217,19 @@ namespace Nucleus
             Raylib.InitAudioDevice();
             Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
             Raylib.InitWindow(windowWidth, windowHeight, windowName);
+			if(CommandLineArguments.TryGetParam("monitor", out int monitor)) {
+				var monitorPos = Raylib.GetMonitorPosition(monitor);
+				var monitorW = Raylib.GetMonitorWidth(monitor);
+				var monitorH = Raylib.GetMonitorHeight(monitor);
+				var monitorSize = new System.Numerics.Vector2(monitorW, monitorH);
+				var windowSize = new System.Numerics.Vector2(windowWidth, windowHeight);
+
+				// monitor TL + (monitor size / 2) == centerMonitor
+				// centerMonitor - (window size / 2) to center window to monitor
+				var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
+
+				Raylib.SetWindowPosition((int)windowPos.X, (int)windowPos.Y);
+			}
             Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
             if (icon != null) Raylib.SetWindowIcon(Raylib.LoadImage(Filesystem.Resolve(icon, "images")));
             OpenGL.Import(OpenGLAddressRetriever.GetProc);
