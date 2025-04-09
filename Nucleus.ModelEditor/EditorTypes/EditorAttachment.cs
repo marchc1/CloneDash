@@ -5,6 +5,7 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +13,7 @@ namespace Nucleus.ModelEditor
 {
 	public abstract class EditorAttachment : IEditorType
 	{
+		public EditorModel GetModel() => Slot.Bone.Model;
 		public IEditorType? GetTransformParent() => Hidden ? Slot.Bone : this;
 		public IEditorType? DeferTransformationsTo() => GetTransformParent();
 		public string Name { get; set; }

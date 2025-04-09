@@ -9,6 +9,7 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -18,6 +19,7 @@ namespace Nucleus.ModelEditor
 {
 	public class ModelImage : IEditorType
 	{
+		public EditorModel GetModel() => throw new Exception();
 		public string SingleName => "Image File";
 		public string PluralName => "Image Files";
 		public bool Hovered { get; set; }
@@ -71,6 +73,7 @@ namespace Nucleus.ModelEditor
 	}
 	public class ModelImages : IEditorType
 	{
+		public EditorModel GetModel() => Model;
 		public string SingleName => "Images";
 		public string PluralName => "Images";
 		public bool Hovered { get; set; }

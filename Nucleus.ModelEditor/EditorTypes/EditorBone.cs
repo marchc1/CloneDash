@@ -3,12 +3,13 @@ using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
+using System.Net.Mail;
 
 namespace Nucleus.ModelEditor
 {
 	public class EditorBone : PoseableObject, IEditorType
 	{
-
+		public EditorModel GetModel() => Model;
 		[JsonIgnore] public bool Hovered { get; set; } = false;
 		[JsonIgnore] public bool Selected { get; set; } = false;
 		public bool CanHide() => true;

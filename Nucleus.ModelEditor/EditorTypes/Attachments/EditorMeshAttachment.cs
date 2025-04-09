@@ -327,6 +327,7 @@ namespace Nucleus.ModelEditor
 
 	public class MeshVertex : IEditorType
 	{
+		public EditorModel GetModel() => Attachment.Slot.Bone.Model;
 		public IEditorType? DeferPropertiesTo() => Attachment;
 		public IEditorType? DeferTransformationsTo() => Attachment;
 		public IEditorType? GetTransformParent() => Attachment;

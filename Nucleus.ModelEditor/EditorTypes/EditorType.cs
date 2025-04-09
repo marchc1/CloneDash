@@ -20,6 +20,7 @@ namespace Nucleus.ModelEditor
 
 		bool CanRename() => true;
 		bool CanDelete() => false;
+		EditorModel GetModel();
 
 		[JsonIgnore] string SingleName { get; }
 		[JsonIgnore] string PluralName { get; }

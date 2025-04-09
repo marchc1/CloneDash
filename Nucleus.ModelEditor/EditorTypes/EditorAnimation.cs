@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Models;
 using System.Diagnostics;
+using System.Net.Mail;
 using System.Reflection;
 
 namespace Nucleus.ModelEditor;
@@ -31,6 +32,7 @@ public class AttachmentTimeline : EditorTimeline, ISlotEditorTimeline
 
 public class EditorAnimation : IEditorType
 {
+	public EditorModel GetModel() => Model;
 	public EditorModel Model { get; set; }
 	[JsonIgnore] public string SingleName => "animation";
 	[JsonIgnore] public string PluralName => "animations";

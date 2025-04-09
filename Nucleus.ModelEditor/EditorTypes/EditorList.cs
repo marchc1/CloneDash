@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.UI;
+using System.Net.Mail;
 
 namespace Nucleus.ModelEditor
 {
@@ -18,6 +19,7 @@ namespace Nucleus.ModelEditor
 	/// <param name="pluralName"></param>
 	public abstract class EditorList<T>(string singleName, string pluralName) : List<T>, IEditorType
 	{
+		public EditorModel GetModel() => Model;
 		public EditorModel Model { get; set; }
 		[JsonIgnore] public string SingleName => singleName;
 		[JsonIgnore] public string PluralName => pluralName;

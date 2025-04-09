@@ -4,6 +4,7 @@ namespace Nucleus.ModelEditor
 {
 	public class EditorSkin : IEditorType
 	{
+		public EditorModel GetModel() => Model;
 		public EditorModel Model { get; set; }
 		public string Name { get; set; } = "";
 

@@ -171,11 +171,16 @@ namespace Nucleus.UI
 				nmStr = "(not specified)";
 			else if (double.IsPositiveInfinity(Value)) nmStr = "+Infinity";
 			else if (double.IsNegativeInfinity(Value)) nmStr = "-Infinity";
+			else if(TextFormat != null) 
+				nmStr = string.Format(TextFormat, Value);
 			else nmStr = string.Format($"{{0:0.{new string('0', Digits)}}}", Value);
 			string text = Prefix + nmStr + Suffix;
 
 			return text;
 		}
+
+		[StringSyntax(StringSyntaxAttribute.NumericFormat)]
+		public string? TextFormat { get; set; }
 
 		public override void Paint(float width, float height) {
 			if(MinimumValue != null && MaximumValue != null) {

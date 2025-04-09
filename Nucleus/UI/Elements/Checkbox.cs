@@ -9,12 +9,33 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
+	public class CheckboxButton : Button {
+		public bool Checked { get; set; } = false;
+		public delegate void CheckboxClicked(CheckboxButton self);
+		public event CheckboxClicked? OnCheckedChanged;
+
+		public override void Paint(float width, float height) {
+			var bck = BackgroundColor;
+
+			if (Checked)
+				BackgroundColor = BackgroundColor.Adjust(0, 0, 2);
+
+			base.Paint(width, height);
+			BackgroundColor = bck;
+		}
+
+		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+				Checked = !Checked;
+			OnCheckedChanged?.Invoke(this);
+		}
+	}
 	public class Checkbox : Button, IBindableToConVar
 	{
 		public bool Checked { get; set; } = false;
 		protected override void Initialize() {
 			Text = "";
 		}
+
 		public delegate void CheckboxClicked(Checkbox self);
 		public event CheckboxClicked? OnCheckedChanged;
 

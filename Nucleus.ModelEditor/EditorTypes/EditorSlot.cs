@@ -16,6 +16,7 @@ namespace Nucleus.ModelEditor
 {
 	public class EditorSlot : IEditorType
 	{
+		public EditorModel GetModel() => Bone.Model;
 		public EditorBone Bone { get; set; }
 		public string Name { get; set; }
 
