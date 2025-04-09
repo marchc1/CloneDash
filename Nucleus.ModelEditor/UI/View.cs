@@ -538,6 +538,7 @@ public class View : Panel
 	protected override void Initialize() {
 		base.Initialize();
 		Visible = false;
+		BorderSize = 0;
 	}
 }
 
