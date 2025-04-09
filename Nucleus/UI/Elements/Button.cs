@@ -44,12 +44,20 @@ namespace Nucleus.UI
 		public override void Paint(float width, float height) {
 			var backpre = BackgroundColor;
 			var forepre = ForegroundColor;
-			if ((TriggeredWhenEnterPressed || Pulsing) && CanInput()) {
+
+			var canInput = CanInput();
+
+			if ((TriggeredWhenEnterPressed || Pulsing) && canInput) {
 				backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 1.9));
 				forepre = forepre.Adjust(0, 0, 1 + (Math.Sin(PulseTime * 6) * 0.1f));
 			}
 			var back = MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.5f, 1f), new(0, 1.2f, 0.6f, 1f));
 			var fore = MixColorBasedOnMouseState(this, forepre, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+
+			if (!canInput) {
+				back = back.Adjust(0, 0, -0.5f);
+				fore = fore.Adjust(0, 0, -0.5f);
+			}
 
 			Graphics2D.SetDrawColor(back);
 			var whd2 = new Vector2F(width / 2, width / 2);

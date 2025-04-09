@@ -1174,7 +1174,12 @@ namespace Nucleus.UI
 					break;
 			}
 
-			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, ImageColor ?? TextColor);
+			Color thisC = ImageColor ?? TextColor;
+
+			if (!CanInput())
+				thisC = thisC.Adjust(0, 0, -.5f);
+
+			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, thisC);
 		}
 
 		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");

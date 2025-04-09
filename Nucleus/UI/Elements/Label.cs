@@ -43,8 +43,13 @@ namespace Nucleus.UI
 				Graphics2D.SetDrawColor(BackgroundColor);
 				Graphics2D.DrawRectangle(0, 0, width, height);
 			}
+			var textC = TextColor;
+			if (!CanInput()) {
+				textC = textC.Adjust(0, 0, -0.5f);
+			}
+
             Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(TextAlignment, RenderBounds.Size, TextPadding);
-            Graphics2D.SetDrawColor(TextColor);
+            Graphics2D.SetDrawColor(textC);
             Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, TextAlignment);
         }
     }
