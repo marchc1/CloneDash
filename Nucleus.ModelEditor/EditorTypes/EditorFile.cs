@@ -11,10 +11,21 @@ namespace Nucleus.ModelEditor
 {
 	public class ModelEditorSerializationBinder : ISerializationBinder
 	{
-		private static HashSet<Type> ApprovedBindables = [
-			typeof(EditorRegionAttachment),
-			typeof(EditorMeshAttachment),
-		];
+		private static HashSet<Type> ApprovedBindables;
+		static ModelEditorSerializationBinder() {
+			ApprovedBindables = [];
+
+			// Build the type whitelist. Has to be done for security reasons
+			// Includes all abstract implementors of attachments and timelines.
+			// Those types will then include their typename in the JSON so they can
+			// be deserialized properly
+
+			foreach (var attachmentType in typeof(EditorAttachment).GetInheritorsOfAbstractType())
+				ApprovedBindables.Add(attachmentType);
+
+			foreach (var timelineType in typeof(EditorTimeline).GetInheritorsOfAbstractType())
+				ApprovedBindables.Add(timelineType);
+		}
 		public Type BindToType(string? assemblyName, string typeName) {
 			var resolvedTypeName = $"{typeName}, {assemblyName}";
 
@@ -87,13 +98,11 @@ namespace Nucleus.ModelEditor
 					}
 				}
 
-				foreach (var skin in model.Skins) {
+				foreach (var skin in model.Skins) 
 					SkinAdded?.Invoke(this, model, skin);
-				}
-
-				foreach (var animation in model.Animations) {
+				
+				foreach (var animation in model.Animations) 
 					AnimationAdded?.Invoke(this, model, animation);
-				}
 			}
 		}
 
@@ -344,21 +353,30 @@ namespace Nucleus.ModelEditor
 		// ============================================================================================== //
 
 		/// <summary>
-		/// Called when a slot is added to a bone.
+		/// Called when an animation is added to a bone.
 		/// </summary>
 		public event AnimationAddRemove? AnimationAdded;
 		/// <summary>
-		/// Called when a slot is removed from a bone.
+		/// Called when an animation is removed from a bone.
 		/// </summary>
 		public event AnimationAddRemove? AnimationRemoved;
 		/// <summary>
-		/// Called when a slot is renamed.
+		/// Called when an animation is renamed.
 		/// </summary>
 		public event AnimationRename? AnimationRenamed;
+		/// <summary>
+		/// Called when an animation is activated.
+		/// </summary>
+		public event AnimationGeneric? AnimationActivated;
+		/// <summary>
+		/// Called when an animation is deactivated
+		/// </summary>
+		public event AnimationGeneric? AnimationDeactivated;
 
 
 		public delegate void AnimationAddRemove(EditorFile file, EditorModel model, EditorAnimation animation);
 		public delegate void AnimationRename(EditorFile file, EditorAnimation animation, string oldName, string newName);
+		public delegate void AnimationGeneric(EditorFile file, EditorModel model, EditorAnimation animation);
 
 		public EditorReturnResult<EditorAnimation> AddAnimation(EditorModel model, string name) {
 			if (model.Skins.FirstOrDefault(x => x.Name == name) != null)
@@ -380,6 +398,26 @@ namespace Nucleus.ModelEditor
 			var oldName = animation.Name;
 			animation.Name = newName;
 			AnimationRenamed?.Invoke(this, animation, oldName, newName);
+
+			return EditorResult.OK;
+		}
+
+		public EditorResult SetActiveAnimation(EditorModel model, EditorAnimation anim) {
+			UnsetActiveAnimation(model);
+
+			model.ActiveAnimation = anim;
+			AnimationActivated?.Invoke(this, model, anim);
+
+			return EditorResult.OK;
+		}
+
+		public EditorResult UnsetActiveAnimation(EditorModel model, EditorAnimation? onlyIfThis = null) {
+			if (model.ActiveAnimation == null) return EditorResult.OK;
+			if (onlyIfThis != null && model.ActiveAnimation != onlyIfThis) return new("Not the same animation!");
+
+			var anim = model.ActiveAnimation;
+			model.ActiveAnimation = null;
+			AnimationDeactivated?.Invoke(this, model, anim);
 
 			return EditorResult.OK;
 		}

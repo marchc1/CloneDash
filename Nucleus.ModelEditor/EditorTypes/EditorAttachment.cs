@@ -31,6 +31,7 @@ namespace Nucleus.ModelEditor
 
 		[JsonIgnore] public bool Hovered { get; set; }
 		[JsonIgnore] public bool Selected { get; set; }
+		[JsonIgnore]
 		public bool Hidden {
 			get => Slot.GetActiveAttachment() != this;
 			set { }

@@ -307,7 +307,7 @@ namespace Nucleus.ModelEditor
 
 				var animationTools = animateWorkspace.SplitApart(Dock.Bottom);
 
-				animationTools.SizePercentage = 0.2f;
+				animationTools.SizePercentage = 0.33f;
 				Dopesheet = animationTools.Division.AddView<DopesheetView>();
 
 				var playback = animationTools.Division.SplitApart(Dock.Right);
@@ -463,7 +463,7 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			EngineCore.Initialize(1600, 900, "Nucleus - Model v4 Editor", args);
+			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args);
 			EngineCore.GameInfo = new() {
 				GameName = "Nucleus - Model v4 Editor"
 			};
