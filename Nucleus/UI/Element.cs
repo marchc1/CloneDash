@@ -1282,7 +1282,7 @@ namespace Nucleus.UI
 		/// Also includes the element itself.
 		/// </summary>
 		/// <returns></returns>
-		public bool CanInput() {
+		public virtual bool CanInput() {
 			if (InputDisabled)
 				return false;
 

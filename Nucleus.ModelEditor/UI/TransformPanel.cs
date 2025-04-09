@@ -4,6 +4,44 @@ using Raylib_cs;
 
 namespace Nucleus.ModelEditor
 {
+	public class KeyframeButton : Button
+	{
+		public static readonly Raylib_cs.Color KEYFRAME_COLOR_NO_PENDING_KEYFRAME = new Raylib_cs.Color(90, 240, 120);
+		public static readonly Raylib_cs.Color KEYFRAME_COLOR_PENDING_KEYFRAME = new Raylib_cs.Color(240, 90, 20);
+		public static readonly Raylib_cs.Color KEYFRAME_COLOR_ACTIVE_KEYFRAME = new Raylib_cs.Color(240, 30, 5);
+
+		public override void Paint(float width, float height) {
+			bool canInput = CanInput();
+			bool isAnimateMode = ModelEditor.Active.AnimationMode;
+			var activeAnimation = ModelEditor.Active.File.Models.First().ActiveAnimation;
+
+			bool canUse = (canInput && isAnimateMode && activeAnimation != null);
+
+			if (canUse) {
+				// todo: determine background color
+				BackgroundColor = KEYFRAME_COLOR_NO_PENDING_KEYFRAME;
+				ImageColor = Color.Black;
+			}
+			else {
+				BackgroundColor = DefaultBackgroundColor;
+				ImageColor = Color.Gray;
+			}
+
+			base.Paint(width, height);
+		}
+
+		public override bool CanInput() {
+			if (ModelEditor.Active.File.Models.First().ActiveAnimation == null) return false;
+
+			return base.CanInput();
+		}
+
+		protected override void Initialize() {
+			Text = "";
+			Image = Textures.LoadTextureFromFile("models/keyframe.png");
+			ImageOrientation = ImageOrientation.Centered;
+		}
+	}
 	public class TransformPanel : Panel
 	{
 		public delegate void FloatChange(int i, float value);
@@ -13,7 +51,7 @@ namespace Nucleus.ModelEditor
 		public event Element.MouseEventDelegate? OnKeyframe;
 		private NumSlider[] sliders;
 		private Button button;
-		private Button keyframe;
+		private KeyframeButton keyframe;
 
 		private bool enableSliders = true;
 		public bool EnableSliders {
@@ -28,7 +66,7 @@ namespace Nucleus.ModelEditor
 		}
 		public NumSlider GetNumSlider(int index) => sliders[index];
 		public Button GetButton() => button;
-		public Button GetKeyframeButton() => keyframe;
+		public KeyframeButton GetKeyframeButton() => keyframe;
 
 		public static TransformPanel New(Element parent, string text, int floats) {
 			var panel = parent.Add<TransformPanel>();
@@ -42,32 +80,11 @@ namespace Nucleus.ModelEditor
 			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
 			panel.button.BorderSize = 0;
 
-			panel.keyframe = panel.Add<Button>();
+			panel.keyframe = panel.Add<KeyframeButton>();
 			panel.keyframe.Dock = Dock.Right;
-			panel.keyframe.Text = "";
-			panel.keyframe.Image = panel.Textures.LoadTextureFromFile("models/keyframe.png");
-			panel.keyframe.ImageOrientation = ImageOrientation.Centered;
 			panel.keyframe.Size = new(26);
 			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(panel, v2, v3);
 			panel.keyframe.BorderSize = 0;
-			panel.keyframe.PaintOverride += (self, w, h) => {
-				bool canInput = self.CanInput();
-				bool isAnimateMode = ModelEditor.Active.AnimationMode;
-
-				bool canUse = (canInput && isAnimateMode);
-
-				if (canUse) {
-					// todo: determine background color
-					self.BackgroundColor = ModelEditor.KEYFRAME_COLOR_NO_PENDING_KEYFRAME;
-					self.ImageColor = Color.Black;
-				}
-				else {
-					self.BackgroundColor = Element.DefaultBackgroundColor;
-					self.ImageColor = Color.Gray;
-				}
-
-				self.Paint(w, h);
-			};
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;
