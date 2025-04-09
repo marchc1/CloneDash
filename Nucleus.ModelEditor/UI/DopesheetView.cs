@@ -369,12 +369,19 @@ namespace Nucleus.ModelEditor.UI
 			drawGradient(height);
 		}
 
+		/// <summary>
+		/// Determines if the dopesheet listens to hooks relating
+		/// </summary>
+		public bool ShouldListenToHooks { get; private set; }
+
 		private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
 			KeyframeInfoPanel.ClearChildren();
+			ShouldListenToHooks = false;
 		}
 
 		private void File_AnimationActivated(EditorFile file, EditorModel model, EditorAnimation animation) {
 			KeyframeInfoPanel.ClearChildren();
+			ShouldListenToHooks = true;
 		}
 	}
 }
