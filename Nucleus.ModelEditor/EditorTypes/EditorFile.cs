@@ -120,7 +120,6 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-
 		/// <summary>
 		/// Called when the file is cleared.
 		/// </summary>
