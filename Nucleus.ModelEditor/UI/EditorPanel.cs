@@ -487,6 +487,13 @@ namespace Nucleus.ModelEditor
 					hovered.OnMouseEntered();
 				}
 			}
+			else {
+				if (HoveredObject != null) {
+					HoveredObject.Hovered = false;
+					HoveredObject.OnMouseLeft();
+				}
+				HoveredObject = null;
+			}
 			activeOp?.Think(ModelEditor.Active, HoverGridPos);
 		}
 		public Vector2F ScreenToGrid(Vector2F screenPos) {
