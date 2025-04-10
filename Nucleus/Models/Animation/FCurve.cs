@@ -1,9 +1,11 @@
-﻿namespace Nucleus.Models
+﻿using Newtonsoft.Json;
+
+namespace Nucleus.Models
 {
-	public class FCurve<T> : IFCurve
+	public class FCurve<T> : IKeyframable<T>
 	{
 		public List<Keyframe<T>> Keyframes { get; private set; } = [];
-		private bool valid = false;
+		[JsonIgnore] private bool valid = false;
 
 		public void AddKeyframe(Keyframe<T> keyframe) {
 			Keyframes.Add(keyframe);
@@ -21,7 +23,7 @@
 			}
 		}
 
-		public bool Invalid => !valid;
+		[JsonIgnore] public bool Invalid => !valid;
 
 		public T? DetermineValueAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();

@@ -1,34 +1,73 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Models;
+using Nucleus.Types;
 using System.Diagnostics;
 using System.Net.Mail;
 using System.Reflection;
 
 namespace Nucleus.ModelEditor;
 
-public interface IBoneEditorTimeline {
+public interface IBoneEditorTimeline
+{
 	public EditorBone Bone { get; set; }
 }
-public interface ISlotEditorTimeline {
+public interface ISlotEditorTimeline
+{
 	public EditorSlot Slot { get; set; }
 }
 
 public abstract class EditorTimeline
 {
+	public EditorBone AssociatedBone { get; set; }
 	public abstract void Apply(EditorModel model, float time);
 }
 
-public class AttachmentTimeline : EditorTimeline, ISlotEditorTimeline
-{
-	public EditorSlot Slot { get; set; }
-	public FCurve<EditorAttachment?> Attachments = new();
-	public override void Apply(EditorModel model, float time) {
-		var currentAttachment = Attachments.DetermineValueAtTime(time);
+public abstract class CurveEditorTimeline : EditorTimeline;
 
-		Slot.SetActiveAttachment(currentAttachment);
+public abstract class CurveEditorTimeline1 : CurveEditorTimeline
+{
+	public FCurve<float> Curve = new();
+}
+public abstract class CurveEditorTimeline2 : CurveEditorTimeline
+{
+	public FCurve<float> Curve1 = new();
+	public FCurve<float> Curve2 = new();
+	
+	public void Split<T>(out T t1, out T t2) where T : CurveEditorTimeline1, new() {
+		t1 = new();
+		t2 = new();
+
+		t1.Curve = Curve1;
+		t2.Curve = Curve2;
+
+		return;
 	}
 }
 
+public class TranslateTimeline : CurveEditorTimeline2, IBoneEditorTimeline
+{
+	public EditorBone Bone { get; set; }
+	public override void Apply(EditorModel model, float time) {
+		Bone.PositionX = Curve1.DetermineValueAtTime(time);
+		Bone.PositionY = Curve2.DetermineValueAtTime(time);
+	}
+}
+
+public class TranslateXTimeline : CurveEditorTimeline1, IBoneEditorTimeline
+{
+	public EditorBone Bone { get; set; }
+	public override void Apply(EditorModel model, float time) {
+		Bone.PositionX = Curve.DetermineValueAtTime(time);
+	}
+}
+
+public class TranslateYTimeline : CurveEditorTimeline1, IBoneEditorTimeline
+{
+	public EditorBone Bone { get; set; }
+	public override void Apply(EditorModel model, float time) {
+		Bone.PositionY = Curve.DetermineValueAtTime(time);
+	}
+}
 
 public class EditorAnimation : IEditorType
 {
@@ -54,7 +93,7 @@ public class EditorAnimation : IEditorType
 	public string GetName() => Name;
 
 	public void Apply(float time) {
-		foreach(var timeline in Timelines) {
+		foreach (var timeline in Timelines) {
 			timeline.Apply(Model, time);
 		}
 	}

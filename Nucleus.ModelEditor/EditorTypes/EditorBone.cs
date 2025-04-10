@@ -134,6 +134,16 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var separateRow = PropertiesPanel.NewRow(props, "Separate", "models/separate.png");
+			props.Thinking += (self) => {
+				separateRow.Parent.Visible = separateRow.Parent.Enabled = ModelEditor.Active.AnimationMode;
+				separateRow.InputDisabled = ModelEditor.Active.File.ActiveAnimation == null;
+			};
+
+			var separateTranslation = PropertiesPanel.AddLabeledCheckbox(separateRow, "Translate", false);
+			var separateScale = PropertiesPanel.AddLabeledCheckbox(separateRow, "Scale", false);
+			var separateReflection = PropertiesPanel.AddLabeledCheckbox(separateRow, "Reflection", false);
+
 			var transformRow = PropertiesPanel.NewRow(props, "Transform", "models/bonetransform.png");
 
 			var boneTransformData = TransformMode.Unpack();
