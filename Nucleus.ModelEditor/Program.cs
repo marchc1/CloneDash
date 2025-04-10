@@ -55,6 +55,29 @@ namespace Nucleus.ModelEditor
 	}
 	public class ModelEditor : Level
 	{
+		public bool IsPropertyCurrentlyAnimatable(KeyframeProperty prop) {
+			if (prop == KeyframeProperty.None) return false;
+
+			if (!AnimationMode) return false;
+
+			if (File.ActiveAnimation == null) return false;
+
+			switch (prop) {
+				case KeyframeProperty.Bone_Translation:
+				case KeyframeProperty.Bone_Rotation:
+				case KeyframeProperty.Bone_Scale:
+				case KeyframeProperty.Bone_Shear:
+				case KeyframeProperty.Bone_Inherit:
+					return LastSelectedObject is EditorBone;
+
+				case KeyframeProperty.Slot_Attachment:
+					case KeyframeProperty.Slot_Color:
+					return LastSelectedObject is EditorSlot;
+
+				default:
+					return true;
+			}
+		}
 		public ActionStack Actions { get; } = new();
 		// Object selection management
 		private List<IEditorType> __selectedObjectsL = [];
@@ -205,7 +228,6 @@ namespace Nucleus.ModelEditor
 			return t != null; // we could return true here but the compiler isn't recognizing that t would not be null.
 		}
 
-
 		public static ModelEditor Active;
 
 
@@ -302,9 +324,6 @@ namespace Nucleus.ModelEditor
 
 				var animateWorkspace = View.CopyWorkspace("Setup", "Animate");
 
-				var splitAn = animateWorkspace.Splits.First();
-				Animations = splitAn.Division.AddView<AnimationsView>();
-
 				var animationTools = animateWorkspace.SplitApart(Dock.Bottom);
 
 				animationTools.SizePercentage = 0.33f;
@@ -313,6 +332,10 @@ namespace Nucleus.ModelEditor
 				var playback = animationTools.Division.SplitApart(Dock.Right);
 				playback.SizePercentage = 0.2f;
 				Playback = playback.Division.AddView<PlaybackView>();
+
+				var splitAn = animateWorkspace.SplitApart(Dock.Right);
+				splitAn.SizePercentage = 0.17f;
+				Animations = splitAn.Division.AddView<AnimationsView>();
 			}
 
 			Editor.Add(out SwitchMode);
@@ -342,6 +365,11 @@ namespace Nucleus.ModelEditor
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
 			File.Cleared += File_Cleared;
+
+			ToggleModes();
+			OpenTest();
+
+			SetupHooks();
 		}
 
 		private void File_Cleared(EditorFile file) {
@@ -354,6 +382,9 @@ namespace Nucleus.ModelEditor
 
 		private void File_OperatorDeactivated(EditorFile self, Operator op, bool canceled) {
 			op.RestoreEditor(this);
+		}
+		private void SetupHooks() {
+			Dopesheet.SetupHooks();
 		}
 
 		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);
