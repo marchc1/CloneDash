@@ -114,6 +114,9 @@ namespace Nucleus.ModelEditor
 
 				foreach (var animation in model.Animations)
 					AnimationAdded?.Invoke(this, model, animation);
+
+				if (ActiveAnimation != null)
+					SetActiveAnimation(model, ActiveAnimation);
 			}
 		}
 
