@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using glTFLoader.Schema;
+using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
 using Color = Raylib_cs.Color;
@@ -53,6 +54,7 @@ namespace Nucleus.ModelEditor.UI
 		public FlexPanel Buttons;
 		public Panel TimeInfoPanel;
 		public Panel KeyframeInfoPanel;
+		public Panel KeyframeChannelsPanel;
 		public NumSlider ZoomSlider;
 
 		private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
@@ -128,6 +130,12 @@ namespace Nucleus.ModelEditor.UI
 			Buttons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			Buttons.PaintOverride += Buttons_PaintOverride;
 
+			ButtonsAndNames.Add(out KeyframeChannelsPanel);
+			KeyframeChannelsPanel.Dock = Dock.Fill;
+			KeyframeChannelsPanel.DockMargin = RectangleF.TLRB(0);
+			KeyframeChannelsPanel.DockPadding = RectangleF.Zero;
+			KeyframeChannelsPanel.BorderSize = 0;
+
 			// Setup buttons
 			{
 				Buttons.Add(out Button jumpStart); SetupButton(jumpStart, true, true, false); jumpStart.Image = Textures.LoadTextureFromFile("models/jumpStart.png");
@@ -147,7 +155,7 @@ namespace Nucleus.ModelEditor.UI
 			TimeInfoPanel.PaintOverride += TopButtonsAndTimeInfo_PaintOverride;
 			TimeInfoPanel.MouseClickEvent += TimeInfoPanel_MouseClickEvent;
 			TimeInfoPanel.MouseDragEvent += TimeInfoPanel_MouseDragEvent;
-			TimeInfoPanel.MouseReleaseEvent += TimeInfoPanel_MouseReleaseEvent; ;
+			TimeInfoPanel.MouseReleaseEvent += TimeInfoPanel_MouseReleaseEvent;
 
 			Add(out KeyframeInfoPanel);
 			KeyframeInfoPanel.Dock = Dock.Fill;
@@ -157,7 +165,7 @@ namespace Nucleus.ModelEditor.UI
 			KeyframeInfoPanel.PaintOverride += KeyframeInfoPanel_PaintOverride;
 			KeyframeInfoPanel.MouseClickEvent += KeyframeInfoPanel_MouseClickEvent;
 			KeyframeInfoPanel.MouseDragEvent += KeyframeInfoPanel_MouseDragEvent;
-			KeyframeInfoPanel.MouseReleaseEvent += KeyframeInfoPanel_MouseReleaseEvent; ;
+			KeyframeInfoPanel.MouseReleaseEvent += KeyframeInfoPanel_MouseReleaseEvent;
 		}
 
 		private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
@@ -382,12 +390,84 @@ namespace Nucleus.ModelEditor.UI
 
 		private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
 			KeyframeInfoPanel.ClearChildren();
+			KeyframeChannelsPanel.ClearChildren();
 			ShouldListenToHooks = false;
 		}
 
 		private void File_AnimationActivated(EditorFile file, EditorModel model, EditorAnimation animation) {
 			KeyframeInfoPanel.ClearChildren();
 			ShouldListenToHooks = true;
+			CreateChannels();
+		}
+
+		public void SetupHooks() {
+			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
+		}
+		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
+		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
+
+		public void SetupBoneChannelHeader(EditorBone bone) {
+			KeyframeChannelsPanel.Add(out Button header);
+			header.Dock = Dock.Top;
+			header.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
+			header.DockMargin = RectangleF.Zero;
+			header.BorderSize = 1;
+			header.Size = new(24);
+			header.TextPadding = new(24, 0);
+			header.ForegroundColor = new(10, 10, 10);
+			header.TextAlignment = Anchor.CenterLeft;
+			header.Text = bone.Name;
+			header.TextSize = 16;
+			header.Image = Textures.LoadTextureFromFile("models/bone.png");
+			header.ImageOrientation = ImageOrientation.Centered;
+			header.ImageFollowsText = true;
+
+			header.MouseClickEvent += (_, _, _) => {
+				ModelEditor.Active.SelectObject(bone);
+			};
+		}
+
+		public void CreateChannels() {
+			KeyframeChannelsPanel.ClearChildren();
+
+			var animation = ModelEditor.Active.File.ActiveAnimation;
+			if (animation == null) return;
+
+			KeyframeChannelsPanel.Add(out Button header);
+			header.Dock = Dock.Top;
+			header.BackgroundColor = HEADER_SELECTED_COLOR;
+			header.DockMargin = RectangleF.Zero;
+			header.BorderSize = 1;
+			header.Size = new(24);
+			header.TextPadding = new(8, 0);
+			header.ForegroundColor = new(10, 10, 10);
+			header.TextAlignment = Anchor.CenterLeft;
+			header.Text = animation.Name;
+			header.TextSize = 17;
+
+			if (ModelEditor.Active.SelectedObjectsCount > 0) {
+				HashSet<EditorBone> foundBones = [];
+
+				foreach(var selected in ModelEditor.Active.SelectedObjects) {
+					EditorBone? representingBone = null;
+
+					if (selected is EditorBone bone)
+						representingBone = bone;
+					else if (selected is EditorSlot slot)
+						representingBone = slot.Bone;
+
+					if (representingBone != null && foundBones.Add(representingBone))
+						SetupBoneChannelHeader(representingBone);
+				}
+			}
+			else {
+				// todo
+			}
+		}
+
+		private void Active_SelectedChanged() {
+			if (!ShouldListenToHooks) return;
+			CreateChannels();
 		}
 	}
 }

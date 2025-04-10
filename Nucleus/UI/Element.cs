@@ -1108,6 +1108,7 @@ namespace Nucleus.UI
 			return ret;
 		}
 
+		public bool ImageFollowsText { get; set; } = false;
 		public Color? ImageColor { get; set; } = null;
 		public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
 			if (Image == null)

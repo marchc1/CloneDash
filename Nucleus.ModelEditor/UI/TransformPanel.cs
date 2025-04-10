@@ -29,7 +29,7 @@ namespace Nucleus.ModelEditor
 		public Button GetButton() => button;
 		public KeyframeButton GetKeyframeButton() => keyframe;
 
-		public static TransformPanel New(Element parent, string text, int floats) {
+		public static TransformPanel New(Element parent, string text, int floats, KeyframeProperty property = KeyframeProperty.None) {
 			var panel = parent.Add<TransformPanel>();
 			panel.DockPadding = RectangleF.TLRB(2);
 			panel.BorderSize = 2;
@@ -44,6 +44,7 @@ namespace Nucleus.ModelEditor
 			panel.keyframe = panel.Add<KeyframeButton>();
 			panel.keyframe.Dock = Dock.Right;
 			panel.keyframe.Size = new(26);
+			panel.keyframe.Property = property;
 			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(panel, v2, v3);
 			panel.keyframe.BorderSize = 0;
 

@@ -64,10 +64,10 @@ namespace Nucleus.ModelEditor
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			transformPanel.Size = new(280, 115);
 
-			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1);
-			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2);
-			TransformScale = TransformPanel.New(transformPanel, "Scale", 2);
-			TransformShear = TransformPanel.New(transformPanel, "Shear", 2);
+			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1, KeyframeProperty.Bone_Rotation);
+			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2, KeyframeProperty.Bone_Translation);
+			TransformScale = TransformPanel.New(transformPanel, "Scale", 2, KeyframeProperty.Bone_Scale);
+			TransformShear = TransformPanel.New(transformPanel, "Shear", 2, KeyframeProperty.Bone_Shear);
 
 			TransformRotation.GetNumSlider(0).OnValueChanged += CHANGE_Rotation;
 			TransformTranslation.GetNumSlider(0).OnValueChanged += CHANGE_TranslationX;

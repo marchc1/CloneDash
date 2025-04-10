@@ -9,7 +9,7 @@ namespace Nucleus.UI
 	{
 		protected override void Initialize() {
 			base.Initialize();
-			BackgroundColor = new(20, 25, 32, 220); 
+			BackgroundColor = new(20, 25, 32, 220);
 		}
 		protected override void OnThink(FrameState frameState) {
 			if (Hovered)
@@ -67,14 +67,22 @@ namespace Nucleus.UI
 			else
 				Graphics2D.DrawRectangle(0, 0, width, height);
 
-			ImageDrawing();
+			Vector2F posOffset = new(0);
+
+			Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(TextAlignment, RenderBounds.Size, TextPadding);
+			if (ImageFollowsText && Image != null) {
+				posOffset = new Vector2F(textDrawingPosition.X - (width / 2) - (Image.Width / 2) - 2, 0);
+			}
+
+			ImageDrawing(posOffset);
 			if (BorderSize > 0) {
-				Graphics2D.SetDrawColor(fore); 
+				Graphics2D.SetDrawColor(fore);
 				if (DrawAsCircle)
 					Graphics2D.DrawCircleLines(whd2, whd3);
 				else
 					Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 			}
+
 			base.Paint(width, height);
 		}
 	}

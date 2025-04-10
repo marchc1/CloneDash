@@ -14,12 +14,7 @@ namespace Nucleus.ModelEditor
 
 		public override void Paint(float width, float height) {
 			bool canInput = CanInput();
-			bool isAnimateMode = ModelEditor.Active.AnimationMode;
-			var activeAnimation = ModelEditor.Active.File.Models.First().ActiveAnimation;
-
-			bool canUse = (canInput && ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property));
-
-			if (canUse) {
+			if (canInput) {
 				// todo: determine background color
 				BackgroundColor = KEYFRAME_COLOR_NO_PENDING_KEYFRAME;
 				ImageColor = Color.Black;
@@ -33,9 +28,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override bool CanInput() {
-			if (ModelEditor.Active.File.Models.First().ActiveAnimation == null) return false;
-
-			return base.CanInput();
+			return ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && base.CanInput();
 		}
 
 		protected override void Initialize() {

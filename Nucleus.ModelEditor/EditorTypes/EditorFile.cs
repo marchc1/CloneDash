@@ -63,6 +63,8 @@ namespace Nucleus.ModelEditor
 
 		public TimelineManager Timeline = new();
 
+		public EditorAnimation? ActiveAnimation;
+
 		// ============================================================================================== //
 		// Serialization
 		// ============================================================================================== //
@@ -414,6 +416,7 @@ namespace Nucleus.ModelEditor
 			UnsetActiveAnimation(model);
 
 			model.ActiveAnimation = anim;
+			ActiveAnimation = anim;
 			AnimationActivated?.Invoke(this, model, anim);
 
 			return EditorResult.OK;
@@ -425,6 +428,7 @@ namespace Nucleus.ModelEditor
 
 			var anim = model.ActiveAnimation;
 			model.ActiveAnimation = null;
+			ActiveAnimation = null;
 			AnimationDeactivated?.Invoke(this, model, anim);
 
 			return EditorResult.OK;

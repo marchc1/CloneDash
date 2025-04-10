@@ -19,7 +19,7 @@ namespace Nucleus.ModelEditor
 {
 	public class ModelImage : IEditorType
 	{
-		public EditorModel GetModel() => throw new Exception();
+		public EditorModel GetModel() => null;
 		public string SingleName => "Image File";
 		public string PluralName => "Image Files";
 		public bool Hovered { get; set; }
