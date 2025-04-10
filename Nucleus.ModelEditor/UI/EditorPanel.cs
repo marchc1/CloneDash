@@ -407,85 +407,86 @@ namespace Nucleus.ModelEditor
 
 
 		protected override void OnThink(FrameState frameState) {
-			// Hover determination
-			HoverGridPos = ScreenToGrid(GetMousePos());
-
-			bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
-			bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
-			bool canHoverTest_Meshes = (SelectMode & ViewportSelectMode.Meshes) == ViewportSelectMode.Meshes;
-
-			IEditorType? hovered = null;
-
-			foreach (var model in ModelEditor.Active.File.Models) {
-				EditorAttachment? firstAttachment = null;
-				foreach (var slot in model.Slots) {
-					foreach (var attachment in slot.Attachments) {
-						var lastHovered = hovered;
-
-						if (!attachment.GetVisible()) continue;
-
-						bool hovertest = attachment.HoverTest(HoverGridPos) && CanSelect(attachment);
-
-						switch (attachment) {
-							case EditorRegionAttachment:
-								if (canHoverTest_Images && hovertest) hovered = attachment; break;
-							case EditorMeshAttachment meshAttachment:
-								if (canHoverTest_Meshes && hovertest)
-									hovered = attachment;
-
-								// Test the vertices, if selected
-								if (meshAttachment.Selected) {
-									foreach (var vertex in meshAttachment.GetVertices()) {
-										if (vertex.HoverTest(HoverGridPos)) {
-											hovered = vertex;
-										}
-									}
-								}
-
-								break;
-						}
-
-						if (hovered == attachment) {
-							if (firstAttachment == null)
-								firstAttachment = attachment;
-							else {
-								if (!attachment.HoverTestOpacity(HoverGridPos))
-									hovered = lastHovered; // reset back, only use fallback if needed
-							}
-						}
-					}
-					if (hovered is MeshVertex) break;
-				}
-
-				if (hovered is not MeshVertex && canHoverTest_Bones) {
-					foreach (var bone in model.GetAllBones()) {
-						if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
-							hovered = bone;
-					}
-				}
-			}
-
 			var activeOp = ModelEditor.Active.File.ActiveOperator;
 
-			// The active operator has the final say after our determinations were made
-			// If no active operator; default to true
-			// If active operator; default is true, unless operator overrode the method
-			if (!(activeOp?.HoverTest(hovered) ?? true)) {
-				return;
+			if (Hovered) {
+				// Hover determination
+				HoverGridPos = ScreenToGrid(GetMousePos());
+
+				bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
+				bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
+				bool canHoverTest_Meshes = (SelectMode & ViewportSelectMode.Meshes) == ViewportSelectMode.Meshes;
+
+				IEditorType? hovered = null;
+
+				foreach (var model in ModelEditor.Active.File.Models) {
+					EditorAttachment? firstAttachment = null;
+					foreach (var slot in model.Slots) {
+						foreach (var attachment in slot.Attachments) {
+							var lastHovered = hovered;
+
+							if (!attachment.GetVisible()) continue;
+
+							bool hovertest = attachment.HoverTest(HoverGridPos) && CanSelect(attachment);
+
+							switch (attachment) {
+								case EditorRegionAttachment:
+									if (canHoverTest_Images && hovertest) hovered = attachment; break;
+								case EditorMeshAttachment meshAttachment:
+									if (canHoverTest_Meshes && hovertest)
+										hovered = attachment;
+
+									// Test the vertices, if selected
+									if (meshAttachment.Selected) {
+										foreach (var vertex in meshAttachment.GetVertices()) {
+											if (vertex.HoverTest(HoverGridPos)) {
+												hovered = vertex;
+											}
+										}
+									}
+
+									break;
+							}
+
+							if (hovered == attachment) {
+								if (firstAttachment == null)
+									firstAttachment = attachment;
+								else {
+									if (!attachment.HoverTestOpacity(HoverGridPos))
+										hovered = lastHovered; // reset back, only use fallback if needed
+								}
+							}
+						}
+						if (hovered is MeshVertex) break;
+					}
+
+					if (hovered is not MeshVertex && canHoverTest_Bones) {
+						foreach (var bone in model.GetAllBones()) {
+							if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
+								hovered = bone;
+						}
+					}
+				}
+
+				// The active operator has the final say after our determinations were made
+				// If no active operator; default to true
+				// If active operator; default is true, unless operator overrode the method
+				if (!(activeOp?.HoverTest(hovered) ?? true)) {
+					return;
+				}
+
+				if (HoveredObject != null) {
+					HoveredObject.Hovered = false;
+					HoveredObject.OnMouseLeft();
+				}
+
+				HoveredObject = hovered;
+
+				if (hovered != null) {
+					hovered.Hovered = true;
+					hovered.OnMouseEntered();
+				}
 			}
-
-			if (HoveredObject != null) {
-				HoveredObject.Hovered = false;
-				HoveredObject.OnMouseLeft();
-			}
-
-			HoveredObject = hovered;
-
-			if (hovered != null) {
-				hovered.Hovered = true;
-				hovered.OnMouseEntered();
-			}
-
 			activeOp?.Think(ModelEditor.Active, HoverGridPos);
 		}
 		public Vector2F ScreenToGrid(Vector2F screenPos) {
