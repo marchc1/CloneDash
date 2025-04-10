@@ -813,7 +813,7 @@ namespace Nucleus.UI
 			//OnRemoval();
 		}
 
-		public virtual string TooltipText { get; set; }
+		public virtual string? TooltipText { get; set; }
 
 		public virtual void PreRender() { }
 		public virtual void PostRender() { }

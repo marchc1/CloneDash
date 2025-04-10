@@ -8,11 +8,14 @@ namespace Nucleus.ModelEditor
 		public delegate void FloatChange(int i, float value);
 		public event FloatChange? FloatChanged;
 
+		public delegate void Keyframed(int index);
+
 		public event Element.MouseEventDelegate? OnSelected;
-		public event Element.MouseEventDelegate? OnKeyframe;
+		public event Keyframed? OnKeyframe;
 		private NumSlider[] sliders;
 		private Button button;
 		private KeyframeButton keyframe;
+		private KeyframeButton keyframe2;
 
 		private bool enableSliders = true;
 		public bool EnableSliders {
@@ -28,6 +31,7 @@ namespace Nucleus.ModelEditor
 		public NumSlider GetNumSlider(int index) => sliders[index];
 		public Button GetButton() => button;
 		public KeyframeButton GetKeyframeButton() => keyframe;
+		public KeyframeButton GetKeyframeButton2() => keyframe2;
 
 		public static TransformPanel New(Element parent, string text, int floats, KeyframeProperty property = KeyframeProperty.None) {
 			var panel = parent.Add<TransformPanel>();
@@ -41,12 +45,30 @@ namespace Nucleus.ModelEditor
 			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
 			panel.button.BorderSize = 0;
 
+			panel.Thinking += (_) => {
+				panel.keyframe.TooltipText = panel.keyframe2.Enabled ? "Keyframe X" : null;
+			};
+
+			panel.keyframe2 = panel.Add<KeyframeButton>();
+			panel.keyframe2.Dock = Dock.Right;
+			panel.keyframe2.Size = new(26);
+			panel.keyframe2.Property = property;
+			panel.keyframe2.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(2);
+			panel.keyframe2.BorderSize = 0;
+			panel.keyframe2.Enabled = false;
+			panel.keyframe2.TooltipText = "Keyframe Y";
+
 			panel.keyframe = panel.Add<KeyframeButton>();
 			panel.keyframe.Dock = Dock.Right;
 			panel.keyframe.Size = new(26);
 			panel.keyframe.Property = property;
-			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(panel, v2, v3);
+			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(1);
 			panel.keyframe.BorderSize = 0;
+
+			ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
+				if (prop == property)
+					panel.keyframe2.Enabled = separated;
+			};
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;

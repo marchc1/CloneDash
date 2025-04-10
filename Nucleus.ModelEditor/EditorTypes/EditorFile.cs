@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Nucleus.ModelEditor.UI;
+using Nucleus.Models;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Runtime.CompilerServices;
@@ -99,7 +100,7 @@ namespace Nucleus.ModelEditor
 
 							switch (attachment) {
 								case EditorMeshAttachment meshAttachment:
-									foreach(var weight in meshAttachment.Weights) {
+									foreach (var weight in meshAttachment.Weights) {
 										AssociateBoneToMesh(meshAttachment, weight.Bone);
 									}
 									break;
@@ -108,10 +109,10 @@ namespace Nucleus.ModelEditor
 					}
 				}
 
-				foreach (var skin in model.Skins) 
+				foreach (var skin in model.Skins)
 					SkinAdded?.Invoke(this, model, skin);
-				
-				foreach (var animation in model.Animations) 
+
+				foreach (var animation in model.Animations)
 					AnimationAdded?.Invoke(this, model, animation);
 			}
 		}
@@ -611,7 +612,7 @@ namespace Nucleus.ModelEditor
 			// todo: implement *actual* autobinding
 
 			float sharedWeight = 1f / weights.Count;
-			foreach(var weightData in weights) {
+			foreach (var weightData in weights) {
 				foreach (var vertex in attachment.GetVertices())
 					attachment.SetVertexWeight(vertex, weightData.Bone, sharedWeight, false); // skip validation to save time
 			}
@@ -619,7 +620,7 @@ namespace Nucleus.ModelEditor
 
 		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, MeshVertex? onlyThisVertex = null) {
 			var weights = attachment.Weights;
-			foreach(var weightData in weights) {
+			foreach (var weightData in weights) {
 				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
 					continue;
 
@@ -628,7 +629,7 @@ namespace Nucleus.ModelEditor
 					continue;
 				}
 
-				foreach(var vertex in attachment.GetVertices()) {
+				foreach (var vertex in attachment.GetVertices()) {
 					weightData.SetVertexPos(vertex, weightData.Bone.WorldTransform.WorldToLocal(attachment.WorldTransform.LocalToWorld(vertex)));
 				}
 			}
@@ -880,6 +881,77 @@ namespace Nucleus.ModelEditor
 			AttachmentAdded?.Invoke(this, newAttachment.Slot, newAttachment);
 			if (selected)
 				ModelEditor.Active.SelectObject(newAttachment);
+		}
+
+		public delegate void SeparatePropertyDelegate(EditorBone bone, KeyframeProperty property, bool separated);
+		public event SeparatePropertyDelegate? PropertySeparatedOrCombined;
+		public void SetDoesBoneHaveSeparatedProperty(EditorBone editorBone, KeyframeProperty property, bool separated) {
+			if (ActiveAnimation == null) return;
+
+			ActiveAnimation.SetDoesBoneHaveSeparatedProperty(editorBone, property, separated);
+			PropertySeparatedOrCombined?.Invoke(editorBone, property, separated);
+		}
+
+		public delegate void PropertyKeyframed<IE, T>(IE type, KeyframeProperty property, float frame, T value) where IE : IEditorType;
+
+		public event PropertyKeyframed<EditorBone, float>? RotateKeyframed;
+
+		public event PropertyKeyframed<EditorBone, Vector2F>? TranslateKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? TranslateXKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? TranslateYKeyframed;
+
+		public event PropertyKeyframed<EditorBone, Vector2F>? ScaleKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? ScaleXKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? ScaleYKeyframed;
+
+		public event PropertyKeyframed<EditorBone, Vector2F>? ShearKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? ShearXKeyframed;
+		public event PropertyKeyframed<EditorBone, float>? ShearYKeyframed;
+
+		public event PropertyKeyframed<EditorBone, TransformMode>? TransformModeKeyframed;
+
+		public event PropertyKeyframed<EditorSlot, EditorAttachment>? ActiveAttachmentKeyframed;
+
+		public void KeyframeRotation(EditorBone bone, float frame, float value) {
+
+		}
+
+		public void KeyframeTranslation(EditorBone bone, float frame, Vector2F value) {
+
+		}
+		public void KeyframeTranslationX(EditorBone bone, float frame, float value) {
+
+		}
+		public void KeyframeTranslationY(EditorBone bone, float frame, float value) {
+
+		}
+
+		public void KeyframeScale(EditorBone bone, float frame, Vector2F value) {
+
+		}
+		public void KeyframeScaleX(EditorBone bone, float frame, float value) {
+
+		}
+		public void KeyframeScaleY(EditorBone bone, float frame, float value) {
+
+		}
+
+		public void KeyframeShear(EditorBone bone, float frame, Vector2F value) {
+
+		}
+		public void KeyframeShearX(EditorBone bone, float frame, float value) {
+
+		}
+		public void KeyframeShearY(EditorBone bone, float frame, float value) {
+
+		}
+
+		public void KeyframeTransformMode(EditorBone bone, float frame, TransformMode value) {
+
+		}
+
+		public void KeyframeActiveAttachment(EditorSlot slot, float frame, EditorAttachment value) {
+
 		}
 	}
 }

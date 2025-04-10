@@ -140,9 +140,17 @@ namespace Nucleus.ModelEditor
 				separateRow.InputDisabled = ModelEditor.Active.File.ActiveAnimation == null;
 			};
 
-			var separateTranslation = PropertiesPanel.AddLabeledCheckbox(separateRow, "Translate", false);
-			var separateScale = PropertiesPanel.AddLabeledCheckbox(separateRow, "Scale", false);
-			var separateReflection = PropertiesPanel.AddLabeledCheckbox(separateRow, "Reflection", false);
+			ModelEditor.Active.File.AnimationActivated += (_, _, _) => { };
+			ModelEditor.Active.File.AnimationDeactivated += (_, _, _) => { };
+
+
+			var separateTranslation = PropertiesPanel.AddLabeledCheckbox(separateRow, "Translate", ModelEditor.Active.File.ActiveAnimation?.DoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Translation) ?? false);
+			var separateScale = PropertiesPanel.AddLabeledCheckbox(separateRow, "Scale", ModelEditor.Active.File.ActiveAnimation?.DoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Scale) ?? false);
+			var separateShear = PropertiesPanel.AddLabeledCheckbox(separateRow, "Shear", ModelEditor.Active.File.ActiveAnimation?.DoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Shear) ?? false);
+
+			separateTranslation.OnCheckedChanged += (s) => ModelEditor.Active.File.SetDoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Translation, s.Checked);
+			separateScale.OnCheckedChanged += (s) => ModelEditor.Active.File.SetDoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Scale, s.Checked);
+			separateShear.OnCheckedChanged += (s) => ModelEditor.Active.File.SetDoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Shear, s.Checked);
 
 			var transformRow = PropertiesPanel.NewRow(props, "Transform", "models/bonetransform.png");
 

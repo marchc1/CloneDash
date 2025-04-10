@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using glTFLoader.Schema;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Rendering;
@@ -111,6 +112,46 @@ namespace Nucleus.ModelEditor
 
 			SetTransformMode(EditorTransformMode.ParentCoordinates);
 			SetEditorOperator(EditorDefaultOperator.RotateSelection);
+
+
+			ModelEditor.Active.File.AnimationActivated += File_AnimationActivated;
+			ModelEditor.Active.File.AnimationDeactivated += File_AnimationDeactivated;
+			ModelEditor.Active.SetupAnimateModeChanged += Active_SetupAnimateModeChanged;
+			ModelEditor.Active.SelectedChanged += Active_SelectedChanged1;
+		}
+
+		private void Active_SelectedChanged1() {
+			setupAnimPanels(null, null);
+
+			var animationMode = ModelEditor.Active.AnimationMode;
+			if (!animationMode) return;
+
+			var animation = ModelEditor.Active.File.ActiveAnimation;
+			if (animation == null) return;
+
+			var selected = ModelEditor.Active.LastSelectedObject;
+			if (selected == null) return;
+			if (selected is not EditorBone bone) return;
+
+			setupAnimPanels(animation, bone);
+		}
+
+		private void setupAnimPanels(EditorAnimation? anim, EditorBone? bone) {
+			ModelEditor.Active.Editor.TransformTranslation.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Translation);
+			ModelEditor.Active.Editor.TransformScale.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Scale);
+			ModelEditor.Active.Editor.TransformShear.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Shear);
+		}
+
+		private void Active_SetupAnimateModeChanged(ModelEditor editor, bool animationMode) {
+			Active_SelectedChanged1();
+		}
+
+		private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
+			Active_SelectedChanged1();
+		}
+
+		private void File_AnimationActivated(EditorFile file, EditorModel model, EditorAnimation animation) {
+			Active_SelectedChanged1();
 		}
 
 		private void File_Cleared(EditorFile file) {

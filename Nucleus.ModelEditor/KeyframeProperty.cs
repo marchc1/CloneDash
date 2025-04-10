@@ -10,6 +10,7 @@ public enum KeyframeProperty {
 	Bone_Translation,
 	Bone_Scale,
 	Bone_Shear,
+
 	Bone_Inherit,
 
 	Slot_Attachment,

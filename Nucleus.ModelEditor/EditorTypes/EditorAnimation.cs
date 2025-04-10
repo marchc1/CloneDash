@@ -2,6 +2,7 @@
 using Nucleus.Models;
 using Nucleus.Types;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Mail;
 using System.Reflection;
 
@@ -86,6 +87,27 @@ public class EditorAnimation : IEditorType
 	}
 
 	public string Name { get; set; }
+
+	public Dictionary<KeyframeProperty, HashSet<EditorBone>> SeparatedProperties = [];
+	public bool DoesBoneHaveSeparatedProperty(EditorBone bone, KeyframeProperty property) {
+		if (!SeparatedProperties.TryGetValue(property, out var hs)) {
+			hs = [];
+			SeparatedProperties[property] = hs;
+		}
+
+		return hs.Contains(bone);
+	}
+	public void SetDoesBoneHaveSeparatedProperty(EditorBone bone, KeyframeProperty property, bool state) {
+		if (!SeparatedProperties.TryGetValue(property, out var hs)) {
+			hs = [];
+			SeparatedProperties[property] = hs;
+		}
+
+		if (state)
+			hs.Add(bone);
+		else
+			hs.Remove(bone);
+	}
 
 	public List<EditorTimeline> Timelines = [];
 	public bool Export { get; set; } = true;
