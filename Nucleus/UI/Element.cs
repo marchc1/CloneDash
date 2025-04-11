@@ -198,7 +198,7 @@ namespace Nucleus.UI
 
 
 		public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
-		public Vector2F ChildRenderOffset { get; internal set; } = Vector2F.Zero;
+		public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
 
 		private RectangleF __renderbounds = RectangleF.Zero;
 
