@@ -58,14 +58,16 @@ public class TimelineManager
 		if (PlayingBackwards) dt *= -1;
 
 		Frame += dt;
-		if (Frame > maxTime) {
-			while (Frame > maxTime)
-				Frame -= maxTime;
-		}
+		if (maxTime > 0) {
+			if (Frame > maxTime) {
+				while (Frame > maxTime)
+					Frame -= maxTime;
+			}
 
-		if(Frame < 0) {
-			while (Frame < 0)
-				Frame += maxTime;
+			if (Frame < 0) {
+				while (Frame < 0)
+					Frame += maxTime;
+			}
 		}
 		FrameElapsed?.Invoke(this, Frame);
 	}
