@@ -8,14 +8,24 @@ namespace Nucleus.ModelEditor
 		public delegate void FloatChange(int i, float value);
 		public event FloatChange? FloatChanged;
 
-		public delegate void Keyframed(int index);
+		public delegate void Keyframed(KeyframeProperty property, int index);
 
 		public event Element.MouseEventDelegate? OnSelected;
 		public event Keyframed? OnKeyframe;
 		private NumSlider[] sliders;
 		private Button button;
 		private KeyframeButton keyframe;
-		private KeyframeButton keyframe2;
+		private KeyframeButton keyframeX;
+		private KeyframeButton keyframeY;
+
+		public bool SeparatedProperties {
+			get => !keyframe.Enabled;
+			set {
+				keyframe.Enabled = !value;
+				keyframeX.Enabled = value;
+				keyframeY.Enabled = value;
+			}
+		}
 
 		private bool enableSliders = true;
 		public bool EnableSliders {
@@ -30,8 +40,6 @@ namespace Nucleus.ModelEditor
 		}
 		public NumSlider GetNumSlider(int index) => sliders[index];
 		public Button GetButton() => button;
-		public KeyframeButton GetKeyframeButton() => keyframe;
-		public KeyframeButton GetKeyframeButton2() => keyframe2;
 
 		public static TransformPanel New(Element parent, string text, int floats, KeyframeProperty property = KeyframeProperty.None) {
 			var panel = parent.Add<TransformPanel>();
@@ -45,30 +53,35 @@ namespace Nucleus.ModelEditor
 			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
 			panel.button.BorderSize = 0;
 
-			panel.Thinking += (_) => {
-				panel.keyframe.TooltipText = panel.keyframe2.Enabled ? "Keyframe X" : null;
-			};
+			panel.keyframeY = panel.Add<KeyframeButton>();
+			panel.keyframeY.Dock = Dock.Right;
+			panel.keyframeY.Size = new(26);
+			panel.keyframeY.Property = property;
+			panel.keyframeY.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, 1);
+			panel.keyframeY.BorderSize = 0;
+			panel.keyframeY.Enabled = false;
+			panel.keyframeY.TooltipText = "Keyframe Y";
 
-			panel.keyframe2 = panel.Add<KeyframeButton>();
-			panel.keyframe2.Dock = Dock.Right;
-			panel.keyframe2.Size = new(26);
-			panel.keyframe2.Property = property;
-			panel.keyframe2.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(2);
-			panel.keyframe2.BorderSize = 0;
-			panel.keyframe2.Enabled = false;
-			panel.keyframe2.TooltipText = "Keyframe Y";
+			panel.keyframeX = panel.Add<KeyframeButton>();
+			panel.keyframeX.Dock = Dock.Right;
+			panel.keyframeX.Size = new(26);
+			panel.keyframeX.Property = property;
+			panel.keyframeX.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, 0);
+			panel.keyframeX.BorderSize = 0;
+			panel.keyframeX.Enabled = false;
+			panel.keyframeX.TooltipText = "Keyframe X";
 
 			panel.keyframe = panel.Add<KeyframeButton>();
 			panel.keyframe.Dock = Dock.Right;
 			panel.keyframe.Size = new(26);
 			panel.keyframe.Property = property;
-			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(1);
+			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, -1);
 			panel.keyframe.BorderSize = 0;
 
-			ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
-				if (prop == property)
-					panel.keyframe2.Enabled = separated;
-			};
+			//ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
+			//	if (prop == property)
+			//		panel.keyframe2.Enabled = separated;
+			//};
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;

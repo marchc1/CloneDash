@@ -5,70 +5,101 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
 using System.Reflection;
+using System.Security.Cryptography;
 
 namespace Nucleus.ModelEditor;
 
-public interface IBoneEditorTimeline
+public enum KeyframeState {
+	NotKeyframed,
+	PendingKeyframe,
+	Keyframed
+}
+
+public interface IBoneTimeline
 {
 	public EditorBone Bone { get; set; }
 }
-public interface ISlotEditorTimeline
+
+public interface ISlotTimeline
 {
 	public EditorSlot Slot { get; set; }
 }
 
+public interface IBoneProperty<T> : IBoneTimeline
+{
+	public T GetValue();
+	public KeyframeState KeyframedAt(double time);
+}
+public interface ISlotProperty<T> : ISlotTimeline
+{
+	public T GetValue();
+	public KeyframeState KeyframedAt(double time);
+}
+
+public interface IKeyframableProperty<TargetType, ValueType> {
+	public ValueType GetValue(TargetType target);
+}
+
 public abstract class EditorTimeline
 {
-	public EditorBone AssociatedBone { get; set; }
 	public abstract void Apply(EditorModel model, float time);
 }
 
-public abstract class CurveEditorTimeline : EditorTimeline;
+public interface IKeyframeQueryable<T> {
+	public abstract bool KeyframedAtTime(double time);
+	public abstract bool TryGetValueAtTime(double time, out T? value);
+}
 
-public abstract class CurveEditorTimeline1 : CurveEditorTimeline
+public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 {
 	public FCurve<float> Curve = new();
+
+	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
+	public bool TryGetValueAtTime(double time, out float value) {
+		var found = Curve.TryFindKeyframe(time, out var key);
+		value = 0;
+		if (!found) return false;
+
+		value = key?.Value ?? 0;
+		return true;
+	}
 }
-public abstract class CurveEditorTimeline2 : CurveEditorTimeline
+public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector2F>
 {
-	public FCurve<float> Curve1 = new();
-	public FCurve<float> Curve2 = new();
-	
-	public void Split<T>(out T t1, out T t2) where T : CurveEditorTimeline1, new() {
-		t1 = new();
-		t2 = new();
+	public FCurve<float> CurveX = new();
+	public FCurve<float> CurveY = new();
 
-		t1.Curve = Curve1;
-		t2.Curve = Curve2;
+	public bool KeyframedAtTime(double time) => CurveX.TryFindKeyframe(time, out var _);
+	public bool TryGetValueAtTime(double time, out Vector2F value) {
+		var foundX = CurveX.TryFindKeyframe(time, out var keyX);
+		var foundY = CurveY.TryFindKeyframe(time, out var keyY);
+		Debug.Assert(foundX == foundY);
 
-		return;
+		value = Vector2F.Zero;
+		if (!foundX) return false;
+
+		value = new(keyX?.Value ?? 0, keyY?.Value ?? 0);
+		return true;
 	}
 }
 
-public class TranslateTimeline : CurveEditorTimeline2, IBoneEditorTimeline
-{
-	public EditorBone Bone { get; set; }
-	public override void Apply(EditorModel model, float time) {
-		Bone.PositionX = Curve1.DetermineValueAtTime(time);
-		Bone.PositionY = Curve2.DetermineValueAtTime(time);
-	}
-}
-
-public class TranslateXTimeline : CurveEditorTimeline1, IBoneEditorTimeline
-{
-	public EditorBone Bone { get; set; }
-	public override void Apply(EditorModel model, float time) {
-		Bone.PositionX = Curve.DetermineValueAtTime(time);
-	}
-}
-
-public class TranslateYTimeline : CurveEditorTimeline1, IBoneEditorTimeline
+public class TranslateTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 {
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, float time) {
-		Bone.PositionY = Curve.DetermineValueAtTime(time);
+		Bone.Position = new(
+			CurveX.DetermineValueAtTime(time),
+			CurveY.DetermineValueAtTime(time)
+		);
+	}
+	public Vector2F GetValue() => Bone.Position;
+	public KeyframeState KeyframedAt(double time) {
+		if (!TryGetValueAtTime(time, out var key))
+			return KeyframeState.NotKeyframed;
+		return key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
 	}
 }
+
 
 public class EditorAnimation : IEditorType
 {
@@ -110,6 +141,32 @@ public class EditorAnimation : IEditorType
 	}
 
 	public List<EditorTimeline> Timelines = [];
+
+	public T GetTimeline<T>(EditorBone bone, bool createIfMissing = true) where T : EditorTimeline, IBoneTimeline, new() {
+		T? timeline = Timelines.FirstOrDefault(x => x is T tTimeline && tTimeline.Bone == bone) as T;
+		if(timeline == null) {
+			if (!createIfMissing) return null;
+
+			timeline = new();
+			timeline.Bone = bone;
+		}
+
+		return timeline;
+	}
+
+	public T GetTimeline<T>(EditorSlot slot, bool createIfMissing = true) where T : EditorTimeline, ISlotTimeline, new() {
+		T? timeline = Timelines.FirstOrDefault(x => x is T tTimeline && tTimeline.Slot == slot) as T;
+		if (timeline == null) {
+			if (!createIfMissing) return null;
+
+			timeline = new();
+			timeline.Slot = slot;
+		}
+
+		return timeline;
+	}
+
+
 	public bool Export { get; set; } = true;
 
 	public string GetName() => Name;

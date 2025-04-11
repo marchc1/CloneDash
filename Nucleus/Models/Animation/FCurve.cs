@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.Models
 {
@@ -8,13 +9,32 @@ namespace Nucleus.Models
 		[JsonIgnore] private bool valid = false;
 
 		public void AddKeyframe(Keyframe<T> keyframe) {
+			Keyframes.RemoveAll(x => keyframe.Time == x.Time);
 			Keyframes.Add(keyframe);
 			valid = false;
 		}
+
 		public void RemoveKeyframe(Keyframe<T> keyframe) {
 			Keyframes.Remove(keyframe);
 			valid = false;
 		}
+
+		public bool TryFindKeyframe(Predicate<Keyframe<T>> predicate, [NotNullWhen(true)] out Keyframe<T>? keyframe) {
+			Recompute();
+
+			keyframe = null;
+			foreach (var kf in Keyframes) {
+				if (predicate(kf)) {
+					keyframe = kf;
+					break;
+				}
+			}
+
+			return keyframe.HasValue;
+		}
+
+		public bool TryFindKeyframe(double time, [NotNullWhen(true)] out Keyframe<T>? keyframe)
+			=> TryFindKeyframe(x => x.Time == time, out keyframe);
 
 		public void Recompute() {
 			if (valid == false) {
