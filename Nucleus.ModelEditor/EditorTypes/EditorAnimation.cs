@@ -325,12 +325,10 @@ public class EditorAnimation : IEditorType
 		ModelEditor.Active.File.UnsetActiveAnimation(Model);
 		// Force selection (pull out of any operators etc)
 		ModelEditor.Active.File.DeactivateOperator(true);
-		ModelEditor.Active.SelectObject(this);
 	}
 	public virtual void OnShown() {
 		ModelEditor.Active.File.SetActiveAnimation(Model, this);
 		ModelEditor.Active.File.DeactivateOperator(true);
-		ModelEditor.Active.SelectObject(this);
 	}
 
 	public virtual bool CanTranslate() => false;

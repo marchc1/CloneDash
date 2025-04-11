@@ -53,6 +53,7 @@ namespace Nucleus.ModelEditor.UI
 		public Panel ButtonsAndNames;
 		public FlexPanel Buttons;
 		public Panel TimeInfoPanel;
+		public Panel KeyframeOverlay;
 		public Panel KeyframeInfoPanel;
 		public Panel KeyframeChannelsPanel;
 		public NumSlider ZoomSlider;
@@ -162,10 +163,16 @@ namespace Nucleus.ModelEditor.UI
 			KeyframeInfoPanel.Size = new(36);
 			KeyframeInfoPanel.DockMargin = RectangleF.TLRB(0);
 			KeyframeInfoPanel.DockPadding = RectangleF.Zero;
-			KeyframeInfoPanel.PaintOverride += KeyframeInfoPanel_PaintOverride;
 			KeyframeInfoPanel.MouseClickEvent += KeyframeInfoPanel_MouseClickEvent;
 			KeyframeInfoPanel.MouseDragEvent += KeyframeInfoPanel_MouseDragEvent;
 			KeyframeInfoPanel.MouseReleaseEvent += KeyframeInfoPanel_MouseReleaseEvent;
+
+			Add(out KeyframeOverlay);
+			KeyframeOverlay.OnHoverTest += Passthru;
+			KeyframeOverlay.Thinking += (s) => s.SetRenderBounds(KeyframeInfoPanel.RenderBounds);
+			KeyframeOverlay.DockMargin = RectangleF.TLRB(0);
+			KeyframeOverlay.DockPadding = RectangleF.Zero;
+			KeyframeOverlay.PaintOverride += KeyframeInfoPanel_PaintOverride;
 		}
 
 		private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
@@ -372,7 +379,6 @@ namespace Nucleus.ModelEditor.UI
 
 			self.BackgroundColor = new(13, 16, 20);
 			self.BorderSize = 0;
-			self.Paint(width, height);
 
 			var curframe = GetCurFrame();
 			float curframeX = (float)FrameToX(curframe);
@@ -405,9 +411,21 @@ namespace Nucleus.ModelEditor.UI
 		}
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
+		
+		public void AddKeyframe(double time) {
 
-		public void SetupBoneChannelHeader(EditorBone bone) {
+		}
+
+		public void SetupBoneChannel(EditorBone bone) {
 			KeyframeChannelsPanel.Add(out Button header);
+			KeyframeInfoPanel.Add(out Panel keyframes);
+
+			keyframes.Dock = Dock.Top;
+			keyframes.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
+			keyframes.DockMargin = RectangleF.Zero;
+			keyframes.Size = new(24);
+			keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
+
 			header.Dock = Dock.Top;
 			header.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
 			header.DockMargin = RectangleF.Zero;
@@ -431,6 +449,7 @@ namespace Nucleus.ModelEditor.UI
 
 		public void CreateChannels() {
 			KeyframeChannelsPanel.ClearChildren();
+			KeyframeInfoPanel.ClearChildren();
 
 			var animation = ModelEditor.Active.File.ActiveAnimation;
 			if (animation == null) return;
@@ -447,6 +466,13 @@ namespace Nucleus.ModelEditor.UI
 			header.Text = animation.Name;
 			header.TextSize = 17;
 
+			KeyframeInfoPanel.Add(out Panel keyframes);
+			keyframes.Dock = Dock.Top;
+			keyframes.BackgroundColor = HEADER_SELECTED_COLOR;
+			keyframes.DockMargin = RectangleF.Zero;
+			keyframes.Size = new(24);
+			keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
+
 			if (ModelEditor.Active.SelectedObjectsCount > 0) {
 				HashSet<EditorBone> foundBones = [];
 
@@ -459,13 +485,13 @@ namespace Nucleus.ModelEditor.UI
 						representingBone = slot.Bone;
 
 					if (representingBone != null && foundBones.Add(representingBone))
-						SetupBoneChannelHeader(representingBone);
+						SetupBoneChannel(representingBone);
 				}
 			}
 			else {
 				List<EditorBone> bones = animation.GetAffectedBones();
 				foreach (var bone in bones) {
-					SetupBoneChannelHeader(bone);
+					SetupBoneChannel(bone);
 				}
 			}
 		}

@@ -116,5 +116,10 @@ namespace Nucleus.ModelEditor
 
 		public bool Hidden { get; set; }
 		public bool CanHide() => true;
+
+		public void ResetToSetupPose() {
+			foreach (var bone in GetAllBones()) bone.ResetToSetupPose();
+			foreach (var slot in Slots) slot.ResetToSetupPose();
+		}
 	}
 }

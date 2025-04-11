@@ -229,6 +229,9 @@ namespace Nucleus.UI
 			if (w.HasValue) __renderbounds.W = w.Value;
 			if (h.HasValue) __renderbounds.H = h.Value;
 		}
+		public void SetRenderBounds(RectangleF bounds) {
+			__renderbounds = bounds;
+		}
 
 		protected virtual void Initialize() { }
 

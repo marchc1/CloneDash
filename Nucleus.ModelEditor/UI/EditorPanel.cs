@@ -155,6 +155,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
+			
 			Active_SelectedChanged1();
 		}
 

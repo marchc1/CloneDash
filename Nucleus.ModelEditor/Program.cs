@@ -292,8 +292,7 @@ namespace Nucleus.ModelEditor
 				View.SetActiveWorkspaceByName("Setup");
 
 				foreach (var model in File.Models) {
-					foreach (var bone in model.GetAllBones()) bone.ResetToSetupPose();
-					foreach (var slot in model.Slots) slot.ResetToSetupPose();
+					model.ResetToSetupPose();
 				}
 			}
 
@@ -370,8 +369,8 @@ namespace Nucleus.ModelEditor
 			File.OperatorDeactivated += File_OperatorDeactivated;
 			File.Cleared += File_Cleared;
 
-			ToggleModes();
 			OpenTest();
+			ToggleModes();
 
 			SetupHooks();
 		}
@@ -391,6 +390,12 @@ namespace Nucleus.ModelEditor
 			Dopesheet.SetupHooks();
 			File.Timeline.FrameChanged += (_, _) => UpdateModelAnimations();
 			File.Timeline.FrameElapsed += (_, _) => UpdateModelAnimations();
+
+			File.AnimationDeactivated += (_, _, _) => {
+				foreach (var model in File.Models) {
+					model.ResetToSetupPose();
+				}
+			};
 		}
 		private void UpdateModelAnimations() {
 			foreach (var model in File.Models)
