@@ -33,7 +33,7 @@ namespace Nucleus.ModelEditor
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
 		public EditorAttachment? GetActiveAttachment() 
-			=> (AnimationMode ? (ActiveAttachment ?? SetupActiveAttachment) : SetupActiveAttachment);
+			=> AnimationMode ? ActiveAttachment : SetupActiveAttachment;
 
 		public void SetActiveAttachment(EditorAttachment? attachment) {
 			if (attachment != null && !Attachments.Contains(attachment))

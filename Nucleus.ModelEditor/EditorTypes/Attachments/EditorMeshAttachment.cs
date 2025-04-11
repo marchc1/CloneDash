@@ -624,7 +624,7 @@ namespace Nucleus.ModelEditor
 
 		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
 			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
-			Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
+			// Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
 			if (weightData == null) return;
 
 			if (validate) {
@@ -1137,6 +1137,10 @@ namespace Nucleus.ModelEditor
 							av3 = tp3.AssociatedObject as MeshVertex;
 
 				if (av1 == null || av2 == null || av3 == null) continue;
+
+				//av1.Attachment = this;
+				//av2.Attachment = this;
+				//av3.Attachment = this;
 
 				bool ic1 = av1.IsConstrainedTo(av2), ic2 = av2.IsConstrainedTo(av3), ic3 = av3.IsConstrainedTo(av1);
 

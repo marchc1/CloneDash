@@ -852,6 +852,7 @@ namespace Nucleus.ModelEditor
 					switch (typeof(T).Name) {
 						case "EditorMeshAttachment":
 							EditorMeshAttachment meshTo = new EditorMeshAttachment();
+							meshTo.Slot = attachment.Slot;
 							newAttachment = meshTo;
 
 							meshTo.Path = regionFrom.Path;
