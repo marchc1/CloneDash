@@ -27,7 +27,8 @@ public interface ISlotTimeline
 	public EditorSlot Slot { get; set; }
 }
 
-public interface IProperty<T> {
+public interface IProperty<T>
+{
 	public T GetSetupValue();
 	public T GetValue();
 }
@@ -58,9 +59,7 @@ public abstract class EditorTimeline
 	public abstract IEnumerable<double> GetKeyframeTimes();
 
 	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
-		return !obj.TryGetValueAtTime(time, out var key) 
-					? KeyframeState.NotKeyframed : key?.Equals(obj.GetValue()) ?? false 
-						? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+		return !obj.TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key?.Equals(obj.GetValue()) ?? false ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
 	}
 }
 
@@ -92,7 +91,7 @@ public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 	public override double CalculateMaxTime() => Curve.Last.Time;
 
 	public override IEnumerable<double> GetKeyframeTimes() {
-		foreach(var keyframe in Curve.GetKeyframes())
+		foreach (var keyframe in Curve.GetKeyframes())
 			yield return keyframe.Time;
 	}
 }
@@ -283,7 +282,7 @@ public class EditorAnimation : IEditorType
 	public double CalculateMaxTime() {
 		double time = 0;
 
-		foreach(var tl in Timelines) {
+		foreach (var tl in Timelines) {
 			var tlTime = tl.CalculateMaxTime();
 			if (tlTime > time)
 				time = tlTime;
@@ -418,7 +417,7 @@ public class EditorAnimation : IEditorType
 	internal List<EditorBone> GetAffectedBones() {
 		HashSet<EditorBone> bones = [];
 
-		foreach(var timeline in Timelines) {
+		foreach (var timeline in Timelines) {
 			switch (timeline) {
 				case IBoneTimeline boneTimeline: bones.Add(boneTimeline.Bone); break;
 				case ISlotTimeline slotTimeline: bones.Add(slotTimeline.Slot.Bone); break;
