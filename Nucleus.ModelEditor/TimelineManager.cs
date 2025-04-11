@@ -37,10 +37,13 @@ public class TimelineManager
 		Frame += dt;
 		while (Frame > maxTime)
 			Frame -= maxTime;
+		FrameElapsed?.Invoke(this, Frame);
 	}
 
 	public delegate void FrameChangedD(TimelineManager timeline, int frame);
+	public delegate void FrameChangedD2(TimelineManager timeline, double frame);
 	public event FrameChangedD? FrameChanged;
+	public event FrameChangedD2? FrameElapsed;
 
 	public void SetFrame(int frame) {
 		frame = Math.Max(0, frame);

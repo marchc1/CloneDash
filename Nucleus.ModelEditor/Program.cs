@@ -385,6 +385,13 @@ namespace Nucleus.ModelEditor
 		}
 		private void SetupHooks() {
 			Dopesheet.SetupHooks();
+			File.Timeline.FrameChanged += (_, _) => UpdateModels();
+			File.Timeline.FrameElapsed += (_, _) => UpdateModels();
+		}
+		private void UpdateModels() {
+			foreach (var model in File.Models)
+				if (model.ActiveAnimation != null)
+					model.ActiveAnimation.Apply(File.Timeline.Frame);
 		}
 
 		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);

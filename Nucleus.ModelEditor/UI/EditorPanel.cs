@@ -137,9 +137,9 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void setupAnimPanels(EditorAnimation? anim, EditorBone? bone) {
-			ModelEditor.Active.Editor.TransformTranslation.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Translation);
-			ModelEditor.Active.Editor.TransformScale.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Scale);
-			ModelEditor.Active.Editor.TransformShear.GetKeyframeButton2().Enabled = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Shear);
+			ModelEditor.Active.Editor.TransformTranslation.SeparatedProperties = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Translation);
+			ModelEditor.Active.Editor.TransformScale.SeparatedProperties = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Scale);
+			ModelEditor.Active.Editor.TransformShear.SeparatedProperties = (anim == null || bone == null) ? false : anim.DoesBoneHaveSeparatedProperty(bone, KeyframeProperty.Bone_Shear);
 		}
 
 		private void Active_SetupAnimateModeChanged(ModelEditor editor, bool animationMode) {

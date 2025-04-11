@@ -56,8 +56,13 @@ namespace Nucleus.ModelEditor
 			panel.keyframeY = panel.Add<KeyframeButton>();
 			panel.keyframeY.Dock = Dock.Right;
 			panel.keyframeY.Size = new(26);
+			panel.keyframeY.ArrayIndex = 1;
 			panel.keyframeY.Property = property;
-			panel.keyframeY.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, 1);
+			panel.keyframeY.MouseReleaseEvent += (v1, v2, v3) => {
+				var timeline = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(ModelEditor.Active.LastSelectedObject, property, 1);
+				if (timeline is IKeyframeQueryable<float> kqf && timeline is IProperty<float> kpf)
+					kqf.InsertKeyframe(ModelEditor.Active.File.Timeline.Frame, kpf.GetValue());
+			};
 			panel.keyframeY.BorderSize = 0;
 			panel.keyframeY.Enabled = false;
 			panel.keyframeY.TooltipText = "Keyframe Y";
@@ -65,8 +70,13 @@ namespace Nucleus.ModelEditor
 			panel.keyframeX = panel.Add<KeyframeButton>();
 			panel.keyframeX.Dock = Dock.Right;
 			panel.keyframeX.Size = new(26);
+			panel.keyframeX.ArrayIndex = 0;
 			panel.keyframeX.Property = property;
-			panel.keyframeX.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, 0);
+			panel.keyframeX.MouseReleaseEvent += (v1, v2, v3) => {
+				var timeline = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(ModelEditor.Active.LastSelectedObject, property, 0);
+				if (timeline is IKeyframeQueryable<float> kqf && timeline is IProperty<float> kpf)
+					kqf.InsertKeyframe(ModelEditor.Active.File.Timeline.Frame, kpf.GetValue());
+			};
 			panel.keyframeX.BorderSize = 0;
 			panel.keyframeX.Enabled = false;
 			panel.keyframeX.TooltipText = "Keyframe X";
@@ -74,14 +84,21 @@ namespace Nucleus.ModelEditor
 			panel.keyframe = panel.Add<KeyframeButton>();
 			panel.keyframe.Dock = Dock.Right;
 			panel.keyframe.Size = new(26);
+			panel.keyframe.ArrayIndex = -1;
 			panel.keyframe.Property = property;
-			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => panel.OnKeyframe?.Invoke(property, -1);
+			panel.keyframe.MouseReleaseEvent += (v1, v2, v3) => {
+				var timeline = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(ModelEditor.Active.LastSelectedObject, property, -1);
+				if (timeline is IKeyframeQueryable<float> kqf && timeline is IProperty<float> kpf)
+					kqf.InsertKeyframe(ModelEditor.Active.File.Timeline.Frame, kpf.GetValue());
+				if (timeline is IKeyframeQueryable<Vector2F> kqv2 && timeline is IProperty<Vector2F> kpv2)
+					kqv2.InsertKeyframe(ModelEditor.Active.File.Timeline.Frame, kpv2.GetValue());
+			};
 			panel.keyframe.BorderSize = 0;
 
-			//ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
-			//	if (prop == property)
-			//		panel.keyframe2.Enabled = separated;
-			//};
+			ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
+				if (prop == property)
+					panel.SeparatedProperties = separated;
+			};
 
 			var floatparts = panel.Add<FlexPanel>();
 			floatparts.Dock = Dock.Fill;

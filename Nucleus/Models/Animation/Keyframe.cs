@@ -4,6 +4,24 @@ namespace Nucleus.Models
 {
 	public struct Keyframe<T>
 	{
+		public Keyframe() {
+			Time = 0;
+			Value = default;
+			LeftHandle = new() { HandleType = KeyframeHandleType.AutoClamped };
+			RightHandle = new() { HandleType = KeyframeHandleType.AutoClamped };
+			Interpolation = KeyframeInterpolation.Bezier;
+			Easing = KeyframeEasing.Automatic;
+		}
+
+		public Keyframe(double time, T value) {
+			Time = time;
+			Value = value;
+			LeftHandle = new() { HandleType = KeyframeHandleType.AutoClamped };
+			RightHandle = new() { HandleType = KeyframeHandleType.AutoClamped };
+			Interpolation = KeyframeInterpolation.Bezier;
+			Easing = KeyframeEasing.Automatic;
+		}
+
 		public double Time;
 		public T Value;
 		public KeyframeHandle<T>? LeftHandle;

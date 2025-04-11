@@ -894,66 +894,19 @@ namespace Nucleus.ModelEditor
 			PropertySeparatedOrCombined?.Invoke(editorBone, property, separated);
 		}
 
-		public delegate void PropertyKeyframed<IE, T>(IE type, KeyframeProperty property, float frame, T value) where IE : IEditorType;
 
-		public event PropertyKeyframed<EditorBone, float>? RotateKeyframed;
+		public void InsertKeyframe<TL, VT>(EditorBone bone, double time, VT value) where TL : EditorTimeline, IKeyframeQueryable<VT>, IBoneProperty<VT>, new() {
+			if (ActiveAnimation == null) return;
 
-		public event PropertyKeyframed<EditorBone, Vector2F>? TranslateKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? TranslateXKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? TranslateYKeyframed;
-
-		public event PropertyKeyframed<EditorBone, Vector2F>? ScaleKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? ScaleXKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? ScaleYKeyframed;
-
-		public event PropertyKeyframed<EditorBone, Vector2F>? ShearKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? ShearXKeyframed;
-		public event PropertyKeyframed<EditorBone, float>? ShearYKeyframed;
-
-		public event PropertyKeyframed<EditorBone, TransformMode>? TransformModeKeyframed;
-
-		public event PropertyKeyframed<EditorSlot, EditorAttachment>? ActiveAttachmentKeyframed;
-
-		public void KeyframeRotation(EditorBone bone, float frame, float value) {
-
+			var timeline = ActiveAnimation.GetTimeline<TL>(bone);
+			timeline.InsertKeyframe(time, value);
 		}
 
-		public void KeyframeTranslation(EditorBone bone, float frame, Vector2F value) {
+		public void InsertKeyframe<TL, VT>(EditorSlot slot, double time, VT value) where TL : EditorTimeline, IKeyframeQueryable<VT>, ISlotProperty<VT>, new() {
+			if (ActiveAnimation == null) return;
 
-		}
-		public void KeyframeTranslationX(EditorBone bone, float frame, float value) {
-
-		}
-		public void KeyframeTranslationY(EditorBone bone, float frame, float value) {
-
-		}
-
-		public void KeyframeScale(EditorBone bone, float frame, Vector2F value) {
-
-		}
-		public void KeyframeScaleX(EditorBone bone, float frame, float value) {
-
-		}
-		public void KeyframeScaleY(EditorBone bone, float frame, float value) {
-
-		}
-
-		public void KeyframeShear(EditorBone bone, float frame, Vector2F value) {
-
-		}
-		public void KeyframeShearX(EditorBone bone, float frame, float value) {
-
-		}
-		public void KeyframeShearY(EditorBone bone, float frame, float value) {
-
-		}
-
-		public void KeyframeTransformMode(EditorBone bone, float frame, TransformMode value) {
-
-		}
-
-		public void KeyframeActiveAttachment(EditorSlot slot, float frame, EditorAttachment value) {
-
+			var timeline = ActiveAnimation.GetTimeline<TL>(slot);
+			timeline.InsertKeyframe(time, value);
 		}
 	}
 }
