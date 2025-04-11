@@ -71,6 +71,13 @@ namespace Nucleus.ModelEditor.UI
 			interp.Checked = ModelEditor.Active.File.Timeline.Interpolated;
 			interp.OnCheckedChanged += (c) => ModelEditor.Active.File.Timeline.Interpolated = c.Checked;
 
+
+			ModelEditor.Active.File.Loaded += (file) => {
+				fps.Value = file.Timeline.FPS;
+				speed.Value = file.Timeline.Speed;
+				stepped.Checked = file.Timeline.Stepped;
+				interp.Checked = file.Timeline.Interpolated;
+			};
 		}
 	}
 }

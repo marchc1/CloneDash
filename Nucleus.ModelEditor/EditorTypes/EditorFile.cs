@@ -119,12 +119,18 @@ namespace Nucleus.ModelEditor
 				if (ActiveAnimation != null)
 					SetActiveAnimation(model, ActiveAnimation);
 			}
+
+			Loaded?.Invoke(this);
 		}
 
 		/// <summary>
 		/// Called when the file is cleared.
 		/// </summary>
 		public event FileClear? Cleared;
+		/// <summary>
+		/// Called when a file is fully loaded and ready
+		/// </summary>
+		public event FileClear? Loaded;
 		public delegate void FileClear(EditorFile file);
 
 
