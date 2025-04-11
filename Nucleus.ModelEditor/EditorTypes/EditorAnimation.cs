@@ -290,11 +290,11 @@ public class EditorAnimation : IEditorType
 		return result;
 	}
 
-	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, int arrayIndex = -1, bool createIfMissing = true) {
+	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, int arrayIndex, bool createIfMissing) {
 		var tl = SearchTimelineByProperty(type, property, out var _, arrayIndex, createIfMissing);
 		return tl;
 	}
-	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, out bool created, int arrayIndex = -1, bool createIfMissing = true) {
+	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, out bool created, int arrayIndex, bool createIfMissing) {
 		(EditorTimeline Timeline, bool Created) info = type switch {
 			EditorBone bone => property switch {
 				KeyframeProperty.None => new(null, false),

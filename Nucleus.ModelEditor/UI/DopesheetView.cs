@@ -453,6 +453,9 @@ namespace Nucleus.ModelEditor.UI
 		public void SetupHooks() {
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 			ModelEditor.Active.File.TimelineCreated += (_, _) => Active_SelectedChanged();
+			ModelEditor.Active.File.TimelineRemoved += (_, _) => Active_SelectedChanged();
+			ModelEditor.Active.File.TimelineCombined += (_, _, _, _) => Active_SelectedChanged();
+			ModelEditor.Active.File.TimelineSeparated += (_, _, _, _) => Active_SelectedChanged();
 		}
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);

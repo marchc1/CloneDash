@@ -891,6 +891,22 @@ namespace Nucleus.ModelEditor
 		public void SetDoesBoneHaveSeparatedProperty(EditorBone editorBone, KeyframeProperty property, bool separated) {
 			if (ActiveAnimation == null) return;
 
+			if (separated) {
+				// Find the root timeline if it exists
+				var combinedTimeline = ActiveAnimation.SearchTimelineByProperty(editorBone, property, -1, false);
+				if(combinedTimeline != null && combinedTimeline is CurveTimeline2 ct2) {
+					SeparateTimelines(ct2);
+				}
+			}
+			else {
+				var x = ActiveAnimation.SearchTimelineByProperty(editorBone, property, 0, false);
+				var y = ActiveAnimation.SearchTimelineByProperty(editorBone, property, 1, false);
+
+				if(x is CurveTimeline1 ct1x && y is CurveTimeline1 ct1y) {
+					CombineTimelines(ct1x, ct1y);
+				}
+			}
+
 			ActiveAnimation.SetDoesBoneHaveSeparatedProperty(editorBone, property, separated);
 			PropertySeparatedOrCombined?.Invoke(editorBone, property, separated);
 		}
@@ -918,7 +934,7 @@ namespace Nucleus.ModelEditor
 			if (ActiveAnimation == null) return;
 
 			bool created = false;
-			var timeline = ActiveAnimation?.SearchTimelineByProperty(type, property, out created, arrayIndex);
+			var timeline = ActiveAnimation?.SearchTimelineByProperty(type, property, out created, arrayIndex, true);
 
 			// See if the timeline implements IKeyframeQueryable<T> (for InsertKeyframe)
 			// and IProperty<T> (for getting the active value out of the timeline-attached object).
@@ -945,6 +961,110 @@ namespace Nucleus.ModelEditor
 			}
 
 			KeyframeCreated?.Invoke(ActiveAnimation, timeline, Timeline.Frame);
+		}
+
+		public void CombineTimelines(CurveTimeline1 x, CurveTimeline1 y) {
+			var activeAnimation = ActiveAnimation;
+			Debug.Assert(activeAnimation != null);
+
+			CurveTimeline2? ct2 = null;
+			switch (x) {
+				case TranslateXTimeline translateX:
+					if(y is not TranslateYTimeline translateY) throw new Exception("Mismatched X and Y types");
+					Debug.Assert(translateX.Bone == translateY.Bone);
+
+					TranslateTimeline translate = new() { Bone = translateX.Bone, CurveX = x.Curve, CurveY = y.Curve };
+					activeAnimation.Timelines.Add(translate);
+					TimelineCreated?.Invoke(activeAnimation, translate);
+					ct2 = translate;
+					break;
+				case ScaleXTimeline scaleX:
+					if (y is not ScaleYTimeline scaleY) throw new Exception("Mismatched X and Y types");
+					Debug.Assert(scaleX.Bone == scaleY.Bone);
+
+					ScaleTimeline scale = new() { Bone = scaleX.Bone, CurveX = x.Curve, CurveY = y.Curve };
+					activeAnimation.Timelines.Add(scale);
+					TimelineCreated?.Invoke(activeAnimation, scale);
+					ct2 = scale;
+					break;
+				case ShearXTimeline shearX:
+					if (y is not TranslateYTimeline shearY) throw new Exception("Mismatched X and Y types");
+					Debug.Assert(shearX.Bone == shearY.Bone);
+
+					TranslateTimeline shear = new() { Bone = shearX.Bone, CurveX = x.Curve, CurveY = y.Curve };
+					activeAnimation.Timelines.Add(shear);
+					TimelineCreated?.Invoke(activeAnimation, shear);
+					ct2 = shear;
+					break;
+
+				default:
+					throw new Exception("Cannot combine those timeline types");
+			}
+
+			// TODO: Evaluate both curves to determine what's missing in each curve, then create a dummy keyframe
+
+			Debug.Assert(activeAnimation.Timelines.Remove(x));
+			TimelineRemoved?.Invoke(activeAnimation, x);
+			Debug.Assert(activeAnimation.Timelines.Remove(y));
+			TimelineRemoved?.Invoke(activeAnimation, y);
+
+			TimelineCombined?.Invoke(activeAnimation, x, y, ct2);
+		}
+
+		public void SeparateTimelines(CurveTimeline2 timeline) {
+			var activeAnimation = ActiveAnimation;
+			Debug.Assert(activeAnimation != null);
+
+			switch (timeline) {
+				case TranslateTimeline translate:
+					TranslateXTimeline xTimeline = new() { Bone = translate.Bone, Curve = translate.CurveX };
+					TranslateYTimeline yTimeline = new() { Bone = translate.Bone, Curve = translate.CurveX };
+
+					activeAnimation.Timelines.Add(xTimeline);
+					TimelineCreated?.Invoke(activeAnimation, xTimeline);
+
+					activeAnimation.Timelines.Add(yTimeline);
+					TimelineCreated?.Invoke(activeAnimation, yTimeline);
+
+					Debug.Assert(activeAnimation.Timelines.Remove(translate));
+
+					TimelineRemoved?.Invoke(activeAnimation, translate);
+					TimelineSeparated?.Invoke(activeAnimation, translate, xTimeline, yTimeline);
+					break;
+				case ScaleTimeline scale:
+					ScaleXTimeline xScTimeline = new() { Bone = scale.Bone, Curve = scale.CurveX };
+					ScaleYTimeline yScTimeline = new() { Bone = scale.Bone, Curve = scale.CurveX };
+
+					activeAnimation.Timelines.Add(xScTimeline);
+					TimelineCreated?.Invoke(activeAnimation, xScTimeline);
+
+					activeAnimation.Timelines.Add(yScTimeline);
+					TimelineCreated?.Invoke(activeAnimation, yScTimeline);
+
+					Debug.Assert(activeAnimation.Timelines.Remove(scale));
+
+					TimelineRemoved?.Invoke(activeAnimation, scale);
+					TimelineSeparated?.Invoke(activeAnimation, scale, xScTimeline, yScTimeline);
+					break;
+				case ShearTimeline shear:
+					ShearXTimeline xShTimeline = new() { Bone = shear.Bone, Curve = shear.CurveX };
+					ShearYTimeline yShTimeline = new() { Bone = shear.Bone, Curve = shear.CurveX };
+
+					activeAnimation.Timelines.Add(xShTimeline);
+					TimelineCreated?.Invoke(activeAnimation, xShTimeline);
+
+					activeAnimation.Timelines.Add(yShTimeline);
+					TimelineCreated?.Invoke(activeAnimation, yShTimeline);
+
+					Debug.Assert(activeAnimation.Timelines.Remove(shear));
+
+					TimelineRemoved?.Invoke(activeAnimation, shear);
+					TimelineSeparated?.Invoke(activeAnimation, shear, xShTimeline, yShTimeline);
+					break;
+
+				default:
+					throw new Exception("Cannot split this timeline type");
+			}
 		}
 	}
 }
