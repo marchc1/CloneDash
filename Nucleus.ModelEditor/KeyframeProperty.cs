@@ -11,7 +11,7 @@ public enum KeyframeProperty {
 	Bone_Scale,
 	Bone_Shear,
 
-	Bone_Inherit,
+	Bone_TransformMode,
 
 	Slot_Attachment,
 	Slot_Color,

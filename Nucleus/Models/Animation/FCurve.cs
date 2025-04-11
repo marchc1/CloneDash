@@ -2,7 +2,7 @@
 
 namespace Nucleus.Models
 {
-	public class FCurve<T> : IKeyframable<T>
+	public class FCurve<T> : IFCurve<T>
 	{
 		public List<Keyframe<T>> Keyframes { get; private set; } = [];
 		[JsonIgnore] private bool valid = false;

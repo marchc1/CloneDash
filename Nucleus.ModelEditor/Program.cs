@@ -67,7 +67,7 @@ namespace Nucleus.ModelEditor
 				case KeyframeProperty.Bone_Rotation:
 				case KeyframeProperty.Bone_Scale:
 				case KeyframeProperty.Bone_Shear:
-				case KeyframeProperty.Bone_Inherit:
+				case KeyframeProperty.Bone_TransformMode:
 					return LastSelectedObject is EditorBone;
 
 				case KeyframeProperty.Slot_Attachment:

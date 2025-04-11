@@ -1,5 +1,5 @@
 ﻿namespace Nucleus.Models;
-public interface IKeyframable<T> {
+public interface IFCurve<T> {
 	void AddKeyframe(Keyframe<T> kf);
 	void RemoveKeyframe(Keyframe<T> kf);
 }
