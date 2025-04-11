@@ -2,6 +2,7 @@
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.ModelEditor
 {
@@ -41,6 +42,8 @@ namespace Nucleus.ModelEditor
 		public bool CanScale() => false;
 		public bool CanShear() => false;
 		public bool CanHide() => false;
+
+		public bool CanKeyframe() => false;
 
 		public bool GetVisible() => !Hidden;
 
@@ -96,5 +99,19 @@ namespace Nucleus.ModelEditor
 		bool OnUnselected() => true;
 		void OnHidden() { }
 		void OnShown() { }
+
+		/// <summary>
+		/// Determines if keyframeable + gets keyframe parameters.
+		/// </summary>
+		/// <param name="target">The target for keyframing</param>
+		/// <param name="property">The property for keyframing</param>
+		/// <param name="arrayIndex">The index for keyframing (usually -1)</param>
+		/// <returns>True if able to keyframe; false otherwise. Default is <c>false</c> (as defined by <see cref="IEditorType.GetKeyframeParameters(out IEditorType?, out KeyframeProperty, out int)"/>)</returns>
+		bool GetKeyframeParameters([NotNullWhen(true)] out IEditorType? target, [NotNullWhen(true)] out KeyframeProperty property, [NotNullWhen(true)] out int arrayIndex) {
+			arrayIndex = -1;
+			property = KeyframeProperty.None;
+			target = null;
+			return false;
+		}
 	}
 }
