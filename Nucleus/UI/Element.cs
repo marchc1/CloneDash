@@ -1098,6 +1098,7 @@ namespace Nucleus.UI
 		public Texture? Image { get; set; }
 		public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
+		public Vector2F ImagePadding { get; set; } = new(0);
 		public Vector2F GetGlobalPosition() {
 			Vector2F ret = new Vector2F(0, 0);
 			Element? t = this;
@@ -1177,6 +1178,11 @@ namespace Nucleus.UI
 
 					break;
 			}
+
+			destRect.X += ImagePadding.X;
+			destRect.Y += ImagePadding.Y;
+			destRect.Width -= ImagePadding.X * 2;
+			destRect.Height -= ImagePadding.Y * 2;
 
 			Color thisC = ImageColor ?? TextColor;
 
