@@ -55,11 +55,16 @@ namespace Nucleus.ModelEditor
 	}
 	public class ModelEditor : Level
 	{
-		public bool IsPropertyCurrentlyAnimatable(KeyframeProperty prop) {
-			if (prop == KeyframeProperty.None) return false; // block if no property requested
+		public bool CanInsertKeyframes() {
 			if (!AnimationMode) return false; // block if in setup
 			if (File.ActiveAnimation == null) return false; // block if no active animation
 			if (File.Timeline.PlayDirection != 0) return false; // block if timeline playing
+
+			return true;
+		}
+		public bool IsPropertyCurrentlyAnimatable(KeyframeProperty prop) {
+			if (prop == KeyframeProperty.None) return false; // block if no property requested
+			if (!CanInsertKeyframes()) return false; // see CanInsertKeyframes
 
 			switch (prop) {
 				case KeyframeProperty.Bone_Translation:
