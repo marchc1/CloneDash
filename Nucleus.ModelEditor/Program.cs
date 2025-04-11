@@ -400,7 +400,7 @@ namespace Nucleus.ModelEditor
 		private void UpdateModelAnimations() {
 			foreach (var model in File.Models)
 				if (model.ActiveAnimation != null)
-					model.ActiveAnimation.Apply(File.Timeline.Frame);
+					model.ActiveAnimation.Apply(File.Timeline.GetPlayhead());
 		}
 
 		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);

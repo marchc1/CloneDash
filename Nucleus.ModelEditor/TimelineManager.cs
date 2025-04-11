@@ -29,6 +29,16 @@ public class TimelineManager
 
 	public int PlayDirection { get; private set; } = 0;
 
+	/// <summary>
+	/// Differs from Frame, in that it accounts for Interpolated.
+	/// </summary>
+	/// <returns></returns>
+	public double GetPlayhead() {
+		if (Interpolated) return Frame;
+
+		return Math.Round(Frame);
+	}
+
 	public bool PlayingBackwards {
 		get => PlayDirection == -1;
 		set => PlayDirection = value ? -1 : 0;

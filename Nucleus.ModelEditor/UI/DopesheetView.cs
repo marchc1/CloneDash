@@ -300,7 +300,7 @@ namespace Nucleus.ModelEditor.UI
 			ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		}
 
-		public double GetCurFrame() => ModelEditor.Active.File.Timeline.Frame;
+		public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetPlayhead();
 		public void SetCurFrame() {
 			var xLocal = TimeInfoPanel.GetMousePos();
 			ModelEditor.Active.File.Timeline.SetFrame(XToFrame(xLocal.X));
@@ -323,7 +323,7 @@ namespace Nucleus.ModelEditor.UI
 		private void TopButtonsAndTimeInfo_PaintOverride(Element self, float width, float height) {
 			var tl = ModelEditor.Active.File.Timeline;
 
-			var curframe = tl.Frame;
+			var curframe = tl.GetPlayhead();
 
 			self.BackgroundColor = new(30, 37, 46);
 			self.BorderSize = 0;
@@ -612,7 +612,7 @@ namespace Nucleus.ModelEditor.UI
 			var xMajorDivisions = CalcXMajorDivisions();
 			var widthPer = Zoom * xMajorDivisions;
 			var frame = -xMajorDivisions * 2;
-			var curframe = tl.Frame;
+			var curframe = tl.GetPlayhead();
 			float curframeX = (float)FrameToX(curframe);
 			for (double x = xstart - widthPer; x < width; x += widthPer) {
 				frame += xMajorDivisions;
