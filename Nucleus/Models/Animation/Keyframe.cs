@@ -32,7 +32,7 @@ namespace Nucleus.Models
 		private static T LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (leftmostOfTime) {
 				case Keyframe<float> kfL: return rightmostOfTime is Keyframe<float> kfR ? (T)(object)(float)NMath.Remap(time, kfL.Time, kfR.Time, kfL.Value, kfR.Value) : throw new Exception();
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
@@ -61,64 +61,64 @@ namespace Nucleus.Models
 
 					return (T)(object)(float)ry;
 
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T SinusoidalInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T QuadraticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T CubicInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T QuarticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T QuinticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T ExponentialInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T CircularInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T BackInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T BounceInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 		private static T ElasticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 			switch (default(T)) {
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 
 		public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 			var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 			switch (interpolation) {
-				case KeyframeInterpolation.Constant: return leftmostOfTime.Value;
+				case KeyframeInterpolation.Constant: return rightmostOfTime.Value;
 				case KeyframeInterpolation.Linear: return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
 				case KeyframeInterpolation.Bezier: return BezierInterpolator(time, leftmostOfTime, rightmostOfTime);
 				case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
@@ -131,7 +131,7 @@ namespace Nucleus.Models
 				case KeyframeInterpolation.Back: return BackInterpolator(time, leftmostOfTime, rightmostOfTime);
 				case KeyframeInterpolation.Bounce: return BounceInterpolator(time, leftmostOfTime, rightmostOfTime);
 				case KeyframeInterpolation.Elastic: return ElasticInterpolator(time, leftmostOfTime, rightmostOfTime);
-				default: return leftmostOfTime.Value;
+				default: return rightmostOfTime.Value;
 			}
 		}
 	}
