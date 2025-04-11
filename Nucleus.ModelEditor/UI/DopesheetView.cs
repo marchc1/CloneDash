@@ -413,6 +413,9 @@ namespace Nucleus.ModelEditor.UI
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
 		
+		public void SetupKeyframes(EditorBone bone, EditorTimeline timeline) {
+
+		}
 		public void CreateKeyframeButton(Panel keyframes, double time) {
 
 		}
@@ -450,7 +453,7 @@ namespace Nucleus.ModelEditor.UI
 
 			var rotate = animation.SearchTimelineByProperty(bone, KeyframeProperty.Bone_Rotation, -1, false);
 			if(rotate != null)
-				
+				SetupKeyframes(bone, rotate)
 		}
 
 		public void CreateChannels() {
