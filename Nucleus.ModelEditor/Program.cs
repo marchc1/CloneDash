@@ -240,6 +240,7 @@ namespace Nucleus.ModelEditor
 		public WeightsPanel Weights;
 		public AnimationsView Animations;
 		public DopesheetView Dopesheet;
+		public GraphView Graph;
 		public PlaybackView Playback;
 		public Button SwitchMode;
 
@@ -331,6 +332,7 @@ namespace Nucleus.ModelEditor
 
 				animationTools.SizePercentage = 0.33f;
 				Dopesheet = animationTools.Division.AddView<DopesheetView>();
+				Graph = animationTools.Division.AddView<GraphView>();
 
 				var playback = animationTools.Division.SplitApart(Dock.Right);
 				playback.SizePercentage = 0.2f;

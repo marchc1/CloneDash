@@ -28,6 +28,7 @@ public interface ISlotTimeline
 }
 
 public interface IProperty<T> {
+	public T GetSetupValue();
 	public T GetValue();
 }
 
@@ -55,6 +56,12 @@ public abstract class EditorTimeline
 	public abstract double CalculateMaxTime();
 
 	public abstract IEnumerable<double> GetKeyframeTimes();
+
+	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
+		return !obj.TryGetValueAtTime(time, out var key) 
+					? KeyframeState.NotKeyframed : key?.Equals(obj.GetValue()) ?? false 
+						? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	}
 }
 
 public interface IKeyframeQueryable<T>
@@ -127,8 +134,9 @@ public class RotationTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.Rotation = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.SetupRotation;
 	public float GetValue() => Bone.Rotation;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<RotationTimeline, float>(this, time);
 }
 
 
@@ -142,8 +150,9 @@ public class TranslateTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 			CurveY.DetermineValueAtTime(time)
 		);
 	}
+	public Vector2F GetSetupValue() => Bone.SetupPosition;
 	public Vector2F GetValue() => Bone.Position;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateTimeline, Vector2F>(this, time);
 }
 
 public class TranslateXTimeline : CurveTimeline1, IBoneProperty<float>
@@ -153,8 +162,9 @@ public class TranslateXTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.PositionX = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.SetupPositionX;
 	public float GetValue() => Bone.PositionX;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateXTimeline, float>(this, time);
 }
 
 public class TranslateYTimeline : CurveTimeline1, IBoneProperty<float>
@@ -164,8 +174,9 @@ public class TranslateYTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.PositionY = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.SetupPositionY;
 	public float GetValue() => Bone.PositionY;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateYTimeline, float>(this, time);
 }
 
 
@@ -182,8 +193,9 @@ public class ScaleTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 			CurveY.DetermineValueAtTime(time)
 		);
 	}
+	public Vector2F GetSetupValue() => Bone.SetupScale;
 	public Vector2F GetValue() => Bone.Scale;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleTimeline, Vector2F>(this, time);
 }
 
 public class ScaleXTimeline : CurveTimeline1, IBoneProperty<float>
@@ -193,8 +205,9 @@ public class ScaleXTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.ScaleX = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.SetupScaleX;
 	public float GetValue() => Bone.ScaleX;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleXTimeline, float>(this, time);
 }
 
 public class ScaleYTimeline : CurveTimeline1, IBoneProperty<float>
@@ -204,14 +217,10 @@ public class ScaleYTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.ScaleY = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.SetupScaleY;
 	public float GetValue() => Bone.ScaleY;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleYTimeline, float>(this, time);
 }
-
-
-
-
-
 
 public class ShearTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 {
@@ -223,8 +232,9 @@ public class ShearTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 			CurveY.DetermineValueAtTime(time)
 		);
 	}
+	public Vector2F GetSetupValue() => Bone.Shear;
 	public Vector2F GetValue() => Bone.Shear;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearTimeline, Vector2F>(this, time);
 }
 
 public class ShearXTimeline : CurveTimeline1, IBoneProperty<float>
@@ -234,8 +244,9 @@ public class ShearXTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.ShearX = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.ShearX;
 	public float GetValue() => Bone.ShearX;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearXTimeline, float>(this, time);
 }
 
 public class ShearYTimeline : CurveTimeline1, IBoneProperty<float>
@@ -245,8 +256,9 @@ public class ShearYTimeline : CurveTimeline1, IBoneProperty<float>
 	public override void Apply(EditorModel model, double time) {
 		Bone.ShearY = Curve.DetermineValueAtTime(time);
 	}
+	public float GetSetupValue() => Bone.ShearY;
 	public float GetValue() => Bone.ShearY;
-	public override KeyframeState KeyframedAt(double time) => !TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key == GetValue() ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearYTimeline, float>(this, time);
 }
 
 
