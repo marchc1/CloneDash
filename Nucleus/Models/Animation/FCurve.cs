@@ -47,6 +47,7 @@ namespace Nucleus.Models
 
 		public T? DetermineValueAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
+
 			int count = Keyframes.Count;
 			switch (count) {
 				case 0: return default;

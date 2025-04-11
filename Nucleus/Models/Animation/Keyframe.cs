@@ -53,7 +53,7 @@ namespace Nucleus.Models
 						kfR.Time,
 						kfR.Value,
 
-						NMath.Remap(time, leftmostOfTime.Time, rightmostOfTime.Time, 0, 1),
+						NMath.Remap(time, leftmostOfTime.Time, rightmostOfTime.Time, 0, 1, false, clampOutput: true),
 
 						out var rx,
 						out var ry
