@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Models;
 using Nucleus.Types;
+using Raylib_cs;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
@@ -41,9 +42,19 @@ public interface ISlotProperty<T> : ISlotTimeline, IProperty<T>
 
 public abstract class EditorTimeline
 {
+	public static readonly Color TIMELINE_COLOR_ROTATION = new(50, 255, 50);
+	public static readonly Color TIMELINE_COLOR_TRANSLATE = new(50, 50, 255);
+	public static readonly Color TIMELINE_COLOR_SCALE = new(255, 50, 50);
+	public static readonly Color TIMELINE_COLOR_SHEAR = new(255, 255, 70);
+	/// <summary>
+	/// Optional <see cref="Color"/>, used in the dope sheet
+	/// </summary>
+	public virtual Color Color => Color.White;
 	public abstract void Apply(EditorModel model, double time);
 	public abstract KeyframeState KeyframedAt(double time);
 	public abstract double CalculateMaxTime();
+
+	public abstract IEnumerable<double> GetKeyframeTimes();
 }
 
 public interface IKeyframeQueryable<T>
@@ -72,6 +83,11 @@ public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 	}
 
 	public override double CalculateMaxTime() => Curve.Last.Time;
+
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach(var keyframe in Curve.GetKeyframes())
+			yield return keyframe.Time;
+	}
 }
 public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector2F>
 {
@@ -97,10 +113,16 @@ public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector
 	}
 
 	public override double CalculateMaxTime() => CurveX.Last.Time;
+
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in CurveX.GetKeyframes())
+			yield return keyframe.Time;
+	}
 }
 
 public class RotationTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_ROTATION;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.Rotation = Curve.DetermineValueAtTime(time);
@@ -112,6 +134,7 @@ public class RotationTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class TranslateTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 {
+	public override Color Color => TIMELINE_COLOR_TRANSLATE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.Position = new(
@@ -125,6 +148,7 @@ public class TranslateTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 
 public class TranslateXTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_TRANSLATE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.PositionX = Curve.DetermineValueAtTime(time);
@@ -135,6 +159,7 @@ public class TranslateXTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class TranslateYTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_TRANSLATE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.PositionY = Curve.DetermineValueAtTime(time);
@@ -149,6 +174,7 @@ public class TranslateYTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class ScaleTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 {
+	public override Color Color => TIMELINE_COLOR_SCALE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.Scale = new(
@@ -162,6 +188,7 @@ public class ScaleTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 
 public class ScaleXTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_SCALE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.ScaleX = Curve.DetermineValueAtTime(time);
@@ -172,6 +199,7 @@ public class ScaleXTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class ScaleYTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_SCALE;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.ScaleY = Curve.DetermineValueAtTime(time);
@@ -187,6 +215,7 @@ public class ScaleYTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class ShearTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 {
+	public override Color Color => TIMELINE_COLOR_SHEAR;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.Shear = new(
@@ -200,6 +229,7 @@ public class ShearTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 
 public class ShearXTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_SHEAR;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.ShearX = Curve.DetermineValueAtTime(time);
@@ -210,6 +240,7 @@ public class ShearXTimeline : CurveTimeline1, IBoneProperty<float>
 
 public class ShearYTimeline : CurveTimeline1, IBoneProperty<float>
 {
+	public override Color Color => TIMELINE_COLOR_SHEAR;
 	public EditorBone Bone { get; set; }
 	public override void Apply(EditorModel model, double time) {
 		Bone.ShearY = Curve.DetermineValueAtTime(time);

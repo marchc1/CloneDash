@@ -628,6 +628,21 @@ namespace Nucleus.ModelEditor.UI
 				case EditorBone bone:
 
 					break;
+				case EditorTimeline timeline:
+					var color = timeline.Color;
+					var minTime = XToFrameExact(0);
+					var maxTime = XToFrameExact(width);
+					foreach(var keyframeTime in timeline.GetKeyframeTimes()) {
+						// Early skip frames that aren't visible. Saves the FrameToX calculation
+						if (keyframeTime < minTime || keyframeTime > maxTime) continue;
+
+						var x = (int)((float)FrameToX(keyframeTime) - 2);
+						Graphics2D.SetDrawColor(color);
+						Graphics2D.DrawRectangle(x, 0, 5, height);
+						Graphics2D.SetDrawColor(15, 15, 15);
+						Graphics2D.DrawRectangleOutline(x, 0, 5, height, 1);
+					}
+					break;
 			}
 		}
 
