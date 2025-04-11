@@ -2,6 +2,7 @@
 using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
+using System.Diagnostics;
 using Color = Raylib_cs.Color;
 
 namespace Nucleus.ModelEditor.UI
@@ -412,7 +413,7 @@ namespace Nucleus.ModelEditor.UI
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
 		
-		public void AddKeyframe(double time) {
+		public void CreateKeyframeButton(Panel keyframes, double time) {
 
 		}
 
@@ -444,7 +445,12 @@ namespace Nucleus.ModelEditor.UI
 				ModelEditor.Active.SelectObject(bone);
 			};
 
+			var animation = ModelEditor.Active.File.ActiveAnimation;
+			Debug.Assert(animation != null, "???");
 
+			var rotate = animation.SearchTimelineByProperty(bone, KeyframeProperty.Bone_Rotation, -1, false);
+			if(rotate != null)
+				
 		}
 
 		public void CreateChannels() {
