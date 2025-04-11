@@ -544,12 +544,16 @@ namespace Nucleus.ModelEditor.UI
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, -1);
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 0);
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 1);
+
+					foreach(var slot in bone.Slots)
+						SearchPropertyThenCreatePanel(anim, slot, KeyframeProperty.Slot_Attachment, -1);
+
 					break;
 			}
 		}
 
-		private void SearchPropertyThenCreatePanel(EditorAnimation anim, EditorBone bone, KeyframeProperty property, int arrayIndex = -1) {
-			var timeline = anim.SearchTimelineByProperty(bone, property, arrayIndex, false);
+		private void SearchPropertyThenCreatePanel(EditorAnimation anim, IEditorType target, KeyframeProperty property, int arrayIndex = -1) {
+			var timeline = anim.SearchTimelineByProperty(target, property, arrayIndex, false);
 			if (timeline == null) return;
 
 			CreateChannelPanels(out Button header, out Panel keyframes, timeline);
@@ -558,7 +562,8 @@ namespace Nucleus.ModelEditor.UI
 				KeyframeProperty.Bone_Rotation => "Rotate",
 				KeyframeProperty.Bone_Translation => "Translate",
 				KeyframeProperty.Bone_Scale => "Scale",
-				KeyframeProperty.Bone_Shear => "Shear",
+
+				KeyframeProperty.Slot_Attachment => $"Attach: {target.GetName()}",
 				_ => "N/A",
 			}}{(arrayIndex == -1 ? "" : $" {arrayIndex switch {
 				0 => "X",
@@ -566,11 +571,17 @@ namespace Nucleus.ModelEditor.UI
 				_ => throw new Exception($"Inavlid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
 			}}")}";
 
+			header.ImagePadding = property switch {
+				KeyframeProperty.Slot_Attachment => new(8),
+				_ => new(6)
+			};
 			header.Image = Textures.LoadTextureFromFile($"models/{property switch {
 				KeyframeProperty.Bone_Rotation => "rotate_color",
 				KeyframeProperty.Bone_Translation => "translate_color",
 				KeyframeProperty.Bone_Scale => "scale_color",
 				KeyframeProperty.Bone_Shear => "shear_color",
+
+				KeyframeProperty.Slot_Attachment => "paperclip",
 				_ => "N/A",
 			}}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
 				0 => "x",
@@ -581,7 +592,7 @@ namespace Nucleus.ModelEditor.UI
 			header.ImageFollowsText = true;
 			header.ImageOrientation = ImageOrientation.Centered;
 			header.TextPadding = new(38, 0);
-			header.ImagePadding = new(4);
+			
 
 			header.Thinking += (s) => {
 				bool selected = ModelEditor.Active.SelectedObjectsCount > 0 && property switch {
@@ -589,6 +600,7 @@ namespace Nucleus.ModelEditor.UI
 					KeyframeProperty.Bone_Translation => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.TranslateSelection,
 					KeyframeProperty.Bone_Scale => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ScaleSelection,
 					KeyframeProperty.Bone_Shear => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ShearSelection,
+					KeyframeProperty.Slot_Attachment => ModelEditor.Active.IsObjectSelected(target),
 					_ => false
 				};
 				var selectedInt = selected ? 80 : 45;
