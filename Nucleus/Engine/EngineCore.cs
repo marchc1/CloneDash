@@ -381,6 +381,7 @@ namespace Nucleus
 		public static string FrameCost { get; set; } = "";
         public static float FrameCostMS { get; set; }
         public static float FPS => Raylib.GetFPS();
+		public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 
         public static void Frame() {
             MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
