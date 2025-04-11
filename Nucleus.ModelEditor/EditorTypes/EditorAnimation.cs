@@ -48,6 +48,7 @@ public abstract class EditorTimeline
 	public static readonly Color TIMELINE_COLOR_TRANSLATE = new(50, 50, 255);
 	public static readonly Color TIMELINE_COLOR_SCALE = new(255, 50, 50);
 	public static readonly Color TIMELINE_COLOR_SHEAR = new(255, 255, 70);
+	public static readonly Color TIMELINE_COLOR_ATTACHMENT = new(170);
 	/// <summary>
 	/// Optional <see cref="Color"/>, used in the dope sheet
 	/// </summary>
@@ -95,6 +96,32 @@ public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 			yield return keyframe.Time;
 	}
 }
+
+public abstract class GenericStepTimeline<T> : EditorTimeline, IKeyframeQueryable<T>
+{
+	public FCurve<T> Curve = new();
+	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
+	public bool TryGetValueAtTime(double time, out T? value) {
+		var found = Curve.TryFindKeyframe(time, out var key);
+		value = default;
+		if (!found) return false;
+
+		value = key.HasValue ? key.Value.Value : value;
+		return true;
+	}
+
+	public void InsertKeyframe(double time, T value) {
+		Curve.AddKeyframe(new(time, value));
+	}
+
+	public override double CalculateMaxTime() => Curve.Last.Time;
+
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in Curve.GetKeyframes())
+			yield return keyframe.Time;
+	}
+}
+
 public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector2F>
 {
 	public FCurve<float> CurveX = new();
@@ -261,6 +288,19 @@ public class ShearYTimeline : CurveTimeline1, IBoneProperty<float>
 }
 
 
+public class ActiveAttachmentTimeline : GenericStepTimeline<EditorAttachment?>, ISlotProperty<EditorAttachment?>
+{
+	public override Color Color => TIMELINE_COLOR_ATTACHMENT;
+	public EditorSlot Slot { get; set; }
+	public override void Apply(EditorModel model, double time) {
+		Slot.ActiveAttachment = Curve.DetermineValueAtTime(time);
+	}
+	public EditorAttachment? GetSetupValue() => Slot.SetupActiveAttachment;
+	public EditorAttachment? GetValue() => Slot.ActiveAttachment;
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ActiveAttachmentTimeline, EditorAttachment?>(this, time);
+}
+
+
 
 
 public class EditorAnimation : IEditorType
@@ -316,15 +356,33 @@ public class EditorAnimation : IEditorType
 
 	public List<EditorTimeline> Timelines = [];
 
-	public (T Timeline, bool Created) GetTimeline<T>(EditorBone bone, bool createIfMissing = true) where T : EditorTimeline, IBoneTimeline, new() {
-		T? timeline = Timelines.FirstOrDefault(x => x is T tTimeline && tTimeline.Bone == bone) as T;
+	// This is a generic's and interfaces nightmare
+	public (T Timeline, bool Created) GetTimeline<T>(IEditorType item, bool createIfMissing = true) where T : EditorTimeline, new() {
+		T? timeline;
+		switch (item) {
+			case EditorBone bone:
+				timeline = Timelines.FirstOrDefault(x => x is T tTimeline && x is IBoneTimeline btl && btl.Bone == bone) as T;
+				break;
+			case EditorSlot slot:
+				timeline = Timelines.FirstOrDefault(x => x is T tTimeline && x is ISlotTimeline stl && stl.Slot == slot) as T;
+				break;
+			default:
+				throw new Exception($"Unregistered IEditorType for GetTimeline<T> (got typeof '{item.GetType().Name}')");
+		}
+
 		(T Timeline, bool Created) result = (null, false);
 		if (timeline == null) {
 			if (!createIfMissing) return result;
 
 			result.Created = true;
 			timeline = new();
-			timeline.Bone = bone;
+
+			switch (timeline) {
+				case IBoneTimeline btl: btl.Bone = item as EditorBone ?? throw new Exception("wtf"); break;
+				case ISlotTimeline stl: stl.Slot = item as EditorSlot ?? throw new Exception("wtf"); break;
+				default: throw new Exception($"No creation-assignment function defined for GetTimeline<T> (got typeof '{item.GetType().Name}')");
+			}
+
 			Timelines.Add(timeline);
 		}
 
@@ -336,6 +394,7 @@ public class EditorAnimation : IEditorType
 		var tl = SearchTimelineByProperty(type, property, out var _, arrayIndex, createIfMissing);
 		return tl;
 	}
+
 	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, out bool created, int arrayIndex, bool createIfMissing) {
 		(EditorTimeline Timeline, bool Created) info = type switch {
 			EditorBone bone => property switch {
@@ -361,23 +420,15 @@ public class EditorAnimation : IEditorType
 				},
 				_ => throw new Exception("Missing property to search.")
 			},
+			EditorSlot slot => property switch {
+				KeyframeProperty.Slot_Attachment => GetTimeline<ActiveAttachmentTimeline>(slot, createIfMissing),
+				_ => throw new Exception("Missing property to search.")
+			},
 			_ => new(null, false)
 		};
 
 		created = info.Created;
 		return info.Timeline;
-	}
-
-	public T GetTimeline<T>(EditorSlot slot, bool createIfMissing = true) where T : EditorTimeline, ISlotTimeline, new() {
-		T? timeline = Timelines.FirstOrDefault(x => x is T tTimeline && tTimeline.Slot == slot) as T;
-		if (timeline == null) {
-			if (!createIfMissing) return null;
-
-			timeline = new();
-			timeline.Slot = slot;
-		}
-
-		return timeline;
 	}
 
 	public bool Export { get; set; } = true;
@@ -426,6 +477,4 @@ public class EditorAnimation : IEditorType
 
 		return bones.ToList();
 	}
-
-	//public EditorResult Remove() => ModelEditor.Active.File
 }
