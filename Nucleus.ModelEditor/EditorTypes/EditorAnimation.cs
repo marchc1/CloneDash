@@ -311,7 +311,6 @@ public class EditorAnimation : IEditorType
 		return timeline;
 	}
 
-
 	public bool Export { get; set; } = true;
 
 	public string GetName() => Name;
@@ -347,6 +346,19 @@ public class EditorAnimation : IEditorType
 	public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameAnimation(Model, this, newName);
 	public virtual void Render() { }
 	public virtual void RenderOverlay() { }
+
+	internal List<EditorBone> GetAffectedBones() {
+		HashSet<EditorBone> bones = [];
+
+		foreach(var timeline in Timelines) {
+			switch (timeline) {
+				case IBoneTimeline boneTimeline: bones.Add(boneTimeline.Bone); break;
+				case ISlotTimeline slotTimeline: bones.Add(slotTimeline.Slot.Bone); break;
+			}
+		}
+
+		return bones.ToList();
+	}
 
 	//public EditorResult Remove() => ModelEditor.Active.File
 }

@@ -104,7 +104,12 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.OperatorActivated += File_OperatorActivated;
 			ModelEditor.Active.File.OperatorDeactivated += File_OperatorDeactivated;
-			ModelEditor.Active.File.Cleared += File_Cleared; ;
+			ModelEditor.Active.File.Cleared += File_Cleared;
+			ModelEditor.Active.SetupAnimateModeChanged += (_, mode) => {
+				if (mode) {
+					Active_SelectedChanged();
+				}
+			};
 
 			ModelEditor.Active.File.ItemTransformed += File_ItemTransformed;
 

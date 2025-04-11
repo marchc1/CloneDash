@@ -284,16 +284,20 @@ namespace Nucleus.ModelEditor
 			if (AnimationMode) {
 				SwitchMode.Text = "Animate Mode";
 				View.SetActiveWorkspaceByName("Animate");
+
+				UpdateModelAnimations();
 			}
 			else {
 				SwitchMode.Text = "Setup Mode";
 				View.SetActiveWorkspaceByName("Setup");
+
+				foreach (var model in File.Models) {
+					foreach (var bone in model.GetAllBones()) bone.ResetToSetupPose();
+					foreach (var slot in model.Slots) slot.ResetToSetupPose();
+				}
 			}
 
-			foreach (var model in File.Models) {
-				foreach (var bone in model.GetAllBones()) bone.ResetToSetupPose();
-				foreach (var slot in model.Slots) slot.ResetToSetupPose();
-			}
+
 
 			SetupAnimateModeChanged?.Invoke(this, AnimationMode);
 		}
@@ -385,10 +389,10 @@ namespace Nucleus.ModelEditor
 		}
 		private void SetupHooks() {
 			Dopesheet.SetupHooks();
-			File.Timeline.FrameChanged += (_, _) => UpdateModels();
-			File.Timeline.FrameElapsed += (_, _) => UpdateModels();
+			File.Timeline.FrameChanged += (_, _) => UpdateModelAnimations();
+			File.Timeline.FrameElapsed += (_, _) => UpdateModelAnimations();
 		}
-		private void UpdateModels() {
+		private void UpdateModelAnimations() {
 			foreach (var model in File.Models)
 				if (model.ActiveAnimation != null)
 					model.ActiveAnimation.Apply(File.Timeline.Frame);

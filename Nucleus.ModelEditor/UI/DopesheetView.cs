@@ -425,6 +425,8 @@ namespace Nucleus.ModelEditor.UI
 			header.MouseClickEvent += (_, _, _) => {
 				ModelEditor.Active.SelectObject(bone);
 			};
+
+
 		}
 
 		public void CreateChannels() {
@@ -448,7 +450,7 @@ namespace Nucleus.ModelEditor.UI
 			if (ModelEditor.Active.SelectedObjectsCount > 0) {
 				HashSet<EditorBone> foundBones = [];
 
-				foreach(var selected in ModelEditor.Active.SelectedObjects) {
+				foreach (var selected in ModelEditor.Active.SelectedObjects) {
 					EditorBone? representingBone = null;
 
 					if (selected is EditorBone bone)
@@ -461,7 +463,10 @@ namespace Nucleus.ModelEditor.UI
 				}
 			}
 			else {
-				// todo
+				List<EditorBone> bones = animation.GetAffectedBones();
+				foreach (var bone in bones) {
+					SetupBoneChannelHeader(bone);
+				}
 			}
 		}
 
