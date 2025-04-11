@@ -282,9 +282,11 @@ namespace Nucleus.ModelEditor
 				KeyframeState.Keyframed => KeyframeButton.KEYFRAME_COLOR_ACTIVE_KEYFRAME
 			};
 
+			color = MixColorBasedOnMouseState(self, color, new(0, .6f, 1.2f, 1), new(0, 1, .5f, 1));
+
 			Graphics2D.SetDrawColor(color);
 			Graphics2D.SetTexture(Textures.LoadTextureFromFile("models/keyframe.png"));
-			Graphics2D.DrawTexture(new(2, 2), new(width - 4, width - 4));
+			Graphics2D.DrawImage(RectangleF.FromPosAndSize(new(2), new(height - 4)));
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {

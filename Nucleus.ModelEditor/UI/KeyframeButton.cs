@@ -15,6 +15,7 @@ namespace Nucleus.ModelEditor
 
 		public override void Paint(float width, float height) {
 			bool canInput = CanInput();
+			ImagePadding = new(7);
 			if (canInput) {
 				// todo: determine background color
 				var selected = ModelEditor.Active.LastSelectedObject;

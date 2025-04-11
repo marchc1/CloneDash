@@ -86,7 +86,7 @@ namespace Nucleus.ModelEditor
 		public virtual void OnShown() {
 			Slot.SetActiveAttachment(this);
 			ModelEditor.Active.File.DeactivateOperator(true);
-			//ModelEditor.Active.SelectObject(this);
+			ModelEditor.Active.SelectObject(this);
 		}
 
 		public virtual bool CanRename() => true;
