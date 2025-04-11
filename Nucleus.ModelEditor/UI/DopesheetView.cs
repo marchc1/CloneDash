@@ -59,6 +59,12 @@ namespace Nucleus.ModelEditor.UI
 		public Panel KeyframeChannelsPanel;
 		public NumSlider ZoomSlider;
 
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+			KeyframeInfoPanel.ChildRenderOffset = new(0, -ScrollOffset);
+			KeyframeChannelsPanel.ChildRenderOffset = new(0, -ScrollOffset);
+		}
+
 		private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
 			button.Text = "";
 			button.BorderSize = 1;
@@ -260,7 +266,7 @@ namespace Nucleus.ModelEditor.UI
 
 		private void processScroll(Vector2F delta) {
 			if (!Dragging) return;
-			delta.X *= -1;
+			delta *= -1;
 			DetermineDragDirection(delta);
 			if (ResolvedDraggingDirection) {
 				if (DraggingX) FrameOffset += delta.X;
@@ -451,36 +457,161 @@ namespace Nucleus.ModelEditor.UI
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
 
 
-		public void SetupBoneChannel(EditorBone bone) {
-			KeyframeChannelsPanel.Add(out Button header);
-			KeyframeInfoPanel.Add(out Panel keyframes);
+		private void CreateChannelPanels(out Button header, out Panel keyframes, object? target = null) {
+			KeyframeChannelsPanel.Add(out header);
+			KeyframeInfoPanel.Add(out keyframes);
 
 			keyframes.Dock = Dock.Top;
-			keyframes.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
 			keyframes.DockMargin = RectangleF.Zero;
+			keyframes.BorderSize = 1;
 			keyframes.Size = new(24);
 			keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
+			keyframes.SetTag("target", target);
+			keyframes.PaintOverride += Keyframes_PaintOverride;
 
 			header.Dock = Dock.Top;
-			header.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
 			header.DockMargin = RectangleF.Zero;
 			header.BorderSize = 1;
 			header.Size = new(24);
-			header.TextPadding = new(24, 0);
 			header.ForegroundColor = new(10, 10, 10);
 			header.TextAlignment = Anchor.CenterLeft;
-			header.Text = bone.Name;
-			header.TextSize = 16;
-			header.Image = Textures.LoadTextureFromFile("models/bone.png");
-			header.ImageOrientation = ImageOrientation.Centered;
-			header.ImageFollowsText = true;
 
-			header.MouseClickEvent += (_, _, _) => {
-				ModelEditor.Active.SelectObject(bone);
+		}
+		public void SetupBoneChannel(object target) {
+			CreateChannelPanels(out Button header, out Panel keyframes, target);
+			switch (target) {
+				case EditorAnimation animation:
+					header.BackgroundColor = HEADER_SELECTED_COLOR;
+					header.TextPadding = new(8, 0);
+					header.Text = animation.Name;
+					header.TextSize = 17;
+
+					keyframes.BackgroundColor = HEADER_SELECTED_COLOR;
+
+					if (ModelEditor.Active.SelectedObjectsCount > 0) {
+						HashSet<EditorBone> foundBones = [];
+
+						foreach (var selected in ModelEditor.Active.SelectedObjects) {
+							EditorBone? representingBone = null;
+
+							if (selected is EditorBone bone)
+								representingBone = bone;
+							else if (selected is EditorSlot slot)
+								representingBone = slot.Bone;
+
+							if (representingBone != null && foundBones.Add(representingBone))
+								SetupBoneChannel(representingBone);
+						}
+					}
+					else {
+						List<EditorBone> bones = animation.GetAffectedBones();
+						foreach (var bone in bones) {
+							SetupBoneChannel(bone);
+						}
+					}
+					break;
+				case EditorBone bone:
+					keyframes.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
+					header.BackgroundColor = bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR;
+
+					header.Text = bone.Name;
+					header.TextPadding = new(24, 0);
+					header.TextSize = 16;
+					header.Image = Textures.LoadTextureFromFile("models/bone.png");
+					header.ImageOrientation = ImageOrientation.Centered;
+					header.ImageFollowsText = true;
+
+					header.MouseClickEvent += (_, _, _) => {
+						ModelEditor.Active.SelectObject(bone);
+					};
+
+					// Get timelines in order
+					var anim = ModelEditor.Active.File.ActiveAnimation;
+					Debug.Assert(anim != null);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Rotation, -1);
+
+					break;
+			}
+		}
+
+		private void SearchPropertyThenCreatePanel(EditorAnimation anim, EditorBone bone, KeyframeProperty property, int arrayIndex = -1) {
+			var timeline = anim.SearchTimelineByProperty(bone, property, arrayIndex, false);
+			if (timeline == null) return;
+
+			CreateChannelPanels(out Button header, out Panel keyframes, timeline);
+
+			header.Text = $"{property switch {
+				KeyframeProperty.Bone_Rotation => "Rotate",
+				KeyframeProperty.Bone_Translation => "Translate",
+				KeyframeProperty.Bone_Scale => "Scale",
+				KeyframeProperty.Bone_Shear => "Shear",
+				_ => "N/A",
+			}}{(arrayIndex == -1 ? "" : $" {arrayIndex switch {
+				0 => "X",
+				1 => "Y",
+				_ => throw new Exception($"Inavlid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
+			}}")}";
+
+			header.Image = Textures.LoadTextureFromFile($"models/{property switch {
+				KeyframeProperty.Bone_Rotation => "rotate_color",
+				KeyframeProperty.Bone_Translation => "translate_color",
+				KeyframeProperty.Bone_Scale => "scale_color",
+				KeyframeProperty.Bone_Shear => "shear_color",
+				_ => "N/A",
+			}}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
+				0 => "x",
+				1 => "y",
+				_ => throw new Exception($"Inavlid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
+			}}")}.png");
+
+			header.ImageFollowsText = true;
+			header.TextPadding = new(38, 0);
+
+			header.Thinking += (s) => {
+				bool selected = ModelEditor.Active.SelectedObjectsCount > 0 && property switch {
+					KeyframeProperty.Bone_Rotation => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.RotateSelection,
+					KeyframeProperty.Bone_Translation => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.TranslateSelection,
+					KeyframeProperty.Bone_Scale => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ScaleSelection,
+					KeyframeProperty.Bone_Shear => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ShearSelection,
+					_ => false
+				};
+				var selectedInt = selected ? 80 : 45;
+				var color = new Color(selectedInt, selectedInt + 3, selectedInt + 7);
+				header.BackgroundColor = color;
+				keyframes.BackgroundColor = color;
 			};
 
-			var animation = ModelEditor.Active.File.ActiveAnimation;
-			Debug.Assert(animation != null, "???");
+		}
+
+		private void Keyframes_PaintOverride(Element self, float width, float height) {
+			var target = self.GetTag<object>("target");
+
+			// Render the background color and border
+			self.Paint(width, height);
+
+			// Render overlay lines
+			var tl = ModelEditor.Active.File.Timeline;
+			var xstart = defaultXOffset - FrameOffset;
+			var xMajorDivisions = CalcXMajorDivisions();
+			var widthPer = Zoom * xMajorDivisions;
+			var frame = -xMajorDivisions * 2;
+			var curframe = tl.Frame;
+			float curframeX = (float)FrameToX(curframe);
+			for (double x = xstart - widthPer; x < width; x += widthPer) {
+				frame += xMajorDivisions;
+				if (x < -widthPer || frame < 0) continue;
+
+				var xf = (float)x;
+				Graphics2D.SetDrawColor(15, 15, 15);
+				Graphics2D.DrawLine(xf, 0, xf, height);
+			}
+
+			// Render specific keyframe info.
+			switch (target) {
+				case EditorBone bone:
+
+					break;
+			}
 		}
 
 		public void CreateChannels() {
@@ -490,46 +621,7 @@ namespace Nucleus.ModelEditor.UI
 			var animation = ModelEditor.Active.File.ActiveAnimation;
 			if (animation == null) return;
 
-			KeyframeChannelsPanel.Add(out Button header);
-			header.Dock = Dock.Top;
-			header.BackgroundColor = HEADER_SELECTED_COLOR;
-			header.DockMargin = RectangleF.Zero;
-			header.BorderSize = 1;
-			header.Size = new(24);
-			header.TextPadding = new(8, 0);
-			header.ForegroundColor = new(10, 10, 10);
-			header.TextAlignment = Anchor.CenterLeft;
-			header.Text = animation.Name;
-			header.TextSize = 17;
-
-			KeyframeInfoPanel.Add(out Panel keyframes);
-			keyframes.Dock = Dock.Top;
-			keyframes.BackgroundColor = HEADER_SELECTED_COLOR;
-			keyframes.DockMargin = RectangleF.Zero;
-			keyframes.Size = new(24);
-			keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
-
-			if (ModelEditor.Active.SelectedObjectsCount > 0) {
-				HashSet<EditorBone> foundBones = [];
-
-				foreach (var selected in ModelEditor.Active.SelectedObjects) {
-					EditorBone? representingBone = null;
-
-					if (selected is EditorBone bone)
-						representingBone = bone;
-					else if (selected is EditorSlot slot)
-						representingBone = slot.Bone;
-
-					if (representingBone != null && foundBones.Add(representingBone))
-						SetupBoneChannel(representingBone);
-				}
-			}
-			else {
-				List<EditorBone> bones = animation.GetAffectedBones();
-				foreach (var bone in bones) {
-					SetupBoneChannel(bone);
-				}
-			}
+			SetupBoneChannel(animation);
 		}
 
 		private void Active_SelectedChanged() {
