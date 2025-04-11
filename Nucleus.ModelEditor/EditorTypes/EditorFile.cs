@@ -945,7 +945,8 @@ namespace Nucleus.ModelEditor
 
 			// See if the timeline implements IKeyframeQueryable<T> (for InsertKeyframe)
 			// and IProperty<T> (for getting the active value out of the timeline-attached object).
-			// I don't like the interface hell here, but it works, and is the best way I can think of
+			// I don't like the interface hell here, but it works, and is the best way I can think of. And it only has to happen here,
+			// everything else ultimately uses the InsertKeyframe API without a care in the world about the interface/target type.
 
 			// Keyframe float types
 			if (timeline is IKeyframeQueryable<float> kqf && timeline is IProperty<float> kpf)
@@ -954,6 +955,10 @@ namespace Nucleus.ModelEditor
 			// Keyframe vector2f types
 			else if (timeline is IKeyframeQueryable<Vector2F> kqv2 && timeline is IProperty<Vector2F> kpv2)
 				kqv2.InsertKeyframe(Timeline.Frame, kpv2.GetValue());
+
+			// Keyframe Attachment types
+			else if (timeline is IKeyframeQueryable<EditorAttachment> kqa && timeline is IProperty<EditorAttachment> kpa)
+				kqa.InsertKeyframe(Timeline.Frame, kpa.GetValue());
 
 			// Something went horribly wrong (probably I forgot to implement a type here)
 			else {
