@@ -416,6 +416,7 @@ namespace Nucleus.ModelEditor
 
 		protected override void OnThink(FrameState frameState) {
 			var activeOp = ModelEditor.Active.File.ActiveOperator;
+			ModelEditor.Active.File.Timeline.AddDeltaTime(EngineCore.Level.CurtimeDelta, ModelEditor.Active.File.ActiveAnimation?.CalculateMaxTime() ?? 0);
 
 			if (Hovered) {
 				// Hover determination

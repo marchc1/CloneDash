@@ -147,6 +147,35 @@ namespace Nucleus.ModelEditor.UI
 				Buttons.Add(out Button jumpNext); SetupButton(jumpNext, true, true, false); jumpNext.Image = Textures.LoadTextureFromFile("models/jumpNext.png");
 				Buttons.Add(out Button jumpEnd); SetupButton(jumpEnd, true, false, true); jumpEnd.Image = Textures.LoadTextureFromFile("models/jumpEnd.png");
 				Buttons.Add(out Button loop); SetupButton(loop, true, true, true); loop.Image = Textures.LoadTextureFromFile("models/loop.png");
+
+				playBackward.Thinking += (s) => {
+					var timeline = ModelEditor.Active.File.Timeline;
+
+					s.Image = timeline.PlayingBackwards
+								? Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
+								? Textures.LoadTextureFromFile("models/backReset.png") : Textures.LoadTextureFromFile("models/playBackward.png");
+
+					s.BackgroundColor = timeline.PlayingBackwards ? Color.SkyBlue : DefaultBackgroundColor;
+				};
+
+				playForward.Thinking += (s) => {
+					var timeline = ModelEditor.Active.File.Timeline;
+
+					s.Image = timeline.PlayingForwards
+								? Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
+								? Textures.LoadTextureFromFile("models/forwardReset.png") : Textures.LoadTextureFromFile("models/playForward.png");
+					s.BackgroundColor = timeline.PlayingForwards ? Color.SkyBlue : DefaultBackgroundColor;
+				};
+
+				playBackward.MouseReleaseEvent += (_, _, _) => {
+					var timeline = ModelEditor.Active.File.Timeline;
+					timeline.TogglePlayBackwards();
+				};
+
+				playForward.MouseReleaseEvent += (_, _, _) => {
+					var timeline = ModelEditor.Active.File.Timeline;
+					timeline.TogglePlayForwards();
+				};
 			}
 
 			Add(out TimeInfoPanel);
@@ -265,7 +294,7 @@ namespace Nucleus.ModelEditor.UI
 			ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		}
 
-		public int GetCurFrame() => (int)ModelEditor.Active.File.Timeline.Frame;
+		public double GetCurFrame() => ModelEditor.Active.File.Timeline.Frame;
 		public void SetCurFrame() {
 			var xLocal = TimeInfoPanel.GetMousePos();
 			ModelEditor.Active.File.Timeline.SetFrame(XToFrame(xLocal.X));
@@ -288,7 +317,7 @@ namespace Nucleus.ModelEditor.UI
 		private void TopButtonsAndTimeInfo_PaintOverride(Element self, float width, float height) {
 			var tl = ModelEditor.Active.File.Timeline;
 
-			var curframe = Convert.ToInt32(tl.Frame);
+			var curframe = tl.Frame;
 
 			self.BackgroundColor = new(30, 37, 46);
 			self.BorderSize = 0;
@@ -305,7 +334,9 @@ namespace Nucleus.ModelEditor.UI
 			var widthPer = Zoom * xMajorDivisions;
 			float curframeX = (float)FrameToX(curframe);
 
-			Vector2F frameTextSize = Graphics2D.GetTextSize($"{curframe}", "Noto Sans", 20);
+			var curframeText = $"{Math.Round(curframe)}";
+
+			Vector2F frameTextSize = Graphics2D.GetTextSize(curframeText, "Noto Sans", 20);
 
 			for (double x = xstart - widthPer; x < width; x += widthPer) {
 				frame += xMajorDivisions;
@@ -340,7 +371,7 @@ namespace Nucleus.ModelEditor.UI
 			Graphics2D.SetDrawColor(FrameMarkerColor);
 
 			Graphics2D.DrawLine(curframeX, height / 2, curframeX, height);
-			Graphics2D.DrawText(textX, (height / 2) + 2, $"{curframe}", "Noto Sans", 20, Anchor.BottomCenter);
+			Graphics2D.DrawText(textX, (height / 2) + 2, curframeText, "Noto Sans", 20, Anchor.BottomCenter);
 			int tX = 4;
 			var oob = FrameOutOfBounds(curframe);
 			if (!oob) {
@@ -350,6 +381,8 @@ namespace Nucleus.ModelEditor.UI
 			drawGradient(height);
 		}
 
+		public double FrameToX(double frame)
+			=> (defaultXOffset - FrameOffset) + (frame * Zoom);
 		public double FrameToX(int frame)
 			=> (defaultXOffset - FrameOffset) + (frame * Zoom);
 
@@ -359,6 +392,10 @@ namespace Nucleus.ModelEditor.UI
 		public double XToFrameExact(double x)
 			=> (x - defaultXOffset + FrameOffset) / Zoom;
 
+		public bool FrameOutOfBounds(double frame) {
+			var x = FrameToX(frame);
+			return x <= 14 || x >= TimeInfoPanel.RenderBounds.W;
+		}
 		public bool FrameOutOfBounds(int frame) {
 			var x = FrameToX(frame);
 			return x <= 14 || x >= TimeInfoPanel.RenderBounds.W;
@@ -412,13 +449,7 @@ namespace Nucleus.ModelEditor.UI
 		}
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
-		
-		public void SetupKeyframes(EditorBone bone, EditorTimeline timeline) {
 
-		}
-		public void CreateKeyframeButton(Panel keyframes, double time) {
-
-		}
 
 		public void SetupBoneChannel(EditorBone bone) {
 			KeyframeChannelsPanel.Add(out Button header);
@@ -450,10 +481,6 @@ namespace Nucleus.ModelEditor.UI
 
 			var animation = ModelEditor.Active.File.ActiveAnimation;
 			Debug.Assert(animation != null, "???");
-
-			var rotate = animation.SearchTimelineByProperty(bone, KeyframeProperty.Bone_Rotation, -1, false);
-			if(rotate != null)
-				SetupKeyframes(bone, rotate)
 		}
 
 		public void CreateChannels() {

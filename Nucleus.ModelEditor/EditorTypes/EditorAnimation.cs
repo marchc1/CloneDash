@@ -43,6 +43,7 @@ public abstract class EditorTimeline
 {
 	public abstract void Apply(EditorModel model, double time);
 	public abstract KeyframeState KeyframedAt(double time);
+	public abstract double CalculateMaxTime();
 }
 
 public interface IKeyframeQueryable<T>
@@ -69,6 +70,8 @@ public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 	public void InsertKeyframe(double time, float value) {
 		Curve.AddKeyframe(new(time, value));
 	}
+
+	public override double CalculateMaxTime() => Curve.Last.Time;
 }
 public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector2F>
 {
@@ -92,6 +95,8 @@ public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector
 		CurveX.AddKeyframe(new(time, value.X));
 		CurveY.AddKeyframe(new(time, value.Y));
 	}
+
+	public override double CalculateMaxTime() => CurveX.Last.Time;
 }
 
 public class RotationTimeline : CurveTimeline1, IBoneProperty<float>
@@ -230,6 +235,18 @@ public class EditorAnimation : IEditorType
 	public bool Hidden {
 		get => Model.ActiveAnimation != this;
 		set { }
+	}
+
+	public double CalculateMaxTime() {
+		double time = 0;
+
+		foreach(var tl in Timelines) {
+			var tlTime = tl.CalculateMaxTime();
+			if (tlTime > time)
+				time = tlTime;
+		}
+
+		return time;
 	}
 
 	public string Name { get; set; }

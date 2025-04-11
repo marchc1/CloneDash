@@ -8,6 +8,19 @@ namespace Nucleus.Models
 		public List<Keyframe<T>> Keyframes { get; private set; } = [];
 		[JsonIgnore] private bool valid = false;
 
+		public Keyframe<T> First {
+			get {
+				Recompute();
+				return Keyframes.FirstOrDefault();
+			}
+		}
+		public Keyframe<T> Last {
+			get {
+				Recompute();
+				return Keyframes.LastOrDefault();
+			}
+		}
+
 		public void AddKeyframe(Keyframe<T> keyframe) {
 			Keyframes.RemoveAll(x => keyframe.Time == x.Time);
 			Keyframes.Add(keyframe);
