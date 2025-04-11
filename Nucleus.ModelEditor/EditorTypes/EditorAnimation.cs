@@ -29,8 +29,24 @@ public interface ISlotTimeline
 
 public interface IProperty<T>
 {
+	/// <summary>
+	/// Gets the default value (setup value)
+	/// </summary>
+	/// <returns></returns>
 	public T GetSetupValue();
+	/// <summary>
+	/// Gets the current value
+	/// </summary>
+	/// <returns></returns>
 	public T GetValue();
+	/// <summary>
+	/// Compares two <typeparamref name="T"/>'s. The reason you must define this (and usually, it can just be a == b) is for things like draw order; a draw order in this case
+	/// would be an integer array, which would requiring iterating over two integer arrays and comparing their values rather than comparing references of the arrays
+	/// </summary>
+	/// <param name="a"></param>
+	/// <param name="b"></param>
+	/// <returns></returns>
+	public bool Compare(T? a, T? b);
 }
 
 public interface IBoneProperty<T> : IBoneTimeline, IProperty<T>
@@ -60,7 +76,7 @@ public abstract class EditorTimeline
 	public abstract IEnumerable<double> GetKeyframeTimes();
 
 	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
-		return !obj.TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : key?.Equals(obj.GetValue()) ?? false ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+		return !obj.TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : obj.Compare(key, obj.GetValue()) ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
 	}
 }
 
@@ -162,6 +178,7 @@ public class RotationTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.SetupRotation;
 	public float GetValue() => Bone.Rotation;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<RotationTimeline, float>(this, time);
 }
 
@@ -178,6 +195,7 @@ public class TranslateTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 	}
 	public Vector2F GetSetupValue() => Bone.SetupPosition;
 	public Vector2F GetValue() => Bone.Position;
+	public bool Compare(Vector2F a, Vector2F b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateTimeline, Vector2F>(this, time);
 }
 
@@ -190,6 +208,7 @@ public class TranslateXTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.SetupPositionX;
 	public float GetValue() => Bone.PositionX;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateXTimeline, float>(this, time);
 }
 
@@ -202,6 +221,7 @@ public class TranslateYTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.SetupPositionY;
 	public float GetValue() => Bone.PositionY;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<TranslateYTimeline, float>(this, time);
 }
 
@@ -221,6 +241,7 @@ public class ScaleTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 	}
 	public Vector2F GetSetupValue() => Bone.SetupScale;
 	public Vector2F GetValue() => Bone.Scale;
+	public bool Compare(Vector2F a, Vector2F b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleTimeline, Vector2F>(this, time);
 }
 
@@ -233,6 +254,7 @@ public class ScaleXTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.SetupScaleX;
 	public float GetValue() => Bone.ScaleX;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleXTimeline, float>(this, time);
 }
 
@@ -245,6 +267,7 @@ public class ScaleYTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.SetupScaleY;
 	public float GetValue() => Bone.ScaleY;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ScaleYTimeline, float>(this, time);
 }
 
@@ -260,6 +283,7 @@ public class ShearTimeline : CurveTimeline2, IBoneProperty<Vector2F>
 	}
 	public Vector2F GetSetupValue() => Bone.Shear;
 	public Vector2F GetValue() => Bone.Shear;
+	public bool Compare(Vector2F a, Vector2F b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearTimeline, Vector2F>(this, time);
 }
 
@@ -272,6 +296,7 @@ public class ShearXTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.ShearX;
 	public float GetValue() => Bone.ShearX;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearXTimeline, float>(this, time);
 }
 
@@ -284,6 +309,7 @@ public class ShearYTimeline : CurveTimeline1, IBoneProperty<float>
 	}
 	public float GetSetupValue() => Bone.ShearY;
 	public float GetValue() => Bone.ShearY;
+	public bool Compare(float a, float b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ShearYTimeline, float>(this, time);
 }
 
@@ -297,6 +323,7 @@ public class ActiveAttachmentTimeline : GenericStepTimeline<EditorAttachment?>, 
 	}
 	public EditorAttachment? GetSetupValue() => Slot.SetupActiveAttachment;
 	public EditorAttachment? GetValue() => Slot.ActiveAttachment;
+	public bool Compare(EditorAttachment? a, EditorAttachment? b) => a == b;
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<ActiveAttachmentTimeline, EditorAttachment?>(this, time);
 }
 
