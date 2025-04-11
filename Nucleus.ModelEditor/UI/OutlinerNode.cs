@@ -140,13 +140,34 @@ namespace Nucleus.ModelEditor
 			Expander.PaintOverride += Expander_PaintOverride;
 
 			Visibility.MouseClickEvent += Visibility_MouseClickEvent;
+			Keyframe.MouseClickEvent += Keyframe_MouseClickEvent; ;
 
 			Expander.MouseReleaseEvent += Expander_MouseReleaseEvent;
 
 			// we want text and label to passthru
 			Image.OnHoverTest += Passthru;
 
+			Keyframe.Visible = Keyframe.Enabled = ModelEditor.Active.AnimationMode;
+			ModelEditor.Active.SetupAnimateModeChanged += (_, animateMode) => {
+				Keyframe.Visible = Keyframe.Enabled = animateMode;
+			};
+
 			Dock = Dock.Top;
+		}
+
+		private void Keyframe_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+			IEditorType? editorItem = GetRepresentingObject();
+			if (editorItem == null) return;
+
+			if (
+				button == MouseButton.Mouse1 
+				&& ModelEditor.Active.CanInsertKeyframes() 
+				&& editorItem.CanKeyframe() 
+				&& editorItem.GetKeyframeParameters(out var target, out var prop, out var index)
+			)
+				ModelEditor.Active.File.InsertKeyframe(target, prop, index);
+			else // Redirect the click event to expander
+				Expander_MouseReleaseEvent(self, state, button);
 		}
 
 		private void Visibility_MouseClickEvent(Element self, FrameState state, MouseButton button) {
@@ -241,14 +262,36 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
+			IEditorType? editorItem = GetRepresentingObject();
+			
+			if (editorItem == null) return;
+			if (!ModelEditor.Active.CanInsertKeyframes()) return;
+			if (!editorItem.CanKeyframe()) return;
+			if (!editorItem.GetKeyframeParameters(out var target, out var property, out var index)) return;
 
+			// Search for the timeline, set up KeyframeState enum for rendering
+			var anim = ModelEditor.Active.File.ActiveAnimation;
+			if (anim == null) return;
+
+			var timeline = anim.SearchTimelineByProperty(target, property, index, false);
+			KeyframeState state = timeline?.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) ?? KeyframeState.NotKeyframed;
+
+			Color color = state switch {
+				KeyframeState.NotKeyframed => KeyframeButton.KEYFRAME_COLOR_NOT_KEYFRAMED,
+				KeyframeState.PendingKeyframe => KeyframeButton.KEYFRAME_COLOR_PENDING_KEYFRAME,
+				KeyframeState.Keyframed => KeyframeButton.KEYFRAME_COLOR_ACTIVE_KEYFRAME
+			};
+
+			Graphics2D.SetDrawColor(color);
+			Graphics2D.SetTexture(Textures.LoadTextureFromFile("models/keyframe.png"));
+			Graphics2D.DrawTexture(new(2, 2), new(width - 4, width - 4));
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
-		
+
 			if (editorItem is EditorAttachment attachment) {
 				var visColor = attachment.Slot.GetActiveAttachment() == attachment ? 185 : 80;
 				var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
