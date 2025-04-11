@@ -452,6 +452,7 @@ namespace Nucleus.ModelEditor.UI
 
 		public void SetupHooks() {
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
+			ModelEditor.Active.File.TimelineCreated += (_, _) => Active_SelectedChanged();
 		}
 		public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
 		public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
@@ -530,6 +531,17 @@ namespace Nucleus.ModelEditor.UI
 					Debug.Assert(anim != null);
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Rotation, -1);
 
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, -1);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, 0);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, 1);
+
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, -1);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, 0);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, 1);
+
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, -1);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 0);
+					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 1);
 					break;
 			}
 		}
@@ -565,7 +577,9 @@ namespace Nucleus.ModelEditor.UI
 			}}")}.png");
 
 			header.ImageFollowsText = true;
+			header.ImageOrientation = ImageOrientation.Centered;
 			header.TextPadding = new(38, 0);
+			header.ImagePadding = new(4);
 
 			header.Thinking += (s) => {
 				bool selected = ModelEditor.Active.SelectedObjectsCount > 0 && property switch {

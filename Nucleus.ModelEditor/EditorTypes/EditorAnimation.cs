@@ -274,46 +274,56 @@ public class EditorAnimation : IEditorType
 
 	public List<EditorTimeline> Timelines = [];
 
-	public T GetTimeline<T>(EditorBone bone, bool createIfMissing = true) where T : EditorTimeline, IBoneTimeline, new() {
+	public (T Timeline, bool Created) GetTimeline<T>(EditorBone bone, bool createIfMissing = true) where T : EditorTimeline, IBoneTimeline, new() {
 		T? timeline = Timelines.FirstOrDefault(x => x is T tTimeline && tTimeline.Bone == bone) as T;
+		(T Timeline, bool Created) result = (null, false);
 		if (timeline == null) {
-			if (!createIfMissing) return null;
+			if (!createIfMissing) return result;
 
+			result.Created = true;
 			timeline = new();
 			timeline.Bone = bone;
 			Timelines.Add(timeline);
 		}
 
-		return timeline;
+		result.Timeline = timeline;
+		return result;
 	}
 
 	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, int arrayIndex = -1, bool createIfMissing = true) {
-		return type switch {
+		var tl = SearchTimelineByProperty(type, property, out var _, arrayIndex, createIfMissing);
+		return tl;
+	}
+	public EditorTimeline? SearchTimelineByProperty(IEditorType? type, KeyframeProperty property, out bool created, int arrayIndex = -1, bool createIfMissing = true) {
+		(EditorTimeline Timeline, bool Created) info = type switch {
 			EditorBone bone => property switch {
-				KeyframeProperty.None => null,
+				KeyframeProperty.None => new(null, false),
 				KeyframeProperty.Bone_Rotation => GetTimeline<RotationTimeline>(bone, createIfMissing),
 				KeyframeProperty.Bone_Translation => arrayIndex switch {
 					-1 => GetTimeline<TranslateTimeline>(bone, createIfMissing),
 					0 => GetTimeline<TranslateXTimeline>(bone, createIfMissing),
 					1 => GetTimeline<TranslateYTimeline>(bone, createIfMissing),
-					_ => null
+					_ => new(null, false)
 				},
 				KeyframeProperty.Bone_Scale => arrayIndex switch {
 					-1 => GetTimeline<ScaleTimeline>(bone, createIfMissing),
 					0 => GetTimeline<ScaleXTimeline>(bone, createIfMissing),
 					1 => GetTimeline<ScaleYTimeline>(bone, createIfMissing),
-					_ => null
+					_ => new(null, false)
 				},
 				KeyframeProperty.Bone_Shear => arrayIndex switch {
 					-1 => GetTimeline<ShearTimeline>(bone, createIfMissing),
 					0 => GetTimeline<ShearXTimeline>(bone, createIfMissing),
 					1 => GetTimeline<ShearYTimeline>(bone, createIfMissing),
-					_ => null
+					_ => new(null, false)
 				},
 				_ => throw new Exception("Missing property to search.")
 			},
-			_ => null
+			_ => new(null, false)
 		};
+
+		created = info.Created;
+		return info.Timeline;
 	}
 
 	public T GetTimeline<T>(EditorSlot slot, bool createIfMissing = true) where T : EditorTimeline, ISlotTimeline, new() {

@@ -6,6 +6,7 @@ using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Types;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.ModelEditor
@@ -894,19 +895,56 @@ namespace Nucleus.ModelEditor
 			PropertySeparatedOrCombined?.Invoke(editorBone, property, separated);
 		}
 
+		public delegate void OnTimelineDelegate(EditorAnimation animation, EditorTimeline timeline);
 
-		public void InsertKeyframe<TL, VT>(EditorBone bone, double time, VT value) where TL : EditorTimeline, IKeyframeQueryable<VT>, IBoneProperty<VT>, new() {
+		public delegate void OnTimelineSeparated(EditorAnimation animation, EditorTimeline timelineOriginal, EditorTimeline timelineX, EditorTimeline timelineY);
+		public delegate void OnTimelineCombined(EditorAnimation animation, EditorTimeline timelineX, EditorTimeline timelineY, EditorTimeline timelineOriginal);
+
+		public delegate void OnKeyframeCreateDelegate(EditorAnimation animation, EditorTimeline timeline, double frame);
+		public delegate void OnKeyframeDelegateDeltatime(EditorAnimation animation, EditorTimeline timeline, double frameFrom, double frameTo);
+		public delegate void OnKeyframeRemoveDelegate(EditorAnimation animation, EditorTimeline timeline, double frame);
+
+		public event OnTimelineDelegate? TimelineCreated;
+		public event OnTimelineDelegate? TimelineRemoved;
+		public event OnTimelineSeparated? TimelineSeparated;
+		public event OnTimelineCombined? TimelineCombined;
+
+		public event OnKeyframeCreateDelegate? KeyframeCreated;
+		public event OnKeyframeDelegateDeltatime? KeyframeMoved;
+		public event OnKeyframeRemoveDelegate? KeyframeRemoved;
+
+		public void InsertKeyframe(IEditorType? type, KeyframeProperty property, int arrayIndex = -1) { 
+			if (type == null) return;
 			if (ActiveAnimation == null) return;
 
-			var timeline = ActiveAnimation.GetTimeline<TL>(bone);
-			timeline.InsertKeyframe(time, value);
-		}
+			bool created = false;
+			var timeline = ActiveAnimation?.SearchTimelineByProperty(type, property, out created, arrayIndex);
 
-		public void InsertKeyframe<TL, VT>(EditorSlot slot, double time, VT value) where TL : EditorTimeline, IKeyframeQueryable<VT>, ISlotProperty<VT>, new() {
-			if (ActiveAnimation == null) return;
+			// See if the timeline implements IKeyframeQueryable<T> (for InsertKeyframe)
+			// and IProperty<T> (for getting the active value out of the timeline-attached object).
+			// I don't like the interface hell here, but it works, and is the best way I can think of
 
-			var timeline = ActiveAnimation.GetTimeline<TL>(slot);
-			timeline.InsertKeyframe(time, value);
+			// Keyframe float types
+			if (timeline is IKeyframeQueryable<float> kqf && timeline is IProperty<float> kpf)
+				kqf.InsertKeyframe(Timeline.Frame, kpf.GetValue());
+
+			// Keyframe vector2f types
+			else if (timeline is IKeyframeQueryable<Vector2F> kqv2 && timeline is IProperty<Vector2F> kpv2)
+				kqv2.InsertKeyframe(Timeline.Frame, kpv2.GetValue());
+
+			// Something went horribly wrong (probably I forgot to implement a type here)
+			else {
+				Debug.Assert(false, "Can't find a way to keyframe", $"Type: {type}\nProperty:{property}\nArray Index:{arrayIndex}\nTimeline:{timeline}\nActive Animation:{ActiveAnimation}");
+				return;
+			}
+
+			Debug.Assert(ActiveAnimation != null);
+
+			if (created) {
+				TimelineCreated?.Invoke(ActiveAnimation, timeline);
+			}
+
+			KeyframeCreated?.Invoke(ActiveAnimation, timeline, Timeline.Frame);
 		}
 	}
 }
