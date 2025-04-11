@@ -129,5 +129,13 @@ namespace Nucleus.ModelEditor
 		public bool Hidden { get; set; }
 
 		public bool CanHide() => true;
+
+		public bool CanKeyframe() => true;
+		public bool GetKeyframeParameters([NotNullWhen(true)] out IEditorType? target, [NotNullWhen(true)] out KeyframeProperty property, [NotNullWhen(true)] out int arrayIndex) {
+			arrayIndex = -1;
+			property = KeyframeProperty.Slot_Attachment;
+			target = this;
+			return CanKeyframe();
+		}
 	}
 }
