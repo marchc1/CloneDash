@@ -55,11 +55,12 @@ namespace Nucleus.Models
 				case 2: return Keyframe<T>.DetermineValue(time, Keyframes[0], Keyframes[1], interpolationOverride);
 				default:
 					var firstKeyframe = Keyframes[0];
-					if (time <= firstKeyframe.Time) return firstKeyframe.Value;
+					if (time <= firstKeyframe.Time) 
+						return firstKeyframe.Value;
 
 					for (int i = 1; i < Keyframes.Count; i++) {
 						var keyframe = Keyframes[i];
-						if (keyframe.Time <= time) {
+						if (time <= keyframe.Time) {
 							return Keyframe<T>.DetermineValue(time, Keyframes[i - 1], keyframe, interpolationOverride);
 						}
 					}

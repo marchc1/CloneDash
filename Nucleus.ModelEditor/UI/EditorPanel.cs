@@ -118,6 +118,9 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.AnimationDeactivated += File_AnimationDeactivated;
 			ModelEditor.Active.SetupAnimateModeChanged += Active_SetupAnimateModeChanged;
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged1;
+
+			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => Active_SelectedChanged();
+			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
 		}
 
 		private void Active_SelectedChanged1() {
@@ -283,7 +286,6 @@ namespace Nucleus.ModelEditor
 		private void CHANGE_ShearY(NumSlider self, double oldValue, double newValue) {
 			ModelEditor.Active.File.ShearYSelected((float)newValue);
 		}
-
 		private void Active_SelectedChanged() {
 			PreUIDeterminations determinations = ModelEditor.Active.GetDeterminations();
 
