@@ -56,11 +56,10 @@ namespace Nucleus.ModelEditor
 	public class ModelEditor : Level
 	{
 		public bool IsPropertyCurrentlyAnimatable(KeyframeProperty prop) {
-			if (prop == KeyframeProperty.None) return false;
-
-			if (!AnimationMode) return false;
-
-			if (File.ActiveAnimation == null) return false;
+			if (prop == KeyframeProperty.None) return false; // block if no property requested
+			if (!AnimationMode) return false; // block if in setup
+			if (File.ActiveAnimation == null) return false; // block if no active animation
+			if (File.Timeline.PlayDirection != 0) return false; // block if timeline playing
 
 			switch (prop) {
 				case KeyframeProperty.Bone_Translation:
