@@ -230,13 +230,13 @@ namespace Nucleus.ModelEditor
 		}
 		public void EditScaleX(float value) {
 			if (AnimationMode)
-				ScaleX = value - SetupScaleX;
+				ScaleX = value;
 			else
 				SetupScaleX = value;
 		}
 		public void EditScaleY(float value) {
 			if (AnimationMode)
-				ScaleY = value - SetupScaleY;
+				ScaleY = value;
 			else
 				SetupScaleY = value;
 		}
