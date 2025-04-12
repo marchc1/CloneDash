@@ -14,6 +14,8 @@ using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Systems.CustomAlbums;
 using System.Diagnostics;
+using Nucleus.ManagedMemory;
+using FMOD;
 
 namespace CloneDash.Game
 {
@@ -97,18 +99,15 @@ namespace CloneDash.Game
 			chartBtn.Add(out userIcon);
 			chartBtn.Add(out likeIcon);
 			chartBtn.Add(out playDemo);
-			chartBtn.Add(out downloadOrPlay);
 
 			userIcon.PaintOverride += ImageRenderer_PaintOverride;
 			likeIcon.PaintOverride += ImageRenderer_PaintOverride;
 			playDemo.PaintOverride += ImageRenderer_PaintOverride;
-			downloadOrPlay.PaintOverride += ImageRenderer_PaintOverride;
 
 			imageRenderer.ImageOrientation = ImageOrientation.Zoom;
 			userIcon.ImageOrientation = ImageOrientation.Zoom;
 			likeIcon.ImageOrientation = ImageOrientation.Zoom;
 			playDemo.ImageOrientation = ImageOrientation.Zoom;
-			downloadOrPlay.ImageOrientation = ImageOrientation.Zoom;
 
 			songAuthor.Text = chart.Artist;
 			songAuthor.AutoSize = true;
@@ -122,9 +121,6 @@ namespace CloneDash.Game
 			userIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/user.png");
 			likeIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/heart.png");
 			playDemo.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/listen.png");
-
-			bool downloaded = false; //todo
-			downloadOrPlay.Image = userIcon.Level.Textures.LoadTextureFromFile(downloaded ? "ui/play.png" : "ui/download.png");
 
 			songAuthor.Position = new(96, 16);
 			songAuthor.TextSize = 20;
@@ -143,24 +139,19 @@ namespace CloneDash.Game
 			chartAuthor.TextSize = 22;
 			chartAuthor.Size = new(24);
 
-			downloadOrPlay.Anchor = Anchor.BottomRight;
-			downloadOrPlay.Origin = Anchor.BottomRight;
-			downloadOrPlay.Position = new();
-			downloadOrPlay.Size = new(24);
-
 			playDemo.Anchor = Anchor.BottomRight;
 			playDemo.Origin = Anchor.BottomRight;
-			playDemo.Position = new(-26, 0);
+			playDemo.Position = new(-4, 0);
 			playDemo.Size = new(24);
 
 			likeCount.Anchor = Anchor.BottomRight;
 			likeCount.Origin = Anchor.BottomRight;
-			likeCount.Position = new(-58, -3);
+			likeCount.Position = new(-38, -3);
 			likeCount.AutoSize = true;
 
 			likeIcon.Anchor = Anchor.BottomRight;
 			likeIcon.Origin = Anchor.BottomRight;
-			likeIcon.Position = new(-58 + -24, 0);
+			likeIcon.Position = new(-38 + -22, 0);
 			likeIcon.Size = new(24);
 
 			imageRenderer.OnHoverTest += Element.Passthru;
@@ -170,8 +161,27 @@ namespace CloneDash.Game
 			chartAuthor.OnHoverTest += Element.Passthru;
 			userIcon.OnHoverTest += Element.Passthru;
 			likeIcon.OnHoverTest += Element.Passthru;
-		}
 
+			chartBtn.MouseReleaseEvent += (_, _, _) => {
+				var filename = Filesystem.Resolve($"charts/{chart.ID}.mdm", "game", false);
+				if (!File.Exists(filename)) {
+					chart.DownloadTo(filename, (worked) => {
+						System.Diagnostics.Debug.Assert(worked);
+						if (worked) {
+							LoadMDM(filename);
+							Logs.Info($"Downloaded {chart.ID}.mdm");
+						}
+						else Logs.Warn($"Couldn't download {chart.ID}.mdm");
+					});
+					Logs.Info($"Downloading {chart.ID}.mdm..");
+				}
+				else {
+					Logs.Info($"Already cached {chart.ID}.mdm");
+					LoadMDM(filename);
+				}
+			};
+		}
+		private void LoadMDM(string filename) => LoadSongSelector(new CustomChartsSong(filename));
 		private void ImageRenderer_PaintOverride(Element self, float width, float height) {
 			if (IValidatable.IsValid(self.Image))
 				self.ImageDrawing(new(0), new(width, height));
@@ -372,7 +382,13 @@ namespace CloneDash.Game
 			LoadSongSelector(song);
 		}
 
-		private static void CreateDifficulty(Window levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel) {
+		private static void CreateDifficulty(Window levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
+			=> CreateDifficulty(levelSelector, (mapID, state) => {
+				var sheet = song.GetSheet(mapID);
+				var lvl = new CD_GameLevel(sheet);
+				EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
+			}, difficulty, difficultyLevel);
+		private static void CreateDifficulty(Window levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string difficultyLevel) {
 			if (difficultyLevel == "") return;
 			if (difficultyLevel == "0") return;
 
@@ -426,9 +442,7 @@ namespace CloneDash.Game
 			};
 
 			play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
-				var sheet = song.GetSheet(mapID);
-				var lvl = new CD_GameLevel(sheet);
-				EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
+				onClick(mapID, state);
 			};
 		}
 

@@ -108,6 +108,8 @@ namespace CloneDash.Systems.CustomAlbums
 		public string CoverURL => $"https://cdn.mdmc.moe/{ID}/cover.png";
 		public string MP3URL => $"https://cdn.mdmc.moe/{ID}/music.mp3";
 		public string OGGURL => $"https://cdn.mdmc.moe/{ID}/music.ogg";
+		public string DemoMP3URL => $"https://cdn.mdmc.moe/{ID}/demo.mp3";
+		public string DemoOGGURL => $"https://cdn.mdmc.moe/{ID}/demo.ogg";
 
 		public int GetLikes() => Likes ?? Analytics.Likes.Length;
 
@@ -132,9 +134,9 @@ namespace CloneDash.Systems.CustomAlbums
 			});
 		}
 
-		public void GetDemoAsMusicTrack(Action<MusicTrack?> callback) {
-			string oggURL = OGGURL;
-			string mp3URL = MP3URL;
+		public void GetMusicTrack(Action<MusicTrack?> callback, bool demo) {
+			string oggURL = demo ? DemoOGGURL : OGGURL;
+			string mp3URL = demo ? DemoMP3URL : MP3URL;
 			ThreadSystem.SpawnBackgroundWorker(() => {
 				var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(oggURL));
 				task.Wait();
@@ -157,6 +159,28 @@ namespace CloneDash.Systems.CustomAlbums
 				});
 			});
 		}
+		public void DownloadTo(string filename, Action<bool> callback) {
+			var id = ID;
+
+			ThreadSystem.SpawnBackgroundWorker(() => {
+				var task = Task.Run(() => MDMCWebAPI.Http.GetAsync($"https://api.mdmc.moe/v2/charts/{id}/download"));
+				task.Wait();
+				var response = task.Result;
+
+				MainThread.RunASAP(() => {
+					if (!response.IsSuccessStatusCode)
+						callback?.Invoke(false);
+					else {
+						Directory.CreateDirectory(Path.GetDirectoryName(filename));
+						using (var content = response.Content.ReadAsStream())
+						using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
+							content.CopyTo(fileOut);
+						}
+						callback?.Invoke(true);
+					}
+				});
+			});
+		}
 	}
 
 	public struct MDMCProfile
@@ -168,7 +192,8 @@ namespace CloneDash.Systems.CustomAlbums
 		[JsonProperty("banner")] public string Banner;
 	}
 
-	public struct MDMCTopScore {
+	public struct MDMCTopScore
+	{
 		[JsonProperty("hash")] public string Hash;
 		[JsonProperty("rankedScore")] public double RankedScore;
 	}
