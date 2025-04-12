@@ -60,6 +60,7 @@ public interface ISlotProperty<T> : ISlotTimeline, IProperty<T>
 
 public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, IKeyframe[] keyframes) : IKeyframe {
 	public EditorTimeline Timeline => timeline;
+	public IFCurve[] FCurves => curves;
 	public IKeyframe[] Keyframes => keyframes;
 
 	public double GetTime() => Keyframes[0].GetTime();
