@@ -627,6 +627,7 @@ namespace Nucleus.Engine
 			var FPS = Raylib.GetFPS();
 			List<DebugRecord> fields;
 			if (EngineCore.ShowDebuggingInfo) {
+				Graphics2D.ResetDrawingOffset();
 				fields = [
 					$"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
 					"",
@@ -636,6 +637,7 @@ namespace Nucleus.Engine
 					$"    [GPU]  Mesh Memory    : {IManagedMemory.NiceBytes((Model3System.UsedMeshBytes))}",
 					$"Window",
 					$"    Resolution            : {frameState.WindowWidth}x{frameState.WindowHeight}",
+					$"    Graphics2D.Offset     : {Graphics2D.Offset}",
 					$"    FPS                   : {FPS} ({Raylib.GetFrameTime() * 1000:0.##}ms render time)",
 					$"Level",
 					$"    Level Classname       : {this.GetType().Name}",

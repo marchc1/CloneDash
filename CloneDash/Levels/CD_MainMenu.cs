@@ -181,7 +181,7 @@ namespace CloneDash.Game
 				}
 			};
 		}
-		private void LoadMDM(string filename) => LoadSongSelector(new CustomChartsSong(filename));
+		private void LoadMDM(string filename) => LoadSongSelectorFancy(new CustomChartsSong(filename));
 		private void ImageRenderer_PaintOverride(Element self, float width, float height) {
 			if (IValidatable.IsValid(self.Image))
 				self.ImageDrawing(new(0), new(width, height));
@@ -272,43 +272,48 @@ namespace CloneDash.Game
 				lvitem.MouseReleaseEvent += Lvitem_MouseReleaseEvent;
 			}
 		}
+		private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
+			(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
-		private void LoadSongSelector(ChartSong song) {
+		private void LoadSongSelectorFancy(ChartSong song) {
 			// Load all slow-to-get info now before the Window loads
 			MusicTrack? track = song.GetDemoTrack();
-			song.GetInfo();
-			song.GetCover();
+			var info = song.GetInfo();
+			var cover = song.GetCover();
 
-			ConstantLengthNumericalQueue<float> framesOverTime = new(480);
-			Window levelSelector = UI.Add<Window>();
-			levelSelector.HideNonCloseButtons();
+			Panel levelSelector = UI.Add<Panel>();
 			levelSelector.MakePopup();
-			levelSelector.Title = $"\"{song.Name}\" by {song.Author} - Level Selection";
-			//test.Title = "Non-Rendertexture Window";
-			levelSelector.Size = new Vector2F(650, 320);
-			levelSelector.DockPadding = RectangleF.TLRB(8);
-			levelSelector.Center();
+			levelSelector.Dock = Dock.Fill;
+			levelSelector.Thinking += (s) =>
+				s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
+			var back = levelSelector.Add<Button>();
 
-			levelSelector.AddParent.PaintOverride += (self, w, h) => {
-				var length = framesOverTime.Length;
-				Vector2F[] lineparts = new Vector2F[length];
-				for (int i = 0; i < length; i++) {
-					float sample = framesOverTime[i];
-					var x = (i / (float)framesOverTime.Capacity) * w;
-					var y = (h / 2) + (h * .25f * sample);
-					lineparts[i] = new(x, y);
-				}
-				Graphics2D.SetDrawColor(50, 50, 50);
-				Graphics2D.DrawLineStrip(lineparts.ToArray());
+			back.Anchor = Anchor.Center;
+			back.Origin = Anchor.Center;
+			back.Position = new(-256, 0);
+			back.Image = Textures.LoadTextureFromFile("ui/back.png");
+			back.MouseReleaseEvent += (_, _, _) => levelSelector.Remove();
+			back.Text = "";
+			back.ImageOrientation = ImageOrientation.Centered;
+			back.BackgroundColor = new(0, 0);
+			back.ForegroundColor = new(0, 0);
+			back.Size = new(106);
+			back.PaintOverride += (self, w, h) => {
+				self.ImageColor = Element.MixColorBasedOnMouseState(self, new(200, 200, 200, 
+					(int)(Math.Clamp(NMath.Ease.OutCubic(self.Lifetime - 0.35f), 0, 1) * 255)
+					), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
+				self.Paint(w, h);
 			};
 
 			float currentAvgVolume = 0;
 			SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
 
-
 			Panel imageCanvas = levelSelector.Add<Panel>();
-			imageCanvas.Dock = Dock.Right;
+			imageCanvas.Anchor = Anchor.Center;
+			imageCanvas.Origin = Anchor.Center;
+			imageCanvas.Clipping = false;
 			imageCanvas.Size = new Vector2F(320 - 36);
+			imageCanvas.OnHoverTest += Element.Passthru;
 			imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
 				var c = song.GetCover();
 				if (c == null) return;
@@ -319,14 +324,40 @@ namespace CloneDash.Game
 				var offset = Graphics2D.Offset;
 				Graphics2D.ResetDrawingOffset();
 				Rlgl.PushMatrix();
+				var imgOffset = offsetBasedOnLifetime(self, 1.5f, 2);
 				Rlgl.Translatef(
-					(offset.X + (width / 2)) + (float)(NMath.Remap(1 - NMath.Ease.OutCubic(self.Lifetime * 2), 0, 1, 0, 1, false, true) * width), 
-					offset.Y + (height / 2), 0);
+					(offset.X + (width / 2)),
+					offset.Y + (height / 2) + imgOffset,
+				0);
 				Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
 				Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
 				Graphics2D.DrawImage(new(0, 0), size);
 				Graphics2D.OffsetDrawing(offset);
 				Rlgl.PopMatrix();
+			};
+
+			var title = levelSelector.Add<Label>();
+			title.TextSize = 48;
+			title.Text = song.Name;
+			title.AutoSize = true;
+			title.Anchor = Anchor.Center;
+			title.Origin = Anchor.Center;
+
+			title.Thinking += (s) => {
+				s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 6, 0, 1)) * 255));
+				s.Position = new(0, -190 - offsetBasedOnLifetime(s, 1.35f, 6));
+			};
+
+			var author = levelSelector.Add<Label>();
+			author.TextSize = 22;
+			author.Text = $"by {song.Author}";
+			author.AutoSize = true;
+			author.Anchor = Anchor.Center;
+			author.Origin = Anchor.Center;
+
+			author.Thinking += (s) => {
+				s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 1.3f, 0, 1)) * 255));
+				s.Position = new(0, -162 - offsetBasedOnLifetime(s, 1.35f, 12));
 			};
 
 			if (track != null) {
@@ -347,43 +378,71 @@ namespace CloneDash.Game
 					for (int i = 0; i < frames.Length; i++) {
 						float val = frames[i];
 						currentAvgVolume += val;
-						if (i % 256 == 0)
-							framesOverTime.Add(val);
 					}
 					currentAvgVolume /= frames.Length;
 					currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
 				};
 			}
 
-			var info = song.GetInfo();
+			var difficulties = levelSelector.Add<FlexPanel>();
+			difficulties.Direction = Directional180.Vertical;
+			difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
+			difficulties.Anchor = Anchor.Center;
+			difficulties.Origin = Anchor.Center;
+			difficulties.Position = new(256 + 64, 0);
+			int height = 356;
+			difficulties.Thinking += (s) => {
+				s.Size = new(256, height);
+			};
 
+			var d1 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Easy, song.Difficulty1);
+			var d2 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Normal, song.Difficulty2);
+			var d3 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Hard, song.Difficulty3);
+			var d4 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Hidden, song.Difficulty4);
+			var d5 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Touhou, song.Difficulty5);
 
-			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Touhou, song.Difficulty5);
-			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Hidden, song.Difficulty4);
-			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Hard, song.Difficulty3);
-			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Normal, song.Difficulty2);
-			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Easy, song.Difficulty1);
+			height = (d1 == null ? 0 : 80) + (d2 == null ? 0 : 80) + (d3 == null ? 0 : 80) + (d4 == null ? 0 : 80) + (d5 == null ? 0 : 80);
+			float offsetButtonSlide = 2f;
+			var btns = new Button[] { d1, d2, d3, d4, d5 };
+			for (int i = 0; i < btns.Length; i++) {
+				var btn = btns[i];
+				if (btn == null) continue;
+				var thisOffset = offsetButtonSlide;
 
-			LevelSelectWindow?.AttachWindowAndLockInput(levelSelector);
+				btn.PaintOverride += (s, w, h) => {
+					var life = s.Lifetime - (thisOffset * .15f);
+					var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
+					var xOffset = NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * 256;
+
+					var a = s.BackgroundColor.A;
+					s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, (int)(a * alpha));
+					s.ChildRenderOffset = new(xOffset, 0);
+					s.Paint(w, h);
+
+					s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, a);
+				};
+
+				offsetButtonSlide += 1;
+			}
 		}
 		private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 			var song = self.GetTag<MuseDashSong>("musedash_song");
 
-			LoadSongSelector(song);
+			LoadSongSelectorFancy(song);
 		}
 
-		private static void CreateDifficulty(Window levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
+		private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
 			=> CreateDifficulty(levelSelector, (mapID, state) => {
 				var sheet = song.GetSheet(mapID);
 				var lvl = new CD_GameLevel(sheet);
 				EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
 			}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
-		private static void CreateDifficulty(Window levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
-			if (difficultyLevel == "") return;
-			if (difficultyLevel == "0") return;
+		private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
+			if (difficultyLevel == "") return null;
+			if (difficultyLevel == "0") return null;
 
 			Button play = levelSelector.Add<Button>();
-			play.AutoSize = true;
+			play.Size = new(64);
 			play.Dock = Dock.Bottom;
 
 			var difficultyName = difficulty switch {
@@ -448,6 +507,8 @@ namespace CloneDash.Game
 			play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
 				onClick(mapID, state);
 			};
+
+			return play;
 		}
 
 		public override void PreRenderBackground(FrameState frameState) {
