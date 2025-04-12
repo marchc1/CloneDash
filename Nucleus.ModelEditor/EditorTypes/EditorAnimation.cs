@@ -58,6 +58,35 @@ public interface ISlotProperty<T> : ISlotTimeline, IProperty<T>
 
 }
 
+public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, IKeyframe[] keyframes) : IKeyframe {
+	public EditorTimeline Timeline => timeline;
+	public IKeyframe[] Keyframes => keyframes;
+
+	public double GetTime() => Keyframes[0].GetTime();
+
+	public object? GetValue() => throw new NotImplementedException();
+	public T? GetValue<T>() => throw new NotImplementedException();
+	public Type GetValueType() => throw new NotImplementedException();
+
+	public void SetTime(double time) {
+		for (int i = 0; i < curves.Length; i++) {
+			curves[i].SetKeyframeTime(keyframes[i], time);
+		}
+	}
+
+	public void SetValue(object? value) {
+		for (int i = 0; i < keyframes.Length; i++) {
+			keyframes[i].SetValue(value);
+		}
+	}
+
+	public void SetValue<T>(T? value) {
+		for (int i = 0; i < keyframes.Length; i++) {
+			keyframes[i].SetValue(value);
+		}
+	}
+}
+
 public abstract class EditorTimeline
 {
 	public static readonly Color TIMELINE_COLOR_ROTATION = new(50, 255, 50);
@@ -75,6 +104,7 @@ public abstract class EditorTimeline
 	public abstract double CalculateMaxTime();
 
 	public abstract IEnumerable<double> GetKeyframeTimes();
+	public abstract IEnumerable<TimelineKeyframePairs> GetKeyframes();
 
 	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
 		return !obj.TryGetKeyframedValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : obj.Compare(key, obj.GetValue()) ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
@@ -108,7 +138,12 @@ public abstract class CurveTimeline1 : CurveTimeline, IKeyframeQueryable<float>
 		Curve.AddKeyframe(new(time, value));
 	}
 
-	public override double CalculateMaxTime() => Curve.Last.Time;
+	public override double CalculateMaxTime() => Curve.Last?.Time ?? 0;
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		foreach (var keyframe in Curve.GetKeyframes())
+			yield return new(this, [Curve], [keyframe]);
+	}
 
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in Curve.GetKeyframes())
@@ -133,8 +168,13 @@ public abstract class GenericStepTimeline<T> : CurveTimeline, IKeyframeQueryable
 		Curve.AddKeyframe(new(time, value));
 	}
 
-	public override double CalculateMaxTime() => Curve.Last.Time;
+	public override double CalculateMaxTime() => Curve.Last?.Time ?? 0;
 
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		foreach (var keyframe in Curve.GetKeyframes())
+			yield return new(this, [Curve], [keyframe]);
+	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in Curve.GetKeyframes())
 			yield return keyframe.Time;
@@ -164,8 +204,13 @@ public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2
 		CurveY.AddKeyframe(new(time, value.Y));
 	}
 
-	public override double CalculateMaxTime() => CurveX.Last.Time;
+	public override double CalculateMaxTime() => CurveX.Last?.Time ?? 0;
 
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		for (int i = 0; i < CurveX.Count; i++) 
+			yield return new(this, [CurveX, CurveY], [CurveX[i], CurveY[i]]);
+	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveX.GetKeyframes())
 			yield return keyframe.Time;
@@ -385,8 +430,13 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<SlotColorTimeline, Color>(this, time);
 
-	public override double CalculateMaxTime() => CurveR.Last.Time;
+	public override double CalculateMaxTime() => CurveR.Last?.Time ?? 0;
 
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		for (int i = 0; i < CurveR.Count; i++)
+			yield return new(this, [CurveR, CurveG, CurveB, CurveA], [CurveR[i], CurveG[i], CurveB[i], CurveA[i]]);
+	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveR.GetKeyframes())
 			yield return keyframe.Time;
