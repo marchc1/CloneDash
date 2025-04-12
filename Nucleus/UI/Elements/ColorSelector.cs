@@ -63,7 +63,7 @@ namespace Nucleus.UI.Elements
 			RSlider.SetValueNoUpdate(SelectedColor.R);
 			GSlider.SetValueNoUpdate(SelectedColor.G);
 			BSlider.SetValueNoUpdate(SelectedColor.B);
-			ASlider.SetValueNoUpdate(SelectedColor.A);
+			ASlider.SetValueNoUpdate(SelectedColor.A / 255f);
 
 			Hexbox.Text = $"{SelectedColor.ToHex(true)}";
 		}
@@ -216,7 +216,7 @@ namespace Nucleus.UI.Elements
 			ASlider.MinimumValue = 0;
 			ASlider.MaximumValue = 1;
 			ASlider.Digits = 3;
-			ASlider.Prefix = "Alpha: ";
+			ASlider.TextFormat = "Alpha: {0:0.000}";
 			ASlider.Value = 0;
 
 			Hexbox = Add<Textbox>();
