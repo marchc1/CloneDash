@@ -41,9 +41,9 @@ namespace Nucleus.ManagedMemory
                 MainThread.RunASAP(() => {
                     Raylib.UnloadTexture(underlying);
 					if(UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
-
-                    parent?.EnsureTextureRemoved(this);
-                }, ThreadExecutionTime.BeforeFrame);
+					underlyingImage = null;
+					parent?.EnsureTextureRemoved(this);
+                }, ThreadExecutionTime.AfterFrame);
                 disposedValue = true;
             }
         }

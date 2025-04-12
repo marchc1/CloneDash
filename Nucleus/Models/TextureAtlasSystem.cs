@@ -130,9 +130,6 @@ namespace Nucleus.Models
 			if (packedTex != null)
 				packedTex.Dispose();
 
-			if (packedImg != null)
-				Raylib.UnloadImage(packedImg.Value);
-
 			Span<PackingRectangle> rects = stackalloc PackingRectangle[unpacked.Count];
 			int i = 0;
 			string[] keys = new string[unpacked.Count];
