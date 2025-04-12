@@ -274,9 +274,6 @@ public abstract class BaseTimelineView : View
 			SetCurFrame();
 	}
 
-
-
-
 	private void TimeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
 		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		DraggingFrame = button == MouseButton.Mouse1;
@@ -288,7 +285,8 @@ public abstract class BaseTimelineView : View
 	public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetPlayhead();
 	public void SetCurFrame() {
 		var xLocal = TimeInfoPanel.GetMousePos();
-		ModelEditor.Active.File.Timeline.SetFrame(XToFrame(xLocal.X));
+		var precise = EngineCore.CurrentFrameState.KeyboardState.ShiftDown;
+		ModelEditor.Active.File.Timeline.SetFrame(precise ? XToFrameExact(xLocal.X) : XToFrame(xLocal.X));
 	}
 
 	private void drawGradient(float height) {
@@ -326,7 +324,7 @@ public abstract class BaseTimelineView : View
 		var widthPer = Zoom * xMajorDivisions;
 		float curframeX = (float)FrameToX(curframe);
 
-		var curframeText = $"{Math.Round(curframe)}";
+		var curframeText = $"{(tl.PlayDirection != 0 ? Math.Round(curframe) : Math.Round(curframe, 2))}";
 
 		Vector2F frameTextSize = Graphics2D.GetTextSize(curframeText, "Noto Sans", 20);
 
