@@ -111,6 +111,7 @@ public class DopesheetView : BaseTimelineView
 		if (!isKeyframeSelected) return;
 
 		var curframe = isDraggingKeyframe ? frameDrag : frameStart;
+		curframe = Math.Max(0, curframe);
 		var xDrag = (float)FrameToX(curframe);
 		Graphics2D.SetDrawColor(FrameDraggingColor);
 		Graphics2D.DrawLine(xDrag, height / 2, xDrag, height);
@@ -124,6 +125,8 @@ public class DopesheetView : BaseTimelineView
 		if (!isKeyframeSelected) return;
 
 		var curframe = isDraggingKeyframe ? frameDrag : frameStart;
+		curframe = Math.Max(0, curframe);
+
 		var xDrag = (float)FrameToX(curframe);
 		Graphics2D.SetDrawColor(255, 90, 15);
 		Graphics2D.DrawLine(xDrag, 0, xDrag, height);

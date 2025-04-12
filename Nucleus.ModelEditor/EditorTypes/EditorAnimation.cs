@@ -74,6 +74,7 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 	/// </summary>
 	/// <param name="time"></param>
 	public void SetTime(double time) {
+		time = Math.Max(0, time);
 		for (int i = 0; i < curves.Length; i++) {
 			curves[i].SetKeyframeTime(keyframes[i], time);
 		}
