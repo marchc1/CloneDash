@@ -404,6 +404,8 @@ namespace Nucleus.ModelEditor
 			};
 		}
 		private void UpdateModelAnimations() {
+			if (!AnimationMode) return;
+
 			foreach (var model in File.Models)
 				if (model.ActiveAnimation != null)
 					model.ActiveAnimation.Apply(File.Timeline.GetPlayhead());

@@ -21,6 +21,16 @@ namespace Nucleus.ModelEditor.UI.Operators
 
 		public override void Selected(ModelEditor editor, IEditorType type) {
 			switch (type) {
+				case EditorSlot slot:
+					var file = ModelEditor.Active.File;
+					var result = file.AddAttachment<EditorRegionAttachment>(slot, SelectedImage.Name);
+					if (result.Failed) {
+
+					}
+					else {
+						result.Result.Path = $"<{SelectedImage.Name}>";
+					}
+					break;
 				case EditorBone bone:
 					var boneDialog = EditorDialogs.CreateDialogWindow("Image: Set Parent");
 					EditorDialogs.SetupDescription(boneDialog, "How should the attachment be parented?");

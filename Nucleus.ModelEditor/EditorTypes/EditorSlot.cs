@@ -57,8 +57,10 @@ namespace Nucleus.ModelEditor
 			Color = SetupColor;
 			DarkColor = SetupDarkColor;
 			Blending = SetupBlending;
-			if (SetupActiveAttachment == null)
-				SetupActiveAttachment = Attachments.FirstOrDefault();
+
+			// active attachment can be null
+			//if (SetupActiveAttachment == null)
+				//SetupActiveAttachment = Attachments.FirstOrDefault();
 
 			ActiveAttachment = SetupActiveAttachment;
 		}
