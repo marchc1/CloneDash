@@ -69,6 +69,10 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 	public T? GetValue<T>() => throw new NotImplementedException();
 	public Type GetValueType() => throw new NotImplementedException();
 
+	/// <summary>
+	/// You can use this, as it calls <see cref="IFCurve.SetKeyframeTime(IKeyframe, double)"/> properly.
+	/// </summary>
+	/// <param name="time"></param>
 	public void SetTime(double time) {
 		for (int i = 0; i < curves.Length; i++) {
 			curves[i].SetKeyframeTime(keyframes[i], time);
