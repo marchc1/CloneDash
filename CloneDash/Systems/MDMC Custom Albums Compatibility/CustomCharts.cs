@@ -38,7 +38,11 @@ namespace CloneDash
             return GetStreamReader(archive, filename).ReadToEnd();
         }
         private static byte[] GetByteArray(ZipArchive archive, string filename) {
-            var stream = archive.Entries.FirstOrDefault(x => x.Name == filename)?.Open() ?? throw new Exception($"Could not create a read stream for {filename}");
+            var stream = archive.Entries.FirstOrDefault(x => x.Name == filename)?.Open();
+			if(stream == null) {
+				return [];
+			}
+
             using (var mem = new MemoryStream()) {
                 stream.CopyTo(mem);
                 return mem.ToArray();
@@ -54,6 +58,13 @@ namespace CloneDash
                 Archive = ZipFile.Open(filepath, ZipArchiveMode.Read);
                 
             }
+
+			~CustomChartsSong() {
+				MainThread.RunASAP(() => {
+					if (CoverTexture != null && Raylib.IsTextureReady(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
+				});
+			}
+
             protected override MusicTrack ProduceAudioTrack() {
                 var demoBytes = GetByteArray(Archive, "music.ogg");
                 return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
@@ -63,6 +74,8 @@ namespace CloneDash
                 var coverBytes = GetByteArray(Archive, "cover.png");
                 var img = Raylib.LoadImageFromMemory(".png", coverBytes);
                 var tex = Raylib.LoadTextureFromImage(img);
+				Raylib.GenTextureMipmaps(ref tex);
+				Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
                 Raylib.UnloadImage(img);
 
                 return new() {
@@ -72,6 +85,12 @@ namespace CloneDash
 
             protected override MusicTrack? ProduceDemoTrack() {
                 var demoBytes = GetByteArray(Archive, "demo.ogg");
+				if (demoBytes.Length == 0)
+					demoBytes = GetByteArray(Archive, "demo.mp3");
+
+				if (demoBytes.Length == 0)
+					return null;
+
                 return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
             }
 

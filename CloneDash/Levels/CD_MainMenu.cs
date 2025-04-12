@@ -330,10 +330,12 @@ namespace CloneDash.Game
 			imageCanvas.Clipping = false;
 			imageCanvas.Size = new Vector2F(320 - 36);
 			imageCanvas.OnHoverTest += Element.Passthru;
+			imageCanvas.Clipping = false;
+
 			imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
 				var c = song.GetCover();
 				if (c == null) return;
-				Graphics2D.SetDrawColor(255, 255, 255, 255);
+				
 				Graphics2D.SetTexture(c.Texture);
 				var distance = 16;
 				var size = new Vector2F(width - (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16));
@@ -341,12 +343,17 @@ namespace CloneDash.Game
 				Graphics2D.ResetDrawingOffset();
 				Rlgl.PushMatrix();
 				var imgOffset = offsetBasedOnLifetime(self, 1.5f, 2);
+				var sizeOffset = offsetBasedOnLifetime(self, 1.5f, 8);
+				size -= sizeOffset;
 				Rlgl.Translatef(
 					(offset.X + (width / 2)),
 					offset.Y + (height / 2) + imgOffset,
 				0);
 				Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
 				Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
+				Graphics2D.SetDrawColor(25, 25, 25, 255);
+				Graphics2D.DrawCircle(size / 2, (size.W / 2) + 12);
+				Graphics2D.SetDrawColor(255, 255, 255, 255);
 				Graphics2D.DrawImage(new(0, 0), size);
 				Graphics2D.OffsetDrawing(offset);
 				Rlgl.PopMatrix();
@@ -377,8 +384,8 @@ namespace CloneDash.Game
 			};
 
 			if (track != null) {
-				track.Playhead = 0;
 				track.Volume = 0.4f;
+				track.Restart();
 				track.Playing = true;
 
 				levelSelector.Thinking += delegate (Element self) {

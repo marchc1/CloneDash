@@ -141,5 +141,9 @@ namespace Nucleus.Audio
 			Current = this;
 			Raylib.UpdateMusicStream(underlying);
 		}
+
+		public void Restart() {
+			Raylib.SeekMusicStream(underlying, 0);
+		}
 	}
 }
