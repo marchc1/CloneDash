@@ -1,5 +1,4 @@
 ﻿namespace Nucleus.Models;
-public interface IFCurve<T> {
-	void AddKeyframe(Keyframe<T> kf);
-	void RemoveKeyframe(Keyframe<T> kf);
+public interface IFCurve {
+	public void SetKeyframeTime(IKeyframe keyframe, double newTime);
 }

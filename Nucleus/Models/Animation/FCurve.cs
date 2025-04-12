@@ -1,12 +1,13 @@
 ﻿using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.Models
 {
-	public class FCurve<T> : IFCurve<T>
+	public class FCurve<T> : IFCurve
 	{
 		public List<Keyframe<T>> Keyframes { get; set; } = [];
-
+		public int Count => Keyframes.Count;
 		public IEnumerable<Keyframe<T>> GetKeyframes() {
 			Recompute();
 
@@ -16,16 +17,35 @@ namespace Nucleus.Models
 
 		[JsonIgnore] private bool valid = false;
 
-		public Keyframe<T> First {
+		public Keyframe<T>? First {
 			get {
 				Recompute();
 				return Keyframes.FirstOrDefault();
 			}
 		}
-		public Keyframe<T> Last {
+		public Keyframe<T>? Last {
 			get {
 				Recompute();
 				return Keyframes.LastOrDefault();
+			}
+		}
+
+		public void SetKeyframeTime(IKeyframe keyframe, double time) {
+#if DEBUG
+			Debug.Assert(Keyframes.Contains(keyframe));
+			keyframe.SetTime(time);
+			valid = false;
+#endif
+		}
+
+		public Keyframe<T> this[int index] {
+			get {
+				Recompute();
+				return Keyframes[index];
+			}
+			set {
+				valid = false;
+				Keyframes[index] = value;
 			}
 		}
 
