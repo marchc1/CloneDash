@@ -77,6 +77,7 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 		for (int i = 0; i < curves.Length; i++) {
 			curves[i].SetKeyframeTime(keyframes[i], time);
 		}
+		ModelEditor.Active.QueueAnimationUpdate();
 	}
 
 	public void SetValue(object? value) {

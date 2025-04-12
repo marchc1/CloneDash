@@ -55,6 +55,16 @@ namespace Nucleus.ModelEditor
 	}
 	public class ModelEditor : Level
 	{
+		private bool __queuedAnimationUpdate = false;
+		public void QueueAnimationUpdate() => __queuedAnimationUpdate = true;
+		public bool CheckQueuedAnimationUpdate() {
+			if (__queuedAnimationUpdate) {
+				__queuedAnimationUpdate = false;
+				return true;
+			}
+
+			return false;
+		}
 		public bool CanInsertKeyframes() {
 			if (!AnimationMode) return false; // block if in setup
 			if (File.ActiveAnimation == null) return false; // block if no active animation
@@ -306,6 +316,12 @@ namespace Nucleus.ModelEditor
 			SetupAnimateModeChanged?.Invoke(this, AnimationMode);
 		}
 
+		public override void PreThink(ref FrameState frameState) {
+			base.Think(frameState);
+			if (CheckQueuedAnimationUpdate() && AnimationMode)
+				UpdateModelAnimations();
+		}
+
 		public override void Initialize(params object[] args) {
 
 			Active = this;
@@ -403,6 +419,7 @@ namespace Nucleus.ModelEditor
 				}
 			};
 		}
+
 		private void UpdateModelAnimations() {
 			if (!AnimationMode) return;
 

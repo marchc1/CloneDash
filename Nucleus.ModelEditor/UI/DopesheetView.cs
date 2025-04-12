@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 
@@ -45,8 +46,7 @@ public class DopesheetView : BaseTimelineView
 		switch (target) {
 			case EditorTimeline timeline:
 				foreach(var keyframe in timeline.GetKeyframes()) {
-					var time = keyframe.GetTime();
-					var x = (float)FrameToX(time);
+					var x = (float)FrameToX(keyframe.GetTime());
 					var keyframeBtn = keyframes.Add<Button>();
 					keyframeBtn.Size = new(5, 24);
 					keyframeBtn.Position = new(x - 2, 0);
@@ -55,13 +55,81 @@ public class DopesheetView : BaseTimelineView
 					keyframeBtn.ForegroundColor = new(15, 15, 15, 255);
 					keyframeBtn.Text = "";
 					keyframeBtn.PaintOverride += (self, w, h) => {
-						self.Position = new((float)FrameToX(time) - 2, 0);
+						self.Position = new((float)FrameToX(keyframe.GetTime()) - 2, 0);
 						self.Paint(w, h);
 					};
+
+					keyframeBtn.SetTag("keyframeInfo", keyframe);
+					keyframeBtn.MouseClickEvent += KeyframeBtn_MouseClickEvent;
+					keyframeBtn.MouseDragEvent += KeyframeBtn_MouseDragEvent;
+					keyframeBtn.MouseReleasedOrLostEvent += KeyframeBtn_MouseReleaseEvent;
 				}
 				break;
 		}
 	}
+
+	TimelineKeyframePairs? selected;
+	bool isKeyframeSelected;
+	bool isDraggingKeyframe;
+	double frameStart;
+	double frameDrag;
+
+	private void KeyframeBtn_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		isKeyframeSelected = false;
+		isDraggingKeyframe = false;
+		frameStart = 0;
+		frameDrag = 0;
+
+		selected = self.GetTag<TimelineKeyframePairs>("keyframeInfo");
+
+		if (selected == null) return;
+
+		isKeyframeSelected = true;
+		frameStart = selected?.GetTime() ?? 0;
+	}
+	private void KeyframeBtn_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+		var xy = state.MouseState.MousePos - self.Parent.GetGlobalPosition();
+		var frameNow = state.KeyboardState.ShiftDown ? XToFrameExact(xy.X) : XToFrame(xy.X);
+
+		if (frameNow != frameStart || isDraggingKeyframe) {
+			isDraggingKeyframe = true;
+			frameDrag = frameNow;
+			selected?.SetTime(frameNow);
+		}
+	}
+	private void KeyframeBtn_MouseReleaseEvent(Element self, FrameState state, MouseButton button, bool lost) {
+		if (!isDraggingKeyframe)
+			ModelEditor.Active.File.Timeline.SetFrame(frameStart);
+
+		isKeyframeSelected = false;
+		isDraggingKeyframe = false;
+	}
+
+	public static readonly Raylib_cs.Color FrameDraggingColor = new(255, 90, 15);
+
+	protected override void PaintTimeOverlay(float width, float height) {
+		if (!isKeyframeSelected) return;
+
+		var curframe = isDraggingKeyframe ? frameDrag : frameStart;
+		var xDrag = (float)FrameToX(curframe);
+		Graphics2D.SetDrawColor(FrameDraggingColor);
+		Graphics2D.DrawLine(xDrag, height / 2, xDrag, height);
+
+		string curframeText = $"{(EngineCore.CurrentFrameState.KeyboardState.ShiftDown ? Math.Round(curframe, 2) : curframe)}";
+
+		RenderGradientFrameText(KeyframeInfoPanel, xDrag, height, curframeText, FrameDraggingColor);
+	}
+
+	protected override void PaintPanelOverlay(float width, float height) {
+		if (!isKeyframeSelected) return;
+
+		var curframe = isDraggingKeyframe ? frameDrag : frameStart;
+		var xDrag = (float)FrameToX(curframe);
+		Graphics2D.SetDrawColor(255, 90, 15);
+		Graphics2D.DrawLine(xDrag, 0, xDrag, height);
+	}
+
+
 	private void Keyframes_PaintOverride(Element self, float width, float height) {
 		var target = self.GetTag<object>("target");
 

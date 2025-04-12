@@ -76,7 +76,10 @@ public abstract class BaseTimelineView : View
 		var vY = smallVertical ? 8 : 4;
 		button.DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
 	}
-	protected virtual void PaintOverlay(float width, float height) {
+	protected virtual void PaintTimeOverlay(float width, float height) {
+
+	}
+	protected virtual void PaintPanelOverlay(float width, float height) {
 
 	}
 	protected override void Initialize() {
@@ -353,26 +356,34 @@ public abstract class BaseTimelineView : View
 		}
 
 		var textX = (float)Math.Clamp(curframeX, 10, width - 10);
-		Graphics2D.SetDrawColor(self.BackgroundColor);
-
-		var rectPos = new Vector2F(textX - (frameTextSize.W / 2), (height / 2) - frameTextSize.H);
-		Graphics2D.DrawRectangle(rectPos, frameTextSize);
-		var colorGradientEnd = new Color(self.BackgroundColor.R, self.BackgroundColor.G, self.BackgroundColor.B, (byte)0);
-		Graphics2D.DrawGradient(rectPos - new Vector2F(12, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Left);
-		Graphics2D.DrawGradient(rectPos + new Vector2F(frameTextSize.W, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Right);
 
 		Graphics2D.SetDrawColor(FrameMarkerColor);
 
 		Graphics2D.DrawLine(curframeX, height / 2, curframeX, height);
-		Graphics2D.DrawText(textX, (height / 2) + 2, curframeText, "Noto Sans", 20, Anchor.BottomCenter);
+		RenderGradientFrameText(self, textX, height, curframeText, FrameMarkerColor);
+
 		int tX = 4;
 		var oob = FrameOutOfBounds(curframe);
 		if (!oob) {
 			Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
 		}
 
-		PaintOverlay(width, height);
+		PaintTimeOverlay(width, height);
 		drawGradient(height);
+	}
+
+	public static void RenderGradientFrameText(Element self, float x, float height, string text, Color color) {
+		var frameTextSize = Graphics2D.GetTextSize(text, "Noto Sans", 20);
+		Graphics2D.SetDrawColor(self.BackgroundColor);
+
+		var rectPos = new Vector2F(x - (frameTextSize.W / 2), (height / 2) - frameTextSize.H);
+		Graphics2D.DrawRectangle(rectPos, frameTextSize);
+		var colorGradientEnd = new Color(self.BackgroundColor.R, self.BackgroundColor.G, self.BackgroundColor.B, (byte)0);
+		Graphics2D.DrawGradient(rectPos - new Vector2F(12, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Left);
+		Graphics2D.DrawGradient(rectPos + new Vector2F(frameTextSize.W, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Right);
+
+		Graphics2D.SetDrawColor(color);
+		Graphics2D.DrawText(x, (height / 2) + 2, text, "Noto Sans", 20, Anchor.BottomCenter);
 	}
 
 	public double FrameToX(double frame)
@@ -418,6 +429,7 @@ public abstract class BaseTimelineView : View
 		Graphics2D.SetDrawColor(FrameMarkerColor);
 		Graphics2D.DrawLine(curframeX, 0, curframeX, height);
 
+		PaintPanelOverlay(width, height);
 		drawGradient(height);
 	}
 
