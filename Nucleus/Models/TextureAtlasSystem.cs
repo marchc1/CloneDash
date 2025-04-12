@@ -169,7 +169,10 @@ namespace Nucleus.Models
 				PackingRectangle rect = rects[j];
 				string key = keys[rect.Id];
 				Image src = unpacked[key];
-				Raylib.ImageDraw(ref workingImage, src, new(0, 0, src.Width, src.Height), new(rect.X + additionalPadding, rect.Y + additionalPadding, rect.Width - (additionalPadding * 2), rect.Height - (additionalPadding * 2)), Color.White);
+				Raylib.ImageDraw(ref workingImage, src, 
+					new(0, 0, src.Width, src.Height), 
+					new(rect.X + additionalPadding, rect.Y + additionalPadding, rect.Width - (additionalPadding * 2), rect.Height - (additionalPadding * 2)),
+					Color.White);
 
 				if (testing) {
 					Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());
