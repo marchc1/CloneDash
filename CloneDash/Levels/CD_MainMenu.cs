@@ -252,15 +252,14 @@ namespace CloneDash.Game
 			txt.TextChangedEvent += delegate (Element self, string oldT, string newT) {
 				foreach (Element e in list.MainPanel.GetChildren()) {
 					ListViewItem item = e as ListViewItem;
-
 					var song = item.GetTag<MuseDashSong>("musedash_song");
 
-					if (song.Name.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
-					else if (song.BaseName.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
-					else if (song.Author.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+					if (song.Name.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
+					else if (song.BaseName.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
+					else if (song.Author.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
 					else item.ShowLVItem = false;
 				}
-				list.InvalidateChildren(self: true, recursive: true);
+				MainThread.RunASAP(() => list.InvalidateChildren(self: true, recursive: true));
 			};
 
 			list.Dock = Dock.Fill;

@@ -73,6 +73,7 @@ namespace Nucleus.UI
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
+					child.EngineDisabled = false;
 					child.EngineInvisible = !RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(-MainPanel.ChildRenderOffset), child.RenderBounds);
 				}
 				else {
