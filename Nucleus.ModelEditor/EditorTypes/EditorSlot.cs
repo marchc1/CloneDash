@@ -23,7 +23,6 @@ namespace Nucleus.ModelEditor
 		public Color SetupColor { get; set; } = Color.White;
 		public bool TintBlack { get; set; } = false;
 		public Color SetupDarkColor { get; set; } = Color.Black;
-		public BlendMode SetupBlending { get; set; } = BlendMode.Normal;
 		public EditorAttachment? SetupActiveAttachment { get; set; } = null;
 
 		public List<EditorAttachment> Attachments { get; set; } = [];
@@ -32,8 +31,10 @@ namespace Nucleus.ModelEditor
 		public BlendMode Blending { get; set; } = BlendMode.Normal;
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
-		public EditorAttachment? GetActiveAttachment() 
-			=> AnimationMode ? ActiveAttachment : SetupActiveAttachment;
+		public Color GetColor() => AnimationMode ? Color : SetupColor;
+		public Color GetDarkColor() => AnimationMode ? DarkColor : SetupColor;
+
+		public EditorAttachment? GetActiveAttachment() => AnimationMode ? ActiveAttachment : SetupActiveAttachment;
 
 		public void SetActiveAttachment(EditorAttachment? attachment) {
 			if (attachment != null && !Attachments.Contains(attachment))
@@ -56,7 +57,6 @@ namespace Nucleus.ModelEditor
 		public void ResetToSetupPose() {
 			Color = SetupColor;
 			DarkColor = SetupDarkColor;
-			Blending = SetupBlending;
 
 			// active attachment can be null
 			//if (SetupActiveAttachment == null)
@@ -84,7 +84,7 @@ namespace Nucleus.ModelEditor
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
 			var slotColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 
-			var slotColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? Color : SetupColor);
+			var slotColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, this, KeyframeProperty.Slot_Color, -1, AnimationMode ? Color : SetupColor);
 			var slotDarkColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? DarkColor : SetupDarkColor);
 			var slotTintCheck = PropertiesPanel.AddLabeledCheckbox(slotColorRow, "Tint black?", TintBlack);
 
@@ -107,11 +107,10 @@ namespace Nucleus.ModelEditor
 			};
 
 			var slotBlendRow = PropertiesPanel.NewRow(props, "Blending", "models/blending.png");
-			var blending = PropertiesPanel.AddEnumComboBox(slotBlendRow, AnimationMode ? Blending : SetupBlending);
-
+			var blending = PropertiesPanel.AddEnumComboBox(slotBlendRow, Blending);
+			// think hook needed; todo
 			blending.OnSelectionChanged += (_, _, v) => {
-				if (AnimationMode) Blending = v;
-				else SetupBlending = v;
+				if (!AnimationMode) Blending = v;
 			};
 		}
 

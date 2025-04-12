@@ -65,6 +65,7 @@ public abstract class EditorTimeline
 	public static readonly Color TIMELINE_COLOR_SCALE = new(255, 50, 50);
 	public static readonly Color TIMELINE_COLOR_SHEAR = new(255, 255, 70);
 	public static readonly Color TIMELINE_COLOR_ATTACHMENT = new(170);
+	public static readonly Color TIMELINE_COLOR_SLOT_COLOR = new(255, 95, 175);
 	/// <summary>
 	/// Optional <see cref="Color"/>, used in the dope sheet
 	/// </summary>
@@ -76,23 +77,25 @@ public abstract class EditorTimeline
 	public abstract IEnumerable<double> GetKeyframeTimes();
 
 	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
-		return !obj.TryGetValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : obj.Compare(key, obj.GetValue()) ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+		return !obj.TryGetKeyframedValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : obj.Compare(key, obj.GetValue()) ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
 	}
 }
 
 public interface IKeyframeQueryable<T>
 {
 	public abstract bool KeyframedAtTime(double time);
-	public abstract bool TryGetValueAtTime(double time, out T? value);
+	public abstract bool TryGetKeyframedValueAtTime(double time, out T? value);
 	public abstract void InsertKeyframe(double time, T value);
 }
 
-public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
+public abstract class CurveTimeline : EditorTimeline;
+
+public abstract class CurveTimeline1 : CurveTimeline, IKeyframeQueryable<float>
 {
 	public FCurve<float> Curve = new();
 
 	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
-	public bool TryGetValueAtTime(double time, out float value) {
+	public bool TryGetKeyframedValueAtTime(double time, out float value) {
 		var found = Curve.TryFindKeyframe(time, out var key);
 		value = 0;
 		if (!found) return false;
@@ -113,11 +116,11 @@ public abstract class CurveTimeline1 : EditorTimeline, IKeyframeQueryable<float>
 	}
 }
 
-public abstract class GenericStepTimeline<T> : EditorTimeline, IKeyframeQueryable<T>
+public abstract class GenericStepTimeline<T> : CurveTimeline, IKeyframeQueryable<T>
 {
 	public FCurve<T> Curve = new();
 	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
-	public bool TryGetValueAtTime(double time, out T? value) {
+	public bool TryGetKeyframedValueAtTime(double time, out T? value) {
 		var found = Curve.TryFindKeyframe(time, out var key);
 		value = default;
 		if (!found) return false;
@@ -138,13 +141,13 @@ public abstract class GenericStepTimeline<T> : EditorTimeline, IKeyframeQueryabl
 	}
 }
 
-public abstract class CurveTimeline2 : EditorTimeline, IKeyframeQueryable<Vector2F>
+public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2F>
 {
 	public FCurve<float> CurveX = new();
 	public FCurve<float> CurveY = new();
 
 	public bool KeyframedAtTime(double time) => CurveX.TryFindKeyframe(time, out var _);
-	public bool TryGetValueAtTime(double time, out Vector2F value) {
+	public bool TryGetKeyframedValueAtTime(double time, out Vector2F value) {
 		var foundX = CurveX.TryFindKeyframe(time, out var keyX);
 		var foundY = CurveY.TryFindKeyframe(time, out var keyY);
 		Debug.Assert(foundX == foundY);
@@ -328,7 +331,66 @@ public class ActiveAttachmentTimeline : GenericStepTimeline<EditorAttachment?>, 
 }
 
 
+public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color> {
+	public FCurve<float> CurveR { get; set; } = new();
+	public FCurve<float> CurveG { get; set; } = new();
+	public FCurve<float> CurveB { get; set; } = new();
+	public FCurve<float> CurveA { get; set; } = new();
+	public override Color Color => TIMELINE_COLOR_SLOT_COLOR;
+	public EditorSlot Slot { get; set; }
 
+	public override void Apply(EditorModel model, double time) {
+		Slot.Color = new(
+			(int)Math.Clamp(CurveR.DetermineValueAtTime(time) * 2.55f, 0, 255),
+			(int)Math.Clamp(CurveG.DetermineValueAtTime(time) * 2.55f, 0, 255),
+			(int)Math.Clamp(CurveB.DetermineValueAtTime(time) * 2.55f, 0, 255),
+			(int)Math.Clamp(CurveA.DetermineValueAtTime(time) * 2.55f, 0, 255)
+		);
+	}
+	public Color GetSetupValue() => Slot.SetupColor;
+	public Color GetValue() => Slot.Color;
+	public bool Compare(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A;
+	public bool KeyframedAtTime(double time) => CurveR.TryFindKeyframe(time, out var _);
+
+	public bool TryGetKeyframedValueAtTime(double time, out Color value) {
+		var fR = CurveR.TryFindKeyframe(time, out var r);
+		var fG = CurveG.TryFindKeyframe(time, out var g);
+		var fB = CurveB.TryFindKeyframe(time, out var b);
+		var fA = CurveA.TryFindKeyframe(time, out var a);
+
+		var pass = fR == true && fB == true && fG == true && fA == true;
+		Debug.Assert(pass);
+		if (!pass) {
+			value = Color.Blank;
+			return false;
+		}
+
+		value = new(
+			(int)Math.Clamp((r?.Value ?? 0) * 2.55f, 0, 255),
+			(int)Math.Clamp((g?.Value ?? 0) * 2.55f, 0, 255),
+			(int)Math.Clamp((b?.Value ?? 0) * 2.55f, 0, 255),
+			(int)Math.Clamp((a?.Value ?? 0) * 2.55f, 0, 255)
+		);
+
+		return true;
+	}
+
+	public void InsertKeyframe(double time, Color value) {
+		CurveR.AddKeyframe(new(time, value.R / 2.55f));
+		CurveG.AddKeyframe(new(time, value.G / 2.55f));
+		CurveB.AddKeyframe(new(time, value.B / 2.55f));
+		CurveA.AddKeyframe(new(time, value.A / 2.55f));
+	}
+
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<SlotColorTimeline, Color>(this, time);
+
+	public override double CalculateMaxTime() => CurveR.Last.Time;
+
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in CurveR.GetKeyframes())
+			yield return keyframe.Time;
+	}
+}
 
 public class EditorAnimation : IEditorType
 {
@@ -449,6 +511,7 @@ public class EditorAnimation : IEditorType
 			},
 			EditorSlot slot => property switch {
 				KeyframeProperty.Slot_Attachment => GetTimeline<ActiveAttachmentTimeline>(slot, createIfMissing),
+				KeyframeProperty.Slot_Color => GetTimeline<SlotColorTimeline>(slot, createIfMissing),
 				_ => throw new Exception("Missing property to search.")
 			},
 			_ => new(null, false)

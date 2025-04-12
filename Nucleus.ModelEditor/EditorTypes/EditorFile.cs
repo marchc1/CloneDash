@@ -960,6 +960,9 @@ namespace Nucleus.ModelEditor
 			else if (timeline is IKeyframeQueryable<EditorAttachment> kqa && timeline is IProperty<EditorAttachment> kpa)
 				kqa.InsertKeyframe(Timeline.Frame, kpa.GetValue());
 
+			else if (timeline is IKeyframeQueryable<Color> kqc && timeline is IProperty<Color> kpc)
+				kqc.InsertKeyframe(Timeline.Frame, kpc.GetValue());
+
 			// Something went horribly wrong (probably I forgot to implement a type here)
 			else {
 				Debug.Assert(false, "Can't find a way to keyframe", $"Type: {type}\nProperty:{property}\nArray Index:{arrayIndex}\nTimeline:{timeline}\nActive Animation:{ActiveAnimation}");

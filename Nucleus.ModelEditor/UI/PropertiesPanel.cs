@@ -181,6 +181,32 @@ namespace Nucleus.ModelEditor
 
 			return selector;
 		}
+		/// <summary>
+		/// Keyframeable variant of <see cref="AddColorSelector(Panel, Color?)"/>
+		/// </summary>
+		/// <param name="prop"></param>
+		/// <param name="currentColor"></param>
+		/// <returns></returns>
+		public static ColorSelector AddColorSelector(Panel prop, IEditorType target, KeyframeProperty property, int arrayIndex, Color? currentColor = null) {
+			var panel = AddInternalPropPanel(prop);
+
+
+			var keyframe = panel.Add<KeyframeButton>();
+			keyframe.Property = property;
+			keyframe.ArrayIndex = arrayIndex;
+			keyframe.Size = new(24);
+			keyframe.Dock = Dock.Right;
+			keyframe.MouseReleaseEvent += (_, _, _) => ModelEditor.Active.File.InsertKeyframe(target, property, 0);
+
+			var selector = panel.Add<ColorSelector>();
+			selector.Dock = Dock.Fill;
+			selector.Size = new(64);
+			selector.SelectedColor = currentColor ?? Color.White;
+			selector.BorderSize = 0;
+
+
+			return selector;
+		}
 
 		public static DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
 			var panel = AddInternalPropPanel(prop);
