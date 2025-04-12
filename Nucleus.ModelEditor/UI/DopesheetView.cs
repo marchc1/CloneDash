@@ -21,6 +21,8 @@ public class DopesheetView : BaseTimelineView
 		KeyframeInfoPanel.MouseClickEvent += KeyframeInfoPanel_MouseClickEvent;
 		KeyframeInfoPanel.MouseDragEvent += KeyframeInfoPanel_MouseDragEvent;
 		KeyframeInfoPanel.MouseReleaseEvent += KeyframeInfoPanel_MouseReleaseEvent;
+
+		KeyframeOverlay.MoveToFront();
 	}
 
 	protected override void CreateChannelPanels(out Button header, out Panel keyframes, object? target = null) {
