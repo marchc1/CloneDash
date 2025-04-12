@@ -564,6 +564,7 @@ namespace Nucleus.ModelEditor.UI
 				KeyframeProperty.Bone_Rotation => "Rotate",
 				KeyframeProperty.Bone_Translation => "Translate",
 				KeyframeProperty.Bone_Scale => "Scale",
+				KeyframeProperty.Bone_Shear => "Shear",
 
 				KeyframeProperty.Slot_Attachment => $"Attach: {target.GetName()}",
 				KeyframeProperty.Slot_Color => $"RGBA: {target.GetName()}",

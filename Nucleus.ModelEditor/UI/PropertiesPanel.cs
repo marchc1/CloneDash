@@ -190,6 +190,8 @@ namespace Nucleus.ModelEditor
 		public static ColorSelector AddColorSelector(Panel prop, IEditorType target, KeyframeProperty property, int arrayIndex, Color? currentColor = null) {
 			var panel = AddInternalPropPanel(prop);
 
+			if (target is not EditorSlot slot)
+				throw new Exception("Unsupported type for this method");
 
 			var keyframe = panel.Add<KeyframeButton>();
 			keyframe.Property = property;
@@ -203,6 +205,8 @@ namespace Nucleus.ModelEditor
 			selector.Size = new(64);
 			selector.SelectedColor = currentColor ?? Color.White;
 			selector.BorderSize = 0;
+			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = slot.GetColor();
+			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = slot.GetColor();
 
 
 			return selector;
