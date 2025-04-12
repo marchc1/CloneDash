@@ -12,5 +12,10 @@
         public string Difficulty3 { get; set; } = "0";
         public string Difficulty4 { get; set; } = "0";
         public string Difficulty5 { get; set; } = "0";
+
+		public string Designer(int index) {
+			if (index >= LevelDesigners.Length) return "";
+			return LevelDesigners[index];
+		}
     }
 }

@@ -304,7 +304,7 @@ namespace CloneDash.Game
 			};
 
 			float currentAvgVolume = 0;
-			SecondOrderSystem animationSmoother = new SecondOrderSystem(1, 0.98f, 1f, 0);
+			SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
 
 
 			Panel imageCanvas = levelSelector.Add<Panel>();
@@ -316,11 +316,13 @@ namespace CloneDash.Game
 				Graphics2D.SetDrawColor(255, 255, 255, 255);
 				Graphics2D.SetTexture(c.Texture);
 				var distance = 16;
-				var size = new Vector2F(width - (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 90), 0, 16));
+				var size = new Vector2F(width - (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16));
 				var offset = Graphics2D.Offset;
 				Graphics2D.ResetDrawingOffset();
 				Rlgl.PushMatrix();
-				Rlgl.Translatef(offset.X + (width / 2), offset.Y + (height / 2), 0);
+				Rlgl.Translatef(
+					(offset.X + (width / 2)) + (float)(NMath.Remap(1 - NMath.Ease.OutCubic(self.Lifetime * 2), 0, 1, 0, 1, false, true) * width), 
+					offset.Y + (height / 2), 0);
 				Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
 				Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
 				Graphics2D.DrawImage(new(0, 0), size);
@@ -354,19 +356,8 @@ namespace CloneDash.Game
 				};
 			}
 
-			Label bpm = levelSelector.Add<Label>();
-			bpm.AutoSize = true;
-			bpm.Text = $"BPM: {song.BPM}";
-			bpm.TextSize = 18;
-			bpm.Dock = Dock.Top;
-			bpm.TextAlignment = Anchor.TopLeft;
+			var info = song.GetInfo();
 
-			Label mapper = levelSelector.Add<Label>();
-			mapper.AutoSize = true;
-			mapper.Text = ""; // $"Level Designer: {song.LevelDesigner}";
-			mapper.TextSize = 18;
-			mapper.Dock = Dock.Top;
-			mapper.TextAlignment = Anchor.TopLeft;
 
 			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Touhou, song.Difficulty5);
 			CreateDifficulty(levelSelector, song, MuseDashDifficulty.Hidden, song.Difficulty4);
@@ -387,8 +378,8 @@ namespace CloneDash.Game
 				var sheet = song.GetSheet(mapID);
 				var lvl = new CD_GameLevel(sheet);
 				EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
-			}, difficulty, difficultyLevel);
-		private static void CreateDifficulty(Window levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string difficultyLevel) {
+			}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
+		private static void CreateDifficulty(Window levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
 			if (difficultyLevel == "") return;
 			if (difficultyLevel == "0") return;
 
@@ -414,6 +405,19 @@ namespace CloneDash.Game
 			};
 			int mapID = (int)difficulty;
 
+
+			Label mapper = play.Add<Label>();
+			mapper.AutoSize = true;
+			mapper.Text = $"by {designer}";
+			mapper.TextSize = 15;
+			mapper.TextAlignment = Anchor.BottomCenter;
+			mapper.Position = new(-6, -3);
+			mapper.Anchor = Anchor.BottomRight;
+			mapper.OnHoverTest += Element.Passthru;
+			mapper.Origin = Anchor.BottomRight;
+			mapper.TextAlignment = Anchor.TopLeft;
+
+
 			play.BackgroundColor = buttonColor;
 			play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
 			//play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
@@ -422,6 +426,7 @@ namespace CloneDash.Game
 			play.TextPadding = new(8, 0);
 			play.TextSize = 28;
 
+
 			play.BorderSize = 2;
 			play.PaintOverride += delegate (Element self, float w, float h) {
 				if (self is not Button btn) return; // make nullable happy, it will always be Button
@@ -429,7 +434,7 @@ namespace CloneDash.Game
 
 				Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(Anchor.CenterRight, btn.RenderBounds.Size, btn.TextPadding);
 				Graphics2D.SetDrawColor(btn.TextColor);
-				Graphics2D.DrawText(textDrawingPosition, $"{difficultyLevel}", btn.Font, btn.TextSize, Anchor.CenterRight);
+				Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{difficultyLevel}", btn.Font, btn.TextSize, Anchor.CenterRight);
 			};
 
 			play.Thinking += delegate (Element self) {
