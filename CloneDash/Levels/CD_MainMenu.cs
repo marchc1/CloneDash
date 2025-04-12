@@ -281,11 +281,27 @@ namespace CloneDash.Game
 			var info = song.GetInfo();
 			var cover = song.GetCover();
 
+			ConstantLengthNumericalQueue<float> framesOverTime = new(480);
+
 			Panel levelSelector = UI.Add<Panel>();
 			levelSelector.MakePopup();
 			levelSelector.Dock = Dock.Fill;
 			levelSelector.Thinking += (s) =>
 				s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
+			levelSelector.PaintOverride += (s, w, h) => {
+				s.Paint(w, h);
+				var length = framesOverTime.Capacity;
+				Vector2F[] lineparts = new Vector2F[length];
+				for (int i = 0; i < framesOverTime.Capacity; i++) {
+					float sample = framesOverTime[i];
+					var x = (i / (float)framesOverTime.Capacity * w);
+					var y = (h / 2) + (h * .15f * sample);
+					lineparts[i] = new(x, y);
+				}
+				Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 140));
+				Graphics2D.DrawLineStrip(lineparts.ToArray());
+			};
+
 			var back = levelSelector.Add<Button>();
 
 			back.Anchor = Anchor.Center;
@@ -378,6 +394,8 @@ namespace CloneDash.Game
 					for (int i = 0; i < frames.Length; i++) {
 						float val = frames[i];
 						currentAvgVolume += val;
+						if (i % 256 == 0)
+							framesOverTime.Add(val);
 					}
 					currentAvgVolume /= frames.Length;
 					currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
