@@ -545,8 +545,10 @@ namespace Nucleus.ModelEditor.UI
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 0);
 					SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 1);
 
-					foreach(var slot in bone.Slots)
+					foreach (var slot in bone.Slots) {
 						SearchPropertyThenCreatePanel(anim, slot, KeyframeProperty.Slot_Attachment, -1);
+						SearchPropertyThenCreatePanel(anim, slot, KeyframeProperty.Slot_Color, -1);
+					}
 
 					break;
 			}
@@ -564,11 +566,12 @@ namespace Nucleus.ModelEditor.UI
 				KeyframeProperty.Bone_Scale => "Scale",
 
 				KeyframeProperty.Slot_Attachment => $"Attach: {target.GetName()}",
+				KeyframeProperty.Slot_Color => $"RGBA: {target.GetName()}",
 				_ => "N/A",
 			}}{(arrayIndex == -1 ? "" : $" {arrayIndex switch {
 				0 => "X",
 				1 => "Y",
-				_ => throw new Exception($"Inavlid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
+				_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
 			}}")}";
 
 			header.ImagePadding = property switch {
@@ -582,6 +585,7 @@ namespace Nucleus.ModelEditor.UI
 				KeyframeProperty.Bone_Shear => "shear_color",
 
 				KeyframeProperty.Slot_Attachment => "paperclip",
+				KeyframeProperty.Slot_Color => "rgba",
 				_ => "N/A",
 			}}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
 				0 => "x",

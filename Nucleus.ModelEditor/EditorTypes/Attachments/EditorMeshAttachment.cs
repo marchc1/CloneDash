@@ -949,8 +949,14 @@ namespace Nucleus.ModelEditor
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
 
-			var color = (byte)((IsActiveAttachment && ShouldDim) ? 90 : 255);
-			Rlgl.Color4ub(color, color, color, 255);
+			var color = Slot.GetColor();
+
+			if (IsActiveAttachment && ShouldDim) {
+				color.R /= 2;
+				color.G /= 2;
+				color.B /= 2;
+			}
+			Rlgl.Color4ub(color.R, color.G, color.B, color.A);
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
 				uStart = (float)region.X / (float)tex.Width;

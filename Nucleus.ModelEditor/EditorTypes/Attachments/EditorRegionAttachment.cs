@@ -167,7 +167,8 @@ namespace Nucleus.ModelEditor
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
 
-			Rlgl.Color4ub(255, 255, 255, 255);
+			var c = Slot.GetColor();
+			Rlgl.Color4ub(c.R, c.G, c.B, c.A);
 
 			float uStart, uEnd, vStart, vEnd;
 			uStart = (float)region.X / (float)tex.Width;

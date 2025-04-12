@@ -151,7 +151,12 @@ namespace Nucleus.UI
 					Raylib.SetMousePosition((int)dragStart.X, (int)dragStart.Y);
 
 				didDrag = true;
-				Value += delta.X / (MathF.Pow(1.5f, Digits));
+				double precision;
+				if (MinimumValue.HasValue && MaximumValue.HasValue) {
+					precision = (MaximumValue.Value - MinimumValue.Value) * self.RenderBounds.Width;
+				}
+				else precision = MathF.Pow(1.5f, Digits);
+				Value += delta.X / precision;
 			}
 		}
 

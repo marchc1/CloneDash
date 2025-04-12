@@ -39,8 +39,25 @@ namespace Nucleus.UI.Elements
 				Graphics2D.DrawRectangle(1, 1, width - 2, height - 2);
 			}
 
+			Graphics2D.SetTexture(checkerboardTex);
+			Graphics2D.SetDrawColor(255, 255, 255);
+
+			Vector2F pos = new(3, 3), size = new(width / 2, height - 6);
+
+			Raylib.DrawTexturePro(checkerboardTex, new(0, 0, size.W, size.H), new(Graphics2D.Offset.X + pos.X, Graphics2D.Offset.Y + pos.Y, size.W, size.H), new(0), 0, Color.White);
+
 			Graphics2D.SetDrawColor(SelectedColor);
-			Graphics2D.DrawRectangle(3, 3, width - 6, height - 6);
+			Graphics2D.DrawRectangle(3, 3, (width / 2) - 2, height - 6);
+
+			Graphics2D.SetDrawColor(SelectedColor, 255);
+			Graphics2D.DrawRectangle(1 + (width / 2), 3, (width / 2) - 4, height - 6);
+		}
+
+		private static Raylib_cs.Texture2D checkerboardTex;
+		static ColorSelector() {
+			var img = Raylib.GenImageChecked(64, 64, 4, 4, Color.Gray, Color.DarkGray);
+			checkerboardTex = Raylib.LoadTextureFromImage(img);
+			Raylib.UnloadImage(img);
 		}
 	}
 
@@ -260,6 +277,7 @@ namespace Nucleus.UI.Elements
 
 			BackgroundColor = new Color(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, (byte)225);
 		}
+
 
 		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, Types.MouseButton button) {
 			DragMode = ColorSelectorDragMode.None;

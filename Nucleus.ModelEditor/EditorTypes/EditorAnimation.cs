@@ -358,8 +358,9 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 		var fB = CurveB.TryFindKeyframe(time, out var b);
 		var fA = CurveA.TryFindKeyframe(time, out var a);
 
+		var sanityCheck = fR == fB == fG == fA;
+		Debug.Assert(sanityCheck, "Curve evaluation failed; all four curves didn't have keyframes at this time...");
 		var pass = fR == true && fB == true && fG == true && fA == true;
-		Debug.Assert(pass);
 		if (!pass) {
 			value = Color.Blank;
 			return false;
