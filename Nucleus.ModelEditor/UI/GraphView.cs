@@ -1,6 +1,7 @@
-﻿namespace Nucleus.ModelEditor.UI
+﻿namespace Nucleus.ModelEditor.UI;
+
+public class GraphView : BaseTimelineView
 {
-	public class GraphView : View {
-		public override string Name { get => "Graph Editor"; set { } }
-	}
+	public override string Name => "Graph Editor";
+	public override bool LockDragDirection => false;
 }

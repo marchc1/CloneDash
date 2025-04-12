@@ -284,7 +284,7 @@ public class ViewDivision : Panel
 			switcher.Dock = Dock.Left;
 			switcher.AutoSize = true;
 			switcher.BorderSize = 0;
-			switcher.TextPadding = new(12, 0);
+			switcher.TextPadding = new(32, 0);
 			switcher.Text = view.Name;
 			switcher.SetTag("view", view);
 			switcher.MouseReleaseEvent += (_, _, _) => {
