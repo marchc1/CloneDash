@@ -304,7 +304,7 @@ namespace CloneDash.Game
 			};
 
 			float currentAvgVolume = 0;
-			SecondOrderSystem animationSmoother = new SecondOrderSystem(4, 0.98f, 1f, 0);
+			SecondOrderSystem animationSmoother = new SecondOrderSystem(1, 0.98f, 1f, 0);
 
 
 			Panel imageCanvas = levelSelector.Add<Panel>();
@@ -316,7 +316,7 @@ namespace CloneDash.Game
 				Graphics2D.SetDrawColor(255, 255, 255, 255);
 				Graphics2D.SetTexture(c.Texture);
 				var distance = 16;
-				var size = new Vector2F(width - (distance * 2) - Math.Abs(animationSmoother.Update(currentAvgVolume) * 90));
+				var size = new Vector2F(width - (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 90), 0, 16));
 				var offset = Graphics2D.Offset;
 				Graphics2D.ResetDrawingOffset();
 				Rlgl.PushMatrix();
