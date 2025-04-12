@@ -76,6 +76,9 @@ public abstract class BaseTimelineView : View
 		var vY = smallVertical ? 8 : 4;
 		button.DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
 	}
+	protected virtual void PaintOverlay(float width, float height) {
+
+	}
 	protected override void Initialize() {
 		base.Initialize();
 
@@ -368,6 +371,7 @@ public abstract class BaseTimelineView : View
 			Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
 		}
 
+		PaintOverlay(width, height);
 		drawGradient(height);
 	}
 
