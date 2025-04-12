@@ -2,7 +2,7 @@
 
 namespace Nucleus.Models
 {
-	public struct Keyframe<T>
+	public class Keyframe<T>
 	{
 		public Keyframe() {
 			Time = 0;

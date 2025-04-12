@@ -51,7 +51,7 @@ namespace Nucleus.Models
 				}
 			}
 
-			return keyframe.HasValue;
+			return keyframe != null;
 		}
 
 		public bool TryFindKeyframe(double time, [NotNullWhen(true)] out Keyframe<T>? keyframe)

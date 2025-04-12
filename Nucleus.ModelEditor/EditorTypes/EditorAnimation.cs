@@ -125,7 +125,7 @@ public abstract class GenericStepTimeline<T> : CurveTimeline, IKeyframeQueryable
 		value = default;
 		if (!found) return false;
 
-		value = key.HasValue ? key.Value.Value : value;
+		value = key == null ? value : key.Value;
 		return true;
 	}
 
