@@ -38,6 +38,29 @@ public class DopesheetView : BaseTimelineView
 		keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
 		keyframes.SetTag("target", target);
 		keyframes.PaintOverride += Keyframes_PaintOverride;
+		keyframes.Thinking += (self) => {
+			//self.ChildRenderOffset = new(-(float)FrameOffset, 0);
+		};
+
+		switch (target) {
+			case EditorTimeline timeline:
+				foreach(var keyframe in timeline.GetKeyframes()) {
+					var time = keyframe.GetTime();
+					var x = (float)FrameToX(time);
+					var keyframeBtn = keyframes.Add<Button>();
+					keyframeBtn.Size = new(5, 24);
+					keyframeBtn.Position = new(x - 2, 0);
+					keyframeBtn.BackgroundColor = keyframe.Timeline.Color;
+					keyframeBtn.BorderSize = 1;
+					keyframeBtn.ForegroundColor = new(15, 15, 15, 255);
+					keyframeBtn.Text = "";
+					keyframeBtn.PaintOverride += (self, w, h) => {
+						self.Position = new((float)FrameToX(time) - 2, 0);
+						self.Paint(w, h);
+					};
+				}
+				break;
+		}
 	}
 	private void Keyframes_PaintOverride(Element self, float width, float height) {
 		var target = self.GetTag<object>("target");
@@ -63,7 +86,7 @@ public class DopesheetView : BaseTimelineView
 		}
 
 		// Render specific keyframe info.
-		switch (target) {
+		/*switch (target) {
 			case EditorBone bone:
 
 				break;
@@ -82,7 +105,7 @@ public class DopesheetView : BaseTimelineView
 					Graphics2D.DrawRectangleOutline(x, 0, 5, height, 1);
 				}
 				break;
-		}
+		}*/
 	}
 	protected override void OnZoomsChanged() {
 		base.OnZoomsChanged();
