@@ -215,16 +215,25 @@
         public static bool operator ==(RectangleF a, RectangleF b) => equality(a, b);
         public static bool operator !=(RectangleF a, RectangleF b) => !equality(a, b);
 
-        public RectangleF AddPosition(Vector2F v) {
-            return new RectangleF() {
-                x = this.X + v.X,
-                y = this.Y + v.Y,
-                w = this.W,
-                h = this.H
-            };
-        }
+		public RectangleF AddPosition(Vector2F v) {
+			return new RectangleF() {
+				x = this.X + v.X,
+				y = this.Y + v.Y,
+				w = this.W,
+				h = this.H
+			};
+		}
 
-        public RectangleF FitInto(RectangleF cropRect) {
+		public RectangleF AddSize(Vector2F v) {
+			return new RectangleF() {
+				x = this.X,
+				y = this.Y,
+				w = this.W + v.X,
+				h = this.H + v.Y
+			};
+		}
+
+		public RectangleF FitInto(RectangleF cropRect) {
             RectangleF newR = this;
 
             if(newR.X < cropRect.X) {
