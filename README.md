@@ -14,7 +14,7 @@ It currently implements:
 ![CloneDash_iK1pd9AlJL](https://github.com/user-attachments/assets/02ec7e9e-8e9a-4a20-93a9-0d4c851ceac7)
 ![CloneDash_BF52fggWJg](https://github.com/user-attachments/assets/2fed8c0f-9e92-42ea-9747-ab82cc72d2f9)
 
-This is a hastily-put-together alpha of game functionality. It kind of matches the base gameplay, but there's still work that needs to be done. The current core of the project is a bit of a mess and a lot of this will change as I further work on the project. You will need to own the game to play this currently, as it relies on finding a valid Steam installation of the game, and does not have any custom level support (yet...)
+This is a hastily-put-together alpha of game functionality. It kind of matches the base gameplay, but there's still work that needs to be done. The current core of the project is a bit of a mess and a lot of this will change as I further work on the project. You will need to own the game to play this currently, as it relies on finding a valid Steam installation of the game. Custom albums are supported (in the https://github.com/MDMods/CustomAlbums .mdm format), however support is limited, your mileage may vary.
 
 There are still a lot of things I'd like to implement that are currently missing, for starters, custom levels. It would be nice to provide a lot of customizability and accessibility options the base game does not allow for as well.
 
