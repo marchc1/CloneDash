@@ -30,9 +30,28 @@ public class DopesheetView : BaseTimelineView
 		var remove = AddTopButton("models/remove.png");
 		var paste = AddTopButton("models/paste.png");
 
+		AddTopSpace(16);
+
 		var curve_constant = AddTopButton("models/curve_constant.png");
 		var curve_linear = AddTopButton("models/curve_linear.png");
 		var curve_bezier = AddTopButton("models/curve_bezier.png");
+
+		AddTopSpace(16);
+
+		var autobezier = AddTopButton("models/autobezier.png");
+		AddTopSpace(16);
+
+		TopButtonPanel.Add(out LabeledNumSlider curframeNum);
+		curframeNum.Dock = Dock.Left;
+		curframeNum.Text = "Frame";
+		curframeNum.Size = new(128);
+		curframeNum.TextFormat = "{0:0.00}";
+		// TODO: remove this, fix numslider relying on order so much
+		curframeNum.Value = 1;
+		curframeNum.Value = 0;
+
+		ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead();
+		ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead();
 
 		KeyframeOverlay.MoveToFront();
 	}

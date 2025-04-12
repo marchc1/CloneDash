@@ -31,6 +31,7 @@ namespace Nucleus.UI
 		public int Digits { get => numslider.Digits; set => numslider.Digits = value; }
 		public string Prefix { get => numslider.Prefix; set => numslider.Prefix = value; }
 		public string Suffix { get => numslider.Suffix; set => numslider.Suffix = value; }
+		public string? TextFormat { get => numslider.TextFormat; set => numslider.TextFormat = value; }
 
 		public new string Text { get => label.Text; set => label.Text = value; }
 		protected override void Initialize() {

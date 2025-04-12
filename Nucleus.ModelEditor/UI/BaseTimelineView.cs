@@ -213,6 +213,8 @@ public abstract class BaseTimelineView : View
 	}
 
 	private Button lastButton;
+	private float divisionSpace = 0;
+
 	public Button AddTopButton(string icon) {
 		TopButtonPanel.Add(out Button button);
 		button.Dock = Dock.Left;
@@ -227,10 +229,13 @@ public abstract class BaseTimelineView : View
 		lastButton = button;
 		return button;
 	}
+	
 	public void AddTopSpace(float width = 32) {
-		if (lastButton == null) return;
-
-		lastButton.DockMargin.AddSize(new(width, 0));
+		TopButtonPanel.Add(out Panel panel);
+		panel.Dock = Dock.Left;
+		panel.DockMargin = RectangleF.Zero;
+		panel.Size = new(width);
+		panel.Visible = false;
 	}
 
 	private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {

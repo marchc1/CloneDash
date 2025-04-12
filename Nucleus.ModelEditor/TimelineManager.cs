@@ -39,6 +39,13 @@ public class TimelineManager
 		return Math.Round(Frame);
 	}
 
+	/// <summary>
+	/// Returns how the playhead should look to the user. The frame is rounded only when playing; otherwise, it is only rounded to 2 digits
+	/// </summary>
+	/// <returns></returns>
+	public double GetVisualPlayhead() => PlayDirection != 0 ? Math.Round(Frame) : Math.Round(Frame, 2);
+
+
 	public bool PlayingBackwards {
 		get => PlayDirection == -1;
 		set => PlayDirection = value ? -1 : 0;
