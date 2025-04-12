@@ -733,8 +733,6 @@ namespace Nucleus.UI
 				else {
 					child.RenderBounds = RectangleF.Zero;
 				}
-
-				element.PostLayoutChild(child);
 			}
 			if (wasInvalid) {
 				element.OnPostLayoutChildren?.Invoke(element);

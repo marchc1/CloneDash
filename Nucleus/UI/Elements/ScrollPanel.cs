@@ -57,7 +57,7 @@ namespace Nucleus.UI
 			base.PerformLayout(width, height);
 		}
 		public virtual bool ShouldItemBeVisible(Element e) {
-			return e is ListViewItem lvi && lvi.ShowLVItem;
+			return true;
 		}
 		protected override void OnThink(FrameState frameState) {
 			base.OnThink(frameState);
@@ -73,7 +73,6 @@ namespace Nucleus.UI
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
-					child.EngineDisabled = false;
 					child.EngineInvisible = !RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(-MainPanel.ChildRenderOffset), child.RenderBounds);
 				}
 				else {

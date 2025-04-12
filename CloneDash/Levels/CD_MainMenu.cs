@@ -255,17 +255,12 @@ namespace CloneDash.Game
 
 					var song = item.GetTag<MuseDashSong>("musedash_song");
 
-					if (song.Name.ToLower().Contains(txt.Text.ToLower()))
-						item.ShowLVItem = true;
-					else if (song.BaseName.ToLower().Contains(txt.Text.ToLower()))
-						item.ShowLVItem = true;
-					else if (song.Author.ToLower().Contains(txt.Text.ToLower()))
-						item.ShowLVItem = true;
-					else 
-						item.ShowLVItem = false;
+					if (song.Name.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+					else if (song.BaseName.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+					else if (song.Author.ToLower().Contains(txt.Text.ToLower())) item.ShowLVItem = true;
+					else item.ShowLVItem = false;
 				}
-
-				MainThread.RunASAP(() => list.InvalidateChildren(self: true, recursive: true));
+				list.InvalidateChildren(self: true, recursive: true);
 			};
 
 			list.Dock = Dock.Fill;
