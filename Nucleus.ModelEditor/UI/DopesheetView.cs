@@ -23,8 +23,20 @@ public class DopesheetView : BaseTimelineView
 		KeyframeInfoPanel.MouseDragEvent += KeyframeInfoPanel_MouseDragEvent;
 		KeyframeInfoPanel.MouseReleaseEvent += KeyframeInfoPanel_MouseReleaseEvent;
 
+		var btn = TopButtonPanel;
+
+		var copy = AddTopButton("models/copy.png");
+		var cut = AddTopButton("models/cut.png");
+		var remove = AddTopButton("models/remove.png");
+		var paste = AddTopButton("models/paste.png");
+
+		var curve_constant = AddTopButton("models/curve_constant.png");
+		var curve_linear = AddTopButton("models/curve_linear.png");
+		var curve_bezier = AddTopButton("models/curve_bezier.png");
+
 		KeyframeOverlay.MoveToFront();
 	}
+
 
 	protected override void CreateChannelPanels(out Button header, out Panel keyframes, object? target = null) {
 		base.CreateChannelPanels(out header, out keyframes, target);

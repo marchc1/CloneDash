@@ -53,6 +53,7 @@ public abstract class BaseTimelineView : View
 	public static float DefaultZoom = 18f;
 	public static float MaxZoom = 150f;
 
+	public Panel TopButtonPanel;
 	public Panel ButtonsAndNames;
 	public FlexPanel Buttons;
 	public Panel TimeInfoPanel;
@@ -91,12 +92,12 @@ public abstract class BaseTimelineView : View
 		DockPadding = RectangleF.Zero;
 		BackgroundColor = BackgroundColor.Adjust(0, -.4, 2);
 		// Create the initial panels
-		Add(out Panel topPanel);
-		topPanel.Dock = Dock.Top;
-		topPanel.Size = new(44);
-		topPanel.DockMargin = RectangleF.TLRB(6);
-		topPanel.DrawPanelBackground = true;
-		topPanel.DockPadding = RectangleF.Zero;
+		Add(out TopButtonPanel);
+		TopButtonPanel.Dock = Dock.Top;
+		TopButtonPanel.Size = new(44);
+		TopButtonPanel.DockMargin = RectangleF.TLRB(6);
+		TopButtonPanel.DrawPanelBackground = false;
+		TopButtonPanel.DockPadding = RectangleF.Zero;
 
 		Add(out Panel bottomPanel);
 		bottomPanel.Dock = Dock.Bottom;
@@ -209,6 +210,27 @@ public abstract class BaseTimelineView : View
 		KeyframeOverlay.DockMargin = RectangleF.TLRB(0);
 		KeyframeOverlay.DockPadding = RectangleF.Zero;
 		KeyframeOverlay.PaintOverride += KeyframeInfoPanel_PaintOverride;
+	}
+
+	private Button lastButton;
+	public Button AddTopButton(string icon) {
+		TopButtonPanel.Add(out Button button);
+		button.Dock = Dock.Left;
+		button.Size = new(32);
+		button.DockMargin = RectangleF.TLRB(2, 0, 0, 2);
+		button.Text = "";
+		button.Image = Textures.LoadTextureFromFile(icon);
+		button.ImageOrientation = ImageOrientation.Zoom;
+		button.ImagePadding = new(4);
+		button.BorderSize = 1;
+
+		lastButton = button;
+		return button;
+	}
+	public void AddTopSpace(float width = 32) {
+		if (lastButton == null) return;
+
+		lastButton.DockMargin.AddSize(new(width, 0));
 	}
 
 	private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
