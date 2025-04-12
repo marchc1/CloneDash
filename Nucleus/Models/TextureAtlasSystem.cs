@@ -133,12 +133,14 @@ namespace Nucleus.Models
 			Span<PackingRectangle> rects = stackalloc PackingRectangle[unpacked.Count];
 			int i = 0;
 			string[] keys = new string[unpacked.Count];
+			int additionalPadding = 4; // added onto drawing position; added * 2 onto pack-size
+
 			foreach (var strTexPair in unpacked) {
 				rects[i] = new PackingRectangle(
 					0,
 					0,
-					(uint)strTexPair.Value.Width,
-					(uint)strTexPair.Value.Height,
+					(uint)(strTexPair.Value.Width + (additionalPadding * 2)),
+					(uint)(strTexPair.Value.Height + (additionalPadding * 2)),
 					i
 				);
 
@@ -167,7 +169,7 @@ namespace Nucleus.Models
 				PackingRectangle rect = rects[j];
 				string key = keys[rect.Id];
 				Image src = unpacked[key];
-				Raylib.ImageDraw(ref workingImage, src, new(0, 0, src.Width, src.Height), new(rect.X, rect.Y, rect.Width, rect.Height), Color.White);
+				Raylib.ImageDraw(ref workingImage, src, new(0, 0, src.Width, src.Height), new(rect.X + additionalPadding, rect.Y + additionalPadding, rect.Width - (additionalPadding * 2), rect.Height - (additionalPadding * 2)), Color.White);
 
 				if (testing) {
 					Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());
