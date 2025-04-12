@@ -81,7 +81,7 @@ namespace Nucleus.Models
 
 					for (int i = 1; i < Keyframes.Count; i++) {
 						var keyframe = Keyframes[i];
-						if (time <= keyframe.Time) {
+						if (time < keyframe.Time) {
 							return Keyframe<T>.DetermineValue(time, Keyframes[i - 1], keyframe, interpolationOverride);
 						}
 					}
