@@ -101,8 +101,8 @@ public class SongSelector : Panel
 			return;
 
 		DiscIndex--;
-		DiscAnimationOffset--;
-		activeTrack = null;
+		DiscAnimationOffset--; 
+		ResetDiskTrack();
 	}
 
 	public void MoveRight() {
@@ -110,11 +110,11 @@ public class SongSelector : Panel
 			return;
 
 		DiscIndex++;
-		DiscAnimationOffset++;
-		activeTrack = null;
+		DiscAnimationOffset++; 
+		ResetDiskTrack();
 	}
 
-	public int GetSongIndex(int localIndex) => NMath.Modulo(DiscIndex + localIndex, Songs.Count);
+	public int GetSongIndex(int localIndex) => Songs.Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, Songs.Count);
 	public ChartSong GetDiscSong(int localIndex) {
 		var songIndex = GetSongIndex(localIndex);
 		return Songs[songIndex];
@@ -127,9 +127,10 @@ public class SongSelector : Panel
 
 	public void NavigateToDisc(Button discButton) {
 		var index = discButton.GetTagSafely<int>("localDiscIndex");
-		activeTrack = GetDiscSong(index).GetDemoTrack();
 		DiscIndex += index;
 		DiscAnimationOffset += index;
+		if(index != 0)
+			ResetDiskTrack();
 	}
 
 	public bool IsDiscOverflowed(int localIndex) {
@@ -147,12 +148,39 @@ public class SongSelector : Panel
 	public Button GetActiveDisc() => Discs[Discs.Length / 2];
 
 	MusicTrack? activeTrack;
-	public bool ShouldPlayDiscDemo() {
+	bool doNotTryToGetTrackAgain;
+	public MusicTrack? ActiveTrack => activeTrack;
+	public void ResetDiskTrack() {
+		if (IValidatable.IsValid(activeTrack)) {
+			activeTrack.Playing = false;
+			activeTrack = null;
+		}
+		doNotTryToGetTrackAgain = false;
+	}
 
+	public void FigureOutDisk() {
+		if (Songs.Count <= 0) return;
+		activeTrack?.Update();
+		if (IValidatable.IsValid(activeTrack)) return;
+		if (doNotTryToGetTrackAgain) return;
+
+		// Should play track?
+		if (Math.Abs(DiscAnimationOffset) < 0.3) {
+			var chart = GetDiscSong(0);
+			activeTrack = chart.GetDemoTrack();
+			if(activeTrack == null) {
+				doNotTryToGetTrackAgain = true;
+				return;
+			}
+			activeTrack.Restart();
+			activeTrack.Playing = true;
+			activeTrack.Volume = 0.5f;
+		}
 	}
 
 	// Constantly running logic
 	public void ThinkDiscs() {
+		FigureOutDisk();
 		float width = RenderBounds.W, height = RenderBounds.H;
 
 		if (FlyAwaySOS.Update(FlyAway) > 0.001f) {
@@ -526,7 +554,7 @@ public class CD_MainMenu : Level
 
 	internal void LoadChartSelector(ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
-		MusicTrack? track = song.GetDemoTrack();
+		MusicTrack? track = Selector.ActiveTrack;
 		var info = song.GetInfo();
 		var cover = song.GetCover();
 
@@ -678,18 +706,6 @@ public class CD_MainMenu : Level
 		};
 
 		if (track != null) {
-			track.Volume = 0.4f;
-			track.Restart();
-			track.Playing = true;
-
-			levelSelector.Thinking += delegate (Element self) {
-				track.Update();
-			};
-
-			levelSelector.Removed += delegate (Element self) {
-				track.Paused = true;
-			};
-
 			track.Processing += (self, frames) => {
 				currentAvgVolume = 0;
 				for (int i = 0; i < frames.Length; i++) {

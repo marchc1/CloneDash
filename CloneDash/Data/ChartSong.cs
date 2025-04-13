@@ -28,7 +28,8 @@ namespace CloneDash.Data
 
 		protected void Clear() {
 			AudioTrack?.Dispose(); AudioTrack = null;
-			DemoTrack?.Dispose(); DemoTrack = null;
+			// Not clearing the demo since i dont want a sudden jump
+			// DemoTrack?.Dispose(); DemoTrack = null;
 			Info = null;
 			__gotCover = false;
 			CoverTexture = null;
