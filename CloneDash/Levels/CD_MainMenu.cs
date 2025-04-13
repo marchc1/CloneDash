@@ -101,7 +101,7 @@ public class SongSelector : Panel
 			return;
 
 		DiscIndex--;
-		DiscAnimationOffset--; 
+		DiscAnimationOffset--;
 		ResetDiskTrack();
 	}
 
@@ -110,7 +110,7 @@ public class SongSelector : Panel
 			return;
 
 		DiscIndex++;
-		DiscAnimationOffset++; 
+		DiscAnimationOffset++;
 		ResetDiskTrack();
 	}
 
@@ -122,6 +122,7 @@ public class SongSelector : Panel
 	public ChartSong GetDiscSong(Button discButton) {
 		int localIndex = discButton.GetTagSafely<int>("localDiscIndex");
 		var songIndex = GetSongIndex(localIndex);
+
 		return Songs[songIndex];
 	}
 
@@ -129,7 +130,7 @@ public class SongSelector : Panel
 		var index = discButton.GetTagSafely<int>("localDiscIndex");
 		DiscIndex += index;
 		DiscAnimationOffset += index;
-		if(index != 0)
+		if (index != 0)
 			ResetDiskTrack();
 	}
 
@@ -168,7 +169,7 @@ public class SongSelector : Panel
 		if (Math.Abs(DiscAnimationOffset) < 0.3) {
 			var chart = GetDiscSong(0);
 			activeTrack = chart.GetDemoTrack();
-			if(activeTrack == null) {
+			if (activeTrack == null) {
 				doNotTryToGetTrackAgain = true;
 				return;
 			}
@@ -190,6 +191,7 @@ public class SongSelector : Panel
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
+			var index = DiscIndex + disc.GetTagSafely<int>("localDiscIndex");
 
 			if (i == Discs.Length / 2 && FlyAwaySOS.Out > 0.00001) {
 				disc.ImageRotation = DiscRotateSOS.Update((MathF.Floor(DiscRotateAnimation / 360) * 360) + (DiscRotateAnimation % 360) * FlyAwaySOS.Out);
@@ -197,6 +199,22 @@ public class SongSelector : Panel
 				float size = (discWidth * ((FlyAwaySOS.Out / 2) + 1)) - DiscVibrate;
 				CalculateDiscPos(width, height, i, out float x, out float y);
 				disc.SetRenderBounds(x - (size / 2), y - (size / 2), size, size);
+			}
+
+			if (!InfiniteList && index > Songs.Count) continue;
+
+			if (Songs.Count > 0) {
+				var song = GetDiscSong(disc);
+				var cover = song.GetCover();
+
+				disc.Text = "";
+				if (cover != null) {
+					disc.ImageOrientation = ImageOrientation.Stretch;
+					disc.ImagePadding = new(16);
+					disc.Image = cover.Texture;
+					disc.ImageFlipX = false;
+					disc.ImageFlipY = cover.Flipped;
+				}
 			}
 		}
 	}
@@ -234,18 +252,7 @@ public class SongSelector : Panel
 
 			CalculateDiscPos(width, height, i, out float x, out float y);
 			disc.Position = new(x, y);
-
-			var song = GetDiscSong(disc);
-			var cover = song.GetCover();
-
 			disc.Text = "";
-			if (cover != null) {
-				disc.ImageOrientation = ImageOrientation.Stretch;
-				disc.ImagePadding = new(16);
-				disc.Image = cover.Texture;
-				disc.ImageFlipX = false;
-				disc.ImageFlipY = cover.Flipped;
-			}
 		}
 
 		var heightDiv2 = height / 2;
@@ -680,7 +687,7 @@ public class CD_MainMenu : Level
 			var oldSize = s.TextSize;
 			var w = levelSelector.RenderBounds.W;
 			s.TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
-			if(oldSize != s.TextSize)
+			if (oldSize != s.TextSize)
 				s.InvalidateLayout();
 
 			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 6, 0, 1)) * 255));

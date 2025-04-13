@@ -36,7 +36,11 @@ namespace CloneDash.Data
 			Sheets.Clear();
 		}
 
-        // These methods will be called when their respective data is not set. They are protected for that reason.
+		// These methods will be called when their respective data is not set. They are protected for that reason.
+
+		protected object AsyncLock { get; } = new object();
+		protected bool DeferringDemoToAsyncHandler { get; set; }
+		protected bool DeferringCoverToAsyncHandler { get; set; }
 
         protected abstract MusicTrack ProduceAudioTrack();
         protected abstract MusicTrack? ProduceDemoTrack();
@@ -62,7 +66,12 @@ namespace CloneDash.Data
         }
 
         public MusicTrack? GetDemoTrack() {
-            if (__gotDemoTrack == false && DemoTrack != null && IValidatable.IsValid(AudioTrack))
+			if (DeferringDemoToAsyncHandler) {
+				lock (AsyncLock) {
+					return DemoTrack;
+				}
+			}
+			if (__gotDemoTrack == false && DemoTrack != null && IValidatable.IsValid(AudioTrack))
                 return DemoTrack;
 
             DemoTrack = ProduceDemoTrack();
@@ -71,7 +80,13 @@ namespace CloneDash.Data
         }
 
         public ChartCover? GetCover() {
-            if (__gotCover == true)
+			if (DeferringCoverToAsyncHandler) {
+				lock (AsyncLock) {
+					return CoverTexture;
+				}
+			}
+
+			if (__gotCover == true)
                 return CoverTexture;
 
             CoverTexture = ProduceCover();
@@ -94,7 +109,6 @@ namespace CloneDash.Data
                 
                 if(AudioTrack != null) AudioTrack.Dispose();
                 if(DemoTrack != null) DemoTrack.Dispose();
-                
             });
         }
     }

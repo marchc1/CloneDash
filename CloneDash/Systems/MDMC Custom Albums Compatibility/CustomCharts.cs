@@ -102,12 +102,17 @@ namespace CloneDash
 					};
 				}
 				else {
-					var tex = WebChart.GetCoverAsTexture();
-					if (tex == null) return null;
+					DeferringCoverToAsyncHandler = true;
+					WebChart.GetCoverAsTextureAsync((tex) => {
+						if (tex == null) return;
 
-					return new() {
-						Texture = tex
-					};
+						lock (AsyncLock) {
+							CoverTexture = new() {
+								Texture = tex
+							};
+						}
+					});
+					return null;
 				}
 			}
 
@@ -123,7 +128,13 @@ namespace CloneDash
 					return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
 				}
 				else {
-					return WebChart.GetMusicTrack(true);
+					DeferringDemoToAsyncHandler = true;
+					WebChart.GetMusicTrackAsync((demo) => {
+						lock (AsyncLock) {
+							DemoTrack = demo;
+						}
+					}, true);
+					return null;
 				}
 			}
 
