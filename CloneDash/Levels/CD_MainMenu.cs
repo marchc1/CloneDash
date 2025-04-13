@@ -285,6 +285,7 @@ namespace CloneDash.Game
 
 			Panel levelSelector = UI.Add<Panel>();
 			levelSelector.MakePopup();
+			levelSelector.ForegroundColor = Color.Blank;
 			levelSelector.Dock = Dock.Fill;
 			levelSelector.Thinking += (s) =>
 				s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
@@ -318,6 +319,7 @@ namespace CloneDash.Game
 				self.ImageColor = Element.MixColorBasedOnMouseState(self, new(200, 200, 200, 
 					(int)(Math.Clamp(NMath.Ease.OutCubic(self.Lifetime - 0.35f), 0, 1) * 255)
 					), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
+				self.Position = new(-160 + (NMath.Ease.OutCubic(Math.Clamp(self.Lifetime - 0.3f, 0, 1)) * -96), 0);
 				self.Paint(w, h);
 			};
 
@@ -351,9 +353,10 @@ namespace CloneDash.Game
 				0);
 				Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
 				Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
-				Graphics2D.SetDrawColor(25, 25, 25, 255);
+				var alpha = 1 - NMath.Remap(1 - NMath.Ease.OutCubic(self.Lifetime * 2), 0, 1, 0, 1, false, true);
+				Graphics2D.SetDrawColor(25, 25, 25, (int)(255 * alpha));
 				Graphics2D.DrawCircle(size / 2, (size.W / 2) + 12);
-				Graphics2D.SetDrawColor(255, 255, 255, 255);
+				Graphics2D.SetDrawColor(255, 255, 255, (int)(255 * alpha));
 				Graphics2D.DrawImage(new(0, 0), size);
 				Graphics2D.OffsetDrawing(offset);
 				Rlgl.PopMatrix();
@@ -437,7 +440,7 @@ namespace CloneDash.Game
 				btn.PaintOverride += (s, w, h) => {
 					var life = s.Lifetime - (thisOffset * .15f);
 					var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
-					var xOffset = NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * 256;
+					var xOffset = NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 
 					var a = s.BackgroundColor.A;
 					s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, (int)(a * alpha));
