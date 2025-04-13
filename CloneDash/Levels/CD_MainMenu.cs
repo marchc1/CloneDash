@@ -28,6 +28,7 @@ public class SongSelector : Panel
 		Songs.AddRange(songs);
 
 		ApplyFilter(CurrentFilter);
+		InvalidateLayout();
 	}
 
 	public void ApplyFilter(Predicate<ChartSong>? filter) {
@@ -57,8 +58,21 @@ public class SongSelector : Panel
 		SelectionUpdated(true);
 	}
 
+
+	public delegate void UserWantsMore();
+	public event UserWantsMore? UserWantsMoreSongs;
+	public bool CanAcceptMoreSongs { get; set; } = true;
+	public bool InfiniteList { get; set; } = true;
+
 	protected virtual void SelectionUpdated(bool cleared) {
 
+	}
+
+	protected void GetMoreSongs() {
+		if (!CanAcceptMoreSongs) return;
+
+		CanAcceptMoreSongs = false;
+		UserWantsMoreSongs?.Invoke();
 	}
 
 	public Button Disc1;
@@ -75,10 +89,17 @@ public class SongSelector : Panel
 	public float DiscAnimationOffset = 0;
 
 	public void MoveLeft() {
+		if (!InfiniteList && DiscIndex <= 0)
+			return;
+
 		DiscIndex--;
 		DiscAnimationOffset--;
 	}
+
 	public void MoveRight() {
+		if (!InfiniteList && DiscIndex >= Songs.Count - 1)
+			return;
+
 		DiscIndex++;
 		DiscAnimationOffset++;
 	}
@@ -94,13 +115,34 @@ public class SongSelector : Panel
 		return Songs[songIndex];
 	}
 
+	public bool IsDiscOverflowed(int localIndex) {
+		var songIndex = DiscIndex + localIndex;
+		return songIndex >= Songs.Count || songIndex < 0;
+	}
+
+	public bool WillDiscOverflow() {
+		return IsDiscOverflowed(DiscIndex);
+	}
+
 	public float FlyAway = 0;
 
 	public void LayoutDiscs(float width, float height) {
-		if (Songs.Count <= 0) return;
+		if (Songs.Count <= 0 || WillDiscOverflow()) {
+			GetMoreSongs();
+			return;
+		}
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			var discWidth = (width / Discs.Length);
+
+			var willOverflow = !InfiniteList && IsDiscOverflowed(i - (Discs.Length / 2));
+			if (willOverflow) {
+				disc.Visible = false;
+				continue;
+			}
+			else {
+				disc.Visible = true;
+			}
 
 			disc.Size = new(discWidth, discWidth);
 
@@ -120,7 +162,7 @@ public class SongSelector : Panel
 
 			disc.Text = "";
 			if (cover != null) {
-				disc.ImageOrientation = ImageOrientation.Fit;
+				disc.ImageOrientation = ImageOrientation.Stretch;
 				disc.ImagePadding = new(16);
 				disc.Image = cover.Texture;
 				disc.ImageFlipX = false;
@@ -154,7 +196,7 @@ public class SongSelector : Panel
 		if (Math.Abs(DiscAnimationOffset) > 0.001d) {
 			DiscAnimationOffset /= 1.02f;
 			InvalidateLayout(); // loop for next frame
-			if(Math.Abs(DiscAnimationOffset) < 0.2) {
+			if (Math.Abs(DiscAnimationOffset) < 0.2) {
 				if (Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.Left) || Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.A)) {
 					MoveLeft();
 				}
@@ -163,7 +205,7 @@ public class SongSelector : Panel
 				}
 			}
 		}
-		else if(DiscAnimationOffset != 0) {
+		else if (DiscAnimationOffset != 0) {
 			// set it to 0 and don't invalidate again after
 			DiscAnimationOffset = 0;
 			InvalidateLayout();
@@ -187,7 +229,14 @@ public class SongSelector : Panel
 			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - (Discs.Length / 2));
 
-			disc.MouseReleaseEvent += (s, _, _) => EngineCore.Level.As<CD_MainMenu>().LoadSongSelectorFancy(GetDiscSong(s as Button));
+			disc.MouseReleaseEvent += (s, _, _) => {
+				var song = GetDiscSong(s as Button);
+				if (song is CustomChartsSong customChartsSong) {
+					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadSongSelectorFancy(c));
+				}
+				else
+					EngineCore.Level.As<CD_MainMenu>().LoadSongSelectorFancy(song);
+			};
 			disc.BorderSize = 0;
 			var midpoint = Discs.Length / 2;
 			disc.BackgroundColor = new(0, 0, 0, 0);
@@ -277,6 +326,11 @@ public class CD_MainMenu : Level
 		loadMDCC.BorderSize = 0;
 		loadMDCC.MouseReleaseEvent += (_, _, _) => {
 			var selector = InitializeSelector();
+			selector.InfiniteList = false;
+			selector.UserWantsMoreSongs += () => {
+				// Load more songs
+				PopulateWindow();
+			};
 		};
 		loadMDCC.TooltipText = "Load CustomAlbums .mdm File";
 
@@ -298,100 +352,10 @@ public class CD_MainMenu : Level
 		scrollPanel.AddParent.ClearChildren();
 	}
 
-	private void AddChartSelector(MDMCChart chart) {
-		Button chartBtn = scrollPanel.Add<Button>();
-		chartBtn.BorderSize = 0;
-		chartBtn.Text = "";
-		chartBtn.Dock = Dock.Top;
-		chartBtn.Dock = Dock.Top;
-		chartBtn.Size = new(96);
-
-		Panel imageRenderer = chartBtn.Add<Panel>();
-		imageRenderer.Size = new(64);
-		imageRenderer.Position = new(4);
-		imageRenderer.PaintOverride += ImageRenderer_PaintOverride;
-
-		chart.GetCoverAsTexture((tex) => {
-			if (IValidatable.IsValid(tex)) {
-				imageRenderer.Image = tex;
-			}
-		});
-
-		Label songAuthor, songName, likeCount, chartAuthor;
-		Panel userIcon, likeIcon;
-		Button playDemo, downloadOrPlay;
-
-		chartBtn.Add(out songAuthor);
-		chartBtn.Add(out songName);
-		chartBtn.Add(out likeCount);
-		chartBtn.Add(out chartAuthor);
-		chartBtn.Add(out userIcon);
-		chartBtn.Add(out likeIcon);
-		chartBtn.Add(out playDemo);
-
-		userIcon.PaintOverride += ImageRenderer_PaintOverride;
-		likeIcon.PaintOverride += ImageRenderer_PaintOverride;
-		playDemo.PaintOverride += ImageRenderer_PaintOverride;
-
-		imageRenderer.ImageOrientation = ImageOrientation.Zoom;
-		userIcon.ImageOrientation = ImageOrientation.Zoom;
-		likeIcon.ImageOrientation = ImageOrientation.Zoom;
-		playDemo.ImageOrientation = ImageOrientation.Zoom;
-
-		songAuthor.Text = chart.Artist;
-		songAuthor.AutoSize = true;
-
-		songName.Text = string.IsNullOrEmpty(chart.TitleRomanized) ? chart.Title : chart.TitleRomanized;
-		songName.AutoSize = true;
-
-		likeCount.Text = $"{chart.Likes}";
-		chartAuthor.Text = $"{chart.Charter}";
-
-		userIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/user.png");
-		likeIcon.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/heart.png");
-		playDemo.Image = userIcon.Level.Textures.LoadTextureFromFile("ui/listen.png");
-
-		songAuthor.Position = new(96, 16);
-		songAuthor.TextSize = 20;
-
-		songName.Position = new(96, 32);
-		songName.TextSize = 24;
-
-		userIcon.Anchor = Anchor.BottomLeft;
-		userIcon.Origin = Anchor.BottomLeft;
-		userIcon.Size = new(24);
-
-		chartAuthor.AutoSize = true;
-		chartAuthor.Anchor = Anchor.BottomLeft;
-		chartAuthor.Origin = Anchor.BottomLeft;
-		chartAuthor.Position = new(24 + 2, -1);
-		chartAuthor.TextSize = 22;
-		chartAuthor.Size = new(24);
-
-		playDemo.Anchor = Anchor.BottomRight;
-		playDemo.Origin = Anchor.BottomRight;
-		playDemo.Position = new(-4, 0);
-		playDemo.Size = new(24);
-
-		likeCount.Anchor = Anchor.BottomRight;
-		likeCount.Origin = Anchor.BottomRight;
-		likeCount.Position = new(-38, -3);
-		likeCount.AutoSize = true;
-
-		likeIcon.Anchor = Anchor.BottomRight;
-		likeIcon.Origin = Anchor.BottomRight;
-		likeIcon.Position = new(-38 + -22, 0);
-		likeIcon.Size = new(24);
-
-		imageRenderer.OnHoverTest += Element.Passthru;
-		songAuthor.OnHoverTest += Element.Passthru;
-		songName.OnHoverTest += Element.Passthru;
-		likeCount.OnHoverTest += Element.Passthru;
-		chartAuthor.OnHoverTest += Element.Passthru;
-		userIcon.OnHoverTest += Element.Passthru;
-		likeIcon.OnHoverTest += Element.Passthru;
-
-		chartBtn.MouseReleaseEvent += (_, _, _) => {
+	private CustomChartsSong AddChartSelector(MDMCChart chart) {
+		CustomChartsSong song = new CustomChartsSong(chart);
+		return song;
+		/*chartBtn.MouseReleaseEvent += (_, _, _) => {
 			var filename = Filesystem.Resolve($"charts/{chart.ID}.mdm", "game", false);
 			if (!File.Exists(filename)) {
 				chart.DownloadTo(filename, (worked) => {
@@ -408,7 +372,7 @@ public class CD_MainMenu : Level
 				Logs.Info($"Already cached {chart.ID}.mdm");
 				LoadMDM(filename);
 			}
-		};
+		};*/
 	}
 	private void LoadMDM(string filename) => LoadSongSelectorFancy(new CustomChartsSong(filename));
 	private void ImageRenderer_PaintOverride(Element self, float width, float height) {
@@ -417,20 +381,22 @@ public class CD_MainMenu : Level
 	}
 
 	private void PopulateWindow(string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
-		var tempLabel = scrollPanel.Add<Label>();
+		/*var tempLabel = scrollPanel.Add<Label>();
 		tempLabel.Text = "Loading...";
 		tempLabel.Dock = Dock.Top;
 		tempLabel.TextAlignment = Anchor.Center;
 		tempLabel.AutoSize = true;
-		tempLabel.TextSize = 26;
+		tempLabel.TextSize = 26;*/
 
 		MDMCWebAPI.SearchCharts(query, sort, page, onlyRanked).Then((resp) => {
-			tempLabel.Remove();
 			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
+			var songs = new List<CustomChartsSong>();
 
 			foreach (MDMCChart chart in charts) {
-				AddChartSelector(chart);
+				songs.Add(AddChartSelector(chart));
 			}
+
+			Selector?.AddSongs(songs);
 		});
 	}
 
@@ -519,7 +485,7 @@ public class CD_MainMenu : Level
 		levelSelector.Thinking += (s) => {
 			s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
 			Selector.FlyAway = Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 1, 0, 1);
-			if(s.Lifetime < 1.5)
+			if (s.Lifetime < 1.5)
 				Selector.InvalidateLayout();
 		};
 		// TODO: the opposite of whatever this mess is

@@ -53,6 +53,8 @@ namespace CloneDash.Systems.CustomAlbums
 		public int Views;
 	}
 
+	// TODO: remember how to properly do C# async, clean this up, hate the repeated code here
+
 	public struct MDMCChart
 	{
 		[JsonProperty("_id")]
@@ -113,7 +115,27 @@ namespace CloneDash.Systems.CustomAlbums
 
 		public int GetLikes() => Likes ?? Analytics.Likes.Length;
 
-		public void GetCoverAsTexture(Action<Texture?> callback) {
+		public Texture? GetCoverAsTexture() {
+			string coverURL = CoverURL;
+			var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(coverURL));
+			task.Wait();
+			var response = task.Result;
+
+			if (!response.IsSuccessStatusCode)
+				return null;
+			else {
+				Image img = Raylib.LoadImageFromMemory(".png", response.Content.ReadAsStream().ToMemoryStream().ToArray());
+				var tex2d = Raylib.LoadTextureFromImage(img);
+				Raylib.GenTextureMipmaps(ref tex2d);
+				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+				Raylib.UnloadImage(img);
+
+				return tex;
+			}
+		}
+
+		public void GetCoverAsTextureAsync(Action<Texture?> callback) {
 			string coverURL = CoverURL;
 			ThreadSystem.SpawnBackgroundWorker(() => {
 				var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(coverURL));
@@ -134,7 +156,28 @@ namespace CloneDash.Systems.CustomAlbums
 			});
 		}
 
-		public void GetMusicTrack(Action<MusicTrack?> callback, bool demo) {
+		public MusicTrack? GetMusicTrack(bool demo) {
+			string oggURL = demo ? DemoOGGURL : OGGURL;
+			string mp3URL = demo ? DemoMP3URL : MP3URL;
+			var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(oggURL));
+			task.Wait();
+			var response = task.Result;
+
+			if (!response.IsSuccessStatusCode) {
+				task = Task.Run(() => MDMCWebAPI.Http.GetAsync(mp3URL));
+				task.Wait();
+				response = task.Result;
+			}
+
+			if (!response.IsSuccessStatusCode)
+				return null;
+			else {
+				MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream().ToMemoryStream().ToArray());
+				return track;
+			}
+		}
+
+		public void GetMusicTrackAsync(Action<MusicTrack?> callback, bool demo) {
 			string oggURL = demo ? DemoOGGURL : OGGURL;
 			string mp3URL = demo ? DemoMP3URL : MP3URL;
 			ThreadSystem.SpawnBackgroundWorker(() => {

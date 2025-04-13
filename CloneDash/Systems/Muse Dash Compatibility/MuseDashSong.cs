@@ -146,6 +146,8 @@ namespace CloneDash
 				}, tex2D.m_MipCount);
 
                 var tex = Raylib.LoadTextureFromImage(img);
+				Raylib.GenTextureMipmaps(ref tex);
+				Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
                 Raylib.UnloadImage(img);
 				CoverTexture = new() {
 					Texture = new(EngineCore.Level.Textures, tex, true),

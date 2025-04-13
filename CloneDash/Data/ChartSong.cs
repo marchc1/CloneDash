@@ -15,16 +15,25 @@ namespace CloneDash.Data
         public string Author { get; set; } = "";
         public decimal BPM => GetInfo().BPM;
 
-        public string Difficulty1 => GetInfo().Difficulty1;
-        public string Difficulty2 => GetInfo().Difficulty2;
-        public string Difficulty3 => GetInfo().Difficulty3;
-        public string Difficulty4 => GetInfo().Difficulty4;
-        public string Difficulty5 => GetInfo().Difficulty5;
+        public string Difficulty1 => GetInfo()?.Difficulty1 ?? "";
+        public string Difficulty2 => GetInfo()?.Difficulty2 ?? "";
+        public string Difficulty3 => GetInfo()?.Difficulty3 ?? "";
+        public string Difficulty4 => GetInfo()?.Difficulty4 ?? "";
+        public string Difficulty5 => GetInfo()?.Difficulty5 ?? "";
 
         protected MusicTrack? AudioTrack { get; set; }
         protected MusicTrack? DemoTrack { get; set; }
         protected ChartCover? CoverTexture { get; set; }
         protected Dictionary<int, ChartSheet> Sheets { get; set; } = [];
+
+		protected void Clear() {
+			AudioTrack?.Dispose(); AudioTrack = null;
+			DemoTrack?.Dispose(); DemoTrack = null;
+			Info = null;
+			__gotCover = false;
+			CoverTexture = null;
+			Sheets.Clear();
+		}
 
         // These methods will be called when their respective data is not set. They are protected for that reason.
 
