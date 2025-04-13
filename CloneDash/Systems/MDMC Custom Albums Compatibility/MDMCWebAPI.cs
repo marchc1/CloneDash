@@ -202,26 +202,30 @@ namespace CloneDash.Systems.CustomAlbums
 				});
 			});
 		}
+		private class checkProgressTemp : IProgress<float>
+		{
+			public string id { get; set; }
+			public float Progress { get; set; }
+			public void Report(float value) {
+				Progress = value;
+				Logs.Info($"[{id}]: {value}%");
+			}
+		}
 		public void DownloadTo(string filename, Action<bool> callback) {
 			var id = ID;
 
-			ThreadSystem.SpawnBackgroundWorker(() => {
-				var task = Task.Run(() => MDMCWebAPI.Http.GetAsync($"https://api.mdmc.moe/v2/charts/{id}/download"));
-				task.Wait();
-				var response = task.Result;
+			ThreadSystem.SpawnBackgroundWorker(async () => {
+				using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
+					var progress = new checkProgressTemp();
+					progress.id = id;
 
-				MainThread.RunASAP(() => {
-					if (!response.IsSuccessStatusCode)
-						callback?.Invoke(false);
-					else {
-						Directory.CreateDirectory(Path.GetDirectoryName(filename));
-						using (var content = response.Content.ReadAsStream())
-						using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
-							content.CopyTo(fileOut);
-						}
+					Directory.CreateDirectory(Path.GetDirectoryName(filename));
+					await MDMCWebAPI.Http.DownloadDataAsync($"https://api.mdmc.moe/v2/charts/{id}/download", fileOut, progress);
+
+					MainThread.RunASAP(() => {
 						callback?.Invoke(true);
-					}
-				});
+					});
+				}
 			});
 		}
 	}
@@ -318,6 +322,45 @@ namespace CloneDash.Systems.CustomAlbums
 	/// </summary>
 	public static class MDMCWebAPI
 	{
+		public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<float> progress = null, CancellationToken cancellationToken = default(CancellationToken)) {
+			using (var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead)) {
+				var contentLength = response.Content.Headers.ContentLength;
+				using (var download = await response.Content.ReadAsStreamAsync()) {
+					// no progress... no contentLength... very sad
+					if (progress is null || !contentLength.HasValue) {
+						await download.CopyToAsync(destination);
+						return;
+					}
+					// Such progress and contentLength much reporting Wow!
+					var progressWrapper = new Progress<long>(totalBytes => progress.Report(GetProgressPercentage(totalBytes, contentLength.Value)));
+					await download.CopyToAsync(destination, 81920, progressWrapper, cancellationToken);
+				}
+			}
+
+			float GetProgressPercentage(float totalBytes, float currentBytes) => (totalBytes / currentBytes) * 100f;
+		}
+
+		static async Task CopyToAsync(this Stream source, Stream destination, int bufferSize, IProgress<long> progress = null, CancellationToken cancellationToken = default(CancellationToken)) {
+			if (bufferSize < 0)
+				throw new ArgumentOutOfRangeException(nameof(bufferSize));
+			if (source is null)
+				throw new ArgumentNullException(nameof(source));
+			if (!source.CanRead)
+				throw new InvalidOperationException($"'{nameof(source)}' is not readable.");
+			if (destination == null)
+				throw new ArgumentNullException(nameof(destination));
+			if (!destination.CanWrite)
+				throw new InvalidOperationException($"'{nameof(destination)}' is not writable.");
+
+			var buffer = new byte[bufferSize];
+			long totalBytesRead = 0;
+			int bytesRead;
+			while ((bytesRead = await source.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) != 0) {
+				await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+				totalBytesRead += bytesRead;
+				progress?.Report(totalBytesRead);
+			}
+		}
 		public static readonly HttpClient Http = new HttpClient();
 		public const string WEBAPI_ENDPOINT = "https://api.mdmc.moe/v2";
 

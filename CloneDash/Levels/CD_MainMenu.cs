@@ -127,7 +127,7 @@ public class SongSelector : Panel
 	public float FlyAway = 0;
 
 	public void LayoutDiscs(float width, float height) {
-		if (Songs.Count <= 0 || WillDiscOverflow()) {
+		if (Songs.Count <= 0 || (!InfiniteList && WillDiscOverflow())) {
 			GetMoreSongs();
 			return;
 		}
@@ -327,9 +327,11 @@ public class CD_MainMenu : Level
 		loadMDCC.MouseReleaseEvent += (_, _, _) => {
 			var selector = InitializeSelector();
 			selector.InfiniteList = false;
+			int page = 1;
 			selector.UserWantsMoreSongs += () => {
 				// Load more songs
-				PopulateWindow();
+				PopulateWindow(page: page);
+				page++;
 			};
 		};
 		loadMDCC.TooltipText = "Load CustomAlbums .mdm File";
@@ -397,6 +399,7 @@ public class CD_MainMenu : Level
 			}
 
 			Selector?.AddSongs(songs);
+			Selector.CanAcceptMoreSongs = true;
 		});
 	}
 

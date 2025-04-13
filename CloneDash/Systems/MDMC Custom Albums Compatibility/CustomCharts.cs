@@ -163,10 +163,16 @@ namespace CloneDash
 				}
 			}
 
+			private bool __downloading = false;
 			public void DownloadOrPullFromCache(Action<CustomChartsSong> complete) {
 				if (Archive == null) {
+					if (__downloading) {
+						Logs.Error("Already downloading, please wait.");
+						return;
+					}
 					// Ensure Archive is populated from either a download or a cache
 					var filename = Filesystem.Resolve($"charts/{WebChart.ID}.mdm", "game", false);
+					__downloading = true;
 					if (!File.Exists(filename)) {
 						WebChart.DownloadTo(filename, (worked) => {
 							System.Diagnostics.Debug.Assert(worked);
