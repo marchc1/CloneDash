@@ -126,8 +126,7 @@ namespace CloneDash.Systems.CustomAlbums
 			else {
 				Image img = Raylib.LoadImageFromMemory(".png", response.Content.ReadAsStream().ToMemoryStream().ToArray());
 				var tex2d = Raylib.LoadTextureFromImage(img);
-				Raylib.GenTextureMipmaps(ref tex2d);
-				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
 				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 				Raylib.UnloadImage(img);
 
@@ -229,6 +228,7 @@ namespace CloneDash.Systems.CustomAlbums
 			});
 		}
 	}
+
 
 	public struct MDMCProfile
 	{

@@ -94,8 +94,7 @@ namespace CloneDash
 					var coverBytes = GetByteArray(Archive, "cover.png");
 					var img = Raylib.LoadImageFromMemory(".png", coverBytes);
 					var tex = Raylib.LoadTextureFromImage(img);
-					Raylib.GenTextureMipmaps(ref tex);
-					Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+					Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 					Raylib.UnloadImage(img);
 
 					return new() {

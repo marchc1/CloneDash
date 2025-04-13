@@ -30,7 +30,10 @@ public class SongSelector : Panel
 		ApplyFilter(CurrentFilter);
 		InvalidateLayout();
 	}
-
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		ThinkDiscs();
+	}
 	public void ApplyFilter(Predicate<ChartSong>? filter) {
 		if (filter == null) {
 			ClearFilter();
@@ -64,6 +67,11 @@ public class SongSelector : Panel
 	public bool CanAcceptMoreSongs { get; set; } = true;
 	public bool InfiniteList { get; set; } = true;
 
+	public float DiscRotateAnimation { get; set; } = 0;
+
+	public SecondOrderSystem DiscRotateSOS = new(2f, 0.94f, 1.1f, 0);
+	public SecondOrderSystem FlyAwaySOS = new(1.5f, 0.94f, 1.1f, 0);
+
 	protected virtual void SelectionUpdated(bool cleared) {
 
 	}
@@ -94,6 +102,7 @@ public class SongSelector : Panel
 
 		DiscIndex--;
 		DiscAnimationOffset--;
+		activeTrack = null;
 	}
 
 	public void MoveRight() {
@@ -102,6 +111,7 @@ public class SongSelector : Panel
 
 		DiscIndex++;
 		DiscAnimationOffset++;
+		activeTrack = null;
 	}
 
 	public int GetSongIndex(int localIndex) => NMath.Modulo(DiscIndex + localIndex, Songs.Count);
@@ -115,6 +125,13 @@ public class SongSelector : Panel
 		return Songs[songIndex];
 	}
 
+	public void NavigateToDisc(Button discButton) {
+		var index = discButton.GetTagSafely<int>("localDiscIndex");
+		activeTrack = GetDiscSong(index).GetDemoTrack();
+		DiscIndex += index;
+		DiscAnimationOffset += index;
+	}
+
 	public bool IsDiscOverflowed(int localIndex) {
 		var songIndex = DiscIndex + localIndex;
 		return songIndex >= Songs.Count || songIndex < 0;
@@ -124,7 +141,44 @@ public class SongSelector : Panel
 		return IsDiscOverflowed(DiscIndex);
 	}
 
+	public float DiscVibrate = 0;
 	public float FlyAway = 0;
+
+	public Button GetActiveDisc() => Discs[Discs.Length / 2];
+
+	MusicTrack? activeTrack;
+	public bool ShouldPlayDiscDemo() {
+
+	}
+
+	// Constantly running logic
+	public void ThinkDiscs() {
+		float width = RenderBounds.W, height = RenderBounds.H;
+
+		if (FlyAwaySOS.Update(FlyAway) > 0.001f) {
+			LayoutDiscs(width, height);
+		}
+		var discWidth = (width / Discs.Length);
+
+		for (int i = 0; i < Discs.Length; i++) {
+			var disc = Discs[i];
+
+			if (i == Discs.Length / 2 && FlyAwaySOS.Out > 0.00001) {
+				disc.ImageRotation = DiscRotateSOS.Update((MathF.Floor(DiscRotateAnimation / 360) * 360) + (DiscRotateAnimation % 360) * FlyAwaySOS.Out);
+
+				float size = (discWidth * ((FlyAwaySOS.Out / 2) + 1)) - DiscVibrate;
+				CalculateDiscPos(width, height, i, out float x, out float y);
+				disc.SetRenderBounds(x - (size / 2), y - (size / 2), size, size);
+			}
+		}
+	}
+	public void CalculateDiscPos(float width, float height, int index, out float x, out float y) {
+		float flyAway = FlyAwaySOS.Out;
+		float flyAwayMw = flyAway * (width);
+		var widthRatio = MathF.Cos((float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -1 - (flyAway * 2), 1 + (flyAway * 2)));
+		x = (float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -flyAwayMw, width + flyAwayMw);
+		y = (height / 2f) + ((1 - widthRatio) * 250);
+	}
 
 	public void LayoutDiscs(float width, float height) {
 		if (Songs.Count <= 0 || (!InfiniteList && WillDiscOverflow())) {
@@ -146,16 +200,12 @@ public class SongSelector : Panel
 
 			disc.Size = new(discWidth, discWidth);
 
-			float flyAway = FlyAway * (width);
-			var discX = (float)NMath.Remap(i + DiscAnimationOffset, 0, Discs.Length - 1, -flyAway, width + flyAway);
-
 			var rot = (float)NMath.Remap(i + DiscAnimationOffset, 0, Discs.Length - 1, -15, 15);
-			disc.ImageRotation = rot;
+			if (FlyAwaySOS.Out < 0.00001 || i != Discs.Length / 2)
+				disc.ImageRotation = rot;
 
-			var widthRatio = MathF.Cos((float)NMath.Remap(i + DiscAnimationOffset, 0, Discs.Length - 1, -1 - (FlyAway * 2), 1 + (FlyAway * 2)));
-
-			var discY = (height / 2f) + ((1 - widthRatio) * 250);
-			disc.Position = new(discX, discY);
+			CalculateDiscPos(width, height, i, out float x, out float y);
+			disc.Position = new(x, y);
 
 			var song = GetDiscSong(disc);
 			var cover = song.GetCover();
@@ -230,12 +280,13 @@ public class SongSelector : Panel
 			disc.SetTag("localDiscIndex", i - (Discs.Length / 2));
 
 			disc.MouseReleaseEvent += (s, _, _) => {
+				NavigateToDisc(s as Button);
 				var song = GetDiscSong(s as Button);
 				if (song is CustomChartsSong customChartsSong) {
-					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadSongSelectorFancy(c));
+					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(c));
 				}
 				else
-					EngineCore.Level.As<CD_MainMenu>().LoadSongSelectorFancy(song);
+					EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(song);
 			};
 			disc.BorderSize = 0;
 			var midpoint = Discs.Length / 2;
@@ -376,7 +427,7 @@ public class CD_MainMenu : Level
 			}
 		};*/
 	}
-	private void LoadMDM(string filename) => LoadSongSelectorFancy(new CustomChartsSong(filename));
+	private void LoadMDM(string filename) => LoadChartSelector(new CustomChartsSong(filename));
 	private void ImageRenderer_PaintOverride(Element self, float width, float height) {
 		if (IValidatable.IsValid(self.Image))
 			self.ImageDrawing(new(0), new(width, height));
@@ -473,7 +524,7 @@ public class CD_MainMenu : Level
 	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
-	internal void LoadSongSelectorFancy(ChartSong song) {
+	internal void LoadChartSelector(ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
 		MusicTrack? track = song.GetDemoTrack();
 		var info = song.GetInfo();
@@ -485,13 +536,13 @@ public class CD_MainMenu : Level
 		levelSelector.MakePopup();
 		levelSelector.ForegroundColor = Color.Blank;
 		levelSelector.Dock = Dock.Fill;
+		Selector.FlyAway = 1;
 		levelSelector.Thinking += (s) => {
 			s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
-			Selector.FlyAway = Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 1, 0, 1);
-			if (s.Lifetime < 1.5)
-				Selector.InvalidateLayout();
 		};
 		// TODO: the opposite of whatever this mess is
+		SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
+		float currentAvgVolume = 0;
 		Vector2F[] lineBufferL = new Vector2F[framesOverTime.Capacity];
 		Vector2F[] lineBufferR = new Vector2F[framesOverTime.Capacity];
 		levelSelector.PaintOverride += (s, w, h) => {
@@ -508,10 +559,26 @@ public class CD_MainMenu : Level
 			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 140));
 			Graphics2D.DrawLineStrip(lineBufferL);
 			Graphics2D.DrawLineStrip(lineBufferR);
+
+			var distance = 16;
+			var size = (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16);
+			Selector.DiscVibrate = size;
+
+			// force-render the selector active disc
+			var disc = Selector.GetActiveDisc();
+			var pos = disc.RenderBounds.Pos;
+			Graphics2D.OffsetDrawing(pos);
+
+			disc.Paint(disc.RenderBounds.W, disc.RenderBounds.H);
+			Graphics2D.OffsetDrawing(-pos);
+
+			Selector.DiscRotateAnimation = s.Lifetime * 90;
 		};
+		Selector.DiscRotateSOS.ResetTo(0);
 		levelSelector.Removed += (s) => {
 			if (Selector != null) {
 				Selector.FlyAway = 0;
+				Selector.DiscVibrate = 0;
 				Selector.InvalidateLayout();
 			}
 		};
@@ -528,17 +595,16 @@ public class CD_MainMenu : Level
 		back.BackgroundColor = new(0, 0);
 		back.ForegroundColor = new(0, 0);
 		back.Size = new(106);
+
 		back.PaintOverride += (self, w, h) => {
 			self.ImageColor = Element.MixColorBasedOnMouseState(self, new(200, 200, 200,
 				(int)(Math.Clamp(NMath.Ease.OutCubic(self.Lifetime - 0.35f), 0, 1) * 255)
 				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
-			self.Position = new(-160 + (NMath.Ease.OutCubic(Math.Clamp(self.Lifetime - 0.3f, 0, 1)) * -96), 0);
+			self.Position = new((levelSelector.RenderBounds.W / -5) - (NMath.Ease.InCubic(Math.Clamp(1 - (self.Lifetime - 0.3f), 0, 1)) * -64), 0);
 			self.Paint(w, h);
 		};
 
-		float currentAvgVolume = 0;
-		SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
-
+		/*
 		Panel imageCanvas = levelSelector.Add<Panel>();
 		imageCanvas.Anchor = Anchor.Center;
 		imageCanvas.Origin = Anchor.Center;
@@ -573,7 +639,7 @@ public class CD_MainMenu : Level
 			Graphics2D.DrawImage(new(0, 0), size, flipY: c.Flipped);
 			Graphics2D.OffsetDrawing(offset);
 			Rlgl.PopMatrix();
-		};
+		};*/
 
 		var title = levelSelector.Add<Label>();
 		title.TextSize = 48;
@@ -583,8 +649,14 @@ public class CD_MainMenu : Level
 		title.Origin = Anchor.Center;
 
 		title.Thinking += (s) => {
+			var oldSize = s.TextSize;
+			var w = levelSelector.RenderBounds.W;
+			s.TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
+			if(oldSize != s.TextSize)
+				s.InvalidateLayout();
+
 			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 6, 0, 1)) * 255));
-			s.Position = new(0, -190 - offsetBasedOnLifetime(s, 1.35f, 6));
+			s.Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(s, 1.35f, 6));
 		};
 
 		var author = levelSelector.Add<Label>();
@@ -595,8 +667,14 @@ public class CD_MainMenu : Level
 		author.Origin = Anchor.Center;
 
 		author.Thinking += (s) => {
+			var oldSize = s.TextSize;
+			var w = levelSelector.RenderBounds.W;
+			s.TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155);
+			if (oldSize != s.TextSize)
+				s.InvalidateLayout();
+
 			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 1.3f, 0, 1)) * 255));
-			s.Position = new(0, -162 - offsetBasedOnLifetime(s, 1.35f, 12));
+			s.Position = new(0, (w / -6f) - offsetBasedOnLifetime(s, 1.35f, 12));
 		};
 
 		if (track != null) {
@@ -630,9 +708,9 @@ public class CD_MainMenu : Level
 		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
 		difficulties.Anchor = Anchor.Center;
 		difficulties.Origin = Anchor.Center;
-		difficulties.Position = new(256 + 64, 0);
 		int height = 356;
 		difficulties.Thinking += (s) => {
+			s.Position = new(levelSelector.RenderBounds.W / 4f, 0);
 			s.Size = new(256, height);
 		};
 
@@ -669,7 +747,7 @@ public class CD_MainMenu : Level
 	private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 		var song = self.GetTag<MuseDashSong>("musedash_song");
 
-		LoadSongSelectorFancy(song);
+		LoadChartSelector(song);
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
