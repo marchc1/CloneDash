@@ -204,7 +204,6 @@ public class SongSelector : Panel
 		if (FlyAwaySOS.Update(FlyAway) > 0.001f) {
 			LayoutDiscs(width, height);
 		}
-		var discWidth = (width / Discs.Length);
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
@@ -216,7 +215,8 @@ public class SongSelector : Panel
 					+ (DiscRotateAnimation % 360)
 				);
 
-				float size = (discWidth * ((FlyAwaySOS.Out / 2) + 1)) - DiscVibrate;
+				var discWidth = GetDiscSize(width, disc);
+				float size = (discWidth * ((FlyAwaySOS.Out / 4) + 1)) - DiscVibrate;
 				CalculateDiscPos(width, height, i, out float x, out float y);
 				disc.SetRenderBounds(x - (size / 2), y - (size / 2), size, size);
 			}
@@ -246,6 +246,11 @@ public class SongSelector : Panel
 		y = (height / 2f) + ((1 - widthRatio) * 250);
 	}
 
+	public float GetDiscSize(float width, Button b) {
+		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset), 0, 1);
+		return (width / Discs.Length) + (mainDiscMult * 64);
+	}
+
 	public void LayoutDiscs(float width, float height) {
 		if (Songs.Count <= 0 || (!InfiniteList && WillDiscOverflow())) {
 			GetMoreSongs();
@@ -253,7 +258,7 @@ public class SongSelector : Panel
 		}
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
-			var discWidth = (width / Discs.Length);
+			var discWidth = GetDiscSize(width, disc);
 
 			var willOverflow = !InfiniteList && IsDiscOverflowed(i - (Discs.Length / 2));
 			if (willOverflow) {
