@@ -12,8 +12,6 @@ using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Systems.CustomAlbums;
-using Nucleus.Rendering;
-using System.Buffers;
 
 namespace CloneDash.Game;
 
@@ -169,7 +167,7 @@ public class SongSelector : Panel
 		if (Math.Abs(DiscAnimationOffset) < 0.3) {
 			var chart = GetDiscSong(0);
 			activeTrack = chart.GetDemoTrack();
-			
+
 			if (activeTrack == null) {
 				doNotTryToGetTrackAgain = !chart.IsLoadingDemoAsync;
 				return;
@@ -179,6 +177,23 @@ public class SongSelector : Panel
 			activeTrack.Playing = true;
 			activeTrack.Volume = 0.5f;
 		}
+	}
+
+	public bool InSheetSelection { get; private set; }
+	public float TargetRotationPostExit { get; private set; }
+	public void EnterSheetSelection() {
+		InSheetSelection = true;
+		TargetRotationPostExit = 1;
+	}
+	public void ExitSheetSelection() {
+		InSheetSelection = false;
+		if (DiscRotateAnimation % 360 > 180) {
+			DiscRotateSOS.ResetTo((DiscRotateAnimation % 180) - 180);
+		}
+		DiscRotateAnimation = 0;
+		FlyAway = 0;
+		DiscVibrate = 0;
+		InvalidateLayout();
 	}
 
 	// Constantly running logic
@@ -195,8 +210,11 @@ public class SongSelector : Panel
 			var disc = Discs[i];
 			var index = DiscIndex + disc.GetTagSafely<int>("localDiscIndex");
 
-			if (i == Discs.Length / 2 && FlyAwaySOS.Out > 0.00001) {
-				disc.ImageRotation = DiscRotateSOS.Update((MathF.Floor(DiscRotateAnimation / 360) * 360) + (DiscRotateAnimation % 360) * FlyAwaySOS.Out);
+			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
+				disc.ImageRotation = DiscRotateSOS.Update(
+					(MathF.Floor(DiscRotateAnimation / 360) * 360)
+					+ (DiscRotateAnimation % 360)
+				);
 
 				float size = (discWidth * ((FlyAwaySOS.Out / 2) + 1)) - DiscVibrate;
 				CalculateDiscPos(width, height, i, out float x, out float y);
@@ -611,12 +629,11 @@ public class CD_MainMenu : Level
 
 			Selector.DiscRotateAnimation = s.Lifetime * 90;
 		};
+		Selector.EnterSheetSelection();
 		Selector.DiscRotateSOS.ResetTo(0);
 		levelSelector.Removed += (s) => {
 			if (Selector != null) {
-				Selector.FlyAway = 0;
-				Selector.DiscVibrate = 0;
-				Selector.InvalidateLayout();
+				Selector.ExitSheetSelection();
 			}
 		};
 
