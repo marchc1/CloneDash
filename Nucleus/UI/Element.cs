@@ -79,7 +79,7 @@ namespace Nucleus.UI
 			get => __engineDisabled;
 			set {
 				__engineDisabled = value;
-				if (__engineDisabled != value) 
+				if (__engineDisabled != value)
 					InvalidateParentAndItsChildren();
 			}
 		}
@@ -87,7 +87,7 @@ namespace Nucleus.UI
 			get => __engineInvisible;
 			set {
 				__engineInvisible = value;
-				if (__engineInvisible != value) 
+				if (__engineInvisible != value)
 					InvalidateParentAndItsChildren();
 			}
 		}
@@ -320,7 +320,7 @@ namespace Nucleus.UI
 		public virtual void ChildParented(Element parent, Element child) { }
 		public void TriggerOnChildParented(Element parent, Element child) {
 			ChildParented(parent, child);
-			OnChildParented?.Invoke(parent, child);	
+			OnChildParented?.Invoke(parent, child);
 		}
 
 		protected virtual void OnThink(FrameState frameState) { }
@@ -658,12 +658,25 @@ namespace Nucleus.UI
 			UI.Popups.Add(this);
 		}
 
+		// NOTE: the three checks in these MoveToX methods confirm the following conditions are not true:
+		// - there is not an immediate parent (almost always false, but worth confirming if you tried UI.MoveToFront() or something stupid)
+		// - there is only one child (== 1 is valid because if Count was 0, then that would mean this element isn't a child, in which case something went horribly wrong anyway)
+		// - is the element already at the front/back
+
+		// and if any of the three conditions are met, it breaks out, since that would be an invalid state for these methods to work anyway
+		// (and avoids unnecessary layout recalcs for the 3rd condition)
 		public void MoveToFront() {
+			if (Parent == null || Parent.Children.Count == 1 || Parent.Children.Last() == this)
+				return;
+
 			Parent.Children.Remove(this);
 			Parent.Children.Add(this);
 			Parent.InvalidateLayout();
 		}
 		public void MoveToBack() {
+			if (Parent == null || Parent.Children.Count == 1 || Parent.Children.First() == this)
+				return;
+
 			Parent.Children.Remove(this);
 			Parent.Children.Insert(0, this);
 			Parent.InvalidateLayout();
@@ -1099,6 +1112,7 @@ namespace Nucleus.UI
 		public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
 		public Vector2F ImagePadding { get; set; } = new(0);
+		public float ImageRotation { get; set; } = 0;
 		public Vector2F GetGlobalPosition() {
 			Vector2F ret = new Vector2F(0, 0);
 			Element? t = this;
@@ -1189,7 +1203,13 @@ namespace Nucleus.UI
 			if (!CanInput())
 				thisC = thisC.Adjust(0, 0, -.5f);
 
-			Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), 0, thisC);
+			if (ImageRotation != 0) {
+				destRect.X += destRect.Width / 2;
+				destRect.Y += destRect.Height / 2;
+				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, thisC);
+			}
+			else
+				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), ImageRotation, thisC);
 		}
 
 		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");

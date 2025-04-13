@@ -78,9 +78,9 @@ namespace CloneDash
 				Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
                 Raylib.UnloadImage(img);
 
-                return new() {
-                    Texture = tex
-                };
+				return new() {
+					Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
+				};
             }
 
             protected override MusicTrack? ProduceDemoTrack() {

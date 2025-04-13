@@ -131,6 +131,7 @@ namespace CloneDash
             }
 
             protected override ChartCover? ProduceCover() {
+				LoadAssetFile();
 				if (DemoFile == null) return null;
 
 				LoadAssetFile();
@@ -145,9 +146,9 @@ namespace CloneDash
 				}, tex2D.m_MipCount);
                 var tex = Raylib.LoadTextureFromImage(img);
                 Raylib.UnloadImage(img);
-                CoverTexture = new() {
-                    Texture = tex
-                };
+				CoverTexture = new() {
+					Texture = new(EngineCore.Level.Textures, tex, true)
+				};
 
                 return CoverTexture;
             }

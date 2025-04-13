@@ -1,9 +1,10 @@
 ﻿using Nucleus;
+using Nucleus.ManagedMemory;
 using Raylib_cs;
 
 namespace CloneDash.Data
 {
     public class ChartCover {
-        public Texture2D Texture { get; set; }
+        public Texture Texture { get; set; }
     }
 }
