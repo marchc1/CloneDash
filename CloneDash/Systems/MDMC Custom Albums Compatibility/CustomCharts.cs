@@ -134,7 +134,7 @@ namespace CloneDash
 					Name = info.name;
 					Author = info.author;
 					ChartInfo ret = new() {
-						BPM = decimal.Parse(info.bpm),
+						BPM = decimal.TryParse(info.bpm, out var bpmprs) ? bpmprs : 0,
 						LevelDesigners = [info.levelDesigner1, info.levelDesigner2, info.levelDesigner3, info.levelDesigner4],
 						Scene = info.scene,
 						SearchTags = info.searchTags.ToArray(),
