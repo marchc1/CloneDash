@@ -508,7 +508,7 @@ public class CD_MainMenu : Level
 		var info = song.GetInfo();
 		var cover = song.GetCover();
 
-		ConstantLengthNumericalQueue<float> framesOverTime = new(480);
+		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
 
 		Panel levelSelector = UI.Add<Panel>();
 		levelSelector.MakePopup();
@@ -520,18 +520,23 @@ public class CD_MainMenu : Level
 			if(s.Lifetime < 1.5)
 				Selector.InvalidateLayout();
 		};
-		Vector2F[] lineBuffer = new Vector2F[framesOverTime.Capacity];
+		// TODO: the opposite of whatever this mess is
+		Vector2F[] lineBufferL = new Vector2F[framesOverTime.Capacity];
+		Vector2F[] lineBufferR = new Vector2F[framesOverTime.Capacity];
 		levelSelector.PaintOverride += (s, w, h) => {
 			s.Paint(w, h);
 			var length = framesOverTime.Capacity;
 			for (int i = 0; i < framesOverTime.Capacity; i++) {
-				float sample = framesOverTime[i];
-				var x = (i / (float)framesOverTime.Capacity * w);
+				float sample = framesOverTime[framesOverTime.Capacity - 1 - i];
+				var xL = (w / 2) + ((i / (float)framesOverTime.Capacity * (-w / 2)));
+				var xR = (w / 2) + ((i / (float)framesOverTime.Capacity * (w / 2)));
 				var y = (h / 2) + (h * .15f * sample);
-				lineBuffer[i] = new(x, y);
+				lineBufferL[i] = new(xL, y);
+				lineBufferR[i] = new(xR, y);
 			}
 			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 140));
-			Graphics2D.DrawLineStrip(lineBuffer);
+			Graphics2D.DrawLineStrip(lineBufferL);
+			Graphics2D.DrawLineStrip(lineBufferR);
 		};
 		levelSelector.Removed += (s) => {
 			if (Selector != null) {
