@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Quic;
 using System.Text.Json.Serialization;
+using Color = Raylib_cs.Color;
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
 
@@ -132,7 +133,6 @@ namespace CloneDash
             protected override ChartCover? ProduceCover() {
                 // The Texture2D stuff doesnt exist in any form for Linux (its a Windows-specific binary)
                 // todo; if Muse Dash only stores textures in one or two particular formats, perhaps use/make a C# parser for the texture data?
-                if (!OperatingSystem.IsWindows()) return null;
 				if (DemoFile == null) return null;
 
 				LoadAssetFile();
@@ -140,8 +140,11 @@ namespace CloneDash
                     return CoverTexture;
 
                 Texture2D tex2D = (Texture2D)DemoFile.assetsFileList[0].Objects.First(x => x is Texture2D tex2D && tex2D.m_Name.EndsWith("_cover"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-                var imgData = AssetStudio.Texture2DExtensions.ConvertToStream(tex2D, ImageFormat.Png, true).ToArray();
-                var img = Raylib.LoadImageFromMemory(".png", imgData);
+				
+				var imgData = tex2D.image_data.GetData();
+				var img = imgData.ToImage(tex2D.m_Width, tex2D.m_Height, tex2D.m_TextureFormat switch {
+					TextureFormat.DXT5 => PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA
+				}, tex2D.m_MipCount);
                 var tex = Raylib.LoadTextureFromImage(img);
                 Raylib.UnloadImage(img);
                 CoverTexture = new() {
