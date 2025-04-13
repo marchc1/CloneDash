@@ -168,6 +168,12 @@ namespace Nucleus.UI.Elements
 		public void Update(Vector2F contents, Vector2F size) {
 			PageContents = contents;
 			PageSize = size;
+
+			var overflowing = contents.Y - size.Y;
+			if (Scroll > overflowing && Scroll > 0) {
+				Scroll = Math.Max(0, overflowing);
+			}
+
 			this.Visible = ShouldShow();
 			this.Enabled = this.Visible;
 		}
