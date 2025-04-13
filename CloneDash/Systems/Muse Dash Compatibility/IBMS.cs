@@ -350,8 +350,8 @@ namespace CloneDash
 	{
 		Unknown = 0,
 		Easy = 1,
-		Normal = 2,
-		Hard = 3,
+		Hard = 2,
+		Master = 3,
 
 		Hidden = 4,
 		Touhou = 5
