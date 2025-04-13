@@ -34,6 +34,8 @@ namespace CloneDash.Data
 			__gotCover = false;
 			CoverTexture = null;
 			Sheets.Clear();
+
+			DeferringDemoToAsyncHandler = false;
 		}
 
 		// These methods will be called when their respective data is not set. They are protected for that reason.
@@ -42,7 +44,22 @@ namespace CloneDash.Data
 		protected bool DeferringDemoToAsyncHandler { get; set; }
 		protected bool DeferringCoverToAsyncHandler { get; set; }
 
-        protected abstract MusicTrack ProduceAudioTrack();
+		public bool IsLoadingDemoAsync {
+			get {
+				lock (AsyncLock) {
+					return DeferringDemoToAsyncHandler && DemoTrack == null;
+				}
+			}
+		}
+		public bool IsLoadingCoverAsync {
+			get {
+				lock (AsyncLock) {
+					return DeferringCoverToAsyncHandler && CoverTexture == null;
+				}
+			}
+		}
+
+		protected abstract MusicTrack ProduceAudioTrack();
         protected abstract MusicTrack? ProduceDemoTrack();
         protected abstract ChartCover? ProduceCover();
         protected abstract ChartInfo? ProduceInfo();

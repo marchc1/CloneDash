@@ -146,7 +146,9 @@ namespace CloneDash.Systems.CustomAlbums
 						callback?.Invoke(null);
 					else {
 						Image img = Raylib.LoadImageFromMemory(".png", response.Content.ReadAsStream().ToMemoryStream().ToArray());
-						Texture tex = new Texture(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(img), true);
+						var tex2d = Raylib.LoadTextureFromImage(img);
+						Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+						Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 						Raylib.UnloadImage(img);
 
 						callback?.Invoke(tex);

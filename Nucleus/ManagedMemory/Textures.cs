@@ -20,6 +20,7 @@ namespace Nucleus.ManagedMemory
 		// Unmanaged missing texture; should not be freed...
 		public static readonly Texture MISSING = new Texture(null, Raylib.LoadTexture(Filesystem.Resolve("missing_texture.png", "images")), false);
 
+		public string? DebugName { get; set; }
         public int Width => underlying.Width;
         public int Height => underlying.Height;
         public uint UWidth => (uint)underlying.Width;
@@ -39,6 +40,7 @@ namespace Nucleus.ManagedMemory
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue && selfDisposing) {
                 MainThread.RunASAP(() => {
+					Logs.Debug($"auto-disposing tex#{underlying.Id} [{underlying.Width}x{underlying.Height}].");
                     Raylib.UnloadTexture(underlying);
 					if(UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
 					underlyingImage = null;

@@ -103,6 +103,7 @@ namespace CloneDash
 				}
 				else {
 					DeferringCoverToAsyncHandler = true;
+
 					WebChart.GetCoverAsTextureAsync((tex) => {
 						if (tex == null) return;
 
@@ -112,6 +113,7 @@ namespace CloneDash
 							};
 						}
 					});
+
 					return null;
 				}
 			}

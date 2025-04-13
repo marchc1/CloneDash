@@ -169,10 +169,12 @@ public class SongSelector : Panel
 		if (Math.Abs(DiscAnimationOffset) < 0.3) {
 			var chart = GetDiscSong(0);
 			activeTrack = chart.GetDemoTrack();
+			
 			if (activeTrack == null) {
-				doNotTryToGetTrackAgain = true;
+				doNotTryToGetTrackAgain = !chart.IsLoadingDemoAsync;
 				return;
 			}
+
 			activeTrack.Restart();
 			activeTrack.Playing = true;
 			activeTrack.Volume = 0.5f;
