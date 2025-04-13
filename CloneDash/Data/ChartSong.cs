@@ -35,7 +35,7 @@ namespace CloneDash.Data
 			CoverTexture = null;
 			Sheets.Clear();
 
-			DeferringDemoToAsyncHandler = false;
+			DeferringCoverToAsyncHandler = false;
 		}
 
 		// These methods will be called when their respective data is not set. They are protected for that reason.
