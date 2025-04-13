@@ -144,10 +144,12 @@ namespace CloneDash
 				var img = imgData.ToImage(tex2D.m_Width, tex2D.m_Height, tex2D.m_TextureFormat switch {
 					TextureFormat.DXT5 => PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA
 				}, tex2D.m_MipCount);
+
                 var tex = Raylib.LoadTextureFromImage(img);
                 Raylib.UnloadImage(img);
 				CoverTexture = new() {
-					Texture = new(EngineCore.Level.Textures, tex, true)
+					Texture = new(EngineCore.Level.Textures, tex, true),
+					Flipped = true
 				};
 
                 return CoverTexture;

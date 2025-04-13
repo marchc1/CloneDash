@@ -123,6 +123,8 @@ public class SongSelector : Panel
 				disc.ImageOrientation = ImageOrientation.Fit;
 				disc.ImagePadding = new(16);
 				disc.Image = cover.Texture;
+				disc.ImageFlipX = false;
+				disc.ImageFlipY = cover.Flipped;
 			}
 		}
 
@@ -599,7 +601,7 @@ public class CD_MainMenu : Level
 			Graphics2D.SetDrawColor(25, 25, 25, (int)(255 * alpha));
 			Graphics2D.DrawCircle(size / 2, (size.W / 2) + 12);
 			Graphics2D.SetDrawColor(255, 255, 255, (int)(255 * alpha));
-			Graphics2D.DrawImage(new(0, 0), size);
+			Graphics2D.DrawImage(new(0, 0), size, flipY: c.Flipped);
 			Graphics2D.OffsetDrawing(offset);
 			Rlgl.PopMatrix();
 		};

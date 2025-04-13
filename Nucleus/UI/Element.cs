@@ -1113,6 +1113,8 @@ namespace Nucleus.UI
 
 		public Vector2F ImagePadding { get; set; } = new(0);
 		public float ImageRotation { get; set; } = 0;
+		public bool ImageFlipX { get; set; } = false;
+		public bool ImageFlipY { get; set; } = false;
 		public Vector2F GetGlobalPosition() {
 			Vector2F ret = new Vector2F(0, 0);
 			Element? t = this;
@@ -1203,9 +1205,19 @@ namespace Nucleus.UI
 			if (!CanInput())
 				thisC = thisC.Adjust(0, 0, -.5f);
 
-			if (ImageRotation != 0) {
+			if (ImageRotation != 0 || ImageFlipX || ImageFlipY) {
 				destRect.X += destRect.Width / 2;
 				destRect.Y += destRect.Height / 2;
+
+				if (ImageFlipX) {
+					sourceRect.X = sourceRect.Width;
+					sourceRect.Width *= -1;
+				}
+				if (ImageFlipY) {
+					sourceRect.Y = sourceRect.Height;
+					sourceRect.Height *= -1;
+				}
+
 				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, thisC);
 			}
 			else
