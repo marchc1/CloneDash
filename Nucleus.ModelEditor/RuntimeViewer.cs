@@ -1,0 +1,162 @@
+﻿using Nucleus.Models.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Nucleus.ModelEditor;
+
+public class RuntimeViewer : IModelLoader
+{
+	public ModelData LoadModelFromFile(string filepath) {
+		throw new NotImplementedException("Editor runtime viewer isn't designed to load from a file; use LoadModelFromEditor.");
+	}
+
+	private static void SetupVertexExport(
+											Dictionary<EditorBone, BoneData> boneDataLookup,
+											EditorMeshAttachment mesh,
+											List<MeshTriangle> trianglesInst,
+											List<MeshVertex> verticesInst,
+											Dictionary<EditorMeshVertex, int> verticesArrPtr,
+											Dictionary<EditorMeshVertex, MeshVertex> editorToRealVertex,
+											EditorMeshVertex eVertex,
+											out int vIndex
+										) {
+		if (!verticesArrPtr.TryGetValue(eVertex, out vIndex)) {
+			vIndex = verticesInst.Count;
+			var newVertex = new MeshVertex() {
+				X = eVertex.X,
+				Y = eVertex.Y
+			};
+			verticesInst.Add(newVertex);
+			editorToRealVertex.Add(eVertex, newVertex);
+			verticesArrPtr.Add(eVertex, vIndex);
+
+			if (mesh.GetVertexWeightInformation(eVertex, out var bones, out var weights, out var positions)) {
+				newVertex.Weights = new MeshAttachmentWeight[bones.Length];
+
+				for (int i = 0; i < bones.Length; i++) {
+					newVertex.Weights[i] = new(boneDataLookup[bones[i]].Index, weights[i], positions[i]);
+										}
+			}
+		}
+	}
+	public ModelData LoadModelFromEditor(EditorModel model) {
+		ModelData data = new ModelData();
+		data.Name = model.Name;
+		data.TextureAtlas = model.Images.TextureAtlas;
+		data.FormatVersion = Model4System.MODEL_FORMAT_VERSION;
+
+		Dictionary<EditorBone, BoneData> lookupBone = [];
+		Dictionary<EditorSlot, SlotData> lookupSlot = [];
+		{
+			var boneIndex = 0;
+			foreach (var bone in model.GetAllBones()) {
+				BoneData boneData = new BoneData();
+
+				boneData.Name = bone.Name;
+				boneData.Index = boneIndex;
+				boneData.TransformMode = bone.TransformMode;
+				boneData.Length = bone.Length;
+				boneData.Position = bone.SetupPosition;
+				boneData.Rotation = bone.SetupRotation;
+				boneData.Scale = bone.SetupScale;
+				boneData.Shear = bone.SetupShear;
+				boneData.Parent = bone.Parent == null ? null : lookupBone.TryGetValue(bone.Parent, out BoneData? boneDataParent) ? boneDataParent : null;
+
+				data.BoneDatas.Add(boneData);
+				lookupBone.Add(bone, boneData);
+				boneIndex += 1;
+			}
+		}
+		{
+			var slotIndex = 0;
+
+			foreach (var slot in model.Slots) {
+				var slotData = new SlotData();
+
+				slotData.Name = slot.Name;
+				slotData.Index = slotIndex;
+				slotData.BoneData = lookupBone.TryGetValue(slot.Bone, out var boneData) ? boneData : throw new KeyNotFoundException("Can't find the Slot's bone! This should never happen!");
+				slotData.Color = slot.SetupColor;
+				slotData.BlendMode = slot.Blending;
+				slotData.Attachment = slot.SetupActiveAttachment?.Name ?? null;
+
+				data.SlotDatas.Add(slotData);
+				lookupSlot[slot] = slotData;
+				slotIndex++;
+			}
+		}
+		{
+			// Placeholder; write a single skin pair.
+			// TODO: implement skins
+			// TODO: what the hell was I thinking with the whole <path> stuff? Need to go back and 
+			// figure out a better solution here
+			var skin = new Skin();
+			skin.Name = "default";
+			data.DefaultSkin = skin;
+			foreach (var slot in model.Slots) {
+				foreach (var attachment in slot.Attachments) {
+					Attachment? realAttachment;
+
+					switch (attachment) {
+						case EditorRegionAttachment region:
+							var newRegion = new RegionAttachment();
+
+							newRegion.Position = region.Position;
+							newRegion.Rotation = region.Rotation;
+							newRegion.Scale = region.Scale;
+							Debug.Assert(model.Images.TextureAtlas.TryGetTextureRegion(region.GetPath().TrimStart('<').TrimEnd('>'), out newRegion.Region));
+
+							realAttachment = newRegion;
+							break;
+						case EditorMeshAttachment mesh:
+							var newMesh = new MeshAttachment();
+
+							newMesh.Position = mesh.Position;
+							newMesh.Rotation = mesh.Rotation;
+							newMesh.Scale = mesh.Scale;
+
+							List<MeshTriangle> trianglesInst = [];
+							List<MeshVertex> verticesInst = [];
+							Dictionary<EditorMeshVertex, int> verticesArrPtr = [];
+							Dictionary<EditorMeshVertex, MeshVertex> editorToRealVertex = [];
+
+							mesh.RefreshDelaunator();
+							foreach (var triangle in mesh.Triangles) {
+								EditorMeshVertex ev1 = triangle.Points[0].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
+								EditorMeshVertex ev2 = triangle.Points[1].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
+								EditorMeshVertex ev3 = triangle.Points[2].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
+
+								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
+								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
+								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev3, out int v3);
+								
+								trianglesInst.Add(new() {
+									V1 = v1,
+									V2 = v2,
+									V3 = v3,
+								});
+							}
+
+							newMesh.Triangles = trianglesInst.ToArray();
+							newMesh.Vertices = verticesInst.ToArray();
+
+							Debug.Assert(model.Images.TextureAtlas.TryGetTextureRegion(mesh.GetPath().TrimStart('<').TrimEnd('>'), out newMesh.Region));
+							realAttachment = newMesh;
+
+							break;
+						default: continue;
+					}
+
+					skin.SetAttachment(lookupSlot[slot].Index, attachment.Name, realAttachment);
+				}
+			}
+			data.Skins.Add(skin);
+		}
+
+		return data;
+	}
+}

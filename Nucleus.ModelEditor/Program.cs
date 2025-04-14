@@ -2,12 +2,17 @@
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
+using Nucleus.Models.Runtime;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Nucleus.Util;
+using Raylib_cs;
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.ModelEditor
 {
@@ -391,6 +396,64 @@ namespace Nucleus.ModelEditor
 				UpdateModelAnimations();
 		}
 
+		public void MakeRuntimeTest(EditorModel model) {
+			var window = UI.Add<Window>();
+			window.Size = new(1280, 720);
+			window.Center();
+			window.Title = "Runtime Test";
+			//window.MakePopup();
+
+
+			var data = new RuntimeViewer().LoadModelFromEditor(model);
+			var instance = data.Instantiate();
+
+			var refresh = window.Add<Button>();
+			refresh.Dock = Dock.Top;
+			refresh.Text = "Refresh Data";
+			refresh.MouseReleaseEvent += (_, _, _) => {
+				data = new RuntimeViewer().LoadModelFromEditor(model);
+				instance = data.Instantiate();
+			};
+
+			var renderingPanel = window.Add<Panel>();
+			renderingPanel.Dock = Dock.Fill;
+
+			Stopwatch profiler = new();
+			renderingPanel.PaintOverride += (s, w, h) => {
+				//Surface.SetViewport(s.GetGlobalPosition(), s.RenderBounds.Size);
+
+				Raylib.BeginMode2D(new() {
+					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),
+					Target = new(0, -82),
+					Rotation = 0,
+					Zoom = 2f
+				});
+
+				Raylib.DrawLineV(new(-w, 0), new(w, 0), Color.Red);
+				Raylib.DrawLineV(new(0, -h), new(0, h), Color.Green);
+
+				profiler.Reset();
+				profiler.Start();
+				instance.Render();
+				profiler.Stop();
+
+				Raylib.EndMode2D();
+
+				string[] strings = [
+					$"Model Name      : {instance.Data.Name}",
+					$"    Bones       : {instance.Bones.Count}",
+					$"    Slots       : {instance.Slots.Count}",
+					$"    Skins       : {instance.Data.Skins.Count}",
+					$"    Animations  : {instance.Data.Animations.Count}",
+					$"    Render Time : {profiler.Elapsed.TotalMilliseconds:0.00}ms",
+				];
+				for (int i = 0; i < strings.Length; i++) {
+					Graphics2D.DrawText(new(16, 16 + (i * 18)), strings[i], "Consolas", 16);
+				}
+				//Surface.ResetViewport();
+			};
+		}
+
 		public override void Initialize(params object[] args) {
 
 			Active = this;
@@ -398,6 +461,11 @@ namespace Nucleus.ModelEditor
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
+
+			var btn = menubar.AddButton("Tests");
+			btn.AddButton("Runtime Test", null, () => {
+				MakeRuntimeTest(File.Models.First());
+			});
 
 			UI.Add(out View);
 			View.Dock = Dock.Fill;
@@ -469,6 +537,7 @@ namespace Nucleus.ModelEditor
 			ToggleModes();
 
 			SetupHooks();
+			MakeRuntimeTest(File.Models.First());
 		}
 
 		private void File_Cleared(EditorFile file) {
