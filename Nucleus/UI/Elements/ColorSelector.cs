@@ -178,6 +178,8 @@ namespace Nucleus.UI.Elements
 
 			this.Origin = Anchor.BottomCenter;
 			this.UI.OnElementClicked += delegate (Element el, FrameState fs, Types.MouseButton mb) {
+				if (el == null) return;
+
 				if (!el.IsIndirectChildOf(this)) {
 					this.Remove();
 				}
