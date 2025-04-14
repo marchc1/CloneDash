@@ -591,6 +591,9 @@ public class CD_MainMenu : Level
 	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
+	// At some point, this should just become an element type. This whole thing is a wreck otherwise and injects a bunch of callbacks into
+	// random things... I hate it
+
 	internal void LoadChartSelector(ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
 		MusicTrack? track = Selector.ActiveTrack;
@@ -732,6 +735,7 @@ public class CD_MainMenu : Level
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
 
+		bool setupTrack = track != null;
 		author.Thinking += (s) => {
 			var oldSize = s.TextSize;
 			var w = levelSelector.RenderBounds.W;
@@ -741,9 +745,26 @@ public class CD_MainMenu : Level
 
 			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 1.3f, 0, 1)) * 255));
 			s.Position = new(0, (w / -6f) - offsetBasedOnLifetime(s, 1.35f, 12));
-		};
 
-		if (track != null) {
+			if (!setupTrack) {
+				track = Selector.ActiveTrack;
+				if (track != null) {
+					setupTrack = true;
+					track.Processing += (self, frames) => {
+						currentAvgVolume = 0;
+						for (int i = 0; i < frames.Length; i++) {
+							float val = frames[i];
+							currentAvgVolume += val;
+							if (i % 256 == 0)
+								framesOverTime.Add(val);
+						}
+						currentAvgVolume /= frames.Length;
+						currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
+					};
+				}
+			}
+		};
+		if (track != null)
 			track.Processing += (self, frames) => {
 				currentAvgVolume = 0;
 				for (int i = 0; i < frames.Length; i++) {
@@ -755,7 +776,6 @@ public class CD_MainMenu : Level
 				currentAvgVolume /= frames.Length;
 				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
 			};
-		}
 
 		var difficulties = levelSelector.Add<FlexPanel>();
 		difficulties.Direction = Directional180.Vertical;
