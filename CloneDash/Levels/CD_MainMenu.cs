@@ -12,6 +12,7 @@ using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Systems.CustomAlbums;
+using System.Runtime.CompilerServices;
 
 namespace CloneDash.Game;
 
@@ -79,6 +80,8 @@ public class SongSelector : Panel
 	protected void GetMoreSongs() {
 		if (!CanAcceptMoreSongs) return;
 
+		Loading.Visible = true;
+		Loading.MoveToFront();
 		CanAcceptMoreSongs = false;
 		UserWantsMoreSongs?.Invoke();
 	}
@@ -198,6 +201,7 @@ public class SongSelector : Panel
 		InvalidateLayout();
 	}
 
+	public Label Loading;
 	// Constantly running logic
 	public void ThinkDiscs() {
 		FigureOutDisk();
@@ -268,6 +272,7 @@ public class SongSelector : Panel
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
+			disc.Visible = true;
 			var discWidth = GetDiscSize(width, disc);
 
 			var willOverflow = !InfiniteList && IsDiscOverflowed(i - (Discs.Length / 2));
@@ -340,9 +345,19 @@ public class SongSelector : Panel
 		Add(out Disc5);
 		Add(out CurrentTrackName);
 		Add(out CurrentTrackAuthor);
+
+		Add(out Loading);
+		Loading.Anchor = Anchor.Center;
+		Loading.Origin = Anchor.Center;
+		Loading.Text = "LOADING";
+		Loading.TextSize = 100;
+		Loading.AutoSize = true;
+		Loading.Visible = false;
+
 		Discs = [Disc1, Disc2, Disc3, Disc4, Disc5];
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
+			disc.Visible = false;
 			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - (Discs.Length / 2));
 
@@ -398,6 +413,11 @@ public class SongSelector : Panel
 
 		CurrentTrackName.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
 		CurrentTrackAuthor.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
+	}
+
+	internal void AcceptMoreSongs() {
+		CanAcceptMoreSongs = true;
+		Loading.Visible = false;
 	}
 }
 
@@ -517,7 +537,7 @@ public class CD_MainMenu : Level
 			}
 
 			Selector?.AddSongs(songs);
-			Selector.CanAcceptMoreSongs = true;
+			Selector?.AcceptMoreSongs();
 		});
 	}
 
