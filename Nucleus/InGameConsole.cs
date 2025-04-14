@@ -40,7 +40,7 @@ namespace Nucleus
 			float maxX = Graphics2D.GetTextSize(maxS, "Consolas", 16).X;
 			float maxXD = Graphics2D.GetTextSize(maxSD, "Consolas", 16).X;
 
-			Graphics2D.SetDrawColor(25, 25, 25, 220);
+			Graphics2D.SetDrawColor(5, 5, 5, 155);
 			Graphics2D.DrawRectangle(new(0, -4), new(maxX + 8, (PotentialMatches.Length * 18) + 8));
 			Graphics2D.DrawRectangle(new(maxX + 20, -4), new(maxXD + 8, (PotentialMatches.Length * 18) + 8));
 
@@ -101,6 +101,7 @@ namespace Nucleus
 			consoleLogs.Thinking += ConsoleLogs_Thinking;
 
 			consoleInput.DemandKeyboardFocus();
+			consoleInput.Editor.MouseReleaseEvent += (_, _, _) => SetupAutocomplete();
 
 			foreach (var msg in ConsoleSystem.GetMessages()) {
 				SetupRow(msg);
@@ -130,14 +131,18 @@ namespace Nucleus
 			consoleInput.SetCaret(selected.Name.Length, 0);
 		}
 
-		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, Nucleus.Types.KeyboardKey key) {
-			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
+		private void SetupAutocomplete() {
 			if (!IValidatable.IsValid(autoComplete)) {
 				autoComplete = UI.Add<ConsoleAutocomplete>();
-				autoComplete.Position = self.GetGlobalPosition() + new Vector2F(0, 40);
+				autoComplete.Position = consoleInput.GetGlobalPosition() + new Vector2F(0, 40);
 			}
 
 			autoComplete.PotentialMatches = ConCommandBase.FindMatchesThatStartWith(consoleInput.GetText(), 0, 20);
+		}
+
+		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, Nucleus.Types.KeyboardKey key) {
+			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
+			SetupAutocomplete();
 		}
 		public override void OnRemoval() {
 			base.OnRemoval();
