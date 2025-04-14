@@ -116,7 +116,7 @@ namespace CloneDash.Game
 
 		// Player input system
 		public InputState InputState { get; private set; }
-		public List<IPlayerInput> InputReceivers { get; } = [];
+		public List<ICloneDashInputSystem> InputReceivers { get; } = [];
 
 		public AutoPlayer AutoPlayer { get; private set; }
 		/// <summary>
@@ -230,14 +230,14 @@ namespace CloneDash.Game
 			Draw3DCoordinateStart = Draw3DCoordinateStart.TopLeft0_0;
 
 			// build the input system
-			var inputInterface = typeof(IPlayerInput);
+			var inputInterface = typeof(ICloneDashInputSystem);
 			var inputs = AppDomain.CurrentDomain.GetAssemblies()
 				.SelectMany(x => x.GetTypes())
 				.Where(x => inputInterface.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
 				.Select(x => Activator.CreateInstance(x)).ToList();
 
 			foreach (object input in inputs)
-				InputReceivers.Add((IPlayerInput)input);
+				InputReceivers.Add((ICloneDashInputSystem)input);
 
 			var info = CharacterMod.GetCharacterData();
 			CharacterDescriptor = info.Descriptor;
@@ -292,7 +292,7 @@ namespace CloneDash.Game
 				__whenjump = Conductor.Time;
 
 			InputState inputState = new InputState();
-			foreach (IPlayerInput playerInput in InputReceivers)
+			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);
 
 			if (AutoPlayer.Enabled) {

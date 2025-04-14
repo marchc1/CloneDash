@@ -5,7 +5,7 @@ namespace CloneDash.Game.Input
     /// <summary>
     /// Player input interface. Allows for easily defining different input types, all that needs to be done is implementing this interface and modifying the <see cref="InputState"/> from <see cref="Poll(ref InputState)"/>
     /// </summary>
-    public interface IPlayerInput
+    public interface ICloneDashInputSystem
     {
         /// <summary>
         /// Will be called every tick.<br></br>

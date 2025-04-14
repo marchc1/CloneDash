@@ -2,7 +2,7 @@
 
 namespace CloneDash.Game.Input
 {
-    public class MouseInput : IPlayerInput
+    public class MouseInput : ICloneDashInputSystem
     {
         public static MouseButton[] TopKeys = [MouseButton.MouseRight]; //sdfg
         public static MouseButton[] BottomKeys = [MouseButton.MouseLeft]; //hjkl
