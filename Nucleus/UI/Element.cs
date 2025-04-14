@@ -381,7 +381,18 @@ namespace Nucleus.UI
 		}
 		#endregion
 		#region Layout control
-		public bool LayoutInvalidated { get; protected set; } = true;
+		public double LastLayoutTime { get; private set; } = 0;
+
+		private bool __layoutinvalid = true;
+		public bool LayoutInvalidated {
+			get => __layoutinvalid;
+			protected set {
+				if (__layoutinvalid == true && value == false)
+					LastLayoutTime = Level.Curtime;
+
+				__layoutinvalid = value;
+			}
+		}
 		public void InvalidateChildren(bool immediate = false, bool recursive = false, bool self = false) {
 			if (self)
 				InvalidateLayout(immediate);
