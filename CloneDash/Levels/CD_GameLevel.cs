@@ -17,6 +17,7 @@ using CloneDash.Data;
 using Nucleus.Audio;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
+using System.Diagnostics;
 
 namespace CloneDash.Game
 {
@@ -206,6 +207,22 @@ namespace CloneDash.Game
 			}
 		}
 
+		private int entI = 0;
+
+		public bool LoadMapFrame(int ms) {
+			Stopwatch watch = new Stopwatch();
+			watch.Start();
+			while(entI < Sheet.Entities.Count) {
+				if (watch.ElapsedMilliseconds >= ms)
+					return false;
+
+				LoadEntity(Sheet.Entities[entI]);
+				entI++;
+			}
+
+			return entI >= Sheet.Entities.Count;
+		}
+
 		private StatisticsData Stats { get; } = new();
 		private CharacterDescriptor CharacterDescriptor;
 		public override void Initialize(params object[] args) {
@@ -235,9 +252,6 @@ namespace CloneDash.Game
 			AutoPlayer.Enabled = (bool)args[0];
 			TopPathway = Add<Pathway>(PathwaySide.Top);
 			BottomPathway = Add<Pathway>(PathwaySide.Bottom);
-
-			foreach (ChartEntity ChartEntity in Sheet.Entities)
-				LoadEntity(ChartEntity);
 
 			Conductor = Add<Conductor>();
 

@@ -799,10 +799,36 @@ public class CD_MainMenu : Level
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
 		=> CreateDifficulty(levelSelector, (mapID, state) => {
-			var sheet = song.GetSheet(mapID);
-			var lvl = new CD_GameLevel(sheet);
-			EngineCore.LoadLevel(lvl, state.KeyboardState.AltDown);
+			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.KeyboardState.AltDown);
 		}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
+
+
+	private CD_GameLevel? workingLevel;
+	private bool shouldAutoplay;
+	private bool readyToLoadFramepiecewise;
+	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
+		if (workingLevel != null) return;
+
+		ThreadSystem.SpawnBackgroundWorker(() => {
+			var sheet = song.GetSheet(mapID);
+			workingLevel = new CD_GameLevel(sheet);
+			shouldAutoplay = autoplay;
+			readyToLoadFramepiecewise = true;
+		});
+	}
+
+	public void DoChartSheetLoadLevelFrame(int ms) {
+		if (workingLevel == null) return;
+		if (!readyToLoadFramepiecewise) return;
+		if (workingLevel.LoadMapFrame(ms))
+			EngineCore.LoadLevel(workingLevel, shouldAutoplay);
+	}
+
+	public override void Think(FrameState frameState) {
+		base.Think(frameState);
+		DoChartSheetLoadLevelFrame(5000);
+	}
+
 	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
 		if (difficultyLevel == "") return null;
 		if (difficultyLevel == "0") return null;

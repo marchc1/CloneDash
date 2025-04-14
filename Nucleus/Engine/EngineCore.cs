@@ -320,7 +320,7 @@ namespace Nucleus
                 __loadLevel(level, args);
         }
 
-        public static void UnloadLevel() {
+		public static void UnloadLevel() {
             LoadingLevel = true;
 
             if (Level != null) {
