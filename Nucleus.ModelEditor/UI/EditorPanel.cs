@@ -466,10 +466,10 @@ namespace Nucleus.ModelEditor
 								}
 							}
 						}
-						if (hovered is MeshVertex) break;
+						if (hovered is EditorMeshVertex) break;
 					}
 
-					if (hovered is not MeshVertex && canHoverTest_Bones) {
+					if (hovered is not EditorMeshVertex && canHoverTest_Bones) {
 						foreach (var bone in model.GetAllBones()) {
 							if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
 								hovered = bone;
