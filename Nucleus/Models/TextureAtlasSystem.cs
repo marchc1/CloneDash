@@ -8,8 +8,10 @@ using System.Numerics;
 
 namespace Nucleus.Models
 {
-	public struct AtlasRegion
+	public struct AtlasRegion : IValidatable
 	{
+		public bool IsValid() => Valid;
+		public bool Valid;
 		public int X;
 		public int Y;
 		public int W;
@@ -20,18 +22,21 @@ namespace Nucleus.Models
 			Y = y;
 			W = w;
 			H = h;
+			Valid = true;
 		}
 		public AtlasRegion(uint x, uint y, uint w, uint h) {
 			X = (int)x;
 			Y = (int)y;
 			W = (int)w;
 			H = (int)h;
+			Valid = true;
 		}
 		public static readonly AtlasRegion MISSING = new AtlasRegion() {
 			X = 0,
 			Y = 0,
 			W = 512,
-			H = 512
+			H = 512,
+			Valid = false
 		};
 	}
 
