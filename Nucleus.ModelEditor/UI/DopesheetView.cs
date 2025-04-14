@@ -128,7 +128,9 @@ public class DopesheetView : BaseTimelineView
 
 		isKeyframeSelected = true;
 		frameStart = selected?.GetTime() ?? 0;
-		ModelEditor.Active.SelectKeyframe(selected);
+#nullable disable
+		ModelEditor.Active.SelectKeyframe(selected.Value);
+#nullable enable
 	}
 	private void KeyframeBtn_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		var xy = state.MouseState.MousePos - self.Parent.GetGlobalPosition();
@@ -236,6 +238,7 @@ public class DopesheetView : BaseTimelineView
 
 	private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
 		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
+		ModelEditor.Active.UnselectAllKeyframes();
 	}
 	private void KeyframeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		processScroll(delta);
@@ -244,5 +247,6 @@ public class DopesheetView : BaseTimelineView
 	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 		ResetDragDirection(false, Vector2F.Zero);
 		DraggingFrame = false;
+		SetCurFrame();
 	}
 }
