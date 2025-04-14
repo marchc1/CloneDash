@@ -93,6 +93,10 @@ public class DopesheetView : BaseTimelineView
 					keyframeBtn.ForegroundColor = new(15, 15, 15, 255);
 					keyframeBtn.Text = "";
 					keyframeBtn.PaintOverride += (self, w, h) => {
+						self.ForegroundColor = 
+							ModelEditor.Active.IsKeyframeSelected(keyframe) 
+								? self.BackgroundColor.Adjust(0, 1, 1.3f) 
+								: self.BackgroundColor.Adjust(0, 1, -0.5f);
 						self.Position = new((float)FrameToX(keyframe.GetTime()) - 2, 0);
 						self.Paint(w, h);
 					};

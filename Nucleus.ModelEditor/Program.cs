@@ -89,7 +89,8 @@ namespace Nucleus.ModelEditor
 		public event SelectKeyframeDelegate? OnKeyframeUnselected;
 
 		public bool KeyframesSelected => __selectedKeyframes.Count > 0;
-		public bool IsKeyframeSelected(IKeyframe keyframe) => __selectedKeyframesHs.Contains(keyframe);
+		public bool IsKeyframeSelected(IKeyframe keyframe)
+			=> __selectedKeyframesHs.Contains(keyframe);
 
 		private bool selectKeyframe(IKeyframe keyframe) {
 			if (__selectedKeyframesHs.Add(keyframe)) {
@@ -449,6 +450,9 @@ namespace Nucleus.ModelEditor
 				else {
 					if (LastSelectedObject?.OnUnselected() ?? false) {
 						UnselectAllObjects();
+					}
+
+					if (KeyframesSelected) {
 						UnselectAllKeyframes();
 					}
 				}
