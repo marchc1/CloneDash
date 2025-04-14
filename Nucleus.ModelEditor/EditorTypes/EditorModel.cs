@@ -27,6 +27,10 @@ namespace Nucleus.ModelEditor
 			allbones.Add(bone);
 			foreach (var child in bone.Children) addBoneAndChildrenIntoBones(child);
 		}
+		/// <summary>
+		/// Returns every bone, sorted parent-before-child.. The root bone will always be first.
+		/// </summary>
+		/// <returns></returns>
 		public List<EditorBone> GetAllBones() {
 			if (allBonesInvalid) {
 				allbones.Clear();
