@@ -20,6 +20,7 @@ namespace Nucleus.ManagedMemory
 		// Unmanaged missing texture; should not be freed...
 		public static readonly Texture MISSING = new Texture(null, Raylib.LoadTexture(Filesystem.Resolve("missing_texture.png", "images")), false);
 
+		public uint HardwareID => underlying.Id;
 		public string? DebugName { get; set; }
         public int Width => underlying.Width;
         public int Height => underlying.Height;
