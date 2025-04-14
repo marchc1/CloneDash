@@ -623,6 +623,11 @@ namespace Nucleus.Engine
 				Graphics2D.DrawText(UI.Hovered.GetGlobalPosition() + new Vector2F(0, UI.Hovered.RenderBounds.H), $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
 			}
 
+			Graphics2D.ResetDrawingOffset();
+			if (ui_showupdates.GetBool()) RenderShowUpdates();
+			if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
+			
+
 			UnlockEntityBuffer();
 			var FPS = Raylib.GetFPS();
 			List<DebugRecord> fields;
@@ -697,7 +702,35 @@ namespace Nucleus.Engine
 
 		}
 
-		public static ConVar ui_hoverresult = ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
+		private void RenderShowUpdates() {
+			var now = Curtime;
+			foreach (var element in UI.Elements) {
+				var lastLayout = element.LastLayoutTime;
+				var delta = 1 - (Math.Min(now - lastLayout, 0.5) * 2);
+				if (delta > 1) continue;
+
+				Graphics2D.SetDrawColor(255, 50, 50, (int)(150f * delta));
+				Graphics2D.DrawRectangle(element.GetGlobalPosition(), element.RenderBounds.Size);
+			}
+		}
+
+		private void VisRenderBounds(Element e) {
+			foreach (var element in e.Children) {
+				if (!element.Visible || element.EngineInvisible) continue;
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawRectangleOutline(element.GetGlobalPosition(), element.RenderBounds.Size);
+				VisRenderBounds(element);
+			}
+		}
+
+		public static ConVar ui_hoverresult 
+			= ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
+		public static ConVar ui_visrenderbounds
+			= ConVar.Register("ui_visrenderbounds", "0", ConsoleFlags.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
+		public static ConVar ui_showupdates
+			= ConVar.Register("ui_showupdates", "0", ConsoleFlags.None, "Visualize layout updates.", 0, 1);
+		public static ConCommand ui_elementcount
+			= ConCommand.Register("ui_elementcount", (_, _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), ConsoleFlags.None, "Highlights the currently hovered element");
 
 		public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
 	}
