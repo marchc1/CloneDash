@@ -627,7 +627,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, MeshVertex? onlyThisVertex = null) {
+		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, EditorMeshVertex? onlyThisVertex = null) {
 			var weights = attachment.Weights;
 			foreach (var weightData in weights) {
 				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
@@ -862,10 +862,10 @@ namespace Nucleus.ModelEditor
 
 							var quadpoints = regionFrom.QuadPoints(localized: false);
 
-							meshTo.ShapeEdges.Add(MeshVertex.FromVector(quadpoints.TL, meshTo));
-							meshTo.ShapeEdges.Add(MeshVertex.FromVector(quadpoints.TR, meshTo));
-							meshTo.ShapeEdges.Add(MeshVertex.FromVector(quadpoints.BR, meshTo));
-							meshTo.ShapeEdges.Add(MeshVertex.FromVector(quadpoints.BL, meshTo));
+							meshTo.ShapeEdges.Add(EditorMeshVertex.FromVector(quadpoints.TL, meshTo));
+							meshTo.ShapeEdges.Add(EditorMeshVertex.FromVector(quadpoints.TR, meshTo));
+							meshTo.ShapeEdges.Add(EditorMeshVertex.FromVector(quadpoints.BR, meshTo));
+							meshTo.ShapeEdges.Add(EditorMeshVertex.FromVector(quadpoints.BL, meshTo));
 
 							break;
 					}

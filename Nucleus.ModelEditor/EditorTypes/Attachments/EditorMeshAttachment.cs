@@ -34,7 +34,7 @@ namespace Nucleus.ModelEditor
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";
 		public override bool OverrideSelection => true;
-		public override Type[]? SelectableTypes => [typeof(MeshVertex)];
+		public override Type[]? SelectableTypes => [typeof(EditorMeshVertex)];
 
 		public void SetMode(EditMesh_Mode mode) {
 			CurrentMode = mode;
@@ -43,7 +43,7 @@ namespace Nucleus.ModelEditor
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
 		private Checkbox Triangles, Dim, Isolate;
-		List<MeshVertex> WorkingLines = [];
+		List<EditorMeshVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
 			CreateButton.Pulsing = CurrentMode == EditMesh_Mode.Create;
@@ -91,14 +91,14 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		public MeshVertex? AttachedVertex;
-		public MeshVertex? HoveredVertex;
+		public EditorMeshVertex? AttachedVertex;
+		public EditorMeshVertex? HoveredVertex;
 		/// <summary>
 		/// In the context of <see cref="EditMesh_Mode.Create"/>, this is the created vertex.
 		/// <br/>
 		/// In the context of <see cref="EditMesh_Mode.Modify"/>, this is the clicked vertex.
 		/// </summary>
-		public MeshVertex? ClickedVertex;
+		public EditorMeshVertex? ClickedVertex;
 		public bool IsHoveredSteinerPoint;
 		public bool IsClickedSteinerPoint;
 		public EditorMeshAttachment Attachment => this.UIDeterminations.Last as EditorMeshAttachment ?? throw new Exception("Wtf?");
@@ -165,7 +165,7 @@ namespace Nucleus.ModelEditor
 
 			// Overrides, for the create vertex mode, but designed this way in case
 			// other things need it
-			MeshVertex? clickVertexOverride = null;
+			EditorMeshVertex? clickVertexOverride = null;
 			bool? hoveredSteinerOverride = null;
 
 			switch (CurrentMode) {
@@ -175,7 +175,7 @@ namespace Nucleus.ModelEditor
 					// TODO + HACK; the 0.05f thing avoids issues with duplicate points.
 					// Really, I probably should just... wait to start dragging before
 					// creating the vertex... just lazy right now
-					MeshVertex vertex = MeshVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
+					EditorMeshVertex vertex = EditorMeshVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
 					Attachment.SteinerPoints.Add(vertex);
 					Attachment.Invalidate();
 
@@ -214,7 +214,7 @@ namespace Nucleus.ModelEditor
 					else {
 						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(mousePos) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation);
 
-						WorkingLines.Add(MeshVertex.FromVector(newClickP, Attachment));
+						WorkingLines.Add(EditorMeshVertex.FromVector(newClickP, Attachment));
 					}
 					break;
 			}
@@ -325,7 +325,7 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
-	public class MeshVertex : IEditorType
+	public class EditorMeshVertex : IEditorType
 	{
 		public EditorModel GetModel() => Attachment.Slot.Bone.Model;
 		public IEditorType? DeferPropertiesTo() => Attachment;
@@ -336,22 +336,22 @@ namespace Nucleus.ModelEditor
 		public EditorMeshAttachment Attachment;
 
 
-		public HashSet<MeshVertex> ConstrainedHashSet = [];
+		public HashSet<EditorMeshVertex> ConstrainedHashSet = [];
 		[JsonIgnore] public bool HasConstrainedEdges => ConstrainedHashSet.Count > 0;
 
 		/// <summary>
 		/// Note that this only applies to <see cref="EditorMeshAttachment.SteinerPoints"/> -> <see cref="EditorMeshAttachment.ShapeEdges"/> or 
 		/// <see cref="EditorMeshAttachment.SteinerPoints"/> -> <see cref="EditorMeshAttachment.SteinerPoints"/>. Shape edges inheritly are 
-		/// constrained to the next <see cref="MeshVertex"/> in the array (or in the case of the last edge, the last point -> first point).
+		/// constrained to the next <see cref="EditorMeshVertex"/> in the array (or in the case of the last edge, the last point -> first point).
 		/// </summary>
-		public IEnumerable<MeshVertex> ConstrainedVertices {
+		public IEnumerable<EditorMeshVertex> ConstrainedVertices {
 			get {
 				foreach (var vertex in ConstrainedHashSet)
 					yield return vertex;
 			}
 		}
 
-		public bool IsConstrainedTo(MeshVertex other) {
+		public bool IsConstrainedTo(EditorMeshVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -366,7 +366,7 @@ namespace Nucleus.ModelEditor
 			return otherContainsUs && weContainOther;
 		}
 
-		public void ConstrainTo(MeshVertex other) {
+		public void ConstrainTo(EditorMeshVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -381,7 +381,7 @@ namespace Nucleus.ModelEditor
 			Attachment.Invalidate();
 		}
 
-		public void UnconstrainFrom(MeshVertex other) {
+		public void UnconstrainFrom(EditorMeshVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -415,8 +415,8 @@ namespace Nucleus.ModelEditor
 		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
 
 		public Vector2F ToVector() => new(X, Y);
-		public static MeshVertex FromVector(Vector2F vec, EditorMeshAttachment attachment) {
-			MeshVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
+		public static EditorMeshVertex FromVector(Vector2F vec, EditorMeshAttachment attachment) {
+			EditorMeshVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
 
 			// Bind *just* this vertex to the bone its parented to
 			// Todo: auto-weigh to the bone somehow?
@@ -425,7 +425,7 @@ namespace Nucleus.ModelEditor
 			return vertex;
 		}
 
-		public static implicit operator Vector2F(MeshVertex v) => v.ToVector();
+		public static implicit operator Vector2F(EditorMeshVertex v) => v.ToVector();
 
 		public void OnMouseEntered() { }
 		public void OnMouseLeft() { }
@@ -443,19 +443,19 @@ namespace Nucleus.ModelEditor
 	{
 		public EditorBone Bone;
 
-		private List<MeshVertex> __vertices = [];
+		private List<EditorMeshVertex> __vertices = [];
 		private List<float> __weights = [];
 		private List<Vector2F> __positions = [];
 
-		public List<MeshVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
+		public List<EditorMeshVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
 		public List<float> Weights { get => __weights; set { Invalidated = true; __weights = value; } }
 		public List<Vector2F> Positions { get => __positions; set { Invalidated = true; __positions = value; } }
 
-		[JsonIgnore] private Dictionary<MeshVertex, float> TrueWeights = [];
-		[JsonIgnore] private Dictionary<MeshVertex, Vector2F> TruePositions = [];
+		[JsonIgnore] private Dictionary<EditorMeshVertex, float> TrueWeights = [];
+		[JsonIgnore] private Dictionary<EditorMeshVertex, Vector2F> TruePositions = [];
 		[JsonIgnore] public bool Invalidated = true;
 
-		public void SetVertexWeight(MeshVertex vertex, float weight) {
+		public void SetVertexWeight(EditorMeshVertex vertex, float weight) {
 			bool found = false;
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
@@ -474,7 +474,7 @@ namespace Nucleus.ModelEditor
 
 			Invalidated = true;
 		}
-		public void SetVertexPos(MeshVertex vertex, Vector2F pos) {
+		public void SetVertexPos(EditorMeshVertex vertex, Vector2F pos) {
 			bool found = false;
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
@@ -493,7 +493,7 @@ namespace Nucleus.ModelEditor
 			Invalidated = true;
 		}
 
-		public bool AddVertex(MeshVertex vertex, float? weight = null, Vector2F? pos = null) {
+		public bool AddVertex(EditorMeshVertex vertex, float? weight = null, Vector2F? pos = null) {
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
 					Weights[i] = weight ?? Weights[i];
@@ -506,7 +506,7 @@ namespace Nucleus.ModelEditor
 			return false;
 		}
 
-		public bool RemoveVertex(MeshVertex vertex) {
+		public bool RemoveVertex(EditorMeshVertex vertex) {
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
 					Vertices.RemoveAt(i);
@@ -542,11 +542,11 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public float TryGetVertexWeight(MeshVertex vertex) {
+		public float TryGetVertexWeight(EditorMeshVertex vertex) {
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out var value) ? value : 0;
 		}
-		public bool TryGetVertexWeight(MeshVertex vertex, [NotNullWhen(true)] out float weight) {
+		public bool TryGetVertexWeight(EditorMeshVertex vertex, [NotNullWhen(true)] out float weight) {
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out weight);
 		}
@@ -556,13 +556,19 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public Vector2F TryGetVertexPosition(MeshVertex vertex) {
+		public Vector2F TryGetVertexPosition(EditorMeshVertex vertex) {
 			Validate();
 			return TruePositions.TryGetValue(vertex, out var value) ? value : Vector2F.Zero;
 		}
-		public bool TryGetVertexPosition(MeshVertex vertex, [NotNullWhen(true)] out Vector2F pos) {
+		public bool TryGetVertexPosition(EditorMeshVertex vertex, [NotNullWhen(true)] out Vector2F pos) {
 			Validate();
 			return TruePositions.TryGetValue(vertex, out pos);
+		}
+
+		public bool TryGetVertexInfo(EditorMeshVertex vertex, out float weight, out Vector2F pos) {
+			Validate();
+			var gotWeight = TryGetVertexWeight(vertex, out weight);
+			return TryGetVertexPosition(vertex, out pos) || gotWeight;
 		}
 
 		public int Count {
@@ -585,7 +591,7 @@ namespace Nucleus.ModelEditor
 	{
 		public List<EditorMeshWeights> Weights = [];
 
-		public delegate void OnVertexSelected(MeshVertex vertex);
+		public delegate void OnVertexSelected(EditorMeshVertex vertex);
 		public event OnVertexSelected? VertexSelected;
 
 		public static void NormalizeWeights(float[] numbers, int refrainIndex) {
@@ -622,7 +628,34 @@ namespace Nucleus.ModelEditor
 			numbers[refrainIndex] = refrainValue;
 		}
 
-		public void SetVertexWeight(MeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
+		public bool GetVertexWeightInformation(EditorMeshVertex vertex, [NotNullWhen(true)] out EditorBone[]? bones, [NotNullWhen(true)] out float[]? weights, [NotNullWhen(true)] out Vector2F[]? positions) {
+			List<EditorBone> boneList = [];
+			List<float> weightList = [];
+			List<Vector2F> posList = [];
+
+			foreach (var weightData in Weights) {
+				if (weightData.TryGetVertexInfo(vertex, out float weight, out Vector2F pos)) {
+					boneList.Add(weightData.Bone);
+					weightList.Add(weight);
+					posList.Add(pos);
+				}
+			}
+
+			Debug.Assert(boneList.Count == weightList.Count && weightList.Count == posList.Count && posList.Count == boneList.Count);
+			if (boneList.Count == 0) {
+				bones = null;
+				weights = null;
+				positions = null;
+				return false;
+			}
+
+			bones = boneList.ToArray();
+			weights = weightList.ToArray();
+			positions = posList.ToArray();
+			return true;
+		}
+
+		public void SetVertexWeight(EditorMeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
 			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
 			// Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
 			if (weightData == null) return;
@@ -648,7 +681,7 @@ namespace Nucleus.ModelEditor
 			weightData.SetVertexWeight(vertex, weight);
 		}
 
-		public Vector2F CalculateVertexWorldPosition(Transformation transform, MeshVertex vertex) {
+		public Vector2F CalculateVertexWorldPosition(Transformation transform, EditorMeshVertex vertex) {
 			Vector2F basePosition = transform.LocalToWorld(vertex.X, vertex.Y);
 			if (Weights.Count <= 0)
 				return basePosition;
@@ -677,14 +710,14 @@ namespace Nucleus.ModelEditor
 		/// Removes a vertex while ensuring the removal of constraint references.
 		/// </summary>
 		/// <param name="vertex"></param>
-		public bool RemoveVertex(MeshVertex vertex) {
+		public bool RemoveVertex(EditorMeshVertex vertex) {
 			while (vertex.HasConstrainedEdges)
 				vertex.UnconstrainFrom(vertex.ConstrainedVertices.First());
 
 			return SteinerPoints.Remove(vertex) || ShapeEdges.Remove(vertex);
 		}
 
-		public void SelectVertex(MeshVertex vertex, bool multiselect = false) {
+		public void SelectVertex(EditorMeshVertex vertex, bool multiselect = false) {
 			if (multiselect) {
 				bool wasIn = SelectedVertices.Remove(vertex);
 
@@ -699,7 +732,7 @@ namespace Nucleus.ModelEditor
 			VertexSelected?.Invoke(vertex);
 		}
 
-		public IEnumerable<MeshVertex> GetSelectedVertices() => SelectedVertices;
+		public IEnumerable<EditorMeshVertex> GetSelectedVertices() => SelectedVertices;
 
 		public Vector2F Position { get => pos; set => pos = value; }
 		public float Rotation { get; set; }
@@ -713,7 +746,7 @@ namespace Nucleus.ModelEditor
 		public override bool CanShear() => false;
 		public override bool CanHide() => true;
 
-		public HashSet<MeshVertex> SelectedVertices = [];
+		public HashSet<EditorMeshVertex> SelectedVertices = [];
 
 
 		public override bool OnSelected() {
@@ -801,13 +834,13 @@ namespace Nucleus.ModelEditor
 		/// <summary>
 		/// Sequential edges to define the shape.
 		/// </summary>
-		public List<MeshVertex> ShapeEdges = [];
+		public List<EditorMeshVertex> ShapeEdges = [];
 		/// <summary>
 		/// Arbitrary points within the shapes edges.
 		/// </summary>
-		public List<MeshVertex> SteinerPoints = [];
+		public List<EditorMeshVertex> SteinerPoints = [];
 
-		public IEnumerable<MeshVertex> GetVertices() {
+		public IEnumerable<EditorMeshVertex> GetVertices() {
 			foreach (var co in ShapeEdges) {
 				co.Attachment = this;
 				yield return co;
@@ -821,7 +854,7 @@ namespace Nucleus.ModelEditor
 
 		//[JsonIgnore] public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
 
-		private void RefreshDelaunator() {
+		public void RefreshDelaunator() {
 			if (Invalidated) {
 				triangles.Clear();
 
@@ -838,13 +871,13 @@ namespace Nucleus.ModelEditor
 
 				var workingShape = new Shape(triPoints);
 
-				Dictionary<MeshVertex, HashSet<MeshVertex>> avoidDuplicateEdges = [];
+				Dictionary<EditorMeshVertex, HashSet<EditorMeshVertex>> avoidDuplicateEdges = [];
 
 				foreach (var steinerPoint in SteinerPoints)
 					workingShape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
 
 				foreach (var constrainedFromTripoint in workingShape.GetAllPoints()) {
-					var constrainedFrom = constrainedFromTripoint.AssociatedObject as MeshVertex ?? throw new Exception();
+					var constrainedFrom = constrainedFromTripoint.AssociatedObject as EditorMeshVertex ?? throw new Exception();
 					if (!constrainedFrom.HasConstrainedEdges) continue;
 
 					foreach (var constrainedTo in constrainedFrom.ConstrainedVertices) {
@@ -969,9 +1002,9 @@ namespace Nucleus.ModelEditor
 				foreach (var tri in triangles) {
 					var points = tri.Points;
 
-					var av1 = points[0].AssociatedObject as MeshVertex;
-					var av2 = points[1].AssociatedObject as MeshVertex;
-					var av3 = points[2].AssociatedObject as MeshVertex;
+					var av1 = points[0].AssociatedObject as EditorMeshVertex;
+					var av2 = points[1].AssociatedObject as EditorMeshVertex;
+					var av3 = points[2].AssociatedObject as EditorMeshVertex;
 
 					if (av1 == null || av2 == null || av3 == null)
 						continue;
@@ -1019,9 +1052,9 @@ namespace Nucleus.ModelEditor
 				var tp2 = tri.Points[1];
 				var tp3 = tri.Points[2];
 
-				var av1 = tp1.AssociatedObject as MeshVertex;
-				var av2 = tp2.AssociatedObject as MeshVertex;
-				var av3 = tp3.AssociatedObject as MeshVertex;
+				var av1 = tp1.AssociatedObject as EditorMeshVertex;
+				var av2 = tp2.AssociatedObject as EditorMeshVertex;
+				var av3 = tp3.AssociatedObject as EditorMeshVertex;
 
 				if (av1 == null || av2 == null || av3 == null)
 					continue;
@@ -1063,7 +1096,7 @@ namespace Nucleus.ModelEditor
 		}
 
 
-		public void RenderVertex(MeshVertex vertex, bool isHighlighted, Vector2F? pos = null) {
+		public void RenderVertex(EditorMeshVertex vertex, bool isHighlighted, Vector2F? pos = null) {
 			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditMeshOperator meshOp && meshOp.CurrentMode == EditMesh_Mode.Delete;
 
 			System.Numerics.Vector2 drawPos = (pos ?? CalculateVertexWorldPosition(WorldTransform, vertex)).ToNumerics();
@@ -1138,9 +1171,9 @@ namespace Nucleus.ModelEditor
 
 			foreach (var tri in Triangles) {
 				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
-				MeshVertex? av1 = tp1.AssociatedObject as MeshVertex,
-							av2 = tp2.AssociatedObject as MeshVertex,
-							av3 = tp3.AssociatedObject as MeshVertex;
+				EditorMeshVertex? av1 = tp1.AssociatedObject as EditorMeshVertex,
+							av2 = tp2.AssociatedObject as EditorMeshVertex,
+							av3 = tp3.AssociatedObject as EditorMeshVertex;
 
 				if (av1 == null || av2 == null || av3 == null) continue;
 
@@ -1167,7 +1200,7 @@ namespace Nucleus.ModelEditor
 				var isHighlighted =
 						((edge1.Hovered && meshOp == null)
 						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
-					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorMeshVertex));
 
 				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
 
@@ -1190,7 +1223,7 @@ namespace Nucleus.ModelEditor
 				var point = SteinerPoints[i];
 				var isHighlighted =
 					((point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint))
-					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(MeshVertex));
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorMeshVertex));
 
 				RenderVertex(point, isHighlighted);
 				//Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
