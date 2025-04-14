@@ -257,7 +257,7 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public DateTime Start { get; private set; } = DateTime.Now;
+		public DateTime Start { get; private set; } = DateTime.UtcNow;
 
 		public double LastRealtime { get; private set; } = 0;
 		public double Realtime { get; private set; } = 0;
@@ -338,7 +338,7 @@ namespace Nucleus.Engine
 			LastFrameState = FrameState;
 
 			LastRealtime = Realtime;
-			Realtime = (DateTime.Now - Start).TotalSeconds;
+			Realtime = (DateTime.UtcNow - Start).TotalSeconds;
 			RealtimeDelta = Realtime - LastRealtime;
 
 			if (!Paused) {
