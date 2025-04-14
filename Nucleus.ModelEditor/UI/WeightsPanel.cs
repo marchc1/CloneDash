@@ -149,7 +149,7 @@ public class WeightsPanel : View
 		ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 	}
 
-	MeshVertex? activeVertex;
+	EditorMeshVertex? activeVertex;
 	EditorMeshAttachment? activeAttachment;
 	EditorMeshWeights? activeWeights;
 
@@ -190,7 +190,7 @@ public class WeightsPanel : View
 		}
 	}
 
-	private void ActiveAttachment_VertexSelected(MeshVertex vertex) {
+	private void ActiveAttachment_VertexSelected(EditorMeshVertex vertex) {
 		activeVertex = vertex;
 		// Update numslider
 
