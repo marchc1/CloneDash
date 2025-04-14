@@ -373,8 +373,6 @@ namespace Nucleus.Engine
 			frameState.WindowWidth = width;
 			frameState.WindowHeight = height;
 
-			if (!Paused) RunEventPreThink(ref frameState);
-
 			if (frameState.WindowWidth != LastFrameState.WindowWidth || frameState.WindowHeight != LastFrameState.WindowHeight) {
 				__viewDirty = true;
 			}
@@ -462,6 +460,8 @@ namespace Nucleus.Engine
 				}
 			}
 			frameState.KeyboardState = keyboardState;
+
+			if (!Paused) RunEventPreThink(ref frameState);
 
 			// UI thinking should happen here because if a popup UI element exists, we need to block input to the game. Don't just block Think though
 			int rebuilds = Element.LayoutRecursive(UI, frameState);
