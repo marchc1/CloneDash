@@ -20,15 +20,29 @@ namespace Nucleus
 			int maxI = 0;
 			string maxS = "";
 
+			int maxID = 0;
+			string maxSD = "";
+
 			for (int i = 0; i < PotentialMatches.Length; i++) {
 				string s = PotentialMatches[i].Name;
 				if (s.Length > maxI) {
 					maxS = s;
 					maxI = s.Length;
 				}
+
+				string d = PotentialMatches[i].HelpString;
+				if (d.Length > maxID) {
+					maxSD = d;
+					maxID = d.Length;
+				}
 			}
 
 			float maxX = Graphics2D.GetTextSize(maxS, "Consolas", 16).X;
+			float maxXD = Graphics2D.GetTextSize(maxSD, "Consolas", 16).X;
+
+			Graphics2D.SetDrawColor(25, 25, 25, 220);
+			Graphics2D.DrawRectangle(new(0, -4), new(maxX + 8, (PotentialMatches.Length * 18) + 8));
+			Graphics2D.DrawRectangle(new(maxX + 20, -4), new(maxXD + 8, (PotentialMatches.Length * 18) + 8));
 
 			for (int i = 0; i < PotentialMatches.Length; i++) {
 				Graphics2D.SetDrawColor(245, 245, 245);
