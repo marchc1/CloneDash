@@ -3,6 +3,7 @@ using Nucleus.Models;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Mail;
 using System.Reflection;
@@ -58,7 +59,8 @@ public interface ISlotProperty<T> : ISlotTimeline, IProperty<T>
 
 }
 
-public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, IKeyframe[] keyframes) : IKeyframe {
+public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, IKeyframe[] keyframes) : IKeyframe
+{
 	public EditorTimeline Timeline => timeline;
 	public IFCurve[] FCurves => curves;
 	public IKeyframe[] Keyframes => keyframes;
@@ -90,6 +92,24 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 	public void SetValue<T>(T? value) {
 		for (int i = 0; i < keyframes.Length; i++) {
 			keyframes[i].SetValue(value);
+		}
+	}
+
+	/// <summary>
+	/// Does this even help? This is mostly for use with HashSet...
+	/// </summary>
+	/// <returns></returns>
+	/// <exception cref="Exception"></exception>
+	public override int GetHashCode() {
+		switch (Keyframes.Length) {
+			case 1: return HashCode.Combine(Timeline, Keyframes[0]);
+			case 2: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1]);
+			case 3: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1], Keyframes[2]);
+			case 4: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1], Keyframes[2], Keyframes[3]);
+			case 5: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1], Keyframes[2], Keyframes[3], Keyframes[4]);
+			case 6: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1], Keyframes[2], Keyframes[3], Keyframes[4], Keyframes[5]);
+			case 7: return HashCode.Combine(Timeline, Keyframes[0], Keyframes[1], Keyframes[2], Keyframes[3], Keyframes[4], Keyframes[5], Keyframes[6]);
+			default: throw new Exception();
 		}
 	}
 }
@@ -215,7 +235,7 @@ public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2
 
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
-		for (int i = 0; i < CurveX.Count; i++) 
+		for (int i = 0; i < CurveX.Count; i++)
 			yield return new(this, [CurveX, CurveY], [CurveX[i], CurveY[i]]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
@@ -383,7 +403,8 @@ public class ActiveAttachmentTimeline : GenericStepTimeline<EditorAttachment?>, 
 }
 
 
-public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color> {
+public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color>
+{
 	public FCurve<float> CurveR { get; set; } = new();
 	public FCurve<float> CurveG { get; set; } = new();
 	public FCurve<float> CurveB { get; set; } = new();

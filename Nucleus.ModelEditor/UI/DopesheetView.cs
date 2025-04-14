@@ -10,8 +10,8 @@ public class DopesheetView : BaseTimelineView
 	public override string Name => "Dope Sheet";
 	public override bool LockDragDirection => true;
 
-
 	public Panel KeyframeInfoPanel;
+
 	protected override void Initialize() {
 		base.Initialize();
 		Add(out KeyframeInfoPanel);
@@ -36,6 +36,10 @@ public class DopesheetView : BaseTimelineView
 		var curve_linear = AddTopButton("models/curve_linear.png");
 		var curve_bezier = AddTopButton("models/curve_bezier.png");
 
+		curve_constant.Thinking += CurveBtn_DetermineInputState;
+		curve_linear.Thinking += CurveBtn_DetermineInputState;
+		curve_bezier.Thinking += CurveBtn_DetermineInputState;
+
 		AddTopSpace(16);
 
 		var autobezier = AddTopButton("models/autobezier.png");
@@ -56,6 +60,9 @@ public class DopesheetView : BaseTimelineView
 		KeyframeOverlay.MoveToFront();
 	}
 
+	private void CurveBtn_DetermineInputState(Element self) {
+		self.InputDisabled = !ModelEditor.Active.KeyframesSelected;
+	}
 
 	protected override void CreateChannelPanels(out Button header, out Panel keyframes, object? target = null) {
 		base.CreateChannelPanels(out header, out keyframes, target);
@@ -117,6 +124,7 @@ public class DopesheetView : BaseTimelineView
 
 		isKeyframeSelected = true;
 		frameStart = selected?.GetTime() ?? 0;
+		ModelEditor.Active.SelectKeyframe(selected);
 	}
 	private void KeyframeBtn_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		var xy = state.MouseState.MousePos - self.Parent.GetGlobalPosition();

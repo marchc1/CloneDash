@@ -1,6 +1,7 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
+using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -72,6 +73,73 @@ namespace Nucleus.ModelEditor
 
 			return true;
 		}
+
+		private List<IKeyframe> __selectedKeyframes = [];
+		private HashSet<IKeyframe> __selectedKeyframesHs = [];
+		public IEnumerable<IKeyframe> SelectedKeyframes {
+			get {
+				foreach (var kfp in __selectedKeyframes)
+					yield return kfp;
+			}
+		}
+		public int SelectedKeyframesCount => __selectedKeyframes.Count;
+
+		public delegate void SelectKeyframeDelegate(IKeyframe keyframe);
+		public event SelectKeyframeDelegate? OnKeyframeSelected;
+		public event SelectKeyframeDelegate? OnKeyframeUnselected;
+
+		public bool KeyframesSelected => __selectedKeyframes.Count > 0;
+		public bool IsKeyframeSelected(IKeyframe keyframe) => __selectedKeyframesHs.Contains(keyframe);
+
+		private bool selectKeyframe(IKeyframe keyframe) {
+			if (__selectedKeyframesHs.Add(keyframe)) {
+				__selectedKeyframes.Add(keyframe);
+				return true;
+			}
+			return false;
+		}
+
+		private bool unselectKeyframe(IKeyframe keyframe) {
+			if (__selectedKeyframesHs.Remove(keyframe)) {
+				__selectedKeyframes.Remove(keyframe);
+				return true;
+			}
+			return false;
+		}
+
+		public void SelectKeyframe(IKeyframe keyframe, bool multi = false) {
+			if (!multi) UnselectAllKeyframes();
+			if (selectKeyframe(keyframe))
+				OnKeyframeSelected?.Invoke(keyframe);
+		}
+
+		public void UnselectKeyframe(IKeyframe keyframe) {
+			if (unselectKeyframe(keyframe))
+				OnKeyframeUnselected?.Invoke(keyframe);
+		}
+
+		public void SelectKeyframes(IEnumerable<IKeyframe> keyframes, bool multi = false) {
+			if (!multi) UnselectAllKeyframes();
+
+			foreach (var keyframe in keyframes)
+				SelectKeyframe(keyframe);
+		}
+
+		public void UnselectKeyframes(IEnumerable<IKeyframe> keyframes) {
+			foreach (var keyframe in keyframes)
+				UnselectKeyframe(keyframe);
+		}
+
+		public void UnselectAllKeyframes() {
+			foreach(var keyframe in __selectedKeyframes) 
+				OnKeyframeUnselected?.Invoke(keyframe);
+
+			__selectedKeyframes.Clear();
+			__selectedKeyframesHs.Clear();
+		}
+
+
+
 		public bool IsPropertyCurrentlyAnimatable(KeyframeProperty prop) {
 			if (prop == KeyframeProperty.None) return false; // block if no property requested
 			if (!CanInsertKeyframes()) return false; // see CanInsertKeyframes
@@ -85,7 +153,7 @@ namespace Nucleus.ModelEditor
 					return LastSelectedObject is EditorBone;
 
 				case KeyframeProperty.Slot_Attachment:
-					case KeyframeProperty.Slot_Color:
+				case KeyframeProperty.Slot_Color:
 					return LastSelectedObject is EditorSlot;
 
 				default:
@@ -379,8 +447,10 @@ namespace Nucleus.ModelEditor
 				if (File.ActiveOperator != null)
 					File.DeactivateOperator(true);
 				else {
-					if (LastSelectedObject?.OnUnselected() ?? false)
+					if (LastSelectedObject?.OnUnselected() ?? false) {
 						UnselectAllObjects();
+						UnselectAllKeyframes();
+					}
 				}
 
 			});
