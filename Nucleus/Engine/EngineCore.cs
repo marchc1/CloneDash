@@ -79,10 +79,13 @@ namespace Nucleus
     public static class EngineCore
     {
 		public static ConVar engine_wireframe = ConVar.Register("engine_wireframe", "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
-			if (cv.GetBool())
-				Rlgl.EnableWireMode();
-			else
-				Rlgl.DisableWireMode();
+			// Queued so there's actually a GL context to work with
+			MainThread.RunASAP(() => {
+				if (cv.GetBool())
+					Rlgl.EnableWireMode();
+				else
+					Rlgl.DisableWireMode();
+			});
 		});
 
 		// ------------------------------------------------------------------------------------------ //
