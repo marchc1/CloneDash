@@ -208,8 +208,9 @@ namespace CloneDash.Game
 		}
 
 		private int entI = 0;
-
+		private bool __deferringAsync = false;
 		public bool LoadMapFrame(int ms) {
+			__deferringAsync = true;
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 			while(entI < Sheet.Entities.Count) {
@@ -254,6 +255,11 @@ namespace CloneDash.Game
 			BottomPathway = Add<Pathway>(PathwaySide.Bottom);
 
 			Conductor = Add<Conductor>();
+
+			if (!__deferringAsync) {
+				foreach (var ent in Sheet.Entities)
+					LoadEntity(ent);
+			}
 
 			//foreach (var tempoChange in Sheet)
 			Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
