@@ -75,16 +75,24 @@ namespace Nucleus
             }
         }
     }
+	[MarkForStaticConstruction]
     public static class EngineCore
     {
-        // ------------------------------------------------------------------------------------------ //
-        // Level storing & state
-        // ------------------------------------------------------------------------------------------ //
+		public static ConVar engine_wireframe = ConVar.Register("engine_wireframe", "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
+			if (cv.GetBool())
+				Rlgl.EnableWireMode();
+			else
+				Rlgl.DisableWireMode();
+		});
 
-        /// <summary>
-        /// A special loading screen level. Always kept "loaded" in some fashion, although only runs its frame function when LoadingLevel == true.
-        /// </summary>
-        public static Level LoadingScreen { get; set; }
+		// ------------------------------------------------------------------------------------------ //
+		// Level storing & state
+		// ------------------------------------------------------------------------------------------ //
+
+		/// <summary>
+		/// A special loading screen level. Always kept "loaded" in some fashion, although only runs its frame function when LoadingLevel == true.
+		/// </summary>
+		public static Level LoadingScreen { get; set; }
         /// <summary>
         /// The current level; if null, you'll get a big red complaint
         /// </summary>
