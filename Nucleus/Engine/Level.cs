@@ -327,6 +327,11 @@ namespace Nucleus.Engine
 		}
 
 		Stopwatch profiler = new();
+		Stopwatch timing = new();
+
+		public void PreInitialize() {
+			timing.Start();
+		}
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -338,7 +343,7 @@ namespace Nucleus.Engine
 			LastFrameState = FrameState;
 
 			LastRealtime = Realtime;
-			Realtime = (DateTime.UtcNow - Start).TotalSeconds;
+			Realtime = timing.Elapsed.TotalSeconds;
 			RealtimeDelta = Realtime - LastRealtime;
 
 			if (!Paused) {

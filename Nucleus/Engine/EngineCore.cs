@@ -274,6 +274,7 @@ namespace Nucleus
 
             Level = level;
             LoadingLevel = true;
+			level.PreInitialize();
             level.InitializeUI();
             Level.Initialize(args);
 			InGameConsole.HookToLevel(Level);
