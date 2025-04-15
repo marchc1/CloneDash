@@ -397,17 +397,25 @@ namespace Nucleus.ModelEditor
 		}
 
 
+		private Animation? activeAnimation;
+		private double start;
 		private void UpdateModel(Panel animationsButtons, EditorModel model, out ModelData modelData, out ModelInstance modelInstance) {
 			modelData = new RuntimeViewer().LoadModelFromEditor(model);
 			modelInstance = modelData.Instantiate();
 
 			animationsButtons.ClearChildren();
 			animationsButtons.Size = new(256);
-			foreach(var animation in modelData.Animations) {
+			foreach (var animation in modelData.Animations) {
 				var playThisOne = animationsButtons.Add<Button>();
 				playThisOne.Size = new Vector2F(24);
 				playThisOne.Dock = Dock.Top;
 				playThisOne.Text = $"{animation.Name}";
+				var instance = modelInstance;
+				playThisOne.MouseReleaseEvent += (_, _, _) => {
+					instance.SetToSetupPose();
+					activeAnimation = animation;
+					start = Curtime;
+				};
 			}
 		}
 
@@ -438,6 +446,10 @@ namespace Nucleus.ModelEditor
 			renderingPanel.Dock = Dock.Fill;
 			renderingPanel.PaintOverride += (s, w, h) => {
 				//Surface.SetViewport(s.GetGlobalPosition(), s.RenderBounds.Size);
+
+				if (activeAnimation != null) {
+					activeAnimation.Apply(instance, (Curtime - start) * File.Timeline.FPS);
+				}
 
 				Raylib.BeginMode2D(new() {
 					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),

@@ -164,6 +164,93 @@ public class RuntimeViewer : IModelLoader
 				animationData.Name = animation.Name;
 				animationData.Duration = animation.CalculateMaxTime();
 
+				foreach(var editTimeline in animation.Timelines) {
+					Timeline runtimeTimeline;
+					switch (editTimeline) {
+						// duo bone properties
+
+						case TranslateTimeline editTimelineCast: {
+								Models.Runtime.TranslateTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.CurveX;
+								tl.Curves[1] = editTimelineCast.CurveY;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ScaleTimeline editTimelineCast: {
+								Models.Runtime.ScaleTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.CurveX;
+								tl.Curves[1] = editTimelineCast.CurveY;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ShearTimeline editTimelineCast: {
+								Models.Runtime.ShearTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.CurveX;
+								tl.Curves[1] = editTimelineCast.CurveY;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+
+						// mono bone properties
+						case RotationTimeline editTimelineCast: {
+								Models.Runtime.RotationTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case TranslateXTimeline editTimelineCast: {
+								Models.Runtime.TranslateXTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case TranslateYTimeline editTimelineCast: {
+								Models.Runtime.TranslateYTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ScaleXTimeline editTimelineCast: {
+								Models.Runtime.ScaleXTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ScaleYTimeline editTimelineCast: {
+								Models.Runtime.ScaleYTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ShearXTimeline editTimelineCast: {
+								Models.Runtime.ShearXTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+						case ShearYTimeline editTimelineCast: {
+								Models.Runtime.ShearYTimeline tl = new();
+								tl.Curves[0] = editTimelineCast.Curve;
+								tl.BoneIndex = lookupBone[editTimelineCast.Bone].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+
+						default: Logs.Warn($"Please implement Timeline converter for edit-type '{editTimeline.GetType().Name}'"); continue;
+					}
+
+					animationData.Timelines.Add(runtimeTimeline);
+				}
+
 				data.Animations.Add(animationData);
 			}
 		}

@@ -1,16 +1,17 @@
-﻿using Nucleus.Core;
+﻿// This *might* get separated into separate files per type soon, but for now, it's simpler
+// to just have it all be in one place.
+
+using Nucleus.Core;
 using Nucleus.Types;
-using Nucleus.UI;
 using Raylib_cs;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Nucleus.Models.Runtime;
 
 /// <summary>
-/// The 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
+/// Runtime for the 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
 /// </summary>
 public static class Model4System
 {
@@ -122,6 +123,9 @@ public class ModelInstance : IContainsSetupPose
 	public List<BoneInstance> Bones { get; set; } = [];
 	public List<SlotInstance> Slots { get; set; } = [];
 	public List<SlotInstance> DrawOrder { get; set; } = [];
+
+	public BoneInstance? RootBone => Bones.Count > 0 ? Bones[0] : null;
+
 	public Skin Skin { get; set; }
 	public Vector2F Position { get; set; }
 	public bool FlipX { get; set; }
@@ -137,10 +141,8 @@ public class ModelInstance : IContainsSetupPose
 		var offset = Graphics2D.Offset;
 		Graphics2D.ResetDrawingOffset();
 
-		foreach (var bone in Bones) {
-			bone.SetToSetupPose();
+		foreach(var bone in Bones)
 			bone.UpdateWorldTransform();
-		}
 
 		foreach (var slot in DrawOrder) {
 			var attachment = slot.Attachment;
@@ -148,12 +150,13 @@ public class ModelInstance : IContainsSetupPose
 
 			attachment.Render(slot);
 		}
+		foreach (var bone in Bones) {
+			var test = bone.LocalToWorld(0, 0);
+			//Raylib.DrawCircleV(new(test.X, -test.Y), 4, Color.Red);
+			//Graphics2D.DrawText(new(test.X, -test.Y), $"rot: {bone.Rotation}", "Consolas", 7);
+		}
 
 		Graphics2D.OffsetDrawing(offset);
-	}
-
-	public void UpdateWorldTransform() {
-
 	}
 
 	public void SetToSetupPose() {
@@ -245,6 +248,8 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject
 		Shear = Data.Shear;
 
 		TransformMode = Data.TransformMode;
+
+		UpdateWorldTransform();
 	}
 
 	public Vector2F WorldToLocal(float x, float y) => WorldTransform.WorldToLocal(x, y);
@@ -255,7 +260,8 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject
 	public Vector2F LocalToWorld(Vector2F xy) => WorldTransform.LocalToWorld(xy);
 	public float LocalToWorldRotation(float rot) => WorldTransform.LocalToWorldRotation(rot);
 
-	public void UpdateWorldTransform() => UpdateWorldTransform(Position, Rotation, Scale, Shear);
+	public void UpdateWorldTransform() 
+		=> UpdateWorldTransform(Position, Rotation, Scale, Shear);
 	public void UpdateWorldTransform(Vector2F pos, float rot, Vector2F scale, Vector2F shear)
 		=> WorldTransform = Transformation.CalculateWorldTransformation(pos, rot, scale, shear, TransformMode, Parent?.WorldTransform ?? null);
 }
@@ -348,6 +354,7 @@ public class Skin
 		Attachments[new(name, slot)] = attachment;
 	}
 }
+
 public class Animation
 {
 	public double Duration { get; set; }
@@ -355,7 +362,10 @@ public class Animation
 	public List<Timeline> Timelines { get; set; } = [];
 
 	public void Apply(ModelInstance model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
-
+		foreach(var tl in Timelines) {
+			// todo: lasttime
+			tl.Apply(model, 0, time, mix, mixBlend);
+		}
 	}
 }
 
@@ -421,7 +431,8 @@ public class RegionAttachment : Attachment
 }
 
 
-public record MeshAttachmentWeight(int Bone, float Weight, Vector2F Position) {
+public record MeshAttachmentWeight(int Bone, float Weight, Vector2F Position)
+{
 	public bool IsEmpty => Weight == 0;
 }
 public class MeshVertex
@@ -470,7 +481,7 @@ public class MeshAttachment : Attachment
 		Debug.Assert(Triangles != null); if (Triangles == null) return;
 
 		var region = Region;
-		
+
 		Debug.Assert(region.IsValid());
 		if (!region.IsValid()) return;
 
@@ -522,7 +533,210 @@ public class MeshAttachment : Attachment
 		Rlgl.End();
 	}
 }
-public abstract class Timeline;
+
+// Get ready for interface hell here; but most of it is for good reason...
+
+public abstract class Timeline
+{
+	public abstract void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend);
+}
+public interface IBoneTimeline
+{
+	public int BoneIndex { get; set; }
+}
+public interface ISlotTimeline
+{
+	public int SlotIndex { get; set; }
+}
+public static class TimelineInterfaceExtensions {
+
+	public static BoneInstance Bone(this IBoneTimeline tl, ModelInstance model) => model.Bones[tl.BoneIndex]; 
+	public static SlotInstance Slot(this ISlotTimeline tl, ModelInstance model) => model.Slots[tl.SlotIndex];
+}
+/// <summary>
+/// We assume each curve in <see cref="Curves"/> contains the same amount of keyframes.
+/// <br/>
+/// If this is not true, things like BeforeFirstFrame and DetermineValue will likely not work correctly.
+/// <br/>
+/// So don't mess with these unless you know what you're doing.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public abstract class CurveTimeline<T> : Timeline
+{
+	public FCurve<T>[] Curves;
+	private T?[] outputBuffer;
+	public CurveTimeline(int curves) {
+		Curves = new FCurve<T>[curves];
+		outputBuffer = new T[curves];
+	}
+	/// <summary>
+	/// Returns a shared <typeparamref name="T"/>[] instance; keep this in mind if you store this value somewhere.
+	/// <br/>
+	/// You aren't supposed to though, you're supposed to use it to convert it into a struct/etc of your choosing
+	/// </summary>
+	/// <param name="time"></param>
+	/// <returns></returns>
+	public T?[] DetermineValue(double time) {
+		for (int i = 0; i < Curves.Length; i++)
+			outputBuffer[i] = Curves[i].DetermineValueAtTime(time);
+
+		return outputBuffer;
+	}
+
+	public bool BeforeFirstFrame(double time, out T? value) {
+		var first = Curves[0].First;
+		value = default;
+		if (first == null) return true;
+
+		value = first.Value;
+		return time < first.Time;
+	}
+	public bool AfterLastFrame(double time, out T? value) {
+		var last = Curves[0].Last;
+		value = default;
+		if (last == null) return true;
+
+		value = last.Value;
+		return time > last.Time;
+	}
+
+	public bool BeforeFirstFrame(double time) => BeforeFirstFrame(time, out var _);
+	public bool AfterLastFrame(double time) => AfterLastFrame(time, out var _);
+
+	public FCurve<T> Curve(int index) => Curves[index];
+}
+
+public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative) : CurveTimeline<float>(1), IBoneTimeline
+{
+	public int BoneIndex { get; set; }
+
+	public abstract float Get(BoneInstance bone);
+	public abstract float GetSetup(BoneInstance bone);
+	public abstract void Set(BoneInstance bone, float value);
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
+		var bone = this.Bone(model);
+		if (BeforeFirstFrame(time))
+			switch (blend) {
+				case MixBlendMode.Setup: Set(bone, GetSetup(bone)); return;
+				default: return;
+			}
+
+		if (AfterLastFrame(time, out float r))
+			switch (blend) {
+				case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * r) : (GetSetup(bone) + r)); return;
+				default: return;
+			}
+
+		r = Curve(0).DetermineValueAtTime(time);
+		switch (blend) {
+			case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * r) : (GetSetup(bone) + r)); break;
+		}
+	}
+}
+public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveTimeline<float>(2), IBoneTimeline
+{
+	public int BoneIndex { get; set; }
+
+	public abstract Vector2F Get(BoneInstance bone);
+	public abstract Vector2F GetSetup(BoneInstance bone);
+	public abstract void Set(BoneInstance bone, Vector2F value);
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
+		var bone = this.Bone(model);
+		if (BeforeFirstFrame(time))
+			switch (blend) {
+				case MixBlendMode.Setup: Set(bone, GetSetup(bone)); return;
+				default: return;
+			}
+
+		float x, y;
+		Vector2F xy;
+
+		if (AfterLastFrame(time)) {
+			x = Curve(0).Last?.Value ?? (multiplicative ? 1 : 0);
+			y = Curve(1).Last?.Value ?? (multiplicative ? 1 : 0);
+			xy = new(x, y);
+			switch (blend) {
+				case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * xy) : (GetSetup(bone) + xy)); return;
+				default: return;
+			}
+		}
+
+		x = Curve(0).DetermineValueAtTime(time);
+		y = Curve(1).DetermineValueAtTime(time);
+		xy = new(x, y);
+		
+		switch (blend) {
+			case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * xy) : (GetSetup(bone) + xy)); break;
+		}
+	}
+}
+
+public class TranslateTimeline() : DuoBoneFloatPropertyTimeline(false)
+{
+	public override Vector2F Get(BoneInstance bone) => bone.Position;
+	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Position;
+	public override void Set(BoneInstance bone, Vector2F value) => bone.Position = value;
+}
+public class ScaleTimeline() : DuoBoneFloatPropertyTimeline(true)
+{
+	public override Vector2F Get(BoneInstance bone) => bone.Scale;
+	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Scale;
+	public override void Set(BoneInstance bone, Vector2F value) => bone.Scale = value;
+}
+
+public class ShearTimeline() : DuoBoneFloatPropertyTimeline(false)
+{
+	public override Vector2F Get(BoneInstance bone) => bone.Shear;
+	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Shear;
+	public override void Set(BoneInstance bone, Vector2F value) => bone.Shear = value;
+}
+
+
+public class RotationTimeline() : MonoBoneFloatPropertyTimeline(false)
+{
+	public override float Get(BoneInstance bone) => bone.Rotation;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Rotation;
+	public override void Set(BoneInstance bone, float value) => bone.Rotation = value;
+}
+public class TranslateXTimeline() : MonoBoneFloatPropertyTimeline(false)
+{
+	public override float Get(BoneInstance bone) => bone.Position.X;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Position.X;
+	public override void Set(BoneInstance bone, float value) => bone.Position = new(value, bone.Position.Y);
+}
+public class TranslateYTimeline() : MonoBoneFloatPropertyTimeline(false)
+{
+	public override float Get(BoneInstance bone) => bone.Position.Y;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Position.Y;
+	public override void Set(BoneInstance bone, float value) => bone.Position = new(bone.Position.X, value);
+}
+public class ScaleXTimeline() : MonoBoneFloatPropertyTimeline(true)
+{
+	public override float Get(BoneInstance bone) => bone.Scale.X;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.X;
+	public override void Set(BoneInstance bone, float value) => bone.Scale = new(value, bone.Scale.Y);
+}
+public class ScaleYTimeline() : MonoBoneFloatPropertyTimeline(true)
+{
+	public override float Get(BoneInstance bone) => bone.Scale.Y;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.Y;
+	public override void Set(BoneInstance bone, float value) => bone.Scale = new(bone.Scale.X, value);
+}
+public class ShearXTimeline() : MonoBoneFloatPropertyTimeline(false)
+{
+	public override float Get(BoneInstance bone) => bone.Shear.X;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.X;
+	public override void Set(BoneInstance bone, float value) => bone.Shear = new(value, bone.Shear.Y);
+}
+public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false)
+{
+	public override float Get(BoneInstance bone) => bone.Shear.Y;
+	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.Y;
+	public override void Set(BoneInstance bone, float value) => bone.Shear = new(bone.Shear.X, value);
+}
+
 
 public interface IModelLoader
 {
