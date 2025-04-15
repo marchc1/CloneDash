@@ -574,6 +574,9 @@ namespace Nucleus.ModelEditor
 
 			SetupHooks();
 			// MakeRuntimeTest(File.Models.First());
+#nullable disable
+			FileAssoc.Register(NUCLEUS_MODEL4_SOURCE_EXT, "March.Nucleus.Model4Editor", "Nucleus Model4 Source File");
+#nullable enable
 		}
 
 		private string createDefaultFolder() {
