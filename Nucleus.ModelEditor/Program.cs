@@ -137,7 +137,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void UnselectAllKeyframes() {
-			foreach(var keyframe in __selectedKeyframes) 
+			foreach (var keyframe in __selectedKeyframes)
 				OnKeyframeUnselected?.Invoke(keyframe);
 
 			__selectedKeyframes.Clear();
@@ -396,6 +396,22 @@ namespace Nucleus.ModelEditor
 				UpdateModelAnimations();
 		}
 
+
+		private void UpdateModel(Panel animationsButtons, EditorModel model, out ModelData modelData, out ModelInstance modelInstance) {
+			modelData = new RuntimeViewer().LoadModelFromEditor(model);
+			modelInstance = modelData.Instantiate();
+
+			animationsButtons.ClearChildren();
+			animationsButtons.Size = new(256);
+			foreach(var animation in modelData.Animations) {
+				var playThisOne = animationsButtons.Add<Button>();
+				playThisOne.Size = new Vector2F(24);
+				playThisOne.Dock = Dock.Top;
+				playThisOne.Text = $"{animation.Name}";
+			}
+		}
+
+
 		public void MakeRuntimeTest(EditorModel model) {
 			var window = UI.Add<Window>();
 			window.Size = new(1280, 720);
@@ -403,22 +419,23 @@ namespace Nucleus.ModelEditor
 			window.Title = "Runtime Test";
 			//window.MakePopup();
 
-
-			var data = new RuntimeViewer().LoadModelFromEditor(model);
-			var instance = data.Instantiate();
-
 			var refresh = window.Add<Button>();
 			refresh.Dock = Dock.Top;
 			refresh.Text = "Refresh Data";
-			refresh.MouseReleaseEvent += (_, _, _) => {
-				data = new RuntimeViewer().LoadModelFromEditor(model);
-				instance = data.Instantiate();
-			};
+
+			var animations = window.Add<Panel>();
+			animations.Dock = Dock.Left;
+			animations.Size = new(256);
+
+			ModelData data;
+			ModelInstance instance;
+			UpdateModel(animations, model, out data, out instance);
+			refresh.MouseReleaseEvent += (_, _, _) => UpdateModel(animations, model, out data, out instance);
+
+			Stopwatch profiler = new();
 
 			var renderingPanel = window.Add<Panel>();
 			renderingPanel.Dock = Dock.Fill;
-
-			Stopwatch profiler = new();
 			renderingPanel.PaintOverride += (s, w, h) => {
 				//Surface.SetViewport(s.GetGlobalPosition(), s.RenderBounds.Size);
 

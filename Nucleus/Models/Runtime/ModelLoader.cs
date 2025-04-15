@@ -350,11 +350,11 @@ public class Skin
 }
 public class Animation
 {
-	public float Duration { get; set; }
+	public double Duration { get; set; }
 	public string Name { get; set; }
 	public List<Timeline> Timelines { get; set; } = [];
 
-	public void Apply(ModelInstance model, float time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+	public void Apply(ModelInstance model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
 
 	}
 }

@@ -189,7 +189,9 @@ namespace Nucleus.Models
 			}
 
 			packedImg = workingImage;
-			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(workingImage), true, packedImg);
+			var tex = Raylib.LoadTextureFromImage(workingImage);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, tex, true, packedImg);
 
 			valid = true;
 		}

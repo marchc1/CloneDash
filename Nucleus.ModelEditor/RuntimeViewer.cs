@@ -43,6 +43,7 @@ public class RuntimeViewer : IModelLoader
 			}
 		}
 	}
+
 	public ModelData LoadModelFromEditor(EditorModel model) {
 		ModelData data = new ModelData();
 		data.Name = model.Name;
@@ -155,6 +156,16 @@ public class RuntimeViewer : IModelLoader
 				}
 			}
 			data.Skins.Add(skin);
+		}
+
+		{
+			foreach(var animation in model.Animations) {
+				var animationData = new Animation();
+				animationData.Name = animation.Name;
+				animationData.Duration = animation.CalculateMaxTime();
+
+				data.Animations.Add(animationData);
+			}
 		}
 
 		return data;
