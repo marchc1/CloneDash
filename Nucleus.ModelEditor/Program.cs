@@ -485,7 +485,6 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Initialize(params object[] args) {
-
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
@@ -576,6 +575,8 @@ namespace Nucleus.ModelEditor
 #nullable disable
 			FileAssoc.Register(NUCLEUS_MODEL4_SOURCE_EXT, "March.Nucleus.Model4Editor", "Nucleus Model4 Source File");
 #nullable enable
+
+			titleUpdate();
 		}
 
 		private string createDefaultFolder() {
