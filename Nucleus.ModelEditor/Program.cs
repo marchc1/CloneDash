@@ -3,6 +3,7 @@ using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
+using Nucleus.Platform;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -491,8 +492,14 @@ namespace Nucleus.ModelEditor
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
 
-			var btn = menubar.AddButton("Tests");
-			btn.AddButton("Runtime Test", null, () => {
+			var file = menubar.AddButton("File");
+			file.AddButton("New", null, File_New);
+			file.AddButton("Open...", null, File_Open);
+			file.AddButton("Save...", null, File_Save);
+			file.AddButton("Save as...", null, File_SaveAs);
+
+			var tests = menubar.AddButton("Tests");
+			tests.AddButton("Runtime Test", null, () => {
 				MakeRuntimeTest(File.Models.First());
 			});
 
@@ -563,10 +570,72 @@ namespace Nucleus.ModelEditor
 			File.Cleared += File_Cleared;
 
 			OpenTest();
-			ToggleModes();
+			// ToggleModes();
 
 			SetupHooks();
-			MakeRuntimeTest(File.Models.First());
+			// MakeRuntimeTest(File.Models.First());
+		}
+
+		private string createDefaultFolder() {
+			var folderPath = Filesystem.Resolve("modelsrc", "game");
+			Directory.CreateDirectory(folderPath);
+			return folderPath;
+		}
+
+		private void titleUpdate() 
+			=> EngineCore.SetWindowTitle($"Nucleus Model4 Editor - {(File.DiskPath == null ? "No active file" : $"Editing {Path.GetFileName(File.DiskPath)}")}");
+		
+
+		private void serializeTo(string? path, bool writePathToFile) {
+			if (path == null) return;
+			System.IO.File.WriteAllText(path, File.Serialize());
+			if (writePathToFile) File.DiskPath = path;
+			Logs.Debug("File write OK!");
+			titleUpdate();
+		}
+
+		private void deserializeFrom(string? path) {
+			if (path == null) return;
+			File.Deserialize(System.IO.File.ReadAllText(path));
+			Active.Editor.CameraX = File.CameraX;
+			Active.Editor.CameraY = File.CameraY;
+			Active.Editor.CameraZoom = File.CameraZoom;
+			Logs.Info("File load OK!");
+			titleUpdate();
+		}
+
+		private void File_SaveAs() {
+			string folderPath = createDefaultFolder();
+			var result = TinyFileDialogs.SaveFileDialog("Save Nucleus Model4 Project", folderPath, [NUCLEUS_MODEL4_SOURCE_EXT], "Nucleus Model4 Source File");
+			if (!result.Cancelled) {
+				serializeTo(result.Result, true);
+			}
+		}
+
+		private void File_Save() {
+			if(File.DiskPath == null) {
+				File_SaveAs();
+				return;
+			}
+
+			serializeTo(File.DiskPath, true);
+		}
+
+		private void File_Open() {
+			string folderPath = createDefaultFolder();
+
+			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [NUCLEUS_MODEL4_SOURCE_EXT], "Nucleus Model4 Source File", false);
+			if (!result.Cancelled)
+				deserializeFrom(result.Result);
+
+			titleUpdate();
+		}
+
+		private void File_New() {
+			File.Clear();
+			
+			if(AnimationMode)
+				ToggleModes();
 		}
 
 		private void File_Cleared(EditorFile file) {
@@ -600,18 +669,13 @@ namespace Nucleus.ModelEditor
 					model.ActiveAnimation.Apply(File.Timeline.GetPlayhead());
 		}
 
-		private string testPath => Filesystem.Resolve("test.bondsmodel", "game", false);
+		public const string NUCLEUS_MODEL4_SOURCE_EXT = ".nm4src";
 		private void SaveTest() {
 			Logs.Info("SaveTest: executing");
-			System.IO.File.WriteAllText(testPath, File.Serialize());
 			Logs.Info("SaveTest: success");
 		}
 		private void OpenTest() {
 			Logs.Info("OpenTest: executing");
-			File.Deserialize(System.IO.File.ReadAllText(testPath));
-			Active.Editor.CameraX = File.CameraX;
-			Active.Editor.CameraY = File.CameraY;
-			Active.Editor.CameraZoom = File.CameraZoom;
 
 			Logs.Info("OpenTest: success");
 		}

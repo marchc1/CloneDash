@@ -57,6 +57,7 @@ namespace Nucleus.ModelEditor
 			};
 		}
 		public List<EditorModel> Models = [];
+		[JsonIgnore] public string? DiskPath { get; set; }
 
 		// Camera position and zoom
 		public float CameraX = 0;
@@ -765,6 +766,7 @@ namespace Nucleus.ModelEditor
 
 		public void Clear() {
 			DeactivateOperator(true);
+			DiskPath = null;
 			Models.Clear();
 			Cleared?.Invoke(this);
 		}

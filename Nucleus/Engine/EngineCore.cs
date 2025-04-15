@@ -511,5 +511,9 @@ namespace Nucleus
         public static void SetWindowPosition(Vector2F mposFinal) {
             Raylib.SetWindowPosition((int)mposFinal.X, (int)mposFinal.Y);
         }
-    }
+
+		public static void SetWindowTitle(string title) {
+			Raylib.SetWindowTitle(title);
+		}
+	}
 }
