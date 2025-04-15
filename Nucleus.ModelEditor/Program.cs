@@ -577,7 +577,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private string createDefaultFolder() {
-			var folderPath = Filesystem.Resolve("modelsrc", "game");
+			var folderPath = Filesystem.Resolve("modelsrc", "game", false);
 			Directory.CreateDirectory(folderPath);
 			return folderPath;
 		}
@@ -624,7 +624,7 @@ namespace Nucleus.ModelEditor
 		private void File_Open() {
 			string folderPath = createDefaultFolder();
 
-			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [NUCLEUS_MODEL4_SOURCE_EXT], "Nucleus Model4 Source File", false);
+			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
 			if (!result.Cancelled)
 				deserializeFrom(result.Result);
 
