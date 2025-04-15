@@ -562,14 +562,13 @@ namespace Nucleus.ModelEditor
 				}
 
 			});
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], () => SaveTest());
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], () => OpenTest());
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], File_Save);
+			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], File_Open);
 
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
 			File.Cleared += File_Cleared;
 
-			OpenTest();
 			// ToggleModes();
 
 			SetupHooks();
@@ -603,6 +602,7 @@ namespace Nucleus.ModelEditor
 			Active.Editor.CameraX = File.CameraX;
 			Active.Editor.CameraY = File.CameraY;
 			Active.Editor.CameraZoom = File.CameraZoom;
+			File.DiskPath = path;
 			Logs.Info("File load OK!");
 			titleUpdate();
 		}
@@ -628,7 +628,7 @@ namespace Nucleus.ModelEditor
 			string folderPath = createDefaultFolder();
 
 			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
-			if (!result.Cancelled)
+			if (!result.Cancelled) 
 				deserializeFrom(result.Result);
 
 			titleUpdate();
@@ -673,15 +673,6 @@ namespace Nucleus.ModelEditor
 		}
 
 		public const string NUCLEUS_MODEL4_SOURCE_EXT = ".nm4src";
-		private void SaveTest() {
-			Logs.Info("SaveTest: executing");
-			Logs.Info("SaveTest: success");
-		}
-		private void OpenTest() {
-			Logs.Info("OpenTest: executing");
-
-			Logs.Info("OpenTest: success");
-		}
 
 		private void AttemptRename(IEditorType? item = null) {
 			var determinations = GetDeterminations();
