@@ -152,6 +152,7 @@ public class RuntimeViewer : IModelLoader
 						default: continue;
 					}
 
+					realAttachment.Name = attachment.Name;
 					skin.SetAttachment(lookupSlot[slot].Index, attachment.Name, realAttachment);
 				}
 			}
@@ -244,6 +245,32 @@ public class RuntimeViewer : IModelLoader
 								runtimeTimeline = tl;
 								break;
 							}
+
+						case SlotColorTimeline editTimelineCast: {
+								Models.Runtime.SlotColor4Timeline tl = new();
+								tl.Curves[0] = editTimelineCast.CurveR;
+								tl.Curves[1] = editTimelineCast.CurveG;
+								tl.Curves[2] = editTimelineCast.CurveB;
+								tl.Curves[3] = editTimelineCast.CurveA;
+								tl.SlotIndex = lookupSlot[editTimelineCast.Slot].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+
+						case ActiveAttachmentTimeline editTimelineCast: {
+								Models.Runtime.ActiveAttachmentTimeline tl = new();
+
+								var oldFCurve = editTimelineCast.Curve;
+								Models.FCurve<string?> newFCurve = new();
+								foreach(var oldKF in oldFCurve.GetKeyframes()) 
+									newFCurve.AddKeyframe(new(oldKF.Time, oldKF.Value?.Name));
+
+								tl.Curves[0] = newFCurve;
+								tl.SlotIndex = lookupSlot[editTimelineCast.Slot].Index;
+								runtimeTimeline = tl;
+								break;
+							}
+
 
 						default: Logs.Warn($"Please implement Timeline converter for edit-type '{editTimeline.GetType().Name}'"); continue;
 					}
