@@ -69,7 +69,7 @@ namespace Nucleus.ModelEditor
 
 		private EditorSkin? activeSkin = null;
 		public EditorSkin? ActiveSkin {
-			get => activeSkin; 
+			get => activeSkin;
 			set => activeSkin = value;
 		}
 		public SkinsList Skins { get; set; } = [];
@@ -96,11 +96,10 @@ namespace Nucleus.ModelEditor
 		}
 
 		public ModelImage? ResolveImage(string? path) {
-			if (path == null) return null;
-			if (path.StartsWith("<") && path.EndsWith(">"))
-				return Images.ImageLookup.TryGetValue(path.Substring(1, path.Length - 2), out ModelImage? img) ? img : null;
+			if (path == null) return null; // todo: get rid of < > entirely before any major release.
+			path = path.TrimStart('<').TrimEnd('>');
 
-			return null; // eventually; absolute paths?
+			return Images.ImageLookup.TryGetValue(path, out ModelImage? img) ? img : null;
 		}
 		public string GetName() => Name;
 		public bool IsNameTaken(string name) => ModelEditor.Active.File.Models.FirstOrDefault(x => x.Name == name) != null;
@@ -110,7 +109,7 @@ namespace Nucleus.ModelEditor
 		public bool HoverTest(Vector2F gridPos) => false;
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) { }
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) { }
-		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {}
+		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) { }
 		public string SingleName => "model";
 		public string PluralName => "models";
 		public ViewportSelectMode SelectMode => ViewportSelectMode.NotApplicable;
