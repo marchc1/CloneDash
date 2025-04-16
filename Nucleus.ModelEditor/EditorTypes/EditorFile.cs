@@ -632,6 +632,7 @@ namespace Nucleus.ModelEditor
 			var weights = attachment.Weights;
 			if (weights.Count <= 0) return;
 
+			attachment.SetupWorldTransform();
 			foreach (var weightData in weights) {
 				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
 					continue;
@@ -905,7 +906,7 @@ namespace Nucleus.ModelEditor
 			if (separated) {
 				// Find the root timeline if it exists
 				var combinedTimeline = ActiveAnimation.SearchTimelineByProperty(editorBone, property, -1, false);
-				if(combinedTimeline != null && combinedTimeline is CurveTimeline2 ct2) {
+				if (combinedTimeline != null && combinedTimeline is CurveTimeline2 ct2) {
 					SeparateTimelines(ct2);
 				}
 			}
@@ -913,7 +914,7 @@ namespace Nucleus.ModelEditor
 				var x = ActiveAnimation.SearchTimelineByProperty(editorBone, property, 0, false);
 				var y = ActiveAnimation.SearchTimelineByProperty(editorBone, property, 1, false);
 
-				if(x is CurveTimeline1 ct1x && y is CurveTimeline1 ct1y) {
+				if (x is CurveTimeline1 ct1x && y is CurveTimeline1 ct1y) {
 					CombineTimelines(ct1x, ct1y);
 				}
 			}
@@ -940,7 +941,7 @@ namespace Nucleus.ModelEditor
 		public event OnKeyframeDelegateDeltatime? KeyframeMoved;
 		public event OnKeyframeRemoveDelegate? KeyframeRemoved;
 
-		public void InsertKeyframe(IEditorType? type, KeyframeProperty property, int arrayIndex = -1) { 
+		public void InsertKeyframe(IEditorType? type, KeyframeProperty property, int arrayIndex = -1) {
 			if (type == null) return;
 			if (ActiveAnimation == null) return;
 
@@ -989,7 +990,7 @@ namespace Nucleus.ModelEditor
 			CurveTimeline2? ct2 = null;
 			switch (x) {
 				case TranslateXTimeline translateX:
-					if(y is not TranslateYTimeline translateY) throw new Exception("Mismatched X and Y types");
+					if (y is not TranslateYTimeline translateY) throw new Exception("Mismatched X and Y types");
 					Debug.Assert(translateX.Bone == translateY.Bone);
 
 					TranslateTimeline translate = new() { Bone = translateX.Bone, CurveX = x.Curve, CurveY = y.Curve };
