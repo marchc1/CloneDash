@@ -11,6 +11,7 @@ namespace Nucleus.UI.Elements
 
 		public void AddMenuItem(IMenuItem item) => MenuItems.Add(item);
 		public void AddButton(string text, string? icon = null, Action? callback = null) => AddMenuItem(new MenuButton(text, icon, callback));
+		public void AddSubMenu(string text, string? icon = null, Func<Menu, bool>? callback = null) => AddMenuItem(new MenuSubmenu(text, icon, callback));
 
 		public void Show() {
 			Menu menu = UI.Menu();

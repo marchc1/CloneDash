@@ -9,6 +9,7 @@ namespace Nucleus.UI.Elements
 		public void Construct(Menu parent) { }
 	}
 	record MenuButton(string text, string? icon = null, Action? invoke = null) : IMenuItem;
+	record MenuSubmenu(string text, string? icon = null, Func<Menu, bool>? invoke = null) : IMenuItem;
 	public class Menu : Panel
 	{
 		private List<IMenuItem> items = [];
@@ -18,7 +19,7 @@ namespace Nucleus.UI.Elements
 		public void AddButton(string text, string? icon = null, Action? invoke = null) {
 			items.Add(new MenuButton(text, icon, invoke));
 		}
-		public void Open(Vector2F pos) {
+		public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
 			this.Position = pos;
 			this.BorderSize = 1;
 
@@ -29,37 +30,103 @@ namespace Nucleus.UI.Elements
 			this.Clipping = false;
 			bool reverse = false;
 
+			Menu? activeSubmenu = null;
+			Element? lastHoveredPiece = null;
+
 			foreach (var item in items) {
 				switch (item) {
-					case MenuButton btn:
-						var b = this.Add<Button>();
-						b.Dock = Dock.Top;
-						b.Size = new Types.Vector2F(0, 28);
-						b.Text = btn.text;
-						b.AutoSize = false;
-						b.TextPadding = new(12, 12);
-						b.TextSize = 18;
-						b.TextAlignment = Anchor.CenterLeft;
-						b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
-						b.BorderSize = 0;
-						b.MouseReleaseEvent += new MouseEventDelegate((e, fs, mb) => {
-							btn.invoke?.Invoke();
-							this.Remove();
-						});
-						b.Clipping = false;
-						var mic = MathF.Max(items.Count, 8);
+					case MenuButton btn: {
+							var b = this.Add<Button>();
+							b.Dock = Dock.Top;
+							b.Size = new Types.Vector2F(0, 28);
+							b.Text = btn.text;
+							b.AutoSize = false;
+							b.TextPadding = new(12, 12);
+							b.TextSize = 18;
+							b.TextAlignment = Anchor.CenterLeft;
+							b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
+							b.BorderSize = 0;
+							b.MouseReleaseEvent += new MouseEventDelegate((e, fs, mb) => {
+								btn.invoke?.Invoke();
 
-						b.PaintOverride += (self, width, height) => {
-							float x = 0;
-							var by = new Vector2F(x, 0);
-							Graphics2D.OffsetDrawing(by);
-							if (b.Hovered) {
-								Graphics2D.SetDrawColor(70, 80, 90, 222);
-								Graphics2D.DrawRectangle(0, 0, width, height);
-							}
-							b.Paint(width, height);
-							Graphics2D.OffsetDrawing(-by);
-						};
+								Menu ultimateMenu = this;
+								while (true) {
+									var parent = ultimateMenu.Parent;
+									if (parent is not Menu parentMenu) break;
+									ultimateMenu = parentMenu;
+								}
+
+								ultimateMenu?.Remove();
+							});
+							b.Thinking += (s) => {
+								if (s.Hovered) {
+									if (lastHoveredPiece != s) {
+										activeSubmenu?.Remove();
+									}
+									lastHoveredPiece = s;
+								}
+							};
+							b.Clipping = false;
+							var mic = MathF.Max(items.Count, 8);
+
+							b.PaintOverride += (self, width, height) => {
+								float x = 0;
+								var by = new Vector2F(x, 0);
+								Graphics2D.OffsetDrawing(by);
+								if (b.Hovered) {
+									Graphics2D.SetDrawColor(70, 80, 90, 222);
+									Graphics2D.DrawRectangle(0, 0, width, height);
+								}
+								b.Paint(width, height);
+								Graphics2D.OffsetDrawing(-by);
+							};
+						}
+						break;
+					case MenuSubmenu submenu: {
+							var b = this.Add<Button>();
+							b.Dock = Dock.Top;
+							b.Size = new Types.Vector2F(0, 28);
+							b.Text = submenu.text;
+							b.AutoSize = false;
+							b.TextPadding = new(12, 12);
+							b.TextSize = 18;
+							b.TextAlignment = Anchor.CenterLeft;
+							b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
+							b.BorderSize = 0;
+							b.Thinking += (s) => {
+								if (s.Hovered) {
+									if (lastHoveredPiece != s) {
+										activeSubmenu?.Remove();
+										activeSubmenu = this.Add<Menu>();
+										var shouldUse = submenu.invoke?.Invoke(activeSubmenu) ?? false;
+										if (shouldUse) {
+											activeSubmenu.Open(s.GetGlobalPosition() + new Vector2F(s.RenderBounds.W + 2, 4), false, this);
+										}
+										else {
+											activeSubmenu.Remove();
+											activeSubmenu = null;
+										}
+									}
+
+									lastHoveredPiece = s;
+								}
+							};
+
+							b.Clipping = false;
+							var mic = MathF.Max(items.Count, 8);
+
+							b.PaintOverride += (self, width, height) => {
+								float x = 0;
+								var by = new Vector2F(x, 0);
+								Graphics2D.OffsetDrawing(by);
+								if (b.Hovered) {
+									Graphics2D.SetDrawColor(70, 80, 90, 222);
+									Graphics2D.DrawRectangle(0, 0, width, height);
+								}
+								b.Paint(width, height);
+								Graphics2D.OffsetDrawing(-by);
+							};
+						}
 						break;
 					default:
 						item.Construct(this);
@@ -90,7 +157,8 @@ namespace Nucleus.UI.Elements
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
 			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
-			this.MakePopup();
+			if(popup)
+				this.MakePopup();
 
 			UI.OnElementClicked += UI_OnElementClicked;
 		}
