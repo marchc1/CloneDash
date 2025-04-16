@@ -202,6 +202,8 @@ public class DragRenderer : LogicalEntity {
 			var div = dividerAddingTo.DivisionTarget.ActiveView;
 			Debug.Assert(div != null);
 
+			if (div == null) return;
+
 			var divpos = div.GetGlobalPosition();
 			var divsize = div.RenderBounds.Size;
 
