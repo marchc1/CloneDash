@@ -17,6 +17,40 @@ using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.ModelEditor
 {
+	[Nucleus.MarkForStaticConstruction]
+	public static class ModelEditor_RecentFiles
+	{
+		public struct ModelEditor_RecentFile
+		{
+			public string Path;
+			public DateTime Opened;
+		}
+		public static ConVar modeleditor_maxrecentfiles = ConVar.Register("ModelEditor_maxrecentfiles", "24", ConsoleFlags.Saved, "How many recent files can be available before the least-recent file is forgotten about.", 0, null);
+		private static ModelEditor_RecentFile[] recentfiles() {
+			ModelEditor_RecentFile[] files = Host.GetDataStore<ModelEditor_RecentFile[]>("ModelEditor.RecentFiles") ?? [];
+			return files;
+		}
+		private static void compilefiles(ModelEditor_RecentFile[] array) {
+			Host.SetDataStore("ModelEditor.RecentFiles", array);
+			Host.WriteConfig();
+		}
+		public static ModelEditor_RecentFile[] GetRecentFiles() {
+			return recentfiles();
+		}
+		public static void PushRecentFile(string file) {
+			List<ModelEditor_RecentFile> files = recentfiles().ToList();
+			files.RemoveAll(x => x.Path == file);
+
+			files.Insert(0, new() {
+				Path = file,
+				Opened = DateTime.Now
+			});
+			while (files.Count > modeleditor_maxrecentfiles.GetInt()) {
+				files.RemoveAt(modeleditor_maxrecentfiles.GetInt() - 1);
+			}
+			compilefiles(files.ToArray());
+		}
+	}
 	public class OutlinerAndProperties : View
 	{
 		public override string Name => "Outliner";
@@ -494,6 +528,21 @@ namespace Nucleus.ModelEditor
 			var file = menubar.AddButton("File");
 			file.AddButton("New", null, File_New);
 			file.AddButton("Open...", null, File_Open);
+
+			file.AddSubMenu("Open Recent", null, (m) => {
+				var files = ModelEditor_RecentFiles.GetRecentFiles();
+				if (files.Length == 0)
+					return false;
+
+				foreach (var file in files) {
+					m.AddButton(Path.GetFileName(file.Path), null, () => {
+						deserializeFrom(file.Path);
+					});
+				}
+
+				return true;
+			});
+
 			file.AddButton("Save...", null, File_Save);
 			file.AddButton("Save as...", null, File_SaveAs);
 
@@ -595,6 +644,7 @@ namespace Nucleus.ModelEditor
 			if (writePathToFile) File.DiskPath = path;
 			Logs.Debug("File write OK!");
 			titleUpdate();
+			ModelEditor_RecentFiles.PushRecentFile(path);
 		}
 
 		private void deserializeFrom(string? path) {
@@ -606,6 +656,7 @@ namespace Nucleus.ModelEditor
 			File.DiskPath = path;
 			Logs.Info("File load OK!");
 			titleUpdate();
+			ModelEditor_RecentFiles.PushRecentFile(path);
 		}
 
 		private void File_SaveAs() {

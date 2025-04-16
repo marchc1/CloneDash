@@ -100,7 +100,7 @@ namespace Nucleus.UI.Elements
 										activeSubmenu = this.Add<Menu>();
 										var shouldUse = submenu.invoke?.Invoke(activeSubmenu) ?? false;
 										if (shouldUse) {
-											activeSubmenu.Open(s.GetGlobalPosition() + new Vector2F(s.RenderBounds.W + 2, 4), false, this);
+											activeSubmenu.Open(new Vector2F(s.RenderBounds.W + 8, s.GetGlobalPosition().Y - 7), false, this);
 										}
 										else {
 											activeSubmenu.Remove();
