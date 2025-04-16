@@ -206,6 +206,7 @@ namespace Nucleus.ModelEditor
 				case EditMesh_Mode.New:
 					if (WorkingLines.Count > 0 && HoveredVertex == WorkingLines.First()) {
 						Attachment.ShapeEdges.Clear();
+						Attachment.Weights.Clear();
 						RestoreAttachmentTransform();
 						Attachment.ShapeEdges.AddRange(WorkingLines);
 						Attachment.Invalidate();
@@ -962,12 +963,16 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
 		[JsonIgnore] public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
+		public void SetupWorldTransform() {
+			WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+		}
+
 		public override void Render() {
 			if (Hidden) return;
 			RefreshDelaunator();
 
 			if (!SuppressWorldTransform)
-				WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+				SetupWorldTransform();
 
 			var model = Slot.Bone.Model;
 
