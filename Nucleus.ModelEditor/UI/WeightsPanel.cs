@@ -66,7 +66,7 @@ public class BindOperator : Operator
 		}
 
 		// Either way, need to set up local vertex positions
-		ModelEditor.Active.File.UpdateVertexPositions(SelectedAttachment, BonesToBind);
+		EditorFile.UpdateVertexPositions(SelectedAttachment, BonesToBind);
 	}
 	public override bool HoverTest(IEditorType? type) {
 		if (AlreadyBoundBones.Contains(type) || BonesToBind.Contains(type))
@@ -143,7 +143,7 @@ public class WeightsPanel : View
 			if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
 				return;
 
-			ModelEditor.Active.File.UpdateVertexPositions(meshAttachment);
+			EditorFile.UpdateVertexPositions(meshAttachment);
 		});
 
 		ModelEditor.Active.SelectedChanged += Active_SelectedChanged;

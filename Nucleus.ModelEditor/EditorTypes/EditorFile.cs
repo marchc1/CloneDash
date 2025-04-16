@@ -628,8 +628,10 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, EditorMeshVertex? onlyThisVertex = null) {
+		public static void UpdateVertexPositions(EditorMeshAttachment attachment, List<EditorBone>? onlyTheseBones = null, EditorMeshVertex? onlyThisVertex = null) {
 			var weights = attachment.Weights;
+			if (weights.Count <= 0) return;
+
 			foreach (var weightData in weights) {
 				if (onlyTheseBones != null && !onlyTheseBones.Contains(weightData.Bone))
 					continue;

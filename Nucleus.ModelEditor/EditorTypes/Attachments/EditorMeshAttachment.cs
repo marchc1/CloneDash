@@ -194,7 +194,7 @@ namespace Nucleus.ModelEditor
 
 					clickVertexOverride = vertex;
 					hoveredSteinerOverride = true;
-					ModelEditor.Active.File.UpdateVertexPositions(Attachment, onlyThisVertex: vertex);
+					EditorFile.UpdateVertexPositions(Attachment, onlyThisVertex: vertex);
 					break;
 				case EditMesh_Mode.Delete:
 					if (HoveredVertex != null) {
@@ -237,7 +237,7 @@ namespace Nucleus.ModelEditor
 						var clamped = ClampVertexPosition(localized);
 
 						ClickedVertex.SetPos(clamped);
-						ModelEditor.Active.File.UpdateVertexPositions(ClickedVertex.Attachment);
+						EditorFile.UpdateVertexPositions(ClickedVertex.Attachment);
 
 						Attachment.Invalidate();
 					}
@@ -327,6 +327,9 @@ namespace Nucleus.ModelEditor
 
 	public class EditorMeshVertex : IEditorType
 	{
+		public override string ToString() {
+			return $"EditorVertex [{X}, {Y}]";
+		}
 		public EditorModel GetModel() => Attachment.Slot.Bone.Model;
 		public IEditorType? DeferPropertiesTo() => Attachment;
 		public IEditorType? DeferTransformationsTo() => Attachment;
