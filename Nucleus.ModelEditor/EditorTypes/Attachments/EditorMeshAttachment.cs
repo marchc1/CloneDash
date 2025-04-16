@@ -796,8 +796,8 @@ namespace Nucleus.ModelEditor
 
 		public Color Color { get; set; } = Color.White;
 
-		public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
-		public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
+		[JsonIgnore] public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
+		[JsonIgnore] public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
 
 		private (Texture Texture, AtlasRegion Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
 			var model = Slot.Bone.Model;
@@ -953,11 +953,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.DrawRenderBatchActive();
 		}
 
-		public static bool InEditMeshOperator => ModelEditor.Active.File.ActiveOperator is EditMeshOperator;
-		public bool IsActiveAttachment => ModelEditor.Active.File.ActiveOperator is EditMeshOperator op && op.Attachment == this;
-		public static bool RenderTriangles => InEditMeshOperator && EditMeshOperator.meshedit_triangles.GetBool();
-		public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
-		public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
+		[JsonIgnore] public static bool InEditMeshOperator => ModelEditor.Active.File.ActiveOperator is EditMeshOperator;
+		[JsonIgnore]  public bool IsActiveAttachment => ModelEditor.Active.File.ActiveOperator is EditMeshOperator op && op.Attachment == this;
+		[JsonIgnore] public static bool RenderTriangles => InEditMeshOperator && EditMeshOperator.meshedit_triangles.GetBool();
+		[JsonIgnore] public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
+		[JsonIgnore] public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
 		public override void Render() {
 			if (Hidden) return;

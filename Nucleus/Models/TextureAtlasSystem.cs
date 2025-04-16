@@ -16,7 +16,6 @@ namespace Nucleus.Models
 		public int Y;
 		public int W;
 		public int H;
-
 		public AtlasRegion(int x, int y, int w, int h) {
 			X = x;
 			Y = y;
@@ -48,7 +47,7 @@ namespace Nucleus.Models
 	/// </summary>
 	public class TextureAtlasSystem
 	{
-		public bool Debugging => false;
+		public bool Debugging { get; set; }
 		public const string VERSION = "TextureAtlasVersion1";
 
 		public static string SerializeAtlas(Dictionary<string, AtlasRegion> regions) {
@@ -180,9 +179,7 @@ namespace Nucleus.Models
 					Color.White);
 
 				if (testing) {
-					Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());
-					var text = $"{key}";
-					Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11], text, new((int)rect.X + 4, (int)rect.Y + 4), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
+					renderTestData(rect, key, src, ref workingImage);
 				}
 
 				regions[key] = new(rect.X, rect.Y, rect.Width, rect.Height);
@@ -194,6 +191,14 @@ namespace Nucleus.Models
 			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, tex, true, packedImg);
 
 			valid = true;
+		}
+
+		public void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
+			Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());
+			var text = $"{key}";
+			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11], text, new((int)rect.X + 4, (int)rect.Y + 4), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
+			text = $"{rect.X}, {rect.Y} [{rect.Width}x{rect.Height}]";
+			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11], text, new((int)rect.X + 16, (int)rect.Y + 4 + (14 * 1)), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
 		}
 
 		public void SaveTo(string filepath) {
@@ -245,6 +250,17 @@ namespace Nucleus.Models
 			Invalidate();
 		}
 
+		public void AddTexture(string name, Image cpuImage) {
+			if (locked)
+				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context).");
+
+			if (unpacked.TryGetValue(name, out var packed))
+				Raylib.UnloadImage(packed);
+
+			unpacked[name] = cpuImage;
+			Invalidate();
+		}
+
 		public bool RemoveTexture(string name) {
 			bool removed = unpacked.Remove(name);
 			Invalidate();
@@ -289,11 +305,27 @@ namespace Nucleus.Models
 			return false;
 		}
 
+		public void AddRegion(string name, AtlasRegion newRegion) {
+			regions.Add(name, newRegion);
+		}
+
 		public ManagedMemory.Texture Texture {
 			get {
 				Validate();
 				return packedTex;
 			}
+			set {
+				packedTex = value;
+				valid = true;
+			}
+		}
+
+		~TextureAtlasSystem() {
+			MainThread.RunASAP(() => {
+				foreach (var img in unpacked) {
+					Raylib.UnloadImage(img.Value);
+				}
+			});
 		}
 	}
 }

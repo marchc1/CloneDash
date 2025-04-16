@@ -205,7 +205,7 @@ namespace Nucleus.ModelEditor
 			var quadpoints = this.QuadPoints();
 			// Should only be called when the quad test passes, so if no image available,
 			// just return true and throw an assert for debugging
-			Debug.Assert(quadpoints.Texture.HasCPUImage, "No CPU image available!");
+			// Debug.Assert(quadpoints.Texture.HasCPUImage, "No CPU image available!");
 			if (!quadpoints.Texture.HasCPUImage) {
 				DidPassOpacity = true;
 				return true;

@@ -166,6 +166,7 @@ namespace Poly2Tri
 		/// </summary>
 		/// <param name="output">The output list.</param>
 		public void Triangulate(IList<Triangle> output) {
+			if (Points.Count == 0) return;
 			SweepContext tcx = new();
 			tcx.AddPoints(Points);
 

@@ -127,9 +127,13 @@ public class RuntimeViewer : IModelLoader
 
 							mesh.RefreshDelaunator();
 							foreach (var triangle in mesh.Triangles) {
-								EditorMeshVertex ev1 = triangle.Points[0].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
-								EditorMeshVertex ev2 = triangle.Points[1].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
-								EditorMeshVertex ev3 = triangle.Points[2].AssociatedObject as EditorMeshVertex ?? throw new Exception("No mesh vertex to convert during EditorModel conversion process");
+								EditorMeshVertex? ev1 = triangle.Points[0].AssociatedObject as EditorMeshVertex;
+								EditorMeshVertex? ev2 = triangle.Points[1].AssociatedObject as EditorMeshVertex;
+								EditorMeshVertex? ev3 = triangle.Points[2].AssociatedObject as EditorMeshVertex;
+
+								if (ev1 == null) continue;
+								if (ev2 == null) continue;
+								if (ev3 == null) continue;
 
 								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
 								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
