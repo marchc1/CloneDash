@@ -515,9 +515,9 @@ public class MeshAttachment : Attachment
 				var av2 = Vertices[tri.V2];
 				var av3 = Vertices[tri.V3];
 
-				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 0, 1, region.Y, region.Y + region.H);
-				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 0, 1, region.Y, region.Y + region.H);
-				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 0, 1, region.Y, region.Y + region.H);
+				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
+				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
+				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
 
 				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
 				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
