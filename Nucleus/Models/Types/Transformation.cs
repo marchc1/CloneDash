@@ -1,5 +1,4 @@
-﻿using glTFLoader.Schema;
-using Nucleus.Types;
+﻿using Nucleus.Types;
 using System.Diagnostics;
 using System.Numerics;
 

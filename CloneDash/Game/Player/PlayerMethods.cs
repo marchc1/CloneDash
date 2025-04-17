@@ -178,9 +178,6 @@ namespace CloneDash.Game
                 HoldingTopPathwaySustain = entity;
             else
                 HoldingBottomPathwaySustain = entity;
-
-            if (wasSustaining && !IsSustaining(PathwaySide.Top) && !IsSustaining(PathwaySide.Bottom))
-                Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
         }
         /// <summary>
         /// Returns if the jump was successful. Mostly returns this for the sake of animation.
@@ -214,48 +211,14 @@ namespace CloneDash.Game
                 __whenjump = Conductor.Time;
                 OnAirAttack?.Invoke(this, PathwaySide.Top);
 
-                if (entity is SustainBeam)
-                    Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
-                else if (IsSustaining()) {
-                    HologramPlayer.Visible = true;
-					var airAnim = GetHitAnimation(entity, PathwaySide.Top);
-					__whenHjump = Conductor.Time;
-					__jumpAnimationHStops = HologramPlayer.GetAnimationLength(airAnim);
-					HologramPlayer.PlayAnimation(airAnim);
-                }
-                else {
-					var airAnim = GetHitAnimation(entity, PathwaySide.Top);
-					__firstJump = !InAir;
-					__jumpAnimationStops = Player.GetAnimationLength(airAnim);
-					Player.PlayAnimation(airAnim, fallback: GetCharacterAnimation(CharacterAnimation.Walk));
-                }
-
                 return true;
             }
             return false;
         }
 
-		public string GetHitAnimation(CD_BaseMEntity? entity, PathwaySide? side) {
-			if (!IValidatable.IsValid(entity)) {
-				return side == PathwaySide.Top ? GetCharacterAnimation(CharacterAnimation.AirFail) : GetCharacterAnimation(CharacterAnimation.GroundFail);
-			}
-
-			return side == PathwaySide.Top ? GetCharacterAnimation(CharacterAnimation.AirHit) : GetCharacterAnimation(CharacterAnimation.GroundHit);
-		}
-
         public void AttackGround(CD_BaseMEntity entity) {
             __whenjump = -2000000000000d;
             OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
-
-            if (entity is SustainBeam)
-                Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Hold), loop: true);
-            else if (IsSustaining()) {
-                HologramPlayer.Visible = true;
-				HologramPlayer.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom));
-            }
-            else {
-                Player.PlayAnimation(GetHitAnimation(entity, PathwaySide.Bottom), fallback: GetCharacterAnimation(CharacterAnimation.Walk));
-            }
         }
         /// <summary>
         /// Gets the current pathway the player is on. Returns Top if jumping, else bottom.

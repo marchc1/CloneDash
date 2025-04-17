@@ -15,7 +15,6 @@ namespace CloneDash.Game.Entities
         }
         public override void Initialize() {
             base.Initialize();
-            SetModel("sustainbeam.glb", "Idle", true);
         }
 
         public bool HeldState { get; private set; } = false;
@@ -39,7 +38,6 @@ namespace CloneDash.Game.Entities
             HeldState = true;
             ForceDraw = true;
             Level.As<CD_GameLevel>().SetSustain(Pathway, this);
-            PlayAnimation("Open", loop: false);
             Level.As<CD_GameLevel>().AddCombo();
             Level.As<CD_GameLevel>().AddFever(FeverGiven);
         }
@@ -106,22 +104,12 @@ namespace CloneDash.Game.Entities
                 Raylib.DrawCubeV(new((startPos + endPos) / 2f, YPos, 10), new(endPos - startPos, i, 0.2f), Game.Pathway.GetColor(Pathway, HeldState ? 9 : 5));
             }
 
-            var mS = Model.Model;
-
-            Model.Position = new(startPos, YPos, 0);
-            Model.Rotation = new(0, 0, 0);
-            Model.Render();
-
-            Model.Position = new(endPos, YPos, 0);
-            Model.Rotation = new(0, 0, 180);
-            Model.Render();
-
             //Console.WriteLine($"AnimationFrame {AnimationFrame} CurrentAnimation.HasValue {CurrentAnimation.HasValue}");
             //DrawSpriteBasedOnPathway(TextureSystem.LoadTexture("fightable_beam"), RectangleF.FromPosAndSize(new(startPos, YPos), TextureSize), TextureSize / 2, 0);
             //DrawSpriteBasedOnPathway(TextureSystem.fightable_beam, RectangleF.FromPosAndSize(new(endPos, YPos), TextureSize), TextureSize / 2, 180);
         }
         public override void Build() {
-            HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
+
         }
     }
 }

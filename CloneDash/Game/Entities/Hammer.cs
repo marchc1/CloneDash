@@ -40,13 +40,10 @@ namespace CloneDash.Game.Entities
             var timeToHit = (float)(HitTime - ShowTime);
 
             pos.Y = pathwayY;
-            var bone = this.Model.GetBoneByName("Bone");
-
-            bone.Rotation = new(0, 0, -(float)(whenDidHammerHit == -1 ? NMath.Remap(level.Conductor.Time, HitTime - 2, HitTime, 100, 0) : NMath.Remap(Level.CurtimeF - whenDidHammerHit, 0, 0.55f, 0, 100)));
         }
 
         public override void Build() {
-            HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
+
         }
     }
 }

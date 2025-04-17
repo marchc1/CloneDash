@@ -2,27 +2,155 @@
 
 namespace CloneDash.Modding.Descriptors
 {
+	public class CharacterMultiAnimationState(CharacterDescriptor_MultiAnimation anim) {
+		public int CurrentCount = 1;
+		public string PickSequential() {
+			string name = anim.GetAnimation(CurrentCount);
+			CurrentCount++;
+			if(CurrentCount > anim.Count) {
+				CurrentCount = 1;
+			}
+
+			return name;
+		}
+	}
+	public class CharacterDescriptor_MultiAnimation {
+		[JsonProperty("format")] public string Format;
+		[JsonProperty("count")] public int Count;
+
+		public static implicit operator CharacterDescriptor_MultiAnimation(string s) => new() {
+			Format = s,
+			Count = 1
+		};
+
+		public bool HasAnimations => Count > 0;
+		public string GetAnimation(int at) => string.Format(Format, at);
+		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count - 1) + 1);
+	}
+	public class CharacterDescriptor_MainShow
+	{
+		[JsonProperty("model")] public string Model;
+	}
+	public class CharacterDescriptor_Play
+	{
+		public class CharacterDescriptor_PlayAir
+		{
+			[JsonProperty("great")] public CharacterDescriptor_MultiAnimation Great;
+			[JsonProperty("perfect")] public CharacterDescriptor_MultiAnimation Perfect;
+			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
+			[JsonProperty("miss")] public CharacterDescriptor_MultiAnimation? Miss;
+		}
+		public class CharacterDescriptor_PlayRoad
+		{
+			[JsonProperty("great")] public CharacterDescriptor_MultiAnimation Great;
+			[JsonProperty("perfect")] public CharacterDescriptor_MultiAnimation Perfect;
+			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
+			[JsonProperty("miss")] public CharacterDescriptor_MultiAnimation Miss;
+		}
+		public class CharacterDescriptor_PlayTransitions
+		{
+			[JsonProperty("air_to_ground")] public CharacterDescriptor_MultiAnimation AirToGround;
+		}
+		public class CharacterDescriptor_PlayJump
+		{
+			[JsonProperty("jump")] public CharacterDescriptor_MultiAnimation Jump;
+			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
+		}
+		public class CharacterDescriptor_PlayPress
+		{
+			[JsonProperty("press")] public CharacterDescriptor_MultiAnimation Press;
+
+			[JsonProperty("air_press_end")] public CharacterDescriptor_MultiAnimation AirPressEnd;
+			[JsonProperty("air_press_hurt")] public CharacterDescriptor_MultiAnimation AirPressHurt;
+
+			[JsonProperty("down_press_hit")] public CharacterDescriptor_MultiAnimation DownPressHit;
+			[JsonProperty("up_press_hit")] public CharacterDescriptor_MultiAnimation UpPressHit;
+		}
+
+		[JsonProperty("model")] public string Model;
+
+		[JsonProperty("run")] public CharacterDescriptor_MultiAnimation RunAnimation;
+		[JsonProperty("die")] public CharacterDescriptor_MultiAnimation DieAnimation;
+		[JsonProperty("standby")] public CharacterDescriptor_MultiAnimation StandbyAnimation;
+
+		[JsonProperty("air")] public CharacterDescriptor_PlayAir AirAnimations;
+		[JsonProperty("road")] public CharacterDescriptor_PlayRoad RoadAnimations;
+		[JsonProperty("double")] public CharacterDescriptor_MultiAnimation DoubleAnimation;
+		[JsonProperty("transitions")] public CharacterDescriptor_PlayTransitions TransitionAnimations;
+		[JsonProperty("jump")] public CharacterDescriptor_PlayJump JumpAnimations;
+		[JsonProperty("press")] public CharacterDescriptor_PlayPress PressAnimations;
+
+	}
+	public class CharacterDescriptor_Victory
+	{
+		[JsonProperty("model")] public string Model;
+	}
+	public class CharacterDescriptor_Fail
+	{
+		[JsonProperty("model")] public string Model;
+	}
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
 		// version 3 since we're using Model v3
 		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, 3) { }
 
-		[JsonIgnore] private static readonly string[] Attacks = ["Hit1", "Hit2", "Hit3"];
+		[JsonProperty("name")] public string Name;
+		[JsonProperty("author")] public string Author;
+		[JsonProperty("perk")] public string Perk;
+		[JsonProperty("version")] public string Version;
 
-		public string Animation_WalkCycle = "Walk";
-		public string[] Animation_AirAttacks_Failed = ["Jump"];
-		public string[] Animation_GroundAttacks_Failed = ["Punch"];
 
-		public string[]? Animation_Attacks = null;
-		public string[]? Animation_AirAttacks = null;
-		public string[]? Animation_GroundAttacks = Attacks;
+		/// <summary>
+		/// Maximum player health
+		/// </summary>
+		[JsonProperty("max_hp")] public double? MaxHP;
+		/// <summary>
+		/// Fever threshold
+		/// </summary>
+		[JsonProperty("fever_threshold")] public double? FeverThreshold;
+		/// <summary>
+		/// How long a fever lasts, in seconds
+		/// </summary>
+		[JsonProperty("fever_time")] public double? FeverTime;
+		/// <summary>
+		/// Is the character killable. If false, deaths will not be registered beyond
+		/// the final score being inapplicable
+		/// </summary>
+		[JsonProperty("killable")] public bool Killable = true;
+		/// <summary>
+		/// How fast HP is lost over time (hp/per sec)
+		/// </summary>
+		[JsonProperty("lose_hp_rate")] public double LoseHPRate;
+		/// <summary>
+		/// Does this character enter autoplay mode.
+		/// </summary>
+		[JsonProperty("automatic")] public bool Automatic;
+		/// <summary>
+		/// Score multiplier.
+		/// </summary>
+		[JsonProperty("score_multiplier")] public double ScoreMultiplier = 1.0d;
+		/// <summary>
+		/// Specifies a string filepath (local to the directory of the descriptor) for a Lua logic controller.
+		/// Not implemented yet, requires my plans for a scripting API
+		/// </summary>
+		[JsonProperty("logic_controller")] public string? LogicController;
 
-		public string[] GetAirAttacks() =>
-			Animation_AirAttacks == null ? Animation_Attacks ?? throw new Exception("No air attacks!") : Animation_AirAttacks;
-		public string[] GetGroundAttacks() =>
-			Animation_GroundAttacks == null ? Animation_Attacks ?? throw new Exception("No ground attacks!") : Animation_GroundAttacks;
-
-		public string Animation_Holding = "Holding";
+		/// <summary>
+		/// Main menu model
+		/// </summary>
+		[JsonProperty("mainshow")] public CharacterDescriptor_MainShow MainShow = new();
+		/// <summary>
+		/// In-game model
+		/// </summary>
+		[JsonProperty("play")] public CharacterDescriptor_Play Play = new();
+		/// <summary>
+		/// Victory model
+		/// </summary>
+		[JsonProperty("victory")] public CharacterDescriptor_Victory Victory = new();
+		/// <summary>
+		/// Fail model
+		/// </summary>
+		[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
 		public static CharacterDescriptor ParseFile(string filepath) => ParseFile<CharacterDescriptor>(filepath);
 	}

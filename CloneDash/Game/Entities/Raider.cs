@@ -46,12 +46,10 @@ namespace CloneDash.Game.Entities
 		}
 		public override void Initialize() {
 			base.Initialize();
-			SetModel("singlehit.glb", "SingleHitIdle", true);
 		}
 
 		public override void Build() {
-			HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
-			//Texture = RelatedToBoss ? TextureSystem.LoadTexture("boss_projectile.png") : TextureSystem.LoadTexture("fightable_ball.png");
+			
 		}
 	}
 }

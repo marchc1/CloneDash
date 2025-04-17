@@ -74,7 +74,6 @@ namespace CloneDash.Game
 		public const float PLAYER_OFFSET_Y = 0.64f;
 		public const float PLAYER_OFFSET_HIT_Y = -0.267f;
 
-
 		public bool InHit { get; private set; } = false;
 
 		public bool SuppressHitMessages { get; set; }
@@ -178,31 +177,6 @@ namespace CloneDash.Game
 			AirHit,
 			GroundHit,
 			Hold
-		}
-
-		public string GetCharacterAnimation(CharacterAnimation animation) {
-			switch (animation) {
-				case CharacterAnimation.Walk:
-					return CharacterDescriptor.Animation_WalkCycle;
-
-				case CharacterAnimation.AirFail:
-					return CharacterDescriptor.Animation_AirAttacks_Failed[failP++ % CharacterDescriptor.Animation_AirAttacks_Failed.Length];
-				case CharacterAnimation.GroundFail:
-					return CharacterDescriptor.Animation_GroundAttacks_Failed[failP++ % CharacterDescriptor.Animation_GroundAttacks_Failed.Length];
-
-				case CharacterAnimation.AirHit:
-					var airs = CharacterDescriptor.GetAirAttacks();
-					return airs[attackP++ % airs.Length];
-				case CharacterAnimation.GroundHit:
-					var grounds = CharacterDescriptor.GetAirAttacks();
-					return grounds[attackP++ % grounds.Length];
-
-				case CharacterAnimation.Hold:
-					return CharacterDescriptor.Animation_Holding;
-
-				default:
-					throw new Exception("Unknown CharacterAnimation value.");
-			}
 		}
 
 		private int entI = 0;

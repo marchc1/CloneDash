@@ -13,6 +13,10 @@ namespace CloneDash.Modding.Settings
 	public static class CharacterMod
 	{
 		public static ConVar clonedash_character = ConVar.Register("clonedash_character", "", ConsoleFlags.Saved, "Your character.");
+		public static ConCommand clonedash_characterinfo = ConCommand.Register("clonedash_characterinfo", (_, _) => {
+			Logs.Print("Character Info:");
+			Logs.Print("    ");
+		}, "Your characters info, based on the Clone Dash Descriptor");
 
 		static CharacterMod() {
 			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");

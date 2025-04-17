@@ -23,8 +23,6 @@ namespace CloneDash.Game.Entities
 		}
 		public override void Initialize() {
             base.Initialize();
-            SetModel("doublehit.glb", "Idle", true);
-            Model.HSV = new(37, 1.24f, 1);
         }
 
         public override void ChangePosition(ref Vector2F pos) {
@@ -50,8 +48,8 @@ namespace CloneDash.Game.Entities
             var game = Level.As<CD_GameLevel>();
             var YPos = Game.Pathway.ValueDependantOnPathway(Pathway, game.TopPathway.Position.Y, game.BottomPathway.Position.Y);
 
-            Model.Position = new(this.Position.X, this.Position.Y, 0);
-            Model.Rotation = this.Rotation;
+            Model.Position = new(this.Position.X, this.Position.Y);
+            // Model.Rotation = this.Rotation;
             Model.Render();
 
             if (Dead)

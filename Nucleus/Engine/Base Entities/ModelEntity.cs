@@ -43,8 +43,8 @@ namespace Nucleus.Engine
 
         public override void Render(FrameState frameState) => Render();
         public void Render() {
-            if (!Visible)
-                return;
+            if (!Visible) return;
+            if (Model == null) return;
 
             Model.Position = new(Position.X, Position.Y);
             Model.Render();

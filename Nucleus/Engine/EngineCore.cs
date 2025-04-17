@@ -267,7 +267,6 @@ namespace Nucleus
                 UnloadLevel();
             }
 
-            Model3AnimationChannel.GlobalPause = false;
             Logs.Info($"Loading level {level.GetType().Name}...");
             Stopwatch s = new Stopwatch();
             s.Start();
