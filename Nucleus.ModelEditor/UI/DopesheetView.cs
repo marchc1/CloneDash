@@ -54,8 +54,8 @@ public class DopesheetView : BaseTimelineView
 		curframeNum.Value = 1;
 		curframeNum.Value = 0;
 
-		ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead();
-		ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead();
+		ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead(false);
+		ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => curframeNum.Value = ModelEditor.Active.File.Timeline.GetVisualPlayhead(false);
 
 		KeyframeOverlay.MoveToFront();
 	}

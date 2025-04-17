@@ -80,7 +80,7 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 		for (int i = 0; i < curves.Length; i++) {
 			curves[i].SetKeyframeTime(keyframes[i], time);
 		}
-		ModelEditor.Active.QueueAnimationUpdate();
+		ModelEditor.Active?.QueueAnimationUpdate();
 	}
 
 	public void SetValue(object? value) {
@@ -135,6 +135,12 @@ public abstract class EditorTimeline
 
 	protected KeyframeState KeyframedAtCalc<TL, VL>(TL obj, double time) where TL : IKeyframeQueryable<VL>, IProperty<VL> {
 		return !obj.TryGetKeyframedValueAtTime(time, out var key) ? KeyframeState.NotKeyframed : obj.Compare(key, obj.GetValue()) ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	}
+
+	public void ScaleTime(double refFPS) {
+		foreach(var kf in GetKeyframes()) {
+			kf.SetTime(kf.GetTime() * refFPS);
+		}
 	}
 }
 

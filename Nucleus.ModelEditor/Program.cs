@@ -488,7 +488,7 @@ namespace Nucleus.ModelEditor
 				//Surface.SetViewport(s.GetGlobalPosition(), s.RenderBounds.Size);
 
 				if (activeAnimation != null) {
-					activeAnimation.Apply(instance, (Curtime - start) * File.Timeline.FPS);
+					activeAnimation.Apply(instance, (Curtime - start) );
 				}
 
 				Raylib.BeginMode2D(new() {

@@ -315,7 +315,7 @@ public abstract class BaseTimelineView : View
 			SetCurFrame();
 	}
 
-	public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetPlayhead();
+	public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetVisualPlayhead(true);
 	public void SetCurFrame() {
 		var xLocal = TimeInfoPanel.GetMousePos();
 		var precise = EngineCore.CurrentFrameState.KeyboardState.ShiftDown;
@@ -340,7 +340,7 @@ public abstract class BaseTimelineView : View
 		if (width <= 0 || height <= 0) return;
 		var tl = ModelEditor.Active.File.Timeline;
 
-		var curframe = tl.GetPlayhead();
+		var curframe = tl.GetVisualPlayhead(true);
 
 		self.BackgroundColor = new(30, 37, 46);
 		self.BorderSize = 0;
@@ -418,11 +418,13 @@ public abstract class BaseTimelineView : View
 	public double FrameToX(int frame)
 		=> (defaultXOffset - FrameOffset) + (frame * Zoom);
 
+	public int GetFPS() => ModelEditor.Active.File.Timeline.FPS;
+
 	public int XToFrame(double x)
-		=> (int)Math.Round((x - defaultXOffset + FrameOffset) / Zoom);
+		=> (int)Math.Round(((x - defaultXOffset + FrameOffset) / Zoom) );
 
 	public double XToFrameExact(double x)
-		=> (x - defaultXOffset + FrameOffset) / Zoom;
+		=> ((x - defaultXOffset + FrameOffset) / Zoom);
 
 	public bool FrameOutOfBounds(double frame) {
 		var x = FrameToX(frame);
