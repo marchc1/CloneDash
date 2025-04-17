@@ -185,7 +185,7 @@ namespace CloneDash.Game
 			__deferringAsync = true;
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
-			while(entI < Sheet.Entities.Count) {
+			while (entI < Sheet.Entities.Count) {
 				if (watch.ElapsedMilliseconds >= ms)
 					return false;
 
@@ -629,26 +629,21 @@ namespace CloneDash.Game
 		}
 
 		public override void PreRenderBackground(FrameState frameState) {
-			Graphics2D.SetTexture(Textures.LoadTextureFromFile("backgroundscroll.png"));
-			var offset = ((float)Curtime * -600f) % frameState.WindowWidth;
-			Graphics2D.SetDrawColor(255, 255, 255, 127);
-			var offset2 = frameState.WindowHeight * 0.1f;
-			Graphics2D.DrawTexture(new(offset, offset2), new(frameState.WindowWidth, frameState.WindowHeight));
-			Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, offset2), new(frameState.WindowWidth, frameState.WindowHeight)); ;
-		}
-		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 
 		}
+		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
+			cam.Zoom = 1f;
+			//cam.Zoom = 1.0f + ((MathF.Sin(CurtimeF * 5) + 1) / 2);
+			cam.Rotation = 0.0f;
+			cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
+			cam.Target = cam.Offset;
+		}
 		public override void Render(FrameState frameState) {
-			if (CommandLineArguments.IsParamTrue("debug")) {
-				Rlgl.DrawRenderBatchActive();
-				Rlgl.SetLineWidth(5);
-				Raylib.DrawLine3D(new(0, 2.5f, 0), new(10000, 2.5f, 0), Color.Red);
-				Raylib.DrawLine3D(new(2.5f, 0, 0), new(2.5f, 10000, 0), Color.Green);
-				Rlgl.DrawRenderBatchActive();
-				Rlgl.SetLineWidth(1);
-			}
-			
+			Raylib.DrawLineV(new(0, 0), new(1600, 900), Color.Red);
+
+			TopPathway.Render();
+			BottomPathway.Render();
+
 			foreach (Entity ent in VisibleEntities) {
 				if (ent is not CD_BaseEnemy entCD)
 					continue;
@@ -656,12 +651,15 @@ namespace CloneDash.Game
 				float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
 
 				Graphics2D.SetDrawColor(255, 255, 255);
-				var p = new Vector2F((float)entCD.XPos, yPosition); // Calculate the final beat position on the track
+				var p = new Vector2F((float)entCD.XPos, yPosition);
+					; // Calculate the final beat position on the track
 				entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
 				ent.Position = p;
 				ent.Render(frameState);
+
+				Graphics2D.DrawCircle(ent.Position, 16);
 			}
-			
+
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
 		}
 

@@ -41,7 +41,7 @@ namespace CloneDash.Game.Entities
         public override void Think(FrameState frameState) {
             if (!thoughtBefore) {
                 thoughtBefore = true;
-                this.Rotation = Pathway == PathwaySide.Top ? new(0, 0, -180) : new(0, 0, 0);
+                this.Rotation = Pathway == PathwaySide.Top ? -180 : 0;
             }
         }
         public override void Render(FrameState frameState) {

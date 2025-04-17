@@ -12,7 +12,7 @@ namespace CloneDash.Game
 		public CD_BaseEnemy Enemy;
 		public EnemyPostHitPhysicsController(CD_BaseEnemy enemy) {
 			Enemy = enemy;
-			Enemy.Rotation = new System.Numerics.Vector3(0);
+			Enemy.Rotation = 0;
 		}
         private bool hit = false;
 
@@ -29,7 +29,7 @@ namespace CloneDash.Game
             this.pos = Enemy.Position;
             this.vel = velocity;
             this.angVel = angularVelocity;
-            this.ang = Enemy.Rotation.Z;
+            this.ang = Enemy.Rotation;
             lastCurtime = Enemy.Level.CurtimeF;
         }
 
@@ -46,7 +46,7 @@ namespace CloneDash.Game
 
                 ang += angVel * delta;
 
-				Enemy.Rotation = new(0, 0, ang);
+				Enemy.Rotation = ang;
 
                 lastCurtime = level.CurtimeF;
             }

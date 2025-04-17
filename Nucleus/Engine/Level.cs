@@ -607,7 +607,6 @@ namespace Nucleus.Engine
 				RunEventPreRenderBackground(frameState);
 				frameState.Camera2D = cam2d;
 
-				Rlgl.DisableDepthTest();
 				Raylib.BeginMode2D(cam2d);
 			}
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));

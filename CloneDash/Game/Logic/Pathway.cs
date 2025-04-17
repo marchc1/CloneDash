@@ -88,23 +88,27 @@ namespace CloneDash.Game
             Position = new Vector2F(frameState.WindowHeight * PATHWAY_LEFT_PERCENTAGE, GetPathwayY(Side));
         }
         public override void PostRender(FrameState frameState) {
-            var beatInfluence = 1 - Level.As<CD_GameLevel>().Conductor.NoteDivisorRealtime(4);
-            var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
-            var size = Raymath.Remap(realInfluence, 0, 1, 36, 42);
-            var curtimeOffset = (float)Level.Curtime * 120;
 
-            float divisors = 3;
-            float ring_offset = 360 / divisors / 2;
-
-            var alpha = (int)Raymath.Remap(realInfluence, 0, 1, 79, 130);
-
-            Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, DashVars.TopPathwayColor, DashVars.BottomPathwayColor), alpha);
-            Graphics2D.DrawRing(Position, (32 / 2) - 4, (32 / 2));
-
-            var ringPartSize = 360f / divisors;
-            for (float i = 0; i < 360f; i += ringPartSize) {
-                Graphics2D.DrawRing(Position, size, size / 1.15f, curtimeOffset + i, curtimeOffset + i + (ringPartSize - ring_offset));
-            }
         }
+
+		public void Render() {
+			var beatInfluence = 1 - Level.As<CD_GameLevel>().Conductor.NoteDivisorRealtime(4);
+			var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
+			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42);
+			var curtimeOffset = (float)Level.Curtime * 120;
+
+			float divisors = 3;
+			float ring_offset = 360 / divisors / 2;
+
+			var alpha = (int)Raymath.Remap(realInfluence, 0, 1, 79, 130);
+
+			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, DashVars.TopPathwayColor, DashVars.BottomPathwayColor), alpha);
+			Graphics2D.DrawRing(Position, (32 / 2) - 4, (32 / 2));
+
+			var ringPartSize = 360f / divisors;
+			for (float i = 0; i < 360f; i += ringPartSize) {
+				Graphics2D.DrawRing(Position, size, size / 1.15f, curtimeOffset + i, curtimeOffset + i + (ringPartSize - ring_offset));
+			}
+		}
     }
 }

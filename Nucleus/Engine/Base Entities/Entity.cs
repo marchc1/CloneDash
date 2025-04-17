@@ -43,7 +43,7 @@ namespace Nucleus.Engine
         public bool RendersItself { get; set; } = true;
 
         public Vector2F Position { get; set; } = Vector2F.Zero;
-        public Vector3 Rotation { get; set; } = Vector3.Zero;
+        public float Rotation { get; set; } = 0;
         public Vector2F Scale { get; set; } = Vector2F.One;
     }
 }
