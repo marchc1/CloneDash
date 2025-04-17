@@ -249,6 +249,7 @@ namespace Nucleus.Core
 		}
 
 		public static void DrawLineBezier(Vector2F start, Vector2F end, float width = 1f) => Raylib.DrawLineBezier(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
+		public static void DrawCubicBezier(Vector2F p1, Vector2F c1, Vector2F c3, Vector2F p4, float width = 1f) => Raylib.DrawSplineSegmentBezierCubic(AFV2ToSNV2(p1), AFV2ToSNV2(p4), AFV2ToSNV2(c1), AFV2ToSNV2(c3), width, __drawColor);
 
 		public static void DrawCircle(int centerX, int centerY, float radius) => Raylib.DrawCircle(offsetX(centerX), offsetY(centerY), radius, __drawColor);
 		public static void DrawCircle(Vector2F pos, float radius) => Raylib.DrawCircleV(AFV2ToSNV2(pos), radius, __drawColor);
