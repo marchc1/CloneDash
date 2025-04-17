@@ -43,7 +43,7 @@ public class TimelineManager
 	/// Returns how the playhead should look to the user. The frame is rounded only when playing; otherwise, it is only rounded to 2 digits
 	/// </summary>
 	/// <returns></returns>
-	public double GetVisualPlayhead() => PlayDirection != 0 ? Math.Round(Frame) : Math.Round(Frame, 2);
+	public double GetVisualPlayhead(bool alwaysInterpolate) => (alwaysInterpolate || PlayDirection == 0) ? Math.Round(Frame * FPS, 2) : Math.Round(Frame * FPS);
 
 
 	public bool PlayingBackwards {
@@ -69,8 +69,6 @@ public class TimelineManager
 	public void AddDeltaTime(double dt, double maxTime) {
 		if (PlayDirection == 0) return;
 		if (!ModelEditor.Active.AnimationMode) return;
-
-		dt *= FPS;
 
 		if (PlayingBackwards) dt *= -1;
 
@@ -100,7 +98,7 @@ public class TimelineManager
 		FrameChanged?.Invoke(this, frame);
 	}
 	public void SetFrame(double frame) {
-		frame = Math.Max(0, frame);
+		frame = Math.Max(0, frame / FPS);
 		Frame = frame;
 		FrameChanged?.Invoke(this, (int)(float)frame);
 	}
