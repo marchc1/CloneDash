@@ -14,6 +14,21 @@ namespace Nucleus.Models
 			foreach (var keyframe in Keyframes)
 				yield return keyframe;
 		}
+		public void ScaleTime(double scale) {
+			foreach(var kf in Keyframes) {
+				kf.SetTime(kf.GetTime() * scale);
+			}
+			valid =false;
+		}
+
+		public FCurve<T> Copy(double scale = 1) {
+			FCurve<T> copy = new FCurve<T>();
+			foreach(var kf in GetKeyframes()) {
+				copy.AddKeyframe(kf.Copy(scale));
+			}
+			copy.valid = false;
+			return copy;
+		}
 
 		[JsonIgnore] private bool valid = false;
 
