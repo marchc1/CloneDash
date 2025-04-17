@@ -550,6 +550,7 @@ namespace Nucleus.ModelEditor
 
 			file.AddButton("Save...", null, File_Save);
 			file.AddButton("Save as...", null, File_SaveAs);
+			file.AddButton("Export...", null, File_Export);
 
 			var tests = menubar.AddButton("Tests");
 			tests.AddButton("Runtime Test", null, () => {
@@ -631,6 +632,28 @@ namespace Nucleus.ModelEditor
 #nullable enable
 
 			titleUpdate();
+		}
+
+		private void File_Export() {
+			var window = UI.Add<Window>();
+			window.Size = new(1280, 720);
+			window.Center();
+			window.Title = $"Export [{Model4System.MODEL_FORMAT_VERSION}]";
+			window.MakePopup();
+
+			var btn = window.Add<Button>();
+			btn.Text = "Export JSON";
+			btn.Dock = Dock.Top;
+			btn.MouseReleaseEvent += (_, _, _) => {
+				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [Model4System.MODEL_FORMAT_REFJSON_EXT], "Model4 as Ref'd JSON");
+				if (!save.Cancelled) {
+					var model = ModelEditor.Active.File.Models.First();
+					model.Images.TextureAtlas.SaveTo(save.Result);
+					new ModelRefJSON().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(model));
+				}
+				Logs.Info("Saved.");
+				window.Remove();
+			};
 		}
 
 		private string createDefaultFolder() {

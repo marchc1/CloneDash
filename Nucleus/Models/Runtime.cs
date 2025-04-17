@@ -1,6 +1,8 @@
 ﻿// This *might* get separated into separate files per type soon, but for now, it's simpler
 // to just have it all be in one place.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
@@ -21,6 +23,7 @@ public static class Model4System
 	/// Editor can use this too
 	/// </summary>
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.13.01";
+	public const string MODEL_FORMAT_REFJSON_EXT = ".nm4rj";
 
 	private static Dictionary<string, WeakReference<ModelData>> ModelCache { get; set; } = [];
 	private static string getCacheID<IML>(string uniqueID)
@@ -834,4 +837,58 @@ public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false)
 public interface IModelLoader
 {
 	ModelData LoadModelFromFile(string filepath);
+}
+
+// Basic JSON model loader. Uses Newtonsoft's references to deserialize properly.
+// The editor does something similar but with EditorModel instead.
+public class ModelRefJSON : IModelLoader
+{
+	public class ModelRefJsonSerializationBinder : ISerializationBinder
+	{
+		private static HashSet<Type> ApprovedBindables;
+		static ModelRefJsonSerializationBinder() {
+			ApprovedBindables = [];
+
+			// Build the type whitelist. Has to be done for security reasons
+			// Includes all abstract implementors of attachments and timelines.
+			// Those types will then include their typename in the JSON so they can
+			// be deserialized properly
+
+			foreach (var attachmentType in typeof(Attachment).GetInheritorsOfAbstractType())
+				ApprovedBindables.Add(attachmentType);
+
+			foreach (var timelineType in typeof(Timeline).GetInheritorsOfAbstractType())
+				ApprovedBindables.Add(timelineType);
+		}
+		public Type BindToType(string? assemblyName, string typeName) {
+			var resolvedTypeName = $"{typeName}, {assemblyName}";
+
+			var type = Type.GetType(resolvedTypeName, true);
+			if (!ApprovedBindables.Contains(type))
+				throw new JsonSerializationException($"Type is not approved for serialization. Typename: ${resolvedTypeName}");
+
+			return type;
+		}
+
+		public void BindToName(Type serializedType, out string? assemblyName, out string? typeName) {
+			assemblyName = null;
+			typeName = serializedType.AssemblyQualifiedName;
+		}
+	}
+	public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings() {
+		ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+		PreserveReferencesHandling = PreserveReferencesHandling.All,
+		SerializationBinder = new ModelRefJsonSerializationBinder()
+	};
+
+	public ModelData LoadModelFromFile(string filepath) {
+		var data = JsonConvert.DeserializeObject<ModelData>(File.ReadAllText(filepath), Settings);
+		if (data == null)
+			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
+		return data;
+	}
+	public void SaveModelToFile(string filepath, ModelData data) {
+		var serialized = JsonConvert.SerializeObject(data, Settings);
+		File.WriteAllText(filepath, serialized);
+	}
 }
