@@ -82,7 +82,7 @@ public class Keyframe<T> : IKeyframe
 
 	private static T LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 		switch (leftmostOfTime) {
-			case Keyframe<float> kfL: return rightmostOfTime is Keyframe<float> kfR ? (T)(object)(float)NMath.Remap(time, kfL.Time, kfR.Time, kfL.Value, kfR.Value) : throw new Exception();
+			case Keyframe<float> kfL: return rightmostOfTime is Keyframe<float> kfR ? (T)(object)(float)NMath.Remap(time, kfL.Time, kfR.Time, kfL.Value, kfR.Value, true) : throw new Exception();
 			default: return leftmostOfTime.Value;
 		}
 	}
