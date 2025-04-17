@@ -53,12 +53,17 @@ namespace Nucleus.Types
         /// </summary>
         [JsonIgnore] public float H { get { return y; } set { y = value; } }
 
-        public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
-        public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
-        public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
-        public static Vector2F operator /(Vector2F from, float by) => new Vector2F((float)((double)from.X / (double)by), (float)((double)from.Y / (double)by));
+		public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
+		public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
+		public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
+		public static Vector2F operator /(Vector2F from, float by) => new Vector2F((float)((double)from.X / (double)by), (float)((double)from.Y / (double)by));
 
-        public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
+		public static Vector2F operator +(float from, Vector2F by) => new Vector2F(from + by.X, from + by.Y);
+		public static Vector2F operator -(float from, Vector2F by) => new Vector2F(from - by.X, from - by.Y);
+		public static Vector2F operator *(float from, Vector2F by) => new Vector2F(from * by.X, from * by.Y);
+		public static Vector2F operator /(float from, Vector2F by) => new Vector2F((float)((double)from / (double)by.X), (float)((double)from / (double)by.Y));
+
+		public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
         public static Vector2F operator -(Vector2F from, Vector2F by) => new Vector2F(from.X - by.X, from.Y - by.Y);
         public static Vector2F operator *(Vector2F from, Vector2F by) => new Vector2F(from.X * by.X, from.Y * by.Y);
         public static Vector2F operator /(Vector2F from, Vector2F by) => new Vector2F((float)((double)from.X / (double)by.X), (float)((double)from.Y / (double)by.Y));
