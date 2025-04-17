@@ -372,7 +372,7 @@ namespace CloneDash.Game
 
 			var level = Level.As<CD_GameLevel>();
 
-			level.SpawnTextEffect("PASS", Position, new Color(235, 235, 235, 255));
+			level.SpawnTextEffect("PASS", Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
 			OnPass();
 			OnPassEvent?.Invoke(this);
 			GlobalOnPassEvent?.Invoke(this);

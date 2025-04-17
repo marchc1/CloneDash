@@ -199,6 +199,11 @@ namespace CloneDash.Game
 		private StatisticsData Stats { get; } = new();
 		private CharacterDescriptor CharacterDescriptor;
 		public override void Initialize(params object[] args) {
+			var info = CharacterMod.GetCharacterData();
+			CharacterDescriptor = info.Descriptor;
+
+			MaxHealth = (float)(CharacterDescriptor.MaxHP ?? MaxHealth);
+
 			Render3D = false;
 			Health = MaxHealth;
 
@@ -212,8 +217,6 @@ namespace CloneDash.Game
 			foreach (object input in inputs)
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
-			var info = CharacterMod.GetCharacterData();
-			CharacterDescriptor = info.Descriptor;
 
 			Player = Add(ModelEntity.Create(info.Filepath));
 			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
@@ -573,11 +576,11 @@ namespace CloneDash.Game
 		/// <param name="text">The text</param>
 		/// <param name="position">Where it spawns (it will rise upwards after being spawned)</param>
 		/// <param name="color">The color of the text</param>
-		public void SpawnTextEffect(string text, Vector2F position, Color? color = null) {
+		public void SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
 			if (color == null)
 				color = new Color(255, 255, 255, 255);
 
-			Add(new TextEffect(text, position, color.Value));
+			Add(new TextEffect(text, position, transitionOut, color.Value));
 		}
 
 		/// <summary>

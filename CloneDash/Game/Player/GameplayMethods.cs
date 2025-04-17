@@ -48,7 +48,7 @@ namespace CloneDash.Game
 
                         if (SuppressHitMessages == false) {
                             Color c = poll.HitEntity.HitColor;
-                            SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, c);
+                            SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
                         }
                     }
                 }
