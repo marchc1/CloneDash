@@ -24,7 +24,12 @@ namespace CloneDash.Modding.Descriptors
 		};
 
 		public bool HasAnimations => Count > 0;
-		public string GetAnimation(int at) => string.Format(Format, at);
+		/// <summary>
+		/// Expects a start-at-1 index
+		/// </summary>
+		/// <param name="at"></param>
+		/// <returns></returns>
+		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
 		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count - 1) + 1);
 	}
 	public class CharacterDescriptor_MainShow

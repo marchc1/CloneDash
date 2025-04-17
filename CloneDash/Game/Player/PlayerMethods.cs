@@ -206,19 +206,33 @@ namespace CloneDash.Game
 			}
 		}
 
-		public bool AttackAir(CD_BaseMEntity entity, bool force) {
-            if (CanJump || force) {
+		public bool AttackAir(PollResult result) {
+            if (CanJump || result.Hit) {
                 __whenjump = Conductor.Time;
                 OnAirAttack?.Invoke(this, PathwaySide.Top);
 
-                return true;
+				if (result.Hit) {
+					PlayerAnim_ForceAttackAir(ref result);
+				}
+				else {
+					PlayerAnim_ForceJump();
+				}
+
+				return true;
             }
             return false;
         }
 
-        public void AttackGround(CD_BaseMEntity entity) {
+        public void AttackGround(PollResult result) {
             __whenjump = -2000000000000d;
             OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+
+			if (result.Hit) {
+				PlayerAnim_ForceAttackGround(ref result);
+			}
+			else {
+				PlayAnim_ForceMiss();
+			}
         }
         /// <summary>
         /// Gets the current pathway the player is on. Returns Top if jumping, else bottom.

@@ -198,6 +198,93 @@ namespace CloneDash.Game
 
 		private StatisticsData Stats { get; } = new();
 		private CharacterDescriptor CharacterDescriptor;
+
+		public enum CDDAnimationType {
+			Run,
+			Die,
+			Standby,
+
+			AirGreat,
+			AirPerfect,
+			AirHurt,
+
+			RoadGreat,
+			RoadPerfect,
+			RoadHurt,
+			RoadMiss,
+
+			Double,
+
+			AirToGround,
+
+			Jump,
+			JumpHurt,
+
+			Press,
+			AirPressEnd,
+			AirPressHurt,
+			DownPressHit,
+			UpPressHit
+		}
+
+		int seq = 0;
+		public string AnimationCDD(CDDAnimationType type) {
+			var playData = CharacterDescriptor.Play;
+			switch (type) {
+				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq++);
+				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq++);
+
+				case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq++);
+				case CDDAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation(seq++);
+				case CDDAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation(seq++);
+
+				case CDDAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation(seq++);
+				case CDDAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation(seq++);
+
+				case CDDAnimationType.RoadGreat: return playData.RoadAnimations.Great.GetAnimation(seq++);
+				case CDDAnimationType.RoadPerfect: return playData.RoadAnimations.Perfect.GetAnimation(seq++);
+				case CDDAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation(seq++);
+				case CDDAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation(seq++);
+
+				default: throw new Exception("Can't do anything here");
+			}
+			
+			throw new Exception("Can't do anything here");
+		}
+
+		public void PlayerAnim_EnqueueRun() {
+			Player.Model.SetToSetupPose();
+			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+		}
+
+		public void PlayerAnim_ForceJump() {
+			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
+			PlayerAnim_EnqueueRun();
+		}
+
+		public void PlayAnim_ForceMiss() {
+			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
+			PlayerAnim_EnqueueRun();
+		}
+		public void PlayerAnim_ForceAttackAir(ref PollResult result) {
+			if (result.IsPerfect) {
+				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
+			}
+			else if (result.IsAtLeastGreat) {
+				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
+			}
+			PlayerAnim_EnqueueRun();
+		}
+		public void PlayerAnim_ForceAttackGround(ref PollResult result) {
+			if (result.IsPerfect) {
+				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
+			}
+			else if (result.IsAtLeastGreat) {
+				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
+			}
+			PlayerAnim_EnqueueRun();
+		}
+
 		public override void Initialize(params object[] args) {
 			var info = CharacterMod.GetCharacterData();
 			CharacterDescriptor = info.Descriptor;
@@ -219,7 +306,11 @@ namespace CloneDash.Game
 
 			Player = Add(ModelEntity.Create(info.Filepath));
 			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
+			Player.Scale = new(0.75f);
+			HologramPlayer.Scale = Player.Scale;
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
+
+			PlayerAnim_EnqueueRun();
 
 			HologramPlayer.Visible = false;
 			AutoPlayer = Add<AutoPlayer>();
@@ -634,7 +725,7 @@ namespace CloneDash.Game
 
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
-			cam.Zoom = 1f;
+			cam.Zoom = frameState.WindowHeight / 900;
 			//cam.Zoom = 1.0f + ((MathF.Sin(CurtimeF * 5) + 1) / 2);
 			cam.Rotation = 0.0f;
 			cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
@@ -642,6 +733,9 @@ namespace CloneDash.Game
 		}
 		public override void Render(FrameState frameState) {
 			Raylib.DrawLineV(new(0, 0), new(1600, 900), Color.Red);
+
+			Rlgl.DisableDepthTest();
+			Rlgl.DisableBackfaceCulling();
 
 			TopPathway.Render();
 			BottomPathway.Render();

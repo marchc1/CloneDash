@@ -227,6 +227,7 @@ namespace Nucleus.Models
 			packedTex = new(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(packedImg.Value), true);
 			regions = DeserializeAtlas(File.ReadAllText(fileAtlas));
 			unpacked.Clear();
+			valid = true;
 			Lock();
 		}
 

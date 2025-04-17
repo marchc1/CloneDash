@@ -137,6 +137,7 @@ public class ModelInstance : IContainsSetupPose
 
 	public Skin Skin { get; set; }
 	public Vector2F Position { get; set; }
+	public Vector2F Scale { get; set; } = new(1, 1);
 	public bool FlipX { get; set; }
 	public bool FlipY { get; set; }
 	public TextureAtlasSystem TextureAtlas => Data.TextureAtlas;
@@ -149,6 +150,9 @@ public class ModelInstance : IContainsSetupPose
 	public void Render() {
 		var offset = Graphics2D.Offset;
 		Graphics2D.ResetDrawingOffset();
+		Rlgl.PushMatrix();
+		Rlgl.Translatef(Position.X, Position.Y, 0);
+		Rlgl.Scalef(Scale.X, Scale.Y, 0);
 
 		foreach (var bone in Bones)
 			bone.UpdateWorldTransform();
@@ -165,6 +169,7 @@ public class ModelInstance : IContainsSetupPose
 			//Graphics2D.DrawText(new(test.X, -test.Y), $"rot: {bone.Rotation}", "Consolas", 7);
 		}
 
+		Rlgl.PopMatrix();
 		Graphics2D.OffsetDrawing(offset);
 	}
 
@@ -858,6 +863,104 @@ public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false)
 }
 
 
+public class AnimationChannelEntry {
+	public Animation Animation;
+	public bool Looping;
+}
+public class AnimationChannel
+{
+	public AnimationChannelEntry? CurrentEntry;
+	public Queue<AnimationChannelEntry> QueuedEntries = [];
+	public double Time;
+}
+public class AnimationHandler
+{
+	public AnimationChannel[] Channels = new AnimationChannel[5];
+	ModelData model;
+	public AnimationHandler(ModelData model) {
+		this.model = model;
+		for (int i = 0; i < Channels.Length; i++) {
+			Channels[i] = new();
+		}
+	}
+	public bool IsPlayingAnimation() {
+		foreach(var channel in Channels) {
+			if (channel.CurrentEntry != null) return true;
+		}
+
+		return false;
+	}
+
+	public void AddDeltaTime(double time) {
+		for (int i = 0; i < Channels.Length; i++) {
+			var channel = Channels[i];
+
+			channel.Time += time;
+			var anim = channel.CurrentEntry;
+			if (anim == null) {
+				if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
+					channel.CurrentEntry = newAnim;
+					anim = newAnim;
+				}
+				else continue;
+			}
+
+			if(channel.Time > anim.Animation.Duration) {
+				if (anim.Looping) 
+					channel.Time = channel.Time % anim.Animation.Duration;
+				else {
+					// Enqueue the next animation
+					if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
+						channel.CurrentEntry = newAnim;
+					}
+					else {
+						channel.CurrentEntry = null;
+					}
+				}
+			}
+		}
+	}
+
+	public void AddAnimation(int channel, string animation, bool loops = false) {
+		var channelObj = Channels[channel];
+
+		var anim = model.FindAnimation(animation);
+		if (anim == null) return;
+
+		channelObj.QueuedEntries.Enqueue(new() { 
+			Animation = anim,
+			Looping = loops
+		});
+	}
+
+	public void SetAnimation(int channel, string animation, bool loops = false) {
+		var channelObj = Channels[channel];
+		StopAnimation(channel);
+
+		var anim = model.FindAnimation(animation);
+		if (anim == null) return;
+
+		channelObj.QueuedEntries.Clear();
+		channelObj.QueuedEntries.Enqueue(new() {
+			Animation = anim,
+			Looping = loops
+		});
+	}
+
+	public void StopAnimation(int channel) {
+		Channels[channel].CurrentEntry = null;
+		Channels[channel].Time = 0;
+	}
+
+	public void Apply(ModelInstance model) {
+		foreach (var channel in Channels) {
+			if (channel.CurrentEntry == null) continue;
+
+			channel.CurrentEntry.Animation.Apply(model, channel.Time);
+		}
+	}
+}
+
 public interface IModelLoader
 {
 	ModelData LoadModelFromFile(string filepath);
@@ -901,7 +1004,7 @@ public class ModelRefJSON : IModelLoader
 	}
 	public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings() {
 		ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
-		PreserveReferencesHandling = PreserveReferencesHandling.All,
+		PreserveReferencesHandling = PreserveReferencesHandling.Objects,
 		SerializationBinder = new ModelRefJsonSerializationBinder(),
 		NullValueHandling = NullValueHandling.Ignore,
 		TypeNameHandling = TypeNameHandling.Auto
@@ -923,3 +1026,5 @@ public class ModelRefJSON : IModelLoader
 		data.TextureAtlas.SaveTo(filepath);
 	}
 }
+
+

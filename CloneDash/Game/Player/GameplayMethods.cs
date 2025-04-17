@@ -56,9 +56,9 @@ namespace CloneDash.Game
                 // Trigger animation events on the player controller
                 var hitSomething = pollResult.HasValue && pollResult.Value.Hit;
                 if (pathway == PathwaySide.Top)
-                    AttackAir(pollResult.Value.HitEntity, hitSomething);
+                    AttackAir(pollResult ?? default);
                 else
-                    AttackGround(pollResult.Value.HitEntity);
+                    AttackGround(pollResult ?? default);
 
                 if(hitSomething)
                     Stats.Hits++;

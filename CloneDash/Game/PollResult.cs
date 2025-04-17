@@ -1,4 +1,6 @@
 ﻿using CloneDash.Game.Entities;
+using Nucleus;
+using Nucleus.Engine;
 
 namespace CloneDash.Game
 {
@@ -17,7 +19,30 @@ namespace CloneDash.Game
             result.HitEntity = hitEntity;
             result.DistanceToHit = distanceToHit;
             result.Greatness = greatness;
+
             return result;
         }
-    }
+
+		public bool IsPerfect {
+			get {
+				if (!Hit) return false;
+
+				double distance = DistanceToHit;
+				double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
+				double preperfect = -HitEntity.PrePerfectRange, postperfect = HitEntity.PostPerfectRange;
+
+				return NMath.InRange(distance, preperfect, postperfect);
+			}
+		}
+		public bool IsAtLeastGreat {
+			get {
+				if (!Hit) return false;
+
+				double distance = DistanceToHit;
+				double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
+
+				return NMath.InRange(distance, pregreat, postgreat);
+			}
+		}
+	}
 }
