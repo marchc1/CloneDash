@@ -48,9 +48,6 @@ namespace CloneDash.Game.Entities
             var game = Level.As<CD_GameLevel>();
             var YPos = Game.Pathway.ValueDependantOnPathway(Pathway, game.TopPathway.Position.Y, game.BottomPathway.Position.Y);
 
-            Model.Position = new(this.Position.X, this.Position.Y);
-            // Model.Rotation = this.Rotation;
-            Model.Render();
 
             if (Dead)
                 return;
