@@ -1,5 +1,4 @@
-﻿using glTFLoader.Schema;
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using Nucleus.Core;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Types;

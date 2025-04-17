@@ -7,8 +7,11 @@ using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Nucleus.Models.Runtime;
 
@@ -311,6 +314,24 @@ public class SlotInstance : IContainsSetupPose
 	public void SetAttachment(string? value) => Attachment = value == null ? null : Model.GetAttachment(Index, value);
 }
 
+public class SkinEntryTypeConverter : TypeConverter
+{
+	public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) {
+		return sourceType == typeof(string);
+	}
+
+	// Expect format: "SkinEntry { Name = hand_L_1, SlotIndex = 0 }"
+	public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) {
+		if (value is string s) {
+			var match = Regex.Match(s, @"SkinEntry \{ Name = (.*?), SlotIndex = (\d+) \}");
+			if (match.Success) {
+				return new SkinEntry(match.Groups[1].Value.Trim(), int.Parse(match.Groups[2].Value));
+			}
+		}
+		throw new NotSupportedException($"Cannot convert '{value}' to SkinEntry.");
+	}
+}
+
 /// <summary>
 /// A record where <see cref="SlotIndex"/> refers to <see cref="SlotData.Index"/> and <see cref="Name"/> refers to the attachment name in that slot.
 /// This allows for specific attachments to be swapped out by a skin. It is not currently implemented in the editor, and needs to be considered before
@@ -318,7 +339,7 @@ public class SlotInstance : IContainsSetupPose
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="SlotIndex"></param>
-public record SkinEntry(string Name, int SlotIndex);
+[TypeConverter(typeof(SkinEntryTypeConverter))]public record SkinEntry(string Name, int SlotIndex);
 // iirc, records handle this automatically; saving in case they don't
 // public override int GetHashCode() => HashCode.Combine(Name, SlotIndex);
 
@@ -882,7 +903,8 @@ public class ModelRefJSON : IModelLoader
 		ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
 		PreserveReferencesHandling = PreserveReferencesHandling.All,
 		SerializationBinder = new ModelRefJsonSerializationBinder(),
-		NullValueHandling = NullValueHandling.Ignore
+		NullValueHandling = NullValueHandling.Ignore,
+		TypeNameHandling = TypeNameHandling.Auto
 	};
 
 	public ModelData LoadModelFromFile(string filepath) {

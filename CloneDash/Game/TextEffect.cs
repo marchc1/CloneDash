@@ -30,7 +30,7 @@ namespace CloneDash.Game
         public Color Color { get; set; } = new(255, 255, 255, 255);
 
         public override void PostRender(FrameState frameState) {
-            float ageToDie = 1;
+            float ageToDie = 0.6f;
             double lifetime;
 
             if (SuppressAutoDeath)

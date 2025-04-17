@@ -217,7 +217,6 @@ namespace CloneDash.Game
 			foreach (object input in inputs)
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
-
 			Player = Add(ModelEntity.Create(info.Filepath));
 			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);

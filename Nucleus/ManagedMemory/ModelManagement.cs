@@ -46,7 +46,7 @@ public class ModelManagement : IManagedMemory
 			return data;
 		}
 
-		ModelDatas[filepath] = ModelLoader.LoadModelFromFile(filepath);
+		ModelDatas[filepath] = ModelLoader.LoadModelFromFile(Path.ChangeExtension(filepath, ".nm4rj"));
 		return ModelDatas[filepath];
 	}
 

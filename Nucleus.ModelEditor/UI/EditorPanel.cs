@@ -1,5 +1,4 @@
-﻿using glTFLoader.Schema;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Rendering;
