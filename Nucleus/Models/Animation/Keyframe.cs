@@ -42,6 +42,27 @@ public class Keyframe<T> : IKeyframe
 		Easing = KeyframeEasing.Automatic;
 	}
 
+	public Keyframe<T> Copy(double scale = 1) {
+		Keyframe<T> copy = new Keyframe<T>();
+
+		copy.Time = Time * scale;
+		copy.Value = Value;
+		copy.Interpolation = Interpolation;
+		copy.Easing = Easing;
+		copy.LeftHandle = LeftHandle == null ? null : new() {
+			HandleType = LeftHandle.Value.HandleType,
+			Time = LeftHandle.Value.Time * scale,
+			Value = LeftHandle.Value.Value,
+		}; 
+		copy.RightHandle = RightHandle == null ? null : new() {
+			HandleType = RightHandle.Value.HandleType,
+			Time = RightHandle.Value.Time * scale,
+			Value = RightHandle.Value.Value,
+		};
+
+		return copy;
+	}
+
 	public double Time;
 	public T Value;
 	public KeyframeHandle<T>? LeftHandle;
