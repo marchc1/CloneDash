@@ -487,6 +487,8 @@ namespace Nucleus
 			RenderToScreen(4 + 6, 4);
 		}
 		public static bool IsScreenBlockerActive => scrblockers.Count > 0;
+		public static int VisibleLines => ScreenMessages.Count;
+		public static int TextSize => 13;
 		public static void RenderToScreen(int x, int y) {
 			int i = 0;
 			ScreenMessages.RemoveAll(x => x.Age > MaxMessageTime);
@@ -496,11 +498,11 @@ namespace Nucleus
 				float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 
 				var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
-				var textSize = Graphics2D.GetTextSize(text, "Consolas", 13);
+				var textSize = Graphics2D.GetTextSize(text, "Consolas", TextSize);
 				Graphics2D.SetDrawColor(30, 30, 30, (int)(110 * fade));
 				Graphics2D.DrawRectangle(x, y + 2 + (i * 15), textSize.W + 4, textSize.H + 4);
 				Graphics2D.SetDrawColor(Logs.LevelToColor(message.Level), (int)(fade * 255));
-				Graphics2D.DrawText(new(x - 1, y + 4 + (i * 15) + 1), text, "Consolas", 13);
+				Graphics2D.DrawText(new(x - 1, y + 4 + (i * 15) + 1), text, "Consolas", TextSize);
 				i++;
 			}
 		}
