@@ -4,13 +4,12 @@ namespace Nucleus.Types
 {
 	public struct FrameState
     {
-        public Element? HoveredUIElement { get; set; }
+		public Element? HoveredUIElement;
         public bool HoveringUIElement => IValidatable.IsValid(HoveredUIElement);
 
-        public Vector2F WindowSize { get; set; }
-
-        public float WindowX { get; internal set; }
-        public float WindowY { get; internal set; }
+		public Vector2F WindowSize;
+		public float WindowX;
+		public float WindowY;
 
         public float WindowWidth {
             get { return WindowSize.X; }
@@ -20,9 +19,10 @@ namespace Nucleus.Types
             get { return WindowSize.Y; }
             set { WindowSize = new Vector2F(WindowSize.X, value); }
         }
-        public MouseState MouseState { get; set; }
-        public KeyboardState KeyboardState { get; set; }
-        public Raylib_cs.Camera3D Camera { get; internal set; }
+		public MouseState MouseState;
+		public KeyboardState KeyboardState;
+		public Raylib_cs.Camera2D Camera2D;
+		public Raylib_cs.Camera3D Camera3D;
 
         public bool MouseClicked(MouseButton button) => MouseState.Clicked(button);
         public bool MouseHeld(MouseButton button) => MouseState.Held(button);
