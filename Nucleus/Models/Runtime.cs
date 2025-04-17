@@ -56,8 +56,11 @@ public interface IModelInstanceObject
 
 
 
-public class ModelData
+public class ModelData : IDisposable
 {
+	public void Dispose() {
+		MainThread.RunASAP(() => { TextureAtlas?.ClearTextures(); });
+	}
 	/// <summary>
 	/// Model format (matches the model format that the editor compiled)
 	/// </summary>
@@ -72,7 +75,7 @@ public class ModelData
 	public List<Skin> Skins { get; set; } = [];
 	public Skin DefaultSkin { get; set; }
 	public List<Animation> Animations { get; set; } = [];
-	public TextureAtlasSystem TextureAtlas { get; set; }
+	[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; set; }
 
 
 	/// <summary>
@@ -886,10 +889,15 @@ public class ModelRefJSON : IModelLoader
 		var data = JsonConvert.DeserializeObject<ModelData>(File.ReadAllText(filepath), Settings);
 		if (data == null)
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
+
+		// Load the texture atlas now
+		data.TextureAtlas = new();
+		data.TextureAtlas.LoadFrom(filepath);
 		return data;
 	}
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
+		data.TextureAtlas.SaveTo(filepath);
 	}
 }

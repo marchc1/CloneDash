@@ -647,7 +647,7 @@ namespace Nucleus.ModelEditor
 			btn.MouseReleaseEvent += (_, _, _) => {
 				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [Model4System.MODEL_FORMAT_REFJSON_EXT], "Model4 as Ref'd JSON");
 				if (!save.Cancelled) {
-					new ModelRefJSON().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(model));
+					new ModelRefJSON().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(File.Models.First()));
 				}
 				Logs.Info("Saved.");
 				window.Remove();

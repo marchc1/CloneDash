@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Raylib_cs;
 
@@ -7,8 +8,8 @@ namespace Nucleus.Engine
 
     public class ModelEntity : Entity
     {
-        private Model3 __model;
-        public Model3 Model {
+        private ModelInstance __model;
+        public ModelInstance Model {
             get {
                 return __model;
             }
@@ -17,58 +18,35 @@ namespace Nucleus.Engine
             }
         }
 
-		public double GetAnimationLength(string animation) => (float)(Model.Model.FindAnimation(animation)?.AnimationLength ?? 0);
+		public double GetAnimationLength(string animation) => throw new NotImplementedException();
 
 
-		public bool PlayingAnimation => Model.PlayingAnimation;
+		public bool PlayingAnimation => false;
 
-        public void SetModel(string modelname, string? animation = null, bool loopAnimation = false, string? fallback = null) {
-            __model = Model3System.Load(modelname);
-            if (animation != null)
-                PlayAnimation(animation, loopAnimation, fallback);
-        }
-
-        private System.Numerics.Vector3 __tint = new(0, 1, 1);
-        private Color __color = new(255, 255, 255, 255);
-
-        public System.Numerics.Vector3 HSV {
-            get { return __tint; }
-            set {
-                __tint = value;
-                Model.HSV = value;
-            }
-        }
-        public Color Color {
-            get { return __color; }
-            set {
-                __color = value;
-                Model.Color = value;
-            }
+        public void SetModel(string modelname) {
+            __model = Level.Models.CreateInstanceFromFile(modelname);
         }
 
         public bool Visible { get; set; } = true;
 
-        public unsafe static ModelEntity Create(string model, bool resolvePath = true, bool nocache = false) {
+        public unsafe static ModelEntity Create(string model) {
             ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
-            entity.__model = Model3System.Load(model, resolveFilepath: resolvePath, nocache: nocache);
+            entity.__model = EngineCore.Level.Models.CreateInstanceFromFile(model);
             return entity;
         }
 
         public ModelEntity(string? model = null) {
             if (model != null)
-                __model = Model3System.Load(model);
-        }
+                __model = EngineCore.Level.Models.CreateInstanceFromFile(model);
+		}
 
-        public void PlayAnimation(string animationName, bool loop = false, string? fallback = null) => Model.PlayAnimation(animationName, loop, fallback);
         public override void Render(FrameState frameState) => Render();
         public void Render() {
             if (!Visible)
                 return;
 
-            Model.Position = new(Position.X, Position.Y, 0);
-            Model.Rotation = Rotation;
-            Model.Scale = new(Scale.X, 1, Scale.Y);
+            Model.Position = new(Position.X, Position.Y);
             Model.Render();
         }
     }

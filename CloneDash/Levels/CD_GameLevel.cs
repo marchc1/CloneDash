@@ -150,7 +150,6 @@ namespace CloneDash.Game
 
 			Music.Paused = true;
 			Paused = true;
-			Model3AnimationChannel.GlobalPause = true;
 			UnpauseTime = 0;
 
 			return true;
@@ -165,7 +164,6 @@ namespace CloneDash.Game
 		private void fullUnpause() {
 			Music.Paused = false;
 			Paused = false;
-			Model3AnimationChannel.GlobalPause = false;
 			UnpauseTime = 0;
 		}
 
@@ -242,11 +240,10 @@ namespace CloneDash.Game
 
 			var info = CharacterMod.GetCharacterData();
 			CharacterDescriptor = info.Descriptor;
-			var filename = Filesystem.Resolve($"{info.Name}.glb", "chars");
 
-			Player = Add(ModelEntity.Create(filename, resolvePath: false));
-			HologramPlayer = Add(ModelEntity.Create(filename, resolvePath: false));
-			Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
+			Player = Add(ModelEntity.Create(info.Filepath));
+			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
+			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
 			HologramPlayer.Visible = false;
 			AutoPlayer = Add<AutoPlayer>();
@@ -385,18 +382,10 @@ namespace CloneDash.Game
 
 
 			Player.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio)));
-			Player.Scale = new(0.9f);
 			HologramPlayer.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio)));
 
 			if (HologramPlayer.PlayingAnimation) {
-				var animator = HologramPlayer.Model;
-				var animation = animator.Animations.FirstOrDefault(x => x.Value.Playing).Value ?? null;
 
-				float a = (float)(animation.AnimationPlayhead / animation.AnimationData.AnimationLength);
-				HologramPlayer.Visible = true;
-				var alpha = Math.Clamp(NMath.Ease.InQuad(1 - a) * 255, 0, 255);
-				HologramPlayer.Color = new(150, 206, 255, (int)alpha);
-				FrameDebuggingStrings.Add("PlayerAlpha = " + alpha);
 			}
 			else {
 				HologramPlayer.Visible = false;

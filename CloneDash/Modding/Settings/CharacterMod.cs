@@ -18,14 +18,14 @@ namespace CloneDash.Modding.Settings
 			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
 		}
 
-		public static (string Name, CharacterDescriptor Descriptor) GetCharacterData() {
+		public static (string Name, string Filepath, CharacterDescriptor Descriptor) GetCharacterData() {
 			string name = clonedash_character.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
 				throw new Exception("Cannot load character; clonedash_character convar empty");
 			}
 
 			CharacterDescriptor descriptor = CharacterDescriptor.ParseFile(Filesystem.Resolve($"{name}.cdd", "chars"));
-			return (name, descriptor);
+			return (name, Filesystem.Resolve($"{name}.cdd", "chars"), descriptor);
 		}
 	}
 }

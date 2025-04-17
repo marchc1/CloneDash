@@ -1,5 +1,4 @@
-﻿using glTFLoader.Schema;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -29,6 +28,7 @@ namespace Nucleus.Engine
 		public TextureManagement Textures { get; } = new();
 		public SoundManagement Sounds { get; } = new();
 		public TimerManagement Timers { get; }
+		public ModelManagement Models { get; } = new();
 
 		public Level() {
 			Timers = new(this);
@@ -643,8 +643,7 @@ namespace Nucleus.Engine
 					"",
 					$"Engine",
 					$"    [CPU]  Sound Memory   : {IManagedMemory.NiceBytes(Sounds.UsedBits / 8)}",
-					$"    [GPU]  Texture Memory : {IManagedMemory.NiceBytes((Textures.UsedBits + Model3System.UsedTextureBits) / 8)}",
-					$"    [GPU]  Mesh Memory    : {IManagedMemory.NiceBytes((Model3System.UsedMeshBytes))}",
+					$"    [GPU]  Texture Memory : {IManagedMemory.NiceBytes(Textures.UsedBits)}",
 					$"Window",
 					$"    Resolution            : {frameState.WindowWidth}x{frameState.WindowHeight}",
 					$"    Graphics2D.Offset     : {Graphics2D.Offset}",
