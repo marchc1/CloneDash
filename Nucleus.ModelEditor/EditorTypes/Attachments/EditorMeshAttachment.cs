@@ -5,6 +5,7 @@ using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -30,6 +31,7 @@ namespace Nucleus.ModelEditor
 		public static ConVar meshedit_triangles = ConVar.Register("meshedit_triangles", "0", ConsoleFlags.Saved, "Visualizes the triangulated mesh attachment when using the Edit Mesh operator.");
 		public static ConVar meshedit_dim = ConVar.Register("meshedit_dim", "0", ConsoleFlags.Saved, "Dims the mesh attachment's texture when using the Edit Mesh operator.");
 		public static ConVar meshedit_isolate = ConVar.Register("meshedit_isolate", "0", ConsoleFlags.Saved, "Isolates the active mesh attachment when using the Edit Mesh operator.");
+		public static ConVar meshedit_deformed = ConVar.Register("meshedit_deformed", "1", ConsoleFlags.Saved, "Renders the mesh deformed");
 
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";
@@ -42,7 +44,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
-		private Checkbox Triangles, Dim, Isolate;
+		private Checkbox Triangles, Dim, Isolate, Deform;
 		List<EditorMeshVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
@@ -81,6 +83,10 @@ namespace Nucleus.ModelEditor
 			Triangles.BindToConVar(meshedit_triangles);
 			Dim.BindToConVar(meshedit_dim);
 			Isolate.BindToConVar(meshedit_isolate);
+
+			var row4 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
+			row4.Add(out Deform); row4.Add(new Label() { Text = "Deformed", AutoSize = true });
+			Deform.BindToConVar(meshedit_deformed);
 
 			UpdateButtonState();
 
@@ -264,47 +270,56 @@ namespace Nucleus.ModelEditor
 			IsClickedSteinerPoint = false;
 		}
 
+		public bool ShouldRenderUndeformed => CurrentMode == EditMesh_Mode.New || !meshedit_deformed.GetBool();
+		public bool ShouldRenderGizmosThough => CurrentMode != EditMesh_Mode.New && !meshedit_deformed.GetBool();
+
 		private Transformation StoredAttachTransform;
 		private void PatchAttachmentTransform() {
-			if (CurrentMode != EditMesh_Mode.New) return;
+			if (!ShouldRenderUndeformed) return;
 
 			StoredAttachTransform = Attachment.WorldTransform;
 			Attachment.WorldTransform = Transformation.CalculateWorldTransformation(StoredAttachTransform.Translation, 0, Vector2F.One, Vector2F.Zero, TransformMode.Normal);
 			Attachment.SuppressWorldTransform = true;
 		}
 		private void RestoreAttachmentTransform() {
-			if (CurrentMode != EditMesh_Mode.New) return;
+			if (!ShouldRenderUndeformed) return;
 			Attachment.WorldTransform = StoredAttachTransform;
 			Attachment.SuppressWorldTransform = false;
 		}
 		public override bool RenderOverride() {
-			if (CurrentMode == EditMesh_Mode.New) {
+			if (ShouldRenderUndeformed) {
 				var camsize = ModelEditor.Active.Editor.CameraZoom;
 
 				PatchAttachmentTransform();
-				Attachment.RenderStandalone();
 
-				var mp = ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos()) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation;
-
-				for (int i = 0; i < WorkingLines.Count; i++) {
-					var edge1 = WorkingLines[i].ToVector();
-					var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToVector();
-
-					edge1 = Attachment.WorldTransform.LocalToWorld(edge1);
-					edge2 = Attachment.WorldTransform.LocalToWorld(edge2);
-
-					Color c = i < WorkingLines.Count - 1 ? new Color(150, 150, 255) : new Color(60, 120, 255, 160);
-					Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
-
-					var isHighlighted = HoveredVertex != null && edge1 == HoveredVertex;
-					Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 4.5f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+				if (ShouldRenderGizmosThough) {
+					Attachment.RenderStandalone();
+					Attachment.RenderOverlay();
 				}
+				else {
+					Attachment.RenderStandalone();
+					var mp = ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos()) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation;
 
-				if (HoveredVertex == null)
-					Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.Lime);
+					for (int i = 0; i < WorkingLines.Count; i++) {
+						var edge1 = WorkingLines[i].ToVector();
+						var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToVector();
 
-				RestoreAttachmentTransform();
+						edge1 = Attachment.WorldTransform.LocalToWorld(edge1);
+						edge2 = Attachment.WorldTransform.LocalToWorld(edge2);
 
+						Color c = i < WorkingLines.Count - 1 ? new Color(150, 150, 255) : new Color(60, 120, 255, 160);
+						Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
+
+						var isHighlighted = HoveredVertex != null && edge1 == HoveredVertex;
+						Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 4.5f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
+					}
+
+					if (HoveredVertex == null)
+						Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.Lime);
+
+					RestoreAttachmentTransform();
+
+				}
 				return true;
 			}
 
@@ -958,7 +973,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		[JsonIgnore] public static bool InEditMeshOperator => ModelEditor.Active.File.ActiveOperator is EditMeshOperator;
-		[JsonIgnore]  public bool IsActiveAttachment => ModelEditor.Active.File.ActiveOperator is EditMeshOperator op && op.Attachment == this;
+		[JsonIgnore] public bool IsActiveAttachment => ModelEditor.Active.File.ActiveOperator is EditMeshOperator op && op.Attachment == this;
 		[JsonIgnore] public static bool RenderTriangles => InEditMeshOperator && EditMeshOperator.meshedit_triangles.GetBool();
 		[JsonIgnore] public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
 		[JsonIgnore] public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
@@ -1126,6 +1141,27 @@ namespace Nucleus.ModelEditor
 
 				Raylib.DrawCircleV(drawPos, (size) / camsize, Color.Black);
 				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, color);
+
+				// debugging weight pairs
+				if (isHighlighted || isSelected) {
+					var point = ModelEditor.Active.Editor.GridToScreen(drawPos.ToNucleus());
+					var region = vertex.Attachment.quadpoints().Region;
+					DebugOverlay.Text($"Region: {region}", point - new Vector2F(0, 18), 16);
+					DebugOverlay.Text($"Vertex X: {vertex.X}, Y: {vertex.Y}", point, 16);
+					if (Weights.Count == 0) {
+						DebugOverlay.Text($"    No weights available", point + new Vector2F(0, 18 * 1), 16);
+					}
+					else {
+						DebugOverlay.Text($"    Weights:", point + new Vector2F(0, 18 * 1), 16);
+						var i = 2;
+						foreach (var weightPair in Weights) {
+							DebugOverlay.Text($"      {weightPair.Bone.Name}: {weightPair.TryGetVertexWeight(vertex)} x {weightPair.TryGetVertexPosition(vertex)}", point + new Vector2F(0, 18 * i), 16);
+							DebugOverlay.Line(point + new Vector2F(48, (18 * i) + 8), ModelEditor.Active.Editor.GridToScreen(weightPair.Bone.GetWorldPosition()), 3, BoneWeightListIndexToColor(i - 2));
+
+							i += 1;
+						}
+					}
+				}
 			}
 			else {
 				float size = (isSelected ? 9f : 7f) + (isHighlighted ? 1f : 0f);
@@ -1163,6 +1199,8 @@ namespace Nucleus.ModelEditor
 			return (new Vector3(baselineHue, 0.78f, 1.00f)).ToRGB((float)(alpha) / 255f);
 		}
 
+		public Transformation? TransformOverride = null;
+
 		public override void RenderOverlay() {
 			if (Hidden) return;
 
@@ -1176,6 +1214,8 @@ namespace Nucleus.ModelEditor
 			Graphics2D.SetDrawColor(245, 100, 20);
 			var offset = Graphics2D.Offset;
 			Graphics2D.ResetDrawingOffset();
+
+			var transform = TransformOverride ?? WorldTransform;
 
 			foreach (var tri in Triangles) {
 				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
@@ -1191,9 +1231,9 @@ namespace Nucleus.ModelEditor
 
 				bool ic1 = av1.IsConstrainedTo(av2), ic2 = av2.IsConstrainedTo(av3), ic3 = av3.IsConstrainedTo(av1);
 
-				Vector2F v1 = CalculateVertexWorldPosition(WorldTransform, av1),
-						 v2 = CalculateVertexWorldPosition(WorldTransform, av2),
-						 v3 = CalculateVertexWorldPosition(WorldTransform, av3);
+				Vector2F v1 = CalculateVertexWorldPosition(transform, av1),
+						 v2 = CalculateVertexWorldPosition(transform, av2),
+						 v3 = CalculateVertexWorldPosition(transform, av3);
 
 				if (ic1) Graphics2D.DrawLine(v1, v2);
 				if (ic2) Graphics2D.DrawLine(v2, v3);
@@ -1217,8 +1257,8 @@ namespace Nucleus.ModelEditor
 
 				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
 
-				var vertex1 = CalculateVertexWorldPosition(WorldTransform, edge1);
-				var vertex2 = CalculateVertexWorldPosition(WorldTransform, edge2);
+				var vertex1 = CalculateVertexWorldPosition(transform, edge1);
+				var vertex2 = CalculateVertexWorldPosition(transform, edge2);
 
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 

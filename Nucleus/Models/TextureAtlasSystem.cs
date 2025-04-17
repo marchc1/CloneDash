@@ -37,6 +37,10 @@ namespace Nucleus.Models
 			H = 512,
 			Valid = false
 		};
+
+		public override string ToString() {
+			return $"x {X} y {Y} w {W} h {H}";
+		}
 	}
 
 	/// <summary>
