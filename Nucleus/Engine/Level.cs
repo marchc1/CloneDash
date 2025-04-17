@@ -61,7 +61,8 @@ namespace Nucleus.Engine
 		public virtual void ModifyKeyboardState(ref KeyboardState keyboardState) { }
 		public virtual void Think(FrameState frameState) { }
 		public virtual void PostThink(FrameState frameState) { }
-		public virtual void CalcView(FrameState frameState, ref Camera3D cam) { }
+		public virtual void CalcView2D(FrameState frameState, ref Camera2D cam) { }
+		public virtual void CalcView3D(FrameState frameState, ref Camera3D cam) { }
 		public virtual void PreRenderBackground(FrameState frameState) { }
 		public virtual void PreRender(FrameState frameState) { }
 		public virtual void Render(FrameState frameState) { }
@@ -329,6 +330,8 @@ namespace Nucleus.Engine
 		Stopwatch profiler = new();
 		Stopwatch timing = new();
 
+		public bool Render3D { get; set; } = true;
+
 		public void PreInitialize() {
 			timing.Start();
 		}
@@ -581,29 +584,42 @@ namespace Nucleus.Engine
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
-			var cam = new Camera3D() {
-				Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
-				FovY = frameState.WindowHeight * 1,
-				Position = offset + new System.Numerics.Vector3(0, 0, -500),
-				Target = offset + new System.Numerics.Vector3(0, 0, 0),
-				Up = new(0, -1, 0)
-			};
+			bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
+			if (render3D) {
+				var cam3d = new Camera3D() {
+					Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
+					FovY = frameState.WindowHeight * 1,
+					Position = offset + new System.Numerics.Vector3(0, 0, -500),
+					Target = offset + new System.Numerics.Vector3(0, 0, 0),
+					Up = new(0, -1, 0)
+				};
 
-			CalcView(frameState, ref cam);
-			RunEventPreRenderBackground(frameState);
-			frameState.Camera = cam;
+				CalcView3D(frameState, ref cam3d);
+				RunEventPreRenderBackground(frameState);
+				frameState.Camera3D = cam3d;
 
-			//Graphics.ScissorRect(RectangleF.XYWH(frameState.WindowX, frameState.WindowY, frameState.WindowWidth, frameState.WindowHeight));
-			Raylib.BeginMode3D(cam);
+				Raylib.BeginMode3D(cam3d);
+			}
+			else {
+				var cam2d = new Camera2D() { };
 
+				CalcView2D(frameState, ref cam2d);
+				RunEventPreRenderBackground(frameState);
+				frameState.Camera2D = cam2d;
+
+				Rlgl.DisableDepthTest();
+				Raylib.BeginMode2D(cam2d);
+			}
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
 			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
 
 			RunEventPreRender(frameState);
 
 			RunEventRender(frameState);
-
-			Raylib.EndMode3D();
+			if (render3D)
+				Raylib.EndMode3D();
+			else
+				Raylib.EndMode2D();
 			//Graphics.ScissorRect();
 
 			RunEventRender2D(frameState);
@@ -631,7 +647,7 @@ namespace Nucleus.Engine
 			Graphics2D.ResetDrawingOffset();
 			if (ui_showupdates.GetBool()) RenderShowUpdates();
 			if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
-			
+
 
 			UnlockEntityBuffer();
 			var FPS = Raylib.GetFPS();
@@ -727,7 +743,7 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public static ConVar ui_hoverresult 
+		public static ConVar ui_hoverresult
 			= ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
 		public static ConVar ui_visrenderbounds
 			= ConVar.Register("ui_visrenderbounds", "0", ConsoleFlags.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
