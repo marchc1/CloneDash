@@ -418,10 +418,10 @@ public abstract class BaseTimelineView : View
 	public double FrameToX(int frame)
 		=> (defaultXOffset - FrameOffset) + (frame * Zoom);
 
-	public int GetFPS() => ModelEditor.Active.File.Timeline.FPS;
+	public double FPSDiff => (double)ModelEditor.Active.File.Timeline.GetVisualFPS() / (double)ModelEditor.Active.File.Timeline.FPS;
 
 	public int XToFrame(double x)
-		=> (int)Math.Round(((x - defaultXOffset + FrameOffset) / Zoom) );
+		=> (int)(Math.Round(((x - defaultXOffset + FrameOffset) / Zoom)));
 
 	public double XToFrameExact(double x)
 		=> ((x - defaultXOffset + FrameOffset) / Zoom);
