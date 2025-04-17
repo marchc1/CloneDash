@@ -92,7 +92,7 @@ namespace CloneDash.Modding.Descriptors
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
 		// version 3 since we're using Model v3
-		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, 3) { }
+		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, 4) { }
 
 		[JsonProperty("name")] public string Name;
 		[JsonProperty("author")] public string Author;

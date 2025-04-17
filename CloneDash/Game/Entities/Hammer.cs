@@ -26,7 +26,6 @@ namespace CloneDash.Game.Entities
 
         public override void Initialize() {
             base.Initialize();
-            SetModel("hammer.glb");
         }
         float whenDidHammerHit = -1;
 		public override void OnReset() {

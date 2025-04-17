@@ -24,3 +24,5 @@ namespace CloneDash.Modding.Descriptors
 		}
 	}
 }
+
+
