@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor;
 
-public class RuntimeViewer : IModelLoader
+public class RuntimeConverter : IModelLoader
 {
 	public ModelData LoadModelFromFile(string filepath) {
 		throw new NotImplementedException("Editor runtime viewer isn't designed to load from a file; use LoadModelFromEditor.");
@@ -30,7 +30,9 @@ public class RuntimeViewer : IModelLoader
 			vIndex = verticesInst.Count;
 			var newVertex = new MeshVertex() {
 				X = eVertex.X,
-				Y = eVertex.Y
+				Y = eVertex.Y,
+				U = eVertex.U,
+				V = eVertex.V
 			};
 			verticesInst.Add(newVertex);
 			editorToRealVertex.Add(eVertex, newVertex);
