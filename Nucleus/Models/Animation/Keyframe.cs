@@ -86,31 +86,43 @@ public class Keyframe<T> : IKeyframe
 			default: return leftmostOfTime.Value;
 		}
 	}
+	private static Vector2F CubicBezier(Vector2F p1, Vector2F c2, Vector2F c3, Vector2F p4, float t) {
+		// Clamp t between 0 and 1
+		t = Math.Clamp(t, 0f, 1f);
+
+		// Convert c2 and c3 from relative to absolute positions
+		Vector2F p2 = p1 + c2;
+		Vector2F p3 = p4 + c3;
+
+		float u = 1 - t;
+		float tt = t * t;
+		float uu = u * u;
+		float uuu = uu * u;
+		float ttt = tt * t;
+
+		return uuu * p1
+			 + 3 * uu * t * p2
+			 + 3 * u * tt * p3
+			 + ttt * p4;
+	}
+	private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
+	private static Vector2F KeyframeToVector2F(KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
 	private static T BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 		switch (leftmostOfTime) {
 			case Keyframe<float> kfL:
 				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
 
-				NMath.CubicBezier(
-					kfL.Time,
-					kfL.Value,
 
-					kfL.Time + (kfL.RightHandle?.Time ?? 0),
-					kfL.Value + (kfL.RightHandle?.Time ?? 0),
-
-					kfR.Time + (kfR.LeftHandle?.Time ?? 0),
-					kfR.Value + (kfR.RightHandle?.Time ?? 0),
-
-					kfR.Time,
-					kfR.Value,
-
-					NMath.Remap(time, leftmostOfTime.Time, rightmostOfTime.Time, 0, 1, false, clampOutput: true),
-
-					out var rx,
-					out var ry
+				float normalizedT = (float)((time - kfL.Time) / (kfR.Time - kfL.Time));
+				var factor = CubicBezier(
+					KeyframeToVector2F(kfL),
+					KeyframeToVector2F(kfL.RightHandle),
+					KeyframeToVector2F(kfR.LeftHandle),
+					KeyframeToVector2F(kfR),
+					normalizedT
 					);
 
-				return (T)(object)(float)ry;
+				return (T)(object)factor.Y;
 
 			default: return leftmostOfTime.Value;
 		}
