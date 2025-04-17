@@ -141,7 +141,7 @@ public class ModelInstance : IContainsSetupPose
 		var offset = Graphics2D.Offset;
 		Graphics2D.ResetDrawingOffset();
 
-		foreach(var bone in Bones)
+		foreach (var bone in Bones)
 			bone.UpdateWorldTransform();
 
 		foreach (var slot in DrawOrder) {
@@ -260,7 +260,7 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject
 	public Vector2F LocalToWorld(Vector2F xy) => WorldTransform.LocalToWorld(xy);
 	public float LocalToWorldRotation(float rot) => WorldTransform.LocalToWorldRotation(rot);
 
-	public void UpdateWorldTransform() 
+	public void UpdateWorldTransform()
 		=> UpdateWorldTransform(Position, Rotation, Scale, Shear);
 	public void UpdateWorldTransform(Vector2F pos, float rot, Vector2F scale, Vector2F shear)
 		=> WorldTransform = Transformation.CalculateWorldTransformation(pos, rot, scale, shear, TransformMode, Parent?.WorldTransform ?? null);
@@ -364,7 +364,7 @@ public class Animation
 	public List<Timeline> Timelines { get; set; } = [];
 
 	public void Apply(ModelInstance model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
-		foreach(var tl in Timelines) {
+		foreach (var tl in Timelines) {
 			// todo: lasttime
 			tl.Apply(model, 0, time, mix, mixBlend);
 		}
@@ -515,17 +515,16 @@ public class MeshAttachment : Attachment
 				var av2 = Vertices[tri.V2];
 				var av3 = Vertices[tri.V3];
 
-				Vector2F p1 = new(av1.X, av1.Y);
-				Vector2F p2 = new(av2.X, av2.Y);
-				Vector2F p3 = new(av3.X, av3.Y);
+				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 0, 1, region.Y, region.Y + region.H);
+				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 0, 1, region.Y, region.Y + region.H);
+				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 0, 1, region.Y, region.Y + region.H);
 
-				float u1 = (float)NMath.Remap(p1.X, -region.W / 2, region.W / 2, uStart, uEnd), v1 = (float)NMath.Remap(p1.Y, -region.H / 2, region.H / 2, vEnd, vStart);
-				float u2 = (float)NMath.Remap(p2.X, -region.W / 2, region.W / 2, uStart, uEnd), v2 = (float)NMath.Remap(p2.Y, -region.H / 2, region.H / 2, vEnd, vStart);
-				float u3 = (float)NMath.Remap(p3.X, -region.W / 2, region.W / 2, uStart, uEnd), v3 = (float)NMath.Remap(p3.Y, -region.H / 2, region.H / 2, vEnd, vStart);
+				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
+				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
 
-				p1 = CalculateVertexWorldPosition(slot.Model, worldTransform, av1);
-				p2 = CalculateVertexWorldPosition(slot.Model, worldTransform, av2);
-				p3 = CalculateVertexWorldPosition(slot.Model, worldTransform, av3);
+				Vector2F p1 = CalculateVertexWorldPosition(slot.Model, worldTransform, av1);
+				Vector2F p2 = CalculateVertexWorldPosition(slot.Model, worldTransform, av2);
+				Vector2F p3 = CalculateVertexWorldPosition(slot.Model, worldTransform, av3);
 
 				Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
 				Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
@@ -551,9 +550,10 @@ public interface ISlotTimeline
 {
 	public int SlotIndex { get; set; }
 }
-public static class TimelineInterfaceExtensions {
+public static class TimelineInterfaceExtensions
+{
 
-	public static BoneInstance Bone(this IBoneTimeline tl, ModelInstance model) => model.Bones[tl.BoneIndex]; 
+	public static BoneInstance Bone(this IBoneTimeline tl, ModelInstance model) => model.Bones[tl.BoneIndex];
 	public static SlotInstance Slot(this ISlotTimeline tl, ModelInstance model) => model.Slots[tl.SlotIndex];
 }
 /// <summary>

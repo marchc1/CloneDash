@@ -219,9 +219,14 @@ namespace Nucleus.ModelEditor
 						SetMode(EditMesh_Mode.Modify);
 					}
 					else {
-						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(mousePos) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation);
+						var gridpos = ModelEditor.Active.Editor.ScreenToGrid(mousePos);
+						var attachpos = Attachment.WorldTransform.Translation;
+						var attachClickPos = gridpos - attachpos;
 
-						WorkingLines.Add(EditorMeshVertex.FromVector(newClickP, Attachment));
+						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(attachClickPos) + Attachment.WorldTransform.Translation);
+						var newTexCoord = Attachment.GetVertexUV(newClickP);
+						Logs.Info(newTexCoord);
+						WorkingLines.Add(EditorMeshVertex.FromVector(newClickP, newTexCoord, Attachment));
 					}
 					break;
 			}
@@ -352,6 +357,8 @@ namespace Nucleus.ModelEditor
 		public IEditorType? GetTransformParent() => Attachment;
 		public float X;
 		public float Y;
+		public float U;
+		public float V;
 		public EditorMeshAttachment Attachment;
 
 
@@ -434,8 +441,18 @@ namespace Nucleus.ModelEditor
 		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
 
 		public Vector2F ToVector() => new(X, Y);
-		public static EditorMeshVertex FromVector(Vector2F vec, EditorMeshAttachment attachment) {
+		public static EditorMeshVertex FromVector(Vector2F vec,EditorMeshAttachment attachment) {
 			EditorMeshVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
+
+			// Bind *just* this vertex to the bone its parented to
+			// Todo: auto-weigh to the bone somehow?
+			attachment.SetVertexWeight(vertex, attachment.Slot.Bone, 1.0f, false);
+
+			return vertex;
+		}
+
+		public static EditorMeshVertex FromVector(Vector2F vec, Vector2F tex, EditorMeshAttachment attachment) {
+			EditorMeshVertex vertex = new() { X = vec.X, Y = vec.Y, U = tex.X, V = tex.Y, Attachment = attachment };
 
 			// Bind *just* this vertex to the bone its parented to
 			// Todo: auto-weigh to the bone somehow?
@@ -452,6 +469,12 @@ namespace Nucleus.ModelEditor
 		public bool OnSelected() {
 			Attachment.SelectVertex(this);
 			return false;
+		}
+
+		internal void AutoUV() {
+			var uvcoords = (Attachment as EditorMeshAttachment).GetVertexUV(this);
+			U = uvcoords.X;
+			V = uvcoords.Y;
 		}
 	}
 
@@ -606,8 +629,26 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
+	[Nucleus.MarkForStaticConstruction]
 	public class EditorMeshAttachment : EditorAttachment
 	{
+		public static ConCommand nm4_autouvmesh = ConCommand.Register("nm4_autouvmesh", (_, _) => {
+			var modeleditor = ModelEditor.Active;
+			var selected = modeleditor.LastSelectedObject;
+			if (selected is not EditorMeshAttachment meshAttachment) {
+				Logs.Warn("Cannot perform this operation on a non-mesh attachment.");
+				return;
+			}
+
+			foreach (var hullpoint in meshAttachment.ShapeEdges)
+				hullpoint.AutoUV();
+			foreach (var steinerpoint in meshAttachment.SteinerPoints)
+				steinerpoint.AutoUV();
+
+			int i = meshAttachment.ShapeEdges.Count + meshAttachment.SteinerPoints.Count;
+			Logs.Info($"Auto-UV'd {i} vertices on mesh '{selected.GetName()}'");
+		}, "Automatically calculates texture coordinates for the last selected object");
+
 		public List<EditorMeshWeights> Weights = [];
 
 		public delegate void OnVertexSelected(EditorMeshVertex vertex);
@@ -1036,9 +1077,13 @@ namespace Nucleus.ModelEditor
 					Vector2F p2 = new((float)points[1].X, (float)points[1].Y);
 					Vector2F p3 = new((float)points[2].X, (float)points[2].Y);
 
-					float u1 = (float)NMath.Remap(p1.X, -region.W / 2, region.W / 2, uStart, uEnd), v1 = (float)NMath.Remap(p1.Y, -region.H / 2, region.H / 2, vEnd, vStart);
-					float u2 = (float)NMath.Remap(p2.X, -region.W / 2, region.W / 2, uStart, uEnd), v2 = (float)NMath.Remap(p2.Y, -region.H / 2, region.H / 2, vEnd, vStart);
-					float u3 = (float)NMath.Remap(p3.X, -region.W / 2, region.W / 2, uStart, uEnd), v3 = (float)NMath.Remap(p3.Y, -region.H / 2, region.H / 2, vEnd, vStart);
+					Vector2F t1 = new((float)av1.U, (float)av1.V);
+					Vector2F t2 = new((float)av2.U, (float)av2.V);
+					Vector2F t3 = new((float)av3.U, (float)av3.V);
+
+					float u1 = (float)NMath.Remap(t1.X, 0, 1, uStart, uEnd), v1 = (float)NMath.Remap(t1.Y, 0, 1, vEnd, vStart);
+					float u2 = (float)NMath.Remap(t2.X, 0, 1, uStart, uEnd), v2 = (float)NMath.Remap(t2.Y, 0, 1, vEnd, vStart);
+					float u3 = (float)NMath.Remap(t3.X, 0, 1, uStart, uEnd), v3 = (float)NMath.Remap(t3.Y, 0, 1, vEnd, vStart);
 
 					p1 = CalculateVertexWorldPosition(WorldTransform, av1);
 					p2 = CalculateVertexWorldPosition(WorldTransform, av2);
@@ -1307,6 +1352,13 @@ namespace Nucleus.ModelEditor
 
 			// var quadpoints = this.quadpoints();
 			// return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
+		}
+
+		public Vector2F GetVertexUV(Vector2F pos) {
+			return new(
+				(float)NMath.Remap(pos.X, LocalWidth / -2, LocalWidth / 2, 0, 1),
+				(float)NMath.Remap(pos.Y, LocalHeight / -2, LocalHeight / 2, 0, 1)
+			);
 		}
 	}
 }

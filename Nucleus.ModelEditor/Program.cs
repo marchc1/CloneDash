@@ -425,6 +425,11 @@ namespace Nucleus.ModelEditor
 			SetupAnimateModeChanged?.Invoke(this, AnimationMode);
 		}
 
+		public override void PostRender(FrameState frameState) {
+			base.PostRender(frameState);
+			ConsoleSystem.RenderToScreen(8, (int)(frameState.WindowHeight - (ConsoleSystem.VisibleLines * ConsoleSystem.TextSize)) - 64);
+		}
+
 		public override void PreThink(ref FrameState frameState) {
 			base.Think(frameState);
 			if (CheckQueuedAnimationUpdate() && AnimationMode)
@@ -435,7 +440,7 @@ namespace Nucleus.ModelEditor
 		private Animation? activeAnimation;
 		private double start;
 		private void UpdateModel(Panel animationsButtons, EditorModel model, out ModelData modelData, out ModelInstance modelInstance) {
-			modelData = new RuntimeViewer().LoadModelFromEditor(model);
+			modelData = new RuntimeConverter().LoadModelFromEditor(model);
 			modelInstance = modelData.Instantiate();
 
 			animationsButtons.ClearChildren();
