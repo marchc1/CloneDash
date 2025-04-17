@@ -878,7 +878,8 @@ public class ModelRefJSON : IModelLoader
 	public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings() {
 		ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
 		PreserveReferencesHandling = PreserveReferencesHandling.All,
-		SerializationBinder = new ModelRefJsonSerializationBinder()
+		SerializationBinder = new ModelRefJsonSerializationBinder(),
+		NullValueHandling = NullValueHandling.Ignore
 	};
 
 	public ModelData LoadModelFromFile(string filepath) {
