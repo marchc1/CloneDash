@@ -199,8 +199,8 @@ namespace CloneDash.Game
 		private StatisticsData Stats { get; } = new();
 		private CharacterDescriptor CharacterDescriptor;
 		public override void Initialize(params object[] args) {
+			Render3D = false;
 			Health = MaxHealth;
-			Draw3DCoordinateStart = Draw3DCoordinateStart.TopLeft0_0;
 
 			// build the input system
 			var inputInterface = typeof(ICloneDashInputSystem);
@@ -636,8 +636,8 @@ namespace CloneDash.Game
 			Graphics2D.DrawTexture(new(offset, offset2), new(frameState.WindowWidth, frameState.WindowHeight));
 			Graphics2D.DrawTexture(new(offset + frameState.WindowWidth, offset2), new(frameState.WindowWidth, frameState.WindowHeight)); ;
 		}
-		public override void CalcView(FrameState frameState, ref Camera3D cam) {
-			base.CalcView(frameState, ref cam);
+		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
+
 		}
 		public override void Render(FrameState frameState) {
 			if (CommandLineArguments.IsParamTrue("debug")) {

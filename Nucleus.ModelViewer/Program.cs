@@ -216,19 +216,19 @@ namespace Nucleus.ModelViewer
 				if (IValidatable.IsValid(visBones) && visBones.Checked) {
 					foreach (var bone in Entity.Model.Bones) {
 						var worldPos = bone.LocalToWorld(new(0, 0, 0));
-						var screenPos = Raylib.GetWorldToScreen(worldPos, frameState.Camera);
+						var screenPos = Raylib.GetWorldToScreen(worldPos, frameState.Camera3D);
 
 						Graphics2D.SetDrawColor(255, 50, 50);
 						Graphics2D.DrawCircle(screenPos.ToNucleus(), 4);
 						if(bone.Parent != null && !bone.Parent.IsRoot) {
 							var parentWorldPos = bone.Parent.LocalToWorld(new(0, 0, 0));
-							var parentScreenPos = Raylib.GetWorldToScreen(parentWorldPos, frameState.Camera);
+							var parentScreenPos = Raylib.GetWorldToScreen(parentWorldPos, frameState.Camera3D);
 							Graphics2D.DrawLine(screenPos.ToNucleus(), parentScreenPos.ToNucleus(), 2);
 						}
 
 						if (!bone.HasChildren) { 
 							var outwardWorldPos = bone.LocalToWorld(new(0, 50, 0));
-							var outwardScreenPos = Raylib.GetWorldToScreen(outwardWorldPos, frameState.Camera);
+							var outwardScreenPos = Raylib.GetWorldToScreen(outwardWorldPos, frameState.Camera3D);
 							Graphics2D.DrawLine(screenPos.ToNucleus(), outwardScreenPos.ToNucleus(), 2);
 						}
 
@@ -243,11 +243,11 @@ namespace Nucleus.ModelViewer
 			}
 		}
 
-		public override void CalcView(FrameState frameState, ref Camera3D cam) {
+		public override void CalcView3D(FrameState frameState, ref Camera3D cam) {
 			cam.FovY = CamZoom * 340;
 			cam.Position = new(CamOffset.X, CamOffset.Y, -500);
 			cam.Target = new(CamOffset.X, CamOffset.Y, 0);
-			base.CalcView(frameState, ref cam);
+			base.CalcView3D(frameState, ref cam);
 		}
 	}
 	internal class Program
