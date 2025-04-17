@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\glTFLoader\glTFLoader.csproj" />
     <ProjectReference Include="..\Poly2Tri\Poly2Tri.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
