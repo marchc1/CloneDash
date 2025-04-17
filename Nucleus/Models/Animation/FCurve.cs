@@ -64,10 +64,11 @@ namespace Nucleus.Models
 			}
 		}
 
-		public void AddKeyframe(Keyframe<T> keyframe) {
+		public Keyframe<T> AddKeyframe(Keyframe<T> keyframe) {
 			Keyframes.RemoveAll(x => keyframe.Time == x.Time);
 			Keyframes.Add(keyframe);
 			valid = false;
+			return keyframe;
 		}
 
 		public void RemoveKeyframe(Keyframe<T> keyframe) {
