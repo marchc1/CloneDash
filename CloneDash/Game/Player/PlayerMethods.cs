@@ -178,6 +178,12 @@ namespace CloneDash.Game
                 HoldingTopPathwaySustain = entity;
             else
                 HoldingBottomPathwaySustain = entity;
+
+            var isSustaining = IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
+
+			if(!wasSustaining && isSustaining)PlayerAnim_EnterSustain();
+			if(wasSustaining && !isSustaining)PlayerAnim_ExitSustain();
+			
         }
         /// <summary>
         /// Returns if the jump was successful. Mostly returns this for the sake of animation.

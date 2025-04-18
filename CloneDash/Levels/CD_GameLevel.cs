@@ -331,7 +331,7 @@ namespace CloneDash.Game
 		}
 
 		public void PlayerAnim_EnterSustain() {
-			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), false);
+			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), true);
 		}
 		public void PlayerAnim_ExitSustain() {
 			Player.Animations.StopAnimation(0);

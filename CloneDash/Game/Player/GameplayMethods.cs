@@ -51,10 +51,6 @@ namespace CloneDash.Game
                             Color c = poll.HitEntity.HitColor;
                             SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
                         }
-
-						if(poll.HitEntity is SustainBeam) {
-							PlayerAnim_EnterSustain();
-						}
                     }
                 }
 
