@@ -39,7 +39,7 @@ namespace CloneDash.Game
 			Vector2 winSize;
 			switch (args.GetString(0)) {
 				case "16:9": winSize = new(1600, 900); break;
-				case "16.5:9": winSize = new(1950, 900); break;
+				case "19.5:9": winSize = new(1950, 900); break;
 				case "4:3": winSize = new(1600, 1200); break;
 				default:
 					Logs.Warn($"Expected 16:9, 19.5:9, or 4:3.");
@@ -51,6 +51,7 @@ namespace CloneDash.Game
 			Vector2 monSize = new Vector2(Raylib.GetMonitorWidth(0), Raylib.GetMonitorHeight(0));
 			Vector2 winPos = (monPos + (monSize / 2)) - (winSize / 2);
 			Raylib.SetWindowPosition((int)winPos.X, (int)winPos.Y);
+			Raylib.SetWindowSize((int)winSize.X, (int)winSize.Y);
 		});
 
 		public void SeekTo(double time) {
