@@ -45,5 +45,9 @@ namespace Nucleus
 		public static bool InRange(this double n, double min, double max) => n >= min && n <= max;
 		public static bool InRange(this uint n, uint min, uint max) => n >= min && n <= max;
 		public static bool InRange(this long n, long min, long max) => n >= min && n <= max;
+
+		public static T Random<T>(this IList<T> list) {
+			return list[System.Random.Shared.Next(0, list.Count)];
+		}
 	}
 }
