@@ -9,6 +9,11 @@ namespace CloneDash.Game
 {
     public class Pathway : LogicalEntity
     {
+
+		public static readonly Color PATHWAY_TOP_COLOR = new Color(178, 255, 252, 120);
+		public static readonly Color PATHWAY_BOTTOM_COLOR = new Color(248, 178, 255, 120);
+		public static readonly Color PATHWAY_DUAL_COLOR = new Color(220, 160, 140, 255);
+
 		/// <summary>
 		/// Top pathway will be placed at Y 0 + (H * PATHWAY_TOP_PERCENTAGE)
 		/// </summary>
@@ -76,7 +81,7 @@ namespace CloneDash.Game
         }
 
         public static Color GetColor(PathwaySide side, int alpha = -1) {
-            var c = ValueDependantOnPathway(side, DashVars.TopPathwayColor, DashVars.BottomPathwayColor);
+            var c = ValueDependantOnPathway(side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR);
 
             return new(c.R, c.G, c.B, alpha == -1 ? c.A : alpha);
         }
@@ -102,7 +107,7 @@ namespace CloneDash.Game
 
 			var alpha = (int)Raymath.Remap(realInfluence, 0, 1, 79, 130);
 
-			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, DashVars.TopPathwayColor, DashVars.BottomPathwayColor), alpha);
+			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR), alpha);
 			Graphics2D.DrawRing(Position, (32 / 2) - 4, (32 / 2));
 
 			var ringPartSize = 360f / divisors;
