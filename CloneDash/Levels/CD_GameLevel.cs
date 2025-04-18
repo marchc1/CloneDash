@@ -238,6 +238,8 @@ namespace CloneDash.Game
 				case CDDAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation(seq++);
 				case CDDAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation(seq++);
 
+				case CDDAnimationType.Double: return playData.DoubleAnimation.GetAnimation(seq++);
+
 				case CDDAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation(seq++);
 				case CDDAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation(seq++);
 
