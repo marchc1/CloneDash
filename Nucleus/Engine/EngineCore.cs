@@ -514,5 +514,14 @@ namespace Nucleus
 		public static void SetWindowTitle(string title) {
 			Raylib.SetWindowTitle(title);
 		}
+
+		public static void StopSound() {
+			var lvl = Level;
+
+			if (lvl == null) return;
+			if (lvl.Sounds == null) return;
+
+			lvl.Sounds.Dispose();
+		}
 	}
 }
