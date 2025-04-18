@@ -224,7 +224,9 @@ namespace Nucleus.Models
 			if (packedImg != null) Raylib.UnloadImage(packedImg.Value);
 
 			packedImg = Raylib.LoadImage(filePNG);
-			packedTex = new(EngineCore.Level.Textures, Raylib.LoadTextureFromImage(packedImg.Value), true);
+			var tex = Raylib.LoadTextureFromImage(packedImg.Value);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			packedTex = new(EngineCore.Level.Textures, tex, true);
 			regions = DeserializeAtlas(File.ReadAllText(fileAtlas));
 			unpacked.Clear();
 			valid = true;
