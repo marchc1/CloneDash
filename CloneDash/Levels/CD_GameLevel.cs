@@ -24,7 +24,7 @@ namespace CloneDash.Game
 	[Nucleus.MarkForStaticConstruction]
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
-		public static ConCommand clonedash_settime = ConCommand.Register("clonedash_seek", (_, args) => {
+		public static ConCommand clonedash_seek = ConCommand.Register("clonedash_seek", (_, args) => {
 			var level = EngineCore.Level.AsNullable<CD_GameLevel>();
 			if (level == null) {
 				Logs.Warn("Not in game context!");
@@ -34,6 +34,23 @@ namespace CloneDash.Game
 			double? d = args.GetDouble(0);
 			if (!d.HasValue) Logs.Warn("Did not specify a time!");
 			else level.SeekTo(d.Value);
+		});
+		public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
+			Vector2 winSize;
+			switch (args.GetString(0)) {
+				case "16:9": winSize = new(1600, 900); break;
+				case "16.5:9": winSize = new(1950, 900); break;
+				case "4:3": winSize = new(1600, 1200); break;
+				default:
+					Logs.Warn($"Expected 16:9, 19.5:9, or 4:3.");
+					return;
+
+			}
+
+			Vector2 monPos = Raylib.GetMonitorPosition(0);
+			Vector2 monSize = new Vector2(Raylib.GetMonitorWidth(0), Raylib.GetMonitorHeight(0));
+			Vector2 winPos = (monPos + (monSize / 2)) - (winSize / 2);
+			Raylib.SetWindowPosition((int)winPos.X, (int)winPos.Y);
 		});
 
 		public void SeekTo(double time) {
@@ -70,8 +87,8 @@ namespace CloneDash.Game
 		public const string STRING_SCORE = "SCORE";
 		public const string FONT = "Noto Sans";
 
-		public const float PLAYER_OFFSET_X = 0.225f;
-		public const float PLAYER_OFFSET_Y = 0.64f;
+		public const float PLAYER_OFFSET_X = 0.25f;
+		public const float PLAYER_OFFSET_Y = 0.775f;
 		public const float PLAYER_OFFSET_HIT_Y = -0.267f;
 
 		public bool InHit { get; private set; } = false;
@@ -345,7 +362,7 @@ namespace CloneDash.Game
 
 			Player = Add(ModelEntity.Create(info.Filepath));
 			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
-			Player.Scale = new(0.75f);
+			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
 
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
@@ -487,11 +504,12 @@ namespace CloneDash.Game
 			else if (holdingTop) yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
 			else if (holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
-
 			Player.Position = new Vector2F(
 				frameState.WindowHeight * PLAYER_OFFSET_X,
 				yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio))
 			);
+
+
 			HologramPlayer.Position = new Vector2F(
 				frameState.WindowHeight * PLAYER_OFFSET_X,
 				((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio))

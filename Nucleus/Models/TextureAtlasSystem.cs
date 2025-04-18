@@ -235,7 +235,7 @@ namespace Nucleus.Models
 
 		public void ClearTextures() {
 			if (locked)
-				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context).");
+				Logs.Warn("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). If this isn't due to a level change, it should be investigated.");
 
 			foreach (var kvp in unpacked)
 				Raylib.UnloadImage(kvp.Value);
