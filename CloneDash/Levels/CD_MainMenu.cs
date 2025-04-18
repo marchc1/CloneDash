@@ -538,6 +538,7 @@ public class CD_MainMenu : Level
 		menuBtn.ImageOrientation = ImageOrientation.Zoom;
 		menuBtn.Dock = Dock.Right;
 		menuBtn.Image = Textures.LoadTextureFromFile(icon);
+		menuBtn.ImagePadding = new(4);
 		menuBtn.TextSize = 21;
 		menuBtn.DockMargin = RectangleF.TLRB(0);
 		menuBtn.BorderSize = 0;
