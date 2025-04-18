@@ -641,7 +641,7 @@ public abstract class CurveTimeline<T> : Timeline
 	public FCurve<T> Curve(int index) => Curves[index];
 }
 
-public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative) : CurveTimeline<float>(1), IBoneTimeline
+public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative, bool rotation) : CurveTimeline<float>(1), IBoneTimeline
 {
 	public int BoneIndex { get; set; }
 
@@ -665,7 +665,15 @@ public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative) : Curve
 
 		r = Curve(0).DetermineValueAtTime(time);
 		switch (blend) {
-			case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * r) : (GetSetup(bone) + r)); break;
+			case MixBlendMode.Setup:
+				if (multiplicative) r = (GetSetup(bone) * r);
+				else if (rotation) {
+					r = (GetSetup(bone) + r);
+				}
+				else r = (GetSetup(bone) + r);
+				
+				Set(bone, r); 
+				break;
 		}
 	}
 }
@@ -819,43 +827,43 @@ public class ShearTimeline() : DuoBoneFloatPropertyTimeline(false)
 }
 
 
-public class RotationTimeline() : MonoBoneFloatPropertyTimeline(false)
+public class RotationTimeline() : MonoBoneFloatPropertyTimeline(false, true)
 {
 	public override float Get(BoneInstance bone) => bone.Rotation;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Rotation;
 	public override void Set(BoneInstance bone, float value) => bone.Rotation = value;
 }
-public class TranslateXTimeline() : MonoBoneFloatPropertyTimeline(false)
+public class TranslateXTimeline() : MonoBoneFloatPropertyTimeline(false, false)
 {
 	public override float Get(BoneInstance bone) => bone.Position.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.X;
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(value, bone.Position.Y);
 }
-public class TranslateYTimeline() : MonoBoneFloatPropertyTimeline(false)
+public class TranslateYTimeline() : MonoBoneFloatPropertyTimeline(false, false)
 {
 	public override float Get(BoneInstance bone) => bone.Position.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.Y;
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(bone.Position.X, value);
 }
-public class ScaleXTimeline() : MonoBoneFloatPropertyTimeline(true)
+public class ScaleXTimeline() : MonoBoneFloatPropertyTimeline(true, false)
 {
 	public override float Get(BoneInstance bone) => bone.Scale.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.X;
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(value, bone.Scale.Y);
 }
-public class ScaleYTimeline() : MonoBoneFloatPropertyTimeline(true)
+public class ScaleYTimeline() : MonoBoneFloatPropertyTimeline(true, false)
 {
 	public override float Get(BoneInstance bone) => bone.Scale.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.Y;
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(bone.Scale.X, value);
 }
-public class ShearXTimeline() : MonoBoneFloatPropertyTimeline(false)
+public class ShearXTimeline() : MonoBoneFloatPropertyTimeline(false, false)
 {
 	public override float Get(BoneInstance bone) => bone.Shear.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.X;
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(value, bone.Shear.Y);
 }
-public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false)
+public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false, false)
 {
 	public override float Get(BoneInstance bone) => bone.Shear.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.Y;
