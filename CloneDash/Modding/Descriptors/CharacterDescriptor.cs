@@ -32,9 +32,34 @@ namespace CloneDash.Modding.Descriptors
 		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
 		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count - 1) + 1);
 	}
+	/// <summary>
+	/// Class used for in-game animations from <see cref="CharacterDescriptor_MainShowTouch.GetRandomTouchResponse()"/>
+	/// </summary>
+	public class CharacterMainShowTouchResponse(CharacterDescriptor_MainShowTouch touchdata, string response) {
+		public CharacterDescriptor_MultiAnimation MainResponse => touchdata.MainResponse;
+
+		public string Start => string.Format(touchdata.StartResponse, response);
+		public string Standby => string.Format(touchdata.StartResponse, response);
+		public string End => string.Format(touchdata.StartResponse, response);
+	}
+	public class CharacterDescriptor_MainShowTouch {
+		[JsonProperty("response_main")] public CharacterDescriptor_MultiAnimation MainResponse;
+		[JsonProperty("response_start")] public string StartResponse;
+		[JsonProperty("response_standby")] public string StandbyResponse;
+		[JsonProperty("response_end")] public string EndResponse;
+		[JsonProperty("responses")] public string[] Responses;
+
+		public CharacterMainShowTouchResponse GetRandomTouchResponse() {
+			var str = Responses[Random.Shared.Next(0, Responses.Length - 1)];
+			return new(this, str);
+		}
+	}
 	public class CharacterDescriptor_MainShow
 	{
 		[JsonProperty("model")] public string Model;
+		[JsonProperty("music")] public string Music;
+		[JsonProperty("standby")] public string StandbyAnimation;
+		[JsonProperty("touch")] public CharacterDescriptor_MainShowTouch Touch;
 	}
 	public class CharacterDescriptor_Play
 	{
