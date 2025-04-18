@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
+using static AssetStudio.BundleFile;
 
 namespace CloneDash.Game;
 
@@ -501,33 +502,12 @@ public class CD_MainMenu : Level
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
 
-		var loadMDLevel = header.Add<Button>();
-		loadMDLevel.AutoSize = false;
-		loadMDLevel.Size = new Vector2F(64);
-		loadMDLevel.Text = "";
-		loadMDLevel.ImageOrientation = ImageOrientation.Zoom;
-		loadMDLevel.Dock = Dock.Right;
-		loadMDLevel.Image = Textures.LoadTextureFromFile("ui\\play_md_level.png");
-		loadMDLevel.TextSize = 21;
-		loadMDLevel.DockMargin = RectangleF.TLRB(0);
-		loadMDLevel.BorderSize = 0;
-		loadMDLevel.MouseReleaseEvent += (_, _, _) => {
+		MenuButton(header, "ui\\play_md_level.png", "Load Muse Dash Level", () => {
 			var selector = InitializeSelector();
 			selector.AddSongs(MuseDashCompatibility.Songs);
-		};
-		loadMDLevel.TooltipText = "Load Muse Dash Level";
+		});
 
-		var loadMDCC = header.Add<Button>();
-		loadMDCC.AutoSize = false;
-		loadMDCC.Size = new Vector2F(64);
-		loadMDCC.Text = "";
-		loadMDCC.ImageOrientation = ImageOrientation.Zoom;
-		loadMDCC.Dock = Dock.Right;
-		loadMDCC.Image = Textures.LoadTextureFromFile("ui\\play_cam_level.png");
-		loadMDCC.TextSize = 21;
-		loadMDCC.DockMargin = RectangleF.TLRB(0);
-		loadMDCC.BorderSize = 0;
-		loadMDCC.MouseReleaseEvent += (_, _, _) => {
+		MenuButton(header, "ui\\play_cam_level.png", "Load CustomAlbums .mdm File", () => {
 			var selector = InitializeSelector();
 			selector.InfiniteList = false;
 			int page = 1;
@@ -536,8 +516,7 @@ public class CD_MainMenu : Level
 				PopulateWindow(page: page);
 				page++;
 			};
-		};
-		loadMDCC.TooltipText = "Load CustomAlbums .mdm File";
+		});
 
 		var test2 = header.Add<Label>();
 		test2.Size = new Vector2F(158, 32);
@@ -549,6 +528,23 @@ public class CD_MainMenu : Level
 
 		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
 		InitializeCharacterPanel();
+	}
+
+	Button MenuButton(Panel header, string icon, string text, Action onClicked) {
+		var menuBtn = header.Add<Button>();
+		menuBtn.AutoSize = false;
+		menuBtn.Size = new Vector2F(64);
+		menuBtn.Text = "";
+		menuBtn.ImageOrientation = ImageOrientation.Zoom;
+		menuBtn.Dock = Dock.Right;
+		menuBtn.Image = Textures.LoadTextureFromFile(icon);
+		menuBtn.TextSize = 21;
+		menuBtn.DockMargin = RectangleF.TLRB(0);
+		menuBtn.BorderSize = 0;
+		menuBtn.MouseReleaseEvent += (_, _, _) => onClicked();
+		menuBtn.TooltipText = text;
+
+		return menuBtn;
 	}
 
 	Panel searchPanel;
