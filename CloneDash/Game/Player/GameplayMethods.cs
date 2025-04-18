@@ -4,6 +4,7 @@ using CloneDash.Game.Input;
 using System.Numerics;
 using Nucleus.Types;
 using Raylib_cs;
+using CloneDash.Game.Entities;
 
 namespace CloneDash.Game
 {
@@ -50,6 +51,10 @@ namespace CloneDash.Game
                             Color c = poll.HitEntity.HitColor;
                             SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
                         }
+
+						if(poll.HitEntity is SustainBeam) {
+							PlayerAnim_EnterSustain();
+						}
                     }
                 }
 

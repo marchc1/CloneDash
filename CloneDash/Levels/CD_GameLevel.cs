@@ -199,7 +199,8 @@ namespace CloneDash.Game
 		private StatisticsData Stats { get; } = new();
 		private CharacterDescriptor CharacterDescriptor;
 
-		public enum CDDAnimationType {
+		public enum CDDAnimationType
+		{
 			Run,
 			Die,
 			Standby,
@@ -248,10 +249,21 @@ namespace CloneDash.Game
 				case CDDAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation(seq++);
 				case CDDAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation(seq++);
 
+				case CDDAnimationType.Press: return playData.PressAnimations.Press.GetAnimation(seq++);
+				case CDDAnimationType.AirPressEnd: return playData.PressAnimations.AirPressEnd.GetAnimation(seq++);
+
 				default: throw new Exception("Can't do anything here");
 			}
-			
+
 			throw new Exception("Can't do anything here");
+		}
+
+		public ModelEntity GetAnimatablePlayer() {
+			if (IsSustaining()) {
+				return HologramPlayer;
+			}
+
+			return Player;
 		}
 
 		public void PlayerAnim_EnqueueRun() {
@@ -260,32 +272,57 @@ namespace CloneDash.Game
 		}
 
 		public void PlayerAnim_ForceJump() {
-			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
+			var ply = GetAnimatablePlayer();
+
+			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
 			PlayerAnim_EnqueueRun();
 		}
 
 		public void PlayAnim_ForceMiss() {
-			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
+			var ply = GetAnimatablePlayer();
+
+			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
 			PlayerAnim_EnqueueRun();
 		}
 		public void PlayerAnim_ForceAttackAir(ref PollResult result) {
-			if (result.IsPerfect) {
-				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
+			var ply = GetAnimatablePlayer();
+			if (result.HitEntity is DoubleHitEnemy dhe) {
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
+			}
+			else if (result.IsPerfect) {
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
 			}
 			else if (result.IsAtLeastGreat) {
-				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
 			}
 			PlayerAnim_EnqueueRun();
 		}
 		public void PlayerAnim_ForceAttackGround(ref PollResult result) {
-			if (result.IsPerfect) {
-				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
+			var ply = GetAnimatablePlayer();
+
+			if (result.HitEntity is DoubleHitEnemy dhe) {
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
+			}
+			else if (result.IsPerfect) {
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
 			}
 			else if (result.IsAtLeastGreat) {
-				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
+				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
 			}
 			PlayerAnim_EnqueueRun();
 		}
+
+		public void PlayerAnim_EnterSustain() {
+			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), false);
+		}
+		public void PlayerAnim_ExitSustain() {
+			Player.Animations.StopAnimation(0);
+			if (InAir) {
+				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPressEnd), false);
+			}
+			PlayerAnim_EnqueueRun();
+		}
+
 
 		public override void Initialize(params object[] args) {
 			var info = CharacterMod.GetCharacterData();
@@ -310,6 +347,7 @@ namespace CloneDash.Game
 			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
 			Player.Scale = new(0.75f);
 			HologramPlayer.Scale = Player.Scale;
+
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
 			PlayerAnim_EnqueueRun();
@@ -450,8 +488,14 @@ namespace CloneDash.Game
 			else if (holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
 
-			Player.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio)));
-			HologramPlayer.Position = new Vector2F(frameState.WindowHeight * PLAYER_OFFSET_X, ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio)));
+			Player.Position = new Vector2F(
+				frameState.WindowHeight * PLAYER_OFFSET_X,
+				yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio))
+			);
+			HologramPlayer.Position = new Vector2F(
+				frameState.WindowHeight * PLAYER_OFFSET_X,
+				((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio))
+			);
 
 			if (HologramPlayer.PlayingAnimation) {
 
@@ -750,7 +794,7 @@ namespace CloneDash.Game
 
 				Graphics2D.SetDrawColor(255, 255, 255);
 				var p = new Vector2F((float)entCD.XPos, yPosition);
-					; // Calculate the final beat position on the track
+				; // Calculate the final beat position on the track
 				entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
 				ent.Position = p;
 				ent.Render(frameState);
