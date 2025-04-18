@@ -494,5 +494,20 @@ namespace Nucleus.Core
 				//Raylib.DrawTexturePro(__texture, new(0, 0, width, height), new(pos.X, pos.Y, size.X, size.Y), new(0, 0), 0, __drawColor);
 			}
 		}
+
+		public static void DrawLoader(float x, float y, float inner = 14, float outer = 21, int segments = 16, bool useRealtime = false, double? time = null) {
+			for (float i = 0; i < segments; i++) {
+				var r = i / segments;
+				var rn = r * MathF.PI * 2;
+
+				var sO = MathF.Sin(rn) * 1;
+				var cO = MathF.Cos(rn) * 1;
+
+				var c = (int)((1 - (r + time ?? (useRealtime ? (float)(DateTime.Now - EngineCore.Level.Start).TotalSeconds : EngineCore.Level.CurtimeF)) % 1) * 155);
+
+				SetDrawColor(c, c, c);
+				DrawLine(x + (sO * inner), y + (cO * inner), x + (sO * outer), y + (cO * outer), 1);
+			}
+		}
 	}
 }
