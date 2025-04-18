@@ -121,7 +121,6 @@ namespace CloneDash.Modding.Descriptors
 	}
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
-		// version 3 since we're using Model v3
 		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, 4) { }
 
 		[JsonProperty("name")] public string Name;
@@ -183,5 +182,10 @@ namespace CloneDash.Modding.Descriptors
 		[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
 		public static CharacterDescriptor ParseFile(string filepath) => ParseFile<CharacterDescriptor>(filepath);
+
+
+		public string GetMainShowModel() => Path.Combine(Path.GetDirectoryName(Filepath), MainShow.Model);
+		public string GetMainShowMusic() => Path.Combine(Path.GetDirectoryName(Filepath), MainShow.Music);
+		public string GetPlayModel() => Path.Combine(Path.GetDirectoryName(Filepath), Play.Model);
 	}
 }

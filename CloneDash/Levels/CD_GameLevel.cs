@@ -345,7 +345,9 @@ namespace CloneDash.Game
 
 		public override void Initialize(params object[] args) {
 			var info = CharacterMod.GetCharacterData();
-			CharacterDescriptor = info.Descriptor;
+			if(info == null) throw new ArgumentNullException(nameof(info));
+
+			CharacterDescriptor = info;
 
 			MaxHealth = (float)(CharacterDescriptor.MaxHP ?? MaxHealth);
 
@@ -362,8 +364,8 @@ namespace CloneDash.Game
 			foreach (object input in inputs)
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
-			Player = Add(ModelEntity.Create(info.Filepath));
-			HologramPlayer = Add(ModelEntity.Create(info.Filepath));
+			Player = Add(ModelEntity.Create(info.GetPlayModel()));
+			HologramPlayer = Add(ModelEntity.Create(info.GetPlayModel()));
 			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
 

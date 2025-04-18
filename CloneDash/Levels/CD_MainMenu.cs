@@ -13,6 +13,9 @@ using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Systems.CustomAlbums;
 using System.Runtime.CompilerServices;
+using Nucleus.Models.Runtime;
+using CloneDash.Modding.Descriptors;
+using CloneDash.Modding.Settings;
 
 namespace CloneDash.Game;
 
@@ -421,14 +424,76 @@ public class SongSelector : Panel
 	}
 }
 
+public class CharacterPanel : Panel {
+	CharacterDescriptor character;
+	ModelInstance model;
+	AnimationHandler anims;
+	MusicTrack music;
+	protected override void Initialize() {
+		base.Initialize();
+		var character = CharacterMod.GetCharacterData();
+		if (character == null) return;
+		if (character.Filepath == null) return;
+		this.character = character;
+
+		model = Level.Models.CreateInstanceFromFile(character.GetMainShowModel());
+		anims = new(model.Data);
+		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
+
+		music = Level.Sounds.LoadMusicFromFile(character.GetMainShowMusic(), true);
+		music.Loops = true;
+	}
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		anims?.AddDeltaTime(Level.CurtimeDelta);
+		anims?.Apply(model);
+		music?.Update();
+	}
+	CharacterMainShowTouchResponse touchResponse;
+	int click = 0;
+	public override void MouseClick(FrameState state, MouseButton button) {
+		touchResponse = character.MainShow.Touch.GetRandomTouchResponse();
+		click++;
+
+		anims.SetAnimation(0, character.MainShow.Touch.MainResponse.GetAnimation(click));
+		anims.AddAnimation(0, character.MainShow.StandbyAnimation, true);
+
+		anims.SetAnimation(1, touchResponse.Start);
+		anims.AddAnimation(1, touchResponse.Standby);
+		anims.AddAnimation(1, touchResponse.End);
+	}
+	public override void Paint(float width, float height) {
+		Raylib.BeginMode2D(new() {
+			Zoom = height / 900 / 2.4f,
+			Offset = new(width / 2, height / 1)
+		});
+
+		model?.Render();
+
+		Raylib.EndMode2D();
+	}
+}
 public class CD_MainMenu : Level
 {
 	public SongSelector Selector;
-	public SongSelector InitializeSelector() {
+	public CharacterPanel Character;
+	public void RemoveExistingPanels() {
 		Selector?.Remove();
+		Character?.Remove();
+	}
+	public SongSelector InitializeSelector() {
+		RemoveExistingPanels();
+
 		Selector = UI.Add<SongSelector>();
 		Selector.Dock = Dock.Fill;
 		return Selector;
+	}
+	public CharacterPanel InitializeCharacterPanel() {
+		RemoveExistingPanels();
+
+		Character = UI.Add<CharacterPanel>();
+		Character.Dock = Dock.Fill;
+		return Character;
 	}
 	public override void Initialize(params object[] args) {
 		var header = UI.Add<Panel>();
@@ -483,6 +548,7 @@ public class CD_MainMenu : Level
 		test2.DockMargin = RectangleF.TLRB(4);
 
 		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
+		InitializeCharacterPanel();
 	}
 
 	Panel searchPanel;

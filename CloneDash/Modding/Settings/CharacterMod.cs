@@ -16,25 +16,28 @@ namespace CloneDash.Modding.Settings
 		public static ConCommand clonedash_characterinfo = ConCommand.Register("clonedash_characterinfo", (_, _) => {
 			var info = GetCharacterData();
 			Logs.Print($"Character Info:");
-			Logs.Print($"    Name:      {info.Descriptor.Name}");
-			Logs.Print($"    Author:    {info.Descriptor.Author}");
-			Logs.Print($"    Perk:      {info.Descriptor.Perk}");
-			Logs.Print($"    Version:   {info.Descriptor.Version}");
-			Logs.Print($"    Max HP:    {info.Descriptor.MaxHP}");
+			Logs.Print($"    Name:      {info.Name}");
+			Logs.Print($"    Author:    {info.Author}");
+			Logs.Print($"    Perk:      {info.Perk}");
+			Logs.Print($"    Version:   {info.Version}");
+			Logs.Print($"    Max HP:    {info.MaxHP}");
 		}, "Your characters info, based on the Clone Dash Descriptor");
 
 		static CharacterMod() {
 			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
 		}
 
-		public static (string Filepath, CharacterDescriptor Descriptor) GetCharacterData() {
+		public static CharacterDescriptor? GetCharacterData() {
 			string name = clonedash_character.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
-				throw new Exception("Cannot load character; clonedash_character convar empty");
+				return null;
+				//throw new Exception("Cannot load character; clonedash_character convar empty");
 			}
 
-			CharacterDescriptor descriptor = CharacterDescriptor.ParseFile(Filesystem.Resolve($"{name}.cdd", "chars"));
-			return (Filesystem.Resolve($"{name}.cdd", "chars"), descriptor);
+			var path = Filesystem.Resolve($"{name}.cdd", "chars");
+			CharacterDescriptor descriptor = CharacterDescriptor.ParseFile(path);
+			descriptor.Filepath = path;
+			return descriptor;
 		}
 	}
 }
