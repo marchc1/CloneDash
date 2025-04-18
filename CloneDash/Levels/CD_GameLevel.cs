@@ -249,26 +249,27 @@ namespace CloneDash.Game
 		int seq = 0;
 		public string AnimationCDD(CDDAnimationType type) {
 			var playData = CharacterDescriptor.Play;
+			if(type != CDDAnimationType.Run) seq += 1;
 			switch (type) {
-				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq++);
-				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq++);
+				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
+				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq);
 
-				case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq++);
-				case CDDAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation(seq++);
-				case CDDAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation(seq++);
+				case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq);
+				case CDDAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation(seq);
+				case CDDAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation(seq);
 
-				case CDDAnimationType.Double: return playData.DoubleAnimation.GetAnimation(seq++);
+				case CDDAnimationType.Double: return playData.DoubleAnimation.GetAnimation(seq);
 
-				case CDDAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation(seq++);
-				case CDDAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation(seq++);
+				case CDDAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation(seq);
+				case CDDAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation(seq);
 
-				case CDDAnimationType.RoadGreat: return playData.RoadAnimations.Great.GetAnimation(seq++);
-				case CDDAnimationType.RoadPerfect: return playData.RoadAnimations.Perfect.GetAnimation(seq++);
-				case CDDAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation(seq++);
-				case CDDAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation(seq++);
+				case CDDAnimationType.RoadGreat: return playData.RoadAnimations.Great.GetAnimation(seq);
+				case CDDAnimationType.RoadPerfect: return playData.RoadAnimations.Perfect.GetAnimation(seq);
+				case CDDAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation(seq);
+				case CDDAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation(seq);
 
-				case CDDAnimationType.Press: return playData.PressAnimations.Press.GetAnimation(seq++);
-				case CDDAnimationType.AirPressEnd: return playData.PressAnimations.AirPressEnd.GetAnimation(seq++);
+				case CDDAnimationType.Press: return playData.PressAnimations.Press.GetAnimation(seq);
+				case CDDAnimationType.AirPressEnd: return playData.PressAnimations.AirPressEnd.GetAnimation(seq);
 
 				default: throw new Exception("Can't do anything here");
 			}
@@ -406,7 +407,7 @@ namespace CloneDash.Game
 		public Panel PauseWindow { get; private set; }
 		private bool lastNoteHit = false;
 		public override void PreThink(ref FrameState frameState) {
-			XPos = frameState.WindowWidth * PLAYER_OFFSET_X;
+			XPos = frameState.WindowHeight * Game.Pathway.PATHWAY_LEFT_PERCENTAGE;
 
 			if (lastNoteHit && Music.Paused) {
 				EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
@@ -501,19 +502,27 @@ namespace CloneDash.Game
 
 			bool holdingTop = HoldingTopPathwaySustain != null, holdingBottom = HoldingBottomPathwaySustain != null;
 			bool holding = holdingTop || holdingBottom;
-			if (holdingTop && holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
-			else if (holdingTop) yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
-			else if (holdingBottom) yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
+			if (holdingTop && holdingBottom) 
+				yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
+			else if (holdingTop) 
+				yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
+			else if (holdingBottom) 
+				yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
+			if (yoff.HasValue) {
+				yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
+			}
+			var PLAYER_OFFSET_HIT_Y = -.28f;
 			Player.Position = new Vector2F(
-				frameState.WindowHeight * PLAYER_OFFSET_X,
-				yoff ?? ((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * CharacterYRatio))
+				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
+				yoff ?? 
+					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120) 
+					+ (frameState.WindowHeight * ((1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) - Game.Pathway.PATHWAY_TOP_PERCENTAGE) * -CharacterYRatio))
 			);
 
-
 			HologramPlayer.Position = new Vector2F(
-				frameState.WindowHeight * PLAYER_OFFSET_X,
-				((frameState.WindowHeight * PLAYER_OFFSET_Y) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio))
+				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
+				yoff ?? ((frameState.WindowHeight * Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio))
 			);
 
 			if (HologramPlayer.PlayingAnimation) {
@@ -822,6 +831,7 @@ namespace CloneDash.Game
 			}
 
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
+			FrameDebuggingStrings.Add($"Player Animation: {Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
 		}
 
 		public override void Render2D(FrameState frameState) {

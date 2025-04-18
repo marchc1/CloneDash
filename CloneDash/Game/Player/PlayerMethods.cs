@@ -214,7 +214,7 @@ namespace CloneDash.Game
 
 		public bool AttackAir(PollResult result) {
             if (CanJump || result.Hit) {
-                __whenjump = Conductor.Time;
+                __whenjump = result.HitEntity is DoubleHitEnemy ? -20000000000d : Conductor.Time;
                 OnAirAttack?.Invoke(this, PathwaySide.Top);
 
 				if (result.Hit) {
