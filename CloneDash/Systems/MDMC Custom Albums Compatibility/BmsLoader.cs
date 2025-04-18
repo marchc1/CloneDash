@@ -194,6 +194,7 @@ namespace CloneDash.Systems.CustomCharts
 		private static void LoadMusicData(JsonArray noteData) {
 			short noteId = 1;
 			foreach (var node in noteData) {
+				Interlude.Spin();
 				if (noteId == short.MaxValue) {
 					Logs.Warn($"Cannot process full chart, there are too many objects. Max objects is {short.MaxValue}.");
 					break;
@@ -258,6 +259,7 @@ namespace CloneDash.Systems.CustomCharts
 			var geminiCache = new Dictionary<Decimal, List<MusicData>>();
 
 			for (var i = 1; i < MusicDataManager.Data.Count; i++) {
+				Interlude.Spin();
 				var mData = MusicDataManager.Data[i];
 				mData.doubleIdx = -1;
 				MusicDataManager.Set(i, mData);
@@ -305,16 +307,17 @@ namespace CloneDash.Systems.CustomCharts
 			var noteData = bms.GetNoteData();
 			Logs.Info("Got note data");
 
-			LoadMusicData(noteData);
-			MusicDataManager.Sort();
+			LoadMusicData(noteData); Interlude.Spin();
+			MusicDataManager.Sort(); Interlude.Spin();
 
 			//ProcessBossData(bms);
-			MusicDataManager.Sort();
+			MusicDataManager.Sort(); Interlude.Spin();
 
-			ProcessGeminis();
+			ProcessGeminis(); Interlude.Spin();
 
 			// Process the delay for each MusicData
 			foreach (var mData in MusicDataManager.Data) {
+				Interlude.Spin();
 				if (mData.configData == null) continue;
 				mData.tick -= _delay;
 				mData.showTick = Decimal.Round(mData.tick - mData.dt, 2);

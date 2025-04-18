@@ -364,14 +364,17 @@ namespace CloneDash.Game
 			foreach (object input in inputs)
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
+			Interlude.Spin();
 			Player = Add(ModelEntity.Create(info.GetPlayModel()));
+			Interlude.Spin();
 			HologramPlayer = Add(ModelEntity.Create(info.GetPlayModel()));
 			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
 
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
-			PlayerAnim_EnqueueRun();
+			Player.Model.SetToSetupPose();
+			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 
 			HologramPlayer.Visible = false;
 			AutoPlayer = Add<AutoPlayer>();
@@ -470,7 +473,9 @@ namespace CloneDash.Game
 						restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 						restart.ImageOrientation = ImageOrientation.Fit;
 						restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+							Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 							EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
+							Interlude.End();
 						};
 						restart.PaintOverride += Button_PaintOverride;
 
@@ -773,6 +778,7 @@ namespace CloneDash.Game
 		/// </summary>
 		/// <param name="ChartEntity"></param>
 		public void LoadEntity(ChartEntity ChartEntity) {
+			Interlude.Spin();
 			if (!CD_BaseEnemy.TypeConvert.ContainsKey(ChartEntity.Type)) {
 				Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
 				return;
@@ -808,8 +814,6 @@ namespace CloneDash.Game
 			cam.Target = cam.Offset;
 		}
 		public override void Render(FrameState frameState) {
-			Raylib.DrawLineV(new(0, 0), new(1600, 900), Color.Red);
-
 			Rlgl.DisableDepthTest();
 			Rlgl.DisableBackfaceCulling();
 

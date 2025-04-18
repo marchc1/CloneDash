@@ -425,7 +425,8 @@ public class SongSelector : Panel
 	}
 }
 
-public class CharacterPanel : Panel {
+public class CharacterPanel : Panel
+{
 	CharacterDescriptor character;
 	ModelInstance model;
 	AnimationHandler anims;
@@ -919,19 +920,19 @@ public class CD_MainMenu : Level
 	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
 		if (workingLevel != null) return;
 
-		ThreadSystem.SpawnBackgroundWorker(() => {
-			var sheet = song.GetSheet(mapID);
-			workingLevel = new CD_GameLevel(sheet);
-			shouldAutoplay = autoplay;
-			readyToLoadFramepiecewise = true;
-		});
+		Interlude.Begin($"Loading '{song.Name}'...");
+
+		var sheet = song.GetSheet(mapID);
+		workingLevel = new CD_GameLevel(sheet);
+		shouldAutoplay = autoplay;
+		readyToLoadFramepiecewise = true;
 	}
 
 	public void DoChartSheetLoadLevelFrame(int ms) {
 		if (workingLevel == null) return;
 		if (!readyToLoadFramepiecewise) return;
-		if (workingLevel.LoadMapFrame(ms))
-			EngineCore.LoadLevel(workingLevel, shouldAutoplay);
+		EngineCore.LoadLevel(workingLevel, shouldAutoplay);
+		Interlude.End();
 	}
 
 	public override void Think(FrameState frameState) {

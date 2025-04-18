@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using Color = Raylib_cs.Color;
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
+using static CloneDash.Systems.UnityAssetUtils;
 
 namespace CloneDash
 {
@@ -139,11 +140,7 @@ namespace CloneDash
                     return CoverTexture;
 
                 Texture2D tex2D = (Texture2D)DemoFile.assetsFileList[0].Objects.First(x => x is Texture2D tex2D && tex2D.m_Name.EndsWith("_cover"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-				
-				var imgData = tex2D.image_data.GetData();
-				var img = imgData.ToImage(tex2D.m_Width, tex2D.m_Height, tex2D.m_TextureFormat switch {
-					TextureFormat.DXT5 => PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA
-				}, tex2D.m_MipCount);
+				var img = tex2D.ToRaylib();
 
                 var tex = Raylib.LoadTextureFromImage(img);
 				Raylib.GenTextureMipmaps(ref tex);
@@ -161,22 +158,24 @@ namespace CloneDash
                 if (DashSheetOverrides.TryGetValue(mapID, out ChartSheet? sheet))
                     return sheet;
 
-				LoadAssetFile();
+				LoadAssetFile(); Interlude.Spin();
 
 				MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
                 var obj = map.ToType();
-                var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented);
+                var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin();
 
-                var rr = InitializeCompatibilityLayer();
-                if (rr != MDCompatLayerInitResult.OK)
+				var rr = InitializeCompatibilityLayer(); Interlude.Spin();
+
+				if (rr != MDCompatLayerInitResult.OK)
                     throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
 
-                StageInfo stage = JsonConvert.DeserializeObject<StageInfo>(rawData);
-                stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary);
+                StageInfo stage = JsonConvert.DeserializeObject<StageInfo>(rawData); Interlude.Spin();
 
-                FillInTheBlankNotes(this, stage);
+				stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary); Interlude.Spin();
 
-                return ConvertStageInfoToDashSheet(this, stage);
+				FillInTheBlankNotes(this, stage); Interlude.Spin();
+
+				return ConvertStageInfoToDashSheet(this, stage);
             }
 
             protected override ChartInfo? ProduceInfo() {

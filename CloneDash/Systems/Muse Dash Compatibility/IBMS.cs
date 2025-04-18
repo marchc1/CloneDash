@@ -112,7 +112,8 @@ namespace CloneDash
             Dictionary<int, List<MusicData>> LongPresses = new();
             HashSet<string> WarnedIBMSPresses = new();
             foreach (var s in MDinfo.musicDatas) {
-                if (s.noteData == null && first) {
+				Interlude.Spin();
+				if (s.noteData == null && first) {
                     sheet.StartOffset = (float)s.tick;
                 }
 
@@ -301,8 +302,9 @@ namespace CloneDash
             }
 
             sheet.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+			Interlude.Spin();
 
-            Console.WriteLine($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
+			Console.WriteLine($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
             return sheet;
         }
 

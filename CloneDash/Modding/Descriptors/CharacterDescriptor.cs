@@ -30,7 +30,7 @@ namespace CloneDash.Modding.Descriptors
 		/// <param name="at"></param>
 		/// <returns></returns>
 		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
-		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count - 1) + 1);
+		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count) + 1);
 	}
 	/// <summary>
 	/// Class used for in-game animations from <see cref="CharacterDescriptor_MainShowTouch.GetRandomTouchResponse()"/>
@@ -50,7 +50,7 @@ namespace CloneDash.Modding.Descriptors
 		[JsonProperty("responses")] public string[] Responses;
 
 		public CharacterMainShowTouchResponse GetRandomTouchResponse() {
-			var str = Responses[Random.Shared.Next(0, Responses.Length - 1)];
+			var str = Responses[Random.Shared.Next(0, Responses.Length)];
 			return new(this, str);
 		}
 	}

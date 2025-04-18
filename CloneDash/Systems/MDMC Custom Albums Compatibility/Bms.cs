@@ -391,6 +391,7 @@ namespace CloneDash.Systems.CustomCharts
 
 			var objectId = 1;
 			for (var i = 0; i < Notes.Count; i++) {
+				Interlude.Spin();
 				var note = Notes[i];
 				if (note is null) continue;
 
