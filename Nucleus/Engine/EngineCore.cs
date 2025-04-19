@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static Nucleus.EngineCore;
 
 namespace Nucleus
 {
@@ -257,9 +258,13 @@ namespace Nucleus
 
 		public static PerfGraph CPUGraph;
 		public static PerfGraph MemGraph;
+		public delegate void LevelRemovedDelegate(Level level);
+		public static event LevelRemovedDelegate? LevelRemoved;
+
         private static void __loadLevel(Level level, object[] args) {
             if (level == null) {
-                Level = null;
+				LevelRemoved?.Invoke(Level);
+				Level = null;
                 LoadingLevel = false;
                 return;
             }
@@ -328,8 +333,8 @@ namespace Nucleus
                 Level.UI.Remove();
                 LoadingScreen?.Unload();
             }
-
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
+			LevelRemoved?.Invoke(Level);
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
             LoadingLevel = false;
         }
 

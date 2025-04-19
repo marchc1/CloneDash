@@ -141,10 +141,14 @@ namespace Nucleus.Engine
 			EntityHash.Clear();
 
 			OnUnload();
+			Unloaded?.Invoke();
 			if (RenderTarget.HasValue) {
 				Raylib.UnloadRenderTexture(RenderTarget.Value);
 			}
 		}
+		public delegate void UnloadDelegate();
+		public event UnloadDelegate? Unloaded;
+
 		public virtual void OnUnload() { }
 
 		/// <summary>
