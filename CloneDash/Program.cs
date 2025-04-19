@@ -60,14 +60,14 @@ namespace CloneDash
 			// need a better way to implement custom scenes
 
 			Filesystem.AddPath("custom", Filesystem.Resolve("game") + "custom/");
+
 			Filesystem.AddPath("chars", Filesystem.Resolve("custom") + "chars/");
 			Filesystem.AddPath("interludes", Filesystem.Resolve("custom") + "interludes/");
+			Filesystem.AddPath("scenes", Filesystem.Resolve("custom") + "scenes/");
 
-			Filesystem.AddPath("audio", Filesystem.Resolve("game") + "assets/scenes/default/audio/");
 			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
 			Filesystem.AddPath("interludes", Filesystem.Resolve("game") + "assets/interludes/");
-			Filesystem.AddPath("models", Filesystem.Resolve("game") + "assets/scenes/default/models/");
-            Filesystem.AddPath("scripts", Filesystem.Resolve("game") + "assets/scenes/default/scripts/");
+			Filesystem.AddPath("scenes", Filesystem.Resolve("game") + "assets/scenes/");
 
 			EngineCore.Start();
         }
