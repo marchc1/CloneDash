@@ -237,7 +237,7 @@ namespace Nucleus.Models
 
 		public void ClearTextures() {
 			if (locked)
-				Logs.Warn("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). If this isn't due to a level change, it should be investigated.");
+				Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
 
 			foreach (var kvp in unpacked)
 				Raylib.UnloadImage(kvp.Value);
@@ -248,7 +248,7 @@ namespace Nucleus.Models
 
 		public void AddTexture(string name, string filepath) {
 			if (locked)
-				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context).");
+				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). Textures cannot be added during runtime.");
 
 			if (unpacked.TryGetValue(name, out var packed))
 				Raylib.UnloadImage(packed);
@@ -259,7 +259,7 @@ namespace Nucleus.Models
 
 		public void AddTexture(string name, Image cpuImage) {
 			if (locked)
-				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context).");
+				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). Textures cannot be added during runtime.");
 
 			if (unpacked.TryGetValue(name, out var packed))
 				Raylib.UnloadImage(packed);
