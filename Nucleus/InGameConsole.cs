@@ -170,6 +170,7 @@ namespace Nucleus
 	public static class InGameConsole
 	{
 		private static ConsoleWindow? inputPanel = null;
+		public static ConsoleWindow? Instance => inputPanel;
 		private static void OpenConsole(Element parent) {
 			if (IValidatable.IsValid(inputPanel)) {
 				CloseConsole();
