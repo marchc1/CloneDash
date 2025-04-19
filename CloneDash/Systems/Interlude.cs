@@ -73,7 +73,7 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 	string[] files;
 	public override bool ShouldFlipTexture => false;
 	public CloneDashInterludeProvider() {
-		files = Filesystem.Find("interludes", "*.png").ToArray();
+		files = Filesystem.FindFiles("interludes", "*.png").ToArray();
 	}
 	public override int Count => files.Length;
 

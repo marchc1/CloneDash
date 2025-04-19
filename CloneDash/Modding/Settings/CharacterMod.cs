@@ -35,14 +35,14 @@ namespace CloneDash.Modding.Settings
 		}
 
 		public static string[] GetAvailableCharacters() {
-			var files = Filesystem.Find("chars", "*.cdd", absolutePaths: false, includeExtension: false);
+			var files = Filesystem.FindDirectories("chars", "*.cdd", absolutePaths: false);
 			return files.ToArray();
 		}
 		public static CharacterDescriptor[] GetAvailableCharacterDescriptors() {
-			var files = Filesystem.Find("chars", "*.cdd").ToArray();
+			var files = Filesystem.FindDirectories("chars", "").ToArray();
 			var descriptors = new CharacterDescriptor[files.Length];
 			for (int i = 0; i < files.Length; i++) {
-				descriptors[i] = CharacterDescriptor.ParseFile(files[i]);
+				descriptors[i] = CharacterDescriptor.ParseFile(Path.Combine(files[i], "character.cdd"));
 			}
 			return descriptors;
 		}
@@ -54,7 +54,7 @@ namespace CloneDash.Modding.Settings
 				//throw new Exception("Cannot load character; clonedash_character convar empty");
 			}
 
-			var path = Filesystem.Resolve($"{name}.cdd", "chars", false);
+			var path = Filesystem.Resolve($"{name}/character.cdd", "chars", false);
 			if(path == null || !File.Exists(path)) {
 				Logs.Warn($"WARNING: Bad character name '{name}'! Refusing to load CharacterDescriptor!");
 				return null;

@@ -37,17 +37,30 @@ namespace Nucleus.Core
 			{ "shaders", [$"{AppContext.BaseDirectory}assets/shaders"] },
 		};
 
-		public static IEnumerable<string> Find(string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly, bool absolutePaths = true, bool includeExtension = true) {
+		public static IEnumerable<string> FindFiles(string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly, bool absolutePaths = true, bool includeExtension = true) {
 			var filesystemPaths = Path[path];
 			List<string> findBuffer = [];
 			foreach (var filesystemPath in filesystemPaths) {
 				findBuffer.AddRange(Directory.GetFiles(filesystemPath, searchPattern, searchOptions));
 			}
-			
+
 			if (!absolutePaths)
 				for (int i = 0; i < findBuffer.Count; i++) findBuffer[i] = System.IO.Path.GetFileName(findBuffer[i]);
-			if (!includeExtension) 
+			if (!includeExtension)
 				for (int i = 0; i < findBuffer.Count; i++) findBuffer[i] = System.IO.Path.ChangeExtension(findBuffer[i], null);
+
+			return findBuffer;
+		}
+
+		public static IEnumerable<string> FindDirectories(string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly, bool absolutePaths = true) {
+			var filesystemPaths = Path[path];
+			List<string> findBuffer = [];
+			foreach (var filesystemPath in filesystemPaths) {
+				findBuffer.AddRange(Directory.GetDirectories(filesystemPath, searchPattern, searchOptions));
+			}
+
+			if (!absolutePaths)
+				for (int i = 0; i < findBuffer.Count; i++) findBuffer[i] = System.IO.Path.GetFileName(findBuffer[i]);
 
 			return findBuffer;
 		}
