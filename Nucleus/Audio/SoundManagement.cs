@@ -2,6 +2,7 @@
 using System.Text;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
+using Nucleus.Util;
 using Raylib_cs;
 
 namespace Nucleus.Audio
@@ -142,10 +143,7 @@ namespace Nucleus.Audio
 
 			Music m;
 			unsafe {
-				var alloc = Raylib.New<byte>(bytearray.Length);
-				for (int i = 0; i < bytearray.Length; i++) {
-					alloc[i] = bytearray[i];
-				}
+				var alloc = bytearray.ToUnmanagedPointer();
 				using var fileTypeNative = fileExtension.ToAnsiBuffer();
 				m = Raylib.LoadMusicStreamFromMemory(fileTypeNative.AsPointer(), alloc, bytearray.Length);
 				MusicTrack music = new(this, m, true, alloc);
