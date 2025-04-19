@@ -180,7 +180,7 @@ namespace CloneDash
 			public static string GetDownloadCachePath(string localPath) {
 				var download = Filesystem.GetSearchPathID("download")[0] as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
 
-				return download.ResolveToAbsolute("charts");
+				return download.ResolveToAbsolute($"charts/{localPath}.mdm");
 			}
 
 			public void DownloadOrPullFromCache(Action<CustomChartsSong> complete) {
