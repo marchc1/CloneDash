@@ -371,9 +371,9 @@ namespace CloneDash.Game
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
 			Interlude.Spin();
-			Player = Add(ModelEntity.Create(charData.GetPlayModel()));
+			Player = Add(ModelEntity.Create("character", charData.GetPlayModel()));
 			Interlude.Spin();
-			HologramPlayer = Add(ModelEntity.Create(charData.GetPlayModel()));
+			HologramPlayer = Add(ModelEntity.Create("character", charData.GetPlayModel()));
 			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
 

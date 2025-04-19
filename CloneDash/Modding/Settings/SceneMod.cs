@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CloneDash.Modding.Settings
@@ -24,30 +25,41 @@ namespace CloneDash.Modding.Settings
 		}, "Prints all available scenes");
 
 		public static string[] GetAvailableScenes() {
-			var files = Filesystem.FindDirectories("scenes", "", absolutePaths: false);
+			var files = Filesystem.FindDirectories("scenes", "");
 			return files.ToArray();
 		}
 		public static SceneDescriptor[] GetAvailableSceneDescriptors() {
-			var files = Filesystem.FindDirectories("scenes", "").ToArray();
-			var descriptors = new SceneDescriptor[files.Length];
-			for (int i = 0; i < files.Length; i++) {
-				descriptors[i] = SceneDescriptor.ParseFile(Path.Combine(files[i], "scene.cdd"));
+			var dirs = Filesystem.FindDirectories("scenes", "").ToArray();
+			var descriptors = new SceneDescriptor?[dirs.Length];
+
+			for (int i = 0; i < dirs.Length; i++)
+				descriptors[i] = SceneDescriptor.ParseScene(Path.Combine(dirs[i], "scene.cdd"));
+
+			var notNull = 0;
+			for (int i = 0; i < dirs.Length; i++)
+				if (descriptors[i] != null) notNull++;
+
+			var notNullReturn = new SceneDescriptor[notNull];
+			var notNullPtr = 0;
+			for (int i = 0; i < dirs.Length; i++) {
+				var descriptor = descriptors[i];
+				if (descriptor != null) {
+					notNullReturn[notNullPtr] = descriptor;
+					notNullPtr++;
+				}
 			}
-			return descriptors;
+
+			return notNullReturn;
 		}
 
 		public static SceneDescriptor? GetSceneData(ChartSong? song = null) {
-			if(song != null && clonedash_allowsceneoverride.GetBool()) {
+			SceneDescriptor? descriptor;
+
+			if (song != null && clonedash_allowsceneoverride.GetBool()) {
 				var sceneName = song.GetInfo().Scene;
-				var scenePath = Filesystem.Resolve($"{sceneName}/scene.cdd", "scenes", false);
-				if(scenePath == null || !File.Exists(scenePath)) {
-					Logs.Warn($"WARNING: No scene named '{sceneName}' exists, falling back to clonedash_scene...");
-				}
-				else {
-					SceneDescriptor sceneDescriptor = SceneDescriptor.ParseFile(scenePath);
-					sceneDescriptor.Filepath = scenePath;
-					return sceneDescriptor;
-				}
+				descriptor = SceneDescriptor.ParseScene(sceneName);
+				if (descriptor != null) return descriptor;
+				Logs.Warn($"WARNING: Song scene override is enabled, but the scene '{sceneName}' doesn't exist in Clone Dash! Falling back to clonedash_scene...");
 			}
 
 			string name = clonedash_scene.GetString();
@@ -55,14 +67,12 @@ namespace CloneDash.Modding.Settings
 				return null;
 			}
 
-			var path = Filesystem.Resolve($"{name}/scene.cdd", "scenes", false);
-			if (path == null || !File.Exists(path)) {
-				Logs.Warn($"WARNING: Bad scene name '{name}'! Refusing to load SceneDescriptor!");
+			descriptor = SceneDescriptor.ParseFile(name);
+			if(descriptor == null) {
+				Logs.Warn($"WARNING: The scene '{name}' could not be found by the file system!");
 				return null;
 			}
-
-			SceneDescriptor descriptor = SceneDescriptor.ParseFile(path);
-			descriptor.Filepath = path;
+			descriptor.Filename = name;
 			return descriptor;
 		}
 	}

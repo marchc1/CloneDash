@@ -30,24 +30,6 @@ public static class Model4System
 	public const string MODEL_FORMAT_REFJSON_EXT = ".nm4rj";
 
 	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
-
-	private static Dictionary<string, WeakReference<ModelData>> ModelCache { get; set; } = [];
-	private static string getCacheID<IML>(string uniqueID)
-		=> $"WITH_{typeof(IML).AssemblyQualifiedName}_FROM_{uniqueID}";
-
-	public static ModelData LoadModelFromFile<IML>(string filepath) where IML : IModelLoader, new() {
-		var uniqueID = getCacheID<IML>(filepath);
-		if (ModelCache.TryGetValue(uniqueID, out var weakRefModelData) && weakRefModelData.TryGetTarget(out ModelData? modelData))
-			return modelData;
-
-		var newModelData = new IML().LoadModelFromFile(filepath) ?? throw new Exception($"IModelLoader '{typeof(IML).Name}' returned null.");
-		ModelCache[uniqueID] = new(newModelData);
-		return newModelData;
-	}
-
-	public static void PushModelData<IML>(ModelData data, string uniqueID) {
-		ModelCache[getCacheID<IML>(uniqueID)] = new(data);
-	}
 }
 
 
@@ -1021,7 +1003,7 @@ public class AnimationHandler
 
 public interface IModelLoader
 {
-	ModelData LoadModelFromFile(string filepath);
+	ModelData LoadModelFromFile(string pathID, string path);
 }
 
 // Basic JSON model loader. Uses Newtonsoft's references to deserialize properly.
@@ -1068,14 +1050,17 @@ public class ModelRefJSON : IModelLoader
 		TypeNameHandling = TypeNameHandling.Auto
 	};
 
-	public ModelData LoadModelFromFile(string filepath) {
-		var data = JsonConvert.DeserializeObject<ModelData>(File.ReadAllText(filepath), Settings);
+	public ModelData LoadModelFromFile(string pathID, string path){
+		var text = Filesystem.ReadAllText(pathID, path);
+		if (text == null) throw new FileNotFoundException();
+
+		var data = JsonConvert.DeserializeObject<ModelData>(text, Settings);
 		if (data == null)
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
 
 		// Load the texture atlas now
 		data.TextureAtlas = new();
-		data.TextureAtlas.LoadFrom(filepath);
+		data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
 		return data;
 	}
 	public void SaveModelToFile(string filepath, ModelData data) {

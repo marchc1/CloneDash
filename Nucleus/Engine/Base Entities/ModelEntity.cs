@@ -24,18 +24,18 @@ namespace Nucleus.Engine
 
 		public bool Visible { get; set; } = true;
 
-		public unsafe static ModelEntity Create(string model) {
+		public unsafe static ModelEntity Create(string pathID, string model) {
 			ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
-			entity.__model = EngineCore.Level.Models.CreateInstanceFromFile(model);
+			entity.__model = EngineCore.Level.Models.CreateInstanceFromFile(pathID, model);
 			entity.__anim = new(entity.__model.Data);
 			return entity;
 		}
 
-		public ModelEntity(string? model = null) {
+		public ModelEntity(string modelPath = "models", string? model = null) {
 			if (model == null) return;
 
-			var data = Level.Models.LoadModelFromFile(model);
+			var data = Level.Models.LoadModelFromFile(modelPath, model);
 			__model = data.Instantiate();
 			__anim = new(data);
 		}

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Core;
 
 namespace CloneDash.Modding.Descriptors
 {
@@ -181,11 +182,21 @@ namespace CloneDash.Modding.Descriptors
 		/// </summary>
 		[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
-		public static CharacterDescriptor ParseFile(string filepath) => ParseFile<CharacterDescriptor>(filepath);
+		public static CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CharacterDescriptor>(text, filename) : null;
 
+		public string GetPlayModel() => Play.Model;
+		public string GetPlay() => Play.Model;
+		public string GetMainShowModel() => MainShow.Model;
+		public string GetMainShowMusic() => MainShow.Music;
 
-		public string GetMainShowModel() => Path.Combine(Path.GetDirectoryName(Filepath), MainShow.Model);
-		public string GetMainShowMusic() => Path.Combine(Path.GetDirectoryName(Filepath), MainShow.Music);
-		public string GetPlayModel() => Path.Combine(Path.GetDirectoryName(Filepath), Play.Model);
+		internal void SetupFilesystem() {
+			Filesystem.RemoveSearchPath("character");
+			var searchPath = Filesystem.FindSearchPath("chars", $"{Filename}/character.cdd");
+			switch (searchPath) {
+				case DiskSearchPath diskPath:
+					Filesystem.AddTemporarySearchPath("character", DiskSearchPath.Combine(searchPath, Filename));
+					break;
+			}
+		}
 	}
 }

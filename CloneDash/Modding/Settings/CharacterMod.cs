@@ -31,20 +31,34 @@ namespace CloneDash.Modding.Settings
 		}, "Prints all available characters");
 
 		static CharacterMod() {
-			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
 		}
 
 		public static string[] GetAvailableCharacters() {
-			var files = Filesystem.FindDirectories("chars", "", absolutePaths: false);
-			return files.ToArray();
+			var dirs = Filesystem.FindDirectories("chars", "");
+			return dirs.ToArray();
 		}
 		public static CharacterDescriptor[] GetAvailableCharacterDescriptors() {
-			var files = Filesystem.FindDirectories("chars", "").ToArray();
-			var descriptors = new CharacterDescriptor[files.Length];
-			for (int i = 0; i < files.Length; i++) {
-				descriptors[i] = CharacterDescriptor.ParseFile(Path.Combine(files[i], "character.cdd"));
+			var dirs = Filesystem.FindDirectories("chars", "").ToArray();
+			var descriptors = new CharacterDescriptor?[dirs.Length];
+
+			for (int i = 0; i < dirs.Length; i++) 
+				descriptors[i] = CharacterDescriptor.ParseCharacter(Path.Combine(dirs[i], "character.cdd"));
+			
+			var notNull = 0;
+			for (int i = 0; i < dirs.Length; i++) 
+				if (descriptors[i] != null) notNull++;
+
+			var notNullReturn = new CharacterDescriptor[notNull];
+			var notNullPtr = 0;
+			for (int i = 0; i < dirs.Length; i++) {
+				var descriptor = descriptors[i];
+				if (descriptor != null) {
+					notNullReturn[notNullPtr] = descriptor;
+					notNullPtr++;
+				}
 			}
-			return descriptors;
+			
+			return notNullReturn;
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {
@@ -54,13 +68,13 @@ namespace CloneDash.Modding.Settings
 				//throw new Exception("Cannot load character; clonedash_character convar empty");
 			}
 
-			var path = Filesystem.Resolve($"{name}/character.cdd", "chars", false);
-			if(path == null || !File.Exists(path)) {
-				Logs.Warn($"WARNING: Bad character name '{name}'! Refusing to load CharacterDescriptor!");
+			CharacterDescriptor? descriptor = CharacterDescriptor.ParseCharacter(Path.Combine(name, "character.cdd"));
+			if(descriptor == null) {
+				Logs.Warn($"WARNING: The character '{name}' could not be found by the file system!");
 				return null;
 			}
-			CharacterDescriptor descriptor = CharacterDescriptor.ParseFile(path);
-			descriptor.Filepath = path;
+			descriptor.Filename = name;
+			descriptor.SetupFilesystem();
 			return descriptor;
 		}
 	}

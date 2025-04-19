@@ -197,10 +197,12 @@ namespace Nucleus
         public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
             MainThread.Thread = Thread.CurrentThread;
 
+			Host.ReadConfig();
             CommandLineArguments.FromArgs(args ?? []);
-            ShowDebuggingInfo = CommandLineArguments.IsParamTrue("debug");
+			ShowDebuggingInfo = CommandLineArguments.IsParamTrue("debug");
 
-            Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
+
+			Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
 
             // check build number, 3rd part is days since jan 1st, 2000
             ConsoleSystem.Initialize();
@@ -243,7 +245,7 @@ namespace Nucleus
 				Raylib.SetWindowPosition((int)windowPos.X, (int)windowPos.Y);
 			}
             Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-            if (icon != null) Raylib.SetWindowIcon(Raylib.LoadImage(Filesystem.Resolve(icon, "images")));
+            if (icon != null) Raylib.SetWindowIcon(Filesystem.ReadImage("images", icon));
             OpenGL.Import(OpenGLAddressRetriever.GetProc);
             Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);
 

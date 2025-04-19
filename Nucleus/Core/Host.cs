@@ -35,15 +35,12 @@ namespace Nucleus.Core
 			if (Initialized && !forced)
 				return;
 
-			if (!File.Exists(Filesystem.Resolve("config.cfg", "cfg", false))) {
+			if (!Filesystem.ReadAllText("cfg", "config.cfg", out string? cfgText)) {
 				Config = new();
 				return;
 			}
 
-			Config = JsonConvert.DeserializeObject<HostConfig>(Filesystem.ReadAllText("config.cfg", "cfg")) ?? throw new Exception("Could not parse cfg/config.cfg");
-			/*foreach (var cfg in Config.CVars) {
-				ConsoleSystem.ParseOneCommand($"{cfg.Key} \"{cfg.Value}\"");
-			}*/
+			Config = JsonConvert.DeserializeObject<HostConfig>(cfgText) ?? throw new Exception("Could not parse cfg/config.cfg");
 			Initialized = true;
 		}
 

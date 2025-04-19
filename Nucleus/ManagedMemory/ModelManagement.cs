@@ -41,14 +41,15 @@ public class ModelManagement : IManagedMemory
 
 	public ModelRefJSON ModelLoader = new();
 
-	public ModelData LoadModelFromFile(string filepath) {
-		if (ModelDatas.TryGetValue(filepath, out var data)) {
+	public ModelData LoadModelFromFile(string pathID, string path) {
+		var savePath = Path.Combine(pathID, path);
+		if (ModelDatas.TryGetValue(savePath, out var data)) {
 			return data;
 		}
 
-		ModelDatas[filepath] = ModelLoader.LoadModelFromFile(Path.ChangeExtension(filepath, ".nm4rj"));
-		return ModelDatas[filepath];
+		ModelDatas[savePath] = ModelLoader.LoadModelFromFile(pathID, Path.ChangeExtension(path, ".nm4rj"));
+		return ModelDatas[savePath];
 	}
 
-	public ModelInstance CreateInstanceFromFile(string filepath) => LoadModelFromFile(filepath).Instantiate();
+	public ModelInstance CreateInstanceFromFile(string pathID, string filepath) => LoadModelFromFile(pathID, filepath).Instantiate();
 }

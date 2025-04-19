@@ -18,7 +18,7 @@ namespace Nucleus.ManagedMemory
     public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true, Image? underlyingImage = null) : ITexture
     {
 		// Unmanaged missing texture; should not be freed...
-		public static readonly Texture MISSING = new Texture(null, Raylib.LoadTexture(Filesystem.Resolve("missing_texture.png", "images")), false);
+		public static readonly Texture MISSING = new Texture(null, Filesystem.ReadTexture("images", "missing_texture.png"), false);
 
 		public uint HardwareID => underlying.Id;
 		public string? DebugName { get; set; }
@@ -173,12 +173,18 @@ namespace Nucleus.ManagedMemory
         private Dictionary<Texture, string> LoadedFilesFromTexture = [];
 
         public Texture LoadTextureFromFile(string filepath, bool localToImages = true) {
-            filepath = localToImages ? Filesystem.Resolve(filepath, "images") : filepath;
+			if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
 
-            if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
+			Texture tex;
 
-            Texture tex = new(this, Raylib.LoadTexture(filepath), true);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			if (localToImages) {
+				tex = new(this, Filesystem.ReadTexture("images", filepath), true);
+			}
+			else {
+				tex = new(this, Raylib.LoadTexture(filepath), true);
+				Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			}
+
             LoadedTexturesFromFile.Add(filepath, tex);
             LoadedFilesFromTexture.Add(tex, filepath);
             Textures.Add(tex);

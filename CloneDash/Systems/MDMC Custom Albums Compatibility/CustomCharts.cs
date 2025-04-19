@@ -176,6 +176,13 @@ namespace CloneDash
 			}
 
 			private bool __downloading = false;
+
+			public static string GetDownloadCachePath(string localPath) {
+				var download = Filesystem.GetSearchPathID("download")[0] as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
+
+				return download.ResolveToAbsolute("charts");
+			}
+
 			public void DownloadOrPullFromCache(Action<CustomChartsSong> complete) {
 				if (Archive == null) {
 					if (__downloading) {
@@ -183,7 +190,7 @@ namespace CloneDash
 						return;
 					}
 					// Ensure Archive is populated from either a download or a cache
-					var filename = Filesystem.Resolve($"charts/{WebChart.ID}.mdm", "game", false);
+					var filename = GetDownloadCachePath(WebChart.ID);
 					__downloading = true;
 					if (!File.Exists(filename)) {
 						WebChart.DownloadTo(filename, (worked) => {

@@ -13,16 +13,17 @@ namespace Nucleus.Core
 		[DllImport("raylib", CallingConvention = CallingConvention.Cdecl)]
 		public static extern void glTexImage2DMultisample(int target, int level, int format, int width, int height, bool fixedsamplelocs);
 	}
+	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
 		public static FontManager FontManager { get; private set; } = new(new() {
-			{ "Consolas", Filesystem.Resolve("MonaspaceNeon-Regular.otf", "fonts") },
-			{ "Open Sans", Filesystem.Resolve("open-sans.ttf", "fonts") },
-			{ "Noto Sans", Filesystem.Resolve("noto-sans-en-jp.ttf", "fonts") },
+			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
+			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
+			{ "Noto Sans", new FontEntry("noto-sans-en-jp.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color __drawColor = Color.White;
-		public static Shader shader_hsvtransform = Raylib.LoadShader("", Filesystem.Resolve("change_color.fshader", "shaders"));
+		public static Shader shader_hsvtransform = Filesystem.ReadFragmentShader("shaders", "change_color.fshader"); 
 		public static float Hue { get; set; } = 0;
 		public static float Saturation { get; set; } = 1;
 		public static float Value { get; set; } = 1;
@@ -85,10 +86,6 @@ namespace Nucleus.Core
 		public static void ResetDrawingOffset() => __offset = new Vector2F(0, 0);
 		public static void OffsetDrawing(Vector2F by) => __offset = __offset + by;
 		public static void SetOffset(Vector2F offset) => __offset = offset;
-
-		public static void AssociateFont(string filepath, string nickname) {
-			FontManager.FontNameToFilepath[nickname] = filepath;
-		}
 
 		public static Vector2F GetTextSize(string message, string font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Core;
 using Nucleus.Engine;
 using System;
 using System.Collections.Generic;
@@ -88,7 +89,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
 
 	public void Initialize(Level level) {
-		var folderpath = Path.GetDirectoryName(Filepath);
+		var folderpath = Path.GetDirectoryName(Filename);
 		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Begin));
 		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Fever));
 		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Unpause));
@@ -107,7 +108,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 
 	[JsonProperty("announcer")] public SceneDescriptor_Announcer AnnouncerLines;
 
-	public static SceneDescriptor ParseFile(string filepath) => ParseFile<SceneDescriptor>(filepath);
+	public static SceneDescriptor? ParseFile(string filepath) => ParseFile<SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
 
 	private bool disposedValue;
 	protected virtual void Dispose(bool disposing) {
@@ -132,4 +133,6 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 		Dispose(disposing: true);
 		GC.SuppressFinalize(this);
 	}
+
+	public static SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<SceneDescriptor>(text, filename) : null;
 }

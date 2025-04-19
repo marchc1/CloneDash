@@ -52,7 +52,16 @@ namespace Nucleus.Audio
 		private Dictionary<Sound, string> LoadedFilesFromSound = [];
 
 		public Sound LoadSoundFromFile(string filepath, bool localToAudio = true) {
-			filepath = localToAudio ? Filesystem.Resolve(filepath, "audio") : filepath;
+			if (LoadedSoundsFromFile.TryGetValue(filepath, out Sound? soundFromFile)) return soundFromFile;
+
+			Sound tex;
+
+			if (localToAudio) {
+				tex = new(this, Filesystem.ReadSound("images", filepath), true);
+			}
+			else {
+				tex = new(this, Raylib.LoadSound(filepath), true);
+			}
 
 			if (LoadedSoundsFromFile.TryGetValue(filepath, out Sound? sndFromFile)) return sndFromFile;
 
@@ -106,11 +115,9 @@ namespace Nucleus.Audio
 			return sound;
 		}
 
-		public MusicTrack LoadMusicFromFile(string file, bool autoplay = false) {
-			if (!File.Exists(file))
-				throw new FileNotFoundException($"File '{file}' does not exist.");
+		public MusicTrack LoadMusicFromFile(string pathID, string file, bool autoplay = false) {
 			unsafe {
-				var music = new MusicTrack(this, Raylib.LoadMusicStream(file), true, null);
+				var music = new MusicTrack(this, Filesystem.ReadMusic(pathID, file), true, null);
 
 				if (!autoplay)
 					music.Playing = false;
@@ -119,6 +126,8 @@ namespace Nucleus.Audio
 				return music;
 			}
 		}
+
+		public MusicTrack LoadMusicFromFile(string file, bool autoplay = false) => LoadMusicFromFile("audio", file, autoplay);
 
 		public const int MUSIC_HEADER_RIFF = ('R' << 24) + ('I' << 16) + ('F' << 8) + 'F';
 		public const int MUSIC_HEADER_OGGS = ('O' << 24) + ('g' << 16) + ('g' << 8) + 'S';

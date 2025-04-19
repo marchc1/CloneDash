@@ -316,6 +316,20 @@ namespace Nucleus.Models
 			regions.Add(name, newRegion);
 		}
 
+		public void Load(string atlas, byte[] pngData) {
+			if (packedTex != null) packedTex.Dispose();
+			if (packedImg != null) Raylib.UnloadImage(packedImg.Value);
+
+			packedImg = Raylib.LoadImageFromMemory(".png", pngData);
+			var tex = Raylib.LoadTextureFromImage(packedImg.Value);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			packedTex = new(EngineCore.Level.Textures, tex, true);
+			regions = DeserializeAtlas(atlas);
+			unpacked.Clear();
+			valid = true;
+			Lock();
+		}
+
 		public ManagedMemory.Texture Texture {
 			get {
 				Validate();

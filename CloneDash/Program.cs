@@ -59,20 +59,26 @@ namespace CloneDash
 
 			// need a better way to implement custom scenes
 
-			Filesystem.AddPath("custom", Path.Combine(Filesystem.Resolve("game"), "custom/"));
-			Filesystem.AddPath("download", Path.Combine(Filesystem.Resolve("game"), "download/"));
+			// Assume base directory is game[0]. It should always be this, if its not, something messed up
+			var game = Filesystem.GetSearchPathID("game")[0];
+			{
+				Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/"));
+				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/"));
+				Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
+				Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
 
-			Filesystem.AddPath("chars", Path.Combine(Filesystem.Resolve("custom"), "chars/"));
-			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("custom"), "charts/"));
-			Filesystem.AddPath("interludes", Path.Combine(Filesystem.Resolve("custom"), "interludes/"));
-			Filesystem.AddPath("scenes", Path.Combine(Filesystem.Resolve("custom"), "scenes/"));
-
-			Filesystem.AddPath("chars", Path.Combine(Filesystem.Resolve("game"), "assets/chars/"));
-			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("game"), "assets/charts/"));
-			Filesystem.AddPath("interludes", Path.Combine(Filesystem.Resolve("game"), "assets/interludes/"));
-			Filesystem.AddPath("scenes", Path.Combine(Filesystem.Resolve("game"), "assets/scenes/"));
-
-			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("download"), "charts/")); // TODO: mdmc.moe downloaded charts should go in here!
+				var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(game, "custom"));
+				{
+					Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
+					Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
+					Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
+					Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
+				}
+				var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(game, "download"));
+				{
+					Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
+				}
+			}
 
 			EngineCore.Start();
 		}

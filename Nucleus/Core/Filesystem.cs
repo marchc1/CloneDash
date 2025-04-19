@@ -1,4 +1,6 @@
 ﻿using Nucleus.Util;
+using Raylib_cs;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Nucleus.Core
@@ -15,9 +17,10 @@ namespace Nucleus.Core
 		/// <param name="specificAccess"></param>
 		/// <param name="specificMode"></param>
 		/// <returns></returns>
-		public abstract bool Check(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
+		public abstract bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
+		protected abstract bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
 		/// <summary>
-		/// Actually opens a stream. Note: The implementer is responsible for making sure that <see cref="Check(string, FileAccess?, FileMode?)"/> returns
+		/// Actually opens a stream. Note: The implementer is responsible for making sure that <see cref="CheckFileExists(string, FileAccess?, FileMode?)"/> returns
 		/// false if the stream cannot be opened. 
 		/// </summary>
 		/// <param name="path"></param>
@@ -31,28 +34,35 @@ namespace Nucleus.Core
 
 		/// <summary>
 		/// Can the path be read?
-		/// <br/><b>Note:</b> A macro to <see cref="Check"/> with no access/mode arguments.
+		/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with no access/mode arguments.
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public bool Exists(string path) => Check(path);
+		public bool DirectoryExists(string path) => CheckDirectoryExists(path);
 		/// <summary>
 		/// Can the path be read?
-		/// <br/><b>Note:</b> A macro to <see cref="Check"/> with <see cref="FileAccess.Read"/> and <see cref="FileMode.Open"/>.
+		/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with no access/mode arguments.
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public bool CanRead(string path) => Check(path, FileAccess.Read, FileMode.Open);
+		public bool Exists(string path) => CheckFileExists(path);
 		/// <summary>
 		/// Can the path be read?
-		/// <br/><b>Note:</b> A macro to <see cref="Check"/> with <see cref="FileAccess.Write"/> and <see cref="FileMode.Create"/>.
+		/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with <see cref="FileAccess.Read"/> and <see cref="FileMode.Open"/>.
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public bool CanWrite(string path) => Check(path, FileAccess.Write, FileMode.Create);
+		public bool CanRead(string path) => CheckFileExists(path, FileAccess.Read, FileMode.Open);
+		/// <summary>
+		/// Can the path be read?
+		/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with <see cref="FileAccess.Write"/> and <see cref="FileMode.Create"/>.
+		/// </summary>
+		/// <param name="path"></param>
+		/// <returns></returns>
+		public bool CanWrite(string path) => CheckFileExists(path, FileAccess.Write, FileMode.Create);
 
 		public Stream? Open(string path, FileAccess access, FileMode open) {
-			if (!Check(path))
+			if (!CheckFileExists(path))
 				return null;
 
 			var stream = OnOpen(path, access, open);
@@ -60,12 +70,15 @@ namespace Nucleus.Core
 			return stream;
 		}
 
-		public string? ReadText(string path) => ReadText(path, Encoding.UTF8);
-		public string? ReadText(string path, Encoding encoding) {
-			var bytes = ReadBytes(path);
-			if (bytes == null) return null;
+		public string? ReadText(string path) {
+			if (!CanRead(path)) return null;
+			using (var stream = Open(path, FileAccess.Read, FileMode.Open)) {
+				if (stream == null) return null;
 
-			return encoding.GetString(bytes);
+				using (var reader = new StreamReader(stream)) {
+					return reader.ReadToEnd();
+				}
+			}
 		}
 
 		public byte[]? ReadBytes(string path) {
@@ -74,12 +87,12 @@ namespace Nucleus.Core
 				if (stream == null) return null;
 
 				byte[] buffer = new byte[stream.Length];
-				stream.Read(buffer);
+				int read = stream.Read(buffer);
 				return buffer;
 			}
 		}
 
-		public bool WriteText(string path, string text) => WriteText(path, text, Encoding.UTF8);
+		public bool WriteText(string path, string text) => WriteText(path, text, Encoding.Default);
 		public bool WriteText(string path, string text, Encoding encoding) => WriteBytes(path, encoding.GetBytes(text));
 		public bool WriteBytes(string path, byte[] data) {
 			if (!CanWrite(path)) return false;
@@ -114,28 +127,34 @@ namespace Nucleus.Core
 
 		public static DiskSearchPath Combine(SearchPath root, string rootDirectory) => new DiskSearchPath(root, rootDirectory);
 
-		private string resolveToAbsolute(string localPath) {
+		public string ResolveToAbsolute(string localPath) {
 			return Path.Combine(RootDirectory, localPath.TrimStart('/').TrimStart('\\'));
 		}
-		private string resolveToLocal(string absPath) {
+		public string ResolveToLocal(string absPath) {
 			return Path.GetRelativePath(RootDirectory, absPath);
 		}
 
-		protected override bool Check(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+		public override bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 			if (path == null) return false;
-			var absPath = resolveToAbsolute(path);
+			var absPath = ResolveToAbsolute(path);
 
-			var info = new FileInfo(path);
+			var info = new FileInfo(absPath);
 
 			if (!info.Exists) return false;
 			if (info.IsReadOnly && specificAccess.HasValue && specificAccess.Value.HasFlag(FileAccess.Write)) return false;
 			return true;
 		}
 
+		protected override bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+			var info = new DirectoryInfo(ResolveToAbsolute(path));
+			if (!info.Exists) return false;
+			return true;
+		}
+
 		protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
 			// Just in case something *really* goes wrong, a try-catch is done here
 			try {
-				return new FileStream(resolveToAbsolute(path), open, access);
+				return new FileStream(ResolveToAbsolute(path), open, access);
 			}
 			catch (Exception ex) {
 				Logs.Warn($"Core.DiskSearchPath: FileStream errored despite Check succeeding. Reason: {ex.Message}");
@@ -144,13 +163,13 @@ namespace Nucleus.Core
 		}
 
 		public override IEnumerable<string> FindFiles(string path, string searchQuery, SearchOption options) {
-			foreach (var file in Directory.GetFiles(resolveToAbsolute(path), searchQuery, options)) {
-				yield return resolveToLocal(file);
+			foreach (var file in Directory.GetFiles(ResolveToAbsolute(path), searchQuery, options)) {
+				yield return ResolveToLocal(file);
 			}
 		}
 		public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
-			foreach (var file in Directory.GetDirectories(resolveToAbsolute(path), searchQuery, options)) {
-				yield return resolveToLocal(file);
+			foreach (var file in Directory.GetDirectories(ResolveToAbsolute(path), searchQuery, options)) {
+				yield return ResolveToLocal(file);
 			}
 		}
 	}
@@ -191,10 +210,10 @@ namespace Nucleus.Core
 		static Filesystem() {
 			var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
 			{
+				var cfg = AddSearchPath("cfg", DiskSearchPath.Combine(game, "cfg"));
 				var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 				{
 					var audio = AddSearchPath("audio", DiskSearchPath.Combine(assets, "audio"));
-					var cfg = AddSearchPath("cfg", DiskSearchPath.Combine(assets, "cfg"));
 					var fonts = AddSearchPath("fonts", DiskSearchPath.Combine(assets, "fonts"));
 					var images = AddSearchPath("images", DiskSearchPath.Combine(assets, "images"));
 					var models = AddSearchPath("models", DiskSearchPath.Combine(assets, "models"));
@@ -260,27 +279,47 @@ namespace Nucleus.Core
 			return pathObj;
 		}
 
+		public static T AddTemporarySearchPath<T>(string pathID, T path, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
+			var level = EngineCore.Level ?? throw new NotSupportedException("Cannot create temporary search paths when no level is active.");
+
+			var pathObj = AddSearchPath<T>(pathID, path, add);
+			level.Unloaded += () => RemoveSearchPath(pathID, pathObj);
+			return pathObj;
+		}
+
 		public static bool RemoveSearchPath(string pathID, SearchPath path) {
 			if (!Path.TryGetValue(pathID, out var pathIDObj)) return false;
 			return pathIDObj.Remove(path);
 		}
 
+		public static bool RemoveSearchPath(string pathID) {
+			if (!Path.TryGetValue(pathID, out var pathIDObj)) return false;
+			return pathIDObj.RemoveAll(x => true) > 0;
+		}
 
-		public static IEnumerable<string> FindFiles(string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-			foreach (var pathID in GetSearchPathID(path))
-				foreach (var file in pathID.FindFiles(path, searchPattern, searchOptions))
+		public static SearchPath? FindSearchPath(string pathID, string path) {
+			foreach (var pathIDObj in GetSearchPathID(pathID))
+				if (pathIDObj.Exists(path))
+					return pathIDObj;
+
+			return null;
+		}
+
+		public static IEnumerable<string> FindFiles(string pathID, string path, string searchPattern = "*", SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+			foreach (var pathIDObj in GetSearchPathID(pathID))
+				foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
 					yield return file;
 		}
 
-		public static IEnumerable<string> FindDirectories(string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-			foreach (var pathID in GetSearchPathID(path))
-				foreach (var file in pathID.FindDirectories(path, searchPattern, searchOptions))
+		public static IEnumerable<string> FindDirectories(string pathID, string path, string searchPattern = "*", SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+			foreach (var pathIDObj in GetSearchPathID(pathID))
+				foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
 					yield return file;
 		}
 
 		public static Stream? Open(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 			foreach (var pathObj in GetSearchPathID(pathID)) {
-				if (pathObj.Check(path, access, mode)) {
+				if (pathObj.CheckFileExists(path, access, mode)) {
 					var stream = pathObj.Open(path, access, mode);
 					if (stream != null) return stream;
 				}
@@ -298,22 +337,23 @@ namespace Nucleus.Core
 			return null;
 		}
 
-		public static string? ReadAllText(string pathID, string path, Encoding encoding) {
+		public static byte[]? ReadAllBytes(string pathID, string path) {
 			foreach (var pathObj in GetSearchPathID(pathID)) {
-				var text = pathObj.ReadText(path, encoding);
-				if (text != null) return text;
+				var bytes = pathObj.ReadBytes(path);
+				if (bytes != null) return bytes;
 			}
 
 			return null;
 		}
 
-		public static byte[]? ReadAllBytes(string pathID, string path, Encoding encoding) {
-			foreach (var pathObj in GetSearchPathID(pathID)) {
-				var text = pathObj.ReadBytes(path);
-				if (text != null) return text;
-			}
+		public static bool ReadAllText(string pathID, string path, [NotNullWhen(true)] out string? text) {
+			text = ReadAllText(pathID, path);
+			return text != null;
+		}
 
-			return null;
+		public static bool ReadAllBytes(string pathID, string path, [NotNullWhen(true)] out byte[]? bytes) {
+			bytes = ReadAllBytes(pathID, path);
+			return bytes != null;
 		}
 
 		public static bool WriteAllText(string pathID, string path, string text, Encoding encoding) {
@@ -341,6 +381,69 @@ namespace Nucleus.Core
 			}
 
 			return false;
+		}
+
+		private static FileNotFoundException NotFound(string pathID, string path) => new FileNotFoundException($"Cannot find '{path}' in '{pathID}'!");
+		public static string GetExtension(string path) => System.IO.Path.GetExtension(path) ?? "";
+
+		// Extra Raylib macros.
+
+		public static Image ReadImage(string pathID, string path) {
+			byte[]? data = ReadAllBytes(pathID, path);
+			if (data == null) throw NotFound(pathID, path);
+			return Raylib.LoadImageFromMemory(GetExtension(path), data);
+		}
+		public static Texture2D ReadTexture(string pathID, string path, TextureFilter filter = TextureFilter.TEXTURE_FILTER_BILINEAR) {
+			var img = ReadImage(pathID, path);
+			var tex = Raylib.LoadTextureFromImage(img);
+			Raylib.UnloadImage(img);
+			Raylib.SetTextureFilter(tex, filter);
+			return tex;
+		}
+		public static Sound ReadSound(string pathID, string path) {
+			byte[]? data = ReadAllBytes(pathID, path);
+			if (data == null) throw NotFound(pathID, path);
+			var wav = Raylib.LoadWaveFromMemory(GetExtension(path), data);
+			var snd = Raylib.LoadSoundFromWave(wav);
+			Raylib.UnloadWave(wav);
+			return snd;
+		}
+		public static Music ReadMusic(string pathID, string path) {
+			byte[]? data = ReadAllBytes(pathID, path);
+			if (data == null) throw NotFound(pathID, path);
+			var music = Raylib.LoadMusicStreamFromMemory(GetExtension(path), data);
+			return music;
+		}
+		public static Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
+			byte[]? data = ReadAllBytes(pathID, path);
+			if (data == null) throw NotFound(pathID, path);
+
+			var font = Raylib.LoadFontFromMemory(GetExtension(path), data, fontSize, codepoints, codepointCount);
+			return font;
+		}
+		public static Shader ReadVertexShader(string pathID, string vertexShader) {
+			string? data = ReadAllText(pathID, vertexShader);
+			if (data == null) throw NotFound(pathID, vertexShader);
+
+			var shader = Raylib.LoadShaderFromMemory(data, null);
+			return shader;
+		}
+		public static Shader ReadFragmentShader(string pathID, string fragmentShader) {
+			string? data = ReadAllText(pathID, fragmentShader);
+			if (data == null) throw NotFound(pathID, fragmentShader);
+
+			var shader = Raylib.LoadShaderFromMemory(null, data);
+			return shader;
+		}
+		public static Shader ReadShader(string pathID, string vertexShader, string fragmentShader) {
+			string? vertexData = ReadAllText(pathID, vertexShader);
+			if (vertexData == null) throw NotFound(pathID, vertexShader);
+
+			string? fragmentData = ReadAllText(pathID, fragmentShader);
+			if (fragmentData == null) throw NotFound(pathID, fragmentShader);
+
+			var shader = Raylib.LoadShaderFromMemory(vertexData, fragmentData);
+			return shader;
 		}
 	}
 }

@@ -8,7 +8,7 @@ namespace Nucleus.Core
         private int[] RegisteredCodepoints = [];
         private HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 
-        public Dictionary<string, string> FontNameToFilepath = new();
+        public Dictionary<string, FontEntry> FontNameToFilepath = new();
         private Dictionary<string, Dictionary<int, Font>> fonttable = new();
         private bool AreFontsDirty = false;
 
@@ -27,7 +27,7 @@ namespace Nucleus.Core
             }
         }
 
-        public FontManager(Dictionary<string, string> fonttable, string[]? codepoints = null) {
+        public FontManager(Dictionary<string, FontEntry> fonttable, string[]? codepoints = null) {
             codepoints = codepoints ?? [];
             FontNameToFilepath = fonttable;
             foreach (var codepointStr in codepoints)
@@ -64,8 +64,9 @@ namespace Nucleus.Core
                 }
 
                 if (!f1.TryGetValue(fontSize, out font)) {
+					var entry = FontNameToFilepath[fontName];
 
-                    f1[fontSize] = Raylib.LoadFontEx(FontNameToFilepath[fontName], fontSize, RegisteredCodepoints, RegisteredCodepoints.Length);
+					f1[fontSize] = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepoints, RegisteredCodepoints.Length);
                     font = f1[fontSize]; // how did I miss this
                 }
 

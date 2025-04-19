@@ -435,14 +435,14 @@ public class CharacterPanel : Panel
 		base.Initialize();
 		var character = CharacterMod.GetCharacterData();
 		if (character == null) return;
-		if (character.Filepath == null) return;
+		if (character.Filename == null) return;
 		this.character = character;
 
-		model = Level.Models.CreateInstanceFromFile(character.GetMainShowModel());
+		model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
 		anims = new(model.Data);
 		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
-		music = Level.Sounds.LoadMusicFromFile(character.GetMainShowMusic(), true);
+		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
 		music.Loops = true;
 	}
 	protected override void OnThink(FrameState frameState) {
