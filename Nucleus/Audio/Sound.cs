@@ -1,5 +1,6 @@
 ﻿using FftSharp;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace Nucleus.Audio
@@ -22,6 +23,11 @@ namespace Nucleus.Audio
 			// size * rate * channels = bits per second
 			Underlying.Stream.SampleSize * Underlying.Stream.SampleRate * Underlying.Stream.Channels
 			/ Underlying.FrameCount; // this is wrong...
+
+		public void Play(float volume = 1.0f, float pitch = 1.0f, float pan = 0.5f) {
+			Debug.Assert(Parent != null);
+			Parent?.PlaySound(this, volume, pitch, pan);
+		}
 
 		protected virtual void Dispose(bool disposing) {
 			if (!disposedValue && SelfDisposing) {
