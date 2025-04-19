@@ -64,7 +64,10 @@ namespace CloneDash.Game
                 if(hitSomething)
                     Stats.Hits++;
 
-                ExitHitState();
+				if(IsVisuallySustaining())
+					lastHologramHitTime = Conductor.Time;
+
+				ExitHitState();
 
                 //if (Debug)
                     //Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");

@@ -18,6 +18,7 @@ using Nucleus.Audio;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using System.Diagnostics;
+using Nucleus.ManagedMemory;
 
 namespace CloneDash.Game
 {
@@ -278,8 +279,10 @@ namespace CloneDash.Game
 			throw new Exception("Can't do anything here");
 		}
 
+		private double lastHologramHitTime = -10000;
+		private int lastSustainTick = 0;
 		public ModelEntity GetAnimatablePlayer() {
-			if (IsSustaining()) {
+			if (IsVisuallySustaining()) {
 				return HologramPlayer;
 			}
 
@@ -287,11 +290,13 @@ namespace CloneDash.Game
 		}
 
 		public void PlayerAnim_EnqueueRun() {
+			if (lastSustainTick == Ticks) return;
 			Player.Model.SetToSetupPose();
 			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 		}
 
 		public void PlayerAnim_ForceJump() {
+			if (lastSustainTick == Ticks) return;
 			var ply = GetAnimatablePlayer();
 
 			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
@@ -299,12 +304,14 @@ namespace CloneDash.Game
 		}
 
 		public void PlayAnim_ForceMiss() {
+			if (lastSustainTick == Ticks) return;
 			var ply = GetAnimatablePlayer();
 
 			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
 			PlayerAnim_EnqueueRun();
 		}
 		public void PlayerAnim_ForceAttackAir(ref PollResult result) {
+			if (lastSustainTick == Ticks) return;
 			var ply = GetAnimatablePlayer();
 			if (result.HitEntity is DoubleHitEnemy dhe) {
 				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
@@ -318,6 +325,7 @@ namespace CloneDash.Game
 			PlayerAnim_EnqueueRun();
 		}
 		public void PlayerAnim_ForceAttackGround(ref PollResult result) {
+			if (lastSustainTick == Ticks) return;
 			var ply = GetAnimatablePlayer();
 
 			if (result.HitEntity is DoubleHitEnemy dhe) {
@@ -333,9 +341,11 @@ namespace CloneDash.Game
 		}
 
 		public void PlayerAnim_EnterSustain() {
+			lastSustainTick = Ticks;
 			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), true);
 		}
 		public void PlayerAnim_ExitSustain() {
+			lastSustainTick = 0;
 			Player.Animations.StopAnimation(0);
 			if (InAir) {
 				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPressEnd), false);
@@ -343,6 +353,8 @@ namespace CloneDash.Game
 			PlayerAnim_EnqueueRun();
 		}
 
+
+		ShaderInstance hologramShader;
 
 		public override void Initialize(params object[] args) {
 			var charData = CharacterMod.GetCharacterData();
@@ -370,12 +382,14 @@ namespace CloneDash.Game
 			foreach (object input in inputs)
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
+			hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 			Interlude.Spin();
 			Player = Add(ModelEntity.Create("character", charData.GetPlayModel()));
 			Interlude.Spin();
 			HologramPlayer = Add(ModelEntity.Create("character", charData.GetPlayModel()));
 			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
+			HologramPlayer.Shader = hologramShader;
 
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
@@ -423,6 +437,7 @@ namespace CloneDash.Game
 		public Panel PauseWindow { get; private set; }
 		private bool lastNoteHit = false;
 		public override void PreThink(ref FrameState frameState) {
+			Ticks++;
 			XPos = frameState.WindowHeight * Game.Pathway.PATHWAY_LEFT_PERCENTAGE;
 
 			if (lastNoteHit && Music.Paused) {
@@ -540,11 +555,13 @@ namespace CloneDash.Game
 
 			HologramPlayer.Position = new Vector2F(
 				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
-				yoff ?? ((frameState.WindowHeight * Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) + (frameState.WindowHeight * PLAYER_OFFSET_HIT_Y * HologramCharacterYRatio))
+					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120)
+					+ (frameState.WindowHeight * ((1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) - Game.Pathway.PATHWAY_TOP_PERCENTAGE) * HologramCharacterYRatio))
 			);
 
-			if (HologramPlayer.PlayingAnimation) {
-
+			if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
+				HologramPlayer.Visible = true;
+				HologramPlayer.SetShaderUniform("time", (float)(Conductor.Time - lastHologramHitTime) * 2);
 			}
 			else {
 				HologramPlayer.Visible = false;
@@ -849,6 +866,9 @@ namespace CloneDash.Game
 
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
 			FrameDebuggingStrings.Add($"Player Animation: {Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
+			FrameDebuggingStrings.Add($"Hologram-Player Animation: {HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
+			FrameDebuggingStrings.Add($"Player Y: {CharacterYRatio}");
+			FrameDebuggingStrings.Add($"Hologram-Player Y: {HologramCharacterYRatio}");
 		}
 
 		public override void Render2D(FrameState frameState) {

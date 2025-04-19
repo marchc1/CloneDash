@@ -489,12 +489,20 @@ public class CD_MainMenu : Level
 		refresh.Size = new(32);
 		refresh.Text = "Refresh Shader";
 
-		//var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+		
 		var renderPanel = window.Add<Panel>();
 		renderPanel.Dock = Dock.Fill;
 		var charData = CharacterMod.GetCharacterData();
+		
 
 		var model = level.Models.CreateInstanceFromFile("chars", $"{charData.Filename}/{charData.GetPlayModel()}");
+		var anims = new AnimationHandler(model);
+
+		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+		float time = 0;
+		var shaderTimeLoc = shader.GetShaderLocation("time");
+		model.SetToSetupPose();
+		anims.SetAnimation(0, "air_hit_great_2", false);
 
 		renderPanel.PaintOverride += (s, w, h) => {
 			Raylib.BeginMode2D(new() {
@@ -502,17 +510,30 @@ public class CD_MainMenu : Level
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w /2, h/2) + new System.Numerics.Vector2(0, 200)
 			});
 
-			model.Render();
+			anims.AddDeltaTime(EngineCore.Level.CurtimeDelta);
+			anims.Apply(model);
+			time += EngineCore.Level.CurtimeDeltaF;
+			shader.SetShaderValue("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
+			if (Raylib.IsShaderReady(shader)) {
+				Raylib.BeginShaderMode(shader);
+				model.Render();
+				Raylib.EndShaderMode();
+			}
 
 			Raylib.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
-
+			Raylib.UnloadShader(shader);
+			shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+			time = 0;
+			shaderTimeLoc = shader.GetShaderLocation("time");
+			model.SetToSetupPose();
+			anims.SetAnimation(0, "air_hit_great_2", false);
 		};
 
 		window.Removed += (s) => {
-
+			Raylib.UnloadShader(shader);
 		};
 	});
 	public SongSelector Selector;
