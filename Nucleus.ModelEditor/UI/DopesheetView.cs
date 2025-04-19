@@ -74,7 +74,7 @@ public class DopesheetView : BaseTimelineView
 		keyframes.DockMargin = RectangleF.Zero;
 		keyframes.BorderSize = 1;
 		keyframes.Size = new(24);
-		keyframes.PassMouseTo(KeyframeInfoPanel); // this is only used as a background for keyframes
+		keyframes.OnHoverTest += Passthru;
 		keyframes.SetTag("target", target);
 		keyframes.PaintOverride += Keyframes_PaintOverride;
 		keyframes.Thinking += (self) => {
@@ -97,7 +97,8 @@ public class DopesheetView : BaseTimelineView
 							ModelEditor.Active.IsKeyframeSelected(keyframe) 
 								? self.BackgroundColor.Adjust(0, 1, 1.3f) 
 								: self.BackgroundColor.Adjust(0, 1, -0.5f);
-						self.Position = new((float)FrameToX(keyframe.GetTime()) - 2, 0);
+						var fps = ModelEditor.Active.File.Timeline.GetVisualFPS();
+						self.Position = new((float)FrameToX(keyframe.GetTime() * fps) - 2, 0);
 						self.Paint(w, h);
 					};
 
