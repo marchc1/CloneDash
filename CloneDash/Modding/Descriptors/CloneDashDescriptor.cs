@@ -30,5 +30,3 @@ namespace CloneDash.Modding.Descriptors
 		}
 	}
 }
-
-
