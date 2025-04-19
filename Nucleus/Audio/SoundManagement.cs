@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Raylib_cs;
@@ -87,7 +88,10 @@ namespace Nucleus.Audio
 
 		public Sound PlaySound(string soundpath, bool localToAudio = true, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
 			var sound = LoadSoundFromFile(soundpath, localToAudio);
+			return PlaySound(sound, volume, pitch, pan);
+		}
 
+		public Sound PlaySound(Sound sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
 			Raylib.StopSound(sound);
 			Raylib.SetSoundVolume(sound, volume);
 			Raylib.SetSoundPitch(sound, pitch);
@@ -98,10 +102,8 @@ namespace Nucleus.Audio
 			//var ready = Raylib.IsSoundReady(sound);
 			//var playing = Raylib.IsSoundPlaying(sound);
 
-			Sounds.Add(sound);
 			return sound;
 		}
-
 
 		public MusicTrack LoadMusicFromFile(string file, bool autoplay = false) {
 			if (!File.Exists(file))
@@ -117,24 +119,27 @@ namespace Nucleus.Audio
 			}
 		}
 
+		public const int MUSIC_HEADER_RIFF = ('R' << 24) + ('I' << 16) + ('F' << 8) + 'F';
+		public const int MUSIC_HEADER_OGGS = ('O' << 24) + ('g' << 16) + ('g' << 8) + 'S';
+		public const int MUSIC_HEADER_ID3 = ('I' << 24) + ('D' << 16) + ('3' << 8) + 0x03;
+
+		public const string MUSIC_HEADER_RIFF_EXTENSION = ".wav";
+		public const string MUSIC_HEADER_OGGS_EXTENSION = ".ogg";
+		public const string MUSIC_HEADER_ID3_EXTENSION = ".mp3";
+
+		// Automatically determines the file extension from the bytearray
 		public MusicTrack LoadMusicFromMemory(byte[] bytearray, bool autoplay = false) {
-			// Automatically determines the file extension from the bytearray
-			string fileExtension = "";
-			byte b1 = bytearray[0], b2 = bytearray[1], b3 = bytearray[2], b4 = bytearray[3];
-			string header = Encoding.ASCII.GetString([b1, b2, b3, b4]);
-			switch (header) {
-				case "RIFF": //.wav
-					fileExtension = ".wav";
-					break;
+			if (bytearray.Length < 4) throw new Exception("Can't even determine the file type... file < 4 bytes!");
 
-				case "OggS": //.ogg
-					fileExtension = ".ogg";
-					break;
+			Span<byte> byteHeader = [bytearray[0], bytearray[1], bytearray[2], bytearray[3]];
+			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
+			string fileExtension = headerCast[0] switch {
+				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
+				MUSIC_HEADER_OGGS => MUSIC_HEADER_OGGS_EXTENSION,
+				MUSIC_HEADER_ID3 => MUSIC_HEADER_ID3_EXTENSION,
+				_ => throw new Exception("Unsupported audio type")
+			};
 
-				default: // There should be a better way to find MP3 files... does Raylib support other file types too?
-					fileExtension = ".mp3";
-					break;
-			}
 			Music m;
 			unsafe {
 				var alloc = Raylib.New<byte>(bytearray.Length);
