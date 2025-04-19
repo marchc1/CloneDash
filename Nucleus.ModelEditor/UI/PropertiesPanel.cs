@@ -152,7 +152,7 @@ namespace Nucleus.ModelEditor
 
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
 			searchBtn.MouseReleaseEvent += (_, _, _) => {
-				var result = TinyFileDialogs.SelectFolderDialog("Select Images Folder", Filesystem.Path["game"][0]);
+				var result = TinyFileDialogs.SelectFolderDialog("Select Images Folder", (Filesystem.Path["game"][0] as DiskSearchPath).RootDirectory);
 				if (!result.Cancelled)
 					chosenPath(path, result.Result);
 			};

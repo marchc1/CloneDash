@@ -655,9 +655,11 @@ namespace Nucleus.ModelEditor
 		}
 
 		private string createDefaultFolder() {
-			var folderPath = Filesystem.Resolve("modelsrc", "game", false);
-			Directory.CreateDirectory(folderPath);
-			return folderPath;
+			var modelsrc = Filesystem.GetSearchPathID("modelsrc");
+			if (modelsrc.Count == 0)
+				Filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
+
+			return (modelsrc[0] as DiskSearchPath).RootDirectory;
 		}
 
 		private void titleUpdate() 

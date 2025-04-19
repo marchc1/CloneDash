@@ -112,6 +112,7 @@ namespace Nucleus.Core
 
 		public DiskSearchPath(string rootDirectory) {
 			RootDirectory = rootDirectory;
+			Directory.CreateDirectory(rootDirectory);
 		}
 		/// <summary>
 		/// <b>Note:</b> <paramref name="root"/> must be a <see cref="DiskSearchPath"/>.

@@ -7,7 +7,7 @@ namespace Nucleus.ModelEditor
 {
 	public static class Checkerboard
 	{
-		private static Shader shader = Raylib.LoadShader(null, Filesystem.Resolve("checkerboard.fshader", "shaders"));
+		private static Shader shader = Filesystem.ReadFragmentShader("shaders", "checkerboard.fshader");
 		private static Color defaultLight => new Color(60, 60, 63);
 		private static Color defaultDark => new Color(46, 46, 49);
 		public static void Draw(float gridSize = 50, float quadSize = 4096, Color? light = null, Color? dark = null) {
