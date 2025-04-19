@@ -3,9 +3,11 @@ using Nucleus;
 using Nucleus.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace CloneDash.Modding.Settings
 {
@@ -22,7 +24,7 @@ namespace CloneDash.Modding.Settings
 			Logs.Print($"    Version:   {info.Version}");
 			Logs.Print($"    Max HP:    {info.MaxHP}");
 		}, "Your characters info, based on the Clone Dash Descriptor");
-		public static ConCommand clonedash_allcharacters = ConCommand.Register("clonedash_characterinfo", (_, _) => {
+		public static ConCommand clonedash_allcharacters = ConCommand.Register("clonedash_allcharacters", (_, _) => {
 			var characters = GetAvailableCharacters();
 			foreach (var character in characters)
 				Logs.Print($"    {character}");
@@ -35,6 +37,14 @@ namespace CloneDash.Modding.Settings
 		public static string[] GetAvailableCharacters() {
 			var files = Filesystem.Find("chars", "*.cdd", absolutePaths: false, includeExtension: false);
 			return files.ToArray();
+		}
+		public static CharacterDescriptor[] GetAvailableCharacterDescriptors() {
+			var files = Filesystem.Find("chars", "*.cdd").ToArray();
+			var descriptors = new CharacterDescriptor[files.Length];
+			for (int i = 0; i < files.Length; i++) {
+				descriptors[i] = CharacterDescriptor.ParseFile(files[i]);
+			}
+			return descriptors;
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {

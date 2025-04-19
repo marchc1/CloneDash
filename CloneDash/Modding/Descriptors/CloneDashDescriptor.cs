@@ -18,7 +18,11 @@ namespace CloneDash.Modding.Descriptors
 		}
 		public string? Filepath;
 		public int Version;
-		public static T ParseFile<T>(string filepath) where T : CloneDashDescriptor => JsonConvert.DeserializeObject<T>(File.ReadAllText(filepath)) ?? throw new Exception("Could not parse the file.");
+		public static T ParseFile<T>(string filepath) where T : CloneDashDescriptor {
+			var ret = JsonConvert.DeserializeObject<T>(File.ReadAllText(filepath)) ?? throw new Exception("Could not parse the file.");
+			ret.Filepath = filepath;
+			return ret;
+		}
 	
 		static CloneDashDescriptor() {
 			FileAssoc.Register(".cdd", "CloneDash.Descriptor", "Clone Dash Descriptor File");
