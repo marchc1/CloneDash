@@ -35,7 +35,7 @@ namespace CloneDash.Modding.Settings
 		}
 
 		public static string[] GetAvailableCharacters() {
-			var files = Filesystem.FindDirectories("chars", "*.cdd", absolutePaths: false);
+			var files = Filesystem.FindDirectories("chars", "", absolutePaths: false);
 			return files.ToArray();
 		}
 		public static CharacterDescriptor[] GetAvailableCharacterDescriptors() {

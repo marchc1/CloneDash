@@ -651,7 +651,7 @@ namespace Nucleus.Engine
 			UnlockEntityBuffer();
 			var FPS = Raylib.GetFPS();
 			List<DebugRecord> fields;
-			if (EngineCore.ShowDebuggingInfo && IValidatable.IsValid(InGameConsole.Instance)) {
+			if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
 				Graphics2D.ResetDrawingOffset();
 				fields = [
 					$"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
