@@ -8,6 +8,7 @@ using Nucleus.UI.Elements;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
@@ -108,10 +109,10 @@ namespace Nucleus.ModelEditor
 			List<ModelImage> images = [];
 			List<string> imageNames = [];
 			Dictionary<string, ModelImage> imageLookup = [];
-			var files = Directory.GetFiles(Filepath);
+			var files = Directory.GetFiles(Filepath, "*", SearchOption.AllDirectories);
 			foreach (var file in files) {
-				var nameExt = Path.GetFileName(file);
-				var name = Path.GetFileNameWithoutExtension(file);
+				var nameExt = file.Replace(Filepath, "").TrimStart('\\').Replace("\\", "/");
+				var name = Path.ChangeExtension(nameExt, null);
 				var ext = Path.GetExtension(file);
 				if (ext != null && nameExt != null && name != null) {
 					switch (ext) {

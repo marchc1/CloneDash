@@ -18,6 +18,7 @@ namespace Nucleus.Models.Runtime;
 /// <summary>
 /// Runtime for the 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
 /// </summary>
+[Nucleus.MarkForStaticConstruction]
 public static class Model4System
 {
 	/// <summary>
@@ -27,6 +28,8 @@ public static class Model4System
 	/// </summary>
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.13.01";
 	public const string MODEL_FORMAT_REFJSON_EXT = ".nm4rj";
+
+	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 
 	private static Dictionary<string, WeakReference<ModelData>> ModelCache { get; set; } = [];
 	private static string getCacheID<IML>(string uniqueID)
@@ -344,7 +347,7 @@ public class SkinEntryTypeConverter : TypeConverter
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="SlotIndex"></param>
-[TypeConverter(typeof(SkinEntryTypeConverter))]public record SkinEntry(string Name, int SlotIndex);
+[TypeConverter(typeof(SkinEntryTypeConverter))] public record SkinEntry(string Name, int SlotIndex);
 // iirc, records handle this automatically; saving in case they don't
 // public override int GetHashCode() => HashCode.Combine(Name, SlotIndex);
 
@@ -457,11 +460,27 @@ public class RegionAttachment : Attachment
 		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
 		Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex2f(TL.X, TL.Y);
 
-		Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex2f(BR.X, BR.Y);
+		Rlgl.TexCoord2f(uEnd, vEnd);   Rlgl.Vertex2f(BR.X, BR.Y);
 		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
 		Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
+
+		if (Model4System.m4s_wireframe.GetBool()) {
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.Begin(DrawMode.LINES);
+			Rlgl.SetTexture(0);
+
+			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(TL.X, TL.Y);
+			Rlgl.Vertex2f(TL.X, TL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
+			Rlgl.Vertex2f(BR.X, BR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(BL.X, BL.Y);
+			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(BR.X, BR.Y);
+
+			Rlgl.End();
+			Rlgl.DrawRenderBatchActive();
+		}
 	}
 }
 
@@ -565,6 +584,36 @@ public class MeshAttachment : Attachment
 		}
 
 		Rlgl.End();
+
+		if (Model4System.m4s_wireframe.GetBool()) {
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.Begin(DrawMode.LINES);
+			Rlgl.SetTexture(0);
+
+			foreach (var tri in Triangles) {
+				var av1 = Vertices[tri.V1];
+				var av2 = Vertices[tri.V2];
+				var av3 = Vertices[tri.V3];
+
+				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
+				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
+				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
+
+				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
+				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
+
+				Vector2F p1 = CalculateVertexWorldPosition(slot.Model, worldTransform, av1);
+				Vector2F p2 = CalculateVertexWorldPosition(slot.Model, worldTransform, av2);
+				Vector2F p3 = CalculateVertexWorldPosition(slot.Model, worldTransform, av3);
+
+				Rlgl.Vertex3f(p1.X, -p1.Y, 0); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
+				Rlgl.Vertex3f(p2.X, -p2.Y, 0); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
+				Rlgl.Vertex3f(p3.X, -p3.Y, 0); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
+			}
+
+			Rlgl.End();
+			Rlgl.DrawRenderBatchActive();
+		}
 	}
 }
 
@@ -671,8 +720,8 @@ public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative, bool ro
 					r = (GetSetup(bone) + r);
 				}
 				else r = (GetSetup(bone) + r);
-				
-				Set(bone, r); 
+
+				Set(bone, r);
 				break;
 		}
 	}
@@ -871,7 +920,8 @@ public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false, false)
 }
 
 
-public class AnimationChannelEntry {
+public class AnimationChannelEntry
+{
 	public Animation Animation;
 	public bool Looping;
 }
@@ -892,7 +942,7 @@ public class AnimationHandler
 		}
 	}
 	public bool IsPlayingAnimation() {
-		foreach(var channel in Channels) {
+		foreach (var channel in Channels) {
 			if (channel.CurrentEntry != null) return true;
 		}
 
@@ -913,8 +963,8 @@ public class AnimationHandler
 				else continue;
 			}
 
-			if(channel.Time > anim.Animation.Duration) {
-				if (anim.Looping) 
+			if (channel.Time > anim.Animation.Duration) {
+				if (anim.Looping)
 					channel.Time = channel.Time % anim.Animation.Duration;
 				else {
 					// Enqueue the next animation
@@ -935,7 +985,7 @@ public class AnimationHandler
 		var anim = model.FindAnimation(animation);
 		if (anim == null) return;
 
-		channelObj.QueuedEntries.Enqueue(new() { 
+		channelObj.QueuedEntries.Enqueue(new() {
 			Animation = anim,
 			Looping = loops
 		});
