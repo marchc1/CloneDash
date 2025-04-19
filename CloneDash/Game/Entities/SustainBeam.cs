@@ -70,7 +70,7 @@ namespace CloneDash.Game.Entities
                     Level.As<CD_GameLevel>().AddCombo();
                     Level.As<CD_GameLevel>().AddFever(FeverGiven);
                     Level.As<CD_GameLevel>().SetSustain(Pathway, null);
-                    Level.Sounds.PlaySound("punch.wav", true, 0.24f);
+					Level.As<CD_GameLevel>().Scene.PlayPunch();
                 }
                 // check if pathway being held
                 else if (!PathwayCheck.IsPressed) {

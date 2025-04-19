@@ -172,7 +172,7 @@ namespace CloneDash.Game
 			return true;
 		}
 		private void startUnpause() {
-			Sounds.PlaySound("321.wav", true, 0.8f, 1f);
+			Scene.PlayUnpause();
 			UnpauseTime = Realtime;
 			Timers.Simple(3, () => {
 				fullUnpause();
@@ -215,7 +215,8 @@ namespace CloneDash.Game
 		}
 
 		private StatisticsData Stats { get; } = new();
-		private CharacterDescriptor CharacterDescriptor;
+		public CharacterDescriptor Character;
+		public SceneDescriptor Scene;
 
 		public enum CDDAnimationType
 		{
@@ -248,7 +249,7 @@ namespace CloneDash.Game
 
 		int seq = 0;
 		public string AnimationCDD(CDDAnimationType type) {
-			var playData = CharacterDescriptor.Play;
+			var playData = Character.Play;
 			if(type != CDDAnimationType.Run) seq += 1;
 			switch (type) {
 				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
@@ -344,12 +345,17 @@ namespace CloneDash.Game
 
 
 		public override void Initialize(params object[] args) {
-			var info = CharacterMod.GetCharacterData();
-			if(info == null) throw new ArgumentNullException(nameof(info));
+			var charData = CharacterMod.GetCharacterData();
+			var sceneData = SceneMod.GetSceneData();
+			if(charData == null) throw new ArgumentNullException(nameof(charData));
+			if(sceneData == null) throw new ArgumentNullException(nameof(sceneData));
 
-			CharacterDescriptor = info;
+			Character = charData;
+			Scene = sceneData;
+			sceneData.Initialize(this);
+			Interlude.Spin();
 
-			MaxHealth = (float)(CharacterDescriptor.MaxHP ?? MaxHealth);
+			MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
 
 			Render3D = false;
 			Health = MaxHealth;
@@ -365,9 +371,9 @@ namespace CloneDash.Game
 				InputReceivers.Add((ICloneDashInputSystem)input);
 
 			Interlude.Spin();
-			Player = Add(ModelEntity.Create(info.GetPlayModel()));
+			Player = Add(ModelEntity.Create(charData.GetPlayModel()));
 			Interlude.Spin();
-			HologramPlayer = Add(ModelEntity.Create(info.GetPlayModel()));
+			HologramPlayer = Add(ModelEntity.Create(charData.GetPlayModel()));
 			Player.Scale = new(.6f);
 			HologramPlayer.Scale = Player.Scale;
 
@@ -376,24 +382,29 @@ namespace CloneDash.Game
 			Player.Model.SetToSetupPose();
 			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 
+			Interlude.Spin();
 			HologramPlayer.Visible = false;
 			AutoPlayer = Add<AutoPlayer>();
 			AutoPlayer.Enabled = (bool)args[0];
 			TopPathway = Add<Pathway>(PathwaySide.Top);
 			BottomPathway = Add<Pathway>(PathwaySide.Bottom);
+			Interlude.Spin();
 
 			Conductor = Add<Conductor>();
+			Interlude.Spin();
 
 			if (!__deferringAsync) {
 				foreach (var ent in Sheet.Entities)
 					LoadEntity(ent);
 			}
+			Interlude.Spin();
 
 			//foreach (var tempoChange in Sheet)
 			Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
 
 			Music = Sheet.Song.GetAudioTrack();
 			Music.Volume = 0.25f;
+			Interlude.Spin();
 
 			Music.Loops = false;
 			Music.Playing = true;
@@ -406,7 +417,7 @@ namespace CloneDash.Game
 			Scorebar.Level = this;
 			Scorebar.Size = new(0, 128);
 
-			Sounds.PlaySound("readygo.wav", true, 0.8f, 1.0f);
+			Scene.PlayBegin();
 		}
 		public bool Debug { get; set; } = true;
 		public Panel PauseWindow { get; private set; }
@@ -562,7 +573,7 @@ namespace CloneDash.Game
 				lastNoteHit = true;
 				if (Stats.Misses == 0) {
 					Logs.Info("Full combo achieved.");
-					Sounds.PlaySound("fullcombo.wav", true, 0.8f, 1f);
+					Scene.PlayFullCombo();
 				}
 			}
 

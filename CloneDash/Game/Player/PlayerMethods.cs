@@ -129,8 +129,8 @@ namespace CloneDash.Game
         private void EnterFever() {
             InFever = true;
             WhenDidFeverStart = Conductor.Time;
-            Sounds.PlaySound("fever.wav", true, 0.8f, 1.1f);
-        }
+			Scene.PlayFever();
+		}
         /// <summary>
         /// Exits fever.
         /// </summary>
