@@ -2,9 +2,15 @@
 
 #version 330
 
-in vec4 color;
+in vec2 fragTexCoord;
+in vec4 fragColor;
+out vec4 finalColor;
+
+uniform sampler2D texture0;
 uniform float time;
-out vec4 FragColor;
+
+uniform vec4 colorMult;
+uniform vec3 inputHSV;
 
 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
@@ -37,12 +43,12 @@ float simplexNoise(vec2 v){
 
 void main() {
 
-    float speed = 1.5;
-    float factor = 1 - (time * speed);
+    float speed = 5;
+    float factor = 1 - (time * 2);
     int noiseScale = 80;
 
-    vec4 color = vec4(0.2, 0.6, 0.4, 1);
-    vec4 dissolveColor = vec4(0.3, 0.3, 1, 1);
+    vec4 color = texture(texture0, fragTexCoord) * vec4(0.7, 0.8, 1.0, 0.7);
+    vec4 dissolveColor = vec4(0.0, 0.3, 1, 0.6);
 
     float noise = simplexNoise(gl_FragCoord.xy / noiseScale);
 
@@ -52,5 +58,5 @@ void main() {
     dissolveColor *= sn2 * color.a;
     color.a *= sn1;
 
-    FragColor = dissolveColor + color;
+    finalColor = (dissolveColor + color) * fragColor;
 }
