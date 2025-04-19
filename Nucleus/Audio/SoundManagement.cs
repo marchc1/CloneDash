@@ -119,13 +119,11 @@ namespace Nucleus.Audio
 
 		public MusicTrack LoadMusicFromFile(string pathID, string file, bool autoplay = false) {
 			unsafe {
-				var music = new MusicTrack(this, Filesystem.ReadMusic(pathID, file), true, null);
-
-				if (!autoplay)
-					music.Playing = false;
-
-				Sounds.Add(music);
-				return music;
+				var data = Filesystem.ReadAllBytes(pathID, file);
+				if (data == null) {
+					throw new Exception();
+				}
+				return LoadMusicFromMemory(data, autoplay);
 			}
 		}
 

@@ -14,7 +14,14 @@ namespace CloneDash.Modding.Settings
 	[Nucleus.MarkForStaticConstruction]
 	public static class CharacterMod
 	{
-		public static ConVar clonedash_character = ConVar.Register("clonedash_character", "", ConsoleFlags.Saved, "Your character.");
+		private static CharacterDescriptor? activeDescriptor;
+		public delegate void CharacterUpdatedDelegate(CharacterDescriptor? charDescriptor);
+		public static event CharacterUpdatedDelegate? CharacterUpdated;
+		public static ConVar clonedash_character = ConVar.Register("clonedash_character", "", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
+			activeDescriptor = null;
+			activeDescriptor = GetCharacterData();
+			CharacterUpdated?.Invoke(activeDescriptor);
+		});
 		public static ConCommand clonedash_characterinfo = ConCommand.Register("clonedash_characterinfo", (_, _) => {
 			var info = GetCharacterData();
 			Logs.Print($"Character Info:");
@@ -62,7 +69,9 @@ namespace CloneDash.Modding.Settings
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {
-			string name = clonedash_character.GetString();
+			if (activeDescriptor != null) return activeDescriptor;
+
+			string name = clonedash_character?.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
 				return null;
 				//throw new Exception("Cannot load character; clonedash_character convar empty");
@@ -75,6 +84,7 @@ namespace CloneDash.Modding.Settings
 			}
 			descriptor.Filename = name;
 			descriptor.MountToFilesystem();
+			activeDescriptor = descriptor;
 			return descriptor;
 		}
 	}

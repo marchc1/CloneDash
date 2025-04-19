@@ -185,7 +185,6 @@ namespace CloneDash.Modding.Descriptors
 		public static CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CharacterDescriptor>(text, filename) : null;
 
 		public string GetPlayModel() => Play.Model;
-		public string GetPlay() => Play.Model;
 		public string GetMainShowModel() => MainShow.Model;
 		public string GetMainShowMusic() => MainShow.Music;
 

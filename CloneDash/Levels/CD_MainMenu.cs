@@ -474,8 +474,47 @@ public class CharacterPanel : Panel
 		Raylib.EndMode2D();
 	}
 }
+[Nucleus.MarkForStaticConstruction]
 public class CD_MainMenu : Level
 {
+	public static ConCommand clonedash_hologramtest = ConCommand.Register("clonedash_hologramtest", (_, _) => {
+		var level = EngineCore.Level;
+		var window = level.UI.Add<Window>();
+		window.Title = "Hologram Test";
+		window.Size = new(600, 600);
+		window.Center();
+
+		var refresh = window.Add<Button>();
+		refresh.Dock = Dock.Bottom;
+		refresh.Size = new(32);
+		refresh.Text = "Refresh Shader";
+
+		//var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+		var renderPanel = window.Add<Panel>();
+		renderPanel.Dock = Dock.Fill;
+		var charData = CharacterMod.GetCharacterData();
+
+		var model = level.Models.CreateInstanceFromFile("chars", $"{charData.Filename}/{charData.GetPlayModel()}");
+
+		renderPanel.PaintOverride += (s, w, h) => {
+			Raylib.BeginMode2D(new() {
+				Zoom = 1f,
+				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w /2, h/2) + new System.Numerics.Vector2(0, 200)
+			});
+
+			model.Render();
+
+			Raylib.EndMode2D();
+		};
+
+		refresh.MouseReleaseEvent += (_, _, _) => {
+
+		};
+
+		window.Removed += (s) => {
+
+		};
+	});
 	public SongSelector Selector;
 	public CharacterPanel Character;
 	public void RemoveExistingPanels() {
