@@ -69,7 +69,6 @@ namespace CloneDash.Modding.Settings
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {
-			if (activeDescriptor != null) return activeDescriptor;
 
 			string name = clonedash_character?.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
@@ -84,7 +83,6 @@ namespace CloneDash.Modding.Settings
 			}
 			descriptor.Filename = name;
 			descriptor.MountToFilesystem();
-			activeDescriptor = descriptor;
 			return descriptor;
 		}
 	}
