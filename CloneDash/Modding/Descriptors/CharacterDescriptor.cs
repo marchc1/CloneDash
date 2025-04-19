@@ -189,7 +189,7 @@ namespace CloneDash.Modding.Descriptors
 		public string GetMainShowModel() => MainShow.Model;
 		public string GetMainShowMusic() => MainShow.Music;
 
-		internal void SetupFilesystem() {
+		internal void MountToFilesystem() {
 			Filesystem.RemoveSearchPath("character");
 			var searchPath = Filesystem.FindSearchPath("chars", $"{Filename}/character.cdd");
 			switch (searchPath) {

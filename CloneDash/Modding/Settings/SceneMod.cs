@@ -57,7 +57,7 @@ namespace CloneDash.Modding.Settings
 
 			if (song != null && clonedash_allowsceneoverride.GetBool()) {
 				var sceneName = song.GetInfo().Scene;
-				descriptor = SceneDescriptor.ParseScene(sceneName);
+				descriptor = SceneDescriptor.ParseScene(Path.Combine(sceneName, "scene.cdd"));
 				if (descriptor != null) return descriptor;
 				Logs.Warn($"WARNING: Song scene override is enabled, but the scene '{sceneName}' doesn't exist in Clone Dash! Falling back to clonedash_scene...");
 			}
@@ -67,12 +67,13 @@ namespace CloneDash.Modding.Settings
 				return null;
 			}
 
-			descriptor = SceneDescriptor.ParseFile(name);
+			descriptor = SceneDescriptor.ParseScene(Path.Combine(name, "scene.cdd"));
 			if(descriptor == null) {
 				Logs.Warn($"WARNING: The scene '{name}' could not be found by the file system!");
 				return null;
 			}
 			descriptor.Filename = name;
+			descriptor.MountToFilesystem();
 			return descriptor;
 		}
 	}

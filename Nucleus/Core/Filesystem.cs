@@ -305,13 +305,25 @@ namespace Nucleus.Core
 			return null;
 		}
 
-		public static IEnumerable<string> FindFiles(string pathID, string path, string searchPattern = "*", SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		public static IEnumerable<string> FindFiles(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+			foreach (var pathIDObj in GetSearchPathID(pathID))
+				foreach (var file in pathIDObj.FindFiles("", searchPattern, searchOptions))
+					yield return file;
+		}
+
+		public static IEnumerable<string> FindDirectories(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+			foreach (var pathIDObj in GetSearchPathID(pathID))
+				foreach (var file in pathIDObj.FindDirectories("", searchPattern, searchOptions))
+					yield return file;
+		}
+
+		public static IEnumerable<string> FindFiles(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
 			foreach (var pathIDObj in GetSearchPathID(pathID))
 				foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
 					yield return file;
 		}
 
-		public static IEnumerable<string> FindDirectories(string pathID, string path, string searchPattern = "*", SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		public static IEnumerable<string> FindDirectories(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
 			foreach (var pathIDObj in GetSearchPathID(pathID))
 				foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
 					yield return file;

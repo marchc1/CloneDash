@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -51,19 +52,20 @@ namespace Nucleus.Audio
 		private Dictionary<string, Sound> LoadedSoundsFromFile = [];
 		private Dictionary<Sound, string> LoadedFilesFromSound = [];
 
-		public Sound LoadSoundFromFile(string filepath, bool localToAudio = true) {
+		public Sound LoadSoundFromFile(string pathID, string filepath) {
 			if (LoadedSoundsFromFile.TryGetValue(filepath, out Sound? soundFromFile)) return soundFromFile;
 
-			Sound tex;
+			Sound snd = new(this, Filesystem.ReadSound(pathID, filepath), true);
 
-			if (localToAudio) {
-				tex = new(this, Filesystem.ReadSound("images", filepath), true);
-			}
-			else {
-				tex = new(this, Raylib.LoadSound(filepath), true);
-			}
+			LoadedSoundsFromFile.Add(filepath, snd);
+			LoadedFilesFromSound.Add(snd, filepath);
+			Sounds.Add(snd);
 
-			if (LoadedSoundsFromFile.TryGetValue(filepath, out Sound? sndFromFile)) return sndFromFile;
+			return snd;
+		}
+		public Sound LoadSoundFromFile(string filepath, bool localToAudio = true) {
+			if(localToAudio)
+				return LoadSoundFromFile("audio", filepath);
 
 			Sound snd = new(this, Raylib.LoadSound(filepath), true);
 			LoadedSoundsFromFile.Add(filepath, snd);

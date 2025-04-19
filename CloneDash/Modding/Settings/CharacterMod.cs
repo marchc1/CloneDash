@@ -74,7 +74,7 @@ namespace CloneDash.Modding.Settings
 				return null;
 			}
 			descriptor.Filename = name;
-			descriptor.SetupFilesystem();
+			descriptor.MountToFilesystem();
 			return descriptor;
 		}
 	}

@@ -89,12 +89,11 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
 
 	public void Initialize(Level level) {
-		var folderpath = Path.GetDirectoryName(Filename);
-		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Begin));
-		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Fever));
-		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.Unpause));
-		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, AnnouncerLines.FullCombo));
-		PunchSound = level.Sounds.LoadSoundFromFile(Path.Combine(folderpath, Punch));
+		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin);
+		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever);
+		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause);
+		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo);
+		PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch);
 	}
 
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
@@ -135,4 +134,14 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	}
 
 	public static SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<SceneDescriptor>(text, filename) : null;
+
+	internal void MountToFilesystem() {
+		Filesystem.RemoveSearchPath("scene");
+		var searchPath = Filesystem.FindSearchPath("scenes", $"{Filename}/scene.cdd");
+		switch (searchPath) {
+			case DiskSearchPath diskPath:
+				Filesystem.AddTemporarySearchPath("scene", DiskSearchPath.Combine(searchPath, Filename));
+				break;
+		}
+	}
 }
