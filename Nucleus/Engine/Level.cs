@@ -29,6 +29,7 @@ namespace Nucleus.Engine
 		public SoundManagement Sounds { get; } = new();
 		public TimerManagement Timers { get; }
 		public ModelManagement Models { get; } = new();
+		public ShaderManagement Shaders { get; } = new();
 
 		public Level() {
 			Timers = new(this);
