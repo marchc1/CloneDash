@@ -24,7 +24,7 @@ namespace CloneDash.Modding.Settings
 		}, "Prints all available scenes");
 
 		public static string[] GetAvailableScenes() {
-			var files = Filesystem.FindDirectories("scenes", "*.cdd", absolutePaths: false);
+			var files = Filesystem.FindDirectories("scenes", "", absolutePaths: false);
 			return files.ToArray();
 		}
 		public static SceneDescriptor[] GetAvailableSceneDescriptors() {
