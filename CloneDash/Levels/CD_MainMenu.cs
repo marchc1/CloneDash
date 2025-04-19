@@ -454,6 +454,7 @@ public class CharacterPanel : Panel
 	CharacterMainShowTouchResponse touchResponse;
 	int click = 0;
 	public override void MouseClick(FrameState state, MouseButton button) {
+		if (character == null) return;
 		touchResponse = character.MainShow.Touch.GetRandomTouchResponse();
 		click++;
 

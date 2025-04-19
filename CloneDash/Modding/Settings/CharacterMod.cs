@@ -22,9 +22,19 @@ namespace CloneDash.Modding.Settings
 			Logs.Print($"    Version:   {info.Version}");
 			Logs.Print($"    Max HP:    {info.MaxHP}");
 		}, "Your characters info, based on the Clone Dash Descriptor");
+		public static ConCommand clonedash_allcharacters = ConCommand.Register("clonedash_characterinfo", (_, _) => {
+			var characters = GetAvailableCharacters();
+			foreach (var character in characters)
+				Logs.Print($"    {character}");
+		}, "Prints all available characters");
 
 		static CharacterMod() {
 			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
+		}
+
+		public static string[] GetAvailableCharacters() {
+			var files = Filesystem.Find("chars", "*.cdd", absolutePaths: false, includeExtension: false);
+			return files.ToArray();
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {
@@ -34,7 +44,11 @@ namespace CloneDash.Modding.Settings
 				//throw new Exception("Cannot load character; clonedash_character convar empty");
 			}
 
-			var path = Filesystem.Resolve($"{name}.cdd", "chars");
+			var path = Filesystem.Resolve($"{name}.cdd", "chars", false);
+			if(path == null || !File.Exists(path)) {
+				Logs.Warn($"WARNING: Bad character name '{name}'! Refusing to load CharacterDescriptor!");
+				return null;
+			}
 			CharacterDescriptor descriptor = CharacterDescriptor.ParseFile(path);
 			descriptor.Filepath = path;
 			return descriptor;
