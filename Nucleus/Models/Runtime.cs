@@ -917,6 +917,7 @@ public class AnimationHandler
 {
 	public AnimationChannel[] Channels = new AnimationChannel[5];
 	ModelData model;
+	public AnimationHandler(ModelInstance model) : this(model.Data) { }
 	public AnimationHandler(ModelData model) {
 		this.model = model;
 		for (int i = 0; i < Channels.Length; i++) {
@@ -926,6 +927,13 @@ public class AnimationHandler
 	public bool IsPlayingAnimation() {
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry != null) return true;
+		}
+
+		return false;
+	}
+	public bool IsAnimationQueued() {
+		foreach (var channel in Channels) {
+			if (channel.QueuedEntries.Count > 0) return true;
 		}
 
 		return false;
