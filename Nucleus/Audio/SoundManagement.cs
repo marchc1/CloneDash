@@ -138,7 +138,7 @@ namespace Nucleus.Audio
 				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
 				MUSIC_HEADER_OGGS => MUSIC_HEADER_OGGS_EXTENSION,
 				MUSIC_HEADER_ID3 => MUSIC_HEADER_ID3_EXTENSION,
-				_ => throw new Exception("Unsupported audio type")
+				_ => MUSIC_HEADER_ID3_EXTENSION,
 			};
 
 			Music m;
