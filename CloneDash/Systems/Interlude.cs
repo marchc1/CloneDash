@@ -64,12 +64,22 @@ public class MuseDashInterludeProvider : InterludeTextureProvider
 	public override Texture2D Pick(int index) => interludes[index].LoadTexture();
 }
 /// <summary>
-/// (TODO)
 /// Provides interlude textures from Clone Dash.
 /// </summary>
-//public class CloneDashInterludeProvider : InterludeTextureProvider {
-//
-//}
+public class CloneDashInterludeProvider : InterludeTextureProvider
+{
+	string[] files;
+	public CloneDashInterludeProvider() {
+		files = Filesystem.Find("interludes", "*.png").ToArray();
+	}
+	public override int Count => files.Length;
+
+	public override Texture2D Pick(int index) {
+		var tex = Raylib.LoadTexture(files[index]);
+		Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+		return tex;
+	}
+}
 /// <summary>
 /// Called during level loads. Adds a little something during loading operations, while
 /// running on the main thread.
