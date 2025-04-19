@@ -41,5 +41,7 @@
             else return $"{data / (ulong)DataUnit.Gigabyte:0.000}GB";
         }
         public static string NiceBytes(IManagedMemory inf) => NiceBytes(inf.UsedBytes);
+
+		public static string MergePath(string pathID, string path) => $"{pathID}@{path}";
     }
 }

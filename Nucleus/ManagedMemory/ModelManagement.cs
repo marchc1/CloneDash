@@ -36,9 +36,6 @@ public class ModelManagement : IManagedMemory
 		GC.SuppressFinalize(this);
 	}
 
-	private Dictionary<string, Texture> LoadedTexturesFromFile = [];
-	private Dictionary<Texture, string> LoadedFilesFromTexture = [];
-
 	public ModelRefJSON ModelLoader = new();
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
