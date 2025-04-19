@@ -18,6 +18,7 @@ namespace CloneDash;
 public abstract class InterludeTextureProvider
 {
 	public abstract int Count { get; }
+	public abstract bool ShouldFlipTexture { get; }
 	public bool Empty => Count == 0;
 	public int RandomIndex() => Random.Shared.Next(0, Count);
 	public abstract Texture2D Pick(int index);
@@ -43,6 +44,7 @@ public class MuseDashInterlude
 public class MuseDashInterludeProvider : InterludeTextureProvider
 {
 	static MuseDashInterlude[] interludes;
+	public override bool ShouldFlipTexture => true;
 	static MuseDashInterludeProvider() {
 		if (MuseDashCompatibility.InitializeCompatibilityLayer() != MuseDashCompatibility.MDCompatLayerInitResult.OK) {
 			interludes = [];
@@ -69,6 +71,7 @@ public class MuseDashInterludeProvider : InterludeTextureProvider
 public class CloneDashInterludeProvider : InterludeTextureProvider
 {
 	string[] files;
+	public override bool ShouldFlipTexture => false;
 	public CloneDashInterludeProvider() {
 		files = Filesystem.Find("interludes", "*.png").ToArray();
 	}
@@ -111,8 +114,8 @@ public static class Interlude
 			if (!hasTex) {
 				Logs.Warn("Failed to load the interlude texture, despite a provider giving us one!");
 			}
-			if (provider is MuseDashInterludeProvider)
-				flipTex = true;
+			
+			flipTex = provider.ShouldFlipTexture;
 
 			return;
 		}
