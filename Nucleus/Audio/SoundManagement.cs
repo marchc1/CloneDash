@@ -132,7 +132,7 @@ namespace Nucleus.Audio
 		public MusicTrack LoadMusicFromMemory(byte[] bytearray, bool autoplay = false) {
 			if (bytearray.Length < 4) throw new Exception("Can't even determine the file type... file < 4 bytes!");
 
-			Span<byte> byteHeader = [bytearray[0], bytearray[1], bytearray[2], bytearray[3]];
+			Span<byte> byteHeader = [bytearray[3], bytearray[2], bytearray[1], bytearray[0]];
 			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
 			string fileExtension = headerCast[0] switch {
 				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
