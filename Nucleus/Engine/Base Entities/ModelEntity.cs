@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Raylib_cs;
@@ -8,6 +9,10 @@ namespace Nucleus.Engine
 
 	public class ModelEntity : Entity
 	{
+		private Dictionary<string, float> shaderlocs_float = [];
+		public void SetShaderUniform(string name, float value) {
+			shaderlocs_float[name] = value;
+		}
 		private ModelInstance __model;
 		private AnimationHandler __anim;
 		public ModelInstance Model {
@@ -21,6 +26,7 @@ namespace Nucleus.Engine
 
 		public AnimationHandler Animations => __anim;
 		public bool PlayingAnimation => __anim.IsPlayingAnimation();
+		public bool AnimationQueued => __anim.IsAnimationQueued();
 
 		public bool Visible { get; set; } = true;
 
@@ -40,6 +46,8 @@ namespace Nucleus.Engine
 			__anim = new(data);
 		}
 
+		public IShader? Shader { get; set; }
+
 		public override void Render(FrameState frameState) => Render();
 		public void Render() {
 			if (!Visible) return;
@@ -50,7 +58,18 @@ namespace Nucleus.Engine
 			__anim.Apply(Model);
 			Model.Position = Position;
 			Model.Scale = Scale;
+
+			var shader = Shader;
+			var isvalid = IValidatable.IsValid(shader);
+			if (isvalid) {
+				foreach (var fl in shaderlocs_float) shader?.SetUniform(fl.Key, fl.Value);
+				shader?.Activate();
+			}
+
 			Model.Render();
+
+			if (isvalid) 
+				shader?.Deactivate();
 		}
 	}
 }
