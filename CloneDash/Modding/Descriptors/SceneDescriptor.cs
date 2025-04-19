@@ -42,7 +42,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpause() => AnnouncerLines.UnpauseSound.Play(.8f);
 	public void PlayFullCombo() => AnnouncerLines.FullComboSound.Play(.8f);
-	public void PlayPunch() => PunchSound.Play(.4f);
+	public void PlayPunch() => PunchSound.Play(.3f);
 
 	[JsonProperty("name")] public string Name;
 	[JsonProperty("author")] public string Author;
