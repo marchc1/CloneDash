@@ -12,6 +12,7 @@ namespace CloneDash.Modding.Descriptors;
 
 public class SceneDescriptor : CloneDashDescriptor, IDisposable
 {
+	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "2") { }
 	public class SceneDescriptor_Announcer
 	{
 		[JsonProperty("begin")] public string Begin;
@@ -24,10 +25,67 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 		public Sound UnpauseSound;
 		public Sound FullComboSound;
 	}
-	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "2") { }
+	public class SceneDescriptor_Boss
+	{
+		[JsonProperty("model")] public string Model;
+
+		[JsonProperty("in")] public string In;
+		[JsonProperty("out")] public string Out;
+		[JsonProperty("hurt")] public string Hurt;
+
+		[JsonProperty("standby")] public SceneDescriptor_BossStandby Standby;
+		[JsonProperty("attacks")] public SceneDescriptor_BossAttacks Attacks;
+		[JsonProperty("transitions")] public SceneDescriptor_BossTransitions Transitions;
+		[JsonProperty("close")] public SceneDescriptor_BossClose Close;
+		[JsonProperty("multi")] public SceneDescriptor_BossMulti Multi;
+	}
+	public class SceneDescriptor_BossStandby
+	{
+		[JsonProperty("0")] public string Standby0;
+		[JsonProperty("1")] public string Standby1;
+		[JsonProperty("2")] public string Standby2;
+	}
+	public class SceneDescriptor_BossAttack {
+		[JsonProperty("air")] public string Air;
+		[JsonProperty("road")] public string Road;
+
+		public static implicit operator SceneDescriptor_BossAttack(string s) => new() { Air = s, Road = s };
+	}
+	public class SceneDescriptor_BossAttacks
+	{
+		[JsonProperty("1")] public SceneDescriptor_BossAttack Attack1;
+		[JsonProperty("2")] public SceneDescriptor_BossAttack Attack2;
+	}
+	public class SceneDescriptor_BossTransition {
+		[JsonProperty("0")] public string? To0;
+		[JsonProperty("1")] public string? To1;
+		[JsonProperty("2")] public string? To2;
+	}
+	public class SceneDescriptor_BossTransitions {
+		[JsonProperty("0")] public SceneDescriptor_BossTransition From0;
+		[JsonProperty("1")] public SceneDescriptor_BossTransition From1;
+		[JsonProperty("2")] public SceneDescriptor_BossTransition From2;
+	}
+	public class SceneDescriptor_BossClose
+	{
+		[JsonProperty("24")] public string? Attack24;
+		[JsonProperty("48")] public string? Attack48;
+	}
+	public class SceneDescriptor_BossMulti
+	{
+		[JsonProperty("atk")] public string? Attack;
+		[JsonProperty("atk_end")] public string? AttackEnd;
+		[JsonProperty("hurt")] public string? Hurt;
+		[JsonProperty("hurt_end")] public string? HurtEnd;
+		[JsonProperty("atk_out")] public string? AttackOut;
+	}
+
+
 
 	[JsonProperty("punch")] public string Punch;
 	public Sound PunchSound;
+
+	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
 
 	public void Initialize(Level level) {
 		var folderpath = Path.GetDirectoryName(Filepath);
