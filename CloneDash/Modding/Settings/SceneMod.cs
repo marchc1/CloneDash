@@ -1,4 +1,5 @@
-﻿using CloneDash.Modding.Descriptors;
+﻿using CloneDash.Data;
+using CloneDash.Modding.Descriptors;
 using Nucleus;
 using Nucleus.Core;
 using System;
@@ -15,6 +16,7 @@ namespace CloneDash.Modding.Settings
 	public static class SceneMod
 	{
 		public static ConVar clonedash_scene = ConVar.Register("clonedash_scene", "clonedash", ConsoleFlags.Saved, "Your scene.");
+		public static ConVar clonedash_allowsceneoverride = ConVar.Register("clonedash_allowsceneoverride", "1", ConsoleFlags.Saved, "If true (and the scene specified exists on-disk), allows charts to specify the scene used during gameplay. If false, will always use clonedash_scene.", 0, 1);
 		public static ConCommand clonedash_allscenes = ConCommand.Register("clonedash_allscenes", (_, _) => {
 			var scenes = GetAvailableScenes();
 			foreach (var scene in scenes)
@@ -34,7 +36,20 @@ namespace CloneDash.Modding.Settings
 			return descriptors;
 		}
 
-		public static SceneDescriptor? GetCharacterData() {
+		public static SceneDescriptor? GetSceneData(ChartSong? song = null) {
+			if(song != null && clonedash_allowsceneoverride.GetBool()) {
+				var sceneName = song.GetInfo().Scene;
+				var scenePath = Filesystem.Resolve($"{sceneName}/scene.cdd", "scenes", false);
+				if(scenePath == null || !File.Exists(scenePath)) {
+					Logs.Warn($"WARNING: No scene named '{sceneName}' exists, falling back to clonedash_scene...");
+				}
+				else {
+					SceneDescriptor sceneDescriptor = SceneDescriptor.ParseFile(scenePath);
+					sceneDescriptor.Filepath = scenePath;
+					return sceneDescriptor;
+				}
+			}
+
 			string name = clonedash_scene.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
 				return null;
