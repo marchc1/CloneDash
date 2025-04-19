@@ -14,8 +14,8 @@ using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash
 {
-    // I've been testing with these levels:
-    /*
+	// I've been testing with these levels:
+	/*
         8bit_adventurer_map3
         bass_telekinesis_map3
         can_i_friend_you_on_bassbook_lol_map3
@@ -28,14 +28,14 @@ namespace CloneDash
         the_89s_momentum_map3
     */
 
-    internal class Program
-    {
-        static void Main(string[] args) {
-            MuseDashCompatibility.InitializeCompatibilityLayer();
-            EngineCore.Initialize(1600, 900, "Clone Dash", args);
-            EngineCore.GameInfo = new() {
-                GameName = "Clone Dash"
-            };
+	internal class Program
+	{
+		static void Main(string[] args) {
+			MuseDashCompatibility.InitializeCompatibilityLayer();
+			EngineCore.Initialize(1600, 900, "Clone Dash", args);
+			EngineCore.GameInfo = new() {
+				GameName = "Clone Dash"
+			};
 
 			if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
 				CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
@@ -59,17 +59,22 @@ namespace CloneDash
 
 			// need a better way to implement custom scenes
 
-			Filesystem.AddPath("custom", Filesystem.Resolve("game") + "custom/");
+			Filesystem.AddPath("custom", Path.Combine(Filesystem.Resolve("game"), "custom/"));
+			Filesystem.AddPath("download", Path.Combine(Filesystem.Resolve("game"), "download/"));
 
-			Filesystem.AddPath("chars", Filesystem.Resolve("custom") + "chars/");
-			Filesystem.AddPath("interludes", Filesystem.Resolve("custom") + "interludes/");
-			Filesystem.AddPath("scenes", Filesystem.Resolve("custom") + "scenes/");
+			Filesystem.AddPath("chars", Path.Combine(Filesystem.Resolve("custom"), "chars/"));
+			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("custom"), "charts/"));
+			Filesystem.AddPath("interludes", Path.Combine(Filesystem.Resolve("custom"), "interludes/"));
+			Filesystem.AddPath("scenes", Path.Combine(Filesystem.Resolve("custom"), "scenes/"));
 
-			Filesystem.AddPath("chars", Filesystem.Resolve("game") + "assets/chars/");
-			Filesystem.AddPath("interludes", Filesystem.Resolve("game") + "assets/interludes/");
-			Filesystem.AddPath("scenes", Filesystem.Resolve("game") + "assets/scenes/");
+			Filesystem.AddPath("chars", Path.Combine(Filesystem.Resolve("game"), "assets/chars/"));
+			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("game"), "assets/charts/"));
+			Filesystem.AddPath("interludes", Path.Combine(Filesystem.Resolve("game"), "assets/interludes/"));
+			Filesystem.AddPath("scenes", Path.Combine(Filesystem.Resolve("game"), "assets/scenes/"));
+
+			Filesystem.AddPath("charts", Path.Combine(Filesystem.Resolve("download"), "charts/")); // TODO: mdmc.moe downloaded charts should go in here!
 
 			EngineCore.Start();
-        }
-    }
+		}
+	}
 }
