@@ -12,11 +12,9 @@ using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Systems.CustomAlbums;
-using System.Runtime.CompilerServices;
 using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
-using static AssetStudio.BundleFile;
 
 namespace CloneDash.Game;
 
