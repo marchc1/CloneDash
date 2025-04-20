@@ -557,6 +557,8 @@ namespace Nucleus
 			if (shouldThrow)
 				ex.Throw();
 
+			EngineCore.StopSound();
+
 			shouldThrow = true;
 			// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
 			Stopwatch time = new();
