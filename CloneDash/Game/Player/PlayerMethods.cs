@@ -194,10 +194,10 @@ namespace CloneDash.Game
 
 			if (!wasSustainingTop && isSustainingTop) playeranim_startsustain_top = true;
 			if (!wasSustainingBottom && isSustainingBottom) playeranim_startsustain_bottom = true;
-			
-			if (wasSustaining && !isSustaining) 
+
+			if (wasSustaining && !isSustaining)
 				playeranim_endsustain = true;
-			
+
 		}
 		/// <summary>
 		/// Returns if the jump was successful. Mostly returns this for the sake of animation.
@@ -268,7 +268,7 @@ namespace CloneDash.Game
 				PlayerAnim_ExitSustain();
 				logTests("Exiting sustain.");
 			}
-			else if(playeranim_endsustain && playeranim_startsustain) {
+			else if (playeranim_endsustain && playeranim_startsustain) {
 				// Suppress any hologram animations.
 				logTests("Suppressing further hologram animations.");
 				suppress_hologram = true;
@@ -312,12 +312,12 @@ namespace CloneDash.Game
 			if (!suppress_hologram && playeranim_insustain) { // We use the same things for playeranim_attack etc, but redirect it to the hologram player
 				playerTarget = HologramPlayer;
 
-				if(playeranim_startsustain_top || playeranim_startsustain_bottom) {
+				if (playeranim_startsustain_top || playeranim_startsustain_bottom) {
 					resetPlayerAnimState();
 					return;
 				}
 
-				if(playeranim_attackair || playeranim_attackground) {
+				if (playeranim_attackair || playeranim_attackground) {
 					lastHologramHitTime = Conductor.Time;
 				}
 
@@ -369,21 +369,37 @@ namespace CloneDash.Game
 		}
 
 		public bool AttackAir(PollResult result) {
+			if (InMashState) {
+				playeranim_attackair = true;
+				playeranim_perfect = true;
+
+				OnAirAttack?.Invoke(this, PathwaySide.Top);
+				return true;
+			}
+
 			if (CanJump || result.Hit) {
 				var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
 				playeranim_attackdouble = isDHE;
 				playeranim_attackair = result.Hit && !isDHE;
 				playeranim_jump = CanJump;
-
 				playeranim_perfect |= result.IsPerfect;
+
 				OnAirAttack?.Invoke(this, PathwaySide.Top);
 
 				return true;
 			}
+
 			return false;
 		}
 
 		public void AttackGround(PollResult result) {
+			if (InMashState) {
+				playeranim_attackdouble = true;
+				playeranim_perfect = true;
+				OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+				return;
+			}
+
 			if (result.Hit) {
 				if (result.HitEntity is DoubleHitEnemy) {
 					playeranim_attackdouble = true;
@@ -398,9 +414,9 @@ namespace CloneDash.Game
 				playeranim_attackground = false;
 				playeranim_miss = true;
 			}
+
 			playeranim_perfect |= result.IsPerfect;
 			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
-
 		}
 		/// <summary>
 		/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.

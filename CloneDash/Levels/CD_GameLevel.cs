@@ -952,16 +952,16 @@ namespace CloneDash.Game
 		}
 
 		public override void PreRenderBackground(FrameState frameState) {
-
 			Boss.Scale = new(.6f);
 			Boss.Position = new(0, GetPlayerY(0));
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
-			cam.Zoom = (frameState.WindowHeight / 900) + (MashZoomSOS.Update(InMashState ? 1 : 0) / 5f);
+			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0);
+			cam.Zoom = (frameState.WindowHeight / 900) + (zoomValue / 5f);
 			//cam.Zoom = 1.0f + ((MathF.Sin(RealtimeF * 2) + 1) / 2);
 			cam.Rotation = 0.0f;
 			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-			cam.Target = new(frameState.WindowWidth / -2, 0);
+			cam.Target = new((frameState.WindowWidth / -2) * zoomValue, 0);
 			cam.Offset += cam.Target;
 
 			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
