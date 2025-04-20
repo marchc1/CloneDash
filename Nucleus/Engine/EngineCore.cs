@@ -670,7 +670,7 @@ namespace Nucleus
 
 				Rlgl.DrawRenderBatchActive();
 				Raylib.SwapScreenBuffer();
-				Raylib.WaitTime(0.05);
+				Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
 			}
 		}
 
