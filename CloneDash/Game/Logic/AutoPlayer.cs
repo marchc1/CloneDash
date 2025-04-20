@@ -121,7 +121,7 @@ namespace CloneDash.Game.Logic
                     if (kvp.Value.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
                         holding = false;
                         CurrentSustains[kvp.Key] = null;
-                        Logs.Debug("Sustain stopped because it is complete");
+                        //Logs.Debug("Sustain stopped because it is complete");
                     }
                     else // Keep holding the button otherwise
                         holding = true;

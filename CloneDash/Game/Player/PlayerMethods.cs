@@ -258,7 +258,7 @@ namespace CloneDash.Game
 		}
 		private double lastHologramHitTime = -20000;
 		private void logTests(string testStr) {
-			Logs.Debug($"PlayerAnimationState: {testStr}");
+			//Logs.Debug($"PlayerAnimationState: {testStr}");
 		}
 		private void determinePlayerAnimationState() {
 			ModelEntity playerTarget;
