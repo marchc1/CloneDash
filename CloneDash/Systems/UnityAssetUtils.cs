@@ -32,7 +32,6 @@ namespace CloneDash.Systems
 
 			Raylib_cs.PixelFormat pixelFormat;
 			switch (tex2D.m_TextureFormat) {
-				case TextureFormat.RGBA32: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32A32; break;
 				case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;
 				case TextureFormat.BC7:
 					BcDecoder decoder = new BcDecoder();

@@ -144,4 +144,6 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 				break;
 		}
 	}
+
+	public string GetBossModel() => Boss.Model;
 }

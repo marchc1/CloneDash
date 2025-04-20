@@ -24,7 +24,10 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public AnimationHandler Animations => __anim;
+		public AnimationHandler Animations {
+			get => __anim;
+			set => __anim = value;
+		}
 		public bool PlayingAnimation => __anim.IsPlayingAnimation();
 		public bool AnimationQueued => __anim.IsAnimationQueued();
 

@@ -55,7 +55,7 @@ namespace CloneDash.Game
 			if (song == null) {
 				Logs.Warn("Can't find that song.");
 				Logs.Print("Here are some similar names:");
-				foreach(var s in MuseDashCompatibility.Songs.Where(x => x.BaseName.ToLower().Contains(md_level.ToLower())))
+				foreach (var s in MuseDashCompatibility.Songs.Where(x => x.BaseName.ToLower().Contains(md_level.ToLower())))
 					Logs.Print($"    {s.Name} ({s.BaseName})");
 				return;
 			}
@@ -171,6 +171,7 @@ namespace CloneDash.Game
 		public MusicTrack Music { get; private set; }
 		public ModelEntity Player { get; set; }
 		public ModelEntity HologramPlayer { get; set; }
+		public Boss Boss { get; set; }
 		public Pathway TopPathway { get; set; }
 		public Pathway BottomPathway { get; set; }
 
@@ -278,7 +279,7 @@ namespace CloneDash.Game
 		int seq = 0;
 		public string AnimationCDD(CDDAnimationType type) {
 			var playData = Character.Play;
-			if(type != CDDAnimationType.Run) seq += 1;
+			if (type != CDDAnimationType.Run) seq += 1;
 			switch (type) {
 				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
 				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq);
@@ -352,11 +353,53 @@ namespace CloneDash.Game
 
 		ShaderInstance hologramShader;
 
+		public void BossIn() {
+			Boss.Visible = true;
+			Boss.Animations.SetAnimation(0, Scene.Boss.In, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
+		}
+		public void BossOut() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Out, false);
+		}
+		public void BossSingleHit() {
+
+		}
+		public void BossMasher() { 
+		
+		}
+		public void BossFar1Start() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From0.To1, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby1, true);
+		}
+		public void BossFar1End() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From1.To0, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
+		}
+		public void BossFar1To2() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From1.To2, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby2, true);
+		}
+		public void BossFar2Start() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From0.To2, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby2, true);
+		}
+		public void BossFar2End() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From2.To0, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
+		}
+		public void BossFar2To1() {
+			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From2.To1, false);
+			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby1, true);
+		}
+		public void BossHide() {
+
+		}
+
 		public override void Initialize(params object[] args) {
 			var charData = CharacterMod.GetCharacterData();
 			var sceneData = SceneMod.GetSceneData();
-			if(charData == null) throw new ArgumentNullException(nameof(charData));
-			if(sceneData == null) throw new ArgumentNullException(nameof(sceneData));
+			if (charData == null) throw new ArgumentNullException(nameof(charData));
+			if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
 
 			Character = charData;
 			Scene = sceneData;
@@ -387,6 +430,8 @@ namespace CloneDash.Game
 			HologramPlayer.Scale = Player.Scale;
 			HologramPlayer.Shader = hologramShader;
 
+			Boss = Add(new Boss(sceneData));
+			Boss.Model.SetToSetupPose();
 			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
 
 			Player.Model.SetToSetupPose();
@@ -406,6 +451,9 @@ namespace CloneDash.Game
 			if (!__deferringAsync) {
 				foreach (var ent in Sheet.Entities)
 					LoadEntity(ent);
+
+				foreach (var ev in Sheet.Events)
+					LoadEvent(ev);
 			}
 			Interlude.Spin();
 
@@ -531,11 +579,11 @@ namespace CloneDash.Game
 
 			bool holdingTop = HoldingTopPathwaySustain != null, holdingBottom = HoldingBottomPathwaySustain != null;
 			bool holding = holdingTop || holdingBottom;
-			if (holdingTop && holdingBottom) 
+			if (holdingTop && holdingBottom)
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
-			else if (holdingTop) 
+			else if (holdingTop)
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
-			else if (holdingBottom) 
+			else if (holdingBottom)
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
 			if (yoff.HasValue) {
@@ -544,8 +592,8 @@ namespace CloneDash.Game
 			var PLAYER_OFFSET_HIT_Y = -.28f;
 			Player.Position = new Vector2F(
 				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
-				yoff ?? 
-					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120) 
+				yoff ??
+					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120)
 					+ (frameState.WindowHeight * ((1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) - Game.Pathway.PATHWAY_TOP_PERCENTAGE) * -CharacterYRatio))
 			);
 
@@ -566,6 +614,7 @@ namespace CloneDash.Game
 			VisibleEntities.Clear();
 
 			foreach (var entity in Entities) {
+				if (entity is Boss) continue;
 				if (entity is not CD_BaseEnemy)
 					continue;
 
@@ -592,6 +641,8 @@ namespace CloneDash.Game
 
 			// Sort the visible entities by their hit time
 			VisibleEntities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+
+			IterateEvents();
 
 			//LockEntityBuffer();
 
@@ -787,23 +838,62 @@ namespace CloneDash.Game
 			Add(new TextEffect(text, position, transitionOut, color.Value));
 		}
 
+		public List<CD_BaseEvent> Events = [];
+		public HashSet<CD_BaseEvent> ActiveEvents = [];
+		public HashSet<CD_BaseEvent> HandledEvents = [];
+
+		private bool shouldActivateEvent(CD_BaseEvent ev) => ev.TriggerType switch {
+			EventTriggerType.AtTimeMinusLength => Conductor.Time >= (ev.Time - ev.Length),
+			EventTriggerType.AtTime => Conductor.Time >= ev.Time,
+			_ => false
+		};
+		private bool shouldDeactivateEvent(CD_BaseEvent ev) => ev.TriggerType switch {
+			EventTriggerType.AtTimeMinusLength => Conductor.Time >= ev.Time,
+			EventTriggerType.AtTime => Conductor.Time >= (ev.Time + ev.Length),
+			_ => false
+		};
+
+		public void IterateEvents() {
+			foreach (var ev in Events) {
+				if (ActiveEvents.Contains(ev)) {
+					// Determine if the event needs to be deactivated
+					if (shouldDeactivateEvent(ev)) {
+						HandledEvents.Add(ev);
+						ActiveEvents.Remove(ev);
+						ev.Deactivate();
+						Logs.Debug($"Deactivating {ev.GetType().Name}");
+					}
+				}
+				else if (!HandledEvents.Contains(ev)) {
+					// Determine if the event needs to be activated
+					if (shouldActivateEvent(ev)) {
+						ActiveEvents.Add(ev);
+						ev.Activate();
+						Logs.Debug($"Activating {ev.GetType().Name}");
+					}
+				}
+				// The event has both been activated and deactivated, so its ignored
+			}
+		}
+
 		/// <summary>
 		/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 		/// </summary>
 		/// <param name="ChartEvent"></param>
 		public void LoadEvent(ChartEvent ChartEvent) {
-			/*var ev = MapEvent.CreateFromType(this.Game, ChartEvent.Type);
+			Interlude.Spin();
+			var ev = CD_BaseEvent.CreateFromType(this, ChartEvent.Type);
 
-            ev.Time = ChartEvent.Time;
-            ev.Length = ChartEvent.Length;
+			ev.Time = ChartEvent.Time;
+			ev.Length = ChartEvent.Length;
 
-            ev.Score = ChartEvent.Score;
-            ev.Fever = ChartEvent.Fever;
-            ev.Damage = ChartEvent.Damage;
+			ev.Score = ChartEvent.Score;
+			ev.Fever = ChartEvent.Fever;
+			ev.Damage = ChartEvent.Damage;
 
-            ev.Build();
+			ev.Build();
 
-            Events.Add(ev);*/
+			Events.Add(ev);
 		}
 
 		/// <summary>
@@ -838,6 +928,10 @@ namespace CloneDash.Game
 
 		public override void PreRenderBackground(FrameState frameState) {
 
+			Boss.Scale = new(.6f);
+			Boss.Position = new(
+				frameState.WindowWidth - ((frameState.WindowHeight / 900) * 800),
+				frameState.WindowHeight * .76f);
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			cam.Zoom = frameState.WindowHeight / 900;
@@ -854,8 +948,7 @@ namespace CloneDash.Game
 			BottomPathway.Render();
 
 			foreach (Entity ent in VisibleEntities) {
-				if (ent is not CD_BaseEnemy entCD)
-					continue;
+				if (ent is not CD_BaseEnemy entCD) continue;
 
 				float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
 
