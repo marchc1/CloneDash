@@ -32,6 +32,7 @@ namespace Nucleus.Audio
 		protected virtual void Dispose(bool disposing) {
 			if (!disposedValue && SelfDisposing) {
 				MainThread.RunASAP(() => {
+					Raylib.StopSound(Underlying);
 					Raylib.UnloadSound(Underlying);
 					Parent?.EnsureISoundRemoved(this);
 				}, ThreadExecutionTime.BeforeFrame);
