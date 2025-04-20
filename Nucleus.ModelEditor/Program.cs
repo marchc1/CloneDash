@@ -553,7 +553,7 @@ namespace Nucleus.ModelEditor
 			file.AddSeparator();
 			file.AddButton("Export...", null, File_Export);
 			file.AddSeparator();
-			file.AddButton("Add a Model", null, File_Export);
+			file.AddButton("Add a Model", null, File_AddModel);
 
 
 			var tests = menubar.AddButton("Tests");
@@ -636,6 +636,10 @@ namespace Nucleus.ModelEditor
 #nullable enable
 
 			titleUpdate();
+		}
+
+		private void File_AddModel() {
+			File.AddModel($"New Model #{File.Models.Count + 1}");
 		}
 
 		private void File_Export() {

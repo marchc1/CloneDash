@@ -749,12 +749,16 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public void DrawModels() {
 			foreach (var model in ModelEditor.Active.File.Models) {
+				if (model.Hidden) continue;
+
 				foreach (var slot in model.Slots) {
 					slot.GetActiveAttachment()?.Render();
 				}
 			}
 
 			foreach (var model in ModelEditor.Active.File.Models) {
+				if (model.Hidden) continue;
+
 				foreach (var bone in model.GetAllBones()) {
 					DrawBone(bone);
 				}

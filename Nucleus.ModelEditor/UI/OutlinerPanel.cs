@@ -215,6 +215,11 @@ namespace Nucleus.ModelEditor
 				});
 			};
 
+			ModelEditor.Active.File.ModelRenamed += (file, modelR, oldName, newName) => {
+				if (modelR == model) {
+					modelNode.Text = newName;
+				}
+			};
 			ModelEditor.Active.File.ModelRemoved += (file, modelR) => {
 				if (modelR == model) {
 					modelNode.Remove();
