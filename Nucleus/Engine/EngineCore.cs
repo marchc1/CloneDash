@@ -699,6 +699,3 @@ namespace Nucleus
 		}
 	}
 }
-
-
-

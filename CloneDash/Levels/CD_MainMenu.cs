@@ -979,24 +979,11 @@ public class CD_MainMenu : Level
 	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
 		if (workingLevel != null) return;
 
-		Interlude.Begin($"Loading '{song.Name}'...");
-
-		var sheet = song.GetSheet(mapID);
-		workingLevel = new CD_GameLevel(sheet);
-		shouldAutoplay = autoplay;
-		readyToLoadFramepiecewise = true;
-	}
-
-	public void DoChartSheetLoadLevelFrame(int ms) {
-		if (workingLevel == null) return;
-		if (!readyToLoadFramepiecewise) return;
-		EngineCore.LoadLevel(workingLevel, shouldAutoplay);
-		Interlude.End();
+		workingLevel = ChartSong.LoadLevel(song, mapID, autoplay);
 	}
 
 	public override void Think(FrameState frameState) {
 		base.Think(frameState);
-		DoChartSheetLoadLevelFrame(5000);
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {

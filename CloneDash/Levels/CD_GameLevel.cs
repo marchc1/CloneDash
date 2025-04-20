@@ -19,6 +19,7 @@ using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using System.Diagnostics;
 using Nucleus.ManagedMemory;
+using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash.Game
 {
@@ -36,6 +37,32 @@ namespace CloneDash.Game
 			if (!d.HasValue) Logs.Warn("Did not specify a time!");
 			else level.SeekTo(d.Value);
 		});
+
+		public static ConCommand clonedash_openmdlevel = ConCommand.Register(nameof(clonedash_openmdlevel), (_, args) => {
+			var md_level = args.GetString(0);
+			if (md_level == null) {
+				Logs.Warn("Provide a name.");
+				return;
+			}
+
+			var map = args.GetInt(1);
+			if (map == null) {
+				Logs.Warn("Provide a difficulty.");
+				return;
+			}
+
+			MuseDashSong? song = MuseDashCompatibility.Songs.FirstOrDefault(x => x.BaseName == md_level);
+			if (song == null) {
+				Logs.Warn("Can't find that song.");
+				Logs.Print("Here are some similar names:");
+				foreach(var s in MuseDashCompatibility.Songs.Where(x => x.BaseName.ToLower().Contains(md_level.ToLower())))
+					Logs.Print($"    {s.Name} ({s.BaseName})");
+				return;
+			}
+
+			ChartSong.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
+		});
+
 		public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
 			Vector2 winSize;
 			switch (args.GetString(0)) {

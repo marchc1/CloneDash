@@ -1,4 +1,5 @@
-﻿using Nucleus;
+﻿using CloneDash.Game;
+using Nucleus;
 using Nucleus.Audio;
 using Raylib_cs;
 
@@ -119,7 +120,18 @@ namespace CloneDash.Data
             return Sheets[difficulty];
         }
 
-        ~ChartSong() {
+		internal static CD_GameLevel LoadLevel(ChartSong song, int mapID, bool autoplay) {
+			Interlude.Begin($"Loading '{song.Name}'...");
+
+			var sheet = song.GetSheet(mapID);
+			var workingLevel = new CD_GameLevel(sheet);
+			if (workingLevel == null) return workingLevel;
+			EngineCore.LoadLevel(workingLevel, autoplay);
+			MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
+			return workingLevel;
+		}
+
+		~ChartSong() {
             MainThread.RunASAP(() => {
                 if (__gotCover && CoverTexture != null) 
                     Raylib.UnloadTexture(CoverTexture.Texture);
