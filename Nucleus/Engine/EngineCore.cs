@@ -557,7 +557,8 @@ namespace Nucleus
 			if (shouldThrow)
 				ex.Throw();
 
-			EngineCore.StopSound();
+			var oldMaster = Raylib.GetMasterVolume();
+			Raylib.SetMasterVolume(0);
 
 			shouldThrow = true;
 			// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
@@ -588,6 +589,7 @@ namespace Nucleus
 				}
 				else if(!hasRenderedOverlay) {
 					// Hopefully it wasnt the font manager that broke!
+					Graphics2D.SetDrawColor(255, 255, 255);
 					string[] languages = [
 	"A fatal error has occured. Press any key to exit.",
 						"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
@@ -661,6 +663,7 @@ namespace Nucleus
 				else {
 					Raylib.PollInputEvents();
 					if(Raylib.GetKeyPressed() != 0) {
+						Raylib.SetMasterVolume(oldMaster);
 						return false;
 					}
 				}
