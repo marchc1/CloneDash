@@ -68,8 +68,6 @@ public class BossHide(CD_GameLevel game) : CD_BaseEvent(game)
 	}
 }
 
-
-
 public class Boss : CD_BaseEnemy
 {
 	private SceneDescriptor scene;
@@ -79,7 +77,7 @@ public class Boss : CD_BaseEnemy
 		Visible = false;
 	}
 	public override void Initialize() {
-		Model = Level.Models.CreateInstanceFromFile("scene", scene.Boss.Model);
+		Model = scene.Boss.ModelData.Instantiate();
 		Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
 	}
 
