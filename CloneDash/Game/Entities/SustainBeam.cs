@@ -50,8 +50,8 @@ namespace CloneDash.Game.Entities
         }
 
         public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
-            return xPosition >= -96 && xPosition <= gamewidth; // does this even need to be changed right now
-        }
+			return base.VisTest(gamewidth, gameheight, xPosition);
+		}
 
         public override void Think(FrameState frameState) {
             if (HeldState) {

@@ -222,7 +222,7 @@ namespace CloneDash.Game
 			get {
 				return (float)(
 					(__firstJump ? Math.Clamp(NMath.Ease.OutExpo(Hologram_AirTime * 10), 0, 1) : 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1))
-				) * -1;
+				) * 1;
 			}
 		}
 

@@ -350,7 +350,6 @@ namespace CloneDash.Game
 			PlayerAnim_EnqueueRun(Player);
 		}
 
-
 		ShaderInstance hologramShader;
 
 		public void BossIn() {
@@ -480,6 +479,13 @@ namespace CloneDash.Game
 		public bool Debug { get; set; } = true;
 		public Panel PauseWindow { get; private set; }
 		private bool lastNoteHit = false;
+
+		public float GetPlayerY(double jumpRatio) {
+			var height = EngineCore.GetWindowHeight();
+
+			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) - (height * -.135f);
+		}
+
 		public override void PreThink(ref FrameState frameState) {
 			Ticks++;
 			XPos = frameState.WindowHeight * Game.Pathway.PATHWAY_LEFT_PERCENTAGE;
@@ -592,15 +598,12 @@ namespace CloneDash.Game
 			var PLAYER_OFFSET_HIT_Y = -.28f;
 			Player.Position = new Vector2F(
 				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
-				yoff ??
-					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120)
-					+ (frameState.WindowHeight * ((1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) - Game.Pathway.PATHWAY_TOP_PERCENTAGE) * -CharacterYRatio))
+				yoff ?? GetPlayerY(CharacterYRatio)
 			);
 
 			HologramPlayer.Position = new Vector2F(
 				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
-					(((frameState.WindowHeight * (1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE)) + 120)
-					+ (frameState.WindowHeight * ((1 - Game.Pathway.PATHWAY_BOTTOM_PERCENTAGE) - Game.Pathway.PATHWAY_TOP_PERCENTAGE) * HologramCharacterYRatio))
+				yoff ?? GetPlayerY(HologramCharacterYRatio)
 			);
 
 			if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
@@ -929,20 +932,26 @@ namespace CloneDash.Game
 		public override void PreRenderBackground(FrameState frameState) {
 
 			Boss.Scale = new(.6f);
-			Boss.Position = new(
-				frameState.WindowWidth - ((frameState.WindowHeight / 900) * 800),
-				frameState.WindowHeight * .76f);
+			Boss.Position = new(0, GetPlayerY(0));
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			cam.Zoom = frameState.WindowHeight / 900;
-			//cam.Zoom = 1.0f + ((MathF.Sin(CurtimeF * 5) + 1) / 2);
+			//cam.Zoom = 1.0f + ((MathF.Sin(RealtimeF * 2) + 1) / 2);
 			cam.Rotation = 0.0f;
-			cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
-			cam.Target = cam.Offset;
+			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
+			cam.Target = new(frameState.WindowWidth / 4, 0);
+			cam.Offset += cam.Target;
+
+			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
+			//cam.Target = cam.Offset;
 		}
 		public override void Render(FrameState frameState) {
 			Rlgl.DisableDepthTest();
 			Rlgl.DisableBackfaceCulling();
+
+			Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
+			Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
+			Rlgl.DrawRenderBatchActive();
 
 			TopPathway.Render();
 			BottomPathway.Render();

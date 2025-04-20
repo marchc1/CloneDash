@@ -15,26 +15,35 @@ namespace CloneDash.Game
 		public static readonly Color PATHWAY_DUAL_COLOR = new Color(220, 160, 140, 255);
 
 		/// <summary>
-		/// Top pathway will be placed at Y 0 + (H * PATHWAY_TOP_PERCENTAGE)
+		/// Top pathway will be placed at Y coordinate (winH * PATHWAY_TOP_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_TOP_PERCENTAGE => .346f;
+		public static float PATHWAY_TOP_PERCENTAGE => -.153333f;
 		/// <summary>
-		/// Top pathway will be placed at Y H - (H * PATHWAY_BOTTOM_PERCENTAGE)
+		/// Bottom pathway will be placed at Y coordinate(winH * PATHWAY_BOTTOM_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_BOTTOM_PERCENTAGE => .3722f;
+		public static float PATHWAY_BOTTOM_PERCENTAGE => .125f;
 		/// <summary>
-		/// Both pathway will be placed at X 0 + (H * PATHWAY_LEFT_PERCENTAGE)
+		/// Both pathways will be placed at X coordinate (winH * PATHWAY_LEFT_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_LEFT_PERCENTAGE => .3722f;
+		public static float PATHWAY_LEFT_PERCENTAGE => -.5f;
+
+		public static float GetPathwayLeft() => EngineCore.GetWindowHeight() * PATHWAY_LEFT_PERCENTAGE;
+		public static float GetPathwayTop() => EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE;
+		public static float GetPathwayBottom() => EngineCore.GetWindowHeight() * PATHWAY_BOTTOM_PERCENTAGE;
+		public static float GetPathwayMiddle() {
+			var height = EngineCore.GetWindowHeight();
+			return ((height * PATHWAY_TOP_PERCENTAGE) + (height * PATHWAY_BOTTOM_PERCENTAGE)) / 2;
+		}
+
         public bool IsClicked => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopClicked > 0, Level.As<CD_GameLevel>().InputState.BottomClicked > 0);
         public bool IsPressed => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeld, Level.As<CD_GameLevel>().InputState.BottomHeld);
 
-		public static float GetPathwayY(PathwaySide side) =>
-			side == PathwaySide.Both 
-				? (GetPathwayY(PathwaySide.Top) + GetPathwayY(PathwaySide.Bottom)) / 2
-				: side == PathwaySide.Top
-					? EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE
-					: EngineCore.GetWindowHeight() - (EngineCore.GetWindowHeight() * PATHWAY_BOTTOM_PERCENTAGE);
+		public static float GetPathwayY(PathwaySide side) => side switch {
+			PathwaySide.Both => GetPathwayMiddle(),
+			PathwaySide.Top => GetPathwayTop(),
+			PathwaySide.Bottom => GetPathwayBottom(),
+			_ => GetPathwayBottom()
+		};
 
 		/// <summary>
 		/// The half of the screen the pathway resides on.
@@ -43,7 +52,7 @@ namespace CloneDash.Game
 
         private bool checkSide(PathwaySide side) {
             if (Side == PathwaySide.None || Side == PathwaySide.Both)
-                throw new NotImplementedException("A pathway must have a very specific side attached to it.");
+                throw new NotImplementedException("A pathway must be attached to either the top or bottom side of the screen.");
 
             return Side == side;
         }

@@ -263,7 +263,7 @@ namespace CloneDash.Game
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.HitTime;
 			var tickShow = this.ShowTime;
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, frameState.WindowWidth);
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, frameState.WindowHeight);
 
 			return thisPos;
 		}
@@ -287,7 +287,7 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -500 && xPosition <= gamewidth + 500;
+			return xPosition >= -gamewidth / 2 && xPosition <= gamewidth / 2;
 		}
 
 		/// <summary>
