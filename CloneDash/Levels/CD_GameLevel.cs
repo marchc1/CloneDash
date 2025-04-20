@@ -617,7 +617,7 @@ namespace CloneDash.Game
 			if (yoff.HasValue) {
 				yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
 			}
-			var PLAYER_OFFSET_HIT_Y = -.28f;
+
 			Player.Position = new Vector2F(
 				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
 				yoff ?? GetPlayerY(CharacterYRatio)

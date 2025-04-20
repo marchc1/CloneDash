@@ -3,48 +3,18 @@ using Nucleus.Core;
 
 namespace CloneDash.Modding.Descriptors
 {
-	public class CharacterMultiAnimationState(CharacterDescriptor_MultiAnimation anim) {
-		public int CurrentCount = 1;
-		public string PickSequential() {
-			string name = anim.GetAnimation(CurrentCount);
-			CurrentCount++;
-			if(CurrentCount > anim.Count) {
-				CurrentCount = 1;
-			}
-
-			return name;
-		}
-	}
-	public class CharacterDescriptor_MultiAnimation {
-		[JsonProperty("format")] public string Format;
-		[JsonProperty("count")] public int Count;
-
-		public static implicit operator CharacterDescriptor_MultiAnimation(string s) => new() {
-			Format = s,
-			Count = 1
-		};
-
-		public bool HasAnimations => Count > 0;
-		/// <summary>
-		/// Expects a start-at-1 index
-		/// </summary>
-		/// <param name="at"></param>
-		/// <returns></returns>
-		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
-		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count) + 1);
-	}
 	/// <summary>
 	/// Class used for in-game animations from <see cref="CharacterDescriptor_MainShowTouch.GetRandomTouchResponse()"/>
 	/// </summary>
 	public class CharacterMainShowTouchResponse(CharacterDescriptor_MainShowTouch touchdata, string response) {
-		public CharacterDescriptor_MultiAnimation MainResponse => touchdata.MainResponse;
+		public Descriptor_MultiAnimationClass MainResponse => touchdata.MainResponse;
 
 		public string Start => string.Format(touchdata.StartResponse, response);
 		public string Standby => string.Format(touchdata.StartResponse, response);
 		public string End => string.Format(touchdata.StartResponse, response);
 	}
 	public class CharacterDescriptor_MainShowTouch {
-		[JsonProperty("response_main")] public CharacterDescriptor_MultiAnimation MainResponse;
+		[JsonProperty("response_main")] public Descriptor_MultiAnimationClass MainResponse;
 		[JsonProperty("response_start")] public string StartResponse;
 		[JsonProperty("response_standby")] public string StandbyResponse;
 		[JsonProperty("response_end")] public string EndResponse;
@@ -66,47 +36,47 @@ namespace CloneDash.Modding.Descriptors
 	{
 		public class CharacterDescriptor_PlayAir
 		{
-			[JsonProperty("great")] public CharacterDescriptor_MultiAnimation Great;
-			[JsonProperty("perfect")] public CharacterDescriptor_MultiAnimation Perfect;
-			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
-			[JsonProperty("miss")] public CharacterDescriptor_MultiAnimation? Miss;
+			[JsonProperty("great")] public Descriptor_MultiAnimationClass Great;
+			[JsonProperty("perfect")] public Descriptor_MultiAnimationClass Perfect;
+			[JsonProperty("hurt")] public Descriptor_MultiAnimationClass Hurt;
+			[JsonProperty("miss")] public Descriptor_MultiAnimationClass? Miss;
 		}
 		public class CharacterDescriptor_PlayRoad
 		{
-			[JsonProperty("great")] public CharacterDescriptor_MultiAnimation Great;
-			[JsonProperty("perfect")] public CharacterDescriptor_MultiAnimation Perfect;
-			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
-			[JsonProperty("miss")] public CharacterDescriptor_MultiAnimation Miss;
+			[JsonProperty("great")] public Descriptor_MultiAnimationClass Great;
+			[JsonProperty("perfect")] public Descriptor_MultiAnimationClass Perfect;
+			[JsonProperty("hurt")] public Descriptor_MultiAnimationClass Hurt;
+			[JsonProperty("miss")] public Descriptor_MultiAnimationClass Miss;
 		}
 		public class CharacterDescriptor_PlayTransitions
 		{
-			[JsonProperty("air_to_ground")] public CharacterDescriptor_MultiAnimation AirToGround;
+			[JsonProperty("air_to_ground")] public Descriptor_MultiAnimationClass AirToGround;
 		}
 		public class CharacterDescriptor_PlayJump
 		{
-			[JsonProperty("jump")] public CharacterDescriptor_MultiAnimation Jump;
-			[JsonProperty("hurt")] public CharacterDescriptor_MultiAnimation Hurt;
+			[JsonProperty("jump")] public Descriptor_MultiAnimationClass Jump;
+			[JsonProperty("hurt")] public Descriptor_MultiAnimationClass Hurt;
 		}
 		public class CharacterDescriptor_PlayPress
 		{
-			[JsonProperty("press")] public CharacterDescriptor_MultiAnimation Press;
+			[JsonProperty("press")] public Descriptor_MultiAnimationClass Press;
 
-			[JsonProperty("air_press_end")] public CharacterDescriptor_MultiAnimation AirPressEnd;
-			[JsonProperty("air_press_hurt")] public CharacterDescriptor_MultiAnimation AirPressHurt;
+			[JsonProperty("air_press_end")] public Descriptor_MultiAnimationClass AirPressEnd;
+			[JsonProperty("air_press_hurt")] public Descriptor_MultiAnimationClass AirPressHurt;
 
-			[JsonProperty("down_press_hit")] public CharacterDescriptor_MultiAnimation DownPressHit;
-			[JsonProperty("up_press_hit")] public CharacterDescriptor_MultiAnimation UpPressHit;
+			[JsonProperty("down_press_hit")] public Descriptor_MultiAnimationClass DownPressHit;
+			[JsonProperty("up_press_hit")] public Descriptor_MultiAnimationClass UpPressHit;
 		}
 
 		[JsonProperty("model")] public string Model;
 
-		[JsonProperty("run")] public CharacterDescriptor_MultiAnimation RunAnimation;
-		[JsonProperty("die")] public CharacterDescriptor_MultiAnimation DieAnimation;
-		[JsonProperty("standby")] public CharacterDescriptor_MultiAnimation StandbyAnimation;
+		[JsonProperty("run")] public Descriptor_MultiAnimationClass RunAnimation;
+		[JsonProperty("die")] public Descriptor_MultiAnimationClass DieAnimation;
+		[JsonProperty("standby")] public Descriptor_MultiAnimationClass StandbyAnimation;
 
 		[JsonProperty("air")] public CharacterDescriptor_PlayAir AirAnimations;
 		[JsonProperty("road")] public CharacterDescriptor_PlayRoad RoadAnimations;
-		[JsonProperty("double")] public CharacterDescriptor_MultiAnimation DoubleAnimation;
+		[JsonProperty("double")] public Descriptor_MultiAnimationClass DoubleAnimation;
 		[JsonProperty("transitions")] public CharacterDescriptor_PlayTransitions TransitionAnimations;
 		[JsonProperty("jump")] public CharacterDescriptor_PlayJump JumpAnimations;
 		[JsonProperty("press")] public CharacterDescriptor_PlayPress PressAnimations;
