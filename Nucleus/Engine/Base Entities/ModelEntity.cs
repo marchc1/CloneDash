@@ -65,7 +65,7 @@ namespace Nucleus.Engine
 				foreach (var fl in shaderlocs_float) shader?.SetUniform(fl.Key, fl.Value);
 				shader?.Activate();
 			}
-
+			Model = null;
 			Model.Render();
 
 			if (isvalid) 

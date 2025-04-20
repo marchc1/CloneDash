@@ -589,6 +589,8 @@ namespace Nucleus.Engine
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
+			Raylib.ClearBackground(new Color(0, 0, 0, 255));
+
 			bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
 			if (render3D) {
 				var cam3d = new Camera3D() {

@@ -20,6 +20,7 @@ namespace Nucleus.Core
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
 			{ "Noto Sans", new FontEntry("noto-sans-en-jp.ttf", "fonts") },
+			{ "Noto Sans Mono", new FontEntry("NotoSansMono-VariableFont_wdth,wght.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color __drawColor = Color.White;
