@@ -60,6 +60,9 @@ namespace CloneDash.Game.Entities
 		}
 
 		protected override void OnMiss() {
+			if (StartedHitting) return;
+			if (Hits > 0) return;
+
 			DamagePlayer();
 		}
 
