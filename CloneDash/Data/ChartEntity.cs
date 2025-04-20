@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Data
 {
-    public struct ChartEntity
+    public class ChartEntity
     {
         public EntityType Type;
         public PathwaySide Pathway;

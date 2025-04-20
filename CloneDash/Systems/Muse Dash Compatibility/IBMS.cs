@@ -161,39 +161,6 @@ namespace CloneDash
 						_ => false
 					};
 
-					EntityType entityType = ib.code switch {
-						IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown
-						or IBMSCode.Medium1Normal or IBMSCode.Medium2Normal or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Medium1Up or IBMSCode.Medium2Up
-						or IBMSCode.Large1 or IBMSCode.Large2
-						or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
-							=> EntityType.Single,
-
-						IBMSCode.Gemini => EntityType.Double,
-						IBMSCode.Hammer => EntityType.Hammer,
-						IBMSCode.Mul => EntityType.Masher,
-						IBMSCode.Block => EntityType.Gear,
-						IBMSCode.Ghost => EntityType.Ghost,
-						IBMSCode.Raider => EntityType.Raider,
-						IBMSCode.Music => EntityType.Score,
-						IBMSCode.Hp => EntityType.Heart,
-
-						_ => EntityType.Unknown
-					};
-
-					EntityVariant size = ib.code switch {
-						IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
-						IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
-						IBMSCode.Medium2Normal or IBMSCode.Medium2Down or IBMSCode.Medium2Up => EntityVariant.Medium2,
-						IBMSCode.Large1 => EntityVariant.Large1,
-						IBMSCode.Large2 => EntityVariant.Large2,
-
-						IBMSCode.BossAttack1 => EntityVariant.Boss1,
-						IBMSCode.BossAttack2_1 => EntityVariant.Boss2,
-						IBMSCode.BossAttack2_2 => EntityVariant.Boss3,
-
-						_ => EntityVariant.NotApplicable
-					};
-
 					EventType eventType = ib.code switch {
 						IBMSCode.BossIn => EventType.BossIn,
 						IBMSCode.BossOut => EventType.BossOut,
@@ -228,32 +195,64 @@ namespace CloneDash
 
 						sheet.Events.Add(ChartEvent);
 					}
-					else if (entityType != EntityType.Unknown) {
-						//Switch case for direction type
-						EntityEnterDirection dir = ib.code switch {
-							IBMSCode.SmallDown or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Hammer => EntityEnterDirection.TopDown;
-							IBMSCode.SmallUp or IBMSCode.Medium1Up or IBMSCode.Medium2Up or IBMSCode.HammerFlip => EntityEnterDirection.BottomUp;
-							_ => EntityEnterDirection.RightSide
-						};
-
-						ChartEntity ent = new ChartEntity();
-						ent.Type = entityType;
-						ent.Pathway = pathwayType;
-						ent.EnterDirection = dir;
-						ent.HitTime = tick_hit;
-						ent.ShowTime = tick_show;
-
-						ent.Fever = s.noteData.fever;
-						ent.Damage = s.noteData.damage;
-						ent.Length = (double)s.configData.length;
-						ent.Score = s.noteData.score;
-
-						ent.RelatedToBoss = isBoss;
-						ent.DebuggingInfo = $"ib.code: {ib.code}";
-						sheet.Entities.Add(ent);
-					}
 					else {
-						if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
+						EntityType entityType = ib.code switch {
+							IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown
+							or IBMSCode.Medium1Normal or IBMSCode.Medium2Normal or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Medium1Up or IBMSCode.Medium2Up
+							or IBMSCode.Large1 or IBMSCode.Large2
+							or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
+								=> EntityType.Single,
+
+							IBMSCode.Gemini => EntityType.Double,
+							IBMSCode.Hammer => EntityType.Hammer,
+							IBMSCode.Mul => EntityType.Masher,
+							IBMSCode.Block => EntityType.Gear,
+							IBMSCode.Ghost => EntityType.Ghost,
+							IBMSCode.Raider => EntityType.Raider,
+							IBMSCode.Music => EntityType.Score,
+							IBMSCode.Hp => EntityType.Heart,
+
+							_ => EntityType.Unknown
+						};
+						if (entityType != EntityType.Unknown) {
+
+							EntityVariant size = ib.code switch {
+								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
+								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
+								IBMSCode.Medium2Normal or IBMSCode.Medium2Down or IBMSCode.Medium2Up => EntityVariant.Medium2,
+								IBMSCode.Large1 => EntityVariant.Large1,
+								IBMSCode.Large2 => EntityVariant.Large2,
+
+								IBMSCode.BossAttack1 => EntityVariant.Boss1,
+								IBMSCode.BossAttack2_1 => EntityVariant.Boss2,
+								IBMSCode.BossAttack2_2 => EntityVariant.Boss3,
+
+								_ => EntityVariant.NotApplicable
+							};
+
+							EntityEnterDirection dir = ib.code switch {
+								IBMSCode.SmallDown or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Hammer => EntityEnterDirection.TopDown,
+								IBMSCode.SmallUp or IBMSCode.Medium1Up or IBMSCode.Medium2Up or IBMSCode.HammerFlip => EntityEnterDirection.BottomUp,
+								_ => EntityEnterDirection.RightSide
+							};
+
+							ChartEntity ent = new ChartEntity();
+							ent.Type = entityType;
+							ent.Pathway = pathwayType;
+							ent.EnterDirection = dir;
+							ent.HitTime = tick_hit;
+							ent.ShowTime = tick_show;
+
+							ent.Fever = s.noteData.fever;
+							ent.Damage = s.noteData.damage;
+							ent.Length = (double)s.configData.length;
+							ent.Score = s.noteData.score;
+
+							ent.RelatedToBoss = isBoss;
+							ent.DebuggingInfo = $"ib.code: {ib.code}";
+							sheet.Entities.Add(ent);
+						}
+						else if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
 							Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
 							Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
 							Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
@@ -262,6 +261,7 @@ namespace CloneDash
 							Logs.Info($"NoteID: {s.noteData.id}");
 							Logs.Info("");
 						}
+
 					}
 				}
 				first = false;

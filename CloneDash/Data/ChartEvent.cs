@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Data
 {
-    public struct ChartEvent
+    public class ChartEvent
     {
         public float Time;
         public double Length;
