@@ -330,6 +330,9 @@ namespace Nucleus
 
 			s.Stop();
 
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
+			GC.WaitForFullGCComplete();
+
 			Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
 			//GC.Collect();
 			//GC.WaitForPendingFinalizers();
