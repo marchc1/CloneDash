@@ -2,6 +2,8 @@
 {
 	public enum EventType
 	{
+		NotApplicable,
+
 		BossIn,
 		BossOut,
 		BossSingleHit,

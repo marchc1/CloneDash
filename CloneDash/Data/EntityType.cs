@@ -3,13 +3,18 @@
 	/// <summary>
 	/// Only applicable to <see cref="EntityType.Single"/>.
 	/// </summary>
-	public enum EntitySize {
-		BossSmall1,
-		BossSmall2,
-		BossSmall3,
+	public enum EntityVariant {
+		NotApplicable,
+
+		Boss1,
+		Boss2,
+		Boss3,
+
 		Small,
+
 		Medium1,
 		Medium2,
+
 		Large1,
 		Large2
 	}

@@ -154,96 +154,68 @@ namespace CloneDash
 					}
 
 					//Switch case for entity type
-					EntityType type = EntityType.Unknown;
-					EventType? Event = null;
-					bool IsBoss = false;
-					switch (ib.code) {
-						case IBMSCode.SmallNormal:
-						case IBMSCode.SmallUp:
-						case IBMSCode.SmallDown:
-						case IBMSCode.Medium1Normal:
-						case IBMSCode.Medium2Normal:
-						case IBMSCode.Medium1Down:
-						case IBMSCode.Medium2Down:
-						case IBMSCode.Medium1Up:
-						case IBMSCode.Medium2Up:
-						case IBMSCode.Large1:
-						case IBMSCode.Large2:
-							type = EntityType.Single;
-							break;
-						case IBMSCode.Gemini:
-							type = EntityType.Double;
-							break;
+					bool isBoss = ib.code switch {
+						IBMSCode.BossBlock
+						or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
+						=> true,
+						_ => false
+					};
 
-						case IBMSCode.Music:
-							type = EntityType.Score;
-							break;
+					EntityType entityType = ib.code switch {
+						IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown
+						or IBMSCode.Medium1Normal or IBMSCode.Medium2Normal or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Medium1Up or IBMSCode.Medium2Up
+						or IBMSCode.Large1 or IBMSCode.Large2
+						or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
+							=> EntityType.Single,
 
-						case IBMSCode.Hammer:
-							type = EntityType.Hammer;
-							break;
+						IBMSCode.Gemini => EntityType.Double,
+						IBMSCode.Hammer => EntityType.Hammer,
+						IBMSCode.Mul => EntityType.Masher,
+						IBMSCode.Block => EntityType.Gear,
+						IBMSCode.Ghost => EntityType.Ghost,
+						IBMSCode.Raider => EntityType.Raider,
+						IBMSCode.Music => EntityType.Score,
+						IBMSCode.Hp => EntityType.Heart,
 
-						case IBMSCode.Mul:
-							type = EntityType.Masher;
-							break;
+						_ => EntityType.Unknown
+					};
 
-						case IBMSCode.Block:
-							type = EntityType.Gear;
-							break;
+					EntityVariant size = ib.code switch {
+						IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
+						IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
+						IBMSCode.Medium2Normal or IBMSCode.Medium2Down or IBMSCode.Medium2Up => EntityVariant.Medium2,
+						IBMSCode.Large1 => EntityVariant.Large1,
+						IBMSCode.Large2 => EntityVariant.Large2,
 
-						case IBMSCode.Ghost:
-							type = EntityType.Ghost;
-							break;
+						IBMSCode.BossAttack1 => EntityVariant.Boss1,
+						IBMSCode.BossAttack2_1 => EntityVariant.Boss2,
+						IBMSCode.BossAttack2_2 => EntityVariant.Boss3,
 
-						case IBMSCode.Raider:
-							type = EntityType.Raider;
-							break;
+						_ => EntityVariant.NotApplicable
+					};
 
-						case IBMSCode.BossAttack1:
-						case IBMSCode.BossAttack2_1:
-						case IBMSCode.BossAttack2_2:
-							type = EntityType.Single;
-							IsBoss = true;
-							break;
-						case IBMSCode.BossBlock:
-							type = EntityType.Gear;
-							IsBoss = true;
-							break;
+					EventType eventType = ib.code switch {
+						IBMSCode.BossIn => EventType.BossIn,
+						IBMSCode.BossOut => EventType.BossOut,
 
-						case IBMSCode.BossIn: Event = EventType.BossIn; break;
-						case IBMSCode.BossOut: Event = EventType.BossOut; break;
-						case IBMSCode.BossNear2: Event = EventType.BossSingleHit; break;
-						case IBMSCode.BossMul2: Event = EventType.BossMasher; break;
-						case IBMSCode.BossFar1Start: Event = EventType.BossFar1Start; break;
-						case IBMSCode.BossFar1End: Event = EventType.BossFar1End; break;
-						case IBMSCode.BossFar1To2: Event = EventType.BossFar1To2; break;
-						case IBMSCode.BossFar2Start: Event = EventType.BossFar2Start; break;
-						case IBMSCode.BossFar2End: Event = EventType.BossFar2End; break;
-						case IBMSCode.BossFar2To1: Event = EventType.BossFar2To1; break;
-						case IBMSCode.BossHide: Event = EventType.BossHide; break;
+						IBMSCode.BossNear2 => EventType.BossSingleHit,
+						IBMSCode.BossMul2 => EventType.BossMasher,
 
-						case IBMSCode.Hp:
-							type = EntityType.Heart;
-							break;
+						IBMSCode.BossFar1Start => EventType.BossFar1Start,
+						IBMSCode.BossFar1End => EventType.BossFar1End,
+						IBMSCode.BossFar1To2 => EventType.BossFar1To2,
+						IBMSCode.BossFar2Start => EventType.BossFar2Start,
+						IBMSCode.BossFar2End => EventType.BossFar2End,
+						IBMSCode.BossFar2To1 => EventType.BossFar2To1,
 
-						default:
-							if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
-								Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
-								Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
-								Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
-								Logs.Info($"DataObjID: {s.objId}");
-								Logs.Info($"ConfigID: {s.configData.id}");
-								Logs.Info($"NoteID: {s.noteData.id}");
-								Logs.Info("");
-							}
-							//ConsoleSystem.Print($"IBMS code with no translation: {s.noteData.ibms_id} (stored in enum as {ib.name})");
-							break;
-					}
+						IBMSCode.BossHide => EventType.BossHide,
 
+						_ => EventType.NotApplicable
+					};
 
-					if (Event != null) {
+					if (eventType != EventType.NotApplicable) {
 						ChartEvent ChartEvent = new();
-						ChartEvent.Type = Event.Value;
+						ChartEvent.Type = eventType;
 						ChartEvent.Time = tick_hit;
 						ChartEvent.Length = (double)s.configData.length;
 
@@ -256,44 +228,39 @@ namespace CloneDash
 
 						sheet.Events.Add(ChartEvent);
 					}
-					else {
+					else if (entityType != EntityType.Unknown) {
 						//Switch case for direction type
-						EntityEnterDirection dir = EntityEnterDirection.RightSide;
-						switch (ib.code) {
-							case IBMSCode.SmallDown:
-							case IBMSCode.Medium1Down:
-							case IBMSCode.Medium2Down:
-							case IBMSCode.Hammer:
-								dir = EntityEnterDirection.TopDown;
-								break;
+						EntityEnterDirection dir = ib.code switch {
+							IBMSCode.SmallDown or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Hammer => EntityEnterDirection.TopDown;
+							IBMSCode.SmallUp or IBMSCode.Medium1Up or IBMSCode.Medium2Up or IBMSCode.HammerFlip => EntityEnterDirection.BottomUp;
+							_ => EntityEnterDirection.RightSide
+						};
 
-							case IBMSCode.SmallUp:
-							case IBMSCode.Medium1Up:
-							case IBMSCode.Medium2Up:
-							case IBMSCode.HammerFlip:
-								dir = EntityEnterDirection.BottomUp;
-								break;
-						}
+						ChartEntity ent = new ChartEntity();
+						ent.Type = entityType;
+						ent.Pathway = pathwayType;
+						ent.EnterDirection = dir;
+						ent.HitTime = tick_hit;
+						ent.ShowTime = tick_show;
 
-						if (type != EntityType.Unknown) {
-							ChartEntity ent = new ChartEntity();
-							ent.Type = type;
-							ent.Pathway = pathwayType;
-							ent.EnterDirection = dir;
-							ent.HitTime = tick_hit;
-							ent.ShowTime = tick_show;
+						ent.Fever = s.noteData.fever;
+						ent.Damage = s.noteData.damage;
+						ent.Length = (double)s.configData.length;
+						ent.Score = s.noteData.score;
 
-							ent.Fever = s.noteData.fever;
-							ent.Damage = s.noteData.damage;
-							ent.Length = (double)s.configData.length;
-							ent.Score = s.noteData.score;
-
-							ent.RelatedToBoss = IsBoss;
-							ent.DebuggingInfo = $"ib.code: {ib.code}";
-							sheet.Entities.Add(ent);
-						}
-						else {
-
+						ent.RelatedToBoss = isBoss;
+						ent.DebuggingInfo = $"ib.code: {ib.code}";
+						sheet.Entities.Add(ent);
+					}
+					else {
+						if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
+							Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
+							Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
+							Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
+							Logs.Info($"DataObjID: {s.objId}");
+							Logs.Info($"ConfigID: {s.configData.id}");
+							Logs.Info($"NoteID: {s.noteData.id}");
+							Logs.Info("");
 						}
 					}
 				}
