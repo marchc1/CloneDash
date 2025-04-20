@@ -272,6 +272,12 @@ namespace Nucleus
 			// Japanese (hiragana, katakana)
 			Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
 			Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
+			
+			// Some korean
+			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
+
+			foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
+				Graphics2D.RegisterCodepoints(languageLine);
 		}
 
 		public static PerfGraph CPUGraph;
@@ -543,7 +549,18 @@ namespace Nucleus
 			}
 		}
 
-		public static ConCommand panic = ConCommand.Register("panic", (_,_) => {
+		public static ConCommand panic = ConCommand.Register("panic", (_, _) => {
+			if (Debugger.IsAttached) {
+				try {
+					throw new Exception("force-panic (despite panic system deactivated due to presence of debugger)");
+				}
+				catch (Exception ex) {
+					var edi = ExceptionDispatchInfo.Capture(ex);
+					if (!Panic(edi)) {
+						edi.Throw();
+					}
+				}
+			}
 			throw new Exception("panic concommand called");
 		}, "Crashes the engine.");
 
@@ -551,7 +568,7 @@ namespace Nucleus
 		private const float PANIC_SIZE = 16;
 		private static void renderLine(ref int textY) => renderLine(null, ref textY);
 		private static void renderLine(string? line, ref int textY) {
-			if(line == null) {
+			if (line == null) {
 				textY++;
 				return;
 			}
@@ -564,13 +581,49 @@ namespace Nucleus
 
 			textY++;
 		}
+		private static readonly string[] ErrorMessageInAutoTranslatedLanguages = [
+			"A fatal error has occured. Press any key to exit.",
+			"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
+			"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.",
+			"出现致命错误。按任意键退出。              發生致命錯誤。按任意鍵退出。",
+			"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.",
+			"Der er opstået en fatal fejl. Tryk på en vilkårlig tast for at afslutte.",
+			"Er is een fatale fout opgetreden. Druk op een willekeurige toets om af te sluiten.",
+			"On ilmnenud fataalne viga. Väljumiseks vajutage suvalist klahvi.",
+			"On tapahtunut kohtalokas virhe. Poistu painamalla mitä tahansa näppäintä.",
+			"Une erreur fatale s'est produite. Appuyez sur n'importe quelle touche pour quitter.",
+			"Es ist ein schwerwiegender Fehler aufgetreten. Drücken Sie eine beliebige Taste zum Beenden.",
+			"Προέκυψε ένα μοιραίο σφάλμα. Πατήστε οποιοδήποτε πλήκτρο για έξοδο.",
+			"Végzetes hiba történt. Nyomja meg bármelyik billentyűt a kilépéshez.",
+			"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.",
+			"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.",
+			"致命的なエラーが発生しました。いずれかのキーを押して終了してください。",
+			"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
+			"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.",
+			"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.",
+			"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.",
+			"Wystąpił błąd krytyczny. Naciśnij dowolny przycisk, aby wyjść.",
+			"Ocorreu um erro fatal. Prima qualquer tecla para sair.",
+			"Ocorreu um erro fatal. Pressione qualquer tecla para sair.",
+			"A apărut o eroare fatală. Apăsați orice tastă pentru a ieși.",
+			"Произошла фатальная ошибка. Нажмите любую клавишу, чтобы выйти.",
+			"Vyskytla sa fatálna chyba. Stlačte ľubovoľné tlačidlo, aby ste ukončili prácu.",
+			"Zgodila se je usodna napaka. Za izhod pritisnite katero koli tipko.",
+			"Se ha producido un error fatal. Pulse cualquier tecla para salir.",
+			"Ett allvarligt fel har inträffat. Tryck på valfri tangent för att avsluta.",
+			"Ölümcül bir hata oluştu. Çıkmak için herhangi bir tuşa basın.",
+			"Виникла фатальна помилка. Натисніть будь-яку клавішу для виходу."
+		];
+
 		public static bool Panic(ExceptionDispatchInfo ex) {
 			if (shouldThrow)
 				ex.Throw();
 
 			var oldMaster = Raylib.GetMasterVolume();
 			Raylib.SetMasterVolume(0);
-
+			Raylib.SetWindowTitle("Nucleus Engine - Panicked!");
+			Raylib.SetWindowMinSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Raylib.SetWindowMaxSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
 			shouldThrow = true;
 			// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
 			Stopwatch time = new();
@@ -578,7 +631,7 @@ namespace Nucleus
 			time.Start();
 			int y = 0;
 			var lastTime = 0d;
-			
+
 			var exLines = ex.SourceException.Message.Split('\n');
 			var exStkLines = ex.SourceException.StackTrace?.Split('\n') ?? ["<No stack trace available>"];
 
@@ -594,49 +647,16 @@ namespace Nucleus
 				Rlgl.LoadIdentity();
 
 				if (y < Raylib.GetScreenHeight()) {
-					int elapsedY = (int)((float)elapsed * 1000);
+					int elapsedY = (int)((float)elapsed * 1150);
 					Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(120, 120, 120, 170));
 					y += elapsedY;
 				}
-				else if(!hasRenderedOverlay) {
+				else if (!hasRenderedOverlay) {
 					// Hopefully it wasnt the font manager that broke!
 					Graphics2D.SetDrawColor(255, 255, 255);
-					string[] languages = [
-	"A fatal error has occured. Press any key to exit.",
-						"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
-						"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.",
-						"出现致命错误。按任意键退出。              發生致命錯誤。按任意鍵退出。",
-						"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.",
-						"Der er opstået en fatal fejl. Tryk på en vilkårlig tast for at afslutte.",
-						"Er is een fatale fout opgetreden. Druk op een willekeurige toets om af te sluiten.",
-						"On ilmnenud fataalne viga. Väljumiseks vajutage suvalist klahvi.",
-						"On tapahtunut kohtalokas virhe. Poistu painamalla mitä tahansa näppäintä.",
-						"Une erreur fatale s'est produite. Appuyez sur n'importe quelle touche pour quitter.",
-						"Es ist ein schwerwiegender Fehler aufgetreten. Drücken Sie eine beliebige Taste zum Beenden.",
-						"Προέκυψε ένα μοιραίο σφάλμα. Πατήστε οποιοδήποτε πλήκτρο για έξοδο.",
-						"Végzetes hiba történt. Nyomja meg bármelyik billentyűt a kilépéshez.",
-						"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.",
-						"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.",
-						"致命的なエラーが発生しました。いずれかのキーを押して終了してください。",
-						"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
-						"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.",
-						"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.",
-						"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.",
-						"Wystąpił błąd krytyczny. Naciśnij dowolny przycisk, aby wyjść.",
-						"Ocorreu um erro fatal. Prima qualquer tecla para sair.",
-						"Ocorreu um erro fatal. Pressione qualquer tecla para sair.",
-						"A apărut o eroare fatală. Apăsați orice tastă pentru a ieși.",
-						"Произошла фатальная ошибка. Нажмите любую клавишу, чтобы выйти.",
-						"Vyskytla sa fatálna chyba. Stlačte ľubovoľné tlačidlo, aby ste ukončili prácu.",
-						"Zgodila se je usodna napaka. Za izhod pritisnite katero koli tipko.",
-						"Se ha producido un error fatal. Pulse cualquier tecla para salir.",
-						"Ett allvarligt fel har inträffat. Tryck på valfri tangent för att avsluta.",
-						"Ölümcül bir hata oluştu. Çıkmak için herhangi bir tuşa basın.",
-						"Виникла фатальна помилка. Натисніть будь-яку клавішу для виходу."
-];
 
-					var box = new System.Numerics.Vector2(0, PANIC_SIZE * languages.Length);
-					foreach (var languageLine in languages) {
+					var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessageInAutoTranslatedLanguages.Length);
+					foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages) {
 						var size = Graphics2D.GetTextSize(languageLine, PANIC_FONT, PANIC_SIZE);
 						if (size.X > box.X)
 							box.X = size.X;
@@ -646,7 +666,7 @@ namespace Nucleus
 					var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), (Raylib.GetScreenHeight() / 2) - (box.Y / 2));
 					Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 					var langLineY = 0;
-					foreach (var line in languages) {
+					foreach (var line in ErrorMessageInAutoTranslatedLanguages) {
 						Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE, Anchor.TopCenter);
 
 						langLineY++;
@@ -660,7 +680,7 @@ namespace Nucleus
 					renderLine(ref textY);
 					foreach (var line in exStkLines) renderLine($"    {line}", ref textY);
 
-					if(innerEx != null) {
+					if (innerEx != null) {
 						renderLine(ref textY);
 						renderLine("Inner exception:", ref textY);
 
@@ -673,7 +693,7 @@ namespace Nucleus
 				}
 				else {
 					Raylib.PollInputEvents();
-					if(Raylib.GetKeyPressed() != 0) {
+					if (Raylib.GetKeyPressed() != 0) {
 						Raylib.SetMasterVolume(oldMaster);
 						return false;
 					}
