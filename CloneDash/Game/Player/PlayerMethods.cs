@@ -7,6 +7,7 @@ using Nucleus.Types;
 using CloneDash.Game.Entities;
 using Nucleus.UI;
 using Nucleus;
+using FMOD;
 
 namespace CloneDash.Game
 {
@@ -174,22 +175,29 @@ namespace CloneDash.Game
 		/// <param name="side"></param>
 		/// <returns></returns>
 		public bool IsSustaining(PathwaySide side) => side == PathwaySide.Top ? HoldingTopPathwaySustain != null : HoldingBottomPathwaySustain != null;
-		public bool IsVisuallySustaining() => lastSustainTick != Ticks && IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
+		public bool IsSustaining() => IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
 		public void SetSustain(PathwaySide side, CD_BaseMEntity entity) {
-			var wasSustaining = IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
+			var wasSustainingTop = IsSustaining(PathwaySide.Top);
+			var wasSustainingBottom = IsSustaining(PathwaySide.Bottom);
+			var wasSustaining = wasSustainingTop || wasSustainingBottom;
 
 			if (side == PathwaySide.Top)
 				HoldingTopPathwaySustain = entity;
 			else
 				HoldingBottomPathwaySustain = entity;
 
-			var isSustaining = IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
+			var isSustainingTop = IsSustaining(PathwaySide.Top);
+			var isSustainingBottom = IsSustaining(PathwaySide.Bottom);
+			var isSustaining = isSustainingTop || isSustainingBottom;
 
-			if (!wasSustaining && isSustaining) 
-				PlayerAnim_EnterSustain();
+			if (!wasSustaining && isSustaining) playeranim_startsustain = true;
+
+			if (!wasSustainingTop && isSustainingTop) playeranim_startsustain_top = true;
+			if (!wasSustainingBottom && isSustainingBottom) playeranim_startsustain_bottom = true;
+			
 			if (wasSustaining && !isSustaining) 
-				PlayerAnim_ExitSustain();
-
+				playeranim_endsustain = true;
+			
 		}
 		/// <summary>
 		/// Returns if the jump was successful. Mostly returns this for the sake of animation.
@@ -218,21 +226,157 @@ namespace CloneDash.Game
 			}
 		}
 
+		private bool playeranim_miss = false;
+		private bool playeranim_jump = false;
+		private bool playeranim_attackair = false;
+		private bool playeranim_attackground = false;
+		private bool playeranim_attackdouble = false;
+
+		private bool playeranim_perfect = false;
+
+		private bool playeranim_startsustain = false;
+		private bool playeranim_startsustain_top = false;
+		private bool playeranim_startsustain_bottom = false;
+		private bool playeranim_insustain = false;
+		private bool playeranim_endsustain = false;
+
+		private void resetPlayerAnimState() {
+			playeranim_miss = false;
+			playeranim_jump = false;
+
+			playeranim_attackair = false;
+			playeranim_attackground = false;
+			playeranim_attackdouble = false;
+
+			playeranim_perfect = false;
+
+			playeranim_startsustain = false;
+			playeranim_startsustain_top = false;
+			playeranim_startsustain_bottom = false;
+			playeranim_endsustain = false;
+			playeranim_insustain = IsSustaining();
+		}
+		private double lastHologramHitTime = -20000;
+		private void logTests(string testStr) {
+			Logs.Debug($"PlayerAnimationState: {testStr}");
+		}
+		private void determinePlayerAnimationState() {
+			ModelEntity playerTarget;
+			bool suppress_hologram = false;
+			// Call end sustain animation. But only if we're ending a sustain and not starting a new one immediately
+			if (playeranim_endsustain && !playeranim_startsustain) {
+				PlayerAnim_ExitSustain();
+				logTests("Exiting sustain.");
+			}
+			else if(playeranim_endsustain && playeranim_startsustain) {
+				// Suppress any hologram animations.
+				logTests("Suppressing further hologram animations.");
+				suppress_hologram = true;
+			}
+
+			if (playeranim_attackdouble) {
+				__whenjump = -2000000000000d;
+				PlayerAnim_ForceAttackDouble(Player);
+				PlayerAnim_EnqueueRun(Player);
+
+				resetPlayerAnimState();
+				logTests("Double attack");
+				return;
+			}
+
+			if (playeranim_startsustain) {
+				PlayerAnim_EnterSustain();
+
+				logTests("Sustain started");
+
+				if (playeranim_startsustain_bottom && playeranim_startsustain_top) {
+					resetPlayerAnimState();
+					logTests("Not allowing further animation; both sustains pressed at once!");
+					return;
+				}
+
+				if (!suppress_hologram && playeranim_attackair && playeranim_startsustain_bottom && !playeranim_startsustain_top) {
+					// Hologram player attacks the air, while the player starts the bottom sustain.
+					PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
+				}
+
+				if (!suppress_hologram && playeranim_attackground && playeranim_startsustain_top && !playeranim_startsustain_bottom) {
+					// Hologram player attacks the ground, while the player starts the top sustain.
+					PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
+				}
+
+				resetPlayerAnimState();
+				return;
+			}
+
+			if (!suppress_hologram && playeranim_insustain) { // We use the same things for playeranim_attack etc, but redirect it to the hologram player
+				playerTarget = HologramPlayer;
+
+				if(playeranim_startsustain_top || playeranim_startsustain_bottom) {
+					resetPlayerAnimState();
+					return;
+				}
+
+				if(playeranim_attackair || playeranim_attackground) {
+					lastHologramHitTime = Conductor.Time;
+				}
+
+				if (playeranim_attackair) {
+					PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
+					__whenHjump = Conductor.Time;
+				}
+				else if (playeranim_attackground) {
+					PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
+					__whenHjump = -2000000000000d;
+				}
+			}
+			else {
+				playerTarget = Player;
+				if (playeranim_attackair) {
+					PlayerAnim_ForceAttackAir(Player, playeranim_perfect);
+					__whenjump = Conductor.Time;
+					PlayerAnim_EnqueueRun(Player);
+				}
+				else if (playeranim_attackground) {
+					PlayerAnim_ForceAttackGround(Player, playeranim_perfect);
+					__whenjump = -2000000000000d;
+					PlayerAnim_EnqueueRun(Player);
+				}
+				else if (playeranim_jump) {
+					PlayerAnim_ForceJump(Player);
+				}
+				else if (playeranim_miss) {
+					__whenjump = -2000000000000d;
+					PlayerAnim_ForceMiss(Player);
+				}
+			}
+
+			/*FrameDebuggingStrings.Add($"PlayerAnimState:");
+
+			FrameDebuggingStrings.Add($"    playeranim_miss                 : {playeranim_miss}");
+			FrameDebuggingStrings.Add($"    playeranim_jump                 : {playeranim_jump}");
+			FrameDebuggingStrings.Add($"    playeranim_attackair            : {playeranim_attackair}");
+			FrameDebuggingStrings.Add($"    playeranim_attackground         : {playeranim_attackground}");
+			FrameDebuggingStrings.Add($"    playeranim_attackdouble         : {playeranim_attackdouble}");
+			FrameDebuggingStrings.Add($"    playeranim_perfect              : {playeranim_perfect}");
+			FrameDebuggingStrings.Add($"    playeranim_startsustain         : {playeranim_startsustain}");
+			FrameDebuggingStrings.Add($"    playeranim_startsustain_top     : {playeranim_startsustain_top}");
+			FrameDebuggingStrings.Add($"    playeranim_startsustain_bottom  : {playeranim_startsustain_bottom}");
+			FrameDebuggingStrings.Add($"    playeranim_insustain            : {playeranim_insustain}");
+			FrameDebuggingStrings.Add($"    playeranim_endsustain           : {playeranim_endsustain}");*/
+
+			resetPlayerAnimState();
+		}
+
 		public bool AttackAir(PollResult result) {
 			if (CanJump || result.Hit) {
-				if (IsVisuallySustaining())
-					__whenHjump = result.HitEntity is DoubleHitEnemy ? -20000000000d : Conductor.Time;
-				else
-					__whenjump = result.HitEntity is DoubleHitEnemy ? -20000000000d : Conductor.Time;
+				var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
+				playeranim_attackdouble = isDHE;
+				playeranim_attackair = result.Hit && !isDHE;
+				playeranim_jump = CanJump;
 
+				playeranim_perfect |= result.IsPerfect;
 				OnAirAttack?.Invoke(this, PathwaySide.Top);
-
-				if (result.Hit) {
-					PlayerAnim_ForceAttackAir(ref result);
-				}
-				else {
-					PlayerAnim_ForceJump();
-				}
 
 				return true;
 			}
@@ -240,19 +384,23 @@ namespace CloneDash.Game
 		}
 
 		public void AttackGround(PollResult result) {
-			if (IsVisuallySustaining())
-				__whenHjump = -2000000000000d;
-			else
-				__whenjump = -2000000000000d;
-
-			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
-
 			if (result.Hit) {
-				PlayerAnim_ForceAttackGround(ref result);
+				if (result.HitEntity is DoubleHitEnemy) {
+					playeranim_attackdouble = true;
+					playeranim_miss = false;
+				}
+				else {
+					playeranim_attackground = true;
+					playeranim_miss = false;
+				}
 			}
 			else {
-				PlayAnim_ForceMiss();
+				playeranim_attackground = false;
+				playeranim_miss = true;
 			}
+			playeranim_perfect |= result.IsPerfect;
+			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+
 		}
 		/// <summary>
 		/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.

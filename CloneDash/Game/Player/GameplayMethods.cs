@@ -64,9 +64,6 @@ namespace CloneDash.Game
                 if(hitSomething)
                     Stats.Hits++;
 
-				if(IsVisuallySustaining())
-					lastHologramHitTime = Conductor.Time;
-
 				ExitHitState();
 
                 //if (Debug)

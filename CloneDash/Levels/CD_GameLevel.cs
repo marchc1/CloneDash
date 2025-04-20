@@ -306,78 +306,47 @@ namespace CloneDash.Game
 			throw new Exception("Can't do anything here");
 		}
 
-		private double lastHologramHitTime = -10000;
-		private int lastSustainTick = 0;
-		public ModelEntity GetAnimatablePlayer() {
-			if (IsVisuallySustaining()) {
-				return HologramPlayer;
-			}
-
-			return Player;
+		public void PlayerAnim_EnqueueRun(ModelEntity model) {
+			model.Model.SetToSetupPose();
+			model.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 		}
 
-		public void PlayerAnim_EnqueueRun() {
-			if (lastSustainTick == Ticks) return;
-			Player.Model.SetToSetupPose();
-			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+		public void PlayerAnim_ForceJump(ModelEntity model) {
+			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
+			PlayerAnim_EnqueueRun(model);
+		}
+		public void PlayerAnim_ForceMiss(ModelEntity model) {
+			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
+			PlayerAnim_EnqueueRun(model);
+		}
+		public void PlayerAnim_ForceAttackAir(ModelEntity model, bool perfect) {
+			if (perfect)
+				model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
+			else
+				model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
+		}
+		public void PlayerAnim_ForceAttackGround(ModelEntity model, bool perfect) {
+			if (perfect)
+				model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
+			else
+				model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
 		}
 
-		public void PlayerAnim_ForceJump() {
-			if (lastSustainTick == Ticks) return;
-			var ply = GetAnimatablePlayer();
-
-			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
-			PlayerAnim_EnqueueRun();
-		}
-
-		public void PlayAnim_ForceMiss() {
-			if (lastSustainTick == Ticks) return;
-			var ply = GetAnimatablePlayer();
-
-			ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
-			PlayerAnim_EnqueueRun();
-		}
-		public void PlayerAnim_ForceAttackAir(ref PollResult result) {
-			if (lastSustainTick == Ticks) return;
-			var ply = GetAnimatablePlayer();
-			if (result.HitEntity is DoubleHitEnemy dhe) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
-			}
-			else if (result.IsPerfect) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
-			}
-			else if (result.IsAtLeastGreat) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
-			}
-			PlayerAnim_EnqueueRun();
-		}
-		public void PlayerAnim_ForceAttackGround(ref PollResult result) {
-			if (lastSustainTick == Ticks) return;
-			var ply = GetAnimatablePlayer();
-
-			if (result.HitEntity is DoubleHitEnemy dhe) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
-			}
-			else if (result.IsPerfect) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
-			}
-			else if (result.IsAtLeastGreat) {
-				ply.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
-			}
-			PlayerAnim_EnqueueRun();
+		public void PlayerAnim_ForceAttackDouble(ModelEntity model) {
+			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
 		}
 
 		public void PlayerAnim_EnterSustain() {
-			lastSustainTick = Ticks;
 			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), true);
 		}
 		public void PlayerAnim_ExitSustain() {
-			lastSustainTick = 0;
-			Player.Animations.StopAnimation(0);
+			Player.Animations.ClearAnimation(0);
 			if (InAir) {
 				Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPressEnd), false);
 			}
-			PlayerAnim_EnqueueRun();
+			// We'll also kill the hologram player here
+			HologramPlayer.Animations.StopAnimation(0);
+			PlayerAnim_EnqueueRun(Player);
 		}
 
 
@@ -636,6 +605,11 @@ namespace CloneDash.Game
 			//foreach (var e in Events)
 			//e.TryCall();
 
+			// Resets the player animation state controller.
+			// Does not reset any actively playing animations, just the internal state machines
+			// used to determine when animations are triggered and on what.
+			resetPlayerAnimState();
+
 			// Start input processing.
 			// Bottom is executed first, so if two pathway attacks happen on the same frame, it can exit the jump state
 			// before jumping again, allowing the attack to work as expected
@@ -708,7 +682,11 @@ namespace CloneDash.Game
 		public override void Think(FrameState frameState) {
 
 		}
-
+		public override void PostThink(FrameState frameState) {
+			// Perform player animation. Things in HitLogic will trigger certain flags, which will result in 
+			// specific animations being played
+			determinePlayerAnimationState();
+		}
 		/// <summary>
 		/// Gets the games <see cref="Pathway"/> from a <see cref="PathwaySide"/><br></br>
 		/// Note: If strict is off (default), it will return the bottom pathway if PathwaySide.Middle is passed, otherwise it will throw an exception.

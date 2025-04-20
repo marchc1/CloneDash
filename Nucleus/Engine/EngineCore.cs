@@ -515,8 +515,19 @@ namespace Nucleus
 			}
 
 			ExceptionDispatchInfo? edi = null;
+			Started = true;
+			if (Debugger.IsAttached) {
+				// Skip panic routine.
+				Logs.Info("PANIC: Disabled due to the presence of a debugger.");
+				LoadingScreen?.Initialize([]);
+				while (Running) {
+					shouldThrow = false;
+					Frame();
+				}
+				Logs.Info("Nucleus Engine has halted peacefully.");
+			}
 			try {
-				Started = true;
+				Logs.Info("PANIC: Active.");
 				LoadingScreen?.Initialize([]);
 				while (Running) {
 					shouldThrow = false;

@@ -1000,6 +1000,12 @@ public class AnimationHandler
 		Channels[channel].Time = 0;
 	}
 
+	public void ClearAnimation(int channel) {
+		Channels[channel].QueuedEntries.Clear();
+		Channels[channel].CurrentEntry = null;
+		Channels[channel].Time = 0;
+	}
+
 	public void Apply(ModelInstance model) {
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry == null) continue;
