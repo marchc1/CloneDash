@@ -567,8 +567,10 @@ namespace Nucleus
 			throw new Exception("panic concommand called");
 		}, "Crashes the engine.");
 
-		private const string PANIC_FONT = "Noto Sans Mono";
-		private const float PANIC_SIZE = 16;
+		private const string PANIC_FONT = "Noto Sans";
+		private const string PANIC_FONT_CONSOLE = "Noto Sans Mono";
+		private const float PANIC_SIZE = 18;
+		private const float PANIC_SIZE_CONSOLE = 16;
 		private static void renderLine(ref int textY) => renderLine(null, ref textY);
 		private static void renderLine(string? line, ref int textY) {
 			if (line == null) {
@@ -576,11 +578,11 @@ namespace Nucleus
 				return;
 			}
 			Graphics2D.SetDrawColor(0, 0, 0, 220);
-			var textSize = Graphics2D.GetTextSize(line, PANIC_FONT, PANIC_SIZE);
-			Graphics2D.DrawRectangle(0, textY * PANIC_SIZE, textSize.W + 8, PANIC_SIZE);
+			var textSize = Graphics2D.GetTextSize(line, PANIC_FONT_CONSOLE, PANIC_SIZE_CONSOLE);
+			Graphics2D.DrawRectangle(0, textY * PANIC_SIZE_CONSOLE, textSize.W + 8, PANIC_SIZE_CONSOLE);
 
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(new(4, textY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE);
+			Graphics2D.DrawText(new(4, textY * PANIC_SIZE_CONSOLE), line, PANIC_FONT_CONSOLE, PANIC_SIZE_CONSOLE);
 
 			textY++;
 		}
