@@ -1,6 +1,7 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
+using System.Collections.Generic;
 
 namespace Nucleus.UI.Elements
 {
@@ -10,6 +11,7 @@ namespace Nucleus.UI.Elements
 	}
 	record MenuButton(string text, string? icon = null, Action? invoke = null) : IMenuItem;
 	record MenuSubmenu(string text, string? icon = null, Func<Menu, bool>? invoke = null) : IMenuItem;
+	record MenuSeparator() : IMenuItem;
 	public class Menu : Panel
 	{
 		private List<IMenuItem> items = [];
@@ -18,6 +20,9 @@ namespace Nucleus.UI.Elements
 		}
 		public void AddButton(string text, string? icon = null, Action? invoke = null) {
 			items.Add(new MenuButton(text, icon, invoke));
+		}
+		public void AddSeparator() {
+			items.Add(new MenuSeparator());
 		}
 		public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
 			this.Position = pos;
@@ -33,8 +38,20 @@ namespace Nucleus.UI.Elements
 			Menu? activeSubmenu = null;
 			Element? lastHoveredPiece = null;
 
+			var first = items.FirstOrDefault();
+			var last = items.LastOrDefault();
+
 			foreach (var item in items) {
 				switch (item) {
+					case MenuSeparator sep:
+						if (item == first || item == last)
+							continue;
+
+						var s = this.Add<Panel>();
+						s.Dock = Dock.Top;
+						s.Size = new Types.Vector2F(0, 5);
+						s.PaintOverride += S_PaintOverride;
+						break;
 					case MenuButton btn: {
 							var b = this.Add<Button>();
 							b.Dock = Dock.Top;
@@ -161,6 +178,12 @@ namespace Nucleus.UI.Elements
 				this.MakePopup();
 
 			UI.OnElementClicked += UI_OnElementClicked;
+		}
+
+		private void S_PaintOverride(Element self, float width, float height) {
+			var c = 145;
+			Graphics2D.SetDrawColor(c, c, c);
+			Graphics2D.DrawLine(8, height / 2, (width) - (8 * 2), height / 2);
 		}
 
 		private void UI_OnElementClicked(Element el, FrameState fs, Types.MouseButton mb) {

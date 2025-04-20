@@ -550,7 +550,11 @@ namespace Nucleus.ModelEditor
 
 			file.AddButton("Save...", null, File_Save);
 			file.AddButton("Save as...", null, File_SaveAs);
+			file.AddSeparator();
 			file.AddButton("Export...", null, File_Export);
+			file.AddSeparator();
+			file.AddButton("Add a Model", null, File_Export);
+
 
 			var tests = menubar.AddButton("Tests");
 			tests.AddButton("Runtime Test", null, () => {
