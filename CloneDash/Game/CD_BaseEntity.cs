@@ -406,6 +406,7 @@ namespace CloneDash.Game
 
 
 		public void Reset() {
+			Hits = 0;
 			DidDamagePlayer = false;
 			DidRewardPlayer = false;
 			DidPunishPlayer = false;

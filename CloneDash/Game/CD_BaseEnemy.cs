@@ -8,7 +8,7 @@ namespace CloneDash.Game
             { EntityType.Double, typeof(DoubleHitEnemy) },
             // { EntityType.Score, typeof(Score) },
             { EntityType.Hammer, typeof(Hammer) },
-            // { EntityType.Masher, typeof(Masher) },
+            { EntityType.Masher, typeof(Masher) },
             { EntityType.Gear, typeof(Gear) },
             // { EntityType.Ghost, typeof(Ghost) },
             { EntityType.Raider, typeof(Raider) },

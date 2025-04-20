@@ -20,6 +20,7 @@ using CloneDash.Modding.Settings;
 using System.Diagnostics;
 using Nucleus.ManagedMemory;
 using static CloneDash.MuseDashCompatibility;
+using CloneDash.Animation;
 
 namespace CloneDash.Game
 {
@@ -135,20 +136,38 @@ namespace CloneDash.Game
 
 		public bool InMashState { get; private set; }
 		public CD_BaseMEntity? MashingEntity;
+		private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
+		private TextEffect mashTextEffect;
 
 		/// <summary>
 		/// Enters the mash state, which causes all attacks to be redirected into this entity.
 		/// </summary>
 		/// <param name="ent"></param>
 		public void EnterMashState(CD_BaseMEntity ent) {
+			if (IValidatable.IsValid(mashTextEffect))
+				mashTextEffect.Remove();
+
+			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
+			mashTextEffect.SuppressAutoDeath = true;
+			UpdateMashTextEffect();
+
 			InMashState = true;
 			MashingEntity = ent;
 		}
+		public void UpdateMashTextEffect() {
+			if (!IValidatable.IsValid(mashTextEffect)) return;
+			if (!IValidatable.IsValid(MashingEntity)) return;
 
+			mashTextEffect.Position = GetPathway(PathwaySide.Top).Position;
+			mashTextEffect.Text = $"HITS: {MashingEntity.Hits}";
+		}
 		/// <summary>
 		/// Exits the mash state.
 		/// </summary>
 		public void ExitMashState() {
+			if (IValidatable.IsValid(mashTextEffect))
+				mashTextEffect.Remove();
+
 			InMashState = false;
 			MashingEntity = null;
 		}
@@ -511,6 +530,9 @@ namespace CloneDash.Game
 
 			InputState = inputState;
 
+			if (InMashState)
+				UpdateMashTextEffect();
+
 			if (inputState.PauseButton) {
 				if (Music.Paused) {
 					startUnpause();
@@ -834,11 +856,11 @@ namespace CloneDash.Game
 		/// <param name="text">The text</param>
 		/// <param name="position">Where it spawns (it will rise upwards after being spawned)</param>
 		/// <param name="color">The color of the text</param>
-		public void SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
+		public TextEffect SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
 			if (color == null)
 				color = new Color(255, 255, 255, 255);
 
-			Add(new TextEffect(text, position, transitionOut, color.Value));
+			return Add(new TextEffect(text, position, transitionOut, color.Value));
 		}
 
 		public List<CD_BaseEvent> Events = [];
@@ -935,11 +957,11 @@ namespace CloneDash.Game
 			Boss.Position = new(0, GetPlayerY(0));
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
-			cam.Zoom = frameState.WindowHeight / 900;
+			cam.Zoom = (frameState.WindowHeight / 900) + (MashZoomSOS.Update(InMashState ? 1 : 0) / 5f);
 			//cam.Zoom = 1.0f + ((MathF.Sin(RealtimeF * 2) + 1) / 2);
 			cam.Rotation = 0.0f;
 			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-			cam.Target = new(frameState.WindowWidth / 4, 0);
+			cam.Target = new(frameState.WindowWidth / -2, 0);
 			cam.Offset += cam.Target;
 
 			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);

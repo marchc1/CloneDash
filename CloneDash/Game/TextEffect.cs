@@ -50,6 +50,7 @@ namespace CloneDash.Game
             var size = 1f - (float)Ease.InExpo(Remap(lifetime, 0, ageToDie, 0, 1));
 
             Rlgl.PushMatrix();
+            Rlgl.Translatef(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
             Rlgl.Translatef(Position.X - (pos0to1_two * (frameState.WindowWidth * 0.15f)), Position.Y - pos, 0);
             Rlgl.Scalef(size, size, size);
             Graphics2D.SetDrawColor(Color, (int)(Color.A * Raymath.Remap((float)lifetime, 0, ageToDie, 1, 0)));
