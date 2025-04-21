@@ -242,6 +242,7 @@ public class DopesheetView : BaseTimelineView
 		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		ModelEditor.Active.UnselectAllKeyframes();
 	}
+
 	private void KeyframeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		processScroll(delta);
 	}
