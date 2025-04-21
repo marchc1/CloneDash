@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CloneDash.Game;
 
-public class ProfilerResult {
+public class ProfilerResult : IDisposable {
 	public string Identifier = "???";
 	public Stopwatch Timer = new();
 	public ProfilerResult? Parent;
@@ -23,10 +23,26 @@ public class ProfilerResult {
 
 	List<string> WriteToStringArray(List<string> input, int iteration = 0) {
 		input.Add($"{new string(' ', iteration * 4)} > {Identifier}: {Timer.Elapsed.TotalMilliseconds:F4}ms");
+		foreach(var child in Children) {
+			child.WriteToStringArray(input, iteration + 1);
+		}
 		return input;
 	}
 
 	public string[] ToStringArray() => [.. WriteToStringArray([])];
+
+	/// <summary>
+	/// Releases the profiler result.
+	/// </summary>
+	public void End() {
+		Debug.Assert(CD_StaticSequentialProfiler.Profiling);
+		Debug.Assert(CD_StaticSequentialProfiler.CurrentStackFrame == this);
+		CD_StaticSequentialProfiler.EndStackFrame();
+	}
+
+	public void Dispose() {
+		End();
+	}
 }
 
 public static class CD_StaticSequentialProfiler
@@ -49,8 +65,8 @@ public static class CD_StaticSequentialProfiler
 		return r;
 	}
 
-	public static void StartStackFrame(string name) {
-		Debug.Assert(currentStackFrame != null);
+	public static ProfilerResult? StartStackFrame(string name) {
+		if (currentStackFrame == null) return null;
 
 		var stack = new ProfilerResult();
 		stack.Identifier = name;
@@ -59,6 +75,7 @@ public static class CD_StaticSequentialProfiler
 		currentStackFrame.Children.Add(stack);
 
 		currentStackFrame = stack;
+		return stack;
 	}
 
 	public static ProfilerResult EndStackFrame() {

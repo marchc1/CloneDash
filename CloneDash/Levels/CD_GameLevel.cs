@@ -391,86 +391,102 @@ namespace CloneDash.Game
 		ShaderInstance hologramShader;
 
 		public override void Initialize(params object[] args) {
-			var charData = CharacterMod.GetCharacterData();
-			var sceneData = SceneMod.GetSceneData();
-			if (charData == null) throw new ArgumentNullException(nameof(charData));
-			if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
+			using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
+				using (CD_StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
+					var charData = CharacterMod.GetCharacterData();
+					var sceneData = SceneMod.GetSceneData();
+					if (charData == null) throw new ArgumentNullException(nameof(charData));
+					if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
 
-			Character = charData;
-			Scene = sceneData;
-			sceneData.Initialize(this);
-			Interlude.Spin();
+					Character = charData;
+					Scene = sceneData;
+				}
+				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
+					Scene.Initialize(this);
+				}
+				Interlude.Spin();
 
-			MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
+				MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
 
-			Render3D = false;
-			Health = MaxHealth;
+				Render3D = false;
+				Health = MaxHealth;
 
-			// build the input system
-			var inputInterface = typeof(ICloneDashInputSystem);
-			var inputs = AppDomain.CurrentDomain.GetAssemblies()
-				.SelectMany(x => x.GetTypes())
-				.Where(x => inputInterface.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
-				.Select(x => Activator.CreateInstance(x)).ToList();
+				using (CD_StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
+					// build the input system
+					var inputInterface = typeof(ICloneDashInputSystem);
+					var inputs = AppDomain.CurrentDomain.GetAssemblies()
+						.SelectMany(x => x.GetTypes())
+						.Where(x => inputInterface.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
+						.Select(x => Activator.CreateInstance(x)).ToList();
 
-			foreach (object input in inputs)
-				InputReceivers.Add((ICloneDashInputSystem)input);
+					foreach (object input in inputs)
+						InputReceivers.Add((ICloneDashInputSystem)input);
+				}
+				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
+					hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
+					Interlude.Spin();
+					Player = Add(ModelEntity.Create("character", Character.GetPlayModel()));
+					Interlude.Spin();
 
-			hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
-			Interlude.Spin();
-			Player = Add(ModelEntity.Create("character", charData.GetPlayModel()));
-			Interlude.Spin();
-			HologramPlayer = Add(ModelEntity.Create("character", charData.GetPlayModel()));
-			Player.Scale = new(1.25f);
-			HologramPlayer.Scale = Player.Scale;
-			HologramPlayer.Shader = hologramShader;
+					HologramPlayer = Add(ModelEntity.Create("character", Character.GetPlayModel()));
+					Player.Scale = new(1.25f);
 
-			Boss = Add(new Boss(sceneData));
-			Boss.Model.SetToSetupPose();
-			//Player.PlayAnimation(GetCharacterAnimation(CharacterAnimation.Walk), loop: true);
+					HologramPlayer.Scale = Player.Scale;
+					HologramPlayer.Shader = hologramShader;
 
-			Player.Model.SetToSetupPose();
-			Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+					Player.Model.SetToSetupPose();
+					Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+				}
+				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
+					Boss = Add(new Boss(Scene));
+					Boss.Model.SetToSetupPose();
+				}
 
-			Interlude.Spin();
-			HologramPlayer.Visible = false;
-			AutoPlayer = Add<AutoPlayer>();
-			AutoPlayer.Enabled = (bool)args[0];
-			TopPathway = Add<Pathway>(PathwaySide.Top);
-			BottomPathway = Add<Pathway>(PathwaySide.Bottom);
-			Interlude.Spin();
+				Interlude.Spin();
 
-			Conductor = Add<Conductor>();
-			Interlude.Spin();
+				using (CD_StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
+					HologramPlayer.Visible = false;
+					AutoPlayer = Add<AutoPlayer>();
+					AutoPlayer.Enabled = (bool)args[0];
+					TopPathway = Add<Pathway>(PathwaySide.Top);
+					BottomPathway = Add<Pathway>(PathwaySide.Bottom);
+					Interlude.Spin();
 
-			if (!__deferringAsync) {
-				foreach (var ent in Sheet.Entities)
-					LoadEntity(ent);
+					Conductor = Add<Conductor>();
+					Interlude.Spin();
+				}
+				using (CD_StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
+					if (!__deferringAsync) {
+						foreach (var ent in Sheet.Entities)
+							LoadEntity(ent);
 
-				foreach (var ev in Sheet.Events)
-					LoadEvent(ev);
+						foreach (var ev in Sheet.Events)
+							LoadEvent(ev);
+					}
+				}
+				Interlude.Spin();
+
+				//foreach (var tempoChange in Sheet)
+				Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
+				using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
+					Music = Sheet.Song.GetAudioTrack();
+				}
+				Music.Volume = 0.25f;
+				Interlude.Spin();
+
+				Music.Loops = false;
+				Music.Playing = true;
+
+				UIBar = this.UI.Add<CD_Player_UIBar>();
+				UIBar.Level = this;
+				UIBar.Size = new(0, 64);
+
+				Scorebar = this.UI.Add<CD_Player_Scorebar>();
+				Scorebar.Level = this;
+				Scorebar.Size = new(0, 128);
+
+				Scene.PlayBegin();
 			}
-			Interlude.Spin();
-
-			//foreach (var tempoChange in Sheet)
-			Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
-
-			Music = Sheet.Song.GetAudioTrack();
-			Music.Volume = 0.25f;
-			Interlude.Spin();
-
-			Music.Loops = false;
-			Music.Playing = true;
-
-			UIBar = this.UI.Add<CD_Player_UIBar>();
-			UIBar.Level = this;
-			UIBar.Size = new(0, 64);
-
-			Scorebar = this.UI.Add<CD_Player_Scorebar>();
-			Scorebar.Level = this;
-			Scorebar.Size = new(0, 128);
-
-			Scene.PlayBegin();
 
 			if (CD_StaticSequentialProfiler.Profiling) {
 				var results = CD_StaticSequentialProfiler.End();
@@ -560,6 +576,10 @@ namespace CloneDash.Game
 						restart.ImageOrientation = ImageOrientation.Fit;
 						restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
 							Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
+
+							if (clonedash_profilegameload.GetBool())
+								CD_StaticSequentialProfiler.Start();
+
 							EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
 							Interlude.End();
 						};
