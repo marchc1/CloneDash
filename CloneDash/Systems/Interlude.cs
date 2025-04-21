@@ -146,7 +146,8 @@ public static class Interlude
 	/// It is automatically limited to 30 FPS updates; so you can call this repeatedly with minimal performance loss
 	/// </summary>
 	public static void Spin() {
-		if (!inInterlude) return;
+		if (!inInterlude)
+			return;
 
 		var msNow = limiter.Elapsed.TotalSeconds;
 		if (lastFrame < 0 || (msNow - lastFrame) >= (1d / 30d)) {

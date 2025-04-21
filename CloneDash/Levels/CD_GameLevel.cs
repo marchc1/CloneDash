@@ -97,7 +97,6 @@ namespace CloneDash.Game
 			var workingLevel = new CD_GameLevel(sheet);
 			if (workingLevel == null) return workingLevel;
 			EngineCore.LoadLevel(workingLevel, autoplay);
-			MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
 			return workingLevel;
 		}
 
@@ -498,6 +497,8 @@ namespace CloneDash.Game
 					}
 				}, false);
 			}
+
+			MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
 		}
 		public bool Debug { get; set; } = true;
 		public Panel PauseWindow { get; private set; }
