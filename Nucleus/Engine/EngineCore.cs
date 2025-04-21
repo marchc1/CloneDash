@@ -569,9 +569,9 @@ namespace Nucleus
 
 		public static ConCommand interrupt = ConCommand.Register("interrupt", (_, a) => {
 			EngineCore.Interrupt(() => {
-				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.SetDrawColor(255, 0, 0);
 				Graphics2D.DrawRectangle(64, 64, 256, 256);
-			}, (a.GetInt(0) ?? 0) > 0);
+			}, (a.GetInt(0) ?? 0) > 0, "You should see a red square in the top-left!");
 		}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
 
 		private const string PANIC_FONT = "Noto Sans";
@@ -760,12 +760,12 @@ namespace Nucleus
 					else {
 						lines[0] = "A debugging interrupt has occured and the application has temporarily halted.";
 					}
-					lines[1] = "Press any key to continue";
-					lines[2] = "";
-					for (int i = 0; i < messages.Length; i++) lines[i + 3] = messages[i];
+					for (int i = 0; i < messages.Length; i++) lines[i + 1] = messages[i] ?? "<NULL STRING>";
 
+					lines[lines.Length - 2] = "";
+					lines[lines.Length - 1] = "Press any key to continue.";
 
-					var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessageInAutoTranslatedLanguages.Length);
+					var box = new System.Numerics.Vector2(0, PANIC_SIZE * lines.Length);
 					foreach (var languageLine in lines) {
 						var size = Graphics2D.GetTextSize(languageLine, PANIC_FONT, PANIC_SIZE);
 						if (size.X > box.X)
@@ -776,7 +776,7 @@ namespace Nucleus
 					var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), (box.Y / 2) + padding);
 					Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 					var langLineY = 0;
-					foreach (var line in ErrorMessageInAutoTranslatedLanguages) {
+					foreach (var line in lines) {
 						Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE, Anchor.TopCenter);
 
 						langLineY++;
