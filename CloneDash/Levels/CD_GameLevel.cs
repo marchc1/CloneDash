@@ -62,7 +62,7 @@ namespace CloneDash.Game
 				return;
 			}
 
-			ChartSong.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
+			CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
 		});
 
 		public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
@@ -83,6 +83,24 @@ namespace CloneDash.Game
 			Raylib.SetWindowPosition((int)winPos.X, (int)winPos.Y);
 			Raylib.SetWindowSize((int)winSize.X, (int)winSize.Y);
 		});
+
+		public static ConVar clonedash_profilegameload = ConVar.Register("clonedash_profilegameload", "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
+
+		public static CD_GameLevel LoadLevel(ChartSong song, int mapID, bool autoplay) {
+			Interlude.Begin($"Loading '{song.Name}'...");
+			if (clonedash_profilegameload.GetBool()) {
+				Logs.Info("Starting the sequential profiler.");
+				CD_StaticSequentialProfiler.Start();
+			}
+
+			var sheet = song.GetSheet(mapID);
+			var workingLevel = new CD_GameLevel(sheet);
+			if (workingLevel == null) return workingLevel;
+			EngineCore.LoadLevel(workingLevel, autoplay);
+			MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
+			return workingLevel;
+		}
+
 
 		public void SeekTo(double time) {
 			Music.Playhead = (float)time;
@@ -453,6 +471,17 @@ namespace CloneDash.Game
 			Scorebar.Size = new(0, 128);
 
 			Scene.PlayBegin();
+
+			if (CD_StaticSequentialProfiler.Profiling) {
+				var results = CD_StaticSequentialProfiler.End();
+				EngineCore.Interrupt(() => {
+					Graphics2D.SetDrawColor(255, 255, 255);
+					var lines = results.ToStringArray();
+					for (int i = 0; i < lines.Length; i++) {
+						Graphics2D.DrawText(8, 8 + (i * 16), lines[i], "Consolas", 15);
+					}
+				}, false);
+			}
 		}
 		public bool Debug { get; set; } = true;
 		public Panel PauseWindow { get; private set; }

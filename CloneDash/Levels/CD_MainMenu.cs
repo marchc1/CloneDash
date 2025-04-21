@@ -1029,7 +1029,7 @@ public class CD_MainMenu : Level
 	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
 		if (workingLevel != null) return;
 
-		workingLevel = ChartSong.LoadLevel(song, mapID, autoplay);
+		workingLevel = CD_GameLevel.LoadLevel(song, mapID, autoplay);
 	}
 
 	public override void Think(FrameState frameState) {
