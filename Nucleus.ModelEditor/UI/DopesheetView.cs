@@ -231,6 +231,7 @@ public class DopesheetView : BaseTimelineView
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
 		KeyframeInfoPanel.ChildRenderOffset = new(0, -ScrollOffset);
+		ClipChildrenVisibility(KeyframeInfoPanel);
 	}
 	public override void CreateChannels() {
 		KeyframeInfoPanel.ClearChildren();

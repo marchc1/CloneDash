@@ -342,7 +342,10 @@ namespace Nucleus.UI
 		/// Returns all children of this element. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
 		/// </summary>
 		/// <returns></returns>
-		public Element[] GetChildren() => Children.ToArray();
+		public IEnumerable<Element> GetChildren() {
+			foreach (var child in Children)
+				yield return child;
+		}
 
 		public void AddChild(Element p) {
 			if (p.Parent != null) {

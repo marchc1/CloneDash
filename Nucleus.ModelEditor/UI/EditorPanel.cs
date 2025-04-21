@@ -4,6 +4,7 @@ using Nucleus.ModelEditor.UI;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -125,6 +126,21 @@ namespace Nucleus.ModelEditor
 
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
+
+			Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8 + -32 + -8),
+				Size = new(300, 32),
+				Mode = PerfGraphMode.CPU_Frametime
+			});
+			Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8),
+				Size = new(300, 32),
+				Mode = PerfGraphMode.RAM_Usage
+			});
 		}
 
 		private void Active_SelectedChanged1() {

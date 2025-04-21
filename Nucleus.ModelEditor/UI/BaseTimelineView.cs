@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using FftSharp.Windows;
+using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -62,10 +63,23 @@ public abstract class BaseTimelineView : View
 	public NumSlider ZoomSlider;
 
 	public abstract bool LockDragDirection { get; }
+	// TODO (for consideration): Should this just be default Nucleus
+	// functionality?
+	public void ClipChildrenVisibility(Element parentOfALotOfChildren) {
+		var selfH = RenderBounds.H;
+		foreach (var child in parentOfALotOfChildren.GetChildren()) {
+			child.Visible =
+				// Check if it's overflowing the top...
+				child.RenderBounds.Y > (ScrollOffset - child.RenderBounds.H) &&
+				// ... and then the bottom
+				child.RenderBounds.Y < (ScrollOffset + selfH);
+		}
+	}
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
 		KeyframeChannelsPanel.ChildRenderOffset = new(0, -ScrollOffset);
+		ClipChildrenVisibility(KeyframeChannelsPanel);
 	}
 
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
