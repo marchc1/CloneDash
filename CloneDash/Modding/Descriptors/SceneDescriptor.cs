@@ -278,24 +278,24 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 
 	public Sound PunchSound;
 	public void Initialize(Level level) {
-		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin);
-		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever);
-		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause);
-		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo);
+		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin); Interlude.Spin();
+		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever); Interlude.Spin();
+		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause); Interlude.Spin();
+		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo); Interlude.Spin();
 
-		PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch);
+		PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
 
-		Boss.LoadModelData(level);
-		Masher.LoadModelData(level);
+		Boss.LoadModelData(level); Interlude.Spin();
+		Masher.LoadModelData(level); Interlude.Spin();
 
-		BossEnemy1.LoadModelData(level);
-		BossEnemy2.LoadModelData(level);
-		BossEnemy3.LoadModelData(level);
-		SmallEnemy.LoadModelData(level);
-		MediumEnemy1.LoadModelData(level);
-		MediumEnemy2.LoadModelData(level);
-		LargeEnemy1.LoadModelData(level);
-		LargeEnemy2.LoadModelData(level);
+		BossEnemy1.LoadModelData(level); Interlude.Spin();
+		BossEnemy2.LoadModelData(level); Interlude.Spin();
+		BossEnemy3.LoadModelData(level); Interlude.Spin();
+		SmallEnemy.LoadModelData(level); Interlude.Spin();
+		MediumEnemy1.LoadModelData(level); Interlude.Spin();
+		MediumEnemy2.LoadModelData(level); Interlude.Spin();
+		LargeEnemy1.LoadModelData(level); Interlude.Spin();
+		LargeEnemy2.LoadModelData(level); Interlude.Spin();
 	}
 
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
