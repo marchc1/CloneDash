@@ -86,10 +86,8 @@ public class Boss : CD_BaseEnemy
 	}
 
 	public const int ANIMATION_CHANNEL_MAIN = 0;
-	public const int ANIMATION_CHANNEL_TOP = 1;
-	public const int ANIMATION_CHANNEL_BOTTOM = 2;
-	public const int ANIMATION_CHANNEL_MODE2 = 3;
-
+	public const int ANIMATION_CHANNEL_FIRE = 1;
+	public const int ANIMATION_CHANNEL_FIRE2 = 3;
 
 	public void In() {
 		var scene = GetGameLevel().Scene;
@@ -142,6 +140,10 @@ public class Boss : CD_BaseEnemy
 	}
 
 	public override void OnSignalReceived(CD_BaseMEntity from, EntitySignalType signalType, object? data = null) {
+		// If not visible, ignore the signal
+		// Just so things don't get clogged up and a fire animation plays
+		// when nothing is being fired.
+		if (!Visible) return;
 		var scene = GetGameLevel().Scene;
 
 		switch (from) {
@@ -158,7 +160,7 @@ public class Boss : CD_BaseEnemy
 					var pathway = she.Pathway;
 					var attackanims = she.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
 					Animations.SetAnimation(
-						pathway == PathwaySide.Top ? ANIMATION_CHANNEL_TOP : ANIMATION_CHANNEL_BOTTOM,
+						ANIMATION_CHANNEL_FIRE,
 						pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground,
 						false);
 				}

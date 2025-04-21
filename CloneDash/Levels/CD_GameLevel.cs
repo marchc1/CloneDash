@@ -403,7 +403,7 @@ namespace CloneDash.Game
 			Player = Add(ModelEntity.Create("character", charData.GetPlayModel()));
 			Interlude.Spin();
 			HologramPlayer = Add(ModelEntity.Create("character", charData.GetPlayModel()));
-			Player.Scale = new(.6f);
+			Player.Scale = new(1.25f);
 			HologramPlayer.Scale = Player.Scale;
 			HologramPlayer.Shader = hologramShader;
 
@@ -461,7 +461,7 @@ namespace CloneDash.Game
 		public float GetPlayerY(double jumpRatio) {
 			var height = EngineCore.GetWindowHeight();
 
-			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) - (height * -.135f);
+			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) - (height * -.28f);
 		}
 
 		public override void PreThink(ref FrameState frameState) {
@@ -578,12 +578,12 @@ namespace CloneDash.Game
 			}
 
 			Player.Position = new Vector2F(
-				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
+				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 245,
 				yoff ?? GetPlayerY(CharacterYRatio)
 			);
 
 			HologramPlayer.Position = new Vector2F(
-				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 120,
+				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 245,
 				yoff ?? GetPlayerY(HologramCharacterYRatio)
 			);
 
@@ -911,18 +911,17 @@ namespace CloneDash.Game
 			ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 			ent.Build();
 		}
-		public float GlobalScale => 0.6f;
+		public float GlobalScale => 1f;
 		public override void PreRenderBackground(FrameState frameState) {
 			Boss.Scale = new(GlobalScale);
-			Boss.Position = new(0, GetPlayerY(0));
+			Boss.Position = new(0, 450);
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
-			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0);
-			cam.Zoom = (frameState.WindowHeight / 900) + (zoomValue / 5f);
-			//cam.Zoom = 1.0f + ((MathF.Sin(RealtimeF * 2) + 1) / 2);
+			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
+			cam.Zoom = (frameState.WindowHeight / 900 / 2) + (zoomValue / 5f);
 			cam.Rotation = 0.0f;
 			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-			cam.Target = new((frameState.WindowWidth / -2) * zoomValue, 0);
+			cam.Target = new((frameState.WindowWidth / 1) * zoomValue, 0);
 			cam.Offset += cam.Target;
 
 			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);

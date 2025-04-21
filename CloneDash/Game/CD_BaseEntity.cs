@@ -291,9 +291,9 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -gamewidth / 2 && xPosition <= gamewidth / 2;
+			return xPosition >= -gamewidth / 1 && xPosition <= gamewidth / 1;
 		}
-
+		
 		/// <summary>
 		/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 		/// </summary>

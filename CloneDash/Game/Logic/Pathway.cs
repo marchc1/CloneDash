@@ -17,15 +17,15 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Top pathway will be placed at Y coordinate (winH * PATHWAY_TOP_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_TOP_PERCENTAGE => -.153333f;
+		public static float PATHWAY_TOP_PERCENTAGE => -.25f;
 		/// <summary>
 		/// Bottom pathway will be placed at Y coordinate(winH * PATHWAY_BOTTOM_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_BOTTOM_PERCENTAGE => .125f;
+		public static float PATHWAY_BOTTOM_PERCENTAGE => .25f;
 		/// <summary>
 		/// Both pathways will be placed at X coordinate (winH * PATHWAY_LEFT_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_LEFT_PERCENTAGE => -.5f;
+		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
 
 		public static float GetPathwayLeft() => EngineCore.GetWindowHeight() * PATHWAY_LEFT_PERCENTAGE;
 		public static float GetPathwayTop() => EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE;
@@ -99,7 +99,7 @@ namespace CloneDash.Game
         public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
         public Vector2F Position { get; private set; }
         public override void Think(FrameState frameState) {
-            Position = new Vector2F(frameState.WindowHeight * PATHWAY_LEFT_PERCENTAGE, GetPathwayY(Side));
+            Position = new Vector2F(GetPathwayLeft(), GetPathwayY(Side));
         }
         public override void PostRender(FrameState frameState) {
 
@@ -108,7 +108,7 @@ namespace CloneDash.Game
 		public void Render() {
 			var beatInfluence = 1 - Level.As<CD_GameLevel>().Conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
-			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42);
+			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42) * 2;
 			var curtimeOffset = (float)Level.Curtime * 120;
 
 			float divisors = 3;
@@ -117,7 +117,7 @@ namespace CloneDash.Game
 			var alpha = (int)Raymath.Remap(realInfluence, 0, 1, 79, 130);
 
 			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR), alpha);
-			Graphics2D.DrawRing(Position, (32 / 2) - 4, (32 / 2));
+			Graphics2D.DrawRing(Position, ((32 / 2) - 4) * 2, ((32 / 2)) * 2);
 
 			var ringPartSize = 360f / divisors;
 			for (float i = 0; i < 360f; i += ringPartSize) {

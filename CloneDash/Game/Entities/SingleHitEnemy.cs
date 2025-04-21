@@ -60,7 +60,7 @@ namespace CloneDash.Game.Entities
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			Position = new(0, 260);
+			Position = new(0, 450);
 			base.DetermineAnimationPlayback();
 		}
 
@@ -100,6 +100,13 @@ namespace CloneDash.Game.Entities
 
 				_ => throw new Exception("Can't handle that case...")
 			};
+
+			switch (EnterDirection) {
+				case EntityEnterDirection.BottomUp:
+				case EntityEnterDirection.TopDown:
+					showtime += (5 / 30d);
+					break;
+			}
 
 			SceneDescriptor.IContainsGreatPerfect greatPerfect = Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1,
