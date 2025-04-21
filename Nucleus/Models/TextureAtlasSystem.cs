@@ -273,6 +273,12 @@ namespace Nucleus.Models
 			Invalidate();
 			return removed;
 		}
+		public void RemoveTexturesByName(Predicate<string> regionCheck) {
+			var keysToRemove = unpacked.Keys.Where(x => !regionCheck(x));
+			foreach (var key in keysToRemove)
+				unpacked.Remove(key);
+			Invalidate();
+		}
 
 		public bool TryGetTextureRegion(string name, out AtlasRegion region) {
 			Validate();
