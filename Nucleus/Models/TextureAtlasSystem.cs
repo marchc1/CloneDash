@@ -119,8 +119,9 @@ namespace Nucleus.Models
 
 		private ManagedMemory.Texture? packedTex;
 		private Image? packedImg;
-		private Dictionary<string, Image> unpacked = [];
-		private Dictionary<string, AtlasRegion> regions = [];
+		public Dictionary<string, Image> UnpackedImages = [];
+		public Dictionary<string, AtlasRegion> AllRegions = [];
+
 
 		private bool valid = false;
 		private bool locked = false;
@@ -134,16 +135,16 @@ namespace Nucleus.Models
 		public void Validate() {
 			if (valid && packedTex != null) return;
 
-			regions.Clear();
+			AllRegions.Clear();
 			if (packedTex != null)
 				packedTex.Dispose();
 
-			Span<PackingRectangle> rects = stackalloc PackingRectangle[unpacked.Count];
+			Span<PackingRectangle> rects = stackalloc PackingRectangle[UnpackedImages.Count];
 			int i = 0;
-			string[] keys = new string[unpacked.Count];
+			string[] keys = new string[UnpackedImages.Count];
 			int additionalPadding = 4; // added onto drawing position; added * 2 onto pack-size
 
-			foreach (var strTexPair in unpacked) {
+			foreach (var strTexPair in UnpackedImages) {
 				rects[i] = new PackingRectangle(
 					0,
 					0,
@@ -176,7 +177,7 @@ namespace Nucleus.Models
 			for (int j = 0; j < rects.Length; j++) {
 				PackingRectangle rect = rects[j];
 				string key = keys[rect.Id];
-				Image src = unpacked[key];
+				Image src = UnpackedImages[key];
 				Raylib.ImageDraw(ref workingImage, src, 
 					new(0, 0, src.Width, src.Height), 
 					new(rect.X + additionalPadding, rect.Y + additionalPadding, rect.Width - (additionalPadding * 2), rect.Height - (additionalPadding * 2)),
@@ -186,7 +187,7 @@ namespace Nucleus.Models
 					renderTestData(rect, key, src, ref workingImage);
 				}
 
-				regions[key] = new(rect.X, rect.Y, rect.Width, rect.Height);
+				AllRegions[key] = new(rect.X, rect.Y, rect.Width, rect.Height);
 			}
 
 			packedImg = workingImage;
@@ -211,7 +212,7 @@ namespace Nucleus.Models
 				var filePNG = Path.ChangeExtension(filepath, "png");
 				var fileAtlas = Path.ChangeExtension(filepath, "texatlas");
 				Raylib.ExportImage(packedImg.Value, filePNG);
-				File.WriteAllText(fileAtlas, SerializeAtlas(regions));
+				File.WriteAllText(fileAtlas, SerializeAtlas(AllRegions));
 			}
 			else throw new Exception("Validation failed, no packed image to save!");
 		}
@@ -227,8 +228,8 @@ namespace Nucleus.Models
 			var tex = Raylib.LoadTextureFromImage(packedImg.Value);
 			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 			packedTex = new(EngineCore.Level.Textures, tex, true);
-			regions = DeserializeAtlas(File.ReadAllText(fileAtlas));
-			unpacked.Clear();
+			AllRegions = DeserializeAtlas(File.ReadAllText(fileAtlas));
+			UnpackedImages.Clear();
 			valid = true;
 			Lock();
 		}
@@ -239,10 +240,10 @@ namespace Nucleus.Models
 			if (locked)
 				Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
 
-			foreach (var kvp in unpacked)
+			foreach (var kvp in UnpackedImages)
 				Raylib.UnloadImage(kvp.Value);
 
-			unpacked.Clear();
+			UnpackedImages.Clear();
 			Invalidate();
 		}
 
@@ -250,10 +251,10 @@ namespace Nucleus.Models
 			if (locked)
 				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). Textures cannot be added during runtime.");
 
-			if (unpacked.TryGetValue(name, out var packed))
+			if (UnpackedImages.TryGetValue(name, out var packed))
 				Raylib.UnloadImage(packed);
 
-			unpacked[name] = Raylib.LoadImage(filepath);
+			UnpackedImages[name] = Raylib.LoadImage(filepath);
 			Invalidate();
 		}
 
@@ -261,29 +262,29 @@ namespace Nucleus.Models
 			if (locked)
 				throw new InvalidOperationException("The TextureAtlasSystem has been set to read-only (probably because it's in a runtime context). Textures cannot be added during runtime.");
 
-			if (unpacked.TryGetValue(name, out var packed))
+			if (UnpackedImages.TryGetValue(name, out var packed))
 				Raylib.UnloadImage(packed);
 
-			unpacked[name] = cpuImage;
+			UnpackedImages[name] = cpuImage;
 			Invalidate();
 		}
 
 		public bool RemoveTexture(string name) {
-			bool removed = unpacked.Remove(name);
+			bool removed = UnpackedImages.Remove(name);
 			Invalidate();
 			return removed;
 		}
 		public void RemoveTexturesByName(Predicate<string> regionCheck) {
-			var keysToRemove = unpacked.Keys.Where(x => !regionCheck(x));
+			var keysToRemove = UnpackedImages.Keys.Where(x => !regionCheck(x));
 			foreach (var key in keysToRemove)
-				unpacked.Remove(key);
+				UnpackedImages.Remove(key);
 			Invalidate();
 		}
 
 		public bool TryGetTextureRegion(string name, out AtlasRegion region) {
 			Validate();
 
-			if (regions.TryGetValue(name, out region))
+			if (AllRegions.TryGetValue(name, out region))
 				return true;
 
 			region = default;
@@ -303,7 +304,7 @@ namespace Nucleus.Models
 		public bool TryGetTextureUV(string name, out Vector2F uS, out Vector2F vS, out Vector2F uE, out Vector2F vE) {
 			Validate();
 
-			if (regions.TryGetValue(name, out var region)) {
+			if (AllRegions.TryGetValue(name, out var region)) {
 				uS = Vector2F.Zero;
 				vS = Vector2F.Zero;
 				uE = Vector2F.Zero;
@@ -319,7 +320,7 @@ namespace Nucleus.Models
 		}
 
 		public void AddRegion(string name, AtlasRegion newRegion) {
-			regions.Add(name, newRegion);
+			AllRegions.Add(name, newRegion);
 		}
 
 		public void Load(string atlas, byte[] pngData) {
@@ -330,8 +331,8 @@ namespace Nucleus.Models
 			var tex = Raylib.LoadTextureFromImage(packedImg.Value);
 			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 			packedTex = new(EngineCore.Level.Textures, tex, true);
-			regions = DeserializeAtlas(atlas);
-			unpacked.Clear();
+			AllRegions = DeserializeAtlas(atlas);
+			UnpackedImages.Clear();
 			valid = true;
 			Lock();
 		}
@@ -349,7 +350,7 @@ namespace Nucleus.Models
 
 		~TextureAtlasSystem() {
 			MainThread.RunASAP(() => {
-				foreach (var img in unpacked) {
+				foreach (var img in UnpackedImages) {
 					Raylib.UnloadImage(img.Value);
 				}
 			});

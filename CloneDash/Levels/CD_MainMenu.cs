@@ -15,6 +15,7 @@ using CloneDash.Systems.CustomAlbums;
 using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
+using System.Diagnostics;
 
 namespace CloneDash.Game;
 
@@ -489,11 +490,11 @@ public class CD_MainMenu : Level
 		refresh.Size = new(32);
 		refresh.Text = "Refresh Shader";
 
-		
+
 		var renderPanel = window.Add<Panel>();
 		renderPanel.Dock = Dock.Fill;
 		var charData = CharacterMod.GetCharacterData();
-		
+
 
 		var model = level.Models.CreateInstanceFromFile("chars", $"{charData.Filename}/{charData.GetPlayModel()}");
 		var anims = new AnimationHandler(model);
@@ -507,7 +508,7 @@ public class CD_MainMenu : Level
 		renderPanel.PaintOverride += (s, w, h) => {
 			Raylib.BeginMode2D(new() {
 				Zoom = 1f,
-				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w /2, h/2) + new System.Numerics.Vector2(0, 200)
+				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
 
 			anims.AddDeltaTime(EngineCore.Level.CurtimeDelta);
@@ -534,6 +535,55 @@ public class CD_MainMenu : Level
 
 		window.Removed += (s) => {
 			Raylib.UnloadShader(shader);
+		};
+	});
+	public static ConCommand clonedash_scenetest = ConCommand.Register("clonedash_scenetest", (_, _) => {
+		var level = EngineCore.Level;
+		var window = level.UI.Add<Window>();
+		window.Title = "Hologram Test";
+		window.Size = new(600, 600);
+		window.Center();
+
+		var refresh = window.Add<Button>();
+		refresh.Dock = Dock.Bottom;
+		refresh.Size = new(32);
+		refresh.Text = "Refresh";
+
+		var name = window.Add<Textbox>();
+		name.Dock = Dock.Top;
+
+		var renderPanel = window.Add<Panel>();
+		renderPanel.Dock = Dock.Fill;
+		var sceneData = SceneMod.GetSceneData();
+
+		ModelInstance? model = null;
+		AnimationHandler? anims = null;
+
+		renderPanel.PaintOverride += (s, w, h) => {
+			Raylib.BeginMode2D(new() {
+				Zoom = 1f,
+				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
+			});
+
+			if (model != null && anims != null) {
+				anims.AddDeltaTime(EngineCore.Level.CurtimeDelta);
+				anims.Apply(model);
+				model.Render();
+			}
+			Raylib.EndMode2D();
+		};
+
+		refresh.MouseReleaseEvent += (_, _, _) => {
+			try {
+				model = level.Models.CreateInstanceFromFile("scenes", $"{sceneData.Filename}/{name.Text}.nm4rj");
+				anims = new AnimationHandler(model);
+
+				model.SetToSetupPose();
+				anims.SetAnimation(0, "air_hit_great_2", false);
+			}
+			catch(Exception ex) {
+				Debug.Assert(false, ex.Message);
+			}
 		};
 	});
 	public SongSelector Selector;

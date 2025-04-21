@@ -124,5 +124,29 @@ namespace Nucleus.ModelEditor
 			foreach (var bone in GetAllBones()) bone.ResetToSetupPose();
 			foreach (var slot in Slots) slot.ResetToSetupPose();
 		}
+
+		public void RemoveUnusedImages() {
+			HashSet<string> unusedRegions = [];
+			foreach (var region in Images.TextureAtlas.AllRegions) {
+				unusedRegions.Add(region.Key);
+			}
+
+			foreach(var slot in Slots) {
+				foreach(var attachment in slot.Attachments) {
+					switch (attachment) {
+						case EditorRegionAttachment r: unusedRegions.Remove(r.Path); break;
+						case EditorMeshAttachment m: unusedRegions.Remove(m.Path); break;
+					}
+				}
+			}
+
+			foreach (var unusedRegion in unusedRegions) {
+				Images.TextureAtlas.UnpackedImages.Remove(unusedRegion);
+				Images.TextureAtlas.AllRegions.Remove(unusedRegion);
+			}
+
+			Images.TextureAtlas.Invalidate();
+			Images.TextureAtlas.Validate();
+		}
 	}
 }
