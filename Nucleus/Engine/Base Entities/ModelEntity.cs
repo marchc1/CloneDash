@@ -9,12 +9,12 @@ namespace Nucleus.Engine
 
 	public class ModelEntity : Entity
 	{
-		private Dictionary<string, float> shaderlocs_float = [];
+		protected Dictionary<string, float> shaderlocs_float = [];
 		public void SetShaderUniform(string name, float value) {
 			shaderlocs_float[name] = value;
 		}
-		private ModelInstance __model;
-		private AnimationHandler __anim;
+		protected ModelInstance __model;
+		protected AnimationHandler __anim;
 		public ModelInstance Model {
 			get {
 				return __model;
@@ -52,7 +52,7 @@ namespace Nucleus.Engine
 		public IShader? Shader { get; set; }
 
 		public override void Render(FrameState frameState) => Render();
-		public void Render() {
+		public virtual void Render() {
 			if (!Visible) return;
 			if (Model == null) return;
 

@@ -61,6 +61,11 @@ namespace CloneDash.Game
 		public EntityType Type { get; set; } = EntityType.Unknown;
 
 		/// <summary>
+		/// Entity variant (usually not applicable). Mostly for determining models.
+		/// </summary>
+		public EntityVariant Variant { get; set; } = EntityVariant.NotApplicable;
+
+		/// <summary>
 		/// How much damage does the player take if failing to kill/pass this entity.
 		/// </summary>
 		public float DamageTaken { get; set; }
@@ -198,6 +203,42 @@ namespace CloneDash.Game
 
 			//Game.GameplayManager.SpawnTextEffect("PASS", color: new Color(200,200,200,255));
 		}
+
+
+		// need to override rendering so animations use conductor-time-delta
+		// instead of curtime-delta
+		// (and a few other things)
+		public override void Render() {
+			var level = Level.As<CD_GameLevel>();
+			if (!Visible) return;
+			if (Model == null) return;
+
+			if (!level.Paused) __anim.AddDeltaTime(level.Conductor.TimeDelta);
+
+			__anim.Apply(Model);
+
+			var pos = Position; OverrideModelPosition(ref pos);
+			Model.Position = pos;
+
+			Model.Scale = Scale;
+
+			var shader = Shader;
+			var isvalid = IValidatable.IsValid(shader);
+			if (isvalid) {
+				foreach (var fl in shaderlocs_float) shader?.SetUniform(fl.Key, fl.Value);
+				shader?.Activate();
+			}
+
+			Model.Render();
+
+			if (isvalid)
+				shader?.Deactivate();
+		}
+		protected virtual void OverrideModelPosition(ref Vector2F position) { }
+		protected virtual void OnVisible() {
+
+		}
+
 
 		protected virtual void OnReward() {
 			var game = Level.As<CD_GameLevel>();

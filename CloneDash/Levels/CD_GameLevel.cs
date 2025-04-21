@@ -927,14 +927,15 @@ namespace CloneDash.Game
 		/// <param name="ChartEntity"></param>
 		public void LoadEntity(ChartEntity ChartEntity) {
 			Interlude.Spin();
-			if (!CD_BaseEnemy.TypeConvert.ContainsKey(ChartEntity.Type)) {
+
+			if (!CD_BaseEnemy.TryCreateFromType(this, ChartEntity.Type, out CD_BaseEnemy? ent)) {
 				Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
 				return;
 			}
-			var ent = CD_BaseEnemy.CreateFromType(this, ChartEntity.Type);
 
 			ent.Pathway = ChartEntity.Pathway;
 			ent.EnterDirection = ChartEntity.EnterDirection;
+			ent.Variant = ChartEntity.Variant;
 
 			ent.HitTime = ChartEntity.HitTime;
 			ent.ShowTime = ChartEntity.ShowTime;
@@ -950,9 +951,9 @@ namespace CloneDash.Game
 			ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 			ent.Build();
 		}
-
+		public float GlobalScale => 0.6f;
 		public override void PreRenderBackground(FrameState frameState) {
-			Boss.Scale = new(.6f);
+			Boss.Scale = new(GlobalScale);
 			Boss.Position = new(0, GetPlayerY(0));
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {

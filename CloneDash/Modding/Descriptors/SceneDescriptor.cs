@@ -33,6 +33,11 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 			AirModelData = level.Models.LoadModelFromFile("scene", AirModel);
 			GroundModelData = level.Models.LoadModelFromFile("scene", GroundModel);
 		}
+
+		public ModelData GetModelFromPathway(PathwaySide pathway) 
+			=> pathway == PathwaySide.Top ? AirModelData : 
+			pathway == PathwaySide.Bottom ? GroundModelData : 
+			throw new InvalidOperationException("No way to give this entity a model when it doesnt have a pathway.");
 	}
 
 	public class SceneDescriptor_Announcer
@@ -88,14 +93,14 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 #nullable enable
 	}
 	public class SceneDescriptor_DoubleEnemy;
-	public class SceneDescriptor_BossEnemy1;
-	public class SceneDescriptor_BossEnemy2;
-	public class SceneDescriptor_BossEnemy3;
-	public class SceneDescriptor_SmallEnemy;
-	public class SceneDescriptor_MediumEnemy1;
-	public class SceneDescriptor_MediumEnemy2;
-	public class SceneDescriptor_LargeEnemy1;
-	public class SceneDescriptor_LargeEnemy2;
+	public class SceneDescriptor_BossEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_BossEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_BossEnemy3 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_SmallEnemy : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
+	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
 	public class SceneDescriptor_Hammer;
 	public class SceneDescriptor_Raider;
 	public class SceneDescriptor_Ghost;
@@ -161,6 +166,15 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 
 		Boss.LoadModelData(level);
 		Masher.LoadModelData(level);
+
+		BossEnemy1.LoadModelData(level);
+		BossEnemy2.LoadModelData(level);
+		BossEnemy3.LoadModelData(level);
+		SmallEnemy.LoadModelData(level);
+		MediumEnemy1.LoadModelData(level);
+		MediumEnemy2.LoadModelData(level);
+		LargeEnemy1.LoadModelData(level);
+		LargeEnemy2.LoadModelData(level);
 	}
 
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);

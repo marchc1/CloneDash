@@ -5,6 +5,7 @@
         public EntityType Type;
         public PathwaySide Pathway;
         public EntityEnterDirection EnterDirection;
+        public EntityVariant Variant;
 
         public double HitTime;
         public double ShowTime;

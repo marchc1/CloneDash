@@ -216,7 +216,7 @@ namespace CloneDash
 						};
 						if (entityType != EntityType.Unknown) {
 
-							EntityVariant size = ib.code switch {
+							EntityVariant variant = ib.code switch {
 								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
 								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
 								IBMSCode.Medium2Normal or IBMSCode.Medium2Down or IBMSCode.Medium2Up => EntityVariant.Medium2,
@@ -238,6 +238,7 @@ namespace CloneDash
 
 							ChartEntity ent = new ChartEntity();
 							ent.Type = entityType;
+							ent.Variant = variant;
 							ent.Pathway = pathwayType;
 							ent.EnterDirection = dir;
 							ent.HitTime = tick_hit;

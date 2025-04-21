@@ -83,8 +83,10 @@ namespace CloneDash.Game
         public double GetTempoAtTime(double time) => GetTempoChangeAtTime(time).BPM;
 
         public bool firstTick = true;
+		private double lastTime;
         public override void Think(FrameState frameState) {
-            var game = Level.As<CD_GameLevel>();
+			lastTime = Time;
+			var game = Level.As<CD_GameLevel>();
             Level.FrameDebuggingStrings.Add($"Conductor Time: {Time}");
 
             if (firstTick) {
@@ -115,7 +117,10 @@ namespace CloneDash.Game
 
             UIBar.Completion = game.Music.Playhead / game.Music.Length;
             firstTick = false;
+			TimeDelta = Time - lastTime;
         }
+
+		public double TimeDelta { get; private set; }
 
         /// <summary>
         /// Returns how long 1/<paramref name="division"/> of a note takes, in seconds. By default, <paramref name="division"/> is set to 4, which is a quarter note.

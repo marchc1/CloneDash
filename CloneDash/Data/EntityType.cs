@@ -1,28 +1,10 @@
 ﻿namespace CloneDash
 {
 	/// <summary>
-	/// Only applicable to <see cref="EntityType.Single"/>.
+	/// The default entity types.<br></br>
+	/// Custom entities should use the Custom EntityType.
 	/// </summary>
-	public enum EntityVariant {
-		NotApplicable,
-
-		Boss1,
-		Boss2,
-		Boss3,
-
-		Small,
-
-		Medium1,
-		Medium2,
-
-		Large1,
-		Large2
-	}
-    /// <summary>
-    /// The default entity types.<br></br>
-    /// Custom entities should use the Custom EntityType.
-    /// </summary>
-    public enum EntityType
+	public enum EntityType
     {
         /// <summary>
         /// Not set

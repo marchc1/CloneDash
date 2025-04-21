@@ -16,11 +16,8 @@ namespace CloneDash.Game.Entities
 			base.OnReset();
 			postHitPhysics = new(this);
 		}
-
-
 		protected override void OnHit(PathwaySide side) {
             Kill();
-            postHitPhysics.Hit(NMath.Random.Vec2(new(-120, -210), new(-100, -180)), NMath.Random.Single(12.5f, 22.5f));
         }
 
         protected override void OnMiss() {
@@ -51,15 +48,32 @@ namespace CloneDash.Game.Entities
                         break;
                 }
             }
-
-            postHitPhysics.PassthroughPosition(ref pos);
         }
         public override void Initialize() {
             base.Initialize();
         }
 
         public override void Build() {
-            //Texture = RelatedToBoss ? TextureSystem.LoadTexture("boss_projectile.png") : TextureSystem.LoadTexture("fightable_ball.png");
-        }
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
+			Model = (Variant switch {
+				EntityVariant.Boss1 => scene.BossEnemy1.GetModelFromPathway(Pathway),
+				EntityVariant.Boss2 => scene.BossEnemy2.GetModelFromPathway(Pathway),
+				EntityVariant.Boss3 => scene.BossEnemy3.GetModelFromPathway(Pathway),
+
+				EntityVariant.Small => scene.SmallEnemy.GetModelFromPathway(Pathway),
+
+				EntityVariant.Medium1 => scene.MediumEnemy1.GetModelFromPathway(Pathway),
+				EntityVariant.Medium2 => scene.MediumEnemy2.GetModelFromPathway(Pathway),
+
+				EntityVariant.Large1 => scene.LargeEnemy1.GetModelFromPathway(Pathway),
+				EntityVariant.Large2 => scene.LargeEnemy2.GetModelFromPathway(Pathway),
+
+				_ => scene.SmallEnemy.GetModelFromPathway(Pathway) // default to small if broken
+			}).Instantiate();
+			Animations = new(Model);
+			Scale = new(level.GlobalScale);
+
+		}
     }
 }
