@@ -103,10 +103,6 @@ namespace CloneDash.Game
 		public bool ForceDraw { get; protected set; } = false;
 
 		/// <summary>
-		/// Is the entity invisible. The difference between this and Should/ForceDraw is that this just doesnt call the drawing function, but still allows it to pass visibility testing.
-		/// </summary>
-		public bool Invisible { get; set; } = false;
-		/// <summary>
 		/// The interactivity method of this entity. Different methods of the entity will be called based on this value.
 		/// </summary>
 		public EntityInteractivity Interactivity { get; set; } = EntityInteractivity.Noninteractive;
@@ -135,12 +131,15 @@ namespace CloneDash.Game
 		/// How long does this entity need to be hit/sustained, in seconds
 		/// </summary>
 		public double Length { get; set; }
-		/// <summary>
-		/// Unused
-		/// </summary>
-		public double Speed { get; set; }
+		public int Speed { get; set; }
 
 		public bool TellBossWhenSpawned { get; set; } = false;
+
+		public virtual void OnSignalReceived(CD_BaseMEntity from, EntitySignalType signalType, object? data = null) {
+
+		}
+		public void SendSignal(CD_BaseMEntity to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
+		public void BroadcastSignal(EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
 
 		/// <summary>
 		/// Damages the player as a punishment (which also resets their combo)
@@ -203,43 +202,6 @@ namespace CloneDash.Game
 
 			//Game.GameplayManager.SpawnTextEffect("PASS", color: new Color(200,200,200,255));
 		}
-
-
-		// need to override rendering so animations use conductor-time-delta
-		// instead of curtime-delta
-		// (and a few other things)
-		public override void Render() {
-			var level = Level.As<CD_GameLevel>();
-			if (!Visible) return;
-			if (Model == null) return;
-
-			if (!level.Paused) __anim.AddDeltaTime(level.Conductor.TimeDelta);
-
-			__anim.Apply(Model);
-
-			var pos = Position; OverrideModelPosition(ref pos);
-			Model.Position = pos;
-
-			Model.Scale = Scale;
-
-			var shader = Shader;
-			var isvalid = IValidatable.IsValid(shader);
-			if (isvalid) {
-				foreach (var fl in shaderlocs_float) shader?.SetUniform(fl.Key, fl.Value);
-				shader?.Activate();
-			}
-
-			Model.Render();
-
-			if (isvalid)
-				shader?.Deactivate();
-		}
-
-		protected virtual void OverrideModelPosition(ref Vector2F position) { }
-		protected virtual void OnVisible() {
-
-		}
-
 
 		protected virtual void OnReward() {
 			var game = Level.As<CD_GameLevel>();
@@ -388,9 +350,16 @@ namespace CloneDash.Game
 		/// </summary>
 		public static event EntityNoArgumentEvent GlobalOnReleaseEvent;
 
+		public CD_GameLevel GetGameLevel() => Level.As<CD_GameLevel>();
+		public Conductor GetConductor() => Level.As<CD_GameLevel>().Conductor;
+
+
 		public int Hits { get; set; } = 0;
+		public bool WasHitPerfect { get; set; } = false;
+		public double LastHitTime { get; set; }
 		public void Hit(PathwaySide pathway) {
 			Hits++;
+			LastHitTime = GetConductor().Time;
 			OnHit(pathway);
 			OnHitEvent?.Invoke(this, pathway);
 			GlobalOnHitEvent?.Invoke(this);
@@ -452,9 +421,9 @@ namespace CloneDash.Game
 			DidDamagePlayer = false;
 			DidRewardPlayer = false;
 			DidPunishPlayer = false;
+			WasHitPerfect = false;
 			DidPass = false;
 			Dead = false;
-			Invisible = false;
 			Shown = false;
 			OnReset();
 		}

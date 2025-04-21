@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using CloneDash.Game;
+using Newtonsoft.Json;
 
 using Nucleus.Audio;
 using Nucleus.Core;
@@ -29,7 +30,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 		[JsonIgnore] public ModelData AirModelData;
 		[JsonIgnore] public ModelData GroundModelData;
 #nullable enable
-		public void LoadModelData(Level level) {
+		public virtual void LoadModelData(Level level) {
 			AirModelData = level.Models.LoadModelFromFile("scene", AirModel);
 			GroundModelData = level.Models.LoadModelFromFile("scene", GroundModel);
 		}
@@ -69,7 +70,34 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 #nullable enable
 	}
 	public class SceneDescriptor_Sustains;
-	public class SceneDescriptor_Saws;
+
+	public interface IContains3Speeds {
+		public int LowSpeed { get; }
+		public int MediumSpeed { get; }
+		public int HighSpeed { get; }
+	}
+
+	public interface IContainsGreatPerfect {
+		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model);
+		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model);
+	}
+
+	public class SceneDescriptor_ContainsOneModelData_With3Speeds : SceneDescriptor_ContainsOneModelData, IContains3Speeds
+	{
+#nullable disable
+		[JsonProperty("speeds")] public int[] Speeds;
+		public int LowSpeed => Speeds[2];
+		public int MediumSpeed => Speeds[1];
+		public int HighSpeed => Speeds[0];
+#nullable enable
+	}
+
+	public class SceneDescriptor_Saw : SceneDescriptor_ContainsOneModelData_With3Speeds 
+	{
+#nullable disable
+		[JsonProperty("destroy")] public string Destroy;
+#nullable enable
+	}
 	public class SceneDescriptor_MasherEnemy : SceneDescriptor_ContainsOneModelData {
 #nullable disable
 		public class __InAnimations {
@@ -81,7 +109,10 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 			[JsonProperty("format")] public string Format;
 			[JsonProperty("normal")] public int[] NormalSpeeds;
 		}
-		public class __CompleteAnimations {
+		public class __CompleteAnimations : IContainsGreatPerfect
+		{
+			public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
+			public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model) => model.Data.FindAnimation(Perfect);
 			[JsonProperty("great")] public string Great;
 			[JsonProperty("perfect")] public string Perfect;
 		}
@@ -92,18 +123,108 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 		[JsonProperty("complete")] public __CompleteAnimations CompleteAnimations;
 #nullable enable
 	}
-	public class SceneDescriptor_DoubleEnemy;
-	public class SceneDescriptor_BossEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_BossEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_BossEnemy3 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_SmallEnemy : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData;
-	public class SceneDescriptor_Hammer;
-	public class SceneDescriptor_Raider;
-	public class SceneDescriptor_Ghost;
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation : SceneDescriptor_ContainsAirGroundModelData, IContains3Speeds, IContainsGreatPerfect
+	{
+#nullable disable
+		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
+		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model) => model.Data.FindAnimation(Perfect);
+
+		[JsonProperty("speeds")] public int[] Speeds;
+		[JsonProperty("animation")] public string Animation;
+		[JsonProperty("great")] public string Great;
+		[JsonProperty("perfect")] public string Perfect;
+		[JsonIgnore] public int LowSpeed => Speeds[2];
+		[JsonIgnore] public int MediumSpeed => Speeds[1];
+		[JsonIgnore] public int HighSpeed => Speeds[0];
+
+		public string GetAnimationString(int speed, out double showtime) {
+			var speedIndex = speed switch {
+				1 => 2,
+				2 => 1,
+				3 => 0,
+				_ => throw new Exception("Invalid speed")
+			};
+
+			var frameSpeed = Speeds[speedIndex];
+			showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+			return string.Format(Animation, frameSpeed);
+		}
+#nullable enable
+	}
+
+	public class SceneDescriptor_DoubleEnemy : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_BossEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_BossEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_BossEnemy3 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+
+	public class SceneDescriptor_FormatSpeeds : IContains3Speeds
+	{
+#nullable disable
+		[JsonProperty("format")] public string Format;
+		[JsonProperty("speeds")] public int[] Speeds;
+		public int LowSpeed => Speeds[2];
+		public int MediumSpeed => Speeds[1];
+		public int HighSpeed => Speeds[0];
+#nullable enable
+	}
+	public class SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds : SceneDescriptor_ContainsAirGroundModelData, IContainsGreatPerfect {
+#nullable disable
+		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
+		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model) => model.Data.FindAnimation(Perfect);
+
+		[JsonProperty("normal")] public SceneDescriptor_FormatSpeeds Normal;
+		[JsonProperty("up")] public SceneDescriptor_FormatSpeeds Up;
+		[JsonProperty("down")] public SceneDescriptor_FormatSpeeds Down;
+		[JsonProperty("great")] public string Great;
+		[JsonProperty("perfect")] public string Perfect;
+
+		public string GetAnimationString(int speed, EntityEnterDirection direction, out double showtime) {
+			var speedIndex = speed switch {
+				1 => 2,
+				2 => 1,
+				3 => 0,
+				_ => throw new Exception("Invalid speed")
+			};
+
+			var formatSpeeds = direction switch {
+				EntityEnterDirection.RightSide => Normal,
+				EntityEnterDirection.TopDown => Down,
+				EntityEnterDirection.BottomUp => Up,
+				_ => throw new Exception("Invalid speed")
+			};
+
+			var frameSpeed = formatSpeeds.Speeds[speedIndex];
+			showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+			return string.Format(formatSpeeds.Format, frameSpeed);
+		}
+#nullable enable
+	}
+
+	public class SceneDescriptor_SmallEnemy : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
+	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
+	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
+	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation {
+#nullable disable
+		[JsonProperty("upsidedown_airmodel")] public string UpsideDownAirModel;
+		[JsonProperty("upsidedown_groundmodel")] public string UpsideDownGroundModel;
+
+		[JsonIgnore] public ModelData UpsideDownAirModelData;
+		[JsonIgnore] public ModelData UpsideDownGroundModelData;
+
+		public override void LoadModelData(Level level) {
+			base.LoadModelData(level);
+			UpsideDownAirModelData = level.Models.LoadModelFromFile("scene", UpsideDownAirModel);
+			UpsideDownGroundModelData = level.Models.LoadModelFromFile("scene", UpsideDownGroundModel);
+		}
+#nullable enable
+	}
+
+	public class SceneDescriptor_Hammer : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
+	public class SceneDescriptor_Raider : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
+	public class SceneDescriptor_Ghost : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
 	public class SceneDescriptor_Note;
 	public class SceneDescriptor_Heart;
 	public class SceneDescriptor_BossStandby
@@ -117,10 +238,10 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	public class SceneDescriptor_BossAttack {
 #nullable disable
 		[JsonProperty("air")] public string Air;
-		[JsonProperty("road")] public string Road;
+		[JsonProperty("ground")] public string Ground;
 #nullable enable
 
-		public static implicit operator SceneDescriptor_BossAttack(string s) => new() { Air = s, Road = s };
+		public static implicit operator SceneDescriptor_BossAttack(string s) => new() { Air = s, Ground = s };
 	}
 	public class SceneDescriptor_BossAttacks
 	{
@@ -238,7 +359,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	[JsonProperty("boss3")] public SceneDescriptor_BossEnemy3 BossEnemy3;
 
 	[JsonProperty("sustains")] public SceneDescriptor_Sustains Sustains;
-	[JsonProperty("saw")] public SceneDescriptor_Saws Saws;
+	[JsonProperty("saw")] public SceneDescriptor_Saw Saws;
 	[JsonProperty("masher")] public SceneDescriptor_MasherEnemy Masher;
 	[JsonProperty("double")] public SceneDescriptor_DoubleEnemy DoubleEnemy;
 	[JsonProperty("small")] public SceneDescriptor_SmallEnemy SmallEnemy;

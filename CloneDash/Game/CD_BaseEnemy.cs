@@ -1,4 +1,6 @@
 ﻿using CloneDash.Game.Entities;
+using Nucleus;
+using Nucleus.Models.Runtime;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game
@@ -16,7 +18,7 @@ namespace CloneDash.Game
             // { EntityType.Heart, typeof(Health) },
             { EntityType.SustainBeam, typeof(SustainBeam) },
 		};
-        public CD_BaseEnemy(EntityType type) {
+        protected CD_BaseEnemy(EntityType type) {
             Type = type;
         }
 
@@ -32,7 +34,32 @@ namespace CloneDash.Game
 		}
 		public static CD_BaseEnemy CreateFromType(CD_GameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
 		public static CD_BaseEnemy CreateFromType(CD_GameLevel game, Type type) {
-			return game.Add((CD_BaseEnemy)Activator.CreateInstance(type));
+			var enemy = game.Add((CD_BaseEnemy)Activator.CreateInstance(type));
+			return enemy;
+		}
+
+
+		public Nucleus.Models.Runtime.Animation? ApproachAnimation;
+		public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
+		public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
+
+		public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time) * -1);
+
+		public virtual void DetermineAnimationPlayback() {
+			ApproachAnimation?.Apply(Model, AnimationTime);
+		}
+
+		public override void Render() {
+			if (!Visible) return;
+			if (Model == null) return;
+			if (AnimationTime == 0) return;
+
+			DetermineAnimationPlayback();
+
+			Model.Position = Position;
+			Model.Scale = Scale;
+
+			Model.Render();
 		}
 	}
 }

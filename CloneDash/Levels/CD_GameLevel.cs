@@ -27,6 +27,7 @@ namespace CloneDash.Game
 	[Nucleus.MarkForStaticConstruction]
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
+		public const double REFERENCE_FPS = 30;
 		public static ConCommand clonedash_seek = ConCommand.Register("clonedash_seek", (_, args) => {
 			var level = EngineCore.Level.AsNullable<CD_GameLevel>();
 			if (level == null) {
@@ -370,48 +371,6 @@ namespace CloneDash.Game
 		}
 
 		ShaderInstance hologramShader;
-
-		public void BossIn() {
-			Boss.Visible = true;
-			Boss.Animations.SetAnimation(0, Scene.Boss.In, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
-		}
-		public void BossOut() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Out, false);
-		}
-		public void BossSingleHit() {
-
-		}
-		public void BossMasher() { 
-		
-		}
-		public void BossFar1Start() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From0.To1, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby1, true);
-		}
-		public void BossFar1End() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From1.To0, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
-		}
-		public void BossFar1To2() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From1.To2, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby2, true);
-		}
-		public void BossFar2Start() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From0.To2, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby2, true);
-		}
-		public void BossFar2End() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From2.To0, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby0, true);
-		}
-		public void BossFar2To1() {
-			Boss.Animations.SetAnimation(0, Scene.Boss.Transitions.From2.To1, false);
-			Boss.Animations.AddAnimation(0, Scene.Boss.Standby.Standby1, true);
-		}
-		public void BossHide() {
-
-		}
 
 		public override void Initialize(params object[] args) {
 			var charData = CharacterMod.GetCharacterData();
@@ -940,6 +899,7 @@ namespace CloneDash.Game
 			ent.HitTime = ChartEntity.HitTime;
 			ent.ShowTime = ChartEntity.ShowTime;
 			ent.Length = ChartEntity.Length;
+			ent.Speed = ChartEntity.Speed;
 
 			ent.FeverGiven = ChartEntity.Fever;
 			ent.DamageTaken = ChartEntity.Damage;

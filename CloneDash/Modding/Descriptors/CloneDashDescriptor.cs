@@ -17,8 +17,10 @@ namespace CloneDash.Modding.Descriptors
 			Type = type;
 			Version = version;
 		}
+
 		public string? Filename;
 		public string Version;
+
 		public static T ParseFile<T>(string data, string filename) where T : CloneDashDescriptor {
 			var ret = JsonConvert.DeserializeObject<T>(data) ?? throw new Exception("Could not parse the file.");
 			ret.Filename = filename;

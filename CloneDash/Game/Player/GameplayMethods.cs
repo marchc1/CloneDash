@@ -8,67 +8,88 @@ using CloneDash.Game.Entities;
 
 namespace CloneDash.Game
 {
-    public partial class CD_GameLevel : Level
-    {
-        /// <summary>
-        /// Currently visible entities this tick
-        /// </summary>
-        public List<CD_BaseMEntity> VisibleEntities { get; private set; } = [];
+	public enum EntitySignalType
+	{
+		FirstAppearance
+	}
 
-        private double LastAttackTime;
-        private PathwaySide LastAttackPathway;
+	public partial class CD_GameLevel : Level
+	{
+		/// <summary>
+		/// Currently visible entities this tick
+		/// </summary>
+		public List<CD_BaseMEntity> VisibleEntities { get; private set; } = [];
 
-        private void HitLogic(PathwaySide pathway) {
-            int amountOfTimesHit = pathway == PathwaySide.Top ? InputState.TopClicked : InputState.BottomClicked;
-            bool keyHitOnThisSide = amountOfTimesHit > 0;
+		private double LastAttackTime;
+		private PathwaySide LastAttackPathway;
 
-            if (!keyHitOnThisSide)
-                return;
+		public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
+			if (entityFrom is not CD_BaseMEntity mentFrom) return;
 
-            for (int i = 0; i < amountOfTimesHit; i++) {
-                EnterHitState();
+			foreach (var entity in Entities) {
+				if (entity is not CD_BaseMEntity ment) continue;
+				ment.OnSignalReceived(mentFrom, signalType, data);
+			}
+		}
+		public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
+			if (entityFrom is not CD_BaseMEntity mentFrom) return;
 
-                LastAttackTime = Conductor.Time;
-                LastAttackPathway = pathway;
+			if (entityTo is not CD_BaseMEntity ment) return;
+			ment.OnSignalReceived(mentFrom, signalType, data);
+		}
 
-                // Hit testing
-                PollResult? pollResult = null;
-                if (InMashState) {
-                    //if (Debug)
-                        //Console.WriteLine($"mashing entity = {MashingEntity}");
+		private void HitLogic(PathwaySide pathway) {
+			int amountOfTimesHit = pathway == PathwaySide.Top ? InputState.TopClicked : InputState.BottomClicked;
+			bool keyHitOnThisSide = amountOfTimesHit > 0;
 
-                    MashingEntity.Hit(pathway);
-                }
-                else {
-                    var poll = Poll(pathway);
-                    pollResult = poll;
+			if (!keyHitOnThisSide)
+				return;
 
-                    if (poll.Hit) {
-                        poll.HitEntity.Hit(pathway);
+			for (int i = 0; i < amountOfTimesHit; i++) {
+				EnterHitState();
+
+				LastAttackTime = Conductor.Time;
+				LastAttackPathway = pathway;
+
+				// Hit testing
+				PollResult? pollResult = null;
+				if (InMashState) {
+					//if (Debug)
+					//Console.WriteLine($"mashing entity = {MashingEntity}");
+
+					MashingEntity.Hit(pathway);
+				}
+				else {
+					var poll = Poll(pathway);
+					pollResult = poll;
+
+					if (poll.Hit) {
+						poll.HitEntity.WasHitPerfect = poll.IsPerfect;
+						poll.HitEntity.Hit(pathway);
 						Scene.PlayPunch();
 
-                        if (SuppressHitMessages == false) {
-                            Color c = poll.HitEntity.HitColor;
-                            SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
-                        }
-                    }
-                }
+						if (SuppressHitMessages == false) {
+							Color c = poll.HitEntity.HitColor;
+							SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+						}
+					}
+				}
 
-                // Trigger animation events on the player controller
-                var hitSomething = pollResult.HasValue && pollResult.Value.Hit;
-                if (pathway == PathwaySide.Top)
-                    AttackAir(pollResult ?? default);
-                else
-                    AttackGround(pollResult ?? default);
+				// Trigger animation events on the player controller
+				var hitSomething = pollResult.HasValue && pollResult.Value.Hit;
+				if (pathway == PathwaySide.Top)
+					AttackAir(pollResult ?? default);
+				else
+					AttackGround(pollResult ?? default);
 
-                if(hitSomething)
-                    Stats.Hits++;
+				if (hitSomething)
+					Stats.Hits++;
 
 				ExitHitState();
 
-                //if (Debug)
-                    //Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
-            }
-        }
-    }
+				//if (Debug)
+				//Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
+			}
+		}
+	}
 }
