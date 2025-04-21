@@ -52,8 +52,17 @@ namespace CloneDash.Game.Entities
         public override void Initialize() {
             base.Initialize();
         }
+		// TODO: Rework how the base level determines visibility, then remove XPos as a factor at all
+		protected override void OverrideModelPosition(ref Vector2F position) {
+			base.OverrideModelPosition(ref position);
+			position.X = 0;
+			position.Y = 0;
+		}
+		protected override void OnVisible() {
+			base.OnVisible();
+		}
 
-        public override void Build() {
+		public override void Build() {
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 			Model = (Variant switch {
@@ -69,7 +78,7 @@ namespace CloneDash.Game.Entities
 				EntityVariant.Large1 => scene.LargeEnemy1.GetModelFromPathway(Pathway),
 				EntityVariant.Large2 => scene.LargeEnemy2.GetModelFromPathway(Pathway),
 
-				_ => scene.SmallEnemy.GetModelFromPathway(Pathway) // default to small if broken
+				_ => scene.SmallEnemy.GetModelFromPathway(Pathway) // default to small if something broke
 			}).Instantiate();
 			Animations = new(Model);
 			Scale = new(level.GlobalScale);

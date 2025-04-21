@@ -248,6 +248,7 @@ namespace CloneDash
 							ent.Damage = s.noteData.damage;
 							ent.Length = (double)s.configData.length;
 							ent.Score = s.noteData.score;
+							ent.Speed = s.noteData.speed;
 
 							ent.RelatedToBoss = isBoss;
 							ent.DebuggingInfo = $"ib.code: {ib.code}";

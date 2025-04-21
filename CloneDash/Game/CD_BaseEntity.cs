@@ -234,6 +234,7 @@ namespace CloneDash.Game
 			if (isvalid)
 				shader?.Deactivate();
 		}
+
 		protected virtual void OverrideModelPosition(ref Vector2F position) { }
 		protected virtual void OnVisible() {
 

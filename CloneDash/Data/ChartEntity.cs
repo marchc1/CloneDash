@@ -12,6 +12,7 @@
 
         public int Fever;
         public int Score;
+        public int Speed;
         public int Health;
         public int Damage;
         internal double Length;
