@@ -1,6 +1,7 @@
 ﻿using Nucleus;
 using Nucleus.Core;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -10,7 +11,8 @@ namespace Nucleus
 	public enum ConsoleFlags : ulong
 	{
 		None = 0,
-		Saved = 1
+		Saved = 1 << 0,
+		DevelopmentOnly = 1 << 60 
 	}
 	public struct CVValue
 	{
@@ -250,6 +252,8 @@ namespace Nucleus
 			ConsoleFlags flags,
 			string helpString
 		) {
+			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, (_, _) => { }, flags, "");
+
 			if (IsRegistered(name)) {
 				var t = lookup[name];
 				if (t is ConCommand cc)
@@ -371,6 +375,8 @@ namespace Nucleus
 			ChangeCallback? callback = null,
 			bool callback_first = true
 		) {
+			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, defaultValue, flags);
+
 			if (IsRegistered(name)) {
 				var t = lookup[name];
 				if (t is ConVar cv)

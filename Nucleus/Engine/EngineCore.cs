@@ -272,7 +272,7 @@ namespace Nucleus
 			// Japanese (hiragana, katakana)
 			Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
 			Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
-			
+
 			// Some korean
 			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
 
@@ -565,7 +565,14 @@ namespace Nucleus
 				}
 			}
 			throw new Exception("panic concommand called");
-		}, "Crashes the engine.");
+		}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Panic method (NOTE: this *will* crash the engine!).");
+
+		public static ConCommand interrupt = ConCommand.Register("interrupt", (_, a) => {
+			EngineCore.Interrupt(() => {
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawRectangle(64, 64, 256, 256);
+			}, (a.GetInt(0) ?? 0) > 0);
+		}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
 
 		private const string PANIC_FONT = "Noto Sans";
 		private const string PANIC_FONT_CONSOLE = "Noto Sans Mono";
@@ -653,7 +660,7 @@ namespace Nucleus
 
 				if (y < Raylib.GetScreenHeight()) {
 					int elapsedY = (int)((float)elapsed * 1150);
-					Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(120, 120, 120, 170));
+					Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(70, 170));
 					y += elapsedY;
 				}
 				else if (!hasRenderedOverlay) {
@@ -701,6 +708,89 @@ namespace Nucleus
 					if (Raylib.GetKeyPressed() != 0) {
 						Raylib.SetMasterVolume(oldMaster);
 						return false;
+					}
+				}
+
+				Rlgl.DrawRenderBatchActive();
+				Raylib.SwapScreenBuffer();
+				Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
+			}
+		}
+
+		private static bool interrupting = false;
+		public static bool InInterrupt => interrupting;
+		public static void Interrupt(Action draw, bool problematic, params string[] messages) {
+			if (interrupting) return;
+			interrupting = true;
+
+			var oldMaster = Raylib.GetMasterVolume();
+			Raylib.SetMasterVolume(0);
+
+			Raylib.SetWindowMinSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Raylib.SetWindowMaxSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+
+			// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
+			Stopwatch time = new();
+			Graphics2D.ResetDrawingOffset();
+			time.Start();
+			int y = 0;
+			var lastTime = 0d;
+
+			bool hasRenderedOverlay = false;
+
+			while (true) {
+				var now = time.Elapsed.TotalSeconds;
+				double elapsed = now - lastTime;
+				lastTime = now;
+				Rlgl.LoadIdentity();
+
+				if (y < Raylib.GetScreenHeight()) {
+					int elapsedY = (int)((float)elapsed * 1150);
+					Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(90, 100, 120, 170));
+					y += elapsedY;
+				}
+				else if (!hasRenderedOverlay) {
+					Graphics2D.SetDrawColor(255, 255, 255);
+
+					// don't feel like making it static right now
+					var lines = new string[messages.Length + 3];
+					if (problematic) {
+						lines[0] = "An interrupt has occured due to an issue, and the application has temporarily halted.";
+					}
+					else {
+						lines[0] = "A debugging interrupt has occured and the application has temporarily halted.";
+					}
+					lines[1] = "Press any key to continue";
+					lines[2] = "";
+					for (int i = 0; i < messages.Length; i++) lines[i + 3] = messages[i];
+
+
+					var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessageInAutoTranslatedLanguages.Length);
+					foreach (var languageLine in lines) {
+						var size = Graphics2D.GetTextSize(languageLine, PANIC_FONT, PANIC_SIZE);
+						if (size.X > box.X)
+							box.X = size.X;
+					}
+					var padding = 32;
+					var paddingDiv2 = padding / 2;
+					var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), (box.Y / 2) + padding);
+					Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
+					var langLineY = 0;
+					foreach (var line in ErrorMessageInAutoTranslatedLanguages) {
+						Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE, Anchor.TopCenter);
+
+						langLineY++;
+					}
+
+					draw();
+					hasRenderedOverlay = true;
+				}
+				else {
+					Raylib.PollInputEvents();
+					if (Raylib.GetKeyPressed() != 0) {
+						Raylib.SetMasterVolume(oldMaster);
+						interrupting = false;
+						return;
 					}
 				}
 
