@@ -21,6 +21,7 @@ using System.Diagnostics;
 using Nucleus.ManagedMemory;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
+using Nucleus.Rendering;
 
 namespace CloneDash.Game
 {
@@ -998,8 +999,7 @@ namespace CloneDash.Game
 				entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
 				ent.Position = p;
 				ent.Render(frameState);
-
-				Graphics2D.DrawCircle(ent.Position, 16);
+				Rlgl.DrawRenderBatchActive();
 			}
 
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);

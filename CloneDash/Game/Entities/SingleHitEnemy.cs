@@ -104,7 +104,7 @@ namespace CloneDash.Game.Entities
 			switch (EnterDirection) {
 				case EntityEnterDirection.BottomUp:
 				case EntityEnterDirection.TopDown:
-					showtime += (5 / 30d);
+					showtime += (6 / 30d); // Hacky solution...
 					break;
 			}
 
