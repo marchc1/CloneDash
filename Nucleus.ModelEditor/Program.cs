@@ -554,6 +554,7 @@ namespace Nucleus.ModelEditor
 			file.AddButton("Export...", null, File_Export);
 			file.AddSeparator();
 			file.AddButton("Add a Model", null, File_AddModel);
+			file.AddButton("Import Model from nm4src...", null, File_ImportModel);
 
 
 			var tests = menubar.AddButton("Tests");
@@ -640,6 +641,47 @@ namespace Nucleus.ModelEditor
 
 		private void File_AddModel() {
 			File.AddModel($"New Model #{File.Models.Count + 1}");
+		}
+		private void File_ImportModel() {
+			string folderPath = createDefaultFolder();
+
+			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
+			if (!result.Cancelled) {
+				// Load the file into a separate object
+				EditorFile temp = new EditorFile();
+				temp.Deserialize(System.IO.File.ReadAllText(result.Result));
+				if (temp.Models.Count == 0) return;
+				else {
+					var importWindow = UI.Add<Window>();
+					importWindow.Title = $"Import from {Path.GetFileName(result)}";
+					importWindow.Size = new(800, 600);
+					importWindow.MakePopup();
+
+					var lbl = importWindow.Add<Label>();
+					lbl.Text = "Which model do you want to import?";
+					lbl.Dock = Dock.Top;
+
+					var lbl2 = importWindow.Add<Label>();
+					lbl2.Text = "Close the window when done. Clicking an item will append it to the file.";
+					lbl2.Dock = Dock.Top;
+
+					var models = importWindow.Add<ListView>();
+					models.Dock = Dock.Fill;
+
+					foreach(var mdl in temp.Models) {
+						var fileItem = models.Add<ListViewItem>();
+						fileItem.Text = mdl.Name ?? "<unnamed model>";
+						fileItem.MouseReleaseEvent += (_, _, _) => {
+							File.AppendModel(mdl);
+							fileItem.Remove();
+							if(mdl.Name == null)
+								AttemptRename(mdl);
+						};
+					}
+				}
+			}
+
+			titleUpdate();
 		}
 
 		private void File_Export() {

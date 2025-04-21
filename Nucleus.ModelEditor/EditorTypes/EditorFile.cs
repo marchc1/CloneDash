@@ -166,6 +166,26 @@ namespace Nucleus.ModelEditor
 			ModelAdded?.Invoke(this, model);
 			return model;
 		}
+
+		public void AppendModel(EditorModel model) {
+			if (Models.Contains(model)) return;
+
+			// Rename the model if it would conflict with another model in the file.
+			if (Models.FirstOrDefault(x => x.Name == model.Name) != null) {
+				for (int i = 2; i < 10000; i++) {
+					var newName = $"{model.Name} ({i})";
+					if (Models.FirstOrDefault(x => x.Name == newName) != null)
+						continue;
+
+					model.Name = newName;
+				}
+			}
+
+			Models.Add(model);
+			ModelAdded?.Invoke(this, model);
+		}
+
+
 		public EditorResult RenameModel(EditorModel model, string newName) {
 			if (Models.FirstOrDefault(x => x.Name == newName) != null)
 				return new($"The file already contains a model named '{newName}'.");
