@@ -582,7 +582,6 @@ namespace CloneDash.Game
 								CD_StaticSequentialProfiler.Start();
 
 							EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
-							Interlude.End();
 						};
 						restart.PaintOverride += Button_PaintOverride;
 
