@@ -219,7 +219,7 @@ namespace CloneDash.Game
 		}
 		public float HologramCharacterYRatio {
 			get {
-				return 1 - ((float)(
+				return ((float)(
 					(__firstJump ? Math.Clamp(NMath.Ease.OutExpo(Hologram_AirTime * 10), 0, 1) : 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1))
 				));
 			}
@@ -258,6 +258,30 @@ namespace CloneDash.Game
 		private double lastHologramHitTime = -20000;
 		private void logTests(string testStr) {
 			//Logs.Debug($"PlayerAnimationState: {testStr}");
+		}
+		private void DrawPlayerState() {
+			string[] lines = [
+				$"__whenjump:                     {__whenjump}",
+				$"__whenHjump:                    {__whenHjump}",
+				$"playeranim_miss:                {playeranim_miss}",
+				$"playeranim_jump:                {playeranim_jump}",
+				$"playeranim_attackair:           {playeranim_attackair}",
+				$"playeranim_attackground:        {playeranim_attackground}",
+				$"playeranim_attackdouble:        {playeranim_attackdouble}",
+				$"playeranim_perfect:             {playeranim_perfect}",
+				$"playeranim_startsustain:        {playeranim_startsustain}",
+				$"playeranim_startsustain_top:    {playeranim_startsustain_top}",
+				$"playeranim_startsustain_bottom: {playeranim_startsustain_bottom}",
+				$"playeranim_insustain:           {playeranim_insustain}",
+				$"playeranim_endsustain:          {playeranim_endsustain}"
+			];
+
+			int y = 0;
+			Graphics2D.SetDrawColor(255, 255, 255);
+			foreach (var line in lines) {
+				Graphics2D.DrawText(8, 8 + y, line, "Consolas", 14);
+				y += 14;
+			}
 		}
 		private void determinePlayerAnimationState() {
 			ModelEntity playerTarget;
@@ -318,14 +342,17 @@ namespace CloneDash.Game
 
 				if (playeranim_attackair || playeranim_attackground) {
 					lastHologramHitTime = Conductor.Time;
+					Logs.Info("Setting last hologram hit time");
 				}
 
 				if (playeranim_attackair) {
 					PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
 					__whenHjump = Conductor.Time;
+					//EngineCore.Interrupt(() => DrawPlayerState(), false);
 				}
 				else if (playeranim_attackground) {
 					PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
+					//EngineCore.Interrupt(() => DrawPlayerState(), false);
 					__whenHjump = -2000000000000d;
 				}
 			}

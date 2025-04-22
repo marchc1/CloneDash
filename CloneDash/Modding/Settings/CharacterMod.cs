@@ -62,7 +62,6 @@ namespace CloneDash.Modding.Settings
 		}
 
 		public static CharacterDescriptor? GetCharacterData() {
-
 			string name = clonedash_character?.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
 				return null;
@@ -74,8 +73,10 @@ namespace CloneDash.Modding.Settings
 				Logs.Warn($"WARNING: The character '{name}' could not be found by the file system!");
 				return null;
 			}
+
 			descriptor.Filename = name;
 			descriptor.MountToFilesystem();
+
 			return descriptor;
 		}
 	}
