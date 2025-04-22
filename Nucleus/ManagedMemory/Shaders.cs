@@ -72,7 +72,7 @@ public class ShaderManagement : IManagedMemory
 
 	public bool IsValid() => !disposedValue;
 
-	protected virtual void Dispose(bool disposing) {
+	protected virtual void Dispose(bool usercall) {
 		if (!disposedValue) {
 			lock (Shaders) {
 				foreach (var m in shaders) {
@@ -87,12 +87,12 @@ public class ShaderManagement : IManagedMemory
 	// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
 	~ShaderManagement() {
 		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: true);
+		Dispose(usercall: false);
 	}
 
 	public void Dispose() {
 		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: true);
+		Dispose(usercall: true);
 		GC.SuppressFinalize(this);
 	}
 

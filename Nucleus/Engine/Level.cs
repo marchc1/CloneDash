@@ -132,6 +132,8 @@ namespace Nucleus.Engine
 		public void Unload() {
 			Textures.Dispose();
 			Sounds.Dispose();
+			Models.Dispose();
+			Shaders.Dispose();
 
 			Entity[] dead = EntityList.ToArray();
 			foreach (Entity ent in dead) {

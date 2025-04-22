@@ -49,5 +49,39 @@ namespace Nucleus
 		public static T Random<T>(this IList<T> list) {
 			return list[System.Random.Shared.Next(0, list.Count)];
 		}
+
+		public static IList<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, T> deserializer) {
+			int size = reader.Read7BitEncodedInt();
+			List<T> array = new(size);
+			for (int i = 0; i < size; i++) {
+				array[i] = deserializer(reader);
+			}
+			return array;
+		}
+
+		public static void WriteList<T>(this BinaryWriter writer, IList<T> items, Action<BinaryWriter, T> serializer) {
+			int c = items.Count;
+			writer.Write7BitEncodedInt(c);
+			for (int i = 0; i < c; i++) {
+				serializer(writer, items[i]);
+			}
+		}
+
+		public static IDictionary<K, V> ReadDictionary<K, V>(this BinaryReader reader, Func<BinaryReader, K> keyDeserializer, Func<BinaryReader, V> valueDeserializer) {
+			int size = reader.Read7BitEncodedInt();
+			Dictionary<K, V> dict = new(size);
+			for (int i = 0; i < size; i++) 
+				dict[keyDeserializer(reader)] = valueDeserializer(reader);
+			return dict;
+		}
+
+		public static void WriteDictionary<K, V>(this BinaryWriter writer, IDictionary<K, V> items, Action<BinaryWriter, K> keySerializer, Action<BinaryWriter, V> valueSerializer) {
+			int c = items.Count;
+			writer.Write7BitEncodedInt(c);
+			foreach(KeyValuePair<K, V> kvp in items) {
+				keySerializer(writer, kvp.Key);
+				valueSerializer(writer, kvp.Value);
+			}
+		}
 	}
 }

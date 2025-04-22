@@ -49,7 +49,7 @@ namespace Nucleus.Models
 	/// <br/>
 	/// Packs a Texture[] list into a single Texture and AtlasRegion[] regions, which then can be accessed by a realtime renderer
 	/// </summary>
-	public class TextureAtlasSystem
+	public class TextureAtlasSystem : IDisposable
 	{
 		public bool Debugging { get; set; }
 		public const string VERSION = "TextureAtlasVersion1";
@@ -125,6 +125,7 @@ namespace Nucleus.Models
 
 		private bool valid = false;
 		private bool locked = false;
+		private bool disposedValue;
 
 		public void Invalidate() => valid = false;
 
@@ -178,8 +179,8 @@ namespace Nucleus.Models
 				PackingRectangle rect = rects[j];
 				string key = keys[rect.Id];
 				Image src = UnpackedImages[key];
-				Raylib.ImageDraw(ref workingImage, src, 
-					new(0, 0, src.Width, src.Height), 
+				Raylib.ImageDraw(ref workingImage, src,
+					new(0, 0, src.Width, src.Height),
 					new(rect.X + additionalPadding, rect.Y + additionalPadding, rect.Width - (additionalPadding * 2), rect.Height - (additionalPadding * 2)),
 					Color.White);
 
@@ -348,12 +349,30 @@ namespace Nucleus.Models
 			}
 		}
 
-		~TextureAtlasSystem() {
-			MainThread.RunASAP(() => {
-				foreach (var img in UnpackedImages) {
-					Raylib.UnloadImage(img.Value);
-				}
+		protected virtual void Dispose(bool usercall) {
+			if (disposedValue) return;
+
+			if (Texture != null)
+				Texture.Dispose();
+
+			MainThread.RunASAP(() => { 
+				ClearTextures();
 			});
+
+			disposedValue = true;
+		}
+
+		// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+		~TextureAtlasSystem()
+		{
+		    // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+		    Dispose(usercall: false);
+		}
+
+		public void Dispose() {
+			// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+			Dispose(usercall: true);
+			GC.SuppressFinalize(this);
 		}
 	}
 }

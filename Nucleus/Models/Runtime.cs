@@ -46,9 +46,8 @@ public interface IModelInstanceObject
 
 public class ModelData : IDisposable
 {
-	public void Dispose() {
-		MainThread.RunASAP(() => { TextureAtlas?.ClearTextures(); });
-	}
+	private bool disposedValue;
+
 	/// <summary>
 	/// Model format (matches the model format that the editor compiled)
 	/// </summary>
@@ -109,6 +108,24 @@ public class ModelData : IDisposable
 
 	public int FindBoneIndex(string slot) => BoneDatas.FirstOrDefaultIndex(x => x.Name == slot);
 	public int FindSlotIndex(string slot) => SlotDatas.FirstOrDefaultIndex(x => x.Name == slot);
+
+	protected virtual void Dispose(bool usercall) {
+		if (disposedValue) return;
+		TextureAtlas?.Dispose();
+		disposedValue = true;
+	}
+
+	// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+	~ModelData() {
+		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+		Dispose(usercall: false);
+	}
+
+	public void Dispose() {
+		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+		Dispose(usercall: true);
+		GC.SuppressFinalize(this);
+	}
 }
 
 public class ModelInstance : IContainsSetupPose
@@ -442,7 +459,7 @@ public class RegionAttachment : Attachment
 		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
 		Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex2f(TL.X, TL.Y);
 
-		Rlgl.TexCoord2f(uEnd, vEnd);   Rlgl.Vertex2f(BR.X, BR.Y);
+		Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex2f(BR.X, BR.Y);
 		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
 		Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex2f(BL.X, BL.Y);
 
@@ -1064,7 +1081,7 @@ public class ModelRefJSON : IModelLoader
 		TypeNameHandling = TypeNameHandling.Auto
 	};
 
-	public ModelData LoadModelFromFile(string pathID, string path){
+	public ModelData LoadModelFromFile(string pathID, string path) {
 		var text = Filesystem.ReadAllText(pathID, path);
 		if (text == null) throw new FileNotFoundException();
 

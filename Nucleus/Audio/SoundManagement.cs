@@ -26,7 +26,7 @@ namespace Nucleus.Audio
 		}
 		public bool IsValid() => !disposedValue;
 
-		protected virtual void Dispose(bool disposing) {
+		protected virtual void Dispose(bool usercall) {
 			if (!disposedValue) {
 				lock (Sounds) {
 					foreach (ISound t in Sounds) {
@@ -38,11 +38,11 @@ namespace Nucleus.Audio
 		}
 
 		~SoundManagement() {
-			Dispose(disposing: true);
+			Dispose(usercall: false);
 		}
 
 		public void Dispose() {
-			Dispose(disposing: true);
+			Dispose(usercall: true);
 			GC.SuppressFinalize(this);
 		}
 

@@ -12,27 +12,27 @@ public class ModelManagement : IManagedMemory
 
 	public bool IsValid() => !disposedValue;
 
-	protected virtual void Dispose(bool disposing) {
-		if (!disposedValue) {
-			lock (ModelDatas) {
-				foreach (var m in ModelDatas) {
-					m.Value.Dispose();
-				}
-				ModelDatas.Clear();
-				disposedValue = true;
+	protected virtual void Dispose(bool usercall) {
+		if (disposedValue) return;
+
+		lock (ModelDatas) {
+			foreach (var m in ModelDatas) {
+				m.Value.Dispose();
 			}
+			ModelDatas.Clear();
 		}
+		disposedValue = true;
 	}
 
 	// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
 	~ModelManagement() {
 		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: true);
+		Dispose(usercall: false);
 	}
 
 	public void Dispose() {
 		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: true);
+		Dispose(usercall: true);
 		GC.SuppressFinalize(this);
 	}
 

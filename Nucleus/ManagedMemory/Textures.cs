@@ -30,30 +30,43 @@ namespace Nucleus.ManagedMemory
 
 		private Image? UnderlyingImage => underlyingImage;
         private Texture2D Underlying => underlying;
-        private bool disposedValue;
+
+        private bool disposed;
         public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
 
-        public bool IsValid() => !disposedValue;
+        public bool IsValid() => !disposed;
+
+		public void GenerateMipmaps() => Raylib.GenTextureMipmaps(ref underlying);
+		public void SetFilter(TextureFilter filter) => Raylib.SetTextureFilter(underlying, filter);
+		public void SetWrap(TextureWrap wrap) => Raylib.SetTextureWrap(underlying, wrap);
 
 		public bool HasCPUImage => UnderlyingImage.HasValue;
 		public Image GetCPUImage() => UnderlyingImage ?? throw new Exception("No CPU image available. The texture creation call must store the image.");
 
-        protected virtual void Dispose(bool disposing) {
-            if (!disposedValue && selfDisposing) {
-                MainThread.RunASAP(() => {
-					Logs.Debug($"auto-disposing tex#{underlying.Id} [{underlying.Width}x{underlying.Height}].");
-                    Raylib.UnloadTexture(underlying);
-					if(UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
-					underlyingImage = null;
-					parent?.EnsureTextureRemoved(this);
-                }, ThreadExecutionTime.AfterFrame);
-                disposedValue = true;
-            }
+		protected virtual void Dispose(bool usercall) {
+			if (disposed) return;
+			if (!selfDisposing) {
+				Logs.Info("Non-self-disposing texture found; ignoring disposal.");
+				disposed = true;
+				return;
+			}
+
+			MainThread.RunASAP(() => {
+				if (UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
+				underlyingImage = null;
+				Raylib.UnloadTexture(Underlying);
+				parent?.EnsureTextureRemoved(this);
+			});
+
+			disposed = true;
         }
-        ~Texture() { if (selfDisposing) Dispose(disposing: false); }
+
+		// .NET runtime disposes the resource
+        ~Texture() { if (selfDisposing) Dispose(usercall: false); }
+
+		// User disposes the resource
         public void Dispose() {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
+            Dispose(usercall: true);
             GC.SuppressFinalize(this);
         }
 
