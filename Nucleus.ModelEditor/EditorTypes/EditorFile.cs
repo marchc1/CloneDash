@@ -75,6 +75,7 @@ namespace Nucleus.ModelEditor
 			PreserveReferencesHandling = PreserveReferencesHandling.Objects,
 			SerializationBinder = new ModelEditorSerializationBinder(),
 			TypeNameHandling = TypeNameHandling.Auto,
+			MaxDepth = 1024
 		};
 
 		public string Serialize() {

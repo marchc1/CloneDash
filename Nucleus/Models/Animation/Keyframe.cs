@@ -88,24 +88,39 @@ public class Keyframe<T> : IKeyframe
 		}
 	}
 
-	private static Vector2F CubicBezier(Vector2F p1, Vector2F c2, Vector2F c3, Vector2F p4, float t) {
-		// Clamp t between 0 and 1
-		t = (float)NMath.Remap(t, p1.X, p4.X, 0, 1);
-
-		// Convert c2 and c3 from relative to absolute positions
-		Vector2F p2 = p1 + new Vector2F(c2.X, c2.Y);
-		Vector2F p3 = p4 + new Vector2F(c3.X, c3.Y);
-
+	private static Vector2F CubicBezier(Vector2F p0, Vector2F p1, Vector2F p2, Vector2F p3, float t) {
 		float u = 1 - t;
-		float tt = t * t;
-		float uu = u * u;
-		float uuu = uu * u;
-		float ttt = tt * t;
+		return u * u * u * p0 +
+			   3 * u * u * t * p1 +
+			   3 * u * t * t * p2 +
+			   t * t * t * p3;
+	}
+	public static float CubicBezierYForX(Vector2F ip1, Vector2F ic2, Vector2F ic3, Vector2F ip4, float targetX, float epsilon = 1e-5f, int maxIterations = 100) {
+		float tLow = 0f;
+		float tHigh = 1f;
+		float tMid = 0f;
 
-		return uuu * p1
-			 + 3 * uu * t * p2
-			 + 3 * u * tt * p3
-			 + ttt * p4;
+		Vector2F p0 = new(0);
+		Vector2F p1 = ic2;
+		Vector2F p2 = ic3;
+		Vector2F p3 = new(1);
+
+		for (int i = 0; i < maxIterations; i++) {
+			tMid = (tLow + tHigh) * 0.5f;
+			Vector2F point = CubicBezier(p0, p1, p2, p3, tMid);
+			float x = point.X;
+
+			if (Math.Abs(x - targetX) < epsilon)
+				return point.Y;
+
+			if (x < targetX)
+				tLow = tMid;
+			else
+				tHigh = tMid;
+		}
+
+		// Final approximation if convergence not perfect
+		return CubicBezier(p0, p1, p2, p3, tMid).Y;
 	}
 	private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
 	private static Vector2F KeyframeToVector2F(KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
@@ -114,15 +129,17 @@ public class Keyframe<T> : IKeyframe
 			case Keyframe<float> kfL:
 				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
 
-				var factor = CubicBezier(
+				var factor = CubicBezierYForX(
 					KeyframeToVector2F(kfL),
 					KeyframeToVector2F(kfL.RightHandle),
 					KeyframeToVector2F(kfR.LeftHandle),
 					KeyframeToVector2F(kfR),
-					(float)time
+					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
 				);
 
-				return (T)(object)factor.Y;
+				factor = NMath.Lerp(factor, kfL.Value, kfR.Value);
+
+				return (T)(object)factor;
 			default: return leftmostOfTime.Value;
 		}
 	}
