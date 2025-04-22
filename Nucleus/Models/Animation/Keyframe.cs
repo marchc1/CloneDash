@@ -1,4 +1,5 @@
 ﻿using Nucleus.Types;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Nucleus.Models;
  
@@ -86,13 +87,14 @@ public class Keyframe<T> : IKeyframe
 			default: return leftmostOfTime.Value;
 		}
 	}
+
 	private static Vector2F CubicBezier(Vector2F p1, Vector2F c2, Vector2F c3, Vector2F p4, float t) {
 		// Clamp t between 0 and 1
-		t = Math.Clamp(t, 0f, 1f);
+		t = (float)NMath.Remap(t, p1.X, p4.X, 0, 1);
 
 		// Convert c2 and c3 from relative to absolute positions
-		Vector2F p2 = p1 + c2;
-		Vector2F p3 = p4 + c3;
+		Vector2F p2 = p1 + new Vector2F(c2.X, c2.Y);
+		Vector2F p3 = p4 + new Vector2F(c3.X, c3.Y);
 
 		float u = 1 - t;
 		float tt = t * t;
@@ -112,18 +114,15 @@ public class Keyframe<T> : IKeyframe
 			case Keyframe<float> kfL:
 				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
 
-
-				float normalizedT = (float)((time - kfL.Time) / (kfR.Time - kfL.Time));
 				var factor = CubicBezier(
 					KeyframeToVector2F(kfL),
 					KeyframeToVector2F(kfL.RightHandle),
 					KeyframeToVector2F(kfR.LeftHandle),
 					KeyframeToVector2F(kfR),
-					normalizedT
-					);
+					(float)time
+				);
 
 				return (T)(object)factor.Y;
-
 			default: return leftmostOfTime.Value;
 		}
 	}

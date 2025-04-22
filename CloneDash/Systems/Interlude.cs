@@ -1,4 +1,5 @@
 ﻿using AssetStudio;
+using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Core;
@@ -141,6 +142,7 @@ public static class Interlude
 		inInterlude = true; Spin();   // render one interlude frame now
 	}
 
+
 	/// <summary>
 	/// Renders the interlude texture, progress, etc, and swaps the frame buffer.
 	/// It is automatically limited to 30 FPS updates; so you can call this repeatedly with minimal performance loss
@@ -148,37 +150,38 @@ public static class Interlude
 	public static void Spin() {
 		if (!inInterlude)
 			return;
+		using (CD_StaticSequentialProfiler.AccumulateTime("Interlude.Spin")) {
+			var msNow = limiter.Elapsed.TotalSeconds;
+			if (lastFrame < 0 || (msNow - lastFrame) >= (1d / 30d)) {
+				lastFrame = msNow;
+				// Render cycle
+				Rlgl.LoadIdentity();
+				Surface.Clear(0);
+				var windowSize = EngineCore.GetWindowSize();
 
-		var msNow = limiter.Elapsed.TotalSeconds;
-		if (lastFrame < 0 || (msNow - lastFrame) >= (1d / 30d)) {
-			lastFrame = msNow;
-			// Render cycle
-			Rlgl.LoadIdentity();
-			Surface.Clear(0);
-			var windowSize = EngineCore.GetWindowSize();
+				Graphics2D.ResetDrawingOffset(); // Interlude directly takes main-thread control, so the level frame state would never clear this like it usually would
+				if (hasTex) {
+					var tex = interludeTexture;
+					// unity moment; need to flip sometimes
+					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Raylib_cs.Color.White);
+				}
 
-			Graphics2D.ResetDrawingOffset(); // Interlude directly takes main-thread control, so the level frame state would never clear this like it usually would
-			if (hasTex) {
-				var tex = interludeTexture;
-				// unity moment; need to flip sometimes
-				Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Raylib_cs.Color.White);
+				var originalBottomSize = 48f;
+				var originalTextSize = 28f;
+				var originalDesignedRes = 900f;
+
+				var bottomSize = windowSize.H / (originalDesignedRes / originalBottomSize);
+				var texSize = windowSize.H / (originalDesignedRes / originalTextSize);
+				Graphics2D.SetDrawColor(0, 0, 0);
+				Graphics2D.DrawRectangle(0, windowSize.H - bottomSize, windowSize.W, bottomSize);
+
+				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+
+				Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
+				Surface.Spin();
 			}
-
-			var originalBottomSize = 48f;
-			var originalTextSize = 28f;
-			var originalDesignedRes = 900f;
-
-			var bottomSize = windowSize.H / (originalDesignedRes / originalBottomSize);
-			var texSize = windowSize.H / (originalDesignedRes / originalTextSize);
-			Graphics2D.SetDrawColor(0, 0, 0);
-			Graphics2D.DrawRectangle(0, windowSize.H - bottomSize, windowSize.W, bottomSize);
-
-			var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
-			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
-
-			Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
-			Surface.Spin();
 		}
 	}
 

@@ -160,6 +160,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	public class SceneDescriptor_FormatSpeeds : IContains3Speeds
 	{
 #nullable disable
+		[JsonProperty("xoffset")] public float XOffset = 0;
 		[JsonProperty("format")] public string Format;
 		[JsonProperty("speeds")] public int[] Speeds;
 		public int LowSpeed => Speeds[2];
@@ -178,7 +179,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 		[JsonProperty("great")] public string Great;
 		[JsonProperty("perfect")] public string Perfect;
 
-		public string GetAnimationString(int speed, EntityEnterDirection direction, out double showtime) {
+		public string GetAnimationString(int speed, EntityEnterDirection direction, out double showtime, out float xoffset) {
 			var speedIndex = speed switch {
 				1 => 2,
 				2 => 1,
@@ -195,6 +196,7 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 
 			var frameSpeed = formatSpeeds.Speeds[speedIndex];
 			showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+			xoffset = formatSpeeds.XOffset;
 			return string.Format(formatSpeeds.Format, frameSpeed);
 		}
 #nullable enable

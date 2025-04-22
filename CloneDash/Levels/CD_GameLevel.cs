@@ -1,14 +1,11 @@
 ﻿using Nucleus.Engine;
 using Nucleus.Core;
 using CloneDash.Game.Input;
-
 using System.Numerics;
 using Nucleus.Types;
 using CloneDash.Game.Entities;
 using Nucleus;
 using Raylib_cs;
-using System.ComponentModel;
-using Nucleus.UI.Elements;
 using Nucleus.UI;
 using MouseButton = Nucleus.Types.MouseButton;
 using CloneDash.Game.Logic;
@@ -21,7 +18,6 @@ using System.Diagnostics;
 using Nucleus.ManagedMemory;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
-using Nucleus.Rendering;
 
 namespace CloneDash.Game
 {
@@ -489,13 +485,20 @@ namespace CloneDash.Game
 			}
 
 			if (CD_StaticSequentialProfiler.Profiling) {
-				var results = CD_StaticSequentialProfiler.End();
+				CD_StaticSequentialProfiler.End(out var stack, out var accumulators);
 				EngineCore.Interrupt(() => {
 					Graphics2D.SetDrawColor(255, 255, 255);
-					var lines = results.ToStringArray();
-					for (int i = 0; i < lines.Length; i++) {
-						Graphics2D.DrawText(8, 8 + (i * 16), lines[i], "Consolas", 15);
-					}
+					var lines = stack.ToStringArray();
+					int y = 0;
+
+					Graphics2D.DrawText(8, 8 + (y++ * 16), "Accumulators:", "Consolas", 15);
+					for (int i = 0; i < accumulators.Count; i++, y++)
+						Graphics2D.DrawText(8, 8 + (y * 16), $"  {accumulators[i].Key}: {accumulators[i].Value.Timer.Elapsed.TotalMilliseconds:F4} ms", "Consolas", 15);
+					y++;
+					Graphics2D.DrawText(8, 8 + (y++ * 16), "Stack:", "Consolas", 15);
+					for (int i = 0; i < lines.Length; i++, y++)
+						Graphics2D.DrawText(8, 8 + (y * 16), $"  {lines[i]}", "Consolas", 15);
+
 				}, false);
 			}
 

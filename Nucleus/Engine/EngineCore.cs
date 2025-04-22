@@ -745,7 +745,7 @@ namespace Nucleus
 				Rlgl.LoadIdentity();
 
 				if (y < Raylib.GetScreenHeight()) {
-					int elapsedY = (int)((float)elapsed * 1150);
+					int elapsedY = (int)((float)elapsed * 5000);
 					Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(90, 100, 120, 170));
 					y += elapsedY;
 				}

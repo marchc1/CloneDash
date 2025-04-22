@@ -44,25 +44,49 @@ public class ProfilerResult : IDisposable {
 		End();
 	}
 }
+public class ProfilerAccumulator : IDisposable {
+	public Stopwatch Timer = new();
+
+	public ProfilerAccumulator() { }
+
+	public void Dispose() {
+		Timer.Stop();
+	}
+}
 
 public static class CD_StaticSequentialProfiler
 {
 	private static ProfilerResult? currentStackFrame;
 	public static ProfilerResult CurrentStackFrame => currentStackFrame ?? throw new Exception("Please start the sequential profiler");
 
+	private static Dictionary<string, ProfilerAccumulator> accumulators = [];
+
 	public static void Start() {
 		Debug.Assert(currentStackFrame == null);
+		accumulators.Clear();
 		currentStackFrame = new();
 		currentStackFrame.Identifier = "Root";
 	}
 
-	public static ProfilerResult End() {
+	public static void End(out ProfilerResult stack, out List<KeyValuePair<string, ProfilerAccumulator>> accumulators) {
 		Debug.Assert(currentStackFrame != null && currentStackFrame.Parent == null);
 
 		currentStackFrame.Stop();
 		var r = currentStackFrame;
 		currentStackFrame = null;
-		return r;
+
+		stack = r;
+		accumulators = CD_StaticSequentialProfiler.accumulators.ToList();
+	}
+
+	public static ProfilerAccumulator AccumulateTime(string key) {
+		if(!accumulators.TryGetValue(key, out var accumulator)) {
+			accumulator = new();
+			accumulators[key] = accumulator;
+		}
+
+		accumulator.Timer.Start();
+		return accumulator;
 	}
 
 	public static ProfilerResult? StartStackFrame(string name) {

@@ -53,6 +53,8 @@ namespace CloneDash.Game.Entities
 			base.Think(frameState);
 		}
 
+		private float xoffset;
+
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
 				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
@@ -60,7 +62,7 @@ namespace CloneDash.Game.Entities
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			Position = new(0, 450);
+			Position = new(xoffset, 450);
 			base.DetermineAnimationPlayback();
 		}
 
@@ -90,23 +92,16 @@ namespace CloneDash.Game.Entities
 				EntityVariant.Boss2 => scene.BossEnemy2.GetAnimationString(Speed, out showtime),
 				EntityVariant.Boss3 => scene.BossEnemy3.GetAnimationString(Speed, out showtime),
 
-				EntityVariant.Small => scene.SmallEnemy.GetAnimationString(Speed, EnterDirection, out showtime),
+				EntityVariant.Small => scene.SmallEnemy.GetAnimationString(Speed, EnterDirection, out showtime, out xoffset),
 
-				EntityVariant.Medium1 => scene.MediumEnemy1.GetAnimationString(Speed, EnterDirection, out showtime),
-				EntityVariant.Medium2 => scene.MediumEnemy2.GetAnimationString(Speed, EnterDirection, out showtime),
+				EntityVariant.Medium1 => scene.MediumEnemy1.GetAnimationString(Speed, EnterDirection, out showtime, out xoffset),
+				EntityVariant.Medium2 => scene.MediumEnemy2.GetAnimationString(Speed, EnterDirection, out showtime, out xoffset),
 
 				EntityVariant.Large1 => scene.LargeEnemy1.GetAnimationString(Speed, out showtime),
 				EntityVariant.Large2 => scene.LargeEnemy2.GetAnimationString(Speed, out showtime),
 
 				_ => throw new Exception("Can't handle that case...")
 			};
-
-			switch (EnterDirection) {
-				case EntityEnterDirection.BottomUp:
-				case EntityEnterDirection.TopDown:
-					showtime += (6 / 30d); // Hacky solution...
-					break;
-			}
 
 			SceneDescriptor.IContainsGreatPerfect greatPerfect = Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1,
