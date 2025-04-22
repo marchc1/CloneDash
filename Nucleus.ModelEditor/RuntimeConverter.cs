@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor;
 
-public class RuntimeConverter : IModelLoader
+public class RuntimeConverter : IModelFormat
 {
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		throw new NotImplementedException("Editor runtime viewer isn't designed to load from a file; use LoadModelFromEditor.");

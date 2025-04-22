@@ -50,7 +50,7 @@ namespace Nucleus
 			return list[System.Random.Shared.Next(0, list.Count)];
 		}
 
-		public static IList<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, T> deserializer) {
+		public static List<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, T> deserializer) {
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
 			for (int i = 0; i < size; i++) {
@@ -67,7 +67,7 @@ namespace Nucleus
 			}
 		}
 
-		public static IDictionary<K, V> ReadDictionary<K, V>(this BinaryReader reader, Func<BinaryReader, K> keyDeserializer, Func<BinaryReader, V> valueDeserializer) {
+		public static Dictionary<K, V> ReadDictionary<K, V>(this BinaryReader reader, Func<BinaryReader, K> keyDeserializer, Func<BinaryReader, V> valueDeserializer) {
 			int size = reader.Read7BitEncodedInt();
 			Dictionary<K, V> dict = new(size);
 			for (int i = 0; i < size; i++) 
@@ -78,10 +78,33 @@ namespace Nucleus
 		public static void WriteDictionary<K, V>(this BinaryWriter writer, IDictionary<K, V> items, Action<BinaryWriter, K> keySerializer, Action<BinaryWriter, V> valueSerializer) {
 			int c = items.Count;
 			writer.Write7BitEncodedInt(c);
-			foreach(KeyValuePair<K, V> kvp in items) {
+			foreach (KeyValuePair<K, V> kvp in items) {
 				keySerializer(writer, kvp.Key);
 				valueSerializer(writer, kvp.Value);
 			}
+		}
+
+		public static string? ReadNullableString(this BinaryReader reader) {
+			if (!reader.ReadBoolean()) return null;
+			return reader.ReadString();
+		}
+
+		public static void WriteNullableString(this BinaryWriter writer, string? str) {
+			if (str == null) {
+				writer.Write(false);
+				return;
+			}
+
+			writer.Write(true);
+			writer.Write(str);
+		}
+
+		public static T ReadIndexThenFetch<T>(this BinaryReader reader, IList<T> array) {
+			return array[reader.ReadInt32()];
+		}
+
+		public static void WriteIndexOf<T>(this BinaryWriter writer, IList<T> array, T item) {
+			writer.Write(array.IndexOf(item));
 		}
 	}
 }

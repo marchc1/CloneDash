@@ -11,7 +11,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Nucleus.Models.Runtime;
 
@@ -1032,14 +1034,85 @@ public class AnimationHandler
 	}
 }
 
-public interface IModelLoader
+public interface IModelFormat
 {
 	ModelData LoadModelFromFile(string pathID, string path);
+	void SaveModelToFile(string absoluteFilePath, ModelData modelData);
+}
+
+// More efficient binary loader.
+public class ModelBinary : IModelFormat
+{
+	private static BoneData readBone(BinaryReader writer) {
+
+	}
+	private static SlotData readSlot(BinaryReader writer) {
+						
+	}					
+	private static Skin readSkin(BinaryReader writer) {
+						
+	}					
+	private static Animation readAnimation(BinaryReader writer) {
+
+	}
+
+	public ModelData LoadModelFromFile(string pathID, string path) {
+		using (Stream? stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
+			if (stream == null) throw new NullReferenceException();
+			using (BinaryReader reader = new BinaryReader(stream)) {
+				ModelData data = new ModelData();
+
+				data.FormatVersion = reader.ReadString();
+				data.Name = reader.ReadNullableString();
+
+				data.BoneDatas = reader.ReadList(readBone);
+				data.SlotDatas= reader.ReadList(readSlot);
+				data.Skins = reader.ReadList(readSkin);
+				data.DefaultSkin = reader.ReadIndexThenFetch(data.Skins);
+				data.Animations = reader.ReadList(readAnimation);
+
+				// Load the texture atlas now
+				data.TextureAtlas = new();
+				data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
+
+				return data;
+			}
+		}
+	}
+
+	private static void writeBone(BinaryWriter writer, BoneData bone) {
+
+	}
+	private static void writeSlot(BinaryWriter writer, SlotData slot) {
+
+	}
+	private static void writeSkin(BinaryWriter writer, Skin skin) {
+
+	}
+	private static void writeAnimation(BinaryWriter writer, Animation anim) {
+
+	}
+
+	public void SaveModelToFile(string absoluteFilePath, ModelData modelData) {
+		using (FileStream stream = File.Open(absoluteFilePath, FileMode.Create, FileAccess.Write))
+		using (BinaryWriter writer = new BinaryWriter(stream)) {
+			writer.Write(modelData.FormatVersion);
+			writer.WriteNullableString(modelData.Name);
+
+			writer.WriteList(modelData.BoneDatas, writeBone);
+			writer.WriteList(modelData.SlotDatas, writeSlot);
+			writer.WriteList(modelData.Skins, writeSkin);
+			writer.WriteIndexOf(modelData.Skins, modelData.DefaultSkin);
+			writer.WriteList(modelData.Animations, writeAnimation);
+		}
+
+		modelData.TextureAtlas.SaveTo(absoluteFilePath);
+	}
 }
 
 // Basic JSON model loader. Uses Newtonsoft's references to deserialize properly.
 // The editor does something similar but with EditorModel instead.
-public class ModelRefJSON : IModelLoader
+public class ModelRefJSON : IModelFormat
 {
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
@@ -1094,6 +1167,7 @@ public class ModelRefJSON : IModelLoader
 		data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
 		return data;
 	}
+
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
