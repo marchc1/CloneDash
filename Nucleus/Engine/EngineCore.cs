@@ -104,6 +104,13 @@ namespace Nucleus
 					Rlgl.DisableWireMode();
 			});
 		});
+		public static ConCommand engine_activetextures = ConCommand.Register(nameof(engine_activetextures), (_, _) => {
+			var texs = new List<string>();
+			foreach(var texIDPair in Raylib.GetLoadedTextures()) {
+				texs.Add($"{texIDPair.Id} [{texIDPair.Width} x {texIDPair.Height} of format {texIDPair.Format}]");
+			}
+			Interrupt(() => { }, false, texs.ToArray());
+		});
 
 		// ------------------------------------------------------------------------------------------ //
 		// Level storing & state
@@ -773,7 +780,7 @@ namespace Nucleus
 					}
 					var padding = 32;
 					var paddingDiv2 = padding / 2;
-					var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), (box.Y / 2) + padding);
+					var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), padding);
 					Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 					var langLineY = 0;
 					foreach (var line in lines) {

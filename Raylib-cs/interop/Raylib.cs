@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Raylib_cs;
 
@@ -1676,8 +1678,15 @@ public static unsafe partial class Raylib
     public static extern Texture2D LoadTexture(sbyte* fileName);
 
     /// <summary>Load texture from image data</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Texture2D LoadTextureFromImage(Image image);
+    [DllImport(NativeLibName, EntryPoint = "LoadTextureFromImage", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Texture2D __LoadTextureFromImage(Image image);
+	private static Dictionary<uint, Texture2D> loadedTextures = new();
+	public static Texture2D LoadTextureFromImage(Image image) {
+		var tex = __LoadTextureFromImage(image);
+		loadedTextures[tex.Id] = tex;
+		return tex;
+	}
+
 
     /// <summary>Load cubemap from image, multiple image cubemap layouts supported</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1692,11 +1701,26 @@ public static unsafe partial class Raylib
     public static extern CBool IsTextureReady(Texture2D texture);
 
     /// <summary>Unload texture from GPU memory (VRAM)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnloadTexture(Texture2D texture);
+    [DllImport(NativeLibName, EntryPoint = "UnloadTexture", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void __UnloadTexture(Texture2D texture);
+	public static void UnloadTexture(Texture2D texture) {
+		__UnloadTexture(texture);
+		loadedTextures.Remove(texture.Id);
+	}
 
-    /// <summary>Check if a render texture is ready</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	public static IEnumerable<uint> GetLoadedTextureIds() {
+		foreach (var kvp in loadedTextures) {
+			yield return kvp.Key;
+		}
+	}
+	public static IEnumerable<Texture2D> GetLoadedTextures() {
+		foreach (var kvp in loadedTextures) {
+			yield return kvp.Value;
+		}
+	}
+	
+	/// <summary>Check if a render texture is ready</summary>
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern CBool IsRenderTextureReady(RenderTexture2D target);
 
     /// <summary>Unload render texture from GPU memory (VRAM)</summary>

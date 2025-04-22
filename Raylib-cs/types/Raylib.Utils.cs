@@ -813,7 +813,9 @@ public static unsafe partial class Raylib
     public static Texture2D LoadTexture(string fileName)
     {
         using var str1 = fileName.ToAnsiBuffer();
-        return LoadTexture(str1.AsPointer());
+        var tex = LoadTexture(str1.AsPointer());
+		loadedTextures[tex.Id] = tex;
+		return tex;
     }
 
     /// <summary>Update GPU texture with new data</summary>
