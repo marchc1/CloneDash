@@ -72,17 +72,12 @@ public class BossHide(CD_GameLevel game) : CD_BaseEvent(game)
 
 public class Boss : CD_BaseEnemy
 {
-	private SceneDescriptor scene;
-	public Boss(SceneDescriptor scene) : base(EntityType.Boss) {
+	public Boss() : base(EntityType.Boss) {
 		Interactivity = EntityInteractivity.Noninteractive;
-		this.scene = scene;
 		Visible = false;
 	}
 	public override void Initialize() {
-		Model = scene.Boss.ModelData.Instantiate();
-		Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
 
-		// Listen for events
 	}
 
 	public const int ANIMATION_CHANNEL_MAIN = 0;
@@ -181,7 +176,13 @@ public class Boss : CD_BaseEnemy
 		Model.Render();
 	}
 
+	public override void Build() {
+		base.Build();
+		Model = GetGameLevel().Scene.Boss.ModelData.Instantiate();
+		Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
 
+		Model.SetToSetupPose();
+	}
 	public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
 		return Visible;
 	}

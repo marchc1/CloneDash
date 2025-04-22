@@ -435,8 +435,7 @@ namespace CloneDash.Game
 					Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 				}
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
-					Boss = Add(new Boss(Scene));
-					Boss.Model.SetToSetupPose();
+					Boss = Add(new Boss());
 				}
 
 				Interlude.Spin();
@@ -460,6 +459,7 @@ namespace CloneDash.Game
 						foreach (var ev in Sheet.Events)
 							LoadEvent(ev);
 					}
+					Boss.Build();
 				}
 				Interlude.Spin();
 

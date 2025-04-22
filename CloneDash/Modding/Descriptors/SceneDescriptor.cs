@@ -7,7 +7,7 @@ using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 namespace CloneDash.Modding.Descriptors;
 
-public class SceneDescriptor : CloneDashDescriptor, IDisposable
+public class SceneDescriptor : CloneDashDescriptor
 {
 #nullable disable
 	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "2") { }
@@ -307,31 +307,6 @@ public class SceneDescriptor : CloneDashDescriptor, IDisposable
 	public void PlayPunch() => PunchSound.Play(.3f);
 
 	public static SceneDescriptor? ParseFile(string filepath) => ParseFile<SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
-
-	private bool disposedValue;
-	protected virtual void Dispose(bool disposing) {
-		if (!disposedValue) {
-			if (disposing) {
-				// TODO: dispose managed state (managed objects)
-			}
-
-			// TODO: free unmanaged resources (unmanaged objects) and override finalizer
-			// TODO: set large fields to null
-			disposedValue = true;
-		}
-	}
-
-	~SceneDescriptor() {
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: false);
-	}
-
-	public void Dispose() {
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		Dispose(disposing: true);
-		GC.SuppressFinalize(this);
-	}
-
 	public static SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<SceneDescriptor>(text, filename) : null;
 
 	internal void MountToFilesystem() {
