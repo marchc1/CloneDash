@@ -1,13 +1,6 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus;
 using Nucleus.Core;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace CloneDash.Modding.Settings
 {
@@ -87,4 +80,3 @@ namespace CloneDash.Modding.Settings
 		}
 	}
 }
-
