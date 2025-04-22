@@ -82,6 +82,7 @@ namespace CloneDash.Game
 		});
 
 		public static ConVar clonedash_profilegameload = ConVar.Register("clonedash_profilegameload", "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
+		public static ConVar clonedash_offset = ConVar.Register("clonedash_offset", "0", ConsoleFlags.Saved, "Seconds-based chart offset", -1, 1);
 
 		public static CD_GameLevel LoadLevel(ChartSong song, int mapID, bool autoplay) {
 			Interlude.Begin($"Loading '{song.Name}'...");
