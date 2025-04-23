@@ -446,6 +446,11 @@ public class RegionAttachment : Attachment
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 
 		var region = Region;
+		if (!region.IsValid()) {
+			Setup(slot.Bone.Model.Data);
+			if (!Region.IsValid()) return;
+			region = Region;
+		}
 
 		var tex = slot.Bone.Model.TextureAtlas.Texture;
 		float width = region.H, height = region.W;
@@ -563,7 +568,11 @@ public class MeshAttachment : Attachment
 		var region = Region;
 
 		Debug.Assert(region.IsValid());
-		if (!region.IsValid()) return;
+		if (!region.IsValid()) {
+			Setup(slot.Bone.Model.Data);
+			if (!Region.IsValid()) return;
+			region = Region;
+		}
 
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 

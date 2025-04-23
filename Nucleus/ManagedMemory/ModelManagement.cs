@@ -45,7 +45,7 @@ public class ModelManagement : IManagedMemory
 			return data;
 		}
 
-		if (Path.GetExtension(path) == null)
+		if (string.IsNullOrEmpty(Path.GetExtension(path)))
 			path = Path.ChangeExtension(path, ".nm4rj"); // Assume ref'd json, but allow binary/etc formats
 		switch (Path.GetExtension(path)) {
 			case ModelRefJSON.FULL_EXTENSION: ModelDatas[savePath] = JSONModelLoader.LoadModelFromFile(pathID, path); break;
