@@ -173,7 +173,7 @@ namespace CloneDash.Systems.CustomAlbums
 			if (!response.IsSuccessStatusCode)
 				return null;
 			else {
-				MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream().ToMemoryStream().ToArray());
+				MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream());
 				return track;
 			}
 		}
@@ -196,7 +196,7 @@ namespace CloneDash.Systems.CustomAlbums
 					if (!response.IsSuccessStatusCode)
 						callback?.Invoke(null);
 					else {
-						MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream().ToMemoryStream().ToArray());
+						MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream());
 
 						callback?.Invoke(track);
 					}

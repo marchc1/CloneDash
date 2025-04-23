@@ -19,8 +19,9 @@ namespace Nucleus.Util
 			return unmanaged;
 		}
 		public static T* CopyManagedArrayToUnmanagedPointer<T>(IList<T> source) where T : unmanaged {
-			T* unmanaged = Raylib.New<T>(source.Count);
-			for (int i = 0; i < source.Count; i++) {
+			var count = source.Count;
+			T* unmanaged = Raylib.New<T>(count);
+			for (int i = 0; i < count; i++) {
 				unmanaged[i] = source[i];
 			}
 			return unmanaged;

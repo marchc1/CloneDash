@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Nucleus.Core;
@@ -141,11 +142,37 @@ namespace Nucleus.Audio
 		public const string MUSIC_HEADER_OGGS_EXTENSION = ".ogg";
 		public const string MUSIC_HEADER_ID3_EXTENSION = ".mp3";
 
-		// Automatically determines the file extension from the bytearray
+		public unsafe MusicTrack LoadMusicFromMemory(Stream stream, bool autoplay = false) {
+			var len = (int)stream.Length;
+			if (len < 4) throw new Exception("Can't even determine the file type... file < 4 bytes!");
+
+			byte* alloc = Raylib.New<byte>(len);
+			Span<byte> spanned = new Span<byte>(alloc, len);
+			stream.Read(spanned);
+
+			Span<byte> byteHeader = stackalloc byte[] { alloc[3], alloc[2], alloc[1], alloc[0] };
+			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
+
+			Music m = Raylib.LoadMusicStreamFromMemory((headerCast[0] switch {
+				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
+				MUSIC_HEADER_OGGS => MUSIC_HEADER_OGGS_EXTENSION,
+				MUSIC_HEADER_ID3 => MUSIC_HEADER_ID3_EXTENSION,
+				_ => MUSIC_HEADER_ID3_EXTENSION,
+			}).ToAnsiBuffer().AsPointer(), alloc, len);
+
+			MusicTrack music = new(this, m, true, alloc);
+
+			if (!autoplay)
+				music.Playing = false;
+
+			Sounds.Add(music);
+			return music;
+		}
+
 		public MusicTrack LoadMusicFromMemory(byte[] bytearray, bool autoplay = false) {
 			if (bytearray.Length < 4) throw new Exception("Can't even determine the file type... file < 4 bytes!");
-
-			Span<byte> byteHeader = [bytearray[3], bytearray[2], bytearray[1], bytearray[0]];
+			
+			Span<byte> byteHeader = stackalloc byte[] { bytearray[3], bytearray[2], bytearray[1], bytearray[0] };
 			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
 			string fileExtension = headerCast[0] switch {
 				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
