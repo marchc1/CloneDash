@@ -1,4 +1,6 @@
 ﻿using AssetStudio;
+using CloneDash.Game;
+using Nucleus;
 using OdinSerializer;
 using System;
 using System.Collections.Generic;
@@ -11,19 +13,22 @@ using System.Threading.Tasks;
 namespace CloneDash
 {
 	public record MuseDashAsset(string nicename, string filename);
-    public static partial class MuseDashCompatibility
-    {
+	public static partial class MuseDashCompatibility
+	{
 		public static Dictionary<string, string> StreamingAssetsSearchable = [];
 		public static Dictionary<string, Dictionary<string, MuseDashAsset>> StreamingAssetsSearchableTypes = [];
-        public static bool Initialized { get; private set; } = false;
+		public static bool Initialized { get; private set; } = false;
 
-        public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
-            if (Initialized)
-                return MDCompatLayerInitResult.OK;
+		public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
+			if (Initialized)
+				return MDCompatLayerInitResult.OK;
 
+			CD_StaticSequentialProfiler.Start();
 
+			MDCompatLayerInitResult result;
+			using (CD_StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
 #if COMPILED_WINDOWS
-			MDCompatLayerInitResult result = INIT_WINDOWS();
+				result = INIT_WINDOWS();
 #elif COMPILED_OSX
             MDCompatLayerInitResult result = INIT_OSX();
 #elif COMPILED_LINUX
@@ -31,9 +36,12 @@ namespace CloneDash
 #else
 			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
+			}
 
-            if (result != MDCompatLayerInitResult.OK)
-                return result;
+			if (result != MDCompatLayerInitResult.OK) {
+				CD_StaticSequentialProfiler.End(out _, out _);
+				return result;
+			}
 
 			// Trying to make searching these files a bit more efficient...
 			// for now, commenting this out. But it may get used later
@@ -56,31 +64,42 @@ namespace CloneDash
 				list.Add(nicename, new(nicename, filename));
 			}*/
 
-            AssetsManager manager = new AssetsManager();
-            manager.LoadFiles(NoteManagerAssetBundle);
+			byte[] serializedBytes;
+			using (CD_StaticSequentialProfiler.StartStackFrame("Load NoteManagerAssetBundle")) {
+				AssetsManager manager = new AssetsManager();
+				manager.LoadFiles(NoteManagerAssetBundle);
 
-			var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
-            var monobehavior_obj = (monobehavior.ToType()["serializationData"] as OrderedDictionary);
-            var serializedList = monobehavior_obj["SerializedBytes"] as List<object>;
-            byte[] serializedBytes = new byte[serializedList.Count];
-            for (int i = 0; i < serializedList.Count; i++) serializedBytes[i] = (byte)serializedList[i];
+				var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
+				var monobehavior_obj = (monobehavior.ToType()["serializationData"] as OrderedDictionary);
+				var serializedList = monobehavior_obj["SerializedBytes"] as List<object>;
+				serializedBytes = new byte[serializedList.Count];
+				for (int i = 0; i < serializedList.Count; i++) serializedBytes[i] = (byte)serializedList[i];
 
-            NoteDataManager = OdinSerializer.SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
+				manager.Clear();
+			}
 
-            foreach (var notedata in NoteDataManager) {
-                IDToNote[notedata.id] = notedata;
-                IBMSToNote[notedata.ibms_id] = notedata;
-                UIDToNote[notedata.uid] = notedata;
-                if (!IBMSToDesc.ContainsKey(notedata.ibms_id))
-                    IBMSToDesc[notedata.ibms_id] = [];
+			NoteDataManager = OdinSerializer.SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
 
-                IBMSToDesc[notedata.ibms_id].Add(notedata.des);
-            }
+			foreach (var notedata in NoteDataManager) {
+				IDToNote[notedata.id] = notedata;
+				IBMSToNote[notedata.ibms_id] = notedata;
+				UIDToNote[notedata.uid] = notedata;
+				if (!IBMSToDesc.ContainsKey(notedata.ibms_id))
+					IBMSToDesc[notedata.ibms_id] = [];
 
-            BuildDashStructures();
-            manager.Clear();
-            Initialized = true;
-            return result;
-        }
-    }
+				IBMSToDesc[notedata.ibms_id].Add(notedata.des);
+			}
+
+			using (CD_StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
+				BuildDashStructures();
+
+			Initialized = true;
+
+			CD_StaticSequentialProfiler.End(out var stack, out var acumulators);
+
+			Logs.Debug($"MuseDashCompat.Init(): profiling complete, results:\n  Stack:\n{string.Join(Environment.NewLine, stack.ToStringArray())}\n");
+
+			return result;
+		}
+	}
 }

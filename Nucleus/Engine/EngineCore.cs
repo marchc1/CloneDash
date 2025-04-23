@@ -50,6 +50,7 @@ namespace Nucleus
 	public static class MainThread
 	{
 		private static Thread? _thread = null;
+		public static bool Initialized => _thread != null;
 
 		public static Thread Thread {
 			get => _thread ?? throw new Exception("For some reason, the MainThread.Thread property was accessed before it was set. EngineCore initialization sets this variable.");
@@ -218,6 +219,7 @@ namespace Nucleus
 			MouseCursor_Persist = null;
 		}
 		public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
+			if (!MainThread.Initialized)
 			MainThread.Thread = Thread.CurrentThread;
 
 			Host.ReadConfig();
