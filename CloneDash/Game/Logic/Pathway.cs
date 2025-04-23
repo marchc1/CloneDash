@@ -25,7 +25,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Both pathways will be placed at X coordinate (winH * PATHWAY_LEFT_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_LEFT_PERCENTAGE => -0.98f;
+		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
 
 		public static float GetPathwayLeft() => EngineCore.GetWindowHeight() * PATHWAY_LEFT_PERCENTAGE;
 		public static float GetPathwayTop() => EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE;
