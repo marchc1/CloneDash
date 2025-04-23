@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -46,11 +47,16 @@ public class ProfilerResult : IDisposable {
 }
 public class ProfilerAccumulator : IDisposable {
 	public Stopwatch Timer = new();
-
+	public int Calls { get; private set; } = 0;
 	public ProfilerAccumulator() { }
 
 	public void Dispose() {
 		Timer.Stop();
+	}
+
+	public void Start() {
+		Timer.Start();
+		Calls++;
 	}
 }
 
@@ -85,7 +91,7 @@ public static class CD_StaticSequentialProfiler
 			accumulators[key] = accumulator;
 		}
 
-		accumulator.Timer.Start();
+		accumulator.Start();
 		return accumulator;
 	}
 
