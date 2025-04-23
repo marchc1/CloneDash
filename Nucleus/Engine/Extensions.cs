@@ -73,7 +73,7 @@ namespace Nucleus
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
 			for (int i = 0; i < size; i++) {
-				array[i] = deserializer(reader);
+				array.Add(deserializer(reader));
 			}
 			return array;
 		}
@@ -81,7 +81,7 @@ namespace Nucleus
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
 			for (int i = 0; i < size; i++) {
-				array[i] = deserializer(reader, array);
+				array.Add(deserializer(reader, array));
 			}
 			return array;
 		}
@@ -89,7 +89,7 @@ namespace Nucleus
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
 			for (int i = 0; i < size; i++) {
-				array[i] = deserializer(reader, pt);
+				array.Add(deserializer(reader, pt));
 			}
 			return array;
 		}

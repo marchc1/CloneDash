@@ -679,6 +679,13 @@ public abstract class CurveTimeline<T> : Timeline
 		Curves = new FCurve<T>[curves];
 		outputBuffer = new T[curves];
 	}
+
+	public void NewCurves() {
+		for (int i = 0; i < Curves.Length; i++) {
+			Curves[i] = new();
+		}
+	}
+
 	/// <summary>
 	/// Returns a shared <typeparamref name="T"/>[] instance; keep this in mind if you store this value somewhere.
 	/// <br/>
@@ -1101,6 +1108,7 @@ public static class NucleusModel_SaveType_Ext
 public class ModelBinary : IModelFormat
 {
 	public const string EXTENSION = "nm4b";
+	public const string FULL_EXTENSION = $".{EXTENSION}";
 
 	private static BoneData readBone(BinaryReader reader, List<BoneData> workingArray) {
 		BoneData bone = new();
@@ -1134,22 +1142,31 @@ public class ModelBinary : IModelFormat
 	}
 	private static SkinEntry readSkinEntry(BinaryReader reader) => new(reader.ReadString(), reader.ReadInt32());
 	private static MeshAttachmentWeight readMeshAttachmentWeight(BinaryReader reader) => new(reader.ReadInt32(), reader.ReadSingle(), reader.ReadVector2F());
-	private static MeshVertex readMeshVertex(BinaryReader reader) => new() {
-		X = reader.ReadSingle(),
-		Y = reader.ReadSingle(),
-		U = reader.ReadSingle(),
-		V = reader.ReadSingle(),
-		Weights = reader.ReadArray(readMeshAttachmentWeight),
-	};
+	private static MeshVertex readMeshVertex(BinaryReader reader) {
+		MeshVertex vertex = new() {
+			X = reader.ReadSingle(),
+			Y = reader.ReadSingle(),
+			U = reader.ReadSingle(),
+			V = reader.ReadSingle()
+		};
+
+		if (reader.ReadBoolean())
+			vertex.Weights = reader.ReadArray(readMeshAttachmentWeight);
+
+		return vertex;
+	}
 	private static MeshTriangle readMeshTriangle(BinaryReader reader) => new() {
 		V1 = reader.ReadInt32(),
 		V2 = reader.ReadInt32(),
 		V3 = reader.ReadInt32()
 	};
 	private static Attachment readAttachment(BinaryReader reader) {
-		switch (reader.ReadSaveType()) {
+		var name = reader.ReadString();
+		var type = reader.ReadSaveType();
+
+		switch (type) {
 			case NucleusModel_SaveType.Attachment_Region: {
-					RegionAttachment attachment = new();
+					RegionAttachment attachment = new() { Name = name };
 					attachment.Position = reader.ReadVector2F();
 					attachment.Rotation = reader.ReadSingle();
 					attachment.Scale = reader.ReadVector2F();
@@ -1158,9 +1175,8 @@ public class ModelBinary : IModelFormat
 
 					return attachment;
 				}
-				break;
 			case NucleusModel_SaveType.Attachment_Mesh: {
-					MeshAttachment attachment = new();
+					MeshAttachment attachment = new() { Name = name };
 					attachment.Vertices = reader.ReadArray(readMeshVertex);
 					attachment.Triangles = reader.ReadArray(readMeshTriangle);
 
@@ -1171,8 +1187,7 @@ public class ModelBinary : IModelFormat
 
 					return attachment;
 				}
-				break;
-			default: throw new NotImplementedException();
+			default: throw new NotImplementedException($"Weird attachment type given '{type}'");
 		}
 	}
 	private static Skin readSkin(BinaryReader reader, ModelData modelData) {
@@ -1239,79 +1254,95 @@ public class ModelBinary : IModelFormat
 		fcf.Keyframes = reader.ReadList(readKeyframeFloat);
 	}
 	private static Timeline readTimeline(BinaryReader reader) {
-		switch (reader.ReadSaveType()) {
+		var type = reader.ReadSaveType();
+		switch (type) {
 			case NucleusModel_SaveType.Timeline_Translate: {
 					TranslateTimeline tl = new();
+					tl.NewCurves();
 					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_TranslateX: {
 					TranslateXTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_TranslateY: {
 					TranslateYTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_Rotation: {
 					RotationTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_Scale: {
 					ScaleTimeline tl = new();
+					tl.NewCurves();
 					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_ScaleX: {
 					ScaleXTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_ScaleY: {
 					ScaleYTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_Shear: {
 					ShearTimeline tl = new();
+					tl.NewCurves();
 					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_ShearX: {
 					ShearXTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_ShearY: {
 					ShearYTimeline tl = new();
+					tl.NewCurves();
 					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_ActiveAttachment: {
 					ActiveAttachmentTimeline tl = new();
+					tl.NewCurves();
 
+					tl.SlotIndex = reader.ReadInt32();
 					readIntoFCurveStringN(reader, tl.Curves[0]);
 
 					return tl;
 				}
 			case NucleusModel_SaveType.Timeline_SlotColor4: {
 					SlotColor4Timeline tl = new();
+					tl.NewCurves();
+
+					tl.SlotIndex = reader.ReadInt32();
 					readIntoFCurveFloat(reader, tl.Curves[0]);
 					readIntoFCurveFloat(reader, tl.Curves[1]);
 					readIntoFCurveFloat(reader, tl.Curves[2]);
 					readIntoFCurveFloat(reader, tl.Curves[3]);
 					return tl;
 				}
-			default: throw new NotSupportedException();
+			default: throw new NotSupportedException($"Unknown timeline type '{type}'");
 		}
 	}
 	private static Animation readAnimation(BinaryReader reader) {
 		Animation anim = new Animation();
 
-		anim.Duration = reader.ReadSingle();
+		anim.Duration = reader.ReadDouble();
 		anim.Name = reader.ReadString();
 		anim.Timelines = reader.ReadList(readTimeline);
 
@@ -1544,6 +1575,7 @@ public class ModelBinary : IModelFormat
 public class ModelRefJSON : IModelFormat
 {
 	public const string EXTENSION = "nm4rj";
+	public const string FULL_EXTENSION = $".{EXTENSION}";
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
 		private static HashSet<Type> ApprovedBindables;
@@ -1586,7 +1618,7 @@ public class ModelRefJSON : IModelFormat
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		var text = Filesystem.ReadAllText(pathID, path);
-		if (text == null) throw new FileNotFoundException();
+		if (text == null) throw new FileNotFoundException($"Cannot find '{path}' in {pathID}");
 
 		var data = JsonConvert.DeserializeObject<ModelData>(text, Settings);
 		if (data == null)

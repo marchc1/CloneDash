@@ -286,8 +286,10 @@ namespace Nucleus.Models
 		public bool TryGetTextureRegion(string name, out AtlasRegion region) {
 			Validate();
 
-			if (AllRegions.TryGetValue(name, out region))
+			if (AllRegions.TryGetValue(name, out region)) {
+				region.Valid = true;
 				return true;
+			}
 
 			region = default;
 			return false;

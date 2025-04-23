@@ -36,7 +36,8 @@ public class ModelManagement : IManagedMemory
 		GC.SuppressFinalize(this);
 	}
 
-	public ModelRefJSON ModelLoader = new();
+	public ModelRefJSON JSONModelLoader = new();
+	public ModelBinary BinaryModelLoader = new();
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		var savePath = Path.Combine(pathID, path);
@@ -44,7 +45,13 @@ public class ModelManagement : IManagedMemory
 			return data;
 		}
 
-		ModelDatas[savePath] = ModelLoader.LoadModelFromFile(pathID, Path.ChangeExtension(path, ".nm4rj"));
+		if (Path.GetExtension(path) == null)
+			path = Path.ChangeExtension(path, ".nm4rj"); // Assume ref'd json, but allow binary/etc formats
+		switch (Path.GetExtension(path)) {
+			case ModelRefJSON.FULL_EXTENSION: ModelDatas[savePath] = JSONModelLoader.LoadModelFromFile(pathID, path); break;
+			case ModelBinary.FULL_EXTENSION: ModelDatas[savePath] = BinaryModelLoader.LoadModelFromFile(pathID, path); break;
+			default: throw new Exception("Unknown extension.");
+		}
 		return ModelDatas[savePath];
 	}
 
