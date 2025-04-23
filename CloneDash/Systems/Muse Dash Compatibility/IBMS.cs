@@ -2,6 +2,7 @@
 using CloneDash.Data;
 using CloneDash.Systems;
 using Nucleus;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
@@ -279,7 +280,7 @@ namespace CloneDash
 
 
 		public static List<MuseDashAlbum> Albums { get; private set; } = [];
-		public static List<MuseDashSong> Songs { get; private set; } = [];
+		public static List<MuseDashSong> Songs { get; private set; }
 
 
 
@@ -296,21 +297,24 @@ namespace CloneDash
 			Albums = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashAlbum>>(StreamingFiles, "config_others_assets_albums_");
 			Albums.RemoveAll(x => x.JsonName == "");
 
-			foreach (var album in Albums) {
+			ConcurrentBag<MuseDashSong> workSongs = [];
+
+			var res = Parallel.ForEach(Albums, (album) => {
 				var songs = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashSongInfoJSON>>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
 				var songsEN = UnityAssetUtils.LoadAssetEasyC<TextAsset, __musedashSong[]>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
 
 				var songsFinal = new MuseDashSong[songs.Count];
 
 				for (int i = 0; i < songs.Count; i++) {
-					songsFinal[i] = new MuseDashSong(songs[i]);
-					songsFinal[i].Name = songsEN[i].name;
-					songsFinal[i].Author = songsEN[i].author;
-					songsFinal[i].Album = album;
+					workSongs.Add(new MuseDashSong(songs[i]) {
+						Name = songsEN[i].name,
+						Author = songsEN[i].author,
+						Album = album
+					});
 				}
+			});
 
-				Songs.AddRange(songsFinal);
-			}
+			Songs = workSongs.ToList();
 
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
 		}

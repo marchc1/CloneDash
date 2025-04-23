@@ -5,12 +5,16 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CloneDash
 {
+	public record MuseDashAsset(string nicename, string filename);
     public static partial class MuseDashCompatibility
     {
+		public static Dictionary<string, string> StreamingAssetsSearchable = [];
+		public static Dictionary<string, Dictionary<string, MuseDashAsset>> StreamingAssetsSearchableTypes = [];
         public static bool Initialized { get; private set; } = false;
 
         public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
@@ -31,10 +35,31 @@ namespace CloneDash
             if (result != MDCompatLayerInitResult.OK)
                 return result;
 
+			// Trying to make searching these files a bit more efficient...
+			// for now, commenting this out. But it may get used later
+			// only 25ms to run, i just dont want to go through everything
+			// and replace the First calls with calls to these dicts right now
+			/*foreach(var filename in StreamingFiles) {
+				var ext = Path.GetExtension(filename);
+				if (ext != ".bundle") continue;
+				var name = Path.GetFileNameWithoutExtension(filename);
+				var pieces = name.Split('_');
+				var md5 = pieces[pieces.Length - 1];
+				bool isMD5 = Regex.IsMatch(md5, "[a-f0-9]{32}");
+				var nicename = string.Join('_', pieces, 0, isMD5 ? pieces.Length - 1 : pieces.Length);
+
+				StreamingAssetsSearchable[nicename] = filename;
+				var type = pieces[0];
+				if (!StreamingAssetsSearchableTypes.TryGetValue(type, out var list))
+					StreamingAssetsSearchableTypes[type] = list = [];
+
+				list.Add(nicename, new(nicename, filename));
+			}*/
+
             AssetsManager manager = new AssetsManager();
             manager.LoadFiles(NoteManagerAssetBundle);
 
-            var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
+			var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
             var monobehavior_obj = (monobehavior.ToType()["serializationData"] as OrderedDictionary);
             var serializedList = monobehavior_obj["SerializedBytes"] as List<object>;
             byte[] serializedBytes = new byte[serializedList.Count];
