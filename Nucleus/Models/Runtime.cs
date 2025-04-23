@@ -565,7 +565,7 @@ public class MeshAttachment : Attachment
 
 		var region = Region;
 
-		Debug.Assert(region.IsValid());
+		//Debug.Assert(region.IsValid());
 		if (!region.IsValid()) {
 			Setup(slot.Bone.Model.Data);
 			if (!Region.IsValid()) return;
@@ -1233,7 +1233,7 @@ public class ModelBinary : IModelFormat
 		if (reader.ReadBoolean()) {
 			KeyframeHandle<float> lf = new();
 			readIntoKeyframeFloatHandle(reader, ref lf);
-			kf.RightHandle = lf;
+			kf.LeftHandle = lf;
 		}
 
 		if (reader.ReadBoolean()) {
@@ -1244,7 +1244,6 @@ public class ModelBinary : IModelFormat
 
 		kf.Easing = (KeyframeEasing)reader.ReadInt32();
 		kf.Interpolation = (KeyframeInterpolation)reader.ReadInt32();
-
 		return kf;
 	}
 

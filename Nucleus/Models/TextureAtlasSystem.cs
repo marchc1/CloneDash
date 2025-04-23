@@ -238,8 +238,9 @@ namespace Nucleus.Models
 		public void Lock() => locked = true;
 
 		public void ClearTextures() {
-			if (locked)
-				Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
+			// This just gets annoying
+			//if (locked)
+				//Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
 
 			foreach (var kvp in UnpackedImages)
 				Raylib.UnloadImage(kvp.Value);
