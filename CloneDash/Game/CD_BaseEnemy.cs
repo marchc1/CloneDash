@@ -44,6 +44,7 @@ namespace CloneDash.Game
 		public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
 
 		public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time) * -1);
+		private double tth => HitTime - ShowTime; // debugging, places enemy at exact frame position
 
 		public virtual void DetermineAnimationPlayback() {
 			ApproachAnimation?.Apply(Model, AnimationTime);

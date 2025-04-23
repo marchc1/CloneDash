@@ -515,7 +515,7 @@ namespace CloneDash.Game
 
 		public override void PreThink(ref FrameState frameState) {
 			Ticks++;
-			XPos = frameState.WindowHeight * Game.Pathway.PATHWAY_LEFT_PERCENTAGE;
+			XPos = Game.Pathway.GetPathwayLeft();
 
 			if (lastNoteHit && Music.Paused) {
 				EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
@@ -630,12 +630,12 @@ namespace CloneDash.Game
 			}
 
 			Player.Position = new Vector2F(
-				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 245,
+				Game.Pathway.GetPathwayLeft() - 245,
 				yoff ?? GetPlayerY(CharacterYRatio)
 			);
 
 			HologramPlayer.Position = new Vector2F(
-				((frameState.WindowHeight) * Game.Pathway.PATHWAY_LEFT_PERCENTAGE) - 245,
+				Game.Pathway.GetPathwayLeft() - 245,
 				yoff ?? GetPlayerY(HologramCharacterYRatio)
 			);
 
@@ -972,7 +972,7 @@ namespace CloneDash.Game
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
 			cam.Zoom = (frameState.WindowHeight / 900 / 2) + (zoomValue / 5f);
 			cam.Rotation = 0.0f;
-			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
+			cam.Offset = new((frameState.WindowWidth / 2) - (150), frameState.WindowHeight / 2);
 			cam.Target = new((frameState.WindowWidth / 1) * zoomValue, 0);
 			cam.Offset += cam.Target;
 

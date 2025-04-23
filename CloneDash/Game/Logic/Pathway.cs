@@ -27,11 +27,11 @@ namespace CloneDash.Game
 		/// </summary>
 		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
 
-		public static float GetPathwayLeft() => EngineCore.GetWindowHeight() * PATHWAY_LEFT_PERCENTAGE;
-		public static float GetPathwayTop() => EngineCore.GetWindowHeight() * PATHWAY_TOP_PERCENTAGE;
-		public static float GetPathwayBottom() => EngineCore.GetWindowHeight() * PATHWAY_BOTTOM_PERCENTAGE;
+		public static float GetPathwayLeft() => 750 * PATHWAY_LEFT_PERCENTAGE;
+		public static float GetPathwayTop() => 900 * PATHWAY_TOP_PERCENTAGE;
+		public static float GetPathwayBottom() => 900 * PATHWAY_BOTTOM_PERCENTAGE;
 		public static float GetPathwayMiddle() {
-			var height = EngineCore.GetWindowHeight();
+			var height = 900;
 			return ((height * PATHWAY_TOP_PERCENTAGE) + (height * PATHWAY_BOTTOM_PERCENTAGE)) / 2;
 		}
 
