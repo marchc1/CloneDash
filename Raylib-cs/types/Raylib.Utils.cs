@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -149,8 +150,62 @@ public static unsafe partial class Raylib
         }
     }
 
-    /// <summary>Export image data to file</summary>
-    public static CBool ExportImage(Image image, string fileName)
+	public class ImageRef : IDisposable
+	{
+		private Image img;
+		private bool disposedValue;
+
+		public static implicit operator Image(ImageRef self) => self.img;
+
+		public ImageRef(Image img) {
+			this.img = img;
+		}
+		public ImageRef(string filetype, byte* source, int length) {
+			using var fileTypeNative = filetype.ToAnsiBuffer();
+			img = LoadImageFromMemory(fileTypeNative.AsPointer(), source, length);
+		}
+		public ImageRef(string filetype, Stream stream) {
+			var length = (int)stream.Length;
+			if (length < 4) throw new Exception();
+
+			var source = New<byte>(length);
+			Span<byte> buffer = new(source, length);
+			stream.Read(buffer);
+
+			using var fileTypeNative = filetype.ToAnsiBuffer();
+			img = LoadImageFromMemory(fileTypeNative.AsPointer(), source, length);
+		}
+		public ImageRef(string filetype, byte[] source) {
+			img = LoadImageFromMemory(filetype, source);
+		}
+
+		protected virtual void Dispose(bool disposing) {
+			if (!disposedValue) {
+				if (disposing) {
+					// TODO: dispose managed state (managed objects)
+				}
+
+				UnloadImage(img);
+				disposedValue = true;
+			}
+		}
+
+		// // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+		// ~TemporaryImage()
+		// {
+		//     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+		//     Dispose(disposing: false);
+		// }
+
+		public void Dispose() {
+			// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+	}
+
+	/// <summary>Export image data to file</summary>
+	public static CBool ExportImage(Image image, string fileName)
     {
         using var str1 = fileName.ToAnsiBuffer();
         return ExportImage(image, str1.AsPointer());

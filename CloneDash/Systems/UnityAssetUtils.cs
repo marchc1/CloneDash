@@ -114,22 +114,6 @@ public static class UnityAssetUtils
 	}
 
 	/// <summary>
-	/// Method for struct types.
-	/// </summary>
-	public static ReturnStructure LoadAssetEasyS<AssetType, ReturnStructure>(string[] streamingFiles, string query, bool regex = false) where AssetType : class where ReturnStructure : struct {
-		AssetType item = InternalLoadAsset<AssetType>(streamingFiles, query, regex);
-
-		switch (item) {
-			case Texture2D texture2D:
-				var imgData = AssetStudio.Texture2DExtensions.ConvertToStream(texture2D, ImageFormat.Png, true).ToArray();
-				var img = Raylib_cs.Raylib.LoadImageFromMemory(".png", imgData);
-				var tex = Raylib_cs.Raylib.LoadTextureFromImage(img);
-				return (ReturnStructure)(object)tex;
-			default:
-				throw new NotImplementedException($"There is not a struct ReturnStructure generator for {typeof(AssetType).Name}!");
-		}
-	}
-	/// <summary>
 	/// Method for class-types.
 	/// </summary>
 	public static ReturnStructure LoadAssetEasyC<AssetType, ReturnStructure>(string[] streamingFiles, string query, bool regex = false) where AssetType : class where ReturnStructure : class {

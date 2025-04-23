@@ -55,9 +55,8 @@ namespace Nucleus.UI.Elements
 
 		private static Raylib_cs.Texture2D checkerboardTex;
 		static ColorSelector() {
-			var img = Raylib.GenImageChecked(64, 64, 4, 4, Color.Gray, Color.DarkGray);
-			checkerboardTex = Raylib.LoadTextureFromImage(img);
-			Raylib.UnloadImage(img);
+			using (Raylib.ImageRef img = new(Raylib.GenImageChecked(64, 64, 4, 4, Color.Gray, Color.DarkGray)))
+				checkerboardTex = Raylib.LoadTextureFromImage(img);
 		}
 	}
 
@@ -76,7 +75,7 @@ namespace Nucleus.UI.Elements
 			HSlider.SetValueNoUpdate(hsv.X);
 			SSlider.SetValueNoUpdate(hsv.Y);
 			VSlider.SetValueNoUpdate(hsv.Z);
-									
+
 			RSlider.SetValueNoUpdate(SelectedColor.R);
 			GSlider.SetValueNoUpdate(SelectedColor.G);
 			BSlider.SetValueNoUpdate(SelectedColor.B);
@@ -243,7 +242,7 @@ namespace Nucleus.UI.Elements
 			HSlider.OnValueChanged += (_, _, v) => Hue = (float)v;
 			SSlider.OnValueChanged += (_, _, v) => Saturation = (float)Math.Clamp(v, 0, 1);
 			VSlider.OnValueChanged += (_, _, v) => Value = (float)Math.Clamp(v, 0, 1);
-			
+
 
 			RSlider.OnValueChanged += (_, _, v) => {
 				Color c = SelectedColor;

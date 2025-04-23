@@ -92,14 +92,14 @@ namespace CloneDash
 			protected override ChartCover? ProduceCover() {
 				if (Archive != null) {
 					var coverBytes = GetByteArray(Archive, "cover.png");
-					var img = Raylib.LoadImageFromMemory(".png", coverBytes);
-					var tex = Raylib.LoadTextureFromImage(img);
-					Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
-					Raylib.UnloadImage(img);
+					using (Raylib.ImageRef img = new(".png", coverBytes)) {
+						var tex = Raylib.LoadTextureFromImage(img);
+						Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
-					return new() {
-						Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
-					};
+						return new() {
+							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
+						};
+					}
 				}
 				else {
 					DeferringCoverToAsyncHandler = true;

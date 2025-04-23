@@ -124,13 +124,13 @@ namespace CloneDash.Systems.CustomAlbums
 			if (!response.IsSuccessStatusCode)
 				return null;
 			else {
-				Image img = Raylib.LoadImageFromMemory(".png", response.Content.ReadAsStream().ToMemoryStream().ToArray());
-				var tex2d = Raylib.LoadTextureFromImage(img);
-				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
-				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
-				Raylib.UnloadImage(img);
+				using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
+					var tex2d = Raylib.LoadTextureFromImage(img);
+					Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+					Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+					return tex;
+				}
 
-				return tex;
 			}
 		}
 
@@ -145,13 +145,12 @@ namespace CloneDash.Systems.CustomAlbums
 					if (!response.IsSuccessStatusCode)
 						callback?.Invoke(null);
 					else {
-						Image img = Raylib.LoadImageFromMemory(".png", response.Content.ReadAsStream().ToMemoryStream().ToArray());
-						var tex2d = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
-						Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
-						Raylib.UnloadImage(img);
-
-						callback?.Invoke(tex);
+						using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
+							var tex2d = Raylib.LoadTextureFromImage(img);
+							Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+							Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+							callback?.Invoke(tex);
+						}
 					}
 				});
 			});
