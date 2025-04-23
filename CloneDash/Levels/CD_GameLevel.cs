@@ -525,9 +525,6 @@ namespace CloneDash.Game
 			if (ShouldExitFever && InFever)
 				ExitFever();
 
-			if (InputState.TopClicked > 0 && CanJump)
-				__whenjump = Conductor.Time;
-
 			InputState inputState = new InputState();
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);

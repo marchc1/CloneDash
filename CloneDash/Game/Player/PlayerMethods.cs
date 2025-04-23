@@ -301,12 +301,13 @@ namespace CloneDash.Game
 			}
 
 			if (playeranim_attackdouble) {
-				__whenjump = -2000000000000d;
 				PlayerAnim_ForceAttackDouble(Player);
 				PlayerAnim_EnqueueRun(Player);
 
 				resetPlayerAnimState();
 				logTests("Double attack");
+				__whenjump = -2000000000;
+				__whenHjump = -2000000000;
 				return;
 			}
 
