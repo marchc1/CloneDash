@@ -36,12 +36,13 @@ namespace CloneDash
             // If installed, load noteinfo.json for BMS references
             // The bundle is named globalconfigs_assets_notedatamananger
 
-            string platform = "StandaloneWindows64";
-            string musedash_streamingassets = Path.Combine(musedash_installdir, "MuseDash_Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
+            string platform = "StandaloneWindows64"; // Not StandaloneLinux64, Muse Dash doesn't build targetting linux...
+			string musedash_streamingassets = Path.Combine(musedash_installdir, "MuseDash_Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;
 
-            StreamingFiles = Directory.GetFiles(musedash_streamingassets);
+			BuildTarget = musedash_streamingassets;
+			StreamingFiles = Directory.GetFiles(musedash_streamingassets);
             string? musedash_notedatamanager = StreamingFiles.Where(x => Path.GetFileName(x).Contains("globalconfigs_assets_notedatamananger")).FirstOrDefault();
             if (musedash_notedatamanager == default)
                 return MDCompatLayerInitResult.NoteDataManagerNotFound;

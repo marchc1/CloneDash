@@ -48,7 +48,8 @@ namespace CloneDash
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;
 
-            StreamingFiles = Directory.GetFiles(musedash_streamingassets);
+			BuildTarget = musedash_streamingassets;
+			StreamingFiles = Directory.GetFiles(musedash_streamingassets);
             string? musedash_notedatamanager = StreamingFiles.Where(x => Path.GetFileName(x).Contains("globalconfigs_assets_notedatamananger")).FirstOrDefault();
             if (musedash_notedatamanager == default)
                 return MDCompatLayerInitResult.NoteDataManagerNotFound;
