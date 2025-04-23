@@ -1221,7 +1221,7 @@ public class ModelBinary : IModelFormat
 	}
 	private static void readIntoKeyframeFloatHandle(BinaryReader reader, ref KeyframeHandle<float> handle) {
 		handle.Time = reader.ReadDouble();
-		handle.Time = reader.ReadSingle();
+		handle.Value = reader.ReadSingle();
 		handle.HandleType = (KeyframeHandleType)reader.ReadInt32();
 	}
 	private static Keyframe<float> readKeyframeFloat(BinaryReader reader) {
@@ -1488,14 +1488,16 @@ public class ModelBinary : IModelFormat
 		writer.Write(kf.Time);
 		writer.Write(kf.Value);
 
-		if (!kf.LeftHandle.HasValue) writer.Write(false);
+		if (!kf.LeftHandle.HasValue)
+			writer.Write(false);
 		else {
 			var handle = kf.LeftHandle.Value;
 			writer.Write(true);
 			writeKeyframeFloatHandle(writer, ref handle);
 		}
 
-		if (!kf.RightHandle.HasValue) writer.Write(false);
+		if (!kf.RightHandle.HasValue)
+			writer.Write(false);
 		else {
 			var handle = kf.RightHandle.Value;
 			writer.Write(true);
