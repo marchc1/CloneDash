@@ -113,9 +113,20 @@ public class ModelData : IDisposable
 
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
-		if (usercall) {
-			TextureAtlas?.Dispose();
-		}
+
+		BoneDatas.Clear();
+		Animations.Clear();
+		Skins.Clear();
+		SlotDatas.Clear();
+#nullable disable
+		BoneDatas = null;
+		Animations = null;
+		Skins = null;
+		SlotDatas = null;
+#nullable enable
+
+		TextureAtlas?.Dispose();
+		
 		disposedValue = true;
 	}
 

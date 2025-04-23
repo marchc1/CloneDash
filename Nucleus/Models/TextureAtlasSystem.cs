@@ -240,7 +240,7 @@ namespace Nucleus.Models
 		public void ClearTextures() {
 			// This just gets annoying
 			//if (locked)
-				//Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
+			//Logs.Warn("The TextureAtlasSystem is being unloaded while in read-only mode, probably because it's in a runtime context. If this isn't due to a level change, it should be investigated.");
 
 			foreach (var kvp in UnpackedImages)
 				Raylib.UnloadImage(kvp.Value);
@@ -329,8 +329,11 @@ namespace Nucleus.Models
 		}
 
 		public void Load(string atlas, byte[] pngData) {
-			if (packedTex != null) packedTex.Dispose();
-			if (packedImg != null) Raylib.UnloadImage(packedImg.Value);
+			if (packedTex != null)
+				packedTex.Dispose();
+
+			if (packedImg != null)
+				Raylib.UnloadImage(packedImg.Value);
 
 			packedImg = Raylib.LoadImageFromMemory(".png", pngData);
 			var tex = Raylib.LoadTextureFromImage(packedImg.Value);
@@ -356,21 +359,29 @@ namespace Nucleus.Models
 		protected virtual void Dispose(bool usercall) {
 			if (disposedValue) return;
 
-			if (Texture != null)
-				Texture.Dispose();
-
-			MainThread.RunASAP(() => { 
+			if (usercall && MainThread.Thread == Thread.CurrentThread) {
+				if (packedImg.HasValue)
+					Raylib.UnloadImage(packedImg.Value);
 				ClearTextures();
+				packedImg = null;
+			}
+			else MainThread.RunASAP(() => {
+				if (packedImg.HasValue)
+					Raylib.UnloadImage(packedImg.Value);
+				ClearTextures();
+				packedImg = null;
 			});
+
+			if (IValidatable.IsValid(packedTex))
+				packedTex.Dispose();
 
 			disposedValue = true;
 		}
 
 		// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-		~TextureAtlasSystem()
-		{
-		    // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		    Dispose(usercall: false);
+		~TextureAtlasSystem() {
+			// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+			Dispose(usercall: false);
 		}
 
 		public void Dispose() {

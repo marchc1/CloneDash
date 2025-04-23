@@ -432,7 +432,7 @@ public class CharacterPanel : Panel
 	MusicTrack music;
 	protected override void Initialize() {
 		base.Initialize();
-		var character = CharacterMod.GetCharacterData();
+		CharacterDescriptor character = CharacterMod.GetCharacterData();
 		if (character == null) return;
 		if (character.Filename == null) return;
 		this.character = character;
