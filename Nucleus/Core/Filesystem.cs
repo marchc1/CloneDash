@@ -276,7 +276,7 @@ namespace Nucleus.Core
 			var level = EngineCore.Level ?? throw new NotSupportedException("Cannot create temporary search paths when no level is active.");
 
 			var pathObj = AddSearchPath<T>(pathID, path, add);
-			level.Unloaded += () => RemoveSearchPath(pathID, pathObj);
+			level.AddFinalizer((lvl) => RemoveSearchPath(pathID, pathObj));
 			return pathObj;
 		}
 
@@ -284,7 +284,7 @@ namespace Nucleus.Core
 			var level = EngineCore.Level ?? throw new NotSupportedException("Cannot create temporary search paths when no level is active.");
 
 			var pathObj = AddSearchPath<T>(pathID, path, add);
-			level.Unloaded += () => RemoveSearchPath(pathID, pathObj);
+			level.AddFinalizer((lvl) => RemoveSearchPath(pathID, pathObj));
 			return pathObj;
 		}
 

@@ -335,7 +335,7 @@ namespace Nucleus.UI
 		}
 		#endregion
 		#region Parenting system
-		public Element Parent { get; protected set; }
+		public Element Parent { get; internal set; }
 		internal List<Element> Children = [];
 
 		/// <summary>
@@ -420,7 +420,8 @@ namespace Nucleus.UI
 			ChildrensDockingLayoutTop = ChildrensDockingLayoutLeft = ChildrensDockingLayoutRight = ChildrensDockingLayoutBottom = 0;
 
 			if (immediate) {
-				LayoutRecursive(this);
+				var fs = Level.FrameState;
+				LayoutRecursive(this, ref fs);
 			}
 			else {
 				LayoutInvalidated = true;
@@ -735,13 +736,13 @@ namespace Nucleus.UI
 
 		// The element cycle
 
-		public static int LayoutRecursive(Element element, FrameState? frameState = null) {
+		public static int LayoutRecursive(Element element, ref FrameState frameState) {
 			if (!element.Enabled) return 0;
 
 			int returning = 0;
 
-			if (element is UserInterface ui && frameState.HasValue)
-				ui.Preprocess(frameState.Value);
+			if (element is UserInterface ui)
+				ui.Preprocess(frameState.WindowWidth, frameState.WindowHeight);
 
 			element.SizeOfAllChildren = Vector2F.Zero;
 			var wasInvalid = element.LayoutInvalidated;
@@ -751,7 +752,7 @@ namespace Nucleus.UI
 				returning += 1;
 			}
 			foreach (Element child in element.Children.ToArray()) {
-				returning += LayoutRecursive(child, frameState);
+				returning += LayoutRecursive(child, ref frameState);
 				if (child.Enabled) {
 					var ps = (child.RenderBounds.Pos + child.RenderBounds.Size);
 					if (ps > element.SizeOfAllChildren)

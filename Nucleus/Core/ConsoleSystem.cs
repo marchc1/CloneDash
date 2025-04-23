@@ -522,5 +522,9 @@ namespace Nucleus
 		public static void RemoveScreenBlocker(object blocker) {
 			scrblockers.Remove(blocker);
 		}
+
+		public static void ClearScreenBlockers() {
+			scrblockers.Clear();
+		}
 	}
 }

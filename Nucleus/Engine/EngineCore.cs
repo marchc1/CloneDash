@@ -289,14 +289,8 @@ namespace Nucleus
 				Graphics2D.RegisterCodepoints(languageLine);
 		}
 
-		public static PerfGraph CPUGraph;
-		public static PerfGraph MemGraph;
-		public delegate void LevelRemovedDelegate(Level level);
-		public static event LevelRemovedDelegate? LevelRemoved;
-
 		private static void __loadLevel(Level level, object[] args) {
 			if (level == null) {
-				LevelRemoved?.Invoke(Level);
 				Level = null;
 				LoadingLevel = false;
 				return;
@@ -321,14 +315,14 @@ namespace Nucleus
 			__nextFrameLevel = null;
 			__nextFrameArgs = null;
 			if (EngineCore.ShowDebuggingInfo) {
-				CPUGraph = Level.UI.Add(new PerfGraph() {
+				var CPUGraph = Level.UI.Add(new PerfGraph() {
 					Anchor = Anchor.BottomRight,
 					Origin = Anchor.BottomRight,
 					Position = new(-8, -8 + -32 + -8),
 					Size = new(400, 32),
 					Mode = PerfGraphMode.CPU_Frametime
 				});
-				MemGraph = Level.UI.Add(new PerfGraph() {
+				var MemGraph = Level.UI.Add(new PerfGraph() {
 					Anchor = Anchor.BottomRight,
 					Origin = Anchor.BottomRight,
 					Position = new(-8, -8),
@@ -340,7 +334,8 @@ namespace Nucleus
 			s.Stop();
 
 			GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
-			GC.WaitForFullGCComplete();
+			GC.WaitForPendingFinalizers();
+			GC.Collect();
 
 			Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
 			//GC.Collect();
@@ -363,14 +358,17 @@ namespace Nucleus
 
 		public static void UnloadLevel() {
 			LoadingLevel = true;
+			KeyboardFocusedElement = null;
 
 			if (Level != null) {
 				Level.Unload();
-				Level.UI.Remove();
 				LoadingScreen?.Unload();
 			}
-			LevelRemoved?.Invoke(Level);
-			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
+
+			ConsoleSystem.ClearScreenBlockers();
+
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+
 			LoadingLevel = false;
 		}
 

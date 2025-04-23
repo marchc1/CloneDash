@@ -35,6 +35,14 @@ namespace Nucleus.Engine
 			Timers = new(this);
 		}
 
+		private List<Action<Level>> finalizers = [];
+		public void AddFinalizer(Action<Level> finalizer) => finalizers.Add(finalizer);
+		private void runFinalizers() {
+			foreach (var finalizer in finalizers)
+				finalizer(this);
+			finalizers.Clear();
+		}
+
 		public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
 		public T As<T>() where T : Level => (T)this;
 		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
@@ -130,10 +138,14 @@ namespace Nucleus.Engine
 		}
 
 		public void Unload() {
+			runFinalizers();
+
 			Textures.Dispose();
 			Sounds.Dispose();
 			Models.Dispose();
 			Shaders.Dispose();
+
+			UI.Dispose();
 
 			Entity[] dead = EntityList.ToArray();
 			foreach (Entity ent in dead) {
@@ -181,7 +193,7 @@ namespace Nucleus.Engine
 		/// </summary>
 		private List<Entity> EntityList { get; } = new();
 
-		public List<string> FrameDebuggingStrings { get; set; }
+		public List<string> FrameDebuggingStrings { get; set; } = [];
 
 		public Entity[] Entities => EntityList.ToArray();
 
@@ -364,7 +376,7 @@ namespace Nucleus.Engine
 
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
-			FrameDebuggingStrings = [];
+			FrameDebuggingStrings.Clear();
 			EngineCore.CurrentFrameState = new();
 			FrameState frameState = new();
 
@@ -479,7 +491,7 @@ namespace Nucleus.Engine
 			if (!Paused) RunEventPreThink(ref frameState);
 
 			// UI thinking should happen here because if a popup UI element exists, we need to block input to the game. Don't just block Think though
-			int rebuilds = Element.LayoutRecursive(UI, frameState);
+			int rebuilds = Element.LayoutRecursive(UI, ref frameState);
 
 			Element? hoveredElement = Element.ResolveElementHoveringState(UI, frameState, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
 			frameState.HoveredUIElement = hoveredElement;

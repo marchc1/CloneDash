@@ -470,7 +470,6 @@ namespace CloneDash.Game
 		internal CD_Player_UIBar UIBar;
 		internal class CD_Player_UIBar : Element
 		{
-			internal CD_GameLevel Level;
 			public CD_Player_UIBar() {
 
 			}
@@ -479,31 +478,32 @@ namespace CloneDash.Game
 				Dock = Dock.Bottom;
 			}
 			public override void Paint(float width, float height) {
+				var lvl = Level.As<CD_GameLevel>();
+
 				Graphics2D.SetDrawColor(255, 60, 42);
-				Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (Level.Health / Level.MaxHealth), 24);
+				Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (lvl.Health / lvl.MaxHealth), 24);
 				Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
 				Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
 				Graphics2D.SetDrawColor(255, 220, 200);
-				Graphics2D.DrawText(width / 2f, 13, $"HP: {Level.Health}/{Level.MaxHealth}", "Noto Sans", 18, Anchor.Center);
+				Graphics2D.DrawText(width / 2f, 13, $"HP: {lvl.Health}/{lvl.MaxHealth}", "Noto Sans", 18, Anchor.Center);
 				float feverRatio;
-				if (Level.InFever)
-					feverRatio = (float)Level.FeverTimeLeft / Level.FeverTime;
+				if (lvl.InFever)
+					feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
 				else
-					feverRatio = (float)Level.Fever / Level.MaxFever;
+					feverRatio = (float)lvl.Fever / lvl.MaxFever;
 
 				Graphics2D.SetDrawColor(72, 160, 255);
 				Graphics2D.DrawRectangle(width / 4f, 32, (width / 2f) * feverRatio, 24);
 				Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
 				Graphics2D.DrawRectangleOutline(width / 4f, 32, (width / 2f), 24, 2);
 				Graphics2D.SetDrawColor(200, 220, 255);
-				Graphics2D.DrawText(width / 2f, 32 + 13, Level.InFever ? $"FEVER! {Math.Round(Level.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((Level.Fever / Level.MaxFever) * 100)}%", "Noto Sans", 18, Anchor.Center);
+				Graphics2D.DrawText(width / 2f, 32 + 13, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", "Noto Sans", 18, Anchor.Center);
 			}
 		}
 
 		internal CD_Player_Scorebar Scorebar;
 		internal class CD_Player_Scorebar : Element
 		{
-			internal CD_GameLevel Level;
 			public CD_Player_Scorebar() {
 
 			}
@@ -515,11 +515,11 @@ namespace CloneDash.Game
 				Graphics2D.SetDrawColor(255, 255, 255, 255);
 				//if (Level.AutoPlayer.Enabled)
 				//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
-
-				Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{Level.Combo}", "Noto Sans", (int)NMath.Remap(Level.Conductor.Time - Level.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
+				var lvl = Level.As<CD_GameLevel>();
+				Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", "Noto Sans", (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
 				Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Noto Sans", 24, Anchor.Center);
 
-				Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{Level.Score}", "Noto Sans", 32, Anchor.Center);
+				Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", "Noto Sans", 32, Anchor.Center);
 				Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", "Noto Sans", 24, Anchor.Center);
 			}
 		}
