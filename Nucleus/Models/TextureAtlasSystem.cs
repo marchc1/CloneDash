@@ -275,6 +275,7 @@ namespace Nucleus.Models
 			Invalidate();
 			return removed;
 		}
+
 		public void RemoveTexturesByName(Predicate<string> regionCheck) {
 			var keysToRemove = UnpackedImages.Keys.Where(x => !regionCheck(x));
 			foreach (var key in keysToRemove)
