@@ -230,8 +230,6 @@ namespace CloneDash.Systems.CustomAlbums
 			});
 		}
 	}
-
-
 	public struct MDMCProfile
 	{
 		[JsonProperty("bio")] public string Bio;

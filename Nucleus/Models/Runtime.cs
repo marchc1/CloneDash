@@ -559,8 +559,6 @@ public class MeshAttachment : Attachment
 
 		return pos;
 	}
-
-
 	public override void Render(SlotInstance slot) {
 		Debug.Assert(Vertices != null); if (Vertices == null) return;
 		Debug.Assert(Triangles != null); if (Triangles == null) return;
