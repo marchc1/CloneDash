@@ -121,9 +121,11 @@ namespace CloneDash.Game
 
 			var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
 
-			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR), alpha);
+			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, PATHWAY_TOP_COLOR, PATHWAY_BOTTOM_COLOR).Adjust(0, 1.2f, -0.2f), alpha);
 			var ringSize = 1.4f;
 			Graphics2D.DrawRing(Position, ((32 / 2) - 4) * ringSize, ((32 / 2)) * ringSize);
+
+			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, PATHWAY_TOP_COLOR, PATHWAY_BOTTOM_COLOR), alpha);
 
 			var ringPartSize = 360f / divisors;
 			for (float i = 0; i < 360f; i += ringPartSize) {

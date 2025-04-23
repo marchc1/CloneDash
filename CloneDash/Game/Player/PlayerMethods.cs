@@ -8,6 +8,7 @@ using CloneDash.Game.Entities;
 using Nucleus.UI;
 using Nucleus;
 using FMOD;
+using Raylib_cs;
 
 namespace CloneDash.Game
 {
@@ -116,6 +117,7 @@ namespace CloneDash.Game
 			Health -= damage;
 			ResetCombo();
 		}
+		public double LastFeverIncreaseTime { get; private set; } = -2000;
 		/// <summary>
 		/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 		/// </summary>
@@ -125,6 +127,7 @@ namespace CloneDash.Game
 				return;
 
 			Fever = Math.Clamp(Fever + fever, 0, MaxFever);
+			LastFeverIncreaseTime = Conductor.Time;
 			if (Fever >= MaxFever)
 				EnterFever();
 		}
@@ -480,24 +483,42 @@ namespace CloneDash.Game
 			public override void Paint(float width, float height) {
 				var lvl = Level.As<CD_GameLevel>();
 
+				var startAtX = width / 4f;
+				var totalW = width / 2f;
+				var endAtX = startAtX + totalW;
+
+				Graphics2D.ScissorRect(RectangleF.XYWH(startAtX, 0, endAtX, height));
+
 				Graphics2D.SetDrawColor(255, 60, 42);
 				Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (lvl.Health / lvl.MaxHealth), 24);
 				Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
 				Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
 				Graphics2D.SetDrawColor(255, 220, 200);
-				Graphics2D.DrawText(width / 2f, 13, $"HP: {lvl.Health}/{lvl.MaxHealth}", "Noto Sans", 18, Anchor.Center);
+				Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", "Noto Sans", 22, Anchor.Center);
 				float feverRatio;
 				if (lvl.InFever)
 					feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
 				else
 					feverRatio = (float)lvl.Fever / lvl.MaxFever;
 
+				var lastTimeHit = lvl.LastFeverIncreaseTime;
+
 				Graphics2D.SetDrawColor(72, 160, 255);
 				Graphics2D.DrawRectangle(width / 4f, 32, (width / 2f) * feverRatio, 24);
+
+				// when hit gradient
+				var gradSize = 48;
+				var gradColor = new Color(162, 220, 255, (int)(float)NMath.Remap(lvl.Conductor.Time, lastTimeHit, lastTimeHit + .2f, 255, 0, clampOutput: true));
+				Graphics2D.DrawGradient(new(startAtX + ((width / 2f) * feverRatio) - gradSize, 33), new(gradSize, 24 - 2), gradColor, new(gradColor.R, gradColor.G, gradColor.B, (byte)0), Dock.Left);
+
+
+
 				Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
-				Graphics2D.DrawRectangleOutline(width / 4f, 32, (width / 2f), 24, 2);
+				Graphics2D.DrawRectangleOutline(startAtX, 32, (width / 2f), 24, 2);
 				Graphics2D.SetDrawColor(200, 220, 255);
-				Graphics2D.DrawText(width / 2f, 32 + 13, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2)}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", "Noto Sans", 18, Anchor.Center);
+				Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", "Noto Sans", 22, Anchor.Center);
+
+				Graphics2D.ScissorRect();
 			}
 		}
 
