@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net.Mail;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -29,7 +30,6 @@ public static class Model4System
 	/// Editor can use this too
 	/// </summary>
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.13.01";
-	public const string MODEL_FORMAT_REFJSON_EXT = ".nm4rj";
 
 	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 }
@@ -115,6 +115,14 @@ public class ModelData : IDisposable
 		if (disposedValue) return;
 		TextureAtlas?.Dispose();
 		disposedValue = true;
+	}
+
+	public void SetupAttachments() {
+		foreach (var skin in Skins) {
+			foreach (var attachment in skin.Attachments) {
+				attachment.Value.Setup(this);
+			}
+		}
 	}
 
 	// TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
@@ -413,6 +421,7 @@ public abstract class Attachment
 	public virtual void Render(SlotInstance slot) {
 
 	}
+	public virtual void Setup(ModelData data) { }
 }
 
 public class RegionAttachment : Attachment
@@ -421,7 +430,14 @@ public class RegionAttachment : Attachment
 	public Vector2F Scale;
 	public float Rotation;
 	public Color Color = Color.White;
-	public AtlasRegion Region;
+
+	public string Path;
+	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public bool InitializedRegion;
+
+	public override void Setup(ModelData data) {
+		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+	}
 
 	public override void Render(SlotInstance slot) {
 		var bone = slot.Bone;
@@ -509,11 +525,18 @@ public class MeshAttachment : Attachment
 {
 	public MeshVertex[] Vertices;
 	public MeshTriangle[] Triangles;
-	public AtlasRegion Region;
 
 	public Vector2F Position;
 	public float Rotation;
 	public Vector2F Scale;
+
+	public string Path;
+	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public bool InitializedRegion;
+
+	public override void Setup(ModelData data) {
+		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+	}
 
 	private Vector2F CalculateVertexWorldPosition(ModelInstance model, Transformation transform, MeshVertex vertex) {
 		if (vertex.Weights == null || vertex.Weights.Length <= 0)
@@ -1040,21 +1063,259 @@ public interface IModelFormat
 	void SaveModelToFile(string absoluteFilePath, ModelData modelData);
 }
 
+public enum NucleusModel_SaveType : ushort
+{
+	Attachment = 1 << 11,
+	Timeline = 1 << 12,
+
+	Attachment_Region = Attachment | 1,
+	Attachment_Mesh = Attachment | 2,
+
+	Timeline_Translate = Timeline | 1,
+	Timeline_TranslateX = Timeline | 2,
+	Timeline_TranslateY = Timeline | 3,
+	Timeline_Rotation = Timeline | 4,
+	Timeline_Scale = Timeline | 5,
+	Timeline_ScaleX = Timeline | 6,
+	Timeline_ScaleY = Timeline | 7,
+	Timeline_Shear = Timeline | 8,
+	Timeline_ShearX = Timeline | 9,
+	Timeline_ShearY = Timeline | 10,
+	Timeline_SlotColor4 = Timeline | 11,
+	Timeline_ActiveAttachment = Timeline | 12,
+}
+
+public static class NucleusModel_SaveType_Ext
+{
+	public static NucleusModel_SaveType ReadSaveType(this BinaryReader reader) {
+		return (NucleusModel_SaveType)reader.ReadUInt16();
+	}
+	public static void WriteSaveType(this BinaryWriter writer, NucleusModel_SaveType savetype) {
+		writer.Write((ushort)savetype);
+	}
+}
+
 // More efficient binary loader.
 public class ModelBinary : IModelFormat
 {
-	private static BoneData readBone(BinaryReader writer) {
+	public const string EXTENSION = "nm4b";
 
-	}
-	private static SlotData readSlot(BinaryReader writer) {
-						
-	}					
-	private static Skin readSkin(BinaryReader writer) {
-						
-	}					
-	private static Animation readAnimation(BinaryReader writer) {
+	private static BoneData readBone(BinaryReader reader, List<BoneData> workingArray) {
+		BoneData bone = new();
 
+		bone.Name = reader.ReadString();
+		bone.Index = reader.ReadInt32();
+		var parent = reader.ReadInt32();
+		bone.Parent = parent == -1 ? null : workingArray[parent];
+		bone.Length = reader.ReadSingle();
+
+		bone.TransformMode = (TransformMode)reader.ReadInt32();
+		bone.Position = reader.ReadVector2F();
+		bone.Rotation = reader.ReadSingle();
+		bone.Scale = reader.ReadVector2F();
+		bone.Shear = reader.ReadVector2F();
+
+		return bone;
 	}
+	private static SlotData readSlot(BinaryReader reader, ModelData workingModelData) {
+		SlotData slot = new();
+
+		slot.Index = reader.ReadInt32();
+		slot.Name = reader.ReadString();
+		slot.BoneData = workingModelData.BoneDatas[reader.ReadInt32()];
+		slot.Color = reader.ReadColor();
+		slot.DarkColor = reader.ReadNullableColor();
+		slot.Attachment = reader.ReadNullableString();
+		slot.BlendMode = (BlendMode)reader.ReadInt32();
+
+		return slot;
+	}
+	private static SkinEntry readSkinEntry(BinaryReader reader) => new(reader.ReadString(), reader.ReadInt32());
+	private static MeshAttachmentWeight readMeshAttachmentWeight(BinaryReader reader) => new(reader.ReadInt32(), reader.ReadSingle(), reader.ReadVector2F());
+	private static MeshVertex readMeshVertex(BinaryReader reader) => new() {
+		X = reader.ReadSingle(),
+		Y = reader.ReadSingle(),
+		U = reader.ReadSingle(),
+		V = reader.ReadSingle(),
+		Weights = reader.ReadArray(readMeshAttachmentWeight),
+	};
+	private static MeshTriangle readMeshTriangle(BinaryReader reader) => new() {
+		V1 = reader.ReadInt32(),
+		V2 = reader.ReadInt32(),
+		V3 = reader.ReadInt32()
+	};
+	private static Attachment readAttachment(BinaryReader reader) {
+		switch (reader.ReadSaveType()) {
+			case NucleusModel_SaveType.Attachment_Region: {
+					RegionAttachment attachment = new();
+					attachment.Position = reader.ReadVector2F();
+					attachment.Rotation = reader.ReadSingle();
+					attachment.Scale = reader.ReadVector2F();
+					attachment.Color = reader.ReadColor();
+					attachment.Path = reader.ReadString();
+
+					return attachment;
+				}
+				break;
+			case NucleusModel_SaveType.Attachment_Mesh: {
+					MeshAttachment attachment = new();
+					attachment.Vertices = reader.ReadArray(readMeshVertex);
+					attachment.Triangles = reader.ReadArray(readMeshTriangle);
+
+					attachment.Position = reader.ReadVector2F();
+					attachment.Rotation = reader.ReadSingle();
+					attachment.Scale = reader.ReadVector2F();
+					attachment.Path = reader.ReadString();
+
+					return attachment;
+				}
+				break;
+			default: throw new NotImplementedException();
+		}
+	}
+	private static Skin readSkin(BinaryReader reader, ModelData modelData) {
+		Skin skin = new();
+
+		skin.Name = reader.ReadString();
+		skin.Attachments = reader.ReadDictionary(readSkinEntry, readAttachment);
+
+		var c = reader.ReadInt32();
+		skin.Bones.EnsureCapacity(c);
+		for (int i = 0; i < c; i++)
+			skin.Bones.Add(reader.ReadIndexThenFetch(modelData.BoneDatas));
+
+		return skin;
+	}
+	private static Keyframe<string?> readKeyframeStringN(BinaryReader reader) {
+		return new() {
+			Time = reader.ReadDouble(),
+			Value = reader.ReadNullableString()
+		};
+	}
+	private static void readIntoFCurveStringN(BinaryReader reader, FCurve<string?> fcs) {
+		fcs.Keyframes = reader.ReadList(readKeyframeStringN);
+	}
+	private static void readIntoKeyframeFloatHandle(BinaryReader reader, ref KeyframeHandle<float> handle) {
+		handle.Time = reader.ReadDouble();
+		handle.Time = reader.ReadSingle();
+		handle.HandleType = (KeyframeHandleType)reader.ReadInt32();
+	}
+	private static Keyframe<float> readKeyframeFloat(BinaryReader reader) {
+		Keyframe<float> kf = new() {
+			Time = reader.ReadDouble(),
+			Value = reader.ReadSingle()
+		};
+
+		if (reader.ReadBoolean()) {
+			KeyframeHandle<float> lf = new();
+			readIntoKeyframeFloatHandle(reader, ref lf);
+			kf.RightHandle = lf;
+		}
+
+		if (reader.ReadBoolean()) {
+			KeyframeHandle<float> rf = new();
+			readIntoKeyframeFloatHandle(reader, ref rf);
+			kf.RightHandle = rf;
+		}
+
+		kf.Easing = (KeyframeEasing)reader.ReadInt32();
+		kf.Interpolation = (KeyframeInterpolation)reader.ReadInt32();
+
+		return kf;
+	}
+
+	private static void readIntoMonoBoneFloatPropertyTimeline(BinaryReader reader, MonoBoneFloatPropertyTimeline mono) {
+		mono.BoneIndex = reader.ReadInt32();
+		readIntoFCurveFloat(reader, mono.Curves[0]);
+	}
+	private static void readIntoDuoBoneFloatPropertyTimeline(BinaryReader reader, DuoBoneFloatPropertyTimeline duo) {
+		duo.BoneIndex = reader.ReadInt32();
+		readIntoFCurveFloat(reader, duo.Curves[0]);
+		readIntoFCurveFloat(reader, duo.Curves[1]);
+	}
+	private static void readIntoFCurveFloat(BinaryReader reader, FCurve<float> fcf) {
+		fcf.Keyframes = reader.ReadList(readKeyframeFloat);
+	}
+	private static Timeline readTimeline(BinaryReader reader) {
+		switch (reader.ReadSaveType()) {
+			case NucleusModel_SaveType.Timeline_Translate: {
+					TranslateTimeline tl = new();
+					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_TranslateX: {
+					TranslateXTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_TranslateY: {
+					TranslateYTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_Rotation: {
+					RotationTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_Scale: {
+					ScaleTimeline tl = new();
+					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_ScaleX: {
+					ScaleXTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_ScaleY: {
+					ScaleYTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_Shear: {
+					ShearTimeline tl = new();
+					readIntoDuoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_ShearX: {
+					ShearXTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_ShearY: {
+					ShearYTimeline tl = new();
+					readIntoMonoBoneFloatPropertyTimeline(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_ActiveAttachment: {
+					ActiveAttachmentTimeline tl = new();
+
+					readIntoFCurveStringN(reader, tl.Curves[0]);
+
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_SlotColor4: {
+					SlotColor4Timeline tl = new();
+					readIntoFCurveFloat(reader, tl.Curves[0]);
+					readIntoFCurveFloat(reader, tl.Curves[1]);
+					readIntoFCurveFloat(reader, tl.Curves[2]);
+					readIntoFCurveFloat(reader, tl.Curves[3]);
+					return tl;
+				}
+			default: throw new NotSupportedException();
+		}
+	}
+	private static Animation readAnimation(BinaryReader reader) {
+		Animation anim = new Animation();
+
+		anim.Duration = reader.ReadSingle();
+		anim.Name = reader.ReadString();
+		anim.Timelines = reader.ReadList(readTimeline);
+
+		return anim;
+	}
+
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		using (Stream? stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
@@ -1063,11 +1324,15 @@ public class ModelBinary : IModelFormat
 				ModelData data = new ModelData();
 
 				data.FormatVersion = reader.ReadString();
+				bool compressed = reader.ReadBoolean();
+				if (compressed) throw new NotImplementedException("Compression not yet implemented!");
+				for (int i = 0; i < 8; i++) reader.ReadInt32(); // placeholder padding bytes, if they're ever needed
+
 				data.Name = reader.ReadNullableString();
 
-				data.BoneDatas = reader.ReadList(readBone);
-				data.SlotDatas= reader.ReadList(readSlot);
-				data.Skins = reader.ReadList(readSkin);
+				data.BoneDatas = reader.ReadList<BoneData>(readBone);
+				data.SlotDatas = reader.ReadList(data, readSlot);
+				data.Skins = reader.ReadList(data, readSkin);
 				data.DefaultSkin = reader.ReadIndexThenFetch(data.Skins);
 				data.Animations = reader.ReadList(readAnimation);
 
@@ -1075,33 +1340,195 @@ public class ModelBinary : IModelFormat
 				data.TextureAtlas = new();
 				data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
 
+				data.SetupAttachments();
+
 				return data;
 			}
 		}
 	}
 
 	private static void writeBone(BinaryWriter writer, BoneData bone) {
+		writer.Write(bone.Name);
+		writer.Write(bone.Index);
+		writer.Write(bone.Parent?.Index ?? -1);
+		writer.Write(bone.Length);
 
+		writer.Write((int)bone.TransformMode);
+		writer.Write(bone.Position);
+		writer.Write(bone.Rotation);
+		writer.Write(bone.Scale);
+		writer.Write(bone.Shear);
 	}
-	private static void writeSlot(BinaryWriter writer, SlotData slot) {
-
+	private static void writeSlot(ModelData modelData, BinaryWriter writer, SlotData slot) {
+		writer.Write(slot.Index);
+		writer.Write(slot.Name);
+		writer.WriteIndexOf(modelData.BoneDatas, slot.BoneData);
+		writer.Write(slot.Color);
+		writer.Write(slot.DarkColor);
+		writer.WriteNullableString(slot.Attachment);
+		writer.Write((int)slot.BlendMode);
 	}
-	private static void writeSkin(BinaryWriter writer, Skin skin) {
 
+	private static void writeSkinEntry(BinaryWriter writer, SkinEntry skinEntry) {
+		writer.Write(skinEntry.Name);
+		writer.Write(skinEntry.SlotIndex);
+	}
+
+	private static void writeMeshAttachmentWeight(BinaryWriter writer, MeshAttachmentWeight vweight) {
+		writer.Write(vweight.Bone);
+		writer.Write(vweight.Weight);
+		writer.Write(vweight.Position);
+	}
+
+	private static void writeMeshVertex(BinaryWriter writer, MeshVertex vertex) {
+		writer.Write(vertex.X);
+		writer.Write(vertex.Y);
+		writer.Write(vertex.U);
+		writer.Write(vertex.V);
+		if (vertex.Weights == null) {
+			writer.Write(false);
+		}
+		else {
+			writer.Write(true);
+			writer.WriteArray(vertex.Weights, writeMeshAttachmentWeight);
+		}
+	}
+
+	private static void writeMeshTriangle(BinaryWriter writer, MeshTriangle triangle) {
+		writer.Write(triangle.V1);
+		writer.Write(triangle.V2);
+		writer.Write(triangle.V3);
+	}
+
+	private static void writeAttachment(BinaryWriter writer, Attachment attachment) {
+		writer.Write(attachment.Name);
+		switch (attachment) {
+			case RegionAttachment regionAttachment:
+				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Region);
+				writer.Write(regionAttachment.Position);
+				writer.Write(regionAttachment.Rotation);
+				writer.Write(regionAttachment.Scale);
+				writer.Write(regionAttachment.Color);
+				writer.Write(regionAttachment.Path);
+				break;
+			case MeshAttachment meshAttachment:
+				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Mesh);
+				writer.WriteArray(meshAttachment.Vertices, writeMeshVertex);
+				writer.WriteArray(meshAttachment.Triangles, writeMeshTriangle);
+				writer.Write(meshAttachment.Position);
+				writer.Write(meshAttachment.Rotation);
+				writer.Write(meshAttachment.Scale);
+				writer.Write(meshAttachment.Path);
+				break;
+		}
+	}
+
+	private static void writeSkin(ModelData modelData, BinaryWriter writer, Skin skin) {
+		writer.Write(skin.Name);
+		writer.WriteDictionary(skin.Attachments, writeSkinEntry, writeAttachment);
+		writer.Write(skin.Bones.Count);
+		foreach (var bone in skin.Bones) writer.WriteIndexOf(modelData.BoneDatas, bone);
+	}
+
+	private static void writeKeyframeStringN(BinaryWriter writer, Keyframe<string?> kf) {
+		writer.Write(kf.Time);
+		writer.WriteNullableString(kf.Value);
+
+		// We can skip everything else, since strings are not interpolated ever
+	}
+	private static void writeFCurveStringN(BinaryWriter writer, FCurve<string?> fcf) {
+		writer.WriteList(fcf.Keyframes, writeKeyframeStringN);
+	}
+
+	private static void writeKeyframeFloatHandle(BinaryWriter writer, ref KeyframeHandle<float> kfh) {
+		writer.Write(kfh.Time);
+		writer.Write(kfh.Value);
+		writer.Write((int)kfh.HandleType);
+	}
+	private static void writeKeyframeFloat(BinaryWriter writer, Keyframe<float> kf) {
+		writer.Write(kf.Time);
+		writer.Write(kf.Value);
+
+		if (!kf.LeftHandle.HasValue) writer.Write(false);
+		else {
+			var handle = kf.LeftHandle.Value;
+			writer.Write(true);
+			writeKeyframeFloatHandle(writer, ref handle);
+		}
+
+		if (!kf.RightHandle.HasValue) writer.Write(false);
+		else {
+			var handle = kf.RightHandle.Value;
+			writer.Write(true);
+			writeKeyframeFloatHandle(writer, ref handle);
+		}
+
+		writer.Write((int)kf.Easing);
+		writer.Write((int)kf.Interpolation);
+	}
+	private static void writeFCurveFloat(BinaryWriter writer, FCurve<float> fcf) {
+		writer.WriteList(fcf.Keyframes, writeKeyframeFloat);
+	}
+
+	private static void writeTimeline(BinaryWriter writer, Timeline timeline) {
+		writer.WriteSaveType(timeline switch {
+			TranslateTimeline => NucleusModel_SaveType.Timeline_Translate,
+			TranslateXTimeline => NucleusModel_SaveType.Timeline_TranslateX,
+			TranslateYTimeline => NucleusModel_SaveType.Timeline_TranslateY,
+			RotationTimeline => NucleusModel_SaveType.Timeline_Rotation,
+			ScaleTimeline => NucleusModel_SaveType.Timeline_Scale,
+			ScaleXTimeline => NucleusModel_SaveType.Timeline_ScaleX,
+			ScaleYTimeline => NucleusModel_SaveType.Timeline_ScaleY,
+			ShearTimeline => NucleusModel_SaveType.Timeline_Shear,
+			ShearXTimeline => NucleusModel_SaveType.Timeline_ShearX,
+			ShearYTimeline => NucleusModel_SaveType.Timeline_ShearY,
+			ActiveAttachmentTimeline => NucleusModel_SaveType.Timeline_ActiveAttachment,
+			SlotColor4Timeline => NucleusModel_SaveType.Timeline_SlotColor4,
+		});
+
+		switch (timeline) {
+			case MonoBoneFloatPropertyTimeline duo:
+				writer.Write(duo.BoneIndex);
+				writeFCurveFloat(writer, duo.Curves[0]);
+				break;
+			case DuoBoneFloatPropertyTimeline duo:
+				writer.Write(duo.BoneIndex);
+				writeFCurveFloat(writer, duo.Curves[0]);
+				writeFCurveFloat(writer, duo.Curves[1]);
+				break;
+			case SlotColor4Timeline sc4:
+				writer.Write(sc4.SlotIndex);
+				writeFCurveFloat(writer, sc4.Curves[0]);
+				writeFCurveFloat(writer, sc4.Curves[1]);
+				writeFCurveFloat(writer, sc4.Curves[2]);
+				writeFCurveFloat(writer, sc4.Curves[3]);
+				break;
+			case ActiveAttachmentTimeline duo:
+				writer.Write(duo.SlotIndex);
+				writeFCurveStringN(writer, duo.Curves[0]);
+				break;
+			default:
+				throw new NotImplementedException();
+		}
 	}
 	private static void writeAnimation(BinaryWriter writer, Animation anim) {
-
+		writer.Write(anim.Duration);
+		writer.Write(anim.Name);
+		writer.WriteList(anim.Timelines, writeTimeline);
 	}
 
 	public void SaveModelToFile(string absoluteFilePath, ModelData modelData) {
 		using (FileStream stream = File.Open(absoluteFilePath, FileMode.Create, FileAccess.Write))
 		using (BinaryWriter writer = new BinaryWriter(stream)) {
 			writer.Write(modelData.FormatVersion);
+			writer.Write(false); // todo: compression, this is the flag for that
+								 // if compressed; would include a string to specify compression algorithm after
+			for (int i = 0; i < 8; i++) writer.Write(0); // placeholder padding bytes, if they're ever needed. 8 * 4 = 32 bytes
 			writer.WriteNullableString(modelData.Name);
 
 			writer.WriteList(modelData.BoneDatas, writeBone);
-			writer.WriteList(modelData.SlotDatas, writeSlot);
-			writer.WriteList(modelData.Skins, writeSkin);
+			writer.WriteList(modelData.SlotDatas, (writer, slot) => writeSlot(modelData, writer, slot));
+			writer.WriteList(modelData.Skins, (writer, slot) => writeSkin(modelData, writer, slot));
 			writer.WriteIndexOf(modelData.Skins, modelData.DefaultSkin);
 			writer.WriteList(modelData.Animations, writeAnimation);
 		}
@@ -1114,6 +1541,7 @@ public class ModelBinary : IModelFormat
 // The editor does something similar but with EditorModel instead.
 public class ModelRefJSON : IModelFormat
 {
+	public const string EXTENSION = "nm4rj";
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
 		private static HashSet<Type> ApprovedBindables;
@@ -1165,6 +1593,9 @@ public class ModelRefJSON : IModelFormat
 		// Load the texture atlas now
 		data.TextureAtlas = new();
 		data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
+
+		data.SetupAttachments();
+
 		return data;
 	}
 
@@ -1174,5 +1605,3 @@ public class ModelRefJSON : IModelFormat
 		data.TextureAtlas.SaveTo(filepath);
 	}
 }
-
-

@@ -1,6 +1,8 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Types;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -50,6 +52,23 @@ namespace Nucleus
 			return list[System.Random.Shared.Next(0, list.Count)];
 		}
 
+		public static T[] ReadArray<T>(this BinaryReader reader, Func<BinaryReader, T> deserializer) {
+			int size = reader.Read7BitEncodedInt();
+			T[] array = new T[size];
+			for (int i = 0; i < size; i++) {
+				array[i] = deserializer(reader);
+			}
+			return array;
+		}
+
+		public static void WriteArray<T>(this BinaryWriter writer, T[] items, Action<BinaryWriter, T> serializer) {
+			int c = items.Length;
+			writer.Write7BitEncodedInt(c);
+			for (int i = 0; i < c; i++) {
+				serializer(writer, items[i]);
+			}
+		}
+
 		public static List<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, T> deserializer) {
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
@@ -58,8 +77,24 @@ namespace Nucleus
 			}
 			return array;
 		}
+		public static List<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, List<T>, T> deserializer) {
+			int size = reader.Read7BitEncodedInt();
+			List<T> array = new(size);
+			for (int i = 0; i < size; i++) {
+				array[i] = deserializer(reader, array);
+			}
+			return array;
+		}
+		public static List<T> ReadList<T, PT>(this BinaryReader reader, PT pt, Func<BinaryReader, PT, T> deserializer) {
+			int size = reader.Read7BitEncodedInt();
+			List<T> array = new(size);
+			for (int i = 0; i < size; i++) {
+				array[i] = deserializer(reader, pt);
+			}
+			return array;
+		}
 
-		public static void WriteList<T>(this BinaryWriter writer, IList<T> items, Action<BinaryWriter, T> serializer) {
+		public static void WriteList<T>(this BinaryWriter writer, List<T> items, Action<BinaryWriter, T> serializer) {
 			int c = items.Count;
 			writer.Write7BitEncodedInt(c);
 			for (int i = 0; i < c; i++) {
@@ -104,7 +139,34 @@ namespace Nucleus
 		}
 
 		public static void WriteIndexOf<T>(this BinaryWriter writer, IList<T> array, T item) {
-			writer.Write(array.IndexOf(item));
+			var index = array.IndexOf(item);
+			Debug.Assert(index != -1);
+			writer.Write(index);
+		}
+
+		public static Vector2F ReadVector2F(this BinaryReader reader) => new(reader.ReadSingle(), reader.ReadSingle());
+		public static void Write(this BinaryWriter writer, Vector2F vec) {
+			writer.Write(vec.X);
+			writer.Write(vec.Y);
+		}
+
+		public static Color ReadColor(this BinaryReader reader) => new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
+		public static void Write(this BinaryWriter writer, Color col) {
+			writer.Write(col.R);
+			writer.Write(col.G);
+			writer.Write(col.B);
+			writer.Write(col.A);
+		}
+
+		public static Color? ReadNullableColor(this BinaryReader reader) => reader.ReadBoolean() ? new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()) : null;
+		public static void Write(this BinaryWriter writer, Color? col) {
+			if(col == null) {
+				writer.Write(false);
+				return;
+			}
+
+			writer.Write(true);
+			writer.Write(col.Value);
 		}
 	}
 }

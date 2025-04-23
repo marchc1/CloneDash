@@ -691,13 +691,25 @@ namespace Nucleus.ModelEditor
 			window.Title = $"Export [{Model4System.MODEL_FORMAT_VERSION}]";
 			window.MakePopup();
 
-			var btn = window.Add<Button>();
-			btn.Text = "Export JSON";
-			btn.Dock = Dock.Top;
-			btn.MouseReleaseEvent += (_, _, _) => {
-				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [Model4System.MODEL_FORMAT_REFJSON_EXT], "Model4 as Ref'd JSON");
+			var btnJson = window.Add<Button>();
+			btnJson.Text = "Export JSON [.nm4rj]";
+			btnJson.Dock = Dock.Top;
+			btnJson.MouseReleaseEvent += (_, _, _) => {
+				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [ModelRefJSON.EXTENSION], "Model4 as Ref'd JSON");
 				if (!save.Cancelled) {
 					new ModelRefJSON().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(File.Models.First()));
+				}
+				Logs.Info("Saved.");
+				window.Remove();
+			};
+
+			var btnBinary = window.Add<Button>();
+			btnBinary.Text = "Export Binary [.nm4b]";
+			btnBinary.Dock = Dock.Top;
+			btnBinary.MouseReleaseEvent += (_, _, _) => {
+				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [ModelBinary.EXTENSION], "Model4 as Binary Data");
+				if (!save.Cancelled) {
+					new ModelBinary().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(File.Models.First()));
 				}
 				Logs.Info("Saved.");
 				window.Remove();

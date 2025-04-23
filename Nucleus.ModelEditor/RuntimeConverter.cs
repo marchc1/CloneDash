@@ -10,12 +10,8 @@ using System.Threading.Tasks;
 
 namespace Nucleus.ModelEditor;
 
-public class RuntimeConverter : IModelFormat
+public class RuntimeConverter
 {
-	public ModelData LoadModelFromFile(string pathID, string path) {
-		throw new NotImplementedException("Editor runtime viewer isn't designed to load from a file; use LoadModelFromEditor.");
-	}
-
 	private static void SetupVertexExport(
 											Dictionary<EditorBone, BoneData> boneDataLookup,
 											EditorMeshAttachment mesh,
@@ -113,7 +109,7 @@ public class RuntimeConverter : IModelFormat
 							newRegion.Position = region.Position;
 							newRegion.Rotation = region.Rotation;
 							newRegion.Scale = region.Scale;
-							Debug.Assert(model.Images.TextureAtlas.TryGetTextureRegion(region.GetPath().TrimStart('<').TrimEnd('>'), out newRegion.Region));
+							newRegion.Path = region.GetPath().TrimStart('<').TrimEnd('>');
 
 							realAttachment = newRegion;
 							break;
@@ -153,7 +149,7 @@ public class RuntimeConverter : IModelFormat
 							newMesh.Triangles = trianglesInst.ToArray();
 							newMesh.Vertices = verticesInst.ToArray();
 
-							Debug.Assert(model.Images.TextureAtlas.TryGetTextureRegion(mesh.GetPath().TrimStart('<').TrimEnd('>'), out newMesh.Region));
+							newMesh.Path = mesh.GetPath().TrimStart('<').TrimEnd('>');
 							realAttachment = newMesh;
 
 							break;
