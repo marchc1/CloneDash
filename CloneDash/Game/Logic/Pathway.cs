@@ -21,13 +21,13 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Bottom pathway will be placed at Y coordinate(winH * PATHWAY_BOTTOM_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_BOTTOM_PERCENTAGE => .25f;
+		public static float PATHWAY_BOTTOM_PERCENTAGE => .21f;
 		/// <summary>
 		/// Both pathways will be placed at X coordinate (winH * PATHWAY_LEFT_PERCENTAGE)
 		/// </summary>
 		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
 
-		public static float GetPathwayLeft() => 750 * PATHWAY_LEFT_PERCENTAGE;
+		public static float GetPathwayLeft() => 770 * PATHWAY_LEFT_PERCENTAGE;
 		public static float GetPathwayTop() => 900 * PATHWAY_TOP_PERCENTAGE;
 		public static float GetPathwayBottom() => 900 * PATHWAY_BOTTOM_PERCENTAGE;
 		public static float GetPathwayMiddle() {
@@ -106,18 +106,24 @@ namespace CloneDash.Game
         }
 
 		public void Render() {
-			var beatInfluence = 1 - Level.As<CD_GameLevel>().Conductor.NoteDivisorRealtime(4);
+			var lvl = Level.As<CD_GameLevel>();
+			var conductor = lvl.Conductor;
+			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
 			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42) * 2;
-			var curtimeOffset = (float)Level.Curtime * 120;
+			var curtimeOffset = (float)conductor.Time * 200;
+
+			var alphaM = Math.Max(0, Math.Min(conductor.Time + 1, 1));
+			if (alphaM <= 0) return;
 
 			float divisors = 3;
 			float ring_offset = 360 / divisors / 2;
 
-			var alpha = (int)Raymath.Remap(realInfluence, 0, 1, 79, 130);
+			var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
 
 			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR), alpha);
-			Graphics2D.DrawRing(Position, ((32 / 2) - 4) * 2, ((32 / 2)) * 2);
+			var ringSize = 1.4f;
+			Graphics2D.DrawRing(Position, ((32 / 2) - 4) * ringSize, ((32 / 2)) * ringSize);
 
 			var ringPartSize = 360f / divisors;
 			for (float i = 0; i < 360f; i += ringPartSize) {

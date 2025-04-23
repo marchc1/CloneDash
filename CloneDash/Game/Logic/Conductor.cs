@@ -137,7 +137,7 @@ namespace CloneDash.Game
         /// <returns></returns>
         public float NoteDivisorRealtime(float division = 4) {
             var div2sec = NoteDivisorToSeconds(division);
-            return ((float)Time % div2sec) / div2sec;
+            return ((float)NMath.Modulo(Time, div2sec)) / div2sec;
         }
     }
 }

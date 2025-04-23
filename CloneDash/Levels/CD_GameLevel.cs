@@ -510,7 +510,7 @@ namespace CloneDash.Game
 		public float GetPlayerY(double jumpRatio) {
 			var height = EngineCore.GetWindowHeight();
 
-			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) - (height * -.28f);
+			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) + 225;
 		}
 
 		public override void PreThink(ref FrameState frameState) {
@@ -630,14 +630,16 @@ namespace CloneDash.Game
 			}
 
 			Player.Position = new Vector2F(
-				Game.Pathway.GetPathwayLeft() - 245,
+				Game.Pathway.GetPathwayLeft() - 185,
 				yoff ?? GetPlayerY(CharacterYRatio)
 			);
+			Player.Scale = new(PlayerScale);
 
 			HologramPlayer.Position = new Vector2F(
-				Game.Pathway.GetPathwayLeft() - 245,
+				Game.Pathway.GetPathwayLeft() - 185,
 				yoff ?? GetPlayerY(HologramCharacterYRatio)
 			);
+			HologramPlayer.Scale = new(PlayerScale);
 
 			if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
 				HologramPlayer.Visible = true;
@@ -963,6 +965,8 @@ namespace CloneDash.Game
 			ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 			ent.Build();
 		}
+		public float PlayerScale => 1;
+		public float PlayScale => 1.2f;
 		public float GlobalScale => 1f;
 		public override void PreRenderBackground(FrameState frameState) {
 			Boss.Scale = new(GlobalScale);
@@ -970,9 +974,9 @@ namespace CloneDash.Game
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
-			cam.Zoom = (frameState.WindowHeight / 900 / 2) + (zoomValue / 5f);
+			cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
 			cam.Rotation = 0.0f;
-			cam.Offset = new((frameState.WindowWidth / 2) - (150), frameState.WindowHeight / 2);
+			cam.Offset = new((frameState.WindowWidth / 2), frameState.WindowHeight / 2);
 			cam.Target = new((frameState.WindowWidth / 1) * zoomValue, 0);
 			cam.Offset += cam.Target;
 
