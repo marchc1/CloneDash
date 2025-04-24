@@ -45,7 +45,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Does the killing of this entity reward the player, either with healing or score?
 		/// </summary>
-		public bool DoesRewardPlayer { get; private set; } = true;
+		public bool DoesRewardPlayer { get; protected set; } = true;
 
 		/// <summary>
 		/// How much health does the entity give (if any)

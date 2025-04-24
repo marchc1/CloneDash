@@ -15,7 +15,11 @@ namespace CloneDash.Game.Entities
 		}
 
 		protected override void OnHit(PathwaySide side) {
+			// Hack to trick Kill into not calling RewardPlayer without heal.
+			// Set it back right after
+			DoesRewardPlayer = false;
 			Kill();
+			DoesRewardPlayer = true;
 			RewardPlayer(true);
 		}
 

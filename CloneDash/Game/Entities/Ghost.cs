@@ -32,6 +32,7 @@ namespace CloneDash.Game.Entities
 
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
+
 			Model = scene.Ghost.GetModelFromPathway(Pathway).Instantiate();
 
 			var animationName = scene.Ghost.GetAnimationString(Speed, out var showtime);
