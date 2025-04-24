@@ -1,8 +1,10 @@
-﻿using Nucleus.ModelEditor.UI;
+﻿using Nucleus.Core;
+using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Poly2Tri;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -46,7 +48,7 @@ namespace Nucleus.ModelEditor
 			var win = panel.Add<Window>();
 			win.Size = new(330, panel.Size.H);
 			win.Center();
-			win.Title = "Edit Mesh";
+			win.Title = "Edit Clipping";
 			win.HideNonCloseButtons();
 
 			var row1 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
@@ -132,10 +134,12 @@ namespace Nucleus.ModelEditor
 						SetMode(EditClipping_Mode.Create);
 					}
 					else {
+						Attachment.SetupWorldTransform();
+
 						var gridpos = ModelEditor.Active.Editor.ScreenToGrid(mousePos);
 						var attachpos = Attachment.WorldTransform.Translation;
 						var attachClickPos = gridpos - attachpos;
-
+						
 						var newClickP = Attachment.WorldTransform.WorldToLocal(attachClickPos + Attachment.WorldTransform.Translation);
 						WorkingLines.Add(EditorVertex.FromVector(newClickP, new(0, 0), Attachment));
 					}
@@ -204,6 +208,84 @@ namespace Nucleus.ModelEditor
 			foreach (var co in ShapeEdges) {
 				co.Attachment = this;
 				yield return co;
+			}
+		}
+
+		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
+			PropertiesPanel.OperatorButton<EditClippingOperator>(buttons, "Clipping Editor", "models/clipping.png");
+		}
+
+		public override void RenderOverlay() {
+			if (Hidden) return;
+
+			base.RenderOverlay();
+			var camsize = ModelEditor.Active.Editor.CameraZoom;
+
+			EditMeshOperator? meshOp = ModelEditor.Active.File.ActiveOperator as EditMeshOperator;
+
+			Graphics2D.SetDrawColor(245, 100, 20);
+			var offset = Graphics2D.Offset;
+			Graphics2D.ResetDrawingOffset();
+
+			var transform = WorldTransform;
+
+			foreach (var tri in Triangles) {
+				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
+				EditorVertex? av1 = tp1.AssociatedObject as EditorVertex,
+							av2 = tp2.AssociatedObject as EditorVertex,
+							av3 = tp3.AssociatedObject as EditorVertex;
+
+				if (av1 == null || av2 == null || av3 == null) continue;
+
+				//av1.Attachment = this;
+				//av2.Attachment = this;
+				//av3.Attachment = this;
+
+				bool ic1 = av1.IsConstrainedTo(av2), ic2 = av2.IsConstrainedTo(av3), ic3 = av3.IsConstrainedTo(av1);
+
+				Vector2F v1 = CalculateVertexWorldPosition(transform, av1),
+						 v2 = CalculateVertexWorldPosition(transform, av2),
+						 v3 = CalculateVertexWorldPosition(transform, av3);
+
+				if (ic1) Graphics2D.DrawLine(v1, v2);
+				if (ic2) Graphics2D.DrawLine(v2, v3);
+				if (ic3) Graphics2D.DrawLine(v1, v1);
+			}
+
+			Graphics2D.SetOffset(offset);
+
+			for (int i = 0; i < ShapeEdges.Count; i++) {
+				var edge1 = ShapeEdges[i];
+				var edge2 = ShapeEdges[(i + 1) % ShapeEdges.Count];
+				var isHighlighted =
+						((edge1.Hovered && meshOp == null)
+						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorVertex));
+
+				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
+
+				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
+
+
+				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
+
+				var vertex1 = CalculateVertexWorldPosition(transform, edge1);
+				var vertex2 = CalculateVertexWorldPosition(transform, edge2);
+
+				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
+
+				if (Selected) {
+					RenderVertex(edge1, isHighlighted, vertex1);
+				}
+			}
+
+			// hack; but has to be done with the current rendering order
+			if (
+				ModelEditor.Active.File.ActiveOperator is EditClippingOperator editClipOperator
+				&& editClipOperator.CurrentMode == EditClipping_Mode.Create
+				&& editClipOperator.HoveredVertex == null
+			) {
+				editClipOperator.DrawCreateGizmo();
 			}
 		}
 	}

@@ -28,9 +28,76 @@ namespace Nucleus.ModelEditor
 		protected List<Triangle> triangles = [];
 		[JsonIgnore] public bool Invalidated { get; set; } = true;
 		public bool Invalidate() => Invalidated = true;
+		public virtual void UpdateShape(Shape shape) {
+
+		}
+		public void RefreshDelaunator() {
+			if (Invalidated) {
+				triangles.Clear();
+
+				TriPoint[] triPoints = new TriPoint[ShapeEdges.Count];
+				for (int i = 0; i < ShapeEdges.Count; i++) {
+					var vertex = ShapeEdges[i];
+
+					triPoints[i] = new() {
+						X = vertex.X,
+						Y = vertex.Y,
+						AssociatedObject = vertex
+					};
+				}
+
+				var workingShape = new Shape(triPoints);
+
+				Dictionary<EditorVertex, HashSet<EditorVertex>> avoidDuplicateEdges = [];
+				UpdateShape(workingShape);
+
+				foreach (var constrainedFromTripoint in workingShape.GetAllPoints()) {
+					var constrainedFrom = constrainedFromTripoint.AssociatedObject as EditorVertex ?? throw new Exception();
+					if (!constrainedFrom.HasConstrainedEdges) continue;
+
+					foreach (var constrainedTo in constrainedFrom.ConstrainedVertices) {
+						// Find the tri point constrainedTo is associated with
+						// This entire thing REALLY needs to be fixed up. I'm 
+						// just trying to get it working for the sake of getting
+						// it working, then optimize afterwards if needed
+						var constrainedToTripoint = workingShape.GetAllPoints().FirstOrDefault(x => x.AssociatedObject == constrainedTo) ?? throw new Exception();
+
+						if (!avoidDuplicateEdges.TryGetValue(constrainedFrom, out var fromHash)) {
+							fromHash = []; avoidDuplicateEdges[constrainedFrom] = fromHash;
+						}
+
+						if (!avoidDuplicateEdges.TryGetValue(constrainedTo, out var toHash)) {
+							toHash = []; avoidDuplicateEdges[constrainedTo] = toHash;
+						}
+
+						if (fromHash.Add(constrainedFrom) && fromHash.Add(constrainedTo)) {
+							workingShape.ConstrainedEdges.Add(new(constrainedFromTripoint, constrainedToTripoint));
+						}
+					}
+				}
+
+				workingShape.Triangulate(triangles);
+				Shape = workingShape;
+				Invalidated = false;
+
+				//foreach (var point in Shape.Points)
+				//triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
+
+				//foreach (var point in Shape.SteinerPoints)
+				//triPointToMeshVertex[point] = point.AssociatedObject as MeshVertex ?? throw new Exception("No mesh vertex association");
+			}
+		}
 
 		public void SetupWorldTransform() {
 			WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+		}
+
+		public IEnumerable<Triangle> Triangles {
+			get {
+				foreach (var tri in triangles) {
+					yield return tri;
+				}
+			}
 		}
 
 		/// <summary>
