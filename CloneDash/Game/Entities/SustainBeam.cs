@@ -146,6 +146,8 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void Render(FrameState frameState) {
+			if (!ShouldDraw) return;
+
 			var game = Level.As<CD_GameLevel>();
 
 			drawScrollQuad(game, body, ref frameState, 0, 0);
