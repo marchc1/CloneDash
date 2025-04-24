@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nucleus.Core;
+using Nucleus.Types;
 using Raylib_cs;
 
 namespace Nucleus.ManagedMemory
@@ -19,6 +20,8 @@ namespace Nucleus.ManagedMemory
     {
 		// Unmanaged missing texture; should not be freed...
 		public static readonly Texture MISSING = new Texture(null, Filesystem.ReadTexture("images", "missing_texture.png"), false);
+
+		public RectangleF Bounds => RectangleF.XYWH(0, 0, Width, Height);
 
 		public uint HardwareID => underlying.Id;
 		public string? DebugName { get; set; }
@@ -185,27 +188,38 @@ namespace Nucleus.ManagedMemory
         private Dictionary<string, Texture> LoadedTexturesFromFile = [];
         private Dictionary<Texture, string> LoadedFilesFromTexture = [];
 
-        public Texture LoadTextureFromFile(string filepath, bool localToImages = true) {
+		public Texture LoadTextureFromFile(string pathID, string path) {
+			var managedPath = IManagedMemory.MergePath(pathID, path);
+			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
+
+			Texture tex = new(this, Filesystem.ReadTexture(pathID, path), true);
+
+
+			LoadedTexturesFromFile.Add(managedPath, tex);
+			LoadedFilesFromTexture.Add(tex, managedPath);
+			Textures.Add(tex);
+
+			return tex;
+		}
+
+		public Texture LoadTextureFromFile(string filepath, bool localToImages = true) =>
+			localToImages ? LoadTextureFromFile("images", filepath)
+			: LoadTextureFromFileDisk(filepath);
+
+		private Texture LoadTextureFromFileDisk(string filepath) {
 			if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
 
-			Texture tex;
+			Texture tex = new(this, Raylib.LoadTexture(filepath), true);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
-			if (localToImages) {
-				tex = new(this, Filesystem.ReadTexture("images", filepath), true);
-			}
-			else {
-				tex = new(this, Raylib.LoadTexture(filepath), true);
-				Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
-			}
+			LoadedTexturesFromFile.Add(filepath, tex);
+			LoadedFilesFromTexture.Add(tex, filepath);
+			Textures.Add(tex);
 
-            LoadedTexturesFromFile.Add(filepath, tex);
-            LoadedFilesFromTexture.Add(tex, filepath);
-            Textures.Add(tex);
+			return tex;
+		}
 
-            return tex;
-        }
-
-        public void EnsureTextureRemoved(ITexture itex) {
+		public void EnsureTextureRemoved(ITexture itex) {
             if(itex is Texture tex) {
                 if(LoadedFilesFromTexture.TryGetValue(tex, out var filepath)) {
                     LoadedTexturesFromFile.Remove(filepath);

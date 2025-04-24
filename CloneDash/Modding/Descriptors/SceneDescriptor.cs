@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 namespace CloneDash.Modding.Descriptors;
 
@@ -71,7 +72,49 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("multi")] public SceneDescriptor_BossMulti Multi;
 #nullable enable
 	}
-	public class SceneDescriptor_Sustains;
+
+#nullable disable
+	public class SceneDescriptor_OneSustain {
+		[JsonProperty("start")] public string Start;
+		[JsonProperty("end")] public string End;
+		[JsonProperty("body")] public string Body;
+		[JsonProperty("up")] public string Up;
+		[JsonProperty("down")] public string Down;
+
+		[JsonIgnore] public Texture StartTexture;
+		[JsonIgnore] public Texture EndTexture;
+		[JsonIgnore] public Texture BodyTexture;
+		[JsonIgnore] public Texture UpTexture;
+		[JsonIgnore] public Texture DownTexture;
+
+		public void LoadData(Level level) {
+			StartTexture = level.Textures.LoadTextureFromFile("scene", Start);
+			EndTexture = level.Textures.LoadTextureFromFile("scene", End);
+			BodyTexture = level.Textures.LoadTextureFromFile("scene", Body);
+			UpTexture = level.Textures.LoadTextureFromFile("scene", Up);
+			DownTexture = level.Textures.LoadTextureFromFile("scene", Down);
+
+			BodyTexture.SetWrap(Raylib_cs.TextureWrap.TEXTURE_WRAP_REPEAT);
+			UpTexture.SetWrap(Raylib_cs.TextureWrap.TEXTURE_WRAP_REPEAT);
+			DownTexture.SetWrap(Raylib_cs.TextureWrap.TEXTURE_WRAP_REPEAT);
+		}
+	}
+	public class SceneDescriptor_Sustains
+	{
+		[JsonProperty("air")] public SceneDescriptor_OneSustain Air;
+		[JsonProperty("ground")] public SceneDescriptor_OneSustain Ground;
+		public void LoadData(Level level) {
+			Air.LoadData(level);
+			Ground.LoadData(level);
+		}
+
+		public Texture GetStartTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.StartTexture : Ground.StartTexture;
+		public Texture GetEndTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.EndTexture : Ground.EndTexture;
+		public Texture GetBodyTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.BodyTexture : Ground.BodyTexture;
+		public Texture GetUpTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.UpTexture : Ground.UpTexture;
+		public Texture GetDownTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.DownTexture : Ground.DownTexture;
+	}
+#nullable enable
 
 	public interface IContains3Speeds
 	{
@@ -306,6 +349,7 @@ public class SceneDescriptor : CloneDashDescriptor
 		PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
 
 		Boss.LoadModelData(level); Interlude.Spin();
+		Sustains.LoadData(level); Interlude.Spin();
 		Masher.LoadModelData(level); Interlude.Spin();
 		DoubleEnemy.LoadModelData(level); Interlude.Spin();
 
@@ -356,12 +400,13 @@ public class SceneDescriptor : CloneDashDescriptor
 
 	[JsonProperty("punch")] public string Punch;
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
+	[JsonProperty("sustains")] public SceneDescriptor_Sustains Sustains;
+	[JsonProperty("saw")] public SceneDescriptor_Saw Saws;
+
 	[JsonProperty("boss1")] public SceneDescriptor_BossEnemy1 BossEnemy1;
 	[JsonProperty("boss2")] public SceneDescriptor_BossEnemy2 BossEnemy2;
 	[JsonProperty("boss3")] public SceneDescriptor_BossEnemy3 BossEnemy3;
 
-	[JsonProperty("sustains")] public SceneDescriptor_Sustains Sustains;
-	[JsonProperty("saw")] public SceneDescriptor_Saw Saws;
 	[JsonProperty("masher")] public SceneDescriptor_MasherEnemy Masher;
 	[JsonProperty("double")] public SceneDescriptor_DoubleEnemy DoubleEnemy;
 	[JsonProperty("small")] public SceneDescriptor_SmallEnemy SmallEnemy;

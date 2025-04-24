@@ -215,6 +215,9 @@
         public static bool operator ==(RectangleF a, RectangleF b) => equality(a, b);
         public static bool operator !=(RectangleF a, RectangleF b) => !equality(a, b);
 
+		public System.Drawing.Rectangle ToDrawing() => new((int)X, (int)Y, (int)W, (int)H);
+		public System.Drawing.RectangleF ToDrawingF() => new(X, Y, W, H);
+
 		public RectangleF AddPosition(Vector2F v) {
 			return new RectangleF() {
 				x = this.X + v.X,

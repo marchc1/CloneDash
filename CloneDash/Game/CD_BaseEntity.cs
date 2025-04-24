@@ -268,13 +268,13 @@ namespace CloneDash.Game
 		/// </summary>
 		public double XPos { get; protected set; }
 
-		public double XPosFromTimeOffset(FrameState frameState, float timeOffset = 0) {
+		public double XPosFromTimeOffset(ref FrameState frameState, float timeOffset = 0) {
 			var level = Level.As<CD_GameLevel>();
 
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.HitTime;
 			var tickShow = this.ShowTime;
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, frameState.WindowHeight);
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, 1500);
 
 			return thisPos;
 		}
@@ -284,7 +284,7 @@ namespace CloneDash.Game
 		public bool CheckVisTest(FrameState frameState) {
 			var level = Level.As<CD_GameLevel>();
 
-			XPos = XPosFromTimeOffset(frameState);
+			XPos = XPosFromTimeOffset(ref frameState);
 			float w = frameState.WindowWidth, h = frameState.WindowHeight;
 
 			var ret = VisTest(w, h, (float)XPos);
