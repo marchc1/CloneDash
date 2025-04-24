@@ -15,7 +15,7 @@ namespace CloneDash.Game
 		public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
 			{ EntityType.Single, typeof(SingleHitEnemy) },
 			{ EntityType.Double, typeof(DoubleHitEnemy) },
-            // { EntityType.Score, typeof(Score) },
+            { EntityType.Score, typeof(Score) },
             { EntityType.Hammer, typeof(Hammer) },
 			{ EntityType.Masher, typeof(Masher) },
 			{ EntityType.Gear, typeof(Gear) },
