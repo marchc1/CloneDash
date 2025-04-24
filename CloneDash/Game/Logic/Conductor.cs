@@ -22,6 +22,9 @@ namespace CloneDash.Game
     }
 
     public class Conductor : LogicalEntity {
+		public Conductor() {
+			currentInaccurateTime = (float)-PreStartTime;
+		}
         public List<TempoChange> TempoChanges { get; private set; } = [];
 
         /// <summary>
