@@ -374,7 +374,7 @@ namespace CloneDash.Game
 				}
 				else if (playeranim_jump) {
 					PlayerAnim_ForceJump(Player);
-					__whenHjump = Conductor.Time;
+					__whenjump = Conductor.Time;
 				}
 				else if (playeranim_miss) {
 					__whenjump = -2000000000000d;
