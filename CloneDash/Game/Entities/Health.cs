@@ -19,12 +19,6 @@ namespace CloneDash.Game.Entities
 			RewardPlayer(true);
 		}
 
-		protected override void OnReward() {
-			var lvl = GetGameLevel();
-			lvl.Heal(this.HealthGiven);
-			lvl.SpawnTextEffect($"+{this.HealthGiven} HP", lvl.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
-		}
-
 		public override void Build() {
 			base.Build();
 			var level = Level.As<CD_GameLevel>();

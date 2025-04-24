@@ -957,6 +957,7 @@ namespace CloneDash.Game
 			ent.FeverGiven = ChartEntity.Fever;
 			ent.DamageTaken = ChartEntity.Damage;
 			ent.ScoreGiven = ChartEntity.Score;
+			ent.HealthGiven = ChartEntity.Health;
 
 			ent.RelatedToBoss = ChartEntity.RelatedToBoss;
 

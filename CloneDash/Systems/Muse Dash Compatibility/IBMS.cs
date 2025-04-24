@@ -218,6 +218,8 @@ namespace CloneDash
 
 							_ => EntityType.Unknown
 						};
+						var health = ib.code == IBMSCode.Hp ? ChartEntity.DEFAULT_HP : 0;
+
 						if (entityType != EntityType.Unknown) {
 
 							EntityVariant variant = ib.code switch {
@@ -256,6 +258,7 @@ namespace CloneDash
 							ent.Length = (double)s.configData.length;
 							ent.Score = s.noteData.score;
 							ent.Speed = s.noteData.speed;
+							ent.Health = health;
 
 							ent.Blood = blood;
 

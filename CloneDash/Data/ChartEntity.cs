@@ -2,7 +2,7 @@
 {
     public class ChartEntity
     {
-		public const int BLOOD_HEALTH_GIVEN = 80;
+		public const int DEFAULT_HP = 80;
 
 		/// <summary>
 		/// Entity type

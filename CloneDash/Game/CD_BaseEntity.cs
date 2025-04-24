@@ -208,11 +208,15 @@ namespace CloneDash.Game
 			if (level.InMashState) // Is the player mashing an entity
 				return;
 
-			if (heal)
+			if (heal) {
 				level.Heal(HealthGiven);
+				level.SpawnTextEffect($"+{HealthGiven} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
+			}
 
-			if (Blood)
-				level.Heal(ChartEntity.BLOOD_HEALTH_GIVEN);
+			if (Blood) {
+				level.Heal(ChartEntity.DEFAULT_HP);
+				level.SpawnTextEffect($"+{ChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
+			}
 
 			OnReward();
 			DidRewardPlayer = true;
