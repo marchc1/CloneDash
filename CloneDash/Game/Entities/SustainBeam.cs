@@ -100,7 +100,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public float StartPosition { get; private set; }
-		public float RotationDegsPerSecond { get; set; } = 120;
+		public float RotationDegsPerSecond { get; set; } = 200;
 		private void drawStartQuad(CD_GameLevel game, ref FrameState fs, float x) {
 			var tex = start;
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
