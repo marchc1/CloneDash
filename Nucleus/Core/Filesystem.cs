@@ -409,7 +409,6 @@ namespace Nucleus.Core
 		public static Texture2D ReadTexture(string pathID, string path, TextureFilter filter = TextureFilter.TEXTURE_FILTER_BILINEAR) {
 			using (Raylib.ImageRef img = new(ReadImage(pathID, path))) {
 				var tex = Raylib.LoadTextureFromImage(img);
-				Raylib.UnloadImage(img);
 				Raylib.SetTextureFilter(tex, filter);
 				return tex;
 			}
