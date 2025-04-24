@@ -23,6 +23,8 @@ namespace CloneDash.Game.Entities
 
 		public Pathway PathwayCheck;
 
+		private double lastCheckTime;
+
 		public override void OnReset() {
 			base.OnReset();
 			HeldState = false;
@@ -35,12 +37,14 @@ namespace CloneDash.Game.Entities
 			if (StopAcceptingInput == true)
 				return;
 
-			PathwayCheck = Level.As<CD_GameLevel>().GetPathway(attackedPath);
+			var lvl = Level.As<CD_GameLevel>();
+			PathwayCheck = lvl.GetPathway(attackedPath);
 			HeldState = true;
 			ForceDraw = true;
-			Level.As<CD_GameLevel>().SetSustain(Pathway, this);
-			Level.As<CD_GameLevel>().AddCombo();
-			Level.As<CD_GameLevel>().AddFever(FeverGiven);
+			lastCheckTime = lvl.Conductor.Time;
+			lvl.SetSustain(Pathway, this);
+			lvl.AddCombo();
+			lvl.AddFever(FeverGiven);
 		}
 
 		protected override void OnMiss() {
@@ -54,6 +58,7 @@ namespace CloneDash.Game.Entities
 			return base.VisTest(gamewidth, gameheight, xPosition);
 		}
 
+
 		public override void Think(FrameState frameState) {
 			if (HeldState) {
 				var endPos = DistanceToEnd;
@@ -62,24 +67,34 @@ namespace CloneDash.Game.Entities
 
 				var sustainComplete = PathwayCheck.IsPressed && endPos <= 0;
 				var sustainEarlyButStillSuccess = !PathwayCheck.IsPressed && NMath.InRange(endPos, -0.05f, 0.05f);
+				
+				var lvl = GetGameLevel();
 
 				if (sustainComplete || sustainEarlyButStillSuccess) {
 					HeldState = false;
 					StopAcceptingInput = true;
 					ShouldDraw = false;
 					RewardPlayer();
-					Level.As<CD_GameLevel>().AddCombo();
-					Level.As<CD_GameLevel>().AddFever(FeverGiven);
-					Level.As<CD_GameLevel>().SetSustain(Pathway, null);
-					Level.As<CD_GameLevel>().Scene.PlayPunch();
+					lvl.AddCombo();
+					lvl.AddFever(FeverGiven);
+					lvl.SetSustain(Pathway, null);
+					lvl.Scene.PlayPunch();
 				}
 				// check if pathway being held
 				else if (!PathwayCheck.IsPressed) {
 					HeldState = false;
 					StopAcceptingInput = true;
 					ShouldDraw = false;
-					Level.As<CD_GameLevel>().SetSustain(Pathway, null);
+					lvl.SetSustain(Pathway, null);
 					PunishPlayer();
+				}
+				else {
+					var now = GetConductor().Time;
+					var delta = now - lastCheckTime;
+					if(delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
+						lastCheckTime = now;
+						lvl.AddScore(10);
+					}
 				}
 			}
 		}
