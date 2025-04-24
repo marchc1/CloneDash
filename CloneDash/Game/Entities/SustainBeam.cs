@@ -85,19 +85,19 @@ namespace CloneDash.Game.Entities
 		}
 
 		public float StartPosition { get; private set; }
-		public static float ROTATION_DEGS_PER_SECOND => 120;
+		public float RotationDegsPerSecond { get; set; } = 120;
 		private void drawStartQuad(CD_GameLevel game, ref FrameState fs, float x) {
 			var tex = start;
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(ref fs, x));
 			var ypos = game.GetPathway(Pathway).Position.Y;
-			var rot = (float)((game.Conductor.Time * ROTATION_DEGS_PER_SECOND) % 360) * -1;
+			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White);
 		}
 		private void drawEndQuad(CD_GameLevel game, ref FrameState fs, float x) {
 			var tex = end;
 			var xpos = (float)XPosFromTimeOffset(ref fs, x);
 			var ypos = game.GetPathway(Pathway).Position.Y;
-			var rot = (float)((game.Conductor.Time * ROTATION_DEGS_PER_SECOND) % 360) * -1;
+			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White);
 		}
 
@@ -157,6 +157,7 @@ namespace CloneDash.Game.Entities
 			var scene = level.Scene;
 			var sustains = scene.Sustains;
 
+			RotationDegsPerSecond = sustains.RotationDegsPerSecond;
 			start = sustains.GetStartTexture(Pathway);
 			end = sustains.GetEndTexture(Pathway);
 			body = sustains.GetBodyTexture(Pathway);

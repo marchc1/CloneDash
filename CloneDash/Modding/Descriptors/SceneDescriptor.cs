@@ -101,6 +101,7 @@ public class SceneDescriptor : CloneDashDescriptor
 	}
 	public class SceneDescriptor_Sustains
 	{
+		[JsonProperty("degrees")] public float RotationDegsPerSecond = 120;
 		[JsonProperty("air")] public SceneDescriptor_OneSustain Air;
 		[JsonProperty("ground")] public SceneDescriptor_OneSustain Ground;
 		public void LoadData(Level level) {
