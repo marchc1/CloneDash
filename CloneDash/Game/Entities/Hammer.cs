@@ -14,7 +14,6 @@ namespace CloneDash.Game.Entities
 
         protected override void OnHit(PathwaySide side) {
             Kill();
-            whenDidHammerHit = Level.CurtimeF;
         }
 
         protected override void OnMiss() {
@@ -30,19 +29,33 @@ namespace CloneDash.Game.Entities
         float whenDidHammerHit = -1;
 		public override void OnReset() {
 			base.OnReset();
-			whenDidHammerHit = -1;
 		}
 		public override void ChangePosition(ref Vector2F pos) {
-            var level = Level.As<CD_GameLevel>();
 
-            var pathwayY = Game.Pathway.ValueDependantOnPathway(Pathway, level.TopPathway.Position.Y, level.BottomPathway.Position.Y); // Pathway == PathwaySide.Top ? DashVars.UpPathway.Position.Y : DashVars.DownPathway.Position.Y;
-            var timeToHit = (float)(HitTime - ShowTime);
+		}
+		public override void DetermineAnimationPlayback() {
+			Position = new(0, 450);
+			if (Dead) {
+				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
+				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				return;
+			}
+			base.DetermineAnimationPlayback();
+		}
+		public override void Build() {
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
 
-            pos.Y = pathwayY;
-        }
+			Model = scene.Hammer.GetModelFromPathway(Pathway, Flipped).Instantiate();
 
-        public override void Build() {
+			string animationName = scene.Hammer.GetAnimationString(Speed, out var showtime);
+			ShowTime = HitTime - showtime;
 
-        }
+			ApproachAnimation = Model.Data.FindAnimation(animationName);
+			GreatHitAnimation = scene.Hammer.FindGreatAnimation(Model);
+			PerfectHitAnimation = scene.Hammer.FindPerfectAnimation(Model);
+
+			Scale = new(level.GlobalScale);
+		}
     }
 }

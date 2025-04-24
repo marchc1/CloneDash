@@ -232,6 +232,8 @@ namespace CloneDash
 								_ => EntityVariant.NotApplicable
 							};
 
+							bool flipped = ib.code == IBMSCode.HammerFlip || ib.code == IBMSCode.RaiderFlip;
+
 							EntityEnterDirection dir = ib.code switch {
 								IBMSCode.SmallDown or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Hammer => EntityEnterDirection.TopDown,
 								IBMSCode.SmallUp or IBMSCode.Medium1Up or IBMSCode.Medium2Up or IBMSCode.HammerFlip => EntityEnterDirection.BottomUp,
@@ -245,6 +247,7 @@ namespace CloneDash
 							ent.EnterDirection = dir;
 							ent.HitTime = tick_hit;
 							ent.ShowTime = tick_show;
+							ent.Flipped = flipped;
 
 							ent.Fever = s.noteData.fever;
 							ent.Damage = s.noteData.damage;

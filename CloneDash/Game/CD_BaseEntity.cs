@@ -66,6 +66,13 @@ namespace CloneDash.Game
 		public EntityVariant Variant { get; set; } = EntityVariant.NotApplicable;
 
 		/// <summary>
+		/// Not applicable for all entities. Determines if the entity uses a flipped model during <see cref="Build()"/>.
+		/// <br/> If not implemented, will do nothing.
+		/// <br/> (only used in <see cref="Hammer"/> and <see cref="Raider"/>)
+		/// </summary>
+		public bool Flipped { get; set; }
+
+		/// <summary>
 		/// How much damage does the player take if failing to kill/pass this entity.
 		/// </summary>
 		public float DamageTaken { get; set; }

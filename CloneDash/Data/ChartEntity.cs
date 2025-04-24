@@ -9,6 +9,7 @@
 
         public double HitTime;
         public double ShowTime;
+        public bool Flipped;
 
         public int Fever;
         public int Score;
@@ -19,6 +20,6 @@
 
         public bool RelatedToBoss;
 
-        public string DebuggingInfo { get; internal set; }
+        public string? DebuggingInfo { get; internal set; }
     }
 }

@@ -12,7 +12,8 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable disable
 	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "2") { }
 #nullable enable
-	public abstract class SceneDescriptor_ContainsOneModelData {
+	public abstract class SceneDescriptor_ContainsOneModelData
+	{
 #nullable disable
 		[JsonProperty("model")] public string Model;
 
@@ -22,7 +23,8 @@ public class SceneDescriptor : CloneDashDescriptor
 			ModelData = level.Models.LoadModelFromFile("scene", Model);
 		}
 	}
-	public abstract class SceneDescriptor_ContainsAirGroundModelData {
+	public abstract class SceneDescriptor_ContainsAirGroundModelData
+	{
 #nullable disable
 		[JsonProperty("airmodel")] public string AirModel;
 		[JsonProperty("groundmodel")] public string GroundModel;
@@ -35,9 +37,9 @@ public class SceneDescriptor : CloneDashDescriptor
 			GroundModelData = level.Models.LoadModelFromFile("scene", GroundModel);
 		}
 
-		public ModelData GetModelFromPathway(PathwaySide pathway) 
-			=> pathway == PathwaySide.Top ? AirModelData : 
-			pathway == PathwaySide.Bottom ? GroundModelData : 
+		public virtual ModelData GetModelFromPathway(PathwaySide pathway)
+			=> pathway == PathwaySide.Top ? AirModelData :
+			pathway == PathwaySide.Bottom ? GroundModelData :
 			throw new InvalidOperationException("No way to give this entity a model when it doesnt have a pathway.");
 	}
 
@@ -71,13 +73,15 @@ public class SceneDescriptor : CloneDashDescriptor
 	}
 	public class SceneDescriptor_Sustains;
 
-	public interface IContains3Speeds {
+	public interface IContains3Speeds
+	{
 		public int LowSpeed { get; }
 		public int MediumSpeed { get; }
 		public int HighSpeed { get; }
 	}
 
-	public interface IContainsGreatPerfect {
+	public interface IContainsGreatPerfect
+	{
 		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model);
 		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model);
 	}
@@ -92,20 +96,23 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_Saw : SceneDescriptor_ContainsOneModelData_With3Speeds 
+	public class SceneDescriptor_Saw : SceneDescriptor_ContainsOneModelData_With3Speeds
 	{
 #nullable disable
 		[JsonProperty("destroy")] public string Destroy;
 #nullable enable
 	}
-	public class SceneDescriptor_MasherEnemy : SceneDescriptor_ContainsOneModelData {
+	public class SceneDescriptor_MasherEnemy : SceneDescriptor_ContainsOneModelData
+	{
 #nullable disable
-		public class __InAnimations {
+		public class __InAnimations
+		{
 			[JsonProperty("format")] public string Format;
 			[JsonProperty("down")] public int[] DownSpeeds;
 			[JsonProperty("normal")] public int[] NormalSpeeds;
 		}
-		public class __MissAnimations {
+		public class __MissAnimations
+		{
 			[JsonProperty("format")] public string Format;
 			[JsonProperty("normal")] public int[] NormalSpeeds;
 		}
@@ -168,7 +175,8 @@ public class SceneDescriptor : CloneDashDescriptor
 		public int HighSpeed => Speeds[0];
 #nullable enable
 	}
-	public class SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds : SceneDescriptor_ContainsAirGroundModelData, IContainsGreatPerfect {
+	public class SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds : SceneDescriptor_ContainsAirGroundModelData, IContainsGreatPerfect
+	{
 #nullable disable
 		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
 		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model) => model.Data.FindAnimation(Perfect);
@@ -208,7 +216,8 @@ public class SceneDescriptor : CloneDashDescriptor
 	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
 	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
 
-	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation {
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation
+	{
 #nullable disable
 		[JsonProperty("upsidedown_airmodel")] public string UpsideDownAirModel;
 		[JsonProperty("upsidedown_groundmodel")] public string UpsideDownGroundModel;
@@ -221,6 +230,12 @@ public class SceneDescriptor : CloneDashDescriptor
 			UpsideDownAirModelData = level.Models.LoadModelFromFile("scene", UpsideDownAirModel);
 			UpsideDownGroundModelData = level.Models.LoadModelFromFile("scene", UpsideDownGroundModel);
 		}
+
+		public virtual ModelData GetModelFromPathway(PathwaySide pathway, bool flipped) => pathway switch {
+			PathwaySide.Top => flipped ? UpsideDownAirModelData : AirModelData,
+			PathwaySide.Bottom => flipped ? UpsideDownGroundModelData : GroundModelData,
+			_ => throw new Exception("Invalid pathway.")
+		};
 #nullable enable
 	}
 
@@ -237,7 +252,8 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("2")] public string Standby2;
 #nullable enable
 	}
-	public class SceneDescriptor_BossAttack {
+	public class SceneDescriptor_BossAttack
+	{
 #nullable disable
 		[JsonProperty("air")] public string Air;
 		[JsonProperty("ground")] public string Ground;
@@ -252,12 +268,14 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("2")] public SceneDescriptor_BossAttack Attack2;
 #nullable enable
 	}
-	public class SceneDescriptor_BossTransition {
+	public class SceneDescriptor_BossTransition
+	{
 		[JsonProperty("0")] public string? To0;
 		[JsonProperty("1")] public string? To1;
 		[JsonProperty("2")] public string? To2;
 	}
-	public class SceneDescriptor_BossTransitions {
+	public class SceneDescriptor_BossTransitions
+	{
 #nullable disable
 		[JsonProperty("0")] public SceneDescriptor_BossTransition From0;
 		[JsonProperty("1")] public SceneDescriptor_BossTransition From1;
@@ -289,17 +307,24 @@ public class SceneDescriptor : CloneDashDescriptor
 
 		Boss.LoadModelData(level); Interlude.Spin();
 		Masher.LoadModelData(level); Interlude.Spin();
+		DoubleEnemy.LoadModelData(level); Interlude.Spin();
 
 		BossEnemy1.LoadModelData(level); Interlude.Spin();
 		BossEnemy2.LoadModelData(level); Interlude.Spin();
 		BossEnemy3.LoadModelData(level); Interlude.Spin();
+
 		SmallEnemy.LoadModelData(level); Interlude.Spin();
+
 		MediumEnemy1.LoadModelData(level); Interlude.Spin();
 		MediumEnemy2.LoadModelData(level); Interlude.Spin();
+
 		LargeEnemy1.LoadModelData(level); Interlude.Spin();
 		LargeEnemy2.LoadModelData(level); Interlude.Spin();
-	}
 
+		Hammer.LoadModelData(level); Interlude.Spin();
+		Raider.LoadModelData(level); Interlude.Spin();
+		Ghost.LoadModelData(level); Interlude.Spin();
+	}
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpause() => AnnouncerLines.UnpauseSound.Play(.8f);
