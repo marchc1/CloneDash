@@ -407,11 +407,12 @@ namespace Nucleus.Core
 			return Raylib.LoadImageFromMemory(GetExtension(path), data);
 		}
 		public static Texture2D ReadTexture(string pathID, string path, TextureFilter filter = TextureFilter.TEXTURE_FILTER_BILINEAR) {
-			var img = ReadImage(pathID, path);
-			var tex = Raylib.LoadTextureFromImage(img);
-			Raylib.UnloadImage(img);
-			Raylib.SetTextureFilter(tex, filter);
-			return tex;
+			using (Raylib.ImageRef img = new(ReadImage(pathID, path))) {
+				var tex = Raylib.LoadTextureFromImage(img);
+				Raylib.UnloadImage(img);
+				Raylib.SetTextureFilter(tex, filter);
+				return tex;
+			}
 		}
 		public static Sound ReadSound(string pathID, string path) {
 			byte[]? data = ReadAllBytes(pathID, path);
