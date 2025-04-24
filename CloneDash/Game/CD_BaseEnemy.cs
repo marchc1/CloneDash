@@ -19,7 +19,7 @@ namespace CloneDash.Game
             { EntityType.Hammer, typeof(Hammer) },
 			{ EntityType.Masher, typeof(Masher) },
 			{ EntityType.Gear, typeof(Gear) },
-            // { EntityType.Ghost, typeof(Ghost) },
+            { EntityType.Ghost, typeof(Ghost) },
             { EntityType.Raider, typeof(Raider) },
             { EntityType.Heart, typeof(Health) },
             { EntityType.SustainBeam, typeof(SustainBeam) },
