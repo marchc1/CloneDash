@@ -74,7 +74,8 @@ public class SceneDescriptor : CloneDashDescriptor
 	}
 
 #nullable disable
-	public class SceneDescriptor_OneSustain {
+	public class SceneDescriptor_OneSustain
+	{
 		[JsonProperty("start")] public string Start;
 		[JsonProperty("end")] public string End;
 		[JsonProperty("body")] public string Body;
@@ -286,8 +287,25 @@ public class SceneDescriptor : CloneDashDescriptor
 	public class SceneDescriptor_Hammer : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
 	public class SceneDescriptor_Raider : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
 	public class SceneDescriptor_Ghost : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
-	public class SceneDescriptor_Note;
-	public class SceneDescriptor_Heart;
+
+	public class SceneDescriptor_SimpleMountable
+	{
+#nullable disable
+		[JsonProperty("model")] public string Model;
+		[JsonProperty("air")] public string AirAnimation;
+		[JsonProperty("ground")] public string GroundAnimation;
+		[JsonProperty("mount")] public string MountAnimation;
+		[JsonProperty("out")] public string OutAnimation;
+
+		[JsonIgnore] public ModelData ModelData;
+		public void LoadModelData(Level level) {
+			ModelData = level.Models.LoadModelFromFile("scene", Model);
+		}
+#nullable enable
+	}
+
+	public class SceneDescriptor_Score : SceneDescriptor_SimpleMountable;
+	public class SceneDescriptor_Heart : SceneDescriptor_SimpleMountable;
 	public class SceneDescriptor_BossStandby
 	{
 #nullable disable
@@ -339,15 +357,22 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("hurt_end")] public string? HurtEnd;
 		[JsonProperty("atk_out")] public string? AttackOut;
 	}
+	public class SceneDescriptor_Hitsounds {
+		[JsonProperty("punch")] public string Punch;
 
-	public Sound PunchSound;
+		[JsonIgnore] public Sound PunchSound;
+		public void Load(Level level) {
+			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
+		}
+	}
+
 	public void Initialize(Level level) {
 		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin); Interlude.Spin();
 		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever); Interlude.Spin();
 		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause); Interlude.Spin();
 		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo); Interlude.Spin();
 
-		PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
+		Hitsounds.Load(level); Interlude.Spin();
 
 		Boss.LoadModelData(level); Interlude.Spin();
 		Sustains.LoadData(level); Interlude.Spin();
@@ -367,14 +392,19 @@ public class SceneDescriptor : CloneDashDescriptor
 		LargeEnemy2.LoadModelData(level); Interlude.Spin();
 
 		Hammer.LoadModelData(level); Interlude.Spin();
+
 		Raider.LoadModelData(level); Interlude.Spin();
+
 		Ghost.LoadModelData(level); Interlude.Spin();
+
+		Score.LoadModelData(level); Interlude.Spin();
+		Heart.LoadModelData(level); Interlude.Spin();
 	}
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpause() => AnnouncerLines.UnpauseSound.Play(.8f);
 	public void PlayFullCombo() => AnnouncerLines.FullComboSound.Play(.8f);
-	public void PlayPunch() => PunchSound.Play(.3f);
+	public void PlayPunch() => Hitsounds.PunchSound.Play(.3f);
 
 	public static SceneDescriptor? ParseFile(string filepath) => ParseFile<SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
 	public static SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<SceneDescriptor>(text, filename) : null;
@@ -398,6 +428,7 @@ public class SceneDescriptor : CloneDashDescriptor
 	[JsonProperty("author")] public string Author;
 
 	[JsonProperty("announcer")] public SceneDescriptor_Announcer AnnouncerLines;
+	[JsonProperty("hitsounds")] public SceneDescriptor_Hitsounds Hitsounds;
 
 	[JsonProperty("punch")] public string Punch;
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
@@ -418,6 +449,6 @@ public class SceneDescriptor : CloneDashDescriptor
 	[JsonProperty("hammer")] public SceneDescriptor_Hammer Hammer;
 	[JsonProperty("raider")] public SceneDescriptor_Raider Raider;
 	[JsonProperty("ghost")] public SceneDescriptor_Ghost Ghost;
-	[JsonProperty("note")] public SceneDescriptor_Note Note;
 	[JsonProperty("heart")] public SceneDescriptor_Heart Heart;
+	[JsonProperty("score")] public SceneDescriptor_Score Score;
 }

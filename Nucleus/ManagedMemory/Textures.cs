@@ -55,7 +55,7 @@ namespace Nucleus.ManagedMemory
 			}
 
 			MainThread.RunASAP(() => {
-				if (UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value);
+				if (UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value); // todo: something in modeleditor causes this to access violation
 				underlyingImage = null;
 				Raylib.UnloadTexture(Underlying);
 				parent?.EnsureTextureRemoved(this);
