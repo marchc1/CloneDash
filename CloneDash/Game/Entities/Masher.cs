@@ -54,7 +54,7 @@ namespace CloneDash.Game.Entities
 				ForceDraw = true;
 			}
 
-			level.Sounds.PlaySound(level.Scene.PunchSound, 0.24f, pitch: 1 + (Hits / 50f));
+			level.Sounds.PlaySound(level.Scene.Hitsounds.PunchSound, 0.24f, pitch: 1 + (Hits / 50f));
 
 			CheckIfComplete();
 		}
@@ -84,7 +84,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void Build() {
-
+			base.Build();
 		}
 	}
 }

@@ -43,6 +43,8 @@ namespace CloneDash.Game.Entities
 			base.DetermineAnimationPlayback();
 		}
 		public override void Build() {
+			base.Build();
+
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 

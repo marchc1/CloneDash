@@ -32,7 +32,7 @@ namespace CloneDash.Game.Entities
             Graphics2D.ScissorRect();
         }
         public override void Build() {
-            // HSV = new(Pathway == PathwaySide.Top ? 200 : 285, 1, 1);
+			base.Build();
         }
     }
 }
