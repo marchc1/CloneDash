@@ -17,7 +17,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Top pathway will be placed at Y coordinate (winH * PATHWAY_TOP_PERCENTAGE)
 		/// </summary>
-		public static float PATHWAY_TOP_PERCENTAGE => -.25f;
+		public static float PATHWAY_TOP_PERCENTAGE => -.255f;
 		/// <summary>
 		/// Bottom pathway will be placed at Y coordinate(winH * PATHWAY_BOTTOM_PERCENTAGE)
 		/// </summary>
@@ -27,7 +27,7 @@ namespace CloneDash.Game
 		/// </summary>
 		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
 
-		public static float GetPathwayLeft() => 770 * PATHWAY_LEFT_PERCENTAGE;
+		public static float GetPathwayLeft() => 772 * PATHWAY_LEFT_PERCENTAGE;
 		public static float GetPathwayTop() => 900 * PATHWAY_TOP_PERCENTAGE;
 		public static float GetPathwayBottom() => 900 * PATHWAY_BOTTOM_PERCENTAGE;
 		public static float GetPathwayMiddle() {
