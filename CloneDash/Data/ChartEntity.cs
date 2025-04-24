@@ -2,6 +2,8 @@
 {
     public class ChartEntity
     {
+		public const int BLOOD_HEALTH_GIVEN = 80;
+
 		/// <summary>
 		/// Entity type
 		/// </summary>
@@ -48,11 +50,15 @@
 		/// <summary>
 		/// Is the entity vertically flipped.
 		/// </summary>
-        public bool Flipped;
+		public bool Flipped;
+		/// <summary>
+		/// Does the entity also give health when successfully hit?
+		/// </summary>
+		public bool Blood;
 		/// <summary>
 		/// Is the entity related to the boss in any way.
 		/// </summary>
-        public bool RelatedToBoss;
+		public bool RelatedToBoss;
 
         public string? DebuggingInfo { get; internal set; }
     }

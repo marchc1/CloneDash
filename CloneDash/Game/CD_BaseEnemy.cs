@@ -1,4 +1,5 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Data;
+using CloneDash.Game.Entities;
 using Nucleus;
 using Nucleus.Models.Runtime;
 using System.Diagnostics.CodeAnalysis;
@@ -49,7 +50,7 @@ namespace CloneDash.Game
 			var lvl = GetGameLevel();
 			var scene = lvl.Scene;
 
-			if(HealthGiven > 0) {
+			if(Blood) {
 				MountedHeart = scene.Heart.ModelData.Instantiate();
 				MountedHeartAnimation = MountedHeart.Data.FindAnimation(scene.Heart.MountAnimation);
 			}

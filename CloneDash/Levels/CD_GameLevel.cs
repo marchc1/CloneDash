@@ -952,6 +952,7 @@ namespace CloneDash.Game
 			ent.Length = ChartEntity.Length;
 			ent.Speed = ChartEntity.Speed;
 			ent.Flipped = ChartEntity.Flipped;
+			ent.Blood = ChartEntity.Blood;
 
 			ent.FeverGiven = ChartEntity.Fever;
 			ent.DamageTaken = ChartEntity.Damage;

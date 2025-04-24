@@ -1,4 +1,5 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Data;
+using CloneDash.Game.Entities;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -36,6 +37,7 @@ namespace CloneDash.Game
 		public bool DidPunishPlayer { get; private set; } = false;
 
 		/// <summary>
+		/// <summary>
 		/// Has the player been rewarded yet?
 		/// </summary>
 		public bool DidRewardPlayer { get; private set; }
@@ -71,6 +73,11 @@ namespace CloneDash.Game
 		/// <br/> (only used in <see cref="Hammer"/> and <see cref="Raider"/>)
 		/// </summary>
 		public bool Flipped { get; set; }
+
+		/// <summary>
+		/// If set; means that a heart is attached to this entity and will give health when successfully hit
+		/// </summary>
+		public bool Blood { get; set; }
 
 		/// <summary>
 		/// How much damage does the player take if failing to kill/pass this entity.
@@ -203,6 +210,9 @@ namespace CloneDash.Game
 
 			if (heal)
 				level.Heal(HealthGiven);
+
+			if (Blood)
+				level.Heal(ChartEntity.BLOOD_HEALTH_GIVEN);
 
 			OnReward();
 			DidRewardPlayer = true;

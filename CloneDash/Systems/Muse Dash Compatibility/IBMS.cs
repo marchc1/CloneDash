@@ -135,6 +135,8 @@ namespace CloneDash
 							break;
 					}
 
+					var blood = s.configData.blood;
+
 					if (s.isLongPressStart) {
 						ChartEntity press = new ChartEntity();
 						press.Type = EntityType.SustainBeam;
@@ -254,6 +256,8 @@ namespace CloneDash
 							ent.Length = (double)s.configData.length;
 							ent.Score = s.noteData.score;
 							ent.Speed = s.noteData.speed;
+
+							ent.Blood = blood;
 
 							ent.RelatedToBoss = isBoss;
 							ent.DebuggingInfo = $"ib.code: {ib.code}";
