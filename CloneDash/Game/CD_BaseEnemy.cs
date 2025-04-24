@@ -6,7 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace CloneDash.Game
 {
     public class CD_BaseEnemy : CD_BaseMEntity {
-        public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
+		public ModelInstance? MountedHeart;
+		public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
+
+		public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
 			{ EntityType.Single, typeof(SingleHitEnemy) },
 			{ EntityType.Double, typeof(DoubleHitEnemy) },
             // { EntityType.Score, typeof(Score) },
@@ -15,7 +18,7 @@ namespace CloneDash.Game
 			{ EntityType.Gear, typeof(Gear) },
             // { EntityType.Ghost, typeof(Ghost) },
             { EntityType.Raider, typeof(Raider) },
-            // { EntityType.Heart, typeof(Health) },
+            { EntityType.Heart, typeof(Health) },
             { EntityType.SustainBeam, typeof(SustainBeam) },
 		};
         protected CD_BaseEnemy(EntityType type) {
@@ -36,6 +39,18 @@ namespace CloneDash.Game
 		public static CD_BaseEnemy CreateFromType(CD_GameLevel game, Type type) {
 			var enemy = game.Add((CD_BaseEnemy)Activator.CreateInstance(type));
 			return enemy;
+		}
+
+		public override void Build() {
+			base.Build();
+			
+			var lvl = GetGameLevel();
+			var scene = lvl.Scene;
+
+			if(HealthGiven > 0) {
+				MountedHeart = scene.Heart.ModelData.Instantiate();
+				MountedHeartAnimation = MountedHeart.Data.FindAnimation(scene.Heart.MountAnimation);
+			}
 		}
 
 
