@@ -205,12 +205,16 @@ namespace Nucleus.ModelEditor
 		public override string PluralName => "clippings";
 		public override string EditorIcon => "models/clipping.png";
 
-		public List<EditorVertex> ShapeEdges = [];
-		public IEnumerable<EditorVertex> GetVertices() {
-			foreach (var co in ShapeEdges) {
-				co.Attachment = this;
-				yield return co;
-			}
+		public EditorSlot? EndSlot { get; set; }
+
+		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var slotRow = PropertiesPanel.NewRow(props, "Image", "models/clip_end.png");
+			var slot = PropertiesPanel.AddComboBox(slotRow, EndSlot, GetModel().Slots, (s) => {
+				if (s == null) return Slot.Name;
+				return s.Name;
+			}, (n) => {
+
+			});
 		}
 
 		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
@@ -228,8 +232,13 @@ namespace Nucleus.ModelEditor
 			return color;
 		}
 
+		public override void Render() {
+			RenderOverlay();
+		}
+
 		public override void RenderOverlay() {
 			if (Hidden) return;
+			SetupWorldTransform();
 
 			base.RenderOverlay();
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
@@ -281,7 +290,7 @@ namespace Nucleus.ModelEditor
 				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
 
 
-				var lineColor = isEdgeSelected ? new Color(255, 125, 125) : new Color(255, 60, 60);
+				var lineColor = isEdgeSelected ? new Color(195, 60, 60) : new Color(120, 45, 45);
 
 				var vertex1 = CalculateVertexWorldPosition(transform, edge1);
 				var vertex2 = CalculateVertexWorldPosition(transform, edge2);

@@ -17,6 +17,7 @@
     <PackageReference Include="FftSharp" Version="2.2.0" />
     <PackageReference Include="RectpackSharp" Version="1.2.0" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="TinyDialogsNet" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>

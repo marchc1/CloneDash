@@ -212,6 +212,21 @@ namespace Nucleus.ModelEditor
 			return selector;
 		}
 
+		public static DropdownSelector<T> AddComboBox<T>(Panel prop, T? value, IEnumerable<T> options, Func<T?, string> tostring, Action<T> change) {
+			var panel = AddInternalPropPanel(prop);
+
+			var selector = panel.Add<DropdownSelector<T>>();
+			selector.Items.AddRange(options);
+			selector.Selected = value;
+			selector.Dock = Dock.Left;
+			selector.Size = new(96);
+			selector.Selected = value;
+			selector.BorderSize = 0;
+			selector.OnToString += (t) => tostring(t);
+			selector.OnSelectionChanged += (self, o, n) => change(n);
+
+			return selector;
+		}
 		public static DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
 			var panel = AddInternalPropPanel(prop);
 
