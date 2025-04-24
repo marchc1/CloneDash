@@ -16,7 +16,7 @@ namespace Nucleus.ManagedMemory
         public PixelFormat Format { get; }
     }
 
-    public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true, Image? underlyingImage = null) : ITexture
+    public class Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true, Image? underlyingImage = null, bool shouldSelfDisposeImage = true) : ITexture
     {
 		// Unmanaged missing texture; should not be freed...
 		public static readonly Texture MISSING = new Texture(null, Filesystem.ReadTexture("images", "missing_texture.png"), false);
@@ -55,7 +55,7 @@ namespace Nucleus.ManagedMemory
 			}
 
 			MainThread.RunASAP(() => {
-				if (UnderlyingImage.HasValue) Raylib.UnloadImage(UnderlyingImage.Value); // todo: something in modeleditor causes this to access violation
+				if (UnderlyingImage.HasValue && shouldSelfDisposeImage) Raylib.UnloadImage(UnderlyingImage.Value); // todo: something in modeleditor causes this to access violation
 				underlyingImage = null;
 				Raylib.UnloadTexture(Underlying);
 				parent?.EnsureTextureRemoved(this);

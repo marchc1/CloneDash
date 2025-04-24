@@ -138,7 +138,11 @@ namespace Nucleus.Models
 
 			AllRegions.Clear();
 			if (packedTex != null)
-				packedTex.Dispose();
+				packedTex = null;
+			if(packedImg != null) {
+				Raylib.UnloadImage(packedImg.Value);
+				packedImg = null;
+			}
 
 			Span<PackingRectangle> rects = stackalloc PackingRectangle[UnpackedImages.Count];
 			int i = 0;
@@ -194,7 +198,7 @@ namespace Nucleus.Models
 			packedImg = workingImage;
 			var tex = Raylib.LoadTextureFromImage(workingImage);
 			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
-			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, tex, true, packedImg);
+			packedTex = new ManagedMemory.Texture(EngineCore.Level.Textures, tex, true, packedImg, false);
 
 			valid = true;
 		}
@@ -359,7 +363,7 @@ namespace Nucleus.Models
 		protected virtual void Dispose(bool usercall) {
 			if (disposedValue) return;
 
-			if (usercall && MainThread.Thread == Thread.CurrentThread) {
+			if (usercall) {
 				if (packedImg.HasValue)
 					Raylib.UnloadImage(packedImg.Value);
 				ClearTextures();

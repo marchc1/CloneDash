@@ -125,8 +125,9 @@ public class ModelData : IDisposable
 		SlotDatas = null;
 #nullable enable
 
-		TextureAtlas?.Dispose();
-		
+		if (usercall)
+			TextureAtlas?.Dispose();
+
 		disposedValue = true;
 	}
 
