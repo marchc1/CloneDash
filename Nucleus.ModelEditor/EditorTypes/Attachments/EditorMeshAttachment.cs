@@ -291,6 +291,7 @@ namespace Nucleus.ModelEditor
 			Attachment.WorldTransform = StoredAttachTransform;
 			Attachment.SuppressWorldTransform = false;
 		}
+
 		public override bool RenderOverride() {
 			if (ShouldRenderUndeformed) {
 				var camsize = ModelEditor.Active.Editor.CameraZoom;
@@ -694,6 +695,17 @@ namespace Nucleus.ModelEditor
 		}
 
 		[JsonIgnore] public bool SuppressWorldTransform = false;
+
+		public override Color DetermineVertexColor(bool selected, bool highlighted) {
+			var hS = highlighted ? 245 : 165;
+			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditMeshOperator meshOp && meshOp.CurrentMode == EditMesh_Mode.Delete;
+			Color color;
+			if (highlighted && deleteMode)
+				color = new Color(255, 60, 15);
+			else
+				color = selected ? new Color(highlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+			return color;
+		}
 
 		/// <summary>
 		/// This part renders the image, standalone, with no transformation (beyond translation transformation) <br></br>

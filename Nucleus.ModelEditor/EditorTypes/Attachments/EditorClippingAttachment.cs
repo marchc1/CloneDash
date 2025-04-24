@@ -35,6 +35,8 @@ namespace Nucleus.ModelEditor
 		private Button CreateButton, DeleteButton, NewButton;
 		private Checkbox Triangles, Dim, Isolate, Deform;
 		List<EditorVertex> WorkingLines = [];
+		public List<EditorVertex> GetWorkingVertices() => WorkingLines;
+
 		private void UpdateButtonState() {
 			CreateButton.Pulsing = CurrentMode == EditClipping_Mode.Create;
 			DeleteButton.Pulsing = CurrentMode == EditClipping_Mode.Delete;
@@ -215,13 +217,24 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.OperatorButton<EditClippingOperator>(buttons, "Clipping Editor", "models/clipping.png");
 		}
 
+		public override Color DetermineVertexColor(bool selected, bool highlighted) {
+			var hS = highlighted ? 245 : 165;
+			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditClippingOperator clippingOp && clippingOp.CurrentMode == EditClipping_Mode.Delete;
+			Color color;
+			if (highlighted && deleteMode)
+				color = new Color(255, 60, 15);
+			else
+				color = selected ? new Color(highlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
+			return color;
+		}
+
 		public override void RenderOverlay() {
 			if (Hidden) return;
 
 			base.RenderOverlay();
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
 
-			EditMeshOperator? meshOp = ModelEditor.Active.File.ActiveOperator as EditMeshOperator;
+			EditClippingOperator? clipOp = ModelEditor.Active.File.ActiveOperator as EditClippingOperator;
 
 			Graphics2D.SetDrawColor(245, 100, 20);
 			var offset = Graphics2D.Offset;
@@ -254,12 +267,13 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetOffset(offset);
 
-			for (int i = 0; i < ShapeEdges.Count; i++) {
-				var edge1 = ShapeEdges[i];
-				var edge2 = ShapeEdges[(i + 1) % ShapeEdges.Count];
+			var edges = (ModelEditor.Active.File.ActiveOperator is EditClippingOperator editClipOp && editClipOp.CurrentMode == EditClipping_Mode.New) ? editClipOp.GetWorkingVertices() : ShapeEdges;
+			for (int i = 0; i < edges.Count; i++) {
+				var edge1 = edges[i];
+				var edge2 = edges[(i + 1) % edges.Count];
 				var isHighlighted =
-						((edge1.Hovered && meshOp == null)
-						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
+						((edge1.Hovered && clipOp == null)
+						|| (clipOp != null && clipOp.HoveredVertex == edge1))
 					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorVertex));
 
 				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
@@ -267,7 +281,7 @@ namespace Nucleus.ModelEditor
 				var isEdgeSelected = (SelectedVertices.Contains(edge1) && SelectedVertices.Contains(edge2)) || SelectedVertices.Count == 0;
 
 
-				var lineColor = isEdgeSelected ? new Color(40, 255, 255) : new Color(20, 210, 210);
+				var lineColor = isEdgeSelected ? new Color(255, 125, 125) : new Color(255, 60, 60);
 
 				var vertex1 = CalculateVertexWorldPosition(transform, edge1);
 				var vertex2 = CalculateVertexWorldPosition(transform, edge2);

@@ -295,9 +295,12 @@ namespace Nucleus.ModelEditor
 		}
 		public override void EditScaleX(float value) => scale.X = value;
 		public override void EditScaleY(float value) => scale.Y = value;
-		public void RenderVertex(EditorVertex vertex, bool isHighlighted, Vector2F? pos = null) {
-			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditMeshOperator meshOp && meshOp.CurrentMode == EditMesh_Mode.Delete;
 
+		public virtual Color DetermineVertexColor(bool selected, bool highlighted) {
+			return Color.White;
+		}
+
+		public void RenderVertex(EditorVertex vertex, bool isHighlighted, Vector2F? pos = null) {
 			System.Numerics.Vector2 drawPos = (pos ?? CalculateVertexWorldPosition(WorldTransform, vertex)).ToNumerics();
 			bool inWeightMode = ModelEditor.Active.Editor.InWeightsMode;
 			var camsize = ModelEditor.Active.Editor.CameraZoom;
@@ -305,18 +308,11 @@ namespace Nucleus.ModelEditor
 			var isSelectedTruly = SelectedVertices.Contains(vertex);
 			var isSelected = isSelectedTruly || SelectedVertices.Count == 0;
 
-			var hS = isHighlighted ? 245 : 165;
-
 			if (!inWeightMode) {
 				float size = (isSelected ? 4f : 2f) + (isHighlighted ? 1f : 0f);
-				Color color;
-				if (isHighlighted && deleteMode)
-					color = new Color(255, 60, 15);
-				else
-					color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
 
 				Raylib.DrawCircleV(drawPos, (size) / camsize, Color.Black);
-				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, color);
+				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, DetermineVertexColor(isSelected, isHighlighted));
 			}
 			else {
 				float size = (isSelected ? 9f : 7f) + (isHighlighted ? 1f : 0f);
