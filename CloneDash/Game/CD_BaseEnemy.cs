@@ -77,9 +77,11 @@ namespace CloneDash.Game
 			if (MountedHeart == null) return;
 			if (MountedHeartAnimation == null) return;
 			if (MountBone == null) return;
+			if (Dead) return;
 
 			MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
-			MountedHeart.Position = MountBone.LocalToWorld(0, 0);
+			// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
+			MountedHeart.Position = new(MountBone.WorldTransform.X, (900 - MountBone.WorldTransform.Y) - 450);
 			MountedHeart.Scale = Scale;
 			MountedHeart.Render();
 		}
