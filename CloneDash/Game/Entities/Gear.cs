@@ -1,11 +1,5 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace CloneDash.Game.Entities
 {
     public class Gear : CD_BaseEnemy
@@ -16,7 +10,6 @@ namespace CloneDash.Game.Entities
         }
         public override void Initialize() {
             base.Initialize();
-            // SetModel("gear.glb", "Idle", true);
         }
         protected override void OnPass() {
             RewardPlayer();

@@ -151,7 +151,7 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_Saw : SceneDescriptor_ContainsOneModelData_With3Speeds
+	public class SceneDescriptor_Gears : SceneDescriptor_ContainsOneModelData_With3Speeds
 	{
 #nullable disable
 		[JsonProperty("destroy")] public string Destroy;
@@ -481,7 +481,7 @@ public class SceneDescriptor : CloneDashDescriptor
 	[JsonProperty("punch")] public string Punch;
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
 	[JsonProperty("sustains")] public SceneDescriptor_Sustains Sustains;
-	[JsonProperty("saw")] public SceneDescriptor_Saw Saws;
+	[JsonProperty("gear")] public SceneDescriptor_Gears Gears;
 
 	[JsonProperty("boss1")] public SceneDescriptor_BossEnemy1 BossEnemy1;
 	[JsonProperty("boss2")] public SceneDescriptor_BossEnemy2 BossEnemy2;
