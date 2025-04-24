@@ -160,11 +160,15 @@ public class SceneDescriptor : CloneDashDescriptor
 	public class SceneDescriptor_MasherEnemy : SceneDescriptor_ContainsOneModelData
 	{
 #nullable disable
+		public class __Animations {
+
+			[JsonProperty("format")] public string Format;
+			[JsonProperty("speeds")] public int[] Speeds;
+		}
 		public class __InAnimations
 		{
-			[JsonProperty("format")] public string Format;
-			[JsonProperty("down")] public int[] DownSpeeds;
-			[JsonProperty("normal")] public int[] NormalSpeeds;
+			[JsonProperty("down")] public __Animations Down;
+			[JsonProperty("normal")] public __Animations Normal;
 		}
 		public class __MissAnimations
 		{

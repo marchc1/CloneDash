@@ -1,5 +1,7 @@
-﻿using Nucleus;
+﻿using CloneDash.Modding.Descriptors;
+using Nucleus;
 using Nucleus.Engine;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
@@ -8,7 +10,7 @@ namespace CloneDash.Game.Entities
 	{
 		public bool StartedHitting { get; private set; } = false;
 		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * DashVars.MASHER_MAX_HITS_PER_SECOND), 1, int.MaxValue);
-
+		private double lastHitTime = 0;
 
 		public Masher() : base(EntityType.Masher) {
 			Warns = true;
@@ -54,6 +56,9 @@ namespace CloneDash.Game.Entities
 				ForceDraw = true;
 			}
 
+			lastHitTime = level.Conductor.Time;
+			currentAnim = Model.Data.FindAnimation(masherData.Hurt.GetAnimation(Hits));
+			
 			level.Sounds.PlaySound(level.Scene.Hitsounds.PunchSound, 0.24f, pitch: 1 + (Hits / 50f));
 
 			CheckIfComplete();
@@ -76,15 +81,43 @@ namespace CloneDash.Game.Entities
 			StartedHitting = false;
 		}
 
-		public override void ChangePosition(ref Vector2F pos) {
-			var level = Level.As<CD_GameLevel>();
-			if (level.InMashState) {
-				pos.X = level.XPos + (EngineCore.GetWindowHeight() * .1f);
+		SceneDescriptor.SceneDescriptor_MasherEnemy masherData;
+		Nucleus.Models.Runtime.Animation? currentAnim;
+		public override void DetermineAnimationPlayback() {
+			Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(PathwaySide.Both));
+			if (Dead) {
+				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
+				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				return;
 			}
-		}
 
+			if (StartedHitting) {
+				currentAnim?.Apply(Model, (GetConductor().Time - lastHitTime));
+				return;
+			}
+
+			Position = new(0, 450);
+
+			base.DetermineAnimationPlayback();
+		}
 		public override void Build() {
 			base.Build();
+
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
+
+			masherData = scene.Masher;
+			Model = masherData.ModelData.Instantiate();
+
+			var approachSpeeds = EnterDirection switch {
+				EntityEnterDirection.TopDown => masherData.InAnimations.Down,
+				_ => masherData.InAnimations.Normal
+			};
+			ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[Speed]));
+			PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
+			GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
+			var showtime = approachSpeeds.Speeds[Speed] / 30f;
+			ShowTime = HitTime - showtime;
 		}
 	}
 }

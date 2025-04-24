@@ -615,7 +615,7 @@ namespace CloneDash.Game
 
 			bool holdingTop = HoldingTopPathwaySustain != null, holdingBottom = HoldingBottomPathwaySustain != null;
 			bool holding = holdingTop || holdingBottom;
-			if (holdingTop && holdingBottom)
+			if ((holdingTop && holdingBottom) || InMashState)
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
 			else if (holdingTop)
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
