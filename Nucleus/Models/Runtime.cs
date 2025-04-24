@@ -186,7 +186,15 @@ public class ModelInstance : IContainsSetupPose
 			var attachment = slot.Attachment;
 			if (attachment == null) continue;
 
+			Raylib.BeginBlendMode(slot.BlendMode switch {
+				BlendMode.Normal => Raylib_cs.BlendMode.BLEND_ALPHA,
+				BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
+				BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
+				BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
+				_ => throw new Exception($"Unsupported blend mode! (got {slot.BlendMode})")
+			});
 			attachment.Render(slot);
+			Raylib.EndBlendMode();
 		}
 		foreach (var bone in Bones) {
 			var test = bone.LocalToWorld(0, 0);
@@ -334,10 +342,12 @@ public class SlotInstance : IContainsSetupPose
 	public byte B => Color.B;
 	public byte A => Color.A;
 
+	public BlendMode BlendMode { get; set; }
+
 	public void SetToSetupPose() {
 		Color = Data.Color;
 		DarkColor = Data.DarkColor;
-
+		BlendMode = Data.BlendMode;
 		Attachment = Data.Attachment == null ? null : Bone.Model.GetAttachment(Index, Data.Attachment);
 	}
 

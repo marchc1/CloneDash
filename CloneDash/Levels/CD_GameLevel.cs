@@ -119,7 +119,7 @@ namespace CloneDash.Game
 
 			foreach (var entity in Entities) {
 				if (entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
-					mEnt.RewardPlayer(true);
+					mEnt.RewardPlayer();
 					mEnt.Kill();
 				}
 			}

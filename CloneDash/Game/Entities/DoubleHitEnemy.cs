@@ -11,50 +11,54 @@ namespace CloneDash.Game.Entities
 {
     public class DoubleHitEnemy : CD_BaseEnemy
     {
-        private EnemyPostHitPhysicsController postHitPhysics;
         public DoubleHitEnemy() : base(EntityType.Double) {
-            postHitPhysics = new(this);
             Interactivity = EntityInteractivity.Hit;
             DoesDamagePlayer = true;
         }
 		public override void OnReset() {
 			base.OnReset();
-			postHitPhysics = new(this);
 		}
 		public override void Initialize() {
             base.Initialize();
         }
 
-        public override void ChangePosition(ref Vector2F pos) {
-            postHitPhysics.PassthroughPosition(ref pos);
-        }
-
         protected override void OnHit(PathwaySide side) {
             Kill();
-            postHitPhysics.Hit(NMath.Random.Vec2(new(-120, -210), new(-100, -180)), NMath.Random.Single(-22f, 22.5f));
         }
 
         protected override void OnMiss() {
             DamagePlayer();
         }
-        bool thoughtBefore = false;
-        public override void Think(FrameState frameState) {
-            if (!thoughtBefore) {
-                thoughtBefore = true;
-                this.Rotation = Pathway == PathwaySide.Top ? -180 : 0;
-            }
-        }
-        public override void Render(FrameState frameState) {
-            var game = Level.As<CD_GameLevel>();
-            var YPos = Game.Pathway.ValueDependantOnPathway(Pathway, game.TopPathway.Position.Y, game.BottomPathway.Position.Y);
 
+		public override void DetermineAnimationPlayback() {
+			if (Dead) {
+				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
+				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				return;
+			}
+			Position = new(0, 450);
+			base.DetermineAnimationPlayback();
+		}
 
-            if (Dead)
-                return;
-            for (int i = 64 - 1; i >= 0; i -= 4) {
-                var size = Math.Abs(YPos)/ 4;
-                Raylib.DrawCubeV(new((float)XPos, (float)YPos + ((size / 2) * (Pathway == PathwaySide.Top ? 1 : -1)), 10), new(i/1.4f, size, 10), new Color(255, 193, 92, 15));
-            }
-        }
-    }
+		public override void Build() {
+			base.Build();
+
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
+
+			var sceneDescription = scene.DoubleEnemy;
+
+			Model = sceneDescription.GetModelFromPathway(Pathway).Instantiate();
+
+			string animationName = sceneDescription.GetAnimationString(Speed, out var showtime);
+			ShowTime = HitTime - showtime;
+
+			ApproachAnimation = Model.Data.FindAnimation(animationName);
+			GreatHitAnimation =   sceneDescription.FindGreatAnimation(Model);
+			PerfectHitAnimation = sceneDescription.FindPerfectAnimation(Model);
+
+			Scale = new(level.GlobalScale);
+		}
+	}
 }
