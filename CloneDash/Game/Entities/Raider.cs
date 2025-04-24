@@ -63,6 +63,8 @@ namespace CloneDash.Game.Entities
 			PerfectHitAnimation = scene.Raider.FindPerfectAnimation(Model);
 
 			Scale = new(level.GlobalScale);
+
+			SetMountBoneIfApplicable(scene.Raider);
 		}
 	}
 }

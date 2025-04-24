@@ -25,7 +25,7 @@ namespace CloneDash.Game
 			(Pathway == PathwaySide.Top ? AirAnimation : GroundAnimation).Apply(Model, AnimationTime);
 		}
 
-		public void BuildFromScene(SceneDescriptor_SimpleMountable mountable) {
+		public void BuildFromScene(SceneDescriptor_Bonus mountable) {
 			Model = mountable.ModelData.Instantiate();
 
 			AirAnimation = mountable.ModelData.FindAnimation(mountable.AirAnimation) ?? throw new Exception();

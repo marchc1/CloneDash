@@ -105,7 +105,7 @@ namespace CloneDash.Game.Entities
 				_ => throw new Exception("Can't handle that case...")
 			};
 
-			SceneDescriptor.IContainsGreatPerfect greatPerfect = Variant switch {
+			SceneDescriptor.IContainsGreatPerfectAndHPMount greatPerfectHP = Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1,
 				EntityVariant.Boss2 => scene.BossEnemy2,
 				EntityVariant.Boss3 => scene.BossEnemy3,
@@ -124,10 +124,11 @@ namespace CloneDash.Game.Entities
 			ShowTime = HitTime - showtime;
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);
-			GreatHitAnimation = greatPerfect.FindGreatAnimation(Model);
-			PerfectHitAnimation = greatPerfect.FindPerfectAnimation(Model);
+			GreatHitAnimation = greatPerfectHP.FindGreatAnimation(Model);
+			PerfectHitAnimation = greatPerfectHP.FindPerfectAnimation(Model);
 
 			Scale = new(level.GlobalScale);
+			SetMountBoneIfApplicable(greatPerfectHP);
 		}
 	}
 }

@@ -1,4 +1,6 @@
-﻿using CloneDash.Game;
+﻿// This entire file is a nightmare of inheritance.
+
+using CloneDash.Game;
 using Newtonsoft.Json;
 
 using Nucleus.Audio;
@@ -131,6 +133,14 @@ public class SceneDescriptor : CloneDashDescriptor
 		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model);
 	}
 
+	public interface IContainsGreatPerfectAndHPMount : IContainsGreatPerfect
+	{
+		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model);
+		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model);
+		public BoneInstance GetHPMount(ModelInstance model);
+	}
+
+
 	public class SceneDescriptor_ContainsOneModelData_With3Speeds : SceneDescriptor_ContainsOneModelData, IContains3Speeds
 	{
 #nullable disable
@@ -175,7 +185,7 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("complete")] public __CompleteAnimations CompleteAnimations;
 #nullable enable
 	}
-	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation : SceneDescriptor_ContainsAirGroundModelData, IContains3Speeds, IContainsGreatPerfect
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation: SceneDescriptor_ContainsAirGroundModelData, IContains3Speeds, IContainsGreatPerfect
 	{
 #nullable disable
 		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
@@ -203,11 +213,19 @@ public class SceneDescriptor : CloneDashDescriptor
 		}
 #nullable enable
 	}
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation, IContains3Speeds, IContainsGreatPerfectAndHPMount
+	{
+#nullable disable
+		public BoneInstance GetHPMount(ModelInstance model) => model.FindBone(HPMount) ?? throw new KeyNotFoundException($"Missing mount bone '{HPMount}' for {GetType().Name}. Either the scene descriptor failed to add a 'hp' bone in the model, or failed to define a custom name override.");
+
+		[JsonProperty("hp_mount")] public string HPMount = "hp";
+#nullable enable
+	}
 
 	public class SceneDescriptor_DoubleEnemy : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
-	public class SceneDescriptor_BossEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
-	public class SceneDescriptor_BossEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
-	public class SceneDescriptor_BossEnemy3 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_BossEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
+	public class SceneDescriptor_BossEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
+	public class SceneDescriptor_BossEnemy3 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
 
 	public class SceneDescriptor_FormatSpeeds : IContains3Speeds
 	{
@@ -220,15 +238,17 @@ public class SceneDescriptor : CloneDashDescriptor
 		public int HighSpeed => Speeds[0];
 #nullable enable
 	}
-	public class SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds : SceneDescriptor_ContainsAirGroundModelData, IContainsGreatPerfect
+	public class SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount : SceneDescriptor_ContainsAirGroundModelData, IContainsGreatPerfectAndHPMount
 	{
 #nullable disable
 		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
 		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model) => model.Data.FindAnimation(Perfect);
+		public BoneInstance GetHPMount(ModelInstance model) => model.FindBone(HPMount) ?? throw new KeyNotFoundException($"Missing mount bone '{HPMount}' for {GetType().Name}. Either the scene descriptor failed to add a 'hp' bone in the model, or failed to define a custom name override.");
 
 		[JsonProperty("normal")] public SceneDescriptor_FormatSpeeds Normal;
 		[JsonProperty("up")] public SceneDescriptor_FormatSpeeds Up;
 		[JsonProperty("down")] public SceneDescriptor_FormatSpeeds Down;
+		[JsonProperty("hp_mount")] public string HPMount = "hp";
 		[JsonProperty("great")] public string Great;
 		[JsonProperty("perfect")] public string Perfect;
 
@@ -255,11 +275,11 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_SmallEnemy : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
-	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
-	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds;
-	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
-	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_SmallEnemy :   SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
+	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
+	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
+	public class SceneDescriptor_LargeEnemy1 :  SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
+	public class SceneDescriptor_LargeEnemy2 :  SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
 
 	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation
 	{
@@ -283,18 +303,42 @@ public class SceneDescriptor : CloneDashDescriptor
 		};
 #nullable enable
 	}
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown_AndHPMount : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount
+	{
+#nullable disable
+		[JsonProperty("upsidedown_airmodel")] public string UpsideDownAirModel;
+		[JsonProperty("upsidedown_groundmodel")] public string UpsideDownGroundModel;
+
+		[JsonIgnore] public ModelData UpsideDownAirModelData;
+		[JsonIgnore] public ModelData UpsideDownGroundModelData;
+
+		public override void LoadModelData(Level level) {
+			base.LoadModelData(level);
+			UpsideDownAirModelData = level.Models.LoadModelFromFile("scene", UpsideDownAirModel);
+			UpsideDownGroundModelData = level.Models.LoadModelFromFile("scene", UpsideDownGroundModel);
+		}
+
+		public virtual ModelData GetModelFromPathway(PathwaySide pathway, bool flipped) => pathway switch {
+			PathwaySide.Top => flipped ? UpsideDownAirModelData : AirModelData,
+			PathwaySide.Bottom => flipped ? UpsideDownGroundModelData : GroundModelData,
+			_ => throw new Exception("Invalid pathway.")
+		};
+#nullable enable
+	}
 
 	public class SceneDescriptor_Hammer : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
-	public class SceneDescriptor_Raider : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown;
-	public class SceneDescriptor_Ghost : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation;
+	public class SceneDescriptor_Raider : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown_AndHPMount;
+	public class SceneDescriptor_Ghost : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
 
-	public class SceneDescriptor_SimpleMountable
+	public class SceneDescriptor_Bonus
 	{
 #nullable disable
 		[JsonProperty("model")] public string Model;
 		[JsonProperty("air")] public string AirAnimation;
 		[JsonProperty("ground")] public string GroundAnimation;
-		[JsonProperty("mount")] public string MountAnimation;
+#nullable enable
+		[JsonProperty("mount")] public string? MountAnimation;
+#nullable disable
 		[JsonProperty("out")] public string OutAnimation;
 
 		[JsonIgnore] public ModelData ModelData;
@@ -304,8 +348,8 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_Score : SceneDescriptor_SimpleMountable;
-	public class SceneDescriptor_Heart : SceneDescriptor_SimpleMountable;
+	public class SceneDescriptor_Score : SceneDescriptor_Bonus;
+	public class SceneDescriptor_Heart : SceneDescriptor_Bonus;
 	public class SceneDescriptor_BossStandby
 	{
 #nullable disable

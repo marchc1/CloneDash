@@ -2,12 +2,14 @@
 using Nucleus;
 using Nucleus.Models.Runtime;
 using System.Diagnostics.CodeAnalysis;
+using static CloneDash.Modding.Descriptors.SceneDescriptor;
 
 namespace CloneDash.Game
 {
     public class CD_BaseEnemy : CD_BaseMEntity {
 		public ModelInstance? MountedHeart;
 		public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
+		public BoneInstance? MountBone;
 
 		public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
 			{ EntityType.Single, typeof(SingleHitEnemy) },
@@ -51,6 +53,11 @@ namespace CloneDash.Game
 				MountedHeart = scene.Heart.ModelData.Instantiate();
 				MountedHeartAnimation = MountedHeart.Data.FindAnimation(scene.Heart.MountAnimation);
 			}
+		}
+
+		public void SetMountBoneIfApplicable(IContainsGreatPerfectAndHPMount mountData) {
+			if (Model == null) throw new NullReferenceException("Need model first!");
+			MountBone = mountData.GetHPMount(Model);
 		}
 
 
