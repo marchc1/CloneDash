@@ -17,9 +17,9 @@ public class RuntimeConverter
 											EditorMeshAttachment mesh,
 											List<MeshTriangle> trianglesInst,
 											List<MeshVertex> verticesInst,
-											Dictionary<EditorMeshVertex, int> verticesArrPtr,
-											Dictionary<EditorMeshVertex, MeshVertex> editorToRealVertex,
-											EditorMeshVertex eVertex,
+											Dictionary<EditorVertex, int> verticesArrPtr,
+											Dictionary<EditorVertex, MeshVertex> editorToRealVertex,
+											EditorVertex eVertex,
 											out int vIndex
 										) {
 		if (!verticesArrPtr.TryGetValue(eVertex, out vIndex)) {
@@ -122,14 +122,14 @@ public class RuntimeConverter
 
 							List<MeshTriangle> trianglesInst = [];
 							List<MeshVertex> verticesInst = [];
-							Dictionary<EditorMeshVertex, int> verticesArrPtr = [];
-							Dictionary<EditorMeshVertex, MeshVertex> editorToRealVertex = [];
+							Dictionary<EditorVertex, int> verticesArrPtr = [];
+							Dictionary<EditorVertex, MeshVertex> editorToRealVertex = [];
 
 							mesh.RefreshDelaunator();
 							foreach (var triangle in mesh.Triangles) {
-								EditorMeshVertex? ev1 = triangle.Points[0].AssociatedObject as EditorMeshVertex;
-								EditorMeshVertex? ev2 = triangle.Points[1].AssociatedObject as EditorMeshVertex;
-								EditorMeshVertex? ev3 = triangle.Points[2].AssociatedObject as EditorMeshVertex;
+								EditorVertex? ev1 = triangle.Points[0].AssociatedObject as EditorVertex;
+								EditorVertex? ev2 = triangle.Points[1].AssociatedObject as EditorVertex;
+								EditorVertex? ev3 = triangle.Points[2].AssociatedObject as EditorVertex;
 
 								if (ev1 == null) continue;
 								if (ev2 == null) continue;

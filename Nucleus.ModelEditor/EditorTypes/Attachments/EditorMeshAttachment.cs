@@ -36,7 +36,7 @@ namespace Nucleus.ModelEditor
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";
 		public override bool OverrideSelection => true;
-		public override Type[]? SelectableTypes => [typeof(EditorMeshVertex)];
+		public override Type[]? SelectableTypes => [typeof(EditorVertex)];
 
 		public void SetMode(EditMesh_Mode mode) {
 			CurrentMode = mode;
@@ -45,7 +45,7 @@ namespace Nucleus.ModelEditor
 
 		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
 		private Checkbox Triangles, Dim, Isolate, Deform;
-		List<EditorMeshVertex> WorkingLines = [];
+		List<EditorVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
 			CreateButton.Pulsing = CurrentMode == EditMesh_Mode.Create;
@@ -97,14 +97,14 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		public EditorMeshVertex? AttachedVertex;
-		public EditorMeshVertex? HoveredVertex;
+		public EditorVertex? AttachedVertex;
+		public EditorVertex? HoveredVertex;
 		/// <summary>
 		/// In the context of <see cref="EditMesh_Mode.Create"/>, this is the created vertex.
 		/// <br/>
 		/// In the context of <see cref="EditMesh_Mode.Modify"/>, this is the clicked vertex.
 		/// </summary>
-		public EditorMeshVertex? ClickedVertex;
+		public EditorVertex? ClickedVertex;
 		public bool IsHoveredSteinerPoint;
 		public bool IsClickedSteinerPoint;
 		public EditorMeshAttachment Attachment => this.UIDeterminations.Last as EditorMeshAttachment ?? throw new Exception("Wtf?");
@@ -171,7 +171,7 @@ namespace Nucleus.ModelEditor
 
 			// Overrides, for the create vertex mode, but designed this way in case
 			// other things need it
-			EditorMeshVertex? clickVertexOverride = null;
+			EditorVertex? clickVertexOverride = null;
 			bool? hoveredSteinerOverride = null;
 
 			switch (CurrentMode) {
@@ -181,7 +181,7 @@ namespace Nucleus.ModelEditor
 					// TODO + HACK; the 0.05f thing avoids issues with duplicate points.
 					// Really, I probably should just... wait to start dragging before
 					// creating the vertex... just lazy right now
-					EditorMeshVertex vertex = EditorMeshVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
+					EditorVertex vertex = EditorVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
 					Attachment.SteinerPoints.Add(vertex);
 					Attachment.Invalidate();
 
@@ -226,7 +226,7 @@ namespace Nucleus.ModelEditor
 						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(attachClickPos) + Attachment.WorldTransform.Translation);
 						var newTexCoord = Attachment.GetVertexUV(newClickP);
 						Logs.Info(newTexCoord);
-						WorkingLines.Add(EditorMeshVertex.FromVector(newClickP, newTexCoord, Attachment));
+						WorkingLines.Add(EditorVertex.FromVector(newClickP, newTexCoord, Attachment));
 					}
 					break;
 			}
@@ -345,8 +345,7 @@ namespace Nucleus.ModelEditor
 			Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, new(100, 180, 100));
 		}
 	}
-
-	public class EditorMeshVertex : IEditorType
+	public class EditorVertex : IEditorType
 	{
 		public override string ToString() {
 			return $"EditorVertex [{X}, {Y}]";
@@ -359,25 +358,25 @@ namespace Nucleus.ModelEditor
 		public float Y;
 		public float U;
 		public float V;
-		public EditorMeshAttachment Attachment;
+		public EditorVertexAttachment Attachment;
 
 
-		public HashSet<EditorMeshVertex> ConstrainedHashSet = [];
+		public HashSet<EditorVertex> ConstrainedHashSet = [];
 		[JsonIgnore] public bool HasConstrainedEdges => ConstrainedHashSet.Count > 0;
 
 		/// <summary>
 		/// Note that this only applies to <see cref="EditorMeshAttachment.SteinerPoints"/> -> <see cref="EditorMeshAttachment.ShapeEdges"/> or 
 		/// <see cref="EditorMeshAttachment.SteinerPoints"/> -> <see cref="EditorMeshAttachment.SteinerPoints"/>. Shape edges inheritly are 
-		/// constrained to the next <see cref="EditorMeshVertex"/> in the array (or in the case of the last edge, the last point -> first point).
+		/// constrained to the next <see cref="EditorVertex"/> in the array (or in the case of the last edge, the last point -> first point).
 		/// </summary>
-		public IEnumerable<EditorMeshVertex> ConstrainedVertices {
+		public IEnumerable<EditorVertex> ConstrainedVertices {
 			get {
 				foreach (var vertex in ConstrainedHashSet)
 					yield return vertex;
 			}
 		}
 
-		public bool IsConstrainedTo(EditorMeshVertex other) {
+		public bool IsConstrainedTo(EditorVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -392,7 +391,7 @@ namespace Nucleus.ModelEditor
 			return otherContainsUs && weContainOther;
 		}
 
-		public void ConstrainTo(EditorMeshVertex other) {
+		public void ConstrainTo(EditorVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -407,7 +406,7 @@ namespace Nucleus.ModelEditor
 			Attachment.Invalidate();
 		}
 
-		public void UnconstrainFrom(EditorMeshVertex other) {
+		public void UnconstrainFrom(EditorVertex other) {
 			Debug.Assert(this.Attachment != null);
 			Debug.Assert(other.Attachment != null);
 
@@ -441,8 +440,8 @@ namespace Nucleus.ModelEditor
 		public void SetPos(Vector2F pos) => SetPos(pos.X, pos.Y);
 
 		public Vector2F ToVector() => new(X, Y);
-		public static EditorMeshVertex FromVector(Vector2F vec,EditorMeshAttachment attachment) {
-			EditorMeshVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
+		public static EditorVertex FromVector(Vector2F vec, EditorVertexAttachment attachment) {
+			EditorVertex vertex = new() { X = vec.X, Y = vec.Y, Attachment = attachment };
 
 			// Bind *just* this vertex to the bone its parented to
 			// Todo: auto-weigh to the bone somehow?
@@ -451,8 +450,8 @@ namespace Nucleus.ModelEditor
 			return vertex;
 		}
 
-		public static EditorMeshVertex FromVector(Vector2F vec, Vector2F tex, EditorMeshAttachment attachment) {
-			EditorMeshVertex vertex = new() { X = vec.X, Y = vec.Y, U = tex.X, V = tex.Y, Attachment = attachment };
+		public static EditorVertex FromVector(Vector2F vec, Vector2F tex, EditorVertexAttachment attachment) {
+			EditorVertex vertex = new() { X = vec.X, Y = vec.Y, U = tex.X, V = tex.Y, Attachment = attachment };
 
 			// Bind *just* this vertex to the bone its parented to
 			// Todo: auto-weigh to the bone somehow?
@@ -461,7 +460,7 @@ namespace Nucleus.ModelEditor
 			return vertex;
 		}
 
-		public static implicit operator Vector2F(EditorMeshVertex v) => v.ToVector();
+		public static implicit operator Vector2F(EditorVertex v) => v.ToVector();
 
 		public void OnMouseEntered() { }
 		public void OnMouseLeft() { }
@@ -481,23 +480,23 @@ namespace Nucleus.ModelEditor
 	// So the reason this is structured so weirdly: Newtonsoft.Json doesn't seem to like serializing
 	// MeshVertex types as keys. This weird pseudo-dictionary-only-really-o(1)-during-runtime structure
 	// is *probably* good enough for the editor, but I hate it regardless and it's a mess
-	public class EditorMeshWeights
+	public class EditorWeights
 	{
 		public EditorBone Bone;
 
-		private List<EditorMeshVertex> __vertices = [];
+		private List<EditorVertex> __vertices = [];
 		private List<float> __weights = [];
 		private List<Vector2F> __positions = [];
 
-		public List<EditorMeshVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
+		public List<EditorVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
 		public List<float> Weights { get => __weights; set { Invalidated = true; __weights = value; } }
 		public List<Vector2F> Positions { get => __positions; set { Invalidated = true; __positions = value; } }
 
-		[JsonIgnore] private Dictionary<EditorMeshVertex, float> TrueWeights = [];
-		[JsonIgnore] private Dictionary<EditorMeshVertex, Vector2F> TruePositions = [];
+		[JsonIgnore] private Dictionary<EditorVertex, float> TrueWeights = [];
+		[JsonIgnore] private Dictionary<EditorVertex, Vector2F> TruePositions = [];
 		[JsonIgnore] public bool Invalidated = true;
 
-		public void SetVertexWeight(EditorMeshVertex vertex, float weight) {
+		public void SetVertexWeight(EditorVertex vertex, float weight) {
 			bool found = false;
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
@@ -516,7 +515,7 @@ namespace Nucleus.ModelEditor
 
 			Invalidated = true;
 		}
-		public void SetVertexPos(EditorMeshVertex vertex, Vector2F pos) {
+		public void SetVertexPos(EditorVertex vertex, Vector2F pos) {
 			bool found = false;
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
@@ -535,7 +534,7 @@ namespace Nucleus.ModelEditor
 			Invalidated = true;
 		}
 
-		public bool AddVertex(EditorMeshVertex vertex, float? weight = null, Vector2F? pos = null) {
+		public bool AddVertex(EditorVertex vertex, float? weight = null, Vector2F? pos = null) {
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
 					Weights[i] = weight ?? Weights[i];
@@ -548,7 +547,7 @@ namespace Nucleus.ModelEditor
 			return false;
 		}
 
-		public bool RemoveVertex(EditorMeshVertex vertex) {
+		public bool RemoveVertex(EditorVertex vertex) {
 			for (int i = 0; i < Vertices.Count; i++) {
 				if (Vertices[i] == vertex) {
 					Vertices.RemoveAt(i);
@@ -584,11 +583,11 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public float TryGetVertexWeight(EditorMeshVertex vertex) {
+		public float TryGetVertexWeight(EditorVertex vertex) {
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out var value) ? value : 0;
 		}
-		public bool TryGetVertexWeight(EditorMeshVertex vertex, [NotNullWhen(true)] out float weight) {
+		public bool TryGetVertexWeight(EditorVertex vertex, [NotNullWhen(true)] out float weight) {
 			Validate();
 			return TrueWeights.TryGetValue(vertex, out weight);
 		}
@@ -598,16 +597,16 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		/// <param name="vertex"></param>
 		/// <returns></returns>
-		public Vector2F TryGetVertexPosition(EditorMeshVertex vertex) {
+		public Vector2F TryGetVertexPosition(EditorVertex vertex) {
 			Validate();
 			return TruePositions.TryGetValue(vertex, out var value) ? value : Vector2F.Zero;
 		}
-		public bool TryGetVertexPosition(EditorMeshVertex vertex, [NotNullWhen(true)] out Vector2F pos) {
+		public bool TryGetVertexPosition(EditorVertex vertex, [NotNullWhen(true)] out Vector2F pos) {
 			Validate();
 			return TruePositions.TryGetValue(vertex, out pos);
 		}
 
-		public bool TryGetVertexInfo(EditorMeshVertex vertex, out float weight, out Vector2F pos) {
+		public bool TryGetVertexInfo(EditorVertex vertex, out float weight, out Vector2F pos) {
 			Validate();
 			var gotWeight = TryGetVertexWeight(vertex, out weight);
 			return TryGetVertexPosition(vertex, out pos) || gotWeight;
@@ -630,132 +629,10 @@ namespace Nucleus.ModelEditor
 	}
 
 	[Nucleus.MarkForStaticConstruction]
-	public class EditorMeshAttachment : EditorAttachment
+	public class EditorMeshAttachment : EditorVertexAttachment
 	{
-		public static ConCommand nm4_autouvmesh = ConCommand.Register("nm4_autouvmesh", (_, _) => {
-			var modeleditor = ModelEditor.Active;
-			var selected = modeleditor.LastSelectedObject;
-			if (selected is not EditorMeshAttachment meshAttachment) {
-				Logs.Warn("Cannot perform this operation on a non-mesh attachment.");
-				return;
-			}
-
-			foreach (var hullpoint in meshAttachment.ShapeEdges)
-				hullpoint.AutoUV();
-			foreach (var steinerpoint in meshAttachment.SteinerPoints)
-				steinerpoint.AutoUV();
-
-			int i = meshAttachment.ShapeEdges.Count + meshAttachment.SteinerPoints.Count;
-			Logs.Info($"Auto-UV'd {i} vertices on mesh '{selected.GetName()}'");
-		}, "Automatically calculates texture coordinates for the last selected object");
-
-		public List<EditorMeshWeights> Weights = [];
-
-		public delegate void OnVertexSelected(EditorMeshVertex vertex);
-		public event OnVertexSelected? VertexSelected;
-
-		public static void NormalizeWeights(float[] numbers, int refrainIndex) {
-			if (numbers == null || numbers.Length == 0)
-				throw new ArgumentException("Input array must not be null or empty.");
-			if (refrainIndex < 0 || refrainIndex >= numbers.Length)
-				throw new ArgumentOutOfRangeException(nameof(refrainIndex), "Index out of range.");
-
-			float refrainValue = numbers[refrainIndex];
-			float totalOther = 0f;
-
-			for (int i = 0; i < numbers.Length; i++) {
-				if (i != refrainIndex)
-					totalOther += numbers[i];
-			}
-
-			float targetSum = 1f - refrainValue;
-
-			if (totalOther == 0f) {
-				for (int i = 0; i < numbers.Length; i++) {
-					if (i != refrainIndex)
-						numbers[i] = targetSum / (numbers.Length - 1);
-				}
-			}
-			else {
-				float scale = targetSum / totalOther;
-
-				for (int i = 0; i < numbers.Length; i++) {
-					if (i != refrainIndex)
-						numbers[i] *= scale;
-				}
-			}
-
-			numbers[refrainIndex] = refrainValue;
-		}
-
-		public bool GetVertexWeightInformation(EditorMeshVertex vertex, [NotNullWhen(true)] out EditorBone[]? bones, [NotNullWhen(true)] out float[]? weights, [NotNullWhen(true)] out Vector2F[]? positions) {
-			List<EditorBone> boneList = [];
-			List<float> weightList = [];
-			List<Vector2F> posList = [];
-
-			foreach (var weightData in Weights) {
-				if (weightData.TryGetVertexInfo(vertex, out float weight, out Vector2F pos)) {
-					boneList.Add(weightData.Bone);
-					weightList.Add(weight);
-					posList.Add(pos);
-				}
-			}
-
-			Debug.Assert(boneList.Count == weightList.Count && weightList.Count == posList.Count && posList.Count == boneList.Count);
-			if (boneList.Count == 0) {
-				bones = null;
-				weights = null;
-				positions = null;
-				return false;
-			}
-
-			bones = boneList.ToArray();
-			weights = weightList.ToArray();
-			positions = posList.ToArray();
-			return true;
-		}
-
-		public void SetVertexWeight(EditorMeshVertex vertex, EditorBone bone, float weight, bool validate = true) {
-			EditorMeshWeights? weightData = Weights.FirstOrDefault(x => x.Bone == bone);
-			// Debug.Assert(weightData != null, "No weight data. Bone likely isn't bound.");
-			if (weightData == null) return;
-
-			if (validate) {
-				// Get the delta weight
-				var deltaWeight = weight - weightData.TryGetVertexWeight(vertex);
-				// Add up all weights
-				float[] allWeights = new float[Weights.Count];
-				int refrain = -1;
-				for (int i = 0; i < Weights.Count; i++) {
-					allWeights[i] = Weights[i].TryGetVertexWeight(vertex);
-					if (Weights[i].Bone == bone)
-						refrain = i;
-				}
-
-				NormalizeWeights(allWeights, refrain);
-				for (int i = 0; i < allWeights.Length; i++) {
-					Weights[i].SetVertexWeight(vertex, allWeights[i]);
-				}
-			}
-
-			weightData.SetVertexWeight(vertex, weight);
-		}
-
-		public Vector2F CalculateVertexWorldPosition(Transformation transform, EditorMeshVertex vertex) {
-			Vector2F basePosition = transform.LocalToWorld(vertex.X, vertex.Y);
-			if (Weights.Count <= 0)
-				return basePosition;
-
-			Vector2F pos = Vector2F.Zero;
-			foreach (var weightData in Weights) {
-				if (weightData.IsEmpty) continue;
-				var vertLocalPos = weightData.TryGetVertexPosition(vertex);
-				var weight = weightData.TryGetVertexWeight(vertex);
-				pos += weightData.Bone.WorldTransform.LocalToWorld(vertLocalPos) * weight;
-			}
-
-			return pos;
-		}
+		[JsonIgnore] public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
+		[JsonIgnore] public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
 
 		public override string SingleName => "mesh";
 		public override string PluralName => "meshes";
@@ -763,102 +640,6 @@ namespace Nucleus.ModelEditor
 
 		public string GetPath() => Path ?? $"<{Name}>";
 		public string? Path { get; set; } = null;
-
-		private Vector2F pos, scale = new(1, 1);
-
-		/// <summary>
-		/// Removes a vertex while ensuring the removal of constraint references.
-		/// </summary>
-		/// <param name="vertex"></param>
-		public bool RemoveVertex(EditorMeshVertex vertex) {
-			while (vertex.HasConstrainedEdges)
-				vertex.UnconstrainFrom(vertex.ConstrainedVertices.First());
-
-			return SteinerPoints.Remove(vertex) || ShapeEdges.Remove(vertex);
-		}
-
-		public void SelectVertex(EditorMeshVertex vertex, bool multiselect = false) {
-			if (multiselect) {
-				bool wasIn = SelectedVertices.Remove(vertex);
-
-				if (!wasIn)
-					SelectedVertices.Add(vertex);
-
-				return;
-			}
-
-			SelectedVertices.Clear();
-			SelectedVertices.Add(vertex);
-			VertexSelected?.Invoke(vertex);
-		}
-
-		public IEnumerable<EditorMeshVertex> GetSelectedVertices() => SelectedVertices;
-
-		public Vector2F Position { get => pos; set => pos = value; }
-		public float Rotation { get; set; }
-		public Vector2F Scale { get => scale; set => scale = value; }
-
-		[JsonIgnore] public Shape Shape;
-
-		public override bool CanTranslate() => true;
-		public override bool CanRotate() => true;
-		public override bool CanScale() => true;
-		public override bool CanShear() => false;
-		public override bool CanHide() => true;
-
-		public HashSet<EditorMeshVertex> SelectedVertices = [];
-
-
-		public override bool OnSelected() {
-			SelectedVertices.Clear();
-			return true;
-		}
-
-		public override bool OnUnselected() {
-			// Allows the ESCAPE key and clicking out-of-bounds to unselect all vertices
-			if (SelectedVertices.Count > 0) {
-				SelectedVertices.Clear();
-				return false;
-			}
-
-			return true; // allow modeleditor to unselect
-		}
-
-		public override float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => Position.X;
-		public override float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => Position.Y;
-		public override float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => Rotation;
-		public override float GetScaleX() => Scale.X;
-		public override float GetScaleY() => Scale.Y;
-
-		public override void EditTranslationX(float value, UserTransformMode transform = UserTransformMode.LocalSpace) => pos.X = value;
-		public override void EditTranslationY(float value, UserTransformMode transform = UserTransformMode.LocalSpace) => pos.Y = value;
-		public override void EditRotation(float value, bool localTo = true) {
-			if (!localTo)
-				value = WorldTransform.WorldToLocalRotation(value);
-
-			Rotation = value;
-		}
-
-		public override Vector2F GetWorldPosition() => WorldTransform.Translation;
-		public override float GetWorldRotation() => WorldTransform.LocalToWorldRotation(0) + GetRotation();
-		public override float GetScreenRotation() {
-			var wp = WorldTransform.Translation;
-			var wl = WorldTransform.LocalToWorld(Scale.X, 0);
-			var d = (wl - wp);
-			var r = MathF.Atan2(d.Y, d.X).ToDegrees();
-			return r;
-		}
-
-		public override void EditScaleX(float value) => scale.X = value;
-		public override void EditScaleY(float value) => scale.Y = value;
-
-		[JsonIgnore] public Transformation WorldTransform;
-
-		public Color Color { get; set; } = Color.White;
-
-		[JsonIgnore] public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
-		[JsonIgnore] public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
-
 		private (Texture Texture, AtlasRegion Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
 			var model = Slot.Bone.Model;
 
@@ -887,20 +668,12 @@ namespace Nucleus.ModelEditor
 			);
 		}
 
-		private List<Triangle> triangles = [];
-		[JsonIgnore] public bool Invalidated { get; set; } = true;
-		public bool Invalidate() => Invalidated = true;
-
-		/// <summary>
-		/// Sequential edges to define the shape.
-		/// </summary>
-		public List<EditorMeshVertex> ShapeEdges = [];
 		/// <summary>
 		/// Arbitrary points within the shapes edges.
 		/// </summary>
-		public List<EditorMeshVertex> SteinerPoints = [];
+		public List<EditorVertex> SteinerPoints = [];
 
-		public IEnumerable<EditorMeshVertex> GetVertices() {
+		public override IEnumerable<EditorVertex> GetVertices() {
 			foreach (var co in ShapeEdges) {
 				co.Attachment = this;
 				yield return co;
@@ -931,13 +704,13 @@ namespace Nucleus.ModelEditor
 
 				var workingShape = new Shape(triPoints);
 
-				Dictionary<EditorMeshVertex, HashSet<EditorMeshVertex>> avoidDuplicateEdges = [];
+				Dictionary<EditorVertex, HashSet<EditorVertex>> avoidDuplicateEdges = [];
 
 				foreach (var steinerPoint in SteinerPoints)
 					workingShape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
 
 				foreach (var constrainedFromTripoint in workingShape.GetAllPoints()) {
-					var constrainedFrom = constrainedFromTripoint.AssociatedObject as EditorMeshVertex ?? throw new Exception();
+					var constrainedFrom = constrainedFromTripoint.AssociatedObject as EditorVertex ?? throw new Exception();
 					if (!constrainedFrom.HasConstrainedEdges) continue;
 
 					foreach (var constrainedTo in constrainedFrom.ConstrainedVertices) {
@@ -1019,8 +792,8 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public static bool ShouldDim => InEditMeshOperator && EditMeshOperator.meshedit_dim.GetBool();
 		[JsonIgnore] public static bool ShouldIsolate => InEditMeshOperator && EditMeshOperator.meshedit_isolate.GetBool();
 
-		public void SetupWorldTransform() {
-			WorldTransform = Transformation.CalculateWorldTransformation(pos, Rotation, scale, Vector2F.Zero, TransformMode.Normal, Slot.Bone.WorldTransform);
+		public override bool RemoveVertex(EditorVertex vertex) {
+			return base.RemoveVertex(vertex) || SteinerPoints.Remove(vertex);
 		}
 
 		public override void Render() {
@@ -1066,9 +839,9 @@ namespace Nucleus.ModelEditor
 				foreach (var tri in triangles) {
 					var points = tri.Points;
 
-					var av1 = points[0].AssociatedObject as EditorMeshVertex;
-					var av2 = points[1].AssociatedObject as EditorMeshVertex;
-					var av3 = points[2].AssociatedObject as EditorMeshVertex;
+					var av1 = points[0].AssociatedObject as EditorVertex;
+					var av2 = points[1].AssociatedObject as EditorVertex;
+					var av3 = points[2].AssociatedObject as EditorVertex;
 
 					if (av1 == null || av2 == null || av3 == null)
 						continue;
@@ -1120,9 +893,9 @@ namespace Nucleus.ModelEditor
 				var tp2 = tri.Points[1];
 				var tp3 = tri.Points[2];
 
-				var av1 = tp1.AssociatedObject as EditorMeshVertex;
-				var av2 = tp2.AssociatedObject as EditorMeshVertex;
-				var av3 = tp3.AssociatedObject as EditorMeshVertex;
+				var av1 = tp1.AssociatedObject as EditorVertex;
+				var av2 = tp2.AssociatedObject as EditorVertex;
+				var av3 = tp3.AssociatedObject as EditorVertex;
 
 				if (av1 == null || av2 == null || av3 == null)
 					continue;
@@ -1163,87 +936,6 @@ namespace Nucleus.ModelEditor
 			Rlgl.SetLineWidth(1);
 		}
 
-
-		public void RenderVertex(EditorMeshVertex vertex, bool isHighlighted, Vector2F? pos = null) {
-			bool deleteMode = ModelEditor.Active.File.ActiveOperator is EditMeshOperator meshOp && meshOp.CurrentMode == EditMesh_Mode.Delete;
-
-			System.Numerics.Vector2 drawPos = (pos ?? CalculateVertexWorldPosition(WorldTransform, vertex)).ToNumerics();
-			bool inWeightMode = ModelEditor.Active.Editor.InWeightsMode;
-			var camsize = ModelEditor.Active.Editor.CameraZoom;
-
-			var isSelectedTruly = SelectedVertices.Contains(vertex);
-			var isSelected = isSelectedTruly || SelectedVertices.Count == 0;
-
-			var hS = isHighlighted ? 245 : 165;
-
-			if (!inWeightMode) {
-				float size = (isSelected ? 4f : 2f) + (isHighlighted ? 1f : 0f);
-				Color color;
-				if (isHighlighted && deleteMode)
-					color = new Color(255, 60, 15);
-				else
-					color = isSelected ? new Color(isHighlighted ? 180 : 0, 255, 255) : new Color(hS - 15, hS, hS);
-
-				Raylib.DrawCircleV(drawPos, (size) / camsize, Color.Black);
-				Raylib.DrawCircleV(drawPos, (size - 1) / camsize, color);
-
-				// debugging weight pairs
-				if (isHighlighted || isSelected) {
-					var point = ModelEditor.Active.Editor.GridToScreen(drawPos.ToNucleus());
-					var region = vertex.Attachment.quadpoints().Region;
-					DebugOverlay.Text($"Region: {region}", point - new Vector2F(0, 18), 16);
-					DebugOverlay.Text($"Vertex X: {vertex.X}, Y: {vertex.Y}", point, 16);
-					if (Weights.Count == 0) {
-						DebugOverlay.Text($"    No weights available", point + new Vector2F(0, 18 * 1), 16);
-					}
-					else {
-						DebugOverlay.Text($"    Weights:", point + new Vector2F(0, 18 * 1), 16);
-						var i = 2;
-						foreach (var weightPair in Weights) {
-							DebugOverlay.Text($"      {weightPair.Bone.Name}: {weightPair.TryGetVertexWeight(vertex)} x {weightPair.TryGetVertexPosition(vertex)}", point + new Vector2F(0, 18 * i), 16);
-							DebugOverlay.Line(point + new Vector2F(48, (18 * i) + 8), ModelEditor.Active.Editor.GridToScreen(weightPair.Bone.GetWorldPosition()), 3, BoneWeightListIndexToColor(i - 2));
-
-							i += 1;
-						}
-					}
-				}
-			}
-			else {
-				float size = (isSelected ? 9f : 7f) + (isHighlighted ? 1f : 0f);
-				float totalWeight = 0;
-				EditorMeshAttachment attachment = vertex.Attachment;
-				List<EditorMeshWeights> weights = attachment.Weights;
-				EditorBone? selectedBone = ModelEditor.Active.Weights.ActiveWeights?.Bone;
-				for (int i = 0; i < weights.Count; i++) {
-					var weightPair = weights[i];
-					bool isSelectedBone = selectedBone == weightPair.Bone;
-					float weight = weightPair.TryGetVertexWeight(vertex);
-
-					Raylib.DrawCircleSector(
-						drawPos,
-						(size + ((isSelectedBone || isSelectedTruly) ? 6 : 0)) / camsize, totalWeight * 360, (totalWeight * 360) + (weight * 360),
-						32,
-						BoneWeightListIndexToColor(i, (isSelected || isHighlighted) ? 255 : 140)
-						);
-					totalWeight += weight;
-				}
-
-
-				if (isHighlighted) {
-					Rlgl.DrawRenderBatchActive();
-					Rlgl.SetLineWidth(3f);
-					Raylib.DrawCircleLinesV(drawPos, 20 / camsize, Color.White);
-					Rlgl.DrawRenderBatchActive();
-					Rlgl.SetLineWidth(1f);
-				}
-			}
-		}
-
-		public static Color BoneWeightListIndexToColor(int index, int alpha = 255) {
-			var baselineHue = 194 + (index * 90);
-			return (new Vector3(baselineHue, 0.78f, 1.00f)).ToRGB((float)(alpha) / 255f);
-		}
-
 		public Transformation? TransformOverride = null;
 
 		public override void RenderOverlay() {
@@ -1264,9 +956,9 @@ namespace Nucleus.ModelEditor
 
 			foreach (var tri in Triangles) {
 				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
-				EditorMeshVertex? av1 = tp1.AssociatedObject as EditorMeshVertex,
-							av2 = tp2.AssociatedObject as EditorMeshVertex,
-							av3 = tp3.AssociatedObject as EditorMeshVertex;
+				EditorVertex? av1 = tp1.AssociatedObject as EditorVertex,
+							av2 = tp2.AssociatedObject as EditorVertex,
+							av3 = tp3.AssociatedObject as EditorVertex;
 
 				if (av1 == null || av2 == null || av3 == null) continue;
 
@@ -1293,7 +985,7 @@ namespace Nucleus.ModelEditor
 				var isHighlighted =
 						((edge1.Hovered && meshOp == null)
 						|| (meshOp != null && meshOp.HoveredVertex == edge1 && !meshOp.IsHoveredSteinerPoint))
-					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorMeshVertex));
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorVertex));
 
 				var isSelected = SelectedVertices.Contains(edge1) || SelectedVertices.Count == 0;
 
@@ -1316,7 +1008,7 @@ namespace Nucleus.ModelEditor
 				var point = SteinerPoints[i];
 				var isHighlighted =
 					((point.Hovered && meshOp == null) || (meshOp != null && meshOp.HoveredVertex == point && meshOp.IsHoveredSteinerPoint))
-					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorMeshVertex));
+					&& !ModelEditor.Active.Editor.IsTypeProhibitedByOperator(typeof(EditorVertex));
 
 				RenderVertex(point, isHighlighted);
 				//Raylib.DrawCircleV(WorldTransform.LocalToWorld(point).ToNumerics(), (isHighlighted ? 3f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));

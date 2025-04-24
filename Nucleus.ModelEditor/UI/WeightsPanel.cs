@@ -149,14 +149,14 @@ public class WeightsPanel : View
 		ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 	}
 
-	EditorMeshVertex? activeVertex;
+	EditorVertex? activeVertex;
 	EditorMeshAttachment? activeAttachment;
-	EditorMeshWeights? activeWeights;
+	EditorWeights? activeWeights;
 
 	[MemberNotNullWhen(true, nameof(ActiveWeights))]
 	[MemberNotNullWhen(true, nameof(activeWeights))]
 	public bool IsBoneSelected => activeWeights != null;
-	public EditorMeshWeights? ActiveWeights => activeWeights;
+	public EditorWeights? ActiveWeights => activeWeights;
 
 	private void Numslider_OnValueChanged(NumSlider self, double oldValue, double newValue) {
 		if (activeVertex == null) return;
@@ -190,7 +190,7 @@ public class WeightsPanel : View
 		}
 	}
 
-	private void ActiveAttachment_VertexSelected(EditorMeshVertex vertex) {
+	private void ActiveAttachment_VertexSelected(EditorVertex vertex) {
 		activeVertex = vertex;
 		// Update numslider
 
@@ -204,7 +204,7 @@ public class WeightsPanel : View
 			return;
 
 		var lvi = self as ListViewItem ?? throw new Exception();
-		EditorMeshWeights bonepair = self.GetTag<EditorMeshWeights>("bonepair");
+		EditorWeights bonepair = self.GetTag<EditorWeights>("bonepair");
 		activeWeights = bonepair;
 		var vertex = meshAttachment.SelectedVertices.FirstOrDefault();
 
@@ -215,7 +215,7 @@ public class WeightsPanel : View
 
 	private void Btn_PaintOverride(Element self, float width, float height) {
 		var lvi = self as ListViewItem ?? throw new Exception();
-		EditorMeshWeights bonepair = self.GetTag<EditorMeshWeights>("bonepair");
+		EditorWeights bonepair = self.GetTag<EditorWeights>("bonepair");
 
 		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
 			return;
@@ -245,7 +245,7 @@ public class WeightsPanel : View
 		}
 
 		var rectSize = 8;
-		Graphics2D.SetDrawColor(EditorMeshAttachment.BoneWeightListIndexToColor(index));
+		Graphics2D.SetDrawColor(EditorVertexAttachment.BoneWeightListIndexToColor(index));
 		Graphics2D.DrawRectangleRounded(rectSize / 2, rectSize / 2, height - rectSize, height - rectSize, 0.2f, 2);
 
 		if (lvi.Hovered) {

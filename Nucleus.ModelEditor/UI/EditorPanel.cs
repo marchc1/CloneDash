@@ -481,10 +481,10 @@ namespace Nucleus.ModelEditor
 								}
 							}
 						}
-						if (hovered is EditorMeshVertex) break;
+						if (hovered is EditorVertex) break;
 					}
 
-					if (hovered is not EditorMeshVertex && canHoverTest_Bones) {
+					if (hovered is not EditorVertex && canHoverTest_Bones) {
 						foreach (var bone in model.GetAllBones()) {
 							if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
 								hovered = bone;
@@ -693,7 +693,7 @@ namespace Nucleus.ModelEditor
 				if (boneIndex == -1)
 					color = new Color(170, 170, 170, 40);
 				else
-					color = EditorMeshAttachment.BoneWeightListIndexToColor(boneIndex, color.A);
+					color = EditorVertexAttachment.BoneWeightListIndexToColor(boneIndex, color.A);
 			}
 
 

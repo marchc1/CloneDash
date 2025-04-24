@@ -115,7 +115,9 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-			PropertiesPanel.NewMenu(buttons, []);
+			PropertiesPanel.NewMenu(buttons, [
+				new("Clipping", () => PropertiesPanel.NewClippingDialog(ModelEditor.Active.File, this))
+				]);
 			PropertiesPanel.ButtonIcon(buttons, "Set Parent", "models/setparent.png");
 		}
 

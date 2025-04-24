@@ -304,6 +304,19 @@ namespace Nucleus.ModelEditor
 				}, null
 			);
 		}
+		public static void NewClippingDialog(EditorFile file, EditorSlot slot) {
+			EditorDialogs.TextInput(
+				"New Clipping",
+				"Enter the name for the new slot.",
+				"",
+				true,
+				(name) => {
+					var result = file.AddAttachment<EditorClippingAttachment>(slot, name);
+					if (result.Failed)
+						EditorDialogs.ConfirmAction("Slot creation error", result.Reason, true, () => NewClippingDialog(file, slot));
+				}, null
+			);
+		}
 		public static void NewSkinDialog(EditorFile file, EditorModel model) {
 			EditorDialogs.TextInput(
 				"New Slot",
