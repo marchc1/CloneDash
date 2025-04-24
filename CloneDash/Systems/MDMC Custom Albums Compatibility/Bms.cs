@@ -447,7 +447,8 @@ namespace CloneDash.Systems.CustomCharts
 				var speed = pathway == 1 ? speedAir : speedGround;
 				var scene = Info["GENRE"]?.GetValue<string>();
 				if (!NoteData!.TryGetValue(GetNoteDataKey(bmsKey, pathway, speed, scene), out var configData))
-					continue;
+					if (!NoteData!.TryGetValue(GetNoteDataKey(bmsKey, pathway, speed, "0"), out configData))
+						continue;
 
 				var time = Convert.ToDecimal(note["time"].GetValue<float>());
 
