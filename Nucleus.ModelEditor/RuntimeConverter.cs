@@ -14,17 +14,17 @@ public class RuntimeConverter
 {
 	private static void SetupVertexExport(
 											Dictionary<EditorBone, BoneData> boneDataLookup,
-											EditorMeshAttachment mesh,
-											List<MeshTriangle> trianglesInst,
-											List<MeshVertex> verticesInst,
+											EditorVertexAttachment vertexAttachment,
+											List<AttachmentTriangle> trianglesInst,
+											List<AttachmentVertex> verticesInst,
 											Dictionary<EditorVertex, int> verticesArrPtr,
-											Dictionary<EditorVertex, MeshVertex> editorToRealVertex,
+											Dictionary<EditorVertex, AttachmentVertex> editorToRealVertex,
 											EditorVertex eVertex,
 											out int vIndex
 										) {
 		if (!verticesArrPtr.TryGetValue(eVertex, out vIndex)) {
 			vIndex = verticesInst.Count;
-			var newVertex = new MeshVertex() {
+			var newVertex = new AttachmentVertex() {
 				X = eVertex.X,
 				Y = eVertex.Y,
 				U = eVertex.U,
@@ -34,8 +34,8 @@ public class RuntimeConverter
 			editorToRealVertex.Add(eVertex, newVertex);
 			verticesArrPtr.Add(eVertex, vIndex);
 
-			if (mesh.GetVertexWeightInformation(eVertex, out var bones, out var weights, out var positions)) {
-				newVertex.Weights = new MeshAttachmentWeight[bones.Length];
+			if (vertexAttachment.GetVertexWeightInformation(eVertex, out var bones, out var weights, out var positions)) {
+				newVertex.Weights = new AttachmentWeight[bones.Length];
 
 				for (int i = 0; i < bones.Length; i++) {
 					newVertex.Weights[i] = new(boneDataLookup[bones[i]].Index, weights[i], positions[i]);
@@ -113,45 +113,83 @@ public class RuntimeConverter
 
 							realAttachment = newRegion;
 							break;
-						case EditorMeshAttachment mesh:
-							var newMesh = new MeshAttachment();
+						case EditorMeshAttachment mesh: {
+								var newMesh = new MeshAttachment();
 
-							newMesh.Position = mesh.Position;
-							newMesh.Rotation = mesh.Rotation;
-							newMesh.Scale = mesh.Scale;
+								newMesh.Position = mesh.Position;
+								newMesh.Rotation = mesh.Rotation;
+								newMesh.Scale = mesh.Scale;
 
-							List<MeshTriangle> trianglesInst = [];
-							List<MeshVertex> verticesInst = [];
-							Dictionary<EditorVertex, int> verticesArrPtr = [];
-							Dictionary<EditorVertex, MeshVertex> editorToRealVertex = [];
+								List<AttachmentTriangle> trianglesInst = [];
+								List<AttachmentVertex> verticesInst = [];
+								Dictionary<EditorVertex, int> verticesArrPtr = [];
+								Dictionary<EditorVertex, AttachmentVertex> editorToRealVertex = [];
 
-							mesh.RefreshDelaunator();
-							foreach (var triangle in mesh.Triangles) {
-								EditorVertex? ev1 = triangle.Points[0].AssociatedObject as EditorVertex;
-								EditorVertex? ev2 = triangle.Points[1].AssociatedObject as EditorVertex;
-								EditorVertex? ev3 = triangle.Points[2].AssociatedObject as EditorVertex;
+								mesh.RefreshDelaunator();
+								foreach (var triangle in mesh.Triangles) {
+									EditorVertex? ev1 = triangle.Points[0].AssociatedObject as EditorVertex;
+									EditorVertex? ev2 = triangle.Points[1].AssociatedObject as EditorVertex;
+									EditorVertex? ev3 = triangle.Points[2].AssociatedObject as EditorVertex;
 
-								if (ev1 == null) continue;
-								if (ev2 == null) continue;
-								if (ev3 == null) continue;
+									if (ev1 == null) continue;
+									if (ev2 == null) continue;
+									if (ev3 == null) continue;
 
-								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
-								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
-								SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev3, out int v3);
-								
-								trianglesInst.Add(new() {
-									V1 = v1,
-									V2 = v2,
-									V3 = v3,
-								});
+									SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
+									SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
+									SetupVertexExport(lookupBone, mesh, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev3, out int v3);
+
+									trianglesInst.Add(new() {
+										V1 = v1,
+										V2 = v2,
+										V3 = v3,
+									});
+								}
+
+								newMesh.Triangles = trianglesInst.ToArray();
+								newMesh.Vertices = verticesInst.ToArray();
+
+								newMesh.Path = mesh.GetPath().TrimStart('<').TrimEnd('>');
+								realAttachment = newMesh;
 							}
+							break;
+						case EditorClippingAttachment clip: {
+								var newClip = new ClippingAttachment();
 
-							newMesh.Triangles = trianglesInst.ToArray();
-							newMesh.Vertices = verticesInst.ToArray();
+								newClip.Position = clip.Position;
+								newClip.Rotation = clip.Rotation;
+								newClip.Scale = clip.Scale;
 
-							newMesh.Path = mesh.GetPath().TrimStart('<').TrimEnd('>');
-							realAttachment = newMesh;
+								List<AttachmentTriangle> trianglesInst = [];
+								List<AttachmentVertex> verticesInst = [];
+								Dictionary<EditorVertex, int> verticesArrPtr = [];
+								Dictionary<EditorVertex, AttachmentVertex> editorToRealVertex = [];
 
+								clip.RefreshDelaunator();
+								foreach (var triangle in clip.Triangles) {
+									EditorVertex? ev1 = triangle.Points[0].AssociatedObject as EditorVertex;
+									EditorVertex? ev2 = triangle.Points[1].AssociatedObject as EditorVertex;
+									EditorVertex? ev3 = triangle.Points[2].AssociatedObject as EditorVertex;
+
+									if (ev1 == null) continue;
+									if (ev2 == null) continue;
+									if (ev3 == null) continue;
+
+									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
+									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
+									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev3, out int v3);
+
+									trianglesInst.Add(new() {
+										V1 = v1,
+										V2 = v2,
+										V3 = v3,
+									});
+								}
+
+								newClip.Triangles = trianglesInst.ToArray();
+								newClip.Vertices = verticesInst.ToArray();
+								realAttachment = newClip;
+							}
 							break;
 						default: continue;
 					}

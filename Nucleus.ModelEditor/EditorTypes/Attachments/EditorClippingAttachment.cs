@@ -208,7 +208,7 @@ namespace Nucleus.ModelEditor
 		public EditorSlot? EndSlot { get; set; }
 
 		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
-			var slotRow = PropertiesPanel.NewRow(props, "Image", "models/clip_end.png");
+			var slotRow = PropertiesPanel.NewRow(props, "End Slot", "models/clip_end.png");
 			var slot = PropertiesPanel.AddComboBox(slotRow, EndSlot, GetModel().Slots, (s) => {
 				if (s == null) return Slot.Name;
 				return s.Name;

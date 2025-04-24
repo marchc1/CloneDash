@@ -152,12 +152,59 @@ public class ModelData : IDisposable
 	}
 }
 
+public class RuntimeClipper : VertexClipper
+{
+	public ModelInstance Model;
+
+	public RuntimeClipper(ModelInstance model) {
+		Model = model;
+	}
+
+	public bool Active { get; set; }
+
+	public override void Start() {
+		Active = true;
+	}
+
+	public override void End() {
+		Active = false;
+		endAt = null;
+		workingAttachment = null;
+	}
+
+	private SlotInstance? endAt;
+	private ClippingAttachment? workingAttachment;
+
+	public void Start(ClippingAttachment attachment, string? endAt = null) {
+		Start();
+		workingAttachment = attachment;
+		this.endAt = endAt == null ? null : Model.FindSlot(endAt);
+	}
+
+	public void NextSlot(SlotInstance slot) {
+		if (!Active) return;
+		if (endAt == null) return;
+
+		if (endAt == slot) {
+			End();
+			return;
+		}
+	}
+
+	public void ClipTriangle(ref Vector2F tv1, ref Vector2F tv2, ref Vector2F tv3, ref Vector2F uv1, ref Vector2F uv2, ref Vector2F uv3) {
+		if (!Active) return;
+
+	}
+}
+
 public class ModelInstance : IContainsSetupPose
 {
 	public ModelData Data { get; set; }
 	public List<BoneInstance> Bones { get; set; } = [];
 	public List<SlotInstance> Slots { get; set; } = [];
 	public List<SlotInstance> DrawOrder { get; set; } = [];
+
+	public RuntimeClipper Clipping;
 
 	public BoneInstance? RootBone => Bones.Count > 0 ? Bones[0] : null;
 
@@ -171,6 +218,10 @@ public class ModelInstance : IContainsSetupPose
 	private Transformation worldTransform;
 	public Transformation WorldTransform {
 		get => worldTransform;
+	}
+
+	public ModelInstance() {
+		Clipping = new(this);
 	}
 
 	public void Render() {
@@ -194,7 +245,10 @@ public class ModelInstance : IContainsSetupPose
 				BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
 				_ => throw new Exception($"Unsupported blend mode! (got {slot.BlendMode})")
 			});
+
+			Clipping.NextSlot(slot);
 			attachment.Render(slot);
+
 			Raylib.EndBlendMode();
 		}
 		foreach (var bone in Bones) {
@@ -502,13 +556,23 @@ public class RegionAttachment : Attachment
 		vStart = (float)region.Y / tex.Height;
 		vEnd = vStart + ((float)region.H / tex.Height);
 
-		Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex2f(BL.X, BL.Y);
-		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
-		Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex2f(TL.X, TL.Y);
+		var clipping = slot.Model.Clipping;
 
-		Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex2f(BR.X, BR.Y);
-		Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex2f(TR.X, TR.Y);
-		Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex2f(BL.X, BL.Y);
+		Vector2F t1v1 = BL, t1v2 = TR, t1v3 = TL;
+		Vector2F t2v1 = BR, t2v2 = TR, t2v3 = BL;
+		Vector2F uv1v1 = new(uStart, vEnd), uv1v2 = new(uEnd, vStart), uv1v3 = new(uStart, vStart);
+		Vector2F uv2v1 = new(uEnd, vEnd), uv2v2 = new(uEnd, vStart), uv2v3 = new(uStart, vEnd);
+
+		clipping.ClipTriangle(ref t1v1, ref t1v2, ref t1v3, ref uv1v1, ref uv1v2, ref uv1v3);
+		clipping.ClipTriangle(ref t2v1, ref t2v2, ref t2v3, ref uv2v1, ref uv2v2, ref uv2v3);
+
+		Rlgl.TexCoord2f(uv1v1.X, uv1v1.Y); Rlgl.Vertex2f(t1v1.X, t1v1.Y);
+		Rlgl.TexCoord2f(uv1v2.X, uv1v2.Y); Rlgl.Vertex2f(t1v2.X, t1v2.Y);
+		Rlgl.TexCoord2f(uv1v3.X, uv1v3.Y); Rlgl.Vertex2f(t1v3.X, t1v3.Y);
+
+		Rlgl.TexCoord2f(uv2v1.X, uv2v1.Y); Rlgl.Vertex2f(t2v1.X, t2v1.Y);
+		Rlgl.TexCoord2f(uv2v2.X, uv2v2.Y); Rlgl.Vertex2f(t2v2.X, t2v2.Y);
+		Rlgl.TexCoord2f(uv2v3.X, uv2v3.Y); Rlgl.Vertex2f(t2v3.X, t2v3.Y);
 
 		Rlgl.End();
 
@@ -531,43 +595,38 @@ public class RegionAttachment : Attachment
 }
 
 
-public record MeshAttachmentWeight(int Bone, float Weight, Vector2F Position)
+public record AttachmentWeight(int Bone, float Weight, Vector2F Position)
 {
 	public bool IsEmpty => Weight == 0;
 }
-public class MeshVertex
+public class AttachmentVertex
 {
 	public float X;
 	public float Y;
 	public float U;
 	public float V;
-	public MeshAttachmentWeight[]? Weights;
+	public AttachmentWeight[]? Weights;
 }
-public class MeshTriangle
+public class AttachmentTriangle
 {
 	public int V1;
 	public int V2;
 	public int V3;
 }
 
-public class MeshAttachment : Attachment
+public class VertexAttachment : Attachment
 {
-	public MeshVertex[] Vertices;
-	public MeshTriangle[] Triangles;
+	public AttachmentVertex[] Vertices;
+	public AttachmentTriangle[] Triangles;
 
 	public Vector2F Position;
 	public float Rotation;
 	public Vector2F Scale;
 
-	public string Path;
 	[JsonIgnore] public AtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
-	public override void Setup(ModelData data) {
-		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
-	}
-
-	private Vector2F CalculateVertexWorldPosition(ModelInstance model, Transformation transform, MeshVertex vertex) {
+	protected Vector2F CalculateVertexWorldPosition(ModelInstance model, Transformation transform, AttachmentVertex vertex) {
 		if (vertex.Weights == null || vertex.Weights.Length <= 0)
 			return transform.LocalToWorld(vertex.X, vertex.Y);
 
@@ -581,6 +640,14 @@ public class MeshAttachment : Attachment
 
 		return pos;
 	}
+}
+public class MeshAttachment : VertexAttachment
+{
+	public string Path;
+	public override void Setup(ModelData data) {
+		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+	}
+
 	public override void Render(SlotInstance slot) {
 		Debug.Assert(Vertices != null); if (Vertices == null) return;
 		Debug.Assert(Triangles != null); if (Triangles == null) return;
@@ -671,6 +738,17 @@ public class MeshAttachment : Attachment
 		}
 	}
 }
+public class ClippingAttachment : VertexAttachment
+{
+	public string? EndSlot = null;
+
+	public override void Render(SlotInstance slot) {
+		base.Render(slot);
+		// Start the model clipper
+		slot.Model.Clipping.Start(this, EndSlot);
+	}
+}
+
 
 // Get ready for interface hell here; but most of it is for good reason...
 
@@ -1108,6 +1186,7 @@ public enum NucleusModel_SaveType : ushort
 
 	Attachment_Region = Attachment | 1,
 	Attachment_Mesh = Attachment | 2,
+	Attachment_Clipping = Attachment | 3,
 
 	Timeline_Translate = Timeline | 1,
 	Timeline_TranslateX = Timeline | 2,
@@ -1170,9 +1249,9 @@ public class ModelBinary : IModelFormat
 		return slot;
 	}
 	private static SkinEntry readSkinEntry(BinaryReader reader) => new(reader.ReadString(), reader.ReadInt32());
-	private static MeshAttachmentWeight readMeshAttachmentWeight(BinaryReader reader) => new(reader.ReadInt32(), reader.ReadSingle(), reader.ReadVector2F());
-	private static MeshVertex readMeshVertex(BinaryReader reader) {
-		MeshVertex vertex = new() {
+	private static AttachmentWeight readMeshAttachmentWeight(BinaryReader reader) => new(reader.ReadInt32(), reader.ReadSingle(), reader.ReadVector2F());
+	private static AttachmentVertex readMeshVertex(BinaryReader reader) {
+		AttachmentVertex vertex = new() {
 			X = reader.ReadSingle(),
 			Y = reader.ReadSingle(),
 			U = reader.ReadSingle(),
@@ -1184,7 +1263,7 @@ public class ModelBinary : IModelFormat
 
 		return vertex;
 	}
-	private static MeshTriangle readMeshTriangle(BinaryReader reader) => new() {
+	private static AttachmentTriangle readMeshTriangle(BinaryReader reader) => new() {
 		V1 = reader.ReadInt32(),
 		V2 = reader.ReadInt32(),
 		V3 = reader.ReadInt32()
@@ -1213,6 +1292,19 @@ public class ModelBinary : IModelFormat
 					attachment.Rotation = reader.ReadSingle();
 					attachment.Scale = reader.ReadVector2F();
 					attachment.Path = reader.ReadString();
+
+					return attachment;
+				}
+			case NucleusModel_SaveType.Attachment_Clipping: {
+					ClippingAttachment attachment = new() { Name = name };
+					attachment.Vertices = reader.ReadArray(readMeshVertex);
+					attachment.Triangles = reader.ReadArray(readMeshTriangle);
+
+					attachment.Position = reader.ReadVector2F();
+					attachment.Rotation = reader.ReadSingle();
+					attachment.Scale = reader.ReadVector2F();
+
+					attachment.EndSlot = reader.ReadNullableString();
 
 					return attachment;
 				}
@@ -1435,13 +1527,13 @@ public class ModelBinary : IModelFormat
 		writer.Write(skinEntry.SlotIndex);
 	}
 
-	private static void writeMeshAttachmentWeight(BinaryWriter writer, MeshAttachmentWeight vweight) {
+	private static void writeMeshAttachmentWeight(BinaryWriter writer, AttachmentWeight vweight) {
 		writer.Write(vweight.Bone);
 		writer.Write(vweight.Weight);
 		writer.Write(vweight.Position);
 	}
 
-	private static void writeMeshVertex(BinaryWriter writer, MeshVertex vertex) {
+	private static void writeMeshVertex(BinaryWriter writer, AttachmentVertex vertex) {
 		writer.Write(vertex.X);
 		writer.Write(vertex.Y);
 		writer.Write(vertex.U);
@@ -1455,7 +1547,7 @@ public class ModelBinary : IModelFormat
 		}
 	}
 
-	private static void writeMeshTriangle(BinaryWriter writer, MeshTriangle triangle) {
+	private static void writeMeshTriangle(BinaryWriter writer, AttachmentTriangle triangle) {
 		writer.Write(triangle.V1);
 		writer.Write(triangle.V2);
 		writer.Write(triangle.V3);
@@ -1480,6 +1572,15 @@ public class ModelBinary : IModelFormat
 				writer.Write(meshAttachment.Rotation);
 				writer.Write(meshAttachment.Scale);
 				writer.Write(meshAttachment.Path);
+				break;
+			case ClippingAttachment clippingAttachment:
+				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Clipping);
+				writer.WriteArray(clippingAttachment.Vertices, writeMeshVertex);
+				writer.WriteArray(clippingAttachment.Triangles, writeMeshTriangle);
+				writer.Write(clippingAttachment.Position);
+				writer.Write(clippingAttachment.Rotation);
+				writer.Write(clippingAttachment.Scale);
+				writer.WriteNullableString(clippingAttachment.EndSlot);
 				break;
 		}
 	}
