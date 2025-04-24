@@ -6,7 +6,7 @@ using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
-	public class Health : CD_BaseEnemy
+	public class Health : CD_BonusEntity
 	{
 		public Health() : base(EntityType.Heart) {
 			Interactivity = EntityInteractivity.SamePath;
@@ -21,8 +21,15 @@ namespace CloneDash.Game.Entities
 
 		protected override void OnReward() {
 			var lvl = GetGameLevel();
-			lvl.Heal(this.ScoreGiven);
-			lvl.SpawnTextEffect($"+{this.ScoreGiven} HP", lvl.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
+			lvl.Heal(this.HealthGiven);
+			lvl.SpawnTextEffect($"+{this.HealthGiven} HP", lvl.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
+		}
+
+		public override void Build() {
+			base.Build();
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
+			BuildFromScene(scene.Heart);
 		}
 	}
 }

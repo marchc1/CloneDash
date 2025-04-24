@@ -72,6 +72,17 @@ namespace CloneDash.Game
 			ApproachAnimation?.Apply(Model, AnimationTime);
 		}
 
+		public void RenderHeartMount() {
+			if (MountedHeart == null) return;
+			if (MountedHeartAnimation == null) return;
+			if (MountBone == null) return;
+
+			MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
+			MountedHeart.Position = MountBone.LocalToWorld(0, 0);
+			MountedHeart.Scale = Scale;
+			MountedHeart.Render();
+		}
+
 		public override void Render() {
 			if (!Visible) return;
 			if (Model == null) return;
@@ -83,6 +94,8 @@ namespace CloneDash.Game
 			Model.Scale = Scale;
 
 			Model.Render();
+
+			RenderHeartMount();
 		}
 	}
 }
