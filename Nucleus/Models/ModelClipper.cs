@@ -1,5 +1,8 @@
 ﻿using Nucleus.Models.Runtime;
+using Nucleus.Rendering;
 using Nucleus.Types;
+using Poly2Tri;
+using Raylib_cs;
 using System.Buffers;
 
 namespace Nucleus.Models;
@@ -18,6 +21,8 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType> where ModelTyp
 	}
 
 	public void End() {
+		if (Active)
+			Stencils.End();
 		Active = false;
 		endAt = null;
 		workingAttachment = null;
@@ -27,6 +32,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType> where ModelTyp
 		}
 		triangles.Clear();
 		shape.Points.Clear();
+
 	}
 
 	private SlotType? endAt;
@@ -48,12 +54,30 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType> where ModelTyp
 		shape.Points.Clear();
 		shape.Points.EnsureCapacity(verticesLength);
 		for (int i = 0; i < verticesLength; i++) {
-			var vertex = attachment.Vertices[i];
+			var vertex = clipPolygon[i];
 			shape.Points.Add(new(vertex.X, vertex.Y, vertex));
 		}
 
 		triangles.Clear();
 		shape.Triangulate(triangles);
+
+		// Draw stencil mask
+		Stencils.Begin();
+
+		Stencils.BeginMask();
+
+		Rlgl.Begin(DrawMode.TRIANGLES);
+		Rlgl.Color4ub(255, 255, 255, 255);
+
+		foreach (var triangle in triangles) {
+			TriPoint a = triangle.Points[0], b = triangle.Points[1], c = triangle.Points[2];
+			Rlgl.Vertex2f((float)a.X, -(float)a.Y);
+			Rlgl.Vertex2f((float)b.X, -(float)b.Y);
+			Rlgl.Vertex2f((float)c.X, -(float)c.Y);
+		}
+
+		Rlgl.End();
+		Stencils.EndMask();
 	}
 
 	public void NextSlot(SlotInstance slot) {

@@ -202,8 +202,8 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				_ => throw new Exception($"Unsupported blend mode! (got {slot.BlendMode})")
 			});
 
-			Clipping.NextSlot(slot);
 			attachment.Render(slot);
+			Clipping.NextSlot(slot);
 
 			Raylib.EndBlendMode();
 		}
