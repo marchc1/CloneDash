@@ -769,9 +769,12 @@ namespace Nucleus.ModelEditor
 
 				foreach (var slot in model.Slots) {
 					slot.GetActiveAttachment()?.Render();
+					model.Clipping.NextSlot(slot);
 				}
-			}
 
+				model.Clipping.End();
+			}
+			
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (model.Hidden) continue;
 

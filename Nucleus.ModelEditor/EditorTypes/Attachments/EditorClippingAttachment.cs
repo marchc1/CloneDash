@@ -1,6 +1,8 @@
 ﻿using Nucleus.Core;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
+using Nucleus.Models.Runtime;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -199,7 +201,7 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
-	public class EditorClippingAttachment : EditorVertexAttachment
+	public class EditorClippingAttachment : EditorVertexAttachment, IClipPolygon<EditorSlot>
 	{
 		public override string SingleName => "clipping";
 		public override string PluralName => "clippings";
@@ -234,6 +236,7 @@ namespace Nucleus.ModelEditor
 
 		public override void Render() {
 			RenderOverlay();
+			GetModel().Clipping.Start(this, Slot, EndSlot?.Name);
 		}
 
 		public override void RenderOverlay() {
@@ -311,5 +314,18 @@ namespace Nucleus.ModelEditor
 				editClipOperator.DrawCreateGizmo();
 			}
 		}
+
+		public int GetVerticesCount() => ShapeEdges.Count;
+
+		public int ComputeWorldVertices(EditorSlot slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
+			for (int i = startAt; i < length; i++) {
+				worldVertices[i + offset] = CalculateVertexWorldPosition(slot.Bone.WorldTransform, ShapeEdges[i]);
+			}
+
+			return length - startAt;
+		}
+
+		public int ComputeWorldVerticesInto(EditorSlot slot, Vector2F[] worldVertices)
+			=> ComputeWorldVertices(slot, 0, ShapeEdges.Count, worldVertices, 0);
 	}
 }

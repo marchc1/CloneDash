@@ -148,10 +148,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>
 	}
 }
 
-public class RuntimeClipper(ModelInstance model) : ModelClipper<ModelInstance, BoneInstance, SlotInstance>(model)
-{
-
-}
+public class RuntimeClipper(ModelInstance model) : ModelClipper<ModelInstance, BoneInstance, SlotInstance, ClippingAttachment>(model, true);
 
 public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, SlotInstance>
 {
@@ -703,10 +700,11 @@ public class MeshAttachment : VertexAttachment
 		}
 	}
 }
-public class ClippingAttachment : VertexAttachment
+public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 {
 	public string? EndSlot = null;
 
+	public int GetVerticesCount() => Vertices.Length;
 	public override void Render(SlotInstance slot) {
 		base.Render(slot);
 		// Start the model clipper

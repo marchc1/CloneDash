@@ -19,6 +19,8 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] private List<EditorBone> allbones = [];
 		[JsonIgnore] private bool allBonesInvalid = true;
 
+		[JsonIgnore] public EditorClipper Clipping;
+
 		/// <summary>
 		/// A list of slots, in order of drawing order. Static pose.
 		/// </summary>
@@ -82,6 +84,7 @@ namespace Nucleus.ModelEditor
 		public EditorModel() {
 			Skins.Model = this;
 			Animations.Model = this;
+			Clipping = new(this);
 		}
 
 		private ModelImages? images;
