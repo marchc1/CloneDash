@@ -15,6 +15,36 @@ public class RuntimeConverter
 	private static void SetupVertexExport(
 											Dictionary<EditorBone, BoneData> boneDataLookup,
 											EditorVertexAttachment vertexAttachment,
+											List<AttachmentVertex> verticesInst,
+											Dictionary<EditorVertex, int> verticesArrPtr,
+											Dictionary<EditorVertex, AttachmentVertex> editorToRealVertex,
+											EditorVertex eVertex,
+											out int vIndex
+										) {
+		if (!verticesArrPtr.TryGetValue(eVertex, out vIndex)) {
+			vIndex = verticesInst.Count;
+			var newVertex = new AttachmentVertex() {
+				X = eVertex.X,
+				Y = eVertex.Y,
+				U = eVertex.U,
+				V = eVertex.V
+			};
+			verticesInst.Add(newVertex);
+			editorToRealVertex.Add(eVertex, newVertex);
+			verticesArrPtr.Add(eVertex, vIndex);
+
+			if (vertexAttachment.GetVertexWeightInformation(eVertex, out var bones, out var weights, out var positions)) {
+				newVertex.Weights = new AttachmentWeight[bones.Length];
+
+				for (int i = 0; i < bones.Length; i++) {
+					newVertex.Weights[i] = new(boneDataLookup[bones[i]].Index, weights[i], positions[i]);
+				}
+			}
+		}
+	}
+	private static void SetupVertexExport(
+											Dictionary<EditorBone, BoneData> boneDataLookup,
+											EditorVertexAttachment vertexAttachment,
 											List<AttachmentTriangle> trianglesInst,
 											List<AttachmentVertex> verticesInst,
 											Dictionary<EditorVertex, int> verticesArrPtr,
@@ -159,34 +189,17 @@ public class RuntimeConverter
 								newClip.Position = clip.Position;
 								newClip.Rotation = clip.Rotation;
 								newClip.Scale = clip.Scale;
+								newClip.EndSlot = clip.EndSlot?.Name;
 
-								List<AttachmentTriangle> trianglesInst = [];
-								List<AttachmentVertex> verticesInst = [];
+								List<AttachmentVertex> verticesInst = []; 
 								Dictionary<EditorVertex, int> verticesArrPtr = [];
 								Dictionary<EditorVertex, AttachmentVertex> editorToRealVertex = [];
 
 								clip.RefreshDelaunator();
-								foreach (var triangle in clip.Triangles) {
-									EditorVertex? ev1 = triangle.Points[0].AssociatedObject as EditorVertex;
-									EditorVertex? ev2 = triangle.Points[1].AssociatedObject as EditorVertex;
-									EditorVertex? ev3 = triangle.Points[2].AssociatedObject as EditorVertex;
-
-									if (ev1 == null) continue;
-									if (ev2 == null) continue;
-									if (ev3 == null) continue;
-
-									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev1, out int v1);
-									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev2, out int v2);
-									SetupVertexExport(lookupBone, clip, trianglesInst, verticesInst, verticesArrPtr, editorToRealVertex, ev3, out int v3);
-
-									trianglesInst.Add(new() {
-										V1 = v1,
-										V2 = v2,
-										V3 = v3,
-									});
+								foreach (var vertex in clip.GetVertices()) {
+									SetupVertexExport(lookupBone, clip, verticesInst, verticesArrPtr, editorToRealVertex, vertex, out _);
 								}
 
-								newClip.Triangles = trianglesInst.ToArray();
 								newClip.Vertices = verticesInst.ToArray();
 								realAttachment = newClip;
 							}

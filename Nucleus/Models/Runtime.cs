@@ -6,15 +6,11 @@ using Newtonsoft.Json.Serialization;
 using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Net.Mail;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Nucleus.Models.Runtime;
 
@@ -29,7 +25,7 @@ public static class Model4System
 	/// <br/>
 	/// Editor can use this too
 	/// </summary>
-	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.13.01";
+	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.24.01";
 
 	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 }
@@ -46,7 +42,7 @@ public interface IModelInstanceObject
 
 
 
-public class ModelData : IDisposable
+public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>
 {
 	private bool disposedValue;
 
@@ -152,52 +148,12 @@ public class ModelData : IDisposable
 	}
 }
 
-public class RuntimeClipper : VertexClipper
+public class RuntimeClipper(ModelInstance model) : ModelClipper<ModelInstance, BoneInstance, SlotInstance>(model)
 {
-	public ModelInstance Model;
 
-	public RuntimeClipper(ModelInstance model) {
-		Model = model;
-	}
-
-	public bool Active { get; set; }
-
-	public override void Start() {
-		Active = true;
-	}
-
-	public override void End() {
-		Active = false;
-		endAt = null;
-		workingAttachment = null;
-	}
-
-	private SlotInstance? endAt;
-	private ClippingAttachment? workingAttachment;
-
-	public void Start(ClippingAttachment attachment, string? endAt = null) {
-		Start();
-		workingAttachment = attachment;
-		this.endAt = endAt == null ? null : Model.FindSlot(endAt);
-	}
-
-	public void NextSlot(SlotInstance slot) {
-		if (!Active) return;
-		if (endAt == null) return;
-
-		if (endAt == slot) {
-			End();
-			return;
-		}
-	}
-
-	public void ClipTriangle(ref Vector2F tv1, ref Vector2F tv2, ref Vector2F tv3, ref Vector2F uv1, ref Vector2F uv2, ref Vector2F uv3) {
-		if (!Active) return;
-
-	}
 }
 
-public class ModelInstance : IContainsSetupPose
+public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, SlotInstance>
 {
 	public ModelData Data { get; set; }
 	public List<BoneInstance> Bones { get; set; } = [];
@@ -257,6 +213,7 @@ public class ModelInstance : IContainsSetupPose
 			//Graphics2D.DrawText(new(test.X, -test.Y), $"rot: {bone.Rotation}", "Consolas", 7);
 		}
 
+		Clipping.End();
 		Rlgl.PopMatrix();
 		Graphics2D.OffsetDrawing(offset);
 	}
@@ -559,17 +516,13 @@ public class RegionAttachment : Attachment
 		var clipping = slot.Model.Clipping;
 
 		Vector2F t1v1 = BL, t1v2 = TR, t1v3 = TL;
-		Vector2F t2v1 = BR, t2v2 = TR, t2v3 = BL;
 		Vector2F uv1v1 = new(uStart, vEnd), uv1v2 = new(uEnd, vStart), uv1v3 = new(uStart, vStart);
-		Vector2F uv2v1 = new(uEnd, vEnd), uv2v2 = new(uEnd, vStart), uv2v3 = new(uStart, vEnd);
-
-		clipping.ClipTriangle(ref t1v1, ref t1v2, ref t1v3, ref uv1v1, ref uv1v2, ref uv1v3);
-		clipping.ClipTriangle(ref t2v1, ref t2v2, ref t2v3, ref uv2v1, ref uv2v2, ref uv2v3);
-
 		Rlgl.TexCoord2f(uv1v1.X, uv1v1.Y); Rlgl.Vertex2f(t1v1.X, t1v1.Y);
 		Rlgl.TexCoord2f(uv1v2.X, uv1v2.Y); Rlgl.Vertex2f(t1v2.X, t1v2.Y);
 		Rlgl.TexCoord2f(uv1v3.X, uv1v3.Y); Rlgl.Vertex2f(t1v3.X, t1v3.Y);
 
+		Vector2F t2v1 = BR, t2v2 = TR, t2v3 = BL;
+		Vector2F uv2v1 = new(uEnd, vEnd), uv2v2 = new(uEnd, vStart), uv2v3 = new(uStart, vEnd);
 		Rlgl.TexCoord2f(uv2v1.X, uv2v1.Y); Rlgl.Vertex2f(t2v1.X, t2v1.Y);
 		Rlgl.TexCoord2f(uv2v2.X, uv2v2.Y); Rlgl.Vertex2f(t2v2.X, t2v2.Y);
 		Rlgl.TexCoord2f(uv2v3.X, uv2v3.Y); Rlgl.Vertex2f(t2v3.X, t2v3.Y);
@@ -617,7 +570,6 @@ public class AttachmentTriangle
 public class VertexAttachment : Attachment
 {
 	public AttachmentVertex[] Vertices;
-	public AttachmentTriangle[] Triangles;
 
 	public Vector2F Position;
 	public float Rotation;
@@ -640,10 +592,23 @@ public class VertexAttachment : Attachment
 
 		return pos;
 	}
+
+	public int ComputeWorldVertices(SlotInstance slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
+		for (int i = startAt; i < length; i++) {
+			worldVertices[i + offset] = CalculateVertexWorldPosition(slot.Model, slot.Bone.WorldTransform, Vertices[i]);
+		}
+
+		return length - startAt;
+	}
+
+	public int ComputeWorldVerticesInto(SlotInstance slot, Vector2F[] worldVertices)
+		=> ComputeWorldVertices(slot, 0, Vertices.Length, worldVertices, 0);
 }
 public class MeshAttachment : VertexAttachment
 {
+	public AttachmentTriangle[] Triangles;
 	public string Path;
+
 	public override void Setup(ModelData data) {
 		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
 	}
@@ -745,7 +710,7 @@ public class ClippingAttachment : VertexAttachment
 	public override void Render(SlotInstance slot) {
 		base.Render(slot);
 		// Start the model clipper
-		slot.Model.Clipping.Start(this, EndSlot);
+		slot.Model.Clipping.Start(this, slot, EndSlot);
 	}
 }
 
@@ -1298,7 +1263,6 @@ public class ModelBinary : IModelFormat
 			case NucleusModel_SaveType.Attachment_Clipping: {
 					ClippingAttachment attachment = new() { Name = name };
 					attachment.Vertices = reader.ReadArray(readMeshVertex);
-					attachment.Triangles = reader.ReadArray(readMeshTriangle);
 
 					attachment.Position = reader.ReadVector2F();
 					attachment.Rotation = reader.ReadSingle();
@@ -1576,7 +1540,6 @@ public class ModelBinary : IModelFormat
 			case ClippingAttachment clippingAttachment:
 				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Clipping);
 				writer.WriteArray(clippingAttachment.Vertices, writeMeshVertex);
-				writer.WriteArray(clippingAttachment.Triangles, writeMeshTriangle);
 				writer.Write(clippingAttachment.Position);
 				writer.Write(clippingAttachment.Rotation);
 				writer.Write(clippingAttachment.Scale);

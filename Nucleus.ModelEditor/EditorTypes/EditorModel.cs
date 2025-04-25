@@ -1,11 +1,13 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Models.Runtime;
+using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorModel : IEditorType
+	public class EditorModel : IEditorType, IModelInterface<EditorBone, EditorSlot>
 	{
 		public EditorModel GetModel() => this;
 		public IEditorType? DeferTransformationsTo() => Root;
