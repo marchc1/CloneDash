@@ -22,18 +22,7 @@ namespace CloneDash.Game.Entities
 			base.DetermineAnimationPlayback();
 		}
 
-		private bool firstTimeVisible = true;
 		public override void PostThink(FrameState frameState) {
-			if (!Visible) return;
-			if (AnimationTime <= 0) return;
-
-			if (firstTimeVisible) {
-				firstTimeVisible = false;
-				if (Variant.IsBoss()) {
-					SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
-				}
-			}
-
 			base.Think(frameState);
 		}
 

@@ -13,7 +13,6 @@ namespace CloneDash.Game.Entities
 
 		public override void OnReset() {
 			base.OnReset();
-			firstTimeVisible = true;
 		}
 		protected override void OnHit(PathwaySide side) {
 			Kill();
@@ -33,23 +32,16 @@ namespace CloneDash.Game.Entities
 		public override void Initialize() {
 			base.Initialize();
 		}
-		
+
 		public override void Render() {
 			base.Render();
 		}
 
-		private bool firstTimeVisible = true;
+		protected override void OnFirstVisible() {
+			base.OnFirstVisible();
+		}
+
 		public override void PostThink(FrameState frameState) {
-			if (!Visible) return;
-			if (AnimationTime <= 0) return;
-
-			if (firstTimeVisible) {
-				firstTimeVisible = false;
-				if (Variant.IsBoss()) {
-					SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
-				}
-			}
-
 			base.Think(frameState);
 		}
 

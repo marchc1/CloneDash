@@ -303,11 +303,14 @@ namespace CloneDash.Game
 			var ret = VisTest(w, h, (float)XPos);
 			if (Shown == false && ret == true) {
 				Shown = true;
-
-				//if (RelatedToBoss)
-				//level.OnEntityShown(this);
+				OnFirstVisible();
 			}
 			return ret;
+		}
+
+		protected virtual void OnFirstVisible() {
+			if (Variant.IsBoss())
+				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
