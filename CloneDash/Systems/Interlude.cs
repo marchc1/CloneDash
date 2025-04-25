@@ -22,13 +22,14 @@ public abstract class InterludeTextureProvider
 	public abstract bool ShouldFlipTexture { get; }
 	public bool Empty => Count == 0;
 	public int RandomIndex() => Random.Shared.Next(0, Count);
-	public abstract Texture2D Pick(int index);
+	public abstract bool Pick(int index, out Texture2D tex);
 }
 
 public class MuseDashInterlude
 {
-	public string path;
+	public string? path;
 	public Texture2D LoadTexture() {
+		if (path == null) throw new NullReferenceException("Wtf?");
 		AssetStudio.Texture2D tex2d = UnityAssetUtils.InternalLoadAsset<AssetStudio.Texture2D>(StreamingFiles, Path.GetFileNameWithoutExtension(path));
 
 		var img = tex2d.ToRaylib();
@@ -44,27 +45,41 @@ public class MuseDashInterlude
 /// </summary>
 public class MuseDashInterludeProvider : InterludeTextureProvider
 {
-	static MuseDashInterlude[] interludes;
+	static MuseDashInterlude[]? interludes;
 	public override bool ShouldFlipTexture => true;
-	static MuseDashInterludeProvider() {
-		if (MuseDashCompatibility.InitializeCompatibilityLayer() != MuseDashCompatibility.MDCompatLayerInitResult.OK) {
-			interludes = [];
-			return;
+	private static bool ready = false;
+	private static int setup() {
+		if (ready && interludes != null) return interludes.Length;
+
+		if (!MuseDashCompatibility.Initialized) {
+			return 0;
 		}
 
 		var interludesRaw = UnityAssetUtils.GetAllFiles(StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
-		interludes = new MuseDashInterlude[interludesRaw.Length]; 
+		interludes = new MuseDashInterlude[interludesRaw.Length];
 		for (int i = 0; i < interludesRaw.Length; i++) {
 			interludes[i] = new() {
 				path = interludesRaw[i]
 			};
 		}
+		ready = true;
+
+		return interludes.Length;
 	}
-	public override int Count => interludes.Length;
+
+	public override int Count => setup();
 
 	// Texture 2D used here because itll be loaded when Interlude is initialized.
 	// And it will be destroyed immediately after
-	public override Texture2D Pick(int index) => interludes[index].LoadTexture();
+	public override bool Pick(int index, out Texture2D tex) {
+		setup();
+		if (!ready) {
+			tex = default;
+			return false;
+		}
+		tex = interludes?[index]?.LoadTexture() ?? throw new NullReferenceException();
+		return true;
+	}
 }
 /// <summary>
 /// Provides interlude textures from Clone Dash.
@@ -78,10 +93,10 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 	}
 	public override int Count => files.Length;
 
-	public override Texture2D Pick(int index) {
-		var tex = Raylib.LoadTexture(files[index]);
+	public override bool Pick(int index, out Texture2D tex) {
+		tex = Raylib.LoadTexture(files[index]);
 		Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
-		return tex;
+		return true;
 	}
 }
 /// <summary>
@@ -98,7 +113,22 @@ public static class Interlude
 	private static bool hasTex;
 	private static bool flipTex;
 	private static string? loadMsg;
-	private static Raylib_cs.Texture2D interludeTexture;
+	private static string? loadSubMsg;
+	private static Texture2D interludeTexture;
+
+	private static bool _should = false;
+	public static bool ShouldSelectInterludeTexture {
+		get => _should;
+		set {
+			if (!_should && value) {
+				if (!hasTex) {
+					determineInterludeTexture(); // load interlude texture now. Only really used for the loading screen when starting the game
+				}
+			}
+
+			_should = value;
+		}
+	}
 
 	private static void determineInterludeTexture() {
 		var providers = ReflectionTools.InstantiateAllInheritorsOfAbstractType<InterludeTextureProvider>().ToList();
@@ -110,15 +140,18 @@ public static class Interlude
 			}
 
 			// The provider isn't empty
-			interludeTexture = provider.Pick(Random.Shared.Next(0, provider.Count));
-			hasTex = Raylib.IsTextureReady(interludeTexture); // make sure the texture is valid, just in case
-			if (!hasTex) {
-				Logs.Warn("Failed to load the interlude texture, despite a provider giving us one!");
-			}
-			
-			flipTex = provider.ShouldFlipTexture;
+			if (provider.Pick(Random.Shared.Next(0, provider.Count), out interludeTexture)) {
+				hasTex = Raylib.IsTextureReady(interludeTexture); // make sure the texture is valid, just in case
+				if (!hasTex) {
+					Logs.Warn("Failed to load the interlude texture, despite a provider giving us one!");
+				}
 
-			return;
+				flipTex = provider.ShouldFlipTexture;
+
+				return;
+			}
+
+			providers.Remove(provider);
 		}
 	}
 
@@ -131,6 +164,7 @@ public static class Interlude
 		hasTex = false;
 		flipTex = false;
 		loadMsg = null;
+		loadSubMsg = null;
 		inInterlude = false;
 	}
 
@@ -142,14 +176,19 @@ public static class Interlude
 		inInterlude = true; Spin();   // render one interlude frame now
 	}
 
-
 	/// <summary>
 	/// Renders the interlude texture, progress, etc, and swaps the frame buffer.
 	/// It is automatically limited to 30 FPS updates; so you can call this repeatedly with minimal performance loss
 	/// </summary>
-	public static void Spin() {
+	public static void Spin(string? message = null, string? submessage = null) {
 		if (!inInterlude)
 			return;
+
+		if (message != null)
+			loadMsg = message; // changes the title message
+		if (submessage != null)
+			loadSubMsg = submessage; // changes the subtitle message
+
 		using (CD_StaticSequentialProfiler.AccumulateTime("Interlude.Spin")) {
 			var msNow = limiter.Elapsed.TotalSeconds;
 			if (lastFrame < 0 || (msNow - lastFrame) >= (1d / 30d)) {
@@ -175,9 +214,17 @@ public static class Interlude
 				Graphics2D.SetDrawColor(0, 0, 0);
 				Graphics2D.DrawRectangle(0, windowSize.H - bottomSize, windowSize.W, bottomSize);
 
+				Graphics2D.SetDrawColor(new(55)); Graphics2D.DrawRectangle(0, windowSize.H - bottomSize - 2, windowSize.W, 1);
+				Graphics2D.SetDrawColor(new(155)); Graphics2D.DrawRectangle(0, windowSize.H - bottomSize - 1, windowSize.W, 1);
+
 				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
 				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+				if (loadSubMsg == null)
+					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+				else {
+					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
+					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, "Noto Sans", texSize * 0.6f, Anchor.CenterRight);
+				}
 
 				Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
 				Surface.Spin();
