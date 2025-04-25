@@ -113,10 +113,18 @@ namespace CloneDash.Game.Entities
 				EntityEnterDirection.TopDown => masherData.InAnimations.Down,
 				_ => masherData.InAnimations.Normal
 			};
-			ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[Speed]));
+
+			var speedIndex = Speed switch {
+				1 => 2,
+				2 => 1,
+				3 => 0,
+				_ => throw new Exception("Invalid speed")
+			};
+
+			ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[speedIndex]));
 			PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
 			GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
-			var showtime = approachSpeeds.Speeds[Speed] / 30f;
+			var showtime = approachSpeeds.Speeds[speedIndex] / 30f;
 			ShowTime = HitTime - showtime;
 		}
 	}
