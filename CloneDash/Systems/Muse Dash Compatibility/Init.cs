@@ -36,6 +36,7 @@ namespace CloneDash
 #else
 			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
+				Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
 			}
 
 			if (result != MDCompatLayerInitResult.OK) {
@@ -76,9 +77,11 @@ namespace CloneDash
 				for (int i = 0; i < serializedList.Count; i++) serializedBytes[i] = (byte)serializedList[i];
 
 				manager.Clear();
+				Interlude.Spin(submessage: "Muse Dash Compat: Note conversion table loaded...");
 			}
 
-			NoteDataManager = OdinSerializer.SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
+			NoteDataManager = SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
+			Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
 			foreach (var notedata in NoteDataManager) {
 				IDToNote[notedata.id] = notedata;
@@ -92,6 +95,7 @@ namespace CloneDash
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 				BuildDashStructures();
+			Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
 
 			Initialized = true;
 

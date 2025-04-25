@@ -121,6 +121,7 @@ public static class Interlude
 		get => _should;
 		set {
 			if (!_should && value) {
+				_should = value;
 				if (!hasTex) {
 					determineInterludeTexture(); // load interlude texture now. Only really used for the loading screen when starting the game
 				}
