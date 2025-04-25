@@ -239,6 +239,8 @@ namespace Nucleus
 				Raylib.SetTraceLogCallback(&LogCustom);
 			}
 
+			Logs.Info($"    > Display server:     {Platform.DisplayServer}");
+
 			ConfigFlags add = (ConfigFlags)0;
 			bool undecorated = false;
 

@@ -44,6 +44,7 @@ public static partial class Platform
 		RefreshExplorer();
 #else
 		Logs.Info("Cannot register file extensions with the current platform. Only supports WINDOWS.");
+		Logs.Info("    (if you wish to contribute platform-specific code, see Nucleus/Platform/FileAssociations.cs)");
 #endif
 	}
 

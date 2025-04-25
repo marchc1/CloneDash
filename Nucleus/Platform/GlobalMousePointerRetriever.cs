@@ -1,4 +1,8 @@
-﻿using Nucleus.Types;
+﻿// Purpose: Intended to get the mouse position even when not hovering
+// over the window. Some platforms lack support and default back to
+// Raylib.GetMousePos()
+
+using Nucleus.Types;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -11,6 +15,7 @@ namespace Nucleus;
 
 public static partial class Platform
 {
+
 	[StructLayout(LayoutKind.Sequential)]
 	private struct POINT
 	{
@@ -22,10 +27,13 @@ public static partial class Platform
 			Y = y;
 		}
 	}
+
+
+	// DLL imports
 #if COMPILED_WINDOWS
 	[DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
 	[DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
-#elif COMPILED_OSX
+#elif COMPILED_OSX // For now, OSX just uses Raylib's methods
         private static POINT GetCursorPos()
         {
             var t = Raylib.GetMousePosition();
@@ -71,8 +79,13 @@ public static partial class Platform
 
             return new(rootX, rootY);
         }
-#endif
 
+		// Wayland works differently, so just use Raylib's methods I guess
+		private static POINT GetMousePosWayland(){
+			var t = Raylib.GetMousePosition();
+            return new((int)T.X, (int)T.Y);
+        }
+#endif
 
 	public static unsafe Vector2F GetMousePos() {
 #if COMPILED_WINDOWS
@@ -80,11 +93,15 @@ public static partial class Platform
 		ScreenToClient((nint)Raylib.GetWindowHandle(), ref pt);
 		return new Vector2F(pt.X, pt.Y);
 #elif COMPILED_OSX
-            var ret = GetCursorPos();
-            return new Vector2F(ret.X, ret.Y);
+        var ret = GetCursorPos();
+        return new Vector2F(ret.X, ret.Y);
 #elif COMPILED_LINUX
-            var ret = GetMousePosX11();
-            return new Vector2F(ret.X, ret.Y) - Raylib.GetWindowPosition().ToNucleus();
+        Vector2F pos => Platform.DisplayServer switch {
+			case Platform.DisplayServerType.X11 => GetMousePosX11(),
+			case Platform.DisplayServerType.Wayland => GetMousePosWayland(),
+			_ => throw new NotImplementedException("No display server support.")
+		};
+        return new Vector2F(ret.X, ret.Y) - Raylib.GetWindowPosition().ToNucleus();
 #endif
 	}
 }
