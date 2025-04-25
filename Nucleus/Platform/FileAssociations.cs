@@ -33,9 +33,9 @@ public static partial class Platform
 			}
 
 			Logs.Debug($"'{extension}' registered for the current user.");
-			Logs.Debug($"    ProgID:      {progId}");
-			Logs.Debug($"    Description: {description}");
-			Logs.Debug($"    OpenWith:    {appPath}");
+			Logs.Debug($"    > ProgID:      {progId}");
+			Logs.Debug($"    > Description: {description}");
+			Logs.Debug($"    > OpenWith:    {appPath}");
 		}
 		catch (Exception ex) {
 			Logs.Warn($"Failed to register file type: {ex.Message}");
