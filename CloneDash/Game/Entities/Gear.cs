@@ -1,5 +1,4 @@
-﻿using Nucleus.Core;
-using Nucleus.Types;
+﻿using CloneDash.Modding.Descriptors;
 namespace CloneDash.Game.Entities
 {
     public class Gear : CD_BaseEnemy
@@ -8,24 +7,42 @@ namespace CloneDash.Game.Entities
             Interactivity = EntityInteractivity.Avoid;
             DoesDamagePlayer = true;
         }
+
         public override void Initialize() {
             base.Initialize();
         }
+
         protected override void OnPass() {
             RewardPlayer();
         }
-        public override void ChangePosition(ref Vector2F pos) {
-            if(Pathway == PathwaySide.Bottom) {
-                pos.Y += 58f;
-            }
-        }
-        public override void Render(FrameState frameState) {
-            Raylib_cs.Raylib.BeginScissorMode(0, 0, (int)frameState.WindowWidth, (int)(frameState.WindowHeight * 0.683f));
-            base.Render(frameState);
-            Graphics2D.ScissorRect();
-        }
-        public override void Build() {
+
+		public override void DetermineAnimationPlayback() {
+			Position = new(0, 450);
+			base.DetermineAnimationPlayback();
+		}
+
+		public override void Build() {
 			base.Build();
-        }
-    }
+
+			var level = Level.As<CD_GameLevel>();
+			var scene = level.Scene;
+
+			Model = (Variant switch {
+				EntityVariant.Boss1 or EntityVariant.Boss2 => scene.BossGears.GetModelFromPathway(Pathway),
+				_ => scene.Gears.GetModelFromPathway(Pathway)
+			}).Instantiate();
+
+			double showtime = 0;
+			var animationName = Variant switch {
+				EntityVariant.Boss1 or EntityVariant.Boss2 => scene.BossGears.GetAnimationString(Pathway, Speed, out showtime),
+				_ => scene.Gears.GetAnimationString(Pathway, Speed, out showtime)
+			};
+
+			ShowTime = HitTime - showtime;
+
+			ApproachAnimation = Model.Data.FindAnimation(animationName);
+
+			Scale = new(level.GlobalScale);
+		}
+	}
 }

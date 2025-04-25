@@ -135,8 +135,6 @@ public class SceneDescriptor : CloneDashDescriptor
 
 	public interface IContainsGreatPerfectAndHPMount : IContainsGreatPerfect
 	{
-		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model);
-		public Nucleus.Models.Runtime.Animation FindPerfectAnimation(ModelInstance model);
 		public BoneInstance GetHPMount(ModelInstance model);
 	}
 
@@ -151,16 +149,103 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_Gears : SceneDescriptor_ContainsOneModelData_With3Speeds
+	public class SceneDescriptor_Gears
 	{
 #nullable disable
-		[JsonProperty("destroy")] public string Destroy;
+		public class __Gear : SceneDescriptor_ContainsOneModelData_With3Speeds
+		{
+			[JsonProperty("format")] public string Format;
+			[JsonProperty("destroy")] public string Destroy;
+			public string GetAnimationString(int speed, out double showtime) {
+				var speedIndex = speed switch {
+					1 => 2,
+					2 => 1,
+					3 => 0,
+					_ => throw new Exception("Invalid speed")
+				};
+
+				var frameSpeed = Speeds[speedIndex];
+				showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+				return string.Format(Format, frameSpeed);
+			}
+		}
+
+		[JsonProperty("air")] public __Gear Air;
+		[JsonProperty("ground")] public __Gear Ground;
+
+		public void LoadModelData(Level level) {
+			Air.LoadModelData(level);
+			Ground.LoadModelData(level);
+		}
+		public virtual ModelData GetModelFromPathway(PathwaySide pathway) => pathway switch {
+			PathwaySide.Top => Air.ModelData,
+			PathwaySide.Bottom => Ground.ModelData,
+			_ => throw new Exception("Invalid pathway.")
+		};
+
+		public string GetAnimationString(PathwaySide pathway, int speed, out double showtime) => pathway switch {
+			PathwaySide.Top => Ground.GetAnimationString(speed, out showtime),
+			PathwaySide.Bottom => Ground.GetAnimationString(speed, out showtime),
+			_ => throw new Exception("Invalid pathway.")
+		};
+
 #nullable enable
 	}
+
+	public class SceneDescriptor_BossGears
+	{
+#nullable disable
+		public class __BossGear : SceneDescriptor_ContainsOneModelData
+		{
+			[JsonProperty("format_1")] public string Format1;
+			[JsonProperty("format_2")] public string Format2;
+			[JsonProperty("speeds_1")] public int[] Speeds1;
+			[JsonProperty("speeds_2")] public int[] Speeds2;
+			[JsonProperty("destroy")] public string Destroy;
+
+			public string GetAnimationString(int speed, out double showtime) {
+				var speedIndex = speed switch {
+					1 => 2,
+					2 => 1,
+					3 => 0,
+					_ => throw new Exception("Invalid speed")
+				};
+
+				var format = speed == 1 ? Format1 : Format2;
+				var speeds = speed == 1 ? Speeds1 : Speeds2;
+
+				var frameSpeed = speeds[speedIndex];
+				showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+				return string.Format(format, frameSpeed);
+			}
+		}
+		[JsonProperty("air")] public __BossGear Air;
+		[JsonProperty("ground")] public __BossGear Ground;
+
+		public void LoadModelData(Level level) {
+			Air.LoadModelData(level);
+			Ground.LoadModelData(level);
+		}
+
+		public virtual ModelData GetModelFromPathway(PathwaySide pathway) => pathway switch {
+			PathwaySide.Top => Air.ModelData,
+			PathwaySide.Bottom => Ground.ModelData,
+			_ => throw new Exception("Invalid pathway.")
+		};
+		public string GetAnimationString(PathwaySide pathway, int speed, out double showtime) => pathway switch {
+			PathwaySide.Top => Ground.GetAnimationString(speed, out showtime),
+			PathwaySide.Bottom => Ground.GetAnimationString(speed, out showtime),
+			_ => throw new Exception("Invalid pathway.")
+		};
+
+#nullable enable
+	}
+
 	public class SceneDescriptor_MasherEnemy : SceneDescriptor_ContainsOneModelData
 	{
 #nullable disable
-		public class __Animations {
+		public class __Animations
+		{
 
 			[JsonProperty("format")] public string Format;
 			[JsonProperty("speeds")] public int[] Speeds;
@@ -189,7 +274,7 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("complete")] public __CompleteAnimations CompleteAnimations;
 #nullable enable
 	}
-	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation: SceneDescriptor_ContainsAirGroundModelData, IContains3Speeds, IContainsGreatPerfect
+	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation : SceneDescriptor_ContainsAirGroundModelData, IContains3Speeds, IContainsGreatPerfect
 	{
 #nullable disable
 		public Nucleus.Models.Runtime.Animation FindGreatAnimation(ModelInstance model) => model.Data.FindAnimation(Great);
@@ -279,11 +364,11 @@ public class SceneDescriptor : CloneDashDescriptor
 #nullable enable
 	}
 
-	public class SceneDescriptor_SmallEnemy :   SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
+	public class SceneDescriptor_SmallEnemy : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
 	public class SceneDescriptor_MediumEnemy1 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
 	public class SceneDescriptor_MediumEnemy2 : SceneDescriptor_ContainsAirGroundModelData_WithNormalUpDown3Speeds_AndHPMount;
-	public class SceneDescriptor_LargeEnemy1 :  SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
-	public class SceneDescriptor_LargeEnemy2 :  SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
+	public class SceneDescriptor_LargeEnemy1 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
+	public class SceneDescriptor_LargeEnemy2 : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndHPMount;
 
 	public class SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation_AndUpsideDown : SceneDescriptor_ContainsAirGroundModelData_With3SpeedsAndAnimation
 	{
@@ -405,10 +490,13 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("hurt_end")] public string? HurtEnd;
 		[JsonProperty("atk_out")] public string? AttackOut;
 	}
-	public class SceneDescriptor_Hitsounds {
+	public class SceneDescriptor_Hitsounds
+	{
+#nullable disable
 		[JsonProperty("punch")] public string Punch;
 
 		[JsonIgnore] public Sound PunchSound;
+#nullable enable
 		public void Load(Level level) {
 			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
 		}
@@ -424,6 +512,8 @@ public class SceneDescriptor : CloneDashDescriptor
 
 		Boss.LoadModelData(level); Interlude.Spin();
 		Sustains.LoadData(level); Interlude.Spin();
+		Gears.LoadModelData(level); Interlude.Spin();
+		BossGears.LoadModelData(level); Interlude.Spin();
 		Masher.LoadModelData(level); Interlude.Spin();
 		DoubleEnemy.LoadModelData(level); Interlude.Spin();
 
@@ -481,7 +571,8 @@ public class SceneDescriptor : CloneDashDescriptor
 	[JsonProperty("punch")] public string Punch;
 	[JsonProperty("boss")] public SceneDescriptor_Boss Boss;
 	[JsonProperty("sustains")] public SceneDescriptor_Sustains Sustains;
-	[JsonProperty("gear")] public SceneDescriptor_Gears Gears;
+	[JsonProperty("gears")] public SceneDescriptor_Gears Gears;
+	[JsonProperty("boss_gears")] public SceneDescriptor_BossGears BossGears;
 
 	[JsonProperty("boss1")] public SceneDescriptor_BossEnemy1 BossEnemy1;
 	[JsonProperty("boss2")] public SceneDescriptor_BossEnemy2 BossEnemy2;

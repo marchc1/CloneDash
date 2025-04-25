@@ -8,6 +8,7 @@ namespace CloneDash.Modding.Descriptors
 		Character = 1,
 		Scene = 2
 	}
+
 	[Nucleus.MarkForStaticConstruction]
 	public abstract class CloneDashDescriptor
 	{

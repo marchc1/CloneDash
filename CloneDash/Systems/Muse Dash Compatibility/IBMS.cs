@@ -1,6 +1,7 @@
 ﻿using AssetStudio;
 using CloneDash.Data;
 using CloneDash.Systems;
+using CustomAlbums.Utilities;
 using Nucleus;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -208,11 +209,11 @@ namespace CloneDash
 								=> EntityType.Single,
 
 							IBMSCode.Gemini => EntityType.Double,
-							IBMSCode.Hammer => EntityType.Hammer,
+							IBMSCode.Hammer or IBMSCode.HammerFlip => EntityType.Hammer,
 							IBMSCode.Mul => EntityType.Masher,
-							IBMSCode.Block => EntityType.Gear,
+							IBMSCode.BossBlock or IBMSCode.Block => EntityType.Gear,
 							IBMSCode.Ghost => EntityType.Ghost,
-							IBMSCode.Raider => EntityType.Raider,
+							IBMSCode.Raider or IBMSCode.RaiderFlip => EntityType.Raider,
 							IBMSCode.Music => EntityType.Score,
 							IBMSCode.Hp => EntityType.Heart,
 
@@ -232,6 +233,9 @@ namespace CloneDash
 								IBMSCode.BossAttack1 => EntityVariant.Boss1,
 								IBMSCode.BossAttack2_1 => EntityVariant.Boss2,
 								IBMSCode.BossAttack2_2 => EntityVariant.Boss3,
+
+								// :/
+								IBMSCode.BossBlock => s.noteData.IsPhase2BossGear() ? EntityVariant.Boss2 : EntityVariant.Boss1,
 
 								_ => EntityVariant.NotApplicable
 							};
