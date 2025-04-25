@@ -1,4 +1,5 @@
 ﻿using CloneDash.Modding.Descriptors;
+using Nucleus.Types;
 namespace CloneDash.Game.Entities
 {
     public class Gear : CD_BaseEnemy
@@ -19,6 +20,21 @@ namespace CloneDash.Game.Entities
 		public override void DetermineAnimationPlayback() {
 			Position = new(0, 450);
 			base.DetermineAnimationPlayback();
+		}
+
+		private bool firstTimeVisible = true;
+		public override void PostThink(FrameState frameState) {
+			if (!Visible) return;
+			if (AnimationTime <= 0) return;
+
+			if (firstTimeVisible) {
+				firstTimeVisible = false;
+				if (Variant.IsBoss()) {
+					SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
+				}
+			}
+
+			base.Think(frameState);
 		}
 
 		public override void Build() {
