@@ -3,7 +3,6 @@ using Nucleus.Engine;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
-using Nucleus.Platform;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -633,7 +632,7 @@ namespace Nucleus.ModelEditor
 			SetupHooks();
 			// MakeRuntimeTest(File.Models.First());
 #nullable disable
-			FileAssoc.Register(NUCLEUS_MODEL4_SOURCE_EXT, "March.Nucleus.Model4Editor", "Nucleus Model4 Source File");
+			Platform.RegisterFileAssociation(NUCLEUS_MODEL4_SOURCE_EXT, "March.Nucleus.Model4Editor", "Nucleus Model4 Source File");
 #nullable enable
 
 			titleUpdate();
@@ -645,7 +644,7 @@ namespace Nucleus.ModelEditor
 		private void File_ImportModel() {
 			string folderPath = createDefaultFolder();
 
-			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*.{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
+			var result = Platform.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*.{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
 			if (!result.Cancelled) {
 				// Load the file into a separate object
 				EditorFile temp = new EditorFile();
@@ -695,7 +694,7 @@ namespace Nucleus.ModelEditor
 			btnJson.Text = "Export JSON [.nm4rj]";
 			btnJson.Dock = Dock.Top;
 			btnJson.MouseReleaseEvent += (_, _, _) => {
-				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelRefJSON.EXTENSION}"], "Model4 as Ref'd JSON");
+				var save = Platform.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelRefJSON.EXTENSION}"], "Model4 as Ref'd JSON");
 				if (!save.Cancelled) {
 					new ModelRefJSON().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(File.Models.First()));
 				}
@@ -707,7 +706,7 @@ namespace Nucleus.ModelEditor
 			btnBinary.Text = "Export Binary [.nm4b]";
 			btnBinary.Dock = Dock.Top;
 			btnBinary.MouseReleaseEvent += (_, _, _) => {
-				var save = TinyFileDialogs.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelBinary.EXTENSION}"], "Model4 as Binary Data");
+				var save = Platform.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelBinary.EXTENSION}"], "Model4 as Binary Data");
 				if (!save.Cancelled) {
 					new ModelBinary().SaveModelToFile(save.Result, new RuntimeConverter().LoadModelFromEditor(File.Models.First()));
 				}
@@ -751,7 +750,7 @@ namespace Nucleus.ModelEditor
 
 		private void File_SaveAs() {
 			string folderPath = createDefaultFolder();
-			var result = TinyFileDialogs.SaveFileDialog("Save Nucleus Model4 Project", folderPath, [$"*.{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File");
+			var result = Platform.SaveFileDialog("Save Nucleus Model4 Project", folderPath, [$"*.{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File");
 			if (!result.Cancelled) {
 				serializeTo(result.Result, true);
 			}
@@ -769,7 +768,7 @@ namespace Nucleus.ModelEditor
 		private void File_Open() {
 			string folderPath = createDefaultFolder();
 
-			var result = TinyFileDialogs.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
+			var result = Platform.OpenFileDialog("Open Nucleus Model4 Project", folderPath, [$"*{NUCLEUS_MODEL4_SOURCE_EXT}"], "Nucleus Model4 Source File", false);
 			if (!result.Cancelled) 
 				deserializeFrom(result.Result);
 

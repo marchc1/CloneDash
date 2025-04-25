@@ -7,24 +7,24 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.Platform
-{
-    public static class GlobalMousePointerRetriever
-    {
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT
-        {
-            public int X;
-            public int Y;
+namespace Nucleus;
 
-            public POINT(int x, int y) {
-                X = x;
-                Y = y;
-            }
-        }
+public static partial class Platform
+{
+	[StructLayout(LayoutKind.Sequential)]
+	private struct POINT
+	{
+		public int X;
+		public int Y;
+
+		public POINT(int x, int y) {
+			X = x;
+			Y = y;
+		}
+	}
 #if COMPILED_WINDOWS
-        [DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
-        [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
+	[DllImport("user32.dll")] private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
+	[DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
 #elif COMPILED_OSX
         private static POINT GetCursorPos()
         {
@@ -74,11 +74,11 @@ namespace Nucleus.Platform
 #endif
 
 
-        public static unsafe Vector2F GetMousePos() {
+	public static unsafe Vector2F GetMousePos() {
 #if COMPILED_WINDOWS
-            GetCursorPos(out var pt);
-            ScreenToClient((nint)Raylib.GetWindowHandle(), ref pt);
-            return new Vector2F(pt.X, pt.Y);
+		GetCursorPos(out var pt);
+		ScreenToClient((nint)Raylib.GetWindowHandle(), ref pt);
+		return new Vector2F(pt.X, pt.Y);
 #elif COMPILED_OSX
             var ret = GetCursorPos();
             return new Vector2F(ret.X, ret.Y);
@@ -86,6 +86,5 @@ namespace Nucleus.Platform
             var ret = GetMousePosX11();
             return new Vector2F(ret.X, ret.Y) - Raylib.GetWindowPosition().ToNucleus();
 #endif
-        }
-    }
+	}
 }

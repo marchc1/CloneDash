@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Nucleus.Platform;
+using Nucleus;
 
 namespace CloneDash.Modding.Descriptors
 {
@@ -29,7 +29,7 @@ namespace CloneDash.Modding.Descriptors
 		}
 	
 		static CloneDashDescriptor() {
-			FileAssoc.Register(".cdd", "CloneDash.Descriptor", "Clone Dash Descriptor File");
+			Platform.RegisterFileAssociation(".cdd", "CloneDash.Descriptor", "Clone Dash Descriptor File");
 		}
 	}
 }

@@ -1,5 +1,4 @@
 ﻿using Nucleus.Core;
-using Nucleus.Platform;
 using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -271,7 +270,7 @@ namespace Nucleus
 			}
 			Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
 			if (icon != null) Raylib.SetWindowIcon(Filesystem.ReadImage("images", icon));
-			OpenGL.Import(OpenGLAddressRetriever.GetProc);
+			OpenGL.Import(Platform.OpenGL_GetProc);
 			Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);
 
 			// English language
@@ -514,7 +513,7 @@ namespace Nucleus
 		}
 
 		public static unsafe Vector2F MousePos {
-			get => GlobalMousePointerRetriever.GetMousePos();
+			get => Platform.GetMousePos();
 		}
 
 		public static void LimitFramerate(int v) {

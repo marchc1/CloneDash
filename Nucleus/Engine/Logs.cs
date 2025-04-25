@@ -1,5 +1,4 @@
 ﻿using Raylib_cs;
-using Nucleus.Platform;
 
 namespace Nucleus
 {
@@ -90,7 +89,7 @@ namespace Nucleus
 
 		private static void __writeLog(LogLevel level, bool printColor = true, bool newlineAfter = true, params object?[] items) {
 			if (!_initializedColorConsole) {
-				ConsoleMethods.Initialize(RLCToSDC(_defaultBackground), RLCToSDC(_defaultForeground));
+				Platform.ConsoleInitialize(RLCToSDC(_defaultBackground), RLCToSDC(_defaultForeground));
 				_initializedColorConsole = true;
 			}
 
@@ -98,14 +97,14 @@ namespace Nucleus
 				return;
 
 			if (LogTime)
-				ConsoleMethods.Write($"[{DateTime.Now.ToString(TimeFormat)}] ", RLCToSDC(_defaultForeground));
+				Platform.ConsoleWrite($"[{DateTime.Now.ToString(TimeFormat)}] ", RLCToSDC(_defaultForeground));
 
 			if (ShowLevel) {
 				System.Drawing.Color toShow = RLCToSDC(_defaultForeground);
 				if (PrintColor)
 					toShow = RLCToSDC(LevelToColor(level));
 
-				ConsoleMethods.Write($"[{Source}/{LevelToConsoleString(level)}] ", toShow);
+				Platform.ConsoleWrite($"[{Source}/{LevelToConsoleString(level)}] ", toShow);
 			}
 
 			var current = RLCToSDC(_defaultForeground);
@@ -116,7 +115,7 @@ namespace Nucleus
 				if (printColor && item is Color && i != items.Length - 1)
 					current = RLCToSDC((Color)item);
 				else
-					ConsoleMethods.Write(item == null ? "<null>" : item.ToString() ?? "<null-str>", current);
+					Platform.ConsoleWrite(item == null ? "<null>" : item.ToString() ?? "<null-str>", current);
 			}
 
 			List<string> data = [];
@@ -129,7 +128,7 @@ namespace Nucleus
 			LogWrittenText?.Invoke(level, string.Join("", data));
 
 			if (newlineAfter)
-				ConsoleMethods.WriteLine();
+				Platform.ConsoleWriteLine();
 		}
 
 		public static void Log(LogLevel level, bool printColor = true, bool newlineAfter = true, params object?[] items) {

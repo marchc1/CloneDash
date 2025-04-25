@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace Nucleus.Platform
-{
+namespace Nucleus;
+
     
     public static class Packages
     {
@@ -55,4 +55,3 @@ namespace Nucleus.Platform
             #endif
         }
     }
-}
