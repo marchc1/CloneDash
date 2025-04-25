@@ -131,6 +131,8 @@ public static class Interlude
 	}
 
 	private static void determineInterludeTexture() {
+		if (!_should) return;
+
 		var providers = ReflectionTools.InstantiateAllInheritorsOfAbstractType<InterludeTextureProvider>().ToList();
 		while (providers.Count > 0) {
 			var provider = providers.Random();
