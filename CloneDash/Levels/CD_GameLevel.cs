@@ -20,6 +20,7 @@ using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
 using CloneDash.Scripting;
 using Lua;
+using Color = Raylib_cs.Color;
 
 namespace CloneDash.Game
 {
@@ -1004,9 +1005,10 @@ namespace CloneDash.Game
 
 		public override void PreRender(FrameState frameState) {
 			base.PreRender(frameState);
-			Lua.Call(renderScene);
+			//Stopwatch test = Stopwatch.StartNew();
+			Lua.ProtectedCall(renderScene);
+			//Logs.Info(test.Elapsed.TotalMilliseconds);
 		}
-
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
 			cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
