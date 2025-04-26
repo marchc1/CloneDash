@@ -1032,8 +1032,8 @@ namespace CloneDash.Game
 			Rlgl.DisableDepthTest();
 			Rlgl.DisableBackfaceCulling();
 
-			Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
-			Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
+			//Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
+			//Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
 			Rlgl.DrawRenderBatchActive();
 
 			TopPathway.Render();
