@@ -162,18 +162,18 @@ namespace CloneDash
 
 				MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
                 var obj = map.ToType();
-                var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin();
+                var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-				var rr = InitializeCompatibilityLayer(); Interlude.Spin();
+				var rr = InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
 				if (rr != MDCompatLayerInitResult.OK)
                     throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
 
-                StageInfo stage = JsonConvert.DeserializeObject<StageInfo>(rawData); Interlude.Spin();
+                StageInfo stage = JsonConvert.DeserializeObject<StageInfo>(rawData); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-				stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary); Interlude.Spin();
+				stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-				FillInTheBlankNotes(this, stage); Interlude.Spin();
+				FillInTheBlankNotes(this, stage); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
 				return ConvertStageInfoToDashSheet(this, stage);
             }

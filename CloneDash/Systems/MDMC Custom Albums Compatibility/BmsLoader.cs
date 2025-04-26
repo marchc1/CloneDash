@@ -194,7 +194,7 @@ namespace CloneDash.Systems.CustomCharts
 		private static void LoadMusicData(JsonArray noteData) {
 			short noteId = 1;
 			foreach (var node in noteData) {
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (noteId == short.MaxValue) {
 					Logs.Warn($"Cannot process full chart, there are too many objects. Max objects is {short.MaxValue}.");
 					break;
@@ -259,7 +259,7 @@ namespace CloneDash.Systems.CustomCharts
 			var geminiCache = new Dictionary<Decimal, List<MusicData>>();
 
 			for (var i = 1; i < MusicDataManager.Data.Count; i++) {
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				var mData = MusicDataManager.Data[i];
 				mData.doubleIdx = -1;
 				MusicDataManager.Set(i, mData);
@@ -307,17 +307,17 @@ namespace CloneDash.Systems.CustomCharts
 			var noteData = bms.GetNoteData();
 			Logs.Info("Got note data");
 
-			LoadMusicData(noteData); Interlude.Spin();
-			MusicDataManager.Sort(); Interlude.Spin();
+			LoadMusicData(noteData); Interlude.Spin(submessage: "Reading Custom Albums chart...");
+			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			//ProcessBossData(bms);
-			MusicDataManager.Sort(); Interlude.Spin();
+			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
-			ProcessGeminis(); Interlude.Spin();
+			ProcessGeminis(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			// Process the delay for each MusicData
 			foreach (var mData in MusicDataManager.Data) {
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (mData.configData == null) continue;
 				mData.tick -= _delay;
 				mData.showTick = Decimal.Round(mData.tick - mData.dt, 2);

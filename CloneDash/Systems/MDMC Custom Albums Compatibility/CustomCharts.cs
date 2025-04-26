@@ -226,16 +226,16 @@ namespace CloneDash
 			protected override ChartSheet ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
 				var map = Archive.Entries.FirstOrDefault(x => x.Name == $"map{id}.bms");
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
 				var bms = BmsLoader.Load(map.Open(), $"map{id}.bms");
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 
 				var stageInfo = BmsLoader.TransmuteData(bms);
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
 				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo);

@@ -402,6 +402,8 @@ namespace CloneDash.Game
 
 		public override void Initialize(params object[] args) {
 			using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
+				Interlude.Spin(submessage: "Retrieving descriptors...");
+
 				using (CD_StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 					var charData = CharacterMod.GetCharacterData();
 					var sceneData = SceneMod.GetSceneData();
@@ -412,11 +414,13 @@ namespace CloneDash.Game
 					Scene = sceneData;
 				}
 
+				Interlude.Spin(submessage: "Initializing the scene...");
+
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
 					Scene.Initialize(this);
 				}
 
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Initializing Lua...");
 
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
 					Lua = new(this);
@@ -435,6 +439,8 @@ namespace CloneDash.Game
 				Render3D = false;
 				Health = MaxHealth;
 
+
+				Interlude.Spin(submessage: "Initializing ICloneDashInputSystems...");
 				using (CD_StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
 					// build the input system
 					var inputInterface = typeof(ICloneDashInputSystem);
@@ -446,6 +452,9 @@ namespace CloneDash.Game
 					foreach (object input in inputs)
 						InputReceivers.Add((ICloneDashInputSystem)input);
 				}
+
+
+				Interlude.Spin(submessage: "Loading your character...");
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 					hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 					Interlude.Spin();
@@ -461,11 +470,14 @@ namespace CloneDash.Game
 					Player.Model.SetToSetupPose();
 					Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
 				}
+
+
+				Interlude.Spin(submessage: "Loading boss...");
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
 					Boss = Add(new Boss());
 				}
 
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Loading internal entities...");
 
 				using (CD_StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 					HologramPlayer.Visible = false;
@@ -491,7 +503,7 @@ namespace CloneDash.Game
 					}
 					Boss.Build();
 				}
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Loading audio...");
 
 				//foreach (var tempoChange in Sheet)
 				Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
@@ -499,7 +511,7 @@ namespace CloneDash.Game
 					Music = Sheet.Song.GetAudioTrack();
 				}
 				Music.Volume = 0.25f;
-				Interlude.Spin();
+				Interlude.Spin(submessage: "Ready!");
 
 				Music.Loops = false;
 				Music.Playing = true;
@@ -946,7 +958,7 @@ namespace CloneDash.Game
 		/// </summary>
 		/// <param name="ChartEvent"></param>
 		public void LoadEvent(ChartEvent ChartEvent) {
-			Interlude.Spin();
+			Interlude.Spin(submessage: "Loading events...");
 			var ev = CD_BaseEvent.CreateFromType(this, ChartEvent.Type);
 
 			ev.Time = ChartEvent.Time;
@@ -966,7 +978,7 @@ namespace CloneDash.Game
 		/// </summary>
 		/// <param name="ChartEntity"></param>
 		public void LoadEntity(ChartEntity ChartEntity) {
-			Interlude.Spin();
+			Interlude.Spin(submessage: "Loading entities...");
 
 			if (!CD_BaseEnemy.TryCreateFromType(this, ChartEntity.Type, out CD_BaseEnemy? ent)) {
 				Console.WriteLine("No load entity handler for type " + ChartEntity.Type);

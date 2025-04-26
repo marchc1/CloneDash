@@ -503,40 +503,41 @@ public class SceneDescriptor : CloneDashDescriptor
 	}
 
 	public void Initialize(Level level) {
+		Interlude.Spin(submessage: "Initializing sounds...");
 		AnnouncerLines.BeginSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin); Interlude.Spin();
 		AnnouncerLines.FeverSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever); Interlude.Spin();
 		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause); Interlude.Spin();
 		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo); Interlude.Spin();
 
-		Hitsounds.Load(level); Interlude.Spin();
+		Hitsounds.Load(level); Interlude.Spin(submessage: "Initializing hitsounds...");
 
-		Boss.LoadModelData(level); Interlude.Spin();
-		Sustains.LoadData(level); Interlude.Spin();
-		Gears.LoadModelData(level); Interlude.Spin();
-		BossGears.LoadModelData(level); Interlude.Spin();
-		Masher.LoadModelData(level); Interlude.Spin();
-		DoubleEnemy.LoadModelData(level); Interlude.Spin();
+		Boss.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss...");
+		Sustains.LoadData(level);Interlude.Spin(submessage: "Initializing sustain models...");
+		Gears.LoadModelData(level);Interlude.Spin(submessage: "Initializing gear models...");
+		BossGears.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss gear models...");
+		Masher.LoadModelData(level);Interlude.Spin(submessage: "Initializing masher models...");
+		DoubleEnemy.LoadModelData(level);Interlude.Spin(submessage: "Initializing double models...");
 
-		BossEnemy1.LoadModelData(level); Interlude.Spin();
-		BossEnemy2.LoadModelData(level); Interlude.Spin();
-		BossEnemy3.LoadModelData(level); Interlude.Spin();
+		BossEnemy1.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss enemy models...");
+		BossEnemy2.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss enemy models...");
+		BossEnemy3.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss enemy models...");
 
-		SmallEnemy.LoadModelData(level); Interlude.Spin();
+		SmallEnemy.LoadModelData(level);Interlude.Spin(submessage: "Initializing small enemy models...");
 
-		MediumEnemy1.LoadModelData(level); Interlude.Spin();
-		MediumEnemy2.LoadModelData(level); Interlude.Spin();
+		MediumEnemy1.LoadModelData(level);Interlude.Spin(submessage: "Initializing medium enemy models...");
+		MediumEnemy2.LoadModelData(level);Interlude.Spin(submessage: "Initializing medium enemy models...");
 
-		LargeEnemy1.LoadModelData(level); Interlude.Spin();
-		LargeEnemy2.LoadModelData(level); Interlude.Spin();
+		LargeEnemy1.LoadModelData(level);Interlude.Spin(submessage: "Initializing large enemy models...");
+		LargeEnemy2.LoadModelData(level);Interlude.Spin(submessage: "Initializing large enemy models...");
 
-		Hammer.LoadModelData(level); Interlude.Spin();
+		Hammer.LoadModelData(level);Interlude.Spin(submessage: "Initializing hammer models...");
 
-		Raider.LoadModelData(level); Interlude.Spin();
+		Raider.LoadModelData(level);Interlude.Spin(submessage: "Initializing raider models...");
 
-		Ghost.LoadModelData(level); Interlude.Spin();
+		Ghost.LoadModelData(level);Interlude.Spin(submessage: "Initializing ghost models...");
 
-		Score.LoadModelData(level); Interlude.Spin();
-		Heart.LoadModelData(level); Interlude.Spin();
+		Score.LoadModelData(level);Interlude.Spin(submessage: "Initializing extra models...");
+		Heart.LoadModelData(level);Interlude.Spin(submessage: "Initializing extra models...");
 
 
 	}
