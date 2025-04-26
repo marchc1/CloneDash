@@ -40,8 +40,22 @@ namespace Nucleus.ManagedMemory
         public bool IsValid() => !disposed;
 
 		public void GenerateMipmaps() => Raylib.GenTextureMipmaps(ref underlying);
-		public void SetFilter(TextureFilter filter) => Raylib.SetTextureFilter(underlying, filter);
-		public void SetWrap(TextureWrap wrap) => Raylib.SetTextureWrap(underlying, wrap);
+
+		private TextureFilter filter;
+		private TextureWrap wrap;
+
+		public TextureFilter GetFilter() => filter;
+		public TextureWrap GetWrap() => wrap;
+
+		public void SetFilter(TextureFilter filter) {
+			this.filter = filter;
+			Raylib.SetTextureFilter(underlying, filter);
+		}
+
+		public void SetWrap(TextureWrap wrap) {
+			this.wrap = wrap;
+			Raylib.SetTextureWrap(underlying, wrap);
+		}
 
 		public bool HasCPUImage => UnderlyingImage.HasValue;
 		public Image GetCPUImage() => UnderlyingImage ?? throw new Exception("No CPU image available. The texture creation call must store the image.");

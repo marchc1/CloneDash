@@ -394,7 +394,7 @@ namespace CloneDash.Game
 
 
 		LuaFunction renderScene;
-		private void SetupLuaVariables() {
+		private void SetupLua() {
 			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
 			var render = scene["render"];
 			render.TryRead(out renderScene);
@@ -424,7 +424,7 @@ namespace CloneDash.Game
 
 					Lua.DoFile("scene", Scene.PathToBackgroundController);
 
-					SetupLuaVariables();
+					SetupLua();
 				}
 
 				Interlude.Spin();
@@ -478,6 +478,9 @@ namespace CloneDash.Game
 					Conductor = Add<Conductor>();
 					Interlude.Spin();
 				}
+
+				Lua.State.Environment["conductor"] = new CD_LuaConductor(Conductor);
+
 				using (CD_StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
 					if (!__deferringAsync) {
 						foreach (var ent in Sheet.Entities)
@@ -997,7 +1000,7 @@ namespace CloneDash.Game
 		public float PlayerScale => 1;
 		public float PlayScale => 1.2f;
 		public float GlobalScale => 1f;
-		public float BackgroundScale => 160f;
+		public float BackgroundScale => 1f;
 
 
 		public override void PreRenderBackground(FrameState frameState) {

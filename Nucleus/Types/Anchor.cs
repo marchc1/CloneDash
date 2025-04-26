@@ -19,6 +19,8 @@
         public static Anchor BottomCenter = new(8);
         public static Anchor BottomRight = new(9);
 
+		public int Deconstruct() => Anchoring;
+
         /// <summary>
         /// Calculates the position coordinates given a position, size and anchor.
         /// <br></br>
