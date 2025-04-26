@@ -1,37 +1,61 @@
-﻿using CloneDash.Game;
-using FMOD;
-using Lua;
+﻿using Lua;
+using Lua.Standard;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
-using Nucleus.UI;
 using Raylib_cs;
-using System.Numerics;
+using System.Text;
 
 namespace CloneDash.Scripting;
-
 
 public class CD_LuaEnv
 {
 	public LuaState State;
 	private Level level;
+
+
+	public ValueTask<int> print(LuaFunctionExecutionContext context, Memory<LuaValue> buffer, CancellationToken cancellationToken) {
+		string[] args = new string[context.ArgumentCount];
+		for (int i = 0; i < context.ArgumentCount; i++) {
+			args[i] = context.GetArgument(i).ToString();
+		}
+
+		Logs.Print(string.Join(' ', args));
+
+		return new(0);
+	}
+
 	public CD_LuaEnv(Level level) {
 		this.level = level;
 
 		State = LuaState.Create();
+
+		// These libraries *SHOULD* be safe...
+		State.OpenBasicLibrary();
+		State.OpenMathLibrary();
+		State.OpenStringLibrary();
+		State.OpenTableLibrary();
+
 		// Types
 		State.Environment["Color"] = new LuaColor();
+		State.Environment["print"] = new LuaFunction("print", print);
 
 		// Libraries
 		State.Environment["textures"] = new CD_LuaTextures(level, level.Textures);
-		State.Environment["graphics"] = new CD_Graphics(level);
+		State.Environment["graphics"] = new CD_LuaGraphics(level);
 	}
 
 	public LuaValue[] DoFile(string pathID, string path) {
 		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), IManagedMemory.MergePath(pathID, path)).AsTask();
-		t.Wait();
-		return t.Result;
+		try {
+			t.Wait();
+			return t.Result;
+		}
+		catch(Exception ex) {
+			Logs.Error(ex.Message);
+			return [];
+		}
 	}
 
 	public LuaValue[] Call(LuaFunction func, params LuaValue[] args) {
@@ -41,6 +65,9 @@ public class CD_LuaEnv
 	}
 
 	public LuaValue[] ProtectedCall(LuaFunction func, params LuaValue[] args) {
+		if (func == null)
+			return [];
+
 		Task<LuaValue[]> t;
 		try {
 			t = func.InvokeAsync(State, args).AsTask();
@@ -56,14 +83,13 @@ public class CD_LuaEnv
 }
 
 
-
 public interface ILuaWrappedObject<Around> {
 	public Around Unwrap();
 }
 
 
 [LuaObject]
-public partial class CD_Graphics(Level level)
+public partial class CD_LuaGraphics(Level level)
 {
 	private Raylib_cs.Color drawColor = Raylib_cs.Color.White;
 

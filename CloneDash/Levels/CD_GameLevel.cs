@@ -396,7 +396,8 @@ namespace CloneDash.Game
 		LuaFunction renderScene;
 		private void SetupLuaVariables() {
 			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
-			renderScene = scene["render"].Read<LuaFunction>();
+			var render = scene["render"];
+			render.TryRead(out renderScene);
 		}
 
 		public override void Initialize(params object[] args) {
@@ -1006,7 +1007,7 @@ namespace CloneDash.Game
 		public override void PreRender(FrameState frameState) {
 			base.PreRender(frameState);
 			//Stopwatch test = Stopwatch.StartNew();
-			Lua.ProtectedCall(renderScene);
+			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
 			//Logs.Info(test.Elapsed.TotalMilliseconds);
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
