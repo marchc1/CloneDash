@@ -26,7 +26,14 @@ public class CD_LuaEnv
 		t.Wait();
 		return t.Result;
 	}
+
+	public LuaValue[] Call(LuaFunction func, params LuaValue[] args) {
+		var t = func.InvokeAsync(State, args).AsTask();
+		t.Wait();
+		return t.Result;
+	}
 }
+
 
 
 public interface ILuaWrappedObject<Around> {
@@ -61,9 +68,15 @@ public partial class CD_LuaTexture(Level level, TextureManagement textures, Text
 {
 	public Texture Unwrap() => texture;
 
-	[LuaMember("hardwareID")] public float HardwareID => texture.HardwareID;
-	[LuaMember("width")] public float Width => texture.Width;
-	[LuaMember("height")] public float Height => texture.Height;
+	[LuaMember("hardwareID")] public int HardwareID => (int)texture.HardwareID;
+	[LuaMember("width")] public float Width {
+		get => texture.Width;
+		set { }
+	}
+	[LuaMember("height")] public float Height {
+		get => texture.Height;
+		set { }
+	}
 }
 
 

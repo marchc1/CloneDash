@@ -19,13 +19,14 @@ using Nucleus.ManagedMemory;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
 using CloneDash.Scripting;
+using Lua;
 
 namespace CloneDash.Game
 {
 	[Nucleus.MarkForStaticConstruction]
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
-		public CD_LuaEnv Lua = new();
+		public CD_LuaEnv Lua;
 
 		public const double REFERENCE_FPS = 30;
 		public static ConCommand clonedash_seek = ConCommand.Register("clonedash_seek", (_, args) => {
@@ -390,6 +391,13 @@ namespace CloneDash.Game
 
 		ShaderInstance hologramShader;
 
+
+		LuaFunction renderScene;
+		private void SetupLuaVariables() {
+			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
+			renderScene = scene["render"].Read<LuaFunction>();
+		}
+
 		public override void Initialize(params object[] args) {
 			using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 				using (CD_StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
@@ -401,10 +409,24 @@ namespace CloneDash.Game
 					Character = charData;
 					Scene = sceneData;
 				}
+
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
 					Scene.Initialize(this);
 				}
+
 				Interlude.Spin();
+
+				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
+					Lua = new(this);
+					Lua.State.Environment["scene"] = new LuaTable();
+
+					Lua.DoFile("scene", Scene.PathToBackgroundController);
+
+					SetupLuaVariables();
+				}
+
+				Interlude.Spin();
+
 
 				MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
 
@@ -968,13 +990,23 @@ namespace CloneDash.Game
 			ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 			ent.Build();
 		}
+
+
 		public float PlayerScale => 1;
 		public float PlayScale => 1.2f;
 		public float GlobalScale => 1f;
+
+
 		public override void PreRenderBackground(FrameState frameState) {
 			Boss.Scale = new(GlobalScale);
 			Boss.Position = new(0, 450);
 		}
+
+		public override void PreRender(FrameState frameState) {
+			base.PreRender(frameState);
+			Lua.Call(renderScene);
+		}
+
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
 			cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);

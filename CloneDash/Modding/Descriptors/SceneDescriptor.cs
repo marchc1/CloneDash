@@ -537,6 +537,8 @@ public class SceneDescriptor : CloneDashDescriptor
 
 		Score.LoadModelData(level); Interlude.Spin();
 		Heart.LoadModelData(level); Interlude.Spin();
+
+
 	}
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
@@ -564,6 +566,8 @@ public class SceneDescriptor : CloneDashDescriptor
 
 	[JsonProperty("name")] public string Name;
 	[JsonProperty("author")] public string Author;
+
+	[JsonProperty("background_controller")] public string PathToBackgroundController;
 
 	[JsonProperty("announcer")] public SceneDescriptor_Announcer AnnouncerLines;
 	[JsonProperty("hitsounds")] public SceneDescriptor_Hitsounds Hitsounds;
