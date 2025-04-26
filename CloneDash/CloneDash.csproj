@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="BCnEncoder.Net" Version="2.2.0" />
-    <PackageReference Include="CS-Script" Version="4.9.5" />
     <PackageReference Include="Fmod5Sharp" Version="3.0.1" />
+    <PackageReference Include="LuaCSharp" Version="0.4.2" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />

@@ -18,12 +18,15 @@ using System.Diagnostics;
 using Nucleus.ManagedMemory;
 using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
+using CloneDash.Scripting;
 
 namespace CloneDash.Game
 {
 	[Nucleus.MarkForStaticConstruction]
 	public partial class CD_GameLevel(ChartSheet Sheet) : Level
 	{
+		public CD_LuaEnv Lua = new();
+
 		public const double REFERENCE_FPS = 30;
 		public static ConCommand clonedash_seek = ConCommand.Register("clonedash_seek", (_, args) => {
 			var level = EngineCore.Level.AsNullable<CD_GameLevel>();
