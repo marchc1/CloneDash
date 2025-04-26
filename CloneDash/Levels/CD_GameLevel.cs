@@ -89,16 +89,26 @@ namespace CloneDash.Game
 		public static ConVar clonedash_profilegameload = ConVar.Register("clonedash_profilegameload", "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 		public static ConVar clonedash_offset = ConVar.Register("clonedash_offset", "0", ConsoleFlags.Saved, "Seconds-based chart offset", -1, 1);
 
-		public static CD_GameLevel LoadLevel(ChartSong song, int mapID, bool autoplay) {
+		public static CD_GameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 			Interlude.Begin($"Loading '{song.Name}'...");
 			if (clonedash_profilegameload.GetBool()) {
 				Logs.Info("Starting the sequential profiler.");
 				CD_StaticSequentialProfiler.Start();
 			}
 
-			var sheet = song.GetSheet(mapID);
-			var workingLevel = new CD_GameLevel(sheet);
-			if (workingLevel == null) return workingLevel;
+			CD_GameLevel? workingLevel = null;
+			try {
+				var sheet = song.GetSheet(mapID);
+				workingLevel = new CD_GameLevel(sheet);
+				
+			}
+			catch(Exception ex) {
+				Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");
+			}
+
+			if (workingLevel == null) 
+				return null;
+
 			EngineCore.LoadLevel(workingLevel, autoplay);
 			return workingLevel;
 		}
