@@ -686,8 +686,9 @@ namespace CloneDash.Game
 
 			HologramPlayer.Position = new Vector2F(
 				Game.Pathway.GetPathwayLeft() - 185,
-				yoff ?? GetPlayerY(HologramCharacterYRatio)
+				GetPlayerY(HologramCharacterYRatio)
 			);
+
 			HologramPlayer.Scale = new(PlayerScale);
 
 			if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {

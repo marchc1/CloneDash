@@ -98,7 +98,6 @@ namespace CloneDash.Game
 		public bool CanJump => !InAir;
 
 		private double __jumpmax = 0.5d;
-		private bool __firstJump = false;
 		private double __jumpAnimationStops = 0.5d;
 		private double __jumpAnimationHStops = 0.5d;
 		private double __whenjump = -2000000000000d;
@@ -213,20 +212,9 @@ namespace CloneDash.Game
 		public event AttackEvent? OnAirAttack;
 		public event AttackEvent? OnGroundAttack;
 
-		public float CharacterYRatio {
-			get {
-				return (float)(
-					(__firstJump ? Math.Clamp(NMath.Ease.OutExpo(AirTime * 10), 0, 1) : 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1))
-				);
-			}
-		}
-		public float HologramCharacterYRatio {
-			get {
-				return ((float)(
-					(__firstJump ? Math.Clamp(NMath.Ease.OutExpo(Hologram_AirTime * 10), 0, 1) : 1) - (1 - Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1))
-				));
-			}
-		}
+		public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
+		public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
+
 
 		private bool playeranim_miss = false;
 		private bool playeranim_jump = false;
