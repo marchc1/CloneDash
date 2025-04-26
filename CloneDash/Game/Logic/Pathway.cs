@@ -111,7 +111,7 @@ namespace CloneDash.Game
 			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
 			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42) * 2;
-			var curtimeOffset = (float)conductor.Time * 200;
+			var curtimeOffset = (float)conductor.Time * -240;
 
 			var alphaM = Math.Max(0, Math.Min(conductor.Time + 1, 1));
 			if (alphaM <= 0) return;

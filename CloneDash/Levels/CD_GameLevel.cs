@@ -997,6 +997,7 @@ namespace CloneDash.Game
 		public float PlayerScale => 1;
 		public float PlayScale => 1.2f;
 		public float GlobalScale => 1f;
+		public float BackgroundScale => 160f;
 
 
 		public override void PreRenderBackground(FrameState frameState) {
@@ -1007,7 +1008,10 @@ namespace CloneDash.Game
 		public override void PreRender(FrameState frameState) {
 			base.PreRender(frameState);
 			//Stopwatch test = Stopwatch.StartNew();
-			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
+			Rlgl.PushMatrix();
+			Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
+			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight, BackgroundScale);
+			Rlgl.PopMatrix();
 			//Logs.Info(test.Elapsed.TotalMilliseconds);
 		}
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {

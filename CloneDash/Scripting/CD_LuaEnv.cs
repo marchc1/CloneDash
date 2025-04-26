@@ -14,7 +14,6 @@ public class CD_LuaEnv
 	public LuaState State;
 	private Level level;
 
-
 	public ValueTask<int> print(LuaFunctionExecutionContext context, Memory<LuaValue> buffer, CancellationToken cancellationToken) {
 		string[] args = new string[context.ArgumentCount];
 		for (int i = 0; i < context.ArgumentCount; i++) {
@@ -137,8 +136,6 @@ public partial class CD_LuaTexture(Level level, TextureManagement textures, Text
 		set { }
 	}
 }
-
-
 
 [LuaObject]
 public partial class CD_LuaTextures(Level level, TextureManagement textures)
