@@ -46,7 +46,6 @@ namespace CloneDash
 			{
 				Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
 				MuseDashCompatibility.InitializeCompatibilityLayer();
-				Interlude.ShouldSelectInterludeTexture = true;
 			}
 
 			if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {

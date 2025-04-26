@@ -51,7 +51,7 @@ public class MuseDashInterludeProvider : InterludeTextureProvider
 	private static int setup() {
 		if (ready && interludes != null) return interludes.Length;
 
-		if (!MuseDashCompatibility.Initialized) {
+		if (MuseDashCompatibility.WhereIsMuseDashInstalled == null) {
 			return 0;
 		}
 

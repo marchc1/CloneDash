@@ -36,13 +36,16 @@ namespace CloneDash
 #else
 			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
-				Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
 			}
 
 			if (result != MDCompatLayerInitResult.OK) {
 				CD_StaticSequentialProfiler.End(out _, out _);
 				return result;
 			}
+
+			// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready
+			Interlude.ShouldSelectInterludeTexture = true;
+			Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
 
 			// Trying to make searching these files a bit more efficient...
 			// for now, commenting this out. But it may get used later
