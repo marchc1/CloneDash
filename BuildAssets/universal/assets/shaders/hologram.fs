@@ -47,7 +47,7 @@ void main() {
     float factor = 1 - (time * 2);
     int noiseScale = 80;
 
-    vec4 color = texture(texture0, fragTexCoord) * vec4(0.7, 0.8, 1.0, 0.7);
+    vec4 color = texture(texture0, fragTexCoord) * vec4(1.2, 2.2, 4.0, 0.7);
     vec4 dissolveColor = vec4(0.0, 0.3, 1, 0.6);
 
     float noise = simplexNoise(gl_FragCoord.xy / noiseScale);
