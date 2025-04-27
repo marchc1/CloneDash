@@ -490,7 +490,7 @@ namespace Nucleus
 			if (!EngineCore.ShowConsoleLogsInCorner || IsScreenBlockerActive)
 				return;
 
-			RenderToScreen(4 + 6, 4);
+			RenderToScreen(6, 6);
 		}
 		public static bool IsScreenBlockerActive => scrblockers.Count > 0;
 		public static int VisibleLines => ScreenMessages.Count;
