@@ -494,7 +494,7 @@ namespace Nucleus
 		}
 		public static bool IsScreenBlockerActive => scrblockers.Count > 0;
 		public static int VisibleLines => ScreenMessages.Count;
-		public static int TextSize => 13;
+		public static int TextSize { get; set; } = 13;
 		public static void RenderToScreen(int x, int y) {
 			int i = 0;
 			ScreenMessages.RemoveAll(x => x.Age > MaxMessageTime);
@@ -509,7 +509,7 @@ namespace Nucleus
 				Graphics2D.DrawRectangle(x, y + 2 + (i * 15), textSize.W + 4, textSize.H + 4);
 				Graphics2D.SetDrawColor(Logs.LevelToColor(message.Level), (int)(fade * 255));
 				Graphics2D.DrawText(new(x - 1, y + 4 + (i * 15) + 1), text, "Consolas", TextSize);
-				i++;
+				i+= 1 + text.Count(x => x == '\n');
 			}
 		}
 
