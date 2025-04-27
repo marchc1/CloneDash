@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Audio;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
@@ -19,6 +21,8 @@ namespace Nucleus.UI
 	}
 	public class Element : IValidatable
 	{
+		public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
+
 		/// <summary>
 		/// The <see cref="UserInterface"/> the element belongs to.
 		/// </summary>
@@ -207,7 +211,7 @@ namespace Nucleus.UI
 				return __renderbounds;
 			}
 			protected set {
-				__renderbounds = value;
+				__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(value) : value;
 			}
 		}
 		public RectangleF ScreenspaceRenderBounds {
@@ -230,7 +234,7 @@ namespace Nucleus.UI
 			if (h.HasValue) __renderbounds.H = h.Value;
 		}
 		public void SetRenderBounds(RectangleF bounds) {
-			__renderbounds = bounds;
+			__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
 		}
 
 		protected virtual void Initialize() { }
@@ -521,6 +525,10 @@ namespace Nucleus.UI
 			ChildrensDockingLayoutBottom = 0;
 
 			__renderbounds = RectangleF.FromPosAndSize(_position, _size);
+
+			if (FORCE_ROUNDED_RENDERBOUNDS)
+				__renderbounds.RoundInPlace();
+
 			ModifyLayout(ref __renderbounds);
 			//PerformLayout(_size.w, _size.h); used to be here...
 
@@ -657,6 +665,9 @@ namespace Nucleus.UI
 				currentBounds.Pos += overflow;
 				_fitToParent = false;
 			}
+
+			if (FORCE_ROUNDED_RENDERBOUNDS)
+				currentBounds.RoundInPlace();
 
 			RenderBounds = currentBounds;
 
