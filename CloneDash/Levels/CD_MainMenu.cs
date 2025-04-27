@@ -6,7 +6,6 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Raylib_cs;
 using MouseButton = Nucleus.Types.MouseButton;
-using static CloneDash.MuseDashCompatibility;
 using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
@@ -16,11 +15,12 @@ using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using System.Diagnostics;
-using System.Collections.Generic;
+using static AssetStudio.BundleFile;
 
 namespace CloneDash.Game;
 
-public interface IMainMenuPanel {
+public interface IMainMenuPanel
+{
 	public string GetName();
 	public void OnHidden();
 	public void OnShown();
@@ -434,6 +434,35 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 }
 
+public class MainMenuButton : Button
+{
+	protected override void Initialize() {
+		base.Initialize();
+		TextAlignment = Anchor.CenterRight;
+		ShouldDrawImage = false;
+	}
+
+	public string SubText;
+
+	public override void Paint(float width, float height) {
+		Button.ColorStateSetup(this, out Color back, out Color fore);
+		Element.PaintBackground(this, width, height, back, fore, BorderSize);
+
+		var decomposed = fore.Adjust(0, 0, 2555, false);
+
+		Graphics2D.SetDrawColor(decomposed);
+		var p = 2;
+
+		ImageOrientation = ImageOrientation.None;
+		ImageColor = ForegroundColor.Adjust(0, -0.2, 2, false);
+		ImageDrawing(new(p / 2, p / 2), new(height - (p * 2), height - (p * 2)));
+
+		Graphics2D.DrawText(new(width - 8, 8), Text, Font, TextSize * 0.85f, Anchor.TopRight);
+		if (SubText != null)
+			Graphics2D.DrawText(new(width - 4, height - 8), SubText, Font, TextSize * 0.45f, Anchor.BottomRight);
+	}
+}
+
 public class MainMenuPanel : Panel, IMainMenuPanel
 {
 	public string GetName() => "Main Menu";
@@ -447,6 +476,24 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	AnimationHandler anims;
 	MusicTrack music;
 
+	List<MainMenuButton> btns = [];
+
+	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<CD_MainMenu>? action = null) {
+		CD_MainMenu menu = Level.As<CD_MainMenu>();
+
+		Add(out MainMenuButton btn);
+		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).ToRGB();
+		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).ToRGB();
+		btn.Text = text;
+		btn.Image = menu.Textures.LoadTextureFromFile(icon);
+		btn.SubText = description;
+
+		btn.MouseReleaseEvent += (_,_,_) => action?.Invoke(menu);
+
+		btns.Add(btn);
+		return btn;
+	}
+
 	protected override void Initialize() {
 		base.Initialize();
 		CharacterDescriptor character = CharacterMod.GetCharacterData();
@@ -459,8 +506,50 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
 		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
-		music.Loops = true;
+		music.Loops = true; 
+		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.AddSongs(MuseDashCompatibility.Songs);
+		});
+		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310);
+		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.InfiniteList = false;
+			int page = 1;
+			selector.UserWantsMoreSongs += () => {
+				// Load more songs
+				menu.PopulateMDMCCharts(selector, page: page);
+				page++;
+			};
+		});
+		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
+		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
+		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225);
+		MakeNavigationButton("Options", "ui/pause_settings.png", "Select a character from the characters you have installed.", 200);
+		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350);
 	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+
+		var textHeight = height / 20f;
+		var btnWidth = Math.Clamp(width / 3f, 460, 155555);
+		var btnHeight = height / 12f;
+		var btnsLen = btns.Count;
+
+		for (int i = 0; i < btnsLen; i++) {
+			var btn = btns[i];
+
+			btn.Origin = Anchor.Center;
+			btn.TextSize = textHeight;
+			btn.Size = new(btnWidth, btnHeight);
+
+			var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
+
+			btn.Position = new(width * .75f, (height / 2) + (y * height / 3));
+		}
+	}
+
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
 		anims?.AddDeltaTime(Level.CurtimeDelta);
@@ -484,7 +573,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public override void Paint(float width, float height) {
 		Raylib.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
-			Offset = new(width / 2, height / 1)
+			Offset = new((width / 2) - (width * .2f), height / 1)
 		});
 
 		model?.Render();
@@ -492,6 +581,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		Raylib.EndMode2D();
 	}
 }
+
+
+
+
 [Nucleus.MarkForStaticConstruction]
 public class CD_MainMenu : Level
 {
@@ -598,7 +691,7 @@ public class CD_MainMenu : Level
 				model.SetToSetupPose();
 				anims.SetAnimation(0, "air_hit_great_2", false);
 			}
-			catch(Exception ex) {
+			catch (Exception ex) {
 				Debug.Assert(false, ex.Message);
 			}
 		};
@@ -640,30 +733,15 @@ public class CD_MainMenu : Level
 		return next;
 	}
 
+	Panel header;
 	public override void Initialize(params object[] args) {
-		var header = UI.Add<Panel>();
+		header = UI.Add<Panel>();
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
 
 		backButton = MenuButton(header, Dock.Left, "ui\\back.png", $"Back", () => {
 			PopActiveElement();
-		});
-
-		MenuButton(header, Dock.Right, "ui\\play_md_level.png", "Load Muse Dash Level", () => {
-			var selector = PushActiveElement(UI.Add<SongSelector>());
-			selector.AddSongs(MuseDashCompatibility.Songs);
-		});
-
-		MenuButton(header, Dock.Right, "ui\\play_cam_level.png", "Load CustomAlbums .mdm File", () => {
-			var selector = PushActiveElement(UI.Add<SongSelector>());
-			selector.InfiniteList = false;
-			int page = 1;
-			selector.UserWantsMoreSongs += () => {
-				// Load more songs
-				PopulateWindow(selector, page: page);
-				page++;
-			};
 		});
 
 		var test2 = header.Add<Label>();
@@ -677,6 +755,13 @@ public class CD_MainMenu : Level
 		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
 
 		PushActiveElement(UI.Add<MainMenuPanel>());
+		ConsoleSystem.AddScreenBlocker(UI);
+	}
+
+	public override void PostRender(FrameState frameState) {
+		base.PostRender(frameState);
+		ConsoleSystem.TextSize = 11;
+		ConsoleSystem.RenderToScreen(4 + 6, (int)(header.RenderBounds.H + 4));
 	}
 
 	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
@@ -697,48 +782,12 @@ public class CD_MainMenu : Level
 		return menuBtn;
 	}
 
-	Panel searchPanel;
-	ScrollPanel scrollPanel;
-
-	private void ClearWindow() {
-		scrollPanel.AddParent.ClearChildren();
-	}
-
 	private CustomChartsSong AddChartSelector(MDMCChart chart) {
 		CustomChartsSong song = new CustomChartsSong(chart);
 		return song;
-		/*chartBtn.MouseReleaseEvent += (_, _, _) => {
-			var filename = Filesystem.Resolve($"charts/{chart.ID}.mdm", "game", false);
-			if (!File.Exists(filename)) {
-				chart.DownloadTo(filename, (worked) => {
-					System.Diagnostics.Debug.Assert(worked);
-					if (worked) {
-						LoadMDM(filename);
-						Logs.Info($"Downloaded {chart.ID}.mdm");
-					}
-					else Logs.Warn($"Couldn't download {chart.ID}.mdm");
-				});
-				Logs.Info($"Downloading {chart.ID}.mdm..");
-			}
-			else {
-				Logs.Info($"Already cached {chart.ID}.mdm");
-				LoadMDM(filename);
-			}
-		};*/
 	}
 
-	private void ImageRenderer_PaintOverride(Element self, float width, float height) {
-		if (IValidatable.IsValid(self.Image))
-			self.ImageDrawing(new(0), new(width, height));
-	}
-
-	private void PopulateWindow(SongSelector selector, string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
-		/*var tempLabel = scrollPanel.Add<Label>();
-		tempLabel.Text = "Loading...";
-		tempLabel.Dock = Dock.Top;
-		tempLabel.TextAlignment = Anchor.Center;
-		tempLabel.AutoSize = true;
-		tempLabel.TextSize = 26;*/
+	internal void PopulateMDMCCharts(SongSelector selector, string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
 
 		MDMCWebAPI.SearchCharts(query, sort, page, onlyRanked).Then((resp) => {
 			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
@@ -753,10 +802,6 @@ public class CD_MainMenu : Level
 		});
 	}
 
-	public record MuseDashMap(string map_first, List<string> maps);
-
-	public Window LevelSelectWindow { get; set; }
-	
 	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
@@ -841,43 +886,6 @@ public class CD_MainMenu : Level
 			self.Position = new((levelSelector.RenderBounds.W / -5) - (NMath.Ease.InCubic(Math.Clamp(1 - (self.Lifetime - 0.3f), 0, 1)) * -64), 0);
 			self.Paint(w, h);
 		};
-
-		/*
-		Panel imageCanvas = levelSelector.Add<Panel>();
-		imageCanvas.Anchor = Anchor.Center;
-		imageCanvas.Origin = Anchor.Center;
-		imageCanvas.Clipping = false;
-		imageCanvas.Size = new Vector2F(320 - 36);
-		imageCanvas.OnHoverTest += Element.Passthru;
-		imageCanvas.Clipping = false;
-
-		imageCanvas.PaintOverride += delegate (Element self, float width, float height) {
-			var c = song.GetCover();
-			if (c == null) return;
-
-			Graphics2D.SetTexture(c.Texture);
-			var distance = 16;
-			var size = new Vector2F(width - (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16));
-			var offset = Graphics2D.Offset;
-			Graphics2D.ResetDrawingOffset();
-			Rlgl.PushMatrix();
-			var imgOffset = offsetBasedOnLifetime(self, 1.5f, 2);
-			var sizeOffset = offsetBasedOnLifetime(self, 1.5f, 8);
-			size -= sizeOffset;
-			Rlgl.Translatef(
-				(offset.X + (width / 2)),
-				offset.Y + (height / 2) + imgOffset,
-			0);
-			Rlgl.Rotatef(self.Lifetime * 90, 0, 0, 1);
-			Rlgl.Translatef(-size.X / 2, -size.Y / 2, 0);
-			var alpha = 1 - NMath.Remap(1 - NMath.Ease.OutCubic(self.Lifetime * 2), 0, 1, 0, 1, false, true);
-			Graphics2D.SetDrawColor(25, 25, 25, (int)(255 * alpha));
-			Graphics2D.DrawCircle(size / 2, (size.W / 2) + 12);
-			Graphics2D.SetDrawColor(255, 255, 255, (int)(255 * alpha));
-			Graphics2D.DrawImage(new(0, 0), size, flipY: c.Flipped);
-			Graphics2D.OffsetDrawing(offset);
-			Rlgl.PopMatrix();
-		};*/
 
 		var title = levelSelector.Add<Label>();
 		title.TextSize = 48;
@@ -995,8 +1003,7 @@ public class CD_MainMenu : Level
 
 
 	private CD_GameLevel? workingLevel;
-	private bool shouldAutoplay;
-	private bool readyToLoadFramepiecewise;
+
 	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
 		if (workingLevel != null) return;
 
@@ -1048,7 +1055,6 @@ public class CD_MainMenu : Level
 
 		play.BackgroundColor = buttonColor;
 		play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
-		//play.Text = $"Play on {difficultyName} Mode [difficulty: {difficultyLevel}]";
 		play.Text = "";
 		play.TextAlignment = Anchor.CenterLeft;
 		play.TextPadding = new(8, 0);

@@ -1165,6 +1165,10 @@ namespace Nucleus.UI
 
 			switch (ImageOrientation) {
 				case ImageOrientation.None:
+					destRect.X += pos?.X ?? 0;
+					destRect.Y += pos?.Y ?? 0;
+					destRect.Width = size?.X ?? destRect.Width;
+					destRect.Height = size?.Y ?? destRect.Height;
 					break;
 				case ImageOrientation.Centered:
 					var x = (bounds.Width / 2) - (Image.Width / 2);
@@ -1259,14 +1263,17 @@ namespace Nucleus.UI
 
 		public bool ShouldDrawImage { get; set; } = true;
 
-		public static void PaintBackground(Element e, float width, float height) {
-			Graphics2D.SetDrawColor(e.BackgroundColor);
+		public static void PaintBackground(Element e, float width, float height, Color back, Color fore, float borderSize) {
+			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, width, height);
 			if (e.ShouldDrawImage)
 				e.ImageDrawing();
-			Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : e.ForegroundColor);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height, e.BorderSize);
+			Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
 		}
+
+		public static void PaintBackground(Element e, float width, float height)
+			=> PaintBackground(e, width, height, e.BackgroundColor, e.ForegroundColor, e.BorderSize);
 
 		public Vector2F GetMousePos() {
 			return EngineCore.MousePos - this.GetGlobalPosition();
