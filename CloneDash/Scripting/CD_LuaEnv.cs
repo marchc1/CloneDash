@@ -101,7 +101,7 @@ public class CD_LuaEnv
 		return t.Result;
 	}
 
-	public LuaValue[] ProtectedCall(LuaFunction func, params LuaValue[] args) {
+	public LuaValue[] ProtectedCall(LuaFunction? func, params LuaValue[] args) {
 		if (func == null)
 			return [];
 

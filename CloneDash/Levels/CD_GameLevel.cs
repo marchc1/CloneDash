@@ -25,7 +25,7 @@ using Color = Raylib_cs.Color;
 namespace CloneDash.Game
 {
 	[Nucleus.MarkForStaticConstruction]
-	public partial class CD_GameLevel(ChartSheet Sheet) : Level
+	public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	{
 		public CD_LuaEnv Lua;
 
@@ -100,13 +100,13 @@ namespace CloneDash.Game
 			try {
 				var sheet = song.GetSheet(mapID);
 				workingLevel = new CD_GameLevel(sheet);
-				
+
 			}
-			catch(Exception ex) {
+			catch (Exception ex) {
 				Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");
 			}
 
-			if (workingLevel == null) 
+			if (workingLevel == null)
 				return null;
 
 			EngineCore.LoadLevel(workingLevel, autoplay);
@@ -218,7 +218,7 @@ namespace CloneDash.Game
 		/// Timing system.
 		/// </summary>
 		public Conductor Conductor { get; private set; }
-		public MusicTrack Music { get; private set; }
+		public MusicTrack? Music { get; private set; }
 		public ModelEntity Player { get; set; }
 		public ModelEntity HologramPlayer { get; set; }
 		public Boss Boss { get; set; }
@@ -244,7 +244,8 @@ namespace CloneDash.Game
 			if (Conductor.Time < 0)
 				return false;
 
-			Music.Paused = true;
+			if (Music != null)
+				Music.Paused = true;
 			Paused = true;
 			UnpauseTime = 0;
 
@@ -258,7 +259,8 @@ namespace CloneDash.Game
 			});
 		}
 		private void fullUnpause() {
-			Music.Paused = false;
+			if (Music != null)
+				Music.Paused = false;
 			Paused = false;
 			UnpauseTime = 0;
 		}
@@ -278,20 +280,6 @@ namespace CloneDash.Game
 
 		private int entI = 0;
 		private bool __deferringAsync = false;
-		public bool LoadMapFrame(int ms) {
-			__deferringAsync = true;
-			Stopwatch watch = new Stopwatch();
-			watch.Start();
-			while (entI < Sheet.Entities.Count) {
-				if (watch.ElapsedMilliseconds >= ms)
-					return false;
-
-				LoadEntity(Sheet.Entities[entI]);
-				entI++;
-			}
-
-			return entI >= Sheet.Entities.Count;
-		}
 
 		private StatisticsData Stats { get; } = new();
 		public CharacterDescriptor Character;
@@ -403,11 +391,16 @@ namespace CloneDash.Game
 		ShaderInstance hologramShader;
 
 
-		LuaFunction renderScene;
+		LuaFunction? renderScene;
+		LuaFunction? feverStart;
+		LuaFunction? feverRender;
+
 		private void SetupLua() {
 			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
-			var render = scene["render"];
-			render.TryRead(out renderScene);
+
+			scene["render"].TryRead(out renderScene);
+			scene["feverStart"].TryRead(out feverStart);
+			scene["feverRender"].TryRead(out feverRender);
 		}
 
 		public override void Initialize(params object[] args) {
@@ -492,7 +485,7 @@ namespace CloneDash.Game
 				using (CD_StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 					HologramPlayer.Visible = false;
 					AutoPlayer = Add<AutoPlayer>();
-					AutoPlayer.Enabled = (bool)args[0];
+					AutoPlayer.Enabled = args.Length == 0 ? false : (bool)args[0];
 					TopPathway = Add<Pathway>(PathwaySide.Top);
 					BottomPathway = Add<Pathway>(PathwaySide.Bottom);
 					Interlude.Spin();
@@ -504,27 +497,37 @@ namespace CloneDash.Game
 				Lua.State.Environment["conductor"] = new CD_LuaConductor(Conductor);
 
 				using (CD_StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
-					if (!__deferringAsync) {
-						foreach (var ent in Sheet.Entities)
-							LoadEntity(ent);
+					if (Sheet != null) {
+						if (!__deferringAsync) {
+							foreach (var ent in Sheet.Entities)
+								LoadEntity(ent);
 
-						foreach (var ev in Sheet.Events)
-							LoadEvent(ev);
+							foreach (var ev in Sheet.Events)
+								LoadEvent(ev);
+						}
 					}
 					Boss.Build();
 				}
 				Interlude.Spin(submessage: "Loading audio...");
 
 				//foreach (var tempoChange in Sheet)
-				Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
-				using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
-					Music = Sheet.Song.GetAudioTrack();
-				}
-				Music.Volume = 0.25f;
-				Interlude.Spin(submessage: "Ready!");
+				if (Sheet != null)
+					Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
+				else
+					Conductor.TempoChanges.Add(new TempoChange(0, 120));
 
-				Music.Loops = false;
-				Music.Playing = true;
+				using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
+					if (Sheet != null) {
+						Music = Sheet.Song.GetAudioTrack();
+						Music.Volume = 0.25f;
+
+						Music.Loops = false;
+						Music.Playing = true;
+					}
+					else
+						Music = null;
+				}
+				Interlude.Spin(submessage: "Ready!");
 
 				UIBar = this.UI.Add<CD_Player_UIBar>();
 				UIBar.Size = new(0, 64);
@@ -571,7 +574,7 @@ namespace CloneDash.Game
 			Ticks++;
 			XPos = Game.Pathway.GetPathwayLeft();
 
-			if (lastNoteHit && Music.Paused) {
+			if (Music != null && lastNoteHit && Music.Paused && Sheet != null) {
 				EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
 				return;
 			}
@@ -593,7 +596,7 @@ namespace CloneDash.Game
 				UpdateMashTextEffect();
 
 			if (inputState.PauseButton) {
-				if (Music.Paused) {
+				if (Music != null && Music.Paused) {
 					startUnpause();
 					if (IValidatable.IsValid(PauseWindow))
 						PauseWindow.Remove();
@@ -682,7 +685,7 @@ namespace CloneDash.Game
 
 				yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
 			}
-			else 
+			else
 				sos_yoff = null;
 
 			var playerY = yoff ?? GetPlayerY(CharacterYRatio);
@@ -1053,8 +1056,8 @@ namespace CloneDash.Game
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
 			cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
 			cam.Rotation = 0.0f;
-			cam.Offset = new((frameState.WindowWidth / 2), frameState.WindowHeight / 2);
-			cam.Target = new((frameState.WindowWidth / 1) * zoomValue, 0);
+			cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
+			cam.Target = new(frameState.WindowWidth / 1 * zoomValue, 0);
 			cam.Offset += cam.Target;
 
 			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
