@@ -27,11 +27,24 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 		bgrEditWindow.Size = new(1200, 820);
 		bgrEditWindow.Center();
 
+		bgrEditWindow.Add(out Button bgrEditRecompile);
+		bgrEditRecompile.Text = "Recompile";
+		bgrEditRecompile.Dock = Dock.Bottom;
+		bgrEditRecompile.Size = new(48);
+		bgrEditRecompile.DockMargin = RectangleF.TLRB(4);
+
 		bgrEditWindow.Add(out TextEditor bgrEdit);
 		bgrEdit.Dock = Dock.Fill;
 		bgrEdit.Highlighter = new LuaSyntaxHighlighter();
 		bgrEdit.SetText(Filesystem.ReadAllText("scene", "scripts/background.lua"));
 		bgrEdit.TextSize = 14;
+		bgrEdit.DockMargin = RectangleF.TLRB(4);
+
+		bgrEditRecompile.MouseReleaseEvent += (_, _, _) => {
+			Lua.DoString(bgrEdit.GetText());
+			SetupLua(false);
+		};
+
 		menubar = UI.Add<Menubar>();
 		menubar.Dock = Dock.Top;
 		menubar.BackgroundColor = new(10, 15, 20, 155);

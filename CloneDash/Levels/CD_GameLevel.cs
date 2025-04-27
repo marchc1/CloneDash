@@ -391,11 +391,17 @@ namespace CloneDash.Game
 		ShaderInstance hologramShader;
 
 
-		LuaFunction? renderScene;
-		LuaFunction? feverStart;
-		LuaFunction? feverRender;
+		protected LuaFunction? renderScene;
+		protected LuaFunction? feverStart;
+		protected LuaFunction? feverRender;
 
-		private void SetupLua() {
+		protected void SetupLua(bool first = true) {
+			if (first) {
+				Lua.State.Environment["scene"] = new LuaTable();
+
+				Lua.DoFile("scene", Scene.PathToBackgroundController);
+			}
+
 			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
 
 			scene["render"].TryRead(out renderScene);
@@ -427,11 +433,7 @@ namespace CloneDash.Game
 
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
 					Lua = new(this);
-					Lua.State.Environment["scene"] = new LuaTable();
-
-					Lua.DoFile("scene", Scene.PathToBackgroundController);
-
-					SetupLua();
+					SetupLua(true);
 				}
 
 				Interlude.Spin();

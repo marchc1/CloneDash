@@ -94,6 +94,17 @@ public class CD_LuaEnv
 			return [];
 		}
 	}
+	public LuaValue[] DoString(string code, string? id = null) {
+		var t = State.DoStringAsync(code, id ?? "<anonymous code>").AsTask();
+		try {
+			t.Wait();
+			return t.Result;
+		}
+		catch (Exception ex) {
+			Logs.Error(ex.Message);
+			return [];
+		}
+	}
 
 	public LuaValue[] Call(LuaFunction func, params LuaValue[] args) {
 		var t = func.InvokeAsync(State, args).AsTask();
