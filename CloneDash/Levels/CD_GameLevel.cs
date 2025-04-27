@@ -565,6 +565,8 @@ namespace CloneDash.Game
 			return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) + 225;
 		}
 
+		private SecondOrderSystem? sos_yoff;
+
 		public override void PreThink(ref FrameState frameState) {
 			Ticks++;
 			XPos = Game.Pathway.GetPathwayLeft();
@@ -675,12 +677,19 @@ namespace CloneDash.Game
 				yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
 
 			if (yoff.HasValue) {
+				if (sos_yoff == null)
+					sos_yoff = new(15, 1, 1, yoff.Value);
+
 				yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
 			}
+			else 
+				sos_yoff = null;
+
+			var playerY = yoff ?? GetPlayerY(CharacterYRatio);
 
 			Player.Position = new Vector2F(
 				Game.Pathway.GetPathwayLeft() - 185,
-				yoff ?? GetPlayerY(CharacterYRatio)
+				sos_yoff?.Update(playerY) ?? playerY
 			);
 			Player.Scale = new(PlayerScale);
 
