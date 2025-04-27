@@ -583,9 +583,11 @@ namespace CloneDash.Game
 				ExitFever();
 
 			InputState inputState = new InputState();
-			foreach (ICloneDashInputSystem playerInput in InputReceivers)
-				playerInput.Poll(ref frameState, ref inputState);
+			if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
 
+				foreach (ICloneDashInputSystem playerInput in InputReceivers)
+					playerInput.Poll(ref frameState, ref inputState);
+			}
 			if (AutoPlayer.Enabled) {
 				AutoPlayer.Play(ref inputState);
 			}
