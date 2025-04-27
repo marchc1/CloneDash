@@ -16,11 +16,21 @@ using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace CloneDash.Game;
 
-public class SongSelector : Panel
+public interface IMainMenuPanel {
+	public string GetName();
+	public void OnHidden();
+	public void OnShown();
+}
+
+public class SongSelector : Panel, IMainMenuPanel
 {
+	public string GetName() => "Song Selector";
+	public void OnHidden() { }
+	public void OnShown() { }
 	public List<ChartSong> Songs { get; set; } = [];
 	public List<ChartSong>? SongsPostFilter { get; set; }
 
@@ -424,12 +434,19 @@ public class SongSelector : Panel
 	}
 }
 
-public class CharacterPanel : Panel
+public class MainMenuPanel : Panel, IMainMenuPanel
 {
+	public string GetName() => "Main Menu";
+	public void OnHidden() { }
+	public void OnShown() {
+		music.Restart();
+	}
+
 	CharacterDescriptor character;
 	ModelInstance model;
 	AnimationHandler anims;
 	MusicTrack music;
+
 	protected override void Initialize() {
 		base.Initialize();
 		CharacterDescriptor character = CharacterMod.GetCharacterData();
@@ -590,18 +607,23 @@ public class CD_MainMenu : Level
 
 	public Stack<Element> ActiveElements = [];
 
-	public T PushActiveElement<T>(T element) where T : Element {
+	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
 			var last = ActiveElements.Peek();
 			last.Visible = false;
 			last.Enabled = false;
+			if (last is IMainMenuPanel mmp) mmp.OnHidden();
 		}
 
 		ActiveElements.Push(element);
 
+		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+
 		element.Dock = Dock.Fill;
 		return element;
 	}
+
+	private Button backButton;
 
 	public Element PopActiveElement() {
 		if (ActiveElements.Count <= 1) return ActiveElements.Peek();
@@ -611,6 +633,11 @@ public class CD_MainMenu : Level
 		var next = ActiveElements.Peek();
 		next.Visible = true;
 		next.Enabled = true;
+
+		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+
+		if (next is IMainMenuPanel mmp) mmp.OnShown();
+
 		return next;
 	}
 
@@ -620,12 +647,16 @@ public class CD_MainMenu : Level
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
 
-		MenuButton(header, "ui\\play_md_level.png", "Load Muse Dash Level", () => {
+		backButton = MenuButton(header, Dock.Left, "ui\\back.png", $"Back", () => {
+			PopActiveElement();
+		});
+
+		MenuButton(header, Dock.Right, "ui\\play_md_level.png", "Load Muse Dash Level", () => {
 			var selector = PushActiveElement(UI.Add<SongSelector>());
 			selector.AddSongs(MuseDashCompatibility.Songs);
 		});
 
-		MenuButton(header, "ui\\play_cam_level.png", "Load CustomAlbums .mdm File", () => {
+		MenuButton(header, Dock.Right, "ui\\play_cam_level.png", "Load CustomAlbums .mdm File", () => {
 			var selector = PushActiveElement(UI.Add<SongSelector>());
 			selector.InfiniteList = false;
 			int page = 1;
@@ -646,16 +677,16 @@ public class CD_MainMenu : Level
 
 		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
 
-		PushActiveElement(UI.Add<CharacterPanel>());
+		PushActiveElement(UI.Add<MainMenuPanel>());
 	}
 
-	Button MenuButton(Panel header, string icon, string text, Action onClicked) {
+	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
 		var menuBtn = header.Add<Button>();
 		menuBtn.AutoSize = false;
 		menuBtn.Size = new Vector2F(64);
 		menuBtn.Text = "";
 		menuBtn.ImageOrientation = ImageOrientation.Zoom;
-		menuBtn.Dock = Dock.Right;
+		menuBtn.Dock = dock;
 		menuBtn.Image = Textures.LoadTextureFromFile(icon);
 		menuBtn.ImagePadding = new(4);
 		menuBtn.TextSize = 21;
