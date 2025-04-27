@@ -107,7 +107,7 @@ namespace Nucleus
 		});
 		public static ConCommand engine_activetextures = ConCommand.Register(nameof(engine_activetextures), (_, _) => {
 			var texs = new List<string>();
-			foreach(var texIDPair in Raylib.GetLoadedTextures()) {
+			foreach (var texIDPair in Raylib.GetLoadedTextures()) {
 				texs.Add($"{texIDPair.Id} [{texIDPair.Width} x {texIDPair.Height} of format {texIDPair.Format}]");
 			}
 			Interrupt(() => { }, false, texs.ToArray());
@@ -220,7 +220,7 @@ namespace Nucleus
 		}
 		public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
 			if (!MainThread.Initialized)
-			MainThread.Thread = Thread.CurrentThread;
+				MainThread.Thread = Thread.CurrentThread;
 
 			Host.ReadConfig();
 			CommandLineArguments.FromArgs(args ?? []);
@@ -523,13 +523,47 @@ namespace Nucleus
 			Raylib.SetTargetFPS(v);
 		}
 		private static bool shouldThrow = false;
+
+		private static HashSet<Assembly> earlyJITAssemblies = [];
+
+		public static void AddToEarlyJIT() {
+			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+		}
+		public static void AddToEarlyJIT(Assembly assembly) {
+			earlyJITAssemblies.Add(assembly);
+		}
+
 		public static void Start() {
+			var ea = Assembly.GetEntryAssembly();
+			if (ea != null)
+				earlyJITAssemblies.Add(ea);
+
+			earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
+			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+
+			Logs.Info("BOOT: Initializing static constructors...");
 			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
 							  from t in a.GetTypes()
 							  let attributes = t.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true)
 							  where attributes != null && attributes.Length > 0
 							  select t) {
 				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			}
+
+			Logs.Info("BOOT: Running JIT early where possible...");
+			foreach (var method in earlyJITAssemblies
+				   .SelectMany(a => a.GetTypes())
+				   .SelectMany(t => t.GetMethods())) {
+				if (method.ContainsGenericParameters) continue;
+				if (method.IsAbstract) continue;
+				if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) continue;
+				if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) continue;
+				try {
+					RuntimeHelpers.PrepareMethod(method.MethodHandle);
+				}
+				catch { 
+				
+				}
 			}
 
 			ExceptionDispatchInfo? edi = null;

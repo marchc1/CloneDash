@@ -562,8 +562,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		anims?.AddDeltaTime(Level.CurtimeDelta);
-		anims?.Apply(model);
+		if(model != null) {
+			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(frameState.WindowWidth / 2), 0);
+
+			anims?.AddDeltaTime(Level.CurtimeDelta);
+			anims?.Apply(model);
+		}
+
 		music?.Update();
 	}
 	CharacterMainShowTouchResponse touchResponse;
@@ -770,6 +775,10 @@ public class CD_MainMenu : Level
 
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
+
+		if (!EngineCore.ShowConsoleLogsInCorner || ConsoleSystem.IsScreenBlockerActive)
+			return;
+
 		ConsoleSystem.TextSize = 11;
 		ConsoleSystem.RenderToScreen(4 + 6, (int)(header.RenderBounds.H + 4));
 	}

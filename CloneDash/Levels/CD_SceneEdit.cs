@@ -50,6 +50,9 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 		menubar.BackgroundColor = new(10, 15, 20, 155);
 		menubar.MoveToBack();
 
+		var events = menubar.AddButton("Game Events");
+		events.AddButton("Enter Fever", null, () => AddFever(MaxFever));
+
 		var options = menubar.AddButton("Scene");
 		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(clonedash_sceneedit));
 
