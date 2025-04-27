@@ -587,25 +587,33 @@ public class CD_MainMenu : Level
 		};
 	});
 	public SongSelector Selector;
-	public CharacterPanel Character;
-	public void RemoveExistingPanels() {
-		Selector?.Remove();
-		Character?.Remove();
-	}
-	public SongSelector InitializeSelector() {
-		RemoveExistingPanels();
 
-		Selector = UI.Add<SongSelector>();
-		Selector.Dock = Dock.Fill;
-		return Selector;
-	}
-	public CharacterPanel InitializeCharacterPanel() {
-		RemoveExistingPanels();
+	public Stack<Element> ActiveElements = [];
 
-		Character = UI.Add<CharacterPanel>();
-		Character.Dock = Dock.Fill;
-		return Character;
+	public T PushActiveElement<T>(T element) where T : Element {
+		if (ActiveElements.Count > 0) {
+			var last = ActiveElements.Peek();
+			last.Visible = false;
+			last.Enabled = false;
+		}
+
+		ActiveElements.Push(element);
+
+		element.Dock = Dock.Fill;
+		return element;
 	}
+
+	public Element PopActiveElement() {
+		if (ActiveElements.Count <= 1) return ActiveElements.Peek();
+		var element = ActiveElements.Pop();
+		element.Remove();
+
+		var next = ActiveElements.Peek();
+		next.Visible = true;
+		next.Enabled = true;
+		return next;
+	}
+
 	public override void Initialize(params object[] args) {
 		var header = UI.Add<Panel>();
 		header.Position = new Vector2F(0);
@@ -613,12 +621,12 @@ public class CD_MainMenu : Level
 		header.Dock = Dock.Top;
 
 		MenuButton(header, "ui\\play_md_level.png", "Load Muse Dash Level", () => {
-			var selector = InitializeSelector();
+			var selector = PushActiveElement(UI.Add<SongSelector>());
 			selector.AddSongs(MuseDashCompatibility.Songs);
 		});
 
 		MenuButton(header, "ui\\play_cam_level.png", "Load CustomAlbums .mdm File", () => {
-			var selector = InitializeSelector();
+			var selector = PushActiveElement(UI.Add<SongSelector>());
 			selector.InfiniteList = false;
 			int page = 1;
 			selector.UserWantsMoreSongs += () => {
@@ -637,7 +645,8 @@ public class CD_MainMenu : Level
 		test2.DockMargin = RectangleF.TLRB(4);
 
 		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
-		InitializeCharacterPanel();
+
+		PushActiveElement(UI.Add<CharacterPanel>());
 	}
 
 	Button MenuButton(Panel header, string icon, string text, Action onClicked) {
