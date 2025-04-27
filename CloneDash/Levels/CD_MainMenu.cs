@@ -440,9 +440,18 @@ public class MainMenuButton : Button
 		base.Initialize();
 		TextAlignment = Anchor.CenterRight;
 		ShouldDrawImage = false;
+		Clipping = false;
 	}
 
 	public string SubText;
+	SecondOrderSystem sos = new SecondOrderSystem(1, 1, 1, 100);
+
+	public void SetStart(float x) => sos.ResetTo(x);
+
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		this.ChildRenderOffset = new(sos.Update(Hovered ? -50 : 0), 0);
+	}
 
 	public override void Paint(float width, float height) {
 		Button.ColorStateSetup(this, out Color back, out Color fore);
@@ -477,7 +486,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	MusicTrack music;
 
 	List<MainMenuButton> btns = [];
-
+	
 	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<CD_MainMenu>? action = null) {
 		CD_MainMenu menu = Level.As<CD_MainMenu>();
 
@@ -489,6 +498,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		btn.SubText = description;
 
 		btn.MouseReleaseEvent += (_,_,_) => action?.Invoke(menu);
+		btn.SetStart((btns.Count + 1) * 24);
 
 		btns.Add(btn);
 		return btn;
