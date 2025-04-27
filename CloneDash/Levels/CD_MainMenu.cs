@@ -378,10 +378,10 @@ public class SongSelector : Panel, IMainMenuPanel
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(s as Button);
 				if (song is CustomChartsSong customChartsSong) {
-					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(c));
+					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, c));
 				}
 				else
-					EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(song);
+					EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, song);
 			};
 			disc.BorderSize = 0;
 			var midpoint = Discs.Length / 2;
@@ -603,7 +603,6 @@ public class CD_MainMenu : Level
 			}
 		};
 	});
-	public SongSelector Selector;
 
 	public Stack<Element> ActiveElements = [];
 
@@ -662,7 +661,7 @@ public class CD_MainMenu : Level
 			int page = 1;
 			selector.UserWantsMoreSongs += () => {
 				// Load more songs
-				PopulateWindow(page: page);
+				PopulateWindow(selector, page: page);
 				page++;
 			};
 		});
@@ -727,13 +726,13 @@ public class CD_MainMenu : Level
 			}
 		};*/
 	}
-	private void LoadMDM(string filename) => LoadChartSelector(new CustomChartsSong(filename));
+
 	private void ImageRenderer_PaintOverride(Element self, float width, float height) {
 		if (IValidatable.IsValid(self.Image))
 			self.ImageDrawing(new(0), new(width, height));
 	}
 
-	private void PopulateWindow(string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
+	private void PopulateWindow(SongSelector selector, string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
 		/*var tempLabel = scrollPanel.Add<Label>();
 		tempLabel.Text = "Loading...";
 		tempLabel.Dock = Dock.Top;
@@ -749,87 +748,24 @@ public class CD_MainMenu : Level
 				songs.Add(AddChartSelector(chart));
 			}
 
-			Selector?.AddSongs(songs);
-			Selector?.AcceptMoreSongs();
+			selector?.AddSongs(songs);
+			selector?.AcceptMoreSongs();
 		});
-	}
-
-	private void LoadMDCC_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-		LevelSelectWindow = UI.Add<Window>();
-		LevelSelectWindow.Title = "Open Custom Albums Chart";
-		//test.Title = "Non-Rendertexture Window";
-		LevelSelectWindow.Size = new Vector2F(600, 600);
-		LevelSelectWindow.DockPadding = RectangleF.TLRB(4);
-		LevelSelectWindow.HideNonCloseButtons();
-		LevelSelectWindow.Center();
-
-		LevelSelectWindow.Add(out searchPanel);
-		LevelSelectWindow.Add(out scrollPanel);
-
-		searchPanel.Dock = Dock.Top;
-		scrollPanel.Dock = Dock.Fill;
-		searchPanel.Size = new Vector2F(96);
-
-		PopulateWindow();
-
-		/*var result = TinyFileDialogs.OpenFileDialog(".mdm file", "", ["*.mdm"], "Muse Dash Custom Album Chart", false);
-		if (!result.Cancelled) {
-			LoadSongSelector(new CustomChartsSong(result.Result));
-		}*/
 	}
 
 	public record MuseDashMap(string map_first, List<string> maps);
 
 	public Window LevelSelectWindow { get; set; }
-	private void LoadMDLevel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-		if (IValidatable.IsValid(LevelSelectWindow))
-			LevelSelectWindow.Remove();
-
-		LevelSelectWindow = UI.Add<Window>();
-		LevelSelectWindow.Title = "Open Muse Dash Level";
-		//test.Title = "Non-Rendertexture Window";
-		LevelSelectWindow.Size = new Vector2F(600, 600);
-		LevelSelectWindow.DockPadding = RectangleF.TLRB(4);
-		LevelSelectWindow.HideNonCloseButtons();
-		LevelSelectWindow.Center();
-
-		var txt = LevelSelectWindow.Add<Textbox>();
-		var list = LevelSelectWindow.Add<ListView>();
-
-		txt.Dock = Dock.Top;
-		txt.HelperText = "Filter by Level Name...";
-		txt.TextChangedEvent += delegate (Element self, string oldT, string newT) {
-			foreach (Element e in list.MainPanel.GetChildren()) {
-				ListViewItem item = e as ListViewItem;
-				var song = item.GetTag<MuseDashSong>("musedash_song");
-
-				if (song.Name.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
-				else if (song.BaseName.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
-				else if (song.Author.ToLower().Contains(newT.ToLower())) item.ShowLVItem = true;
-				else item.ShowLVItem = false;
-			}
-			MainThread.RunASAP(() => list.InvalidateChildren(self: true, recursive: true));
-		};
-
-		list.Dock = Dock.Fill;
-
-		foreach (var item in Songs) {
-			var lvitem = list.Add<ListViewItem>();
-
-			lvitem.SetTag("musedash_song", item);
-			lvitem.Text = $"\"{item.Name}\" by {item.Author}";
-			lvitem.MouseReleaseEvent += Lvitem_MouseReleaseEvent;
-		}
-	}
+	
 	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
 	// At some point, this should just become an element type. This whole thing is a wreck otherwise and injects a bunch of callbacks into
 	// random things... I hate it
 
-	internal void LoadChartSelector(ChartSong song) {
+	internal void LoadChartSelector(SongSelector selector, ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
-		MusicTrack? track = Selector.ActiveTrack;
+		MusicTrack? track = selector.ActiveTrack;
 		var info = song.GetInfo();
 		var cover = song.GetCover();
 
@@ -839,7 +775,7 @@ public class CD_MainMenu : Level
 		levelSelector.MakePopup();
 		levelSelector.ForegroundColor = Color.Blank;
 		levelSelector.Dock = Dock.Fill;
-		Selector.FlyAway = 1;
+		selector.FlyAway = 1;
 		levelSelector.Thinking += (s) => {
 			s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
 		};
@@ -865,23 +801,23 @@ public class CD_MainMenu : Level
 
 			var distance = 16;
 			var size = (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16);
-			Selector.DiscVibrate = size;
+			selector.DiscVibrate = size;
 
 			// force-render the selector active disc
-			var disc = Selector.GetActiveDisc();
+			var disc = selector.GetActiveDisc();
 			var pos = disc.RenderBounds.Pos;
 			Graphics2D.OffsetDrawing(pos);
 
 			disc.Paint(disc.RenderBounds.W, disc.RenderBounds.H);
 			Graphics2D.OffsetDrawing(-pos);
 
-			Selector.DiscRotateAnimation = s.Lifetime * 90;
+			selector.DiscRotateAnimation = s.Lifetime * 90;
 		};
-		Selector.EnterSheetSelection();
-		Selector.DiscRotateSOS.ResetTo(0);
+		selector.EnterSheetSelection();
+		selector.DiscRotateSOS.ResetTo(0);
 		levelSelector.Removed += (s) => {
-			if (Selector != null) {
-				Selector.ExitSheetSelection();
+			if (selector != null) {
+				selector.ExitSheetSelection();
 			}
 		};
 
@@ -980,7 +916,7 @@ public class CD_MainMenu : Level
 			s.Position = new(0, (w / -6f) - offsetBasedOnLifetime(s, 1.35f, 12));
 
 			if (!setupTrack) {
-				track = Selector.ActiveTrack;
+				track = selector.ActiveTrack;
 				if (track != null) {
 					setupTrack = true;
 					track.Processing += (self, frames) => {
@@ -1050,11 +986,6 @@ public class CD_MainMenu : Level
 
 			offsetButtonSlide += 1;
 		}
-	}
-	private void Lvitem_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-		var song = self.GetTag<MuseDashSong>("musedash_song");
-
-		LoadChartSelector(song);
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
