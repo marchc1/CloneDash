@@ -592,7 +592,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	private void ModdingTools_OpenMenuButtons(CD_MainMenu menu) {
 		CreateNavigationMenu();
-		MakeNavigationButton("Scene Editor", "ui/solder.png", "Opens the scene editor & previewer", 160, (menu) => {
+		MakeNavigationButton("Scene Editor", "ui/sceneselect.png", "Opens the scene editor & previewer", 160, (menu) => {
 			ConCommand.Execute(CD_SceneEdit.clonedash_sceneedit);
 		});
 	}
@@ -724,6 +724,7 @@ public class CD_MainMenu : Level
 			Raylib.UnloadShader(shader);
 		};
 	});
+
 	public static ConCommand clonedash_scenetest = ConCommand.Register("clonedash_scenetest", (_, _) => {
 		var level = EngineCore.Level;
 		var window = level.UI.Add<Window>();

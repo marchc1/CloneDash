@@ -177,12 +177,33 @@ public partial class CD_LuaGraphics(Level level)
 		Raylib.DrawTexturePro(texture.Unwrap(), new(u1, v1, u2, v2), new(x, y, width, height), new(0, 0), 0, drawColor);
 	}
 
+	[LuaMember("drawTextureUVRotated")]
+	public void DrawTextureUVRotated(float x, float y, float width, float height, float startU, float startV, float endU, float endV, float rotation) {
+		var texture = activeTexture;
+		if (texture == null) return;
+
+		var texWidth = texture.Width;
+		var texHeight = texture.Height;
+
+		float u1 = startU * texWidth, v1 = startV * texHeight;
+		float u2 = (endU * texWidth) - u1, v2 = (endV * texHeight) - v1;
+
+		Raylib.DrawTexturePro(texture.Unwrap(), new(u1, v1, u2, v2), new(x, y, width, height), new(width / 2, height / 2), rotation, drawColor);
+	}
+
 	[LuaMember("drawTexture")]
 	public void DrawTexture(float x, float y, float width, float height) {
 		var texture = activeTexture;
 		if (texture == null) return;
 
 		Raylib.DrawTexturePro(texture.Unwrap(), new(0, 0, texture.Width, texture.Height), new(x, y, width, height), new(0, 0), 0, drawColor);
+	}
+	[LuaMember("drawTextureRotated")]
+	public void DrawTextureRotated(float x, float y, float width, float height, float rotation) {
+		var texture = activeTexture;
+		if (texture == null) return;
+
+		Raylib.DrawTexturePro(texture.Unwrap(), new(0, 0, texture.Width, texture.Height), new(x, y, width, height), new(width / 2, height / 2), rotation, drawColor);
 	}
 
 	[LuaMember("drawGradientH")]

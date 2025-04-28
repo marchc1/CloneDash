@@ -392,6 +392,7 @@ namespace CloneDash.Game
 
 
 		protected LuaFunction? renderScene;
+		protected LuaFunction? thinkScene;
 		protected LuaFunction? feverStart;
 		protected LuaFunction? feverRender;
 
@@ -405,6 +406,7 @@ namespace CloneDash.Game
 			var scene = Lua.State.Environment["scene"].Read<LuaTable>();
 
 			scene["render"].TryRead(out renderScene);
+			scene["think"].TryRead(out thinkScene);
 			scene["feverStart"].TryRead(out feverStart);
 			scene["feverRender"].TryRead(out feverRender);
 		}
@@ -816,6 +818,8 @@ namespace CloneDash.Game
 
 			FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {(HoldingTopPathwaySustain == null ? "<null>" : HoldingTopPathwaySustain)}");
 			FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {(HoldingBottomPathwaySustain == null ? "<null>" : HoldingBottomPathwaySustain)}");
+
+			Lua.ProtectedCall(thinkScene, Curtime, CurtimeDelta, InFever);
 		}
 
 		private void Button_PaintOverride(Element self, float width, float height) {
