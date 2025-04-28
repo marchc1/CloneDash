@@ -55,6 +55,8 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 
 		var options = menubar.AddButton("Scene");
 		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(clonedash_sceneedit));
+		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
+		options.AddButton("PlayScale = 1.2", null,  () => PlayScale = 1.2f);
 
 		ConsoleSystem.AddScreenBlocker(this.UI);
 	}

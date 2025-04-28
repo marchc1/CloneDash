@@ -551,20 +551,20 @@ namespace Nucleus
 			}
 
 			Logs.Info("BOOT: Running JIT early where possible...");
-			foreach (var method in earlyJITAssemblies
+			Parallel.ForEach(earlyJITAssemblies
 				   .SelectMany(a => a.GetTypes())
-				   .SelectMany(t => t.GetMethods())) {
-				if (method.ContainsGenericParameters) continue;
-				if (method.IsAbstract) continue;
-				if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) continue;
-				if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) continue;
-				try {
-					RuntimeHelpers.PrepareMethod(method.MethodHandle);
-				}
-				catch { 
-				
-				}
-			}
+				   .SelectMany(t => t.GetMethods()), (method) => {
+					   if (method.ContainsGenericParameters) return;
+					   if (method.IsAbstract) return;
+					   if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
+					   if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
+					   try {
+						   RuntimeHelpers.PrepareMethod(method.MethodHandle);
+					   }
+					   catch {
+
+					   }
+				   });
 
 			ExceptionDispatchInfo? edi = null;
 			Started = true;

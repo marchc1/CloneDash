@@ -137,6 +137,8 @@ namespace CloneDash.Game
 			InFever = true;
 			WhenDidFeverStart = Conductor.Time;
 			Scene.PlayFever();
+
+			Lua.ProtectedCall(feverStart);
 		}
 		/// <summary>
 		/// Exits fever.

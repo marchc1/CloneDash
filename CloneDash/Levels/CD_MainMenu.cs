@@ -16,6 +16,7 @@ using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using System.Diagnostics;
 using static AssetStudio.BundleFile;
+using CloneDash.Levels;
 
 namespace CloneDash.Game;
 
@@ -448,9 +449,11 @@ public class MainMenuButton : Button
 
 	public void SetStart(float x) => sos.ResetTo(x);
 
+	public float Offscreen { get; set; }
+
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		this.ChildRenderOffset = new(sos.Update(Hovered ? -50 : 0), 0);
+		this.ChildRenderOffset = new(sos.Update(Offscreen != 0 ? frameState.WindowWidth / 2 * Offscreen : Hovered ? -50 : 0), 0);
 	}
 
 	public override void Paint(float width, float height) {
@@ -485,10 +488,43 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	AnimationHandler anims;
 	MusicTrack music;
 
-	List<MainMenuButton> btns = [];
-	
+	Stack<List<MainMenuButton>> btns = [];
+
+	public List<MainMenuButton> CreateNavigationMenu() {
+		if (btns.TryPeek(out var lastList)) {
+			foreach (var listBtn in lastList)
+				listBtn.Offscreen = 1;
+		}
+
+		List<MainMenuButton> newBtns = [];
+		btns.Push(newBtns);
+		InvalidateLayout();
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		return newBtns;
+	}
+	public bool UsingRootNavigationMenu => btns.Count == 1;
+	public void DestroyNavigationMenu() {
+		if (UsingRootNavigationMenu) return;
+		var toRemove = btns.Pop();
+		foreach (var btn in toRemove) {
+			btn.Offscreen = -2;
+		}
+		Level.Timers.Simple(1, () => {
+			foreach (var btn in toRemove) {
+				btn.Remove();
+			}
+		});
+
+		var menu = btns.Peek();
+		foreach (var btn in menu)
+			btn.Offscreen = 0;
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		InvalidateLayout();
+	}
+
 	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<CD_MainMenu>? action = null) {
 		CD_MainMenu menu = Level.As<CD_MainMenu>();
+		var menuBtns = btns.Peek();
 
 		Add(out MainMenuButton btn);
 		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).ToRGB();
@@ -497,13 +533,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
-		btn.MouseReleaseEvent += (_,_,_) => action?.Invoke(menu);
-		btn.SetStart((btns.Count + 1) * 24);
+		btn.MouseReleaseEvent += (_, _, _) => action?.Invoke(menu);
+		btn.SetStart((menuBtns.Count + 1) * 24);
 
-		btns.Add(btn);
+		menuBtns.Add(btn);
 		return btn;
 	}
-
+	Button back;
 	protected override void Initialize() {
 		base.Initialize();
 		CharacterDescriptor character = CharacterMod.GetCharacterData();
@@ -516,7 +552,18 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
 		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
-		music.Loops = true; 
+		music.Loops = true;
+
+		Add(out back);
+		back.Origin = Anchor.Center;
+		back.BorderSize = 0;
+		back.BackgroundColor = new(0, 0);
+		back.Image = Textures.LoadTextureFromFile("ui/back.png");
+		back.ImageOrientation = ImageOrientation.Zoom;
+		back.Text = "";
+		back.MouseReleaseEvent += Back_MouseReleaseEvent;
+
+		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 			selector.AddSongs(MuseDashCompatibility.Songs);
@@ -534,18 +581,33 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		});
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
-		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225);
+		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200);
-		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350);
+		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
+	}
+
+	private void Back_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+		DestroyNavigationMenu();
+	}
+
+	private void ModdingTools_OpenMenuButtons(CD_MainMenu menu) {
+		CreateNavigationMenu();
+		MakeNavigationButton("Scene Editor", "ui/solder.png", "Opens the scene editor & previewer", 160, (menu) => {
+			ConCommand.Execute(CD_SceneEdit.clonedash_sceneedit);
+		});
 	}
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 
+		var btns = this.btns.Peek();
 		var textHeight = height / 20f;
 		var btnWidth = Math.Clamp(width / 3f, 460, 155555);
 		var btnHeight = height / 12f;
 		var btnsLen = btns.Count;
+		back.Size = new(btnHeight * 2);
+		back.Position = new(width * .5f, height / 2);
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
 
 		for (int i = 0; i < btnsLen; i++) {
 			var btn = btns[i];
@@ -562,7 +624,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		if(model != null) {
+		if (model != null) {
 			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(frameState.WindowWidth / 2), 0);
 
 			anims?.AddDeltaTime(Level.CurtimeDelta);
@@ -776,7 +838,7 @@ public class CD_MainMenu : Level
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
 
-		if (!EngineCore.ShowConsoleLogsInCorner || ConsoleSystem.IsScreenBlockerActive)
+		if (!EngineCore.ShowConsoleLogsInCorner)
 			return;
 
 		ConsoleSystem.TextSize = 11;

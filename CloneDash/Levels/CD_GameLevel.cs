@@ -1037,7 +1037,7 @@ namespace CloneDash.Game
 
 
 		public float PlayerScale => 1;
-		public float PlayScale => 1.2f;
+		public float PlayScale { get; set; } = 1.2f;
 		public float GlobalScale => 1f;
 		public float BackgroundScale => 1f;
 
@@ -1052,10 +1052,13 @@ namespace CloneDash.Game
 			//Stopwatch test = Stopwatch.StartNew();
 			Rlgl.PushMatrix();
 			Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
-			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight, BackgroundScale);
+			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
+			if (InFever)
+				Lua.ProtectedCall(feverRender, frameState.WindowWidth, frameState.WindowHeight, FeverTime - FeverTimeLeft, FeverTime);
 			Rlgl.PopMatrix();
 			//Logs.Info(test.Elapsed.TotalMilliseconds);
 		}
+
 		public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 			var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
 			cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
