@@ -45,7 +45,6 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 			SetupLua(false);
 		};
 
-
 		menubar = UI.Add<Menubar>();
 		menubar.Dock = Dock.Top;
 		menubar.BackgroundColor = new(10, 15, 20, 155);

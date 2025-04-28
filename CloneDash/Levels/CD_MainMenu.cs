@@ -839,7 +839,7 @@ public class CD_MainMenu : Level
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
 
-		if (!EngineCore.ShowConsoleLogsInCorner)
+		if (!EngineCore.ShowConsoleLogsInCorner || !CommandLineArguments.IsParamTrue("debug"))
 			return;
 
 		ConsoleSystem.TextSize = 11;
