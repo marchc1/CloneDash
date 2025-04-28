@@ -1655,7 +1655,7 @@ public class ModelBinary : IModelFormat
 	public void SaveModelToFile(string absoluteFilePath, ModelData modelData) {
 		using (FileStream stream = File.Open(absoluteFilePath, FileMode.Create, FileAccess.Write))
 		using (BinaryWriter writer = new BinaryWriter(stream)) {
-			writer.Write(modelData.FormatVersion);
+			writer.Write(Model4System.MODEL_FORMAT_VERSION);
 			writer.Write(false); // todo: compression, this is the flag for that
 								 // if compressed; would include a string to specify compression algorithm after
 			for (int i = 0; i < 8; i++) writer.Write(0); // placeholder padding bytes, if they're ever needed. 8 * 4 = 32 bytes
