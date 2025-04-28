@@ -71,6 +71,7 @@ namespace CloneDash.Modding.Descriptors
 		[JsonProperty("model")] public string Model;
 
 		[JsonProperty("run")] public Descriptor_MultiAnimationClass RunAnimation;
+		[JsonProperty("in")] public string? InAnimation;
 		[JsonProperty("die")] public Descriptor_MultiAnimationClass DieAnimation;
 		[JsonProperty("standby")] public Descriptor_MultiAnimationClass StandbyAnimation;
 

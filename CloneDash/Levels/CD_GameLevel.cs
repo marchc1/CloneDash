@@ -287,6 +287,7 @@ namespace CloneDash.Game
 
 		public enum CDDAnimationType
 		{
+			In,
 			Run,
 			Die,
 			Standby,
@@ -320,6 +321,7 @@ namespace CloneDash.Game
 			if (type != CDDAnimationType.Run) seq += 1;
 			switch (type) {
 				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
+				case CDDAnimationType.In:  return playData.InAnimation ?? playData.RunAnimation.GetAnimation(seq);
 				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq);
 
 				case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq);
@@ -475,7 +477,7 @@ namespace CloneDash.Game
 					HologramPlayer.Shader = hologramShader;
 
 					Player.Model.SetToSetupPose();
-					Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+					Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.In), true);
 				}
 
 
@@ -696,8 +698,11 @@ namespace CloneDash.Game
 
 			var playerY = yoff ?? GetPlayerY(CharacterYRatio);
 
+			float conductorInTime = (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
+			conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
+
 			Player.Position = new Vector2F(
-				Game.Pathway.GetPathwayLeft() - 185,
+				(Game.Pathway.GetPathwayLeft() - 185) - (conductorInTime * frameState.WindowWidth / 2f),
 				sos_yoff?.Update(playerY) ?? playerY
 			);
 			Player.Scale = new(PlayerScale);
