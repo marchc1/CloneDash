@@ -25,7 +25,7 @@ public static class Model4System
 	/// <br/>
 	/// Editor can use this too
 	/// </summary>
-	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.24.01";
+	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
 	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 }
@@ -501,7 +501,11 @@ public class RegionAttachment : Attachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.SetTexture(tex.HardwareID);
 
-		Rlgl.Color4ub(slot.R, slot.G, slot.B, slot.A);
+		var color = slot.Color;
+		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
+
+		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 		float uStart, uEnd, vStart, vEnd;
 		uStart = (float)region.X / tex.Width;
@@ -606,6 +610,8 @@ public class MeshAttachment : VertexAttachment
 	public AttachmentTriangle[] Triangles;
 	public string Path;
 
+	public Color Color = Color.White;
+
 	public override void Setup(ModelData data) {
 		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
 	}
@@ -633,9 +639,11 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.SetTexture(tex.HardwareID);
 
 		var color = slot.Color;
+		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
 		Rlgl.DisableBackfaceCulling();
-		Rlgl.Color4ub(color.R, color.G, color.B, color.A);
+		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 		if (Triangles.Length > 0) {
 			float uStart, uEnd, vStart, vEnd;
 			uStart = (float)region.X / (float)tex.Width;
@@ -1254,6 +1262,7 @@ public class ModelBinary : IModelFormat
 					attachment.Position = reader.ReadVector2F();
 					attachment.Rotation = reader.ReadSingle();
 					attachment.Scale = reader.ReadVector2F();
+					attachment.Color = reader.ReadColor();
 					attachment.Path = reader.ReadString();
 
 					return attachment;
@@ -1533,6 +1542,7 @@ public class ModelBinary : IModelFormat
 				writer.Write(meshAttachment.Position);
 				writer.Write(meshAttachment.Rotation);
 				writer.Write(meshAttachment.Scale);
+				writer.Write(meshAttachment.Color);
 				writer.Write(meshAttachment.Path);
 				break;
 			case ClippingAttachment clippingAttachment:

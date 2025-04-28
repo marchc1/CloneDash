@@ -38,6 +38,8 @@ namespace Nucleus.ModelEditor
 		public float Rotation { get; set; }
 		public Vector2F Scale { get => scale; set => scale = value; }
 
+		public Color Color { get; set; } = Raylib_cs.Color.White;
+
 		public override bool CanTranslate() => true;
 		public override bool CanRotate() => true;
 		public override bool CanScale() => true;
@@ -73,8 +75,6 @@ namespace Nucleus.ModelEditor
 		public override void EditScaleY(float value) => scale.Y = value;
 
 		[JsonIgnore] public Transformation WorldTransform;
-
-		public Color Color { get; set; } = Color.White;
 
 		public QuadPoints QuadPoints(bool localized = true) {
 			var model = Slot.Bone.Model;
@@ -168,7 +168,10 @@ namespace Nucleus.ModelEditor
 			Rlgl.SetTexture(((Texture2D)tex).Id);
 
 			var c = Slot.GetColor();
-			Rlgl.Color4ub(c.R, c.G, c.B, c.A);
+			float srM = c.R / 255f, sgM = c.G / 255f, sbM = c.B / 255f, saM = c.A / 255f;
+			float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
+
+			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 			float uStart, uEnd, vStart, vEnd;
 			uStart = (float)region.X / (float)tex.Width;

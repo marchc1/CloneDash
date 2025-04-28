@@ -139,6 +139,7 @@ public class RuntimeConverter
 							newRegion.Position = region.Position;
 							newRegion.Rotation = region.Rotation;
 							newRegion.Scale = region.Scale;
+							newRegion.Color = region.Color;
 							newRegion.Path = region.GetPath().TrimStart('<').TrimEnd('>');
 
 							realAttachment = newRegion;
@@ -149,6 +150,7 @@ public class RuntimeConverter
 								newMesh.Position = mesh.Position;
 								newMesh.Rotation = mesh.Rotation;
 								newMesh.Scale = mesh.Scale;
+								newMesh.Color = mesh.Color;
 
 								List<AttachmentTriangle> trianglesInst = [];
 								List<AttachmentVertex> verticesInst = [];

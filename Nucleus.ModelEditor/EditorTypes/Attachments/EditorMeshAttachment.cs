@@ -165,6 +165,8 @@ namespace Nucleus.ModelEditor
 			base.Selected(editor, type);
 		}
 
+		public Color Color { get; set; } = Color.White;
+
 		public override void Clicked(ModelEditor editor, Vector2F mousePos) {
 			base.Clicked(editor, mousePos);
 			PatchAttachmentTransform();
@@ -785,7 +787,10 @@ namespace Nucleus.ModelEditor
 				color.G /= 2;
 				color.B /= 2;
 			}
-			Rlgl.Color4ub(color.R, color.G, color.B, color.A);
+			float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
+			float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
+
+			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
 				uStart = (float)region.X / (float)tex.Width;
