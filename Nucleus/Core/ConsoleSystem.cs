@@ -478,6 +478,7 @@ namespace Nucleus
 			ConsoleMessageWrittenEvent?.Invoke(ref message);
 
 			AllMessages.Add(message);
+			message.Message = message.Message.Replace("\r", "");
 			ScreenMessages.Add(message);
 			if (AllMessages.Count > MaxConsoleMessages)
 				AllMessages.RemoveAt(0);
