@@ -484,6 +484,7 @@ namespace CloneDash.Game
 				Interlude.Spin(submessage: "Loading boss...");
 				using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
 					Boss = Add(new Boss());
+					Boss.RendersItself = false;
 				}
 
 				Interlude.Spin(submessage: "Loading internal entities...");
@@ -1085,19 +1086,10 @@ namespace CloneDash.Game
 			//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
 			//cam.Target = cam.Offset;
 		}
-		public override void Render(FrameState frameState) {
-			Rlgl.DisableDepthTest();
-			Rlgl.DisableBackfaceCulling();
-
-			//Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
-			//Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
-			Rlgl.DrawRenderBatchActive();
-
-			TopPathway.Render();
-			BottomPathway.Render();
-
+		public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<CD_BaseEnemy> enemyPredicate) {
 			foreach (Entity ent in VisibleEntities) {
 				if (ent is not CD_BaseEnemy entCD) continue;
+				if (!enemyPredicate(entCD)) continue;
 
 				float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
 
@@ -1109,6 +1101,28 @@ namespace CloneDash.Game
 				ent.Render(frameState);
 				Rlgl.DrawRenderBatchActive();
 			}
+		}
+		public override void Render(FrameState frameState) {
+			Rlgl.DisableDepthTest();
+			Rlgl.DisableBackfaceCulling();
+
+			//Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
+			//Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
+			Rlgl.DrawRenderBatchActive();
+
+			// Pathways
+			TopPathway.Render();
+			BottomPathway.Render();
+
+			// Hold notes
+			ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
+	
+			// Boss
+			Boss.Render();
+
+			// The other entities, that aren't sustain beams, in order of top -> bottom pathway
+			ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
+			ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
 
 			FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
 			FrameDebuggingStrings.Add($"Player Animation: {Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
