@@ -80,6 +80,7 @@ public abstract class BaseTimelineView : View
 		base.OnThink(frameState);
 		KeyframeChannelsPanel.ChildRenderOffset = new(0, -ScrollOffset);
 		ClipChildrenVisibility(KeyframeChannelsPanel);
+		CheckIfNewChannels();
 	}
 
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
@@ -653,9 +654,23 @@ public abstract class BaseTimelineView : View
 
 		SetupBoneChannel(animation);
 	}
-
+	private bool newChannels = false;
+	private void MarkForNewChannels() {
+		newChannels = true;
+	}
+	private void CheckIfNewChannels() {
+		if (newChannels) {
+			newChannels = false;
+			CreateChannels();
+		}
+	}
 	private void Active_SelectedChanged() {
 		if (!ShouldListenToHooks) return;
-		CreateChannels();
+		if (ModelEditor.Active.SelectedObjectsCount > 0) {
+			newChannels = true;
+			CheckIfNewChannels();
+		}
+		else
+			MarkForNewChannels();
 	}
 }
