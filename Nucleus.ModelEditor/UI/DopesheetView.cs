@@ -97,7 +97,7 @@ public class DopesheetView : BaseTimelineView
 							ModelEditor.Active.IsKeyframeSelected(keyframe)
 								? self.BackgroundColor.Adjust(0, 1, 1.3f)
 								: self.BackgroundColor.Adjust(0, 1, -0.5f);
-						var fps = ModelEditor.Active.File.Timeline.GetVisualFPS();
+						var fps = ModelEditor.Active.File.Timeline.GetReferenceFPS();
 						self.Position = new((float)FrameToX(keyframe.GetTime() * fps) - 2, 0);
 						self.Paint(w, h);
 					};
@@ -128,7 +128,7 @@ public class DopesheetView : BaseTimelineView
 		if (selected == null) return;
 
 		isKeyframeSelected = true;
-		frameStart = selected?.GetTime() ?? 0;
+		frameStart = (selected?.GetTime() ?? 0) * ModelEditor.Active.File.Timeline.GetReferenceFPS();
 #nullable disable
 		ModelEditor.Active.SelectKeyframe(selected.Value);
 #nullable enable
@@ -140,7 +140,7 @@ public class DopesheetView : BaseTimelineView
 		if (frameNow != frameStart || isDraggingKeyframe) {
 			isDraggingKeyframe = true;
 			frameDrag = frameNow;
-			selected?.SetTime(frameNow);
+			selected?.SetTime(frameNow / ModelEditor.Active.File.Timeline.GetReferenceFPS());
 		}
 	}
 	private void KeyframeBtn_MouseReleaseEvent(Element self, FrameState state, MouseButton button, bool lost) {
