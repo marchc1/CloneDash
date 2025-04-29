@@ -83,7 +83,7 @@ public class DopesheetView : BaseTimelineView
 
 		switch (target) {
 			case EditorTimeline timeline:
-				foreach(var keyframe in timeline.GetKeyframes()) {
+				foreach (var keyframe in timeline.GetKeyframes()) {
 					var x = (float)FrameToX(keyframe.GetTime());
 					var keyframeBtn = keyframes.Add<Button>();
 					keyframeBtn.Size = new(5, 24);
@@ -93,9 +93,9 @@ public class DopesheetView : BaseTimelineView
 					keyframeBtn.ForegroundColor = new(15, 15, 15, 255);
 					keyframeBtn.Text = "";
 					keyframeBtn.PaintOverride += (self, w, h) => {
-						self.ForegroundColor = 
-							ModelEditor.Active.IsKeyframeSelected(keyframe) 
-								? self.BackgroundColor.Adjust(0, 1, 1.3f) 
+						self.ForegroundColor =
+							ModelEditor.Active.IsKeyframeSelected(keyframe)
+								? self.BackgroundColor.Adjust(0, 1, 1.3f)
 								: self.BackgroundColor.Adjust(0, 1, -0.5f);
 						var fps = ModelEditor.Active.File.Timeline.GetVisualFPS();
 						self.Position = new((float)FrameToX(keyframe.GetTime() * fps) - 2, 0);
@@ -250,6 +250,7 @@ public class DopesheetView : BaseTimelineView
 	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 		ResetDragDirection(false, Vector2F.Zero);
 		DraggingFrame = false;
-		SetCurFrame();
+		if (button == MouseButton.Mouse1)
+			SetCurFrame();
 	}
 }
