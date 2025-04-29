@@ -73,9 +73,16 @@ namespace CloneDash
 			Interlude.Spin();
 
 			// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
+			DiskSearchPath? musedash = null;
+			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
+				musedash = Filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
+
 			var game = Filesystem.GetSearchPathID("game")[0];
 			{
 				// Custom assets should always be top priority for the filesystem
+				if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
+					Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums"));
+
 				var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(game, "custom"));
 				{
 					Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));

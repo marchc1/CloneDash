@@ -83,6 +83,21 @@ namespace CloneDash
 				}
 			}
 
+			public CustomChartsSong(string pathID, string path) {
+				string? ext = Path.GetExtension(path);
+				switch (ext) {
+					case ".mdm":
+						Archive = new ZipArchiveSearchPath(pathID, path);
+						break;
+					case ".bms":
+					case ".json":
+					case "":
+						Archive = new DiskSearchPath(Filesystem.FindSearchPath(pathID, path), path);
+						break;
+					default: throw new NotImplementedException("Bad filetype for CustomChartsSong constructor!");
+				}
+			}
+
 			~CustomChartsSong() {
 				MainThread.RunASAP(() => {
 					if (CoverTexture != null && Raylib.IsTextureReady(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);

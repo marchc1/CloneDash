@@ -177,14 +177,15 @@ namespace Nucleus.Core
 	}
 	public class ZipArchiveSearchPath : SearchPath
 	{
-		public string RootDirectory;
 		private Dictionary<string, string> LocalToAbsolute = [];
 		private HashSet<string> LocalExists = [];
 		private ZipArchive archive;
 
 		public ZipArchiveSearchPath(string rootArchive) {
 			archive = new ZipArchive(new FileStream(rootArchive, FileMode.Open), ZipArchiveMode.Read, false);
-			RootDirectory = rootArchive;
+		}
+		public ZipArchiveSearchPath(string pathID, string path) {
+			archive = new ZipArchive(Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open), ZipArchiveMode.Read, false);
 		}
 
 		private string FullNameOf(ZipArchiveEntry entry) => entry.FullName.Replace("\\", "/");

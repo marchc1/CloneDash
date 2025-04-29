@@ -540,6 +540,15 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		return btn;
 	}
 	Button back;
+	public List<ChartSong> RefreshLocalSongs() {
+		List<ChartSong> ret = [];
+
+		foreach(var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
+			ret.Add(new CustomChartsSong("charts", file));
+		}
+
+		return ret;
+	}
 	protected override void Initialize() {
 		base.Initialize();
 		CharacterDescriptor character = CharacterMod.GetCharacterData();
@@ -568,7 +577,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 			selector.AddSongs(MuseDashCompatibility.Songs);
 		});
-		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310);
+		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.AddSongs(RefreshLocalSongs());
+		});
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 			selector.InfiniteList = false;
