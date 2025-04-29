@@ -544,7 +544,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public List<ChartSong> RefreshLocalSongs() {
 		List<ChartSong> ret = [];
 
-		foreach(var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
+		foreach (var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
 			ret.Add(new CustomChartsSong("charts", file));
 		}
 
@@ -653,8 +653,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		touchResponse = character.MainShow.Touch.GetRandomTouchResponse();
 		click++;
 
-		anims.SetAnimation(0, character.MainShow.Touch.MainResponse.GetAnimation(click));
-		anims.AddAnimation(0, character.MainShow.StandbyAnimation, true);
+		var mainResponse = character.MainShow.Touch.MainResponse;
+		if (mainResponse != null) {
+			anims.SetAnimation(0, mainResponse.GetAnimation(click));
+			anims.AddAnimation(0, character.MainShow.StandbyAnimation, true);
+		}
 
 		anims.SetAnimation(1, touchResponse.Start);
 		anims.AddAnimation(1, touchResponse.Standby);

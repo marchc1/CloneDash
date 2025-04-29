@@ -14,7 +14,7 @@ namespace CloneDash.Modding.Descriptors
 		public string End => string.Format(touchdata.StartResponse, response);
 	}
 	public class CharacterDescriptor_MainShowTouch {
-		[JsonProperty("response_main")] public Descriptor_MultiAnimationClass MainResponse;
+		[JsonProperty("response_main")] public Descriptor_MultiAnimationClass? MainResponse;
 		[JsonProperty("response_start")] public string StartResponse;
 		[JsonProperty("response_standby")] public string StandbyResponse;
 		[JsonProperty("response_end")] public string EndResponse;
