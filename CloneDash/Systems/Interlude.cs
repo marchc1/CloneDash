@@ -28,9 +28,12 @@ public abstract class InterludeTextureProvider
 public class MuseDashInterlude
 {
 	public string? path;
-	public Texture2D LoadTexture() {
+	public Texture2D? LoadTexture() {
 		if (path == null) throw new NullReferenceException("Wtf?");
 		AssetStudio.Texture2D tex2d = UnityAssetUtils.InternalLoadAsset<AssetStudio.Texture2D>(StreamingFiles, Path.GetFileNameWithoutExtension(path));
+
+		if (tex2d.m_TextureFormat == TextureFormat.RGBA32)
+			return null;
 
 		var img = tex2d.ToRaylib();
 		var tex = Raylib.LoadTextureFromImage(img);
@@ -77,8 +80,15 @@ public class MuseDashInterludeProvider : InterludeTextureProvider
 			tex = default;
 			return false;
 		}
-		tex = interludes?[index]?.LoadTexture() ?? throw new NullReferenceException();
-		return true;
+		var ttex = interludes?[index]?.LoadTexture();
+
+		if (ttex.HasValue) {
+			tex = ttex.Value;
+			return true;
+		}
+
+		tex = default;
+		return false;
 	}
 }
 /// <summary>
