@@ -1,0 +1,217 @@
+﻿using Nucleus;
+using Nucleus.Core;
+using Nucleus.Engine;
+using Nucleus.Types;
+using Nucleus.UI;
+using Raylib_cs;
+using MouseButton = Nucleus.Types.MouseButton;
+using CloneDash.Data;
+using Nucleus.Audio;
+using static CloneDash.CustomAlbumsCompatibility;
+using Nucleus.Models.Runtime;
+using CloneDash.Modding.Descriptors;
+using CloneDash.Modding.Settings;
+using CloneDash.Levels;
+using CloneDash.Game;
+
+namespace CloneDash.UI;
+
+public class MainMenuPanel : Panel, IMainMenuPanel
+{
+	public string GetName() => "Main Menu";
+	public void OnHidden() { }
+	public void OnShown() {
+		music.Restart();
+	}
+
+	CharacterDescriptor character;
+	ModelInstance model;
+	AnimationHandler anims;
+	MusicTrack music;
+
+	Stack<List<MainMenuButton>> btns = [];
+
+	public List<MainMenuButton> CreateNavigationMenu() {
+		if (btns.TryPeek(out var lastList)) {
+			foreach (var listBtn in lastList)
+				listBtn.Offscreen = 1;
+		}
+
+		List<MainMenuButton> newBtns = [];
+		btns.Push(newBtns);
+		InvalidateLayout();
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		return newBtns;
+	}
+	public bool UsingRootNavigationMenu => btns.Count == 1;
+	public void DestroyNavigationMenu() {
+		if (UsingRootNavigationMenu) return;
+		var toRemove = btns.Pop();
+		foreach (var btn in toRemove) {
+			btn.Offscreen = -2;
+		}
+		Level.Timers.Simple(1, () => {
+			foreach (var btn in toRemove) {
+				btn.Remove();
+			}
+		});
+
+		var menu = btns.Peek();
+		foreach (var btn in menu)
+			btn.Offscreen = 0;
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		InvalidateLayout();
+	}
+
+	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<CD_MainMenu>? action = null) {
+		CD_MainMenu menu = Level.As<CD_MainMenu>();
+		var menuBtns = btns.Peek();
+
+		Add(out MainMenuButton btn);
+		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).ToRGB();
+		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).ToRGB();
+		btn.Text = text;
+		btn.Image = menu.Textures.LoadTextureFromFile(icon);
+		btn.SubText = description;
+
+		btn.MouseReleaseEvent += (_, _, _) => action?.Invoke(menu);
+		btn.SetStart((menuBtns.Count + 1) * 24);
+
+		menuBtns.Add(btn);
+		return btn;
+	}
+
+	Button back;
+	public List<ChartSong> RefreshLocalSongs() {
+		List<ChartSong> ret = [];
+
+		foreach (var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
+			ret.Add(new CustomChartsSong("charts", file));
+		}
+
+		return ret;
+	}
+	protected override void Initialize() {
+		base.Initialize();
+		CharacterDescriptor character = CharacterMod.GetCharacterData();
+		if (character == null) return;
+		if (character.Filename == null) return;
+		this.character = character;
+
+		model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
+		anims = new(model.Data);
+		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
+
+		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
+		music.Loops = true;
+
+		Add(out back);
+		back.Origin = Anchor.Center;
+		back.BorderSize = 0;
+		back.BackgroundColor = new(0, 0);
+		back.Image = Textures.LoadTextureFromFile("ui/back.png");
+		back.ImageOrientation = ImageOrientation.Zoom;
+		back.Text = "";
+		back.MouseReleaseEvent += Back_MouseReleaseEvent;
+
+		CreateNavigationMenu();
+		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.AddSongs(MuseDashCompatibility.Songs);
+		});
+		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.AddSongs(RefreshLocalSongs());
+		});
+		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.InfiniteList = false;
+			int page = 1;
+			selector.UserWantsMoreSongs += () => {
+				// Load more songs
+				menu.PopulateMDMCCharts(selector, page: page);
+				page++;
+			};
+		});
+		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
+		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
+		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
+		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200);
+		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
+	}
+
+	private void Back_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+		DestroyNavigationMenu();
+	}
+
+	private void ModdingTools_OpenMenuButtons(CD_MainMenu menu) {
+		CreateNavigationMenu();
+		MakeNavigationButton("Scene Editor", "ui/sceneselect.png", "Opens the scene editor & previewer", 160, (menu) => {
+			ConCommand.Execute(CD_SceneEdit.clonedash_sceneedit);
+		});
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+
+		var btns = this.btns.Peek();
+		var textHeight = height / 20f;
+		var btnWidth = Math.Clamp(width / 3f, 460, 155555);
+		var btnHeight = height / 12f;
+		var btnsLen = btns.Count;
+		back.Size = new(btnHeight * 2);
+		back.Position = new(width * .5f, height / 2);
+		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+
+		for (int i = 0; i < btnsLen; i++) {
+			var btn = btns[i];
+
+			btn.Origin = Anchor.Center;
+			btn.TextSize = textHeight;
+			btn.Size = new(btnWidth, btnHeight);
+
+			var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
+
+			btn.Position = new(width * .75f, height / 2 + y * height / 3);
+		}
+	}
+
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		if (model != null) {
+			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(frameState.WindowWidth / 2), 0);
+
+			anims?.AddDeltaTime(Level.CurtimeDelta);
+			anims?.Apply(model);
+		}
+
+		music?.Update();
+	}
+	CharacterMainShowTouchResponse touchResponse;
+	int click = 0;
+	public override void MouseClick(FrameState state, MouseButton button) {
+		if (character == null) return;
+		touchResponse = character.MainShow.Touch.GetRandomTouchResponse();
+		click++;
+
+		var mainResponse = character.MainShow.Touch.MainResponse;
+		if (mainResponse != null) {
+			anims.SetAnimation(0, mainResponse.GetAnimation(click));
+			anims.AddAnimation(0, character.MainShow.StandbyAnimation, true);
+		}
+
+		anims.SetAnimation(1, touchResponse.Start);
+		anims.AddAnimation(1, touchResponse.Standby);
+		anims.AddAnimation(1, touchResponse.End);
+	}
+	public override void Paint(float width, float height) {
+		Raylib.BeginMode2D(new() {
+			Zoom = height / 900 / 2.4f,
+			Offset = new(width / 2 - width * .2f, height / 1)
+		});
+
+		model?.Render();
+
+		Raylib.EndMode2D();
+	}
+}

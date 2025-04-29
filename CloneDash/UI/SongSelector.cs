@@ -1,0 +1,422 @@
+﻿using Nucleus;
+using Nucleus.Core;
+using Nucleus.Engine;
+using Nucleus.Types;
+using Nucleus.UI;
+using Raylib_cs;
+using MouseButton = Nucleus.Types.MouseButton;
+using CloneDash.Data;
+using CloneDash.Animation;
+using Nucleus.Audio;
+using static CloneDash.CustomAlbumsCompatibility;
+using CloneDash.Game;
+
+namespace CloneDash.UI;
+
+public class SongSelector : Panel, IMainMenuPanel
+{
+	public string GetName() => "Song Selector";
+	public void OnHidden() { }
+	public void OnShown() { }
+	public List<ChartSong> Songs { get; set; } = [];
+	public List<ChartSong>? SongsPostFilter { get; set; }
+
+	public Predicate<ChartSong>? CurrentFilter { get; private set; }
+
+	public List<ChartSong> GetSongsList() => SongsPostFilter ?? Songs;
+
+	public void AddSongs(IEnumerable<ChartSong> songs) {
+		Songs.AddRange(songs);
+
+		ApplyFilter(CurrentFilter);
+		InvalidateLayout();
+	}
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		ThinkDiscs();
+	}
+	public void ApplyFilter(Predicate<ChartSong>? filter) {
+		if (filter == null) {
+			ClearFilter();
+			return;
+		}
+
+		if (SongsPostFilter == null)
+			SongsPostFilter = [];
+		else
+			SongsPostFilter.Clear();
+
+		foreach (var song in Songs) {
+			if (filter(song))
+				SongsPostFilter.Add(song);
+		}
+
+		CurrentFilter = filter;
+
+		SelectionUpdated(false);
+	}
+
+	public void ClearFilter() {
+		SongsPostFilter?.Clear();
+		SongsPostFilter = null;
+		SelectionUpdated(true);
+	}
+
+
+	public delegate void UserWantsMore();
+	public event UserWantsMore? UserWantsMoreSongs;
+	public bool CanAcceptMoreSongs { get; set; } = true;
+	public bool InfiniteList { get; set; } = true;
+
+	public float DiscRotateAnimation { get; set; } = 0;
+
+	public SecondOrderSystem DiscRotateSOS = new(2f, 0.94f, 1.1f, 0);
+	public SecondOrderSystem FlyAwaySOS = new(1.5f, 0.94f, 1.1f, 0);
+
+	protected virtual void SelectionUpdated(bool cleared) {
+
+	}
+
+	protected void GetMoreSongs() {
+		if (!CanAcceptMoreSongs) return;
+
+		Loading.Visible = true;
+		Loading.MoveToFront();
+		CanAcceptMoreSongs = false;
+		UserWantsMoreSongs?.Invoke();
+	}
+
+	public Button Disc1;
+	public Button Disc2;
+	public Button Disc3;
+	public Button Disc4;
+	public Button Disc5;
+	public Label CurrentTrackName;
+	public Label CurrentTrackAuthor;
+
+	public int DiscIndex = 0;
+	public Button[] Discs;
+
+	public float DiscAnimationOffset = 0;
+
+	public void MoveLeft() {
+		if (!InfiniteList && DiscIndex <= 0)
+			return;
+
+		DiscIndex--;
+		DiscAnimationOffset--;
+		ResetDiskTrack();
+	}
+
+	public void MoveRight() {
+		if (!InfiniteList && DiscIndex >= GetSongsList().Count - 1)
+			return;
+
+		DiscIndex++;
+		DiscAnimationOffset++;
+		ResetDiskTrack();
+	}
+
+	public int GetSongIndex(int localIndex) => GetSongsList().Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, GetSongsList().Count);
+	public ChartSong GetDiscSong(int localIndex) {
+		var songIndex = GetSongIndex(localIndex);
+		return GetSongsList()[songIndex];
+	}
+	public ChartSong GetDiscSong(Button discButton) {
+		int localIndex = discButton.GetTagSafely<int>("localDiscIndex");
+		var songIndex = GetSongIndex(localIndex);
+
+		return GetSongsList()[songIndex];
+	}
+
+	public void NavigateToDisc(Button discButton) {
+		var index = discButton.GetTagSafely<int>("localDiscIndex");
+		DiscIndex += index;
+		DiscAnimationOffset += index;
+		if (index != 0)
+			ResetDiskTrack();
+	}
+
+	public bool IsDiscOverflowed(int localIndex) {
+		var songIndex = DiscIndex + localIndex;
+		return songIndex >= GetSongsList().Count || songIndex < 0;
+	}
+
+	public bool WillDiscOverflow() {
+		return IsDiscOverflowed(DiscIndex);
+	}
+
+	public float DiscVibrate = 0;
+	public float FlyAway = 0;
+
+	public Button GetActiveDisc() => Discs[Discs.Length / 2];
+
+	MusicTrack? activeTrack;
+	bool doNotTryToGetTrackAgain;
+	public MusicTrack? ActiveTrack => activeTrack;
+	public void ResetDiskTrack() {
+		if (IValidatable.IsValid(activeTrack)) {
+			activeTrack.Playing = false;
+			activeTrack = null;
+		}
+		doNotTryToGetTrackAgain = false;
+	}
+
+	public void FigureOutDisk() {
+		if (GetSongsList().Count <= 0) return;
+		activeTrack?.Update();
+		if (IValidatable.IsValid(activeTrack)) return;
+		if (doNotTryToGetTrackAgain) return;
+
+		// Should play track?
+		if (Math.Abs(DiscAnimationOffset) < 0.3) {
+			var chart = GetDiscSong(0);
+			activeTrack = chart.GetDemoTrack();
+
+			if (activeTrack == null) {
+				doNotTryToGetTrackAgain = !chart.IsLoadingDemoAsync;
+				return;
+			}
+
+			activeTrack.Restart();
+			activeTrack.Playing = true;
+			activeTrack.Volume = 0.5f;
+		}
+	}
+
+	public bool InSheetSelection { get; private set; }
+	public float TargetRotationPostExit { get; private set; }
+	public void EnterSheetSelection() {
+		InSheetSelection = true;
+		TargetRotationPostExit = 1;
+	}
+	public void ExitSheetSelection() {
+		InSheetSelection = false;
+		if (DiscRotateAnimation % 360 > 180) {
+			DiscRotateSOS.ResetTo(DiscRotateAnimation % 180 - 180);
+		}
+		DiscRotateAnimation = 0;
+		FlyAway = 0;
+		DiscVibrate = 0;
+		InvalidateLayout();
+	}
+
+	public Label Loading;
+	// Constantly running logic
+	public void ThinkDiscs() {
+		FigureOutDisk();
+		if (!InSheetSelection)
+			DemandKeyboardFocus();
+
+		float width = RenderBounds.W, height = RenderBounds.H;
+		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
+
+		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
+			LayoutDiscs(width, height);
+		}
+
+		for (int i = 0; i < Discs.Length; i++) {
+			var disc = Discs[i];
+			var index = DiscIndex + disc.GetTagSafely<int>("localDiscIndex");
+
+			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
+				disc.ImageRotation = DiscRotateSOS.Update(
+					MathF.Floor(DiscRotateAnimation / 360) * 360
+					+ DiscRotateAnimation % 360
+				);
+
+				var discWidth = GetDiscSize(width, disc);
+				float size = discWidth * (FlyAwaySOS.Out / 4 + 1) - DiscVibrate;
+				CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
+				disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
+			}
+
+			if (!InfiniteList && index > GetSongsList().Count) continue;
+
+			if (GetSongsList().Count > 0) {
+				var song = GetDiscSong(disc);
+				var cover = song.GetCover();
+
+				disc.Text = "";
+				if (cover != null) {
+					disc.ImageOrientation = ImageOrientation.Stretch;
+					disc.ImagePadding = new(16);
+					disc.Image = cover.Texture;
+					disc.ImageFlipX = false;
+					disc.ImageFlipY = cover.Flipped;
+				}
+			}
+		}
+	}
+	public void CalculateDiscPos(float width, float height, int index, out float x, out float y, out float rot) {
+		var offsetYParent = ChildRenderOffset.Y / (width / 2);
+		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
+		float flyAwayMw = flyAway * width;
+		var widthRatio = MathF.Cos((float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -1 - flyAway * 2, 1 + flyAway * 2));
+		x = (float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -flyAwayMw, width + flyAwayMw);
+		y = height / 2f + (1 - widthRatio) * 250;
+		var rR = 150;
+		rot = (float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -15 - flyAway * rR, 15 + flyAway * rR);
+	}
+
+	public float GetDiscSize(float width, Button b) {
+		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset), 0, 1);
+		return width / Discs.Length + mainDiscMult * 64;
+	}
+
+	public void LayoutDiscs(float width, float height) {
+		if (GetSongsList().Count <= 0 || !InfiniteList && WillDiscOverflow()) {
+			GetMoreSongs();
+			return;
+		}
+
+		for (int i = 0; i < Discs.Length; i++) {
+			var disc = Discs[i];
+			disc.Visible = true;
+			var discWidth = GetDiscSize(width, disc);
+
+			var willOverflow = !InfiniteList && IsDiscOverflowed(i - Discs.Length / 2);
+			if (willOverflow) {
+				disc.Visible = false;
+				continue;
+			}
+			else {
+				disc.Visible = true;
+			}
+
+			disc.Size = new(discWidth, discWidth);
+
+			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
+			disc.ImageRotation = rot;
+			disc.Position = new(x, y);
+			disc.Text = "";
+		}
+
+		var heightDiv2 = height / 2;
+
+		CurrentTrackName.Origin = Anchor.Center;
+		CurrentTrackName.Anchor = Anchor.Center;
+		CurrentTrackName.AutoSize = true;
+
+		CurrentTrackAuthor.Origin = Anchor.Center;
+		CurrentTrackAuthor.Anchor = Anchor.Center;
+		CurrentTrackAuthor.AutoSize = true;
+
+		CurrentTrackName.Position = new(0, heightDiv2 / 1.8f);
+		CurrentTrackAuthor.Position = new(0, heightDiv2 / 1.8f + 42);
+
+		CurrentTrackName.TextSize = 48;
+		CurrentTrackAuthor.TextSize = 24;
+
+		var mainSong = GetDiscSong(0);
+		var info = mainSong.GetInfo();
+		if (info != null) {
+			CurrentTrackName.Text = mainSong.Name;
+			CurrentTrackAuthor.Text = mainSong.Author;
+		}
+
+		if (Math.Abs(DiscAnimationOffset) > 0.001d) {
+			DiscAnimationOffset /= 1.02f;
+			InvalidateLayout(); // loop for next frame
+			if (Math.Abs(DiscAnimationOffset) < 0.2) {
+				if (Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.Left) || Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.A)) {
+					MoveLeft();
+				}
+				else if (Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.Right) || Level.FrameState.KeyboardState.KeyDown(KeyboardLayout.USA.D)) {
+					MoveRight();
+				}
+			}
+		}
+		else if (DiscAnimationOffset != 0) {
+			// set it to 0 and don't invalidate again after
+			DiscAnimationOffset = 0;
+			InvalidateLayout();
+		}
+	}
+
+	protected override void Initialize() {
+		base.Initialize();
+		DrawPanelBackground = false;
+
+		Add(out Disc1);
+		Add(out Disc2);
+		Add(out Disc3);
+		Add(out Disc4);
+		Add(out Disc5);
+		Add(out CurrentTrackName);
+		Add(out CurrentTrackAuthor);
+
+		Add(out Loading);
+		Loading.Anchor = Anchor.Center;
+		Loading.Origin = Anchor.Center;
+		Loading.Text = "LOADING";
+		Loading.TextSize = 100;
+		Loading.AutoSize = true;
+		Loading.Visible = false;
+
+		Discs = [Disc1, Disc2, Disc3, Disc4, Disc5];
+		for (int i = 0; i < Discs.Length; i++) {
+			var disc = Discs[i];
+			disc.Visible = false;
+			disc.Origin = Anchor.Center;
+			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
+
+			disc.MouseReleaseEvent += (s, _, _) => {
+				NavigateToDisc(s as Button);
+				var song = GetDiscSong(s as Button);
+				if (song is CustomChartsSong customChartsSong) {
+					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, c));
+				}
+				else
+					EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, song);
+			};
+			disc.BorderSize = 0;
+			var midpoint = Discs.Length / 2;
+			disc.BackgroundColor = new(0, 0, 0, 0);
+			disc.ImageColor = i == midpoint ? new Color(255) : new Color(155);
+			disc.PaintOverride += (s, w, h) => {
+				var a = i == midpoint ? 1 - FlyAway : 1;
+				var c = MixColorBasedOnMouseState(s, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
+				Graphics2D.SetDrawColor(c);
+				Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
+				ImageColor = new(255, 255, 255, (int)(255 * a));
+				s.Paint(w, h);
+			};
+		}
+
+		DemandKeyboardFocus();
+	}
+
+	public override void MouseClick(FrameState state, MouseButton button) {
+		base.MouseClick(state, button);
+		DemandKeyboardFocus();
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		LayoutDiscs(width, height);
+	}
+	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Types.KeyboardKey key) {
+		base.KeyPressed(keyboardState, key);
+		if (key == KeyboardLayout.USA.Left || key == KeyboardLayout.USA.A) {
+			MoveLeft();
+			InvalidateLayout();
+		}
+		else if (key == KeyboardLayout.USA.Right || key == KeyboardLayout.USA.D) {
+			MoveRight();
+			InvalidateLayout();
+		}
+	}
+
+	public override void Paint(float width, float height) {
+		base.Paint(width, height);
+
+		CurrentTrackName.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
+		CurrentTrackAuthor.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
+	}
+
+	internal void AcceptMoreSongs() {
+		CanAcceptMoreSongs = true;
+		Loading.Visible = false;
+	}
+}
