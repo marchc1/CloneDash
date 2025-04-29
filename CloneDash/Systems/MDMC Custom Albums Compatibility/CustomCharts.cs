@@ -34,14 +34,14 @@ namespace CloneDash
 			public string hideBmsMessage { get; set; } = "";
 			public List<string> searchTags { get; set; } = [];
 		}
-		private static StreamReader GetStreamReader(ZipArchive archive, string filename) {
-			return new StreamReader(archive.Entries.FirstOrDefault(x => x.Name == filename)?.Open() ?? throw new Exception($"Could not create a read stream for {filename}"));
+		private static StreamReader GetStreamReader(SearchPath archive, string filename) {
+			return new StreamReader(archive.Open(filename, FileAccess.Read, FileMode.Open) ?? throw new Exception($"Could not create a read stream for {filename}"));
 		}
-		private static string GetString(ZipArchive archive, string filename) {
+		private static string GetString(SearchPath archive, string filename) {
 			return GetStreamReader(archive, filename).ReadToEnd();
 		}
-		private static byte[] GetByteArray(ZipArchive archive, string filename) {
-			var stream = archive.Entries.FirstOrDefault(x => x.Name == filename)?.Open();
+		private static byte[] GetByteArray(SearchPath archive, string filename) {
+			var stream = archive.Open(filename, FileAccess.Read, FileMode.Open);
 			if (stream == null) {
 				return [];
 			}
@@ -55,7 +55,7 @@ namespace CloneDash
 		public class CustomChartsSong : ChartSong
 		{
 			public string? Filepath { get; private set; }
-			public ZipArchive? Archive { get; private set; }
+			public SearchPath? Archive { get; private set; }
 			public MDMCChart WebChart;
 			public bool UsesWebChart = false;
 
@@ -69,8 +69,7 @@ namespace CloneDash
 
 			public CustomChartsSong(string filepath) {
 				Filepath = filepath;
-				Archive = ZipFile.Open(filepath, ZipArchiveMode.Read);
-
+				Archive = new ZipArchiveSearchPath(filepath);
 			}
 
 			~CustomChartsSong() {
@@ -198,7 +197,7 @@ namespace CloneDash
 							if (worked) {
 								// Invalidate everything
 								Filepath = filename;
-								Archive = ZipFile.Open(filename, ZipArchiveMode.Read);
+								Archive = new ZipArchiveSearchPath(filename);
 								Clear();
 								complete(this);
 								Logs.Info($"Downloaded {WebChart.ID}.mdm");
@@ -212,7 +211,7 @@ namespace CloneDash
 
 						// Invalidate everything
 						Filepath = filename;
-						Archive = ZipFile.Open(filename, ZipArchiveMode.Read);
+						Archive = new ZipArchiveSearchPath(filename);
 						Clear();
 						complete?.Invoke(this);
 					}
@@ -225,12 +224,12 @@ namespace CloneDash
 
 			protected override ChartSheet ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
-				var map = Archive.Entries.FirstOrDefault(x => x.Name == $"map{id}.bms");
+				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				var bms = BmsLoader.Load(map.Open(), $"map{id}.bms");
+				var bms = BmsLoader.Load(map, $"map{id}.bms");
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 

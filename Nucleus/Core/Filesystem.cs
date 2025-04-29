@@ -1,6 +1,7 @@
 ﻿using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
 using System.Text;
 
 namespace Nucleus.Core
@@ -174,7 +175,46 @@ namespace Nucleus.Core
 			}
 		}
 	}
+	public class ZipArchiveSearchPath : SearchPath
+	{
+		public string RootDirectory;
+		private Dictionary<string, string> LocalToAbsolute = [];
+		private HashSet<string> LocalExists = [];
+		private ZipArchive archive;
 
+		public ZipArchiveSearchPath(string rootArchive) {
+			archive = new ZipArchive(new FileStream(rootArchive, FileMode.Open), ZipArchiveMode.Read, false);
+			RootDirectory = rootArchive;
+		}
+
+		private string FullNameOf(ZipArchiveEntry entry) => entry.FullName.Replace("\\", "/");
+
+		public override bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+			return archive.Entries.FirstOrDefault(x => FullNameOf(x) == path) != null;
+		}
+
+		protected override bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+			return archive.Entries.FirstOrDefault(x => FullNameOf(x).StartsWith(path)) != null;
+		}
+
+		protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
+			// Just in case something *really* goes wrong, a try-catch is done here
+			try {
+				return archive.GetEntry(path)?.Open();
+			}
+			catch (Exception ex) {
+				Logs.Warn($"Core.DiskSearchPath: FileStream errored despite Check succeeding. Reason: {ex.Message}");
+				return null;
+			}
+		}
+
+		public override IEnumerable<string> FindFiles(string path, string searchQuery, SearchOption options) {
+			throw new NotImplementedException();
+		}
+		public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
+			throw new NotImplementedException();
+		}
+	}
 	public enum SearchPathAdd
 	{
 		/// <summary>
