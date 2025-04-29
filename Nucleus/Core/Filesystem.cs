@@ -165,14 +165,18 @@ namespace Nucleus.Core
 		}
 
 		public override IEnumerable<string> FindFiles(string path, string searchQuery, SearchOption options) {
-			foreach (var file in Directory.GetFiles(ResolveToAbsolute(path), searchQuery, options)) {
-				yield return ResolveToLocal(file);
-			}
+			string absPath = ResolveToAbsolute(path);
+			if (Directory.Exists(absPath))
+				foreach (var file in Directory.GetFiles(absPath, searchQuery, options)) {
+					yield return ResolveToLocal(file);
+				}
 		}
 		public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
-			foreach (var file in Directory.GetDirectories(ResolveToAbsolute(path), searchQuery, options)) {
-				yield return ResolveToLocal(file);
-			}
+			string absPath = ResolveToAbsolute(path);
+			if (Directory.Exists(absPath))
+				foreach (var file in Directory.GetDirectories(absPath, searchQuery, options)) {
+					yield return ResolveToLocal(file);
+				}
 		}
 	}
 	public class ZipArchiveSearchPath : SearchPath
