@@ -195,6 +195,12 @@ public class Keyframe<T> : IKeyframe
 	//}
 
 	public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
+		if (time < leftmostOfTime.Time)
+			return leftmostOfTime.Value;
+
+		if (time > rightmostOfTime.Time)
+			return rightmostOfTime.Value;
+
 		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant: return rightmostOfTime.Value;
