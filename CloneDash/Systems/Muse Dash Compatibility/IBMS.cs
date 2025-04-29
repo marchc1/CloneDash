@@ -1,8 +1,10 @@
 ﻿using AssetStudio;
 using CloneDash.Data;
+using CloneDash.Game.Entities;
 using CloneDash.Systems;
 using CustomAlbums.Utilities;
 using Nucleus;
+using SpirV;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
@@ -198,6 +200,7 @@ namespace CloneDash
 						if (s.noteData.score > 0)
 							ChartEvent.Score = s.noteData.score;
 
+						ChartEvent.BossAction = s.noteData.boss_action;
 						sheet.Events.Add(ChartEvent);
 					}
 					else {
