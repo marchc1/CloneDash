@@ -299,8 +299,8 @@ namespace Nucleus.Engine
 
 		public bool Paused { get; set; } = false;
 
-		public FrameState LastFrameState { get; private set; }
-		public FrameState FrameState { get; private set; }
+		public FrameState LastFrameState { get; private set; } = FrameState.Default;
+		public FrameState FrameState { get; private set; } = FrameState.Default;
 
 		public KeybindSystem Keybinds { get; private set; } = new();
 
@@ -354,6 +354,17 @@ namespace Nucleus.Engine
 		public void PreInitialize() {
 			timing.Start();
 		}
+
+		private void SwapFrameStates() {
+			var last = LastFrameState;
+			var curr = FrameState;
+
+			LastFrameState = curr;
+			FrameState = last;
+
+			FrameState.Reset();
+		}
+
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -361,8 +372,8 @@ namespace Nucleus.Engine
 			profiler.Reset();
 			profiler.Start();
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
-
-			LastFrameState = FrameState;
+			
+			SwapFrameStates();
 
 			LastRealtime = Realtime;
 			Realtime = timing.Elapsed.TotalSeconds;
@@ -377,8 +388,8 @@ namespace Nucleus.Engine
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			FrameDebuggingStrings.Clear();
-			EngineCore.CurrentFrameState = new();
-			FrameState frameState = new();
+			EngineCore.CurrentFrameState = FrameState;
+			FrameState frameState = FrameState;
 
 			float x, y, width, height;
 

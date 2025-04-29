@@ -2,8 +2,27 @@
 
 namespace Nucleus.Types
 {
-	public struct FrameState
+	public class FrameState
     {
+		public static FrameState Default {
+			get {
+				FrameState state = new();
+				state.Reset();
+				return state;
+			}
+		}
+
+		public void Reset() {
+			HoveredUIElement = null;
+			WindowSize = new(0, 0);
+			WindowX = 0;
+			WindowY = 0;
+			MouseState = new();
+			KeyboardState = new();
+			Camera2D = new();
+			Camera3D = new();
+		}
+
 		public Element? HoveredUIElement;
         public bool HoveringUIElement => IValidatable.IsValid(HoveredUIElement);
 
