@@ -69,7 +69,18 @@ namespace CloneDash
 
 			public CustomChartsSong(string filepath) {
 				Filepath = filepath;
-				Archive = new ZipArchiveSearchPath(filepath);
+				string? ext = Path.GetExtension(filepath);
+				switch (ext) {
+					case ".mdm":
+						Archive = new ZipArchiveSearchPath(filepath);
+						break;
+					case ".bms":
+					case ".json":
+					case "":
+						Archive = new DiskSearchPath(ext == "" ? filepath : Path.GetDirectoryName(filepath) ?? throw new Exception("Wtf?"));
+						break;
+					default: throw new NotImplementedException("Bad filetype for CustomChartsSong constructor!");
+				}
 			}
 
 			~CustomChartsSong() {
