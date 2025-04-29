@@ -46,6 +46,16 @@ namespace Nucleus.UI
 		}
 
 		private Vector2F _size = new(32, 32);
+		private bool _dynamicallySized = false;
+		public bool DynamicallySized {
+			get => _dynamicallySized;
+			set {
+				if (_dynamicallySized == value) return;
+
+				_dynamicallySized = value;
+				InvalidateChildren(recursive: true, self: true);
+			}
+		}
 		public Vector2F Size {
 			get { return _size; }
 			set {
@@ -535,7 +545,14 @@ namespace Nucleus.UI
 			ChildrensDockingLayoutRight = 0;
 			ChildrensDockingLayoutBottom = 0;
 
-			__renderbounds = RectangleF.FromPosAndSize(_position, _size);
+
+			var layoutSize = _size;
+			if (_dynamicallySized) {
+				var parentSize = Parent?.Size ?? UI.Size;
+				layoutSize = _size * parentSize;
+			}
+
+			__renderbounds = RectangleF.FromPosAndSize(_position, layoutSize);
 
 			if (FORCE_ROUNDED_RENDERBOUNDS)
 				__renderbounds.RoundInPlace();
