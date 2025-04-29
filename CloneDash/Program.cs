@@ -48,8 +48,11 @@ namespace CloneDash
 				MuseDashCompatibility.InitializeCompatibilityLayer();
 			}
 
-			if (CommandLineArguments.IsParamTrue("fullscreen"))
+			if (CommandLineArguments.IsParamTrue("fullscreen")) {
+				var monitor = Raylib.GetCurrentMonitor();
+				Raylib.SetWindowSize(Raylib.GetMonitorWidth(monitor), Raylib.GetMonitorHeight(monitor));
 				EngineCore.InFullscreen = true;
+			}
 
 			if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
 				CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
