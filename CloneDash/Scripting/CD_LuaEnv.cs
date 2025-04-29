@@ -6,6 +6,7 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
+using System;
 using System.Text;
 
 namespace CloneDash.Scripting;
@@ -141,8 +142,68 @@ public interface ILuaWrappedObject<Around>
 
 
 [LuaObject]
-public partial class CD_LuaGraphics(Level level)
+public partial class CD_LuaGraphics
 {
+	private Level level;
+
+	private static int getRGBAPiece(ref LuaFunctionExecutionContext ctx, int index)
+		=> (byte)(float)Math.Clamp(ctx.GetArgument<double>(index), 0, 255);
+	private static bool tryGetRGBAPiece(LuaValue arg, out int rgbaPiece) {
+		if (arg.TryRead(out double dV)) {
+			rgbaPiece = (byte)(float)Math.Clamp(dV, 0, 255);
+			return true;
+		}
+		else {
+			rgbaPiece = 0;
+			return false;
+		}
+	}
+
+	public CD_LuaGraphics(Level level) {
+		this.level = level;
+
+		this.setDrawColor = new LuaFunction(async (ctx, buffer, ct) => {
+			switch (ctx.ArgumentCount - 1) {
+				case 0:
+					Logs.Warn("No arguments passed to setDrawColor.");
+					return 0;
+				case 1:
+					var arg0 = ctx.GetArgument(1);
+					if (tryGetRGBAPiece(arg0, out int rgbaPiece))
+						drawColor = new(rgbaPiece, rgbaPiece, rgbaPiece, 255);
+					else if (arg0.TryRead(out LuaColor luaColor)) {
+						drawColor = luaColor.Unwrap();
+					}
+					else {
+						throw new ArgumentException("No behavior for non-number or non-color single argument");
+					}
+
+					return 0;
+				case 2: {
+						var rgb = getRGBAPiece(ref ctx, 1);
+						var a = getRGBAPiece(ref ctx, 2);
+						drawColor = new(rgb, rgb, rgb, a);
+					}
+					return 0;
+				case 3: {
+						var r = getRGBAPiece(ref ctx, 1);
+						var g = getRGBAPiece(ref ctx, 2);
+						var b = getRGBAPiece(ref ctx, 3);
+						drawColor = new(r, g, b, 255);
+					}
+					return 0;
+				default: {
+						var r = getRGBAPiece(ref ctx, 1);
+						var g = getRGBAPiece(ref ctx, 2);
+						var b = getRGBAPiece(ref ctx, 3);
+						var a = getRGBAPiece(ref ctx, 4);
+						drawColor = new(r, g, b, a);
+					}
+					return 0;
+			}
+		});
+	}
+
 	private Raylib_cs.Color drawColor = Raylib_cs.Color.White;
 	private CD_LuaTexture? activeTexture;
 	private int matricesCreated = -1;
@@ -157,8 +218,9 @@ public partial class CD_LuaGraphics(Level level)
 		matricesCreated = -1;
 	}
 
-	[LuaMember("pushMatrix")] public void PushMatrix() {
-		if(matricesCreated <= -1) {
+	[LuaMember("pushMatrix")]
+	public void PushMatrix() {
+		if (matricesCreated <= -1) {
 			Logs.Error("Can't push a matrix; not in Lua rendering context");
 			return;
 		}
@@ -166,8 +228,9 @@ public partial class CD_LuaGraphics(Level level)
 		Rlgl.PushMatrix();
 		matricesCreated++;
 	}
-	[LuaMember("popMatrix")] public void PopMatrix() {
-		if(matricesCreated <= 0) {
+	[LuaMember("popMatrix")]
+	public void PopMatrix() {
+		if (matricesCreated <= 0) {
 			Logs.Error("Tried to pop a matrix the Lua context doesn't have control over!");
 			return;
 		}
@@ -175,14 +238,16 @@ public partial class CD_LuaGraphics(Level level)
 		Rlgl.PopMatrix();
 		matricesCreated--;
 	}
-	[LuaMember("translate")] public void Translatef(float x, float y, float z) {
-		if(matricesCreated <= 0) {
+	[LuaMember("translate")]
+	public void Translatef(float x, float y, float z) {
+		if (matricesCreated <= 0) {
 			Logs.Error("Tried to translate a matrix the Lua context doesn't have control over!");
 			return;
 		}
 		Rlgl.Translatef(x, y, z);
 	}
-	[LuaMember("rotate")] public void Rotatef(float angle, float x, float y, float z) {
+	[LuaMember("rotate")]
+	public void Rotatef(float angle, float x, float y, float z) {
 		if (matricesCreated <= 0) {
 			Logs.Error("Tried to rotate a matrix the Lua context doesn't have control over!");
 			return;
@@ -190,7 +255,8 @@ public partial class CD_LuaGraphics(Level level)
 
 		Rlgl.Rotatef(angle, x, y, z);
 	}
-	[LuaMember("scale")] public void Scalef(float x, float y, float z) {
+	[LuaMember("scale")]
+	public void Scalef(float x, float y, float z) {
 		if (matricesCreated <= 0) {
 			Logs.Error("Tried to scale a matrix the Lua context doesn't have control over!");
 			return;
@@ -198,15 +264,8 @@ public partial class CD_LuaGraphics(Level level)
 		Rlgl.Scalef(x, y, z);
 	}
 
-	[LuaMember("setDrawColor")]
-	public void SetDrawColor(double r, double g, double b, double a) {
-		int rI = (int)(float)Math.Clamp(r, 0, 255);
-		int gI = (int)(float)Math.Clamp(g, 0, 255);
-		int bI = (int)(float)Math.Clamp(b, 0, 255);
-		int aI = (int)(float)Math.Clamp(a, 0, 255);
+	[LuaMember("setDrawColor")] public LuaFunction setDrawColor;
 
-		drawColor = new(rI, gI, bI, aI);
-	}
 
 	[LuaMember("setTexture")]
 	public void SetTexture(CD_LuaTexture tex) {
