@@ -80,8 +80,11 @@ public class CD_LuaEnv
 
 		// Libraries
 		State.Environment["textures"] = new CD_LuaTextures(level, level.Textures);
-		State.Environment["graphics"] = new CD_LuaGraphics(level);
+		Graphics = new(level);
+		State.Environment["graphics"] = Graphics;
 	}
+
+	public CD_LuaGraphics Graphics;
 
 	public LuaValue[] DoFile(string pathID, string path) {
 		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), IManagedMemory.MergePath(pathID, path)).AsTask();
@@ -142,6 +145,58 @@ public partial class CD_LuaGraphics(Level level)
 {
 	private Raylib_cs.Color drawColor = Raylib_cs.Color.White;
 	private CD_LuaTexture? activeTexture;
+	private int matricesCreated = -1;
+
+	public void StartRenderingLuaContext() {
+		matricesCreated = 0;
+	}
+	public void EndRenderingLuaContext() {
+		for (int i = 0; i < matricesCreated; i++) {
+			Rlgl.PopMatrix();
+		}
+		matricesCreated = -1;
+	}
+
+	[LuaMember("pushMatrix")] public void PushMatrix() {
+		if(matricesCreated <= -1) {
+			Logs.Error("Can't push a matrix; not in Lua rendering context");
+			return;
+		}
+
+		Rlgl.PushMatrix();
+		matricesCreated++;
+	}
+	[LuaMember("popMatrix")] public void PopMatrix() {
+		if(matricesCreated <= 0) {
+			Logs.Error("Tried to pop a matrix the Lua context doesn't have control over!");
+			return;
+		}
+
+		Rlgl.PopMatrix();
+		matricesCreated--;
+	}
+	[LuaMember("translate")] public void Translatef(float x, float y, float z) {
+		if(matricesCreated <= 0) {
+			Logs.Error("Tried to translate a matrix the Lua context doesn't have control over!");
+			return;
+		}
+		Rlgl.Translatef(x, y, z);
+	}
+	[LuaMember("rotate")] public void Rotatef(float angle, float x, float y, float z) {
+		if (matricesCreated <= 0) {
+			Logs.Error("Tried to rotate a matrix the Lua context doesn't have control over!");
+			return;
+		}
+
+		Rlgl.Rotatef(angle, x, y, z);
+	}
+	[LuaMember("scale")] public void Scalef(float x, float y, float z) {
+		if (matricesCreated <= 0) {
+			Logs.Error("Tried to scale a matrix the Lua context doesn't have control over!");
+			return;
+		}
+		Rlgl.Scalef(x, y, z);
+	}
 
 	[LuaMember("setDrawColor")]
 	public void SetDrawColor(double r, double g, double b, double a) {

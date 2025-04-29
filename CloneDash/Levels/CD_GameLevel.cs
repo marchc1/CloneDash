@@ -1068,9 +1068,13 @@ namespace CloneDash.Game
 			//Stopwatch test = Stopwatch.StartNew();
 			Rlgl.PushMatrix();
 			Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
+
+			Lua.Graphics.StartRenderingLuaContext();
 			Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
 			if (InFever)
 				Lua.ProtectedCall(feverRender, frameState.WindowWidth, frameState.WindowHeight, FeverTime - FeverTimeLeft, FeverTime);
+			Lua.Graphics.EndRenderingLuaContext();
+
 			Rlgl.PopMatrix();
 			//Logs.Info(test.Elapsed.TotalMilliseconds);
 		}
