@@ -28,6 +28,12 @@ namespace Nucleus.ModelEditor.UI
 			ModelEditor.Active.File.ModelRemoved += File_ModelRemoved;
 			ModelEditor.Active.File.Cleared += File_Cleared;
 			ModelEditor.Active.File.AnimationAdded += File_AnimationAdded;
+			ModelEditor.Active.File.Loaded += File_Loaded;
+		}
+
+		private void File_Loaded(EditorFile file) {
+			if (file.Models.Count <= 0) return;
+			ClearAndSetupAnimationPanelFor(file.Models[0]);
 		}
 
 		private void Selector_OnSelectionChanged(DropdownSelector<EditorModel> self, EditorModel oldValue, EditorModel newValue) {
