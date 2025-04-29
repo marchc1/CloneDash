@@ -147,7 +147,13 @@ namespace Nucleus.UI
 		/// </summary>
 		public RectangleF DockMargin {
 			get { return _dockMargin; }
-			set { _dockMargin = value; InvalidateParentAndItsChildren(); }
+			set {
+				if (_dockMargin == value)
+					return;
+
+				_dockMargin = value; 
+				InvalidateParentAndItsChildren();
+			}
 		}
 		/// <summary>
 		/// The extra space left around this elements children (if the child is docked inside of this element).<br></br>
@@ -156,6 +162,9 @@ namespace Nucleus.UI
 		public RectangleF DockPadding {
 			get { return _dockPadding; }
 			set {
+				if (_dockPadding == value)
+					return;
+
 				InvalidateChildren(recursive: true, self: true);
 				if (AddParent != this)
 					AddParent.DockPadding = value;
@@ -400,6 +409,7 @@ namespace Nucleus.UI
 				__layoutinvalid = value;
 			}
 		}
+
 		public void InvalidateChildren(bool immediate = false, bool recursive = false, bool self = false) {
 			if (self)
 				InvalidateLayout(immediate);
@@ -410,6 +420,7 @@ namespace Nucleus.UI
 					e.InvalidateChildren(immediate, recursive);
 			}
 		}
+
 		/// <summary>
 		/// Internal method to cancel any layout invalidations.
 		/// </summary>
