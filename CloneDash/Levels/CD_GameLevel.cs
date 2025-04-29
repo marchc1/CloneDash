@@ -1003,6 +1003,7 @@ namespace CloneDash.Game
 			ev.Score = ChartEvent.Score;
 			ev.Fever = ChartEvent.Fever;
 			ev.Damage = ChartEvent.Damage;
+			ev.BossAction = ChartEvent.BossAction;
 
 			ev.Build();
 

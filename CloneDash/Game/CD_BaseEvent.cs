@@ -28,6 +28,8 @@ namespace CloneDash.Game
 		public int? Fever { get; set; }
 		public int? Damage { get; set; }
 
+		public string? BossAction { get; set; }
+
 		public void Build() {
 			OnBuild();
 		}

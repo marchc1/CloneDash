@@ -10,7 +10,8 @@ namespace CloneDash.Game
 {
 	public enum EntitySignalType
 	{
-		FirstAppearance
+		FirstAppearance,
+		FirstHit
 	}
 
 	public partial class CD_GameLevel : Level

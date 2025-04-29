@@ -24,7 +24,7 @@
         Custom = 16,
 
         /// <summary>
-        /// Basic, single-hit enemy, which damages you when you fail to hit the it
+        /// Basic, single-hit enemy, which damages you when you fail to hit it
         /// </summary>
         Single = 64,
         /// <summary>

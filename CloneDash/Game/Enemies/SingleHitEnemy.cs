@@ -5,8 +5,7 @@ using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-	public class SingleHitEnemy : CD_BaseEnemy
-	{
+	public class SingleHitEnemy : CD_BaseEnemy {
 		public SingleHitEnemy() : base(EntityType.Single) {
 			Interactivity = EntityInteractivity.Hit;
 		}
@@ -15,6 +14,7 @@ namespace CloneDash.Game.Entities
 			base.OnReset();
 		}
 		protected override void OnHit(PathwaySide side) {
+			base.OnHit(side);
 			Kill();
 		}
 
@@ -34,7 +34,8 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void Render() {
-			base.Render();
+			if (Model != null)
+				base.Render();
 		}
 
 		protected override void OnFirstVisible() {
@@ -48,6 +49,8 @@ namespace CloneDash.Game.Entities
 		private float xoffset;
 
 		public override void DetermineAnimationPlayback() {
+			if (Model == null) return;
+
 			if (Dead) {
 				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
@@ -64,7 +67,7 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 
-			Model = (Variant switch {
+			var model = (Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1.GetModelFromPathway(Pathway),
 				EntityVariant.Boss2 => scene.BossEnemy2.GetModelFromPathway(Pathway),
 				EntityVariant.Boss3 => scene.BossEnemy3.GetModelFromPathway(Pathway),
@@ -77,11 +80,14 @@ namespace CloneDash.Game.Entities
 				EntityVariant.Large1 => scene.LargeEnemy1.GetModelFromPathway(Pathway),
 				EntityVariant.Large2 => scene.LargeEnemy2.GetModelFromPathway(Pathway),
 
-				_ => scene.SmallEnemy.GetModelFromPathway(Pathway) // default to small if something broke I guess
-			}).Instantiate();
+				_ => null
+			})?.Instantiate();
+
+			if (model != null)
+				Model = model;
 
 			double showtime = 0;
-			var animationName = Variant switch {
+			string? animationName = Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1.GetAnimationString(Speed, out showtime),
 				EntityVariant.Boss2 => scene.BossEnemy2.GetAnimationString(Speed, out showtime),
 				EntityVariant.Boss3 => scene.BossEnemy3.GetAnimationString(Speed, out showtime),
@@ -94,10 +100,10 @@ namespace CloneDash.Game.Entities
 				EntityVariant.Large1 => scene.LargeEnemy1.GetAnimationString(Speed, out showtime),
 				EntityVariant.Large2 => scene.LargeEnemy2.GetAnimationString(Speed, out showtime),
 
-				_ => throw new Exception("Can't handle that case...")
+				_ => null
 			};
 
-			SceneDescriptor.IContainsGreatPerfectAndHPMount greatPerfectHP = Variant switch {
+			SceneDescriptor.IContainsGreatPerfectAndHPMount? greatPerfectHP = Variant switch {
 				EntityVariant.Boss1 => scene.BossEnemy1,
 				EntityVariant.Boss2 => scene.BossEnemy2,
 				EntityVariant.Boss3 => scene.BossEnemy3,
@@ -110,17 +116,22 @@ namespace CloneDash.Game.Entities
 				EntityVariant.Large1 => scene.LargeEnemy1,
 				EntityVariant.Large2 => scene.LargeEnemy2,
 
-				_ => throw new Exception("Can't handle that case...")
+				_ => null
 			};
 
-			ShowTime = HitTime - showtime;
+			if (Model != null && greatPerfectHP != null && animationName != null) {
+				ShowTime = HitTime - showtime;
 
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
-			GreatHitAnimation = greatPerfectHP.FindGreatAnimation(Model);
-			PerfectHitAnimation = greatPerfectHP.FindPerfectAnimation(Model);
+				ApproachAnimation = Model.Data.FindAnimation(animationName);
+				GreatHitAnimation = greatPerfectHP.FindGreatAnimation(Model);
+				PerfectHitAnimation = greatPerfectHP.FindPerfectAnimation(Model);
 
-			Scale = new(level.GlobalScale);
-			SetMountBoneIfApplicable(greatPerfectHP);
+				Scale = new(level.GlobalScale);
+				SetMountBoneIfApplicable(greatPerfectHP);
+			}
+			else {
+				
+			}
 		}
 	}
 }

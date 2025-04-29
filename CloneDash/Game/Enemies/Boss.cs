@@ -1,6 +1,7 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus;
 using Nucleus.Engine;
+using System.Runtime.Intrinsics.X86;
 namespace CloneDash.Game.Entities;
 
 public class BossInEvent(CD_GameLevel game) : CD_BaseEvent(game)
@@ -20,13 +21,44 @@ public class BossSingleHit(CD_GameLevel game) : CD_BaseEvent(game)
 	public override void Activate() {
 		Game.Boss.SingleHit();
 	}
+
+	public override void OnBuild() {
+		base.OnBuild();
+
+		var boss = Game.Boss;
+		var animation = BossAction == "boss_close_atk_2" ? Game.Scene.Boss.Close.AttackFast : Game.Scene.Boss.Close.AttackSlow;
+
+		Game.LoadEntity(new() {
+			Type = EntityType.Single,
+			Pathway = PathwaySide.Both,
+			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,
+			ShowTime = Time - (animation.Speed / 30d),
+			HitTime = Time
+		});
+	}
 }
 public class BossMasher(CD_GameLevel game) : CD_BaseEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.Masher();
 	}
+
+	public override void OnBuild() {
+		base.OnBuild();
+
+		var boss = Game.Boss;
+		var animation = Game.Scene.Boss.Multi.Attack;
+
+		Game.LoadEntity(new() {
+			Type = EntityType.Masher,
+			Pathway = PathwaySide.Both,
+			Variant = EntityVariant.BossMash,
+			ShowTime = Time - (animation.Speed / 30d),
+			HitTime = Time
+		});
+	}
 }
+
 public class BossFar1Start(CD_GameLevel game) : CD_BaseEvent(game)
 {
 	public override void Activate() {
@@ -144,7 +176,7 @@ public class Boss : CD_BaseEnemy
 		switch (from) {
 			case SingleHitEnemy she:
 				// Confirm that this is boss related, and the first appearance
-				if(she.Variant.IsBoss() && signalType == EntitySignalType.FirstAppearance) {
+				if (she.Variant.IsBoss() && signalType == EntitySignalType.FirstAppearance) {
 					// Figure out which animation to play.
 
 					// Attack2 is defined with the same class as Attack1; less code typed out here
@@ -152,12 +184,43 @@ public class Boss : CD_BaseEnemy
 					// it can just specify a string and thats implicitly casted to the object type
 					// during deserialization.
 
-					var pathway = she.Pathway;
-					var attackanims = she.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
-					Animations.SetAnimation(
-						ANIMATION_CHANNEL_FIRE,
-						pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground,
-						false);
+					switch (she.Variant) {
+						case EntityVariant.BossHitSlow:
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Close.AttackSlow.Name, false);
+							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+							break;
+						case EntityVariant.BossHitFast:
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Close.AttackFast.Name, false);
+							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+							break;
+						default:
+							var pathway = she.Pathway;
+							var attackanims = she.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
+							Animations.SetAnimation(
+								ANIMATION_CHANNEL_FIRE,
+								pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground,
+								false);
+							break;
+					}
+				}
+
+				if(signalType == EntitySignalType.FirstHit) {
+					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Hurt, false);
+					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+				}
+				break;
+			case Masher me:
+				if (me.Variant.IsBoss()) {
+					if (signalType == EntitySignalType.FirstAppearance) {
+						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Multi.Attack.Name, false);
+						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+					}
+				}
+				break;
+			case Gear ge: {
+					var pathway = ge.Pathway;
+					var attackanims = ge.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
+					Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground, false);
 				}
 				break;
 		}

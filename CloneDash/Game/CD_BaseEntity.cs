@@ -314,14 +314,15 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1;
+			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= ShowTime;
 		}
 		
 		/// <summary>
 		/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 		/// </summary>
 		protected virtual void OnHit(PathwaySide side) {
-
+			if (Variant.IsBoss())
+				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstHit);
 		}
 		protected virtual void OnMiss() {
 

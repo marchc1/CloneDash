@@ -477,18 +477,23 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonProperty("2")] public SceneDescriptor_BossTransition From2;
 #nullable enable
 	}
+	public class SceneDescriptor_BossNameSpeed {
+
+		[JsonProperty("name")] public string Name;
+		[JsonProperty("speed")] public float Speed;
+	}
 	public class SceneDescriptor_BossClose
 	{
-		[JsonProperty("24")] public string? Attack24;
-		[JsonProperty("48")] public string? Attack48;
+		[JsonProperty("fast")] public SceneDescriptor_BossNameSpeed AttackFast;
+		[JsonProperty("slow")] public SceneDescriptor_BossNameSpeed AttackSlow;
 	}
 	public class SceneDescriptor_BossMulti
 	{
-		[JsonProperty("atk")] public string? Attack;
-		[JsonProperty("atk_end")] public string? AttackEnd;
-		[JsonProperty("hurt")] public string? Hurt;
-		[JsonProperty("hurt_end")] public string? HurtEnd;
-		[JsonProperty("atk_out")] public string? AttackOut;
+		[JsonProperty("atk")] public SceneDescriptor_BossNameSpeed Attack;
+		[JsonProperty("atk_end")] public string AttackEnd;
+		[JsonProperty("hurt")] public string Hurt;
+		[JsonProperty("hurt_end")] public string HurtEnd;
+		[JsonProperty("atk_out")] public string AttackOut;
 	}
 	public class SceneDescriptor_Hitsounds
 	{

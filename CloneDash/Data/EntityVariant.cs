@@ -10,6 +10,10 @@
 		Boss2,
 		Boss3,
 
+		BossHitFast,
+		BossHitSlow,
+		BossMash,
+
 		Small,
 
 		Medium1,

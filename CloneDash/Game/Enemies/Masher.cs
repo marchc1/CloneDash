@@ -17,7 +17,7 @@ namespace CloneDash.Game.Entities
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = true;
 		}
-		
+
 		private void CheckIfComplete() {
 			var level = Level.As<CD_GameLevel>();
 
@@ -57,8 +57,10 @@ namespace CloneDash.Game.Entities
 			}
 
 			lastHitTime = level.Conductor.Time;
-			currentAnim = Model.Data.FindAnimation(masherData.Hurt.GetAnimation(Hits));
-			
+			if (Model != null) {
+				currentAnim = Model.Data.FindAnimation(masherData.Hurt.GetAnimation(Hits));
+			}
+
 			level.Sounds.PlaySound(level.Scene.Hitsounds.PunchSound, 0.24f, pitch: 1 + (Hits / 50f));
 
 			CheckIfComplete();
@@ -84,6 +86,8 @@ namespace CloneDash.Game.Entities
 		SceneDescriptor.SceneDescriptor_MasherEnemy masherData;
 		Nucleus.Models.Runtime.Animation? currentAnim;
 		public override void DetermineAnimationPlayback() {
+			if (Model == null) return;
+
 			Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(PathwaySide.Both));
 			if (Dead) {
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
@@ -100,6 +104,7 @@ namespace CloneDash.Game.Entities
 
 			base.DetermineAnimationPlayback();
 		}
+
 		public override void Build() {
 			base.Build();
 
@@ -107,25 +112,27 @@ namespace CloneDash.Game.Entities
 			var scene = level.Scene;
 
 			masherData = scene.Masher;
-			Model = masherData.ModelData.Instantiate();
+			if (Variant != EntityVariant.BossMash) {
+				Model = masherData.ModelData.Instantiate();
 
-			var approachSpeeds = EnterDirection switch {
-				EntityEnterDirection.TopDown => masherData.InAnimations.Down,
-				_ => masherData.InAnimations.Normal
-			};
+				var approachSpeeds = EnterDirection switch {
+					EntityEnterDirection.TopDown => masherData.InAnimations.Down,
+					_ => masherData.InAnimations.Normal
+				};
 
-			var speedIndex = Speed switch {
-				1 => 2,
-				2 => 1,
-				3 => 0,
-				_ => throw new Exception("Invalid speed")
-			};
+				var speedIndex = Speed switch {
+					1 => 2,
+					2 => 1,
+					3 => 0,
+					_ => throw new Exception("Invalid speed")
+				};
 
-			ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[speedIndex]));
-			PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
-			GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
-			var showtime = approachSpeeds.Speeds[speedIndex] / 30f;
-			ShowTime = HitTime - showtime;
+				ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[speedIndex]));
+				PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
+				GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
+				var showtime = approachSpeeds.Speeds[speedIndex] / 30f;
+				ShowTime = HitTime - showtime;
+			}
 		}
 	}
 }
