@@ -195,7 +195,7 @@ namespace Nucleus.Engine
 
 		public List<string> FrameDebuggingStrings { get; set; } = [];
 
-		public Entity[] Entities => EntityList.ToArray();
+		public List<Entity> Entities => EntityList;
 
 		public UserInterface UI { get; private set; }
 		public void InitializeUI() {

@@ -510,6 +510,8 @@ namespace CloneDash.Game
 
 							foreach (var ev in Sheet.Events)
 								LoadEvent(ev);
+
+							Entities.Sort((x, y) => (x is CD_BaseEnemy xE && y is CD_BaseEnemy yE) ? xE.HitTime.CompareTo(yE.HitTime) : 0);
 						}
 					}
 					Boss.Build();
@@ -787,7 +789,10 @@ namespace CloneDash.Game
 							PathwaySide currentPathway = Pathway;
 
 							// Is it too late for the player to hit this entity anyway?
-							if (entity.DistanceToHit < -entity.PreGreatRange && !(entity is SustainBeam && ((SustainBeam)entity).HeldState == true)) {
+							if (entity.DistanceToHit < -entity.PreGreatRange 
+								&& !(entity is SustainBeam se && se.HeldState == true)
+								&& !(entity is Masher me && me.Hits > 0)
+							) {
 								entity.Miss();
 								Stats.Misses++;
 							}

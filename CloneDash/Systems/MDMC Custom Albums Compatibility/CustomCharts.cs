@@ -243,6 +243,7 @@ namespace CloneDash
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 
+
 				var stageInfo = BmsLoader.TransmuteData(bms);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
