@@ -232,7 +232,6 @@ namespace CloneDash
 				}
 			}
 
-
 			protected override ChartSheet ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
 				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);

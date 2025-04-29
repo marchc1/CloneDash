@@ -112,8 +112,10 @@ namespace CloneDash.Data
             return CoverTexture;
         }
 
+		public virtual bool ShouldReproduceSheet(int difficulty) => false;
+
         public ChartSheet GetSheet(int difficulty) {
-            if (Sheets.TryGetValue(difficulty, out var sheet))
+			if (Sheets.TryGetValue(difficulty, out var sheet) && !ShouldReproduceSheet(difficulty))
                 return sheet;
 
             Sheets[difficulty] = ProduceSheet(difficulty);
