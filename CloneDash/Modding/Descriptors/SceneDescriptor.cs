@@ -503,7 +503,8 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonIgnore] public Sound PunchSound;
 #nullable enable
 		public void Load(Level level) {
-			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); Interlude.Spin();
+			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); 
+			Interlude.Spin();
 		}
 	}
 
