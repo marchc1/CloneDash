@@ -539,6 +539,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		menuBtns.Add(btn);
 		return btn;
 	}
+
 	Button back;
 	public List<ChartSong> RefreshLocalSongs() {
 		List<ChartSong> ret = [];

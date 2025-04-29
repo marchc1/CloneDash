@@ -487,7 +487,15 @@ namespace Nucleus
 		public static bool Maximized => Raylib.IsWindowMaximized();
 		public static bool Minimized => Raylib.IsWindowMinimized();
 		public static bool Focused => Raylib.IsWindowFocused();
-		public static bool InFullscreen => Raylib.IsWindowFullscreen();
+		public static bool InFullscreen {
+			get => Raylib.IsWindowFullscreen();
+			set {
+				var isFullscreen = Raylib.IsWindowFullscreen();
+				if (isFullscreen == value) return;
+
+				Raylib.ToggleFullscreen();
+			}
+		}
 		public static bool IsUndecorated => Raylib.IsWindowState(ConfigFlags.FLAG_WINDOW_UNDECORATED);
 
 		public static void Maximize() {
