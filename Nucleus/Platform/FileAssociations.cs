@@ -11,6 +11,7 @@ public static partial class Platform
 
 #if COMPILED_WINDOWS
 		// TODO: if the folder path contains .dll this doesn't work... fix that
+		bool wasOpenWithEmpty = openWith == null;
 		string appPath = openWith ?? (Assembly.GetEntryAssembly()?.Location.Replace(".dll", ".exe")) ?? throw new Exception("Wtf");
 		if (!extension.StartsWith("."))
 			extension = "." + extension;
@@ -35,7 +36,7 @@ public static partial class Platform
 			Logs.Debug($"'{extension}' registered for the current user.");
 			Logs.Debug($"    > ProgID:      {progId}");
 			Logs.Debug($"    > Description: {description}");
-			Logs.Debug($"    > OpenWith:    {appPath}");
+			Logs.Debug($"    > OpenWith:    {(wasOpenWithEmpty ? Path.GetFileName(appPath) : appPath)}");
 		}
 		catch (Exception ex) {
 			Logs.Warn($"Failed to register file type: {ex.Message}");
