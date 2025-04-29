@@ -494,7 +494,7 @@ namespace Nucleus.ModelEditor
 					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),
 					Target = new(800, -355),
 					Rotation = 0,
-					Zoom = .65f
+					Zoom = .25f
 				});
 
 				Raylib.DrawLineV(new(-w, 0), new(w, 0), Color.Red);

@@ -189,7 +189,10 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 		foreach (var slot in DrawOrder) {
 			var attachment = slot.Attachment;
-			if (attachment == null) continue;
+			if (attachment == null) {
+				Clipping.NextSlot(slot);
+				continue;
+			}
 
 			Raylib.BeginBlendMode(slot.BlendMode switch {
 				BlendMode.Normal => Raylib_cs.BlendMode.BLEND_ALPHA,
@@ -941,6 +944,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
 		var slot = this.Slot(model);
+
 		if (BeforeFirstFrame(time))
 			switch (blend) {
 				case MixBlendMode.Setup: Set(slot, GetSetup(slot)); return;
@@ -950,8 +954,9 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 		string? attachmentID;
 		Color rgba;
 
+		var curve = Curve(0);
 		if (AfterLastFrame(time)) {
-			attachmentID = Curve(0).Last?.Value ?? null;
+			attachmentID = curve.Last?.Value ?? null;
 			switch (blend) {
 				case MixBlendMode.Setup: Set(slot, attachmentID); return;
 				default: return;
