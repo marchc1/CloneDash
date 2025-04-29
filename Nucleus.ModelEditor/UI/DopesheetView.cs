@@ -238,13 +238,17 @@ public class DopesheetView : BaseTimelineView
 		base.CreateChannels();
 	}
 
+	Vector2F dragStart;
 	private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		dragStart = state.MouseState.MousePos;
+
 		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		ModelEditor.Active.UnselectAllKeyframes();
 	}
 
 	private void KeyframeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		processScroll(delta);
+		Raylib_cs.Raylib.SetMousePosition((int)dragStart.X, (int)dragStart.Y);
 	}
 
 	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
