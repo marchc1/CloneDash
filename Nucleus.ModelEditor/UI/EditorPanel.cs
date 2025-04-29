@@ -682,7 +682,7 @@ namespace Nucleus.ModelEditor
 
 			}
 
-			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : bone.Color.Adjust(0, 0, -0.15f);
+			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : (bone.Color.Adjust(0, 0, -0.15f) with { A = (byte)(bone.Length > 0 ? 45 : 155) });
 			ManagedMemory.Texture boneTex;
 
 			if (ModelEditor.Active.Editor.InWeightsMode
@@ -695,7 +695,6 @@ namespace Nucleus.ModelEditor
 				else
 					color = EditorVertexAttachment.BoneWeightListIndexToColor(boneIndex, color.A);
 			}
-
 
 			if (bone.Length > 0) {
 				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
