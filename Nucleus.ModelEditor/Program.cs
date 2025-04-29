@@ -492,9 +492,9 @@ namespace Nucleus.ModelEditor
 
 				Raylib.BeginMode2D(new() {
 					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),
-					Target = new(0, -82),
+					Target = new(800, -355),
 					Rotation = 0,
-					Zoom = 2f
+					Zoom = .65f
 				});
 
 				Raylib.DrawLineV(new(-w, 0), new(w, 0), Color.Red);

@@ -1077,21 +1077,24 @@ public class AnimationHandler
 			if (anim == null) {
 				if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 					channel.CurrentEntry = newAnim;
+					channel.Time = 0;
 					anim = newAnim;
 				}
 				else continue;
 			}
 
-			if (channel.Time > anim.Animation.Duration) {
+			if (channel.Time >= anim.Animation.Duration) {
 				if (anim.Looping)
 					channel.Time = channel.Time % anim.Animation.Duration;
 				else {
 					// Enqueue the next animation
 					if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 						channel.CurrentEntry = newAnim;
+						channel.Time = 0;
 					}
 					else {
 						channel.CurrentEntry = null;
+						channel.Time = 0;
 					}
 				}
 			}

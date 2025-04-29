@@ -1,6 +1,7 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus;
 using Nucleus.Engine;
+using Raylib_cs;
 using System.Runtime.Intrinsics.X86;
 namespace CloneDash.Game.Entities;
 
@@ -236,13 +237,16 @@ public class Boss : CD_BaseEnemy
 		Model.Position = Position;
 		Model.Scale = Scale;
 
+		Rlgl.DrawRenderBatchActive();
 		Model.Render();
+		Rlgl.DrawRenderBatchActive();
 	}
 
 	public override void Build() {
 		base.Build();
 		Model = GetGameLevel().Scene.Boss.ModelData.Instantiate();
 		Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
+
 
 		Model.SetToSetupPose();
 	}
