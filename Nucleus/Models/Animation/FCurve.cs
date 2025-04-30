@@ -15,15 +15,15 @@ namespace Nucleus.Models
 				yield return keyframe;
 		}
 		public void ScaleTime(double scale) {
-			foreach(var kf in Keyframes) {
+			foreach (var kf in Keyframes) {
 				kf.SetTime(kf.GetTime() * scale);
 			}
-			valid =false;
+			valid = false;
 		}
 
 		public FCurve<T> Copy(double scale = 1) {
 			FCurve<T> copy = new FCurve<T>();
-			foreach(var kf in GetKeyframes()) {
+			foreach (var kf in GetKeyframes()) {
 				copy.AddKeyframe(kf.Copy(scale));
 			}
 			copy.valid = false;
@@ -91,8 +91,10 @@ namespace Nucleus.Models
 		}
 
 		public bool TryFindKeyframe(double time, [NotNullWhen(true)] out Keyframe<T>? keyframe) {
+			Recompute();
+
 			var search = BinarySearchKeyframe(time);
-			if(search == -1) {
+			if (search == -1) {
 				keyframe = null;
 				return false;
 			}
@@ -113,15 +115,15 @@ namespace Nucleus.Models
 			int start = 0;
 			int end = len - 1;
 
-			while (end - start > 0) {
-				var middle = (start + end) / 2;
+			while (end - start > 1) {
+				int middle = (start + end) / 2;
 				var kf = Keyframes[middle];
 				if (kf.Time == time) // exact
 					return middle;
 				else if (kf.Time > time) // collapse backwards
-					end = end / 2;
+					end = middle;
 				else // collapse forwards
-					start = start + middle;
+					start = middle;
 			}
 
 			return start;
@@ -149,14 +151,9 @@ namespace Nucleus.Models
 					if (time <= firstKeyframe.Time)
 						return firstKeyframe.Value;
 
-					for (int i = 1; i < Keyframes.Count; i++) {
-						var keyframe = Keyframes[i];
-						if (time < keyframe.Time) {
-							return Keyframe<T>.DetermineValue(time, Keyframes[i - 1], keyframe, interpolationOverride);
-						}
-					}
+					var start = BinarySearchKeyframe(time);
 
-					return Keyframes[count - 1].Value;
+					return Keyframe<T>.DetermineValue(time, Keyframes[start], Keyframes[start + 1], interpolationOverride);
 			}
 		}
 	}
