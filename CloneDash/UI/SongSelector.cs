@@ -11,6 +11,7 @@ using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Game;
 using System.Collections.Concurrent;
+using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash.UI;
 
@@ -45,10 +46,11 @@ public class MuseDashSearchFilter : SearchFilter
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
 		dialog.SetBarText(FilterText);
 		return x =>
-			(
+			x is MuseDashSong mds && (
 				FilterText == null ? true : 
-				x.Name.ToLower().Contains(FilterText.ToLower()) ||
-				x.Author.ToLower().Contains(FilterText.ToLower())
+				mds.Name.ToLower().Contains(FilterText.ToLower()) ||
+				mds.BaseName.ToLower().Contains(FilterText.ToLower()) ||
+				mds.Author.ToLower().Contains(FilterText.ToLower())
 			);
 	}
 }
