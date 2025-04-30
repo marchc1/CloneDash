@@ -9,11 +9,11 @@ namespace CloneDash.Levels
 	public class CD_Statistics : Level
     {
 		ChartSheet sheet;
-		StatisticsData stats;
+		CD_StatisticsData stats;
         public override void Initialize(params object[] args) {
 #nullable disable
 			sheet = args[0] as ChartSheet;
-			stats = args[1] as StatisticsData;
+			stats = args[1] as CD_StatisticsData;
 #nullable enable
 
 			if (sheet == null) throw new NullReferenceException(nameof(sheet));

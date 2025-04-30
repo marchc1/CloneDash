@@ -302,7 +302,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	private int entI = 0;
 	private bool __deferringAsync = false;
 
-	public StatisticsData Stats;
+	public CD_StatisticsData Stats;
 	public CharacterDescriptor Character;
 	public SceneDescriptor Scene;
 
