@@ -1,5 +1,4 @@
-﻿using Nucleus;
-using Nucleus.Types;
+﻿using Nucleus.Types;
 using Nucleus.UI;
 
 namespace CloneDash.UI;

@@ -5,7 +5,7 @@ using MouseButton = Nucleus.Types.MouseButton;
 
 namespace Nucleus.UI.Elements
 {
-    public class Titlebar : Panel
+	public class Titlebar : Panel
     {
         public string? Image { get; set; } = null;
         public string Title { get; set; } = "Untitled Window";

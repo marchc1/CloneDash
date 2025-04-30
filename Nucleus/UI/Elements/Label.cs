@@ -3,7 +3,7 @@ using Nucleus.Types;
 
 namespace Nucleus.UI
 {
-    public class Label : Element
+	public class Label : Element
     {
 		public bool DrawBackground { get; set; } = false;
         public Anchor TextAlignment { get; set; } = Anchor.Center;

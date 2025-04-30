@@ -1,5 +1,4 @@
 ﻿using CloneDash.Animation;
-using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Types;
@@ -7,7 +6,7 @@ using Raylib_cs;
 
 namespace CloneDash.Game
 {
-    public class Pathway : LogicalEntity
+	public class Pathway : LogicalEntity
     {
 
 		public static readonly Color PATHWAY_TOP_COLOR = new Color(178, 255, 252, 120);

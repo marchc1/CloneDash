@@ -1,5 +1,4 @@
-﻿using Nucleus;
-using Nucleus.Core;
+﻿using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;

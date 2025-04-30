@@ -1,7 +1,7 @@
 ﻿using Raylib_cs;
 using System.Numerics;
 
-namespace Nucleus
+namespace Nucleus.Extensions
 {
 	public static class ColorExtensions
 	{
@@ -16,7 +16,7 @@ namespace Nucleus
 			c.A = (byte)Math.Clamp(alpha * 255, 0, 255);
 			return c;
 		}
-		public static Color Adjust(this Color color, double hue, double saturation, double value, bool bleed = true) => Adjust(color, (float)hue, (float)saturation, (float)value, bleed);
+		public static Color Adjust(this Color color, double hue, double saturation, double value, bool bleed = true) => color.Adjust((float)hue, (float)saturation, (float)value, bleed);
 		public static Color Adjust(this Color color, float hue, float saturation, float value, bool bleed = true) {
 			var hsv = color.ToHSV();
 			hsv.X += hue;
@@ -30,7 +30,7 @@ namespace Nucleus
 			hsv.Y = Math.Clamp(hsv.Y, 0, 1);
 			hsv.Z = Math.Clamp(hsv.Z, 0, 1);
 
-			return hsv.ToRGB((float)color.A / 255f);
+			return hsv.ToRGB(color.A / 255f);
 		}
 
 		public static Vector3 SetHSV(this Vector3 hsv, float? hue = null, float? saturation = null, float? value = null) {
@@ -102,7 +102,7 @@ namespace Nucleus
 		}
 
 		public static Color FromHexRGB(string hex, int alpha = 255) {
-			if (hex.Length != 6 && (hex.Length == 7 && hex[0] != '#'))
+			if (hex.Length != 6 && hex.Length == 7 && hex[0] != '#')
 				throw new Exception("Bad hex argument (expected six-character string OR seven-character with # at the start");
 
 			if (hex[0] == '#')
