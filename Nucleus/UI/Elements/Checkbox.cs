@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Interfaces;
 using Nucleus.Types;
 using System;
 using System.Collections.Generic;
