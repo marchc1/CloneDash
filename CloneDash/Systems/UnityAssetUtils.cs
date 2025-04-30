@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BCnEncoder.Decoder;
 using System.Diagnostics;
+using Nucleus.Extensions;
 
 namespace CloneDash.Systems;
 

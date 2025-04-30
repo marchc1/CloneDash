@@ -16,6 +16,7 @@ using CloneDash.Modding.Settings;
 using System.Diagnostics;
 using CloneDash.UI;
 using Nucleus.Files;
+using Nucleus.Extensions;
 
 namespace CloneDash.Game;
 

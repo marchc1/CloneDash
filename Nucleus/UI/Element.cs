@@ -2,6 +2,7 @@
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Extensions;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;

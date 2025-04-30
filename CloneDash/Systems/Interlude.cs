@@ -3,6 +3,7 @@ using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Core;
+using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.Rendering;
 using Nucleus.Types;

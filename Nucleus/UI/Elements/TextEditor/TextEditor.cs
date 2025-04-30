@@ -1,4 +1,5 @@
 ﻿using Nucleus.Core;
+using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -310,7 +311,7 @@ namespace Nucleus.UI
 					linePart = $"selected: {Math.Min(Caret.StartRow, Caret.EndRow)} - {Math.Max(Caret.StartRow, Caret.EndRow)}";
 				else
 					linePart = $"line {Caret.StartRow} / {Rows.Count}";
-				Graphics2D.DrawText(width - 4, height - 2, $"{StringFormatting.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
+				Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
 			}
 
 			if (BorderSize > 0) {

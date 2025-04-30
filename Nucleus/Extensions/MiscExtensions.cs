@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus
+namespace Nucleus.Extensions
 {
-	public static class Extensions
+	public static class MiscExtensions
 	{
 		public static unsafe Image ToImage(this byte[] data, int width, int height, PixelFormat format, int mipmaps) {
 			var ptr = Raylib.New<byte>(data.Length);
@@ -36,7 +36,7 @@ namespace Nucleus
 		/// <returns>The index of the found item, or -1 if not found in the <see cref="IList{T}"/></returns>
 		public static int FirstOrDefaultIndex<T>(this IList<T> list, Predicate<T> cond) {
 			for (int i = 0, len = list.Count; i < len; i++)
-				if (cond(list[i])) 
+				if (cond(list[i]))
 					return i;
 
 			return -1;
@@ -105,7 +105,7 @@ namespace Nucleus
 		public static Dictionary<K, V> ReadDictionary<K, V>(this BinaryReader reader, Func<BinaryReader, K> keyDeserializer, Func<BinaryReader, V> valueDeserializer) {
 			int size = reader.Read7BitEncodedInt();
 			Dictionary<K, V> dict = new(size);
-			for (int i = 0; i < size; i++) 
+			for (int i = 0; i < size; i++)
 				dict[keyDeserializer(reader)] = valueDeserializer(reader);
 			return dict;
 		}
@@ -160,7 +160,7 @@ namespace Nucleus
 
 		public static Color? ReadNullableColor(this BinaryReader reader) => reader.ReadBoolean() ? new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()) : null;
 		public static void Write(this BinaryWriter writer, Color? col) {
-			if(col == null) {
+			if (col == null) {
 				writer.Write(false);
 				return;
 			}

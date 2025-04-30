@@ -2,6 +2,7 @@
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
+using Nucleus.Extensions;
 using Nucleus.Types;
 using Raylib_cs;
 
