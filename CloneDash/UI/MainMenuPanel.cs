@@ -127,11 +127,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 			selector.InfiniteList = false;
-			int page = 1;
+			selector.SearchFilter = new MDMCSearchFilter();
 			selector.UserWantsMoreSongs += () => {
 				// Load more songs
-				menu.PopulateMDMCCharts(selector, page: page);
-				page++;
+				(selector.SearchFilter as MDMCSearchFilter).PopulateMDMCCharts(selector);
 			};
 		});
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);

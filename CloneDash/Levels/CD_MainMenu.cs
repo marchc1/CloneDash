@@ -228,24 +228,6 @@ public class CD_MainMenu : Level
 		return menuBtn;
 	}
 
-	private CustomChartsSong AddChartSelector(MDMCChart chart) {
-		CustomChartsSong song = new CustomChartsSong(chart);
-		return song;
-	}
-
-	internal void PopulateMDMCCharts(SongSelector selector, string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
-		MDMCWebAPI.SearchCharts(query, sort, page, onlyRanked).Then((resp) => {
-			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
-			var songs = new List<CustomChartsSong>();
-
-			foreach (MDMCChart chart in charts) {
-				songs.Add(AddChartSelector(chart));
-			}
-
-			selector?.AddSongs(songs);
-			selector?.AcceptMoreSongs();
-		});
-	}
 
 	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));

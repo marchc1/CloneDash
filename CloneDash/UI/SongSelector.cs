@@ -12,6 +12,10 @@ using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Game;
 using System.Collections.Concurrent;
 using static CloneDash.MuseDashCompatibility;
+using Nucleus.UI.Elements;
+using CloneDash.Systems.CustomAlbums;
+using static CloneDash.Systems.CustomAlbums.MDMCWebAPI;
+using System.ComponentModel.DataAnnotations;
 
 namespace CloneDash.UI;
 
@@ -34,6 +38,37 @@ public abstract class SearchFilter {
 		textbox.OnTextChanged += (_, _, nt) => fieldInfo.SetValue(this, nt);
 		dialog.SetTag(field, textbox);
 	}
+
+	public void EnumInput<T>(SongSearchDialog dialog, string field, T curVal) where T : Enum {
+		var type = this.GetType();
+		var fieldInfo = type.GetField(field);
+		if (fieldInfo == null) throw new NotImplementedException();
+
+		var selector = dialog.Add(DropdownSelector<T>.FromEnum(curVal));
+		selector.Dock = Dock.Top;
+		selector.Size = new(48);
+		selector.Text = fieldInfo.GetValue(this)?.ToString() ?? "";
+		selector.TextSize = 20;
+		selector.BorderSize = 0;
+		selector.OnSelectionChanged += (_, _, nt) => fieldInfo.SetValue(this, nt);
+		dialog.SetTag(field, selector);
+	}
+
+	public void CheckboxInput(SongSearchDialog dialog, string field, string label)  {
+		var type = this.GetType();
+		var fieldInfo = type.GetField(field);
+		if (fieldInfo == null) throw new NotImplementedException();
+
+		var selector = dialog.Add<CheckboxButton>();
+		selector.Dock = Dock.Top;
+		selector.Size = new(48);
+		selector.Text = label;
+		selector.TextSize = 20;
+		selector.BorderSize = 0;
+		selector.Checked = (bool?)fieldInfo.GetValue(this) ?? false;
+		selector.OnCheckedChanged += (s) => fieldInfo.SetValue(this, s.Checked);
+		dialog.SetTag(field, selector);
+	}
 }
 public class MuseDashSearchFilter : SearchFilter
 {
@@ -47,11 +82,59 @@ public class MuseDashSearchFilter : SearchFilter
 		dialog.SetBarText(FilterText);
 		return x =>
 			x is MuseDashSong mds && (
-				FilterText == null ? true : 
+				FilterText == null ? true :
 				mds.Name.ToLower().Contains(FilterText.ToLower()) ||
 				mds.BaseName.ToLower().Contains(FilterText.ToLower()) ||
 				mds.Author.ToLower().Contains(FilterText.ToLower())
 			);
+	}
+}
+
+public class MDMCSearchFilter : SearchFilter
+{
+	public int Page = 0; 
+	public string Query = "";
+	public MDMCWebAPI.Sort Sort;
+	public bool OnlyRanked = false;
+
+
+	public override void Populate(SongSearchDialog dialog) {
+		TextInput(dialog, nameof(Query), "Search Query");
+		EnumInput(dialog, nameof(Sort), Sort);
+		CheckboxInput(dialog, nameof(OnlyRanked), "Only ranked charts?");
+	}
+
+	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
+		var menu = dialog.Level.As<CD_MainMenu>();
+		Page = 0;
+		dialog.Selector.ClearSongs();
+		PopulateMDMCCharts(dialog.Selector);
+		return x => true;
+	}
+
+	private CustomChartsSong AddChartSelector(MDMCChart chart) {
+		CustomChartsSong song = new CustomChartsSong(chart);
+		return song;
+	}
+
+	internal void PopulateMDMCCharts(SongSelector selector) {
+		Page++;
+
+		MDMCWebAPI.SearchCharts(string.IsNullOrWhiteSpace(Query) ? null : Query, Sort, Page, OnlyRanked).Then((resp) => {
+			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
+			if (charts.Length == 0) {
+				selector.MarkNoMoreSongsLeft();
+				return;
+			}
+			var songs = new List<CustomChartsSong>();
+
+			foreach (MDMCChart chart in charts) {
+				songs.Add(AddChartSelector(chart));
+			}
+
+			selector?.AddSongs(songs);
+			selector?.AcceptMoreSongs();
+		});
 	}
 }
 
@@ -76,6 +159,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public void TriggerUserInitializeSearch() {
 		if (SearchFilter == null) return;
 		UI.Add(out ActiveDialog);
+		ActiveDialog.Selector = this;
 		ActiveDialog.Bar = SearchBar;
 		ActiveDialog.OnUserSubmit += () => TriggerUserSubmittedSearch();
 
@@ -94,6 +178,15 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		ApplyPredicate(CompiledFilter);
 		InvalidateLayout();
+	}
+
+	public void ClearSongs() {
+		Songs.Clear();
+		DiscIndex = 0;
+		InvalidateLayout();
+
+		CanAcceptMoreSongs = true;
+		NoMoreSongsLeft = false;
 	}
 
 	protected override void OnThink(FrameState frameState) {
@@ -135,6 +228,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public delegate void UserWantsMore();
 	public event UserWantsMore? UserWantsMoreSongs;
 	public bool CanAcceptMoreSongs { get; set; } = true;
+	public bool NoMoreSongsLeft { get; set; } = false;
 	public bool InfiniteList { get; set; } = true;
 
 	public float DiscRotateAnimation { get; set; } = 0;
@@ -148,6 +242,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	protected void GetMoreSongs() {
 		if (!CanAcceptMoreSongs) return;
+		if (NoMoreSongsLeft) return;
 
 		Loading.Visible = true;
 		Loading.MoveToFront();
@@ -333,7 +428,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		if (GetSongsList().Count <= 0 || !InfiniteList && WillDiscOverflow()) {
+		if (!NoMoreSongsLeft && (GetSongsList().Count <= 0 || !InfiniteList && WillDiscOverflow())) {
 			GetMoreSongs();
 			return;
 		}
@@ -502,6 +597,12 @@ public class SongSelector : Panel, IMainMenuPanel
 	internal void AcceptMoreSongs() {
 		CanAcceptMoreSongs = true;
 		Loading.Visible = false;
+	}
+
+	internal void MarkNoMoreSongsLeft() {
+		NoMoreSongsLeft = true;
+		Loading.Visible = false;
+		CanAcceptMoreSongs = false;
 	}
 
 }

@@ -12,6 +12,7 @@ public class SongSearchDialog : Panel
 	ScrollPanel parameters;
 	public delegate void OnUserSubmitD();
 	public event OnUserSubmitD? OnUserSubmit;
+	public SongSelector Selector;
 
 	public void SetBarText(string text) => Bar.SearchQuery = string.IsNullOrEmpty(text) ? null : text;
 
@@ -21,7 +22,7 @@ public class SongSearchDialog : Panel
 		Origin = Anchor.Center;
 		Anchor = Anchor.Center;
 		DynamicallySized = true;
-		Size = new(0.8f);
+		Size = new(0.65f);
 
 		Add(out applyButton);
 		applyButton.Text = "Apply";
