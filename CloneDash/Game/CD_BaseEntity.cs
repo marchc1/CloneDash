@@ -321,7 +321,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 		/// </summary>
-		protected virtual void OnHit(PathwaySide side) {
+		protected virtual void OnHit(PathwaySide side, double distanceToHit) {
 			if (Variant.IsBoss())
 				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstHit);
 		}
@@ -376,16 +376,17 @@ namespace CloneDash.Game
 		public static event EntityNoArgumentEvent GlobalOnReleaseEvent;
 
 		public CD_GameLevel GetGameLevel() => Level.As<CD_GameLevel>();
+		public StatisticsData GetStats() => Level.As<CD_GameLevel>().Stats;
 		public Conductor GetConductor() => Level.As<CD_GameLevel>().Conductor;
 
 
 		public int Hits { get; set; } = 0;
 		public bool WasHitPerfect { get; set; } = false;
 		public double LastHitTime { get; set; }
-		public void Hit(PathwaySide pathway) {
+		public void Hit(PathwaySide pathway, double distanceToHit) {
 			Hits++;
 			LastHitTime = GetConductor().Time;
-			OnHit(pathway);
+			OnHit(pathway, distanceToHit);
 			OnHitEvent?.Invoke(this, pathway);
 			GlobalOnHitEvent?.Invoke(this);
 		}

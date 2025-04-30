@@ -12,7 +12,7 @@ namespace CloneDash.Game.Entities
 			DoesPunishPlayer = false;
 		}
 
-		protected override void OnHit(PathwaySide side) {
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
 			Kill();
 		}
 		public override void DetermineAnimationPlayback() {

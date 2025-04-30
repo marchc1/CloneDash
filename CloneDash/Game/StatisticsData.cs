@@ -1,4 +1,6 @@
 ﻿using CloneDash.Data;
+using Nucleus;
+using System.Security.Principal;
 
 namespace CloneDash.Game;
 
@@ -81,6 +83,9 @@ public class CD_EnemyStatistics
 						? CD_EnemyStatisticsAccuracy.Early 
 						: CD_EnemyStatisticsAccuracy.Precise;
 
+		double preperfect = -Enemy.PrePerfectRange, postperfect = Enemy.PostPerfectRange;
+		State = NMath.InRange(hitTime, preperfect, postperfect) ? CD_EnemyStatisticsState.Perfect : CD_EnemyStatisticsState.Great;
+
 		return Accuracy;
 	}
 }
@@ -95,6 +100,7 @@ public class StatisticsData
 
 	public int Score { get; private set; } = 0;
 	public double Accuracy { get; private set; } = 0;
+	public int Combo { get; private set; }
 	public int MaxCombo { get; private set; }
 	public int Perfects { get; private set; } = 0;
 	public int Greats { get; private set; } = 0;
@@ -103,6 +109,7 @@ public class StatisticsData
 	public int Earlys { get; private set; } = 0;
 	public int Exacts { get; private set; } = 0;
 	public int Lates { get; private set; } = 0;
+
 
 	public void RegisterEnemy(CD_BaseEnemy enemy) {
 		if (EnemyInfo.ContainsKey(enemy)) return;
@@ -129,11 +136,24 @@ public class StatisticsData
 		}
 	}
 
+	private void SetMaxComboIfApplicable() {
+		if (Combo > MaxCombo)
+			MaxCombo = Combo;
+	}
+	public void ResetCombo() {
+		SetMaxComboIfApplicable();
+		Combo = 0;
+	}
+	public void UpCombo() {
+		Combo++;
+		SetMaxComboIfApplicable();
+	}
 	public void Compute() {
 		// Assume all perfect until we know otherwise
 		Title = CD_StatisticsImpressiveness.AllPerfect;
 
 		Perfects = 0;
+		Combo = 0;
 		Greats = 0;
 		Passes = 0;
 		Misses = 0;
@@ -141,8 +161,8 @@ public class StatisticsData
 		Exacts = 0;
 		Lates = 0;
 
-		foreach(var kvp in EnemyInfo) {
-			var info = kvp.Value;
+		foreach(var ent in OrderedEnemies) {
+			var info = EnemyInfo[ent];
 
 			switch (info.Accuracy) {
 				case CD_EnemyStatisticsAccuracy.Early: Earlys++; break;
@@ -153,6 +173,7 @@ public class StatisticsData
 			switch (info.State) {
 				case CD_EnemyStatisticsState.Missed:
 					Misses++;
+					ResetCombo();
 					DowngradeTitle(ref Title, CD_StatisticsImpressiveness.Cleared);
 					break;
 				case CD_EnemyStatisticsState.Passed:
@@ -160,10 +181,12 @@ public class StatisticsData
 					break;
 				case CD_EnemyStatisticsState.Great:
 					Greats++;
+					UpCombo();
 					DowngradeTitle(ref Title, CD_StatisticsImpressiveness.FullCombo);
 					break;
 				case CD_EnemyStatisticsState.Perfect:
 					Perfects++;
+					UpCombo();
 					break;
 
 				case CD_EnemyStatisticsState.InPlay:
@@ -220,6 +243,20 @@ public class StatisticsData
 	}
 
 	public void Pass(CD_BaseEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
+
+
+	public void Miss(CD_BaseMEntity ent) {
+		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+		Miss(enemy);
+	}
+	public void Pass(CD_BaseMEntity ent) {
+		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+		Pass(enemy);
+	}
+	public void Hit(CD_BaseMEntity ent, double hitTime) {
+		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+		Hit(enemy, hitTime);
+	}
 
 	public StatisticsData(ChartSheet? sheet) {
 		Sheet = sheet;

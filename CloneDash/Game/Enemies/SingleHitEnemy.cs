@@ -13,13 +13,15 @@ namespace CloneDash.Game.Entities
 		public override void OnReset() {
 			base.OnReset();
 		}
-		protected override void OnHit(PathwaySide side) {
-			base.OnHit(side);
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
+			base.OnHit(side, distanceToHit);
 			Kill();
+			GetStats().Hit(this, distanceToHit);
 		}
 
 		protected override void OnMiss() {
 			PunishPlayer();
+			GetStats().Miss(this);
 			if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
 				DamagePlayer();
 			}

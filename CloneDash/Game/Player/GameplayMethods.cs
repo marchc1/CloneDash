@@ -59,7 +59,7 @@ namespace CloneDash.Game
 					//if (Debug)
 					//Console.WriteLine($"mashing entity = {MashingEntity}");
 
-					MashingEntity.Hit(pathway);
+					MashingEntity.Hit(pathway, 0);
 				}
 				else {
 					var poll = Poll(pathway);
@@ -67,7 +67,7 @@ namespace CloneDash.Game
 
 					if (poll.Hit) {
 						poll.HitEntity.WasHitPerfect = poll.IsPerfect;
-						poll.HitEntity.Hit(pathway);
+						poll.HitEntity.Hit(pathway, poll.DistanceToHit);
 						Scene.PlayPunch();
 
 						if (SuppressHitMessages == false) {

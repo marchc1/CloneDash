@@ -22,6 +22,7 @@ using CloneDash.Scripting;
 using Lua;
 using Color = Raylib_cs.Color;
 using Nucleus.Entities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game
 {
@@ -116,7 +117,11 @@ namespace CloneDash.Game
 
 
 		public void SeekTo(double time) {
-			Music.Playhead = (float)time;
+			if (Music != null) {
+				Music.Playhead = (float)time;
+			}
+
+			Stats.Reset();
 			foreach (var entity in Entities) {
 				if (entity is not CD_BaseEnemy entCD)
 					continue;
@@ -166,7 +171,8 @@ namespace CloneDash.Game
 
 		public float XPos { get; private set; }
 
-		public bool InMashState { get; private set; }
+		[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
+
 		public CD_BaseMEntity? MashingEntity;
 		private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 		private TextEffect mashTextEffect;
@@ -282,7 +288,7 @@ namespace CloneDash.Game
 		private int entI = 0;
 		private bool __deferringAsync = false;
 
-		private StatisticsData Stats;
+		public StatisticsData Stats;
 		public CharacterDescriptor Character;
 		public SceneDescriptor Scene;
 
@@ -322,7 +328,7 @@ namespace CloneDash.Game
 			if (type != CDDAnimationType.Run) seq += 1;
 			switch (type) {
 				case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
-				case CDDAnimationType.In:  return playData.InAnimation ?? playData.RunAnimation.GetAnimation(seq);
+				case CDDAnimationType.In: return playData.InAnimation ?? playData.RunAnimation.GetAnimation(seq);
 				case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq);
 
 				case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq);
@@ -585,6 +591,7 @@ namespace CloneDash.Game
 			XPos = Game.Pathway.GetPathwayLeft();
 
 			if (Music != null && lastNoteHit && Music.Paused && Sheet != null) {
+				Stats.UploadScore(Score);
 				EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
 				return;
 			}
@@ -791,12 +798,11 @@ namespace CloneDash.Game
 							PathwaySide currentPathway = Pathway;
 
 							// Is it too late for the player to hit this entity anyway?
-							if (entity.DistanceToHit < -entity.PreGreatRange 
+							if (entity.DistanceToHit < -entity.PreGreatRange
 								&& !(entity is SustainBeam se && se.HeldState == true)
 								&& !(entity is Masher me && me.Hits > 0)
 							) {
 								entity.Miss();
-								Stats.Miss(entity);
 							}
 						}
 						break;
@@ -804,8 +810,7 @@ namespace CloneDash.Game
 						if (NMath.InRange(entity.DistanceToHit, -entity.PreGreatRange, 0)) {
 							PathwaySide pathCurrentCharacter = Pathway;
 							if (pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
-								entity.Hit(pathCurrentCharacter);
-								Stats.Hit(entity, entity.DistanceToHit);
+								entity.Hit(pathCurrentCharacter, 0);
 							}
 						}
 						break;
@@ -814,13 +819,11 @@ namespace CloneDash.Game
 						if (Pathway == entity.Pathway && entity.DistanceToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 							//entity.Hit(Game.PlayerController.Pathway);
 							entity.DamagePlayer();
-							Stats.Miss(entity);
 						}
 
 						// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
 						if (Pathway != entity.Pathway && entity.DistanceToHit < 0 && !entity.DidDamagePlayer) {
 							entity.Pass();
-							Stats.Pass(entity);
 						}
 
 						break;
@@ -1124,7 +1127,7 @@ namespace CloneDash.Game
 
 			// Hold notes
 			ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
-	
+
 			// Boss
 			Boss.Render();
 

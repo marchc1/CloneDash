@@ -13,7 +13,7 @@
             base.Initialize();
         }
 
-        protected override void OnHit(PathwaySide side) {
+        protected override void OnHit(PathwaySide side, double distanceToHit) {
             Kill();
         }
 

@@ -37,7 +37,7 @@ namespace CloneDash.Game.Entities
 		public override void Think(FrameState frameState) {
 			CheckIfComplete();
 		}
-		protected override void OnHit(PathwaySide side) {
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
 			var level = Level.As<CD_GameLevel>();
 
 			if (MaxHits == 1) {

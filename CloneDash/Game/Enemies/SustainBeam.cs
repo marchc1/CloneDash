@@ -31,7 +31,7 @@ namespace CloneDash.Game.Entities
 			StopAcceptingInput = false;
 		}
 
-		protected override void OnHit(PathwaySide attackedPath) {
+		protected override void OnHit(PathwaySide attackedPath, double distanceToHit) {
 			if (HeldState == true)
 				return;
 			if (StopAcceptingInput == true)
