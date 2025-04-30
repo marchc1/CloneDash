@@ -352,6 +352,9 @@ namespace Nucleus.Types
                 case 93: return !(shift || caps) ? "]" : "}"; // RightBracket
                 case 96: return !(shift || caps) ? "`" : "~"; // Grave
                 case 259: return CharacterType.DeleteBackwards; // Numpad0
+
+                case 257: return new(CharacterType.Enter, "Enter");
+
                 case 262: return new(CharacterType.Arrow, "RIGHT");
                 case 263: return new(CharacterType.Arrow, "LEFT");
                 case 264: return new(CharacterType.Arrow, "DOWN");
