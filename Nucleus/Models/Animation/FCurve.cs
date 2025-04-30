@@ -90,8 +90,42 @@ namespace Nucleus.Models
 			return keyframe != null;
 		}
 
-		public bool TryFindKeyframe(double time, [NotNullWhen(true)] out Keyframe<T>? keyframe)
-			=> TryFindKeyframe(x => x.Time == time, out keyframe);
+		public bool TryFindKeyframe(double time, [NotNullWhen(true)] out Keyframe<T>? keyframe) {
+			var search = BinarySearchKeyframe(time);
+			if(search == -1) {
+				keyframe = null;
+				return false;
+			}
+
+			keyframe = Keyframes[search];
+			return true;
+		}
+
+		public int BinarySearchKeyframe(double time) {
+			int len = Keyframes.Count;
+			if (len == 0) return -1;
+
+#nullable disable
+			if (time <= First.Time) return 0; // pre-first
+			if (time >= Last.Time) return len - 1; // post-last
+#nullable enable
+
+			int start = 0;
+			int end = len - 1;
+
+			while (end - start > 0) {
+				var middle = (start + end) / 2;
+				var kf = Keyframes[middle];
+				if (kf.Time == time) // exact
+					return middle;
+				else if (kf.Time > time) // collapse backwards
+					end = end / 2;
+				else // collapse forwards
+					start = start + middle;
+			}
+
+			return start;
+		}
 
 		public void Recompute() {
 			if (valid == false) {
