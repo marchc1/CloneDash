@@ -20,7 +20,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Currently visible entities this tick
 		/// </summary>
-		public List<CD_BaseMEntity> VisibleEntities { get; private set; } = [];
+		public List<CD_BaseEnemy> VisibleEntities { get; private set; } = [];
 
 		private double LastAttackTime;
 		private PathwaySide LastAttackPathway;
@@ -83,9 +83,6 @@ namespace CloneDash.Game
 					AttackAir(pollResult ?? default);
 				else
 					AttackGround(pollResult ?? default);
-
-				if (hitSomething)
-					Stats.Hits++;
 
 				ExitHitState();
 

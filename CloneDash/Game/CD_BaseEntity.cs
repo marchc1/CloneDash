@@ -91,20 +91,20 @@ namespace CloneDash.Game
 		public float FeverGiven { get; set; }
 
 		/// <summary>
-		/// The low-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this considered to be a positive value.</i>
+		/// The low-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 		/// </summary>
 		public float PreGreatRange { get; set; } = 0.08f;
 		/// <summary>
-		/// The high-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this considered to be a positive value.</i>
+		/// The high-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 		/// </summary>
 		public float PostGreatRange { get; set; } = 0.08f;
 
 		/// <summary>
-		/// The low-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this considered to be a positive value.</i>
+		/// The low-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 		/// </summary>
 		public float PrePerfectRange { get; set; } = 0.05f;
 		/// <summary>
-		/// The high-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this considered to be a positive value.</i>
+		/// The high-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 		/// </summary>
 		public float PostPerfectRange { get; set; } = 0.05f;
 

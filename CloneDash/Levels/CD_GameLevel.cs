@@ -282,7 +282,7 @@ namespace CloneDash.Game
 		private int entI = 0;
 		private bool __deferringAsync = false;
 
-		private StatisticsData Stats { get; } = new();
+		private StatisticsData Stats;
 		public CharacterDescriptor Character;
 		public SceneDescriptor Scene;
 
@@ -415,6 +415,7 @@ namespace CloneDash.Game
 		}
 
 		public override void Initialize(params object[] args) {
+			Stats = new(Sheet);
 			using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 				Interlude.Spin(submessage: "Retrieving descriptors...");
 
@@ -442,7 +443,6 @@ namespace CloneDash.Game
 				}
 
 				Interlude.Spin();
-
 
 				MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
 
@@ -733,7 +733,7 @@ namespace CloneDash.Game
 				if (entity is not CD_BaseEnemy)
 					continue;
 
-				var entCD = entity as CD_BaseMEntity;
+				var entCD = entity as CD_BaseEnemy;
 				// Visibility testing
 				// ShouldDraw overrides ForceDraw here, which is intentional, although the naming convention is confusing and should be adjusted (maybe the names swapped?)
 				if ((entCD.CheckVisTest(frameState) || entCD.ForceDraw) && entCD.ShouldDraw) {
@@ -748,7 +748,7 @@ namespace CloneDash.Game
 
 			if (lastEntity.HitTime + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 				lastNoteHit = true;
-				if (Stats.Misses == 0) {
+				if (Stats.CalculateFullCombo()) {
 					Logs.Info("Full combo achieved.");
 					Scene.PlayFullCombo();
 				}
@@ -796,7 +796,7 @@ namespace CloneDash.Game
 								&& !(entity is Masher me && me.Hits > 0)
 							) {
 								entity.Miss();
-								Stats.Misses++;
+								Stats.Miss(entity);
 							}
 						}
 						break;
@@ -805,7 +805,7 @@ namespace CloneDash.Game
 							PathwaySide pathCurrentCharacter = Pathway;
 							if (pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 								entity.Hit(pathCurrentCharacter);
-								Stats.Hits++;
+								Stats.Hit(entity, entity.DistanceToHit);
 							}
 						}
 						break;
@@ -814,13 +814,13 @@ namespace CloneDash.Game
 						if (Pathway == entity.Pathway && entity.DistanceToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 							//entity.Hit(Game.PlayerController.Pathway);
 							entity.DamagePlayer();
-							Stats.Misses++;
+							Stats.Miss(entity);
 						}
 
 						// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
 						if (Pathway != entity.Pathway && entity.DistanceToHit < 0 && !entity.DidDamagePlayer) {
 							entity.Pass();
-							Stats.Avoids++;
+							Stats.Pass(entity);
 						}
 
 						break;
@@ -914,7 +914,7 @@ namespace CloneDash.Game
 		/// <param name="pathway"></param>
 		/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
 		public PollResult Poll(PathwaySide pathway) {
-			foreach (CD_BaseMEntity entity in VisibleEntities) {
+			foreach (CD_BaseEnemy entity in VisibleEntities) {
 				// If the entity has no interactivity, ignore it in the poll
 				if (!entity.Interactive)
 					continue;
@@ -1049,6 +1049,9 @@ namespace CloneDash.Game
 
 			ent.RendersItself = false;
 			ent.DebuggingInfo = ChartEntity.DebuggingInfo;
+
+			Stats.RegisterEnemy(ent);
+
 			ent.Build();
 		}
 
