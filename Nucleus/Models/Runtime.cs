@@ -31,6 +31,7 @@ public static class Model4System
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
 	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
+	public const double REFERENCE_FPS = 30;
 }
 
 

@@ -165,7 +165,7 @@ public class SceneDescriptor : CloneDashDescriptor
 				};
 
 				var frameSpeed = Speeds[speedIndex];
-				showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+				showtime = frameSpeed / Model4System.REFERENCE_FPS;
 				return string.Format(Format, frameSpeed);
 			}
 		}
@@ -215,7 +215,7 @@ public class SceneDescriptor : CloneDashDescriptor
 				var speeds = speed == 1 ? Speeds1 : Speeds2;
 
 				var frameSpeed = speeds[speedIndex];
-				showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+				showtime = frameSpeed / Model4System.REFERENCE_FPS;
 				return string.Format(format, frameSpeed);
 			}
 		}
@@ -297,7 +297,7 @@ public class SceneDescriptor : CloneDashDescriptor
 			};
 
 			var frameSpeed = Speeds[speedIndex];
-			showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+			showtime = frameSpeed / Model4System.REFERENCE_FPS;
 			return string.Format(Animation, frameSpeed);
 		}
 #nullable enable
@@ -357,7 +357,7 @@ public class SceneDescriptor : CloneDashDescriptor
 			};
 
 			var frameSpeed = formatSpeeds.Speeds[speedIndex];
-			showtime = frameSpeed / CD_GameLevel.REFERENCE_FPS;
+			showtime = frameSpeed / Model4System.REFERENCE_FPS;
 			xoffset = formatSpeeds.XOffset;
 			return string.Format(formatSpeeds.Format, frameSpeed);
 		}
