@@ -118,6 +118,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		SelectionUpdated(false);
 		InvalidateLayout();
 		DiscIndex = 0;
+		ResetDiskTrack();
 	}
 
 	public void ClearFilter() {
