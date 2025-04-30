@@ -67,6 +67,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public List<ChartSong> GetSongsList() => SongsPostFilter ?? Songs;
 
 	public SongSearchBar SearchBar;
+	public Label FilterResults;
 	public SearchFilter? SearchFilter;
 	public SongSearchDialog? ActiveDialog;
 
@@ -119,12 +120,14 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 		DiscIndex = 0;
 		ResetDiskTrack();
+		FilterResults.Text = $"{SongsPostFilter.Count}/{Songs.Count} songs available";
 	}
 
 	public void ClearFilter() {
 		SongsPostFilter?.Clear();
 		SongsPostFilter = null;
 		SelectionUpdated(true);
+		FilterResults.Text = $"{Songs.Count} songs available";
 	}
 
 	public delegate void UserWantsMore();
@@ -409,6 +412,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		Add(out CurrentTrackName);
 		Add(out CurrentTrackAuthor);
 		Add(out SearchBar);
+		Add(out FilterResults);
+		FilterResults.Anchor = Anchor.TopCenter;
+		FilterResults.Origin = Anchor.Center;
 
 		SearchBar.MouseReleaseEvent += SearchBar_MouseReleaseEvent;
 
@@ -467,6 +473,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		LayoutDiscs(width, height);
 		SearchBar.Position = new(width / 2, height * .1f);
 		SearchBar.Size = new(width / 2f, height * 0.06f);
+		FilterResults.Position = new(0, (height * .1f) + (height * 0.06f) + (height * 0.00f));
+		FilterResults.TextSize = height / 30f;
+		FilterResults.AutoSize = true;
 	}
 
 	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Types.KeyboardKey key) {
