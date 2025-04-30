@@ -148,8 +148,6 @@ namespace CloneDash.Game
 		public double Length { get; set; }
 		public int Speed { get; set; }
 
-		public bool TellBossWhenSpawned { get; set; } = false;
-
 		public virtual void OnSignalReceived(CD_BaseMEntity from, EntitySignalType signalType, object? data = null) {
 
 		}
