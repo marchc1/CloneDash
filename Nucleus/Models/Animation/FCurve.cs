@@ -109,7 +109,7 @@ namespace Nucleus.Models
 
 #nullable disable
 			if (time <= First.Time) return 0; // pre-first
-			if (time >= Last.Time) return len - 1; // post-last
+			if (time >= Last.Time) return len - 2; // post-last
 #nullable enable
 
 			int start = 0;
@@ -152,7 +152,6 @@ namespace Nucleus.Models
 						return firstKeyframe.Value;
 
 					var start = BinarySearchKeyframe(time);
-
 					return Keyframe<T>.DetermineValue(time, Keyframes[start], Keyframes[start + 1], interpolationOverride);
 			}
 		}
