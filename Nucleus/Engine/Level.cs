@@ -382,7 +382,7 @@ namespace Nucleus.Engine
 
 			if (!Paused) {
 				LastCurtime = Curtime;
-				Curtime += RealtimeDelta;
+				Curtime += Math.Clamp(RealtimeDelta, 0, 0.1);
 				CurtimeDelta = Curtime - LastCurtime;
 			}
 
