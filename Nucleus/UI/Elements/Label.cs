@@ -48,7 +48,7 @@ namespace Nucleus.UI
 				textC = textC.Adjust(0, 0, -0.5f);
 			}
 
-            Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(TextAlignment, RenderBounds.Size, TextPadding);
+            Vector2F textDrawingPosition = TextAlignment.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
             Graphics2D.SetDrawColor(textC);
             Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, TextAlignment);
         }

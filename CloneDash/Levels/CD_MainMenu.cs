@@ -493,7 +493,7 @@ public class CD_MainMenu : Level
 			if (self is not Button btn) return; // make nullable happy, it will always be Button
 			btn.Paint(w, h);
 
-			Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(Anchor.CenterRight, btn.RenderBounds.Size, btn.TextPadding);
+			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(btn.RenderBounds.Size, btn.TextPadding);
 			Graphics2D.SetDrawColor(btn.TextColor);
 			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{difficultyLevel}", btn.Font, btn.TextSize, Anchor.CenterRight);
 		};

@@ -92,7 +92,7 @@ namespace Nucleus.ModelEditor
 					Graphics2D.DrawImage(new(2, (h - 24) / 2), new(24, 24));
 				}
 
-				Vector2F textDrawingPosition = Anchor.GetPositionGivenAlignment(l.TextAlignment, self.RenderBounds.Size, l.TextPadding);
+				Vector2F textDrawingPosition = l.TextAlignment.GetPositionGivenAlignment(self.RenderBounds.Size, l.TextPadding);
 				Graphics2D.SetDrawColor(l.TextColor);
 				Graphics2D.DrawText(textDrawingPosition, l.Text, l.Font, l.TextSize, l.TextAlignment);
 			};

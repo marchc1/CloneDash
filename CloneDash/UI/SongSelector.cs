@@ -108,7 +108,7 @@ public class MDMCSearchFilter : SearchFilter
 		var menu = dialog.Level.As<CD_MainMenu>();
 		Page = 0;
 		dialog.Selector.ClearSongs();
-		PopulateMDMCCharts(dialog.Selector);
+		//PopulateMDMCCharts(dialog.Selector);
 		return x => true;
 	}
 

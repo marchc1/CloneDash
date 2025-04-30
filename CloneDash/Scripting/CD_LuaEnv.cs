@@ -62,15 +62,15 @@ public class CD_LuaEnv
 		State.Environment["print"] = new LuaFunction("print", print);
 
 		// Enums
-		State.Environment["ANCHOR_TOP_LEFT"] = Anchor.TopLeft.Deconstruct();
-		State.Environment["ANCHOR_TOP_CENTER"] = Anchor.TopCenter.Deconstruct();
-		State.Environment["ANCHOR_TOP_RIGHT"] = Anchor.TopRight.Deconstruct();
-		State.Environment["ANCHOR_CENTER_LEFT"] = Anchor.CenterLeft.Deconstruct();
-		State.Environment["ANCHOR_CENTER"] = Anchor.Center.Deconstruct();
-		State.Environment["ANCHOR_CENTER_RIGHT"] = Anchor.CenterRight.Deconstruct();
-		State.Environment["ANCHOR_BOTTOM_LEFT"] = Anchor.BottomLeft.Deconstruct();
-		State.Environment["ANCHOR_BOTTOM_CENTER"] = Anchor.BottomCenter.Deconstruct();
-		State.Environment["ANCHOR_BOTTOM_RIGHT"] = Anchor.BottomRight.Deconstruct();
+		State.Environment["ANCHOR_TOP_LEFT"] = (int)Anchor.TopLeft;
+		State.Environment["ANCHOR_TOP_CENTER"] = (int)Anchor.TopCenter;
+		State.Environment["ANCHOR_TOP_RIGHT"] = (int)Anchor.TopRight;
+		State.Environment["ANCHOR_CENTER_LEFT"] = (int)Anchor.CenterLeft;
+		State.Environment["ANCHOR_CENTER"] = (int)Anchor.Center;
+		State.Environment["ANCHOR_CENTER_RIGHT"] = (int)Anchor.CenterRight;
+		State.Environment["ANCHOR_BOTTOM_LEFT"] = (int)Anchor.BottomLeft;
+		State.Environment["ANCHOR_BOTTOM_CENTER"] = (int)Anchor.BottomCenter;
+		State.Environment["ANCHOR_BOTTOM_RIGHT"] = (int)Anchor.BottomRight;
 
 		State.Environment["TEXTURE_WRAP_REPEAT"] = (int)TextureWrap.TEXTURE_WRAP_REPEAT;
 		State.Environment["TEXTURE_WRAP_CLAMP"] = (int)TextureWrap.TEXTURE_WRAP_CLAMP;

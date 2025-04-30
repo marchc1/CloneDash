@@ -12,7 +12,7 @@
         public static readonly TextAlignment Bottom = new(2);
 
         public static Anchor FromTextAlignment(TextAlignment horizontal, TextAlignment vertical) {
-            return new Anchor(1 + (vertical.Alignment * 3) + horizontal.Alignment);
+            return (Anchor)(1 + (vertical.Alignment * 3) + horizontal.Alignment);
         }
     }
 }

@@ -683,8 +683,8 @@ namespace Nucleus.UI
 				}
 			}
 			else if (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft) {
-				var np = Anchor.CalculatePosition(currentBounds.Pos, currentBounds.Size, Origin, true);
-				var npO = Anchor.CalculatePosition(new(0, 0), Parent.RenderBounds.Size, Anchor, false);
+				var np = Origin.CalculatePosition(currentBounds.Pos, currentBounds.Size, true);
+				var npO = Anchor.CalculatePosition(new(0, 0), Parent.RenderBounds.Size, false);
 				currentBounds.Pos = npO + np;
 			}
 

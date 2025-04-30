@@ -105,7 +105,7 @@ namespace Nucleus.UI.Elements
             Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
             Graphics2D.SetDrawColor(TextColor);
-            var pnt = Anchor.CalculatePosition(new(TitlePos.Horizontal == 0 ? 8 : 0, 0), new(width, height), TitlePos);
+            var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
             if (Image != null) {
                 ImageOrientation = ImageOrientation.Centered;
                 ImageDrawing(new(4, 4), new(height - 8, height - 8));
