@@ -5,6 +5,7 @@ using Nucleus;
 using Nucleus.Core;
 using Nucleus.Rendering;
 using Nucleus.Types;
+using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
 using static CloneDash.MuseDashCompatibility;

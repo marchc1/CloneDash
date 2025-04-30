@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Nucleus;
+namespace Nucleus.Util;
 
 public static class ReflectionTools
 {
@@ -9,7 +9,7 @@ public static class ReflectionTools
 						.Where(x => x.IsClass && !x.IsAbstract && x.IsSubclassOf(type))
 						.ToArray();
 	public static T[] InstantiateAllInheritorsOfAbstractType<T>() {
-		var inheritors = GetInheritorsOfAbstractType(typeof(T));
+		var inheritors = typeof(T).GetInheritorsOfAbstractType();
 		T[] ret = new T[inheritors.Length];
 		for (int i = 0; i < inheritors.Length; i++) {
 			ret[i] = (T)Activator.CreateInstance(inheritors[i]);
