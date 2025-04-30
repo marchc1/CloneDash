@@ -41,7 +41,7 @@ public class ModelManagement : IManagedMemory
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		var savePath = Path.Combine(pathID, path);
-		if (ModelDatas.TryGetValue(savePath, out var data)) {
+		if (ModelDatas.TryGetValue(savePath, out var data) && data != null) {
 			return data;
 		}
 
