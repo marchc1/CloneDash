@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nucleus.Core;
+using Nucleus.Files;
 using Nucleus.Types;
 using Raylib_cs;
 
 namespace Nucleus.ManagedMemory
 {
-    public interface ITexture : IManagedMemory {
+	public interface ITexture : IManagedMemory {
         public int Width { get; }
         public int Height { get; }
         public PixelFormat Format { get; }

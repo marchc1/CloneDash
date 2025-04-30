@@ -4,8 +4,8 @@ using CloneDash.Game;
 using Newtonsoft.Json;
 
 using Nucleus.Audio;
-using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 namespace CloneDash.Modding.Descriptors;

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Nucleus.Core;
+using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Util;
 using Raylib_cs;

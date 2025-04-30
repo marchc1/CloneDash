@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Text;
 
-namespace Nucleus.Core
+namespace Nucleus.Files
 {
 	/// <summary>
 	/// Base search path that allows multiple different ways to read data from disk, ZIP files, etc...
@@ -328,7 +328,7 @@ namespace Nucleus.Core
 		public static T AddTemporarySearchPath<T>(string pathID, T path, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
 			var level = EngineCore.Level ?? throw new NotSupportedException("Cannot create temporary search paths when no level is active.");
 
-			var pathObj = AddSearchPath<T>(pathID, path, add);
+			var pathObj = AddSearchPath(pathID, path, add);
 			level.AddFinalizer((lvl) => RemoveSearchPath(pathID, pathObj));
 			return pathObj;
 		}

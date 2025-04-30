@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Nucleus.Core;
+using Nucleus.Files;
 
 namespace CloneDash.Modding.Descriptors
 {

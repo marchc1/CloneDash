@@ -1,6 +1,6 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus;
-using Nucleus.Core;
+using Nucleus.Files;
 
 namespace CloneDash.Modding.Settings
 {

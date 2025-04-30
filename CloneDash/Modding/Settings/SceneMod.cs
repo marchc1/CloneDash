@@ -1,7 +1,7 @@
 ﻿using CloneDash.Data;
 using CloneDash.Modding.Descriptors;
 using Nucleus;
-using Nucleus.Core;
+using Nucleus.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;

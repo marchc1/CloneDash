@@ -1,9 +1,10 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Files;
+using Raylib_cs;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Core
 {
-    public class FontManager
+	public class FontManager
     {
         private int[] RegisteredCodepoints = [];
         private HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
