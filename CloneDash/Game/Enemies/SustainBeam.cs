@@ -79,6 +79,7 @@ namespace CloneDash.Game.Entities
 					lvl.AddFever(FeverGiven);
 					lvl.SetSustain(Pathway, null);
 					lvl.Scene.PlayPunch();
+					GetStats().Hit(this, 0);
 				}
 				// check if pathway being held
 				else if (!PathwayCheck.IsPressed) {
@@ -87,6 +88,7 @@ namespace CloneDash.Game.Entities
 					ShouldDraw = false;
 					lvl.SetSustain(Pathway, null);
 					PunishPlayer();
+					GetStats().Miss(this);
 				}
 				else {
 					var now = GetConductor().Time;

@@ -14,7 +14,14 @@ namespace CloneDash.Game.Entities
 
 		protected override void OnHit(PathwaySide side, double distanceToHit) {
 			Kill();
+			GetStats().Hit(this, distanceToHit);
 		}
+
+		protected override void OnMiss() {
+			base.OnMiss();
+			GetStats().Miss(this);
+		}
+
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
 				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));

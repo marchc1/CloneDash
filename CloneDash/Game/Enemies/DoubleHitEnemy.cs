@@ -15,11 +15,13 @@
 
         protected override void OnHit(PathwaySide side, double distanceToHit) {
             Kill();
-        }
+			GetStats().Hit(this, distanceToHit);
+		}
 
         protected override void OnMiss() {
             DamagePlayer();
-        }
+			GetStats().Miss(this);
+		}
 
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {

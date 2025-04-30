@@ -15,7 +15,13 @@ namespace CloneDash.Game.Entities
 
         protected override void OnPass() {
             RewardPlayer();
-        }
+			GetStats().Pass(this);
+		}
+
+		protected override void OnPunishment() {
+			base.OnPunishment();
+			GetStats().Miss(this);
+		}
 
 		public override void DetermineAnimationPlayback() {
 			Position = new(0, 450);

@@ -32,6 +32,7 @@ namespace CloneDash.Game.Entities
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();
+			GetStats().Hit(this, 0);
 		}
 
 		public override void Think(FrameState frameState) {
@@ -71,6 +72,7 @@ namespace CloneDash.Game.Entities
 			if (Hits > 0) return;
 
 			DamagePlayer();
+			GetStats().Miss(this);
 		}
 
 		public override void Initialize() {
