@@ -112,6 +112,7 @@ namespace CloneDash
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
 			ChartSheet sheet = new(song);
+			sheet.Rating = song.Difficulty(MDinfo.difficulty);
 
 			bool first = true;
 			Dictionary<int, List<MusicData>> LongPresses = new();
