@@ -26,13 +26,17 @@ namespace CloneDash.Game.Entities
 			}
 		}
 
+		protected override void OnReward() {
+			base.OnReward();
+			GetStats().Hit(this, 0);
+		}
+
 		private void Complete() {
 			var level = Level.As<CD_GameLevel>();
 			level.SpawnTextEffect($"PERFECT {Hits}/{MaxHits}", level.GetPathway(PathwaySide.Top).Position, TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();
-			GetStats().Hit(this, 0);
 		}
 
 		public override void Think(FrameState frameState) {

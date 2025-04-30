@@ -42,11 +42,6 @@ public enum CD_StatisticsGrade
 	F = -1
 }
 
-public static class CD_StatsExtensions
-{
-	public static bool IsOK(this CD_EnemyStatisticsState state) => state >= CD_EnemyStatisticsState.Passed;
-}
-
 public class CD_EnemyStatistics
 {
 	public CD_BaseEnemy Enemy;
@@ -264,10 +259,7 @@ public class StatisticsData
 	}
 
 	public bool CalculateFullCombo() {
-		foreach (var kvp in EnemyInfo) {
-			if (!kvp.Value.State.IsOK())
-				return false;
-		}
-		return true;
+		Compute();
+		return Misses <= 0;
 	}
 }

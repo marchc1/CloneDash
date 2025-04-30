@@ -59,6 +59,7 @@ namespace CloneDash.Game.Entities
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
+
 			Position = new(xoffset, 450);
 			base.DetermineAnimationPlayback();
 		}

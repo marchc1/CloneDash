@@ -58,6 +58,9 @@ namespace CloneDash.Game.Entities
 			return base.VisTest(gamewidth, gameheight, xPosition);
 		}
 
+		protected override void OnReward() {
+			GetStats().Hit(this, 0);
+		}
 
 		public override void Think(FrameState frameState) {
 			if (HeldState) {
@@ -79,7 +82,6 @@ namespace CloneDash.Game.Entities
 					lvl.AddFever(FeverGiven);
 					lvl.SetSustain(Pathway, null);
 					lvl.Scene.PlayPunch();
-					GetStats().Hit(this, 0);
 				}
 				// check if pathway being held
 				else if (!PathwayCheck.IsPressed) {

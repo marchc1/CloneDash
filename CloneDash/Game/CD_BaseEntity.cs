@@ -306,6 +306,7 @@ namespace CloneDash.Game
 				Shown = true;
 				OnFirstVisible();
 			}
+
 			return ret;
 		}
 

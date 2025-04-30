@@ -117,6 +117,9 @@ namespace CloneDash.Game
 
 
 		public void SeekTo(double time) {
+			InMashState = false;
+			MashingEntity = null;
+
 			if (Music != null) {
 				Music.Playhead = (float)time;
 			}
@@ -132,6 +135,7 @@ namespace CloneDash.Game
 			Combo = 0;
 			Health = 250;
 			InFever = false;
+			WhenDidFeverStart = 0;
 			lastNoteHit = false;
 			Score = 0;
 			Fever = 0;
@@ -140,11 +144,22 @@ namespace CloneDash.Game
 
 			foreach (var entity in Entities) {
 				if (entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
-					mEnt.RewardPlayer();
-					mEnt.Kill();
+					switch (mEnt.Interactivity) {
+						case EntityInteractivity.Hit:
+							mEnt.Hit(mEnt.Pathway, 0);
+							mEnt.RewardPlayer();
+							break;
+						case EntityInteractivity.SamePath:
+							mEnt.Hit(mEnt.Pathway, 0);
+							mEnt.RewardPlayer();
+							break;
+						case EntityInteractivity.Avoid:
+							mEnt.Pass();
+							mEnt.RewardPlayer();
+							break;
+					}
 				}
 			}
-
 		}
 
 		public const string STRING_HP = "HP: {0}";
@@ -1107,8 +1122,8 @@ namespace CloneDash.Game
 				Graphics2D.SetDrawColor(255, 255, 255);
 				var p = new Vector2F((float)entCD.XPos, yPosition);
 				; // Calculate the final beat position on the track
-				entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
-				ent.Position = p;
+				//entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
+				//ent.Position = p;
 				ent.Render(frameState);
 				Rlgl.DrawRenderBatchActive();
 			}
