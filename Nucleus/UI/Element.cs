@@ -5,6 +5,7 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using MouseButton = Nucleus.Types.MouseButton;
 
@@ -286,7 +287,7 @@ namespace Nucleus.UI
 			return Create<T>(AddParent, toAdd);
 		}
 
-		public virtual void Add<T>(out T addInto) where T : Element => addInto = Add<T>();
+		public virtual void Add<T>([NotNull] out T? addInto) where T : Element => addInto = Add<T>();
 
 		public static T Create<T>(Element? parent = null, T? ret = null) where T : Element {
 			ret = ret ?? (T?)Activator.CreateInstance(typeof(T)) ?? throw new Exception("A fatal exception occured during element creation.");

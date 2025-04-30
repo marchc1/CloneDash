@@ -193,6 +193,7 @@ namespace Nucleus.UI
 		}
 
 		public event TextChangedDelegate? OnUserPressedEnter;
+		public event TextChangedDelegate? OnTextChanged;
 
 		public override void KeyboardFocusLost(Element self, bool demanded) {
 			base.KeyboardFocusLost(self, demanded);
@@ -204,6 +205,8 @@ namespace Nucleus.UI
 				return;
 
 			LastKeyboardInteraction = DateTime.Now;
+			var oldText = Text;
+
 			if (vischar.Type == CharacterType.VisibleCharacter) {
 				if (state.ControlDown) {
 					switch (key.Key) {
@@ -217,6 +220,7 @@ namespace Nucleus.UI
 							Logs.Info("Copied to clipboard!");
 							break;
 						case 86:
+							
 							string txt = Clipboard.Text;
 							if (Caret.HasSelection) {
 								Text = Caret.RemoveStringSelection(Text);
@@ -244,6 +248,10 @@ namespace Nucleus.UI
 						if (Caret.HasSelection) {
 							Text = Caret.RemoveStringSelection(Text);
 							Caret.ClearSelection(Caret.Start);
+
+							if (Text != oldText)
+								OnTextChanged?.Invoke(this, oldText, Text);
+
 							return;
 						}
 						if (Caret.Pointer == 0) break;
@@ -270,6 +278,9 @@ namespace Nucleus.UI
 						break;
 				}
 			}
+
+			if(Text != oldText)
+				OnTextChanged?.Invoke(this, oldText, Text);
 		}
 	}
 }

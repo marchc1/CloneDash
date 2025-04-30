@@ -234,7 +234,6 @@ public class CD_MainMenu : Level
 	}
 
 	internal void PopulateMDMCCharts(SongSelector selector, string? query = null, MDMCWebAPI.Sort sort = MDMCWebAPI.Sort.LikesCount, int page = 1, bool onlyRanked = false) {
-
 		MDMCWebAPI.SearchCharts(query, sort, page, onlyRanked).Then((resp) => {
 			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
 			var songs = new List<CustomChartsSong>();

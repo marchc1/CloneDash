@@ -118,6 +118,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 			selector.AddSongs(MuseDashCompatibility.Songs);
+			selector.SearchFilter = new MuseDashSearchFilter();
 		});
 		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());

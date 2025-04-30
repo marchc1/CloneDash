@@ -10,8 +10,48 @@ using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Game;
+using System.Collections.Concurrent;
 
 namespace CloneDash.UI;
+
+public abstract class SearchFilter {
+	public abstract void Populate(SongSearchDialog dialog);
+	public abstract Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog);
+
+	public void TextInput(SongSearchDialog dialog, string field, string helperText) {
+		var type = this.GetType();
+		var fieldInfo = type.GetField(field);
+		if (fieldInfo == null) throw new NotImplementedException();
+
+		dialog.Add(out Textbox textbox);
+		textbox.Dock = Dock.Top;
+		textbox.Size = new(48);
+		textbox.Text = fieldInfo.GetValue(this)?.ToString() ?? "";
+		textbox.HelperText = helperText;
+		textbox.TextSize = 20;
+		textbox.BorderSize = 0;
+		textbox.OnTextChanged += (_, _, nt) => fieldInfo.SetValue(this, nt);
+		dialog.SetTag(field, textbox);
+	}
+}
+public class MuseDashSearchFilter : SearchFilter
+{
+	public string FilterText;
+
+	public override void Populate(SongSearchDialog dialog) {
+		TextInput(dialog, nameof(FilterText), "Filter by name, song author, etc..");
+	}
+
+	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
+		return x =>
+			(
+				FilterText == null ? true : 
+				x.Name.ToLower().Contains(FilterText.ToLower()) ||
+				x.Author.ToLower().Contains(FilterText.ToLower())
+			);
+	}
+}
+
 
 public class SongSelector : Panel, IMainMenuPanel
 {
@@ -21,39 +61,61 @@ public class SongSelector : Panel, IMainMenuPanel
 	public List<ChartSong> Songs { get; set; } = [];
 	public List<ChartSong>? SongsPostFilter { get; set; }
 
-	public Predicate<ChartSong>? CurrentFilter { get; private set; }
+	public Predicate<ChartSong>? CompiledFilter { get; private set; }
 
 	public List<ChartSong> GetSongsList() => SongsPostFilter ?? Songs;
+
+	public SongSearchBar SearchBar;
+	public SearchFilter? SearchFilter;
+	public SongSearchDialog? ActiveDialog;
+
+	public void TriggerUserInitializeSearch() {
+		if (SearchFilter == null) return;
+		UI.Add(out ActiveDialog);
+		ActiveDialog.OnUserSubmit += () => TriggerUserSubmittedSearch();
+
+		SearchFilter.Populate(ActiveDialog);
+	}
+
+	public void TriggerUserSubmittedSearch() {
+		if (SearchFilter == null) return;
+		if (!IValidatable.IsValid(ActiveDialog)) return;
+
+		ApplyPredicate(SearchFilter.BuildPredicate(ActiveDialog));
+	}
 
 	public void AddSongs(IEnumerable<ChartSong> songs) {
 		Songs.AddRange(songs);
 
-		ApplyFilter(CurrentFilter);
+		ApplyPredicate(CompiledFilter);
 		InvalidateLayout();
 	}
+
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
 		ThinkDiscs();
 	}
-	public void ApplyFilter(Predicate<ChartSong>? filter) {
+
+	public void ApplyPredicate(Predicate<ChartSong>? filter) {
 		if (filter == null) {
 			ClearFilter();
 			return;
 		}
 
-		if (SongsPostFilter == null)
-			SongsPostFilter = [];
-		else
-			SongsPostFilter.Clear();
+		ConcurrentBag<ChartSong> multicoreSearchBag = [];
 
-		foreach (var song in Songs) {
+		Parallel.ForEach(Songs, (song) => {
 			if (filter(song))
-				SongsPostFilter.Add(song);
-		}
+				multicoreSearchBag.Add(song);
+		});
 
-		CurrentFilter = filter;
+		SongsPostFilter = multicoreSearchBag.ToList();
+		SongsPostFilter.Sort((x, y) => x.Name.CompareTo(y.Name));
+		CompiledFilter = filter;
 
 		SelectionUpdated(false);
+		InvalidateLayout();
+		DiscIndex = 0;
 	}
 
 	public void ClearFilter() {
@@ -61,7 +123,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		SongsPostFilter = null;
 		SelectionUpdated(true);
 	}
-
 
 	public delegate void UserWantsMore();
 	public event UserWantsMore? UserWantsMoreSongs;
@@ -205,8 +266,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	// Constantly running logic
 	public void ThinkDiscs() {
 		FigureOutDisk();
-		if (!InSheetSelection)
-			DemandKeyboardFocus();
+		RequestKeyboardFocus();
 
 		float width = RenderBounds.W, height = RenderBounds.H;
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
@@ -345,6 +405,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		Add(out Disc5);
 		Add(out CurrentTrackName);
 		Add(out CurrentTrackAuthor);
+		Add(out SearchBar);
+
+		SearchBar.MouseReleaseEvent += SearchBar_MouseReleaseEvent;
 
 		Add(out Loading);
 		Loading.Anchor = Anchor.Center;
@@ -387,6 +450,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		DemandKeyboardFocus();
 	}
 
+	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+		TriggerUserInitializeSearch();
+	}
+
 	public override void MouseClick(FrameState state, MouseButton button) {
 		base.MouseClick(state, button);
 		DemandKeyboardFocus();
@@ -395,7 +462,10 @@ public class SongSelector : Panel, IMainMenuPanel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		LayoutDiscs(width, height);
+		SearchBar.Position = new(width / 2, height * .1f);
+		SearchBar.Size = new(width / 2f, height * 0.06f);
 	}
+
 	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Types.KeyboardKey key) {
 		base.KeyPressed(keyboardState, key);
 		if (key == KeyboardLayout.USA.Left || key == KeyboardLayout.USA.A) {
@@ -419,4 +489,5 @@ public class SongSelector : Panel, IMainMenuPanel
 		CanAcceptMoreSongs = true;
 		Loading.Visible = false;
 	}
+
 }
