@@ -195,7 +195,7 @@ public class StatisticsData
 			Grade = CD_StatisticsGrade.SSS;
 		}
 		else {
-			double gradePercentage = (Perfects + (Greats * .5d)) / (Perfects + Greats + Misses);
+			double gradePercentage = ((Perfects + (Greats * .5d)) / (Perfects + Greats + Misses)) * 100d;
 			if (gradePercentage >= 95d) Grade = CD_StatisticsGrade.SS;
 			else if (gradePercentage >= 90d) Grade = CD_StatisticsGrade.S;
 			else if (gradePercentage >= 80d) Grade = CD_StatisticsGrade.A;
@@ -203,7 +203,7 @@ public class StatisticsData
 			else if (gradePercentage >= 60d) Grade = CD_StatisticsGrade.C;
 			else Grade = CD_StatisticsGrade.D;
 
-			Accuracy = gradePercentage * 100;
+			Accuracy = gradePercentage;
 		}
 	}
 
