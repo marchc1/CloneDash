@@ -10,8 +10,8 @@ namespace CloneDash.Modding.Descriptors
 		public Descriptor_MultiAnimationClass MainResponse => touchdata.MainResponse;
 
 		public string Start => string.Format(touchdata.StartResponse, response);
-		public string Standby => string.Format(touchdata.StartResponse, response);
-		public string End => string.Format(touchdata.StartResponse, response);
+		public string Standby => string.Format(touchdata.StandbyResponse, response);
+		public string End => string.Format(touchdata.EndResponse, response);
 	}
 	public class CharacterDescriptor_MainShowTouch {
 		[JsonProperty("response_main")] public Descriptor_MultiAnimationClass? MainResponse;
@@ -86,6 +86,7 @@ namespace CloneDash.Modding.Descriptors
 	public class CharacterDescriptor_Victory
 	{
 		[JsonProperty("model")] public string Model;
+		[JsonProperty("standby")] public string Standby;
 	}
 	public class CharacterDescriptor_Fail
 	{
@@ -157,6 +158,7 @@ namespace CloneDash.Modding.Descriptors
 
 		public string GetPlayModel() => Play.Model;
 		public string GetMainShowModel() => MainShow.Model;
+		public string GetVictoryModel() => Victory.Model;
 		public string GetMainShowMusic() => MainShow.Music;
 
 		internal void MountToFilesystem() {
