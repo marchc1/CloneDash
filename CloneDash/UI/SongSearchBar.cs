@@ -13,6 +13,8 @@ public class SongSearchDialog : Panel
 	public delegate void OnUserSubmitD();
 	public event OnUserSubmitD? OnUserSubmit;
 
+	public void SetBarText(string text) => Bar.SearchQuery = string.IsNullOrEmpty(text) ? null : text;
+
 	protected override void Initialize() {
 		base.Initialize();
 		MakePopup();

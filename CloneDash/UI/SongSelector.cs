@@ -43,6 +43,7 @@ public class MuseDashSearchFilter : SearchFilter
 	}
 
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
+		dialog.SetBarText(FilterText);
 		return x =>
 			(
 				FilterText == null ? true : 
@@ -72,6 +73,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public void TriggerUserInitializeSearch() {
 		if (SearchFilter == null) return;
 		UI.Add(out ActiveDialog);
+		ActiveDialog.Bar = SearchBar;
 		ActiveDialog.OnUserSubmit += () => TriggerUserSubmittedSearch();
 
 		SearchFilter.Populate(ActiveDialog);
