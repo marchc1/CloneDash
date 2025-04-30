@@ -549,8 +549,8 @@ namespace Nucleus.UI
 
 
 			var layoutSize = _size;
-			if (_dynamicallySized) {
-				var parentSize = Parent?.Size ?? UI.Size;
+			if (_dynamicallySized && Parent != null) {
+				var parentSize = Parent.RenderBounds.Size;
 				layoutSize = _size * parentSize;
 			}
 
