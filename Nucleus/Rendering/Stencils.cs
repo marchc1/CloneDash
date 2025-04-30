@@ -1,5 +1,4 @@
-﻿using Nucleus.Types;
-using Raylib_cs;
+﻿using Raylib_cs;
 
 namespace Nucleus.Rendering;
 

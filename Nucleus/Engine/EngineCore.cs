@@ -13,6 +13,7 @@ using static Nucleus.EngineCore;
 using System.Runtime.ExceptionServices;
 using System.Buffers.Text;
 using static System.Net.Mime.MediaTypeNames;
+using Nucleus.Rendering;
 
 namespace Nucleus
 {
