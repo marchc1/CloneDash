@@ -2,7 +2,7 @@
 using Nucleus;
 using System.Security.Principal;
 
-namespace CloneDash.Game;
+namespace CloneDash.Game.Statistics;
 
 public enum CD_EnemyStatisticsState
 {
@@ -72,10 +72,10 @@ public class CD_EnemyStatistics
 		var prePerfectRange = Enemy.PrePerfectRange;
 		var postPerfectRange = Enemy.PostPerfectRange;
 
-		Accuracy = hitTime > (postPerfectRange / 2d) 
-					? CD_EnemyStatisticsAccuracy.Late 
-					: hitTime < (-prePerfectRange / 2d) 
-						? CD_EnemyStatisticsAccuracy.Early 
+		Accuracy = hitTime > postPerfectRange / 2d
+					? CD_EnemyStatisticsAccuracy.Late
+					: hitTime < -prePerfectRange / 2d
+						? CD_EnemyStatisticsAccuracy.Early
 						: CD_EnemyStatisticsAccuracy.Precise;
 
 		double preperfect = -Enemy.PrePerfectRange, postperfect = Enemy.PostPerfectRange;
@@ -121,7 +121,7 @@ public class StatisticsData
 				title = to;
 				break;
 			case CD_StatisticsImpressiveness.FullCombo:
-				if(to != CD_StatisticsImpressiveness.AllPerfect)
+				if (to != CD_StatisticsImpressiveness.AllPerfect)
 					title = to;
 				break;
 			case CD_StatisticsImpressiveness.Cleared:
@@ -156,7 +156,7 @@ public class StatisticsData
 		Exacts = 0;
 		Lates = 0;
 
-		foreach(var ent in OrderedEnemies) {
+		foreach (var ent in OrderedEnemies) {
 			var info = EnemyInfo[ent];
 
 			switch (info.Accuracy) {
@@ -195,7 +195,7 @@ public class StatisticsData
 			Grade = CD_StatisticsGrade.SSS;
 		}
 		else {
-			double gradePercentage = ((Perfects + (Greats * .5d)) / (Perfects + Greats + Misses)) * 100d;
+			double gradePercentage = (Perfects + Greats * .5d) / (Perfects + Greats + Misses) * 100d;
 			if (gradePercentage >= 95d) Grade = CD_StatisticsGrade.SS;
 			else if (gradePercentage >= 90d) Grade = CD_StatisticsGrade.S;
 			else if (gradePercentage >= 80d) Grade = CD_StatisticsGrade.A;
@@ -225,7 +225,7 @@ public class StatisticsData
 		var stats = GetStatisticsForEnemy(enemy);
 		var accuracy = stats.Hit(hitTime);
 
-		if(stats.State != CD_EnemyStatisticsState.Perfect) {
+		if (stats.State != CD_EnemyStatisticsState.Perfect) {
 			DowngradeTitle(ref Title, CD_StatisticsImpressiveness.FullCombo);
 		}
 

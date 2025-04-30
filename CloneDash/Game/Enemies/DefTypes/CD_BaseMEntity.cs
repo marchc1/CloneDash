@@ -1,5 +1,6 @@
 ﻿using CloneDash.Data;
 using CloneDash.Game.Entities;
+using CloneDash.Game.Statistics;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;

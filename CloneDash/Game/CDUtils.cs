@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game;
+using CloneDash.Game.Input;
 using Nucleus.Engine;
 using System;
 using System.Collections.Generic;

@@ -1,12 +1,12 @@
 ﻿using CloneDash.Data;
-using CloneDash.Game;
+using CloneDash.Game.Statistics;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.UI;
 
 namespace CloneDash.Levels
 {
-    public class CD_Statistics : Level
+	public class CD_Statistics : Level
     {
 		ChartSheet sheet;
 		StatisticsData stats;

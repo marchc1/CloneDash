@@ -22,6 +22,7 @@ using Lua;
 using Color = Raylib_cs.Color;
 using Nucleus.Entities;
 using System.Diagnostics.CodeAnalysis;
+using CloneDash.Game.Statistics;
 
 namespace CloneDash.Game;
 
