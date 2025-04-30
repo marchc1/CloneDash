@@ -1176,7 +1176,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	private double LastAttackTime;
 	private PathwaySide LastAttackPathway;
 
-	public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
+	public void BroadcastEntitySignal(Entity entityFrom, CD_EntitySignalType signalType, object? data = null) {
 		if (entityFrom is not CD_BaseMEntity mentFrom) return;
 
 		foreach (var entity in Entities) {
@@ -1184,7 +1184,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			ment.OnSignalReceived(mentFrom, signalType, data);
 		}
 	}
-	public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
+	public void SendEntitySignal(Entity entityFrom, Entity entityTo, CD_EntitySignalType signalType, object? data = null) {
 		if (entityFrom is not CD_BaseMEntity mentFrom) return;
 
 		if (entityTo is not CD_BaseMEntity ment) return;

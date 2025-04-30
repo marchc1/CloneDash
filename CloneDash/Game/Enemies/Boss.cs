@@ -66,7 +66,7 @@ public class Boss : CD_BaseEnemy
 
 	}
 
-	public override void OnSignalReceived(CD_BaseMEntity from, EntitySignalType signalType, object? data = null) {
+	public override void OnSignalReceived(CD_BaseMEntity from, CD_EntitySignalType signalType, object? data = null) {
 		// If not visible, ignore the signal
 		// Just so things don't get clogged up and a fire animation plays
 		// when nothing is being fired.
@@ -76,7 +76,7 @@ public class Boss : CD_BaseEnemy
 		switch (from) {
 			case SingleHitEnemy she:
 				// Confirm that this is boss related, and the first appearance
-				if (she.Variant.IsBoss() && signalType == EntitySignalType.FirstAppearance) {
+				if (she.Variant.IsBoss() && signalType == CD_EntitySignalType.FirstAppearance) {
 					// Figure out which animation to play.
 
 					// Attack2 is defined with the same class as Attack1; less code typed out here
@@ -104,14 +104,14 @@ public class Boss : CD_BaseEnemy
 					}
 				}
 
-				if(signalType == EntitySignalType.FirstHit) {
+				if(signalType == CD_EntitySignalType.FirstHit) {
 					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Hurt, false);
 					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
 				}
 				break;
 			case Masher me:
 				if (me.Variant.IsBoss()) {
-					if (signalType == EntitySignalType.FirstAppearance) {
+					if (signalType == CD_EntitySignalType.FirstAppearance) {
 						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Multi.Attack.Name, false);
 						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
 					}

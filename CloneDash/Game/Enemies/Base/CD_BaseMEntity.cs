@@ -149,11 +149,11 @@ namespace CloneDash.Game
 		public double Length { get; set; }
 		public int Speed { get; set; }
 
-		public virtual void OnSignalReceived(CD_BaseMEntity from, EntitySignalType signalType, object? data = null) {
+		public virtual void OnSignalReceived(CD_BaseMEntity from, CD_EntitySignalType signalType, object? data = null) {
 
 		}
-		public void SendSignal(CD_BaseMEntity to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
-		public void BroadcastSignal(EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
+		public void SendSignal(CD_BaseMEntity to, CD_EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
+		public void BroadcastSignal(CD_EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
 
 		/// <summary>
 		/// Damages the player as a punishment (which also resets their combo)
@@ -311,7 +311,7 @@ namespace CloneDash.Game
 
 		protected virtual void OnFirstVisible() {
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
+				SendSignal(GetGameLevel().Boss, CD_EntitySignalType.FirstAppearance);
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
@@ -323,7 +323,7 @@ namespace CloneDash.Game
 		/// </summary>
 		protected virtual void OnHit(PathwaySide side, double distanceToHit) {
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstHit);
+				SendSignal(GetGameLevel().Boss, CD_EntitySignalType.FirstHit);
 		}
 		protected virtual void OnMiss() {
 

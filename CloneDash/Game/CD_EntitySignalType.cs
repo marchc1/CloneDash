@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game
 {
-	public enum EntitySignalType
+	public enum CD_EntitySignalType
 	{
 		FirstAppearance,
 		FirstHit
