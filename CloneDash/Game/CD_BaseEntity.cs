@@ -3,6 +3,7 @@ using CloneDash.Game.Entities;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Entities;
 using Nucleus.Types;
 using Raylib_cs;
 

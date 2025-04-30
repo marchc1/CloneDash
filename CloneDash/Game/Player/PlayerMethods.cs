@@ -9,6 +9,7 @@ using Nucleus.UI;
 using Nucleus;
 using FMOD;
 using Raylib_cs;
+using Nucleus.Entities;
 
 namespace CloneDash.Game
 {

@@ -3,6 +3,7 @@ using CloneDash.Game.Input;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Entities;
 using Nucleus.Types;
 using System;
 using System.Collections.Generic;

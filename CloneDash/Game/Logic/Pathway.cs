@@ -1,6 +1,7 @@
 ﻿using CloneDash.Animation;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Entities;
 using Nucleus.Types;
 using Raylib_cs;
 

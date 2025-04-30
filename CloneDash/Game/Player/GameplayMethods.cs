@@ -5,6 +5,7 @@ using System.Numerics;
 using Nucleus.Types;
 using Raylib_cs;
 using CloneDash.Game.Entities;
+using Nucleus.Entities;
 
 namespace CloneDash.Game
 {

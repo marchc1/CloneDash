@@ -21,6 +21,7 @@ using CloneDash.Animation;
 using CloneDash.Scripting;
 using Lua;
 using Color = Raylib_cs.Color;
+using Nucleus.Entities;
 
 namespace CloneDash.Game
 {

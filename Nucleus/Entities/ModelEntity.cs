@@ -1,10 +1,11 @@
 ﻿using Nucleus.Core;
+using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Raylib_cs;
 
-namespace Nucleus.Engine
+namespace Nucleus.Entities
 {
 
 	public class ModelEntity : Entity
@@ -71,7 +72,7 @@ namespace Nucleus.Engine
 
 			Model.Render();
 
-			if (isvalid) 
+			if (isvalid)
 				shader?.Deactivate();
 		}
 	}
