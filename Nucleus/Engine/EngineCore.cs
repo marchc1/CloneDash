@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using Nucleus.Rendering;
 using Nucleus.Files;
+using System.Numerics;
 
 namespace Nucleus;
 
@@ -228,6 +229,15 @@ public static class EngineCore
 
 		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
 			Graphics2D.RegisterCodepoints(languageLine);
+
+		float scaleRatio = (float)Raylib.GetRenderWidth() / (float)Raylib.GetScreenWidth();
+		unsafe {
+			screenScale = Raylib.New<float>(4 * 4);
+			var scale = Raymath.MatrixToFloatV(Raymath.MatrixScale(scaleRatio, scaleRatio, 1.0f));
+			for (int i = 0; i < 4 * 4; i++) {
+				screenScale[i] = scale.v[i];
+			}
+		}
 	}
 
 	private static void __loadLevel(Level level, object[] args) {
@@ -365,18 +375,57 @@ public static class EngineCore
 	public static FrameState CurrentFrameState { get; set; }
 	public static GameInfo GameInfo { get; set; }
 
-	public static float FrameTime => Raylib.GetFrameTime();
+	private static unsafe float* screenScale;
+	public static double TargetFrameTime { get; private set; } = 0;
+	public static double CurrentAppTime { get; private set; } = 0;
+	public static double PreviousAppTime { get; private set; } = 0;
+	public static double UpdateTime { get; private set; } = 0;
+	public static double DrawTime { get; private set; } = 0;
+	public static double FrameTime { get; private set; } = 0;
 
 	public static bool ShowConsoleLogsInCorner { get; set; } = true;
 	public static bool ShowDebuggingInfo { get; set; } = false;
 	public static string FrameCost { get; set; } = "";
 	public static float FrameCostMS { get; set; }
-	public static float FPS => Raylib.GetFPS();
+
+	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
+	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
+	private const float FPS_STEP = FPS_AVERAGE_TIME_SECONDS / FPS_CAPTURE_FRAMES_COUNT;
+	private static int fps_index = 0;
+	private static float[] fps_history = new float[FPS_CAPTURE_FRAMES_COUNT];
+	private static float fps_average = 0, fps_last = 0;
+	public static float FPS {
+		get {
+			float fpsFrame = (float)FrameTime;
+
+			if (fpsFrame == 0) return 0;
+
+			var t = Raylib.GetTime();
+			if((t - fps_last) > FPS_STEP) {
+				fps_last = (float)t;
+				fps_index = (fps_index + 1) % FPS_CAPTURE_FRAMES_COUNT;
+				fps_average -= fps_history[fps_index];
+				fps_history[fps_index] = fpsFrame / FPS_CAPTURE_FRAMES_COUNT;
+				fps_average += fps_history[fps_index];
+			}
+
+			return MathF.Round(1.0f / fps_average);
+		}
+	}
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 
 	public static void Frame() {
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-		Raylib.BeginDrawing();
+
+		CurrentAppTime = Raylib.GetTime();
+		UpdateTime = CurrentAppTime - PreviousAppTime;
+		PreviousAppTime = CurrentAppTime;
+
+		Rlgl.LoadIdentity();
+		unsafe {
+			Rlgl.MultMatrixf(screenScale);
+		}
+
 		Graphics2D.SetOffset(GetGlobalScreenOffset());
 
 		var screenBounds = GetScreenSize();
@@ -413,7 +462,28 @@ public static class EngineCore
 			__loadLevel(__nextFrameLevel, __nextFrameArgs);
 			__nextFrameLevel = null;
 		}
-		Raylib.EndDrawing();
+
+		Rlgl.DrawRenderBatchActive();
+		Raylib.SwapScreenBuffer();
+
+		CurrentAppTime = Raylib.GetTime();
+		DrawTime = CurrentAppTime - PreviousAppTime;
+		PreviousAppTime = CurrentAppTime;
+		FrameTime = UpdateTime + DrawTime;
+
+		if(FrameTime < TargetFrameTime) {
+			double waitFor = TargetFrameTime - FrameTime;
+			Raylib.WaitTime(waitFor);
+
+			CurrentAppTime = Raylib.GetTime();
+			double waitTime = CurrentAppTime - PreviousAppTime;
+			PreviousAppTime = CurrentAppTime;
+
+			FrameTime += waitTime;
+		}
+
+		Raylib.PollInputEvents();
+		
 		Raylib.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
 		Host.CheckDirty();
@@ -466,9 +536,18 @@ public static class EngineCore
 		get => Platform.GetMousePos();
 	}
 
-	public static void LimitFramerate(int v) {
-		Raylib.SetTargetFPS(v);
+
+
+	public static void LimitFramerate(int fps) {
+		if (fps < 1)
+			TargetFrameTime = 0;
+		else
+			TargetFrameTime = 1.0 / (double)fps;
+
+		Logs.Info($"Target FPS: {fps}, milliseconds: {TargetFrameTime * 1000:0.00}");
 	}
+
+
 	private static bool shouldThrow = false;
 
 	private static HashSet<Assembly> earlyJITAssemblies = [];
