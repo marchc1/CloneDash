@@ -46,8 +46,10 @@ namespace CloneDash
 				return result;
 			}
 
-			Catalog = new(Path.Combine(WhereIsMuseDashInstalled, "MuseDash_Data/StreamingAssets/aa/catalog.json"));
-			Bundles = new(Catalog);
+			using (CD_StaticSequentialProfiler.StartStackFrame("Build Catalog")) {
+				Catalog = new(Path.Combine(WhereIsMuseDashInstalled, "MuseDash_Data/StreamingAssets/aa/catalog.json"));
+				Bundles = new(Catalog);
+			}
 			// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready
 			Interlude.ShouldSelectInterludeTexture = true;
 			Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
@@ -63,7 +65,7 @@ namespace CloneDash
 				serializedBytes = [];
 
 				for (int i = 0, n = (int)monobehavior.reader.BaseStream.Length; i < n; i++) {
-					if(
+					if (
 						monobehavior.reader.ReadByte() == 1 &&
 						monobehavior.reader.ReadByte() == 1 &&
 						monobehavior.reader.ReadByte() == 11 &&
@@ -93,19 +95,20 @@ namespace CloneDash
 				manager.Clear();
 				Interlude.Spin(submessage: "Muse Dash Compat: Note conversion table loaded...");
 			}
-
-			NoteDataManager = SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
+			using (CD_StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))
+				NoteDataManager = SerializationUtility.DeserializeValue<List<NoteConfigData>>(serializedBytes, DataFormat.Binary);
 			Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
-			foreach (var notedata in NoteDataManager) {
-				IDToNote[notedata.id] = notedata;
-				IBMSToNote[notedata.ibms_id] = notedata;
-				UIDToNote[notedata.uid] = notedata;
-				if (!IBMSToDesc.ContainsKey(notedata.ibms_id))
-					IBMSToDesc[notedata.ibms_id] = [];
+			using (CD_StaticSequentialProfiler.StartStackFrame("Process NoteDataManager"))
+				foreach (var notedata in NoteDataManager) {
+					IDToNote[notedata.id] = notedata;
+					IBMSToNote[notedata.ibms_id] = notedata;
+					UIDToNote[notedata.uid] = notedata;
+					if (!IBMSToDesc.ContainsKey(notedata.ibms_id))
+						IBMSToDesc[notedata.ibms_id] = [];
 
-				IBMSToDesc[notedata.ibms_id].Add(notedata.des);
-			}
+					IBMSToDesc[notedata.ibms_id].Add(notedata.des);
+				}
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 				BuildDashStructures();
