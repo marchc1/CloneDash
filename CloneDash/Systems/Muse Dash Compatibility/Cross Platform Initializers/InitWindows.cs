@@ -44,7 +44,9 @@ namespace CloneDash
             // The bundle is named globalconfigs_assets_notedatamananger
 
             string platform = "StandaloneWindows64";
-            string musedash_streamingassets = musedash_installdir + $"\\MuseDash_Data\\StreamingAssets\\aa\\{platform}\\"; // TODO: support multiple platforms
+			StandalonePlatform = platform;
+
+			string musedash_streamingassets = musedash_installdir + $"\\MuseDash_Data\\StreamingAssets\\aa\\{platform}\\"; // TODO: support multiple platforms
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;
 

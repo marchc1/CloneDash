@@ -92,22 +92,42 @@ public class UnityEntry
 public class UnityBundleSearcher
 {
 	UnityAssetCatalog catalog;
+	Dictionary<string, string> localKeyNameToBundleName = [];
 	Dictionary<string, string> assetPathToBundleName = [];
+	Dictionary<string, UnityEntry> assetPathToEntry = [];
+	Dictionary<string, HashSet<UnityEntry>> bundleNameToEntries = [];
 
-	static string ExtractBaseName(string filename) {
-		var match = Regex.Match(filename, @"^(.*?)(?:_[a-fA-F0-9]{32})?\.bundle$");
-		return match.Success ? match.Groups[1].Value : filename;
-	}
 	public UnityBundleSearcher(UnityAssetCatalog catalog) {
 		this.catalog = catalog;
+
 		assetPathToBundleName.EnsureCapacity(catalog.Entries.Length);
+		bundleNameToEntries.EnsureCapacity(catalog.Entries.Length);
+
 		foreach (var entry in this.catalog.Entries) {
-			if (entry.Dependency == null) continue;
-			var dependency = entry.Dependency;
-			if (dependency.Key.EndsWith(".bundle")) {
-				assetPathToBundleName[entry.InternalID] = entry.Dependency.Key;
+			var internalID = entry.InternalID;
+			if (internalID.StartsWith("{UnityEngine.AddressableAssets.Addressables.RuntimePath}")) {
+				internalID = internalID.Replace($"{{UnityEngine.AddressableAssets.Addressables.RuntimePath}}\\{MuseDashCompatibility.StandalonePlatform}\\", "");
+				localKeyNameToBundleName[entry.Keys[0].Key] = internalID;
+				bundleNameToEntries[internalID] = [];
+			}
+			else if (entry.Dependency != null) {
+				var dep = entry.Dependency;
+
+				if (localKeyNameToBundleName.TryGetValue(dep.Key, out string? bundleName) && bundleNameToEntries.TryGetValue(bundleName, out var entries)) {
+					entries.Add(entry);
+					assetPathToBundleName[entry.InternalID] = bundleName;
+					assetPathToEntry[entry.InternalID] = entry;
+				}
 			}
 		}
+	}
+
+	public IEnumerable<UnityEntry> Entries(string localBundleName) {
+		localKeyNameToBundleName.TryGetValue(localBundleName, out string? bundleName);
+		bundleNameToEntries.TryGetValue(bundleName, out var entries);
+
+		foreach (var entry in entries)
+			yield return entry;
 	}
 
 	public string Search(string name) => Path.Combine(MuseDashCompatibility.BuildTarget, assetPathToBundleName[name]);

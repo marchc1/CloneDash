@@ -37,6 +37,8 @@ namespace CloneDash
             // The bundle is named globalconfigs_assets_notedatamananger
 
             string platform = "StandaloneWindows64"; // Not StandaloneLinux64, Muse Dash doesn't build targetting linux...
+			StandalonePlatform = platform;
+
 			string musedash_streamingassets = Path.Combine(musedash_installdir, "MuseDash_Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
             if (!Directory.Exists(musedash_streamingassets))
                 return MDCompatLayerInitResult.StreamingAssetsNotFound;

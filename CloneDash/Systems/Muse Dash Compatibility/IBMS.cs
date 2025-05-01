@@ -25,6 +25,7 @@ namespace CloneDash
 		public static List<NoteConfigData> NoteDataManager { get; set; }
 
 		public static string BuildTarget { get; private set; }
+		public static string StandalonePlatform { get; private set; }
 		public static string[] StreamingFiles { get; private set; }
 
 		private static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
