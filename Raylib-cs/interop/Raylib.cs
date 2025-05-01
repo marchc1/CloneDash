@@ -438,16 +438,16 @@ public static unsafe partial class Raylib
     // Timing-related functions
 
     /// <summary>Set target FPS (maximum)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetTargetFPS(int fps);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void SetTargetFPS(int fps);
 
     /// <summary>Get current FPS</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetFPS();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern int GetFPS();
 
     /// <summary>Get time in seconds for last frame drawn</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetFrameTime();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern float GetFrameTime();
 
     /// <summary>Get elapsed time in seconds since InitWindow()</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
