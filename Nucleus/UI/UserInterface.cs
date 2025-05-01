@@ -25,15 +25,16 @@ namespace Nucleus.UI
 		}
 
 		public UserInterface() {
-			Preprocess(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Preprocess(EngineCore.Window.Size);
 		}
 
 		protected override void Initialize() {
 			UI = this;
 
-			Preprocess(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Preprocess(EngineCore.Window.Size);
 		}
 
+		public void Preprocess(Vector2F size) => Preprocess(size.X, size.Y);
 		public void Preprocess(float width, float height) {
 			if (width != this.Size.W || height != this.Size.H) {
 				this.Position = new(0, 0);
@@ -98,12 +99,12 @@ namespace Nucleus.UI
 		}
 
 		public override void Center() {
-			var screen = Raylib.GetCurrentMonitor();
-			var mpos = Raylib.GetMonitorPosition(screen).ToNucleus();
-			var msize = new Vector2F(Raylib.GetMonitorWidth(screen), Raylib.GetMonitorHeight(screen));
+			var screen = EngineCore.Window.Monitor;
+			var mpos = OS.GetMonitorPosition(screen);
+			var msize = OS.GetMonitorSize(screen);
 
 			var mposCenter = mpos + (msize / 2);
-			var mposFinal = mposCenter - new Vector2F(Raylib.GetScreenWidth() / 2f, Raylib.GetScreenHeight() / 2f);
+			var mposFinal = mposCenter - (EngineCore.Window.Size / 2);
 			EngineCore.SetWindowPosition(mposFinal);
 		}
 		~UserInterface() {

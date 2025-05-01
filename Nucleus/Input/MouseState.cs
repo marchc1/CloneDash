@@ -33,7 +33,7 @@ namespace Nucleus.Input
 
 		public Vector2F GlobalMousePos {
 			get {
-				return Raylib.GetWindowPosition().ToNucleus() + MousePos;
+				return EngineCore.Window.Position + MousePos;
 			}
 		}
 		public bool Clicked(MouseButton button) {

@@ -49,9 +49,7 @@ internal class Program
 		}
 
 		if (CommandLineArguments.IsParamTrue("fullscreen")) {
-			var monitor = Raylib.GetCurrentMonitor();
-			Raylib.SetWindowSize(Raylib.GetMonitorWidth(monitor), Raylib.GetMonitorHeight(monitor));
-			EngineCore.InFullscreen = true;
+
 		}
 
 		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {

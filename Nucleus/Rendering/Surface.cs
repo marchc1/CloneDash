@@ -14,7 +14,7 @@ namespace Nucleus.Rendering
 	public static class Surface
 	{
 		public static void SetViewport(float x, float y, float w, float h) {
-			var DPIFactor = Raylib.GetWindowScaleDPI();
+			var DPIFactor = EngineCore.Window.GetWindowScaleDPI();
 			x *= DPIFactor.X;
 			y *= DPIFactor.Y;
 			w *= DPIFactor.X;
@@ -35,7 +35,7 @@ namespace Nucleus.Rendering
 
 		public static void Spin() {
 			Rlgl.DrawRenderBatchActive();
-			Raylib.SwapScreenBuffer();
+			EngineCore.Window.SwapScreenBuffer();
 		}
 	}
 }

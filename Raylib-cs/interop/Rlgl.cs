@@ -461,7 +461,7 @@ public static unsafe partial class Rlgl
 
     /// <summary>Load OpenGL extensions</summary>
     [DllImport(NativeLibName, EntryPoint = "rlLoadExtensions", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void LoadExtensions(void* loader);
+    public static extern void LoadExtensions(delegate* unmanaged[Cdecl]<byte*, void*> loader);
 
     /// <summary>Get current OpenGL version</summary>
     [DllImport(NativeLibName, EntryPoint = "rlGetVersion", CallingConvention = CallingConvention.Cdecl)]

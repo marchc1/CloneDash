@@ -12,6 +12,7 @@ using System.Runtime.ExceptionServices;
 using Nucleus.Rendering;
 using Nucleus.Files;
 using System.Numerics;
+using SDL;
 
 namespace Nucleus;
 
@@ -196,23 +197,27 @@ public static class EngineCore
 		}
 
 		Raylib.InitAudioDevice();
-		Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
-		Raylib.InitWindow(windowWidth, windowHeight, windowName);
+		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+
 		if (CommandLineArguments.TryGetParam("monitor", out int monitor)) {
-			var monitorPos = Raylib.GetMonitorPosition(monitor);
-			var monitorW = Raylib.GetMonitorWidth(monitor);
-			var monitorH = Raylib.GetMonitorHeight(monitor);
-			var monitorSize = new System.Numerics.Vector2(monitorW, monitorH);
-			var windowSize = new System.Numerics.Vector2(windowWidth, windowHeight);
+			var monitorPos = OS.GetMonitorPosition(monitor);
+			var monitorW = OS.GetMonitorWidth(monitor);
+			var monitorH = OS.GetMonitorHeight(monitor);
+			var monitorSize = new Vector2F(monitorW, monitorH);
+			var windowSize = new Vector2F(windowWidth, windowHeight);
 
 			// monitor TL + (monitor size / 2) == centerMonitor
 			// centerMonitor - (window size / 2) to center window to monitor
 			var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
 
-			Raylib.SetWindowPosition((int)windowPos.X, (int)windowPos.Y);
+			Window.Position = new((int)windowPos.X, (int)windowPos.Y);
 		}
+
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-		if (icon != null) Raylib.SetWindowIcon(Filesystem.ReadImage("images", icon));
+
+		if (icon != null) 
+			Window.SetIcon(Filesystem.ReadImage("images", icon));
+
 		OpenGL.Import(Platform.OpenGL_GetProc);
 		Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);
 
@@ -230,7 +235,7 @@ public static class EngineCore
 		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
 			Graphics2D.RegisterCodepoints(languageLine);
 
-		float scaleRatio = (float)Raylib.GetRenderWidth() / (float)Raylib.GetScreenWidth();
+		float scaleRatio = 1.0f;
 		unsafe {
 			screenScale = Raylib.New<float>(4 * 4);
 			var scale = Raymath.MatrixToFloatV(Raymath.MatrixScale(scaleRatio, scaleRatio, 1.0f));
@@ -357,7 +362,7 @@ public static class EngineCore
 	}
 
 	public static Vector2F GetScreenSize() {
-		Vector2F ret = new Vector2F(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+		Vector2F ret = Window.Size;
 		if (IsUndecorated && !Maximized)
 			ret -= new Vector2F(8);
 		return ret;
@@ -394,13 +399,16 @@ public static class EngineCore
 	private static int fps_index = 0;
 	private static float[] fps_history = new float[FPS_CAPTURE_FRAMES_COUNT];
 	private static float fps_average = 0, fps_last = 0;
+
+	public static OSWindow Window;
+
 	public static float FPS {
 		get {
 			float fpsFrame = (float)FrameTime;
 
 			if (fpsFrame == 0) return 0;
 
-			var t = Raylib.GetTime();
+			var t = OS.GetTime();
 			if((t - fps_last) > FPS_STEP) {
 				fps_last = (float)t;
 				fps_index = (fps_index + 1) % FPS_CAPTURE_FRAMES_COUNT;
@@ -417,7 +425,7 @@ public static class EngineCore
 	public static void Frame() {
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
-		CurrentAppTime = Raylib.GetTime();
+		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 
@@ -447,13 +455,13 @@ public static class EngineCore
 			Level.Frame();
 		else {
 			Graphics2D.SetDrawColor(30, 5, 0);
-			Graphics2D.DrawRectangle(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+			Graphics2D.DrawRectangle(0, 0, Window.Size.W, Window.Size.H);
 			Graphics2D.SetDrawColor(240, 70, 60);
 			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
 			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
 		}
 		if (!EngineCore.Running) {
-			Raylib.CloseWindow();
+			Window.Close();
 			return;
 		}
 
@@ -464,9 +472,9 @@ public static class EngineCore
 		}
 
 		Rlgl.DrawRenderBatchActive();
-		Raylib.SwapScreenBuffer();
+		Window.SwapScreenBuffer();
 
-		CurrentAppTime = Raylib.GetTime();
+		CurrentAppTime = OS.GetTime();
 		DrawTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 		FrameTime = UpdateTime + DrawTime;
@@ -475,61 +483,58 @@ public static class EngineCore
 			double waitFor = TargetFrameTime - FrameTime;
 			Raylib.WaitTime(waitFor);
 
-			CurrentAppTime = Raylib.GetTime();
+			CurrentAppTime = OS.GetTime();
 			double waitTime = CurrentAppTime - PreviousAppTime;
 			PreviousAppTime = CurrentAppTime;
 
 			FrameTime += waitTime;
 		}
 
-		Raylib.PollInputEvents();
+		//Raylib.PollInputEvents();
 		
-		Raylib.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
+		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
 		Host.CheckDirty();
 
-		if (Raylib.WindowShouldClose()) {
+		if (Window.UserClosed()) {
 			Close();
 		}
 	}
 
-	public static bool Maximized => Raylib.IsWindowMaximized();
-	public static bool Minimized => Raylib.IsWindowMinimized();
-	public static bool Focused => Raylib.IsWindowFocused();
+	public static bool Maximized => Window.Maximized;
+	public static bool Minimized => Window.Minimized;
+	public static bool Focused => Window.InputFocused;
 	public static bool InFullscreen {
-		get => Raylib.IsWindowFullscreen();
-		set {
-			var isFullscreen = Raylib.IsWindowFullscreen();
-			if (isFullscreen == value) return;
-
-			Raylib.ToggleFullscreen();
-		}
+		get => Window.Fullscreen;
+		set => Window.Fullscreen = value;
 	}
-	public static bool IsUndecorated => Raylib.IsWindowState(ConfigFlags.FLAG_WINDOW_UNDECORATED);
+	public static bool IsUndecorated => Window.Undecorated;
 
 	public static void Maximize() {
 		if (Maximized) {
 			Unmaximize();
 			return;
 		}
-		Raylib.MaximizeWindow();
+		Window.Maximized = true;
 	}
 	public static void Unmaximize() {
 		if (!Maximized)
 			return;
-		Raylib.RestoreWindow();
+
+		Window.Visible = true;
 	}
 	public static void Minimize() {
 		if (Minimized) {
 			Unminimize();
 			return;
 		}
-		Raylib.MinimizeWindow();
+		Window.Minimized = true;
 	}
 	public static void Unminimize() {
 		if (!Minimized)
 			return;
-		Raylib.RestoreWindow();
+
+		Window.Visible = true;
 	}
 
 	public static unsafe Vector2F MousePos {
@@ -702,9 +707,9 @@ public static class EngineCore
 
 		var oldMaster = Raylib.GetMasterVolume();
 		Raylib.SetMasterVolume(0);
-		Raylib.SetWindowTitle("Nucleus Engine - Panicked!");
-		Raylib.SetWindowMinSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-		Raylib.SetWindowMaxSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+		Window.Title = "Nucleus Engine - Panicked!";
+		Window.MinSize = new((int)Window.Size.W, (int)Window.Size.H);
+		Window.MaxSize = new((int)Window.Size.W, (int)Window.Size.H);
 		shouldThrow = true;
 		// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
 		Stopwatch time = new();
@@ -727,9 +732,9 @@ public static class EngineCore
 			lastTime = now;
 			Rlgl.LoadIdentity();
 
-			if (y < Raylib.GetScreenHeight()) {
+			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 1150);
-				Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(70, 170));
+				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(70, 170));
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -744,7 +749,7 @@ public static class EngineCore
 				}
 				var padding = 32;
 				var paddingDiv2 = padding / 2;
-				var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), (Raylib.GetScreenHeight() / 2) - (box.Y / 2));
+				var center = new System.Numerics.Vector2((Window.Size.W / 2) - (box.X / 2), (Window.Size.H / 2) - (box.Y / 2));
 				Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 				var langLineY = 0;
 				foreach (var line in ErrorMessageInAutoTranslatedLanguages) {
@@ -773,15 +778,15 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				Raylib.PollInputEvents();
+				/*Raylib.PollInputEvents();
 				if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					return false;
-				}
+				}*/
 			}
 
 			Rlgl.DrawRenderBatchActive();
-			Raylib.SwapScreenBuffer();
+			Window.SwapScreenBuffer();
 			Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
@@ -795,8 +800,8 @@ public static class EngineCore
 		var oldMaster = Raylib.GetMasterVolume();
 		Raylib.SetMasterVolume(0);
 
-		Raylib.SetWindowMinSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-		Raylib.SetWindowMaxSize(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+		Window.MinSize = new((int)Window.Size.W, (int)Window.Size.H);
+		Window.MaxSize = new((int)Window.Size.W, (int)Window.Size.H);
 
 		// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
 		Stopwatch time = new();
@@ -813,9 +818,9 @@ public static class EngineCore
 			lastTime = now;
 			Rlgl.LoadIdentity();
 
-			if (y < Raylib.GetScreenHeight()) {
+			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 5000);
-				Raylib.DrawRectangle(0, y, Raylib.GetScreenWidth(), elapsedY, new(90, 100, 120, 170));
+				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -842,7 +847,7 @@ public static class EngineCore
 				}
 				var padding = 32;
 				var paddingDiv2 = padding / 2;
-				var center = new System.Numerics.Vector2((Raylib.GetScreenWidth() / 2) - (box.X / 2), padding);
+				var center = new System.Numerics.Vector2((Window.Size.W / 2) - (box.X / 2), padding);
 				Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 				var langLineY = 0;
 				foreach (var line in lines) {
@@ -855,7 +860,7 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				Raylib.PollInputEvents();
+				//Raylib.PollInputEvents();
 				if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;
@@ -864,25 +869,17 @@ public static class EngineCore
 			}
 
 			Rlgl.DrawRenderBatchActive();
-			Raylib.SwapScreenBuffer();
+			Window.SwapScreenBuffer();
 			Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
 
-	public static Vector2F GetWindowSize() {
-		return new(Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-	}
+	public static Vector2F GetWindowSize() => Window.Size;
 
-	public static float GetWindowWidth() => Raylib.GetScreenWidth();
-	public static float GetWindowHeight() => Raylib.GetScreenHeight();
-
-	public static void SetWindowPosition(Vector2F mposFinal) {
-		Raylib.SetWindowPosition((int)mposFinal.X, (int)mposFinal.Y);
-	}
-
-	public static void SetWindowTitle(string title) {
-		Raylib.SetWindowTitle(title);
-	}
+	public static float GetWindowWidth() => Window.Size.W;
+	public static float GetWindowHeight() => Window.Size.H;
+	public static void SetWindowPosition(Vector2F pos) => Window.Position = pos;
+	public static void SetWindowTitle(string title) => Window.Title = title;
 
 	public static void StopSound() {
 		var lvl = Level;

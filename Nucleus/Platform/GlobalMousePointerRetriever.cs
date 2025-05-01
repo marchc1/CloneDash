@@ -90,7 +90,7 @@ public static partial class Platform
 	public static unsafe Vector2F GetMousePos() {
 #if COMPILED_WINDOWS
 		GetCursorPos(out var pt);
-		ScreenToClient((nint)Raylib.GetWindowHandle(), ref pt);
+		ScreenToClient((nint)EngineCore.Window.Handle, ref pt);
 		return new Vector2F(pt.X, pt.Y);
 #elif COMPILED_OSX
         var ret = GetCursorPos();

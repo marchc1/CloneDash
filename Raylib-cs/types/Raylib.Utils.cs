@@ -8,37 +8,37 @@ namespace Raylib_cs;
 public static unsafe partial class Raylib
 {
     /// <summary>Initialize window and OpenGL context</summary>
-    public static void InitWindow(int width, int height, string title)
-    {
-        using var str1 = title.ToUtf8Buffer();
-        InitWindow(width, height, str1.AsPointer());
-    }
+    //public static void InitWindow(int width, int height, string title)
+    //{
+    //    using var str1 = title.ToUtf8Buffer();
+    //    InitWindow(width, height, str1.AsPointer());
+    //}
 
     /// <summary>Set title for window (only PLATFORM_DESKTOP)</summary>
-    public static void SetWindowTitle(string title)
-    {
-        using var str1 = title.ToUtf8Buffer();
-        SetWindowTitle(str1.AsPointer());
-    }
+    //public static void SetWindowTitle(string title)
+    //{
+    //    using var str1 = title.ToUtf8Buffer();
+    //    SetWindowTitle(str1.AsPointer());
+    //}
 
     /// <summary>Get the human-readable, UTF-8 encoded name of the specified monitor</summary>
-    public static string GetMonitorName_(int monitor)
-    {
-        return Utf8StringUtils.GetUTF8String(GetMonitorName(monitor));
-    }
+    //public static string GetMonitorName_(int monitor)
+    //{
+    //    return Utf8StringUtils.GetUTF8String(GetMonitorName(monitor));
+    //}
 
     /// <summary>Get clipboard text content</summary>
-    public static string GetClipboardText_()
-    {
-        return Utf8StringUtils.GetUTF8String(GetClipboardText());
-    }
+    //public static string GetClipboardText_()
+    //{
+    //    return Utf8StringUtils.GetUTF8String(GetClipboardText());
+    //}
 
     /// <summary>Set clipboard text content</summary>
-    public static void SetClipboardText(string text)
-    {
-        using var str1 = text.ToUtf8Buffer();
-        SetClipboardText(str1.AsPointer());
-    }
+    //public static void SetClipboardText(string text)
+    //{
+    //    using var str1 = text.ToUtf8Buffer();
+    //    SetClipboardText(str1.AsPointer());
+    //}
 
     /// <summary>Open URL with default system browser (if available)</summary>
     public static void OpenURL(string url)
