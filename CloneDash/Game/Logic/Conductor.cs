@@ -45,7 +45,7 @@ namespace CloneDash.Game
 		// What was the last music time that Raylib reported?
 		private float lastTimeFromFunctionCall = 0;
 		// What is the current time + the frametime values
-		private float currentInaccurateTime = 0;
+		private double currentInaccurateTime = 0;
 
 		private class CD_Conductor_UIBar : Element
 		{
@@ -99,8 +99,8 @@ namespace CloneDash.Game
 				currentInaccurateTime = (float)-PreStartTime;
 			}
 			else if (currentInaccurateTime < 0) {
-				var ft = Raylib.GetFrameTime();
-				if (ft > 0.5f)
+				var ft = EngineCore.FrameTime;
+				if (ft > 0.5)
 					return;
 
 				currentInaccurateTime += ft;

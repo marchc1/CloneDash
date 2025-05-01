@@ -76,7 +76,7 @@ namespace Nucleus.UI
 
 		public override void Paint(float width, float height) {
 			float c = CheckAnim ?? (Checked ? 1 : 0);
-			c = Math.Clamp(c + (EngineCore.FrameTime * 6f * (Checked ? 1 : -1)), 0, 1);
+			c = Math.Clamp(c + ((float)EngineCore.FrameTime * 6f * (Checked ? 1 : -1)), 0, 1);
 			CheckAnim = c;
 
 			DrawAsCircle = Radio;

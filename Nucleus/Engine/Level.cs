@@ -682,7 +682,7 @@ namespace Nucleus.Engine
 
 
 			UnlockEntityBuffer();
-			var FPS = Raylib.GetFPS();
+			var FPS = EngineCore.FPS;
 			List<DebugRecord> fields;
 			if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
 				Graphics2D.ResetDrawingOffset();
@@ -695,7 +695,7 @@ namespace Nucleus.Engine
 					$"Window",
 					$"    Resolution            : {frameState.WindowWidth}x{frameState.WindowHeight}",
 					$"    Graphics2D.Offset     : {Graphics2D.Offset}",
-					$"    FPS                   : {FPS} ({Raylib.GetFrameTime() * 1000:0.##}ms render time)",
+					$"    FPS                   : {FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)",
 					$"Level",
 					$"    Level Classname       : {this.GetType().Name}",
 					$"    Level Entities        : {EntityList.Count}",
