@@ -24,26 +24,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AssetStudioUtility\AssetStudioUtility.csproj" />
+    <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
     <ProjectReference Include="..\Nucleus\Nucleus.csproj" />
     <ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
     <ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="AssetStudio">
-      <HintPath>..\BuildAssets\universal\AssetStudio.dll</HintPath>
-    </Reference>
-    <Reference Include="AssetStudio.PInvoke">
-      <HintPath>..\BuildAssets\universal\AssetStudio.PInvoke.dll</HintPath>
-    </Reference>
-    <Reference Include="AssetStudioUtility">
-      <HintPath>..\BuildAssets\universal\AssetStudioUtility.dll</HintPath>
-    </Reference>
     <Reference Include="K4os.Compression.LZ4">
       <HintPath>..\BuildAssets\universal\K4os.Compression.LZ4.dll</HintPath>
-    </Reference>
-    <Reference Include="Texture2DDecoderWrapper">
-      <HintPath>..\BuildAssets\universal\Texture2DDecoderWrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 

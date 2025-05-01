@@ -1,7 +1,6 @@
 *.vs
 */bin
 */obj
-AssetStudio/*
 ModelViewer/*
 Nucleus.Testbed/*
 NucleusRenderPipelineRefactorTest/*
