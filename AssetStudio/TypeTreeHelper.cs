@@ -182,7 +182,7 @@ namespace AssetStudio
             return obj;
         }
 
-        private static object ReadValue(List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
+        public static object ReadValue(List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
         {
             var m_Node = m_Nodes[i];
             var varTypeStr = m_Node.m_Type;

@@ -6,6 +6,7 @@ using OdinSerializer;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -58,10 +59,36 @@ namespace CloneDash
 				manager.LoadFiles(NoteManagerAssetBundle);
 
 				var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
-				var monobehavior_obj = (monobehavior.ToType()["serializationData"] as OrderedDictionary);
-				var serializedList = monobehavior_obj["SerializedBytes"] as List<object>;
-				serializedBytes = new byte[serializedList.Count];
-				for (int i = 0; i < serializedList.Count; i++) serializedBytes[i] = (byte)serializedList[i];
+				monobehavior.reader.Reset();
+				serializedBytes = [];
+
+				for (int i = 0, n = (int)monobehavior.reader.BaseStream.Length; i < n; i++) {
+					if(
+						monobehavior.reader.ReadByte() == 1 &&
+						monobehavior.reader.ReadByte() == 1 &&
+						monobehavior.reader.ReadByte() == 11 &&
+						monobehavior.reader.ReadByte() == 0 &&
+						monobehavior.reader.ReadByte() == 0 &&
+						monobehavior.reader.ReadByte() == 0 &&
+						monobehavior.reader.ReadByte() == 109 &&
+						monobehavior.reader.ReadByte() == 0 &&
+						monobehavior.reader.ReadByte() == 95 &&
+						monobehavior.reader.ReadByte() == 0 &&
+						monobehavior.reader.ReadByte() == 78
+						) {
+						// Wow! This sucks!
+						// But it cuts out 400ms...
+						monobehavior.reader.BaseStream.Seek(-11 + -4, SeekOrigin.Current);
+						int length = monobehavior.reader.ReadInt32();
+						serializedBytes = new byte[length];
+						var start = monobehavior.reader.BaseStream.Position;
+						var raw = (monobehavior.reader.BaseStream as MemoryStream).GetBuffer();
+						for (int i2 = 0; i2 < length; i2++) {
+							serializedBytes[i2] = raw[start + i2];
+						}
+						break;
+					}
+				}
 
 				manager.Clear();
 				Interlude.Spin(submessage: "Muse Dash Compat: Note conversion table loaded...");
