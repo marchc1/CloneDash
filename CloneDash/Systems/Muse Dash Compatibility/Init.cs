@@ -56,9 +56,7 @@ namespace CloneDash
 				AssetsManager manager = new AssetsManager();
 				NoteManagerAssetBundle = Bundles.Search("Assets/Static Resources/_Programs/GlobalConfigs/NoteDataMananger.asset");
 				manager.LoadFiles(NoteManagerAssetBundle);
-				using (Bundles.Open("Assets/Static Resources/_Programs/GlobalConfigs/NoteDataMananger.asset")) {
 
-				}
 				var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
 				var monobehavior_obj = (monobehavior.ToType()["serializationData"] as OrderedDictionary);
 				var serializedList = monobehavior_obj["SerializedBytes"] as List<object>;
