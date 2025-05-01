@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -412,7 +413,7 @@ namespace Nucleus.UI
 			return targLine < topRow ? LineOverflow.Above : LineOverflow.Below;
 		}
 
-		private void Editor_OnKeyPressed(Element self, KeyboardState state, Nucleus.Types.KeyboardKey key) {
+		private void Editor_OnKeyPressed(Element self, KeyboardState state, Input.KeyboardKey key) {
 			TextEditorCaret c = Caret;
 			bool caretPointerOnTop = MathF.Min(c.StartRow, c.EndRow) == c.EndRow;
 			int eRow = c.EndRow, eCol = c.EndCol;
@@ -716,14 +717,14 @@ namespace Nucleus.UI
 			self.ConsumeScrollEvent();
 		}
 
-		private void Editor_MouseReleaseEvent(Element self, FrameState state, Nucleus.Types.MouseButton button) {
+		private void Editor_MouseReleaseEvent(Element self, FrameState state, Input.MouseButton button) {
 
 		}
 
 		double LastPress;
 		bool doubleClicked = false;
-		private void Editor_MouseClickEvent(Element self, FrameState state, Nucleus.Types.MouseButton button) {
-			if (button == Nucleus.Types.MouseButton.Mouse1) {
+		private void Editor_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+			if (button == Input.MouseButton.Mouse1) {
 				self.DemandKeyboardFocus();
 
 				Vector2F xy = self.CursorPos();

@@ -4,7 +4,7 @@ using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
@@ -16,6 +16,7 @@ using Nucleus.UI.Elements;
 using CloneDash.Systems.CustomAlbums;
 using static CloneDash.Systems.CustomAlbums.MDMCWebAPI;
 using System.ComponentModel.DataAnnotations;
+using Nucleus.Input;
 
 namespace CloneDash.UI;
 
@@ -575,7 +576,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.AutoSize = true;
 	}
 
-	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Types.KeyboardKey key) {
+	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Input.KeyboardKey key) {
 		base.KeyPressed(keyboardState, key);
 		if (key == KeyboardLayout.USA.Left || key == KeyboardLayout.USA.A) {
 			MoveLeft();

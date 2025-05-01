@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
 using System;
@@ -7,8 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using KeyboardKey = Nucleus.Types.KeyboardKey;
-using MouseButton = Nucleus.Types.MouseButton;
+using KeyboardKey = Nucleus.Input.KeyboardKey;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {

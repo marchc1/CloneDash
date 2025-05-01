@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.ModelEditor
 {

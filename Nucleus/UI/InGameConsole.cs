@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 
@@ -140,7 +141,7 @@ namespace Nucleus
 			autoComplete.PotentialMatches = ConCommandBase.FindMatchesThatStartWith(consoleInput.GetText(), 0, 20);
 		}
 
-		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, Nucleus.Types.KeyboardKey key) {
+		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			SetupAutocomplete();
 		}

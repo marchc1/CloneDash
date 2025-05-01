@@ -5,6 +5,7 @@ using CloneDash.Modding.Settings;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;

@@ -5,7 +5,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
 using System.Diagnostics;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.ModelEditor.UI;
 

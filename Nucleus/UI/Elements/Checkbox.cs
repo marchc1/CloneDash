@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Interfaces;
 using Nucleus.Types;
 using System;

@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using Nucleus.Core;
+using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
 using System;
@@ -98,12 +99,12 @@ namespace Nucleus.UI
 			else if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 			if (TriggeredWhenEnterPressed && frameState.KeyboardState.KeyPressed(KeyboardLayout.USA.Enter)) {
-				MouseReleaseOccur(frameState, Types.MouseButton.MouseLeft, true);
+				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
 			}
 		}
 		string? workType = null;
 		int caret = 0;
-		public override void MouseClick(FrameState state, Types.MouseButton button) {
+		public override void MouseClick(FrameState state, Input.MouseButton button) {
 			KeyboardUnfocus();
 		}
 
@@ -127,7 +128,7 @@ namespace Nucleus.UI
 			}
 			workType = null;
 		}
-		public override void KeyPressed(KeyboardState keyboardState, Types.KeyboardKey key) {
+		public override void KeyPressed(KeyboardState keyboardState, Input.KeyboardKey key) {
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) {
 				double? v = ParseString(Text);
 				if (v != null) {
@@ -161,7 +162,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Types.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
 			if (!didDrag)
 				base.MouseRelease(self, state, button);
 			didDrag = false;

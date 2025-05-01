@@ -186,7 +186,7 @@ namespace Nucleus.UI.Elements
 			Graphics2D.DrawLine(8, height / 2, (width) - (8 * 2), height / 2);
 		}
 
-		private void UI_OnElementClicked(Element el, FrameState fs, Types.MouseButton mb) {
+		private void UI_OnElementClicked(Element el, FrameState fs, Input.MouseButton mb) {
 			if (this.Lifetime > 0.2f && (el == null || !el.IsIndirectChildOf(this))) {
 				this.Remove();
 				UI.OnElementClicked -= UI_OnElementClicked;

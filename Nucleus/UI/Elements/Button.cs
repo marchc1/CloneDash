@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
 
@@ -16,7 +17,7 @@ namespace Nucleus.UI
 			if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 			if (TriggeredWhenEnterPressed && frameState.KeyboardState.KeyPressed(KeyboardLayout.USA.Enter)) {
-				MouseReleaseOccur(frameState, Types.MouseButton.MouseLeft, true);
+				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
 			}
 		}
 

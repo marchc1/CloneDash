@@ -1,5 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;

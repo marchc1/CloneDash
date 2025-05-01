@@ -2,7 +2,7 @@
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Raylib_cs;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI.Elements
 {

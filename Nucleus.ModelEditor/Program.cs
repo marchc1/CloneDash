@@ -2,6 +2,7 @@
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.Input;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
@@ -14,7 +15,7 @@ using Raylib_cs;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.ModelEditor
 {

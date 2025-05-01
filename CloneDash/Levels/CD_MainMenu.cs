@@ -5,7 +5,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Raylib_cs;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 using CloneDash.Data;
 using CloneDash.Animation;
 using Nucleus.Audio;
@@ -17,6 +17,7 @@ using System.Diagnostics;
 using CloneDash.UI;
 using Nucleus.Files;
 using Nucleus.Extensions;
+using Nucleus.Input;
 
 namespace CloneDash.Game;
 

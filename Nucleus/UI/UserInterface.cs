@@ -78,7 +78,7 @@ namespace Nucleus.UI
 			LayoutInvalidated = false;
 		}
 
-		public override void MouseClick(FrameState state, Types.MouseButton button) {
+		public override void MouseClick(FrameState state, Input.MouseButton button) {
 			EngineCore.KeyboardUnfocus(this, true);
 		}
 
@@ -113,8 +113,8 @@ namespace Nucleus.UI
 		public event MouseEventDelegate? OnElementClicked;
 		public event MouseEventDelegate? OnElementReleased;
 
-		public void TriggerElementClicked(Element? e, FrameState fs, Types.MouseButton mb) => OnElementClicked?.Invoke(e, fs, mb);
-		public void TriggerElementReleased(Element? e, FrameState fs, Types.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
+		public void TriggerElementClicked(Element? e, FrameState fs, Input.MouseButton mb) => OnElementClicked?.Invoke(e, fs, mb);
+		public void TriggerElementReleased(Element? e, FrameState fs, Input.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
 		public Menu Menu() {
 			return this.Add<Menu>();
 		}

@@ -1,9 +1,10 @@
-﻿using Nucleus.Types;
+﻿using Nucleus.Input;
+using Nucleus.Types;
 using System.Diagnostics;
 
 namespace CloneDash.Game.Input
 {
-    public class MouseInput : ICloneDashInputSystem
+	public class MouseInput : ICloneDashInputSystem
     {
         public static MouseButton[] TopKeys = [MouseButton.MouseRight]; //sdfg
         public static MouseButton[] BottomKeys = [MouseButton.MouseLeft]; //hjkl

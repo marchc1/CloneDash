@@ -7,7 +7,7 @@ using CloneDash.Game.Entities;
 using Nucleus;
 using Raylib_cs;
 using Nucleus.UI;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 using CloneDash.Game.Logic;
 using CloneDash.Levels;
 using CloneDash.Data;

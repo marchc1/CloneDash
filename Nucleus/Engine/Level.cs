@@ -2,6 +2,7 @@
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Entities;
+using Nucleus.Input;
 using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
@@ -13,7 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.Engine
 {

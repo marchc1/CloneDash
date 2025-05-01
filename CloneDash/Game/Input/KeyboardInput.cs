@@ -1,8 +1,9 @@
-﻿using Nucleus.Types;
+﻿using Nucleus.Input;
+using Nucleus.Types;
 
 namespace CloneDash.Game.Input
 {
-    public class KeyboardInput : ICloneDashInputSystem
+	public class KeyboardInput : ICloneDashInputSystem
     {
         public static KeyboardKey[] TopKeys = [KeyboardLayout.USA.S, KeyboardLayout.USA.D, KeyboardLayout.USA.F, KeyboardLayout.USA.G];
         public static KeyboardKey[] BottomKeys = [KeyboardLayout.USA.H, KeyboardLayout.USA.J, KeyboardLayout.USA.K, KeyboardLayout.USA.L];

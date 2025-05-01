@@ -4,6 +4,7 @@
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;

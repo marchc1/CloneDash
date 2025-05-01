@@ -554,14 +554,14 @@ namespace Nucleus.ModelEditor
 		public IEditorType? HoveredObject { get; private set; }
 		public IEditorType? ClickedObject { get; private set; }
 
-		public override void MouseClick(FrameState state, Types.MouseButton button) {
+		public override void MouseClick(FrameState state, Input.MouseButton button) {
 			base.MouseClick(state, button);
 			ClickPos = GetMousePos();
 			ClickedObject = null;
 			__dragBlocked = false;
 
 			var doesOperatorAllowClick = DefaultOperator?.GizmoClicked(this, HoveredObject, ClickPos) ?? true;
-			if (HoveredObject != null && button == Types.MouseButton.Mouse1) {
+			if (HoveredObject != null && button == Input.MouseButton.Mouse1) {
 				if (doesOperatorAllowClick == false) {
 					__dragBlocked = true;
 					return;
@@ -577,13 +577,13 @@ namespace Nucleus.ModelEditor
 				}
 			}
 
-			if (button == Types.MouseButton.Mouse1)
+			if (button == Input.MouseButton.Mouse1)
 				ModelEditor.Active.File.ActiveOperator?.Clicked(ModelEditor.Active, ClickPos);
 
 			__startedDrag = false;
 			__startDraggingOperator = false;
-			CanDragObject = button == Types.MouseButton.Mouse1;
-			CanDragCamera = button == Types.MouseButton.Mouse2;
+			CanDragObject = button == Input.MouseButton.Mouse1;
+			CanDragCamera = button == Input.MouseButton.Mouse2;
 		}
 
 		[MemberNotNullWhen(true, nameof(DefaultOperator))]
@@ -627,12 +627,12 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Types.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
 			base.MouseRelease(self, state, button);
 			CanDragCamera = false;
 			__dragBlocked = false;
 
-			if (button == Types.MouseButton.Mouse1) {
+			if (button == Input.MouseButton.Mouse1) {
 				bool allowSelection = DefaultOperator?.GizmoReleased(this, ClickedObject, GetMousePos()) ?? true;
 				ModelEditor.Active.File.ActiveOperator?.DragRelease(ModelEditor.Active, ClickPos);
 				if (

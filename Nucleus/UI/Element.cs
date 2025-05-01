@@ -3,12 +3,13 @@ using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {
@@ -1130,19 +1131,19 @@ namespace Nucleus.UI
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
-		public void KeyPressedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
+		public void KeyPressedOccur(KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyPressed(keyboardState, key);
 			OnKeyPressed?.Invoke(this, keyboardState, key);
 		}
-		public void KeyReleasedOccur(KeyboardState keyboardState, Types.KeyboardKey key) {
+		public void KeyReleasedOccur(KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyReleased(keyboardState, key);
 			OnKeyReleased?.Invoke(this, keyboardState, key);
 		}
 
-		public virtual void KeyPressed(KeyboardState keyboardState, Types.KeyboardKey key) { }
-		public virtual void KeyReleased(KeyboardState keyboardState, Types.KeyboardKey key) { }
+		public virtual void KeyPressed(KeyboardState keyboardState, Input.KeyboardKey key) { }
+		public virtual void KeyReleased(KeyboardState keyboardState, Input.KeyboardKey key) { }
 
-		public delegate void KeyDelegate(Element self, KeyboardState state, Types.KeyboardKey key);
+		public delegate void KeyDelegate(Element self, KeyboardState state, Input.KeyboardKey key);
 		public event KeyDelegate? OnKeyPressed;
 		public event KeyDelegate? OnKeyReleased;
 

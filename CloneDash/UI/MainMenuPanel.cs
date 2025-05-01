@@ -3,7 +3,7 @@ using Nucleus.Engine;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
-using MouseButton = Nucleus.Types.MouseButton;
+using MouseButton = Nucleus.Input.MouseButton;
 using CloneDash.Data;
 using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;

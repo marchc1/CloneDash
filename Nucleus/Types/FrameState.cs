@@ -1,4 +1,5 @@
-﻿using Nucleus.UI;
+﻿using Nucleus.Input;
+using Nucleus.UI;
 
 namespace Nucleus.Types
 {
