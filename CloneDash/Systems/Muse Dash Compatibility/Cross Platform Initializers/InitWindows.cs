@@ -50,11 +50,7 @@ namespace CloneDash
 
 			BuildTarget = musedash_streamingassets;
 			StreamingFiles = Directory.GetFiles(musedash_streamingassets);
-            string? musedash_notedatamanager = StreamingFiles.Where(x => Path.GetFileName(x).Contains("globalconfigs_assets_notedatamananger")).FirstOrDefault();
-            if (musedash_notedatamanager == default)
-                return MDCompatLayerInitResult.NoteDataManagerNotFound;
 
-            NoteManagerAssetBundle = musedash_notedatamanager;
             // The note data file would be loaded here from the assetbundle, then the notedata extracted
 
             return MDCompatLayerInitResult.OK;

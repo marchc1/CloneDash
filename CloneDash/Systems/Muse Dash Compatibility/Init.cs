@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Game;
+using CloneDash.Systems;
 using Nucleus;
 using OdinSerializer;
 using System;
@@ -17,6 +18,10 @@ namespace CloneDash
 	{
 		public static Dictionary<string, string> StreamingAssetsSearchable = [];
 		public static Dictionary<string, Dictionary<string, MuseDashAsset>> StreamingAssetsSearchableTypes = [];
+
+		public static UnityAssetCatalog Catalog;
+		public static UnityBundleSearcher Bundles;
+
 		public static bool Initialized { get; private set; } = false;
 
 		public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
@@ -43,6 +48,8 @@ namespace CloneDash
 				return result;
 			}
 
+			Catalog = new(Path.Combine(WhereIsMuseDashInstalled, "MuseDash_Data/StreamingAssets/aa/catalog.json"));
+			Bundles = new(Catalog);
 			// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready
 			Interlude.ShouldSelectInterludeTexture = true;
 			Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
@@ -71,6 +78,7 @@ namespace CloneDash
 			byte[] serializedBytes;
 			using (CD_StaticSequentialProfiler.StartStackFrame("Load NoteManagerAssetBundle")) {
 				AssetsManager manager = new AssetsManager();
+				NoteManagerAssetBundle = Bundles.Search("Assets/Static Resources/_Programs/GlobalConfigs/NoteDataMananger.asset");
 				manager.LoadFiles(NoteManagerAssetBundle);
 
 				var monobehavior = manager.assetsFileList[0].Objects.First(x => x.type == ClassIDType.MonoBehaviour) as MonoBehaviour;
