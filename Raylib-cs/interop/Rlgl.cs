@@ -161,17 +161,25 @@ public static unsafe partial class Rlgl
         double zfar
     );
 
-    /// <summary>Set the viewport area</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlViewport", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Viewport(int x, int y, int width, int height);
+	/// <summary>Set the viewport area</summary>
+	[DllImport(NativeLibName, EntryPoint = "rlViewport", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void Viewport(int x, int y, int width, int height);
 
 
-    // ------------------------------------------------------------------------------------
-    // Functions Declaration - Vertex level operations
-    // ------------------------------------------------------------------------------------
 
-    /// <summary>Initialize drawing mode (how to organize vertex)</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlBegin", CallingConvention = CallingConvention.Cdecl)]
+	[DllImport(NativeLibName, EntryPoint = "rlSetFramebufferWidth", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void SetFramebufferWidth(int width);
+
+	[DllImport(NativeLibName, EntryPoint = "rlSetFramebufferHeight", CallingConvention = CallingConvention.Cdecl)]
+	public static extern void SetFramebufferHeight(int height);
+
+
+	// ------------------------------------------------------------------------------------
+	// Functions Declaration - Vertex level operations
+	// ------------------------------------------------------------------------------------
+
+	/// <summary>Initialize drawing mode (how to organize vertex)</summary>
+	[DllImport(NativeLibName, EntryPoint = "rlBegin", CallingConvention = CallingConvention.Cdecl)]
     public static extern void Begin(int mode);
 
     public static void Begin(DrawMode mode)

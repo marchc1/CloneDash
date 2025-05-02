@@ -298,13 +298,13 @@ public static unsafe partial class Raylib
 	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	//public static extern void EndMode3D();
 
-	/// <summary>Initializes render texture for drawing</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginTextureMode(RenderTexture2D target);
+	///// <summary>Initializes render texture for drawing</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginTextureMode(RenderTexture2D target);
 
-    /// <summary>Ends drawing to render texture</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndTextureMode();
+    ///// <summary>Ends drawing to render texture</summary>
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndTextureMode();
 
     /// <summary>Begin custom shader drawing</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]

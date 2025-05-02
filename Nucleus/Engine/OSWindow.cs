@@ -729,6 +729,51 @@ public unsafe class OSWindow
 		Rlgl.DisableDepthTest();
 	}
 
+	// Initializes render texture for drawing
+	public void BeginTextureMode(RenderTexture2D target) {
+		Rlgl.DrawRenderBatchActive();      // Update and draw internal render batch
+
+		Rlgl.EnableFramebuffer(target.Id); // Enable render target
+
+		// Set viewport and RLGL internal framebuffer size
+		Rlgl.Viewport(0, 0, target.Texture.Width, target.Texture.Height);
+		Rlgl.SetFramebufferWidth(target.Texture.Width);
+		Rlgl.SetFramebufferHeight(target.Texture.Height);
+
+		Rlgl.MatrixMode(MatrixMode.Projection);    // Switch to projection matrix
+		Rlgl.LoadIdentity();               // Reset current matrix (projection)
+
+		// Set orthographic projection to current framebuffer size
+		// NOTE: Configured top-left corner as (0, 0)
+		Rlgl.Ortho(0, target.Texture.Width, target.Texture.Height, 0, 0.0f, 1.0f);
+
+		Rlgl.MatrixMode(MatrixMode.ModelView);     // Switch back to modelview matrix
+		Rlgl.LoadIdentity();               // Reset current matrix (modelview)
+
+		//rlScalef(0.0f, -1.0f, 0.0f);  // Flip Y-drawing (?)
+
+		// Setup current width/height for proper aspect ratio
+		// calculation when using BeginMode3D()
+		CurrentFbo.X = target.Texture.Width;
+		CurrentFbo.Y = target.Texture.Height;
+		UsingFbo = true;
+	}
+
+	// Ends drawing to render texture
+	public void EndTextureMode() {
+		Rlgl.DrawRenderBatchActive();      // Update and draw internal render batch
+
+		Rlgl.DisableFramebuffer();         // Disable render target (fbo)
+
+		// Set viewport to default framebuffer size
+		SetupViewport(RenderSize.W, RenderSize.H);
+
+		// Reset current fbo to screen size
+		CurrentFbo.X = RenderSize.W;
+		CurrentFbo.Y = RenderSize.H;
+		UsingFbo = false;
+	}
+
 	/// <summary>
 	/// Writes the <see cref="WindowMouseState"/> into a <see cref="Input.MouseState"/> structure, then resets the <see cref="WindowMouseState"/> and prepares it for the next time this method is called.
 	/// <br/>This adds a layer of abstraction over how the engine windows handle input vs. how the game code handles input.

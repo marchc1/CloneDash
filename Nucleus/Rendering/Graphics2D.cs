@@ -388,13 +388,14 @@ namespace Nucleus.Core
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendEquation.xhtml
 
-			Raylib.BeginTextureMode(texture);
+			EngineCore.Window.BeginTextureMode(texture);
 			Surface.Clear(0, 0, 0, 0);
 			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.DST_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 			Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM_SEPARATE);
 		}
+
 		public static void EndRenderTarget() {
-			Raylib.EndTextureMode();
+			EngineCore.Window.EndTextureMode();
 		}
 
 		public static void DrawRenderTexture(RenderTexture2D texture, Vector2F size) {
