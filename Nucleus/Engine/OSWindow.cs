@@ -39,14 +39,14 @@ public class WindowKeyboardState(OSWindow window)
 		}
 	}
 
-	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(ev.key.timestamp, (int)ev.key.scancode);
-	public void EnqueueKeyPress(ulong timestamp, int scancode) {
+	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(OS.TicksToTime(ev.key.timestamp), (int)ev.key.scancode);
+	public void EnqueueKeyPress(double timestamp, int scancode) {
 		if (KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
 			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
 			return;
 		}
 
-		KeyPressTimeQueue[KeyPressQueueCount] = OS.TicksToTime(timestamp);
+		KeyPressTimeQueue[KeyPressQueueCount] = timestamp;
 		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(scancode);
 		KeyPressQueueCount++;
 	}
@@ -449,7 +449,7 @@ public unsafe class OSWindow
 						if (key != KeyboardKey.KEY_NULL)
 							Keyboard.CurrentKeyState[(int)key] = 1;
 
-						Keyboard.EnqueueKeyPress(ref ev.Event);
+						Keyboard.EnqueueKeyPress(ev.Timestamp, (int)ev.Event.key.scancode);
 					}
 				}
 				break;
@@ -941,6 +941,7 @@ public unsafe class OSWindow
 			int keyPressed = (int)key;
 			// now - timePressed: this is done to get a relative-to-frame time
 			// since not everything will use SDL's time and know how to handle it
+			//Logs.Info($"{key}, at {timePressed}");
 			keyboardState.PushKeyPress((int)key, now - timePressed);
 		}
 
