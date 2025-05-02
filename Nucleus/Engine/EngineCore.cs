@@ -159,15 +159,50 @@ public static class EngineCore
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 		MouseCursor_Persist = null;
 	}
-	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null) {
-		if (!MainThread.Initialized)
+
+	public static Thread GameThread;
+	public static bool GameThread_GLReady;
+	public static bool GameThread_MainReady;
+	public static Action? GameThreadInitializationProcedure;
+	public static void GameThreadProcedure() {
+		// Initialize the window GL
+		Window.SetupGL();
+
+		if (prgIcon != null)
+			Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
+
+		OpenGL.Import(Platform.OpenGL_GetProc);
+		// English language
+		Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
+		//Graphics2D.RegisterCodepoints(@"`1234567890");
+
+		// Japanese (hiragana, katakana)
+		Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
+		Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
+
+		// Some korean
+		Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
+
+		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
+			Graphics2D.RegisterCodepoints(languageLine);
+
+		// Set GameThread_GLReady flag so the main thread can finish its work
+		GameThread_GLReady = true;
+		// And then wait for the main thread to set GameThread_Playing
+		GameThreadInitializationProcedure?.Invoke();
+		while (!GameThread_MainReady) ;
+
+		StartGameThread();
+	}
+	private static string? prgIcon;
+	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
 		Host.ReadConfig();
 		CommandLineArguments.FromArgs(args ?? []);
 		ShowDebuggingInfo = CommandLineArguments.IsParamTrue("debug");
-
-
+		GameThreadInitializationProcedure = gameThreadInit;
 		Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -197,7 +232,15 @@ public static class EngineCore
 		}
 
 		Raylib.InitAudioDevice();
+		// Initialize SDL. This has to be done on the main thread.
+		OS.InitSDL();
 		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		// We need to start the gane thread and allow it to initialize.
+		prgIcon = icon;
+		GameThread = new Thread(GameThreadProcedure);
+		if (!MainThread.GameThreadSet) MainThread.GameThread = GameThread;
+		GameThread.Start();
+		while (!GameThread_GLReady) ;
 
 		if (CommandLineArguments.TryGetParam("monitor", out int monitor)) {
 			var monitorPos = OS.GetMonitorPosition(monitor);
@@ -214,24 +257,6 @@ public static class EngineCore
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-
-		if (icon != null)
-			Window.SetIcon(Filesystem.ReadImage("images", icon));
-
-		OpenGL.Import(Platform.OpenGL_GetProc);
-		// English language
-		Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
-		//Graphics2D.RegisterCodepoints(@"`1234567890");
-
-		// Japanese (hiragana, katakana)
-		Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
-		Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
-
-		// Some korean
-		Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
-
-		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
-			Graphics2D.RegisterCodepoints(languageLine);
 	}
 
 	private static void __loadLevel(Level level, object[] args) {
@@ -410,10 +435,13 @@ public static class EngineCore
 	}
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 
-	public static void ProcessFrame() {
+	public static void Frame() {
+		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
+		OSWindow.PropagateEventBuffer();
 
 		Rlgl.LoadIdentity();
 		unsafe {
@@ -466,11 +494,6 @@ public static class EngineCore
 		DrawTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 		FrameTime = UpdateTime + DrawTime;
-	}
-	public static void Frame() {
-		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-
-		ProcessFrame();
 
 		if (FrameTime < TargetFrameTime) {
 			double waitFor = TargetFrameTime - FrameTime;
@@ -482,8 +505,6 @@ public static class EngineCore
 
 			FrameTime += waitTime;
 		}
-
-		OSWindow.PollInputEvents();
 
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
@@ -557,7 +578,37 @@ public static class EngineCore
 		earlyJITAssemblies.Add(assembly);
 	}
 
-	public static void Start() {
+	public static void StartGameThread() {
+		ExceptionDispatchInfo edi;
+		Started = true;
+		if (Debugger.IsAttached) {
+			// Skip panic routine.
+			Logs.Info("PANIC: Disabled due to the presence of a debugger.");
+			LoadingScreen?.Initialize([]);
+			while (Running) {
+				shouldThrow = false;
+				Frame();
+			}
+			Logs.Info("Nucleus Engine has halted peacefully.");
+		}
+		try {
+			Logs.Info("PANIC: Active.");
+			LoadingScreen?.Initialize([]);
+			while (Running) {
+				shouldThrow = false;
+				Frame();
+			}
+			Logs.Info("Nucleus Engine has halted peacefully.");
+		}
+		catch (Exception ex) {
+			edi = ExceptionDispatchInfo.Capture(ex);
+			if (!Panic(edi)) {
+				edi.Throw();
+			}
+		}
+	}
+
+	public static void StartMainThread() {
 		var ea = Assembly.GetEntryAssembly();
 		if (ea != null)
 			earlyJITAssemblies.Add(ea);
@@ -590,33 +641,9 @@ public static class EngineCore
 				   }
 			   });
 
-		ExceptionDispatchInfo? edi = null;
-		Started = true;
-		if (Debugger.IsAttached) {
-			// Skip panic routine.
-			Logs.Info("PANIC: Disabled due to the presence of a debugger.");
-			LoadingScreen?.Initialize([]);
-			while (Running) {
-				shouldThrow = false;
-				Frame();
-			}
-			Logs.Info("Nucleus Engine has halted peacefully.");
-		}
-		try {
-			Logs.Info("PANIC: Active.");
-			LoadingScreen?.Initialize([]);
-			while (Running) {
-				shouldThrow = false;
-				Frame();
-			}
-			Logs.Info("Nucleus Engine has halted peacefully.");
-		}
-		catch (Exception ex) {
-			edi = ExceptionDispatchInfo.Capture(ex);
-			if (!Panic(edi)) {
-				edi.Throw();
-			}
-		}
+		GameThread_MainReady = true;
+		while (Running) 
+			OSWindow.PumpInputEvents();
 	}
 
 	public static ConCommand panic = ConCommand.Register("panic", (_, _) => {
@@ -771,7 +798,6 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				OSWindow.PollInputEvents();
 				/*
 				if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
@@ -854,7 +880,6 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				OSWindow.PollInputEvents();
 				/*if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;

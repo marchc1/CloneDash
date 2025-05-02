@@ -29,7 +29,7 @@ namespace Nucleus.HelloWorld
 			};
 			EngineCore.ShowDebuggingInfo = true;
 			EngineCore.LoadLevel(new HelloWorldLevel());
-			EngineCore.Start();
+			EngineCore.StartMainThread();
 		}
 	}
 }

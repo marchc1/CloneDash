@@ -1,9 +1,11 @@
-﻿using Nucleus.Core;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
 using SDL;
 using System.Collections.Concurrent;
 using System.Numerics;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
@@ -80,6 +82,7 @@ public class WindowMouseState(OSWindow window)
 
 public unsafe class OSWindow
 {
+	internal Vector2F ScreenPos;
 	internal Vector2F ScreenSize;
 	internal Vector2F PreviousScreenSize;
 	internal Vector2F RenderSize;
@@ -105,54 +108,53 @@ public unsafe class OSWindow
 		Keyboard = new(this);
 		Mouse = new(this);
 	}
+	public void SetupGL() {
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
 
+		glctx = SDL3.SDL_GL_CreateContext(handle);
+		SDL3.SDL_GL_SetSwapInterval(0);
+
+		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
+
+		ActivateGL();
+		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
+
+		SetupViewport(ScreenSize.X, ScreenSize.Y);
+
+		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+	}
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
-		if (!OS.InitPlatform()) {
+		if (!OS.InitSDL()) {
 			throw Util.Util.MessageBoxException("Cannot initialize SDL.");
 		}
 
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
-		if (confFlags.HasFlag(ConfigFlags.FLAG_MSAA_4X_HINT)) {
-			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
-			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
-		}
-
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
-		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
-		SDL3.SDL_GL_SetSwapInterval(0);
-
-		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
-
-		window.ActivateGL();
-		Rlgl.GlInit(width, height);
-
-		window.SetupViewport(width, height);
-
-		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
-
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
 		windowLookup_id2window[window.windowID] = window;
 		windowLookup_window2id[window] = window.windowID;
 
+		int wx, wy;
+		SDL3.SDL_GetWindowPosition(window.handle, &wx, &wy);
+		window.ScreenPos = new(wx, wy);
 		window.ScreenSize.X = width;
 		window.ScreenSize.Y = height;
 		window.ScreenScale = Raymath.MatrixIdentity();
 
-		// SDL3.SDL_SetEventEnabled(SDL_EventType.SDL_EVENT_DROP_FILE, true);
-
 		window.Resizable = true;
 
 		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
-		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
+		//SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
 
 		return window;
 	}
-	private static double lastUpdate;
+	/*private static double lastUpdate;
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
 		var type = ev->Type;
@@ -166,16 +168,99 @@ public unsafe class OSWindow
 			}
 		}
 		return false;
+	}*/
+
+	private bool hasLastWinflags = false;
+	private SDL_WindowFlags lastFlags;
+	private SDL_WindowFlags curFlags;
+
+	// Returns changed, outputs new state
+	private bool flagChanged(SDL_WindowFlags last, SDL_WindowFlags curr, SDL_WindowFlags bit, out bool state) {
+		if ((last & bit) != (curr & bit)) {
+			state = (curr & bit) == bit;
+			return true;
+		}
+
+		state = false;
+		return false;
+	}
+	private void setflags(ref SDL_WindowFlags target, SDL_WindowFlags bit, bool on) {
+		if (on) target |= bit;
+		else target &= ~bit;
+	}
+	public void UpdateWindowState() {
+		if (!hasLastWinflags)
+			lastFlags = curFlags = SDL3.SDL_GetWindowFlags(handle);
+
+		lastFlags = curFlags;
+		curFlags = SDL3.SDL_GetWindowFlags(handle);
+
+		if (lastFlags != curFlags) {
+			// On a per-parameter basis, check for updates
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, out bool resizable)) SDL3.SDL_SetWindowResizable(handle, resizable);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, out bool borderless)) SDL3.SDL_SetWindowBordered(handle, !borderless);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, out bool maximized)) if (maximized) SDL3.SDL_MaximizeWindow(handle); else SDL3.SDL_RestoreWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, out bool minimized)) if (minimized) SDL3.SDL_MinimizeWindow(handle); else SDL3.SDL_RestoreWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, out bool hidden)) if (hidden) SDL3.SDL_HideWindow(handle); else SDL3.SDL_ShowWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable)) SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop)) SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
+		}
 	}
 
 	public bool Resizable {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
-		set => SDL3.SDL_SetWindowResizable(handle, value);
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, value);
 	}
-
 	public bool Undecorated {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_BORDERLESS);
-		set => SDL3.SDL_SetWindowResizable(handle, value);
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_BORDERLESS);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, value);
+	}
+	// todo
+	public bool Fullscreen {
+		get => false;
+		set { }
+	}
+	public bool Maximized {
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_MAXIMIZED);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, value);
+	}
+	public bool Minimized {
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_MINIMIZED);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, value);
+	}
+	public bool Visible {
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, value);
+	}
+	public bool InputFocused {
+		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS);
+	}
+	public bool MouseFocused {
+		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS);
+	}
+	public bool NotFocusable {
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, value);
+	}
+	public bool Topmost {
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, value);
+	}
+	public bool AlwaysRun {
+		get => false;
+		set => Logs.Warn("AlwaysRun is unsupported on a SDL backend.");
+	}
+	public bool Transparent {
+		get => false;
+		set => Logs.Warn("Transparency is unsupported on a SDL backend.");
+	}
+	public bool HighDPI {
+		get => false;
+		set => Logs.Warn("Setting HighDPI is unsupported on a SDL backend.");
+	}
+	public bool MousePassthru {
+		get => false;
+		set => Logs.Warn("Mouse passthrough is unsupported on a SDL backend.");
 	}
 
 	public void SwapScreenBuffer() => SDL3.SDL_GL_SwapWindow(handle);
@@ -349,28 +434,30 @@ public unsafe class OSWindow
 		return false;
 	}
 
-	public void PushEvent(ref SDL_Event ev) {
-		switch (ev.Type) {
+
+
+	public void PushEvent(ref OSEventTimestamped ev) {
+		switch (ev.Event.Type) {
 			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
-					if (!ev.key.repeat) {
-						KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+					if (!ev.Event.key.repeat) {
+						KeyboardKey key = TranslateKeyboardKey(ev.Event.key.scancode);
 						if (key != KeyboardKey.KEY_NULL)
 							Keyboard.CurrentKeyState[(int)key] = 1;
 
-						Keyboard.EnqueueKeyPress(ref ev);
+						Keyboard.EnqueueKeyPress(ref ev.Event);
 					}
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_KEY_UP: {
-					if (!ev.key.repeat) {
-						KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+					if (!ev.Event.key.repeat) {
+						KeyboardKey key = TranslateKeyboardKey(ev.Event.key.scancode);
 						if (key != KeyboardKey.KEY_NULL)
 							Keyboard.CurrentKeyState[(int)key] = 0;
 					}
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
-					int btn = ev.button.button - 1;
+					int btn = ev.Event.button.button - 1;
 					if (btn == 2) btn = 1;
 					else if (btn == 1) btn = 2;
 
@@ -378,7 +465,7 @@ public unsafe class OSWindow
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: {
-					int btn = ev.button.button - 1;
+					int btn = ev.Event.button.button - 1;
 					if (btn == 2) btn = 1;
 					else if (btn == 1) btn = 2;
 
@@ -386,17 +473,17 @@ public unsafe class OSWindow
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
-				Mouse.CurrentMouseScroll.X = ev.wheel.x;
-				Mouse.CurrentMouseScroll.Y = ev.wheel.y;
+				Mouse.CurrentMouseScroll.X = ev.Event.wheel.x;
+				Mouse.CurrentMouseScroll.Y = ev.Event.wheel.y;
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
-				Mouse.CurrentMousePosition.X = ev.motion.x;
-				Mouse.CurrentMousePosition.Y = ev.motion.y;
+				Mouse.CurrentMousePosition.X = ev.Event.motion.x;
+				Mouse.CurrentMousePosition.Y = ev.Event.motion.y;
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
 			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-					int width = ev.window.data1;
-					int height = ev.window.data2;
+					int width = ev.Event.window.data1;
+					int height = ev.Event.window.data2;
 					SetupViewport(width, height);
 					ScreenSize.W = width;
 					ScreenSize.H = height;
@@ -407,7 +494,7 @@ public unsafe class OSWindow
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
 					int width, height;
-					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.window.windowID), &width, &height);
+					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.Event.window.windowID), &width, &height);
 					SetupViewport(width, height);
 					ScreenSize.W = width;
 					ScreenSize.H = height;
@@ -420,100 +507,46 @@ public unsafe class OSWindow
 		}
 	}
 
-	/// <summary>
-	/// Pumps the event loop.
-	/// </summary>
-	public static void PumpInputEvents() {
-		SDL3.SDL_PumpEvents();
+	public struct OSEventTimestamped
+	{
+		public double Timestamp;
+		public SDL_Event Event;
 	}
+	private static ConcurrentQueue<OSEventTimestamped> EventBuffer = new();
 
-	/// <summary>
-	/// Processes the event queue and sends messages to active windows.
-	/// </summary>
-	public static void PollInputEvents() {
-		SDL_Event ev;
-		unsafe {
-			while (SDL3.SDL_PollEvent(&ev)) {
-				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_TERMINATING: break;
-					case SDL_EventType.SDL_EVENT_LOW_MEMORY: break;
-					case SDL_EventType.SDL_EVENT_LOCALE_CHANGED: break;
-					case SDL_EventType.SDL_EVENT_SYSTEM_THEME_CHANGED: break;
-					case SDL_EventType.SDL_EVENT_CLIPBOARD_UPDATE: break;
-					// Todo: a way to intercept this
-					case SDL_EventType.SDL_EVENT_QUIT: Environment.Exit(0); break;
-					default:
-						var window = SDL3.SDL_GetWindowFromEvent(&ev);
-						var windowID = SDL3.SDL_GetWindowID(window);
+	public static void PropagateEventBuffer() {
+		while (EventBuffer.TryDequeue(out OSEventTimestamped ev)) {
+			switch (ev.Event.Type) {
+				case SDL_EventType.SDL_EVENT_TERMINATING: break;
+				case SDL_EventType.SDL_EVENT_LOW_MEMORY: break;
+				case SDL_EventType.SDL_EVENT_LOCALE_CHANGED: break;
+				case SDL_EventType.SDL_EVENT_SYSTEM_THEME_CHANGED: break;
+				case SDL_EventType.SDL_EVENT_CLIPBOARD_UPDATE: break;
+				// Todo: a way to intercept this
+				case SDL_EventType.SDL_EVENT_QUIT: Environment.Exit(0); break;
+				default:
+					var window = SDL3.SDL_GetWindowFromEvent(&ev.Event);
+					var windowID = SDL3.SDL_GetWindowID(window);
 
-						if (windowLookup_id2window.TryGetValue(windowID, out var osWindow))
-							osWindow.PushEvent(ref ev);
+					if (windowLookup_id2window.TryGetValue(windowID, out var osWindow))
+						osWindow.PushEvent(ref ev);
 
-						break;
-				}
+					break;
 			}
 		}
 	}
 
-	public bool Fullscreen {
-		get => false;
-		set { }
-	}
-
-	public bool Maximized {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_MAXIMIZED);
-		set => SDL3.SDL_MaximizeWindow(handle);
-	}
-
-	public bool Minimized {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_MINIMIZED);
-		set => SDL3.SDL_MinimizeWindow(handle);
-	}
-
-	public bool Visible {
-		get => !SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
-		set {
-			if (value) SDL3.SDL_ShowWindow(handle);
-			else SDL3.SDL_HideWindow(handle);
+	/// <summary>
+	/// Pumps the event queue continuously.
+	/// </summary>
+	public static void PumpInputEvents() {
+		SDL_Event ev;
+		unsafe {
+			while (SDL3.SDL_WaitEvent(&ev)) {
+				var time = OS.GetTime();
+				EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
+			}
 		}
-	}
-
-	public bool InputFocused {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS);
-	}
-
-	public bool MouseFocused {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS);
-	}
-
-	public bool Focusable {
-		get => !SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE);
-		set => SDL3.SDL_SetWindowFocusable(handle, value);
-	}
-
-	public bool Topmost {
-		get => !SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP);
-		set => SDL3.SDL_SetWindowAlwaysOnTop(handle, value);
-	}
-
-	public bool AlwaysRun {
-		get => false;
-		set => Logs.Warn("AlwaysRun is unsupported on a SDL backend.");
-	}
-
-	public bool Transparent {
-		get => false;
-		set => Logs.Warn("Transparency is unsupported on a SDL backend.");
-	}
-
-	public bool HighDPI {
-		get => false;
-		set => Logs.Warn("Setting HighDPI is unsupported on a SDL backend.");
-	}
-
-	public bool MousePassthru {
-		get => false;
-		set => Logs.Warn("Mouse passthrough is unsupported on a SDL backend.");
 	}
 
 	public void Close() {
@@ -923,7 +956,7 @@ public unsafe class OSWindow
 public static unsafe class OS
 {
 	private static bool initialized = false;
-	public static bool InitPlatform() {
+	public static bool InitSDL() {
 		if (initialized) return true;
 
 		if (!SDL3.SDL_Init(
@@ -1033,14 +1066,11 @@ public static unsafe class OS
 	public static void Wait(double seconds) {
 		double start = GetTime();
 		double sleepFor = seconds - (seconds * 0.05);
-		while (true) {
-			Thread.Sleep((int)(sleepFor * 1000));
-			double left = GetTime() - start;
-			if (left > 0) {
-				while ((GetTime() - start) < seconds) 
-					OSWindow.PumpInputEvents();
-				break;
-			}
+
+		Thread.Sleep((int)(sleepFor * 1000));
+		double left = GetTime() - start;
+		if (left > 0) {
+			while ((GetTime() - start) < seconds) ;
 		}
 	}
 }

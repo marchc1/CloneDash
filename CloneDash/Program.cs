@@ -35,11 +35,13 @@ internal class Program
 	static void Main(string[] args) {
 		MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
 
-		EngineCore.Initialize(1600, 900, "Clone Dash", args);
 		EngineCore.GameInfo = new() {
 			GameName = "Clone Dash"
 		};
-
+		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
+		EngineCore.StartMainThread();
+	}
+	static void GameMain() {
 		Interlude.ShouldSelectInterludeTexture = false;
 		Interlude.Begin("Initializing...");
 
@@ -109,6 +111,5 @@ internal class Program
 		}
 		Interlude.Spin();
 		Interlude.End();
-		EngineCore.Start();
 	}
 }

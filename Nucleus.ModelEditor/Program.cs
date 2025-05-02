@@ -915,7 +915,7 @@ namespace Nucleus.ModelEditor
 			};
 
 			EngineCore.LoadLevel(new ModelEditor());
-			EngineCore.Start();
+			EngineCore.StartMainThread();
 		}
 	}
 }
