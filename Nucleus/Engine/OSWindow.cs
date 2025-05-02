@@ -37,14 +37,15 @@ public class WindowKeyboardState(OSWindow window)
 		}
 	}
 
-	public void EnqueueKeyPress(ref SDL_Event ev) {
+	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(ev.key.timestamp, (int)ev.key.scancode);
+	public void EnqueueKeyPress(ulong timestamp, int scancode) {
 		if (KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
 			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
 			return;
 		}
 
-		KeyPressTimeQueue[KeyPressQueueCount] = OS.TicksToTime(ev.key.timestamp);
-		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(ev.key.scancode);
+		KeyPressTimeQueue[KeyPressQueueCount] = OS.TicksToTime(timestamp);
+		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(scancode);
 		KeyPressQueueCount++;
 	}
 }
@@ -326,9 +327,10 @@ public unsafe class OSWindow
 		KeyboardKey.KEY_RIGHT_ALT,      //SDL_SCANCODE_RALT
 		KeyboardKey.KEY_RIGHT_SUPER     //SDL_SCANCODE_RGUI
 	};
-	public static KeyboardKey TranslateKeyboardKey(SDL_Scancode scancode) {
-		if (scancode >= 0 && (int)scancode < SCANCODE_MAPPED_NUM)
-			return ScancodeToKey[(int)scancode];
+	public static KeyboardKey TranslateKeyboardKey(SDL_Scancode scancode) => TranslateKeyboardKey((int)scancode);
+	public static KeyboardKey TranslateKeyboardKey(int scancode) {
+		if (scancode >= 0 && scancode < SCANCODE_MAPPED_NUM)
+			return ScancodeToKey[scancode];
 
 		return KeyboardKey.KEY_NULL;
 	}
