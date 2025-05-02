@@ -69,10 +69,12 @@ public unsafe class OSWindow
 	internal Vector2F PreviousScreenSize;
 	internal Vector2F RenderSize;
 	internal Vector2F RenderOffset;
+	internal Vector2F CurrentFbo;
 	public Matrix4x4 ScreenScale;
 
 	internal bool ResizedLastFrame;
 	internal bool UserWantsToClose;
+	internal bool UsingFbo;
 
 	public WindowKeyboardState Keyboard;
 	public WindowMouseState Mouse;
@@ -451,6 +453,28 @@ public unsafe class OSWindow
 	}
 	public void ClearBackground(int r, int g, int b) => ClearBackground(r, g, b, 255);
 	public void ClearBackground(Color c) => ClearBackground(c.R, c.G, c.B, c.A);
+
+	public void BeginScissorMode(int x, int y, int width, int height) {
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.EnableScissorTest();
+
+#if COMPILED_OSX
+			// todo
+#else
+		if (!UsingFbo && false) {
+			Vector2F scale = GetWindowScaleDPI();
+			Rlgl.Scissor((int)(x * scale.x), (int)(CurrentFbo.H - (y + height) * scale.y), (int)(width * scale.x), (int)(height * scale.y));
+		}
+#endif
+		else {
+			Rlgl.Scissor(x, Rlgl.GetFramebufferHeight() - (y + height), width, height);
+		}
+	}
+
+	public void EndScissorMode() {
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.DisableScissorTest();
+	}
 
 	public void BeginMode2D(Camera2D camera) {
 		Rlgl.DrawRenderBatchActive();    

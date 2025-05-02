@@ -315,7 +315,7 @@ namespace Nucleus.Core
 		public static RectangleF ActiveScissorRect => ScissorRects.Count == 0 ? RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize()) : ScissorRects.Peek();
 
 		public static void ScissorRect() {
-			Raylib.EndScissorMode();
+			EngineCore.Window.EndScissorMode();
 			if (ScissorRects.Count > 0) {
 				var sR = ScissorRects.Pop();
 				__scissorRect = sR;
@@ -327,7 +327,7 @@ namespace Nucleus.Core
 		public static void ScissorRect(RectangleF rect) {
 			var r = rect.FitInto(ActiveScissorRect);
 			ScissorRects.Push(r);
-			Raylib.BeginScissorMode((int)r.X, (int)r.Y, (int)r.W, (int)r.H);
+			EngineCore.Window.BeginScissorMode((int)r.X, (int)r.Y, (int)r.W, (int)r.H);
 			__scissorRect = RectangleF.XYWH(r.X, r.Y, rect.W, r.H);
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
