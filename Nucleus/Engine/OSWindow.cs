@@ -1,16 +1,12 @@
 ﻿using Nucleus.Types;
 using Raylib_cs;
 using SDL;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
 
-public class WindowState(OSWindow window)
-{
-	public bool ResizedLastFrame;
-	public bool UserWantsToClose;
-
-	// Keyboard fields
+public class WindowKeyboardState(OSWindow window) {
 	public const int MAX_KEYBOARD_KEYS = 512;
 	public const int MAX_KEY_PRESSED_QUEUE = 32;
 	public const int MAX_CHAR_PRESSED_QUEUE = 32;
@@ -30,7 +26,15 @@ public class WindowState(OSWindow window)
 	public int[] CharPressedQueue = new int[MAX_CHAR_PRESSED_QUEUE];
 	public int CharPressedQueueCount = 0;
 
-	// Mouse fields
+	internal void Reset() {
+		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
+			PreviousKeyState[i] = CurrentKeyState[i];
+			KeyRepeatInFrame[i] = 0;
+		}
+	}
+}
+
+public class WindowMouseState(OSWindow window) {
 	public const int MAX_MOUSE_BUTTONS = 8;
 
 	public Vector2F MouseOffset;
@@ -44,11 +48,6 @@ public class WindowState(OSWindow window)
 	public Vector2F PreviousMouseWheelMove;
 
 	internal void Reset() {
-		KeyPressedQueueCount = 0;
-		CharPressedQueueCount = 0;
-
-		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) KeyRepeatInFrame[i] = 0;
-
 		PreviousMouseWheelMove.X = CurrentMouseWheelMove.X;
 		PreviousMouseWheelMove.Y = CurrentMouseWheelMove.Y;
 
@@ -57,48 +56,35 @@ public class WindowState(OSWindow window)
 
 		PreviousMousePosition = CurrentMousePosition;
 
-		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
-			PreviousKeyState[i] = CurrentKeyState[i];
-			KeyRepeatInFrame[i] = 0;
-		}
-
 		for (int i = 0; i < MAX_MOUSE_BUTTONS; i++)
 			PreviousMouseButtonState[i] = CurrentMouseButtonState[i];
-
-		ResizedLastFrame = false;
-	}
-
-	internal void Poll() { 
-		SDL_Event ev;
-		unsafe {
-			while (SDL3.SDL_PollEvent(&ev)) {
-				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_QUIT: UserWantsToClose = true; break;
-					// Todo: dropped file?
-					case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
-					case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-						ResizedLastFrame = true;
-						break;
-					case SDL_EventType.SDL_EVENT_KEY_DOWN: break;
-					case SDL_EventType.SDL_EVENT_KEY_UP: break;
-					case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: break;
-					case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: break;
-					case SDL_EventType.SDL_EVENT_MOUSE_WHEEL: break;
-					case SDL_EventType.SDL_EVENT_MOUSE_MOTION: break;
-				}
-			}
-		}
 	}
 }
 
-
 public unsafe class OSWindow
 {
-	public WindowState State;
+	internal Vector2F ScreenSize;
+	internal Vector2F PreviousScreenSize;
+	internal Vector2F RenderSize;
+	internal Vector2F RenderOffset;
+	public Matrix4x4 ScreenScale;
+
+	internal bool ResizedLastFrame;
+	internal bool UserWantsToClose;
+
+	public WindowKeyboardState Keyboard;
+	public WindowMouseState Mouse;
+
 	private SDL_Window* handle;
+	private SDL_WindowID windowID;
 	private SDL_GLContextState* glctx;
+
+	private static Dictionary<OSWindow, SDL_WindowID> windowLookup_window2id = [];
+	private static Dictionary<SDL_WindowID, OSWindow> windowLookup_id2window = [];
+
 	private OSWindow() {
-		State = new(this);
+		Keyboard = new(this);
+		Mouse = new(this);
 	}
 
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
@@ -117,22 +103,23 @@ public unsafe class OSWindow
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 
+
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
 		window.ActivateGL();
 		Rlgl.GlInit(width, height);
-		Rlgl.Viewport(0, 0, width, height);
-		Rlgl.MatrixMode(MatrixMode.PROJECTION);
-		Rlgl.LoadIdentity();
-		Rlgl.Ortho(0, width, height, 0, 0.0, 1.0);
-		Rlgl.MatrixMode(MatrixMode.MODELVIEW);
-		Rlgl.LoadIdentity();
-		Rlgl.ClearColor(245, 245, 245, 255);
-		Rlgl.EnableDepthTest();
+
+		window.SetupViewport(width, height);
 
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
-		SDL_DisplayMode* displayMode = SDL3.SDL_GetCurrentDisplayMode(SDL3.SDL_GetDisplayForWindow(window.handle));
+		window.windowID = SDL3.SDL_GetWindowID(window.handle);
+		windowLookup_id2window[window.windowID] = window;
+		windowLookup_window2id[window] = window.windowID;
+
+		window.ScreenSize.X = width;
+		window.ScreenSize.Y = height;
+		window.ScreenScale = Raymath.MatrixIdentity();
 
 		SDL3.SDL_SetEventEnabled(SDL_EventType.SDL_EVENT_DROP_FILE, true);
 
@@ -151,16 +138,56 @@ public unsafe class OSWindow
 
 	public void SwapScreenBuffer() => SDL3.SDL_GL_SwapWindow(handle);
 
+	public void SetupViewport(float width, float height) => SetupViewport((int)width, (int)height);
+	public void SetupViewport(int width, int height) {
+		RenderSize.W = width;
+		RenderSize.H = height;
+
+#if COMPILED_OSX
+		Vector2F scale = GetWindowScaleDPI();
+		Rlgl.Viewport((int)(RenderOffset.x/2*scale.x), (int)(RenderOffset.y/2*scale.y), (int)((RenderSize.W)*scale.x), (int)((RenderSize.H)*scale.y));
+#else
+		Rlgl.Viewport((int)(RenderOffset.x / 2), ((int)RenderOffset.y / 2), (int)RenderSize.W, (int)RenderSize.H);
+#endif
+
+		Rlgl.MatrixMode(MatrixMode.PROJECTION);
+		Rlgl.LoadIdentity();
+		Rlgl.Ortho(0, RenderSize.W, RenderSize.H, 0, 0, 1);
+		Rlgl.MatrixMode(MatrixMode.MODELVIEW);
+		Rlgl.LoadIdentity();
+	}
+
 	public void ActivateGL() {
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 	}
 
-	/// <summary>
-	/// Input event handler designed to run on the main thread
-	/// </summary>
-	public void PollInputEvents() {
-		State.Reset();
-		State.Poll();
+	public void Event(ref SDL_Event ev){
+
+	}
+
+	public static void PollInputEvents() {
+		SDL_Event ev;
+		unsafe {
+			while (SDL3.SDL_PollEvent(&ev)) {
+				switch (ev.Type) {
+					case SDL_EventType.SDL_EVENT_QUIT: break;
+					case SDL_EventType.SDL_EVENT_TERMINATING: break;
+					case SDL_EventType.SDL_EVENT_LOW_MEMORY: break;
+					case SDL_EventType.SDL_EVENT_LOCALE_CHANGED: break;
+					case SDL_EventType.SDL_EVENT_SYSTEM_THEME_CHANGED: break;
+					case SDL_EventType.SDL_EVENT_CLIPBOARD_UPDATE: break;
+
+					default:
+						var window = SDL3.SDL_GetWindowFromEvent(&ev);
+						var windowID = SDL3.SDL_GetWindowID(window);
+
+						if(windowLookup_id2window.TryGetValue(windowID, out var osWindow))
+							osWindow.Event(ref ev);
+
+						break;
+				}
+			}
+		}
 	}
 
 	public bool Fullscreen {
@@ -385,9 +412,6 @@ public unsafe class OSWindow
 		return new(SDL3.SDL_GetWindowDisplayScale(handle));
 	}
 
-	private Vector2F rendersize;
-	public Vector2F RenderSize => rendersize;
-
 	public void EnableCursor() {
 		SDL3.SDL_SetWindowRelativeMouseMode(handle, false);
 		OS.ShowCursor();
@@ -406,13 +430,9 @@ public unsafe class OSWindow
 		});
 	}
 
-	public void WindowEventThread() {
-
-	}
-
 	public bool UserClosed() {
-		if (State.UserWantsToClose) {
-			State.UserWantsToClose = false;
+		if (UserWantsToClose) {
+			UserWantsToClose = false;
 			return true;
 		}
 

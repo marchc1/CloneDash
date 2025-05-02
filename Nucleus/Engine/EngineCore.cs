@@ -215,7 +215,7 @@ public static class EngineCore
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
 
-		if (icon != null) 
+		if (icon != null)
 			Window.SetIcon(Filesystem.ReadImage("images", icon));
 
 		OpenGL.Import(Platform.OpenGL_GetProc);
@@ -234,15 +234,6 @@ public static class EngineCore
 
 		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
 			Graphics2D.RegisterCodepoints(languageLine);
-
-		float scaleRatio = 1.0f;
-		unsafe {
-			screenScale = Raylib.New<float>(4 * 4);
-			var scale = Raymath.MatrixToFloatV(Raymath.MatrixScale(scaleRatio, scaleRatio, 1.0f));
-			for (int i = 0; i < 4 * 4; i++) {
-				screenScale[i] = scale.v[i];
-			}
-		}
 	}
 
 	private static void __loadLevel(Level level, object[] args) {
@@ -380,7 +371,6 @@ public static class EngineCore
 	public static FrameState CurrentFrameState { get; set; }
 	public static GameInfo GameInfo { get; set; }
 
-	private static unsafe float* screenScale;
 	public static double TargetFrameTime { get; private set; } = 0;
 	public static double CurrentAppTime { get; private set; } = 0;
 	public static double PreviousAppTime { get; private set; } = 0;
@@ -409,7 +399,7 @@ public static class EngineCore
 			if (fpsFrame == 0) return 0;
 
 			var t = OS.GetTime();
-			if((t - fps_last) > FPS_STEP) {
+			if ((t - fps_last) > FPS_STEP) {
 				fps_last = (float)t;
 				fps_index = (fps_index + 1) % FPS_CAPTURE_FRAMES_COUNT;
 				fps_average -= fps_history[fps_index];
@@ -431,7 +421,8 @@ public static class EngineCore
 
 		Rlgl.LoadIdentity();
 		unsafe {
-			Rlgl.MultMatrixf(screenScale);
+			var c = Raymath.MatrixToFloatV(Window.ScreenScale);
+				Rlgl.MultMatrixf(c.v);
 		}
 
 		Graphics2D.SetOffset(GetGlobalScreenOffset());
@@ -479,7 +470,7 @@ public static class EngineCore
 		PreviousAppTime = CurrentAppTime;
 		FrameTime = UpdateTime + DrawTime;
 
-		if(FrameTime < TargetFrameTime) {
+		if (FrameTime < TargetFrameTime) {
 			double waitFor = TargetFrameTime - FrameTime;
 			Raylib.WaitTime(waitFor);
 
@@ -490,7 +481,7 @@ public static class EngineCore
 			FrameTime += waitTime;
 		}
 
-		Window.PollInputEvents();
+		OSWindow.PollInputEvents();
 
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
@@ -778,7 +769,7 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				Window.PollInputEvents();
+				OSWindow.PollInputEvents();
 				/*
 				if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
@@ -861,7 +852,7 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				Window.PollInputEvents();
+				OSWindow.PollInputEvents();
 				/*if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;
