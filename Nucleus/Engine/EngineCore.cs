@@ -780,7 +780,7 @@ public static class EngineCore
 
 			Rlgl.DrawRenderBatchActive();
 			Window.SwapScreenBuffer();
-			Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
+			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
 
@@ -863,7 +863,7 @@ public static class EngineCore
 
 			Rlgl.DrawRenderBatchActive();
 			Window.SwapScreenBuffer();
-			Raylib.WaitTime(hasRenderedOverlay ? 0.2 : 0.005);
+			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
 
