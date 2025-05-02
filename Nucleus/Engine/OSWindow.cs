@@ -788,6 +788,10 @@ public unsafe class OSWindow
 
 		Keyboard.Reset();
 	}
+
+	internal void SetMousePosition(Vector2F dragStart) {
+		
+	}
 }
 
 public static unsafe class OS

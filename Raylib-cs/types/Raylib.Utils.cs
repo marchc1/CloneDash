@@ -47,15 +47,15 @@ public static unsafe partial class Raylib
         OpenURL(str1.AsPointer());
     }
 
-    /// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
-    public static int SetGamepadMappings(string mappings)
-    {
-        using var str1 = mappings.ToUtf8Buffer();
-        return SetGamepadMappings(str1.AsPointer());
-    }
+	/// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
+	//public static int SetGamepadMappings(string mappings)
+	//{
+	//    using var str1 = mappings.ToUtf8Buffer();
+	//    return SetGamepadMappings(str1.AsPointer());
+	//}
 
-    /// <summary>Load shader from files and bind default locations</summary>
-    public static Shader LoadShader(string vsFileName, string fsFileName)
+	/// <summary>Load shader from files and bind default locations</summary>
+	public static Shader LoadShader(string vsFileName, string fsFileName)
     {
         using var str1 = vsFileName.ToAnsiBuffer();
         using var str2 = fsFileName.ToAnsiBuffer();
@@ -315,14 +315,14 @@ public static unsafe partial class Raylib
         return files;
     }
 
-    /// <summary>Get gamepad internal name id</summary>
-    public static string GetGamepadName_(int gamepad)
-    {
-        return Utf8StringUtils.GetUTF8String(GetGamepadName(gamepad));
-    }
+	/// <summary>Get gamepad internal name id</summary>
+	//public static string GetGamepadName_(int gamepad)
+	//{
+	//    return Utf8StringUtils.GetUTF8String(GetGamepadName(gamepad));
+	//}
 
-    /// <summary>Update camera position for selected mode</summary>
-    public static void UpdateCamera(ref Camera3D camera, CameraMode mode)
+	/// <summary>Update camera position for selected mode</summary>
+	public static void UpdateCamera(ref Camera3D camera, CameraMode mode)
     {
         fixed (Camera3D* c = &camera)
         {

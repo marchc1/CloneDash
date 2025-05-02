@@ -150,7 +150,7 @@ namespace Nucleus.UI
 				if (!didDrag)
 					dragStart = state.Mouse.MousePos;
 				else
-					Raylib.SetMousePosition((int)dragStart.X, (int)dragStart.Y);
+					EngineCore.Window.SetMousePosition(dragStart);
 
 				didDrag = true;
 				double precision;

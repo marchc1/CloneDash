@@ -219,8 +219,6 @@ public static class EngineCore
 			Window.SetIcon(Filesystem.ReadImage("images", icon));
 
 		OpenGL.Import(Platform.OpenGL_GetProc);
-		Raylib.SetExitKey(Raylib_cs.KeyboardKey.KEY_NULL);
-
 		// English language
 		Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
 		//Graphics2D.RegisterCodepoints(@"`1234567890");

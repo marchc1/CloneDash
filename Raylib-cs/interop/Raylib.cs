@@ -660,216 +660,215 @@ public static unsafe partial class Raylib
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void OpenURL(sbyte* url);
 
-    //------------------------------------------------------------------------------------
-    // Input Handling Functions (Module: core)
-    //------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------
+	// Input Handling Functions (Module: core)
+	//------------------------------------------------------------------------------------
 
-    // Input-related functions: keyboard
+	// Input-related functions: keyboard
 
-    /// <summary>Detect if a key has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyPressed(KeyboardKey key);
+	///// <summary>Detect if a key has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyPressed(KeyboardKey key);
 
-    /// <summary>Detect if a key has been pressed again</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyPressedRepeat(KeyboardKey key);
+	///// <summary>Detect if a key has been pressed again</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyPressedRepeat(KeyboardKey key);
 
-    /// <summary>Detect if a key is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyDown(KeyboardKey key);
+	///// <summary>Detect if a key is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyDown(KeyboardKey key);
 
-    /// <summary>Detect if a key has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyReleased(KeyboardKey key);
+	///// <summary>Detect if a key has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyReleased(KeyboardKey key);
 
-    /// <summary>Detect if a key is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyUp(KeyboardKey key);
+	///// <summary>Detect if a key is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyUp(KeyboardKey key);
 
-    /// <summary>Set a custom key to exit program (default is ESC)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetExitKey(KeyboardKey key);
+	///// <summary>Set a custom key to exit program (default is ESC)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetExitKey(KeyboardKey key);
 
-    /// <summary>
-    /// Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty
-    /// </summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetKeyPressed();
+	///// <summary>
+	///// Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty
+	///// </summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetKeyPressed();
 
-    /// <summary>
-    /// Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
-    /// </summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetCharPressed();
-
-
-    // Input-related functions: gamepads
-
-    /// <summary>Detect if a gamepad is available</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadAvailable(int gamepad);
-
-    /// <summary>Get gamepad internal name id</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte* GetGamepadName(int gamepad);
-
-    /// <summary>Detect if a gamepad button has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonPressed(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonDown(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonReleased(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonUp(int gamepad, GamepadButton button);
-
-    /// <summary>Get the last gamepad button pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetGamepadButtonPressed();
-
-    /// <summary>Get gamepad axis count for a gamepad</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetGamepadAxisCount(int gamepad);
-
-    /// <summary>Get axis movement value for a gamepad axis</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGamepadAxisMovement(int gamepad, GamepadAxis axis);
-
-    /// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int SetGamepadMappings(sbyte* mappings);
+	///// <summary>
+	///// Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
+	///// </summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetCharPressed();
 
 
-    // Input-related functions: mouse
+	// Input-related functions: gamepads
 
-    /// <summary>Detect if a mouse button has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonPressed(MouseButton button);
+	///// <summary>Detect if a gamepad is available</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadAvailable(int gamepad);
 
-    /// <summary>Detect if a mouse button is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonDown(MouseButton button);
+	///// <summary>Get gamepad internal name id</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern sbyte* GetGamepadName(int gamepad);
 
-    /// <summary>Detect if a mouse button has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonReleased(MouseButton button);
+	///// <summary>Detect if a gamepad button has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonPressed(int gamepad, GamepadButton button);
 
-    /// <summary>Detect if a mouse button is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonUp(MouseButton button);
+	///// <summary>Detect if a gamepad button is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonDown(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position X</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMouseX();
+	///// <summary>Detect if a gamepad button has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonReleased(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position Y</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMouseY();
+	///// <summary>Detect if a gamepad button is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonUp(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position XY</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMousePosition();
+	///// <summary>Get the last gamepad button pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetGamepadButtonPressed();
 
-    /// <summary>Get mouse delta between frames</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMouseDelta();
+	/// <summary>Get gamepad axis count for a gamepad</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetGamepadAxisCount(int gamepad);
 
-    /// <summary>Set mouse position XY</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMousePosition(int x, int y);
+	///// <summary>Get axis movement value for a gamepad axis</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGamepadAxisMovement(int gamepad, GamepadAxis axis);
 
-    /// <summary>Set mouse offset</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseOffset(int offsetX, int offsetY);
-
-    /// <summary>Set mouse scaling</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseScale(float scaleX, float scaleY);
-
-    /// <summary>Get mouse wheel movement for X or Y, whichever is larger</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetMouseWheelMove();
-
-    /// <summary>Get mouse wheel movement for both X and Y</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMouseWheelMoveV();
-
-    /// <summary>Set mouse cursor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseCursor(MouseCursor cursor);
+	///// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int SetGamepadMappings(sbyte* mappings);
 
 
-    // Input-related functions: touch
+	// Input-related functions: mouse
 
-    /// <summary>Get touch position X for touch point 0 (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchX();
+	/// <summary>Detect if a mouse button has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonPressed(MouseButton button);
 
-    /// <summary>Get touch position Y for touch point 0 (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchY();
+	///// <summary>Detect if a mouse button is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonDown(MouseButton button);
 
-    /// <summary>Get touch position XY for a touch point index (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetTouchPosition(int index);
+	///// <summary>Detect if a mouse button has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonReleased(MouseButton button);
 
-    /// <summary>Get touch point identifier for given index</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchPointId(int index);
+	///// <summary>Detect if a mouse button is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonUp(MouseButton button);
 
-    /// <summary>Get number of touch points</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchPointCount();
+	///// <summary>Get mouse position X</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMouseX();
 
-    //------------------------------------------------------------------------------------
-    // Gestures and Touch Handling Functions (Module: gestures)
-    //------------------------------------------------------------------------------------
+	///// <summary>Get mouse position Y</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMouseY();
 
-    /// <summary>Enable a set of gestures using flags</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetGesturesEnabled(Gesture flags);
+	/// <summary>Get mouse position XY</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMousePosition();
 
-    /// <summary>Check if a gesture has been detected</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGestureDetected(Gesture gesture);
+	///// <summary>Get mouse delta between frames</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMouseDelta();
 
-    /// <summary>Get latest detected gesture</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Gesture GetGestureDetected();
+	///// <summary>Set mouse position XY</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMousePosition(int x, int y);
 
-    /// <summary>Get gesture hold time in milliseconds</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGestureHoldDuration();
+	///// <summary>Set mouse offset</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseOffset(int offsetX, int offsetY);
 
-    /// <summary>Get gesture drag vector</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetGestureDragVector();
+	///// <summary>Set mouse scaling</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseScale(float scaleX, float scaleY);
 
-    /// <summary>Get gesture drag angle</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGestureDragAngle();
+	///// <summary>Get mouse wheel movement for X or Y, whichever is larger</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetMouseWheelMove();
 
-    /// <summary>Get gesture pinch delta</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetGesturePinchVector();
+	///// <summary>Get mouse wheel movement for both X and Y</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMouseWheelMoveV();
 
-    /// <summary>Get gesture pinch angle</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGesturePinchAngle();
+	///// <summary>Set mouse cursor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseCursor(MouseCursor cursor);
 
 
-    //------------------------------------------------------------------------------------
-    // Camera System Functions (Module: camera)
-    //------------------------------------------------------------------------------------
+	// Input-related functions: touch
 
-    /// <summary>Update camera position for selected mode</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	///// <summary>Get touch position X for touch point 0 (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchX();
+
+	///// <summary>Get touch position Y for touch point 0 (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchY();
+
+	///// <summary>Get touch position XY for a touch point index (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetTouchPosition(int index);
+
+	///// <summary>Get touch point identifier for given index</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchPointId(int index);
+
+	///// <summary>Get number of touch points</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchPointCount();
+
+	//------------------------------------------------------------------------------------
+	// Gestures and Touch Handling Functions (Module: gestures)
+	//------------------------------------------------------------------------------------
+
+	///// <summary>Enable a set of gestures using flags</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetGesturesEnabled(Gesture flags);
+	//
+	///// <summary>Check if a gesture has been detected</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGestureDetected(Gesture gesture);
+	//
+	///// <summary>Get latest detected gesture</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Gesture GetGestureDetected();
+	//
+	///// <summary>Get gesture hold time in milliseconds</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGestureHoldDuration();
+	//
+	///// <summary>Get gesture drag vector</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetGestureDragVector();
+	//
+	///// <summary>Get gesture drag angle</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGestureDragAngle();
+	//
+	///// <summary>Get gesture pinch delta</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetGesturePinchVector();
+	//
+	///// <summary>Get gesture pinch angle</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGesturePinchAngle();
+
+	//------------------------------------------------------------------------------------
+	// Camera System Functions (Module: camera)
+	//------------------------------------------------------------------------------------
+
+	/// <summary>Update camera position for selected mode</summary>
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void UpdateCamera(Camera3D* camera, CameraMode mode);
 
     /// <summary>Update camera movement/rotation</summary>
