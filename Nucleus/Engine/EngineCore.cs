@@ -461,16 +461,16 @@ public static class EngineCore
 
 		Rlgl.DrawRenderBatchActive();
 		Window.SwapScreenBuffer();
-	}
-	public static void Frame() {
-		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-
-		ProcessFrame();
 
 		CurrentAppTime = OS.GetTime();
 		DrawTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 		FrameTime = UpdateTime + DrawTime;
+	}
+	public static void Frame() {
+		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+
+		ProcessFrame();
 
 		if (FrameTime < TargetFrameTime) {
 			double waitFor = TargetFrameTime - FrameTime;
