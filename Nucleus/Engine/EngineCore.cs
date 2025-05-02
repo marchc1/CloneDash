@@ -410,9 +410,7 @@ public static class EngineCore
 	}
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 
-	public static void Frame() {
-		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-
+	public static void ProcessFrame() {
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
@@ -420,7 +418,7 @@ public static class EngineCore
 		Rlgl.LoadIdentity();
 		unsafe {
 			var c = Raymath.MatrixToFloatV(Window.ScreenScale);
-				Rlgl.MultMatrixf(c.v);
+			Rlgl.MultMatrixf(c.v);
 		}
 
 		Graphics2D.SetOffset(GetGlobalScreenOffset());
@@ -463,6 +461,11 @@ public static class EngineCore
 
 		Rlgl.DrawRenderBatchActive();
 		Window.SwapScreenBuffer();
+	}
+	public static void Frame() {
+		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+
+		ProcessFrame();
 
 		CurrentAppTime = OS.GetTime();
 		DrawTime = CurrentAppTime - PreviousAppTime;

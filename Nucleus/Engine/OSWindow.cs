@@ -146,7 +146,25 @@ public unsafe class OSWindow
 
 		window.Resizable = true;
 
+		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
+		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
+
 		return window;
+	}
+	private static double lastUpdate;
+	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
+		var type = ev->Type;
+		if(ev->Type == SDL_EventType.SDL_EVENT_WINDOW_EXPOSED && !EngineCore.InLevelFrame) {
+			var now = OS.GetTime();
+			if ((now - lastUpdate) > (1 / 60d)) {
+				var winObj = windowLookup_id2window[ev->window.windowID];
+				winObj.PushEvent(ref *ev);
+				EngineCore.ProcessFrame();
+				lastUpdate = now;
+			}
+		}
+		return false;
 	}
 
 	public bool Resizable {
@@ -370,15 +388,27 @@ public unsafe class OSWindow
 				Mouse.CurrentMousePosition.Y = ev.motion.y;
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
-			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-				int width = ev.window.data1;
-				int height = ev.window.data2;
-				SetupViewport(width, height);
-				ScreenSize.W = width;
-				ScreenSize.H = height;
-				CurrentFbo.W = width;
-				CurrentFbo.H = height;
-				ResizedLastFrame = true;
+			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+					int width = ev.window.data1;
+					int height = ev.window.data2;
+					SetupViewport(width, height);
+					ScreenSize.W = width;
+					ScreenSize.H = height;
+					CurrentFbo.W = width;
+					CurrentFbo.H = height;
+					ResizedLastFrame = true;
+				}
+				break;
+			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
+					int width, height;
+					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.window.windowID), &width, &height);
+					SetupViewport(width, height);
+					ScreenSize.W = width;
+					ScreenSize.H = height;
+					CurrentFbo.W = width;
+					CurrentFbo.H = height;
+					ResizedLastFrame = true;
+				}
 				break;
 		}
 	}
