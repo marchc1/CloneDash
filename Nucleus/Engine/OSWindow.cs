@@ -150,25 +150,31 @@ public unsafe class OSWindow
 		window.Resizable = true;
 
 		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
-		//SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
+		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
 
 		return window;
 	}
-	/*private static double lastUpdate;
+	private static double lastUpdate;
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
 		var type = ev->Type;
-		if(ev->Type == SDL_EventType.SDL_EVENT_WINDOW_EXPOSED && !EngineCore.InLevelFrame) {
+		if (ev->Type == SDL_EventType.SDL_EVENT_WINDOW_EXPOSED && !EngineCore.InLevelFrame) {
 			var now = OS.GetTime();
 			if ((now - lastUpdate) > (1 / 60d)) {
 				var winObj = windowLookup_id2window[ev->window.windowID];
-				winObj.PushEvent(ref *ev);
-				EngineCore.ProcessFrame();
+				OSEventTimestamped evP = new() {
+					Event = new SDL_Event() {
+						type = (uint)SDL_EventType.SDL_EVENT_WINDOW_EXPOSED,
+						window = ev->window
+					},
+					Timestamp = OS.GetTime()
+				};
+				EventBuffer.Enqueue(evP);
 				lastUpdate = now;
 			}
 		}
 		return false;
-	}*/
+	}
 
 	private bool hasLastWinflags = false;
 	private SDL_WindowFlags lastFlags;
@@ -494,12 +500,14 @@ public unsafe class OSWindow
 			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
 					int width, height;
 					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.Event.window.windowID), &width, &height);
-					SetupViewport(width, height);
-					ScreenSize.W = width;
-					ScreenSize.H = height;
-					CurrentFbo.W = width;
-					CurrentFbo.H = height;
-					ResizedLastFrame = true;
+					if (ScreenSize.W != width || ScreenSize.H != height) {
+						SetupViewport(width, height);
+						ScreenSize.W = width;
+						ScreenSize.H = height;
+						CurrentFbo.W = width;
+						CurrentFbo.H = height;
+						ResizedLastFrame = true;
+					}
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: UserWantsToClose = true; break;
