@@ -142,7 +142,7 @@ public unsafe class OSWindow
 		window.ScreenSize.Y = height;
 		window.ScreenScale = Raymath.MatrixIdentity();
 
-		SDL3.SDL_SetEventEnabled(SDL_EventType.SDL_EVENT_DROP_FILE, true);
+		// SDL3.SDL_SetEventEnabled(SDL_EventType.SDL_EVENT_DROP_FILE, true);
 
 		window.Resizable = true;
 
@@ -410,6 +410,7 @@ public unsafe class OSWindow
 					ResizedLastFrame = true;
 				}
 				break;
+			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: UserWantsToClose = true; break;
 		}
 	}
 
@@ -418,13 +419,13 @@ public unsafe class OSWindow
 		unsafe {
 			while (SDL3.SDL_PollEvent(&ev)) {
 				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_QUIT: break;
 					case SDL_EventType.SDL_EVENT_TERMINATING: break;
 					case SDL_EventType.SDL_EVENT_LOW_MEMORY: break;
 					case SDL_EventType.SDL_EVENT_LOCALE_CHANGED: break;
 					case SDL_EventType.SDL_EVENT_SYSTEM_THEME_CHANGED: break;
 					case SDL_EventType.SDL_EVENT_CLIPBOARD_UPDATE: break;
-
+					// Todo: a way to intercept this
+					case SDL_EventType.SDL_EVENT_QUIT: Environment.Exit(0); break;
 					default:
 						var window = SDL3.SDL_GetWindowFromEvent(&ev);
 						var windowID = SDL3.SDL_GetWindowID(window);
