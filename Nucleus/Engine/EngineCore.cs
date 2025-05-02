@@ -442,6 +442,7 @@ public static class EngineCore
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 		OSWindow.PropagateEventBuffer();
+		Window.UpdateWindowState();
 
 		Rlgl.LoadIdentity();
 		unsafe {

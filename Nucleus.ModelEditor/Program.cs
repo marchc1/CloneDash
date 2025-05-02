@@ -909,13 +909,15 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args);
+			MainThread.Thread = Thread.CurrentThread;
 			EngineCore.GameInfo = new() {
 				GameName = "Nucleus - Model v4 Editor"
 			};
-
-			EngineCore.LoadLevel(new ModelEditor());
+			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args, gameThreadInit: GameMain);
 			EngineCore.StartMainThread();
+		}
+		static void GameMain() {
+			EngineCore.LoadLevel(new ModelEditor());
 		}
 	}
 }

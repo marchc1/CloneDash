@@ -189,11 +189,7 @@ public unsafe class OSWindow
 		else target &= ~bit;
 	}
 	public void UpdateWindowState() {
-		if (!hasLastWinflags)
-			lastFlags = curFlags = SDL3.SDL_GetWindowFlags(handle);
-
-		lastFlags = curFlags;
-		curFlags = SDL3.SDL_GetWindowFlags(handle);
+		//curFlags = SDL3.SDL_GetWindowFlags(handle);
 
 		if (lastFlags != curFlags) {
 			// On a per-parameter basis, check for updates
@@ -205,6 +201,9 @@ public unsafe class OSWindow
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable)) SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop)) SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
 		}
+
+		lastFlags = curFlags;
+		hasLastWinflags = true;
 	}
 
 	public bool Resizable {
