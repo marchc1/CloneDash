@@ -793,7 +793,7 @@ public unsafe class OSWindow
 	/// </summary>
 	/// <param name="keyboardState"></param>
 	internal void FlushMouseStateInto(ref Input.MouseState ms) {
-		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_MIDDLE_BUTTON, m3 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
+		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m3 = (int)MouseButton.MOUSE_BUTTON_MIDDLE, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
 
 		ms.MousePos = Mouse.CurrentMousePosition;
 		ms.MouseDelta = Mouse.CurrentMousePosition - Mouse.PreviousMousePosition;
