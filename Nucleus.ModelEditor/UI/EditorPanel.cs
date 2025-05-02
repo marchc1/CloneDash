@@ -816,7 +816,7 @@ namespace Nucleus.ModelEditor
 				/* W */   (int)(widthMultiplied),
 				/* H */   (int)height
 			);
-			Raylib.BeginMode3D(cam);
+			EngineCore.Window.BeginMode3D(cam);
 			Rlgl.DisableBackfaceCulling();
 			Rlgl.DisableDepthMask();
 
@@ -829,7 +829,7 @@ namespace Nucleus.ModelEditor
 				Draw3DCursor();
 			}
 
-			Raylib.EndMode3D();
+			EngineCore.Window.EndMode3D();
 			Surface.ResetViewport();
 
 			IEditorType? selectedTransformable = null;

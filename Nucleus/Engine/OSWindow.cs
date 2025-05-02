@@ -636,4 +636,18 @@ public static unsafe class OS
 	}
 
 	public static double GetTime() => (double)SDL3.SDL_GetTicksNS() / 1_000_000_000d;
+
+	/// <summary>
+	/// Performs thread sleeping, but at the end, busy-loops to ensure tight frame timing.
+	/// </summary>
+	/// <param name="seconds">How long, in seconds, should the thread sleep/busy wait for</param>
+	public static void Wait(double seconds) {
+		double start = GetTime();
+		double sleepFor = seconds - (seconds * 0.05);
+		Thread.Sleep((int)(sleepFor * 1000));
+		double left = GetTime() - start;
+		if(left > 0) {
+			while((GetTime() - start) < seconds) {}
+		}
+	}
 }

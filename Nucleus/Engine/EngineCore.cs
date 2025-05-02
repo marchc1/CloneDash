@@ -473,7 +473,7 @@ public static class EngineCore
 
 		if (FrameTime < TargetFrameTime) {
 			double waitFor = TargetFrameTime - FrameTime;
-			Raylib.WaitTime(waitFor);
+			OS.Wait(waitFor);
 
 			CurrentAppTime = OS.GetTime();
 			double waitTime = CurrentAppTime - PreviousAppTime;
