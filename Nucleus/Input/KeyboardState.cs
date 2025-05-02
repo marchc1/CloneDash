@@ -454,11 +454,15 @@ namespace Nucleus.Input
 		public readonly bool WasKeyReleased(KeyboardKey key) => KeysReleased[key.Key];
 
 		public override string ToString() {
+			List<string> pressed = [];
 			List<string> keys = [];
 			foreach (var key in GetKeysHeld()) {
 				keys.Add(KeyboardLayout.USA.FromInt(key).Name);
 			}
-			return $"Held [{string.Join(", ", keys)}]";
+			foreach(var key in GetKeysThisFrame()) {
+				pressed.Add(KeyboardLayout.USA.FromInt(key).Name);
+			}
+			return $"Pressed [{string.Join(", ", pressed)}] Held [{string.Join(", ", keys)}]";
 		}
 
 		public KeyAction GetKeyActionFromKey(KeyboardKey key) {

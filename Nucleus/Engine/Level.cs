@@ -371,7 +371,7 @@ namespace Nucleus.Engine
 			profiler.Reset();
 			profiler.Start();
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
-			
+
 			SwapFrameStates();
 
 			LastRealtime = Realtime;
@@ -383,7 +383,7 @@ namespace Nucleus.Engine
 				Curtime += Math.Clamp(RealtimeDelta, 0, 0.1);
 				CurtimeDelta = Curtime - LastCurtime;
 			}
-			
+
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			FrameDebuggingStrings.Clear();
@@ -429,21 +429,24 @@ namespace Nucleus.Engine
 			EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			bool ranKeybinds = false;
-			if (EngineCore.KeyboardFocusedElement != null) {
+			if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
 				KeyboardState emulatedState = EngineCore.KeyboardFocusedElement.KeyboardInputMarshal.State(ref frameState.Keyboard);
 				ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(emulatedState);
 				if (!ranKeybinds) {
 					ranKeybinds = UI.Keybinds.TestKeybinds(emulatedState);
-					if (!ranKeybinds && IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
+
+					if (!ranKeybinds) {
 						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
 							var pressed = emulatedState.WasKeyPressed(i);
 							var released = emulatedState.WasKeyReleased(i);
-							if(pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
-							if(released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if (pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if (released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 					}
 				}
 			}
+			else
+				ranKeybinds = Keybinds.TestKeybinds(frameState.Keyboard);
 
 			if (!Paused) RunEventPreThink(ref frameState);
 
@@ -532,16 +535,13 @@ namespace Nucleus.Engine
 			Element.ThinkRecursive(UI, frameState);
 
 			// If an element has keyboard focus, wipe the keyboard state because the game shouldnt get that information
-			if (EngineCore.KeyboardFocusedElement != null)
+			if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
 				frameState.Keyboard = new();
 
 			// The frame state is basically complete after PreThink and UI layout/hover resolving, so it should be stored
 			// Last change will be after element thinking
 			EngineCore.CurrentFrameState = frameState; FrameState = frameState;
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrameStateConstructed);
-
-			if (!ranKeybinds)
-				ranKeybinds = Keybinds.TestKeybinds(frameState.Keyboard);
 
 			if (!Paused) RunEventThink(frameState);
 			if (!Paused) RunEventPostThink(frameState);

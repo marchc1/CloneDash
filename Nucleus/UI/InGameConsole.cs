@@ -142,6 +142,10 @@ namespace Nucleus
 		}
 
 		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
+			if (key == KeyboardLayout.USA.Tilda && !state.ShiftDown) {
+				InGameConsole.CloseConsole();
+				return;
+			}
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			SetupAutocomplete();
 		}
@@ -172,7 +176,7 @@ namespace Nucleus
 	{
 		private static ConsoleWindow? inputPanel = null;
 		public static ConsoleWindow? Instance => inputPanel;
-		private static void OpenConsole(Element parent) {
+		public static void OpenConsole(Element parent) {
 			if (IValidatable.IsValid(inputPanel)) {
 				CloseConsole();
 				return;
@@ -183,7 +187,7 @@ namespace Nucleus
 			ConsoleSystem.AddScreenBlocker(inputPanel);
 			inputPanel.Removed += (self) => OnConsoleClosed();
 		}
-		private static void CloseConsole() {
+		public static void CloseConsole() {
 			inputPanel?.Remove();
 			OnConsoleClosed();
 		}
