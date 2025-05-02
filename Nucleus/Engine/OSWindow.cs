@@ -350,17 +350,21 @@ public unsafe class OSWindow
 	public void PushEvent(ref SDL_Event ev) {
 		switch (ev.Type) {
 			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
-					KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
-					if (key != KeyboardKey.KEY_NULL)
-						Keyboard.CurrentKeyState[(int)key] = 1;
+					if (!ev.key.repeat) {
+						KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+						if (key != KeyboardKey.KEY_NULL)
+							Keyboard.CurrentKeyState[(int)key] = 1;
 
-					Keyboard.EnqueueKeyPress(ref ev);
+						Keyboard.EnqueueKeyPress(ref ev);
+					}
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_KEY_UP: {
-					KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
-					if (key != KeyboardKey.KEY_NULL)
-						Keyboard.CurrentKeyState[(int)key] = 0;
+					if (!ev.key.repeat) {
+						KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+						if (key != KeyboardKey.KEY_NULL)
+							Keyboard.CurrentKeyState[(int)key] = 0;
+					}
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
