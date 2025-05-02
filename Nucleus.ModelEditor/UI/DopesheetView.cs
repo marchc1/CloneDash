@@ -250,7 +250,7 @@ public class DopesheetView : BaseTimelineView
 
 	private void KeyframeInfoPanel_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 		processScroll(delta);
-		Raylib_cs.Raylib.SetMousePosition((int)dragStart.X, (int)dragStart.Y);
+		EngineCore.Window.SetMousePosition(dragStart);
 	}
 
 	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {

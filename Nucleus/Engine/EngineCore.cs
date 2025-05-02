@@ -528,7 +528,7 @@ public static class EngineCore
 	}
 
 	public static unsafe Vector2F MousePos {
-		get => Platform.GetMousePos();
+		get => EngineCore.Window.Mouse.CurrentMousePosition;
 	}
 
 

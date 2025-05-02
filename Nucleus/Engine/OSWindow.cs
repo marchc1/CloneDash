@@ -129,6 +129,9 @@ public unsafe class OSWindow
 
 		window.SetupViewport(width, height);
 
+		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
@@ -669,17 +672,11 @@ public unsafe class OSWindow
 	public void BeginScissorMode(int x, int y, int width, int height) {
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.EnableScissorTest();
-#if COMPILED_OSX
+
 		if (!UsingFbo) {
 			Vector2F scale = GetWindowScaleDPI();
-			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H() * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));
+			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));
 		}
-#else
-		if (!UsingFbo) {
-			Vector2F scale = GetWindowScaleDPI();
-			Rlgl.Scissor((int)(x * scale.x), (int)(CurrentFbo.H - (y + height) * scale.y), (int)(width * scale.x), (int)(height * scale.y));
-		}
-#endif
 		else {
 			Rlgl.Scissor(x, (int)CurrentFbo.H - (y + height), width, height);
 		}
@@ -850,7 +847,7 @@ public unsafe class OSWindow
 		Keyboard.Reset();
 	}
 
-	internal void SetMousePosition(Vector2F dragStart) {
+	public void SetMousePosition(Vector2F dragStart) {
 
 	}
 }
