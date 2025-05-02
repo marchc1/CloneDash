@@ -504,6 +504,10 @@ public unsafe class OSWindow
 		SDL3.SDL_DestroyCursor(cursor);
 		SDL3.SDL_GL_DestroyContext(glctx);
 		SDL3.SDL_DestroyWindow(handle);
+
+		// Remove ourselves from the windowID lookup tables
+		windowLookup_window2id.Remove(this);
+		windowLookup_id2window.Remove(windowID);
 	}
 
 	public void SetIcon(Image image) {
