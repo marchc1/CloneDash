@@ -626,10 +626,25 @@ public unsafe class OSWindow
 	SDL_Cursor* cursor;
 
 	public void SetMouseCursor(MouseCursor cursor) {
+		if(this.cursor != null) {
+			SDL3.SDL_DestroyCursor(this.cursor);
+		}
 		this.cursor = SDL3.SDL_CreateSystemCursor(cursor switch {
 			MouseCursor.MOUSE_CURSOR_DEFAULT => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT,
+			MouseCursor.MOUSE_CURSOR_ARROW => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT,
+			MouseCursor.MOUSE_CURSOR_IBEAM => SDL_SystemCursor.SDL_SYSTEM_CURSOR_TEXT,
+			MouseCursor.MOUSE_CURSOR_CROSSHAIR => SDL_SystemCursor.SDL_SYSTEM_CURSOR_CROSSHAIR,
+			MouseCursor.MOUSE_CURSOR_POINTING_HAND => SDL_SystemCursor.SDL_SYSTEM_CURSOR_POINTER,
+			MouseCursor.MOUSE_CURSOR_RESIZE_EW => SDL_SystemCursor.SDL_SYSTEM_CURSOR_EW_RESIZE,
+			MouseCursor.MOUSE_CURSOR_RESIZE_NS => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NS_RESIZE,
+			MouseCursor.MOUSE_CURSOR_RESIZE_NWSE => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NWSE_RESIZE,
+			MouseCursor.MOUSE_CURSOR_RESIZE_NESW => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NESW_RESIZE,
+			MouseCursor.MOUSE_CURSOR_RESIZE_ALL => SDL_SystemCursor.SDL_SYSTEM_CURSOR_MOVE,
+			MouseCursor.MOUSE_CURSOR_NOT_ALLOWED => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NOT_ALLOWED,
 			_ => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT
 		});
+
+		SDL3.SDL_SetCursor(this.cursor);
 	}
 
 	public bool UserClosed() {
