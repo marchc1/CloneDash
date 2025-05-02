@@ -626,9 +626,7 @@ public unsafe class OSWindow
 	SDL_Cursor* cursor;
 
 	public void SetMouseCursor(MouseCursor cursor) {
-		if(this.cursor != null) {
-			SDL3.SDL_DestroyCursor(this.cursor);
-		}
+		var lastCursor = this.cursor;
 		this.cursor = SDL3.SDL_CreateSystemCursor(cursor switch {
 			MouseCursor.MOUSE_CURSOR_DEFAULT => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT,
 			MouseCursor.MOUSE_CURSOR_ARROW => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT,
@@ -643,8 +641,9 @@ public unsafe class OSWindow
 			MouseCursor.MOUSE_CURSOR_NOT_ALLOWED => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NOT_ALLOWED,
 			_ => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT
 		});
-
 		SDL3.SDL_SetCursor(this.cursor);
+		if (lastCursor != null)
+			SDL3.SDL_DestroyCursor(lastCursor);
 	}
 
 	public bool UserClosed() {
