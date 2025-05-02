@@ -414,6 +414,16 @@ public unsafe class OSWindow
 		}
 	}
 
+	/// <summary>
+	/// Pumps the event loop.
+	/// </summary>
+	public static void PumpInputEvents() {
+		SDL3.SDL_PumpEvents();
+	}
+
+	/// <summary>
+	/// Processes the event queue and sends messages to active windows.
+	/// </summary>
 	public static void PollInputEvents() {
 		SDL_Event ev;
 		unsafe {
@@ -879,9 +889,13 @@ public unsafe class OSWindow
 	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
 		int i = 0;
 
+		var now = OS.GetTime();
+
 		while (KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
 			int keyPressed = (int)key;
-			keyboardState.PushKeyPress((int)key, timePressed);
+			// now - timePressed: this is done to get a relative-to-frame time
+			// since not everything will use SDL's time and know how to handle it
+			keyboardState.PushKeyPress((int)key, now - timePressed);
 		}
 
 		for (int j = 0; j < WindowKeyboardState.MAX_KEYBOARD_KEYS; j++) {
@@ -1013,10 +1027,14 @@ public static unsafe class OS
 	public static void Wait(double seconds) {
 		double start = GetTime();
 		double sleepFor = seconds - (seconds * 0.05);
-		Thread.Sleep((int)(sleepFor * 1000));
-		double left = GetTime() - start;
-		if (left > 0) {
-			while ((GetTime() - start) < seconds) { }
+		while (true) {
+			Thread.Sleep((int)(sleepFor * 1000));
+			double left = GetTime() - start;
+			if (left > 0) {
+				while ((GetTime() - start) < seconds) 
+					OSWindow.PumpInputEvents();
+				break;
+			}
 		}
 	}
 }

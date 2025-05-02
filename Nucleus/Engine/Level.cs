@@ -445,7 +445,8 @@ namespace Nucleus.Engine
 					}
 				}
 			}
-			else
+
+			if (!ranKeybinds)
 				ranKeybinds = Keybinds.TestKeybinds(frameState.Keyboard);
 
 			if (!Paused) RunEventPreThink(ref frameState);

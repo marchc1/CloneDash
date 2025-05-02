@@ -83,6 +83,7 @@ namespace Nucleus
 			consoleInput.TriggerExecuteOnEnter = true;
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
 			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
+			consoleInput.Editor.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], () => InGameConsole.CloseConsole());
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = Add<TextEditor>();
@@ -142,10 +143,6 @@ namespace Nucleus
 		}
 
 		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
-			if (key == KeyboardLayout.USA.Tilda && !state.ShiftDown) {
-				InGameConsole.CloseConsole();
-				return;
-			}
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			SetupAutocomplete();
 		}
