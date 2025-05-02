@@ -38,7 +38,7 @@ public class WindowKeyboardState(OSWindow window)
 	}
 
 	public void EnqueueKeyPress(ref SDL_Event ev) {
-		if(KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
+		if (KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
 			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
 			return;
 		}
@@ -357,8 +357,8 @@ public unsafe class OSWindow
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
-				Mouse.CurrentMouseScroll.X = ev.wheel.mouse_x;
-				Mouse.CurrentMouseScroll.Y = ev.wheel.mouse_y;
+				Mouse.CurrentMouseScroll.X = ev.wheel.x;
+				Mouse.CurrentMouseScroll.Y = ev.wheel.y;
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
 				Mouse.CurrentMousePosition.X = ev.motion.x;
@@ -655,17 +655,19 @@ public unsafe class OSWindow
 	public void BeginScissorMode(int x, int y, int width, int height) {
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.EnableScissorTest();
-
 #if COMPILED_OSX
-			// todo
+		if (!UsingFbo) {
+			Vector2F scale = GetWindowScaleDPI();
+			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H() * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));
+		}
 #else
-		if (!UsingFbo && false) {
+		if (!UsingFbo) {
 			Vector2F scale = GetWindowScaleDPI();
 			Rlgl.Scissor((int)(x * scale.x), (int)(CurrentFbo.H - (y + height) * scale.y), (int)(width * scale.x), (int)(height * scale.y));
 		}
 #endif
 		else {
-			Rlgl.Scissor(x, Rlgl.GetFramebufferHeight() - (y + height), width, height);
+			Rlgl.Scissor(x, (int)CurrentFbo.H - (y + height), width, height);
 		}
 	}
 
@@ -783,7 +785,7 @@ public unsafe class OSWindow
 		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_MIDDLE_BUTTON, m3 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
 
 		ms.MousePos = Mouse.CurrentMousePosition;
-		ms.MouseDelta = Mouse.PreviousMousePosition - Mouse.CurrentMousePosition;
+		ms.MouseDelta = Mouse.CurrentMousePosition - Mouse.PreviousMousePosition;
 		ms.MouseScroll = Mouse.CurrentMouseScroll;
 
 		int pm1 = Mouse.PreviousMouseButtonState[m1], pm2 = Mouse.PreviousMouseButtonState[m2], pm3 = Mouse.PreviousMouseButtonState[m3], pm4 = Mouse.PreviousMouseButtonState[m4], pm5 = Mouse.PreviousMouseButtonState[m5];
@@ -817,8 +819,8 @@ public unsafe class OSWindow
 	/// <param name="keyboardState"></param>
 	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
 		int i = 0;
-		
-		while(KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
+
+		while (KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
 			int keyPressed = (int)key;
 			keyboardState.PushKeyPress((int)key, timePressed);
 		}
@@ -835,7 +837,7 @@ public unsafe class OSWindow
 	}
 
 	internal void SetMousePosition(Vector2F dragStart) {
-		
+
 	}
 }
 
