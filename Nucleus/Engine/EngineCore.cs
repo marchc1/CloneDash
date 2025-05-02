@@ -490,8 +490,8 @@ public static class EngineCore
 			FrameTime += waitTime;
 		}
 
-		//Raylib.PollInputEvents();
-		
+		Window.PollInputEvents();
+
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
 		Host.CheckDirty();
@@ -778,7 +778,8 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				/*Raylib.PollInputEvents();
+				Window.PollInputEvents();
+				/*
 				if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					return false;
@@ -860,12 +861,12 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				//Raylib.PollInputEvents();
-				if (Raylib.GetKeyPressed() != 0) {
+				Window.PollInputEvents();
+				/*if (Raylib.GetKeyPressed() != 0) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;
 					return;
-				}
+				}*/
 			}
 
 			Rlgl.DrawRenderBatchActive();

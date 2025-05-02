@@ -2,15 +2,104 @@
 using Raylib_cs;
 using SDL;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Nucleus.Engine;
 
+public class WindowState(OSWindow window)
+{
+	public bool ResizedLastFrame;
+	public bool UserWantsToClose;
+
+	// Keyboard fields
+	public const int MAX_KEYBOARD_KEYS = 512;
+	public const int MAX_KEY_PRESSED_QUEUE = 32;
+	public const int MAX_CHAR_PRESSED_QUEUE = 32;
+
+	public bool ExitKey;
+
+	public byte[] CurrentKeyState = new byte[MAX_KEYBOARD_KEYS];
+	public byte[] PreviousKeyState = new byte[MAX_KEYBOARD_KEYS];
+
+	public byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
+
+	public double[] KeyTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
+	public int[] KeyPressedQueue = new int[MAX_KEY_PRESSED_QUEUE];
+	public int KeyPressedQueueCount = 0;
+
+	public double[] CharTimeQueue = new double[MAX_CHAR_PRESSED_QUEUE];
+	public int[] CharPressedQueue = new int[MAX_CHAR_PRESSED_QUEUE];
+	public int CharPressedQueueCount = 0;
+
+	// Mouse fields
+	public const int MAX_MOUSE_BUTTONS = 8;
+
+	public Vector2F MouseOffset;
+	public Vector2F MouseScale;
+	public Vector2F CurrentMousePosition;
+	public Vector2F PreviousMousePosition;
+
+	public byte[] CurrentMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
+	public byte[] PreviousMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
+	public Vector2F CurrentMouseWheelMove;
+	public Vector2F PreviousMouseWheelMove;
+
+	internal void Reset() {
+		KeyPressedQueueCount = 0;
+		CharPressedQueueCount = 0;
+
+		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) KeyRepeatInFrame[i] = 0;
+
+		PreviousMouseWheelMove.X = CurrentMouseWheelMove.X;
+		PreviousMouseWheelMove.Y = CurrentMouseWheelMove.Y;
+
+		CurrentMouseWheelMove.X = 0;
+		CurrentMouseWheelMove.Y = 0;
+
+		PreviousMousePosition = CurrentMousePosition;
+
+		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
+			PreviousKeyState[i] = CurrentKeyState[i];
+			KeyRepeatInFrame[i] = 0;
+		}
+
+		for (int i = 0; i < MAX_MOUSE_BUTTONS; i++)
+			PreviousMouseButtonState[i] = CurrentMouseButtonState[i];
+
+		ResizedLastFrame = false;
+	}
+
+	internal void Poll() { 
+		SDL_Event ev;
+		unsafe {
+			while (SDL3.SDL_PollEvent(&ev)) {
+				switch (ev.Type) {
+					case SDL_EventType.SDL_EVENT_QUIT: UserWantsToClose = true; break;
+					// Todo: dropped file?
+					case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
+					case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+						ResizedLastFrame = true;
+						break;
+					case SDL_EventType.SDL_EVENT_KEY_DOWN: break;
+					case SDL_EventType.SDL_EVENT_KEY_UP: break;
+					case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: break;
+					case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: break;
+					case SDL_EventType.SDL_EVENT_MOUSE_WHEEL: break;
+					case SDL_EventType.SDL_EVENT_MOUSE_MOTION: break;
+				}
+			}
+		}
+	}
+}
+
+
 public unsafe class OSWindow
 {
+	public WindowState State;
 	private SDL_Window* handle;
 	private SDL_GLContextState* glctx;
-	private OSWindow() { }
+	private OSWindow() {
+		State = new(this);
+	}
 
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		if (!OS.InitPlatform()) {
@@ -66,6 +155,14 @@ public unsafe class OSWindow
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 	}
 
+	/// <summary>
+	/// Input event handler designed to run on the main thread
+	/// </summary>
+	public void PollInputEvents() {
+		State.Reset();
+		State.Poll();
+	}
+
 	public bool Fullscreen {
 		get => false;
 		set { }
@@ -84,7 +181,7 @@ public unsafe class OSWindow
 	public bool Visible {
 		get => !SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
 		set {
-			if(value) SDL3.SDL_ShowWindow(handle);
+			if (value) SDL3.SDL_ShowWindow(handle);
 			else SDL3.SDL_HideWindow(handle);
 		}
 	}
@@ -313,10 +410,9 @@ public unsafe class OSWindow
 
 	}
 
-	private bool userclosed = false;
 	public bool UserClosed() {
-		if (userclosed) {
-			userclosed = false;
+		if (State.UserWantsToClose) {
+			State.UserWantsToClose = false;
 			return true;
 		}
 
