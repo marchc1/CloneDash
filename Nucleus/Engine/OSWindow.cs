@@ -27,9 +27,11 @@ public class WindowKeyboardState(OSWindow window)
 
 	internal void Reset() {
 		KeyPressQueueCount = 0;
-		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
+		for (int i = 0; i < MAX_KEY_PRESSED_QUEUE; i++) {
 			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
 			KeyPressTimeQueue[i] = 0;
+		}
+		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
 		}
@@ -58,15 +60,15 @@ public class WindowMouseState(OSWindow window)
 
 	public byte[] CurrentMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
 	public byte[] PreviousMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
-	public Vector2F CurrentMouseWheelMove;
-	public Vector2F PreviousMouseWheelMove;
+	public Vector2F CurrentMouseScroll;
+	public Vector2F PreviousMouseScroll;
 
 	internal void Reset() {
-		PreviousMouseWheelMove.X = CurrentMouseWheelMove.X;
-		PreviousMouseWheelMove.Y = CurrentMouseWheelMove.Y;
+		PreviousMouseScroll.X = CurrentMouseScroll.X;
+		PreviousMouseScroll.Y = CurrentMouseScroll.Y;
 
-		CurrentMouseWheelMove.X = 0;
-		CurrentMouseWheelMove.Y = 0;
+		CurrentMouseScroll.X = 0;
+		CurrentMouseScroll.Y = 0;
 
 		PreviousMousePosition = CurrentMousePosition;
 
@@ -355,8 +357,8 @@ public unsafe class OSWindow
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
-				Mouse.CurrentMouseWheelMove.X = ev.wheel.mouse_x;
-				Mouse.CurrentMouseWheelMove.Y = ev.wheel.mouse_y;
+				Mouse.CurrentMouseScroll.X = ev.wheel.mouse_x;
+				Mouse.CurrentMouseScroll.Y = ev.wheel.mouse_y;
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
 				Mouse.CurrentMousePosition.X = ev.motion.x;
@@ -367,6 +369,11 @@ public unsafe class OSWindow
 
 	public static void PollInputEvents() {
 		SDL_Event ev;
+		// Tell every window to forget its previous state
+		foreach(var windowKVP in windowLookup_id2window) {
+			windowKVP.Value.Keyboard.Reset();
+			windowKVP.Value.Mouse.Reset();
+		}
 		unsafe {
 			while (SDL3.SDL_PollEvent(&ev)) {
 				switch (ev.Type) {
@@ -727,12 +734,36 @@ public unsafe class OSWindow
 		Rlgl.DisableDepthTest();
 	}
 
-	internal void ProduceMouseState(ref Input.MouseState mouseState) {
-		throw new NotImplementedException();
+	internal void ProduceMouseState(ref Input.MouseState ms) {
+		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_MIDDLE_BUTTON, m3 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
+
+		ms.MousePos = Mouse.CurrentMousePosition;
+		ms.MouseScroll = Mouse.CurrentMouseScroll;
+
+		int pm1 = Mouse.PreviousMouseButtonState[m1], pm2 = Mouse.PreviousMouseButtonState[m2], pm3 = Mouse.PreviousMouseButtonState[m3], pm4 = Mouse.PreviousMouseButtonState[m4], pm5 = Mouse.PreviousMouseButtonState[m5];
+		int cm1 = Mouse.CurrentMouseButtonState[m1], cm2 = Mouse.CurrentMouseButtonState[m2], cm3 = Mouse.CurrentMouseButtonState[m3], cm4 = Mouse.CurrentMouseButtonState[m4], cm5 = Mouse.CurrentMouseButtonState[m5];
+
+		ms.Mouse1Clicked = pm1 == 0 && cm1 == 1;
+		ms.Mouse2Clicked = pm2 == 0 && cm2 == 1;
+		ms.Mouse3Clicked = pm3 == 0 && cm3 == 1;
+		ms.Mouse4Clicked = pm4 == 0 && cm4 == 1;
+		ms.Mouse5Clicked = pm5 == 0 && cm5 == 1;
+
+		ms.Mouse1Released = pm1 == 1 && cm1 == 0;
+		ms.Mouse2Released = pm2 == 1 && cm2 == 0;
+		ms.Mouse3Released = pm3 == 1 && cm3 == 0;
+		ms.Mouse4Released = pm4 == 1 && cm4 == 0;
+		ms.Mouse5Released = pm5 == 1 && cm5 == 0;
+
+		ms.Mouse1Held = cm1 == 1;
+		ms.Mouse2Held = cm2 == 1;
+		ms.Mouse3Held = cm3 == 1;
+		ms.Mouse4Held = cm4 == 1;
+		ms.Mouse5Held = cm5 == 1;
 	}
 
 	internal void ProduceKeyboardState(ref Input.KeyboardState keyboardState) {
-		throw new NotImplementedException();
+
 	}
 }
 

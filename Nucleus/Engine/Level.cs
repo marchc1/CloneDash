@@ -401,8 +401,9 @@ namespace Nucleus.Engine
 			else {
 				x = 0;
 				y = 0;
-				width = EngineCore.GetScreenSize().X;
-				height = EngineCore.GetScreenSize().Y;
+				var size = EngineCore.GetScreenSize();
+				width = size.X;
+				height = size.Y;
 			}
 
 			frameState.WindowX = x;
