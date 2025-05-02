@@ -2,7 +2,7 @@
   "profiles": {
     "CloneDash": {
       "commandName": "Project",
-      "commandLineArgs": "-debug",
+      "commandLineArgs": "-debug -md_level the_89s_momentum -difficulty 3 -autoplay",
       "nativeDebugging": false
     }
   }

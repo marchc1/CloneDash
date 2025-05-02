@@ -28,10 +28,10 @@ namespace Nucleus.Rendering
 
 		public static void ResetViewport() => SetViewport(EngineCore.GetScreenBounds());
 
-		public static void Clear(Color c) => Raylib.ClearBackground(c);
-		public static void Clear(int r, int g, int b, int a) => Raylib.ClearBackground(new(r,g,b,a));
-		public static void Clear(int r, int g, int b) => Raylib.ClearBackground(new(r,g,b,255));
-		public static void Clear(int rgb) => Raylib.ClearBackground(new(rgb,rgb,rgb,255));
+		public static void Clear(Color c) => EngineCore.Window.ClearBackground(c);
+		public static void Clear(int r, int g, int b, int a) => EngineCore.Window.ClearBackground(r, g, b, a);
+		public static void Clear(int r, int g, int b) => EngineCore.Window.ClearBackground(r, g, b, 255);
+		public static void Clear(int rgb) => EngineCore.Window.ClearBackground(rgb, rgb, rgb, 255);
 
 		public static void Spin() {
 			Rlgl.DrawRenderBatchActive();

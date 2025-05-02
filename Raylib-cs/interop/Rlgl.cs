@@ -132,14 +132,16 @@ public static unsafe partial class Rlgl
     [DllImport(NativeLibName, EntryPoint = "rlMultMatrixf", CallingConvention = CallingConvention.Cdecl)]
     public static extern void MultMatrixf(float* matf);
 
-    /// <inheritdoc cref="MultMatrixf(float*)"/>
-    public static void MultMatrixf(Matrix4x4 matf)
-    {
-        Float16 f = Raymath.MatrixToFloatV(matf);
-        MultMatrixf(f.v);
-    }
+	/// <inheritdoc cref="MultMatrixf(float*)"/>
+	public static void MultMatrixf(Float16 f) {
+		MultMatrixf(f.v);
+	}
+	public static void MultMatrixf(Matrix4x4 matf) {
+		Float16 f = Raymath.MatrixToFloatV(matf);
+		MultMatrixf(f.v);
+	}
 
-    [DllImport(NativeLibName, EntryPoint = "rlFrustum", CallingConvention = CallingConvention.Cdecl)]
+	[DllImport(NativeLibName, EntryPoint = "rlFrustum", CallingConvention = CallingConvention.Cdecl)]
     public static extern void Frustum(
         double left,
         double right,

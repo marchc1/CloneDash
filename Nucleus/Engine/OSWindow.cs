@@ -6,7 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
 
-public class WindowKeyboardState(OSWindow window) {
+public class WindowKeyboardState(OSWindow window)
+{
 	public const int MAX_KEYBOARD_KEYS = 512;
 	public const int MAX_KEY_PRESSED_QUEUE = 32;
 	public const int MAX_CHAR_PRESSED_QUEUE = 32;
@@ -34,7 +35,8 @@ public class WindowKeyboardState(OSWindow window) {
 	}
 }
 
-public class WindowMouseState(OSWindow window) {
+public class WindowMouseState(OSWindow window)
+{
 	public const int MAX_MOUSE_BUTTONS = 8;
 
 	public Vector2F MouseOffset;
@@ -102,7 +104,7 @@ public unsafe class OSWindow
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
-
+		SDL3.SDL_GL_SetSwapInterval(0);
 
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
@@ -150,10 +152,10 @@ public unsafe class OSWindow
 		Rlgl.Viewport((int)(RenderOffset.x / 2), ((int)RenderOffset.y / 2), (int)RenderSize.W, (int)RenderSize.H);
 #endif
 
-		Rlgl.MatrixMode(MatrixMode.PROJECTION);
+		Rlgl.MatrixMode(MatrixMode.Projection);
 		Rlgl.LoadIdentity();
 		Rlgl.Ortho(0, RenderSize.W, RenderSize.H, 0, 0, 1);
-		Rlgl.MatrixMode(MatrixMode.MODELVIEW);
+		Rlgl.MatrixMode(MatrixMode.ModelView);
 		Rlgl.LoadIdentity();
 	}
 
@@ -161,7 +163,7 @@ public unsafe class OSWindow
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 	}
 
-	public void Event(ref SDL_Event ev){
+	public void Event(ref SDL_Event ev) {
 
 	}
 
@@ -181,7 +183,7 @@ public unsafe class OSWindow
 						var window = SDL3.SDL_GetWindowFromEvent(&ev);
 						var windowID = SDL3.SDL_GetWindowID(window);
 
-						if(windowLookup_id2window.TryGetValue(windowID, out var osWindow))
+						if (windowLookup_id2window.TryGetValue(windowID, out var osWindow))
 							osWindow.Event(ref ev);
 
 						break;
@@ -437,6 +439,72 @@ public unsafe class OSWindow
 		}
 
 		return false;
+	}
+
+	public const float RL_CULL_DISTANCE_NEAR = 0.01f;
+	public const float RL_CULL_DISTANCE_FAR = 1000f;
+
+	public void ClearBackground(int r, int g, int b, int a) => ClearBackground((byte)r, (byte)g, (byte)b, (byte)a);
+	public void ClearBackground(byte r, byte g, byte b, byte a) {
+		Rlgl.ClearColor(r, g, b, a);
+		Rlgl.ClearScreenBuffers();
+	}
+	public void ClearBackground(int r, int g, int b) => ClearBackground(r, g, b, 255);
+	public void ClearBackground(Color c) => ClearBackground(c.R, c.G, c.B, c.A);
+
+	public void BeginMode2D(Camera2D camera) {
+		Rlgl.DrawRenderBatchActive();    
+		Rlgl.LoadIdentity(); 
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(Raylib.GetCameraMatrix2D(camera)));
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+	}
+
+	public void EndMode2D() {
+		Rlgl.DrawRenderBatchActive();   
+		Rlgl.LoadIdentity();  
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+	}
+
+	public void BeginMode3D(Camera3D camera) {
+		Rlgl.DrawRenderBatchActive();
+
+		Rlgl.MatrixMode(MatrixMode.Projection);
+		Rlgl.PushMatrix();
+		Rlgl.LoadIdentity();
+
+		float aspect = (float)Rlgl.GetFramebufferWidth() / (float)Rlgl.GetFramebufferHeight();
+
+		if (camera.Projection == CameraProjection.Perspective) {
+			double top = RL_CULL_DISTANCE_NEAR * MathF.Tan(camera.FovY * 0.5f * (MathF.PI / 180f));
+			double right = top * aspect;
+
+			Rlgl.Frustum(-right, right, -top, top, RL_CULL_DISTANCE_NEAR, RL_CULL_DISTANCE_FAR);
+		}
+		else if (camera.Projection == CameraProjection.Orthographic) {
+			double top = camera.FovY / 2.0;
+			double right = top * aspect;
+
+			Rlgl.Ortho(-right, right, -top, top, RL_CULL_DISTANCE_NEAR, RL_CULL_DISTANCE_FAR);
+		}
+
+		Rlgl.MatrixMode(MatrixMode.ModelView);
+		Rlgl.LoadIdentity();
+
+		// Setup Camera view
+		Matrix4x4 matView = Raymath.MatrixLookAt(camera.Position, camera.Target, camera.Up);
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(matView));
+
+		Rlgl.EnableDepthTest();
+	}
+
+	public void EndMode3D() {
+		Rlgl.DrawRenderBatchActive();    
+		Rlgl.MatrixMode(MatrixMode.Projection);  
+		Rlgl.PopMatrix();                
+		Rlgl.MatrixMode(MatrixMode.ModelView);   
+		Rlgl.LoadIdentity();             
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale)); 
+		Rlgl.DisableDepthTest();           
 	}
 }
 

@@ -206,13 +206,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		anims.AddAnimation(1, touchResponse.End);
 	}
 	public override void Paint(float width, float height) {
-		Raylib.BeginMode2D(new() {
+		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
 			Offset = new(width / 2 - width * .2f, height / 1)
 		});
 
 		model?.Render();
 
-		Raylib.EndMode2D();
+		EngineCore.Window.EndMode2D();
 	}
 }

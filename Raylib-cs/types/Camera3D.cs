@@ -20,8 +20,8 @@ public enum CameraMode
 /// </summary>
 public enum CameraProjection
 {
-    CAMERA_PERSPECTIVE = 0,
-    CAMERA_ORTHOGRAPHIC
+    Perspective = 0,
+    Orthographic
 }
 
 /// <summary>

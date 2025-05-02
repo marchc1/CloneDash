@@ -16,7 +16,8 @@ namespace Nucleus.HelloWorld
 			public override void PostRender(FrameState frameState) {
 				base.PostRender(frameState);
 				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawText(0, 0, "Hello, World!", "Noto Sans", 16);
+				Graphics2D.DrawText(0, 0, "Hello SDL!", "Noto Sans", 32);
+				Graphics2D.DrawRectangle(500, 500, 120, 120);
 			}
 		}
 		static void Main(string[] args) {

@@ -796,7 +796,7 @@ namespace Nucleus.ModelEditor
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
-				Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
+				Projection = CameraProjection.Orthographic,
 				FovY = EngineCore.GetWindowHeight() / CameraZoom,
 				Position = new(CameraX, CameraY, 500),
 				Target = new(CameraX, CameraY, 0),

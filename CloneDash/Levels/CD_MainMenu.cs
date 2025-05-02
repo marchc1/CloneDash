@@ -60,7 +60,7 @@ public class CD_MainMenu : Level
 		anims.SetAnimation(0, "air_hit_great_2", false);
 
 		renderPanel.PaintOverride += (s, w, h) => {
-			Raylib.BeginMode2D(new() {
+			EngineCore.Window.BeginMode2D(new() {
 				Zoom = 1f,
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
@@ -75,7 +75,7 @@ public class CD_MainMenu : Level
 				Raylib.EndShaderMode();
 			}
 
-			Raylib.EndMode2D();
+			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
@@ -115,7 +115,7 @@ public class CD_MainMenu : Level
 		AnimationHandler? anims = null;
 
 		renderPanel.PaintOverride += (s, w, h) => {
-			Raylib.BeginMode2D(new() {
+			EngineCore.Window.BeginMode2D(new() {
 				Zoom = 1f,
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
@@ -125,7 +125,7 @@ public class CD_MainMenu : Level
 				anims.Apply(model);
 				model.Render();
 			}
-			Raylib.EndMode2D();
+			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {

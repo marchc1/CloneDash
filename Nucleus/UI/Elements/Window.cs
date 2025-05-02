@@ -186,7 +186,7 @@ namespace Nucleus.UI.Elements
             mul = NMath.Ease.OutCubic(mul);
             mulf = NMath.Ease.InCubic(mulf);
 
-            Raylib.BeginMode2D(new Camera2D() {
+			EngineCore.Window.BeginMode2D(new Camera2D() {
                 Offset = new((Position.X * -mulf) + ((Size.X / 2) * -mulf), (Position.Y * -mulf) + ((Size.Y / 2) * -mulf)),
                 Rotation = 0,
                 Target = new(0, mulf),
@@ -202,7 +202,7 @@ namespace Nucleus.UI.Elements
             if (Lifetime < 0.5) {
                 Rlgl.PopMatrix();
                 Rlgl.PopMatrix();
-                Raylib.EndMode2D();
+				EngineCore.Window.EndMode2D();
             }
         }
         public override void PostRenderChildren() {

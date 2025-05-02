@@ -367,6 +367,15 @@ namespace Nucleus.Engine
 			FrameState.Reset();
 		}
 
+		private void test() {
+			Vector2F screenBounds = new(1600, 900);
+			Graphics2D.SetDrawColor(30, 5, 0);
+			Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
+			Graphics2D.SetDrawColor(240, 70, 60);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+		}
+
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -386,7 +395,7 @@ namespace Nucleus.Engine
 				Curtime += Math.Clamp(RealtimeDelta, 0, 0.1);
 				CurtimeDelta = Curtime - LastCurtime;
 			}
-
+			
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			FrameDebuggingStrings.Clear();
@@ -616,12 +625,12 @@ namespace Nucleus.Engine
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
-			Raylib.ClearBackground(new Color(0, 0, 0, 255));
+			Surface.Clear(0, 0, 0, 255);
 
 			bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
 			if (render3D) {
 				var cam3d = new Camera3D() {
-					Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
+					Projection = CameraProjection.Orthographic,
 					FovY = frameState.WindowHeight * 1,
 					Position = offset + new System.Numerics.Vector3(0, 0, -500),
 					Target = offset + new System.Numerics.Vector3(0, 0, 0),
@@ -632,7 +641,7 @@ namespace Nucleus.Engine
 				RunEventPreRenderBackground(frameState);
 				frameState.Camera3D = cam3d;
 
-				Raylib.BeginMode3D(cam3d);
+				EngineCore.Window.BeginMode3D(cam3d);
 			}
 			else {
 				var cam2d = new Camera2D() { };
@@ -641,7 +650,7 @@ namespace Nucleus.Engine
 				RunEventPreRenderBackground(frameState);
 				frameState.Camera2D = cam2d;
 
-				Raylib.BeginMode2D(cam2d);
+				EngineCore.Window.BeginMode2D(cam2d);
 			}
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
 			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
@@ -650,9 +659,9 @@ namespace Nucleus.Engine
 
 			RunEventRender(frameState);
 			if (render3D)
-				Raylib.EndMode3D();
+				EngineCore.Window.EndMode3D();
 			else
-				Raylib.EndMode2D();
+				EngineCore.Window.EndMode2D();
 			//Graphics.ScissorRect();
 
 			RunEventRender2D(frameState);
@@ -750,7 +759,6 @@ namespace Nucleus.Engine
 				EngineCore.FrameCost = $"{nanoseconds / 1_000_000.0} ms";
 			else // greater than or equal to 2 milliseconds
 				EngineCore.FrameCost = $"{nanoseconds / 1_000_000_000.0} s";
-
 		}
 
 		private void RenderShowUpdates() {

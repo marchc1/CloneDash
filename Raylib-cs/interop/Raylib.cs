@@ -271,32 +271,32 @@ public static unsafe partial class Raylib
     // Drawing-related functions
 
     /// <summary>Set background color (framebuffer clear color)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ClearBackground(Color color);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void ClearBackground(Color color);
 
     /// <summary>Setup canvas (framebuffer) to start drawing</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginDrawing();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginDrawing();
 
     /// <summary>End canvas drawing and swap buffers (double buffering)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndDrawing();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndDrawing();
 
     /// <summary>Initialize 2D mode with custom camera (2D)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginMode2D(Camera2D camera);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginMode2D(Camera2D camera);
 
     /// <summary>Ends 2D mode with custom camera</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndMode2D();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndMode2D();
 
     /// <summary>Initializes 3D mode with custom camera (3D)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginMode3D(Camera3D camera);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginMode3D(Camera3D camera);
 
     /// <summary>Ends 3D mode and returns to default 2D orthographic mode</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndMode3D();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndMode3D();
 
     /// <summary>Initializes render texture for drawing</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
