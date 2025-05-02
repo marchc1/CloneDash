@@ -144,6 +144,8 @@ public unsafe class OSWindow
 
 		SDL3.SDL_SetEventEnabled(SDL_EventType.SDL_EVENT_DROP_FILE, true);
 
+		window.Resizable = true;
+
 		return window;
 	}
 
@@ -366,6 +368,17 @@ public unsafe class OSWindow
 			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
 				Mouse.CurrentMousePosition.X = ev.motion.x;
 				Mouse.CurrentMousePosition.Y = ev.motion.y;
+				break;
+			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
+			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+				int width = ev.window.data1;
+				int height = ev.window.data2;
+				SetupViewport(width, height);
+				ScreenSize.W = width;
+				ScreenSize.H = height;
+				CurrentFbo.W = width;
+				CurrentFbo.H = height;
+				ResizedLastFrame = true;
 				break;
 		}
 	}
