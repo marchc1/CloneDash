@@ -26,7 +26,7 @@ namespace Nucleus.UI.Elements
 				return;
 
 			CurrentDialog = UI.Add<ColorSelectorDialog>();
-			CurrentDialog.Position = state.MouseState.MousePos;
+			CurrentDialog.Position = state.Mouse.MousePos;
 			CurrentDialog.Setup(this);
 			CurrentDialog.FitToParent(8);
 		}

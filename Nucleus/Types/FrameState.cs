@@ -18,8 +18,8 @@ namespace Nucleus.Types
 			WindowSize = new(0, 0);
 			WindowX = 0;
 			WindowY = 0;
-			MouseState = new();
-			KeyboardState = new();
+			Mouse = new();
+			Keyboard = new();
 			Camera2D = new();
 			Camera3D = new();
 		}
@@ -39,13 +39,13 @@ namespace Nucleus.Types
             get { return WindowSize.Y; }
             set { WindowSize = new Vector2F(WindowSize.X, value); }
         }
-		public MouseState MouseState;
-		public KeyboardState KeyboardState;
+		public MouseState Mouse;
+		public KeyboardState Keyboard;
 		public Raylib_cs.Camera2D Camera2D;
 		public Raylib_cs.Camera3D Camera3D;
 
-        public bool MouseClicked(MouseButton button) => MouseState.Clicked(button);
-        public bool MouseHeld(MouseButton button) => MouseState.Held(button);
-        public bool MouseReleased(MouseButton button) => MouseState.Released(button);
+        public bool MouseClicked(MouseButton button) => Mouse.Clicked(button);
+        public bool MouseHeld(MouseButton button) => Mouse.Held(button);
+        public bool MouseReleased(MouseButton button) => Mouse.Released(button);
     }
 }

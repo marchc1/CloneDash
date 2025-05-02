@@ -1,6 +1,8 @@
-﻿using Nucleus.Types;
+﻿using Nucleus.Core;
+using Nucleus.Types;
 using Raylib_cs;
 using SDL;
+using System.Collections.Concurrent;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -19,19 +21,29 @@ public class WindowKeyboardState(OSWindow window)
 
 	public byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
 
-	public double[] KeyTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
-	public int[] KeyPressedQueue = new int[MAX_KEY_PRESSED_QUEUE];
-	public int KeyPressedQueueCount = 0;
-
-	public double[] CharTimeQueue = new double[MAX_CHAR_PRESSED_QUEUE];
-	public int[] CharPressedQueue = new int[MAX_CHAR_PRESSED_QUEUE];
-	public int CharPressedQueueCount = 0;
+	public double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
+	public KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
+	public int KeyPressQueueCount = 0;
 
 	internal void Reset() {
+		KeyPressQueueCount = 0;
 		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
+			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
+			KeyPressTimeQueue[i] = 0;
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
 		}
+	}
+
+	public void EnqueueKeyPress(ref SDL_Event ev) {
+		if(KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
+			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
+			return;
+		}
+
+		KeyPressTimeQueue[KeyPressQueueCount] = OS.TicksToTime(ev.key.timestamp);
+		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(ev.key.scancode);
+		KeyPressQueueCount++;
 	}
 }
 
@@ -165,8 +177,192 @@ public unsafe class OSWindow
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 	}
 
-	public void Event(ref SDL_Event ev) {
+	public const int SCANCODE_MAPPED_NUM = 232;
+	public static KeyboardKey[] ScancodeToKey = new KeyboardKey[SCANCODE_MAPPED_NUM] {
+		KeyboardKey.KEY_NULL,           // SDL_SCANCODE_UNKNOWN
+		0,
+		0,
+		0,
+		KeyboardKey.KEY_A,              // SDL_SCANCODE_A
+		KeyboardKey.KEY_B,              // SDL_SCANCODE_B
+		KeyboardKey.KEY_C,              // SDL_SCANCODE_C
+		KeyboardKey.KEY_D,              // SDL_SCANCODE_D
+		KeyboardKey.KEY_E,              // SDL_SCANCODE_E
+		KeyboardKey.KEY_F,              // SDL_SCANCODE_F
+		KeyboardKey.KEY_G,              // SDL_SCANCODE_G
+		KeyboardKey.KEY_H,              // SDL_SCANCODE_H
+		KeyboardKey.KEY_I,              // SDL_SCANCODE_I
+		KeyboardKey.KEY_J,              // SDL_SCANCODE_J
+		KeyboardKey.KEY_K,              // SDL_SCANCODE_K
+		KeyboardKey.KEY_L,              // SDL_SCANCODE_L
+		KeyboardKey.KEY_M,              // SDL_SCANCODE_M
+		KeyboardKey.KEY_N,              // SDL_SCANCODE_N
+		KeyboardKey.KEY_O,              // SDL_SCANCODE_O
+		KeyboardKey.KEY_P,              // SDL_SCANCODE_P
+		KeyboardKey.KEY_Q,              // SDL_SCANCODE_Q
+		KeyboardKey.KEY_R,              // SDL_SCANCODE_R
+		KeyboardKey.KEY_S,              // SDL_SCANCODE_S
+		KeyboardKey.KEY_T,              // SDL_SCANCODE_T
+		KeyboardKey.KEY_U,              // SDL_SCANCODE_U
+		KeyboardKey.KEY_V,              // SDL_SCANCODE_V
+		KeyboardKey.KEY_W,              // SDL_SCANCODE_W
+		KeyboardKey.KEY_X,              // SDL_SCANCODE_X
+		KeyboardKey.KEY_Y,              // SDL_SCANCODE_Y
+		KeyboardKey.KEY_Z,              // SDL_SCANCODE_Z
+		KeyboardKey.KEY_ONE,            // SDL_SCANCODE_1
+		KeyboardKey.KEY_TWO,            // SDL_SCANCODE_2
+		KeyboardKey.KEY_THREE,          // SDL_SCANCODE_3
+		KeyboardKey.KEY_FOUR,           // SDL_SCANCODE_4
+		KeyboardKey.KEY_FIVE,           // SDL_SCANCODE_5
+		KeyboardKey.KEY_SIX,            // SDL_SCANCODE_6
+		KeyboardKey.KEY_SEVEN,          // SDL_SCANCODE_7
+		KeyboardKey.KEY_EIGHT,          // SDL_SCANCODE_8
+		KeyboardKey.KEY_NINE,           // SDL_SCANCODE_9
+		KeyboardKey.KEY_ZERO,           // SDL_SCANCODE_0
+		KeyboardKey.KEY_ENTER,          // SDL_SCANCODE_RETURN
+		KeyboardKey.KEY_ESCAPE,         // SDL_SCANCODE_ESCAPE
+		KeyboardKey.KEY_BACKSPACE,      // SDL_SCANCODE_BACKSPACE
+		KeyboardKey.KEY_TAB,            // SDL_SCANCODE_TAB
+		KeyboardKey.KEY_SPACE,          // SDL_SCANCODE_SPACE
+		KeyboardKey.KEY_MINUS,          // SDL_SCANCODE_MINUS
+		KeyboardKey.KEY_EQUAL,          // SDL_SCANCODE_EQUALS
+		KeyboardKey.KEY_LEFT_BRACKET,   // SDL_SCANCODE_LEFTBRACKET
+		KeyboardKey.KEY_RIGHT_BRACKET,  // SDL_SCANCODE_RIGHTBRACKET
+		KeyboardKey.KEY_BACKSLASH,      // SDL_SCANCODE_BACKSLASH
+		0,                  // SDL_SCANCODE_NONUSHASH
+		KeyboardKey.KEY_SEMICOLON,      // SDL_SCANCODE_SEMICOLON
+		KeyboardKey.KEY_APOSTROPHE,     // SDL_SCANCODE_APOSTROPHE
+		KeyboardKey.KEY_GRAVE,          // SDL_SCANCODE_GRAVE
+		KeyboardKey.KEY_COMMA,          // SDL_SCANCODE_COMMA
+		KeyboardKey.KEY_PERIOD,         // SDL_SCANCODE_PERIOD
+		KeyboardKey.KEY_SLASH,          // SDL_SCANCODE_SLASH
+		KeyboardKey.KEY_CAPS_LOCK,      // SDL_SCANCODE_CAPSLOCK
+		KeyboardKey.KEY_F1,             // SDL_SCANCODE_F1
+		KeyboardKey.KEY_F2,             // SDL_SCANCODE_F2
+		KeyboardKey.KEY_F3,             // SDL_SCANCODE_F3
+		KeyboardKey.KEY_F4,             // SDL_SCANCODE_F4
+		KeyboardKey.KEY_F5,             // SDL_SCANCODE_F5
+		KeyboardKey.KEY_F6,             // SDL_SCANCODE_F6
+		KeyboardKey.KEY_F7,             // SDL_SCANCODE_F7
+		KeyboardKey.KEY_F8,             // SDL_SCANCODE_F8
+		KeyboardKey.KEY_F9,             // SDL_SCANCODE_F9
+		KeyboardKey.KEY_F10,            // SDL_SCANCODE_F10
+		KeyboardKey.KEY_F11,            // SDL_SCANCODE_F11
+		KeyboardKey.KEY_F12,            // SDL_SCANCODE_F12
+		KeyboardKey.KEY_PRINT_SCREEN,   // SDL_SCANCODE_PRINTSCREEN
+		KeyboardKey.KEY_SCROLL_LOCK,    // SDL_SCANCODE_SCROLLLOCK
+		KeyboardKey.KEY_PAUSE,          // SDL_SCANCODE_PAUSE
+		KeyboardKey.KEY_INSERT,         // SDL_SCANCODE_INSERT
+		KeyboardKey.KEY_HOME,           // SDL_SCANCODE_HOME
+		KeyboardKey.KEY_PAGE_UP,        // SDL_SCANCODE_PAGEUP
+		KeyboardKey.KEY_DELETE,         // SDL_SCANCODE_DELETE
+		KeyboardKey.KEY_END,            // SDL_SCANCODE_END
+		KeyboardKey.KEY_PAGE_DOWN,      // SDL_SCANCODE_PAGEDOWN
+		KeyboardKey.KEY_RIGHT,          // SDL_SCANCODE_RIGHT
+		KeyboardKey.KEY_LEFT,           // SDL_SCANCODE_LEFT
+		KeyboardKey.KEY_DOWN,           // SDL_SCANCODE_DOWN
+		KeyboardKey.KEY_UP,             // SDL_SCANCODE_UP
+		KeyboardKey.KEY_NUM_LOCK,       // SDL_SCANCODE_NUMLOCKCLEAR
+		KeyboardKey.KEY_KP_DIVIDE,      // SDL_SCANCODE_KP_DIVIDE
+		KeyboardKey.KEY_KP_MULTIPLY,    // SDL_SCANCODE_KP_MULTIPLY
+		KeyboardKey.KEY_KP_SUBTRACT,    // SDL_SCANCODE_KP_MINUS
+		KeyboardKey.KEY_KP_ADD,         // SDL_SCANCODE_KP_PLUS
+		KeyboardKey.KEY_KP_ENTER,       // SDL_SCANCODE_KP_ENTER
+		KeyboardKey.KEY_KP_1,           // SDL_SCANCODE_KP_1
+		KeyboardKey.KEY_KP_2,           // SDL_SCANCODE_KP_2
+		KeyboardKey.KEY_KP_3,           // SDL_SCANCODE_KP_3
+		KeyboardKey.KEY_KP_4,           // SDL_SCANCODE_KP_4
+		KeyboardKey.KEY_KP_5,           // SDL_SCANCODE_KP_5
+		KeyboardKey.KEY_KP_6,           // SDL_SCANCODE_KP_6
+		KeyboardKey.KEY_KP_7,           // SDL_SCANCODE_KP_7
+		KeyboardKey.KEY_KP_8,           // SDL_SCANCODE_KP_8
+		KeyboardKey.KEY_KP_9,           // SDL_SCANCODE_KP_9
+		KeyboardKey.KEY_KP_0,           // SDL_SCANCODE_KP_0
+		KeyboardKey.KEY_KP_DECIMAL,     // SDL_SCANCODE_KP_PERIOD
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0,
+		KeyboardKey.KEY_LEFT_CONTROL,   //SDL_SCANCODE_LCTRL
+		KeyboardKey.KEY_LEFT_SHIFT,     //SDL_SCANCODE_LSHIFT
+		KeyboardKey.KEY_LEFT_ALT,       //SDL_SCANCODE_LALT
+		KeyboardKey.KEY_LEFT_SUPER,     //SDL_SCANCODE_LGUI
+		KeyboardKey.KEY_RIGHT_CONTROL,  //SDL_SCANCODE_RCTRL
+		KeyboardKey.KEY_RIGHT_SHIFT,    //SDL_SCANCODE_RSHIFT
+		KeyboardKey.KEY_RIGHT_ALT,      //SDL_SCANCODE_RALT
+		KeyboardKey.KEY_RIGHT_SUPER     //SDL_SCANCODE_RGUI
+	};
+	public static KeyboardKey TranslateKeyboardKey(SDL_Scancode scancode) {
+		if (scancode >= 0 && (int)scancode < SCANCODE_MAPPED_NUM)
+			return ScancodeToKey[(int)scancode];
 
+		return KeyboardKey.KEY_NULL;
+	}
+
+	public bool KeyAvailable(ref int i, out KeyboardKey key, out double time) {
+		if (i < Keyboard.KeyPressQueueCount) {
+			key = Keyboard.KeyPressQueue[i];
+			time = Keyboard.KeyPressTimeQueue[i];
+
+			i++;
+			return true;
+		}
+
+		key = KeyboardKey.KEY_NULL;
+		time = 0;
+		return false;
+	}
+
+	public void PushEvent(ref SDL_Event ev) {
+		switch (ev.Type) {
+			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
+					KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+					if (key != KeyboardKey.KEY_NULL)
+						Keyboard.CurrentKeyState[(int)key] = 1;
+
+					Keyboard.EnqueueKeyPress(ref ev);
+				}
+				break;
+			case SDL_EventType.SDL_EVENT_KEY_UP: {
+					KeyboardKey key = TranslateKeyboardKey(ev.key.scancode);
+					if (key != KeyboardKey.KEY_NULL)
+						Keyboard.CurrentKeyState[(int)key] = 0;
+				}
+				break;
+			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
+					int btn = ev.button.button - 1;
+					if (btn == 2) btn = 1;
+					else if (btn == 1) btn = 2;
+
+					Mouse.CurrentMouseButtonState[btn] = 1;
+				}
+				break;
+			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: {
+					int btn = ev.button.button - 1;
+					if (btn == 2) btn = 1;
+					else if (btn == 1) btn = 2;
+
+					Mouse.CurrentMouseButtonState[btn] = 0;
+				}
+				break;
+			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
+				Mouse.CurrentMouseWheelMove.X = ev.wheel.mouse_x;
+				Mouse.CurrentMouseWheelMove.Y = ev.wheel.mouse_y;
+				break;
+			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
+				Mouse.CurrentMousePosition.X = ev.motion.x;
+				Mouse.CurrentMousePosition.Y = ev.motion.y;
+				break;
+		}
 	}
 
 	public static void PollInputEvents() {
@@ -186,7 +382,7 @@ public unsafe class OSWindow
 						var windowID = SDL3.SDL_GetWindowID(window);
 
 						if (windowLookup_id2window.TryGetValue(windowID, out var osWindow))
-							osWindow.Event(ref ev);
+							osWindow.PushEvent(ref ev);
 
 						break;
 				}
@@ -477,15 +673,15 @@ public unsafe class OSWindow
 	}
 
 	public void BeginMode2D(Camera2D camera) {
-		Rlgl.DrawRenderBatchActive();    
-		Rlgl.LoadIdentity(); 
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(Raylib.GetCameraMatrix2D(camera)));
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
 	}
 
 	public void EndMode2D() {
-		Rlgl.DrawRenderBatchActive();   
-		Rlgl.LoadIdentity();  
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
 	}
 
@@ -522,13 +718,21 @@ public unsafe class OSWindow
 	}
 
 	public void EndMode3D() {
-		Rlgl.DrawRenderBatchActive();    
-		Rlgl.MatrixMode(MatrixMode.Projection);  
-		Rlgl.PopMatrix();                
-		Rlgl.MatrixMode(MatrixMode.ModelView);   
-		Rlgl.LoadIdentity();             
-		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale)); 
-		Rlgl.DisableDepthTest();           
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.MatrixMode(MatrixMode.Projection);
+		Rlgl.PopMatrix();
+		Rlgl.MatrixMode(MatrixMode.ModelView);
+		Rlgl.LoadIdentity();
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+		Rlgl.DisableDepthTest();
+	}
+
+	internal void ProduceMouseState(ref Input.MouseState mouseState) {
+		throw new NotImplementedException();
+	}
+
+	internal void ProduceKeyboardState(ref Input.KeyboardState keyboardState) {
+		throw new NotImplementedException();
 	}
 }
 
@@ -635,7 +839,8 @@ public static unsafe class OS
 		SDL3.SDL_HideCursor();
 	}
 
-	public static double GetTime() => (double)SDL3.SDL_GetTicksNS() / 1_000_000_000d;
+	public static double TicksToTime(ulong ticks) => (double)ticks / 1_000_000_000d;
+	public static double GetTime() => TicksToTime(SDL3.SDL_GetTicksNS());
 
 	/// <summary>
 	/// Performs thread sleeping, but at the end, busy-loops to ensure tight frame timing.
@@ -646,8 +851,8 @@ public static unsafe class OS
 		double sleepFor = seconds - (seconds * 0.05);
 		Thread.Sleep((int)(sleepFor * 1000));
 		double left = GetTime() - start;
-		if(left > 0) {
-			while((GetTime() - start) < seconds) {}
+		if (left > 0) {
+			while ((GetTime() - start) < seconds) { }
 		}
 	}
 }

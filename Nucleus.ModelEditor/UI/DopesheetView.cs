@@ -136,8 +136,8 @@ public class DopesheetView : BaseTimelineView
 #nullable enable
 	}
 	private void KeyframeBtn_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
-		var xy = state.MouseState.MousePos - self.Parent.GetGlobalPosition();
-		var frameNow = state.KeyboardState.ShiftDown ? XToFrameExact(xy.X) : XToFrame(xy.X);
+		var xy = state.Mouse.MousePos - self.Parent.GetGlobalPosition();
+		var frameNow = state.Keyboard.ShiftDown ? XToFrameExact(xy.X) : XToFrame(xy.X);
 
 		if (frameNow != frameStart || isDraggingKeyframe) {
 			isDraggingKeyframe = true;
@@ -164,7 +164,7 @@ public class DopesheetView : BaseTimelineView
 		Graphics2D.SetDrawColor(FrameDraggingColor);
 		Graphics2D.DrawLine(xDrag, height / 2, xDrag, height);
 
-		string curframeText = $"{(EngineCore.CurrentFrameState.KeyboardState.ShiftDown ? Math.Round(curframe, 2) : curframe)}";
+		string curframeText = $"{(EngineCore.CurrentFrameState.Keyboard.ShiftDown ? Math.Round(curframe, 2) : curframe)}";
 
 		RenderGradientFrameText(KeyframeInfoPanel, xDrag, height, curframeText, FrameDraggingColor);
 	}
@@ -242,7 +242,7 @@ public class DopesheetView : BaseTimelineView
 
 	Vector2F dragStart;
 	private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
-		dragStart = state.MouseState.MousePos;
+		dragStart = state.Mouse.MousePos;
 
 		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
 		ModelEditor.Active.UnselectAllKeyframes();

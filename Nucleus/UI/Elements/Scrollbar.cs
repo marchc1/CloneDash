@@ -105,7 +105,7 @@ namespace Nucleus.UI.Elements
 
 		private void Grip_MouseDragEvent(Element self, Types.FrameState state, Types.Vector2F delta) {
 			// Remap the new mouse pos
-			var map = state.MouseState.MousePos - self.GetGlobalPosition();
+			var map = state.Mouse.MousePos - self.GetGlobalPosition();
 			//Console.WriteLine(map);
 			var newScroll = (float)NMath.Remap(
 				Alignment == ScrollbarAlignment.Horizontal ? map.X : map.Y,

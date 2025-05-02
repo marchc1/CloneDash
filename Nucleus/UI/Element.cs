@@ -850,10 +850,10 @@ namespace Nucleus.UI
 			var bounds = element.RenderBounds.AddPosition(offset);
 
 			if (element.OnHoverTest == null) {
-				if (element.HoverTest(bounds, frameState.MouseState.MousePos))
+				if (element.HoverTest(bounds, frameState.Mouse.MousePos))
 					lastHovered = element;
 			}
-			else if (element.OnHoverTest(element, bounds, frameState.MouseState.MousePos))
+			else if (element.OnHoverTest(element, bounds, frameState.Mouse.MousePos))
 				lastHovered = element;
 
 			offset += element.RenderBounds.Pos;
@@ -1300,7 +1300,7 @@ namespace Nucleus.UI
 		}
 
 		public Vector2F CursorPos() {
-			return EngineCore.CurrentFrameState.MouseState.MousePos - GetGlobalPosition();
+			return EngineCore.CurrentFrameState.Mouse.MousePos - GetGlobalPosition();
 		}
 
 		public bool ShouldDrawImage { get; set; } = true;

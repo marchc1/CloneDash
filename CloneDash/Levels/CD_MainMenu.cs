@@ -428,7 +428,7 @@ public class CD_MainMenu : Level
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
 		=> CreateDifficulty(levelSelector, (mapID, state) => {
-			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.KeyboardState.AltDown);
+			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.Keyboard.AltDown);
 		}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
 
 
@@ -502,7 +502,7 @@ public class CD_MainMenu : Level
 		};
 
 		play.Thinking += delegate (Element self) {
-			if (EngineCore.CurrentFrameState.KeyboardState.AltDown) {
+			if (EngineCore.CurrentFrameState.Keyboard.AltDown) {
 				play.Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
 			}
 			else {

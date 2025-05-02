@@ -74,7 +74,7 @@ namespace Nucleus.UI.Elements
                 Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
                     pos, size), 1);
 
-                if (EngineCore.CurrentFrameState.KeyboardState.ShiftDown && self.Hovered) {
+                if (EngineCore.CurrentFrameState.Keyboard.ShiftDown && self.Hovered) {
                     Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
                     pos - new Vector2F(2), size + new Vector2F(4)), 1);
                     Graphics2D.DrawLine(pos + new Vector2F(-2, -2), new(4, 4));

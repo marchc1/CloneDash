@@ -50,7 +50,7 @@ namespace Nucleus.UI
 				var font = "Noto Sans";
 				var fontsize = 20;
 				var size = Graphics2D.GetTextSize(text, font, fontsize) + new Vector2F(8, 4);
-				var mousepos = EngineCore.CurrentFrameState.MouseState.MousePos + new Vector2F(8, 8 + 16);
+				var mousepos = EngineCore.CurrentFrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
 
 				// determine if tooltip goes over screen bounds and fix it if so
 				var drawingOffset = Vector2F.Zero;
