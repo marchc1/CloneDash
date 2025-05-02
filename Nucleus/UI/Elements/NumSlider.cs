@@ -98,7 +98,7 @@ namespace Nucleus.UI
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
 			else if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
-			if (TriggeredWhenEnterPressed && frameState.Keyboard.KeyPressed(KeyboardLayout.USA.Enter)) {
+			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Enter)) {
 				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
 			}
 		}

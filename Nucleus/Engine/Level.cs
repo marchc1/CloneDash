@@ -424,8 +424,9 @@ namespace Nucleus.Engine
 				__viewDirty = false;
 			}
 
-			EngineCore.Window.ProduceMouseState(ref frameState.Mouse);
-			EngineCore.Window.ProduceKeyboardState(ref frameState.Keyboard);
+			frameState.Keyboard.Clear();
+			EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
+			EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			bool ranKeybinds = false;
 			if (EngineCore.KeyboardFocusedElement != null) {
@@ -433,14 +434,12 @@ namespace Nucleus.Engine
 				ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(emulatedState);
 				if (!ranKeybinds) {
 					ranKeybinds = UI.Keybinds.TestKeybinds(emulatedState);
-					if (!ranKeybinds) {
-						foreach (var keyPress in emulatedState.KeysPressed) {
-							if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
-								EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyPress));
-						}
-						foreach (var keyRelease in emulatedState.KeysReleased) {
-							if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
-								EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyRelease));
+					if (!ranKeybinds && IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
+						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+							var pressed = emulatedState.WasKeyPressed(i);
+							var released = emulatedState.WasKeyReleased(i);
+							if(pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if(released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 					}
 				}

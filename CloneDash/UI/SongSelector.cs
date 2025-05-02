@@ -483,10 +483,10 @@ public class SongSelector : Panel, IMainMenuPanel
 			DiscAnimationOffset /= 1.02f;
 			InvalidateLayout(); // loop for next frame
 			if (Math.Abs(DiscAnimationOffset) < 0.2) {
-				if (Level.FrameState.Keyboard.KeyDown(KeyboardLayout.USA.Left) || Level.FrameState.Keyboard.KeyDown(KeyboardLayout.USA.A)) {
+				if (Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.Left) || Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.A)) {
 					MoveLeft();
 				}
-				else if (Level.FrameState.Keyboard.KeyDown(KeyboardLayout.USA.Right) || Level.FrameState.Keyboard.KeyDown(KeyboardLayout.USA.D)) {
+				else if (Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.Right) || Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.D)) {
 					MoveRight();
 				}
 			}

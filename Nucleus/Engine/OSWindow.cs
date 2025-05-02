@@ -369,11 +369,6 @@ public unsafe class OSWindow
 
 	public static void PollInputEvents() {
 		SDL_Event ev;
-		// Tell every window to forget its previous state
-		foreach(var windowKVP in windowLookup_id2window) {
-			windowKVP.Value.Keyboard.Reset();
-			windowKVP.Value.Mouse.Reset();
-		}
 		unsafe {
 			while (SDL3.SDL_PollEvent(&ev)) {
 				switch (ev.Type) {
@@ -734,10 +729,16 @@ public unsafe class OSWindow
 		Rlgl.DisableDepthTest();
 	}
 
-	internal void ProduceMouseState(ref Input.MouseState ms) {
+	/// <summary>
+	/// Writes the <see cref="WindowMouseState"/> into a <see cref="Input.MouseState"/> structure, then resets the <see cref="WindowMouseState"/> and prepares it for the next time this method is called.
+	/// <br/>This adds a layer of abstraction over how the engine windows handle input vs. how the game code handles input.
+	/// </summary>
+	/// <param name="keyboardState"></param>
+	internal void FlushMouseStateInto(ref Input.MouseState ms) {
 		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_MIDDLE_BUTTON, m3 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
 
 		ms.MousePos = Mouse.CurrentMousePosition;
+		ms.MouseDelta = Mouse.PreviousMousePosition - Mouse.CurrentMousePosition;
 		ms.MouseScroll = Mouse.CurrentMouseScroll;
 
 		int pm1 = Mouse.PreviousMouseButtonState[m1], pm2 = Mouse.PreviousMouseButtonState[m2], pm3 = Mouse.PreviousMouseButtonState[m3], pm4 = Mouse.PreviousMouseButtonState[m4], pm5 = Mouse.PreviousMouseButtonState[m5];
@@ -760,10 +761,32 @@ public unsafe class OSWindow
 		ms.Mouse3Held = cm3 == 1;
 		ms.Mouse4Held = cm4 == 1;
 		ms.Mouse5Held = cm5 == 1;
+
+		Mouse.Reset();
 	}
 
-	internal void ProduceKeyboardState(ref Input.KeyboardState keyboardState) {
+	/// <summary>
+	/// Writes the <see cref="WindowKeyboardState"/> into a <see cref="Input.KeyboardState"/> structure, then resets the <see cref="WindowKeyboardState"/> and prepares it for the next time this method is called.
+	/// <br/>This adds a layer of abstraction over how the engine windows handle input vs. how the game code handles input.
+	/// </summary>
+	/// <param name="keyboardState"></param>
+	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
+		int i = 0;
+		
+		while(KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
+			int keyPressed = (int)key;
+			keyboardState.PushKeyPress((int)key, timePressed);
+		}
 
+		for (int j = 0; j < WindowKeyboardState.MAX_KEYBOARD_KEYS; j++) {
+			var prev = Keyboard.PreviousKeyState[j];
+			var curr = Keyboard.CurrentKeyState[j];
+
+			keyboardState.KeysDown[j] = curr == 1;
+			keyboardState.KeysReleased[j] = prev > 0 && curr == 0;
+		}
+
+		Keyboard.Reset();
 	}
 }
 

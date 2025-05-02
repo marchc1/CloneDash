@@ -12,17 +12,17 @@ namespace CloneDash.Game.Input
 
         public void Poll(ref FrameState frameState, ref InputState inputState) {
             foreach (var key in TopKeys) {
-                inputState.TopClicked += frameState.Keyboard.KeyPressed(key) ? 1 : 0;
-                inputState.TopHeld |= frameState.Keyboard.KeyDown(key);
+                inputState.TopClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+                inputState.TopHeld |= frameState.Keyboard.IsKeyDown(key);
             }
 
             foreach (var key in BottomKeys) {
-                inputState.BottomClicked += frameState.Keyboard.KeyPressed(key) ? 1 : 0;
-                inputState.BottomHeld |= frameState.Keyboard.KeyDown(key);
+                inputState.BottomClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+                inputState.BottomHeld |= frameState.Keyboard.IsKeyDown(key);
             }
 
-            inputState.TryFever |= frameState.Keyboard.KeyPressed(StartFever);
-            inputState.PauseButton |= frameState.Keyboard.KeyPressed(Pause);
+            inputState.TryFever |= frameState.Keyboard.WasKeyPressed(StartFever);
+            inputState.PauseButton |= frameState.Keyboard.WasKeyPressed(Pause);
         }
     }
 }
