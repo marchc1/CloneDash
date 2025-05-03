@@ -36,10 +36,8 @@ namespace Nucleus.Core
 			if (Initialized && !forced)
 				return;
 
-			if (!Filesystem.ReadAllText("cfg", "config.cfg", out string? cfgText)) {
-				Config = new();
-				return;
-			}
+			if (!Filesystem.ReadAllText("cfg", "config.cfg", out string? cfgText)) 
+				throw new FileNotFoundException("Cannot read the config.cfg file. Is the filesystem initialized properly?");
 
 			Config = JsonConvert.DeserializeObject<HostConfig>(cfgText) ?? throw new Exception("Could not parse cfg/config.cfg");
 			Initialized = true;
