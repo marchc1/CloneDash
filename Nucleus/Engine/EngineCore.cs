@@ -584,7 +584,6 @@ public static class EngineCore
 				shouldThrow = false;
 				Frame();
 			}
-			Logs.Info("Nucleus Engine has halted peacefully.");
 		}
 		try {
 			Logs.Info("PANIC: Active.");
@@ -593,7 +592,6 @@ public static class EngineCore
 				shouldThrow = false;
 				Frame();
 			}
-			Logs.Info("Nucleus Engine has halted peacefully.");
 		}
 		catch (Exception ex) {
 			edi = ExceptionDispatchInfo.Capture(ex);
@@ -643,6 +641,8 @@ public static class EngineCore
 			OSWindow.PumpOSEvents();
 			if (!Running) {
 				Window.Close();
+
+				Logs.Info("Nucleus Engine has halted peacefully.");
 				return;
 			}
 		}
