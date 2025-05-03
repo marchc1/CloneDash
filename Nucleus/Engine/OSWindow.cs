@@ -566,16 +566,17 @@ public unsafe class OSWindow
 	/// <summary>
 	/// Pumps the event queue continuously.
 	/// </summary>
-	public static void PumpInputEvents() {
+	public static void PumpOSEvents() {
 		SDL_Event ev;
 		unsafe {
-			while (SDL3.SDL_WaitEvent(&ev)) {
+			while (SDL3.SDL_WaitEventTimeout(&ev, 5)) {
 				var time = OS.GetTime();
 				EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
 			}
+
+			foreach(var window in windowLookup_id2window) window.Value.UpdateWindowState();
 		}
 	}
-
 	public void Close() {
 		SDL3.SDL_DestroyCursor(cursor);
 		SDL3.SDL_GL_DestroyContext(glctx);
