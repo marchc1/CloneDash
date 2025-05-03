@@ -77,8 +77,10 @@ namespace Nucleus.Core
 		}
 
 		public static void WriteConfig() {
-			Filesystem.WriteAllText("cfg", "config.cfg", JsonConvert.SerializeObject(Config));
-			Logs.Debug("Host: Wrote config to config.cfg");
+			if (!Filesystem.WriteAllText("cfg", "config.cfg", JsonConvert.SerializeObject(Config)))
+				Logs.Warn("Host: Failed to write config.cfg!");
+			else
+				Logs.Debug("Host: Wrote config to config.cfg");
 			LastWriteTime = DateTime.Now;
 		}
 
