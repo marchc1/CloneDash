@@ -1,28 +1,45 @@
 ﻿using Nucleus.Input;
 using Nucleus.Types;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game.Input
 {
 	public class KeyboardInput : ICloneDashInputSystem
-    {
-        public static KeyboardKey[] TopKeys = [KeyboardLayout.USA.S, KeyboardLayout.USA.D, KeyboardLayout.USA.F, KeyboardLayout.USA.G];
-        public static KeyboardKey[] BottomKeys = [KeyboardLayout.USA.H, KeyboardLayout.USA.J, KeyboardLayout.USA.K, KeyboardLayout.USA.L];
-        public static KeyboardKey StartFever = KeyboardLayout.USA.Space;
-        public static KeyboardKey Pause = KeyboardLayout.USA.Escape;
+	{
+		public KeyboardKey[] TopKeys;
+		public KeyboardKey[] BottomKeys;
+		public KeyboardKey[] StartFever;
+		public KeyboardKey[] Pause;
 
-        public void Poll(ref FrameState frameState, ref InputState inputState) {
-            foreach (var key in TopKeys) {
-                inputState.TopClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
-                inputState.TopHeld |= frameState.Keyboard.IsKeyDown(key);
-            }
+		public KeyboardInput() {
+			CD_InputSettings_OnSettingsChanged();
+			CD_InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
+		}
 
-            foreach (var key in BottomKeys) {
-                inputState.BottomClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
-                inputState.BottomHeld |= frameState.Keyboard.IsKeyDown(key);
-            }
+		[MemberNotNull(nameof(TopKeys), nameof(BottomKeys), nameof(StartFever), nameof(Pause))]
+		private void CD_InputSettings_OnSettingsChanged() {
+			TopKeys = CD_InputSettings.GetKeysOfAction(CD_InputAction.AirAttack).ToArray();
+			BottomKeys = CD_InputSettings.GetKeysOfAction(CD_InputAction.GroundAttack).ToArray();
+			StartFever = CD_InputSettings.GetKeysOfAction(CD_InputAction.FeverStart).ToArray();
+			Pause = CD_InputSettings.GetKeysOfAction(CD_InputAction.PauseGame).ToArray();
+		}
 
-            inputState.TryFever |= frameState.Keyboard.WasKeyPressed(StartFever);
-            inputState.PauseButton |= frameState.Keyboard.WasKeyPressed(Pause);
-        }
-    }
+		public void Poll(ref FrameState frameState, ref InputState inputState) {
+			foreach (var key in TopKeys) {
+				inputState.TopClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+				inputState.TopHeld |= frameState.Keyboard.IsKeyDown(key);
+			}
+
+			foreach (var key in BottomKeys) {
+				inputState.BottomClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+				inputState.BottomHeld |= frameState.Keyboard.IsKeyDown(key);
+			}
+
+			foreach (var key in StartFever)
+				inputState.TryFever |= frameState.Keyboard.WasKeyPressed(key);
+
+			foreach (var key in Pause)
+				inputState.PauseButton |= frameState.Keyboard.WasKeyPressed(key);
+		}
+	}
 }
