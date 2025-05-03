@@ -23,7 +23,7 @@ namespace CloneDash
             foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
                 var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
                 if (apps.Contains(musedash_appid)) {
-                    ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "appmanifest_{musedash_appid}.acf"));
+                    ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
                     musedash_installed = true;
                     musedash_installdir = Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "common", appManifest["AppState"].GetString("installdir"));
                 }

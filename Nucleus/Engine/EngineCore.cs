@@ -203,7 +203,6 @@ public static class EngineCore
 		CommandLineArguments.FromArgs(args ?? []);
 		ShowDebuggingInfo = CommandLineArguments.IsParamTrue("debug");
 		GameThreadInitializationProcedure = gameThreadInit;
-		Packages.ErrorIfLinuxAndPackageNotInstalled("libx11-dev", "sudo apt-get install libx11-dev");
 
 		// check build number, 3rd part is days since jan 1st, 2000
 		ConsoleSystem.Initialize();
