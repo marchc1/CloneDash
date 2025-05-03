@@ -161,36 +161,37 @@ public static class EngineCore
 	}
 
 	public static Thread GameThread;
-	public static bool GameThread_GLReady;
-	public static bool GameThread_MainReady;
+	public static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
-		Window.SetupGL();
+		lock (GameThread_GLLock) {
+			Window.SetupGL();
 
-		if (prgIcon != null)
-			Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
+			if (prgIcon != null)
+				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
 
-		OpenGL.Import(Platform.OpenGL_GetProc);
-		// English language
-		Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
-		//Graphics2D.RegisterCodepoints(@"`1234567890");
+			OpenGL.Import(Platform.OpenGL_GetProc);
+			// English language
+			Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
+			//Graphics2D.RegisterCodepoints(@"`1234567890");
 
-		// Japanese (hiragana, katakana)
-		Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
-		Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
+			// Japanese (hiragana, katakana)
+			Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
+			Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
 
-		// Some korean
-		Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
+			// Some korean
+			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
 
-		foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
-			Graphics2D.RegisterCodepoints(languageLine);
+			foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
+				Graphics2D.RegisterCodepoints(languageLine);
 
-		// Set GameThread_GLReady flag so the main thread can finish its work
-		GameThread_GLReady = true;
+			// Set GameThread_GLReady flag so the main thread can finish its work
+		}
+
 		// And then wait for the main thread to set GameThread_Playing
 		GameThreadInitializationProcedure?.Invoke();
-		while (!GameThread_MainReady) ;
+		lock (GameThread_GLLock) ;
 
 		StartGameThread();
 	}
@@ -239,7 +240,7 @@ public static class EngineCore
 		GameThread = new Thread(GameThreadProcedure);
 		if (!MainThread.GameThreadSet) MainThread.GameThread = GameThread;
 		GameThread.Start();
-		while (!GameThread_GLReady) ;
+		lock (GameThread_GLLock) ;
 
 		if (CommandLineArguments.TryGetParam("monitor", out int monitor)) {
 			var monitorPos = OS.GetMonitorPosition(monitor);
@@ -609,39 +610,40 @@ public static class EngineCore
 	}
 
 	public static void StartMainThread() {
-		var ea = Assembly.GetEntryAssembly();
-		if (ea != null)
-			earlyJITAssemblies.Add(ea);
+		lock (GameThread_GLLock) {
+			var ea = Assembly.GetEntryAssembly();
+			if (ea != null)
+				earlyJITAssemblies.Add(ea);
 
-		earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
-		earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+			earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
+			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
 
-		Logs.Info("BOOT: Initializing static constructors...");
-		foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
-						  from t in a.GetTypes()
-						  let attributes = t.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true)
-						  where attributes != null && attributes.Length > 0
-						  select t) {
-			RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			Logs.Info("BOOT: Initializing static constructors...");
+			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
+							  from t in a.GetTypes()
+							  let attributes = t.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true)
+							  where attributes != null && attributes.Length > 0
+							  select t) {
+				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			}
+
+			Logs.Info("BOOT: Running JIT early where possible...");
+			Parallel.ForEach(earlyJITAssemblies
+				   .SelectMany(a => a.GetTypes())
+				   .SelectMany(t => t.GetMethods()), (method) => {
+					   if (method.ContainsGenericParameters) return;
+					   if (method.IsAbstract) return;
+					   if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
+					   if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
+					   try {
+						   RuntimeHelpers.PrepareMethod(method.MethodHandle);
+					   }
+					   catch {
+
+					   }
+				   });
+
 		}
-
-		Logs.Info("BOOT: Running JIT early where possible...");
-		Parallel.ForEach(earlyJITAssemblies
-			   .SelectMany(a => a.GetTypes())
-			   .SelectMany(t => t.GetMethods()), (method) => {
-				   if (method.ContainsGenericParameters) return;
-				   if (method.IsAbstract) return;
-				   if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
-				   if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
-				   try {
-					   RuntimeHelpers.PrepareMethod(method.MethodHandle);
-				   }
-				   catch {
-
-				   }
-			   });
-
-		GameThread_MainReady = true;
 		while (Running) 
 			OSWindow.PumpInputEvents();
 	}
