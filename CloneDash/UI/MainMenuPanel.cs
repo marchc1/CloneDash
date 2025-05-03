@@ -155,25 +155,26 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 
-		var btns = this.btns.Peek();
-		var textHeight = height / 20f;
-		var btnWidth = Math.Clamp(width / 3f, 460, 155555);
-		var btnHeight = height / 12f;
-		var btnsLen = btns.Count;
-		back.Size = new(btnHeight * 2);
-		back.Position = new(width * .5f, height / 2);
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		if (this.btns.TryPeek(out var btns)) {
+			var textHeight = height / 20f;
+			var btnWidth = Math.Clamp(width / 3f, 460, 155555);
+			var btnHeight = height / 12f;
+			var btnsLen = btns.Count;
+			back.Size = new(btnHeight * 2);
+			back.Position = new(width * .5f, height / 2);
+			back.Visible = back.Enabled = !UsingRootNavigationMenu;
 
-		for (int i = 0; i < btnsLen; i++) {
-			var btn = btns[i];
+			for (int i = 0; i < btnsLen; i++) {
+				var btn = btns[i];
 
-			btn.Origin = Anchor.Center;
-			btn.TextSize = textHeight;
-			btn.Size = new(btnWidth, btnHeight);
+				btn.Origin = Anchor.Center;
+				btn.TextSize = textHeight;
+				btn.Size = new(btnWidth, btnHeight);
 
-			var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
+				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
 
-			btn.Position = new(width * .75f, height / 2 + y * height / 3);
+				btn.Position = new(width * .75f, height / 2 + y * height / 3);
+			}
 		}
 	}
 
