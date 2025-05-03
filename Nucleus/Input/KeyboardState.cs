@@ -392,30 +392,77 @@ namespace Nucleus.Input
 			return CharacterType.NoAction;
 		}
 
-		public override bool ControlDown(KeyboardState state) => state.KeyDown(LeftControl) || state.KeyDown(RightControl);
-		public override bool AltDown(KeyboardState state) => state.KeyDown(LeftAlt) || state.KeyDown(RightAlt);
-		public override bool ShiftDown(KeyboardState state) => state.KeyDown(LeftShift) || state.KeyDown(RightShift);
+		public override bool ControlDown(KeyboardState state) => state.IsKeyDown(LeftControl) || state.IsKeyDown(RightControl);
+		public override bool AltDown(KeyboardState state) => state.IsKeyDown(LeftAlt) || state.IsKeyDown(RightAlt);
+		public override bool ShiftDown(KeyboardState state) => state.IsKeyDown(LeftShift) || state.IsKeyDown(RightShift);
 	}
 
 	public struct KeyboardState()
 	{
-		public List<int> KeyOrder = [];
-		public HashSet<int> KeysPressed = [];
-		public Dictionary<int, int> KeyPressCounts = new();
+		public const int MAXIMUM_KEY_ARRAY_LENGTH = 512;
+		public const int MAXIMUM_FRAME_ORDERED_KEYS_LENGTH = 64;
 
-		public List<int> KeysHeld = new List<int>();
-		public List<int> KeysReleased = new List<int>();
+		public double[] KeyTimesThisFrame = new double[MAXIMUM_FRAME_ORDERED_KEYS_LENGTH];
+		public int[] KeysThisFrame = new int[MAXIMUM_FRAME_ORDERED_KEYS_LENGTH];
 
-		public bool KeyDown(KeyboardKey key) => Raylib.IsKeyDown((Raylib_cs.KeyboardKey)key.Key);
-		public bool KeyPressed(KeyboardKey key) => Raylib.IsKeyPressed((Raylib_cs.KeyboardKey)key.Key);
-		public bool KeyReleased(KeyboardKey key) => Raylib.IsKeyReleased((Raylib_cs.KeyboardKey)key.Key);
+		public int TotalKeysThisFrame = 0;
+
+		public bool[] KeysDown = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
+		public byte[] KeysPressed = new byte[MAXIMUM_KEY_ARRAY_LENGTH];
+		public bool[] KeysReleased = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
+
+		public IEnumerable<int> GetKeysThisFrame() {
+			for (int i = 0; i < TotalKeysThisFrame; i++) {
+				yield return KeysThisFrame[i];
+			}
+		}
+
+		public IEnumerable<int> GetKeysHeld() {
+			for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+				if (KeysDown[i])
+					yield return i;
+			}
+		}
+
+		public bool KeyAvailable(ref int i, out int key, out double time) {
+			if (i > TotalKeysThisFrame) {
+				key = 0;
+				time = 0;
+				return false;
+			}
+
+			key = KeysThisFrame[i];
+			time = KeyTimesThisFrame[i];
+			i++;
+			return true;
+		}
+
+		public void PushKeyPress(int key, double time) {
+			KeysThisFrame[TotalKeysThisFrame] = key;
+			KeyTimesThisFrame[TotalKeysThisFrame] = time;
+			TotalKeysThisFrame++;
+			KeysPressed[key]++;
+		}
+
+		public readonly bool IsKeyDown(int key) => KeysDown[key];
+		public readonly bool IsKeyDown(KeyboardKey key) => KeysDown[key.Key];
+		public readonly bool WasKeyPressed(int key) => KeysPressed[key] > 0;
+		public readonly bool WasKeyPressed(KeyboardKey key) => KeysPressed[key.Key] > 0;
+		public readonly int KeyPressCount(int key) => KeysPressed[key];
+		public readonly int KeyPressCount(KeyboardKey key) => KeysPressed[key.Key];
+		public readonly bool WasKeyReleased(int key) => KeysReleased[key];
+		public readonly bool WasKeyReleased(KeyboardKey key) => KeysReleased[key.Key];
 
 		public override string ToString() {
+			List<string> pressed = [];
 			List<string> keys = [];
-			foreach (var key in KeysHeld) {
+			foreach (var key in GetKeysHeld()) {
 				keys.Add(KeyboardLayout.USA.FromInt(key).Name);
 			}
-			return $"Held [{string.Join(", ", keys)}]";
+			foreach(var key in GetKeysThisFrame()) {
+				pressed.Add(KeyboardLayout.USA.FromInt(key).Name);
+			}
+			return $"Pressed [{string.Join(", ", pressed)}] Held [{string.Join(", ", keys)}]";
 		}
 
 		public KeyAction GetKeyActionFromKey(KeyboardKey key) {
@@ -425,5 +472,18 @@ namespace Nucleus.Input
 		public bool ShiftDown => KeyboardLayout.USA.ShiftDown(this);
 		public bool ControlDown => KeyboardLayout.USA.ControlDown(this);
 		public bool AltDown => KeyboardLayout.USA.AltDown(this);
+
+		public void Clear() {
+			for (int i = 0; i < MAXIMUM_FRAME_ORDERED_KEYS_LENGTH; i++) {
+				KeysThisFrame[i] = 0;
+				KeyTimesThisFrame[i] = 0;
+			}
+			TotalKeysThisFrame = 0;
+			for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+				KeysDown[i] = false;
+				KeysPressed[i] = 0;
+				KeysReleased[i] = false;
+			}
+		}
 	}
 }

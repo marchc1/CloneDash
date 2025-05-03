@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Engine;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,8 @@ namespace Nucleus
 	public static class Clipboard
 	{
 		public static string Text {
-			get => Raylib.GetClipboardText_();
-			set => Raylib.SetClipboardText(value);
+			get => OS.GetClipboardText();
+			set => OS.SetClipboardText(value);
 		}
 	}
 }

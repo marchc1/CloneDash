@@ -8,37 +8,37 @@ namespace Raylib_cs;
 public static unsafe partial class Raylib
 {
     /// <summary>Initialize window and OpenGL context</summary>
-    public static void InitWindow(int width, int height, string title)
-    {
-        using var str1 = title.ToUtf8Buffer();
-        InitWindow(width, height, str1.AsPointer());
-    }
+    //public static void InitWindow(int width, int height, string title)
+    //{
+    //    using var str1 = title.ToUtf8Buffer();
+    //    InitWindow(width, height, str1.AsPointer());
+    //}
 
     /// <summary>Set title for window (only PLATFORM_DESKTOP)</summary>
-    public static void SetWindowTitle(string title)
-    {
-        using var str1 = title.ToUtf8Buffer();
-        SetWindowTitle(str1.AsPointer());
-    }
+    //public static void SetWindowTitle(string title)
+    //{
+    //    using var str1 = title.ToUtf8Buffer();
+    //    SetWindowTitle(str1.AsPointer());
+    //}
 
     /// <summary>Get the human-readable, UTF-8 encoded name of the specified monitor</summary>
-    public static string GetMonitorName_(int monitor)
-    {
-        return Utf8StringUtils.GetUTF8String(GetMonitorName(monitor));
-    }
+    //public static string GetMonitorName_(int monitor)
+    //{
+    //    return Utf8StringUtils.GetUTF8String(GetMonitorName(monitor));
+    //}
 
     /// <summary>Get clipboard text content</summary>
-    public static string GetClipboardText_()
-    {
-        return Utf8StringUtils.GetUTF8String(GetClipboardText());
-    }
+    //public static string GetClipboardText_()
+    //{
+    //    return Utf8StringUtils.GetUTF8String(GetClipboardText());
+    //}
 
     /// <summary>Set clipboard text content</summary>
-    public static void SetClipboardText(string text)
-    {
-        using var str1 = text.ToUtf8Buffer();
-        SetClipboardText(str1.AsPointer());
-    }
+    //public static void SetClipboardText(string text)
+    //{
+    //    using var str1 = text.ToUtf8Buffer();
+    //    SetClipboardText(str1.AsPointer());
+    //}
 
     /// <summary>Open URL with default system browser (if available)</summary>
     public static void OpenURL(string url)
@@ -47,15 +47,15 @@ public static unsafe partial class Raylib
         OpenURL(str1.AsPointer());
     }
 
-    /// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
-    public static int SetGamepadMappings(string mappings)
-    {
-        using var str1 = mappings.ToUtf8Buffer();
-        return SetGamepadMappings(str1.AsPointer());
-    }
+	/// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
+	//public static int SetGamepadMappings(string mappings)
+	//{
+	//    using var str1 = mappings.ToUtf8Buffer();
+	//    return SetGamepadMappings(str1.AsPointer());
+	//}
 
-    /// <summary>Load shader from files and bind default locations</summary>
-    public static Shader LoadShader(string vsFileName, string fsFileName)
+	/// <summary>Load shader from files and bind default locations</summary>
+	public static Shader LoadShader(string vsFileName, string fsFileName)
     {
         using var str1 = vsFileName.ToAnsiBuffer();
         using var str2 = fsFileName.ToAnsiBuffer();
@@ -315,14 +315,14 @@ public static unsafe partial class Raylib
         return files;
     }
 
-    /// <summary>Get gamepad internal name id</summary>
-    public static string GetGamepadName_(int gamepad)
-    {
-        return Utf8StringUtils.GetUTF8String(GetGamepadName(gamepad));
-    }
+	/// <summary>Get gamepad internal name id</summary>
+	//public static string GetGamepadName_(int gamepad)
+	//{
+	//    return Utf8StringUtils.GetUTF8String(GetGamepadName(gamepad));
+	//}
 
-    /// <summary>Update camera position for selected mode</summary>
-    public static void UpdateCamera(ref Camera3D camera, CameraMode mode)
+	/// <summary>Update camera position for selected mode</summary>
+	public static void UpdateCamera(ref Camera3D camera, CameraMode mode)
     {
         fixed (Camera3D* c = &camera)
         {

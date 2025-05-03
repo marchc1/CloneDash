@@ -21,7 +21,7 @@ namespace Nucleus.UI.Elements
 				menu.AddItem(item);
 			}
 
-			menu.Open(UI.Level.FrameState.MouseState.MousePos);
+			menu.Open(UI.Level.FrameState.Mouse.MousePos);
 		}
 	}
 	public class Menubar : Panel

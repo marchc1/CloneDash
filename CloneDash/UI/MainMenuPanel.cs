@@ -22,13 +22,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public string GetName() => "Main Menu";
 	public void OnHidden() { }
 	public void OnShown() {
-		music.Restart();
+		music?.Restart();
 	}
 
 	CharacterDescriptor character;
 	ModelInstance model;
 	AnimationHandler anims;
-	MusicTrack music;
+	MusicTrack? music;
 
 	Stack<List<MainMenuButton>> btns = [];
 
@@ -94,17 +94,17 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	protected override void Initialize() {
 		base.Initialize();
-		CharacterDescriptor character = CharacterMod.GetCharacterData();
-		if (character == null) return;
-		if (character.Filename == null) return;
-		this.character = character;
+		CharacterDescriptor? character = CharacterMod.GetCharacterData();
+		if (character != null && character.Filename != null) {
+			this.character = character;
 
-		model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
-		anims = new(model.Data);
-		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
+			model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
+			anims = new(model.Data);
+			anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
-		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
-		music.Loops = true;
+			music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
+			music.Loops = true;
+		}
 
 		Add(out back);
 		back.Origin = Anchor.Center;
@@ -155,25 +155,26 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 
-		var btns = this.btns.Peek();
-		var textHeight = height / 20f;
-		var btnWidth = Math.Clamp(width / 3f, 460, 155555);
-		var btnHeight = height / 12f;
-		var btnsLen = btns.Count;
-		back.Size = new(btnHeight * 2);
-		back.Position = new(width * .5f, height / 2);
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		if (this.btns.TryPeek(out var btns)) {
+			var textHeight = height / 20f;
+			var btnWidth = Math.Clamp(width / 3f, 460, 155555);
+			var btnHeight = height / 12f;
+			var btnsLen = btns.Count;
+			back.Size = new(btnHeight * 2);
+			back.Position = new(width * .5f, height / 2);
+			back.Visible = back.Enabled = !UsingRootNavigationMenu;
 
-		for (int i = 0; i < btnsLen; i++) {
-			var btn = btns[i];
+			for (int i = 0; i < btnsLen; i++) {
+				var btn = btns[i];
 
-			btn.Origin = Anchor.Center;
-			btn.TextSize = textHeight;
-			btn.Size = new(btnWidth, btnHeight);
+				btn.Origin = Anchor.Center;
+				btn.TextSize = textHeight;
+				btn.Size = new(btnWidth, btnHeight);
 
-			var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
+				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
 
-			btn.Position = new(width * .75f, height / 2 + y * height / 3);
+				btn.Position = new(width * .75f, height / 2 + y * height / 3);
+			}
 		}
 	}
 
@@ -206,13 +207,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		anims.AddAnimation(1, touchResponse.End);
 	}
 	public override void Paint(float width, float height) {
-		Raylib.BeginMode2D(new() {
+		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
 			Offset = new(width / 2 - width * .2f, height / 1)
 		});
 
 		model?.Render();
 
-		Raylib.EndMode2D();
+		EngineCore.Window.EndMode2D();
 	}
 }

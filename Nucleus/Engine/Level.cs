@@ -87,18 +87,6 @@ namespace Nucleus.Engine
 				if (entity.Enabled && entity.ThinksForItself)
 					entity.PreThink(ref frameState);
 		}
-		public void RunEventModifyMouseState(ref MouseState mouseState) {
-			ModifyMouseState(ref mouseState);
-			foreach (Entity entity in EntityList)
-				if (entity.Enabled)
-					entity.ModifyMouseState(ref mouseState);
-		}
-		public void RunEventModifyKeyboardState(ref KeyboardState keyboardState) {
-			ModifyKeyboardState(ref keyboardState);
-			foreach (Entity entity in EntityList)
-				if (entity.Enabled)
-					entity.ModifyKeyboardState(ref keyboardState);
-		}
 		public void RunEventThink(FrameState frameState) {
 			Think(frameState);
 			foreach (Entity entity in EntityList)
@@ -367,6 +355,15 @@ namespace Nucleus.Engine
 			FrameState.Reset();
 		}
 
+		private void test() {
+			Vector2F screenBounds = new(1600, 900);
+			Graphics2D.SetDrawColor(30, 5, 0);
+			Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
+			Graphics2D.SetDrawColor(240, 70, 60);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+		}
+
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -374,7 +371,7 @@ namespace Nucleus.Engine
 			profiler.Reset();
 			profiler.Start();
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
-			
+
 			SwapFrameStates();
 
 			LastRealtime = Realtime;
@@ -404,8 +401,9 @@ namespace Nucleus.Engine
 			else {
 				x = 0;
 				y = 0;
-				width = EngineCore.GetScreenSize().X;
-				height = EngineCore.GetScreenSize().Y;
+				var size = EngineCore.GetScreenSize();
+				width = size.X;
+				height = size.Y;
 			}
 
 			frameState.WindowX = x;
@@ -426,80 +424,30 @@ namespace Nucleus.Engine
 				__viewDirty = false;
 			}
 
-			// Mouse processing
-			MouseState mouseState = new();
-
-			if (Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.MOUSE_BUTTON_LEFT)) mouseState.Mouse1Held = true;
-			if (Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.MOUSE_BUTTON_RIGHT)) mouseState.Mouse2Held = true;
-			if (Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.MOUSE_BUTTON_MIDDLE)) mouseState.Mouse3Held = true;
-			if (Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.MOUSE_BUTTON_BACK)) mouseState.Mouse4Held = true;
-			if (Raylib.IsMouseButtonDown(Raylib_cs.MouseButton.MOUSE_BUTTON_FORWARD)) mouseState.Mouse5Held = true;
-
-			if (Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.MOUSE_BUTTON_LEFT)) mouseState.Mouse1Clicked = true;
-			if (Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.MOUSE_BUTTON_RIGHT)) mouseState.Mouse2Clicked = true;
-			if (Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.MOUSE_BUTTON_MIDDLE)) mouseState.Mouse3Clicked = true;
-			if (Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.MOUSE_BUTTON_BACK)) mouseState.Mouse4Clicked = true;
-			if (Raylib.IsMouseButtonPressed(Raylib_cs.MouseButton.MOUSE_BUTTON_FORWARD)) mouseState.Mouse5Clicked = true;
-
-			if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_LEFT)) mouseState.Mouse1Released = true;
-			if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_RIGHT)) mouseState.Mouse2Released = true;
-			if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_MIDDLE)) mouseState.Mouse3Released = true;
-			if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_BACK)) mouseState.Mouse4Released = true;
-			if (Raylib.IsMouseButtonReleased(Raylib_cs.MouseButton.MOUSE_BUTTON_FORWARD)) mouseState.Mouse5Released = true;
-
-			mouseState.MousePos = EngineCore.MousePos;
-			mouseState.MouseDelta = Raylib.GetMouseDelta().ToNucleus();
-			mouseState.MouseScroll = Raylib.GetMouseWheelMoveV().ToNucleus();
-
-			RunEventModifyMouseState(ref mouseState);
-			frameState.MouseState = mouseState;
-
-			// Keyboard processing
-			KeyboardState keyboardState = new();
-
-			while (true) {
-				int keyPressed = Raylib.GetKeyPressed();
-
-				if (keyPressed == 0)
-					break;
-
-				keyboardState.KeysPressed.Add(keyPressed);
-				keyboardState.KeyOrder.Add(keyPressed);
-
-				if (!keyboardState.KeyPressCounts.ContainsKey(keyPressed))
-					keyboardState.KeyPressCounts[keyPressed] = 1;
-				else
-					keyboardState.KeyPressCounts[keyPressed] += 1;
-			}
-
-			foreach (int key in KeyboardLayout.USA.Keys) {
-				if (Raylib.IsKeyDown((Raylib_cs.KeyboardKey)key))
-					keyboardState.KeysHeld.Add(key);
-				if (Raylib.IsKeyPressed((Raylib_cs.KeyboardKey)key))
-					keyboardState.KeysReleased.Add(key);
-			}
-
-			RunEventModifyKeyboardState(ref keyboardState);
+			frameState.Keyboard.Clear();
+			EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
+			EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			bool ranKeybinds = false;
-			if (EngineCore.KeyboardFocusedElement != null) {
-				KeyboardState emulatedState = EngineCore.KeyboardFocusedElement.KeyboardInputMarshal.State(keyboardState);
+			if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
+				KeyboardState emulatedState = EngineCore.KeyboardFocusedElement.KeyboardInputMarshal.State(ref frameState.Keyboard);
 				ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(emulatedState);
 				if (!ranKeybinds) {
 					ranKeybinds = UI.Keybinds.TestKeybinds(emulatedState);
+
 					if (!ranKeybinds) {
-						foreach (var keyPress in emulatedState.KeysPressed) {
-							if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
-								EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyPress));
-						}
-						foreach (var keyRelease in emulatedState.KeysReleased) {
-							if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
-								EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(keyRelease));
+						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+							var pressed = emulatedState.WasKeyPressed(i);
+							var released = emulatedState.WasKeyReleased(i);
+							if (pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if (released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 					}
 				}
 			}
-			frameState.KeyboardState = keyboardState;
+
+			if (!ranKeybinds)
+				ranKeybinds = Keybinds.TestKeybinds(frameState.Keyboard);
 
 			if (!Paused) RunEventPreThink(ref frameState);
 
@@ -511,50 +459,50 @@ namespace Nucleus.Engine
 			UI.Hovered = hoveredElement;
 
 			EngineCore.CurrentFrameState = frameState;
-			if (frameState.MouseState.MouseClicked) {
+			if (frameState.Mouse.MouseClicked) {
 				if (UI.Hovered != null) {
 					UI.Depressed = frameState.HoveredUIElement;
 
-					if (frameState.MouseState.Mouse1Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse1);
-					if (frameState.MouseState.Mouse2Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse2);
-					if (frameState.MouseState.Mouse3Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse3);
-					if (frameState.MouseState.Mouse4Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse4);
-					if (frameState.MouseState.Mouse5Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse5);
+					if (frameState.Mouse.Mouse1Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse1);
+					if (frameState.Mouse.Mouse2Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse2);
+					if (frameState.Mouse.Mouse3Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse3);
+					if (frameState.Mouse.Mouse4Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse4);
+					if (frameState.Mouse.Mouse5Clicked) UI.Hovered.MouseClickOccur(frameState, MouseButton.Mouse5);
 				}
 				else {
-					if (frameState.MouseState.Mouse1Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse1);
-					if (frameState.MouseState.Mouse2Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse2);
-					if (frameState.MouseState.Mouse3Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse3);
-					if (frameState.MouseState.Mouse4Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse4);
-					if (frameState.MouseState.Mouse5Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse5);
+					if (frameState.Mouse.Mouse1Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse1);
+					if (frameState.Mouse.Mouse2Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse2);
+					if (frameState.Mouse.Mouse3Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse3);
+					if (frameState.Mouse.Mouse4Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse4);
+					if (frameState.Mouse.Mouse5Clicked) UI.TriggerElementClicked(null, frameState, MouseButton.Mouse5);
 				}
 			}
 
 			EngineCore.CurrentFrameState = frameState;
-			if (frameState.MouseState.MouseReleased) {
+			if (frameState.Mouse.MouseReleased) {
 				if (UI.Depressed != null) {
 					if (UI.Hovered == UI.Depressed) {
-						if (frameState.MouseState.Mouse1Released)
+						if (frameState.Mouse.Mouse1Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
-						if (frameState.MouseState.Mouse2Released)
+						if (frameState.Mouse.Mouse2Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
-						if (frameState.MouseState.Mouse3Released)
+						if (frameState.Mouse.Mouse3Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
-						if (frameState.MouseState.Mouse4Released)
+						if (frameState.Mouse.Mouse4Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
-						if (frameState.MouseState.Mouse5Released)
+						if (frameState.Mouse.Mouse5Released)
 							UI.Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
 					}
 					else {
-						if (frameState.MouseState.Mouse1Released)
+						if (frameState.Mouse.Mouse1Released)
 							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse1);
-						if (frameState.MouseState.Mouse2Released)
+						if (frameState.Mouse.Mouse2Released)
 							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse2);
-						if (frameState.MouseState.Mouse3Released)
+						if (frameState.Mouse.Mouse3Released)
 							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse3);
-						if (frameState.MouseState.Mouse4Released)
+						if (frameState.Mouse.Mouse4Released)
 							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse4);
-						if (frameState.MouseState.Mouse5Released)
+						if (frameState.Mouse.Mouse5Released)
 							UI.Depressed.MouseLostOccur(frameState, MouseButton.Mouse5);
 					}
 					if (UI.Depressed != null) {
@@ -564,7 +512,7 @@ namespace Nucleus.Engine
 				}
 			}
 
-			if (!mouseState.MouseScroll.IsZero()) {
+			if (!FrameState.Mouse.MouseScroll.IsZero()) {
 				if (IValidatable.IsValid(UI.Hovered) && UI.Hovered.InputDisabled == false) {
 					Element e = UI.Hovered;
 					for (int i = 0; i < 1000; i++) {
@@ -572,7 +520,7 @@ namespace Nucleus.Engine
 							break;
 
 						e.ConsumedScrollEvent = false;
-						e.MouseScrollOccur(frameState, mouseState.MouseScroll);
+						e.MouseScrollOccur(frameState, FrameState.Mouse.MouseScroll);
 						if (e.ConsumedScrollEvent)
 							break;
 
@@ -581,23 +529,20 @@ namespace Nucleus.Engine
 				}
 			}
 
-			if (LastFrameState.MouseState.MouseHeld && FrameState.MouseState.MouseHeld && !FrameState.MouseState.MouseDelta.IsZero() && IValidatable.IsValid(UI.Depressed) && UI.Depressed.InputDisabled == false)
-				UI.Depressed.MouseDragOccur(frameState, FrameState.MouseState.MouseDelta);
+			if (LastFrameState.Mouse.MouseHeld && FrameState.Mouse.MouseHeld && !FrameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(UI.Depressed) && UI.Depressed.InputDisabled == false)
+				UI.Depressed.MouseDragOccur(frameState, FrameState.Mouse.MouseDelta);
 
 			EngineCore.CurrentFrameState = frameState; FrameState = frameState;
 			Element.ThinkRecursive(UI, frameState);
 
 			// If an element has keyboard focus, wipe the keyboard state because the game shouldnt get that information
-			if (EngineCore.KeyboardFocusedElement != null)
-				frameState.KeyboardState = new();
+			if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement))
+				frameState.Keyboard = new();
 
 			// The frame state is basically complete after PreThink and UI layout/hover resolving, so it should be stored
 			// Last change will be after element thinking
 			EngineCore.CurrentFrameState = frameState; FrameState = frameState;
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrameStateConstructed);
-
-			if (!ranKeybinds)
-				ranKeybinds = Keybinds.TestKeybinds(frameState.KeyboardState);
 
 			if (!Paused) RunEventThink(frameState);
 			if (!Paused) RunEventPostThink(frameState);
@@ -616,12 +561,12 @@ namespace Nucleus.Engine
 
 			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
-			Raylib.ClearBackground(new Color(0, 0, 0, 255));
+			Surface.Clear(0, 0, 0, 255);
 
 			bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
 			if (render3D) {
 				var cam3d = new Camera3D() {
-					Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
+					Projection = CameraProjection.Orthographic,
 					FovY = frameState.WindowHeight * 1,
 					Position = offset + new System.Numerics.Vector3(0, 0, -500),
 					Target = offset + new System.Numerics.Vector3(0, 0, 0),
@@ -632,7 +577,7 @@ namespace Nucleus.Engine
 				RunEventPreRenderBackground(frameState);
 				frameState.Camera3D = cam3d;
 
-				Raylib.BeginMode3D(cam3d);
+				EngineCore.Window.BeginMode3D(cam3d);
 			}
 			else {
 				var cam2d = new Camera2D() { };
@@ -641,7 +586,7 @@ namespace Nucleus.Engine
 				RunEventPreRenderBackground(frameState);
 				frameState.Camera2D = cam2d;
 
-				Raylib.BeginMode2D(cam2d);
+				EngineCore.Window.BeginMode2D(cam2d);
 			}
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
 			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
@@ -650,9 +595,9 @@ namespace Nucleus.Engine
 
 			RunEventRender(frameState);
 			if (render3D)
-				Raylib.EndMode3D();
+				EngineCore.Window.EndMode3D();
 			else
-				Raylib.EndMode2D();
+				EngineCore.Window.EndMode2D();
 			//Graphics.ScissorRect();
 
 			RunEventRender2D(frameState);
@@ -704,8 +649,8 @@ namespace Nucleus.Engine
 					$"    UI Rebuilds           : {rebuilds}",
 					$"    UI State:             : hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}",
 					$"Engine - State",
-					$"    Mouse State           : {frameState.MouseState}",
-					$"    Keyboard State        : {frameState.KeyboardState}",
+					$"    Mouse State           : {frameState.Mouse}",
+					$"    Keyboard State        : {frameState.Keyboard}",
 				];
 			}
 			else
@@ -750,7 +695,6 @@ namespace Nucleus.Engine
 				EngineCore.FrameCost = $"{nanoseconds / 1_000_000.0} ms";
 			else // greater than or equal to 2 milliseconds
 				EngineCore.FrameCost = $"{nanoseconds / 1_000_000_000.0} s";
-
 		}
 
 		private void RenderShowUpdates() {

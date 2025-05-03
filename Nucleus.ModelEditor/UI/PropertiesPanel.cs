@@ -300,7 +300,7 @@ namespace Nucleus.ModelEditor
 					});
 				}
 
-				menu.Open(fs.MouseState.MousePos);
+				menu.Open(fs.Mouse.MousePos);
 			});
 			button.Thinking += (_) => {
 				button.InputDisabled = ModelEditor.Active.AnimationMode;

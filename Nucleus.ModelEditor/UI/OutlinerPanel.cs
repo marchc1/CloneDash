@@ -256,7 +256,7 @@ namespace Nucleus.ModelEditor
 					var hovered = UI.Hovered;
 					if (hovered is OutlinerNode node && node.ParentNode == drawOrder) {
 						// Determine if placing above or below
-						Vector2F mousePos = fs.MouseState.MousePos;
+						Vector2F mousePos = fs.Mouse.MousePos;
 						Vector2F nodePos = node.GetGlobalPosition() + AddParent.ChildRenderOffset;
 						float height = node.RenderBounds.Height;
 						bool below = mousePos.Y - nodePos.Y > (height / 2);
@@ -278,7 +278,7 @@ namespace Nucleus.ModelEditor
 						if (otherslot == null || otherslot == slot) return;
 
 						// Determine if placing above or below
-						Vector2F mousePos = fs.MouseState.MousePos;
+						Vector2F mousePos = fs.Mouse.MousePos;
 						Vector2F nodePos = node.GetGlobalPosition() + AddParent.ChildRenderOffset;
 						float height = node.RenderBounds.Height;
 						bool below = mousePos.Y - nodePos.Y > (height / 2);

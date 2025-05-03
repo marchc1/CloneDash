@@ -83,6 +83,7 @@ namespace Nucleus
 			consoleInput.TriggerExecuteOnEnter = true;
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
 			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
+			consoleInput.Editor.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], () => InGameConsole.CloseConsole());
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = Add<TextEditor>();
@@ -172,7 +173,7 @@ namespace Nucleus
 	{
 		private static ConsoleWindow? inputPanel = null;
 		public static ConsoleWindow? Instance => inputPanel;
-		private static void OpenConsole(Element parent) {
+		public static void OpenConsole(Element parent) {
 			if (IValidatable.IsValid(inputPanel)) {
 				CloseConsole();
 				return;
@@ -183,7 +184,7 @@ namespace Nucleus
 			ConsoleSystem.AddScreenBlocker(inputPanel);
 			inputPanel.Removed += (self) => OnConsoleClosed();
 		}
-		private static void CloseConsole() {
+		public static void CloseConsole() {
 			inputPanel?.Remove();
 			OnConsoleClosed();
 		}

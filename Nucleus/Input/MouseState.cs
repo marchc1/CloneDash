@@ -31,11 +31,6 @@ namespace Nucleus.Input
 		public bool MouseHeld => Mouse1Held || Mouse2Held || Mouse3Held || Mouse4Held || Mouse5Held;
 		public bool MouseReleased => Mouse1Released || Mouse2Released || Mouse3Released || Mouse4Released || Mouse5Released;
 
-		public Vector2F GlobalMousePos {
-			get {
-				return Raylib.GetWindowPosition().ToNucleus() + MousePos;
-			}
-		}
 		public bool Clicked(MouseButton button) {
 			switch (button.Button) {
 				case 1: return Mouse1Clicked;

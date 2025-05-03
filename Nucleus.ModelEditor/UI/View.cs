@@ -69,7 +69,7 @@ public struct ViewMoveResult
 				// todo: tab index. Just move it to the furthest side for now
 
 				var centerBtn = buttonSelector.GetGlobalPosition() + (buttonSelector.RenderBounds.Size / 2);
-				var rightmost = UI.Level.FrameState.MouseState.MousePos.X > centerBtn.X;
+				var rightmost = UI.Level.FrameState.Mouse.MousePos.X > centerBtn.X;
 
 				result.TabIndex = Math.Clamp(result.DivisionTarget.IndexOfButton(buttonSelector) + (rightmost ? 1 : 0), 0, result.DivisionTarget.Views.Count);
 
@@ -98,7 +98,7 @@ public struct ViewMoveResult
 							var center = viewDiv.ActiveView.GetGlobalPosition();
 							center += viewDiv.ActiveView.RenderBounds.Size / 2;
 							// TODO: finish implementing this
-							var dir = (center - EngineCore.Level.FrameState.MouseState.MousePos).Normalize();
+							var dir = (center - EngineCore.Level.FrameState.Mouse.MousePos).Normalize();
 							var dotTB = Vector2F.Dot(dir, Vector2F.Up);
 							var dotLR = Vector2F.Dot(dir, Vector2F.Right);
 
@@ -299,21 +299,21 @@ public class ViewDivision : Panel
 			Button? showDraggedTab = null;
 			ViewDivider draggingFrom;
 			switcher.MouseClickEvent += (self, state, btn) => {
-				clickPos = state.MouseState.MousePos;
+				clickPos = state.Mouse.MousePos;
 			};
 			switcher.MouseDragEvent += (self, state, delta) => {
 				if (showDraggedTab != null) {
-					showDraggedTab.Position = state.MouseState.MousePos + new Vector2F(0, -14);
+					showDraggedTab.Position = state.Mouse.MousePos + new Vector2F(0, -14);
 				}
 
 				if (dragging) return;
 
-				var distance = state.MouseState.MousePos.Distance(clickPos);
+				var distance = state.Mouse.MousePos.Distance(clickPos);
 				if (distance > 8) {
 					dragging = true;
 					showDraggedTab = UI.Add<Button>();
 					showDraggedTab.Origin = Anchor.Center;
-					showDraggedTab.Position = state.MouseState.MousePos + new Vector2F(0, -16);
+					showDraggedTab.Position = state.Mouse.MousePos + new Vector2F(0, -16);
 					showDraggedTab.OnHoverTest += Passthru;
 					showDraggedTab.AutoSize = true;
 					showDraggedTab.TextPadding = new(12);

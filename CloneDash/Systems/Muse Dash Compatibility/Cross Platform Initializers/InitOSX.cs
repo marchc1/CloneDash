@@ -34,6 +34,7 @@ namespace CloneDash
                 return MDCompatLayerInitResult.MuseDashNotInstalled;
             musedash_installdir = Path.Combine(musedash_installdir, "MuseDash_Mac_Steam.app", "Contents", "Resources");
             WhereIsMuseDashInstalled = musedash_installdir;
+            WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "Data");
 
             // If installed, load noteinfo.json for BMS references
             // The bundle is named globalconfigs_assets_notedatamananger

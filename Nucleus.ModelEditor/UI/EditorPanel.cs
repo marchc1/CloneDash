@@ -570,7 +570,7 @@ namespace Nucleus.ModelEditor
 				ClickedObject = HoveredObject;
 				var operatorActive = ModelEditor.Active.File.ActiveOperator != null;
 				if (operatorActive) {
-					ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
+					ModelEditor.Active.SelectObject(HoveredObject, state.Keyboard.ShiftDown);
 				}
 				else {
 					//if(ModelEditor.Active.IsObjectSelected(HoveredObject))
@@ -607,7 +607,7 @@ namespace Nucleus.ModelEditor
 						if (HoveredObject != null) {
 							if (!ModelEditor.Active.IsObjectSelected(HoveredObject)) {
 								ModelEditor.Active.File.ActiveOperator?.DragStart(ModelEditor.Active, ClickPos);
-								ModelEditor.Active.SelectObject(HoveredObject, state.KeyboardState.ShiftDown);
+								ModelEditor.Active.SelectObject(HoveredObject, state.Keyboard.ShiftDown);
 							}
 						}
 					}
@@ -643,7 +643,7 @@ namespace Nucleus.ModelEditor
 					var activeOp = ModelEditor.Active.File.ActiveOperator;
 					if (activeOp == null || !activeOp.SelectMultiple) // Kind of a hack, but the editor would
 																	  // trigger a second selection otherwise
-						ModelEditor.Active.SelectObject(ClickedObject, state.KeyboardState.ShiftDown);
+						ModelEditor.Active.SelectObject(ClickedObject, state.Keyboard.ShiftDown);
 				}
 			}
 		}
@@ -796,7 +796,7 @@ namespace Nucleus.ModelEditor
 		}
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
-				Projection = CameraProjection.CAMERA_ORTHOGRAPHIC,
+				Projection = CameraProjection.Orthographic,
 				FovY = EngineCore.GetWindowHeight() / CameraZoom,
 				Position = new(CameraX, CameraY, 500),
 				Target = new(CameraX, CameraY, 0),
@@ -816,7 +816,7 @@ namespace Nucleus.ModelEditor
 				/* W */   (int)(widthMultiplied),
 				/* H */   (int)height
 			);
-			Raylib.BeginMode3D(cam);
+			EngineCore.Window.BeginMode3D(cam);
 			Rlgl.DisableBackfaceCulling();
 			Rlgl.DisableDepthMask();
 
@@ -829,7 +829,7 @@ namespace Nucleus.ModelEditor
 				Draw3DCursor();
 			}
 
-			Raylib.EndMode3D();
+			EngineCore.Window.EndMode3D();
 			Surface.ResetViewport();
 
 			IEditorType? selectedTransformable = null;

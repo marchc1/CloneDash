@@ -60,7 +60,7 @@ public class CD_MainMenu : Level
 		anims.SetAnimation(0, "air_hit_great_2", false);
 
 		renderPanel.PaintOverride += (s, w, h) => {
-			Raylib.BeginMode2D(new() {
+			EngineCore.Window.BeginMode2D(new() {
 				Zoom = 1f,
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
@@ -75,7 +75,7 @@ public class CD_MainMenu : Level
 				Raylib.EndShaderMode();
 			}
 
-			Raylib.EndMode2D();
+			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
@@ -115,7 +115,7 @@ public class CD_MainMenu : Level
 		AnimationHandler? anims = null;
 
 		renderPanel.PaintOverride += (s, w, h) => {
-			Raylib.BeginMode2D(new() {
+			EngineCore.Window.BeginMode2D(new() {
 				Zoom = 1f,
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
@@ -125,7 +125,7 @@ public class CD_MainMenu : Level
 				anims.Apply(model);
 				model.Render();
 			}
-			Raylib.EndMode2D();
+			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
@@ -185,7 +185,7 @@ public class CD_MainMenu : Level
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
 
-		backButton = MenuButton(header, Dock.Left, "ui\\back.png", $"Back", () => {
+		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
 			PopActiveElement();
 		});
 
@@ -428,7 +428,7 @@ public class CD_MainMenu : Level
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
 		=> CreateDifficulty(levelSelector, (mapID, state) => {
-			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.KeyboardState.AltDown);
+			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.Keyboard.AltDown);
 		}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
 
 
@@ -502,7 +502,7 @@ public class CD_MainMenu : Level
 		};
 
 		play.Thinking += delegate (Element self) {
-			if (EngineCore.CurrentFrameState.KeyboardState.AltDown) {
+			if (EngineCore.CurrentFrameState.Keyboard.AltDown) {
 				play.Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
 			}
 			else {

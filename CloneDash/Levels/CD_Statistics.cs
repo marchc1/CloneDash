@@ -109,14 +109,14 @@ namespace CloneDash.Levels
 
 		public override void Render2D(FrameState frameState) {
 			base.Render2D(frameState);
-			Raylib.BeginMode2D(new() {
+			EngineCore.Window.BeginMode2D(new() {
 				Zoom = frameState.WindowHeight / 900 / 2.4f,
 				Offset = new(frameState.WindowWidth / 2 - frameState.WindowWidth * .2f, frameState.WindowHeight / 1)
 			});
 
 			model?.Render();
 
-			Raylib.EndMode2D();
+			EngineCore.Window.EndMode2D();
 		}
 	}
 }

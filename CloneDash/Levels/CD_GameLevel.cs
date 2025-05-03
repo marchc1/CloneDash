@@ -69,7 +69,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	});
 
 	public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
-		Vector2 winSize;
+		Vector2F winSize;
 		switch (args.GetString(0)) {
 			case "16:9": winSize = new(1600, 900); break;
 			case "19.5:9": winSize = new(1950, 900); break;
@@ -80,11 +80,11 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		}
 
-		Vector2 monPos = Raylib.GetMonitorPosition(0);
-		Vector2 monSize = new Vector2(Raylib.GetMonitorWidth(0), Raylib.GetMonitorHeight(0));
-		Vector2 winPos = (monPos + (monSize / 2)) - (winSize / 2);
-		Raylib.SetWindowPosition((int)winPos.X, (int)winPos.Y);
-		Raylib.SetWindowSize((int)winSize.X, (int)winSize.Y);
+		Vector2F monPos = OS.GetMonitorPosition(0);
+		Vector2F monSize = OS.GetMonitorSize(0);
+		Vector2F winPos = (monPos + (monSize / 2)) - (winSize / 2);
+		EngineCore.Window.Position = new((int)winPos.X, (int)winPos.Y);
+		EngineCore.Window.Size = new((int)winSize.X, (int)winSize.Y);
 	});
 
 	public static ConVar clonedash_profilegameload = ConVar.Register("clonedash_profilegameload", "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");

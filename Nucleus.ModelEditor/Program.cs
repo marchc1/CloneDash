@@ -493,7 +493,7 @@ namespace Nucleus.ModelEditor
 					activeAnimation.Apply(instance, (Curtime - start) );
 				}
 
-				Raylib.BeginMode2D(new() {
+				EngineCore.Window.BeginMode2D(new() {
 					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),
 					Target = new(800, -355),
 					Rotation = 0,
@@ -508,7 +508,7 @@ namespace Nucleus.ModelEditor
 				instance.Render();
 				profiler.Stop();
 
-				Raylib.EndMode2D();
+				EngineCore.Window.EndMode2D();
 
 				string[] strings = [
 					$"Model Name      : {instance.Data.Name}",
@@ -909,13 +909,15 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args);
+			MainThread.Thread = Thread.CurrentThread;
 			EngineCore.GameInfo = new() {
 				GameName = "Nucleus - Model v4 Editor"
 			};
-
+			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args, gameThreadInit: GameMain);
+			EngineCore.StartMainThread();
+		}
+		static void GameMain() {
 			EngineCore.LoadLevel(new ModelEditor());
-			EngineCore.Start();
 		}
 	}
 }

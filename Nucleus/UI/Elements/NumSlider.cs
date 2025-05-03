@@ -98,7 +98,7 @@ namespace Nucleus.UI
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
 			else if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
-			if (TriggeredWhenEnterPressed && frameState.KeyboardState.KeyPressed(KeyboardLayout.USA.Enter)) {
+			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Enter)) {
 				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
 			}
 		}
@@ -148,9 +148,9 @@ namespace Nucleus.UI
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			if (delta.Length > 2 || didDrag) {
 				if (!didDrag)
-					dragStart = state.MouseState.MousePos;
+					dragStart = state.Mouse.MousePos;
 				else
-					Raylib.SetMousePosition((int)dragStart.X, (int)dragStart.Y);
+					EngineCore.Window.SetMousePosition(dragStart);
 
 				didDrag = true;
 				double precision;

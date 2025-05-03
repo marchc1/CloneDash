@@ -33,9 +33,9 @@ namespace CloneDash
 #if COMPILED_WINDOWS
 				result = INIT_WINDOWS();
 #elif COMPILED_OSX
-            MDCompatLayerInitResult result = INIT_OSX();
+            	result = INIT_OSX();
 #elif COMPILED_LINUX
-            MDCompatLayerInitResult result = INIT_LINUX();
+            	result = INIT_LINUX();
 #else
 			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
@@ -47,7 +47,7 @@ namespace CloneDash
 			}
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Build Catalog")) {
-				Catalog = new(Path.Combine(WhereIsMuseDashInstalled, "MuseDash_Data/StreamingAssets/aa/catalog.json"));
+				Catalog = new(Path.Combine(WhereIsMuseDashDataFolder, "StreamingAssets/aa/catalog.json"));
 				Bundles = new(Catalog);
 			}
 			// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready

@@ -324,7 +324,7 @@ namespace Nucleus.UI
 		private void Editor_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 			if (doubleClicked) return;
 
-			var pos = CalculatePos(state.MouseState.MousePos - self.GetGlobalPosition());
+			var pos = CalculatePos(state.Mouse.MousePos - self.GetGlobalPosition());
 			Caret.EndCol = pos.Column;
 			Caret.EndRow = pos.Row;
 		}

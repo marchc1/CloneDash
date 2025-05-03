@@ -25,7 +25,7 @@ namespace Nucleus.Core
 			bool ranKeybinds = false;
 
 			foreach (var keybindFinal in FinalKeybindAssociation) {
-				if (!state.KeyPressed(keybindFinal.Key))
+				if (!state.WasKeyPressed(keybindFinal.Key))
 					continue;
 
 				keybindFinal.Value.Sort((x, y) => y.Complexity.CompareTo(x.Complexity));
@@ -54,12 +54,12 @@ namespace Nucleus.Core
 
 		public bool Test(KeyboardState state) {
 			foreach (var key in RequiredKeys) {
-				if (!state.KeyDown(key))
+				if (!state.IsKeyDown(key))
 					return false;
 			}
 
 			if (MustBePure) {
-				foreach (var key in state.KeysHeld) {
+				foreach (var key in state.GetKeysHeld()) {
 					KeyboardKey k = KeyboardLayout.USA.FromInt(key);
 					if (!RequiredKeys.Contains(k) && k != FinalKey) {
 						return false;
@@ -67,7 +67,7 @@ namespace Nucleus.Core
 				}
 			}
 
-			return state.KeyPressed(FinalKey);
+			return state.WasKeyPressed(FinalKey);
 		}
 
 		public static Keybind Make(List<KeyboardKey> requiredKeys, Action bind, bool mustBePure) {

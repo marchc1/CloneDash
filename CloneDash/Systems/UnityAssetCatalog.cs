@@ -106,7 +106,14 @@ public class UnityBundleSearcher
 		foreach (var entry in this.catalog.Entries) {
 			var internalID = entry.InternalID;
 			if (internalID.StartsWith("{UnityEngine.AddressableAssets.Addressables.RuntimePath}")) {
+				// On Windows, Unity packs the files with \, and on Mac, it packs the files with /.
+				// I assume it would also pack Linux files with /, but since there's no official Linux builds for Muse Dash, anyone
+				// installing Muse Dash via Proton would get the Windows catalog - which uses /.
+#if COMPILED_OSX
+				internalID = internalID.Replace($"{{UnityEngine.AddressableAssets.Addressables.RuntimePath}}/{MuseDashCompatibility.StandalonePlatform}/", "");
+#else
 				internalID = internalID.Replace($"{{UnityEngine.AddressableAssets.Addressables.RuntimePath}}\\{MuseDashCompatibility.StandalonePlatform}\\", "");
+#endif
 				localKeyNameToBundleName[entry.Keys[0].Key] = internalID;
 				bundleNameToEntries[internalID] = [];
 			}

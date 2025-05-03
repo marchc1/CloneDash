@@ -29,7 +29,10 @@ namespace Nucleus
 	public static class MainThread
 	{
 		private static Thread? _thread = null;
-		public static bool Initialized => _thread != null;
+		private static Thread? _gamethread = null;
+		public static bool ThreadSet => _thread != null;
+		public static bool GameThreadSet => _gamethread != null;
+		public static bool Initialized => _thread != null && _gamethread != null;
 
 		public static Thread Thread {
 			get => _thread ?? throw new Exception("For some reason, the MainThread.Thread property was accessed before it was set. EngineCore initialization sets this variable.");
@@ -37,8 +40,20 @@ namespace Nucleus
 				if (_thread != null)
 					throw new Exception("The MainThread.Thread property can not be set again.");
 				_thread = value;
+				_thread.Name = "Nucleus - Main Thread";
 			}
 		}
+
+		public static Thread GameThread {
+			get => _gamethread ?? throw new Exception("For some reason, the MainThread.GameThread property was accessed before it was set. EngineCore initialization sets this variable.");
+			set {
+				if (_gamethread != null)
+					throw new Exception("The MainThread.GameThread property can not be set again.");
+				_gamethread = value;
+				_gamethread.Name = "Nucleus - Game Thread";
+			}
+		}
+
 		private static ConcurrentQueue<MainThreadExecutionTask> Actions { get; } = [];
 
 		public static void RunASAP(Action a, ThreadExecutionTime when = ThreadExecutionTime.BeforeFrame) => Actions.Enqueue(new(a, when));
