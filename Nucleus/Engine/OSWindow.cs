@@ -108,13 +108,28 @@ public unsafe class OSWindow
 		Keyboard = new(this);
 		Mouse = new(this);
 	}
-	public void SetupGL() {
+
+	/// <summary>
+	/// Sets up the OpenGL context.<br/>
+	/// This is done in two different ways;<br/>
+	/// 1. On non-OS X platforms, the context is set up in the game thread.<br/>
+	/// 2. On OS X, the context is set up in the main thread.<br/>
+	/// With OS X, the context must be made on the main thread or it hangs indefinitely. On other platforms, it must be made on the game thread or Rlgl.LoadExtensions throws a hissy fit.<br/>
+	/// Ideally this is done differently at some point, but this is the only way to get the game thread working on all platforms
+	/// </summary>
+	/// <param name="window"></param>
+	private static void setupGL(OSWindow window) {
 		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
 		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
+		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
+	}
 
-		glctx = SDL3.SDL_GL_CreateContext(handle);
+	public void SetupGL() {
+#if !COMPILED_OSX
+		setupGL(this);
+#endif
+		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 		SDL3.SDL_GL_SetSwapInterval(0);
-
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
 		ActivateGL();
@@ -135,6 +150,11 @@ public unsafe class OSWindow
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
+
+#if COMPILED_OSX
+		setupGL(window);
+#endif
+
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
 		windowLookup_id2window[window.windowID] = window;
@@ -546,16 +566,17 @@ public unsafe class OSWindow
 	/// <summary>
 	/// Pumps the event queue continuously.
 	/// </summary>
-	public static void PumpInputEvents() {
+	public static void PumpOSEvents() {
 		SDL_Event ev;
 		unsafe {
-			while (SDL3.SDL_WaitEvent(&ev)) {
+			while (SDL3.SDL_WaitEventTimeout(&ev, 5)) {
 				var time = OS.GetTime();
 				EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
 			}
+
+			foreach(var window in windowLookup_id2window) window.Value.UpdateWindowState();
 		}
 	}
-
 	public void Close() {
 		SDL3.SDL_DestroyCursor(cursor);
 		SDL3.SDL_GL_DestroyContext(glctx);
@@ -969,7 +990,7 @@ public static unsafe class OS
 
 		if (!SDL3.SDL_Init(
 			SDL_InitFlags.SDL_INIT_AUDIO |
-			SDL_InitFlags.SDL_INIT_CAMERA |
+			//SDL_InitFlags.SDL_INIT_CAMERA |
 			SDL_InitFlags.SDL_INIT_EVENTS |
 			SDL_InitFlags.SDL_INIT_GAMEPAD |
 			SDL_InitFlags.SDL_INIT_HAPTIC |

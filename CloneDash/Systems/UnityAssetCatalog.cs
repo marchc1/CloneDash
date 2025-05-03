@@ -106,7 +106,11 @@ public class UnityBundleSearcher
 		foreach (var entry in this.catalog.Entries) {
 			var internalID = entry.InternalID;
 			if (internalID.StartsWith("{UnityEngine.AddressableAssets.Addressables.RuntimePath}")) {
+#if COMPILED_WINDOWS
 				internalID = internalID.Replace($"{{UnityEngine.AddressableAssets.Addressables.RuntimePath}}\\{MuseDashCompatibility.StandalonePlatform}\\", "");
+#else
+				internalID = internalID.Replace($"{{UnityEngine.AddressableAssets.Addressables.RuntimePath}}/{MuseDashCompatibility.StandalonePlatform}/", "");
+#endif
 				localKeyNameToBundleName[entry.Keys[0].Key] = internalID;
 				bundleNameToEntries[internalID] = [];
 			}
