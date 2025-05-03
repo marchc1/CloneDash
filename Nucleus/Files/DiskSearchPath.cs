@@ -47,7 +47,7 @@ public class DiskSearchPath : SearchPath
 			}
 
 			if (access.HasFlag(FileAccess.Write)) {
-				if (info.IsReadOnly) return false;
+				if (info.Exists && info.IsReadOnly) return false;
 			}
 
 			return true;
