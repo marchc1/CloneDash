@@ -22,13 +22,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public string GetName() => "Main Menu";
 	public void OnHidden() { }
 	public void OnShown() {
-		music.Restart();
+		music?.Restart();
 	}
 
 	CharacterDescriptor character;
 	ModelInstance model;
 	AnimationHandler anims;
-	MusicTrack music;
+	MusicTrack? music;
 
 	Stack<List<MainMenuButton>> btns = [];
 
