@@ -37,7 +37,7 @@ public class DiskSearchPath : SearchPath
 
 		var info = new FileInfo(absPath);
 
-		if (!info.Exists) return false;
+		if (specificMode.HasValue && specificMode.Value == FileMode.Open && !info.Exists) return false;
 		if (info.IsReadOnly && specificAccess.HasValue && specificAccess.Value.HasFlag(FileAccess.Write)) return false;
 		return true;
 	}
