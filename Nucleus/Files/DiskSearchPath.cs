@@ -52,7 +52,7 @@ public class DiskSearchPath : SearchPath
 
 			return true;
 		}
-		else 
+		else
 			return info.Exists;
 	}
 
@@ -65,7 +65,11 @@ public class DiskSearchPath : SearchPath
 	protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
 		// Just in case something *really* goes wrong, a try-catch is done here
 		try {
-			return new FileStream(ResolveToAbsolute(path), open, access);
+			var absPath = ResolveToAbsolute(path);
+			var absFolder = Path.GetDirectoryName(absPath);
+			if (access.HasFlag(FileAccess.Write) && absFolder != null && !Directory.Exists(absFolder)) 
+				Directory.CreateDirectory(absFolder);
+			return new FileStream(absPath, open, access);
 		}
 		catch (Exception ex) {
 			Logs.Warn($"Core.DiskSearchPath: FileStream errored despite Check succeeding. Reason: {ex.Message}");
