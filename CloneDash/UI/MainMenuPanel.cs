@@ -94,17 +94,17 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	protected override void Initialize() {
 		base.Initialize();
-		CharacterDescriptor character = CharacterMod.GetCharacterData();
-		if (character == null) return;
-		if (character.Filename == null) return;
-		this.character = character;
+		CharacterDescriptor? character = CharacterMod.GetCharacterData();
+		if (character != null && character.Filename != null) {
+			this.character = character;
 
-		model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
-		anims = new(model.Data);
-		anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
+			model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
+			anims = new(model.Data);
+			anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
-		music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
-		music.Loops = true;
+			music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
+			music.Loops = true;
+		}
 
 		Add(out back);
 		back.Origin = Anchor.Center;

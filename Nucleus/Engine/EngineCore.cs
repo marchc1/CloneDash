@@ -161,7 +161,7 @@ public static class EngineCore
 	}
 
 	public static Thread GameThread;
-	public static object GameThread_GLLock = new();
+	private static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
