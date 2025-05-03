@@ -132,7 +132,7 @@ public static class Filesystem
 
 	public static Stream? Open(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
-			if (pathObj.CheckFileExists(path, access, mode)) {
+			if (pathObj.CheckFile(path, access, mode)) {
 				var stream = pathObj.Open(path, access, mode);
 				if (stream != null) return stream;
 			}

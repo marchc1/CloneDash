@@ -17,11 +17,11 @@ public class ZipArchiveSearchPath : SearchPath
 
 	private string FullNameOf(ZipArchiveEntry entry) => entry.FullName.Replace("\\", "/");
 
-	public override bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		return archive.Entries.FirstOrDefault(x => FullNameOf(x) == path) != null;
 	}
 
-	protected override bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		return archive.Entries.FirstOrDefault(x => FullNameOf(x).StartsWith(path)) != null;
 	}
 

@@ -14,10 +14,10 @@ public abstract class SearchPath
 	/// <param name="specificAccess"></param>
 	/// <param name="specificMode"></param>
 	/// <returns></returns>
-	public abstract bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
-	protected abstract bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
+	public abstract bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
+	protected abstract bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
 	/// <summary>
-	/// Actually opens a stream. Note: The implementer is responsible for making sure that <see cref="CheckFileExists(string, FileAccess?, FileMode?)"/> returns
+	/// Actually opens a stream. Note: The implementer is responsible for making sure that <see cref="CheckFile(string, FileAccess?, FileMode?)"/> returns
 	/// false if the stream cannot be opened. 
 	/// </summary>
 	/// <param name="path"></param>
@@ -31,35 +31,35 @@ public abstract class SearchPath
 
 	/// <summary>
 	/// Can the path be read?
-	/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with no access/mode arguments.
+	/// <br/><b>Note:</b> A macro to <see cref="CheckFile"/> with no access/mode arguments.
 	/// </summary>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public bool DirectoryExists(string path) => CheckDirectoryExists(path);
+	public bool DirectoryExists(string path) => CheckDirectory(path);
 	/// <summary>
 	/// Can the path be read?
-	/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with no access/mode arguments.
+	/// <br/><b>Note:</b> A macro to <see cref="CheckFile"/> with no access/mode arguments.
 	/// </summary>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public bool Exists(string path) => CheckFileExists(path);
+	public bool Exists(string path) => CheckFile(path);
 	/// <summary>
 	/// Can the path be read?
-	/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with <see cref="FileAccess.Read"/> and <see cref="FileMode.Open"/>.
+	/// <br/><b>Note:</b> A macro to <see cref="CheckFile"/> with <see cref="FileAccess.Read"/> and <see cref="FileMode.Open"/>.
 	/// </summary>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public bool CanRead(string path) => CheckFileExists(path, FileAccess.Read, FileMode.Open);
+	public bool CanRead(string path) => CheckFile(path, FileAccess.Read, FileMode.Open);
 	/// <summary>
 	/// Can the path be read?
-	/// <br/><b>Note:</b> A macro to <see cref="CheckFileExists"/> with <see cref="FileAccess.Write"/> and <see cref="FileMode.Create"/>.
+	/// <br/><b>Note:</b> A macro to <see cref="CheckFile"/> with <see cref="FileAccess.Write"/> and <see cref="FileMode.Create"/>.
 	/// </summary>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public bool CanWrite(string path) => CheckFileExists(path, FileAccess.Write, FileMode.Create);
+	public bool CanWrite(string path) => CheckFile(path, FileAccess.Write, FileMode.Create);
 
 	public Stream? Open(string path, FileAccess access, FileMode open) {
-		if (!CheckFileExists(path))
+		if (!CheckFile(path))
 			return null;
 
 		var stream = OnOpen(path, access, open);

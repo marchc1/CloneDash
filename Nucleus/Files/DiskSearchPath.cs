@@ -1,4 +1,6 @@
-﻿namespace Nucleus.Files;
+﻿using System.Diagnostics;
+
+namespace Nucleus.Files;
 
 public class DiskSearchPath : SearchPath
 {
@@ -31,18 +33,31 @@ public class DiskSearchPath : SearchPath
 		return Path.GetRelativePath(RootDirectory, absPath);
 	}
 
-	public override bool CheckFileExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+		Debug.Assert(path != "config.cfg");
 		if (path == null) return false;
 		var absPath = ResolveToAbsolute(path);
 
 		var info = new FileInfo(absPath);
 
-		if (specificMode.HasValue && specificMode.Value == FileMode.Open && !info.Exists) return false;
-		if (info.IsReadOnly && specificAccess.HasValue && specificAccess.Value.HasFlag(FileAccess.Write)) return false;
-		return true;
+		if (specificAccess.HasValue) {
+			var access = specificAccess.Value;
+
+			if (access.HasFlag(FileAccess.Read)) {
+				if (!info.Exists) return false;
+			}
+
+			if (access.HasFlag(FileAccess.Write)) {
+				if (info.IsReadOnly) return false;
+			}
+
+			return true;
+		}
+		else 
+			return info.Exists;
 	}
 
-	protected override bool CheckDirectoryExists(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		var info = new DirectoryInfo(ResolveToAbsolute(path));
 		if (!info.Exists) return false;
 		return true;
