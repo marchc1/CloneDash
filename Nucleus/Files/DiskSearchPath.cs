@@ -34,7 +34,6 @@ public class DiskSearchPath : SearchPath
 	}
 
 	public override bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
-		Debug.Assert(path != "config.cfg");
 		if (path == null) return false;
 		var absPath = ResolveToAbsolute(path);
 
