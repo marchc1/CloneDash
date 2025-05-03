@@ -6,3 +6,4 @@ Nucleus.Testbed/*
 NucleusRenderPipelineRefactorTest/*
 ___TempBMS.bms
 Nucleus.ModelEditor/Properties/launchSettings.json
+*.DS_Store
