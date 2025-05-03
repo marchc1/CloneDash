@@ -14,7 +14,7 @@ public abstract class SearchPath
 	/// <param name="specificAccess"></param>
 	/// <param name="specificMode"></param>
 	/// <returns></returns>
-	public abstract bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
+	public abstract bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode);
 	protected abstract bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null);
 	/// <summary>
 	/// Actually opens a stream. Note: The implementer is responsible for making sure that <see cref="CheckFile(string, FileAccess?, FileMode?)"/> returns
@@ -42,7 +42,7 @@ public abstract class SearchPath
 	/// </summary>
 	/// <param name="path"></param>
 	/// <returns></returns>
-	public bool Exists(string path) => CheckFile(path);
+	public bool Exists(string path) => CheckFile(path, null, null);
 	/// <summary>
 	/// Can the path be read?
 	/// <br/><b>Note:</b> A macro to <see cref="CheckFile"/> with <see cref="FileAccess.Read"/> and <see cref="FileMode.Open"/>.
@@ -59,7 +59,7 @@ public abstract class SearchPath
 	public bool CanWrite(string path) => CheckFile(path, FileAccess.Write, FileMode.Create);
 
 	public Stream? Open(string path, FileAccess access, FileMode open) {
-		if (!CheckFile(path))
+		if (!CheckFile(path, access, open))
 			return null;
 
 		var stream = OnOpen(path, access, open);

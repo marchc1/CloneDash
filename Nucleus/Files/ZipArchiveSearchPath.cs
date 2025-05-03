@@ -17,7 +17,7 @@ public class ZipArchiveSearchPath : SearchPath
 
 	private string FullNameOf(ZipArchiveEntry entry) => entry.FullName.Replace("\\", "/");
 
-	public override bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode) {
 		return archive.Entries.FirstOrDefault(x => FullNameOf(x) == path) != null;
 	}
 

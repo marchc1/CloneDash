@@ -33,7 +33,7 @@ public class DiskSearchPath : SearchPath
 		return Path.GetRelativePath(RootDirectory, absPath);
 	}
 
-	public override bool CheckFile(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode) {
 		if (path == null) return false;
 		var absPath = ResolveToAbsolute(path);
 
