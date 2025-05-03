@@ -109,10 +109,7 @@ public unsafe class OSWindow
 		Mouse = new(this);
 	}
 	public void SetupGL() {
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
-
-		glctx = SDL3.SDL_GL_CreateContext(handle);
+		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 		SDL3.SDL_GL_SetSwapInterval(0);
 
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
@@ -135,6 +132,10 @@ public unsafe class OSWindow
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
+
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
+		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
 		windowLookup_id2window[window.windowID] = window;
@@ -969,7 +970,7 @@ public static unsafe class OS
 
 		if (!SDL3.SDL_Init(
 			SDL_InitFlags.SDL_INIT_AUDIO |
-			SDL_InitFlags.SDL_INIT_CAMERA |
+			//SDL_InitFlags.SDL_INIT_CAMERA |
 			SDL_InitFlags.SDL_INIT_EVENTS |
 			SDL_InitFlags.SDL_INIT_GAMEPAD |
 			SDL_InitFlags.SDL_INIT_HAPTIC |

@@ -47,7 +47,7 @@ namespace CloneDash
 			}
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Build Catalog")) {
-				Catalog = new(Path.Combine(WhereIsMuseDashInstalled, "MuseDash_Data/StreamingAssets/aa/catalog.json"));
+				Catalog = new(Path.Combine(WhereIsMuseDashDataFolder, "StreamingAssets/aa/catalog.json"));
 				Bundles = new(Catalog);
 			}
 			// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready

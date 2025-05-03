@@ -10,6 +10,7 @@ namespace CloneDash
     {
         public const uint MUSEDASH_APPID = 774171;
         public static string? WhereIsMuseDashInstalled { get; set; } = null;
+        public static string? WhereIsMuseDashDataFolder { get; set; } = null;
         public static bool IsMuseDashInstalled => WhereIsMuseDashInstalled != null;
     }
 }

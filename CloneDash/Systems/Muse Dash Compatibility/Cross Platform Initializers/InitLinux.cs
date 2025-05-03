@@ -32,6 +32,7 @@ namespace CloneDash
             if (!musedash_installed)
                 return MDCompatLayerInitResult.MuseDashNotInstalled;
             WhereIsMuseDashInstalled = musedash_installdir;
+            WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "MuseDash_Data");
 
             // If installed, load noteinfo.json for BMS references
             // The bundle is named globalconfigs_assets_notedatamananger
