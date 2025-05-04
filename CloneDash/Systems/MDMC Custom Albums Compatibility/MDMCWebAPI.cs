@@ -215,11 +215,11 @@ namespace CloneDash.Systems.CustomAlbums
 			var id = ID;
 
 			ThreadSystem.SpawnBackgroundWorker(async () => {
+				Directory.CreateDirectory(Path.GetDirectoryName(filename));
 				using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
 					var progress = new checkProgressTemp();
 					progress.id = id;
 
-					Directory.CreateDirectory(Path.GetDirectoryName(filename));
 					await MDMCWebAPI.Http.DownloadDataAsync($"https://api.mdmc.moe/v2/charts/{id}/download", fileOut, progress);
 
 					MainThread.RunASAP(() => {
