@@ -1,4 +1,5 @@
 ﻿using CloneDash.Data;
+using CloneDash.Game;
 using CloneDash.Game.Statistics;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
@@ -66,6 +67,7 @@ namespace CloneDash.Levels
 			back.Size = new(.2f);
 			back.Text = "Main Menu";
 			back.Dock = Dock.Right;
+			back.MouseReleaseEvent += (_, _, _) => EngineCore.LoadLevel(new CD_MainMenu());
 		}
 
 		private void TempPanel_PaintOverride(Element self, float width, float height) {
