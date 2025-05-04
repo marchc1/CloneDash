@@ -52,10 +52,10 @@ public partial struct Color
 
     public Color(int r, int g, int b, int a)
     {
-        this.R = Convert.ToByte(r);
-        this.G = Convert.ToByte(g);
-        this.B = Convert.ToByte(b);
-        this.A = Convert.ToByte(a);
+        this.R = Convert.ToByte(Math.Clamp(r, 0, 255));
+        this.G = Convert.ToByte(Math.Clamp(g, 0, 255));
+        this.B = Convert.ToByte(Math.Clamp(b, 0, 255));
+        this.A = Convert.ToByte(Math.Clamp(a, 0, 255));
     }
 
 	// Helper initializers so you dont have to specify everything
