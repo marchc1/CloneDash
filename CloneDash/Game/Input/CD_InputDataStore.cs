@@ -67,6 +67,7 @@ public static class CD_InputSettings
 			if (key.Value == action)
 				yield return KeyboardLayout.USA.FromInt(key.Key);
 	}
+
 	public static IEnumerable<MouseButton> GetMouseButtonsOfAction(CD_InputAction action) {
 		foreach (var btn in data.MouseActions)
 			if (btn.Value == action)
