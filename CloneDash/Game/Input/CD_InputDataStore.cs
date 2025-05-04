@@ -29,6 +29,8 @@ public class CD_InputDataStore {
 		{ MouseButton.MouseRight.Button, CD_InputAction.AirAttack },
 		{ MouseButton.MouseLeft.Button, CD_InputAction.GroundAttack }
 	};
+	public double VisualOffset;
+	public double JudgementOffset;
 	public bool ManualFever = false;
 }
 
