@@ -65,7 +65,8 @@ namespace CloneDash
 				serializedBytes = [];
 
 				for (int i = 0, n = (int)monobehavior.reader.BaseStream.Length; i < n; i++) {
-					if (
+					if ( // This byte pattern matches the OdinSerialized data, faster than AssetStudio's methods since we know the starting data
+						 // Hopefully this doesn't break
 						monobehavior.reader.ReadByte() == 1 &&
 						monobehavior.reader.ReadByte() == 1 &&
 						monobehavior.reader.ReadByte() == 11 &&
