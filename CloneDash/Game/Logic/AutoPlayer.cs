@@ -68,54 +68,60 @@ namespace CloneDash.Game.Logic
 			ents.Sort((x, y) => x.DistanceToHit.CompareTo(y.DistanceToHit));
 
 			// Find the closest interactive entity that hasnt been passed
-			var ent = ents.FirstOrDefault(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
+			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
+			if (entIndex != -1) {
+				while (entIndex < ents.Count) {
+					var ent = ents[entIndex];
+					entIndex++;
 
-			// Is an entity visible?
-			if (ent != default) {
-				var pathway = level.GetPathway(ent);
-				switch (ent.Interactivity) {
-					// Same pathway system, either hit or just run into
-					case EntityInteractivity.SamePath:
-					case EntityInteractivity.Hit:
-					case EntityInteractivity.Sustain:
-						if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, 0.001f)) {
-							if (ent.Pathway == PathwaySide.Top)
-								input.TopClicked = 1;
-							else {
-								if (ent.Interactivity == EntityInteractivity.SamePath) {
-									if (level.InAir || level.IsSustaining())
-										input.BottomClicked = 1;
+					// Is an entity visible?
+					if (ent != default) {
+						var pathway = level.GetPathway(ent);
+						switch (ent.Interactivity) {
+							// Same pathway system, either hit or just run into
+							case EntityInteractivity.SamePath:
+							case EntityInteractivity.Hit:
+							case EntityInteractivity.Sustain:
+								if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, 0.001f)) {
+									if (ent.Pathway == PathwaySide.Top)
+										input.TopClicked += 1;
+									else {
+										if (ent.Interactivity == EntityInteractivity.SamePath) {
+											if (level.InAir || level.IsSustaining())
+												input.BottomClicked += 1;
+										}
+										else
+											input.BottomClicked += 1;
+									}
+
+									// Special logic for sustain beams, hold them in memory so they can continue to be held
+									if (ent.Type == EntityType.SustainBeam) {
+										CurrentSustains[ent.Pathway] = (SustainBeam)ent;
+									}
+
+									// Record the entity as passed
+									Passed.Add(ent);
 								}
-								else
-									input.BottomClicked = 1;
-							}
-
-							// Special logic for sustain beams, hold them in memory so they can continue to be held
-							if (ent.Type == EntityType.SustainBeam) {
-								CurrentSustains[ent.Pathway] = (SustainBeam)ent;
-							}
-
-							// Record the entity as passed
-							Passed.Add(ent);
+								break;
+							// Entities that need to be avoided
+							case EntityInteractivity.Avoid:
+								if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, -0.001f)) {
+									if (level.Pathway == ent.Pathway) {
+										// The entity needs to be avoided, so pick the opposite side the entity is on
+										if (ent.Pathway == PathwaySide.Bottom)
+											input.TopClicked += 1;
+										else
+											input.BottomClicked += 1;
+									}
+									// Record the entity as passed
+									Passed.Add(ent);
+								}
+								break;
+							default:
+								Console.WriteLine($"Can't handle {ent.Interactivity}! Write functionality for this entity's interactivity logic!");
+								break;
 						}
-						break;
-					// Entities that need to be avoided
-					case EntityInteractivity.Avoid:
-						if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, -0.001f)) {
-							if (level.Pathway == ent.Pathway) {
-								// The entity needs to be avoided, so pick the opposite side the entity is on
-								if (ent.Pathway == PathwaySide.Bottom)
-									input.TopClicked = 1;
-								else
-									input.BottomClicked = 1;
-							}
-							// Record the entity as passed
-							Passed.Add(ent);
-						}
-						break;
-					default:
-						Console.WriteLine($"Can't handle {ent.Interactivity}! Write functionality for this entity's interactivity logic!");
-						break;
+					}
 				}
 			}
 

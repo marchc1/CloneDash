@@ -11,7 +11,7 @@ namespace CloneDash.Game.Entities
 	public class SustainBeam : CD_BaseEnemy
 	{
 		public SustainBeam() : base(EntityType.SustainBeam) {
-			Interactivity = EntityInteractivity.Hit;
+			Interactivity = EntityInteractivity.Sustain;
 			DoesDamagePlayer = true;
 		}
 		public override void Initialize() {

@@ -825,6 +825,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						PathwaySide pathCurrentCharacter = Pathway;
 						if (pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
+
 						}
 					}
 					break;
@@ -943,7 +944,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
-					if (Game.Pathway.ComparePathwayType(entity.Pathway, pathway)) {
+					bool isValidHit = entity.Interactivity == EntityInteractivity.Hit ? !entity.Dead : !(entity as SustainBeam).HeldState;
+					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, pathway)) {
 						double distance = entity.DistanceToHit;
 						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
 						double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
@@ -951,7 +953,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 							var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
 							LastPollResult = PollResult.Create(entity, distance, greatness);
 							return LastPollResult;
-
 						}
 					}
 					break;
@@ -1670,7 +1671,15 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <summary>
 	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
 	/// </summary>
-	public PathwaySide Pathway => InAir ? PathwaySide.Top : PathwaySide.Bottom;
+	public PathwaySide Pathway {
+		get {
+			bool topHeld = HoldingTopPathwaySustain != null, bottomHeld = HoldingBottomPathwaySustain != null;
+			if (topHeld && bottomHeld) return PathwaySide.Both;
+			if (topHeld) return PathwaySide.Top;
+			if (bottomHeld) return PathwaySide.Bottom;
+			return InAir ? PathwaySide.Top : PathwaySide.Bottom;
+		}
+	}
 
 	public bool CanHit(PathwaySide pathway) {
 		if (IsSustaining(pathway))
