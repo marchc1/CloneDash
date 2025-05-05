@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game.Entities;
+using CloneDash.Settings;
 using Nucleus.Models.Runtime;
 using System.Diagnostics.CodeAnalysis;
 using static CloneDash.Modding.Descriptors.SceneDescriptor;
@@ -66,7 +67,7 @@ public class CD_BaseEnemy : CD_BaseMEntity
 	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
 	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
 
-	public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time) * -1);
+	public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time) * -1) + InputSettings.VisualOffset;
 	private double tth => HitTime - ShowTime; // debugging, places enemy at exact frame position
 
 	public virtual void DetermineAnimationPlayback() {

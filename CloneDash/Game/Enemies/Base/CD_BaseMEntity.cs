@@ -1,6 +1,7 @@
 ﻿using CloneDash.Data;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -139,10 +140,15 @@ namespace CloneDash.Game
 		/// When does this entity first appear on the screen, in seconds
 		/// </summary>
 		public double ShowTime { get; set; }
+
+		private double hittime = 0;
 		/// <summary>
 		/// When does this entity need to be hit, in seconds
 		/// </summary>
-		public double HitTime { get; set; }
+		public double HitTime {
+			get => hittime + InputSettings.JudgementOffset;
+			set => hittime = value;
+		}
 		/// <summary>
 		/// How long does this entity need to be hit/sustained, in seconds
 		/// </summary>

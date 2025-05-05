@@ -2,6 +2,9 @@
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Core;
+using Nucleus.Extensions;
+using Nucleus.Types;
 using Nucleus.UI;
 
 namespace CloneDash.UI;
@@ -83,17 +86,18 @@ public class SettingsPanel : ScrollPanel
 		return back.Bottom;
 	}
 
-	public NumSlider Number(ConVar cv, string name) {
+	public NumSlider Number(ConVar cv, string name, string format) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
 		slider.Dock = Dock.Fill;
 		slider.MinimumValue = cv.Minimum;
 		slider.MaximumValue = cv.Maximum;
-		slider.TextFormat = "{0:P0}";
+		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
 		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
 		return slider;
 	}
+	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
 }
 
 public class SettingsEditor : Panel, IMainMenuPanel
@@ -150,56 +154,86 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 
 	private void BuildAudioPanel(SettingsPanel panel) {
-		panel.Number(SoundManagement.snd_volume, "Sound Volume");
-		panel.Number(AudioSettings.clonedash_music_volume, "Music Volume");
-		panel.Number(AudioSettings.clonedash_voice_volume, "Voice Volume");
-		panel.Number(AudioSettings.clonedash_hitsound_volume, "Hit-sound Volume");
+		panel.PercentageNumber(SoundManagement.snd_volume, "Sound Volume");
+		panel.PercentageNumber(AudioSettings.clonedash_music_volume, "Music Volume");
+		panel.PercentageNumber(AudioSettings.clonedash_voice_volume, "Voice Volume");
+		panel.PercentageNumber(AudioSettings.clonedash_hitsound_volume, "Hit-sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) {
 
 	}
 
-	public void OpenOffsetWizard(OffsetWizardType type) {
-		var offsetWizard = Level.As<CD_MainMenu>().PushActiveElement(UI.Add<OffsetWizard>());
-		offsetWizard.Type = type;
+	public void OpenOffsetWizard() {
+		var offsetWizard = Level.As<CD_MainMenu>().PushActiveElement(UI.Add<JudgementOffsetWizard>());
 	}
-	public Button OffsetWizardCreator(Button btn, OffsetWizardType type) {
+	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
-		btn.Size = new(0.5f);
-		btn.Text = type == OffsetWizardType.Judgement ? "Judgement Offset Wizard" : "Visual Offset Wizard";
+		btn.Dock = Dock.Fill;
+		btn.Text = "Judgement Offset Wizard";
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
-		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard(type);
+		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard();
 
 		return btn;
 	}
 	private void BuildInputPanel(SettingsPanel panel) {
-		var offsets = panel.Blank("Offsets", "Input offset wizards.");
-		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>(), OffsetWizardType.Judgement);
-		var visBtn = OffsetWizardCreator(offsets.Add<Button>(), OffsetWizardType.Visual);
+		var offsets = panel.Blank("Wizards", "Input offset wizards.");
+		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
-		judgeBtn.Dock = Dock.Left;
-		visBtn.Dock = Dock.Right;
+		var judgementSlider = panel.Number(InputSettings.clonedash_judgementoffset, "Judgement Offset", "{0:0}");
+		var visualSlider = panel.Number(InputSettings.clonedash_visualoffset, "Visual Offset", "{0:0}");
 	}
 }
 
-public enum OffsetWizardType
+public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
-	Judgement,
-	Visual
-}
-
-public class OffsetWizard : Panel, IMainMenuPanel
-{
-	public OffsetWizardType Type;
 	public string GetName() => "Offset Wizard";
 	public void OnHidden() { }
 	public void OnShown() { }
 
 	protected override void Initialize() {
 		base.Initialize();
+
+		track = Level.Sounds.LoadMusicFromFile("offset_cowbell.wav", true);
+		BorderSize = 0;
+	}
+
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		track.Update();
+	}
+
+	MusicTrack track;
+
+	public float CalculateJudgementOffset(float localToPlayhead) {
+		var mld2 = track.Length / 2f;
+		return (localToPlayhead > mld2 ? ((track.Length - localToPlayhead) * -1) : localToPlayhead) / mld2;
 	}
 
 	public override void Paint(float width, float height) {
+		BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
 		base.Paint(width, height);
+
+		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
+		var h = height / 2;
+		Graphics2D.DrawRectangle(0, (height / 2) - (h / 2), width, h);
+
+		var offset = InputSettings.JudgementOffset;
+		var midpoint = width / 2f;
+
+		Graphics2D.SetDrawColor(255, 255, 255);
+		var musicPlayhead = midpoint + (CalculateJudgementOffset((float)offset) * (width / 2));
+		var offsetPlayhead = midpoint + (CalculateJudgementOffset(track.Playhead) * (width / 2));
+		var padding = h * 0.25f;
+		var ls = (height / 2) - (h / 2) + padding;
+		Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - (padding * 2)), height / 100f);
+
+		var triangleSize = height / 26f;
+		Graphics2D.SetDrawColor(200, 220, 255, 150);
+		var startY = h - (h / 2);
+		var endY = (h - (h / 2)) + h;
+		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
+		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
+		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
 	}
 }

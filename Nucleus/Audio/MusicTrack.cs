@@ -57,6 +57,7 @@ namespace Nucleus.Audio
 			__isMemoryBound = memoryBound;
 			Raylib.PlayMusicStream(underlying);
 			Raylib.AttachAudioStreamProcessor(underlying.Stream, &FUCKFUCKFUCKFUCK);
+			recalculateVolumeMultiplier();
 		}
 		private bool disposedValue;
 		public bool IsValid() => !disposedValue;
