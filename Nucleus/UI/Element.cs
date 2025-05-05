@@ -50,6 +50,7 @@ namespace Nucleus.UI
 
 		private Vector2F _size = new(32, 32);
 		private bool _dynamicallySized = false;
+		private bool _dynamicallySizedText = false;
 		public bool DynamicallySized {
 			get => _dynamicallySized;
 			set {
@@ -59,6 +60,7 @@ namespace Nucleus.UI
 				InvalidateChildren(recursive: true, self: true);
 			}
 		}
+
 		public Vector2F Size {
 			get { return _size; }
 			set {
@@ -770,8 +772,20 @@ namespace Nucleus.UI
 		public delegate void TextChangedDelegate(Element self, string oldText, string newText);
 		public event TextChangedDelegate? TextChangedEvent;
 
+		private float __textSize = 18;
 		public string Font { get; set; } = "Noto Sans";
-		public float TextSize { set; get; } = 18;
+		public float TextSize {
+			get {
+				if (!DynamicallySized)
+					return __textSize;
+
+				var heightRatio = EngineCore.GetWindowHeight() / 900f;
+				return Math.Clamp(__textSize * heightRatio, 8, 160);
+			}
+			set {
+				__textSize = value;
+			}
+		}
 
 		public bool Clipping { get; set; } = true;
 		#endregion
