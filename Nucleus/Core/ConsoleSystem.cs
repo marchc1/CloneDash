@@ -365,6 +365,13 @@ namespace Nucleus
 		public void SetValue(int i) => Update(Convert.ToString(i, CultureInfo.InvariantCulture));
 		public void SetValue(double d) => Update(Convert.ToString(d, CultureInfo.InvariantCulture));
 		public void SetValue(bool b) => Update(b ? "1" : "0");
+
+		public static ConVar Register(string name, string defaultValue) => Register(name, defaultValue, ConsoleFlags.None, "");
+		public static ConVar Register(string name, string defaultValue, ConsoleFlags flags) => Register(name, defaultValue, flags, "");
+		public static ConVar Register(string name, double defaultValue) => Register(name, $"{defaultValue}", ConsoleFlags.None, "");
+		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags) => Register(name, $"{defaultValue}", flags, "");
+		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags, double min, double max) => Register(name, $"{defaultValue}", flags, "", min, max);
+
 		public static ConVar Register(
 			string name,
 			string defaultValue,
