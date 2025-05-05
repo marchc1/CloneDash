@@ -1000,6 +1000,7 @@ public static unsafe class OS
 		))
 			return false;
 
+		if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8)) return false;
 		var version = Rlgl.GetVersion();
 		switch (version) {
 			case GlVersion.OPENGL_21:
