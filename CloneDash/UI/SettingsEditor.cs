@@ -76,7 +76,7 @@ public class SettingsPanel : ScrollPanel
 		return (top, panel, name, desc);
 	}
 
-	public void Number(ConVar cv, string name) {
+	public NumSlider Number(ConVar cv, string name) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
 		slider.Dock = Dock.Fill;
@@ -85,6 +85,7 @@ public class SettingsPanel : ScrollPanel
 		slider.TextFormat = "{0:P0}";
 		slider.Value = cv.GetDouble();
 		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
+		return slider;
 	}
 }
 
@@ -145,6 +146,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	private void BuildAudioPanel(SettingsPanel panel) {
 		panel.Number(SoundManagement.snd_volume, "Sound Volume");
+		panel.Number(AudioSettings.clonedash_music_volume, "Music Volume");
+		panel.Number(AudioSettings.clonedash_voice_volume, "Voice Volume");
+		panel.Number(AudioSettings.clonedash_hitsound_volume, "Hit-sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) {
 
