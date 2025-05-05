@@ -67,11 +67,15 @@ public class CD_BaseEnemy : CD_BaseMEntity
 	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
 	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
 
-	public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time) * -1);
+	public double AnimationTime => Math.Max(0, (ShowTime - GetConductor().Time - InputSettings.VisualOffset) * -1);
 	private double tth => HitTime - ShowTime; // debugging, places enemy at exact frame position
 
 	public virtual void DetermineAnimationPlayback() {
 		ApproachAnimation?.Apply(Model, AnimationTime);
+	}
+
+	public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
+		return base.VisTest(gamewidth, gameheight, xPosition);
 	}
 
 	public void RenderHeartMount() {

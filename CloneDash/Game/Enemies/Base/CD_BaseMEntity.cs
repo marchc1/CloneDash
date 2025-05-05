@@ -280,12 +280,12 @@ namespace CloneDash.Game
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be hit. A negative value means that the player hit too late, a positive means the player hit too early.
 		/// </summary>
-		public double DistanceToHit => (HitTime - Level.As<CD_GameLevel>().Conductor.Time);
+		public double DistanceToHit => (HitTime - Level.As<CD_GameLevel>().Conductor.Time) + InputSettings.JudgementOffset;
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
 		/// </summary>
-		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time;
+		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time + InputSettings.JudgementOffset;
 
 		/// <summary>
 		/// Where is the entity in game-space?
@@ -307,7 +307,7 @@ namespace CloneDash.Game
 		public bool CheckVisTest(FrameState frameState) {
 			var level = Level.As<CD_GameLevel>();
 
-			XPos = XPosFromTimeOffset();
+			XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
 			float w = frameState.WindowWidth, h = frameState.WindowHeight;
 
 			var ret = VisTest(w, h, (float)XPos);
@@ -325,7 +325,7 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= ShowTime;
+			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (ShowTime - InputSettings.VisualOffset);
 		}
 		
 		/// <summary>

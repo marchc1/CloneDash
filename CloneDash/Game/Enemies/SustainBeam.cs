@@ -1,4 +1,5 @@
 ﻿
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -55,7 +56,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return base.VisTest(gamewidth, gameheight, xPosition);
+			return NMath.InRange(DistanceToHit - InputSettings.VisualOffset, -1, 1);
 		}
 
 		protected override void OnReward() {
@@ -73,6 +74,7 @@ namespace CloneDash.Game.Entities
 		public float StartPosition { get; private set; }
 		public float RotationDegsPerSecond { get; set; } = 200;
 		private void drawStartQuad(CD_GameLevel game, ref FrameState fs, float x) {
+			x -= (float)InputSettings.VisualOffset;
 			var tex = start;
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
 			var ypos = game.GetPathway(Pathway).Position.Y;
@@ -80,6 +82,7 @@ namespace CloneDash.Game.Entities
 			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White);
 		}
 		private void drawEndQuad(CD_GameLevel game, ref FrameState fs, float x) {
+			x -= (float)InputSettings.VisualOffset;
 			var tex = end;
 			var xpos = (float)XPosFromTimeOffset(x);
 			var ypos = game.GetPathway(Pathway).Position.Y;
@@ -88,9 +91,10 @@ namespace CloneDash.Game.Entities
 		}
 
 		public void drawScrollQuad(CD_GameLevel game, Texture tex, ref FrameState fs, float xOffset, float yOffset) {
-			var xStart = (float)XPosFromTimeOffset(0);
+			float voffset = -(float)InputSettings.VisualOffset;
+			var xStart = (float)XPosFromTimeOffset(voffset);
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
-			var xEnd = (float)XPosFromTimeOffset((float)Length);
+			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
 			var ypos = game.GetPathway(Pathway).Position.Y + yOffset;
 			var height = tex.Height;
 
