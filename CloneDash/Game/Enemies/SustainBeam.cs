@@ -129,7 +129,7 @@ namespace CloneDash.Game.Entities
 
 			var game = Level.As<CD_GameLevel>();
 			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
-			Logs.Info(DidPunishPlayer);
+
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
 			var time = game.Conductor.Time * 5;
