@@ -56,7 +56,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return NMath.InRange(DistanceToHit - InputSettings.VisualOffset, -1, 1);
+			return NMath.InRange(DistanceToHit - InputSettings.VisualOffset, -2 - Length, 2);
 		}
 
 		protected override void OnReward() {
