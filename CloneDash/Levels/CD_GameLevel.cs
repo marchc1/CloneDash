@@ -44,7 +44,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		else level.SeekTo(d.Value);
 	});
 
-	public static ConCommand clonedash_openmdlevel = ConCommand.Register(nameof(clonedash_openmdlevel), (_, args) => {
+
+	private static void clonedash_openmdlevel_execute(ConCommand cmd, ConCommandArguments args) {
 		var md_level = args.GetString(0);
 		if (md_level == null) {
 			Logs.Warn("Provide a name.");
@@ -67,7 +68,12 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		}
 
 		CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
-	});
+	}
+	private static void clonedash_openmdlevel_autocomplete(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns) {
+
+	}
+
+	public static ConCommand clonedash_openmdlevel = ConCommand.Register(nameof(clonedash_openmdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
 
 	public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
 		Vector2F winSize;
@@ -834,7 +840,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					break;
 				case EntityInteractivity.Avoid:
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
-					Logs.Info(entity.DistanceToHit);
 					if (Pathway == entity.Pathway && entity.DistanceToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						entity.DamagePlayer();
