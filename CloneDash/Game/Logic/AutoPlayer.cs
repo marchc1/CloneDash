@@ -129,12 +129,12 @@ namespace CloneDash.Game.Logic
 			// Sustain holding logic
 			foreach (var kvp in CurrentSustains) {
 				// Is there a sustain in progress on this pathway?
-				if (kvp.Value.TryPop(out SustainBeam? sustain)) {
+				if (kvp.Value.TryPeek(out SustainBeam? sustain)) {
 					bool holding = false;
 
 					if (sustain.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
 						holding = false;
-						CurrentSustains[kvp.Key] = null;
+						kvp.Value.Pop();
 						//Logs.Debug("Sustain stopped because it is complete");
 					}
 					else // Keep holding the button otherwise
