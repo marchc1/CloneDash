@@ -347,7 +347,7 @@ namespace CloneDash
 		Hard = 2,
 		Master = 3,
 
-		Hidden = 4,
+		Supreme = 4,
 		Touhou = 5
 	}
 }

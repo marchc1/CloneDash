@@ -399,7 +399,7 @@ public class CD_MainMenu : Level
 		var d1 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Easy, song.Difficulty1);
 		var d2 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Hard, song.Difficulty2);
 		var d3 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Master, song.Difficulty3);
-		var d4 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Hidden, song.Difficulty4);
+		var d4 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Supreme, song.Difficulty4);
 		var d5 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Touhou, song.Difficulty5);
 
 		height = (d1 == null ? 0 : 80) + (d2 == null ? 0 : 80) + (d3 == null ? 0 : 80) + (d4 == null ? 0 : 80) + (d5 == null ? 0 : 80);
@@ -457,7 +457,7 @@ public class CD_MainMenu : Level
 			MuseDashDifficulty.Easy => "Easy",
 			MuseDashDifficulty.Hard => "Hard",
 			MuseDashDifficulty.Master => "Master",
-			MuseDashDifficulty.Hidden => "Hidden",
+			MuseDashDifficulty.Supreme => "Supreme",
 			MuseDashDifficulty.Touhou => "Touhou",
 			_ => throw new Exception($"Unsupported difficulty level '{difficulty}'")
 		};
@@ -465,7 +465,7 @@ public class CD_MainMenu : Level
 			MuseDashDifficulty.Easy => new Color(88, 199, 76, 60),
 			MuseDashDifficulty.Hard => new Color(109, 196, 199, 60),
 			MuseDashDifficulty.Master => new Color(188, 95, 184, 60),
-			MuseDashDifficulty.Hidden => new Color(199, 35, 35, 60),
+			MuseDashDifficulty.Supreme => new Color(199, 35, 35, 60),
 			MuseDashDifficulty.Touhou => new Color(109, 103, 194, 60),
 			_ => play.BackgroundColor
 		};
