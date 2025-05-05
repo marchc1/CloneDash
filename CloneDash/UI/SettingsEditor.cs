@@ -20,6 +20,8 @@ public class SettingsCategory : Button
 		Panel.Dock = Dock.Fill;
 
 		TextAlignment = Nucleus.Types.Anchor.CenterLeft; ;
+		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
+		TextSize = 22;
 
 		Add(out Icon);
 		BorderSize = 0;
@@ -76,6 +78,11 @@ public class SettingsPanel : ScrollPanel
 		return (top, panel, name, desc);
 	}
 
+	public Panel Blank(string name, string description) {
+		var back = buildBackPanel(name, description);
+		return back.Bottom;
+	}
+
 	public NumSlider Number(ConVar cv, string name) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
@@ -109,7 +116,6 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.Dock = Dock.Top;
 		category.DynamicallySized = true;
 		category.Size = new(0.06f);
-		category.TextSize = 32;
 		if (icon != null)
 			category.Icon.Image = Textures.LoadTextureFromFile(icon);
 
@@ -141,7 +147,6 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
 		BuildInputPanel(Category("Input", "oxygen/input-keyboard.png"));
-		BuildOffsetsPanel(Category("Offsets", "ui/offsets.png"));
 	}
 
 	private void BuildAudioPanel(SettingsPanel panel) {
@@ -153,10 +158,48 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	private void BuildDisplayPanel(SettingsPanel panel) {
 
 	}
-	private void BuildInputPanel(SettingsPanel panel) {
 
+	public void OpenOffsetWizard(OffsetWizardType type) {
+		var offsetWizard = Level.As<CD_MainMenu>().PushActiveElement(UI.Add<OffsetWizard>());
+		offsetWizard.Type = type;
 	}
-	private void BuildOffsetsPanel(SettingsPanel panel) {
+	public Button OffsetWizardCreator(Button btn, OffsetWizardType type) {
+		btn.DynamicallySized = true;
+		btn.Size = new(0.5f);
+		btn.Text = type == OffsetWizardType.Judgement ? "Judgement Offset Wizard" : "Visual Offset Wizard";
+		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
+		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard(type);
 
+		return btn;
+	}
+	private void BuildInputPanel(SettingsPanel panel) {
+		var offsets = panel.Blank("Offsets", "Input offset wizards.");
+		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>(), OffsetWizardType.Judgement);
+		var visBtn = OffsetWizardCreator(offsets.Add<Button>(), OffsetWizardType.Visual);
+
+		judgeBtn.Dock = Dock.Left;
+		visBtn.Dock = Dock.Right;
+	}
+}
+
+public enum OffsetWizardType
+{
+	Judgement,
+	Visual
+}
+
+public class OffsetWizard : Panel, IMainMenuPanel
+{
+	public OffsetWizardType Type;
+	public string GetName() => "Offset Wizard";
+	public void OnHidden() { }
+	public void OnShown() { }
+
+	protected override void Initialize() {
+		base.Initialize();
+	}
+
+	public override void Paint(float width, float height) {
+		base.Paint(width, height);
 	}
 }

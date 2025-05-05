@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus;
+using Nucleus.Core;
 using Nucleus.Input;
 
 namespace CloneDash.Settings;
@@ -37,6 +38,10 @@ public class InputDataStore
 public static class InputSettings
 {
 	private static InputDataStore data;
+
+	public static ConVar clonedash_visualoffset = ConVar.Register(nameof(clonedash_visualoffset), 0, ConsoleFlags.Saved);
+	public static ConVar clonedash_judgementoffset = ConVar.Register(nameof(clonedash_judgementoffset), 0, ConsoleFlags.Saved);
+
 
 	static InputSettings() {
 		data = Host.GetDataStore<InputDataStore>("CloneDash.InputSettings") ?? new();
@@ -98,4 +103,7 @@ public static class InputSettings
 			Store();
 		}
 	}
+
+	public static double VisualOffset => clonedash_visualoffset.GetDouble();
+	public static double JudgementOffset => clonedash_judgementoffset.GetDouble();
 }
