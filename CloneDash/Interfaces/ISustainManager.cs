@@ -43,12 +43,16 @@ public class StackBasedSustainManager : ISustainManager
 		callbackToLevel(sustain, prevCount);
 	}
 	public void FailSustainBeam(SustainBeam sustain) {
+		if (!sustain.HeldState) return;
+
 		var stk = StackOf(sustain);
 		var prevCount = stk.Count;
 		stk.Pop();
 		callbackToLevel(sustain, prevCount);
 	}
 	public void CompleteSustainBeam(SustainBeam sustain) {
+		if (!sustain.HeldState) return;
+
 		var stk = StackOf(sustain);
 		var prevCount = stk.Count;
 		stk.Pop();

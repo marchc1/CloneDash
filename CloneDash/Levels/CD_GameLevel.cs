@@ -810,6 +810,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		foreach (var entity in VisibleEntities) {
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
+				case EntityInteractivity.Sustain:
 					if (!entity.Dead) {
 						PathwaySide currentPathway = Pathway;
 
