@@ -85,6 +85,8 @@ namespace Nucleus.UI
 			Text = "";
 
 			KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
+			DynamicallySized = true;
+			TextSize = 20;
 		}
 		public void SetText(string text) {
 			Text = text;
