@@ -833,6 +833,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					break;
 				case EntityInteractivity.Avoid:
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
+					Logs.Info(entity.DistanceToHit);
 					if (Pathway == entity.Pathway && entity.DistanceToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						entity.DamagePlayer();
@@ -1657,7 +1658,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public PathwaySide Pathway {
 		get {
 			var state = Sustains.GetSustainState();
-			if (state == PathwaySide.None) return PathwaySide.Bottom;
+			if (state == PathwaySide.None) return InAir ? PathwaySide.Top : PathwaySide.Bottom;
 			return state;
 		}
 	}
