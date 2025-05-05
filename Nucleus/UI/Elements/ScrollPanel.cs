@@ -27,6 +27,7 @@ namespace Nucleus.UI
 
 			MainPanel = this.Add<Panel>();
 			MainPanel.Dock = Dock.Fill;
+			MainPanel.DrawPanelBackground = false;
 			MainPanel.PaintOverride += delegate (Element self, float width, float height) {
 
 			};

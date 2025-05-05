@@ -137,7 +137,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
-		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200);
+		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
+			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
+			settings.DrawPanelBackground = false;
+
+		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}
 
