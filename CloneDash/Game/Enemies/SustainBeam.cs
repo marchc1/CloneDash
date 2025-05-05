@@ -1,4 +1,5 @@
 ﻿
+using CloneDash.Animation;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Core;
@@ -79,7 +80,7 @@ namespace CloneDash.Game.Entities
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
 			var ypos = game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White);
+			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
 		}
 		private void drawEndQuad(CD_GameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
@@ -87,9 +88,11 @@ namespace CloneDash.Game.Entities
 			var xpos = (float)XPosFromTimeOffset(x);
 			var ypos = game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White);
+			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
 		}
 
+		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
+		private byte beamAlpha;
 		public void drawScrollQuad(CD_GameLevel game, Texture tex, ref FrameState fs, float xOffset, float yOffset) {
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
@@ -100,7 +103,8 @@ namespace CloneDash.Game.Entities
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
-			Rlgl.Color4ub(255, 255, 255, 255);
+			
+			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
 			var maxLength = (xEnd - xStart) / (tex.Width * 2);
 			var length = maxLength - ((xEnd - xMid) / (tex.Width * 2));
@@ -124,7 +128,8 @@ namespace CloneDash.Game.Entities
 			if (!ShouldDraw) return;
 
 			var game = Level.As<CD_GameLevel>();
-
+			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
+			Logs.Info(DidPunishPlayer);
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
 			var time = game.Conductor.Time * 5;
