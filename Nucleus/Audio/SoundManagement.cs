@@ -196,7 +196,7 @@ namespace Nucleus.Audio
 			}
 		}
 
-		public static ConVar snd_volume = ConVar.Register("snd_volume", "1.0", ConsoleFlags.Saved, "Overall sound volume.", 0, 10f, (cv, o, n) => {
+		public static ConVar snd_volume = ConVar.Register("snd_volume", "1.0", ConsoleFlags.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => {
 			Raylib.SetMasterVolume(n.AsFloat ?? 1);
 		});
 	}

@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
+	public class ScrollMainPanel : Panel;
 	public class ScrollPanel : Panel
 	{
 		public Scrollbar VerticalScrollbar { get; private set; }
 		public Scrollbar HorizontalScrollbar { get; private set; }
-		public Panel MainPanel { get; private set; }
+		public ScrollMainPanel MainPanel { get; private set; }
 
 		protected override void Initialize() {
 			base.Initialize();
@@ -25,7 +26,7 @@ namespace Nucleus.UI
 			HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
 			HorizontalScrollbar.Enabled = true;
 
-			MainPanel = this.Add<Panel>();
+			MainPanel = this.Add<ScrollMainPanel>();
 			MainPanel.Dock = Dock.Fill;
 			MainPanel.DrawPanelBackground = false;
 			MainPanel.PaintOverride += delegate (Element self, float width, float height) {

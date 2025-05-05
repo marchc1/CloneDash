@@ -1,4 +1,7 @@
 ﻿using CloneDash.Game;
+using CloneDash.Settings;
+using Nucleus;
+using Nucleus.Audio;
 using Nucleus.UI;
 
 namespace CloneDash.UI;
@@ -9,8 +12,10 @@ public class SettingsCategory : Button
 	public Panel Icon;
 	protected override void Initialize() {
 		base.Initialize();
+	}
 
-		Parent.Parent.Parent.Add(out Panel);
+	public void Setup(SettingsEditor panel) {
+		panel.Add(out Panel);
 		Panel.Category = this;
 		Panel.Dock = Dock.Fill;
 
@@ -38,6 +43,49 @@ public class SettingsPanel : ScrollPanel
 		base.Initialize();
 		BorderSize = 0;
 	}
+
+	private (Panel Top, Panel Bottom, Label Name, Label Description) buildBackPanel(string nameTxt, string descTxt) {
+		var panel = Add<Panel>();
+		panel.DrawPanelBackground = false;
+		panel.DynamicallySized = true;
+		panel.Dock = Dock.Top;
+		panel.Size = new(0.08f);
+
+		var top = panel.Add<Panel>();
+		top.DynamicallySized = true;
+		top.Size = new(0.5f);
+		top.Dock = Dock.Top;
+		top.DrawPanelBackground = false;
+
+		var name = top.Add<Label>();
+		name.Dock = Dock.Left;
+		name.TextAlignment = Nucleus.Types.Anchor.CenterLeft;
+		name.DynamicallySized = true;
+		name.TextPadding = new(16);
+		name.AutoSize = true;
+		name.TextSize = 24;
+		name.Text = nameTxt;
+
+		var desc = top.Add<Label>();
+		desc.Dock = Dock.Fill;
+		desc.TextAlignment = Nucleus.Types.Anchor.CenterLeft;
+		desc.DynamicallySized = true;
+		desc.TextPadding = new(16);
+		desc.Text = descTxt;
+
+		return (top, panel, name, desc);
+	}
+
+	public void Number(ConVar cv, string name) {
+		var back = buildBackPanel(name, cv.HelpString);
+		var slider = back.Bottom.Add<NumSlider>();
+		slider.Dock = Dock.Fill;
+		slider.MinimumValue = cv.Minimum;
+		slider.MaximumValue = cv.Maximum;
+		slider.TextFormat = "{0:P0}";
+		slider.Value = cv.GetDouble();
+		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
+	}
 }
 
 public class SettingsEditor : Panel, IMainMenuPanel
@@ -52,6 +100,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	public SettingsPanel Category(string name, string? icon = null) {
 		var category = settingCategoryPicker.Add<SettingsCategory>();
+		category.Setup(this);
 		categories.Add(category);
 
 		category.Text = name;
@@ -65,16 +114,18 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		if (activeCategory == null)
 			SelectCategory(category);
-
+		else {
+			category.Panel.Visible = category.Panel.Enabled = false;
+		}
 		return category.Panel;
 	}
 
 	public void SelectCategory(SettingsCategory category) {
 		if (activeCategory != null)
-			activeCategory.Panel.Visible = activeCategory.Pulsing = false;
+			activeCategory.Panel.Visible = activeCategory.Panel.Enabled = activeCategory.Pulsing = false;
 
 		activeCategory = category;
-		category.Panel.Visible = category.Pulsing = true;
+		category.Panel.Visible = category.Panel.Enabled = category.Pulsing = true;
 	}
 
 	protected override void Initialize() {
@@ -93,7 +144,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 
 	private void BuildAudioPanel(SettingsPanel panel) {
-
+		panel.Number(SoundManagement.snd_volume, "Sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) {
 

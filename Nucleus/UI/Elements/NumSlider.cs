@@ -56,11 +56,13 @@ namespace Nucleus.UI
 	public class NumSlider : Textbox, INumSlider
 	{
 		private double _value = 0;
+		private bool firstSet = true;
 		public double Value {
 			get => _value;
 			set {
-				if (_value == value)
+				if (_value == value && !firstSet)
 					return;
+				firstSet = false;
 
 				var oldV = _value;
 				SetValueNoUpdate(value);
@@ -106,6 +108,7 @@ namespace Nucleus.UI
 		int caret = 0;
 		public override void MouseClick(FrameState state, Input.MouseButton button) {
 			KeyboardUnfocus();
+			dragStart = state.Mouse.MousePos;
 		}
 
 		public override void KeyboardFocusGained(bool demanded) {
@@ -143,10 +146,9 @@ namespace Nucleus.UI
 		}
 
 
-
 		Vector2F dragStart;
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
-			if (delta.Length > 2 || didDrag) {
+			if (dragStart.Distance(state.Mouse.MousePos) > 5 || didDrag) {
 				if (!didDrag)
 					dragStart = state.Mouse.MousePos;
 				else
