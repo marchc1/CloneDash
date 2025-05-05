@@ -130,6 +130,15 @@ public static class Filesystem
 				yield return file;
 	}
 
+	public static bool CanOpen(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
+		foreach (var pathObj in GetSearchPathID(pathID)) {
+			if (pathObj.CheckFile(path, access, mode))
+				return true;
+		}
+
+		return false;
+	}
+
 	public static Stream? Open(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			if (pathObj.CheckFile(path, access, mode)) {

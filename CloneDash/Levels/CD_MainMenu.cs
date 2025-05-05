@@ -294,6 +294,7 @@ public class CD_MainMenu : Level
 			if (selector != null) {
 				selector.ExitSheetSelection();
 			}
+
 		};
 
 		var back = levelSelector.Add<Button>();

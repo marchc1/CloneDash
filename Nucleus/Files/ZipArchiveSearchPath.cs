@@ -7,12 +7,15 @@ public class ZipArchiveSearchPath : SearchPath
 	private Dictionary<string, string> LocalToAbsolute = [];
 	private HashSet<string> LocalExists = [];
 	private ZipArchive archive;
+	private bool disposedValue;
 
 	public ZipArchiveSearchPath(string rootArchive) {
 		archive = new ZipArchive(new FileStream(rootArchive, FileMode.Open), ZipArchiveMode.Read, false);
 	}
 	public ZipArchiveSearchPath(string pathID, string path) {
-		archive = new ZipArchive(Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open), ZipArchiveMode.Read, false);
+		var stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open);
+
+		archive = new ZipArchive(stream, ZipArchiveMode.Read, false);
 	}
 
 	private string FullNameOf(ZipArchiveEntry entry) => entry.FullName.Replace("\\", "/");

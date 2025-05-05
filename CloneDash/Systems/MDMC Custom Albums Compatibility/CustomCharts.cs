@@ -103,6 +103,7 @@ namespace CloneDash
 			~CustomChartsSong() {
 				MainThread.RunASAP(() => {
 					if (CoverTexture != null && Raylib.IsTextureReady(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
+
 				});
 			}
 
@@ -207,7 +208,7 @@ namespace CloneDash
 			public static string GetDownloadCachePath(string localPath) {
 				var download = Filesystem.GetSearchPathID("download")[0] as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
 
-				return download.ResolveToAbsolute($"charts/{localPath}.mdm");
+				return Path.Combine(download.ResolveToAbsolute("charts"), $"{localPath}.mdm");
 			}
 
 			public void DownloadOrPullFromCache(Action<CustomChartsSong> complete) {
@@ -219,27 +220,29 @@ namespace CloneDash
 					// Ensure Archive is populated from either a download or a cache
 					var filename = GetDownloadCachePath(WebChart.ID);
 					__downloading = true;
-					if (!File.Exists(filename)) {
+					var mdmFilename = $"{WebChart.ID}.mdm";
+					var canStream = Filesystem.CanOpen("charts", mdmFilename);
+					if (!canStream) {
 						WebChart.DownloadTo(filename, (worked) => {
 							System.Diagnostics.Debug.Assert(worked);
 							if (worked) {
 								// Invalidate everything
 								Filepath = filename;
-								Archive = new ZipArchiveSearchPath(filename);
+								Archive = new ZipArchiveSearchPath("charts", mdmFilename);
 								Clear();
 								complete(this);
-								Logs.Info($"Downloaded {WebChart.ID}.mdm");
+								Logs.Info($"Downloaded {mdmFilename}");
 							}
-							else Logs.Warn($"Couldn't download {WebChart.ID}.mdm");
+							else Logs.Warn($"Couldn't download {mdmFilename}");
 						});
-						Logs.Info($"Downloading {WebChart.ID}.mdm..");
+						Logs.Info($"Downloading {mdmFilename}..");
 					}
 					else {
-						Logs.Info($"Already cached {WebChart.ID}.mdm");
+						Logs.Info($"Already cached {mdmFilename}");
 
 						// Invalidate everything
 						Filepath = filename;
-						Archive = new ZipArchiveSearchPath(filename);
+						Archive = new ZipArchiveSearchPath("charts", mdmFilename);
 						Clear();
 						complete?.Invoke(this);
 					}
