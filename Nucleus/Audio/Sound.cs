@@ -26,12 +26,15 @@ namespace Nucleus.Audio
 
 		public void Play(float volume = 1.0f, float pitch = 1.0f, float pan = 0.5f) {
 			Debug.Assert(Parent != null);
-			Parent?.PlaySound(this, volume, pitch, pan);
+			Parent?.PlaySound(this, volume * __volumeMultiplier, pitch, pan);
 		}
 
 		protected virtual void Dispose(bool disposing) {
 			if (!disposedValue && SelfDisposing) {
 				MainThread.RunASAP(() => {
+					foreach (var cv in boundConVars)
+						cv.OnChange -= Cv_OnChange;
+
 					Raylib.StopSound(Underlying);
 					Raylib.UnloadSound(Underlying);
 					Parent?.EnsureISoundRemoved(this);
@@ -46,5 +49,25 @@ namespace Nucleus.Audio
 		}
 
 		public static implicit operator Raylib_cs.Sound(Sound self) => self.Underlying;
+
+
+
+		private float __volumeMultiplier = 1f;
+		List<ConVar> boundConVars = [];
+		private void recalculateVolumeMultiplier() {
+			__volumeMultiplier = 1;
+			if (boundConVars.Count == 0)
+				return;
+
+			foreach (var cv in boundConVars)
+				__volumeMultiplier *= (float)cv.GetDouble();
+		}
+		public void BindVolumeToConVar(ConVar cv) {
+			boundConVars.Add(cv);
+			cv.OnChange += Cv_OnChange;
+			recalculateVolumeMultiplier();
+		}
+		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) => recalculateVolumeMultiplier();
+
 	}
 }

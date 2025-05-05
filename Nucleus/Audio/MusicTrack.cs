@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 using Raylib_cs;
 
 namespace Nucleus.Audio
@@ -28,6 +29,27 @@ namespace Nucleus.Audio
 			Current?.Processing?.Invoke(Current, stackAllocatedBuffer);
 		}
 
+
+		private float __volumeMultiplier = 1f;
+		List<ConVar> boundConVars = [];
+		private void recalculateVolumeMultiplier() {
+			__volumeMultiplier = 1;
+			if (boundConVars.Count == 0)
+				return;
+
+			foreach (var cv in boundConVars)
+				__volumeMultiplier *= (float)cv.GetDouble();
+
+			Raylib.SetMusicVolume(underlying, _volume * __volumeMultiplier);
+		}
+		public void BindVolumeToConVar(ConVar cv) {
+			boundConVars.Add(cv);
+			cv.OnChange += Cv_OnChange;
+			recalculateVolumeMultiplier();
+		}
+		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) => recalculateVolumeMultiplier();
+
+
 		public unsafe MusicTrack(SoundManagement? parent, Music underlying, bool selfDisposing = true, byte* memoryBound = null) {
 			this.parent = parent;
 			this.underlying = underlying;
@@ -50,6 +72,9 @@ namespace Nucleus.Audio
 				MainThread.RunASAP(() => {
 					Raylib.UnloadMusicStream(underlying);
 					unsafe {
+						foreach (var cv in boundConVars)
+							cv.OnChange -= Cv_OnChange;
+
 						if (__isMemoryBound != null)
 							Raylib.MemFree(__isMemoryBound);
 					}
@@ -72,7 +97,7 @@ namespace Nucleus.Audio
 		/// </summary>
 		public float Volume {
 			get { return _volume; }
-			set { _volume = value; Raylib.SetMusicVolume(underlying, value); }
+			set { _volume = value; Raylib.SetMusicVolume(underlying, value * __volumeMultiplier); }
 		}
 		/// <summary>
 		/// Get/sets the pitch of the music track. <b>This will cause the track to slow down. Not recommended to use it.</b> <br></br>
