@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using CloneDash.Settings;
+using Nucleus.Input;
 using Nucleus.Types;
 using System.Diagnostics.CodeAnalysis;
 
@@ -13,15 +14,15 @@ namespace CloneDash.Game.Input
 
 		public KeyboardInput() {
 			CD_InputSettings_OnSettingsChanged();
-			CD_InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
+			InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
 		}
 
 		[MemberNotNull(nameof(TopKeys), nameof(BottomKeys), nameof(StartFever), nameof(Pause))]
 		private void CD_InputSettings_OnSettingsChanged() {
-			TopKeys = CD_InputSettings.GetKeysOfAction(CD_InputAction.AirAttack).ToArray();
-			BottomKeys = CD_InputSettings.GetKeysOfAction(CD_InputAction.GroundAttack).ToArray();
-			StartFever = CD_InputSettings.GetKeysOfAction(CD_InputAction.FeverStart).ToArray();
-			Pause = CD_InputSettings.GetKeysOfAction(CD_InputAction.PauseGame).ToArray();
+			TopKeys = InputSettings.GetKeysOfAction(InputAction.AirAttack).ToArray();
+			BottomKeys = InputSettings.GetKeysOfAction(InputAction.GroundAttack).ToArray();
+			StartFever = InputSettings.GetKeysOfAction(InputAction.FeverStart).ToArray();
+			Pause = InputSettings.GetKeysOfAction(InputAction.PauseGame).ToArray();
 		}
 
 		public void Poll(ref FrameState frameState, ref InputState inputState) {

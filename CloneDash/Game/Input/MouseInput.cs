@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using CloneDash.Settings;
+using Nucleus.Input;
 using Nucleus.Types;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -13,15 +14,15 @@ namespace CloneDash.Game.Input
 		public static MouseButton[] Pause;
 		public MouseInput() {
 			CD_InputSettings_OnSettingsChanged();
-			CD_InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
+			InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
 		}
 
 		[MemberNotNull(nameof(TopButtons), nameof(BottomButtons), nameof(StartFever), nameof(Pause))]
 		private void CD_InputSettings_OnSettingsChanged() {
-			TopButtons = CD_InputSettings.GetMouseButtonsOfAction(CD_InputAction.AirAttack).ToArray();
-			BottomButtons = CD_InputSettings.GetMouseButtonsOfAction(CD_InputAction.GroundAttack).ToArray();
-			StartFever = CD_InputSettings.GetMouseButtonsOfAction(CD_InputAction.FeverStart).ToArray();
-			Pause = CD_InputSettings.GetMouseButtonsOfAction(CD_InputAction.PauseGame).ToArray();
+			TopButtons = InputSettings.GetMouseButtonsOfAction(InputAction.AirAttack).ToArray();
+			BottomButtons = InputSettings.GetMouseButtonsOfAction(InputAction.GroundAttack).ToArray();
+			StartFever = InputSettings.GetMouseButtonsOfAction(InputAction.FeverStart).ToArray();
+			Pause = InputSettings.GetMouseButtonsOfAction(InputAction.PauseGame).ToArray();
 		}
 
 		public void Poll(ref FrameState frameState, ref InputState inputState) {

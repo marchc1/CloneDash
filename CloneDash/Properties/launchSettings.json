@@ -2,7 +2,7 @@
   "profiles": {
     "CloneDash": {
       "commandName": "Project",
-      "commandLineArgs": "-debug -cam_level \"F:\\Important Repos\\CloneDash\\TestCharts\\test1-alltypes-labeled\" -difficulty 2",
+      "commandLineArgs": "-debug",
       "nativeDebugging": false
     }
   }
