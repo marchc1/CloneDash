@@ -280,7 +280,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be hit. A negative value means that the player hit too late, a positive means the player hit too early.
 		/// </summary>
-		public double DistanceToHit => (HitTime - Level.As<CD_GameLevel>().Conductor.Time) + InputSettings.JudgementOffset;
+		public double DistanceToHit => (HitTime - Level.As<CD_GameLevel>().Conductor.Time);
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
