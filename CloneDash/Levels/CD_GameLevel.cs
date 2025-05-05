@@ -825,7 +825,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				case EntityInteractivity.SamePath:
 					if (NMath.InRange(entity.DistanceToHit, -entity.PreGreatRange, 0)) {
 						PathwaySide pathCurrentCharacter = Pathway;
-						if (pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
+						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
 
 						}
