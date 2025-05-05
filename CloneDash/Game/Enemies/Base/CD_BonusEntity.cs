@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CloneDash.Settings;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -21,7 +22,7 @@ namespace CloneDash.Game
 				return;
 			}
 
-			Position = new((float)XPosFromTimeOffset(), 450);
+			Position = new((float)XPosFromTimeOffset((float)InputSettings.VisualOffset), 450);
 			(Pathway == PathwaySide.Top ? AirAnimation : GroundAnimation).Apply(Model, AnimationTime);
 		}
 
