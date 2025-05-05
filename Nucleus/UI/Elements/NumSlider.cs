@@ -157,7 +157,7 @@ namespace Nucleus.UI
 				didDrag = true;
 				double precision;
 				if (MinimumValue.HasValue && MaximumValue.HasValue) {
-					precision = (MaximumValue.Value - MinimumValue.Value) ;
+					precision = RenderBounds.W / (MaximumValue.Value - MinimumValue.Value) ;
 				}
 				else precision = MathF.Pow(1.5f, Digits);
 				Value += delta.X / precision;

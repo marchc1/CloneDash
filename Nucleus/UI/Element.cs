@@ -22,6 +22,13 @@ namespace Nucleus.UI
 		Bottom,
 		Fill
 	}
+	public enum DynamicSizeReference
+	{
+		None,
+		WindowHeight,
+		ParentHeight,
+		SelfHeight
+	}
 	public class Element : IValidatable
 	{
 		public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
@@ -51,6 +58,14 @@ namespace Nucleus.UI
 		private Vector2F _size = new(32, 32);
 		private bool _dynamicallySized = false;
 		private bool _dynamicallySizedText = false;
+		private DynamicSizeReference _dynamicSizeReference = DynamicSizeReference.WindowHeight;
+		public DynamicSizeReference DynamicSizeReference {
+			get => _dynamicSizeReference;
+			set {
+				_dynamicSizeReference = value;
+				InvalidateChildren(recursive: true, self: true);
+			}
+		}
 		public bool DynamicallySized {
 			get => _dynamicallySized;
 			set {
@@ -774,12 +789,22 @@ namespace Nucleus.UI
 
 		private float __textSize = 18;
 		public string Font { get; set; } = "Noto Sans";
+		public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
+
+		public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
+			DynamicSizeReference.None => 1f,
+			DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
+			DynamicSizeReference.ParentHeight => Parent.RenderBounds.Height / 20f,
+			DynamicSizeReference.SelfHeight => RenderBounds.Height / 20f,
+			_ => throw new NotImplementedException()
+		};
+
 		public float TextSize {
 			get {
 				if (!DynamicallySized)
 					return __textSize;
 
-				var heightRatio = EngineCore.GetWindowHeight() / 900f;
+				var heightRatio = GetReferenceSize(DynamicTextSizeReference);
 				return Math.Clamp(__textSize * heightRatio, 8, 160);
 			}
 			set {
