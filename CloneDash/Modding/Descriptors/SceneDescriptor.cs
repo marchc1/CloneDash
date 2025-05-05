@@ -1,6 +1,7 @@
 ﻿// This entire file is a nightmare of inheritance.
 
 using CloneDash.Game;
+using CloneDash.Settings;
 using Newtonsoft.Json;
 
 using Nucleus.Audio;
@@ -503,7 +504,8 @@ public class SceneDescriptor : CloneDashDescriptor
 		[JsonIgnore] public Sound PunchSound;
 #nullable enable
 		public void Load(Level level) {
-			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch); 
+			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch);
+			PunchSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 			Interlude.Spin();
 		}
 	}
