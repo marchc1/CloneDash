@@ -22,7 +22,7 @@ namespace CloneDash.Game
 				return;
 			}
 
-			Position = new((float)XPosFromTimeOffset((float)InputSettings.VisualOffset), 450);
+			Position = new((float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), 450);
 			(Pathway == PathwaySide.Top ? AirAnimation : GroundAnimation).Apply(Model, AnimationTime);
 		}
 
