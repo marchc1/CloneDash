@@ -42,14 +42,14 @@ namespace CloneDash.Game.Entities
 			HeldState = true;
 			ForceDraw = true;
 			lastCheckTime = lvl.Conductor.Time;
-			lvl.SetSustain(Pathway, this);
+			lvl.Sustains.StartSustainBeam(this);
 			lvl.AddCombo();
 			lvl.AddFever(FeverGiven);
 		}
 
 		protected override void OnMiss() {
 			if (HeldState == false) {
-				Level.As<CD_GameLevel>().SetSustain(Pathway, null);
+				Level.As<CD_GameLevel>().Sustains.FailSustainBeam(this);
 				PunishPlayer();
 			}
 		}
@@ -64,42 +64,9 @@ namespace CloneDash.Game.Entities
 
 		public override void Think(FrameState frameState) {
 			if (HeldState) {
-				var endPos = DistanceToEnd;
-
 				// check if sustain complete
-
-				var sustainComplete = PathwayCheck.IsPressed && endPos <= 0;
-				var sustainEarlyButStillSuccess = !PathwayCheck.IsPressed && NMath.InRange(endPos, -0.05f, 0.05f);
-				
 				var lvl = GetGameLevel();
-
-				if (sustainComplete || sustainEarlyButStillSuccess) {
-					HeldState = false;
-					StopAcceptingInput = true;
-					ShouldDraw = false;
-					RewardPlayer();
-					lvl.AddCombo();
-					lvl.AddFever(FeverGiven);
-					lvl.SetSustain(Pathway, null);
-					lvl.Scene.PlayPunch();
-				}
-				// check if pathway being held
-				else if (!PathwayCheck.IsPressed) {
-					HeldState = false;
-					StopAcceptingInput = true;
-					ShouldDraw = false;
-					lvl.SetSustain(Pathway, null);
-					PunishPlayer();
-					GetStats().Miss(this);
-				}
-				else {
-					var now = GetConductor().Time;
-					var delta = now - lastCheckTime;
-					if(delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
-						lastCheckTime = now;
-						lvl.AddScore(10);
-					}
-				}
+				lvl.Sustains.ThinkSustainBeam(this);
 			}
 		}
 
@@ -186,6 +153,42 @@ namespace CloneDash.Game.Entities
 			body = sustains.GetBodyTexture(Pathway);
 			up = sustains.GetUpTexture(Pathway);
 			down = sustains.GetDownTexture(Pathway);
+		}
+
+		internal void Complete() {
+			var lvl = GetGameLevel();
+
+			HeldState = false;
+			StopAcceptingInput = true;
+			ShouldDraw = false;
+			RewardPlayer();
+
+			lvl.AddCombo();
+			lvl.AddFever(FeverGiven);
+			lvl.Sustains.CompleteSustainBeam(this);
+			lvl.Scene.PlayPunch();
+		}
+		internal void Fail() {
+			var lvl = GetGameLevel();
+
+			HeldState = false;
+			StopAcceptingInput = true;
+			ShouldDraw = false;
+			PunishPlayer();
+
+			lvl.Sustains.FailSustainBeam(this);
+
+			GetStats().Miss(this);
+		}
+		internal void Hold() {
+			var lvl = GetGameLevel();
+
+			var now = GetConductor().Time;
+			var delta = now - lastCheckTime;
+			if (delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
+				lastCheckTime = now;
+				lvl.AddScore(10);
+			}
 		}
 	}
 }

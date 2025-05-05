@@ -23,6 +23,7 @@ using Color = Raylib_cs.Color;
 using Nucleus.Entities;
 using System.Diagnostics.CodeAnalysis;
 using CloneDash.Game.Statistics;
+using CloneDash.Interfaces;
 
 namespace CloneDash.Game;
 
@@ -600,6 +601,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	private SecondOrderSystem? sos_yoff;
 
+	InputState inputState = new();
 	public override void PreThink(ref FrameState frameState) {
 		Ticks++;
 		XPos = Game.Pathway.GetPathwayLeft();
@@ -613,12 +615,12 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		if (ShouldExitFever && InFever)
 			ExitFever();
 
-		InputState inputState = new InputState();
+		inputState.Reset();
 		if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
-
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);
 		}
+
 		if (AutoPlayer.Enabled) {
 			AutoPlayer.Play(ref inputState);
 		}
@@ -703,7 +705,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		float? yoff = null;
 
-		bool holdingTop = HoldingTopPathwaySustain != null, holdingBottom = HoldingBottomPathwaySustain != null;
+		bool holdingTop = Sustains.IsSustaining(PathwaySide.Top), holdingBottom = Sustains.IsSustaining(PathwaySide.Bottom);
 		bool holding = holdingTop || holdingBottom;
 		if ((holdingTop && holdingBottom) || InMashState)
 			yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
@@ -846,8 +848,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			//entity.WhenVisible();
 		}
 
-		FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {(HoldingTopPathwaySustain == null ? "<null>" : HoldingTopPathwaySustain)}");
-		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {(HoldingBottomPathwaySustain == null ? "<null>" : HoldingBottomPathwaySustain)}");
+		FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
+		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 
 		Lua.ProtectedCall(thinkScene, Curtime, CurtimeDelta, InFever);
 	}
@@ -1304,11 +1306,13 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <summary>
 	/// Which entity is being held on the top pathway
 	/// </summary>
-	public CD_BaseMEntity? HoldingTopPathwaySustain { get; private set; } = null;
+	//public CD_BaseMEntity? HoldingTopPathwaySustain { get; private set; } = null;
 	/// <summary>
 	/// Which entity is being held on the bottom pathway
 	/// </summary>
-	public CD_BaseMEntity? HoldingBottomPathwaySustain { get; private set; } = null;
+	//public CD_BaseMEntity? HoldingBottomPathwaySustain { get; private set; } = null;
+
+
 	/// <summary>
 	/// Is the player in the air right now?
 	/// </summary>
@@ -1320,6 +1324,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public double Hologram_AirTime => (Conductor.Time - __whenHjump);
 	public double Hologram_TimeToAnimationEnds => __jumpAnimationHStops - (Conductor.Time - __whenHjump);
 
+	public ISustainManager Sustains = new StackBasedSustainManager();
 
 	/// <summary>
 	/// Can the player jump right now?
@@ -1402,42 +1407,20 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// </summary>
 	/// <param name="score"></param>
 	public void RemoveScore(int score) => Score -= score;
-	/// <summary>
-	/// Checks if the player is currently sustaining a note on the given pathway.
-	/// </summary>
-	/// <param name="side"></param>
-	/// <returns></returns>
-	public bool IsSustaining(PathwaySide side) => side == PathwaySide.Top ? HoldingTopPathwaySustain != null : HoldingBottomPathwaySustain != null;
-	public bool IsSustaining() => IsSustaining(PathwaySide.Top) || IsSustaining(PathwaySide.Bottom);
-	public void SetSustain(PathwaySide side, CD_BaseMEntity entity) {
-		var wasSustainingTop = IsSustaining(PathwaySide.Top);
-		var wasSustainingBottom = IsSustaining(PathwaySide.Bottom);
-		var wasSustaining = wasSustainingTop || wasSustainingBottom;
 
-		if (side == PathwaySide.Top)
-			HoldingTopPathwaySustain = entity;
-		else
-			HoldingBottomPathwaySustain = entity;
+	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
+		if (!wasSustainingBefore && isSustainingNow) playeranim_startsustain = true;
 
-		var isSustainingTop = IsSustaining(PathwaySide.Top);
-		var isSustainingBottom = IsSustaining(PathwaySide.Bottom);
-		var isSustaining = isSustainingTop || isSustainingBottom;
-
-		if (!wasSustaining && isSustaining) playeranim_startsustain = true;
+		bool isTop = pathway == PathwaySide.Top, isBottom = pathway == PathwaySide.Bottom;
+		bool wasSustainingTop = isTop && wasSustainingBefore, wasSustainingBottom = isBottom && wasSustainingBefore;
+		bool isSustainingTop = isTop && isSustainingNow, isSustainingBottom = isBottom && isSustainingNow;
 
 		if (!wasSustainingTop && isSustainingTop) playeranim_startsustain_top = true;
 		if (!wasSustainingBottom && isSustainingBottom) playeranim_startsustain_bottom = true;
 
-		if (wasSustaining && !isSustaining)
+		if (wasSustainingBefore && !isSustainingNow)
 			playeranim_endsustain = true;
-
 	}
-	/// <summary>
-	/// Returns if the jump was successful. Mostly returns this for the sake of animation.
-	/// </summary>
-	/// <param name="force"></param>
-	/// <returns></returns>
-	/// 
 
 	public delegate void AttackEvent(CD_GameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
@@ -1475,7 +1458,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		playeranim_startsustain_top = false;
 		playeranim_startsustain_bottom = false;
 		playeranim_endsustain = false;
-		playeranim_insustain = IsSustaining();
+		playeranim_insustain = Sustains.IsSustaining();
 	}
 	private double lastHologramHitTime = -20000;
 	private void logTests(string testStr) {
@@ -1673,16 +1656,14 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// </summary>
 	public PathwaySide Pathway {
 		get {
-			bool topHeld = HoldingTopPathwaySustain != null, bottomHeld = HoldingBottomPathwaySustain != null;
-			if (topHeld && bottomHeld) return PathwaySide.Both;
-			if (topHeld) return PathwaySide.Top;
-			if (bottomHeld) return PathwaySide.Bottom;
-			return InAir ? PathwaySide.Top : PathwaySide.Bottom;
+			var state = Sustains.GetSustainState();
+			if (state == PathwaySide.None) return PathwaySide.Bottom;
+			return state;
 		}
 	}
 
 	public bool CanHit(PathwaySide pathway) {
-		if (IsSustaining(pathway))
+		if (Sustains.IsSustaining(pathway))
 			return false;
 
 		if (pathway == PathwaySide.Top && InAir)

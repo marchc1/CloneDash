@@ -27,12 +27,12 @@ namespace CloneDash.Game.Input
 		public void Poll(ref FrameState frameState, ref InputState inputState) {
             foreach (var btn in TopButtons) {
                 inputState.TopClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
-                inputState.TopHeld |= frameState.Mouse.Held(btn);
-            }
+                inputState.TopHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
+			}
 
             foreach (var btn in BottomButtons) {
                 inputState.BottomClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
-                inputState.BottomHeld |= frameState.Mouse.Held(btn);
+                inputState.BottomHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
             }
 
 			foreach (var btn in StartFever)

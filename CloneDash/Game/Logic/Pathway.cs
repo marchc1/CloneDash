@@ -36,8 +36,10 @@ namespace CloneDash.Game
 			return ((height * PATHWAY_TOP_PERCENTAGE) + (height * PATHWAY_BOTTOM_PERCENTAGE)) / 2;
 		}
 
-        public bool IsClicked => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopClicked > 0, Level.As<CD_GameLevel>().InputState.BottomClicked > 0);
-        public bool IsPressed => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeld, Level.As<CD_GameLevel>().InputState.BottomHeld);
+		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopClicked > 0, Level.As<CD_GameLevel>().InputState.BottomClicked > 0);
+		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeld, Level.As<CD_GameLevel>().InputState.BottomHeld);
+		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeldCount, Level.As<CD_GameLevel>().InputState.BottomHeldCount);
+
 
 		public static float GetPathwayY(PathwaySide side) => side switch {
 			PathwaySide.Both => GetPathwayMiddle(),
@@ -110,7 +112,7 @@ namespace CloneDash.Game
 			var lvl = Level.As<CD_GameLevel>();
 			var conductor = lvl.Conductor;
 			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
-			var realInfluence = Animator.Update((IsClicked || IsPressed) ? 2 : beatInfluence);
+			var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);
 			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42) * 2;
 			var curtimeOffset = (float)conductor.Time * -240;
 

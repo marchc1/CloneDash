@@ -1,5 +1,6 @@
 ﻿using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
+using CloneDash.Interfaces;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -18,9 +19,9 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Used to store which sustains are currently being held.
 		/// </summary>
-		public Dictionary<PathwaySide, SustainBeam?> CurrentSustains = new() {
-			{ PathwaySide.Top, null },
-			{ PathwaySide.Bottom, null },
+		public Dictionary<PathwaySide, Stack<SustainBeam>> CurrentSustains = new() {
+			{ PathwaySide.Top, new() },
+			{ PathwaySide.Bottom, new() },
 		};
 
 		/// <summary>
@@ -87,7 +88,7 @@ namespace CloneDash.Game.Logic
 										input.TopClicked += 1;
 									else {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
-											if (level.InAir || level.IsSustaining())
+											if (level.InAir || level.Sustains.IsSustaining())
 												input.BottomClicked += 1;
 										}
 										else
@@ -96,7 +97,7 @@ namespace CloneDash.Game.Logic
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
 									if (ent.Type == EntityType.SustainBeam) {
-										CurrentSustains[ent.Pathway] = (SustainBeam)ent;
+										CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 									}
 
 									// Record the entity as passed
@@ -128,10 +129,10 @@ namespace CloneDash.Game.Logic
 			// Sustain holding logic
 			foreach (var kvp in CurrentSustains) {
 				// Is there a sustain in progress on this pathway?
-				if (kvp.Value != null) {
+				if (kvp.Value.TryPop(out SustainBeam? sustain)) {
 					bool holding = false;
 
-					if (kvp.Value.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
+					if (sustain.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
 						holding = false;
 						CurrentSustains[kvp.Key] = null;
 						//Logs.Debug("Sustain stopped because it is complete");
@@ -140,15 +141,13 @@ namespace CloneDash.Game.Logic
 						holding = true;
 
 					// Write to input
+					var downOff = holding ? 0 : -1;
 					if (kvp.Key == PathwaySide.Top)
-						input.TopHeld = holding;
+						input.TopHeldCount += kvp.Value.Count + downOff;
 					else
-						input.BottomHeld = holding;
+						input.BottomHeldCount += kvp.Value.Count + downOff;
 				}
 			}
-
-			input.TopHeld |= input.TopClicked > 0;
-			input.BottomHeld |= input.BottomClicked > 0;
 		}
 
 		public const string STRING_AUTO = "AUTO";
