@@ -14,13 +14,13 @@ public class StackBasedSustainManager : ISustainManager
 
 	private void callbackToLevel(SustainBeam beam, int prevCount) {
 		var lvl = beam.GetGameLevel();
-		var stk = StackOf(beam.Pathway);
-		lvl.OnSustainCallback(beam, beam.Pathway, prevCount > 0, stk.Count > 0, stk.Count);
+		var c = ((ISustainManager)this).ActiveSustains();
+		lvl.OnSustainCallback(beam, beam.Pathway, prevCount > 0, ((ISustainManager)this).ActiveSustains() > 0, c);
 	}
 
 	public void StartSustainBeam(SustainBeam sustain) {
 		var stk = StackOf(sustain);
-		var prevCount = stk.Count;
+		var prevCount = ((ISustainManager)this).ActiveSustains();
 		stk.Push(sustain);
 		callbackToLevel(sustain, prevCount);
 	}
@@ -28,7 +28,7 @@ public class StackBasedSustainManager : ISustainManager
 		if (!sustain.WasHit) return;
 
 		var stk = StackOf(sustain);
-		var prevCount = stk.Count;
+		var prevCount = ((ISustainManager)this).ActiveSustains();
 		stk.Pop();
 		callbackToLevel(sustain, prevCount);
 	}
@@ -36,7 +36,7 @@ public class StackBasedSustainManager : ISustainManager
 		if (!sustain.WasHit) return;
 
 		var stk = StackOf(sustain);
-		var prevCount = stk.Count;
+		var prevCount = ((ISustainManager)this).ActiveSustains();
 		stk.Pop();
 		callbackToLevel(sustain, prevCount);
 	}
@@ -93,4 +93,6 @@ public class StackBasedSustainManager : ISustainManager
 			sustain.Hold();
 		}
 	}
+
+	public int ActiveSustains(PathwaySide side) => side == PathwaySide.Top ? TopPathway.Count : BottomPathway.Count;
 }

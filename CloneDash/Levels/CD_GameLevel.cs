@@ -25,6 +25,7 @@ using System.Diagnostics.CodeAnalysis;
 using CloneDash.Game.Statistics;
 using CloneDash.Interfaces;
 using CloneDash.Settings;
+using CloneDash.Implementations;
 
 namespace CloneDash.Game;
 
@@ -1466,7 +1467,20 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <param name="score"></param>
 	public void RemoveScore(int score) => Score -= score;
 
+	/// <summary>
+	/// This is a callback for <see cref="ISustainManager"/> implementations.
+	/// </summary>
+	/// <param name="sustain"></param>
+	/// <param name="pathway"></param>
+	/// <param name="wasSustainingBefore"></param>
+	/// <param name="isSustainingNow"></param>
+	/// <param name="sustainCount"></param>
 	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
+		playeranim_startsustain = false;
+		playeranim_startsustain_top = false;
+		playeranim_startsustain_bottom = false;
+		playeranim_endsustain = false;
+
 		if (!wasSustainingBefore && isSustainingNow) playeranim_startsustain = true;
 
 		bool isTop = pathway == PathwaySide.Top, isBottom = pathway == PathwaySide.Bottom;

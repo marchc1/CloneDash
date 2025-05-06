@@ -19,4 +19,7 @@ public interface ISustainManager
 	public int GetSustainsActiveCount(PathwaySide pathway);
 
 	public void ThinkSustainBeam(SustainBeam sustain);
+
+	public int ActiveSustains(PathwaySide pathway);
+	public int ActiveSustains() => ActiveSustains(PathwaySide.Top) + ActiveSustains(PathwaySide.Bottom);
 }
