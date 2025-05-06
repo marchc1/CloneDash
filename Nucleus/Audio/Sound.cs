@@ -20,7 +20,7 @@ namespace Nucleus.Audio
 		private bool disposedValue;
 		public bool IsValid() => !disposedValue;
 
-		public double Duration => (Underlying.FrameCount * Underlying.Stream.Channels) / (double)SAMPLE_RATE;
+		public double Duration => (Underlying.FrameCount) / (double)SAMPLE_RATE;
 
 		public ulong UsedBits =>
 			// size * rate * channels = bits per second

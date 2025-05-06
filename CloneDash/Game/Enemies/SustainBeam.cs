@@ -81,6 +81,7 @@ namespace CloneDash.Game.Entities
 			x -= (float)InputSettings.VisualOffset;
 			var tex = start;
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
+			Logs.Info(xpos);
 			var ypos = game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
