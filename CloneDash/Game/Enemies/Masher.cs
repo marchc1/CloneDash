@@ -1,4 +1,5 @@
 ﻿using CloneDash.Modding.Descriptors;
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Models.Runtime;
@@ -108,7 +109,8 @@ namespace CloneDash.Game.Entities
 
 			Position = new(0, 450);
 
-			base.DetermineAnimationPlayback();
+			// ???????????????????????????????????
+			ApproachAnimation?.Apply(Model, Math.Max(0, (ShowTime - GetConductor().Time - InputSettings.VisualOffset - InputSettings.JudgementOffset) * -1));
 		}
 
 		public override void Build() {
