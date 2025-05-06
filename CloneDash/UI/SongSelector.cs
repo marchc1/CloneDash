@@ -17,6 +17,8 @@ using CloneDash.Systems.CustomAlbums;
 using static CloneDash.Systems.CustomAlbums.MDMCWebAPI;
 using System.ComponentModel.DataAnnotations;
 using Nucleus.Input;
+using Newtonsoft.Json;
+using System.Security.Cryptography.X509Certificates;
 
 namespace CloneDash.UI;
 
@@ -125,21 +127,32 @@ public class MDMCSearchFilter : SearchFilter
 		return song;
 	}
 
+	private class mdmcChartsWithCount
+	{
+		[JsonProperty("charts")] public MDMCChart[] Charts;
+		[JsonProperty("count")] public int Count;
+	}
+
 	internal void PopulateMDMCCharts(SongSelector selector) {
 		Page++;
 
 		MDMCWebAPI.SearchCharts(string.IsNullOrWhiteSpace(Query) ? null : Query, Sort, Page, OnlyRanked).Then((resp) => {
-			MDMCChart[] charts = resp.FromJSON<MDMCChart[]>() ?? throw new Exception("Parsing failure");
-			if (charts.Length == 0) {
+			mdmcChartsWithCount charts = resp.FromJSON<mdmcChartsWithCount>() ?? throw new Exception("Parsing failure");
+
+			if (charts.Count == 0) {
 				selector.MarkNoMoreSongsLeft();
 				return;
 			}
 			var songs = new List<CustomChartsSong>();
 
-			foreach (MDMCChart chart in charts) {
+			foreach (MDMCChart chart in charts.Charts) {
 				songs.Add(AddChartSelector(chart));
 			}
 
+			selector?.SetCount(charts.Count);
+			if (string.IsNullOrWhiteSpace(Query)) {
+				selector?.SetTotal(charts.Count);
+			}
 			selector?.AddSongs(songs);
 			selector?.AcceptMoreSongs();
 		});
@@ -223,14 +236,21 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 		DiscIndex = 0;
 		ResetDiskTrack();
-		FilterResults.Text = $"{SongsPostFilter.Count}/{Songs.Count} songs available";
+		UpdateFilterText();
 	}
+
+	public int CurrentFilteredCount => SongsPostFilter.Count;
+	public int SongsAvailable => Songs.Count;
+
+	public string GetFilterText() => (CompiledFilter == null) ? $"{totalCountOverride ?? SongsAvailable} songs available" : $"{CurrentFilteredCount}/{totalCountOverride ?? SongsAvailable} songs available";
+
+	public void UpdateFilterText() => FilterResults.Text = GetFilterText();
 
 	public void ClearFilter() {
 		SongsPostFilter?.Clear();
 		SongsPostFilter = null;
 		SelectionUpdated(true);
-		FilterResults.Text = $"{Songs.Count} songs available";
+		UpdateFilterText();
 	}
 
 	public delegate void UserWantsMore();
@@ -455,7 +475,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		if (GetSongsList().Count() <= 0 && CompiledFilter != null) {
+		if (GetSongsList().Count() <= 0 && CompiledFilter != null && !CanAcceptMoreSongs) {
 			Loading.Text = "No songs available.";
 			Loading.Visible = true;
 			DisableDiscs(true);
@@ -465,7 +485,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		Loading.Text = "LOADING";
 		Loading.Visible = true;
 
-		if (!NoMoreSongsLeft && (!InfiniteList && WillDiscOverflow())) {
+		if ((!NoMoreSongsLeft && (!InfiniteList && WillDiscOverflow())) && !(!InfiniteList && countOverride.HasValue && countOverride.Value == Songs.Count)) {
 			GetMoreSongs();
 			DisableDiscs(true);
 			return;
@@ -626,9 +646,19 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
 	}
 
+	private int? countOverride = null;
+	private int? totalCountOverride = null;
+
 	internal void AcceptMoreSongs() {
 		CanAcceptMoreSongs = true;
 		Loading.Visible = false;
+	}
+
+	public void SetCount(int count) {
+		countOverride = count;
+	}
+	public void SetTotal(int count) {
+		totalCountOverride = count;
 	}
 
 	internal void MarkNoMoreSongsLeft() {

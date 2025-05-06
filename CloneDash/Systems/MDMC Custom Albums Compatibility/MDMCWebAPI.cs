@@ -405,7 +405,8 @@ namespace CloneDash.Systems.CustomAlbums
 				{ "q", query ?? "" },
 				{ "sort", sort },
 				{ "page", page },
-				{ "rankedOnly", rankedOnly }
+				{ "rankedOnly", rankedOnly.ToString().ToLower() },
+				{ "includeCount", "true" }
 			});
 
 			return new MDMCWebAPIPromise(url);
