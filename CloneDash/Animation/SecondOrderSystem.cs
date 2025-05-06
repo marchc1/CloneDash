@@ -1,18 +1,89 @@
-﻿using Nucleus;
+﻿using DelaunatorSharp;
+using Nucleus;
+using Nucleus.Core;
+using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 namespace CloneDash.Animation
 {
-    /// <summary>
-    /// Second order system, for animation smoothing mostly
-    /// </summary>
-    public class SecondOrderSystem
-    {
-        private static readonly float PI = (float)Math.PI;
-        private float xp;
-        private float y, yd;
-        private float k1, k2, k3;
-        private float T_crit;
-        private double last = EngineCore.Level.Curtime;
+	/// <summary>
+	/// Second order system, for animation smoothing mostly
+	/// </summary>
+	[Nucleus.MarkForStaticConstruction]
+	public class SecondOrderSystem
+	{
+		public static ConCommand sos_tuner = ConCommand.Register(nameof(sos_tuner), (_, _) => {
+			var window = EngineCore.Level.UI.Add<Window>();
+			window.Size = new(480, 640);
+			window.Center();
+
+			float[] inPoints = new float[512];
+			for (int i = 0; i < inPoints.Length; i++) {
+				inPoints[i] = i < 50 ? 0 : i < 200 ? 1 : 0.5f;
+			}
+
+			float[] outPoints = new float[512];
+
+			var graph = window.Add<Panel>();
+			graph.Size = new(480);
+			graph.Dock = Dock.Top;
+
+			NumSlider fEdit, zEdit, rEdit;
+
+			window.Add(out fEdit);
+			window.Add(out zEdit);
+			window.Add(out rEdit);
+
+			fEdit.Value = 1;
+			zEdit.Value = 1;
+			rEdit.Value = 1;
+
+			fEdit.Size = zEdit.Size = rEdit.Size = new(32);
+			fEdit.Dock = zEdit.Dock = rEdit.Dock = Dock.Top;
+			fEdit.Digits = zEdit.Digits = rEdit.Digits = 3;
+
+			fEdit.OnValueChanged += (_, _, _) => modifySOSTunerData((float)fEdit.Value, (float)zEdit.Value, (float)rEdit.Value, inPoints, outPoints);
+			zEdit.OnValueChanged += (_, _, _) => modifySOSTunerData((float)fEdit.Value, (float)zEdit.Value, (float)rEdit.Value, inPoints, outPoints);
+			rEdit.OnValueChanged += (_, _, _) => modifySOSTunerData((float)fEdit.Value, (float)zEdit.Value, (float)rEdit.Value, inPoints, outPoints);
+			modifySOSTunerData((float)fEdit.Value, (float)zEdit.Value, (float)rEdit.Value, inPoints, outPoints);
+
+			graph.PaintOverride += (_, w, h) => {
+				Graphics2D.SetDrawColor(255, 150, 150);
+				for (int i = 1; i < inPoints.Length; i++) {
+					getVariables(inPoints, i - 1, w, h, out var lx, out var ly);
+					getVariables(inPoints, i, w, h, out var cx, out var cy);
+					Graphics2D.DrawLine(lx, ly, cx, cy);
+				}
+
+				Graphics2D.SetDrawColor(150, 255, 150);
+				for (int i = 1; i < outPoints.Length; i++) {
+					getVariables(outPoints, i - 1, w, h, out var lx, out var ly);
+					getVariables(outPoints, i, w, h, out var cx, out var cy);
+					Graphics2D.DrawLine(lx, ly, cx, cy);
+				}
+			};
+		});
+
+		private static void getVariables(float[] points, int index, float w, float h, out float x, out float y) {
+			var xPadding = 8;
+			var yPadding = h * .1f;
+			x = (float)NMath.Remap(index, 0, points.Length, xPadding, w - (xPadding * 2));
+			y = (float)NMath.Remap(points[index], 0, 1, h - (yPadding * 2), yPadding);
+		}
+
+		private static void modifySOSTunerData(float f, float z, float r, float[] input, float[] output) {
+			SecondOrderSystem sos = new SecondOrderSystem(f, z, r, 0);
+			for (int i = 0; i < input.Length; i++) {
+				output[i] = sos.Update(0.01f, input[i]);
+			}
+		}
+
+		private static readonly float PI = (float)Math.PI;
+		private float xp;
+		private float y, yd;
+		private float k1, k2, k3;
+		private float T_crit;
+		private double last = EngineCore.Level.Curtime;
 		/// <summary>
 		/// Entirely from https://www.youtube.com/watch?v=KPoeNZZ6H4s
 		/// </summary>
@@ -37,43 +108,38 @@ namespace CloneDash.Animation
 			yd = 0;
 			last = EngineCore.Level.Curtime;
 		}
-		public SecondOrderSystem(float f, float z, float r, float x0)
-        {
+		public SecondOrderSystem(float f, float z, float r, float x0) {
 			this.f = f;
 			this.z = z;
 			this.r = r;
 			ResetTo(x0);
-        }
-        public float Update(float x)
-        {
-            float deltatime = (float)(EngineCore.Level.Curtime - last);
-            return Update(deltatime, x);
-        }
-        public float Update(float T, float x, float? xdIn = null)
-        {
-            float xd = 0f;
+		}
+		public float Update(float x) {
+			float deltatime = (float)(EngineCore.Level.Curtime - last);
+			return Update(deltatime, x);
+		}
+		public float Update(float T, float x, float? xdIn = null) {
+			float xd = 0f;
 
-            if (!xdIn.HasValue)
-            {
-                xd = (x - xp) / T;
-                xp = x;
-            }
-            else
-                xd = xdIn.Value;
+			if (!xdIn.HasValue) {
+				xd = (x - xp) / T;
+				xp = x;
+			}
+			else
+				xd = xdIn.Value;
 
-            int iterations = (int)Math.Ceiling(T / T_crit);
-            T = T / iterations;
+			int iterations = (int)Math.Ceiling(T / T_crit);
+			T = T / iterations;
 
-            for (int i = 0; i < iterations; i++)
-            {
-                y = y + T * yd;
-                yd = yd + T * (x + k3 * xd - y - k1 * yd) / k2;
-            }
+			for (int i = 0; i < iterations; i++) {
+				y = y + T * yd;
+				yd = yd + T * (x + k3 * xd - y - k1 * yd) / k2;
+			}
 
-            last = EngineCore.Level.Curtime;
-            return y;
-        }
+			last = EngineCore.Level.Curtime;
+			return y;
+		}
 
 		public float Out => y;
-    }
+	}
 }

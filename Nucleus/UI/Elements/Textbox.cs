@@ -85,8 +85,6 @@ namespace Nucleus.UI
 			Text = "";
 
 			KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
-			DynamicallySized = true;
-			DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 			TextSize = 20;
 		}
 		public void SetText(string text) {
