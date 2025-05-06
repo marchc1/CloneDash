@@ -1476,9 +1476,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <param name="isSustainingNow"></param>
 	/// <param name="sustainCount"></param>
 	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
-		playeranim_startsustain = false;
-		playeranim_startsustain_top = false;
-		playeranim_startsustain_bottom = false;
+		playeranim_startsustain = playeranim_startsustain ? !playeranim_endsustain : playeranim_startsustain;
+		playeranim_startsustain_top = playeranim_startsustain_top ? !playeranim_endsustain : playeranim_startsustain_top;
+		playeranim_startsustain_bottom = playeranim_startsustain_bottom ? !playeranim_endsustain : playeranim_startsustain_bottom;
 		playeranim_endsustain = false;
 
 		if (!wasSustainingBefore && isSustainingNow) playeranim_startsustain = true;
