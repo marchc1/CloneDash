@@ -6,6 +6,7 @@ using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.UI;
 
@@ -86,7 +87,7 @@ public class SettingsPanel : ScrollPanel
 		return back.Bottom;
 	}
 
-	public NumSlider Number(ConVar cv, string name, string format) {
+	public NumSlider Number(ConVar cv, string name, [StringSyntax(StringSyntaxAttribute.NumericFormat)] string format) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
 		slider.Dock = Dock.Fill;
@@ -179,8 +180,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		var offsets = panel.Blank("Wizards", "Input offset wizards.");
 		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
-		var judgementSlider = panel.Number(InputSettings.clonedash_judgementoffset, "Judgement Offset", "{0:0}");
-		var visualSlider = panel.Number(InputSettings.clonedash_visualoffset, "Visual Offset", "{0:0}");
+		var judgementSlider = panel.Number(InputSettings.clonedash_judgementoffset, "Judgement Offset", "{0:0} ms");
+		var visualSlider = panel.Number(InputSettings.clonedash_visualoffset, "Visual Offset", "{0:0} ms");
 	}
 }
 
