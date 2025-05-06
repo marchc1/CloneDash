@@ -104,7 +104,8 @@ namespace Nucleus.Engine
 		}
 
 		public static void FromString(string args) {
-			for (int i = 0; i < args.Length; i++) {
+			parameters.Clear();
+			for (int i = 0; i < args.Length;) {
 				skipWhitespace(args, ref i);
 				char c = args[i];
 				switch (c) {
@@ -127,7 +128,8 @@ namespace Nucleus.Engine
 							parameters[parm] = trueValueType(value);
 						}
 						else {
-							ConVar.SetStartupParameter(parm, value);
+							// no logic right now to handle variables
+							// to do as i figure out how to fit that in
 						}
 
 						break;
@@ -137,19 +139,11 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public static string? File { get; set; }
 		public static void FromArgs(string[] args) {
 			for (int i = 0; i < args.Length; i++)
 				args[i] = args[i].IndexOf(' ') > -1 ? ('"' + args[i] + '"') : args[i];
 
-			string str = string.Join(' ', args);
-			FromString(str);
-			if (args.Length >= 1 && System.IO.File.Exists(args[args.Length - 1])) {
-				File = args[args.Length - 1];
-			}
-			else if (str.Length > 4 && System.IO.File.Exists(str.Substring(1, str.Length - 2))) {
-				File = str.Substring(1, str.Length - 2);
-			}
+			FromString(string.Join(' ', args));
 		}
 	}
 }
