@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Animation
+﻿using Nucleus;
+
+namespace CloneDash.Animation
 {
     /// <summary>
     /// Second order system, for animation smoothing mostly
@@ -10,7 +12,7 @@
         private float y, yd;
         private float k1, k2, k3;
         private float T_crit;
-        private DateTime last = DateTime.UtcNow;
+        private double last = EngineCore.Level.Curtime;
 		/// <summary>
 		/// Entirely from https://www.youtube.com/watch?v=KPoeNZZ6H4s
 		/// </summary>
@@ -33,7 +35,7 @@
 			y = x0;
 
 			yd = 0;
-			last = DateTime.UtcNow;
+			last = EngineCore.Level.Curtime;
 		}
 		public SecondOrderSystem(float f, float z, float r, float x0)
         {
@@ -44,7 +46,7 @@
         }
         public float Update(float x)
         {
-            float deltatime = (float)(DateTime.UtcNow - last).TotalSeconds;
+            float deltatime = (float)(EngineCore.Level.Curtime - last);
             return Update(deltatime, x);
         }
         public float Update(float T, float x, float? xdIn = null)
@@ -68,7 +70,7 @@
                 yd = yd + T * (x + k3 * xd - y - k1 * yd) / k2;
             }
 
-            last = DateTime.UtcNow;
+            last = EngineCore.Level.Curtime;
             return y;
         }
 
