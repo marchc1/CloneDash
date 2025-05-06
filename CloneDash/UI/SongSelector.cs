@@ -284,7 +284,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public int DiscIndex = 0;
 	public Button[] Discs;
 
-	public SecondOrderSystem DiscAnimationOffset = new SecondOrderSystem(1.5f, 1, 1, 0);
+	public SecondOrderSystem DiscAnimationOffset = new SecondOrderSystem(4.5f, 1, 1, 0);
 
 	public void MoveLeft() {
 		if (!InfiniteList && DiscIndex <= 0)
