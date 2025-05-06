@@ -25,7 +25,7 @@ public class SettingsCategory : Button
 
 		TextAlignment = Nucleus.Types.Anchor.CenterLeft; ;
 		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
-		TextSize = 22;
+		TextSize = 16;
 
 		Add(out Icon);
 		BorderSize = 0;
