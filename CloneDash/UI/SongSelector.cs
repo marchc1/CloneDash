@@ -269,14 +269,14 @@ public class SongSelector : Panel, IMainMenuPanel
 	public int DiscIndex = 0;
 	public Button[] Discs;
 
-	public float DiscAnimationOffset = 0;
+	public SecondOrderSystem DiscAnimationOffset = new SecondOrderSystem(1.5f, 1, 1, 0);
 
 	public void MoveLeft() {
 		if (!InfiniteList && DiscIndex <= 0)
 			return;
 
 		DiscIndex--;
-		DiscAnimationOffset--;
+		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out - 1);
 		ResetDiskTrack();
 	}
 
@@ -285,7 +285,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 
 		DiscIndex++;
-		DiscAnimationOffset++;
+		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out + 1);
 		ResetDiskTrack();
 	}
 
@@ -304,7 +304,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public void NavigateToDisc(Button discButton) {
 		var index = discButton.GetTagSafely<int>("localDiscIndex");
 		DiscIndex += index;
-		DiscAnimationOffset += index;
+		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out + index);
 		if (index != 0)
 			ResetDiskTrack();
 	}
@@ -341,7 +341,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (doNotTryToGetTrackAgain) return;
 
 		// Should play track?
-		if (Math.Abs(DiscAnimationOffset) < 0.3) {
+		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
 			var chart = GetDiscSong(0);
 			activeTrack = chart.GetDemoTrack();
 
@@ -423,24 +423,42 @@ public class SongSelector : Panel, IMainMenuPanel
 		var offsetYParent = ChildRenderOffset.Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
 		float flyAwayMw = flyAway * width;
-		var widthRatio = MathF.Cos((float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -1 - flyAway * 2, 1 + flyAway * 2));
-		x = (float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -flyAwayMw, width + flyAwayMw);
+		var widthRatio = MathF.Cos((float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -1 - flyAway * 2, 1 + flyAway * 2));
+		x = (float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -flyAwayMw, width + flyAwayMw);
 		y = height / 2f + (1 - widthRatio) * 250;
 		var rR = 150;
-		rot = (float)NMath.Remap(index + DiscAnimationOffset, 0, Discs.Length - 1, -15 - flyAway * rR, 15 + flyAway * rR);
+		rot = (float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -15 - flyAway * rR, 15 + flyAway * rR);
 	}
 
 	public float GetDiscSize(float width, Button b) {
-		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset), 0, 1);
+		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset.Out), 0, 1);
 		return width / Discs.Length + mainDiscMult * 64;
 	}
 
+	private bool discsDisabled;
+	private void DisableDiscs(bool disabled) {
+		for (int i = 0; i < Discs.Length; i++) {
+			Discs[i].InputDisabled = disabled;
+		}
+		discsDisabled = disabled;
+	}
+
 	public void LayoutDiscs(float width, float height) {
-		if (!NoMoreSongsLeft && (GetSongsList().Count <= 0 || !InfiniteList && WillDiscOverflow())) {
-			GetMoreSongs();
+		if (GetSongsList().Count() <= 0) {
+			Loading.Text = "No songs available.";
+			DisableDiscs(true);
 			return;
 		}
 
+		Loading.Text = "LOADING";
+
+		if (!NoMoreSongsLeft && (!InfiniteList && WillDiscOverflow())) {
+			GetMoreSongs();
+			DisableDiscs(true);
+			return;
+		}
+
+		DisableDiscs(false);
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.Visible = true;
@@ -486,21 +504,13 @@ public class SongSelector : Panel, IMainMenuPanel
 			CurrentTrackAuthor.Text = mainSong.Author;
 		}
 
-		if (Math.Abs(DiscAnimationOffset) > 0.001d) {
-			DiscAnimationOffset /= 1.02f;
+		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
+			DiscAnimationOffset.Update(0);
 			InvalidateLayout(); // loop for next frame
-			if (Math.Abs(DiscAnimationOffset) < 0.2) {
-				if (Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.Left) || Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.A)) {
-					MoveLeft();
-				}
-				else if (Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.Right) || Level.FrameState.Keyboard.IsKeyDown(KeyboardLayout.USA.D)) {
-					MoveRight();
-				}
-			}
 		}
-		else if (DiscAnimationOffset != 0) {
+		else if (DiscAnimationOffset.Out != 0) {
 			// set it to 0 and don't invalidate again after
-			DiscAnimationOffset = 0;
+			DiscAnimationOffset.ResetTo(0);
 			InvalidateLayout();
 		}
 	}

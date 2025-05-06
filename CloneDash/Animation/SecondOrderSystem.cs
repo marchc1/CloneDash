@@ -33,6 +33,7 @@
 			y = x0;
 
 			yd = 0;
+			last = DateTime.UtcNow;
 		}
 		public SecondOrderSystem(float f, float z, float r, float x0)
         {
