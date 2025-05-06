@@ -275,7 +275,6 @@ namespace CloneDash
 				stageInfo.difficulty = difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
 				stageInfo.bpm = bms.Bpm;
-				stageInfo.sceneEvents = bms.GetSceneEvents();
 
 				double lastTime = 0;
 				double lastBeat = 0;
