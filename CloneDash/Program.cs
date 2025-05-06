@@ -66,6 +66,9 @@ internal class Program
 
 		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
 			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+			if (Path.GetExtension(cam_level) == ".bms")
+				difficulty = int.TryParse(Path.GetFileNameWithoutExtension(cam_level).Substring(3), out int diffTest) ? diffTest : throw new Exception();
+
 			CustomChartsSong song = new CustomChartsSong(cam_level);
 			var sheet = song.GetSheet(difficulty);
 

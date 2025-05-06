@@ -560,9 +560,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 			//foreach (var tempoChange in Sheet)
 			if (Sheet != null)
-				Conductor.TempoChanges.Add(new TempoChange(0, (double)Sheet.Song.BPM));
-			else
-				Conductor.TempoChanges.Add(new TempoChange(0, 120));
+				Conductor.AddTempoChange(0, (double)Sheet.Song.BPM);
+			else		  
+				Conductor.AddTempoChange(0, 120);
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (Sheet != null) {

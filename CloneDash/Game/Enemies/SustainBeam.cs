@@ -20,6 +20,7 @@ namespace CloneDash.Game.Entities
 			base.Initialize();
 		}
 
+		public bool WasHit { get; private set; } = false;
 		public bool HeldState { get; private set; } = false;
 		public bool StopAcceptingInput { get; private set; } = false;
 
@@ -29,6 +30,7 @@ namespace CloneDash.Game.Entities
 
 		public override void OnReset() {
 			base.OnReset();
+			WasHit = false;
 			HeldState = false;
 			StopAcceptingInput = false;
 		}
@@ -42,6 +44,7 @@ namespace CloneDash.Game.Entities
 			var lvl = Level.As<CD_GameLevel>();
 			PathwayCheck = lvl.GetPathway(attackedPath);
 			HeldState = true;
+			WasHit = true;
 			ForceDraw = true;
 			lastCheckTime = lvl.Conductor.Time;
 			lvl.Sustains.StartSustainBeam(this);

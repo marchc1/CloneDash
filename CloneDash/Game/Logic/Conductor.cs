@@ -30,6 +30,8 @@ namespace CloneDash.Game
 		}
 		public List<TempoChange> TempoChanges { get; private set; } = [];
 
+		public void AddTempoChange(double time, double bpm) => TempoChanges.Add(new(time, bpm));
+
 		/// <summary>
 		/// The current music playhead, adjusted for inaccuracies.
 		/// </summary>
