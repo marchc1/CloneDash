@@ -244,14 +244,6 @@ namespace CloneDash.Game
 		}
 
 		/// <summary>
-		/// Optional method entities can use to adjust their drawing position.
-		/// </summary>
-		/// <param name="pos"></param>
-		public virtual void ChangePosition(ref Vector2F pos) {
-
-		}
-
-		/// <summary>
 		/// Is the entity dead?
 		/// </summary>
 		public bool Dead { get; private set; } = false;

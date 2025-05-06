@@ -32,9 +32,6 @@ namespace CloneDash.Game.Entities
 		public override void OnReset() {
 			base.OnReset();
 		}
-		public override void ChangePosition(ref Vector2F pos) {
-
-		}
 		public override void DetermineAnimationPlayback() {
 			Position = new(0, 450);
 			if (Dead) {

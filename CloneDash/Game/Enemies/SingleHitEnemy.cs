@@ -27,10 +27,6 @@ namespace CloneDash.Game.Entities
 			}
 		}
 
-		public override void ChangePosition(ref Vector2F pos) {
-
-		}
-
 		public override void Initialize() {
 			base.Initialize();
 		}

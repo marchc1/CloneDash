@@ -30,10 +30,6 @@ namespace CloneDash.Game.Entities
 			}
 		}
 
-		public override void ChangePosition(ref Vector2F pos) {
-
-		}
-
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
 				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
