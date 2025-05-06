@@ -6,7 +6,6 @@ namespace Nucleus;
     public static partial class Platform
     {
         public static void ConsoleInitialize(Color back, Color fore){
-            Console.BackgroundColor = back;
             Console.ForegroundColor = fore;
         }
         public static void ConsoleWrite(string str, Color c) => Console.Write(str, c);
