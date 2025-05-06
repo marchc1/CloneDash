@@ -80,7 +80,7 @@ public class WindowMouseState(OSWindow window)
 	}
 }
 
-public unsafe class OSWindow
+public unsafe class OSWindow : IValidatable
 {
 	internal Vector2F ScreenPos;
 	internal Vector2F ScreenSize;
@@ -288,7 +288,10 @@ public unsafe class OSWindow
 		set => Logs.Warn("Mouse passthrough is unsupported on a SDL backend.");
 	}
 
-	public void SwapScreenBuffer() => SDL3.SDL_GL_SwapWindow(handle);
+	public void SwapScreenBuffer() {
+		if (!IsValid()) return;
+		SDL3.SDL_GL_SwapWindow(handle);
+	}
 
 	public void SetupViewport(float width, float height) => SetupViewport((int)width, (int)height);
 	public void SetupViewport(int width, int height) {
@@ -578,6 +581,7 @@ public unsafe class OSWindow
 		}
 	}
 	public void Close() {
+		isValid = false;
 		SDL3.SDL_DestroyCursor(cursor);
 		SDL3.SDL_GL_DestroyContext(glctx);
 		SDL3.SDL_DestroyWindow(handle);
@@ -980,6 +984,9 @@ public unsafe class OSWindow
 	public void SetMousePosition(Vector2F dragStart) {
 
 	}
+
+	private bool isValid = true;
+	public bool IsValid() => isValid;
 }
 
 public static unsafe class OS
