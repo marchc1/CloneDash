@@ -749,6 +749,7 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
+			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -800,11 +801,15 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				/*
-				if (Raylib.GetKeyPressed() != 0) {
-					Raylib.SetMasterVolume(oldMaster);
-					return false;
-				}*/
+				int i = 0;
+				Window.SwapScreenBuffer();
+				while (true) {
+					OSWindow.PropagateEventBuffer();
+					if (Window.KeyAvailable(ref i, out _, out _)) {
+						Raylib.SetMasterVolume(oldMaster);
+						return false;
+					}
+				}
 			}
 
 			Rlgl.DrawRenderBatchActive();
@@ -835,6 +840,7 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
+			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -882,16 +888,21 @@ public static class EngineCore
 				hasRenderedOverlay = true;
 			}
 			else {
-				/*if (Raylib.GetKeyPressed() != 0) {
-					Raylib.SetMasterVolume(oldMaster);
-					interrupting = false;
-					return;
-				}*/
+				int i = 0;
+				Window.SwapScreenBuffer();
+				while (true) {
+					OSWindow.PropagateEventBuffer();
+					if (Window.KeyAvailable(ref i, out _, out _)) {
+						Raylib.SetMasterVolume(oldMaster);
+						interrupting = false;
+						return;
+					}
+				}
 			}
 
 			Rlgl.DrawRenderBatchActive();
 			Window.SwapScreenBuffer();
-			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
+			OS.Wait(hasRenderedOverlay ? 0.2 : 0.002);
 		}
 	}
 
