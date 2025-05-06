@@ -69,8 +69,19 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
 	}
-	private static void clonedash_openmdlevel_autocomplete(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns) {
+	private static void clonedash_openmdlevel_autocomplete(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+		var songs = Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
+		int len = Math.Clamp(songs.Length, 0, 20);
+		if (len == 0) return;
 
+		returns = new string[len];
+		returnHelp = new string[len];
+
+		for (int i = 0; i < len; i++) {
+			var song = songs[i];
+			returns[i] = song.BaseName;
+			returnHelp[i] = song.Name;
+		}
 	}
 
 	public static ConCommand clonedash_openmdlevel = ConCommand.Register(nameof(clonedash_openmdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");

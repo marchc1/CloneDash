@@ -179,15 +179,59 @@ namespace Nucleus
 				__args = cvValueArgs
 			};
 		}
-		public static ConCommandArguments FromString(string args) {
-			var ret = FromArray(args.Split('"')
-					 .Select((element, index) => index % 2 == 0  // If even index
-						? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-						: new string[] { element })  // Keep the entire item
-					 .SelectMany(element => element).ToArray());
+		public static ConCommandArguments FromString(string args, int curWritePos, out int curArgPos) {
+			var arguments = new List<string>();
+			curArgPos = -1;
+
+			bool inQuotes = false;
+			int argStart = -1;
+			int currentArgIndex = 0;
+
+			for (int i = 0; i <= args.Length; i++) {
+				bool isEnd = i == args.Length;
+				char c = !isEnd ? args[i] : '\0';
+
+				if (!inQuotes && (isEnd || char.IsWhiteSpace(c))) {
+					if (argStart != -1) {
+						string arg = args.Substring(argStart, i - argStart);
+						arguments.Add(arg);
+
+						if (curWritePos >= argStart && curWritePos <= i)
+							curArgPos = currentArgIndex;
+
+						currentArgIndex++;
+						argStart = -1;
+					}
+				}
+				else if (c == '"') {
+					if (inQuotes) {
+						if (argStart != -1) {
+							string arg = args.Substring(argStart, i - argStart);
+							arguments.Add(arg);
+
+							if (curWritePos >= argStart && curWritePos <= i)
+								curArgPos = currentArgIndex;
+
+							currentArgIndex++;
+							argStart = -1;
+						}
+						inQuotes = false;
+					}
+					else {
+						inQuotes = true;
+						argStart = i + 1; // skip quote
+					}
+				}
+				else if (argStart == -1) {
+					argStart = i;
+				}
+			}
+
+			var ret = FromArray(arguments.ToArray());
 			ret.Raw = args;
 			return ret;
 		}
+		public static ConCommandArguments FromString(string args) => FromString(args, 0, out _);
 		public bool GetInt(int pos, [NotNullWhen(true)] out int? ret) {
 			if (pos < 0) goto IsNull;
 			if (pos >= __args.Length) goto IsNull;
@@ -238,21 +282,28 @@ namespace Nucleus
 	{
 		public override bool IsCommand => true;
 		public delegate void ExecutedDelegate(ConCommand cmd, ConCommandArguments args);
+		public delegate void AutocompleteDelegate(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? helpReturns);
 
 		public ExecutedDelegate? OnExecuted;
-		public ConCommand(string name, ExecutedDelegate executed, ConsoleFlags flags, string helpString) : base(name, helpString, flags) {
+		public AutocompleteDelegate? OnAutocomplete;
+		public ConCommand(string name, ExecutedDelegate executed, AutocompleteDelegate? autocomplete, ConsoleFlags flags, string helpString) : base(name, helpString, flags) {
 			OnExecuted = executed;
+			OnAutocomplete = autocomplete;
 		}
 
 		public static ConCommand Register(string name, ExecutedDelegate executed) => Register(name, executed, ConsoleFlags.None, "");
+		public static ConCommand Register(string name, ExecutedDelegate executed, AutocompleteDelegate autocomplete) => Register(name, executed, autocomplete, ConsoleFlags.None, "");
 		public static ConCommand Register(string name, ExecutedDelegate executed, string helpString) => Register(name, executed, ConsoleFlags.None, helpString);
+		public static ConCommand Register(string name, ExecutedDelegate executed, AutocompleteDelegate autocomplete, string helpString) => Register(name, executed, autocomplete, ConsoleFlags.None, helpString);
+		public static ConCommand Register(string name, ExecutedDelegate executed, ConsoleFlags flags, string helpString) => Register(name, executed, null, flags, helpString);
 		public static ConCommand Register(
 			string name,
 			ExecutedDelegate executed,
+			AutocompleteDelegate? autocomplete,
 			ConsoleFlags flags,
 			string helpString
 		) {
-			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, (_, _) => { }, flags, "");
+			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, (_, _) => { }, null, flags, "");
 
 			if (IsRegistered(name)) {
 				var t = lookup[name];
@@ -260,7 +311,7 @@ namespace Nucleus
 					return cc;
 				throw new Exception($"ConCommandBase '{name}' already existed and was not a ConCommand");
 			}
-			ConCommand? cmd = (ConCommand?)Activator.CreateInstance(typeof(ConCommand), [name, executed, flags, helpString]);
+			ConCommand? cmd = (ConCommand?)Activator.CreateInstance(typeof(ConCommand), [name, executed, autocomplete, flags, helpString]);
 			if (cmd == null) throw new Exception("ConVar: null?");
 			lookup[name] = cmd;
 			return cmd;
@@ -278,6 +329,25 @@ namespace Nucleus
 
 			concmd.OnExecuted(concmd, ConCommandArguments.FromString(args));
 		}
+
+		public static string[] Autocomplete(ConCommand concmd, string argsStr, int curWritePos) {
+			if (concmd.OnAutocomplete == null)
+				return [];
+
+			string[]? helpStrs = null;
+#nullable disable
+			string[] strs = null;
+#nullable enable
+			concmd.OnAutocomplete(concmd, argsStr, ConCommandArguments.FromString(argsStr, curWritePos, out int pos), pos,
+#nullable disable
+			ref strs,
+#nullable enable
+			ref helpStrs);
+
+			if (strs == null) return [];
+			return strs;
+		}
+
 		public static void Execute(string concmd, params string[] args) {
 			ConCommandBase? b = Get(concmd);
 
@@ -292,6 +362,7 @@ namespace Nucleus
 	}
 	public class ConVar : ConCommandBase
 	{
+		public delegate void OnConvarChangeDelegate(ConVar self, CVValue old, CVValue now);
 		private static Dictionary<string, string> __startupParms = [];
 		public static void SetStartupParameter(string parameterName, string parameterStringValue) {
 			ConCommandBase? cv = Get(parameterName);
@@ -301,7 +372,6 @@ namespace Nucleus
 			else __startupParms[parameterName] = parameterStringValue;
 		}
 		public override bool IsCommand => false;
-		public delegate void OnConvarChangeDelegate(ConVar self, CVValue old, CVValue now);
 		public event ChangeCallback? OnChange;
 		public string DefaultValue { get; set; }
 		private double? minimum = null;

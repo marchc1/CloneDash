@@ -172,7 +172,6 @@ namespace Nucleus.UI
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.V], () => {
 				if (Readonly) return;
 				InsertText(Clipboard.Text);
-				OnEdit();
 			});
 
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => {
@@ -205,6 +204,9 @@ namespace Nucleus.UI
 			wasHovered = self.Hovered;
 		}
 
+		public delegate void EditorPaintDelegate(TextEditor self, float w, float h);
+		public event EditorPaintDelegate? PreRenderEditorLines;
+
 		private void Editor_PaintOverride(Element self, float width, float height) {
 			int i = 0;
 			int row = (int)TopRow;
@@ -233,22 +235,18 @@ namespace Nucleus.UI
 
 			i = 0;
 			row = (int)TopRow;
-
+			PreRenderEditorLines?.Invoke(this, width, height);
 			while (i < MaxVisibleRows) {
 				if (row >= Rows.Count)
 					break;
 
 				var content = Rows[row];
 
-				var y = PaddingTop + ((i) * FontHeight);
-				var x = PaddingLeft;
-
-				var textPos = new Vector2F(x, y);
+				float y = PaddingTop + (row * FontHeight);
 				var xOffset = 0;
 				string txt = "";
 				foreach (var item in Highlighter.Rows[row] ?? []) {
-					Graphics2D.SetDrawColor(item.Color);
-					Graphics2D.DrawText(x + (xOffset * FontWidth), y + 2, item.Text, Font, TextSize);
+					RenderRowPiece(xOffset, i, item.Text, item.Color);
 					xOffset += item.Text.Length;
 					txt += item.Text;
 				}
@@ -319,6 +317,11 @@ namespace Nucleus.UI
 				Graphics2D.SetDrawColor(ForegroundColor);
 				Graphics2D.DrawRectangleOutline(0, 0, width, height);
 			}
+		}
+
+		public void RenderRowPiece(int character, int row, string text, Color color) {
+			Graphics2D.SetDrawColor(color);
+			Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
 		}
 
 		private void Editor_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
@@ -820,6 +823,9 @@ namespace Nucleus.UI
 			Rows.RemoveAt(index);
 			OnEdit();
 		}
+		public void AppendText(string text) {
+			SetText(GetText() + text);
+		}
 		public void AppendLine(string text) {
 			if (Rows.Count > 0 && (Rows[Rows.Count - 1]?.Length ?? 0) <= 0)
 				Rows[Rows.Count - 1] = text;
@@ -967,6 +973,12 @@ namespace Nucleus.UI
 			else
 				return Caret.SR_SC;
 		}
+		public void SetSelection(int startCol, int startRow, int endCol, int endRow) {
+			Caret.StartRow = startRow;
+			Caret.StartCol = startCol;
+			Caret.EndCol = endCol;
+			Caret.EndRow = endRow;
+		}
 		public bool HasSelection() => Caret.StartCol != Caret.EndCol || Caret.StartRow != Caret.EndRow;
 
 		public string GetSelection() {
@@ -1041,6 +1053,8 @@ namespace Nucleus.UI
 
 				SetCaret(Caret.Column + newLines.Last().Length, row);
 			}
+
+			OnEdit();
 			return true;
 		}
 		public bool DeleteSelection() {

@@ -3,12 +3,23 @@ using Nucleus.Engine;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus
 {
 	public class ConsoleAutocomplete : Panel
 	{
-		public ConCommandBase[]? PotentialMatches;
+		public string[]? PotentialMatches;
+		public string?[]? HelpStrings;
+		public void SetPotentialMatches(string[] potentialMatches, string?[]? helpStrings = null) {
+			PotentialMatches = potentialMatches;
+			HelpStrings = helpStrings;
+		}
+		public void SetNoMatches() {
+			PotentialMatches = null;
+			HelpStrings = null;
+		}
+		//public ConCommand? ActiveConCommand;
 		protected override void Initialize() {
 			base.Initialize();
 			Clipping = false;
@@ -17,7 +28,6 @@ namespace Nucleus
 			//base.Paint(width, height);
 			if (PotentialMatches == null) return;
 
-
 			int maxI = 0;
 			string maxS = "";
 
@@ -25,39 +35,79 @@ namespace Nucleus
 			string maxSD = "";
 
 			for (int i = 0; i < PotentialMatches.Length; i++) {
-				string s = PotentialMatches[i].Name;
+				string s = PotentialMatches[i];
 				if (s.Length > maxI) {
 					maxS = s;
 					maxI = s.Length;
 				}
 
-				string d = PotentialMatches[i].HelpString;
-				if (d.Length > maxID) {
-					maxSD = d;
-					maxID = d.Length;
+				if (HelpStrings != null) {
+					string? d = HelpStrings[i];
+					if (d != null && d.Length > maxID) {
+						maxSD = d;
+						maxID = d.Length;
+					}
 				}
 			}
 
-			float maxX = Graphics2D.GetTextSize(maxS, "Consolas", 16).X;
-			float maxXD = Graphics2D.GetTextSize(maxSD, "Consolas", 16).X;
+			var textSize = 16;
+			var textRect = 4;
 
-			Graphics2D.SetDrawColor(5, 5, 5, 155);
-			Graphics2D.DrawRectangle(new(0, -4), new(maxX + 8, (PotentialMatches.Length * 18) + 8));
-			Graphics2D.DrawRectangle(new(maxX + 20, -4), new(maxXD + 8, (PotentialMatches.Length * 18) + 8));
+			float maxX = Graphics2D.GetTextSize(maxS, "Consolas", textSize).X;
+			float maxXD = Graphics2D.GetTextSize(maxSD, "Consolas", textSize).X;
 
 			for (int i = 0; i < PotentialMatches.Length; i++) {
-				Graphics2D.SetDrawColor(245, 245, 245);
-				Graphics2D.DrawText(new(4, 18 * i), PotentialMatches[i].Name, "Consolas", 16);
+				if (hasTabbed && tabPointer == i)
+					Graphics2D.SetDrawColor(60, 60, 75, 255);
+				else
+					Graphics2D.SetDrawColor(5, 5, 5, 155);
+				var yRect = -4 + (i * (textSize + textRect));
 
-				Graphics2D.SetDrawColor(190, 190, 190);
-				Graphics2D.DrawText(new(4 + 16 + maxX, (18 * i) + 1f), ": " + PotentialMatches[i].HelpString, "Consolas", 13);
+				Graphics2D.DrawRectangle(new(0, yRect), new(maxX + 8, textSize + textRect));
+				if (HelpStrings != null)
+					Graphics2D.DrawRectangle(new(maxX + 20, yRect), new(maxXD + 8, textSize + textRect));
+
+				Graphics2D.SetDrawColor(245, 245, 245);
+				Graphics2D.DrawText(new(4, (textSize + textRect) * i), PotentialMatches[i], "Consolas", 16);
+
+				if (HelpStrings != null && i < HelpStrings.Length && i < PotentialMatches.Length) {
+					string? d = HelpStrings[i];
+					if (d != null) {
+						Graphics2D.SetDrawColor(190, 190, 190);
+						Graphics2D.DrawText(new(4 + 16 + maxX, ((textSize + textRect) * i) + 1f), ": " + d, "Consolas", 13);
+					}
+				}
 			}
 		}
 
-		internal ConCommandBase? GetSelected() {
-			if (PotentialMatches == null) return null;
-			if (PotentialMatches.Length <= 0) return null;
-			return PotentialMatches[0];
+
+		int tabPointer = 0;
+		bool hasTabbed = false;
+		internal void Reset() {
+			PotentialMatches = null;
+			tabPointer = 0;
+			hasTabbed = false;
+		}
+		internal string? Tab() {
+			if ((PotentialMatches?.Length ?? 0) == 0) return null;
+
+			if (hasTabbed == false) {
+				hasTabbed = true;
+				if (PotentialMatches == null) return "";
+
+				return PotentialMatches[0];
+			}
+			else {
+				tabPointer = tabPointer + 1;
+				if (PotentialMatches == null || tabPointer >= PotentialMatches.Length)
+					tabPointer = 0;
+				return PotentialMatches?[tabPointer] ?? "";
+			}
+		}
+
+		public bool TryGetTabSelection([NotNullWhen(true)] out string? tabSelection) {
+			tabSelection = PotentialMatches == null ? null : PotentialMatches.Length == 0 ? null : (tabPointer < 0 | tabPointer > PotentialMatches.Length) ? null : PotentialMatches[tabPointer];
+			return hasTabbed;
 		}
 	}
 	public class ConsoleWindow : Panel
@@ -84,6 +134,7 @@ namespace Nucleus
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
 			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
 			consoleInput.Editor.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], () => InGameConsole.CloseConsole());
+			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = Add<TextEditor>();
@@ -112,6 +163,13 @@ namespace Nucleus
 
 			this.InvalidateChildren(recursive: true);
 		}
+
+		private void ConsoleInput_PreRenderEditorLines(TextEditor self, float w, float h) {
+			if (autoCompleteStr == null) return;
+
+			self.RenderRowPiece(0, 0, autoCompleteStr, new Raylib_cs.Color(255, 255, 255, 150));
+		}
+
 		private void SetupRow(ConsoleMessage message) {
 			consoleLogs.AppendLine($"[{message.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Level)}] {message.Message}");
 			if (consoleLogs.Rows.Count > ConsoleSystem.MaxConsoleMessages)
@@ -122,34 +180,92 @@ namespace Nucleus
 			SetupRow(message);
 		}
 
+		private string? autoCompleteStr;
 		private void ConsoleInput_OnTab(TextEditor self) {
 			// Autocomplete
 			if (!IValidatable.IsValid(autoComplete)) return;
+			autoCompleteStr = autoComplete.Tab();
+			//ConCommandBase? selected = autoComplete.GetSelected();
+			//if (selected == null) return;
 
-			ConCommandBase? selected = autoComplete.GetSelected();
-			if (selected == null) return;
-
-			consoleInput.SetText(selected.Name);
-			consoleInput.SetCaret(selected.Name.Length, 0);
+			//consoleInput.SetText(selected.Name);
+			//consoleInput.SetCaret(selected.Name.Length, 0);
 		}
 
 		private void SetupAutocomplete() {
-			if (!IValidatable.IsValid(autoComplete)) {
+			var args = ConCommandArguments.FromString(consoleInput.GetText());
+			if (!IValidatable.IsValid(autoComplete)) 
 				autoComplete = UI.Add<ConsoleAutocomplete>();
-				autoComplete.Position = consoleInput.GetGlobalPosition() + new Vector2F(0, 40);
+			
+			int startX = 0;
+			for (int i = 0; i < args.Length - 1; i++) {
+				startX += (args.GetString(i)?.Length ?? 0) + 1;
+			}
+			autoComplete.Position = consoleInput.GetGlobalPosition() + new Vector2F(startX * consoleInput.FontWidth, 40);
+
+			string? basename = args.GetString(0);
+			if (basename == null) {
+				autoComplete.SetNoMatches();
+				return;
 			}
 
-			autoComplete.PotentialMatches = ConCommandBase.FindMatchesThatStartWith(consoleInput.GetText(), 0, 20);
+			if (args.Length <= 1) {
+				var matches = ConCommandBase.FindMatchesThatStartWith(basename, 0, 20);
+				string[] names = new string[matches.Length];
+				string[] descs = new string[matches.Length];
+				for (int i = 0, n = matches.Length; i < n; i++) {
+					var match = matches[i];
+					names[i] = match.Name;
+					descs[i] = match.HelpString;
+				}
+
+				autoComplete.SetPotentialMatches(names, descs);
+			}
+			else {
+				ConCommandBase? match = ConCommandBase.Get(basename);
+				if (match is ConCommand ccmd) {
+					autoComplete.SetPotentialMatches(ConCommand.Autocomplete(ccmd, args.Raw, consoleInput.Caret.Column));
+				}
+				else {
+					autoComplete.SetNoMatches();
+				}
+			}
 		}
 
 		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
+			if (IValidatable.IsValid(autoComplete)) {
+				if (key == KeyboardLayout.USA.Space && autoComplete.TryGetTabSelection(out string? tabSelection)) {
+					// Remove one character because this is a post-hook
+					var text = consoleInput.GetText();
+					var userLen = text.Length;
+					var currentCaret = consoleInput.Caret.StartCol;
+
+					var args = ConCommandArguments.FromString(text);
+					int startX = 0;
+					for (int i = 0; i < args.Length - 1; i++) {
+						startX += (args.GetString(i)?.Length ?? 0) + 1;
+					}
+
+					consoleInput.SetSelection(startX, 0, userLen - startX, 0);
+					consoleInput.InsertText(tabSelection + " ");
+					autoComplete.Reset();
+					autoCompleteStr = null;
+				}
+				else if (key != KeyboardLayout.USA.Tab) {
+					autoComplete.Reset();
+					autoCompleteStr = null;
+				}
+			}
+
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			SetupAutocomplete();
 		}
+
 		public override void OnRemoval() {
 			base.OnRemoval();
 			autoComplete?.Remove();
 		}
+
 		private void ConsoleLogs_Thinking(Element self) {
 			if (IValidatable.IsValid(autoComplete) && !consoleInput.Editor.KeyboardFocused) {
 				autoComplete.Remove();
