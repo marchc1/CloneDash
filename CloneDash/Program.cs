@@ -60,6 +60,7 @@ internal class Program
 			var sheet = song.GetSheet(difficulty);
 
 			var lvl = new CD_GameLevel(sheet);
+
 			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
 		}
 

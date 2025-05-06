@@ -553,7 +553,7 @@ public class SceneDescriptor : CloneDashDescriptor
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpause() => AnnouncerLines.UnpauseSound.Play(.8f);
 	public void PlayFullCombo() => AnnouncerLines.FullComboSound.Play(.8f);
-	public void PlayPunch() => Hitsounds.PunchSound.Play(.3f);
+	public void PlayPunch(float pitch = 1) => Hitsounds.PunchSound.Play(.3f, pitch);
 
 	public static SceneDescriptor? ParseFile(string filepath) => ParseFile<SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
 	public static SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<SceneDescriptor>(text, filename) : null;
