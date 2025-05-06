@@ -1,4 +1,5 @@
-﻿using Lua;
+﻿using CloneDash.Game;
+using Lua;
 using Lua.Standard;
 using Nucleus;
 using Nucleus.Engine;
@@ -78,9 +79,11 @@ public class CD_LuaEnv
 		State.Environment["TEXTURE_WRAP_MIRROR_CLAMP"] = (int)TextureWrap.TEXTURE_WRAP_MIRROR_CLAMP;
 
 		// Libraries
+		// TODO: CD_LuaAudio
+		State.Environment["graphics"] = Graphics = new(level);
+		State.Environment["level"] = new CD_LuaLevel(level);
+		// TODO: CD_LuaModels
 		State.Environment["textures"] = new CD_LuaTextures(level, level.Textures);
-		Graphics = new(level);
-		State.Environment["graphics"] = Graphics;
 	}
 
 	public CD_LuaGraphics Graphics;
