@@ -58,11 +58,41 @@ namespace CloneDash.Game
 
 		private class CD_Conductor_UIBar : Element
 		{
-			public float Completion { get; set; }
+			public float Playhead { get; set; }
+			public float Duration { get; set; }
+			public float Completion => Playhead / Duration;
+
+			public double XToSeconds(float x) => (x / RenderBounds.W) * Duration;
+
+			public delegate void Mouse();
+
+			public event Mouse? DragStart;
+			public event Mouse? DragUpdate;
+			public event Mouse? DragEnd;
+
+			public override void MouseClick(FrameState state, Nucleus.Input.MouseButton button) {
+				base.MouseClick(state, button);
+				DragStart?.Invoke();
+			}
+
+			public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+				base.MouseDrag(self, state, delta);
+				DragUpdate?.Invoke();
+			}
+
+			public override void MouseRelease(Element self, FrameState state, Nucleus.Input.MouseButton button) {
+				base.MouseRelease(self, state, button);
+				DragEnd?.Invoke();
+			}
 
 			public override void Paint(float width, float height) {
-				Graphics2D.SetDrawColor(230, 235, 255);
+				Graphics2D.SetDrawColor(230, 235, 255, Depressed ? 100 : 255);
 				Graphics2D.DrawRectangle(0, 0, width * Completion, height);
+
+				if (Depressed) {
+					Graphics2D.SetDrawColor(230, 235, 255);
+					Graphics2D.DrawRectangle(0, 2, (float)XToSeconds(GetMousePos().X) * Completion, height - 4);
+				}
 			}
 		}
 
@@ -72,6 +102,46 @@ namespace CloneDash.Game
 			UIBar = Level.UI.Add<CD_Conductor_UIBar>();
 			UIBar.Dock = Dock.Bottom;
 			UIBar.Size = new(0, 8);
+
+			UIBar.DragStart += UIBar_DragStart;
+			UIBar.DragUpdate += UIBar_DragUpdate;
+			UIBar.DragEnd += UIBar_DragEnd;
+		}
+
+		private bool wasPaused = false;
+		private double? dragSeconds;
+
+		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, Level.As<CD_GameLevel>()?.Music?.Length ?? throw new Exception());
+
+		private void UIBar_DragUpdate() {
+			var game = Level.As<CD_GameLevel>();
+			if (!game.AutoPlayer.Enabled) return;
+
+			dragSeconds = uiSeconds;
+		}
+
+		private void UIBar_DragEnd() {
+			var game = Level.As<CD_GameLevel>();
+			if (!game.AutoPlayer.Enabled) return;
+
+			if (dragSeconds != null) 
+				game.SeekTo(dragSeconds.Value);
+
+			if (!wasPaused)
+				game.ForceUnpause();
+
+			dragSeconds = null;
+		}
+
+		private void UIBar_DragStart() {
+			var game = Level.As<CD_GameLevel>();
+			if (!game.AutoPlayer.Enabled) return;
+
+			wasPaused = game.Paused;
+			if (!wasPaused)
+				game.ForcePause();
+
+			dragSeconds = uiSeconds;
 		}
 
 		public TempoChange GetTempoChangeAtTime(double time) {
@@ -132,8 +202,10 @@ namespace CloneDash.Game
 				currentInaccurateTime += EngineCore.FrameTime;
 			}
 
-			if (game.Music != null)
-				UIBar.Completion = game.Music.Playhead / game.Music.Length;
+			if (game.Music != null) {
+				UIBar.Playhead = game.Music.Playhead;
+				UIBar.Duration = game.Music.Length;
+			}
 			firstTick = false;
 			TimeDelta = Time - lastTime;
 		}

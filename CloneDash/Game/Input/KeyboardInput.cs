@@ -25,22 +25,31 @@ namespace CloneDash.Game.Input
 			Pause = InputSettings.GetKeysOfAction(InputAction.PauseGame).ToArray();
 		}
 
-		public void Poll(ref FrameState frameState, ref InputState inputState) {
-			foreach (var key in TopKeys) {
-				inputState.TopClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
-				inputState.TopHeldCount += frameState.Keyboard.IsKeyDown(key) ? 1 : 0;
-			}
+		public void Poll(ref FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
+			bool pollForTop = actionFilter == null || actionFilter == InputAction.AirAttack;
+			bool pollForBottom = actionFilter == null || actionFilter == InputAction.GroundAttack;
+			bool pollForFever = actionFilter == null || actionFilter == InputAction.FeverStart;
+			bool pollForPause = actionFilter == null || actionFilter == InputAction.PauseGame;
 
-			foreach (var key in BottomKeys) {
-				inputState.BottomClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
-				inputState.BottomHeldCount += frameState.Keyboard.IsKeyDown(key) ? 1 : 0;
-			}
+			if (pollForTop)
+				foreach (var key in TopKeys) {
+					inputState.TopClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+					inputState.TopHeldCount += frameState.Keyboard.IsKeyDown(key) ? 1 : 0;
+				}
 
-			foreach (var key in StartFever)
-				inputState.TryFever |= frameState.Keyboard.WasKeyPressed(key);
+			if (pollForBottom)
+				foreach (var key in BottomKeys) {
+					inputState.BottomClicked += frameState.Keyboard.WasKeyPressed(key) ? 1 : 0;
+					inputState.BottomHeldCount += frameState.Keyboard.IsKeyDown(key) ? 1 : 0;
+				}
 
-			foreach (var key in Pause)
-				inputState.PauseButton |= frameState.Keyboard.WasKeyPressed(key);
+			if (pollForFever)
+				foreach (var key in StartFever)
+					inputState.TryFever |= frameState.Keyboard.WasKeyPressed(key);
+
+			if (pollForPause)
+				foreach (var key in Pause)
+					inputState.PauseButton |= frameState.Keyboard.WasKeyPressed(key);
 		}
 	}
 }

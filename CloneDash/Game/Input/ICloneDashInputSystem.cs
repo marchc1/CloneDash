@@ -1,4 +1,5 @@
-﻿using Nucleus.Types;
+﻿using CloneDash.Settings;
+using Nucleus.Types;
 
 namespace CloneDash.Game.Input
 {
@@ -14,6 +15,6 @@ namespace CloneDash.Game.Input
         /// So instead, you would want to do <c><see cref="InputState.TopClicked"/> += 2</c>, <c><see cref="InputState.PauseButton"/> |= false</c>, etc...
         /// </summary>
         /// <param name="input"></param>
-        public abstract void Poll(ref FrameState frameState, ref InputState inputState);
+        public abstract void Poll(ref FrameState frameState, ref InputState inputState, InputAction? actionFilter = null);
     }
 }

@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace CloneDash.Game.Input
 {
 	public class MouseInput : ICloneDashInputSystem
-    {
+	{
 		public static MouseButton[] TopButtons;
 		public static MouseButton[] BottomButtons;
 		public static MouseButton[] StartFever;
@@ -25,19 +25,26 @@ namespace CloneDash.Game.Input
 			Pause = InputSettings.GetMouseButtonsOfAction(InputAction.PauseGame).ToArray();
 		}
 
-		public void Poll(ref FrameState frameState, ref InputState inputState) {
-            foreach (var btn in TopButtons) {
-                inputState.TopClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
-                inputState.TopHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
-			}
+		public void Poll(ref FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
+			bool pollForTop = actionFilter == null || actionFilter == InputAction.AirAttack;
+			bool pollForBottom = actionFilter == null || actionFilter == InputAction.GroundAttack;
+			bool pollForFever = actionFilter == null || actionFilter == InputAction.FeverStart;
 
-            foreach (var btn in BottomButtons) {
-                inputState.BottomClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
-                inputState.BottomHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
-            }
+			if (pollForTop)
+				foreach (var btn in TopButtons) {
+					inputState.TopClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
+					inputState.TopHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
+				}
 
-			foreach (var btn in StartFever)
-				inputState.TryFever |= frameState.Mouse.Clicked(btn);
-        }
-    }
+			if (pollForBottom)
+				foreach (var btn in BottomButtons) {
+					inputState.BottomClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
+					inputState.BottomHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
+				}
+
+			if (pollForFever)
+				foreach (var btn in StartFever)
+					inputState.TryFever |= frameState.Mouse.Clicked(btn);
+		}
+	}
 }

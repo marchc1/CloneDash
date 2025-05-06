@@ -24,6 +24,7 @@ using Nucleus.Entities;
 using System.Diagnostics.CodeAnalysis;
 using CloneDash.Game.Statistics;
 using CloneDash.Interfaces;
+using CloneDash.Settings;
 
 namespace CloneDash.Game;
 
@@ -304,6 +305,18 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		UnpauseTime = 0;
 	}
 
+	public void ForcePause() {
+		if (Music != null)
+			Music.Paused = true;
+		Paused = true;
+	}
+	public void ForceUnpause() {
+		if (Music != null)
+			Music.Paused = false;
+		Paused = false;
+	}
+
+
 	int attackP = 0;
 	int failP = 0;
 
@@ -447,7 +460,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 			if (FeverFX != null) // Fever should be disable-able fully by the player
 				Lua.DoFile("fever", FeverFX.PathToBackgroundController);
-			
+
 			Lua.DoFile("scene", Scene.PathToBackgroundController);
 		}
 
@@ -659,6 +672,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		inputState.Reset();
 		if (AutoPlayer.Enabled) {
 			AutoPlayer.Play(ref inputState);
+			foreach (ICloneDashInputSystem playerInput in InputReceivers)
+				playerInput.Poll(ref frameState, ref inputState, InputAction.PauseGame);
 		}
 		else if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
@@ -678,7 +693,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			}
 			else {
 				if (startPause()) {
-
 					PauseWindow = this.UI.Add<Panel>();
 					PauseWindow.Size = new(300, 400);
 					PauseWindow.Center();
@@ -875,7 +889,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					break;
 				case EntityInteractivity.Avoid:
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
-					
+
 					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						entity.DamagePlayer();
