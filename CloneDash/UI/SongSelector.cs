@@ -258,11 +258,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		UserWantsMoreSongs?.Invoke();
 	}
 
-	public Button Disc1;
-	public Button Disc2;
-	public Button Disc3;
-	public Button Disc4;
-	public Button Disc5;
 	public Label CurrentTrackName;
 	public Label CurrentTrackAuthor;
 
@@ -276,7 +271,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 
 		DiscIndex--;
-		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out - 1);
+		DiscAnimationOffset.ResetTo(-1);
 		ResetDiskTrack();
 	}
 
@@ -285,7 +280,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 
 		DiscIndex++;
-		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out + 1);
+		DiscAnimationOffset.ResetTo(1);
 		ResetDiskTrack();
 	}
 
@@ -436,11 +431,14 @@ public class SongSelector : Panel, IMainMenuPanel
 		var offsetYParent = ChildRenderOffset.Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
 		float flyAwayMw = flyAway * width;
-		var widthRatio = MathF.Cos((float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -1 - flyAway * 2, 1 + flyAway * 2));
+
+		var lrOut = DiscAnimationOffset.Out % 5;
+
+		var widthRatio = MathF.Cos((float)NMath.Remap(index + lrOut, 0, Discs.Length - 1, -1 - flyAway * 2, 1 + flyAway * 2));
 		x = (float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -flyAwayMw, width + flyAwayMw);
 		y = height / 2f + (1 - widthRatio) * 250;
 		var rR = 150;
-		rot = (float)NMath.Remap(index + DiscAnimationOffset.Out, 0, Discs.Length - 1, -15 - flyAway * rR, 15 + flyAway * rR);
+		rot = (float)NMath.Remap(index + lrOut, 0, Discs.Length - 1, -25 - flyAway * rR, 25 + flyAway * rR);
 	}
 
 	public float GetDiscSize(float width, Button b) {
@@ -528,15 +526,16 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 	}
 
+	public static int VisibleDiscs => 5;
+
 	protected override void Initialize() {
 		base.Initialize();
 		DrawPanelBackground = false;
 
-		Add(out Disc1);
-		Add(out Disc2);
-		Add(out Disc3);
-		Add(out Disc4);
-		Add(out Disc5);
+		Discs = new Button[VisibleDiscs];
+		for (int i = 0; i < VisibleDiscs; i++) 
+			Add(out Discs[i]);
+		
 		Add(out CurrentTrackName);
 		Add(out CurrentTrackAuthor);
 		Add(out SearchBar);
@@ -554,7 +553,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		Loading.AutoSize = true;
 		Loading.Visible = false;
 
-		Discs = [Disc1, Disc2, Disc3, Disc4, Disc5];
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.Visible = false;
@@ -563,7 +561,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			disc.MouseReleaseEvent += (s, _, _) => {
 				NavigateToDisc(s as Button);
-				var song = GetDiscSong(s as Button);
+				var song = GetDiscSong(0);
 				if (song is CustomChartsSong customChartsSong) {
 					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, c));
 				}
