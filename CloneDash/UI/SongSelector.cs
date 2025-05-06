@@ -334,6 +334,19 @@ public class SongSelector : Panel, IMainMenuPanel
 		doNotTryToGetTrackAgain = false;
 	}
 
+	public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		if (delta.Y == 0) return;
+
+		for (int i = 0; i < Math.Abs(delta.Y); i++) {
+			if (delta.Y > 0)
+				MoveLeft();
+			else
+				MoveRight();
+		}
+
+		InvalidateLayout();
+	}
+
 	public void FigureOutDisk() {
 		if (GetSongsList().Count <= 0) return;
 		activeTrack?.Update();
