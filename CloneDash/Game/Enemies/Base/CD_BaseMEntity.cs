@@ -136,12 +136,12 @@ namespace CloneDash.Game
 		/// </summary>
 		public PathwaySide Pathway { get; set; }
 
-		/// When does this entity first appear on the screen, in seconds
+		/// When does this entity first appear on the screen, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
 		public double ShowTime { get; set; }
 
 		/// <summary>
-		/// When does this entity need to be hit, in seconds
+		/// When does this entity need to be hit, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
 		public double HitTime { get; set; }
 
@@ -283,11 +283,15 @@ namespace CloneDash.Game
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be hit. A negative value means that the player hit too late, a positive means the player hit too early.
+		/// <br/>
+		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
 		public double DistanceToHit => HitTime - Level.As<CD_GameLevel>().Conductor.Time;
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
+		/// <br/>
+		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
 		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time;
 
