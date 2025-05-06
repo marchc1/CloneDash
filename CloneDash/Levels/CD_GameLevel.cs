@@ -657,13 +657,12 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			ExitFever();
 
 		inputState.Reset();
-		if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
-			foreach (ICloneDashInputSystem playerInput in InputReceivers)
-				playerInput.Poll(ref frameState, ref inputState);
-		}
-
 		if (AutoPlayer.Enabled) {
 			AutoPlayer.Play(ref inputState);
+		}
+		else if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
+			foreach (ICloneDashInputSystem playerInput in InputReceivers)
+				playerInput.Poll(ref frameState, ref inputState);
 		}
 
 		InputState = inputState;
