@@ -536,7 +536,7 @@ namespace Nucleus
 				case ConVar cv:
 					// Lets see if usargs is not set, which means a description is given
 					if (usargs.Length == 0) {
-						Logs.Info($"  {ccname} (default {cv.DefaultValue}{(cv.DefaultValue != cv.GetString() ? $", current {cv.GetString()})" : ")")}");
+						Logs.Info($"  {ccname} (default '{cv.DefaultValue}'{(cv.DefaultValue != cv.GetString() ? $", 'current {cv.GetString()})'" : ")")}");
 						foreach (var line in cv.HelpString.Split("\n"))
 							Logs.Info($"    {line}");
 					}
