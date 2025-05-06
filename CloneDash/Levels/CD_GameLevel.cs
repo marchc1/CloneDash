@@ -1468,7 +1468,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public void RemoveScore(int score) => Score -= score;
 
 	/// <summary>
-	/// This is a callback for <see cref="ISustainManager"/> implementations.
+	/// This is a callback for <see cref="ISustainManager"/> implementations. It expects wasSustaining, inSustaining, and sustainCount to be relative to the current pathway.
 	/// </summary>
 	/// <param name="sustain"></param>
 	/// <param name="pathway"></param>
@@ -1476,22 +1476,18 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <param name="isSustainingNow"></param>
 	/// <param name="sustainCount"></param>
 	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
-		playeranim_startsustain = playeranim_startsustain ? !playeranim_endsustain : playeranim_startsustain;
-		playeranim_startsustain_top = playeranim_startsustain_top ? !playeranim_endsustain : playeranim_startsustain_top;
-		playeranim_startsustain_bottom = playeranim_startsustain_bottom ? !playeranim_endsustain : playeranim_startsustain_bottom;
-		playeranim_endsustain = false;
+		bool nowInsustain = Sustains.ActiveSustains() > 0;
 
-		if (!wasSustainingBefore && isSustainingNow) playeranim_startsustain = true;
+		playeranim_startsustain = !playeranim_insustain && nowInsustain;
+		playeranim_endsustain = playeranim_insustain && !nowInsustain;
+		if (pathway == PathwaySide.Top)
+			playeranim_startsustain_top = !wasSustainingBefore && isSustainingNow;
+		else
+			playeranim_startsustain_bottom = !wasSustainingBefore && isSustainingNow;
 
-		bool isTop = pathway == PathwaySide.Top, isBottom = pathway == PathwaySide.Bottom;
-		bool wasSustainingTop = isTop && wasSustainingBefore, wasSustainingBottom = isBottom && wasSustainingBefore;
-		bool isSustainingTop = isTop && isSustainingNow, isSustainingBottom = isBottom && isSustainingNow;
+		playeranim_startsustain = playeranim_startsustain || (playeranim_startsustain_top && playeranim_startsustain_bottom);
 
-		if (!wasSustainingTop && isSustainingTop) playeranim_startsustain_top = true;
-		if (!wasSustainingBottom && isSustainingBottom) playeranim_startsustain_bottom = true;
-
-		if (wasSustainingBefore && !isSustainingNow)
-			playeranim_endsustain = true;
+		playeranim_insustain = nowInsustain;
 	}
 
 	public delegate void AttackEvent(CD_GameLevel game, PathwaySide side);
@@ -1599,6 +1595,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			if (!suppress_hologram && playeranim_attackair && playeranim_startsustain_bottom && !playeranim_startsustain_top) {
 				// Hologram player attacks the air, while the player starts the bottom sustain.
 				PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
+				//EngineCore.Interrupt(() => DrawPlayerState(), false);
 			}
 
 			if (!suppress_hologram && playeranim_attackground && playeranim_startsustain_top && !playeranim_startsustain_bottom) {
