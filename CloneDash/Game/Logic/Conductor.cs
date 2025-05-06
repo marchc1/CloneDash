@@ -14,12 +14,22 @@ namespace CloneDash.Game
 	/// </summary>
 	public struct TempoChange
 	{
+		public class TimeComparer : IComparer<TempoChange> {
+			public int Compare(TempoChange x, TempoChange y) {
+				return Math.Sign(y.Time - x.Time);
+			}
+		}
+
 		public double Time;
 		public double BPM;
 
 		public TempoChange(double time, double bpm) {
 			this.Time = time;
 			this.BPM = bpm;
+		}
+
+		public override string ToString() {
+			return $"Tempo Change [time: {Time}, bpm: {BPM}]";
 		}
 	}
 
@@ -66,22 +76,21 @@ namespace CloneDash.Game
 			UIBar.Dock = Dock.Bottom;
 			UIBar.Size = new(0, 8);
 		}
+
 		public TempoChange GetTempoChangeAtTime(double time) {
 			if (TempoChanges.Count == 0)
 				throw new Exception("No tempo changes found in DashGame (likely a DashSheet import error)");
 
-			if (TempoChanges.Count == 1)
+			if (time <= 0)
 				return TempoChanges[0];
 
-			TempoChange last = TempoChanges[0];
-			foreach (var tempoChange in TempoChanges) {
-				if (time >= tempoChange.Time)
-					last = tempoChange;
-				else
-					break;
+			for (int i = 0; i < TempoChanges.Count; i++) {
+				var tempoChange = TempoChanges[i];
+				if (tempoChange.Time > time)
+					return TempoChanges[i - 1];
 			}
 
-			return last;
+			return TempoChanges.Last();
 		}
 		/// <summary>
 		/// Gets the current BPM from the song position

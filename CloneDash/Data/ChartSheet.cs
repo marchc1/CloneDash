@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Data
+﻿using CloneDash.Game;
+
+namespace CloneDash.Data
 {
     public class ChartSheet
     {
@@ -9,5 +11,7 @@
         public string Rating { get; set; }
         public List<ChartEntity> Entities { get; } = [];
         public List<ChartEvent> Events { get; } = [];
-    }
+		public List<TempoChange> TempoChanges { get; } = [];
+
+	}
 }

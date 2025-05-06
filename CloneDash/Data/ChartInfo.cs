@@ -2,7 +2,7 @@
 {
     public class ChartInfo
     {
-        public decimal BPM { get; set; } = 0;
+        public string BPM { get; set; } = "";
         public string Scene { get; set; } = "";
         public string Music { get; set; } = "";
         public string[] LevelDesigners { get; set; } = [];

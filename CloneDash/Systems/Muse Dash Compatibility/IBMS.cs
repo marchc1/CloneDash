@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Data;
+using CloneDash.Game;
 using CloneDash.Game.Entities;
 using CloneDash.Systems;
 using CustomAlbums.Utilities;
@@ -109,12 +110,16 @@ namespace CloneDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo) {
+		public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null) {
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
 			ChartSheet sheet = new(song);
 			sheet.Rating = song.Difficulty(MDinfo.difficulty);
 
+			sheet.TempoChanges.Add(new(0, MDinfo.bpm));
+			if (tempoChanges != null)
+				sheet.TempoChanges.AddRange(tempoChanges);
+			
 			bool first = true;
 			Dictionary<int, List<MusicData>> LongPresses = new();
 			HashSet<string> WarnedIBMSPresses = new();

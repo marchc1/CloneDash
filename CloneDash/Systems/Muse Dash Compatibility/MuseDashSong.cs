@@ -182,7 +182,7 @@ namespace CloneDash
                 List<string> SearchTags = [];
                 SearchTags.AddRange(__jsonInfo.Name.Split(' '));
                 ChartInfo info = new ChartInfo() {
-                    BPM = decimal.TryParse(__jsonInfo.BPM, out var bpm) ? bpm : 0,
+                    BPM = __jsonInfo.BPM,
                     Music = __jsonInfo.Music,
                     LevelDesigners = [__jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner],
                     Difficulty1 = __jsonInfo.Difficulty1,

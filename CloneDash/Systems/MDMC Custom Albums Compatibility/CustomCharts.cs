@@ -7,6 +7,9 @@ using Nucleus.Audio;
 using CloneDash.Systems.CustomCharts;
 using CloneDash.Systems.CustomAlbums;
 using Nucleus.Files;
+using SpirV;
+using System.Security.Cryptography;
+using CloneDash.Game;
 
 namespace CloneDash
 {
@@ -174,7 +177,7 @@ namespace CloneDash
 					Name = info.name;
 					Author = info.author;
 					ChartInfo ret = new() {
-						BPM = decimal.TryParse(info.bpm, out var bpmprs) ? bpmprs : 0,
+						BPM = info.bpm,
 						LevelDesigners = [info.levelDesigner1, info.levelDesigner2, info.levelDesigner3, info.levelDesigner4],
 						Scene = info.scene,
 						SearchTags = info.searchTags.ToArray(),
@@ -189,7 +192,7 @@ namespace CloneDash
 				}
 				else {
 					return new() {
-						BPM = 0,
+						BPM = "",
 						Difficulty1 = "",
 						Difficulty2 = "",
 						Difficulty3 = "",
@@ -259,16 +262,34 @@ namespace CloneDash
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				var bms = BmsLoader.Load(map, $"map{id}.bms");
+				var bms = BmsLoader.Load(map, $"map{id}.bms", out var bpmChanges);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 
-
 				var stageInfo = BmsLoader.TransmuteData(bms);
+				stageInfo.mapName = Name;
+				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
+				stageInfo.difficulty = id;
+				stageInfo.bpm = bms.Bpm;
+				stageInfo.sceneEvents = bms.GetSceneEvents();
+
+				double lastTime = 0;
+				double lastBeat = 0;
+				double lastBPM = bms.Bpm;
+				TempoChange[] newChanges = new TempoChange[bpmChanges.Count];
+				for (int i = 0; i < bpmChanges.Count; i++) {
+					var change = bpmChanges[i];
+					double deltaBeats = change.Time - lastBeat;
+					lastTime += (deltaBeats * 60.0 * 4) / lastBPM;
+					lastBeat = change.Time;
+					lastBPM = change.BPM;
+					newChanges[i] = new TempoChange(lastTime, lastBPM);
+				}
+
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
-				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo);
+				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo, newChanges);
 			}
 		}
 	}

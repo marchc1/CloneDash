@@ -15,7 +15,6 @@ namespace CloneDash.Data
 
 		public string Name { get; set; } = "";
 		public string Author { get; set; } = "";
-		public decimal BPM => GetInfo().BPM;
 
 		public string Difficulty1 => GetInfo()?.Difficulty1 ?? "";
 		public string Difficulty2 => GetInfo()?.Difficulty2 ?? "";

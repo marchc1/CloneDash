@@ -559,8 +559,11 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Interlude.Spin(submessage: "Loading audio...");
 
 			//foreach (var tempoChange in Sheet)
-			if (Sheet != null)
-				Conductor.AddTempoChange(0, (double)Sheet.Song.BPM);
+			if (Sheet != null) {
+				foreach(var bpmChange in Sheet.TempoChanges) {
+					Conductor.AddTempoChange(bpmChange.Time, bpmChange.BPM);
+				}
+			}
 			else		  
 				Conductor.AddTempoChange(0, 120);
 
