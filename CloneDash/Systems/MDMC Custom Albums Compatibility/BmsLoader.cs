@@ -301,36 +301,6 @@ namespace CloneDash.Systems.CustomCharts
 
 			Logs.Info("Processed geminis!");
 		}
-		private static void ProcessDelay(Bms bms) {
-			var delayCache = new Dictionary<string, Decimal>();
-
-			for (var i = 0; i < MusicDataManager.Data.Count; i++) {
-				var mData = MusicDataManager.Data[i];
-				if (!string.IsNullOrEmpty(mData.noteData?.ibms_id)) {
-					var type = mData.noteData.GetNoteType();
-
-					var prefabName = mData.noteData.prefab_name;
-					if (!string.IsNullOrEmpty(prefabName)) {
-						// If not a pickup type, convert to most recent scene
-						if (type != NoteType.Hp && type != NoteType.Music) {
-							var prefix = prefabName[..2];
-						}
-
-						if (delayCache.TryGetValue(prefabName, out var delay)) {
-							mData.dt = delay;
-							MusicDataManager.Set(i, mData);
-						}
-					}
-				}
-
-				var showTick = mData.tick - mData.dt;
-				_delay = showTick < _delay ? showTick : _delay;
-			}
-
-			// Round delay
-			_delay = Decimal.Round(_delay, 3);
-		}
-
 		internal static StageInfo TransmuteData(Bms bms) {
 			MusicDataManager.Clear();
 			_delay = 0;
@@ -342,7 +312,6 @@ namespace CloneDash.Systems.CustomCharts
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			//ProcessBossData(bms);
-			ProcessDelay(bms);
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			ProcessGeminis(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
