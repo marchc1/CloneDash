@@ -322,6 +322,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	public CD_StatisticsData Stats;
 	public CharacterDescriptor Character;
+	public FeverDescriptor? FeverFX;
 	public SceneDescriptor Scene;
 
 	public enum CDDAnimationType
@@ -434,22 +435,34 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	protected LuaFunction? renderScene;
 	protected LuaFunction? thinkScene;
-	protected LuaFunction? feverStart;
-	protected LuaFunction? feverRender;
+	protected LuaFunction? startFeverFX;
+	protected LuaFunction? renderFeverFX;
+	protected LuaFunction? thinkFeverFX;
 
 	protected void SetupLua(bool first = true) {
 		if (first) {
+			Lua.State.Environment["game"] = new CD_LuaGame(this);
+			Lua.State.Environment["fever"] = new LuaTable();
 			Lua.State.Environment["scene"] = new LuaTable();
 
+			if (FeverFX != null) // Fever should be disable-able fully by the player
+				Lua.DoFile("fever", FeverFX.PathToBackgroundController);
+			
 			Lua.DoFile("scene", Scene.PathToBackgroundController);
 		}
 
-		var scene = Lua.State.Environment["scene"].Read<LuaTable>();
+		var fever = Lua.State.Environment["fever"].Read<LuaTable>();
+		{
+			fever["start"].TryRead(out startFeverFX);
+			fever["render"].TryRead(out renderFeverFX);
+			fever["think"].TryRead(out thinkFeverFX);
+		}
 
-		scene["render"].TryRead(out renderScene);
-		scene["think"].TryRead(out thinkScene);
-		scene["feverStart"].TryRead(out feverStart);
-		scene["feverRender"].TryRead(out feverRender);
+		var scene = Lua.State.Environment["scene"].Read<LuaTable>();
+		{
+			scene["render"].TryRead(out renderScene);
+			scene["think"].TryRead(out thinkScene);
+		}
 	}
 
 	public override void Initialize(params object[] args) {
@@ -459,12 +472,15 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
-				var sceneData = SceneMod.GetSceneData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
-				if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
-
 				Character = charData;
+
+				var sceneData = SceneMod.GetSceneData();
+				if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
 				Scene = sceneData;
+
+				var feverFX = FeverMod.GetFeverData();
+				FeverFX = feverFX;
 			}
 
 			Interlude.Spin(submessage: "Initializing the scene...");
@@ -560,11 +576,11 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 			//foreach (var tempoChange in Sheet)
 			if (Sheet != null) {
-				foreach(var bpmChange in Sheet.TempoChanges) {
+				foreach (var bpmChange in Sheet.TempoChanges) {
 					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Measure, bpmChange.BPM);
 				}
 			}
-			else		  
+			else
 				Conductor.AddTempoChange(0, 0, 120);
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
@@ -574,7 +590,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 					Music.Loops = false;
 					Music.Playing = true;
-					if(args.Length > 1) {
+					if (args.Length > 1) {
 						double measure = (double)args[1];
 						Music.Playhead = (float)Conductor.MeasureToSeconds(measure);
 					}
@@ -590,7 +606,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if(CommandLineArguments.GetParam("pretime", 5d) > 0)
+			if (CommandLineArguments.GetParam("pretime", 5d) > 0)
 				Scene.PlayBegin();
 		}
 
@@ -877,7 +893,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 
-		Lua.ProtectedCall(thinkScene, Curtime, CurtimeDelta, InFever);
+		Lua.ProtectedCall(thinkScene);
+		Lua.ProtectedCall(thinkFeverFX);
 	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
@@ -1122,7 +1139,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Lua.Graphics.StartRenderingLuaContext();
 		Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
 		if (InFever)
-			Lua.ProtectedCall(feverRender, frameState.WindowWidth, frameState.WindowHeight, FeverTime - FeverTimeLeft, FeverTime);
+			Lua.ProtectedCall(renderFeverFX, frameState.WindowWidth, frameState.WindowHeight, FeverTime - FeverTimeLeft, FeverTime);
 		Lua.Graphics.EndRenderingLuaContext();
 
 		Rlgl.PopMatrix();
@@ -1320,7 +1337,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <summary>
 	/// How much fever time is left?
 	/// </summary>
-	private double FeverTimeLeft => FeverTime - (Conductor.Time - WhenDidFeverStart);
+	public double FeverTimeLeft => FeverTime - (Conductor.Time - WhenDidFeverStart);
 	/// <summary>
 	/// Returns the fever time left as a value of 0-1, where 0 is the end and 1 is the start. Good for animation.
 	/// </summary>
@@ -1398,7 +1415,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		WhenDidFeverStart = Conductor.Time;
 		Scene.PlayFever();
 
-		Lua.ProtectedCall(feverStart);
+		Lua.ProtectedCall(startFeverFX);
 	}
 	/// <summary>
 	/// Exits fever.

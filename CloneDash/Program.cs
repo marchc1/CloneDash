@@ -105,6 +105,7 @@ internal class Program
 			{
 				Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
 				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
+				Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/"));
 				Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
 				Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
 			}
@@ -118,6 +119,7 @@ internal class Program
 			// tail: default asset fallbacks
 			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/"));
 			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/"));
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
 			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
 			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
 		}

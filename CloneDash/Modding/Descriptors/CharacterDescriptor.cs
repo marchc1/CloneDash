@@ -94,13 +94,11 @@ namespace CloneDash.Modding.Descriptors
 	}
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
-		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, "4") { }
+		public CharacterDescriptor() : base(CloneDashDescriptorType.Character, "chars", "character", "character", "2025-05-06-01") { }
 
 		[JsonProperty("name")] public string Name;
 		[JsonProperty("author")] public string Author;
 		[JsonProperty("perk")] public string Perk;
-		[JsonProperty("version")] public string Version;
-
 
 		/// <summary>
 		/// Maximum player health
@@ -160,15 +158,5 @@ namespace CloneDash.Modding.Descriptors
 		public string GetMainShowModel() => MainShow.Model;
 		public string GetVictoryModel() => Victory.Model;
 		public string GetMainShowMusic() => MainShow.Music;
-
-		internal void MountToFilesystem() {
-			Filesystem.RemoveSearchPath("character");
-			var searchPath = Filesystem.FindSearchPath("chars", $"{Filename}/character.cdd");
-			switch (searchPath) {
-				case DiskSearchPath diskPath:
-					Filesystem.AddTemporarySearchPath("character", DiskSearchPath.Combine(searchPath, Filename));
-					break;
-			}
-		}
 	}
 }

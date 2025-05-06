@@ -14,7 +14,7 @@ namespace CloneDash.Modding.Descriptors;
 public class SceneDescriptor : CloneDashDescriptor
 {
 #nullable disable
-	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "2") { }
+	public SceneDescriptor() : base(CloneDashDescriptorType.Scene, "scenes", "scene", "scene", "2025-05-06-01") { }
 #nullable enable
 	public abstract class SceneDescriptor_ContainsOneModelData
 	{
