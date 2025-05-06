@@ -155,12 +155,10 @@ namespace Nucleus.UI
 					EngineCore.Window.SetMousePosition(dragStart);
 
 				didDrag = true;
-				double precision;
 				if (MinimumValue.HasValue && MaximumValue.HasValue) {
-					precision = RenderBounds.W / (MaximumValue.Value - MinimumValue.Value) ;
+					Value = NMath.Remap(self.GetMousePos().X, BarPadding, self.RenderBounds.Width - (BarPadding * 2), MinimumValue.Value, MaximumValue.Value);
 				}
-				else precision = MathF.Pow(1.5f, Digits);
-				Value += delta.X / precision;
+				else Value += delta.X / MathF.Pow(1.5f, Digits);
 			}
 		}
 
@@ -191,12 +189,12 @@ namespace Nucleus.UI
 		[StringSyntax(StringSyntaxAttribute.NumericFormat)]
 		public string? TextFormat { get; set; }
 
+		public float BarPadding = 6;
 		public override void Paint(float width, float height) {
 			if(MinimumValue != null && MaximumValue != null) {
-				var padding = 6;
-				var draw = (float)Math.Max(NMath.Remap(Value, MinimumValue.Value, MaximumValue.Value, 0, width - (padding * 2)), padding / 2);
+				var draw = (float)Math.Max(NMath.Remap(Value, MinimumValue.Value, MaximumValue.Value, 0, width - (BarPadding * 2)), BarPadding / 2);
 				Graphics2D.SetDrawColor(100, 149, 237);
-				Graphics2D.DrawRectangle(padding, padding, draw, height - (padding * 2));
+				Graphics2D.DrawRectangle(BarPadding, BarPadding, draw, height - (BarPadding * 2));
 			}
 			base.Paint(width, height);
 		}
