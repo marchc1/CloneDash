@@ -31,10 +31,20 @@ namespace Nucleus.Engine
 				(p is string s && getStrBoolVal(s))
 			) : def;
 
-		public static T GetParam<T>(string parm, T def)
-			=> parameters.TryGetValue(parm, out object? obj)
-				? (obj is T ? (T)obj : def)
-				: def;
+		public static T GetParam<T>(string parm, T def) {
+			if (!parameters.TryGetValue(parm, out object? obj)) return def;
+
+			var tAs = def switch {
+				double _ => obj switch {
+					int o => (T)(object)Convert.ToDouble(o),
+					_ => throw new InvalidCastException()
+				},
+				_ => (T)obj
+			};
+
+
+			return tAs;
+		}
 
 		public static bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) {
 			var has = parameters.TryGetValue(parm, out object? obj);

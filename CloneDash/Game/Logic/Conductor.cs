@@ -1,4 +1,5 @@
-﻿using Nucleus;
+﻿using CloneDash.Systems.CustomCharts;
+using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
@@ -14,22 +15,18 @@ namespace CloneDash.Game
 	/// </summary>
 	public struct TempoChange
 	{
-		public class TimeComparer : IComparer<TempoChange> {
-			public int Compare(TempoChange x, TempoChange y) {
-				return Math.Sign(y.Time - x.Time);
-			}
-		}
-
 		public double Time;
+		public double Measure;
 		public double BPM;
 
-		public TempoChange(double time, double bpm) {
+		public TempoChange(double time, double measure, double bpm) {
 			this.Time = time;
+			this.Measure = measure;
 			this.BPM = bpm;
 		}
 
 		public override string ToString() {
-			return $"Tempo Change [time: {Time}, bpm: {BPM}]";
+			return $"Tempo Change [time: {Time}, measure {Measure}, bpm: {BPM}]";
 		}
 	}
 
@@ -40,7 +37,7 @@ namespace CloneDash.Game
 		}
 		public List<TempoChange> TempoChanges { get; private set; } = [];
 
-		public void AddTempoChange(double time, double bpm) => TempoChanges.Add(new(time, bpm));
+		public void AddTempoChange(double time, double measure, double bpm) => TempoChanges.Add(new(time, measure, bpm));
 
 		/// <summary>
 		/// The current music playhead, adjusted for inaccuracies.
@@ -162,6 +159,21 @@ namespace CloneDash.Game
 				div2sec = 0.5f;
 
 			return ((float)NMath.Modulo(Time, div2sec)) / div2sec;
+		}
+
+		public double MeasureToSeconds(double measure) {
+			double ret = 0;
+
+			for (int i = 0; i < TempoChanges.Count; i++) {
+				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
+				var change = TempoChanges[i];
+
+				if(i == TempoChanges.Count - 1 || change.Measure > measure) {
+					return lastChange.Time + ((measure - lastChange.Measure) * (60 / change.BPM));
+				}
+			}
+
+			return 0;
 		}
 	}
 }

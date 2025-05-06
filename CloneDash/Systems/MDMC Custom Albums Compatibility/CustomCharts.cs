@@ -255,21 +255,25 @@ namespace CloneDash
 				}
 			}
 
-			protected override ChartSheet ProduceSheet(int id) {
-				// DownloadOrPullFromCache();
-				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
+			public ChartSheet LoadFromDiskBMS(string diskpath) {
+				Archive = new DiskSearchPath(Path.GetDirectoryName(diskpath)!);
+				var map = Archive.Open(Path.GetFileName(diskpath), FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				var bms = BmsLoader.Load(map, $"map{id}.bms", out var bpmChanges);
+				return loadFromStream(map);
+			}
+
+			private ChartSheet loadFromStream(Stream map, int difficulty = 0) {
+				var bms = BmsLoader.Load(map, "", out var bpmChanges);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 
 				var stageInfo = BmsLoader.TransmuteData(bms);
 				stageInfo.mapName = Name;
+				stageInfo.difficulty = difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
-				stageInfo.difficulty = id;
 				stageInfo.bpm = bms.Bpm;
 				stageInfo.sceneEvents = bms.GetSceneEvents();
 
@@ -283,13 +287,23 @@ namespace CloneDash
 					lastTime += (deltaBeats * 60.0 * 4) / lastBPM;
 					lastBeat = change.Time;
 					lastBPM = change.BPM;
-					newChanges[i] = new TempoChange(lastTime, lastBPM);
+					newChanges[i] = new TempoChange(lastTime, change.Measure, lastBPM);
 				}
 
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
 				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo, newChanges);
+			}
+
+			protected override ChartSheet ProduceSheet(int id) {
+				// DownloadOrPullFromCache();
+				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
+				if (map == null)
+					throw new Exception("Bad map difficulty.");
+
+				return loadFromStream(map, id);
 			}
 		}
 	}

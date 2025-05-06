@@ -116,7 +116,7 @@ namespace CloneDash
 			ChartSheet sheet = new(song);
 			sheet.Rating = song.Difficulty(MDinfo.difficulty);
 
-			sheet.TempoChanges.Add(new(0, MDinfo.bpm));
+			sheet.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)
 				sheet.TempoChanges.AddRange(tempoChanges);
 			

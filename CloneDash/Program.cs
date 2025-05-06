@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Scripting;
 using Nucleus;
@@ -65,15 +66,22 @@ internal class Program
 		}
 
 		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
+			Logs.Info($"cam_level specified: {cam_level}");
 			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
-			if (Path.GetExtension(cam_level) == ".bms")
-				difficulty = int.TryParse(Path.GetFileNameWithoutExtension(cam_level).Substring(3), out int diffTest) ? diffTest : throw new Exception();
 
 			CustomChartsSong song = new CustomChartsSong(cam_level);
-			var sheet = song.GetSheet(difficulty);
-
+			ChartSheet sheet;
+			switch (Path.GetExtension(cam_level)) {
+				case ".bms":
+					sheet = song.LoadFromDiskBMS(cam_level);
+					break;
+				default:
+					sheet = song.GetSheet(difficulty);
+					break;
+			}
+			
 			var lvl = new CD_GameLevel(sheet);
-			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
+			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"), CommandLineArguments.GetParam("startmeasure", 0d));
 		}
 
 		else {

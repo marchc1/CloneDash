@@ -561,11 +561,11 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			//foreach (var tempoChange in Sheet)
 			if (Sheet != null) {
 				foreach(var bpmChange in Sheet.TempoChanges) {
-					Conductor.AddTempoChange(bpmChange.Time, bpmChange.BPM);
+					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Measure, bpmChange.BPM);
 				}
 			}
 			else		  
-				Conductor.AddTempoChange(0, 120);
+				Conductor.AddTempoChange(0, 0, 120);
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (Sheet != null) {
@@ -574,6 +574,10 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 					Music.Loops = false;
 					Music.Playing = true;
+					if(args.Length > 1) {
+						double measure = (double)args[1];
+						Music.Playhead = (float)Conductor.MeasureToSeconds(measure);
+					}
 				}
 				else
 					Music = null;
@@ -746,7 +750,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		var playerY = yoff ?? GetPlayerY(CharacterYRatio);
 
-		float conductorInTime = (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
+		float conductorInTime = Conductor.PreStartTime <= 0 ? 1 : (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
 
 		Player.Position = new Vector2F(

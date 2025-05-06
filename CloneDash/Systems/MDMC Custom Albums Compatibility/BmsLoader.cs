@@ -100,7 +100,7 @@ namespace CloneDash.Systems.CustomCharts
 
 									return tickR.CompareTo(tickL);
 								});
-								bpmChanges.Add(new(tick, freqDivide));
+								bpmChanges.Add(new(tick, tick + 1, freqDivide));
 							}
 							else {
 								// Parse other note data
