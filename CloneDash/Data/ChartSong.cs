@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game;
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Audio;
 using Raylib_cs;
@@ -82,6 +83,7 @@ namespace CloneDash.Data
 				return AudioTrack;
 
 			AudioTrack = ProduceAudioTrack();
+			AudioTrack.BindVolumeToConVar(AudioSettings.clonedash_music_volume);
 			return AudioTrack;
 		}
 
@@ -103,6 +105,7 @@ namespace CloneDash.Data
 				return DemoTrack;
 
 			DemoTrack = ProduceDemoTrack();
+			DemoTrack?.BindVolumeToConVar(AudioSettings.clonedash_music_volume);
 			__gotDemoTrack = true;
 			return DemoTrack;
 		}
