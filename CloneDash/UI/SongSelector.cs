@@ -20,18 +20,25 @@ using Nucleus.Input;
 
 namespace CloneDash.UI;
 
-public abstract class SearchFilter {
+public abstract class SearchFilter
+{
 	public abstract void Populate(SongSearchDialog dialog);
 	public abstract Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog);
 
-	public void TextInput(SongSearchDialog dialog, string field, string helperText) {
+	public void TextInput(SongSearchDialog dialog, string field, string helperText, bool enterReturns = false) {
 		var type = this.GetType();
 		var fieldInfo = type.GetField(field);
 		if (fieldInfo == null) throw new NotImplementedException();
 
 		dialog.Add(out Textbox textbox);
 		textbox.Dock = Dock.Top;
-		textbox.Size = new(48);
+		textbox.Size = new(0.12f);
+		if (enterReturns)
+			textbox.OnUserPressedEnter += (_, _, _) => dialog.Submit();
+
+		textbox.DynamicallySized = true;
+
+		textbox.TextSize = 10;
 		textbox.Text = fieldInfo.GetValue(this)?.ToString() ?? "";
 		textbox.HelperText = helperText;
 		textbox.TextSize = 20;
@@ -55,7 +62,7 @@ public abstract class SearchFilter {
 		dialog.SetTag(field, selector);
 	}
 
-	public void CheckboxInput(SongSearchDialog dialog, string field, string label)  {
+	public void CheckboxInput(SongSearchDialog dialog, string field, string label) {
 		var type = this.GetType();
 		var fieldInfo = type.GetField(field);
 		if (fieldInfo == null) throw new NotImplementedException();
@@ -76,7 +83,7 @@ public class MuseDashSearchFilter : SearchFilter
 	public string FilterText;
 
 	public override void Populate(SongSearchDialog dialog) {
-		TextInput(dialog, nameof(FilterText), "Filter by name, song author, etc..");
+		TextInput(dialog, nameof(FilterText), "Filter by name, song author, etc..", true);
 	}
 
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
@@ -93,14 +100,14 @@ public class MuseDashSearchFilter : SearchFilter
 
 public class MDMCSearchFilter : SearchFilter
 {
-	public int Page = 0; 
+	public int Page = 0;
 	public string Query = "";
 	public MDMCWebAPI.Sort Sort;
 	public bool OnlyRanked = false;
 
 
 	public override void Populate(SongSearchDialog dialog) {
-		TextInput(dialog, nameof(Query), "Search Query");
+		TextInput(dialog, nameof(Query), "Search Query", true);
 		EnumInput(dialog, nameof(Sort), Sort);
 		CheckboxInput(dialog, nameof(OnlyRanked), "Only ranked charts?");
 	}

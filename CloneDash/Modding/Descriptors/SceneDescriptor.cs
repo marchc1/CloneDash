@@ -546,9 +546,8 @@ public class SceneDescriptor : CloneDashDescriptor
 
 		Score.LoadModelData(level);Interlude.Spin(submessage: "Initializing extra models...");
 		Heart.LoadModelData(level);Interlude.Spin(submessage: "Initializing extra models...");
-
-
 	}
+
 	public void PlayBegin() => AnnouncerLines.BeginSound.Play(.8f);
 	public void PlayFever() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpause() => AnnouncerLines.UnpauseSound.Play(.8f);

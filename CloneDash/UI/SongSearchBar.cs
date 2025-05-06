@@ -24,7 +24,7 @@ public class SongSearchDialog : Panel
 		Origin = Anchor.Center;
 		Anchor = Anchor.Center;
 		DynamicallySized = true;
-		Size = new(0.65f);
+		Size = new(0.4f);
 
 		Add(out applyButton);
 		applyButton.Text = "Apply";
@@ -38,7 +38,8 @@ public class SongSearchDialog : Panel
 		AddParent = parameters;
 	}
 
-	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) => Submit();
+	public void Submit() {
 		OnUserSubmit?.Invoke();
 		this.Remove();
 	}
