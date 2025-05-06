@@ -517,6 +517,11 @@ public class SceneDescriptor : CloneDashDescriptor
 		AnnouncerLines.UnpauseSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause); Interlude.Spin();
 		AnnouncerLines.FullComboSound = level.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo); Interlude.Spin();
 
+		AnnouncerLines.BeginSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+		AnnouncerLines.FeverSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+		AnnouncerLines.UnpauseSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+		AnnouncerLines.FullComboSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+
 		Hitsounds.Load(level); Interlude.Spin(submessage: "Initializing hitsounds...");
 
 		Boss.LoadModelData(level);Interlude.Spin(submessage: "Initializing boss...");
