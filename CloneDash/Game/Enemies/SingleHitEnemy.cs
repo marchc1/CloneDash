@@ -123,7 +123,7 @@ namespace CloneDash.Game.Entities
 			};
 
 			if (Model != null && greatPerfectHP != null && animationName != null) {
-				ShowTime = HitTime - showtime;
+				SetShowTimeViaLength(showtime);
 
 				ApproachAnimation = Model.Data.FindAnimation(animationName);
 				GreatHitAnimation = greatPerfectHP.FindGreatAnimation(Model);

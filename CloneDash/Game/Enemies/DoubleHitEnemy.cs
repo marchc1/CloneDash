@@ -45,7 +45,7 @@
 			Model = sceneDescription.GetModelFromPathway(Pathway).Instantiate();
 
 			string animationName = sceneDescription.GetAnimationString(Speed, out var showtime);
-			ShowTime = HitTime - showtime;
+			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);
 			GreatHitAnimation =   sceneDescription.FindGreatAnimation(Model);

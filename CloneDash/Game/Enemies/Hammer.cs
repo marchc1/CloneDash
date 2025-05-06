@@ -53,7 +53,7 @@ namespace CloneDash.Game.Entities
 			Model = scene.Hammer.GetModelFromPathway(Pathway, Flipped).Instantiate();
 
 			string animationName = scene.Hammer.GetAnimationString(Speed, out var showtime);
-			ShowTime = HitTime - showtime;
+			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);
 			GreatHitAnimation = scene.Hammer.FindGreatAnimation(Model);

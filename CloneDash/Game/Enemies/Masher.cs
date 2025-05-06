@@ -22,7 +22,7 @@ namespace CloneDash.Game.Entities
 		private void CheckIfComplete() {
 			var level = Level.As<CD_GameLevel>();
 
-			if ((Hits >= MaxHits || level.Conductor.Time > (HitTime + Length)) && !Dead) {
+			if ((Hits >= MaxHits || level.Conductor.Time > (GetJudgementHitTime() + Length)) && !Dead) {
 				Complete();
 			}
 		}
@@ -109,8 +109,7 @@ namespace CloneDash.Game.Entities
 
 			Position = new(0, 450);
 
-			// ???????????????????????????????????
-			ApproachAnimation?.Apply(Model, Math.Max(0, (ShowTime - GetConductor().Time - InputSettings.VisualOffset - InputSettings.JudgementOffset) * -1));
+			base.DetermineAnimationPlayback();
 		}
 
 		public override void Build() {
@@ -139,7 +138,7 @@ namespace CloneDash.Game.Entities
 				PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
 				GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
 				var showtime = approachSpeeds.Speeds[speedIndex] / 30f;
-				ShowTime = HitTime - showtime;
+				SetShowTimeViaLength(showtime);
 			}
 		}
 	}

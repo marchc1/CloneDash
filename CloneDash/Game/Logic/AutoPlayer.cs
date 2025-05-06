@@ -66,7 +66,7 @@ namespace CloneDash.Game.Logic
 
 			// Sort the visible entities by closest to furthest
 			var ents = level.VisibleEntities;
-			ents.Sort((x, y) => x.DistanceToHit.CompareTo(y.DistanceToHit));
+			ents.Sort((x, y) => x.GetJudgementTimeUntilHit().CompareTo(y.GetJudgementTimeUntilHit()));
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
@@ -78,12 +78,13 @@ namespace CloneDash.Game.Logic
 					// Is an entity visible?
 					if (ent != default) {
 						var pathway = level.GetPathway(ent);
+						var timeToHit = ent.GetJudgementTimeUntilHit();
 						switch (ent.Interactivity) {
 							// Same pathway system, either hit or just run into
 							case EntityInteractivity.SamePath:
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
-								if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, 0.001f)) {
+								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f)) {
 									if (ent.Pathway == PathwaySide.Top)
 										input.TopClicked += 1;
 									else {
@@ -106,7 +107,7 @@ namespace CloneDash.Game.Logic
 								break;
 							// Entities that need to be avoided
 							case EntityInteractivity.Avoid:
-								if (NMath.InRange((float)ent.DistanceToHit, -ent.PrePerfectRange, -0.001f)) {
+								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, -0.001f)) {
 									if (level.Pathway == ent.Pathway) {
 										// The entity needs to be avoided, so pick the opposite side the entity is on
 										if (ent.Pathway == PathwaySide.Bottom)

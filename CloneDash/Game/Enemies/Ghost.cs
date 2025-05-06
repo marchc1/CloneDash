@@ -43,7 +43,7 @@ namespace CloneDash.Game.Entities
 			Model = scene.Ghost.GetModelFromPathway(Pathway).Instantiate();
 
 			var animationName = scene.Ghost.GetAnimationString(Speed, out var showtime);
-			ShowTime = HitTime - showtime;
+			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);
 			GreatHitAnimation = scene.Ghost.FindGreatAnimation(Model);

@@ -136,23 +136,27 @@ namespace CloneDash.Game
 		/// </summary>
 		public PathwaySide Pathway { get; set; }
 
-		private double showtime = 0;
-		private double hittime = 0;
-		/// <summary>
 		/// When does this entity first appear on the screen, in seconds
 		/// </summary>
-		public double ShowTime {
-			get => showtime;
-			set => showtime = value;
-		}
+		public double ShowTime { get; set; }
 
 		/// <summary>
 		/// When does this entity need to be hit, in seconds
 		/// </summary>
-		public double HitTime {
-			get => hittime;
-			set => hittime = value;
-		}
+		public double HitTime { get; set; }
+
+		public void SetShowTimeViaLength(double length) => ShowTime = HitTime - length;
+
+		public double GetVisualShowTime() => ShowTime + InputSettings.VisualOffset;
+		public double GetVisualHitTime() => HitTime + InputSettings.VisualOffset;
+		public double GetJudgementShowTime() => ShowTime + InputSettings.JudgementOffset;
+		public double GetJudgementHitTime() => HitTime + InputSettings.JudgementOffset;
+		public double GetVisualTimeUntilHit() => DistanceToHit + InputSettings.VisualOffset;
+		public double GetVisualTimeUntilEnd() => DistanceToEnd + InputSettings.VisualOffset;
+		public double GetJudgementTimeUntilHit() => DistanceToHit + InputSettings.JudgementOffset;
+		public double GetJudgementTimeUntilEnd() => DistanceToEnd + InputSettings.JudgementOffset;
+
+
 		/// <summary>
 		/// How long does this entity need to be hit/sustained, in seconds
 		/// </summary>
@@ -280,12 +284,12 @@ namespace CloneDash.Game
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be hit. A negative value means that the player hit too late, a positive means the player hit too early.
 		/// </summary>
-		public double DistanceToHit => (HitTime - Level.As<CD_GameLevel>().Conductor.Time) + InputSettings.JudgementOffset;
+		public double DistanceToHit => HitTime - Level.As<CD_GameLevel>().Conductor.Time;
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
 		/// </summary>
-		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time + InputSettings.JudgementOffset;
+		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time;
 
 		/// <summary>
 		/// Where is the entity in game-space?
@@ -296,8 +300,8 @@ namespace CloneDash.Game
 			var level = Level.As<CD_GameLevel>();
 
 			var current = level.Conductor.Time - timeOffset;
-			var tickHit = this.HitTime;
-			var tickShow = this.ShowTime;
+			var tickHit = this.GetVisualHitTime();
+			var tickShow = this.GetVisualShowTime();
 			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, 1500);
 			return thisPos;
 		}
@@ -325,7 +329,7 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (ShowTime - InputSettings.VisualOffset);
+			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
 		}
 		
 		/// <summary>

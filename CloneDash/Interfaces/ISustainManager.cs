@@ -97,7 +97,7 @@ public class StackBasedSustainManager : ISustainManager
 		var lvl = sustain.GetGameLevel();
 		var pathwayCheck = lvl.GetPathway(sustain);
 
-		var endTimeDist = sustain.DistanceToEnd;
+		var endTimeDist = sustain.GetJudgementTimeUntilEnd();
 		var sustainComplete = pathwayCheck.IsPressed() && endTimeDist <= 0;
 		var sustainEarlyButStillSuccess = !pathwayCheck.IsPressed() && NMath.InRange(endTimeDist, -0.05f, 0.05f);
 		if (sustainComplete || sustainEarlyButStillSuccess) {

@@ -567,7 +567,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						foreach (var ev in Sheet.Events)
 							LoadEvent(ev);
 
-						Entities.Sort((x, y) => (x is CD_BaseEnemy xE && y is CD_BaseEnemy yE) ? xE.HitTime.CompareTo(yE.HitTime) : 0);
+						Entities.Sort((x, y) => (x is CD_BaseEnemy xE && y is CD_BaseEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
 					}
 				}
 				Boss.Build();
@@ -810,7 +810,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		var lastEntity = (CD_BaseMEntity)Entities.Last(x => x is CD_BaseEnemy);
 
-		if (lastEntity.HitTime + lastEntity.Length < Conductor.Time && !lastNoteHit) {
+		if (lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
@@ -819,7 +819,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		}
 
 		// Sort the visible entities by their hit time
-		VisibleEntities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+		VisibleEntities.Sort((x, y) => x.GetJudgementHitTime().CompareTo(y.GetJudgementHitTime()));
 
 		IterateEvents();
 
@@ -849,6 +849,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
 		// It is ran after input processing.
 		foreach (var entity in VisibleEntities) {
+			var timeToHit = entity.GetJudgementTimeUntilHit();
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
@@ -856,7 +857,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						PathwaySide currentPathway = Pathway;
 
 						// Is it too late for the player to hit this entity anyway?
-						if (entity.DistanceToHit < -entity.PreGreatRange
+						if (timeToHit < -entity.PreGreatRange
 							&& !(entity is SustainBeam se && se.HeldState == true)
 							&& !(entity is Masher me && me.Hits > 0)
 						) {
@@ -865,7 +866,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					}
 					break;
 				case EntityInteractivity.SamePath:
-					if (NMath.InRange(entity.DistanceToHit, -entity.PreGreatRange, 0)) {
+					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
 						PathwaySide pathCurrentCharacter = Pathway;
 						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
@@ -875,13 +876,14 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					break;
 				case EntityInteractivity.Avoid:
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
-					if (Pathway == entity.Pathway && entity.DistanceToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
+					
+					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						entity.DamagePlayer();
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
-					if (Pathway != entity.Pathway && entity.DistanceToHit < 0 && !entity.DidDamagePlayer) {
+					if (Pathway != entity.Pathway && timeToHit < 0 && !entity.DidDamagePlayer) {
 						entity.Pass();
 					}
 
@@ -991,7 +993,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				case EntityInteractivity.Sustain:
 					bool isValidHit = entity.Interactivity == EntityInteractivity.Hit ? !entity.Dead : !(entity as SustainBeam).HeldState;
 					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, pathway)) {
-						double distance = entity.DistanceToHit;
+						double distance = entity.GetJudgementTimeUntilHit();
 						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
 						double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
 						if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured

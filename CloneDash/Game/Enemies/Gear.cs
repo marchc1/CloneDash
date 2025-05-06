@@ -49,7 +49,7 @@ namespace CloneDash.Game.Entities
 				_ => scene.Gears.GetAnimationString(Pathway, Speed, out showtime)
 			};
 
-			ShowTime = HitTime - showtime;
+			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);
 
