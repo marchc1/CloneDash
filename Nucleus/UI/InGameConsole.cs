@@ -112,6 +112,20 @@ namespace Nucleus
 	}
 	public class ConsoleWindow : Panel
 	{
+		public static string[] UserHistory = new string[256];
+		public static int UserHistoryPos = 0;
+		public static void PushUserHistory(string str) {
+			var last = UserHistory[NMath.Modulo(UserHistoryPos - 1, UserHistory.Length)];
+			if (str == last && last != null) return;
+
+			UserHistory[UserHistoryPos] = str;
+			UserHistoryPos = NMath.Modulo(UserHistoryPos + 1, UserHistory.Length);
+		}
+		public static string? GetUserHistory(int localIndex) {
+			string? at = UserHistory[NMath.Modulo(UserHistoryPos - localIndex, UserHistory.Length)];
+			return at;
+		}
+
 		TextEditor consoleLogs;
 		TextEditor consoleInput;
 		ConsoleAutocomplete? autoComplete;
@@ -194,9 +208,9 @@ namespace Nucleus
 
 		private void SetupAutocomplete() {
 			var args = ConCommandArguments.FromString(consoleInput.GetText());
-			if (!IValidatable.IsValid(autoComplete)) 
+			if (!IValidatable.IsValid(autoComplete))
 				autoComplete = UI.Add<ConsoleAutocomplete>();
-			
+
 			int startX = 0;
 			for (int i = 0; i < args.Length - 1; i++) {
 				startX += (args.GetString(i)?.Length ?? 0) + 1;
@@ -232,6 +246,7 @@ namespace Nucleus
 			}
 		}
 
+		private int userHistoryPos = 0;
 		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
 			if (IValidatable.IsValid(autoComplete)) {
 				if (key == KeyboardLayout.USA.Space && autoComplete.TryGetTabSelection(out string? tabSelection)) {
@@ -246,10 +261,42 @@ namespace Nucleus
 						startX += (args.GetString(i)?.Length ?? 0) + 1;
 					}
 
-					consoleInput.SetSelection(startX, 0, userLen - startX, 0);
+					consoleInput.SetSelection(startX, 0, userLen, 0);
 					consoleInput.InsertText(tabSelection + " ");
 					autoComplete.Reset();
 					autoCompleteStr = null;
+				}
+				else if (key == KeyboardLayout.USA.Up) {
+					int newPos = userHistoryPos + 1;
+					string? txt;
+					if (newPos == 0)
+						txt = "";
+					else
+						txt = GetUserHistory(newPos);
+					if (txt != null) {
+						userHistoryPos++;
+						consoleInput.SetText(txt);
+						consoleInput.SetCaret(txt.Length, 0);
+					}
+					else {
+						consoleInput.SetCaret(consoleInput.GetText().Length, 0);
+					}
+				}
+				else if (key == KeyboardLayout.USA.Down) {
+					int newPos = userHistoryPos - 1;
+					string? txt;
+					if (newPos == 0)
+						txt = "";
+					else
+						txt = GetUserHistory(newPos);
+					if (txt != null) {
+						userHistoryPos--;
+						consoleInput.SetText(txt);
+						consoleInput.SetCaret(txt.Length, 0);
+					}
+					else {
+						consoleInput.SetCaret(consoleInput.GetText().Length, 0);
+					}
 				}
 				else if (key != KeyboardLayout.USA.Tab) {
 					autoComplete.Reset();
@@ -257,7 +304,6 @@ namespace Nucleus
 				}
 			}
 
-			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) return;
 			SetupAutocomplete();
 		}
 
@@ -273,12 +319,17 @@ namespace Nucleus
 		}
 
 		private void ConsoleInput_OnExecute(TextEditor self) {
-			Logs.Print("> " + self.GetText());
-			ConsoleSystem.ParseOneCommand(self.GetText());
+			var txt = self.GetText();
+			Logs.Print("> " + txt);
+			ConsoleSystem.ParseOneCommand(txt);
 			autoComplete?.Remove();
 			MainThread.RunASAP(() => {
 				consoleLogs.SetScroll(1);
 			});
+
+			PushUserHistory(txt);
+			userHistoryPos = 0;
+
 		}
 
 		public override void Paint(float width, float height) {
