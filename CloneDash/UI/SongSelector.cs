@@ -455,13 +455,15 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		if (GetSongsList().Count() <= 0) {
+		if (GetSongsList().Count() <= 0 && CompiledFilter != null) {
 			Loading.Text = "No songs available.";
+			Loading.Visible = true;
 			DisableDiscs(true);
 			return;
 		}
 
 		Loading.Text = "LOADING";
+		Loading.Visible = true;
 
 		if (!NoMoreSongsLeft && (!InfiniteList && WillDiscOverflow())) {
 			GetMoreSongs();
@@ -469,6 +471,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 		}
 
+		Loading.Visible = false;
 		DisableDiscs(false);
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
@@ -533,9 +536,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		DrawPanelBackground = false;
 
 		Discs = new Button[VisibleDiscs];
-		for (int i = 0; i < VisibleDiscs; i++) 
+		for (int i = 0; i < VisibleDiscs; i++)
 			Add(out Discs[i]);
-		
+
 		Add(out CurrentTrackName);
 		Add(out CurrentTrackAuthor);
 		Add(out SearchBar);
