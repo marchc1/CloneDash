@@ -9,7 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace CloneDash.Systems;
+namespace CloneDash.Compatibility.Unity;
 
 public class RawUnityAssetCatalog
 {

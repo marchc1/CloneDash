@@ -11,7 +11,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
-using static CloneDash.Systems.UnityAssetUtils;
+using static CloneDash.Compatibility.Unity.UnityAssetUtils;
+using CloneDash.Compatibility.Unity;
 
 namespace CloneDash.Compatibility.MuseDash;
 

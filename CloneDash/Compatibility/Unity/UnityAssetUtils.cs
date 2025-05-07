@@ -14,7 +14,7 @@ using BCnEncoder.Decoder;
 using System.Diagnostics;
 using Nucleus.Extensions;
 
-namespace CloneDash.Systems;
+namespace CloneDash.Compatibility.Unity;
 
 /// <summary>
 /// Various Unity asset loading utility methods. Tries to abstract away a lot of the AssetStudio stuff.
@@ -37,9 +37,9 @@ public static class UnityAssetUtils
 			case TextureFormat.BC7:
 				BcDecoder decoder = new BcDecoder();
 				var rgba32 = decoder.DecodeRaw(imgData, width, height, BCnEncoder.Shared.CompressionFormat.Bc7);
-				
+
 				imgData = new byte[rgba32.Length * 4];
-				for (int i = 0; i < rgba32.Length; i+=1) {
+				for (int i = 0; i < rgba32.Length; i += 1) {
 					var px = rgba32[i];
 					var imgDataPtr = i * 4;
 					imgData[imgDataPtr] = px.r;

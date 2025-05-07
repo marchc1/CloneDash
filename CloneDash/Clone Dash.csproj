@@ -40,7 +40,6 @@
   <ItemGroup>
     <Folder Include="Compatibility\MDMC\" />
     <Folder Include="Compatibility\CustomAlbums\" />
-    <Folder Include="Systems\Muse Dash Compatibility\Cross Platform Initializers\" />
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
