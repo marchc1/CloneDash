@@ -106,7 +106,7 @@ namespace CloneDash.Animation
 			y = x0;
 
 			yd = 0;
-			last = EngineCore.Level.Curtime;
+			last = EngineCore.Level?.Curtime ?? 0;
 		}
 		public SecondOrderSystem(float f, float z, float r, float x0) {
 			this.f = f;
@@ -115,7 +115,7 @@ namespace CloneDash.Animation
 			ResetTo(x0);
 		}
 		public float Update(float x) {
-			float deltatime = (float)(EngineCore.Level.Curtime - last);
+			float deltatime = (float)((EngineCore.Level?.Curtime ?? 0) - last);
 			return Update(deltatime, x);
 		}
 		public float Update(float T, float x, float? xdIn = null) {
@@ -136,7 +136,7 @@ namespace CloneDash.Animation
 				yd = yd + T * (x + k3 * xd - y - k1 * yd) / k2;
 			}
 
-			last = EngineCore.Level.Curtime;
+			last = (EngineCore.Level?.Curtime ?? 0);
 			return y;
 		}
 
