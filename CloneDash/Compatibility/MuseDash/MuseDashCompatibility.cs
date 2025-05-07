@@ -1,22 +1,25 @@
 ﻿using AssetStudio;
 using CloneDash.Data;
 using CloneDash.Game;
-using CloneDash.Game.Entities;
 using CloneDash.Systems;
 using CustomAlbums.Utilities;
 using Nucleus;
-using SpirV;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
-namespace CloneDash
+namespace CloneDash.Compatibility.MuseDash
 {
 	/// <summary>
 	/// Muse Dash style level converter
 	/// </summary>
 	public static partial class MuseDashCompatibility
 	{
+		public const uint MUSEDASH_APPID = 774171;
+		public static string? WhereIsMuseDashInstalled { get; set; } = null;
+		public static string? WhereIsMuseDashDataFolder { get; set; } = null;
+		public static bool IsMuseDashInstalled => WhereIsMuseDashInstalled != null;
+
 		public static string NoteManagerAssetBundle { get; private set; } = "";
 		public static Dictionary<string, List<string>> IBMSToDesc { get; private set; } = new();
 		public static Dictionary<string, NoteConfigData> IDToNote { get; private set; } = new();
@@ -29,7 +32,7 @@ namespace CloneDash
 		public static string StandalonePlatform { get; private set; }
 		public static string[] StreamingFiles { get; private set; }
 
-		private static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
+		public static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
 			foreach (var md in stage.musicDatas) {
 				if (md.noteData == null && md.configData.note_uid != null) {
 					md.noteData = UIDToNote[md.configData.note_uid];
@@ -119,7 +122,7 @@ namespace CloneDash
 			sheet.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)
 				sheet.TempoChanges.AddRange(tempoChanges);
-			
+
 			bool first = true;
 			Dictionary<int, List<MusicData>> LongPresses = new();
 			HashSet<string> WarnedIBMSPresses = new();

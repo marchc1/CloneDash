@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Scripting;
@@ -12,7 +13,6 @@ using Nucleus.Engine;
 using Nucleus.Files;
 using Raylib_cs;
 using static CloneDash.CustomAlbumsCompatibility;
-using static CloneDash.MuseDashCompatibility;
 
 namespace CloneDash;
 

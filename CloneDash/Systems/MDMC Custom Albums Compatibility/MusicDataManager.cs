@@ -1,8 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using AssetStudio;
-using CustomAlbums.Utilities;
 using Nucleus;
-using static CloneDash.MuseDashCompatibility;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CustomAlbums.Managers
 {

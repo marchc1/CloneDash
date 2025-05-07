@@ -1,4 +1,5 @@
 ﻿using AssetStudio;
+using CloneDash.Compatibility.MuseDash;
 using Newtonsoft.Json;
 using Nucleus;
 using SixLabors.ImageSharp.Processing;

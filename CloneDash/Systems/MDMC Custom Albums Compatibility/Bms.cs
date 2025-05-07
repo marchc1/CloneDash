@@ -1,4 +1,4 @@
-﻿using CloneDash.Systems.Muse_Dash_Compatibility;
+﻿using CloneDash.Compatibility.MuseDash;
 using CustomAlbums.Utilities;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using static CloneDash.MuseDashCompatibility;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.Systems.CustomCharts
 {
@@ -327,7 +327,7 @@ namespace CloneDash.Systems.CustomCharts
 		public void InitNoteData() {
 			NoteData = new Dictionary<string, NoteConfigData>();
 
-			foreach (var config in NoteDataManager) {
+			foreach (var config in MuseDashCompatibility.NoteDataManager) {
 				// Ignore april fools variants (these are handled elsewhere)
 				if (config.IsAprilFools()) continue;
 				// Ignore phase 2 boss gears

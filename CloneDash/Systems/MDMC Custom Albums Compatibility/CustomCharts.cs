@@ -10,6 +10,7 @@ using Nucleus.Files;
 using SpirV;
 using System.Security.Cryptography;
 using CloneDash.Game;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash
 {

@@ -11,7 +11,6 @@ using Nucleus.Audio;
 using static CloneDash.CustomAlbumsCompatibility;
 using CloneDash.Game;
 using System.Collections.Concurrent;
-using static CloneDash.MuseDashCompatibility;
 using Nucleus.UI.Elements;
 using CloneDash.Systems.CustomAlbums;
 using static CloneDash.Systems.CustomAlbums.MDMCWebAPI;
@@ -19,6 +18,7 @@ using System.ComponentModel.DataAnnotations;
 using Nucleus.Input;
 using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.UI;
 

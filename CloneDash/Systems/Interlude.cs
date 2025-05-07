@@ -1,4 +1,5 @@
 ﻿using AssetStudio;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
@@ -10,7 +11,6 @@ using Nucleus.Types;
 using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
-using static CloneDash.MuseDashCompatibility;
 using Texture2D = Raylib_cs.Texture2D;
 
 namespace CloneDash;
@@ -33,7 +33,7 @@ public class MuseDashInterlude
 	public string? path;
 	public Texture2D? LoadTexture() {
 		if (path == null) throw new NullReferenceException("Wtf?");
-		AssetStudio.Texture2D tex2d = UnityAssetUtils.InternalLoadAsset<AssetStudio.Texture2D>(StreamingFiles, Path.GetFileNameWithoutExtension(path));
+		AssetStudio.Texture2D tex2d = UnityAssetUtils.InternalLoadAsset<AssetStudio.Texture2D>(MuseDashCompatibility.StreamingFiles, Path.GetFileNameWithoutExtension(path));
 
 		if (tex2d.m_TextureFormat == TextureFormat.RGBA32)
 			return null;
@@ -61,7 +61,7 @@ public class MuseDashInterludeProvider : InterludeTextureProvider
 			return 0;
 		}
 
-		var interludesRaw = UnityAssetUtils.GetAllFiles(StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
+		var interludesRaw = UnityAssetUtils.GetAllFiles(MuseDashCompatibility.StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
 		interludes = new MuseDashInterlude[interludesRaw.Length];
 		for (int i = 0; i < interludesRaw.Length; i++) {
 			interludes[i] = new() {

@@ -1,6 +1,5 @@
-﻿using CloneDash.Systems.Muse_Dash_Compatibility;
+﻿using CloneDash.Compatibility.MuseDash;
 using System.Text.Json.Nodes;
-using static CloneDash.MuseDashCompatibility;
 
 namespace CustomAlbums.Utilities
 {

@@ -3,16 +3,8 @@ using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using OdinSerializer;
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace CloneDash
+namespace CloneDash.Compatibility.MuseDash
 {
 	public record MuseDashAsset(string nicename, string filename);
 	public static partial class MuseDashCompatibility

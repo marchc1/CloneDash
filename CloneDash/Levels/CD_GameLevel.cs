@@ -1,7 +1,6 @@
 ﻿using Nucleus.Engine;
 using Nucleus.Core;
 using CloneDash.Game.Input;
-using System.Numerics;
 using Nucleus.Types;
 using CloneDash.Game.Entities;
 using Nucleus;
@@ -15,7 +14,6 @@ using Nucleus.Audio;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using Nucleus.ManagedMemory;
-using static CloneDash.MuseDashCompatibility;
 using CloneDash.Animation;
 using CloneDash.Scripting;
 using Lua;
@@ -26,6 +24,7 @@ using CloneDash.Game.Statistics;
 using CloneDash.Interfaces;
 using CloneDash.Settings;
 using CloneDash.Implementations;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.Game;
 
@@ -72,7 +71,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		var songs = Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
+		var songs = MuseDashCompatibility.Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
 		int len = Math.Clamp(songs.Length, 0, 20);
 		if (len == 0) return;
 

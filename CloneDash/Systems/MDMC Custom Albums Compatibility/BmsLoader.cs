@@ -1,15 +1,10 @@
-﻿using AssetStudio;
-using CloneDash.Game;
-using CloneDash.Systems.Muse_Dash_Compatibility;
+﻿using CloneDash.Game;
 using CustomAlbums.Managers;
 using CustomAlbums.Utilities;
 using Nucleus;
-using System;
-using System.Diagnostics;
-using System.Resources;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
-using static CloneDash.MuseDashCompatibility;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.Systems.CustomCharts
 {

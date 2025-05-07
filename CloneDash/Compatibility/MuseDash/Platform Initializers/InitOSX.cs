@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CloneDash
+namespace CloneDash.Compatibility.MuseDash
 {
     public static partial class MuseDashCompatibility
     {

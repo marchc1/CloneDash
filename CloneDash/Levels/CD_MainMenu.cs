@@ -18,6 +18,7 @@ using CloneDash.UI;
 using Nucleus.Files;
 using Nucleus.Extensions;
 using Nucleus.Input;
+using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.Game;
 

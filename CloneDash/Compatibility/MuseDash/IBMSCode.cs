@@ -1,4 +1,4 @@
-﻿namespace CloneDash
+﻿namespace CloneDash.Compatibility.MuseDash
 {
 	public static partial class MuseDashCompatibility
     {
