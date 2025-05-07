@@ -83,7 +83,7 @@ namespace CloneDash.Animation
 		private float y, yd;
 		private float k1, k2, k3;
 		private float T_crit;
-		private double last = EngineCore.Level.Curtime;
+		private double last = EngineCore.Level?.Curtime ?? 0;
 		/// <summary>
 		/// Entirely from https://www.youtube.com/watch?v=KPoeNZZ6H4s
 		/// </summary>
