@@ -4,14 +4,9 @@ using Fmod5Sharp;
 using Newtonsoft.Json;
 using Nucleus.Audio;
 using Nucleus;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using BCnEncoder.Decoder;
-using System.Diagnostics;
 using Nucleus.Extensions;
 
 namespace CloneDash.Compatibility.Unity;

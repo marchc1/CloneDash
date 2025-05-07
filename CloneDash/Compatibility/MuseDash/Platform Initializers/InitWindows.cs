@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using CloneDash.Compatibility.Valve;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CloneDash.Compatibility.MuseDash
 {
-    public static partial class MuseDashCompatibility
+	public static partial class MuseDashCompatibility
     {
         private static MDCompatLayerInitResult INIT_WINDOWS() {
             if (!OperatingSystem.IsWindows())
