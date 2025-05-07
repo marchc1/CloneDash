@@ -1,7 +1,4 @@
-﻿using CloneDash.Systems;
-using Nucleus.Core;
-using Nucleus.Engine;
-using Nucleus.Types;
+﻿using Nucleus.Engine;
 using Raylib_cs;
 
 namespace CloneDash.Game.Entities

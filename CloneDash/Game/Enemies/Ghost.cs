@@ -1,8 +1,4 @@
-﻿using CloneDash.Systems;
-using Nucleus.Core;
-using Nucleus.Types;
-
-namespace CloneDash.Game.Entities
+﻿namespace CloneDash.Game.Entities
 {
 	public class Ghost : CD_BaseEnemy
 	{
