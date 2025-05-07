@@ -44,7 +44,7 @@ internal class Program
 	}
 	static void GameMain() {
 		Interlude.ShouldSelectInterludeTexture = false;
-		Interlude.Begin("Initializing...");
+		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
