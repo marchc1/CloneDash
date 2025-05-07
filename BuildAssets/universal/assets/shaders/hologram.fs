@@ -59,4 +59,5 @@ void main() {
     color.a *= sn1;
 
     finalColor = (dissolveColor + color) * fragColor;
+    finalColor.rgb *= finalColor.a;
 }

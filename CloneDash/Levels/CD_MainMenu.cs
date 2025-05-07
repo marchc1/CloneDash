@@ -71,7 +71,7 @@ public class CD_MainMenu : Level
 			shader.SetShaderValue("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
 			if (Raylib.IsShaderReady(shader)) {
 				Raylib.BeginShaderMode(shader);
-				model.Render();
+				model.Render(false);
 				Raylib.EndShaderMode();
 			}
 

@@ -6,6 +6,8 @@ using Newtonsoft.Json.Serialization;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.ManagedMemory;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.Util;
 using Raylib_cs;
@@ -13,6 +15,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net.Mail;
 using System.Text.RegularExpressions;
 
 namespace Nucleus.Models.Runtime;
@@ -181,7 +184,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Clipping = new(this);
 	}
 
-	public void Render() {
+	public void Render(bool useDefaultShader = true) {
 		var offset = Graphics2D.Offset;
 		Graphics2D.ResetDrawingOffset();
 		Rlgl.PushMatrix();
@@ -198,18 +201,9 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				continue;
 			}
 
-			Raylib.BeginBlendMode(slot.BlendMode switch {
-				BlendMode.Normal => Raylib_cs.BlendMode.BLEND_ALPHA,
-				BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
-				BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
-				BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
-				_ => throw new Exception($"Unsupported blend mode! (got {slot.BlendMode})")
-			});
-
 			attachment.Render(slot);
 			Clipping.NextSlot(slot);
-
-			Raylib.EndBlendMode();
+			slot.EndBlendMode();
 		}
 		foreach (var bone in Bones) {
 			var test = bone.LocalToWorld(0, 0);
@@ -368,6 +362,20 @@ public class SlotInstance : IContainsSetupPose
 	}
 
 	public void SetAttachment(string? value) => Attachment = value == null ? null : Model.GetAttachment(Index, value);
+
+	public void StartBlendModeFor(Attachment attachment) {
+		Raylib.BeginBlendMode(BlendMode switch {
+			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY,
+			BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
+			BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
+			BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
+			_ => throw new Exception($"Unsupported blend mode! (got {BlendMode})")
+		});
+	}
+
+	public void EndBlendMode() {
+		Raylib.EndBlendMode();
+	}
 }
 
 public class SkinEntryTypeConverter : TypeConverter
@@ -461,6 +469,8 @@ public abstract class Attachment
 
 	}
 	public virtual void Setup(ModelData data) { }
+
+	public virtual byte Alpha => 255;
 }
 
 public class RegionAttachment : Attachment
@@ -474,11 +484,14 @@ public class RegionAttachment : Attachment
 	[JsonIgnore] public AtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
+	public override byte Alpha => Color.A;
+
 	public override void Setup(ModelData data) {
 		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
 	}
 
 	public override void Render(SlotInstance slot) {
+		slot.StartBlendModeFor(this);
 		var bone = slot.Bone;
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 
@@ -618,6 +631,7 @@ public class MeshAttachment : VertexAttachment
 	public string Path;
 
 	public Color Color = Color.White;
+	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
 		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
@@ -626,6 +640,8 @@ public class MeshAttachment : VertexAttachment
 	public override void Render(SlotInstance slot) {
 		Debug.Assert(Vertices != null); if (Vertices == null) return;
 		Debug.Assert(Triangles != null); if (Triangles == null) return;
+
+		slot.StartBlendModeFor(this);
 
 		var region = Region;
 

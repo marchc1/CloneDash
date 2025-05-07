@@ -41,7 +41,7 @@ namespace Nucleus.Extensions
 					uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC4 : ShaderUniformDataType.SHADER_UNIFORM_VEC4;
 					break;
 				case int:
-					uniformType = ShaderUniformDataType.SHADER_UNIFORM_FLOAT;
+					uniformType = ShaderUniformDataType.SHADER_UNIFORM_INT;
 					break;
 				default:
 					throw new Exception("Uniform type for T is not explicitly defined by the ShaderExtensions class");

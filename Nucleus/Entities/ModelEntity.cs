@@ -70,7 +70,7 @@ namespace Nucleus.Entities
 				shader?.Activate();
 			}
 
-			Model.Render();
+			Model.Render(useDefaultShader: !isvalid);
 
 			if (isvalid)
 				shader?.Deactivate();
