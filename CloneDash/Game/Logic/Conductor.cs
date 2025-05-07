@@ -80,7 +80,7 @@ namespace CloneDash.Game
 				DragUpdate?.Invoke();
 			}
 
-			public override void MouseRelease(Element self, FrameState state, Nucleus.Input.MouseButton button) {
+			public override void MouseReleasedOrLost(Element self, FrameState state, Nucleus.Input.MouseButton button) {
 				base.MouseRelease(self, state, button);
 				DragEnd?.Invoke();
 			}
