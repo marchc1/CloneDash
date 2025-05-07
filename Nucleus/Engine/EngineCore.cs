@@ -13,6 +13,7 @@ using Nucleus.Rendering;
 using Nucleus.Files;
 using System.Numerics;
 using SDL;
+using Nucleus.Util;
 
 namespace Nucleus;
 
@@ -108,9 +109,6 @@ public static class EngineCore
 
 		KeyboardFocusedElement.KeyboardFocusLost(self, false);
 		KeyboardFocusedElement = null;
-	}
-	public static bool IsAssemblyDebugBuild(Assembly assembly) {
-		return assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled);
 	}
 
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
@@ -209,8 +207,9 @@ public static class EngineCore
 		ConsoleSystem.Initialize();
 		Console.Title = windowName;
 
-		var isDebug = IsAssemblyDebugBuild(typeof(EngineCore).Assembly);
-		Logs.Info($"Nucleus Engine, BuildConfig {(isDebug ? "DEBUG" : "RELEASE")}.");
+		var isDebug = typeof(EngineCore).Assembly.IsAssemblyDebugBuild();
+		var dt = typeof(EngineCore).Assembly.GetLinkerTime();
+		Logs.Info($"Nucleus Engine, Build {(dt.HasValue ? dt.Value.ToString("yyyy-MM-dd") : "<NO LINKER TIME>")} {(isDebug ? "DEBUG" : "RELEASE")}.");
 		Logs.Info("Initializing...");
 		unsafe {
 			Raylib.SetTraceLogCallback(&LogCustom);

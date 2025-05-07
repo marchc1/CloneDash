@@ -1,8 +1,19 @@
-﻿namespace CloneDash;
+﻿using Nucleus.Util;
+using System.Reflection;
+
+namespace CloneDash;
 
 public struct GameVersion
 {
-	public static readonly GameVersion Current = new GameVersion("2025", "05", "07", "alpha");
+	public static GameVersion FromAssembly(Assembly assembly, string? extra = null) {
+		if(assembly.TryGetLinkerTime(out var dt)) {
+			return new($"{dt.Year}", $"{dt.Month:00}", $"{dt.Day:00}", extra);
+		}
+
+		return default;
+	}
+
+	public static readonly GameVersion Current = FromAssembly(Assembly.GetExecutingAssembly(), "alpha");
 
 	public string Year;
 	public string Month;
