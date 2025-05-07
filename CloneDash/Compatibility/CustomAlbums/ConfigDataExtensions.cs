@@ -1,7 +1,7 @@
 ﻿using CloneDash.Compatibility.MuseDash;
 using System.Text.Json.Nodes;
 
-namespace CustomAlbums.Utilities
+namespace CloneDash.Compatibility.CustomAlbums
 {
 	public static class ConfigDataExtensions
 	{

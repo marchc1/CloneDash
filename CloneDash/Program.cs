@@ -12,7 +12,7 @@ using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Raylib_cs;
-using static CloneDash.CustomAlbumsCompatibility;
+using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
 

@@ -6,7 +6,7 @@ using Raylib_cs;
 using MouseButton = Nucleus.Input.MouseButton;
 using CloneDash.Data;
 using Nucleus.Audio;
-using static CloneDash.CustomAlbumsCompatibility;
+using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 using Nucleus.Models.Runtime;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;

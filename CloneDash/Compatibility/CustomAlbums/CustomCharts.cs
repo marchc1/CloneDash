@@ -4,15 +4,14 @@ using Raylib_cs;
 using System.IO.Compression;
 using CloneDash.Data;
 using Nucleus.Audio;
-using CloneDash.Systems.CustomCharts;
-using CloneDash.Systems.CustomAlbums;
 using Nucleus.Files;
 using SpirV;
 using System.Security.Cryptography;
 using CloneDash.Game;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.MDMC;
 
-namespace CloneDash
+namespace CloneDash.Compatibility.CustomAlbums
 {
 	public static partial class CustomAlbumsCompatibility
 	{
@@ -284,7 +283,7 @@ namespace CloneDash
 				for (int i = 0; i < bpmChanges.Count; i++) {
 					var change = bpmChanges[i];
 					double deltaBeats = change.Time - lastBeat;
-					lastTime += (deltaBeats * 60.0 * 4) / lastBPM;
+					lastTime += deltaBeats * 60.0 * 4 / lastBPM;
 					lastBeat = change.Time;
 					lastBPM = change.BPM;
 					newChanges[i] = new TempoChange(lastTime, change.Measure, lastBPM);

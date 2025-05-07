@@ -3,7 +3,7 @@ using AssetStudio;
 using Nucleus;
 using CloneDash.Compatibility.MuseDash;
 
-namespace CustomAlbums.Managers
+namespace CloneDash.Compatibility.CustomAlbums
 {
 	internal static class MusicDataManager
 	{
@@ -38,7 +38,7 @@ namespace CustomAlbums.Managers
 			// Reapply object IDs and round tick to nearest 3 decimal places
 			for (var i = 1; i < MusicDataList.Count; i++) {
 				var musicData = MusicDataList[i];
-				musicData.tick = Decimal.Round(musicData.tick, 3);
+				musicData.tick = decimal.Round(musicData.tick, 3);
 				musicData.objId = (short)i;
 
 				MusicDataList[i] = musicData;

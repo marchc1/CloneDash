@@ -1,12 +1,10 @@
 ﻿using CloneDash.Game;
-using CustomAlbums.Managers;
-using CustomAlbums.Utilities;
 using Nucleus;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using CloneDash.Compatibility.MuseDash;
 
-namespace CloneDash.Systems.CustomCharts
+namespace CloneDash.Compatibility.CustomAlbums
 {
 	public static class BmsLoader
 	{
@@ -203,7 +201,7 @@ namespace CloneDash.Systems.CustomCharts
 				// Create a new note for each configData
 				var newNote = new MusicData();
 				newNote.objId = noteId++;
-				newNote.tick = Decimal.Round(configData.time, 3);
+				newNote.tick = decimal.Round(configData.time, 3);
 				newNote.configData = configData;
 				newNote.isLongPressEnd = false;
 				newNote.isLongPressing = false;
@@ -221,7 +219,7 @@ namespace CloneDash.Systems.CustomCharts
 				if (!newNote.isLongPressStart) continue;
 
 				// Calculate the index in which the hold note ends
-				var endIndex = (int)(Decimal.Round(
+				var endIndex = (int)(decimal.Round(
 					newNote.tick + newNote.configData.length - newNote.noteData.left_great_range -
 					newNote.noteData.left_perfect_range,
 					3) / 0.001m);
@@ -253,7 +251,7 @@ namespace CloneDash.Systems.CustomCharts
 		}
 
 		private static void ProcessGeminis() {
-			var geminiCache = new Dictionary<Decimal, List<MusicData>>();
+			var geminiCache = new Dictionary<decimal, List<MusicData>>();
 
 			for (var i = 1; i < MusicDataManager.Data.Count; i++) {
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
@@ -316,9 +314,9 @@ namespace CloneDash.Systems.CustomCharts
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (mData.configData == null) continue;
 				mData.tick -= _delay;
-				mData.showTick = Decimal.Round(mData.tick - mData.dt, 2);
+				mData.showTick = decimal.Round(mData.tick - mData.dt, 2);
 				if (mData.isLongPressType)
-					mData.endIndex -= (int)(_delay / (Decimal)0.001f);
+					mData.endIndex -= (int)(_delay / (decimal)0.001f);
 			}
 
 			// Transmute the MusicData to a new StageInfo object
