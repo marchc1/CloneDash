@@ -1081,12 +1081,15 @@ public static class MuseDashModelConverter
 				MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
 			}
 		}
+
 		for (int trI = 0, transforms = skeleton.MD_ReadVarInt(true); trI < transforms; trI++) {
 			throw new Exception();
 		}
+
 		for (int pathI = 0, paths = skeleton.MD_ReadVarInt(true); pathI < paths; pathI++) {
 			throw new Exception();
 		}
+
 		for (int deformI = 0, deforms = skeleton.MD_ReadVarInt(true); deformI < deforms; deformI++) {
 			Skin skin = nucleusModelData.Skins[skeleton.MD_ReadVarInt(true)];
 			for (int i2 = 0, c2 = skeleton.MD_ReadVarInt(true); i2 < c2; i2++) {
