@@ -1,0 +1,98 @@
+{
+	"version": "2025-05-06-01",
+
+	"name":    "NEKO#ΦωΦ ",
+	"author":  "PeroPeroGames",
+	"perk":    "If you lose her all HP, she can continue (but the score can't be recorded).",
+	
+	"max_hp":                250,
+	"invincible_fever":      false,
+	"fever_threshold":       null,
+	"fever_time":            null,
+	"killable":              false,
+	"lose_hp_rate":          0,
+	"automatic":             false,
+	"score_multiplier":      1.0,
+	"logic_controller":      null,
+	
+	"mainshow": {
+		"model":   "models/char_5_neko_mainshow.nm4b",
+		"mdimage": "char_5_neko_main/5_neko_main_show",
+		"mdmusic":   "char_5_neko_audio_assets_char_5_neko_bgm/char_5_neko_bgm",
+		"standby": "BgmStandby",
+		"touch": {
+			"response_start": "touch_{0}_start",
+			"response_standby": "touch_{0}_standby",
+			"response_end": "touch_{0}_end",
+			"responses": ["angry", "excited", "proud", "shy"]
+		}
+	},
+	"play": {	
+		"model": "models/char_5_neko.nm4b",
+		"mdimage": "char_5_neko_battle/char_5_neko",
+
+		"in": null,
+		"run": "run",
+		"die": "die",
+		"standby": "standby",
+		"sounds": {
+			"hurt": [
+				"audio/VoiceNekoHurt01.wav",
+				"audio/VoiceNekoHurt02.wav",
+				"audio/VoiceNekoHurt03.wav",
+				"audio/VoiceNekoHurt04.wav",
+				"audio/VoiceNekoHurt05.wav"
+			]
+		},
+		"air": {
+			"great": {
+				"format": "air_hit_great_{0}",
+				"count": 3
+			},
+			"perfect": {
+				"format": "air_hit_perfect_{0}",
+				"count": 4
+			},
+			"hurt": "air_hit_hurt"
+		},
+		"road": {
+			"great": {
+				"format": "road_hit_great_{0}",
+				"count": 3
+			},
+			"perfect": {
+				"format": "road_hit_perfect_{0}",
+				"count": 4
+			},
+			"hurt": "hurt",
+			"miss": "road_hit_miss"
+		},
+		"double": {
+			"format": "double_hit_{0}",
+			"count": 2
+		},
+		"transitions": {
+			"air_to_ground": "down_hit"
+		},
+		"jump": {
+			"jump": "jump",
+			"hurt": "jump_hurt"
+		},
+		"press": {
+			"press": "press",
+			"air_press_end": "air_press_end",
+			"air_press_hurt": "air_press_hurt",
+			"down_press_hit": "down_press_hit",
+			"up_press_hit": "up_press_hit"
+		}
+	},
+	"victory": {
+		"model": "models/char_5_neko_victory.nm4b",
+		"mdimage": "char_5_neko_victory/5_neko_victory",
+		"standby": "standby"
+	},
+	"fail": {
+		"model": "1_mainshow",
+		"mdimage": "char_5_neko_fail/char_5_neko_fail"
+	}
+}
