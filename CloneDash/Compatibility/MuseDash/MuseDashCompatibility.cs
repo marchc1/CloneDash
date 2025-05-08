@@ -1020,7 +1020,7 @@ public static class MuseDashModelConverter
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 								var overlap = 16384 - (int)(16384.4999f - value / 360);
-								value = value - overlap * 360;
+								value -= overlap * 360;
 								fillKeyframe(tl.Curve(0), time, value, curveType, c1, c2, lc3, lc4);
 								lc3 = c3;
 								lc4 = c4;
