@@ -34,7 +34,14 @@ namespace Nucleus.Entities
 
 		public bool Visible { get; set; } = true;
 
-		public unsafe static ModelEntity Create(string pathID, string model) {
+		public static ModelEntity Create(ModelData data) {
+			ModelEntity entity = new ModelEntity();
+			entity.Level = EngineCore.Level;
+			entity.__model = data.Instantiate();
+			entity.__anim = new(entity.__model.Data);
+			return entity;
+		}
+		public static ModelEntity Create(string pathID, string model) {
 			ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
 			entity.__model = EngineCore.Level.Models.CreateInstanceFromFile(pathID, model);

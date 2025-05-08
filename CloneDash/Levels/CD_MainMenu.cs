@@ -50,7 +50,7 @@ public class CD_MainMenu : Level
 		var charData = CharacterMod.GetCharacterData();
 
 
-		var model = level.Models.CreateInstanceFromFile("chars", $"{charData.Filename}/{charData.GetPlayModel()}");
+		var model = charData.GetPlayModelData(level).Instantiate();
 		var anims = new AnimationHandler(model);
 
 		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");

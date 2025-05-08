@@ -4,9 +4,17 @@ using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
 using Nucleus;
+using Nucleus.Models.Runtime;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
+using Raylib_cs;
+using Texture2D = AssetStudio.Texture2D;
+using Color = Raylib_cs.Color;
+using Nucleus.Audio;
+using Nucleus.Engine;
+using Fmod5Sharp.FmodTypes;
+using Fmod5Sharp;
 
 namespace CloneDash.Compatibility.MuseDash
 {
@@ -344,6 +352,168 @@ namespace CloneDash.Compatibility.MuseDash
 			Songs = workSongs.ToList();
 
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
+		}
+
+		private class ParametersReader(Dictionary<string, string[]> kvps)
+		{
+			public T? Read<T>(string key) where T : IParsable<T> => Read<T>(key, 0);
+			public T? Read<T>(string key, int index) where T : IParsable<T> {
+				return kvps.TryGetValue(key, out string[]? pieces)
+					? T.TryParse(pieces[index], null, out T? res)
+						? res
+						: default
+					: default;
+			}
+		}
+
+		public static void SeparateBundlePathCombination(string combined, out string bundle, out string path) {
+			string[] pieces = combined.Split('/');
+			if (pieces.Length != 2) throw new Exception("Expected two pieces; defining the bundle name search, then the path name search (ie. bundleName/pathSearch, without any extensions)");
+			bundle = pieces[0];
+			path = pieces[1];
+		}
+
+		public static MusicTrack GenerateMusicTrack(Level level, string bundleName_pathName) {
+			SeparateBundlePathCombination(bundleName_pathName, out var bundle, out var path);
+			return GenerateMusicTrack(level, bundle, path);
+		}
+		public static MusicTrack GenerateMusicTrack(Level level, string bundleName, string musicName) {
+			var bundle = MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains($"{bundleName}"));
+			AssetsManager manager = new AssetsManager();
+			manager.LoadFiles(bundle);
+			var obj = manager.assetsFileList[0];
+			var audioClip = obj.Objects.First(x => x is AudioClip ta && ta.m_Name.Contains($"{musicName}")) as AudioClip;
+
+			byte[] musicStream;
+			var audiodata = audioClip.m_AudioData.GetData();
+
+			if (audioClip.m_Type == FMODSoundType.UNKNOWN) {
+				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
+				bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
+
+				var track = EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream);
+				track.Paused = false;
+				return track;
+			}
+
+			throw new Exception();
+		}
+
+		public static void PopulateModelDataTextures(ModelData modelData, string bundleName_pathName) {
+			SeparateBundlePathCombination(bundleName_pathName, out var bundle, out var path);
+			PopulateModelDataTextures(modelData, bundle, path);
+		}
+		public static void PopulateModelDataTextures(ModelData modelData, string bundleName, string atlasName) {
+			var bundle = MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains($"{bundleName}"));
+			AssetsManager manager = new AssetsManager();
+			manager.LoadFiles(bundle);
+			var obj = manager.assetsFileList[0];
+			var character_atlas = obj.Objects.First(x => x is TextAsset ta && ta.m_Name == $"{atlasName}.atlas") as TextAsset;
+
+			using var ms = new MemoryStream(character_atlas.m_Script);
+			using var sr = new StreamReader(ms);
+
+			var text = sr.ReadToEnd();
+			var lines = text.Replace("\r", "").Split('\n');
+
+			string? pageName = null;
+			Dictionary<string, string[]> pageParameters = [];
+			bool donePageParameters = false;
+
+			Dictionary<string, ParametersReader> regions = [];
+			string workingRegion = null;
+			Dictionary<string, string[]> workingRegionParameters = [];
+
+			foreach (var curline in lines) {
+				var line = curline.Trim();
+				if (string.IsNullOrEmpty(line)) continue;
+
+				bool runLineSearch = false;
+
+				if (pageName == null)
+					pageName = line;
+				else if (!donePageParameters) {
+					int colon = line.IndexOf(':');
+					if (colon == -1) {
+						donePageParameters = true;
+						runLineSearch = true;
+					}
+					else {
+						var pieces = line.Substring(colon + 1).Split(',');
+						for (int i = 0; i < pieces.Length; i++) pieces[i] = pieces[i].Trim();
+						pageParameters[line.Substring(0, colon)] = pieces;
+					}
+				}
+				else runLineSearch = true;
+
+				if (runLineSearch) {
+					int colon = line.IndexOf(':');
+					if (colon == -1) {
+						if (workingRegion != null) {
+							regions[workingRegion] = new(workingRegionParameters);
+							workingRegionParameters = [];
+						}
+						workingRegion = line;
+					}
+					else {
+						var pieces = line.Substring(colon + 1).Split(',');
+						for (int i = 0; i < pieces.Length; i++) pieces[i] = pieces[i].Trim();
+						workingRegionParameters[line.Substring(0, colon)] = pieces;
+					}
+				}
+			}
+
+			if (workingRegion != null && workingRegionParameters.Count > 0) {
+				regions[workingRegion] = new(workingRegionParameters);
+			}
+
+			if (pageName == null) throw new NullReferenceException();
+			var character_image = obj.Objects.First(x => x is Texture2D no && no.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
+			using var img = new Raylib_cs.Raylib.ImageRef(character_image!.ToRaylib(), flipV: true);
+
+			modelData.TextureAtlas = new();
+
+			var page = new ParametersReader(pageParameters);
+
+			var texWidth = page.Read<int>("size", 0);
+			var texHeight = page.Read<int>("size", 1);
+
+			modelData.TextureAtlas.ClearTextures();
+
+			foreach (var regionKVP in regions) {
+				var region = regionKVP.Value;
+
+				var degreesStr = region.Read<string>("rotate");
+				int degrees = degreesStr switch {
+					"true" => 90,
+					"false" => 0,
+					_ => int.Parse(degreesStr)
+				};
+
+				var x = region.Read<int>("xy", 0);
+				var y = region.Read<int>("xy", 1);
+				var width = region.Read<int>("size", 0);
+				var height = region.Read<int>("size", 1);
+				var originalWidth = region.Read<int>("orig", 0);
+				var originalHeight = region.Read<int>("orig", 1);
+				var offsetX = region.Read<int>("offset", 0);
+				var offsetY = region.Read<int>("offset", 1);
+
+				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
+				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
+				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
+
+				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
+				if (degrees != 0)
+					Raylib.ImageRotate(ref newImg, degrees);
+				Raylib.ImageResizeCanvas(ref newImg, originalWidth, originalHeight, offsetX, (originalHeight - height) - offsetY, Color.Blank);
+				modelData.TextureAtlas.AddTexture(regionKVP.Key, newImg);
+			}
+
+			HashSet<string> usedRegions = [];
+			modelData.TextureAtlas.Validate();
+
+			modelData.SetupAttachments();
 		}
 	}
 

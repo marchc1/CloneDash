@@ -487,7 +487,7 @@ public class RegionAttachment : Attachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
 	}
 
 	public override void Render(SlotInstance slot) {
@@ -634,7 +634,7 @@ public class MeshAttachment : VertexAttachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
 	}
 
 	public override void Render(SlotInstance slot) {

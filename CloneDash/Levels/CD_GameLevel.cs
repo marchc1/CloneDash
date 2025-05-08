@@ -535,10 +535,10 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
-				Player = Add(ModelEntity.Create("character", Character.GetPlayModel()));
+				Player = Add(ModelEntity.Create(Character.GetPlayModelData(this)));
 				Interlude.Spin();
 
-				HologramPlayer = Add(ModelEntity.Create("character", Character.GetPlayModel()));
+				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModelData(this)));
 				Player.Scale = new(1.25f);
 
 				HologramPlayer.Scale = Player.Scale;

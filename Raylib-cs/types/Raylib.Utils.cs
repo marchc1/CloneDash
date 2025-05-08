@@ -157,12 +157,16 @@ public static unsafe partial class Raylib
 
 		public static implicit operator Image(ImageRef self) => self.img;
 
-		public ImageRef(Image img) {
+		public ImageRef(Image img, bool flipH = false, bool flipV = false) {
 			this.img = img;
+			if (flipH) Raylib.ImageFlipHorizontal(ref this.img);
+			if (flipV) Raylib.ImageFlipVertical(ref this.img);
 		}
-		public ImageRef(string filetype, byte* source, int length) {
+		public ImageRef(string filetype, byte* source, int length, bool flipH = false, bool flipV = false) {
 			using var fileTypeNative = filetype.ToAnsiBuffer();
 			img = LoadImageFromMemory(fileTypeNative.AsPointer(), source, length);
+			if (flipH) Raylib.ImageFlipHorizontal(ref this.img);
+			if (flipV) Raylib.ImageFlipVertical(ref this.img);
 		}
 		public ImageRef(string filetype, Stream stream) {
 			var length = (int)stream.Length;

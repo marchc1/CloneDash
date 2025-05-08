@@ -39,6 +39,11 @@ public class ModelManagement : IManagedMemory
 	public ModelRefJSON JSONModelLoader = new();
 	public ModelBinary BinaryModelLoader = new();
 
+	public bool IsCached(string pathID, string path) {
+		var savePath = Path.Combine(pathID, path);
+		return ModelDatas.TryGetValue(savePath, out _);
+	}
+
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		var savePath = Path.Combine(pathID, path);
 		if (ModelDatas.TryGetValue(savePath, out var data) && data != null) {
@@ -47,6 +52,7 @@ public class ModelManagement : IManagedMemory
 
 		if (string.IsNullOrEmpty(Path.GetExtension(path)))
 			path = Path.ChangeExtension(path, ".nm4rj"); // Assume ref'd json, but allow binary/etc formats
+
 		switch (Path.GetExtension(path)) {
 			case ModelRefJSON.FULL_EXTENSION: ModelDatas[savePath] = JSONModelLoader.LoadModelFromFile(pathID, path); break;
 			case ModelBinary.FULL_EXTENSION: ModelDatas[savePath] = BinaryModelLoader.LoadModelFromFile(pathID, path); break;

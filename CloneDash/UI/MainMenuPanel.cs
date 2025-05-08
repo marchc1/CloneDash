@@ -99,12 +99,19 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		if (character != null && character.Filename != null) {
 			this.character = character;
 
-			model = Level.Models.CreateInstanceFromFile("chars", $"{character.Filename}/{character.GetMainShowModel()}");
+			model = character.GetMainShowModelData(Level).Instantiate();
 			anims = new(model.Data);
 			anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
 
-			music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.GetMainShowMusic()}", true);
-			music.Loops = true;
+			if (character.MainShow.Music != null)
+				music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.MainShow.Music}", true);
+
+			else if (character.MainShow.MDMusic != null)
+				music = MuseDashCompatibility.GenerateMusicTrack(Level, character.MainShow.MDMusic);
+
+
+			if (music != null)
+				music.Loops = true;
 		}
 
 		Add(out back);

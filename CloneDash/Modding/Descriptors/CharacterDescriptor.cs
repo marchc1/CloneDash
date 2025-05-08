@@ -1,5 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using CloneDash.Compatibility.MuseDash;
+using Newtonsoft.Json;
+using Nucleus.Audio;
+using Nucleus.Engine;
 using Nucleus.Files;
+using Nucleus.Models.Runtime;
 
 namespace CloneDash.Modding.Descriptors
 {
@@ -28,7 +32,11 @@ namespace CloneDash.Modding.Descriptors
 	public class CharacterDescriptor_MainShow
 	{
 		[JsonProperty("model")] public string Model;
-		[JsonProperty("music")] public string Music;
+		[JsonProperty("mdimage")] public string? UseMDImage;
+
+		[JsonProperty("music")] public string? Music;
+		[JsonProperty("mdmusic")] public string? MDMusic;
+
 		[JsonProperty("standby")] public string StandbyAnimation;
 		[JsonProperty("touch")] public CharacterDescriptor_MainShowTouch Touch;
 	}
@@ -69,6 +77,7 @@ namespace CloneDash.Modding.Descriptors
 		}
 
 		[JsonProperty("model")] public string Model;
+		[JsonProperty("mdimage")] public string? UseMDImage;
 
 		[JsonProperty("run")] public Descriptor_MultiAnimationClass RunAnimation;
 		[JsonProperty("in")] public string? InAnimation;
@@ -86,11 +95,13 @@ namespace CloneDash.Modding.Descriptors
 	public class CharacterDescriptor_Victory
 	{
 		[JsonProperty("model")] public string Model;
+		[JsonProperty("mdimage")] public string? UseMDImage;
 		[JsonProperty("standby")] public string Standby;
 	}
 	public class CharacterDescriptor_Fail
 	{
 		[JsonProperty("model")] public string Model;
+		[JsonProperty("mdimage")] public string? UseMDImage;
 	}
 	public class CharacterDescriptor : CloneDashDescriptor
 	{
@@ -154,9 +165,44 @@ namespace CloneDash.Modding.Descriptors
 
 		public static CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CharacterDescriptor>(text, filename) : null;
 
-		public string GetPlayModel() => Play.Model;
-		public string GetMainShowModel() => MainShow.Model;
 		public string GetVictoryModel() => Victory.Model;
-		public string GetMainShowMusic() => MainShow.Music;
+
+		public MusicTrack? GetMainShowMusic(Level level) {
+			if(MainShow.Music != null) 
+				return level.Sounds.LoadMusicFromFile("character", MainShow.Music);
+
+			if (MainShow.MDMusic != null)
+				return MuseDashCompatibility.GenerateMusicTrack(level, MainShow.MDMusic);
+
+			return null;
+		}
+
+		public ModelData GetPlayModelData(Level level) {
+			var play = Play;
+			var cached = level.Models.IsCached("character", play.Model);
+			var data = level.Models.LoadModelFromFile("character", play.Model);
+			if (play.UseMDImage != null && !cached)
+				MuseDashCompatibility.PopulateModelDataTextures(data, play.UseMDImage);
+
+			return data;
+		}
+		public ModelData GetMainShowModelData(Level level) {
+			var mainshow = MainShow;
+			var cached = level.Models.IsCached("character", mainshow.Model);
+			var data = level.Models.LoadModelFromFile("character", mainshow.Model);
+			if (mainshow.UseMDImage != null && !cached)
+				MuseDashCompatibility.PopulateModelDataTextures(data, mainshow.UseMDImage);
+
+			return data;
+		}
+		public ModelData GetVictoryModelData(Level level) {
+			var victory = Victory;
+			var cached = level.Models.IsCached("character", victory.Model);
+			var data = level.Models.LoadModelFromFile("character", Play.Model);
+			if (victory.UseMDImage != null && !cached)
+				MuseDashCompatibility.PopulateModelDataTextures(data, victory.UseMDImage);
+
+			return data;
+		}
 	}
 }
