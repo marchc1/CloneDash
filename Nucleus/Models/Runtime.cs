@@ -1488,9 +1488,20 @@ public class ModelBinary : IModelFormat
 				data.DefaultSkin = reader.ReadIndexThenFetch(data.Skins);
 				data.Animations = reader.ReadList(readAnimation);
 
-				// Load the texture atlas now
+				// Try to load the texture atlas
+				string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
+				byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+
+				if (texatlas == null && imagedata == null)
+					return data;
+
+				if (texatlas == null)
+					throw new NullReferenceException("Got image data, expected texture atlas as well");
+				if (imagedata == null)
+					throw new NullReferenceException("Got texture atlas, expected image data as well");
+
 				data.TextureAtlas = new();
-				data.TextureAtlas.Load(Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")), Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png")));
+				data.TextureAtlas.Load(texatlas, imagedata);
 
 				data.SetupAttachments();
 
