@@ -35,7 +35,7 @@ namespace CloneDash.Levels
 			if (character.Filename == null) return;
 			this.character = character;
 
-			model = Models.CreateInstanceFromFile("character", character.GetVictoryModel());
+			model = character.GetVictoryModelData(this).Instantiate();
 			anims = new(model.Data);
 			anims.SetAnimation(0, character.Victory.Standby, true);
 

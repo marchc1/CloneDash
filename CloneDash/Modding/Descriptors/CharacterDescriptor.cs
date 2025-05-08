@@ -177,18 +177,30 @@ namespace CloneDash.Modding.Descriptors
 			return null;
 		}
 
+
 		public ModelData GetPlayModelData(Level level) {
 			var play = Play;
 			var cached = level.Models.IsCached("character", play.Model);
+			if(MuseDashModelConverter.ShouldLoadMDModel(play.Model, out string outPath)) {
+				ModelData md_data = new ModelData();
+				MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
+				return md_data;
+			}
 			var data = level.Models.LoadModelFromFile("character", play.Model);
 			if (play.UseMDImage != null && !cached)
 				MuseDashCompatibility.PopulateModelDataTextures(data, play.UseMDImage);
 
 			return data;
 		}
+
 		public ModelData GetMainShowModelData(Level level) {
 			var mainshow = MainShow;
 			var cached = level.Models.IsCached("character", mainshow.Model);
+			if (MuseDashModelConverter.ShouldLoadMDModel(mainshow.Model, out string outPath)) {
+				ModelData md_data = new ModelData();
+				MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
+				return md_data;
+			}
 			var data = level.Models.LoadModelFromFile("character", mainshow.Model);
 			if (mainshow.UseMDImage != null && !cached)
 				MuseDashCompatibility.PopulateModelDataTextures(data, mainshow.UseMDImage);
@@ -198,6 +210,11 @@ namespace CloneDash.Modding.Descriptors
 		public ModelData GetVictoryModelData(Level level) {
 			var victory = Victory;
 			var cached = level.Models.IsCached("character", victory.Model);
+			if (MuseDashModelConverter.ShouldLoadMDModel(victory.Model, out string outPath)) {
+				ModelData md_data = new ModelData();
+				MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
+				return md_data;
+			}
 			var data = level.Models.LoadModelFromFile("character", Play.Model);
 			if (victory.UseMDImage != null && !cached)
 				MuseDashCompatibility.PopulateModelDataTextures(data, victory.UseMDImage);

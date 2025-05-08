@@ -33,7 +33,7 @@ public static class Model4System
 	/// </summary>
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
-	public static ConVar m4s_wireframe = ConVar.Register("m4s_wireframe", "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
+	public static ConVar m4s_wireframe = ConVar.Register(nameof(m4s_wireframe), "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 	public const double REFERENCE_FPS = 30;
 }
 
@@ -191,8 +191,9 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Rlgl.Translatef(Position.X, Position.Y, 0);
 		Rlgl.Scalef(Scale.X, Scale.Y, 0);
 
-		foreach (var bone in Bones)
+		foreach (var bone in Bones) {
 			bone.UpdateWorldTransform();
+		}
 
 		foreach (var slot in DrawOrder) {
 			var attachment = slot.Attachment;
@@ -214,6 +215,12 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Clipping.End();
 		Rlgl.PopMatrix();
 		Graphics2D.OffsetDrawing(offset);
+
+		if (Model4System.m4s_wireframe.GetBool()) {
+			foreach (var bone in Bones) {
+				Raylib.DrawCircleV(bone.WorldTransform.LocalToWorld(0, 0).ToNumerics() * new System.Numerics.Vector2(1, -1), 4, Color.Red);
+			}
+		}
 	}
 
 	public void SetToSetupPose() {
@@ -487,7 +494,7 @@ public class RegionAttachment : Attachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
+		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
 	}
 
 	public override void Render(SlotInstance slot) {
