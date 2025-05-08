@@ -1,9 +1,9 @@
 {
 	"version": "2025-05-06-01",
 
-	"name":    "Navigator Yume",
+	"name":    "Violinist Marija",
 	"author":  "PeroPeroGames",
-	"perk":    "She can destroy all saws (Including all \"Danmaku mode\" obstacles).",
+	"perk":    "When combo is less than 100, Violinist Marija's \"Miss\" judgement won't interrupt the combo.",
 	
 	"max_hp":                250,
 	"invincible_fever":      false,
@@ -16,8 +16,8 @@
 	"logic_controller":      null,
 	
 	"mainshow": {
-		"model": "musedash/char_4_yume_main/4_yume_main_show",
-		"mdmusic": "char_4_yume_audio_assets_char_4_yume_bgm/char_4_yume_bgm",
+		"model": "musedash/char_3_violin_main/3_violin_main_show",
+		"mdmusic": "char_3_violin_audio_assets_char_3_violin_bgm/char_3_violin_bgm",
 		"standby": "BgmStandby",
 		"touch": {
 			"response_start": "touch_{0}_start",
@@ -27,7 +27,7 @@
 		}
 	},
 	"play": {	
-		"model": "musedash/char_4_yume_battle/char_4_yume",
+		"model": "musedash/char_3_violin_battle/char_3_violin",
 		"in": null,
 		"run": "run",
 		"die": "die",
@@ -84,12 +84,12 @@
 		}
 	},
 	"victory": {
-		"model": "models/char_4_yume_victory.nm4b",
-		"mdimage": "char_4_yume_victory/4_yume_victory",
+		"model": "models/char_3_violin_victory.nm4b",
+		"mdimage": "char_3_violin_victory/3_violin_victory",
 		"standby": "standby"
 	},
 	"fail": {
 		"model": "1_mainshow",
-		"mdimage": "char_4_yume_fail/char_4_yume_fail"
+		"mdimage": "char_3_violin_fail/char_3_violin_fail"
 	}
 }

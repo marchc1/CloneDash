@@ -1,9 +1,9 @@
 {
 	"version": "2025-05-06-01",
 
-	"name":    "NEKO#ΦωΦ ",
+	"name":    "Game Streamer NEKO#ΦωΦ",
 	"author":  "PeroPeroGames",
-	"perk":    "If you lose her all HP, she can continue (but the score can't be recorded).",
+	"perk":    "The streamer from Cytus II, Neko#ΦωΦ. You can still continue the game after her HP drops to 0. Your score will not be recorded if you clear the stage in this state. Yeah~ A collab character that won't die~",
 	
 	"max_hp":                250,
 	"invincible_fever":      false,
