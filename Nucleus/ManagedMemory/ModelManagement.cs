@@ -39,13 +39,18 @@ public class ModelManagement : IManagedMemory
 	public ModelRefJSON JSONModelLoader = new();
 	public ModelBinary BinaryModelLoader = new();
 
+	public string CombinePath(string pathID, string path) => IManagedMemory.MergePath(pathID, path);
 	public bool IsCached(string pathID, string path) {
-		var savePath = Path.Combine(pathID, path);
+		var savePath = CombinePath(pathID, path);
 		return ModelDatas.TryGetValue(savePath, out _);
 	}
 
+	public void Cache(ModelData data, string pathID, string path) {
+		ModelDatas[CombinePath(pathID, path)] = data;
+	}
+
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		var savePath = Path.Combine(pathID, path);
+		var savePath = CombinePath(pathID, path);
 		if (ModelDatas.TryGetValue(savePath, out var data) && data != null) {
 			return data;
 		}
