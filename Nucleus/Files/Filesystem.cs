@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using Newtonsoft.Json;
+using Raylib_cs;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -171,6 +172,10 @@ public static class Filesystem
 	public static bool ReadAllText(string pathID, string path, [NotNullWhen(true)] out string? text) {
 		text = ReadAllText(pathID, path);
 		return text != null;
+	}
+
+	public static T ReadJSON<T>(string pathID, string path) {
+		return JsonConvert.DeserializeObject<T>(ReadAllText(pathID, path)!) ?? throw new Exception("Cannot deserialize.");
 	}
 
 	public static bool ReadAllBytes(string pathID, string path, [NotNullWhen(true)] out byte[]? bytes) {

@@ -89,7 +89,7 @@ public class UnitySearchPath : SearchPath
 
 		switch (asset) {
 			case TextAsset ta: return new MemoryStream(ta.m_Script);
-			default: return asset.reader.BaseStream;
+			default: throw new NotImplementedException($"No way to explicitly pull a stream out of a {asset.GetType().FullName}.");
 		}
 	}
 }

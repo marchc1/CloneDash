@@ -86,8 +86,6 @@ internal class Program
 			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
 			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
 			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
-			using (Stream stream = Filesystem.Open("assets", "mdlut.dat") ?? throw new Exception("Cannot find the mdlut.dat file"))
-				Filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(MuseDashCompatibility.WhereIsMuseDashDataFolder!, "StreamingAssets/aa"), stream));
 		}
 
 		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
