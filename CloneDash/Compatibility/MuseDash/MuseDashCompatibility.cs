@@ -372,13 +372,14 @@ namespace CloneDash.Compatibility.MuseDash
 
 			var res = Parallel.ForEach(Albums, (album) => {
 				var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
+				var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
 
 				var songsFinal = new MuseDashSong[songs.Count];
 
 				for (int i = 0; i < songs.Count; i++) {
 					workSongs.Add(new MuseDashSong(songs[i]) {
-						Name = songs[i].Name,
-						Author = songs[i].Author,
+						Name = songsEN[i].name,
+						Author = songsEN[i].author,
 						Album = album
 					});
 				}
@@ -1371,5 +1372,39 @@ public static class MuseDashModelConverter
 		}
 		outPath = path;
 		return false;
+	}
+
+	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
+	// This lets musedash overrides work
+
+	public static ModelData MD_GetModelData(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
+		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath)) {
+			ModelData md_data = new ModelData();
+			MuseDashModelConverter.ConvertMuseDashModelData(md_data, fullyQualifiedPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, fullyQualifiedPath));
+			return md_data;
+		}
+
+		return level.Models.LoadModelFromFile(pathIDIfNotMD, fullyQualifiedPath);
+	}
+
+	public static MusicTrack MD_GetMusicTrack(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
+		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
+			pathIDIfNotMD = "musedash";
+
+		return level.Sounds.LoadMusicFromFile(pathIDIfNotMD, fullyQualifiedPath);
+	}
+
+	public static Nucleus.Audio.Sound MD_GetSound(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
+		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
+			pathIDIfNotMD = "musedash";
+
+		return level.Sounds.LoadSoundFromFile(pathIDIfNotMD, fullyQualifiedPath);
+	}
+
+	public static Nucleus.ManagedMemory.Texture MD_GetTexture(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
+		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
+			pathIDIfNotMD = "musedash";
+
+		return level.Textures.LoadTextureFromFile(pathIDIfNotMD, fullyQualifiedPath);
 	}
 }

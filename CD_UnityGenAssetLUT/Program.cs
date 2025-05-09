@@ -35,6 +35,7 @@ internal class Program
 				if (obj == null) return;
 				foreach (var container in obj.m_Container) {
 					var pathID = container.Value.asset.m_PathID;
+					if (pathID == 0) continue;
 					lookup.TryAdd($"{container.Key}/{(asset.ObjectsDic[pathID] is NamedObject no ? no.m_Name : pathID)}", new(filename, pathID));
 				}
 

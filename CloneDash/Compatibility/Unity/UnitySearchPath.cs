@@ -2,6 +2,7 @@
 using Nucleus.Files;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -21,17 +22,31 @@ public class UnitySearchPath : SearchPath
 	private string root;
 	private HashSet<string> directories = [];
 	private HashSet<string> files = [];
+	private Dictionary<string, List<UnityAssetBundleInfo>> directoryFiles = [];
 
+	private List<UnityAssetBundleInfo> getDirFiles(string directory) {
+		if (!directoryFiles.TryGetValue(directory, out List<UnityAssetBundleInfo>? dirFiles)) {
+			dirFiles = [];
+			directoryFiles[directory] = dirFiles;
+		}
 
-	private void RegisterFile(string filepath) {
+		return dirFiles;
+	}
+
+	private UnityAssetBundleInfo RegisterFile(string filepath, UnityAssetBundleInfo file) {
 		files.Add(filepath);
-		RegisterDirectory(Path.GetDirectoryName(filepath));
+		var directory = Path.GetDirectoryName(filepath)!.Replace("\\", "/");
+		getDirFiles(directory).Add(file);
+		RegisterDirectory(directory);
+		return file;
 	}
 
 	private void RegisterDirectory(string? directory) {
 		if (string.IsNullOrWhiteSpace(directory)) return;
 		directories.Add(directory);
-		RegisterDirectory(Path.GetDirectoryName(directory));
+		getDirFiles(directory);
+
+		RegisterDirectory(Path.GetDirectoryName(directory)?.Replace("\\", "/"));
 	}
 
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
@@ -44,9 +59,8 @@ public class UnitySearchPath : SearchPath
 			string container = reader.ReadString();
 			string bundleName = reader.ReadString();
 			long pathID = reader.ReadInt64();
-			lookups[container] = new(bundleName, pathID);
 
-			RegisterFile(container);
+			lookups[container] = RegisterFile(container, new(bundleName, pathID));
 		}
 	}
 
@@ -66,14 +80,22 @@ public class UnitySearchPath : SearchPath
 	public override bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode)
 		=> (specificAccess == null || specificAccess == FileAccess.Read)
 		&& (specificMode == null || specificMode == FileMode.Open)
-		&& files.Contains(path);
-	public string GetBundleNameFromContainer(string container, out long pathID) {
-		if (lookups.TryGetValue(container, out var bundleInfo)) {
+		&& (files.Contains(path) || (directories.Contains(path) && directoryFiles[path].Count == 1));
+	public string GetBundleNameFromFullPath(string path, out long pathID) {
+		if (lookups.TryGetValue(path, out var bundleInfo)) {
 			pathID = bundleInfo.PathID;
 			return bundleInfo.BundleName;
 		}
 
-		throw new FileNotFoundException(container);
+		if (directories.Contains(path)) {
+			if (directoryFiles[path].Count != 1)
+				throw new InvalidDataException("Tried to use a container as a filepath. This works when there's only one file available, but otherwise, you must specify a fully qualified container + filepath.");
+			var obj = directoryFiles[path][0];
+			pathID = obj.PathID;
+			return obj.BundleName;
+		}
+
+		throw new FileNotFoundException(path);
 	}
 	public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
 		throw new NotImplementedException();
@@ -84,7 +106,7 @@ public class UnitySearchPath : SearchPath
 	}
 
 	protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
-		GetAssetBundle(GetBundleNameFromContainer(path, out var pathID), out var manager);
+		GetAssetBundle(GetBundleNameFromFullPath(path, out var pathID), out var manager);
 		var asset = manager.assetsFileList[0].ObjectsDic[pathID];
 
 		switch (asset) {
