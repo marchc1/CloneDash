@@ -30,10 +30,13 @@ internal class Program
 				string filename = Path.GetFileName(file);
 				AssetsManager assets = new AssetsManager();
 				assets.LoadFiles(file);
-				var obj = assets.assetsFileList[0].Objects.First(x => x is AssetBundle) as AssetBundle;
+				var asset = assets.assetsFileList[0];
+				var obj = asset.Objects.First(x => x is AssetBundle) as AssetBundle;
 				if (obj == null) return;
-				foreach (var container in obj.m_Container)
-					lookup.TryAdd(container.Key, new(filename, container.Value.asset.m_PathID));
+				foreach (var container in obj.m_Container) {
+					var pathID = container.Value.asset.m_PathID;
+					lookup.TryAdd($"{container.Key}/{(asset.ObjectsDic[pathID] is NamedObject no ? no.m_Name : pathID)}", new(filename, pathID));
+				}
 
 				Interlocked.Decrement(ref remaining);
 			});
