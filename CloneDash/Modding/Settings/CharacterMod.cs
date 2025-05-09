@@ -21,8 +21,6 @@ namespace CloneDash.Modding.Settings
 			Logs.Print($"    Name:      {info.Name}");
 			Logs.Print($"    Author:    {info.Author}");
 			Logs.Print($"    Perk:      {info.Perk}");
-			Logs.Print($"    Version:   {info.Version}");
-			Logs.Print($"    Max HP:    {info.MaxHP}");
 		}, "Your characters info, based on the Clone Dash Descriptor");
 		public static ConCommand clonedash_allcharacters = ConCommand.Register("clonedash_allcharacters", (_, _) => {
 			var characters = GetAvailableCharacters();
@@ -37,31 +35,7 @@ namespace CloneDash.Modding.Settings
 			var dirs = Filesystem.FindDirectories("chars", "");
 			return dirs.ToArray();
 		}
-		public static CharacterDescriptor[] GetAvailableCharacterDescriptors() {
-			var dirs = Filesystem.FindDirectories("chars", "").ToArray();
-			var descriptors = new CharacterDescriptor?[dirs.Length];
-
-			for (int i = 0; i < dirs.Length; i++) 
-				descriptors[i] = CharacterDescriptor.ParseCharacter(Path.Combine(dirs[i], "character.cdd"));
-			
-			var notNull = 0;
-			for (int i = 0; i < dirs.Length; i++) 
-				if (descriptors[i] != null) notNull++;
-
-			var notNullReturn = new CharacterDescriptor[notNull];
-			var notNullPtr = 0;
-			for (int i = 0; i < dirs.Length; i++) {
-				var descriptor = descriptors[i];
-				if (descriptor != null) {
-					notNullReturn[notNullPtr] = descriptor;
-					notNullPtr++;
-				}
-			}
-			
-			return notNullReturn;
-		}
-
-		public static CharacterDescriptor? GetCharacterData() {
+		public static ICharacterDescriptor? GetCharacterData() {
 			string name = clonedash_character?.GetString();
 			if (string.IsNullOrWhiteSpace(name)) {
 				return null;
