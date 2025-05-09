@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssetStudio", "AssetStudio\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssetStudioUtility", "AssetStudioUtility\AssetStudioUtility.csproj", "{1A3B17E4-506E-43C9-AD05-EAC0E6C0D5C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CD_UnityGenAssetLUT", "CD_UnityGenAssetLUT\CD_UnityGenAssetLUT.csproj", "{8682EDDE-182C-43B2-A4D7-1142FA45226A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{1A3B17E4-506E-43C9-AD05-EAC0E6C0D5C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A3B17E4-506E-43C9-AD05-EAC0E6C0D5C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A3B17E4-506E-43C9-AD05-EAC0E6C0D5C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8682EDDE-182C-43B2-A4D7-1142FA45226A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8682EDDE-182C-43B2-A4D7-1142FA45226A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8682EDDE-182C-43B2-A4D7-1142FA45226A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8682EDDE-182C-43B2-A4D7-1142FA45226A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,6 +82,7 @@ Global
 		{9CFC46AF-4B66-4FE5-B779-50C177554F3E} = {F9CEF194-EA7B-41C5-B9CF-C181EAC5E306}
 		{64CC2258-D763-4696-B557-60B03EC80330} = {F9CEF194-EA7B-41C5-B9CF-C181EAC5E306}
 		{1A3B17E4-506E-43C9-AD05-EAC0E6C0D5C2} = {F9CEF194-EA7B-41C5-B9CF-C181EAC5E306}
+		{8682EDDE-182C-43B2-A4D7-1142FA45226A} = {A1C2ED6D-CBB6-4A76-8549-4C7085461E90}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2F79997E-69BD-4DF1-AEEF-44938358485B}
