@@ -21,6 +21,7 @@ using Nucleus.Models;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Nucleus.Types;
+using Nucleus.Files;
 
 namespace CloneDash.Compatibility.MuseDash
 {
@@ -363,21 +364,21 @@ namespace CloneDash.Compatibility.MuseDash
 			Stopwatch s = new Stopwatch();
 			s.Start();
 
-			Albums = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashAlbum>>(StreamingFiles, "config_others_assets_albums_");
+
+			Albums = Filesystem.ReadJSON<List<MuseDashAlbum>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
 			Albums.RemoveAll(x => x.JsonName == "");
 
 			ConcurrentBag<MuseDashSong> workSongs = [];
 
 			var res = Parallel.ForEach(Albums, (album) => {
-				var songs = UnityAssetUtils.LoadAssetEasyC<TextAsset, List<MuseDashSongInfoJSON>>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
-				var songsEN = UnityAssetUtils.LoadAssetEasyC<TextAsset, __musedashSong[]>(StreamingFiles, $"config_others_assets_{album.JsonName.ToLower()}_");
+				var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
 
 				var songsFinal = new MuseDashSong[songs.Count];
 
 				for (int i = 0; i < songs.Count; i++) {
 					workSongs.Add(new MuseDashSong(songs[i]) {
-						Name = songsEN[i].name,
-						Author = songsEN[i].author,
+						Name = songs[i].Name,
+						Author = songs[i].Author,
 						Album = album
 					});
 				}
