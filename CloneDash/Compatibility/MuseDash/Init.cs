@@ -1,6 +1,7 @@
 ﻿using AssetStudio;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using FMOD;
 using Nucleus;
 using OdinSerializer;
 
@@ -14,6 +15,17 @@ namespace CloneDash.Compatibility.MuseDash
 
 		public static bool Initialized { get; private set; } = false;
 
+		public static MDCompatLayerInitResult LightInitialize() {
+#if COMPILED_WINDOWS
+			return INIT_WINDOWS();
+#elif COMPILED_OSX
+            return INIT_OSX();
+#elif COMPILED_LINUX
+            return INIT_LINUX();
+#else
+			return MDCompatLayerInitResult.OperatingSystemNotCompatible;
+#endif
+		}
 		public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
 			if (Initialized)
 				return MDCompatLayerInitResult.OK;
@@ -22,15 +34,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 			MDCompatLayerInitResult result;
 			using (CD_StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
-#if COMPILED_WINDOWS
-				result = INIT_WINDOWS();
-#elif COMPILED_OSX
-            	result = INIT_OSX();
-#elif COMPILED_LINUX
-            	result = INIT_LINUX();
-#else
-			MDCompatLayerInitResult result = MDCompatLayerInitResult.OperatingSystemNotCompatible;
-#endif
+				result = LightInitialize();
 			}
 
 			if (result != MDCompatLayerInitResult.OK) {

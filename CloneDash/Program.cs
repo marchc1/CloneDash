@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Scripting;
@@ -51,43 +52,6 @@ internal class Program
 			MuseDashCompatibility.InitializeCompatibilityLayer();
 		}
 
-		if (CommandLineArguments.IsParamTrue("fullscreen")) {
-
-		}
-
-		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
-			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
-			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
-			var sheet = song.GetSheet(difficulty);
-
-			var lvl = new CD_GameLevel(sheet);
-
-			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
-		}
-
-		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
-			Logs.Info($"cam_level specified: {cam_level}");
-			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
-
-			CustomChartsSong song = new CustomChartsSong(cam_level);
-			ChartSheet sheet;
-			switch (Path.GetExtension(cam_level)) {
-				case ".bms":
-					sheet = song.LoadFromDiskBMS(cam_level);
-					break;
-				default:
-					sheet = song.GetSheet(difficulty);
-					break;
-			}
-			
-			var lvl = new CD_GameLevel(sheet);
-			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"), CommandLineArguments.GetParam("startmeasure", 0d));
-		}
-
-		else {
-			EngineCore.LoadLevel(new CD_MainMenu());
-		}
-
 		Interlude.Spin();
 
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
@@ -122,7 +86,43 @@ internal class Program
 			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
 			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
 			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
+			using (Stream stream = Filesystem.Open("assets", "mdlut.dat") ?? throw new Exception("Cannot find the mdlut.dat file"))
+				Filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(MuseDashCompatibility.WhereIsMuseDashDataFolder!, "StreamingAssets/aa"), stream));
 		}
+
+		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
+			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
+			var sheet = song.GetSheet(difficulty);
+
+			var lvl = new CD_GameLevel(sheet);
+
+			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
+		}
+
+		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
+			Logs.Info($"cam_level specified: {cam_level}");
+			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+
+			CustomChartsSong song = new CustomChartsSong(cam_level);
+			ChartSheet sheet;
+			switch (Path.GetExtension(cam_level)) {
+				case ".bms":
+					sheet = song.LoadFromDiskBMS(cam_level);
+					break;
+				default:
+					sheet = song.GetSheet(difficulty);
+					break;
+			}
+
+			var lvl = new CD_GameLevel(sheet);
+			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"), CommandLineArguments.GetParam("startmeasure", 0d));
+		}
+
+		else {
+			EngineCore.LoadLevel(new CD_MainMenu());
+		}
+
 		Interlude.Spin();
 		Interlude.End();
 	}
