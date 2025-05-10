@@ -48,9 +48,9 @@ public class CD_MainMenu : Level
 		var renderPanel = window.Add<Panel>();
 		renderPanel.Dock = Dock.Fill;
 		var charData = CharacterMod.GetCharacterData();
+		if (charData == null) return;
 
-
-		var model = charData.GetPlayModelData(level).Instantiate();
+		var model = charData.GetPlayModel(level).Instantiate();
 		var anims = new AnimationHandler(model);
 
 		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");

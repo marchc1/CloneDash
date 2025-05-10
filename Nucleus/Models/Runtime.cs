@@ -1067,12 +1067,38 @@ public class AnimationChannelEntry
 {
 	public Animation Animation;
 	public bool Looping;
+	public double LoopDuration = -1;
+
+	public bool LimitedLoop => LoopDuration > 0;
 }
 public class AnimationChannel
 {
 	public AnimationChannelEntry? CurrentEntry;
 	public Queue<AnimationChannelEntry> QueuedEntries = [];
 	public double Time;
+	public double ElapsedTime;
+
+	public void ElapseTime(double deltaTime) {
+		Time += deltaTime;
+		ElapsedTime += deltaTime;
+	}
+
+	public void ResetTime() {
+		Time = 0;
+		ElapsedTime = 0;
+	}
+
+	public void EnqueueNext() {
+		// Enqueue the next animation
+		if (QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
+			CurrentEntry = newAnim;
+			ResetTime();
+		}
+		else {
+			CurrentEntry = null;
+			ResetTime();
+		}
+	}
 }
 public class AnimationHandler
 {
@@ -1104,36 +1130,30 @@ public class AnimationHandler
 		for (int i = 0; i < Channels.Length; i++) {
 			var channel = Channels[i];
 
-			channel.Time += time;
+			channel.ElapseTime(time);
 			var anim = channel.CurrentEntry;
 			if (anim == null) {
 				if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 					channel.CurrentEntry = newAnim;
-					channel.Time = 0;
+					channel.ResetTime();
 					anim = newAnim;
 				}
 				else continue;
 			}
 
 			if (channel.Time >= anim.Animation.Duration) {
-				if (anim.Looping)
+				if (anim.Looping) 
 					channel.Time = channel.Time % anim.Animation.Duration;
-				else {
-					// Enqueue the next animation
-					if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
-						channel.CurrentEntry = newAnim;
-						channel.Time = 0;
-					}
-					else {
-						channel.CurrentEntry = null;
-						channel.Time = 0;
-					}
-				}
+				else
+					channel.EnqueueNext();
 			}
+
+			if (anim.LimitedLoop && channel.ElapsedTime >= anim.LoopDuration) 
+				channel.EnqueueNext();
 		}
 	}
 
-	public void AddAnimation(int channel, string animation, bool loops = false) {
+	public void AddAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
 		var channelObj = Channels[channel];
 
 		var anim = model.FindAnimation(animation);
@@ -1141,11 +1161,12 @@ public class AnimationHandler
 
 		channelObj.QueuedEntries.Enqueue(new() {
 			Animation = anim,
-			Looping = loops
+			Looping = loops,
+			LoopDuration = loopDuration
 		});
 	}
 
-	public void SetAnimation(int channel, string animation, bool loops = false) {
+	public void SetAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
 		var channelObj = Channels[channel];
 		StopAnimation(channel);
 
@@ -1155,7 +1176,8 @@ public class AnimationHandler
 		channelObj.QueuedEntries.Clear();
 		channelObj.QueuedEntries.Enqueue(new() {
 			Animation = anim,
-			Looping = loops
+			Looping = loops,
+			LoopDuration = loopDuration
 		});
 	}
 
@@ -1775,13 +1797,13 @@ public class ModelRefJSON : IModelFormat
 		// Try to load the texture atlas
 		string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
 		byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
-		
-		if (texatlas == null && imagedata == null) 
+
+		if (texatlas == null && imagedata == null)
 			return data;
 
-		if (texatlas == null) 
+		if (texatlas == null)
 			throw new NullReferenceException("Got image data, expected texture atlas as well");
-		if (imagedata == null) 
+		if (imagedata == null)
 			throw new NullReferenceException("Got texture atlas, expected image data as well");
 
 		data.TextureAtlas = new();

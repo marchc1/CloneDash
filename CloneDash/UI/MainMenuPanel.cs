@@ -26,7 +26,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		music?.Restart();
 	}
 
-	CharacterDescriptor character;
+	ICharacterDescriptor character;
 	ModelInstance model;
 	AnimationHandler anims;
 	MusicTrack? music;
@@ -95,21 +95,15 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	protected override void Initialize() {
 		base.Initialize();
-		CharacterDescriptor? character = CharacterMod.GetCharacterData();
-		if (character != null && character.Filename != null) {
+		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
+		if (character != null) {
 			this.character = character;
 
-			model = character.GetMainShowModelData(Level).Instantiate();
+			model = character.GetMainShowModel(Level).Instantiate();
 			anims = new(model.Data);
-			anims.SetAnimation(0, character.MainShow.StandbyAnimation, true);
+			anims.SetAnimation(0, character.GetMainShowStandby(), true);
 
-			if (character.MainShow.Music != null)
-				music = Level.Sounds.LoadMusicFromFile("chars", $"{character.Filename}/{character.MainShow.Music}", true);
-
-			else if (character.MainShow.MDMusic != null)
-				music = MuseDashCompatibility.GenerateMusicTrack(Level, character.MainShow.MDMusic);
-
-
+			var music = character.GetMainShowMusic(Level);
 			if (music != null)
 				music.Loops = true;
 		}
@@ -201,22 +195,20 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		music?.Update();
 	}
-	CharacterMainShowTouchResponse touchResponse;
+	ICharacterExpression touchResponse;
 	int click = 0;
 	public override void MouseClick(FrameState state, MouseButton button) {
 		if (character == null) return;
-		touchResponse = character.MainShow.Touch.GetRandomTouchResponse();
+		touchResponse = character.GetMainShowExpression();
 		click++;
 
-		var mainResponse = character.MainShow.Touch.MainResponse;
+		var mainResponse = character.GetMainShowInitialExpression();
 		if (mainResponse != null) {
-			anims.SetAnimation(0, mainResponse.GetAnimation(click));
-			anims.AddAnimation(0, character.MainShow.StandbyAnimation, true);
+			anims.SetAnimation(0, mainResponse);
+			anims.AddAnimation(0, character.GetMainShowStandby(), true);
 		}
 
-		anims.SetAnimation(1, touchResponse.Start);
-		anims.AddAnimation(1, touchResponse.Standby);
-		anims.AddAnimation(1, touchResponse.End);
+		touchResponse.Run(Level, model, anims, out string text, out double duration);
 	}
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {

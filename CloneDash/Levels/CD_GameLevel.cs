@@ -334,109 +334,52 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	private bool __deferringAsync = false;
 
 	public CD_StatisticsData Stats;
-	public CharacterDescriptor Character;
+	public ICharacterDescriptor Character;
 	public FeverDescriptor? FeverFX;
 	public SceneDescriptor Scene;
 
-	public enum CDDAnimationType
-	{
-		In,
-		Run,
-		Die,
-		Standby,
-
-		AirGreat,
-		AirPerfect,
-		AirHurt,
-
-		RoadGreat,
-		RoadPerfect,
-		RoadHurt,
-		RoadMiss,
-
-		Double,
-
-		AirToGround,
-
-		Jump,
-		JumpHurt,
-
-		Press,
-		AirPressEnd,
-		AirPressHurt,
-		DownPressHit,
-		UpPressHit
-	}
-
 	int seq = 0;
-	public string AnimationCDD(CDDAnimationType type) {
-		var playData = Character.Play;
-		if (type != CDDAnimationType.Run) seq += 1;
-		switch (type) {
-			case CDDAnimationType.Run: return playData.RunAnimation.GetAnimation(seq);
-			case CDDAnimationType.In: return playData.InAnimation ?? playData.RunAnimation.GetAnimation(seq);
-			case CDDAnimationType.Die: return playData.DieAnimation.GetAnimation(seq);
-
-			case CDDAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation(seq);
-			case CDDAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation(seq);
-			case CDDAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation(seq);
-
-			case CDDAnimationType.Double: return playData.DoubleAnimation.GetAnimation(seq);
-
-			case CDDAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation(seq);
-			case CDDAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation(seq);
-
-			case CDDAnimationType.RoadGreat: return playData.RoadAnimations.Great.GetAnimation(seq);
-			case CDDAnimationType.RoadPerfect: return playData.RoadAnimations.Perfect.GetAnimation(seq);
-			case CDDAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation(seq);
-			case CDDAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation(seq);
-
-			case CDDAnimationType.Press: return playData.PressAnimations.Press.GetAnimation(seq);
-			case CDDAnimationType.AirPressEnd: return playData.PressAnimations.AirPressEnd.GetAnimation(seq);
-
-			default: throw new Exception("Can't do anything here");
-		}
-
-		throw new Exception("Can't do anything here");
+	public string AnimationCDD(CharacterAnimationType type) {
+		return Character.GetPlayAnimation(type);
 	}
 
 	public void PlayerAnim_EnqueueRun(ModelEntity model) {
 		model.Model.SetToSetupPose();
-		model.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.Run), true);
+		model.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.Run), true);
 	}
 
 	public void PlayerAnim_ForceJump(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Jump), false);
+		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Jump), false);
 		PlayerAnim_EnqueueRun(model);
 	}
 	public void PlayerAnim_ForceMiss(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadMiss), false);
+		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadMiss), false);
 		PlayerAnim_EnqueueRun(model);
 	}
 	public void PlayerAnim_ForceAttackAir(ModelEntity model, bool perfect) {
 		if (perfect)
-			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPerfect), false);
+			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPerfect), false);
 		else
-			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirGreat), false);
+			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirGreat), false);
 	}
 	public void PlayerAnim_ForceAttackGround(ModelEntity model, bool perfect) {
 		if (perfect)
-			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadPerfect), false);
+			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadPerfect), false);
 		else
-			model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.RoadGreat), false);
+			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadGreat), false);
 	}
 
 	public void PlayerAnim_ForceAttackDouble(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Double), false);
+		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Double), false);
 	}
 
 	public void PlayerAnim_EnterSustain() {
-		Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.Press), true);
+		Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press), true);
 	}
 	public void PlayerAnim_ExitSustain() {
 		Player.Animations.ClearAnimation(0);
 		if (InAir) {
-			Player.Animations.SetAnimation(0, AnimationCDD(CDDAnimationType.AirPressEnd), false);
+			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPressEnd), false);
 		}
 		// We'll also kill the hologram player here
 		HologramPlayer.Animations.StopAnimation(0);
@@ -511,7 +454,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 			Interlude.Spin();
 
-			MaxHealth = (float)(Character.MaxHP ?? MaxHealth);
+			MaxHealth = (float)Character.GetDefaultHP();
 
 			Render3D = false;
 			Health = MaxHealth;
@@ -535,17 +478,17 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
-				Player = Add(ModelEntity.Create(Character.GetPlayModelData(this)));
+				Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
 				Interlude.Spin();
 
-				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModelData(this)));
+				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModel(this)));
 				Player.Scale = new(1.25f);
 
 				HologramPlayer.Scale = Player.Scale;
 				HologramPlayer.Shader = hologramShader;
 
 				Player.Model.SetToSetupPose();
-				Player.Animations.AddAnimation(0, AnimationCDD(CDDAnimationType.In), true);
+				Player.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.In), true);
 			}
 
 

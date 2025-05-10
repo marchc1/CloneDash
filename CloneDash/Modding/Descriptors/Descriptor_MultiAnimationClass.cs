@@ -18,6 +18,6 @@ namespace CloneDash.Modding.Descriptors
 		/// <param name="at"></param>
 		/// <returns></returns>
 		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
-		public string PickRandom() => string.Format(Format, Random.Shared.Next(0, Count) + 1);
+		public string GetAnimation() => string.Format(Format, Random.Shared.Next(0, Count) + 1);
 	}
 }

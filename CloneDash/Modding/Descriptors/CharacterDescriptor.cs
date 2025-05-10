@@ -1,42 +1,89 @@
 ﻿using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 using Newtonsoft.Json;
 using Nucleus.Audio;
 using Nucleus.Engine;
+using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.Models.Runtime;
 
 namespace CloneDash.Modding.Descriptors;
 
+public interface ICharacterExpression
+{
+	public string GetStartAnimationName();
+	public string GetIdleAnimationName();
+	public string GetEndAnimationName();
+	public void GetSpeech(Level level, out string text, out Sound voice);
+
+	public bool Run(Level level, ModelInstance model, AnimationHandler anims, out string text, out double duration) {
+		Nucleus.Models.Runtime.Animation? startAnimation = model.Data.FindAnimation(GetStartAnimationName());
+		Nucleus.Models.Runtime.Animation? idleAnimation = model.Data.FindAnimation(GetIdleAnimationName());
+		Nucleus.Models.Runtime.Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
+
+		GetSpeech(level, out text, out var voice);
+		duration = voice.Duration;
+
+		if (startAnimation == null || idleAnimation == null || endAnimation == null) {
+			duration = 0;
+			return false;
+		}
+
+		anims.SetAnimation(1, GetStartAnimationName());
+		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
+		anims.AddAnimation(1, GetEndAnimationName());
+		voice.Play();
+
+		return false;
+	}
+}
+
 public interface ICharacterDescriptor
 {
-	public string Name { get; set; }
-	public string Author { get; set; }
-	public string Perk { get; set; }
+	public string GetName();
+	public string? GetDescription();
+	public string GetAuthor();
+	public string GetPerk();
+
+	public ModelData GetPlayModel(Level level);
+	public ModelData GetMainShowModel(Level level);
+	public ModelData GetVictoryModel(Level level);
+	public ModelData GetFailModel(Level level);
+
+	public MusicTrack? GetMainShowMusic(Level level);
+
+	public string GetMainShowStandby();
+	public string GetVictoryStandby();
+
+	public ICharacterExpression GetMainShowExpression();
+	public string? GetMainShowInitialExpression();
+	public string GetPlayAnimation(CharacterAnimationType animationType);
+
+	public double GetDefaultHP();
+	public string? GetLogicControllerData();
 }
 
-
-/// <summary>
-/// Class used for in-game animations from <see cref="CharacterDescriptor_MainShowTouch.GetRandomTouchResponse()"/>
-/// </summary>
-public class CharacterMainShowTouchResponse(CharacterDescriptor_MainShowTouch touchdata, string response)
-{
-	public Descriptor_MultiAnimationClass MainResponse => touchdata.MainResponse;
-
-	public string Start => string.Format(touchdata.StartResponse, response);
-	public string Standby => string.Format(touchdata.StandbyResponse, response);
-	public string End => string.Format(touchdata.EndResponse, response);
+public class CharacterDescriptor_MainShowExpressionText {
+	[JsonProperty("text")] public string Text;
+	[JsonProperty("voice")] public string Voice;
 }
-public class CharacterDescriptor_MainShowTouch
+public class CharacterDescriptor_MainShowExpression : ICharacterExpression
 {
-	[JsonProperty("response_main")] public Descriptor_MultiAnimationClass? MainResponse;
-	[JsonProperty("response_start")] public string StartResponse;
-	[JsonProperty("response_standby")] public string StandbyResponse;
-	[JsonProperty("response_end")] public string EndResponse;
-	[JsonProperty("responses")] public string[] Responses;
+	[JsonProperty("standby")] public string? Standby;
 
-	public CharacterMainShowTouchResponse GetRandomTouchResponse() {
-		var str = Responses[Random.Shared.Next(0, Responses.Length)];
-		return new(this, str);
+	[JsonProperty("face_start")] public string Start;
+	[JsonProperty("face_idle")] public string Idle;
+	[JsonProperty("face_end")] public string End;
+
+	[JsonProperty("responses")] public CharacterDescriptor_MainShowExpressionText[] Responses;
+
+	string ICharacterExpression.GetStartAnimationName() => Start;
+	string ICharacterExpression.GetIdleAnimationName() => Idle;
+	string ICharacterExpression.GetEndAnimationName() => End;
+	void ICharacterExpression.GetSpeech(Level level, out string text, out Sound sound) {
+		var item = Responses.Random();
+		text = item.Text;
+		sound = level.Sounds.LoadSoundFromFile("character", item.Voice);
 	}
 }
 public class CharacterDescriptor_MainShow
@@ -47,8 +94,9 @@ public class CharacterDescriptor_MainShow
 	[JsonProperty("music")] public string? Music;
 	[JsonProperty("mdmusic")] public string? MDMusic;
 
-	[JsonProperty("standby")] public string StandbyAnimation;
-	[JsonProperty("touch")] public CharacterDescriptor_MainShowTouch Touch;
+	[JsonProperty("standby")] public string Standby;
+	[JsonProperty("clicked")] public string? ClickAnimation;
+	[JsonProperty("expressions")] public CharacterDescriptor_MainShowExpression[] Expressions;
 }
 public class CharacterDescriptor_Play
 {
@@ -118,38 +166,14 @@ public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 	public CharacterDescriptor() : base(CloneDashDescriptorType.Character, "chars", "character", "character", "2025-05-06-01") { }
 
 	[JsonProperty("name")] public string Name { get; set; }
+	[JsonProperty("description")] public string? Description { get; set; }
 	[JsonProperty("author")] public string Author { get; set; }
 	[JsonProperty("perk")] public string Perk { get; set; }
 
 	/// <summary>
 	/// Maximum player health
 	/// </summary>
-	[JsonProperty("max_hp")] public double? MaxHP { get; set; }
-	/// <summary>
-	/// Fever threshold
-	/// </summary>
-	[JsonProperty("fever_threshold")] public double? FeverThreshold { get; set; }
-	/// <summary>
-	/// How long a fever lasts, in seconds
-	/// </summary>
-	[JsonProperty("fever_time")] public double? FeverTime { get; set; }
-	/// <summary>
-	/// Is the character killable. If false, deaths will not be registered beyond
-	/// the final score being inapplicable
-	/// </summary>
-	[JsonProperty("killable")] public bool Killable { get; set; } = true;
-	/// <summary>
-	/// How fast HP is lost over time (hp/per sec)
-	/// </summary>
-	[JsonProperty("lose_hp_rate")] public double LoseHPRate { get; set; }
-	/// <summary>
-	/// Does this character enter autoplay mode.
-	/// </summary>
-	[JsonProperty("automatic")] public bool Automatic { get; set; }
-	/// <summary>
-	/// Score multiplier.
-	/// </summary>
-	[JsonProperty("score_multiplier")] public double ScoreMultiplier { get; set; } = 1.0d;
+	[JsonProperty("default_hp")] public double DefaultHP { get; set; }
 	/// <summary>
 	/// Specifies a string filepath (local to the directory of the descriptor) for a Lua logic controller.
 	/// Not implemented yet, requires my plans for a scripting API
@@ -175,60 +199,58 @@ public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 
 	public static CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CharacterDescriptor>(text, filename) : null;
 
-	public string GetVictoryModel() => Victory.Model;
+	string ICharacterDescriptor.GetName() => Name;
+	string? ICharacterDescriptor.GetDescription() => Description;
+	string ICharacterDescriptor.GetAuthor() => Author;
+	string ICharacterDescriptor.GetPerk() => Perk;
 
-	public MusicTrack? GetMainShowMusic(Level level) {
-		if (MainShow.Music != null)
-			return level.Sounds.LoadMusicFromFile("character", MainShow.Music);
+	ModelData ICharacterDescriptor.GetPlayModel(Level level) => throw new NotImplementedException();
+	ModelData ICharacterDescriptor.GetMainShowModel(Level level) => throw new NotImplementedException();
+	ModelData ICharacterDescriptor.GetVictoryModel(Level level) => throw new NotImplementedException();
+	ModelData ICharacterDescriptor.GetFailModel(Level level) => throw new NotImplementedException();
+	MusicTrack? ICharacterDescriptor.GetMainShowMusic(Level level) => throw new NotImplementedException();
 
-		if (MainShow.MDMusic != null)
-			return MuseDashCompatibility.GenerateMusicTrack(level, MainShow.MDMusic);
+	string ICharacterDescriptor.GetMainShowStandby() => MainShow.Standby;
+	string ICharacterDescriptor.GetVictoryStandby() => Victory.Standby;
 
-		return null;
+	ICharacterExpression ICharacterDescriptor.GetMainShowExpression() {
+		var exp = MainShow.Expressions.Random();
+		return exp;
 	}
 
+	double ICharacterDescriptor.GetDefaultHP() => DefaultHP;
+	string? ICharacterDescriptor.GetLogicControllerData() => LogicController == null ? null : Filesystem.ReadAllText("character", LogicController);
 
-	public ModelData GetPlayModelData(Level level) {
-		var play = Play;
-		var cached = level.Models.IsCached("character", play.Model);
-		if (MuseDashModelConverter.ShouldLoadMDModel(play.Model, out string outPath)) {
-			ModelData md_data = new ModelData();
-			MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
-			return md_data;
+	string ICharacterDescriptor.GetPlayAnimation(CharacterAnimationType type) {
+		var playData = Play;
+
+		switch (type) {
+			case CharacterAnimationType.Run: return playData.RunAnimation.GetAnimation();
+			case CharacterAnimationType.In: return playData.InAnimation ?? playData.RunAnimation.GetAnimation();
+			case CharacterAnimationType.Die: return playData.DieAnimation.GetAnimation();
+
+			case CharacterAnimationType.AirGreat: return playData.AirAnimations.Great.GetAnimation();
+			case CharacterAnimationType.AirPerfect: return playData.AirAnimations.Perfect.GetAnimation();
+			case CharacterAnimationType.AirHurt: return playData.AirAnimations.Hurt.GetAnimation();
+
+			case CharacterAnimationType.Double: return playData.DoubleAnimation.GetAnimation();
+
+			case CharacterAnimationType.Jump: return playData.JumpAnimations.Jump.GetAnimation();
+			case CharacterAnimationType.JumpHurt: return playData.JumpAnimations.Hurt.GetAnimation();
+
+			case CharacterAnimationType.RoadGreat: return playData.RoadAnimations.Great.GetAnimation();
+			case CharacterAnimationType.RoadPerfect: return playData.RoadAnimations.Perfect.GetAnimation();
+			case CharacterAnimationType.RoadMiss: return playData.RoadAnimations.Miss.GetAnimation();
+			case CharacterAnimationType.RoadHurt: return playData.RoadAnimations.Hurt.GetAnimation();
+
+			case CharacterAnimationType.Press: return playData.PressAnimations.Press.GetAnimation();
+			case CharacterAnimationType.AirPressEnd: return playData.PressAnimations.AirPressEnd.GetAnimation();
+
+			default: throw new Exception("Can't do anything here");
 		}
-		var data = level.Models.LoadModelFromFile("character", play.Model);
-		if (play.UseMDImage != null && !cached)
-			MuseDashCompatibility.PopulateModelDataTextures(data, play.UseMDImage);
 
-		return data;
+		throw new Exception("Can't do anything here");
 	}
 
-	public ModelData GetMainShowModelData(Level level) {
-		var mainshow = MainShow;
-		var cached = level.Models.IsCached("character", mainshow.Model);
-		if (MuseDashModelConverter.ShouldLoadMDModel(mainshow.Model, out string outPath)) {
-			ModelData md_data = new ModelData();
-			MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
-			return md_data;
-		}
-		var data = level.Models.LoadModelFromFile("character", mainshow.Model);
-		if (mainshow.UseMDImage != null && !cached)
-			MuseDashCompatibility.PopulateModelDataTextures(data, mainshow.UseMDImage);
-
-		return data;
-	}
-	public ModelData GetVictoryModelData(Level level) {
-		var victory = Victory;
-		var cached = level.Models.IsCached("character", victory.Model);
-		if (MuseDashModelConverter.ShouldLoadMDModel(victory.Model, out string outPath)) {
-			ModelData md_data = new ModelData();
-			MuseDashModelConverter.ConvertMuseDashModelData(md_data, outPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, outPath));
-			return md_data;
-		}
-		var data = level.Models.LoadModelFromFile("character", Play.Model);
-		if (victory.UseMDImage != null && !cached)
-			MuseDashCompatibility.PopulateModelDataTextures(data, victory.UseMDImage);
-
-		return data;
-	}
+	string? ICharacterDescriptor.GetMainShowInitialExpression() => MainShow.ClickAnimation;
 }

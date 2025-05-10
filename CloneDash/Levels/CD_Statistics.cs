@@ -18,7 +18,7 @@ namespace CloneDash.Levels
 	{
 		ChartSheet sheet;
 		CD_StatisticsData stats;
-		CharacterDescriptor character;
+		ICharacterDescriptor character;
 		ModelInstance model;
 		AnimationHandler anims;
 		public override void Initialize(params object[] args) {
@@ -30,14 +30,13 @@ namespace CloneDash.Levels
 			if (sheet == null) throw new NullReferenceException(nameof(sheet));
 			if (stats == null) throw new NullReferenceException(nameof(stats));
 
-			CharacterDescriptor character = CharacterMod.GetCharacterData();
+			ICharacterDescriptor? character = CharacterMod.GetCharacterData();
 			if (character == null) return;
-			if (character.Filename == null) return;
 			this.character = character;
 
-			model = character.GetVictoryModelData(this).Instantiate();
+			model = character.GetVictoryModel(this).Instantiate();
 			anims = new(model.Data);
-			anims.SetAnimation(0, character.Victory.Standby, true);
+			anims.SetAnimation(0, character.GetVictoryStandby(), true);
 
 			stats.Compute();
 
