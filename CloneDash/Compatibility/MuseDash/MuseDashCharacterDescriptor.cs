@@ -89,7 +89,8 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		// pull out the JSON
 		var jsonPathID = (long)((OrderedDictionary)mainShowAsset["skeletonJSON"]!)["m_PathID"]!;
 		var atlasAssets = (List<object>)mainShowAsset["atlasAssets"]!;
-		Debug.Assert(atlasAssets.Count == 1); // if not; it will definitely fail to convert
+
+
 		var atlasBase = (OrderedDictionary)atlasAssets[0];
 		var atlasBaseID = (long)atlasBase["m_PathID"]!;
 
@@ -99,16 +100,22 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 
 		var atlasPathID = (long)((OrderedDictionary)atlasInfo["atlasFile"]!)["m_PathID"]!;
 		var materials = (List<object>)atlasInfo["materials"]!;
-		Debug.Assert(materials.Count == 1); // if not; it will definitely fail to convert
-		var materialBase = (OrderedDictionary)materials[0];
-		var materialPathID = (long)materialBase["m_PathID"]!;
 
-		// read material data
-		var materialMB = assets.FindAssetByPathID<Material>(materialPathID)!;
-		var texPtr = materialMB.m_SavedProperties.m_TexEnvs.First()!.Value.m_Texture;
-		if (!texPtr.TryGet(out var tex)) throw new Exception();
+		long[] textureIDs = new long[materials.Count];
+		int i = 0;
+		foreach (var materialBaseObj in materials) {
+			var materialBase = (OrderedDictionary)materialBaseObj;
+			var materialPathID = (long)materialBase["m_PathID"]!;
 
-		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, tex.m_PathID);
+			// read material data
+			var materialMB = assets.FindAssetByPathID<Material>(materialPathID)!;
+			var texPtr = materialMB.m_SavedProperties.m_TexEnvs.First()!.Value.m_Texture;
+			if (!texPtr.TryGet(out var tex)) throw new Exception();
+			textureIDs[i] = tex.m_PathID;
+			i++;
+		}
+
+		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs);
 	}
 
 	public static ModelData PullModelDataFromGameObject(Level level, string name) {

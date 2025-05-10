@@ -22,27 +22,75 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using Nucleus.Types;
 using Nucleus.Files;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Compatibility.MuseDash
 {
+	public class MDAtlasPage : IDisposable
+	{
+		public string Name;
+		public Raylib.ImageRef Texture;
+		public List<MDAtlasRegion> Regions = [];
+		public ParametersReader Parameters = new ParametersReader([]);
+
+		public void Dispose() {
+			((IDisposable)Texture).Dispose();
+		}
+
+		internal void CheckSizing() {
+			var texWidth = Parameters.Read<int>("size", 0);
+			var texHeight = Parameters.Read<int>("size", 1);
+
+			if (texWidth != Texture.Width || texHeight != Texture.Height)
+				Texture.Resize(texWidth, texHeight);
+		}
+	}
 	public class MDAtlasRegion
 	{
 		public string Name;
-		public int X;
-		public int Y;
-		public int Width;
-		public int Height;
-		public int OriginalWidth;
-		public int OriginalHeight;
-		public int OffsetX;
-		public int OffsetY;
+		public MDAtlasPage Page;
+		public ParametersReader Parameters = new ParametersReader([]);
+
+		public int Degrees {
+			get {
+				var degreesStr = Parameters.Read<string>("rotate")!;
+				int degrees = degreesStr switch {
+					"true" => 90,
+					"false" => 0,
+					_ => int.Parse(degreesStr)
+				};
+
+				return degrees;
+			}
+		}
+		public int X => Parameters.Read<int>("xy", 0);
+		public int Y => Parameters.Read<int>("xy", 1);
+		public int Width => Parameters.Read<int>("size", 0);
+		public int Height => Parameters.Read<int>("size", 1);
+		public int OriginalWidth => Parameters.Read<int>("orig", 0);
+		public int OriginalHeight => Parameters.Read<int>("orig", 1);
+		public int OffsetX => Parameters.Read<int>("offset", 0);
+		public int OffsetY => Parameters.Read<int>("offset", 1);
 	}
-	public class MDAtlas(Dictionary<string, MDAtlasRegion> regions)
+	public class MDAtlas(Dictionary<string, MDAtlasPage> pages, Dictionary<string, MDAtlasRegion> regions) : IDisposable
 	{
+		public Dictionary<string, MDAtlasPage> Pages => pages;
 		public Dictionary<string, MDAtlasRegion> Regions => regions;
+		private bool disposed;
+		public void Dispose() {
+			if (disposed) return;
+
+			foreach (var page in Pages)
+				page.Value.Dispose();
+
+			pages = null;
+
+			disposed = true;
+		}
 	}
 	public class ParametersReader(Dictionary<string, string[]> kvps)
 	{
+		public void Add(string key, string[] values) => kvps.Add(key, values);
 		public T? Read<T>(string key) where T : IParsable<T> => Read<T>(key, 0);
 		public T? Read<T>(string key, int index) where T : IParsable<T> {
 			return kvps.TryGetValue(key, out string[]? pieces)
@@ -393,118 +441,135 @@ namespace CloneDash.Compatibility.MuseDash
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
 		}
 
+		private enum MDAtlasBuildStep
+		{
+			Waiting,
+			ReadyForPage,
+			ReadingPage,
+			ReadyForRegion,
+			ReadingRegion
+		}
+		private class AtlasBuilder()
+		{
+			MDAtlas atlas = new MDAtlas([], []);
 
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D character_image) {
+			MDAtlasPage? workingPage = null;
+			MDAtlasRegion? workingRegion = null;
+
+			public MDAtlasPage WorkingPage => workingPage ?? throw new Exception("Haven't built a page yet!");
+			public MDAtlasRegion WorkingRegion => workingRegion ?? throw new Exception("Haven't built a region yet!");
+
+			public MDAtlas Atlas() => atlas;
+			public MDAtlasPage StartPage(string name) {
+				workingPage = new MDAtlasPage();
+				workingPage.Name = name;
+
+				atlas.Pages[name] = workingPage;
+
+				return workingPage;
+			}
+
+			public MDAtlasRegion StartRegion(string name) {
+				workingRegion = new MDAtlasRegion();
+				workingRegion.Name = name;
+
+				workingRegion.Page = workingPage!;
+				workingPage!.Regions.Add(workingRegion);
+
+				atlas.Regions[name] = workingRegion;
+
+				return workingRegion;
+			}
+		}
+
+		private static bool tryReadProperty(string line, [NotNullWhen(true)] out string? key, [NotNullWhen(true)] out string[]? values) {
+			int colon = line.IndexOf(':');
+
+			if (colon == -1) {
+				key = null;
+				values = null;
+				return false;
+			}
+
+			key = line.Substring(0, colon).Trim();
+			values = line.Substring(colon + 1).Trim().Split(',');
+			return true;
+		}
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images) {
 			using var ms = new MemoryStream(atlasAsset.m_Script);
 			using var sr = new StreamReader(ms);
 
 			var text = sr.ReadToEnd();
 			var lines = text.Replace("\r", "").Split('\n');
 
-			string? pageName = null;
-			Dictionary<string, string[]> pageParameters = [];
-			bool donePageParameters = false;
+			AtlasBuilder atlasBuilder = new AtlasBuilder();
+			MDAtlasBuildStep buildStep = MDAtlasBuildStep.Waiting;
 
-			Dictionary<string, ParametersReader> regions = [];
-			Dictionary<string, MDAtlasRegion> ogRegions = [];
-			string workingRegion = null;
-			Dictionary<string, string[]> workingRegionParameters = [];
+			foreach (var dirtyLine in lines) {
+				var line = dirtyLine.Trim();
 
-			foreach (var curline in lines) {
-				var line = curline.Trim();
-				if (string.IsNullOrEmpty(line)) continue;
-
-				bool runLineSearch = false;
-
-				if (pageName == null)
-					pageName = line;
-				else if (!donePageParameters) {
-					int colon = line.IndexOf(':');
-					if (colon == -1) {
-						donePageParameters = true;
-						runLineSearch = true;
-					}
-					else {
-						var pieces = line.Substring(colon + 1).Split(',');
-						for (int i = 0; i < pieces.Length; i++) pieces[i] = pieces[i].Trim();
-						pageParameters[line.Substring(0, colon)] = pieces;
-					}
+				if (string.IsNullOrEmpty(line)) {
+					buildStep = MDAtlasBuildStep.ReadyForPage;
+					continue;
 				}
-				else runLineSearch = true;
 
-				if (runLineSearch) {
-					int colon = line.IndexOf(':');
-					if (colon == -1) {
-						if (workingRegion != null) {
-							regions[workingRegion] = new(workingRegionParameters);
-							workingRegionParameters = [];
+				switch (buildStep) {
+					case MDAtlasBuildStep.ReadyForPage:
+						var imageName = Path.ChangeExtension(line, null);
+						atlasBuilder.StartPage(line).Texture = new(images.First(x => x.m_Name == imageName).ToRaylib(), flipV: true);
+						buildStep = MDAtlasBuildStep.ReadingPage;
+						break;
+					case MDAtlasBuildStep.ReadingPage: {
+							if (!tryReadProperty(line, out var key, out var values))
+								goto case MDAtlasBuildStep.ReadyForRegion;
+							else {
+								var page = atlasBuilder.WorkingPage;
+								page.Parameters.Add(key, values);
+							}
 						}
-						workingRegion = line;
-					}
-					else {
-						var pieces = line.Substring(colon + 1).Split(',');
-						for (int i = 0; i < pieces.Length; i++) pieces[i] = pieces[i].Trim();
-						workingRegionParameters[line.Substring(0, colon)] = pieces;
-					}
+						break;
+					case MDAtlasBuildStep.ReadyForRegion: {
+							atlasBuilder.StartRegion(line);
+							buildStep = MDAtlasBuildStep.ReadingRegion;
+						}
+						break;
+					case MDAtlasBuildStep.ReadingRegion: {
+							if (!tryReadProperty(line, out var key, out var values))
+								goto case MDAtlasBuildStep.ReadyForRegion;
+							else {
+								var region = atlasBuilder.WorkingRegion;
+								region.Parameters.Add(key, values);
+							}
+						}
+						break;
 				}
 			}
 
-			if (workingRegion != null && workingRegionParameters.Count > 0) {
-				regions[workingRegion] = new(workingRegionParameters);
-			}
-
-			if (pageName == null) throw new NullReferenceException();
-			//var character_image = atlasAsset.assetsFile.Objects.First(x => x is Texture2D texture && texture.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
-			using var img = new Raylib_cs.Raylib.ImageRef(character_image!.ToRaylib(), flipV: true);
+			MDAtlas atlas = atlasBuilder.Atlas();
 
 			modelData.TextureAtlas = new();
-
-			var page = new ParametersReader(pageParameters);
-
-			var texWidth = page.Read<int>("size", 0);
-			var texHeight = page.Read<int>("size", 1);
-
-			if (texWidth != img.Width || texHeight != img.Height)
-				img.Resize(texWidth, texHeight);
+			foreach (var page in atlas.Pages)
+				page.Value.CheckSizing();
 
 			modelData.TextureAtlas.ClearTextures();
 
-			foreach (var regionKVP in regions) {
+			foreach (var regionKVP in atlas.Regions) {
 				var region = regionKVP.Value;
+				var img = region.Page.Texture;
 
-				var degreesStr = region.Read<string>("rotate");
-				int degrees = degreesStr switch {
-					"true" => 90,
-					"false" => 0,
-					_ => int.Parse(degreesStr)
-				};
-
-				var x = region.Read<int>("xy", 0);
-				var y = region.Read<int>("xy", 1);
-				var width = region.Read<int>("size", 0);
-				var height = region.Read<int>("size", 1);
-				var originalWidth = region.Read<int>("orig", 0);
-				var originalHeight = region.Read<int>("orig", 1);
-				var offsetX = region.Read<int>("offset", 0);
-				var offsetY = region.Read<int>("offset", 1);
-
-				ogRegions[regionKVP.Key] = new() {
-					Name = regionKVP.Key,
-					X = x,
-					Y = y,
-					Width = width,
-					Height = height,
-					OriginalWidth = originalWidth,
-					OriginalHeight = originalHeight,
-					OffsetX = offsetX,
-					OffsetY = offsetY
-				};
+				var degrees = region.Degrees;
+				var x = region.X;
+				var y = region.Y;
+				var offsetX = region.OffsetX;
+				var offsetY = region.OffsetY;
+				var width = region.Width;
+				var height = region.Height;
+				var originalWidth = region.OriginalWidth;
+				var originalHeight = region.OriginalHeight;
 
 				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
 				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
 				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
-
-
 
 				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
 				if (degrees != 0)
@@ -518,7 +583,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 			modelData.SetupAttachments();
 
-			return new MDAtlas(ogRegions);
+			return atlas;
 		}
 	}
 
@@ -655,54 +720,6 @@ public static class MuseDashModelConverter
 	}
 
 	public static Color MD_ReadColor(this MemoryStream asset) => MD_ReadNullableColor(asset) ?? throw new NullReferenceException();
-
-	private class stringLineReader(string[] lines, int index)
-	{
-		public string? ReadLine() {
-			if (index >= lines.Length)
-				return null;
-
-			index++;
-			return lines[index - 1];
-		}
-
-		public void BackLine() => index = index <= 0 ? 0 : index - 1;
-	}
-
-	private static bool MD_ReadRegionName(stringLineReader atlasReader, out string key) {
-		var line = atlasReader.ReadLine();
-		if (line == null) {
-			key = null;
-			return false;
-		}
-
-		key = line.Trim();
-		return true;
-	}
-	private static bool MD_ReadAtlasLine(stringLineReader atlasReader, out string key, out string? out1, out string? out2, out string? out3, out string? out4) {
-		var line = atlasReader.ReadLine();
-		if (line == null) {
-			key = null;
-			out1 = out2 = out3 = out4 = null;
-			return false;
-		}
-		var colon = line.IndexOf(':');
-		if (colon == -1) {
-			key = line;
-			out1 = out2 = out3 = out4 = null;
-			atlasReader.BackLine();
-			return false;
-		}
-
-		key = line.Substring(0, colon).Trim();
-		string[] pieces = line.Substring(colon + 1).Split(',');
-		out1 = pieces.Length > 0 ? pieces[0].Trim() : null;
-		out2 = pieces.Length > 1 ? pieces[1].Trim() : null;
-		out3 = pieces.Length > 2 ? pieces[2].Trim() : null;
-		out4 = pieces.Length > 3 ? pieces[3].Trim() : null;
-
-		return true;
-	}
 
 	/// <summary>
 	/// Convert a Muse Dash model from Unity assets into a Nucleus Model4System compatible model, or at least tries to.
@@ -1212,7 +1229,7 @@ public static class MuseDashModelConverter
 							float[] uArray = new float[vertexCount];
 							float[] vArray = new float[vertexCount];
 							for (int uv = 0; uv < vertexCount; uv++) {
-								uArray[uv] = skeleton.MD_ReadFloat(); 
+								uArray[uv] = skeleton.MD_ReadFloat();
 								vArray[uv] = 1 - skeleton.MD_ReadFloat();
 							}
 
@@ -1311,17 +1328,20 @@ public static class MuseDashModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long texturePath) {
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths) {
 		ModelData md_data = new ModelData();
 
 		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath);
 		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath);
-		var texture = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePath);
+		Texture2D[] textures = new Texture2D[texturePaths.Length];
+		for (int i = 0, c = texturePaths.Length; i < c; i++) {
+			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i]);
+		}
 
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
-			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, texture)
+			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, textures)
 		);
 
 		return md_data;
