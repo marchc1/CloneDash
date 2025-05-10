@@ -1326,6 +1326,14 @@ public static class MuseDashModelConverter
 
 				if (attachment != null)
 					skin.SetAttachment(slotIndex, name, attachment);
+				else
+					Logs.Warn($"Ignoring unsupported attachment type ({type switch {
+						ATTACHMENT_BOUNDING_BOX => "bounding box",
+						ATTACHMENT_LINKED_MESH => "linked mesh",
+						ATTACHMENT_PATH => "path",
+						ATTACHMENT_POINT => "point",
+						_ => "???"
+					}}");
 			}
 		}
 		return skin;
