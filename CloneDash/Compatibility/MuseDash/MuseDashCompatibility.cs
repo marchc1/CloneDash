@@ -1333,7 +1333,7 @@ public static class MuseDashModelConverter
 						ATTACHMENT_PATH => "path",
 						ATTACHMENT_POINT => "point",
 						_ => "???"
-					}}");
+					}})");
 			}
 		}
 		return skin;
