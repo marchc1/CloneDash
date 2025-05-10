@@ -575,10 +575,10 @@ public class RegionAttachment : Attachment
 	}
 }
 
-
 public record AttachmentWeight(int Bone, float Weight, Vector2F Position)
 {
 	public bool IsEmpty => Weight == 0;
+	public override string ToString() => $"Weight [{Bone} @ {Position}] * {Weight}";
 }
 public class AttachmentVertex
 {
@@ -587,6 +587,8 @@ public class AttachmentVertex
 	public float U;
 	public float V;
 	public AttachmentWeight[]? Weights;
+
+	public override string ToString() => $"Vertex [coords: {X}, {Y}] [texcoords: {U}, {V}] [weights: {Weights?.Length ?? 0}]";
 }
 public class AttachmentTriangle
 {
@@ -643,6 +645,19 @@ public class MeshAttachment : VertexAttachment
 {
 	public AttachmentTriangle[] Triangles;
 	public string Path;
+
+	public string ToDesmosPointArray() {
+		string[] triangles = new string[Triangles.Length];
+		for (int i = 0, c = triangles.Length; i < c; i++) {
+			var tri = Triangles[i];
+			var v1 = Vertices[tri.V1];
+			var v2 = Vertices[tri.V2];
+			var v3 = Vertices[tri.V3];
+			triangles[i] = $"polygon(({v1.X}, {v1.Y}), ({v2.X}, {v2.Y}), ({v3.X}, {v3.Y}))";
+		}
+
+		return string.Join('\n', triangles);
+	}
 
 	public Color Color = Color.White;
 	public override byte Alpha => Color.A;

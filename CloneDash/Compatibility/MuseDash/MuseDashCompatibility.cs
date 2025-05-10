@@ -1229,6 +1229,7 @@ public static class MuseDashModelConverter
 						break;
 					case ATTACHMENT_MESH: {
 							string path = skeleton.MD_ReadRefString(refStrings) ?? name;
+							
 							Color color = skeleton.MD_ReadColor();
 
 							var vertexCount = skeleton.MD_ReadVarInt(true);
@@ -1270,6 +1271,7 @@ public static class MuseDashModelConverter
 							mesh.Position = new(0);
 							mesh.Rotation = 0;
 							mesh.Scale = new(1);
+
 							for (int i3 = 0; i3 < vertexCount; i3++) {
 								mesh.Vertices[i3].U = uArray[i3];
 								mesh.Vertices[i3].V = vArray[i3];
