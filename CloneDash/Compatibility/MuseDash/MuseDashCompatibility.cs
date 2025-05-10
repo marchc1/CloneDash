@@ -802,7 +802,7 @@ public static class MuseDashModelConverter
 			}
 
 			int iks = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(iks == 0, "This model has inverse kinematics! It won't work correctly!");
+			Logs.WarnIf(iks != 0, "This model has inverse kinematics! It won't work correctly!");
 			for (int i = 0; i < iks; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
@@ -819,7 +819,7 @@ public static class MuseDashModelConverter
 			}
 
 			int transforms = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(transforms == 0, "This model has transforms! It won't work correctly!");
+			Logs.WarnIf(transforms != 0, "This model has transforms! It won't work correctly!");
 			for (int i = 0; i < transforms; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
@@ -842,7 +842,7 @@ public static class MuseDashModelConverter
 			}
 
 			int paths = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(paths == 0, "This model has paths! It won't work correctly!");
+			Logs.WarnIf(paths != 0, "This model has paths! It won't work correctly!");
 			for (int i = 0; i < paths; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
