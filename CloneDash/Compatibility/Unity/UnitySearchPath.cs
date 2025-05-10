@@ -91,6 +91,7 @@ public class UnitySearchPath : SearchPath
 	}
 
 	public Dictionary<string, List<UnityFile>> NamedObjects = [];
+	public Dictionary<long, UnityFile> PathIDObjects = [];
 
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
 		this.root = root;
@@ -188,6 +189,18 @@ public class UnitySearchPath : SearchPath
 			if (asset is T castObject)
 				return castObject;
 		}
+
+		return null;
+	}
+
+	public T? FindAssetByPathID<T>(long pathID) where T : AssetStudio.Object {
+		if (!PathIDObjects.TryGetValue(pathID, out var file))
+			return null;
+
+		GetAssetBundle(file, out var manager);
+		var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
+		if (asset is T castObject)
+			return castObject;
 
 		return null;
 	}
