@@ -330,7 +330,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Hold
 	}
 
-	private int entI = 0;
 	private bool __deferringAsync = false;
 
 	public CD_StatisticsData Stats;
@@ -338,7 +337,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public FeverDescriptor? FeverFX;
 	public SceneDescriptor Scene;
 
-	int seq = 0;
 	public string AnimationCDD(CharacterAnimationType type) {
 		return Character.GetPlayAnimation(type);
 	}

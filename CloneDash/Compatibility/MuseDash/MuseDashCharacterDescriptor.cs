@@ -10,6 +10,7 @@ using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using Nucleus.Extensions;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -38,7 +39,7 @@ public class MuseDashCharacterRetriever : ICharacterRetriever
 	public string GetName(CharacterConfigData cfd) => $"md_{cfd.BGM.Replace("_bgm", "")}";
 
 	IEnumerable<string> ICharacterRetriever.GetAvailableCharacters() {
-		foreach(var character in MuseDashCompatibility.Characters) {
+		foreach (var character in MuseDashCompatibility.Characters) {
 			yield return GetName(character);
 		}
 	}
@@ -66,23 +67,17 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		throw new NotImplementedException();
 	}
 
-	public string? GetLogicControllerData() {
-		throw new NotImplementedException();
-	}
+	public string? GetLogicControllerData() => null;
 
 	public ICharacterExpression? GetMainShowExpression() {
-		throw new NotImplementedException();
+		return null;
 	}
 
-	public string? GetMainShowInitialExpression() {
-		throw new NotImplementedException();
-	}
+	public string? GetMainShowInitialExpression() => null;
 
-	public ModelData GetMainShowModel(Level level) {
+	// I hate this!
+	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
 		var assets = MuseDashCompatibility.StreamingAssets;
-		
-		var mainshowObject = assets.FindAssetByName<GameObject>(configData.MainShow);
-		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
 
 		// This pulls out skeletonDataAsset m_PathID
 		// todo: refactor this abomination
@@ -116,6 +111,19 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, tex.m_PathID);
 	}
 
+	public static ModelData PullModelDataFromGameObject(Level level, string name) {
+		var assets = MuseDashCompatibility.StreamingAssets;
+
+		var mainshowObject = assets.FindAssetByName<GameObject>(name);
+		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
+		if (skeletonMecanim == null)
+			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonAnimation");
+
+		return PullModelDataFromSkeletonMecanim(level, skeletonMecanim!);
+	}
+
+	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, configData.MainShow);
+
 	public MusicTrack? GetMainShowMusic(Level level) {
 		var audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(configData.BGM);
 		if (audioclip == null) return null;
@@ -133,19 +141,78 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 
 	public string GetMainShowStandby() => "BgmStandby";
 
+	private Dictionary<CharacterAnimationType, List<string>> anims;
+	private void convertAnimations() {
+		if (anims != null) return;
+
+		var assets = MuseDashCompatibility.StreamingAssets;
+
+		var mainshowObject = assets.FindAssetByName<GameObject>(configData.BattleShow);
+		var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
+		var actions = (List<object>)actionController.ToType()["actionData"]!;
+		anims = [];
+		foreach(var actionObj in actions) {
+			var action = (OrderedDictionary)actionObj;
+
+			bool isRandomSequence = (byte)action["isRandomSequence"]! > 0;
+
+			CharacterAnimationType type = (string)action["name"]! switch {
+				"char_run" => CharacterAnimationType.Run,
+				"in" => CharacterAnimationType.In,
+				"char_hurt" => CharacterAnimationType.RoadHurt,
+				"char_jump_hurt" => CharacterAnimationType.JumpHurt,
+				"char_die" => CharacterAnimationType.Die,
+				"char_press" => CharacterAnimationType.Press,
+				"char_atk_miss" => CharacterAnimationType.RoadMiss,
+				"char_atk_g" => CharacterAnimationType.RoadGreat,
+				"char_atk_p" => CharacterAnimationType.RoadPerfect,
+				"char_jump" => CharacterAnimationType.Jump,
+				"char_jumphit" => CharacterAnimationType.AirPerfect,
+
+				// todo: research this better
+				"char_downhit" => CharacterAnimationType.NotApplicable, 
+				"char_downpress" => CharacterAnimationType.DownPressHit,
+				"char_uphit" => CharacterAnimationType.NotApplicable,
+				"char_uppress" => CharacterAnimationType.UpPressHit,
+				"char_uppress_end" => CharacterAnimationType.AirPressEnd,
+				"char_big_press" => CharacterAnimationType.Press,
+
+				// ???
+				"char_up_press_s2b" => CharacterAnimationType.NotApplicable,
+				"char_up_press_b2s" => CharacterAnimationType.NotApplicable,
+				"char_down_press_s2b" => CharacterAnimationType.NotApplicable,
+				"char_down_press_b2s" => CharacterAnimationType.NotApplicable,
+
+				"char_bighit" => CharacterAnimationType.Double,
+				"char_up_press_s" => CharacterAnimationType.NotApplicable,
+				"char_down_press_s" => CharacterAnimationType.NotApplicable,
+				"char_uppress_hurt" => CharacterAnimationType.AirPressHurt,
+				"char_jumphit_great" => CharacterAnimationType.AirGreat,
+
+				_ => CharacterAnimationType.NotApplicable
+			};
+			if (type == CharacterAnimationType.NotApplicable) continue;
+
+			if (!anims.TryGetValue(type, out var individualAnims)) {
+				individualAnims = [];
+				anims[type] = individualAnims;
+			}
+
+			var actionIdx = (List<object>)action["actionIdx"]!;
+			foreach(var actionId in actionIdx) {
+				individualAnims.Add((string)actionId!);
+			}
+			//individualAnims.Add()
+		}
+
+	}
+
 	public string GetPlayAnimation(CharacterAnimationType animationType) {
-		throw new NotImplementedException();
+		convertAnimations();
+		return anims[animationType].Random();
 	}
 
-	public ModelData GetPlayModel(Level level) {
-		throw new NotImplementedException();
-	}
-
-	public ModelData GetVictoryModel(Level level) {
-		throw new NotImplementedException();
-	}
-
-	public string GetVictoryStandby() {
-		throw new NotImplementedException();
-	}
+	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, configData.BattleShow);
+	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, configData.VictoryShow);
+	public string GetVictoryStandby() => "standby";
 }

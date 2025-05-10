@@ -2,6 +2,8 @@
 
 public enum CharacterAnimationType
 {
+	NotApplicable,
+
 	In,
 	Run,
 	Die,
