@@ -55,8 +55,25 @@ public class MuseDashCharacterRetriever : ICharacterRetriever
 	}
 }
 
+[Nucleus.MarkForStaticConstruction]
 public class MuseDashCharacterDescriptor(CharacterConfigData configData) : ICharacterDescriptor
 {
+	public static ConCommand clonedash_nextmdchar = ConCommand.Register(nameof(clonedash_nextmdchar), (_, _) => {
+		var clonedash_character = ((ConVar)ConVar.Get("clonedash_character")!);
+		var clonedash_character_value = clonedash_character.GetString();
+		ICharacterRetriever retriever = new MuseDashCharacterRetriever();
+		bool next = false;
+		foreach (var character in retriever.GetAvailableCharacters()) {
+			if (character == clonedash_character_value) next = true;
+			else if (next) { 
+				clonedash_character.SetValue(character);
+				Logs.Info($"Selecting '{character}'");
+				return;
+			}
+		}
+		Logs.Warn("No more characters available.");
+	});
+
 	public string GetName() => $"{configData.Localization["english"].CosName} {configData.Localization["english"].CharacterName}";
 	public string? GetDescription() => configData.Localization["english"].Description;
 	public string GetAuthor() => "PeroPeroGames";
@@ -158,7 +175,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
 		var actions = (List<object>)actionController.ToType()["actionData"]!;
 		anims = [];
-		foreach(var actionObj in actions) {
+		foreach (var actionObj in actions) {
 			var action = (OrderedDictionary)actionObj;
 
 			bool isRandomSequence = (byte)action["isRandomSequence"]! > 0;
@@ -177,7 +194,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 				"char_jumphit" => CharacterAnimationType.AirPerfect,
 
 				// todo: research this better
-				"char_downhit" => CharacterAnimationType.NotApplicable, 
+				"char_downhit" => CharacterAnimationType.NotApplicable,
 				"char_downpress" => CharacterAnimationType.DownPressHit,
 				"char_uphit" => CharacterAnimationType.NotApplicable,
 				"char_uppress" => CharacterAnimationType.UpPressHit,
@@ -206,7 +223,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 			}
 
 			var actionIdx = (List<object>)action["actionIdx"]!;
-			foreach(var actionId in actionIdx) {
+			foreach (var actionId in actionIdx) {
 				individualAnims.Add((string)actionId!);
 			}
 			//individualAnims.Add()
