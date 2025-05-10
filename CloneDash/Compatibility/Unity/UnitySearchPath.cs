@@ -120,6 +120,8 @@ public class UnitySearchPath : SearchPath
 
 				list.Add(file);
 			}
+
+			PathIDObjects[pathID] = file;
 		}
 	}
 
@@ -160,14 +162,17 @@ public class UnitySearchPath : SearchPath
 		throw new NotImplementedException();
 	}
 
+	private object l = new();
 	protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
-		var file = GetBundleNameFromFullPath(path);
-		GetAssetBundle(file, out var manager);
-		var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
+		lock (l) {
+			var file = GetBundleNameFromFullPath(path);
+			GetAssetBundle(file, out var manager);
+			var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
 
-		switch (asset) {
-			case TextAsset ta: return new MemoryStream(ta.m_Script);
-			default: throw new NotImplementedException($"No way to explicitly pull a stream out of a {asset.GetType().FullName}.");
+			switch (asset) {
+				case TextAsset ta: return new MemoryStream(ta.m_Script);
+				default: throw new NotImplementedException($"No way to explicitly pull a stream out of a {asset.GetType().FullName}.");
+			}
 		}
 	}
 

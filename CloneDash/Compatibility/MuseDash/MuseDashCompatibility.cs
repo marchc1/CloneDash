@@ -394,8 +394,7 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, string atlasPath) {
-			var atlasAsset = StreamingAssets.LoadAsset<TextAsset>(atlasPath);
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D character_image) {
 			using var ms = new MemoryStream(atlasAsset.m_Script);
 			using var sr = new StreamReader(ms);
 
@@ -455,7 +454,7 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 
 			if (pageName == null) throw new NullReferenceException();
-			var character_image = atlasAsset.assetsFile.Objects.First(x => x is Texture2D texture && texture.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
+			//var character_image = atlasAsset.assetsFile.Objects.First(x => x is Texture2D texture && texture.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
 			using var img = new Raylib_cs.Raylib.ImageRef(character_image!.ToRaylib(), flipV: true);
 
 			modelData.TextureAtlas = new();
@@ -1307,15 +1306,18 @@ public static class MuseDashModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, string objectName) {
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long texturePath) {
 		ModelData md_data = new ModelData();
-		var prefab = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(objectName);
 
-		/*MuseDashModelConverter.ConvertMuseDashModelData(
+		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath);
+		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath);
+		var texture = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePath);
+
+		ConvertMuseDashModelData(
 			md_data,
-			pathID, 
-			MuseDashCompatibility.PopulateModelDataTextures(md_data, pathID)
-		);*/
+			skeleton,
+			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, texture)
+		);
 
 		return md_data;
 	}

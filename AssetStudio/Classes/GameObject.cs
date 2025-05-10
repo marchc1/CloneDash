@@ -46,12 +46,15 @@ namespace AssetStudio
 			return null;
 		}
 
-		public MonoBehaviour? GetMonoBehaviour(string? name = null) {
+		public MonoBehaviour? GetMonoBehaviorByScriptName(string? name = null) {
 			foreach (var compPtr in m_Components) {
 				if (!compPtr.TryGet(out var comp)) continue;
 
 				if (comp is not MonoBehaviour mb) continue;
-				if (mb.m_Name == name)
+				var scriptPtr = mb.m_Script;
+				if (!scriptPtr.TryGet(out var script)) continue;
+
+				if (script.m_Name == name)
 					return mb;
 			}
 
