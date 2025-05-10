@@ -101,7 +101,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 			model = character.GetMainShowModel(Level).Instantiate();
 			anims = new(model.Data);
-			anims.SetAnimation(0, character.GetMainShowStandby(), true);
+
+			var standby = character.GetMainShowStandby();
+			if (model.Data.FindAnimation(standby) == null) standby = "standby";
+			anims.SetAnimation(0, standby, true);
 
 			music = character.GetMainShowMusic(Level);
 			if (music != null) {
@@ -207,7 +210,9 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var mainResponse = character.GetMainShowInitialExpression();
 		if (mainResponse != null) {
 			anims.SetAnimation(0, mainResponse);
-			anims.AddAnimation(0, character.GetMainShowStandby(), true);
+			var standby = character.GetMainShowStandby();
+			if (model.Data.FindAnimation(standby) == null) standby = "standby";
+			anims.AddAnimation(0, standby, true);
 		}
 
 		touchResponse?.Run(Level, model, anims, out string text, out double duration);
