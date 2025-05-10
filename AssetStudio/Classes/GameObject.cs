@@ -33,5 +33,30 @@ namespace AssetStudio
             var m_Layer = reader.ReadInt32();
             m_Name = reader.ReadAlignedString();
         }
-    }
+
+#nullable enable
+		public T? GetFirstComponent<T>() where T : Component {
+			foreach (var compPtr in m_Components) {
+				if (!compPtr.TryGet(out var comp)) continue;
+
+				if (comp is not T castComp) continue;
+				return castComp;
+			}
+
+			return null;
+		}
+
+		public MonoBehaviour? GetMonoBehaviour(string? name = null) {
+			foreach (var compPtr in m_Components) {
+				if (!compPtr.TryGet(out var comp)) continue;
+
+				if (comp is not MonoBehaviour mb) continue;
+				if (mb.m_Name == name)
+					return mb;
+			}
+
+			return null;
+		}
+	}
+#nullable disable
 }
