@@ -1,13 +1,9 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CloneDash.Compatibility.MuseDash;
 
-public class CharacterLocalizationData {
+public class CharacterLocalizationData
+{
 	[JsonProperty("characterName")] public string CharacterName;
 	[JsonProperty("cosName")] public string CosName;
 	[JsonProperty("cosNames")] public string[] CosNames;
@@ -18,7 +14,10 @@ public class CharacterLocalizationData {
 	[JsonProperty("expressions")] public string[][] Expressions;
 }
 public class CharacterConfigData
+
 {
+	public Dictionary<string, CharacterLocalizationData> Localization = [];
+
 	[JsonProperty("characterName")] public string CharacterName { get; set; }
 	[JsonProperty("cosName")] public string CosName { get; set; }
 	[JsonProperty("description")] public string Description { get; set; }

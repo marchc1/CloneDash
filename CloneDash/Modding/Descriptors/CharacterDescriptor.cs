@@ -9,60 +9,6 @@ using Nucleus.Models.Runtime;
 
 namespace CloneDash.Modding.Descriptors;
 
-public interface ICharacterExpression
-{
-	public string GetStartAnimationName();
-	public string GetIdleAnimationName();
-	public string GetEndAnimationName();
-	public void GetSpeech(Level level, out string text, out Sound voice);
-
-	public bool Run(Level level, ModelInstance model, AnimationHandler anims, out string text, out double duration) {
-		Nucleus.Models.Runtime.Animation? startAnimation = model.Data.FindAnimation(GetStartAnimationName());
-		Nucleus.Models.Runtime.Animation? idleAnimation = model.Data.FindAnimation(GetIdleAnimationName());
-		Nucleus.Models.Runtime.Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
-
-		GetSpeech(level, out text, out var voice);
-		duration = voice.Duration;
-
-		if (startAnimation == null || idleAnimation == null || endAnimation == null) {
-			duration = 0;
-			return false;
-		}
-
-		anims.SetAnimation(1, GetStartAnimationName());
-		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
-		anims.AddAnimation(1, GetEndAnimationName());
-		voice.Play();
-
-		return false;
-	}
-}
-
-public interface ICharacterDescriptor
-{
-	public string GetName();
-	public string? GetDescription();
-	public string GetAuthor();
-	public string GetPerk();
-
-	public ModelData GetPlayModel(Level level);
-	public ModelData GetMainShowModel(Level level);
-	public ModelData GetVictoryModel(Level level);
-	public ModelData GetFailModel(Level level);
-
-	public MusicTrack? GetMainShowMusic(Level level);
-
-	public string GetMainShowStandby();
-	public string GetVictoryStandby();
-
-	public ICharacterExpression? GetMainShowExpression();
-	public string? GetMainShowInitialExpression();
-	public string GetPlayAnimation(CharacterAnimationType animationType);
-
-	public double GetDefaultHP();
-	public string? GetLogicControllerData();
-}
-
 public class CharacterDescriptor_MainShowExpressionText {
 	[JsonProperty("text")] public string Text;
 	[JsonProperty("voice")] public string Voice;

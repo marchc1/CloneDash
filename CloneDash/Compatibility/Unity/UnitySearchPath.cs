@@ -58,6 +58,8 @@ public class UnitySearchPath : SearchPath
 	public Dictionary<string, UnityFile> LookupAbsFiles = [];
 
 
+	public Dictionary<string, List<UnityFile>> NamedObjects = [];
+
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
 		this.root = root;
 		using BinaryReader reader = new(serializedAssetBundleContents);
@@ -65,6 +67,7 @@ public class UnitySearchPath : SearchPath
 		int capacity = reader.ReadInt32();
 		for (int i = 0; i < capacity; i++) {
 			string container = reader.ReadString();
+			string name = reader.ReadString();
 			string bundleName = reader.ReadString();
 			long pathID = reader.ReadInt64();
 
@@ -79,6 +82,15 @@ public class UnitySearchPath : SearchPath
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
+
+			if (!string.IsNullOrEmpty(name)) {
+				if (!NamedObjects.TryGetValue(name, out var list)) {
+					list = [];
+					NamedObjects[name] = list;
+				}
+
+				list.Add(file);
+			}
 		}
 	}
 
@@ -136,5 +148,19 @@ public class UnitySearchPath : SearchPath
 		var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
 
 		return (T)asset;
+	}
+
+	public T? FindAssetByName<T>(string name) where T : AssetStudio.Object {
+		if (!NamedObjects.TryGetValue(name, out var files))
+			return null;
+
+		foreach(var file in files) {
+			GetAssetBundle(file, out var manager);
+			var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
+			if(asset is T castObject)
+				return castObject;
+		}
+
+		return null;
 	}
 }

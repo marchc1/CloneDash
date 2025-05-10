@@ -69,11 +69,14 @@ namespace CloneDash.Compatibility.MuseDash
 		public static Dictionary<string, NoteConfigData> IBMSToNote { get; private set; } = new();
 		public static Dictionary<string, NoteConfigData> UIDToNote { get; private set; } = new();
 
+		public static List<CharacterConfigData> Characters { get; set; }
+		public static List<CharacterLocalizationData> CharactersEN { get; set; }
 		public static List<NoteConfigData> NoteDataManager { get; set; }
 
 		public static string BuildTarget { get; private set; }
 		public static string StandalonePlatform { get; private set; }
 		public static string[] StreamingFiles { get; private set; }
+		public static UnitySearchPath StreamingAssets { get; private set; }
 
 		public static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
 			foreach (var md in stage.musicDatas) {
@@ -391,52 +394,9 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 
-		public static void SeparateBundlePathCombination(string combined, out string bundle, out string path) {
-			string[] pieces = combined.Split('/');
-			if (pieces.Length != 2) throw new Exception("Expected two pieces; defining the bundle name search, then the path name search (ie. bundleName/pathSearch, without any extensions)");
-			bundle = pieces[0];
-			path = pieces[1];
-		}
-
-		public static MusicTrack GenerateMusicTrack(Level level, string bundleName_pathName) {
-			SeparateBundlePathCombination(bundleName_pathName, out var bundle, out var path);
-			return GenerateMusicTrack(level, bundle, path);
-		}
-		public static MusicTrack GenerateMusicTrack(Level level, string bundleName, string musicName) {
-			var bundle = MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains($"{bundleName}"));
-			AssetsManager manager = new AssetsManager();
-			manager.LoadFiles(bundle);
-			var obj = manager.assetsFileList[0];
-			var audioClip = obj.Objects.First(x => x is AudioClip ta && ta.m_Name.Contains($"{musicName}")) as AudioClip;
-
-			byte[] musicStream;
-			var audiodata = audioClip.m_AudioData.GetData();
-
-			if (audioClip.m_Type == FMODSoundType.UNKNOWN) {
-				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-				bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
-
-				var track = EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream);
-				track.Paused = false;
-				return track;
-			}
-
-			throw new Exception();
-		}
-
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, string bundleName_pathName) {
-			SeparateBundlePathCombination(bundleName_pathName, out var bundle, out var path);
-			return PopulateModelDataTextures(modelData, bundle, path);
-		}
-
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, string bundleName, string atlasName) {
-			var bundle = MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains($"{bundleName}"));
-			AssetsManager manager = new AssetsManager();
-			manager.LoadFiles(bundle);
-			var obj = manager.assetsFileList[0];
-			var character_atlas = obj.Objects.First(x => x is TextAsset ta && ta.m_Name == $"{atlasName}.atlas") as TextAsset;
-
-			using var ms = new MemoryStream(character_atlas.m_Script);
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, string atlasPath) {
+			var atlasAsset = StreamingAssets.LoadAsset<TextAsset>(atlasPath);
+			using var ms = new MemoryStream(atlasAsset.m_Script);
 			using var sr = new StreamReader(ms);
 
 			var text = sr.ReadToEnd();
@@ -495,7 +455,7 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 
 			if (pageName == null) throw new NullReferenceException();
-			var character_image = obj.Objects.First(x => x is Texture2D no && no.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
+			var character_image = atlasAsset.assetsFile.Objects.First(x => x is Texture2D texture && texture.m_Name == Path.GetFileNameWithoutExtension(pageName)) as Texture2D;
 			using var img = new Raylib_cs.Raylib.ImageRef(character_image!.ToRaylib(), flipV: true);
 
 			modelData.TextureAtlas = new();
@@ -1344,67 +1304,19 @@ public static class MuseDashModelConverter
 		return skin;
 	}
 
-	public static ModelData ConvertMuseDashModelData(ModelData data, SerializedFile assetFile, string skeletonName, MDAtlas mdatlas) {
-		var skeleton = assetFile.Objects.First(x => x is TextAsset no && no.m_Name == Path.ChangeExtension(skeletonName, ".skel")) as TextAsset;
-		return ConvertMuseDashModelData(data, skeleton, mdatlas);
-	}
-
-	public static ModelData ConvertMuseDashModelData(ModelData data, string assetName, string skeletonName, MDAtlas mdatlas) {
-		AssetsManager assets = new AssetsManager();
-		assets.LoadFiles(MuseDashCompatibility.StreamingFiles.First(x => x.Contains(assetName)));
-		return ConvertMuseDashModelData(data, assets.assetsFileList[0], skeletonName, mdatlas);
-	}
-
-	public static ModelData ConvertMuseDashModelData(string asset_skeleton, MDAtlas mdatlas) {
-		MuseDashCompatibility.SeparateBundlePathCombination(asset_skeleton, out string bundle, out string path);
-		return ConvertMuseDashModelData(new(), bundle, path, mdatlas);
-	}
-
-	public static ModelData ConvertMuseDashModelData(ModelData workOnThis, string asset_skeleton, MDAtlas mdatlas) {
-		MuseDashCompatibility.SeparateBundlePathCombination(asset_skeleton, out string bundle, out string path);
-		return ConvertMuseDashModelData(workOnThis, bundle, path, mdatlas);
-	}
-
-	public static bool ShouldLoadMDModel(string path, out string outPath) {
-		if (path.StartsWith("musedash/")) {
-			outPath = path.Substring(9);
-			return true;
-		}
-		outPath = path;
-		return false;
-	}
-
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
-		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath)) {
-			ModelData md_data = new ModelData();
-			MuseDashModelConverter.ConvertMuseDashModelData(md_data, fullyQualifiedPath, MuseDashCompatibility.PopulateModelDataTextures(md_data, fullyQualifiedPath));
-			return md_data;
-		}
+	public static ModelData MD_GetModelData(this Level level, string objectName) {
+		ModelData md_data = new ModelData();
+		var prefab = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(objectName);
 
-		return level.Models.LoadModelFromFile(pathIDIfNotMD, fullyQualifiedPath);
-	}
+		/*MuseDashModelConverter.ConvertMuseDashModelData(
+			md_data,
+			pathID, 
+			MuseDashCompatibility.PopulateModelDataTextures(md_data, pathID)
+		);*/
 
-	public static MusicTrack MD_GetMusicTrack(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
-		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
-			pathIDIfNotMD = "musedash";
-
-		return level.Sounds.LoadMusicFromFile(pathIDIfNotMD, fullyQualifiedPath);
-	}
-
-	public static Nucleus.Audio.Sound MD_GetSound(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
-		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
-			pathIDIfNotMD = "musedash";
-
-		return level.Sounds.LoadSoundFromFile(pathIDIfNotMD, fullyQualifiedPath);
-	}
-
-	public static Nucleus.ManagedMemory.Texture MD_GetTexture(this Level level, string pathIDIfNotMD, string fullyQualifiedPath) {
-		if (ShouldLoadMDModel(fullyQualifiedPath, out fullyQualifiedPath))
-			pathIDIfNotMD = "musedash";
-
-		return level.Textures.LoadTextureFromFile(pathIDIfNotMD, fullyQualifiedPath);
+		return md_data;
 	}
 }

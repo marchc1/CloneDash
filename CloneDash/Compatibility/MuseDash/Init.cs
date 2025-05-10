@@ -1,6 +1,7 @@
 ﻿using AssetStudio;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using CloneDash.Modding.Settings;
 using FMOD;
 using Nucleus;
 using Nucleus.Files;
@@ -46,12 +47,21 @@ namespace CloneDash.Compatibility.MuseDash
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Mount to Filesystem")) {
 				using (Stream stream = Filesystem.Open("assets", "mdlut.dat") ?? throw new Exception("Cannot find the mdlut.dat file"))
-					Filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa/{StandalonePlatform}"), stream));
+					StreamingAssets = Filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa/{StandalonePlatform}"), stream));
 			}
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))
 				NoteDataManager = Filesystem.ReadJSON<List<NoteConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/notedata.json");
-			
+
+			using (CD_StaticSequentialProfiler.StartStackFrame("Deserialize Characters")) {
+				Characters = Filesystem.ReadJSON<List<CharacterConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/character.json");
+				CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json");
+				System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
+				for (int i = 0, c = Characters.Count; i < c; i++) {
+					Characters[c].Localization["english"] = CharactersEN[i];
+				}
+			}
+
 			Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
 			using (CD_StaticSequentialProfiler.StartStackFrame("Process NoteDataManager"))

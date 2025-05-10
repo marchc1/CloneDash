@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 
 namespace CD_UnityGenAssetLUT;
 
-public record UnityAsset(string bundleName, long path);
+public record UnityAsset(string fullPath, string name, string bundleName, long path);
 
 internal class Program
 {
@@ -18,7 +18,7 @@ internal class Program
 
 		Console.WriteLine("This will take some time.");
 		MuseDashCompatibility.LightInitialize();
-		ConcurrentDictionary<string, UnityAsset> lookup = [];
+		ConcurrentBag<UnityAsset> lookup = [];
 		int total = MuseDashCompatibility.StreamingFiles.Length;
 		int remaining = total;
 
@@ -36,7 +36,10 @@ internal class Program
 				foreach (var container in obj.m_Container) {
 					var pathID = container.Value.asset.m_PathID;
 					if (pathID == 0) continue;
-					lookup.TryAdd($"{container.Key}/{(asset.ObjectsDic[pathID] is NamedObject no ? no.m_Name : pathID)}", new(filename, pathID));
+					lookup.Add(new(
+						$"{container.Key}/{(asset.ObjectsDic[pathID] is NamedObject no ? no.m_Name : pathID)}", 
+						(container.Value.asset.TryGet(out var o) ? o is NamedObject ? (o as NamedObject)!.m_Name : "" : ""), 
+						filename, pathID));
 				}
 
 				Interlocked.Decrement(ref remaining);
@@ -66,9 +69,10 @@ internal class Program
 		writer.Write(DateTime.UtcNow.Ticks);
 		writer.Write(lookup.Count);
 		foreach (var kvp in lookup) {
-			writer.Write(kvp.Key);
-			writer.Write(kvp.Value.bundleName);
-			writer.Write(kvp.Value.path);
+			writer.Write(kvp.fullPath);
+			writer.Write(kvp.name);
+			writer.Write(kvp.bundleName);
+			writer.Write(kvp.path);
 		}
 
 		Console.WriteLine("Done.");
