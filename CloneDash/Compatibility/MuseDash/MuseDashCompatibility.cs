@@ -464,6 +464,9 @@ namespace CloneDash.Compatibility.MuseDash
 			var texWidth = page.Read<int>("size", 0);
 			var texHeight = page.Read<int>("size", 1);
 
+			if (texWidth != img.Width || texHeight != img.Height)
+				img.Resize(texWidth, texHeight);
+
 			modelData.TextureAtlas.ClearTextures();
 
 			foreach (var regionKVP in regions) {
@@ -500,6 +503,8 @@ namespace CloneDash.Compatibility.MuseDash
 				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
 				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
 				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
+
+
 
 				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
 				if (degrees != 0)

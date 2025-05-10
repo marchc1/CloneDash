@@ -150,12 +150,20 @@ public static unsafe partial class Raylib
         }
     }
 
+	/// <summary>
+	/// A helper class for image manipulation and disposal
+	/// </summary>
 	public class ImageRef : IDisposable
 	{
 		private Image img;
 		private bool disposedValue;
 
 		public static implicit operator Image(ImageRef self) => self.img;
+
+		public int Width => img.Width;
+		public int Height => img.Height;
+
+		public void Resize(int width, int height) => Raylib.ImageResize(ref img, width, height);
 
 		public ImageRef(Image img, bool flipH = false, bool flipV = false) {
 			this.img = img;
