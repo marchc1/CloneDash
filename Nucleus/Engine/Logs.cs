@@ -143,6 +143,9 @@ namespace Nucleus
 		public static void Info(params object?[] items) => Log(LogLevel.Info, PrintColor, Newline, items);
 		public static void Success(params object?[] items) => Log(LogLevel.Success, PrintColor, Newline, items);
 		public static void Warn(params object?[] items) => Log(LogLevel.Warn, PrintColor, Newline, items);
+		public static void WarnIf(bool cond, params object?[] items) {
+			if (cond) Log(LogLevel.Warn, PrintColor, Newline, items);
+		}
 		public static void Error(params object?[] items) => Log(LogLevel.Error, PrintColor, Newline, items);
 	}
 }

@@ -801,7 +801,9 @@ public static class MuseDashModelConverter
 				nucleusModelData.SlotDatas.Add(slotData);
 			}
 
-			for (int i = 0, iks = skeleton.MD_ReadVarInt(true); i < iks; i++) {
+			int iks = skeleton.MD_ReadVarInt(true);
+			Logs.WarnIf(iks == 0, "This model has inverse kinematics! It won't work correctly!");
+			for (int i = 0; i < iks; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
 				skeleton.MD_ReadBoolean();
@@ -816,7 +818,9 @@ public static class MuseDashModelConverter
 				skeleton.MD_ReadBoolean();
 			}
 
-			for (int i = 0, transforms = skeleton.MD_ReadVarInt(true); i < transforms; i++) {
+			int transforms = skeleton.MD_ReadVarInt(true);
+			Logs.WarnIf(transforms == 0, "This model has transforms! It won't work correctly!");
+			for (int i = 0; i < transforms; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
 				skeleton.MD_ReadBoolean();
@@ -837,7 +841,9 @@ public static class MuseDashModelConverter
 				skeleton.MD_ReadFloat();
 			}
 
-			for (int i = 0, paths = skeleton.MD_ReadVarInt(true); i < paths; i++) {
+			int paths = skeleton.MD_ReadVarInt(true);
+			Logs.WarnIf(paths == 0, "This model has paths! It won't work correctly!");
+			for (int i = 0; i < paths; i++) {
 				skeleton.MD_ReadString();
 				skeleton.MD_ReadVarInt(true);
 				skeleton.MD_ReadBoolean();
