@@ -103,9 +103,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			anims = new(model.Data);
 			anims.SetAnimation(0, character.GetMainShowStandby(), true);
 
-			var music = character.GetMainShowMusic(Level);
-			if (music != null)
+			music = character.GetMainShowMusic(Level);
+			if (music != null) {
+				music.Playing = true;
 				music.Loops = true;
+			}
 		}
 
 		Add(out back);
@@ -195,7 +197,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		music?.Update();
 	}
-	ICharacterExpression touchResponse;
+	ICharacterExpression? touchResponse;
 	int click = 0;
 	public override void MouseClick(FrameState state, MouseButton button) {
 		if (character == null) return;
@@ -208,7 +210,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			anims.AddAnimation(0, character.GetMainShowStandby(), true);
 		}
 
-		touchResponse.Run(Level, model, anims, out string text, out double duration);
+		touchResponse?.Run(Level, model, anims, out string text, out double duration);
 	}
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {

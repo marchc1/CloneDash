@@ -1,37 +1,9 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus;
-using Nucleus.Files;
 using Nucleus.Util;
 
 namespace CloneDash.Modding.Settings
 {
-	public interface ICharacterRetriever
-	{
-		public ICharacterDescriptor? GetDescriptorFromName(string name);
-		public int Priority { get; }
-
-		public IEnumerable<string> GetAvailableCharacters();
-	}
-
-	public class CharacterModRetriever : ICharacterRetriever
-	{
-		int ICharacterRetriever.Priority => 10000000;
-
-		IEnumerable<string> ICharacterRetriever.GetAvailableCharacters() {
-			var dirs = Filesystem.FindDirectories("chars", "");
-			return dirs;
-		}
-
-		ICharacterDescriptor? ICharacterRetriever.GetDescriptorFromName(string name) {
-			var descriptor = CharacterDescriptor.ParseCharacter(Path.Combine(name, "character.cdd"));
-			if (descriptor == null) return null;
-
-			descriptor.Filename = name;
-			descriptor.MountToFilesystem();
-			return descriptor;
-		}
-	}
-
 	[Nucleus.MarkForStaticConstruction]
 	public static class CharacterMod
 	{

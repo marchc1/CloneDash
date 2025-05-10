@@ -55,7 +55,7 @@ public interface ICharacterDescriptor
 	public string GetMainShowStandby();
 	public string GetVictoryStandby();
 
-	public ICharacterExpression GetMainShowExpression();
+	public ICharacterExpression? GetMainShowExpression();
 	public string? GetMainShowInitialExpression();
 	public string GetPlayAnimation(CharacterAnimationType animationType);
 
@@ -89,11 +89,7 @@ public class CharacterDescriptor_MainShowExpression : ICharacterExpression
 public class CharacterDescriptor_MainShow
 {
 	[JsonProperty("model")] public string Model;
-	[JsonProperty("mdimage")] public string? UseMDImage;
-
 	[JsonProperty("music")] public string? Music;
-	[JsonProperty("mdmusic")] public string? MDMusic;
-
 	[JsonProperty("standby")] public string Standby;
 	[JsonProperty("clicked")] public string? ClickAnimation;
 	[JsonProperty("expressions")] public CharacterDescriptor_MainShowExpression[] Expressions;
@@ -135,7 +131,6 @@ public class CharacterDescriptor_Play
 	}
 
 	[JsonProperty("model")] public string Model;
-	[JsonProperty("mdimage")] public string? UseMDImage;
 
 	[JsonProperty("run")] public Descriptor_MultiAnimationClass RunAnimation;
 	[JsonProperty("in")] public string? InAnimation;
@@ -153,13 +148,11 @@ public class CharacterDescriptor_Play
 public class CharacterDescriptor_Victory
 {
 	[JsonProperty("model")] public string Model;
-	[JsonProperty("mdimage")] public string? UseMDImage;
 	[JsonProperty("standby")] public string Standby;
 }
 public class CharacterDescriptor_Fail
 {
 	[JsonProperty("model")] public string Model;
-	[JsonProperty("mdimage")] public string? UseMDImage;
 }
 public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 {
@@ -204,17 +197,17 @@ public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 	string ICharacterDescriptor.GetAuthor() => Author;
 	string ICharacterDescriptor.GetPerk() => Perk;
 
-	ModelData ICharacterDescriptor.GetPlayModel(Level level) => throw new NotImplementedException();
-	ModelData ICharacterDescriptor.GetMainShowModel(Level level) => throw new NotImplementedException();
-	ModelData ICharacterDescriptor.GetVictoryModel(Level level) => throw new NotImplementedException();
-	ModelData ICharacterDescriptor.GetFailModel(Level level) => throw new NotImplementedException();
-	MusicTrack? ICharacterDescriptor.GetMainShowMusic(Level level) => throw new NotImplementedException();
+	ModelData ICharacterDescriptor.GetPlayModel(Level level) => level.Models.LoadModelFromFile("character", Play.Model);
+	ModelData ICharacterDescriptor.GetMainShowModel(Level level) => level.Models.LoadModelFromFile("character", MainShow.Model);
+	ModelData ICharacterDescriptor.GetVictoryModel(Level level) => level.Models.LoadModelFromFile("character", Victory.Model);
+	ModelData ICharacterDescriptor.GetFailModel(Level level) => level.Models.LoadModelFromFile("character", Fail.Model);
+	MusicTrack? ICharacterDescriptor.GetMainShowMusic(Level level) => MainShow.Music == null ? null : level.Sounds.LoadMusicFromFile("character", MainShow.Music);
 
 	string ICharacterDescriptor.GetMainShowStandby() => MainShow.Standby;
 	string ICharacterDescriptor.GetVictoryStandby() => Victory.Standby;
 
-	ICharacterExpression ICharacterDescriptor.GetMainShowExpression() {
-		var exp = MainShow.Expressions.Random();
+	ICharacterExpression? ICharacterDescriptor.GetMainShowExpression() {
+		var exp = MainShow.Expressions?.Random();
 		return exp;
 	}
 
