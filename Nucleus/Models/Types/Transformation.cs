@@ -14,6 +14,12 @@ namespace Nucleus.Models
 		public float X;
 		public float Y;
 
+		public void Decompose(out float a, out float b, out float c, out float d, out float x, out float y) {
+			a = A; b = B;
+			c = C; d = D;
+			x = X; y = Y;
+		}
+
 		// cached values from CalculateWorldTransformation
 		// needed for World/Local rotation operations
 		private float Rotation;
@@ -89,7 +95,7 @@ namespace Nucleus.Models
 						float sc = pA * pA + pC * pC;
 						float prX;
 
-						if(sc > 0.00001f) {
+						if (sc > 0.00001f) {
 							sc = MathF.Abs(pA * pD - pB * pC) / sc;
 							pB = pC * sc;
 							pD = pA * sc;

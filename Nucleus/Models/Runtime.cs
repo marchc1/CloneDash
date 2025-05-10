@@ -606,11 +606,18 @@ public class VertexAttachment : Attachment
 	[JsonIgnore] public AtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
-	protected Vector2F CalculateVertexWorldPosition(ModelInstance model, Transformation transform, AttachmentVertex vertex) {
+	protected Vector2F CalculateVertexWorldPosition(SlotInstance slot, int vertexI) {
+		var vertex = Vertices![vertexI];
+		var bone = slot.Bone;
+		var transform = slot.Bone.WorldTransform;
+
 		if (vertex.Weights == null || vertex.Weights.Length <= 0)
 			return transform.LocalToWorld(vertex.X, vertex.Y);
 
+		var model = slot.GetModel();
+
 		Vector2F pos = Vector2F.Zero;
+	
 		foreach (var weightData in vertex.Weights) {
 			if (weightData.IsEmpty) continue;
 			var vertLocalPos = weightData.Position;
@@ -623,7 +630,7 @@ public class VertexAttachment : Attachment
 
 	public int ComputeWorldVertices(SlotInstance slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
 		for (int i = startAt; i < length; i++) {
-			worldVertices[i + offset] = CalculateVertexWorldPosition(slot.Model, slot.Bone.WorldTransform, Vertices[i]);
+			worldVertices[i + offset] = CalculateVertexWorldPosition(slot, i);
 		}
 
 		return length - startAt;
@@ -695,9 +702,9 @@ public class MeshAttachment : VertexAttachment
 				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
 				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
 
-				Vector2F p1 = CalculateVertexWorldPosition(slot.Model, worldTransform, av1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot.Model, worldTransform, av2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot.Model, worldTransform, av3);
+				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
+				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
+				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
 
 				Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
 				Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
@@ -724,9 +731,9 @@ public class MeshAttachment : VertexAttachment
 				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
 				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
 
-				Vector2F p1 = CalculateVertexWorldPosition(slot.Model, worldTransform, av1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot.Model, worldTransform, av2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot.Model, worldTransform, av3);
+				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
+				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
+				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
 
 				Rlgl.Vertex3f(p1.X, -p1.Y, 0); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
 				Rlgl.Vertex3f(p2.X, -p2.Y, 0); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
