@@ -1,4 +1,5 @@
-﻿using CloneDash.Game;
+﻿using AssetStudio;
+using CloneDash.Game;
 using CloneDash.Modding.Descriptors;
 using CloneDash.Modding.Settings;
 using Nucleus.Audio;
@@ -73,7 +74,10 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 	}
 
 	public ModelData GetMainShowModel(Level level) {
-		throw new NotImplementedException();
+		var assets = MuseDashCompatibility.StreamingAssets;
+		var mainshow = assets.FindAssetByName<GameObject>(configData.MainShow);
+
+		return null;
 	}
 
 	public MusicTrack? GetMainShowMusic(Level level) {

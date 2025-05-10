@@ -58,7 +58,7 @@ namespace CloneDash.Compatibility.MuseDash
 				CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json");
 				System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
 				for (int i = 0, c = Characters.Count; i < c; i++) {
-					Characters[c].Localization["english"] = CharactersEN[i];
+					Characters[i].Localization["english"] = CharactersEN[i];
 				}
 			}
 

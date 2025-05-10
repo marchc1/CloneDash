@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -57,20 +58,47 @@ public class UnitySearchPath : SearchPath
 	public Dictionary<string, UnityFolder> LookupAbsFolders = [];
 	public Dictionary<string, UnityFile> LookupAbsFiles = [];
 
+	public static string ReadUSPString(BinaryReader br, Encoding? encoding = null) {
+		encoding = encoding ?? Encoding.UTF8;
+		return br.ReadString();
+	}
+
+	public static void WriteUSPString(BinaryWriter bw, string text, Encoding? encoding = null) {
+		encoding = encoding ?? Encoding.UTF8;
+		bw.Write(text);
+	}
+
+	public static int ReadHeader(BinaryReader reader, out DateTime time) {
+		time = new DateTime(reader.ReadInt64()).ToLocalTime();
+		return reader.ReadInt32();
+	}
+
+	public static bool Read(BinaryReader reader, ref int i, int entries, out string container, out string name, out string bundle, out long pathID) {
+		i++;
+		if (i >= entries) {
+			container = null;
+			name = null;
+			bundle = null;
+			pathID = 0;
+			return false;
+		}
+
+		container = UnitySearchPath.ReadUSPString(reader);
+		name = UnitySearchPath.ReadUSPString(reader);
+		bundle = UnitySearchPath.ReadUSPString(reader);
+		pathID = reader.ReadInt64();
+		return true;
+	}
 
 	public Dictionary<string, List<UnityFile>> NamedObjects = [];
 
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
 		this.root = root;
 		using BinaryReader reader = new(serializedAssetBundleContents);
-		WriteTime = new(reader.ReadInt64());
-		int capacity = reader.ReadInt32();
-		for (int i = 0; i < capacity; i++) {
-			string container = reader.ReadString();
-			string name = reader.ReadString();
-			string bundleName = reader.ReadString();
-			long pathID = reader.ReadInt64();
 
+		int entries = ReadHeader(reader, out DateTime time);
+		int i = -1;
+		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
 			for (int i2 = 0; i2 < parts.Length - 1; i2++) {
@@ -78,7 +106,7 @@ public class UnitySearchPath : SearchPath
 				LookupAbsFolders[string.Join('/', parts[..(i2 + 1)])] = folder;
 			}
 			var file = folder.File(parts[parts.Length - 1]);
-			file.PointsToBundle = bundleName;
+			file.PointsToBundle = bundle;
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
@@ -154,10 +182,10 @@ public class UnitySearchPath : SearchPath
 		if (!NamedObjects.TryGetValue(name, out var files))
 			return null;
 
-		foreach(var file in files) {
+		foreach (var file in files) {
 			GetAssetBundle(file, out var manager);
 			var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
-			if(asset is T castObject)
+			if (asset is T castObject)
 				return castObject;
 		}
 
