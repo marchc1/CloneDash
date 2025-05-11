@@ -1,10 +1,9 @@
-﻿using CloneDash.Modding.Descriptors;
-using Nucleus;
+﻿using Nucleus;
 using Nucleus.Util;
 
-namespace CloneDash.Modding.Settings
+namespace CloneDash.Characters
 {
-	[Nucleus.MarkForStaticConstruction]
+	[MarkForStaticConstruction]
 	public static class CharacterMod
 	{
 		private static ICharacterDescriptor? activeDescriptor;

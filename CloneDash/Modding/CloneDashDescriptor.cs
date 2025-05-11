@@ -3,18 +3,19 @@ using Newtonsoft.Json.Converters;
 using Nucleus;
 using Nucleus.Files;
 
-namespace CloneDash.Modding.Descriptors
+namespace CloneDash.Modding
 {
-	public enum CloneDashDescriptorType {
+	public enum CloneDashDescriptorType
+	{
 		Character = 1,
 		Scene = 2,
 		Fever = 3
 	}
 
-	[Nucleus.MarkForStaticConstruction]
+	[MarkForStaticConstruction]
 	public abstract class CloneDashDescriptor
 	{
-		[JsonConverter(typeof(StringEnumConverter))] 
+		[JsonConverter(typeof(StringEnumConverter))]
 		public CloneDashDescriptorType Type { get; private set; }
 
 		/// <summary>
@@ -46,7 +47,7 @@ namespace CloneDash.Modding.Descriptors
 			ret.Filename = filename;
 			return ret;
 		}
-	
+
 		static CloneDashDescriptor() {
 			Platform.RegisterFileAssociation(".cdd", "CloneDash.Descriptor", "Clone Dash Descriptor File");
 		}

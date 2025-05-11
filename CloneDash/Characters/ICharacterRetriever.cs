@@ -1,6 +1,4 @@
-﻿using CloneDash.Modding.Descriptors;
-
-namespace CloneDash.Modding.Settings
+﻿namespace CloneDash.Characters
 {
 	public interface ICharacterRetriever
 	{

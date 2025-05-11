@@ -1,8 +1,7 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Characters;
+using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
-using CloneDash.Modding.Descriptors;
-using CloneDash.Modding.Settings;
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Engine;

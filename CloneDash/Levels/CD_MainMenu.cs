@@ -11,13 +11,14 @@ using CloneDash.Animation;
 using Nucleus.Audio;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 using Nucleus.Models.Runtime;
-using CloneDash.Modding.Settings;
 using System.Diagnostics;
 using CloneDash.UI;
 using Nucleus.Files;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Characters;
+using CloneDash.Scenes;
 
 namespace CloneDash.Game;
 

@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace CloneDash.Modding.Settings
+namespace CloneDash.Scenes
 {
-	[Nucleus.MarkForStaticConstruction]
+	[MarkForStaticConstruction]
 	public static class SceneMod
 	{
 		public static ConVar clonedash_scene = ConVar.Register("clonedash_scene", "clonedash", ConsoleFlags.Saved, "Your scene.");
@@ -68,7 +68,7 @@ namespace CloneDash.Modding.Settings
 			}
 
 			descriptor = SceneDescriptor.ParseScene(Path.Combine(name, "scene.cdd"));
-			if(descriptor == null) {
+			if (descriptor == null) {
 				Logs.Warn($"WARNING: The scene '{name}' could not be found by the file system!");
 				return null;
 			}

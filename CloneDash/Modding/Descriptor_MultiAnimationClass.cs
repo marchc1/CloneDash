@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
 
-namespace CloneDash.Modding.Descriptors
+namespace CloneDash.Modding
 {
-	public class Descriptor_MultiAnimationClass {
+	public class Descriptor_MultiAnimationClass
+	{
 		[JsonProperty("format")] public string Format;
 		[JsonProperty("count")] public int Count;
 
@@ -17,7 +18,7 @@ namespace CloneDash.Modding.Descriptors
 		/// </summary>
 		/// <param name="at"></param>
 		/// <returns></returns>
-		public string GetAnimation(int at) => string.Format(Format, ((at - 1) % Count) + 1);
+		public string GetAnimation(int at) => string.Format(Format, (at - 1) % Count + 1);
 		public string GetAnimation() => string.Format(Format, Random.Shared.Next(0, Count) + 1);
 	}
 }

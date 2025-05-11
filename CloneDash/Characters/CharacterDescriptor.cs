@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.MuseDash;
+﻿using CloneDash.Characters;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using Newtonsoft.Json;
 using Nucleus.Audio;

@@ -3,7 +3,7 @@ using Nucleus.Audio;
 using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 
-namespace CloneDash.Modding.Descriptors;
+namespace CloneDash.Characters;
 
 public interface ICharacterDescriptor
 {

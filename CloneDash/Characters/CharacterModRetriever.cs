@@ -1,7 +1,7 @@
 ﻿using CloneDash.Modding.Descriptors;
 using Nucleus.Files;
 
-namespace CloneDash.Modding.Settings
+namespace CloneDash.Characters
 {
 	public class CharacterModRetriever : ICharacterRetriever
 	{

@@ -1,7 +1,5 @@
 ﻿using AssetStudio;
 using CloneDash.Game;
-using CloneDash.Modding.Descriptors;
-using CloneDash.Modding.Settings;
 using Fmod5Sharp.FmodTypes;
 using Fmod5Sharp;
 using Nucleus;
@@ -11,6 +9,7 @@ using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using Nucleus.Extensions;
+using CloneDash.Characters;
 
 namespace CloneDash.Compatibility.MuseDash;
 

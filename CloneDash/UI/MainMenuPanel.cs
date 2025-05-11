@@ -8,13 +8,12 @@ using CloneDash.Data;
 using Nucleus.Audio;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 using Nucleus.Models.Runtime;
-using CloneDash.Modding.Descriptors;
-using CloneDash.Modding.Settings;
 using CloneDash.Levels;
 using CloneDash.Game;
 using Nucleus.Files;
 using Nucleus.Extensions;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Characters;
 
 namespace CloneDash.UI;
 

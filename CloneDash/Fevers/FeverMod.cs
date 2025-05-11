@@ -1,10 +1,9 @@
-﻿using CloneDash.Modding.Descriptors;
-using Nucleus;
+﻿using Nucleus;
 using Nucleus.Files;
 
-namespace CloneDash.Modding.Settings
+namespace CloneDash.Fevers
 {
-	[Nucleus.MarkForStaticConstruction]
+	[MarkForStaticConstruction]
 	public static class FeverMod
 	{
 		private static FeverDescriptor? activeDescriptor;

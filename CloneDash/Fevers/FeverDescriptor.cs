@@ -1,7 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using CloneDash.Modding;
+using Newtonsoft.Json;
 using Nucleus.Files;
 
-namespace CloneDash.Modding.Descriptors;
+namespace CloneDash.Fevers;
 
 public class FeverDescriptor : CloneDashDescriptor
 {

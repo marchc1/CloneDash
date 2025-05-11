@@ -12,7 +12,6 @@ using CloneDash.Levels;
 using CloneDash.Data;
 using Nucleus.Audio;
 using CloneDash.Modding.Descriptors;
-using CloneDash.Modding.Settings;
 using Nucleus.ManagedMemory;
 using CloneDash.Animation;
 using CloneDash.Scripting;
@@ -25,6 +24,9 @@ using CloneDash.Interfaces;
 using CloneDash.Settings;
 using CloneDash.Implementations;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Fevers;
+using CloneDash.Characters;
+using CloneDash.Scenes;
 
 namespace CloneDash.Game;
 
