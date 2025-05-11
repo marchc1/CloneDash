@@ -1,7 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
-using CloneDash.Modding.Settings;
 using FMOD;
 using Nucleus;
 using Nucleus.Files;
