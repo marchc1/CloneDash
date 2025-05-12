@@ -1,13 +1,15 @@
-﻿using Nucleus;
+﻿using CloneDash.Scenes;
+using Nucleus;
 using Nucleus.Files;
+using Nucleus.Util;
 
 namespace CloneDash.Fevers
 {
 	[MarkForStaticConstruction]
 	public static class FeverMod
 	{
-		private static FeverDescriptor? activeDescriptor;
-		public delegate void UpdatedDelegate(FeverDescriptor? descriptor);
+		private static IFeverDescriptor? activeDescriptor;
+		public delegate void UpdatedDelegate(IFeverDescriptor? descriptor);
 		public static event UpdatedDelegate? FeverUpdated;
 		public static ConVar clonedash_fever = ConVar.Register("clonedash_fever", "default", ConsoleFlags.Saved, "Your fever effect.", null, null, (cv, o, n) => {
 			activeDescriptor = null;
@@ -23,22 +25,20 @@ namespace CloneDash.Fevers
 			return dirs.ToArray();
 		}
 
-		public static FeverDescriptor? GetFeverData() {
-			string name = clonedash_fever?.GetString();
-			if (string.IsNullOrWhiteSpace(name)) {
+		public static IFeverDescriptor? GetFeverData() {
+			string? name = clonedash_fever?.GetString();
+			if (string.IsNullOrWhiteSpace(name)) 
 				return null;
+
+			IFeverProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();
+			foreach (var retriever in retrievers) {
+				IFeverDescriptor? descriptor = retriever.FindByName(name);
+				if (descriptor == null) continue;
+
+				return descriptor;
 			}
 
-			FeverDescriptor? descriptor = FeverDescriptor.ParseFever(Path.Combine(name, "fever.cdd"));
-			if (descriptor == null) {
-				Logs.Warn($"WARNING: The fever '{name}' could not be found by the file system!");
-				return null;
-			}
-
-			descriptor.Filename = name;
-			descriptor.MountToFilesystem();
-
-			return descriptor;
+			return null;
 		}
 	}
 }

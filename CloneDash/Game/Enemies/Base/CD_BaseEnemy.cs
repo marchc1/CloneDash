@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game.Entities;
+using CloneDash.Scenes;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Engine;
@@ -37,8 +38,8 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		SetShowTimeViaLength(showtime);
 
 		ApproachAnimation = Model.Data.FindAnimation(animationName);
-		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Great));
-		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Perfect));
+		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
+		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 
 		Scale = new(level.GlobalScale);
 	}

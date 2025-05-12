@@ -1,6 +1,7 @@
 ﻿// This entire file is a nightmare of inheritance.
 
 using CloneDash.Game;
+using CloneDash.Modding;
 using CloneDash.Scripting;
 using CloneDash.Settings;
 using Lua;
@@ -11,7 +12,7 @@ using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
-namespace CloneDash.Modding.Descriptors;
+namespace CloneDash.Scenes;
 
 public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 {
@@ -779,7 +780,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 	public void PlayFeverSound() => AnnouncerLines.FeverSound.Play(.8f);
 	public void PlayUnpauseSound() => AnnouncerLines.UnpauseSound.Play(.8f);
 	public void PlayFullComboSound() => AnnouncerLines.FullComboSound.Play(.8f);
-	public void PlayHitSound(CD_BaseEnemy enemy, int hits) => Hitsounds.PunchSound.Play(.3f, 1 + (hits / 50f));
+	public void PlayHitSound(CD_BaseEnemy enemy, int hits) => Hitsounds.PunchSound.Play(.3f, 1 + hits / 50f);
 
 	public static CD_SceneDescriptor? ParseFile(string filepath) => ParseFile<CD_SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
 	public static CD_SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CD_SceneDescriptor>(text, filename) : null;

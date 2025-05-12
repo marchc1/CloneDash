@@ -1,4 +1,5 @@
-﻿using Nucleus.Engine;
+﻿using CloneDash.Scenes;
+using Nucleus.Engine;
 using Raylib_cs;
 
 namespace CloneDash.Game.Entities
@@ -30,7 +31,7 @@ namespace CloneDash.Game.Entities
 
 			Model = scene.GetEnemyModel(this).Instantiate();
 			ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
-			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Perfect));
+			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 		}
 	}
 }

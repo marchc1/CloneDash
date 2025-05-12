@@ -24,12 +24,12 @@ public static class SceneMod
 	}
 
 	public static ISceneDescriptor? GetSceneData(ChartSong? song = null) {
-		ISceneProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
 		string? name = clonedash_scene?.GetString();
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;
 
+		ISceneProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
 		foreach (var retriever in retrievers) {
 			ISceneDescriptor? descriptor = retriever.FindByName(name);
 			if (descriptor == null) continue;

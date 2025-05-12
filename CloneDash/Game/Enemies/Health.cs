@@ -1,4 +1,5 @@
-﻿using Nucleus.Engine;
+﻿using CloneDash.Scenes;
+using Nucleus.Engine;
 
 namespace CloneDash.Game.Entities
 {
@@ -25,7 +26,7 @@ namespace CloneDash.Game.Entities
 			var scene = level.Scene;
 			Model = scene.GetEnemyModel(this).Instantiate();
 			ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
-			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Perfect));
+			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 		}
 	}
 }

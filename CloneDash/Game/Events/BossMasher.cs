@@ -1,4 +1,4 @@
-﻿using CloneDash.Modding.Descriptors;
+﻿using CloneDash.Scenes;
 
 namespace CloneDash.Game.Events;
 

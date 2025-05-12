@@ -11,7 +11,6 @@ using CloneDash.Game.Logic;
 using CloneDash.Levels;
 using CloneDash.Data;
 using Nucleus.Audio;
-using CloneDash.Modding.Descriptors;
 using Nucleus.ManagedMemory;
 using CloneDash.Animation;
 using CloneDash.Scripting;
@@ -335,7 +334,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	public CD_StatisticsData Stats;
 	public ICharacterDescriptor Character;
-	public FeverDescriptor? FeverFX;
+	public IFeverDescriptor? FeverFX;
 	public ISceneDescriptor Scene;
 
 	public string AnimationCDD(CharacterAnimationType type) {
@@ -412,8 +411,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			}
 
 			Interlude.Spin(submessage: "Initializing the scene...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
+			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
+				FeverFX?.Initialize(this);
 			}
 
 			Interlude.Spin();
@@ -424,7 +424,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Health = MaxHealth;
 
 
-			Interlude.Spin(submessage: "Initializing ICloneDashInputSystems...");
+			Interlude.Spin(submessage: "Initializing input...");
 			using (CD_StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
 				// build the input system
 				var inputInterface = typeof(ICloneDashInputSystem);
@@ -438,7 +438,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			}
 
 
-			Interlude.Spin(submessage: "Loading your character...");
+			Interlude.Spin(submessage: "Initializing your character...");
 			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
@@ -816,6 +816,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 
 		Scene.Think(this);
+		if (InFever)
+			FeverFX?.Think(this);
 	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
@@ -1057,7 +1059,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
 
 		Scene.RenderBackground(this);
-		//if (InFever) Fever.Render(this);
+		if (InFever) FeverFX?.Render(this);
 
 		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
