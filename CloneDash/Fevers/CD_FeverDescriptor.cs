@@ -33,7 +33,7 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 	}
 
 	public void Initialize(CD_GameLevel game) {
-		
+		SetupLua(game, game.Lua);
 	}
 
 	public void Start(CD_GameLevel game) {
