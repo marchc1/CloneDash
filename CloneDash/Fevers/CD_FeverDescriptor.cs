@@ -45,7 +45,9 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 	}
 
 	public void Render(CD_GameLevel game) {
+		game.Lua.Graphics.StartRenderingLuaContext();
 		game.Lua.ProtectedCall(renderFever);
+		game.Lua.Graphics.EndRenderingLuaContext();
 	}
 
 #nullable disable
