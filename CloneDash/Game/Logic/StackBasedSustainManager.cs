@@ -1,8 +1,7 @@
 ﻿using CloneDash.Game.Entities;
-using CloneDash.Interfaces;
 using Nucleus;
 
-namespace CloneDash.Implementations;
+namespace CloneDash.Game.Logic;
 
 public class StackBasedSustainManager : ISustainManager
 {

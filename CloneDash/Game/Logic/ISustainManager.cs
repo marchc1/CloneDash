@@ -1,7 +1,7 @@
 ﻿using CloneDash.Game.Entities;
 using System.Xml;
 
-namespace CloneDash.Interfaces;
+namespace CloneDash.Game.Logic;
 
 public interface ISustainManager
 {
