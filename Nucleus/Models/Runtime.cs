@@ -206,11 +206,14 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 			Clipping.NextSlot(slot);
 			slot.EndBlendMode();
 		}
+
+		/*int index = 0;
 		foreach (var bone in Bones) {
 			var test = bone.LocalToWorld(0, 0);
-			//Raylib.DrawCircleV(new(test.X, -test.Y), 4, Color.Red);
-			//Graphics2D.DrawText(new(test.X, -test.Y), $"rot: {bone.Rotation}", "Consolas", 7);
-		}
+			Raylib.DrawCircleV(new(test.X, -test.Y), 4, Color.Red);
+			Graphics2D.DrawText(new(test.X, -test.Y), $"[{index}] {bone.Name}", "Consolas", 48);
+			index++;
+		}*/
 
 		Clipping.End();
 		Rlgl.PopMatrix();

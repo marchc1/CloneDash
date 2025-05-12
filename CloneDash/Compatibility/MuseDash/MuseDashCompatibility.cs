@@ -1228,7 +1228,7 @@ public static class MuseDashModelConverter
 						}
 						break;
 					case ATTACHMENT_MESH: {
-							string path = skeleton.MD_ReadRefString(refStrings) ?? name;
+							string path = (skeleton.MD_ReadRefString(refStrings) ?? name)!;
 							
 							Color color = skeleton.MD_ReadColor();
 
@@ -1237,7 +1237,7 @@ public static class MuseDashModelConverter
 							float[] vArray = new float[vertexCount];
 							for (int uv = 0; uv < vertexCount; uv++) {
 								uArray[uv] = skeleton.MD_ReadFloat();
-								vArray[uv] = 1 - skeleton.MD_ReadFloat();
+								vArray[uv] = skeleton.MD_ReadFloat();
 							}
 
 							int triangleCount = skeleton.MD_ReadVarInt(true) / 3;
@@ -1263,7 +1263,7 @@ public static class MuseDashModelConverter
 							}
 
 							MeshAttachment mesh = new();
-							mesh.Name = name;
+							mesh.Name = name!;
 							mesh.Path = path;
 							mesh.Color = color;
 							mesh.Vertices = vertices;
@@ -1274,7 +1274,7 @@ public static class MuseDashModelConverter
 
 							for (int i3 = 0; i3 < vertexCount; i3++) {
 								mesh.Vertices[i3].U = uArray[i3];
-								mesh.Vertices[i3].V = vArray[i3];
+								mesh.Vertices[i3].V = 1 - vArray[i3];
 							}
 
 							attachment = mesh;

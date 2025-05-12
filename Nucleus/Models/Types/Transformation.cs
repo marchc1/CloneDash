@@ -95,7 +95,7 @@ namespace Nucleus.Models
 						float sc = pA * pA + pC * pC;
 						float prX;
 
-						if (sc > 0.00001f) {
+						if (sc > 0.0001f) {
 							sc = MathF.Abs(pA * pD - pB * pC) / sc;
 							pB = pC * sc;
 							pD = pA * sc;
@@ -106,18 +106,40 @@ namespace Nucleus.Models
 							prX = 90 - MathF.Atan2(pD, pB).ToDegrees();
 						}
 
-						float rX = rot + shear.X - prX;
-						float rY = rot + shear.Y - prX + 90;
+						float rX = (rot + shear.X - prX).ToRadians();
+						float rY = (rot + shear.Y - prX + 90).ToRadians();
 
 						lA = MathF.Cos(rX) * scaleX;
-						lB = MathF.Cos(rX) * scaleY;
+						lB = MathF.Cos(rY) * scaleY;
 						lC = MathF.Sin(rX) * scaleX;
-						lD = MathF.Sin(rX) * scaleY;
+						lD = MathF.Sin(rY) * scaleY;
 
 						a = pA * lA - pB * lC;
 						b = pA * lB - pB * lD;
 						c = pC * lA + pD * lC;
 						d = pC * lB + pD * lD;
+
+						break;
+					case TransformMode.NoScale:
+					case TransformMode.NoScaleOrReflection:
+						var rr = rot.ToRadians();
+						var cs = MathF.Cos(rr);
+						var ss = MathF.Sin(rr);
+
+						float zA = pA * cs + pB * ss, zC = pC * cs + pD * ss, acsqr = MathF.Sqrt((zA * zA) + (zC * zC)), iacsqr = 1f / acsqr;
+						zA *= acsqr > 0.00001 ? iacsqr : acsqr; zC *= acsqr > 0.00001 ? iacsqr : acsqr;
+						float ca2 = MathF.PI / 2f + MathF.Atan2(zC, zA);
+						float zB = MathF.Cos(ca2) * acsqr, zD = MathF.Sin(ca2) * acsqr;
+
+						float ns_lA = MathF.Cos(shearX.ToRadians());
+						float ns_lB = MathF.Cos((90 + shearY).ToRadians());
+						float ns_lC = MathF.Sin(shearX.ToRadians());
+						float ns_lD = MathF.Sin((90 + shearY).ToRadians());
+
+						a = zA * ns_lA + zB * ns_lC;
+						b = zA * ns_lB + zB * ns_lD;
+						c = zC * ns_lA + zD * ns_lC;
+						d = zC * ns_lB + zD * ns_lD;
 
 						break;
 				}
