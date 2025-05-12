@@ -24,7 +24,7 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 			lua.DoFile("fever", PathToBackgroundController);
 		}
 
-		var scene = lua.State.Environment["scene"].Read<LuaTable>();
+		var scene = lua.State.Environment["fever"].Read<LuaTable>();
 		{
 			scene["start"].TryRead(out startFever);
 			scene["render"].TryRead(out renderFever);

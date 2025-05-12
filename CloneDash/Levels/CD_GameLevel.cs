@@ -1059,7 +1059,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
 
 		Scene.RenderBackground(this);
-		if (InFever) FeverFX?.Render(this);
+		if (InFever) 
+			FeverFX?.Render(this);
 
 		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
