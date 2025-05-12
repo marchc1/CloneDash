@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Game.Events;
+﻿using CloneDash.Modding.Descriptors;
+
+namespace CloneDash.Game.Events;
 
 public class BossSingleHit(CD_GameLevel game) : CD_BaseEvent(game)
 {
@@ -10,13 +12,13 @@ public class BossSingleHit(CD_GameLevel game) : CD_BaseEvent(game)
 		base.OnBuild();
 
 		var boss = Game.Boss;
-		var animation = BossAction == "boss_close_atk_2" ? Game.Scene.Boss.Close.AttackFast : Game.Scene.Boss.Close.AttackSlow;
+		var animation = Game.Scene.GetBossAnimation(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, out var speed);
 
 		Game.LoadEntity(new() {
 			Type = EntityType.Single,
 			Pathway = PathwaySide.Both,
 			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,
-			ShowTime = Time - (animation.Speed / 30d),
+			ShowTime = Time - speed,
 			HitTime = Time
 		});
 	}

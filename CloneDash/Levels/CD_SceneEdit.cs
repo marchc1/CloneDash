@@ -42,7 +42,7 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 
 		bgrEditRecompile.MouseReleaseEvent += (_, _, _) => {
 			Lua.DoString(bgrEdit.GetText());
-			SetupLua(false);
+			//SetupLua(false);
 		};
 
 		menubar = UI.Add<Menubar>();

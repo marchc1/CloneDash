@@ -294,7 +294,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		return true;
 	}
 	private void startUnpause() {
-		Scene.PlayUnpause();
+		Scene.PlayUnpauseSound();
 		UnpauseTime = Realtime;
 		Timers.Simple(3, () => {
 			fullUnpause();
@@ -318,7 +318,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Paused = false;
 	}
 
-
 	int attackP = 0;
 	int failP = 0;
 
@@ -337,7 +336,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public CD_StatisticsData Stats;
 	public ICharacterDescriptor Character;
 	public FeverDescriptor? FeverFX;
-	public SceneDescriptor Scene;
+	public ISceneDescriptor Scene;
 
 	public string AnimationCDD(CharacterAnimationType type) {
 		return Character.GetPlayAnimation(type);
@@ -388,39 +387,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	ShaderInstance hologramShader;
 
-
-	protected LuaFunction? renderScene;
-	protected LuaFunction? thinkScene;
-	protected LuaFunction? startFeverFX;
-	protected LuaFunction? renderFeverFX;
-	protected LuaFunction? thinkFeverFX;
-
-	protected void SetupLua(bool first = true) {
-		if (first) {
-			Lua.State.Environment["game"] = new CD_LuaGame(this);
-			Lua.State.Environment["fever"] = new LuaTable();
-			Lua.State.Environment["scene"] = new LuaTable();
-
-			if (FeverFX != null) // Fever should be disable-able fully by the player
-				Lua.DoFile("fever", FeverFX.PathToBackgroundController);
-
-			Lua.DoFile("scene", Scene.PathToBackgroundController);
-		}
-
-		var fever = Lua.State.Environment["fever"].Read<LuaTable>();
-		{
-			fever["start"].TryRead(out startFeverFX);
-			fever["render"].TryRead(out renderFeverFX);
-			fever["think"].TryRead(out thinkFeverFX);
-		}
-
-		var scene = Lua.State.Environment["scene"].Read<LuaTable>();
-		{
-			scene["render"].TryRead(out renderScene);
-			scene["think"].TryRead(out thinkScene);
-		}
-	}
-
 	public override void Initialize(params object[] args) {
 		Stats = new(Sheet);
 		using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
@@ -439,17 +405,15 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				FeverFX = feverFX;
 			}
 
-			Interlude.Spin(submessage: "Initializing the scene...");
-
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
-				Scene.Initialize(this);
-			}
-
 			Interlude.Spin(submessage: "Initializing Lua...");
-
 			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
 				Lua = new(this);
-				SetupLua(true);
+				Lua.State.Environment["game"] = new CD_LuaGame(this);
+			}
+
+			Interlude.Spin(submessage: "Initializing the scene...");
+			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene")) {
+				Scene.Initialize(this);
 			}
 
 			Interlude.Spin();
@@ -563,7 +527,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Scorebar.Size = new(0, 128);
 
 			if (CommandLineArguments.GetParam("pretime", 5d) > 0)
-				Scene.PlayBegin();
+				Scene.PlayBeginSound();
 		}
 
 		if (CD_StaticSequentialProfiler.Profiling) {
@@ -770,7 +734,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
-				Scene.PlayFullCombo();
+				Scene.PlayFullComboSound();
 			}
 		}
 
@@ -851,8 +815,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 
-		Lua.ProtectedCall(thinkScene);
-		Lua.ProtectedCall(thinkFeverFX);
+		Scene.Think(this);
 	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
@@ -1086,6 +1049,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public override void PreRenderBackground(FrameState frameState) {
 		Boss.Scale = new(GlobalScale);
 		Boss.Position = new(0, 450);
+
+		Scene.RenderBackground(this);
 	}
 
 	public override void PreRender(FrameState frameState) {
@@ -1093,12 +1058,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		//Stopwatch test = Stopwatch.StartNew();
 		Rlgl.PushMatrix();
 		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
-
-		Lua.Graphics.StartRenderingLuaContext();
-		Lua.ProtectedCall(renderScene, frameState.WindowWidth, frameState.WindowHeight);
-		if (InFever)
-			Lua.ProtectedCall(renderFeverFX, frameState.WindowWidth, frameState.WindowHeight, FeverTime - FeverTimeLeft, FeverTime);
-		Lua.Graphics.EndRenderingLuaContext();
 
 		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -1223,7 +1182,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				if (poll.Hit) {
 					poll.HitEntity.WasHitPerfect = poll.IsPerfect;
 					poll.HitEntity.Hit(pathway, poll.DistanceToHit);
-					Scene.PlayPunch();
+					Scene.PlayHitSound((CD_BaseEnemy)poll.HitEntity, poll.HitEntity.Hits);
 
 					if (SuppressHitMessages == false) {
 						Color c = poll.HitEntity.HitColor;
@@ -1371,9 +1330,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	private void EnterFever() {
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
-		Scene.PlayFever();
-
-		Lua.ProtectedCall(startFeverFX);
+		Scene.PlayFeverSound();
 	}
 	/// <summary>
 	/// Exits fever.

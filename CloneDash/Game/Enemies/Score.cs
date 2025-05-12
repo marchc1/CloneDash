@@ -27,7 +27,10 @@ namespace CloneDash.Game.Entities
 			base.Build();
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
-			BuildFromScene(scene.Score);
+
+			Model = scene.GetEnemyModel(this).Instantiate();
+			ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
+			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Perfect));
 		}
 	}
 }

@@ -101,9 +101,9 @@ public class CharacterDescriptor_Fail
 {
 	[JsonProperty("model")] public string Model;
 }
-public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
+public class CD_CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 {
-	public CharacterDescriptor() : base(CloneDashDescriptorType.Character, "chars", "character", "character", "2025-05-06-01") { }
+	public CD_CharacterDescriptor() : base(CloneDashDescriptorType.Character, "chars", "character", "character", "2025-05-06-01") { }
 
 	[JsonProperty("name")] public string Name { get; set; }
 	[JsonProperty("description")] public string? Description { get; set; }
@@ -137,7 +137,7 @@ public class CharacterDescriptor : CloneDashDescriptor, ICharacterDescriptor
 	/// </summary>
 	[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
-	public static CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CharacterDescriptor>(text, filename) : null;
+	public static CD_CharacterDescriptor? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CD_CharacterDescriptor>(text, filename) : null;
 
 	string ICharacterDescriptor.GetName() => Name;
 	string? ICharacterDescriptor.GetDescription() => Description;

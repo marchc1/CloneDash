@@ -1,5 +1,7 @@
-﻿using Nucleus.Engine;
+﻿using CloneDash.Modding.Descriptors;
+using Nucleus.Engine;
 using Raylib_cs;
+using System.Runtime.Intrinsics.X86;
 namespace CloneDash.Game.Entities;
 
 public class Boss : CD_BaseEnemy
@@ -19,12 +21,12 @@ public class Boss : CD_BaseEnemy
 	public void In() {
 		var scene = GetGameLevel().Scene;
 		Visible = true;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.In, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.In), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 	}
 	public void Out() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Out, false);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Out), false);
 	}
 	public void SingleHit() {
 
@@ -34,33 +36,33 @@ public class Boss : CD_BaseEnemy
 	}
 	public void Far1Start() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From0.To1, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby1, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From0To1), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby1), true);
 	}
 	public void Far1End() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From1.To0, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From1To0), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 	}
 	public void Far1To2() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From1.To2, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby2, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From1To2), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby2), true);
 	}
 	public void Far2Start() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From0.To2, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby2, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From0To2), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby2), true);
 	}
 	public void Far2End() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From2.To0, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From2To0), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 	}
 	public void Far2To1() {
 		var scene = GetGameLevel().Scene;
-		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Transitions.From2.To1, false);
-		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby1, true);
+		Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.From2To1), false);
+		Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby1), true);
 	}
 	public void Hide() {
 
@@ -86,41 +88,34 @@ public class Boss : CD_BaseEnemy
 
 					switch (she.Variant) {
 						case EntityVariant.BossHitSlow:
-							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Close.AttackSlow.Name, false);
-							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.CloseAttackSlow), false);
+							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 							break;
 						case EntityVariant.BossHitFast:
-							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Close.AttackFast.Name, false);
-							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.CloseAttackFast), false);
+							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 							break;
 						default:
-							var pathway = she.Pathway;
-							var attackanims = she.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
-							Animations.SetAnimation(
-								ANIMATION_CHANNEL_FIRE,
-								pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground,
-								false);
+							Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, scene.GetBossAnimation(she), false);
 							break;
 					}
 				}
 
 				if(signalType == CD_EntitySignalType.FirstHit) {
-					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Hurt, false);
-					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Hurt), false);
+					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 				}
 				break;
 			case Masher me:
 				if (me.Variant.IsBoss()) {
 					if (signalType == CD_EntitySignalType.FirstAppearance) {
-						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Multi.Attack.Name, false);
-						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.Boss.Standby.Standby0, true);
+						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttack), false);
+						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 					}
 				}
 				break;
 			case Gear ge: {
-					var pathway = ge.Pathway;
-					var attackanims = ge.Variant == EntityVariant.Boss1 ? scene.Boss.Attacks.Attack1 : scene.Boss.Attacks.Attack2;
-					Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, pathway == PathwaySide.Top ? attackanims.Air : attackanims.Ground, false);
+					Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, scene.GetBossAnimation(ge), false);
 				}
 				break;
 		}
@@ -143,7 +138,7 @@ public class Boss : CD_BaseEnemy
 
 	public override void Build() {
 		base.Build();
-		Model = GetGameLevel().Scene.Boss.ModelData.Instantiate();
+		Model = GetGameLevel().Scene.GetEnemyModel(this).Instantiate();
 		Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
 
 

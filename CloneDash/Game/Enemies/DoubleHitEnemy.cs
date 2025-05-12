@@ -36,22 +36,7 @@
 
 		public override void Build() {
 			base.Build();
-
-			var level = Level.As<CD_GameLevel>();
-			var scene = level.Scene;
-
-			var sceneDescription = scene.DoubleEnemy;
-
-			Model = sceneDescription.GetModelFromPathway(Pathway).Instantiate();
-
-			string animationName = sceneDescription.GetAnimationString(Speed, out var showtime);
-			SetShowTimeViaLength(showtime);
-
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
-			GreatHitAnimation =   sceneDescription.FindGreatAnimation(Model);
-			PerfectHitAnimation = sceneDescription.FindPerfectAnimation(Model);
-
-			Scale = new(level.GlobalScale);
+			BasicSetup();
 		}
 	}
 }

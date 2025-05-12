@@ -76,7 +76,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public float StartPosition { get; private set; }
-		public float RotationDegsPerSecond { get; set; } = 200;
+		public float RotationDegsPerSecond = 200;
 		private void drawStartQuad(CD_GameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 			var tex = start;
@@ -157,14 +157,8 @@ namespace CloneDash.Game.Entities
 
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
-			var sustains = scene.Sustains;
 
-			RotationDegsPerSecond = sustains.RotationDegsPerSecond;
-			start = sustains.GetStartTexture(Pathway);
-			end = sustains.GetEndTexture(Pathway);
-			body = sustains.GetBodyTexture(Pathway);
-			up = sustains.GetUpTexture(Pathway);
-			down = sustains.GetDownTexture(Pathway);
+			scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
 		}
 
 		internal void Complete() {
@@ -178,7 +172,7 @@ namespace CloneDash.Game.Entities
 			lvl.AddCombo();
 			lvl.AddFever(FeverGiven);
 			lvl.Sustains.CompleteSustainBeam(this);
-			lvl.Scene.PlayPunch();
+			lvl.Scene.PlayHitSound(this, Hits);
 		}
 		internal void Fail() {
 			var lvl = GetGameLevel();

@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Game.Events;
+﻿using CloneDash.Modding.Descriptors;
+
+namespace CloneDash.Game.Events;
 
 public class BossMasher(CD_GameLevel game) : CD_BaseEvent(game)
 {
@@ -10,13 +12,13 @@ public class BossMasher(CD_GameLevel game) : CD_BaseEvent(game)
 		base.OnBuild();
 
 		var boss = Game.Boss;
-		var animation = Game.Scene.Boss.Multi.Attack;
+		var animation = Game.Scene.GetBossAnimation(BossAnimationType.MultiAttack, out var time);
 
 		Game.LoadEntity(new() {
 			Type = EntityType.Masher,
 			Pathway = PathwaySide.Both,
 			Variant = EntityVariant.BossMash,
-			ShowTime = Time - (animation.Speed / 30d),
+			ShowTime = Time - time,
 			HitTime = Time
 		});
 	}

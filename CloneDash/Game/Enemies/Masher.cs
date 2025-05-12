@@ -66,10 +66,10 @@ namespace CloneDash.Game.Entities
 
 			lastHitTime = level.Conductor.Time;
 			if (Model != null) {
-				currentAnim = Model.Data.FindAnimation(masherData.Hurt.GetAnimation(Hits));
+				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation());
 			}
 
-			level.Scene.PlayPunch(1 + (Hits / 50f));
+			level.Scene.PlayHitSound(this, Hits);
 
 			CheckIfComplete();
 		}
@@ -92,7 +92,6 @@ namespace CloneDash.Game.Entities
 			StartedHitting = false;
 		}
 
-		SceneDescriptor.SceneDescriptor_MasherEnemy masherData;
 		Nucleus.Models.Runtime.Animation? currentAnim;
 		public override void DetermineAnimationPlayback() {
 			if (Model == null) return;
@@ -120,26 +119,9 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 
-			masherData = scene.Masher;
 			if (Variant != EntityVariant.BossMash) {
-				Model = masherData.ModelData.Instantiate();
-
-				var approachSpeeds = EnterDirection switch {
-					EntityEnterDirection.TopDown => masherData.InAnimations.Down,
-					_ => masherData.InAnimations.Normal
-				};
-
-				var speedIndex = Speed switch {
-					1 => 2,
-					2 => 1,
-					3 => 0,
-					_ => throw new Exception("Invalid speed")
-				};
-
-				ApproachAnimation = Model.Data.FindAnimation(string.Format(approachSpeeds.Format, approachSpeeds.Speeds[speedIndex]));
-				PerfectHitAnimation = masherData.CompleteAnimations.FindPerfectAnimation(Model);
-				GreatHitAnimation = masherData.CompleteAnimations.FindGreatAnimation(Model);
-				var showtime = approachSpeeds.Speeds[speedIndex] / 30f;
+				Model = scene.GetEnemyModel(this).Instantiate();
+				ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out var showtime));
 				SetShowTimeViaLength(showtime);
 			}
 		}

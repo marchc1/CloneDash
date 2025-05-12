@@ -1,8 +1,8 @@
 ﻿using CloneDash.Game.Entities;
 using CloneDash.Settings;
+using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 using System.Diagnostics.CodeAnalysis;
-using static CloneDash.Modding.Descriptors.SceneDescriptor;
 
 namespace CloneDash.Game;
 
@@ -24,6 +24,23 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		{ EntityType.Heart, typeof(Health) },
 		{ EntityType.SustainBeam, typeof(SustainBeam) },
 	};
+
+
+	protected void BasicSetup() {
+		var level = GetGameLevel();
+		var scene = level.Scene;
+
+		Model = scene.GetEnemyModel(this).Instantiate();
+
+		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
+		SetShowTimeViaLength(showtime);
+
+		ApproachAnimation = Model.Data.FindAnimation(animationName);
+		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Great));
+		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, Modding.Descriptors.HitAnimationType.Perfect));
+
+		Scale = new(level.GlobalScale);
+	}
 
 	protected CD_BaseEnemy(EntityType type) {
 		Type = type;
@@ -52,14 +69,14 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		var scene = lvl.Scene;
 
 		if (Blood) {
-			MountedHeart = scene.Heart.ModelData.Instantiate();
-			MountedHeartAnimation = MountedHeart.Data.FindAnimation(scene.Heart.MountAnimation);
+			MountedHeart = scene.GetHP(out string mountAnimation).Instantiate();
+			MountedHeartAnimation = MountedHeart.Data.FindAnimation(mountAnimation);
 		}
 	}
 
-	public void SetMountBoneIfApplicable(IContainsGreatPerfectAndHPMount mountData) {
+	public void SetMountBoneIfApplicable(BoneInstance bone) {
 		if (Model == null) throw new NullReferenceException("Need model first!");
-		MountBone = mountData.GetHPMount(Model);
+		MountBone = bone;
 	}
 
 

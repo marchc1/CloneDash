@@ -38,17 +38,9 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 
-			Model = (Variant switch {
-				EntityVariant.Boss1 or EntityVariant.Boss2 => scene.BossGears.GetModelFromPathway(Pathway),
-				_ => scene.Gears.GetModelFromPathway(Pathway)
-			}).Instantiate();
+			Model = scene.GetEnemyModel(this).Instantiate();
 
-			double showtime = 0;
-			var animationName = Variant switch {
-				EntityVariant.Boss1 or EntityVariant.Boss2 => scene.BossGears.GetAnimationString(Pathway, Speed, out showtime),
-				_ => scene.Gears.GetAnimationString(Pathway, Speed, out showtime)
-			};
-
+			var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model.Data.FindAnimation(animationName);

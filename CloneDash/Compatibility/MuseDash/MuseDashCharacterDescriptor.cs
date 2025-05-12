@@ -31,19 +31,19 @@ public class MuseDashCharacterExpression : ICharacterExpression
 		throw new NotImplementedException();
 	}
 }
-public class MuseDashCharacterRetriever : ICharacterRetriever
+public class MuseDashCharacterRetriever : ICharacterProvider
 {
-	int ICharacterRetriever.Priority => 0;
+	int ICharacterProvider.Priority => 0;
 
 	public string GetName(CharacterConfigData cfd) => $"md_{cfd.BGM.Replace("_bgm", "")}";
 
-	IEnumerable<string> ICharacterRetriever.GetAvailableCharacters() {
+	IEnumerable<string> ICharacterProvider.GetAvailable() {
 		foreach (var character in MuseDashCompatibility.Characters) {
 			yield return GetName(character);
 		}
 	}
 
-	ICharacterDescriptor? ICharacterRetriever.GetDescriptorFromName(string name) {
+	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
 		foreach (var character in MuseDashCompatibility.Characters) {
 			if (name != GetName(character)) continue;
 
@@ -60,9 +60,9 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 	public static ConCommand clonedash_nextmdchar = ConCommand.Register(nameof(clonedash_nextmdchar), (_, _) => {
 		var clonedash_character = ((ConVar)ConVar.Get("clonedash_character")!);
 		var clonedash_character_value = clonedash_character.GetString();
-		ICharacterRetriever retriever = new MuseDashCharacterRetriever();
+		ICharacterProvider retriever = new MuseDashCharacterRetriever();
 		bool next = false;
-		foreach (var character in retriever.GetAvailableCharacters()) {
+		foreach (var character in retriever.GetAvailable()) {
 			if (character == clonedash_character_value) next = true;
 			else if (next) { 
 				clonedash_character.SetValue(character);

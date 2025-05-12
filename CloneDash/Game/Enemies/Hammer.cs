@@ -42,21 +42,8 @@ namespace CloneDash.Game.Entities
 			base.DetermineAnimationPlayback();
 		}
 		public override void Build() {
-			base.Build();
-
-			var level = Level.As<CD_GameLevel>();
-			var scene = level.Scene;
-
-			Model = scene.Hammer.GetModelFromPathway(Pathway, Flipped).Instantiate();
-
-			string animationName = scene.Hammer.GetAnimationString(Speed, out var showtime);
-			SetShowTimeViaLength(showtime);
-
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
-			GreatHitAnimation = scene.Hammer.FindGreatAnimation(Model);
-			PerfectHitAnimation = scene.Hammer.FindPerfectAnimation(Model);
-
-			Scale = new(level.GlobalScale);
+			base.Build(); 
+			BasicSetup();
 		}
     }
 }

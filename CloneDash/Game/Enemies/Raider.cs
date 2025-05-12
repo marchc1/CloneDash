@@ -51,18 +51,8 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 
-			Model = scene.Raider.GetModelFromPathway(Pathway, Flipped).Instantiate();
-
-			string animationName = scene.Raider.GetAnimationString(Speed, out var showtime);
-			SetShowTimeViaLength(showtime);
-
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
-			GreatHitAnimation = scene.Raider.FindGreatAnimation(Model);
-			PerfectHitAnimation = scene.Raider.FindPerfectAnimation(Model);
-
-			Scale = new(level.GlobalScale);
-
-			SetMountBoneIfApplicable(scene.Raider);
+			BasicSetup();
+			SetMountBoneIfApplicable(scene.GetHPMount(this)!);
 		}
 	}
 }
