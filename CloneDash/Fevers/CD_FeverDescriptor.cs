@@ -13,8 +13,9 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 
 	public static CD_FeverDescriptor? ParseFever(string filename) => Filesystem.ReadAllText("fevers", filename, out var text) ? ParseFile<CD_FeverDescriptor>(text, filename) : null;
 
-	LuaFunction? renderFever;
+	LuaFunction? startFever;
 	LuaFunction? thinkFever;
+	LuaFunction? renderFever;
 
 	private void SetupLua(CD_GameLevel game, CD_LuaEnv lua, bool first = true) {
 		if (first) {
@@ -25,6 +26,7 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 
 		var scene = lua.State.Environment["scene"].Read<LuaTable>();
 		{
+			scene["start"].TryRead(out startFever);
 			scene["render"].TryRead(out renderFever);
 			scene["think"].TryRead(out thinkFever);
 		}
@@ -32,6 +34,10 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 
 	public void Initialize(CD_GameLevel game) {
 		
+	}
+
+	public void Start(CD_GameLevel game) {
+		game.Lua.ProtectedCall(startFever);
 	}
 
 	public void Think(CD_GameLevel game) {

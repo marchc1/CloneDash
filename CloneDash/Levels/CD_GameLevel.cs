@@ -1332,6 +1332,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	private void EnterFever() {
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
+		FeverFX?.Start(this);
 		Scene.PlayFeverSound();
 	}
 	/// <summary>
