@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Statistics;
 
-public enum CD_EnemyStatisticsState
+public enum EnemyStatisticsState
 {
 	InPlay,
 	Missed,

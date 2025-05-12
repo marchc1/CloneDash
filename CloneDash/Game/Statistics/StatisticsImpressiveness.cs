@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Statistics;
 
-public enum CD_StatisticsImpressiveness
+public enum StatisticsImpressiveness
 {
 	Failed = 0,
 	Cleared = 1 << 0,

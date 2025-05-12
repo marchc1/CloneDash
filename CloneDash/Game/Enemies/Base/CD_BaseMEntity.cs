@@ -386,7 +386,7 @@ namespace CloneDash.Game
 		public static event EntityNoArgumentEvent GlobalOnReleaseEvent;
 
 		public CD_GameLevel GetGameLevel() => Level.As<CD_GameLevel>();
-		public CD_StatisticsData GetStats() => Level.As<CD_GameLevel>().Stats;
+		public StatisticsData GetStats() => Level.As<CD_GameLevel>().Stats;
 		public Conductor GetConductor() => Level.As<CD_GameLevel>().Conductor;
 
 

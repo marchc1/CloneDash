@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Statistics;
 
-public enum CD_EnemyStatisticsAccuracy
+public enum EnemyStatisticsAccuracy
 {
 	NotApplicable,
 

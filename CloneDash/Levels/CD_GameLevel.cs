@@ -329,7 +329,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	private bool __deferringAsync = false;
 
-	public CD_StatisticsData Stats;
+	public StatisticsData Stats;
 	public ICharacterDescriptor Character;
 	public IFeverDescriptor? FeverFX;
 	public ISceneDescriptor Scene;

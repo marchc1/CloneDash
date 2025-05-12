@@ -2,13 +2,13 @@
 
 namespace CloneDash.Game.Statistics;
 
-public class CD_StatisticsData
+public class StatisticsData
 {
-	public CD_StatisticsImpressiveness Title;
-	public CD_StatisticsGrade Grade;
+	public StatisticsImpressiveness Title;
+	public StatisticsGrade Grade;
 	public ChartSheet? Sheet;
 	public List<CD_BaseEnemy> OrderedEnemies = [];
-	public Dictionary<CD_BaseEnemy, CD_EnemyStatistics> EnemyInfo = [];
+	public Dictionary<CD_BaseEnemy, EnemyStatistics> EnemyInfo = [];
 
 	public int Score { get; private set; } = 0;
 	public double Accuracy { get; private set; } = 0;
@@ -32,17 +32,17 @@ public class CD_StatisticsData
 
 	public void UploadScore(int score) => Score = score;
 
-	private void DowngradeTitle(ref CD_StatisticsImpressiveness title, CD_StatisticsImpressiveness to) {
+	private void DowngradeTitle(ref StatisticsImpressiveness title, StatisticsImpressiveness to) {
 		switch (title) {
-			case CD_StatisticsImpressiveness.AllPerfect:
+			case StatisticsImpressiveness.AllPerfect:
 				title = to;
 				break;
-			case CD_StatisticsImpressiveness.FullCombo:
-				if (to != CD_StatisticsImpressiveness.AllPerfect)
+			case StatisticsImpressiveness.FullCombo:
+				if (to != StatisticsImpressiveness.AllPerfect)
 					title = to;
 				break;
-			case CD_StatisticsImpressiveness.Cleared:
-				if (to != CD_StatisticsImpressiveness.AllPerfect && to != CD_StatisticsImpressiveness.FullCombo)
+			case StatisticsImpressiveness.Cleared:
+				if (to != StatisticsImpressiveness.AllPerfect && to != StatisticsImpressiveness.FullCombo)
 					title = to;
 				break;
 		}
@@ -62,7 +62,7 @@ public class CD_StatisticsData
 	}
 	public void Compute() {
 		// Assume all perfect until we know otherwise
-		Title = CD_StatisticsImpressiveness.AllPerfect;
+		Title = StatisticsImpressiveness.AllPerfect;
 
 		Perfects = 0;
 		Combo = 0;
@@ -77,57 +77,57 @@ public class CD_StatisticsData
 			var info = EnemyInfo[ent];
 
 			switch (info.Accuracy) {
-				case CD_EnemyStatisticsAccuracy.Early: Earlys++; break;
-				case CD_EnemyStatisticsAccuracy.Late: Lates++; break;
-				case CD_EnemyStatisticsAccuracy.Precise: Exacts++; break;
+				case EnemyStatisticsAccuracy.Early: Earlys++; break;
+				case EnemyStatisticsAccuracy.Late: Lates++; break;
+				case EnemyStatisticsAccuracy.Precise: Exacts++; break;
 			}
 
 			switch (info.State) {
-				case CD_EnemyStatisticsState.Missed:
+				case EnemyStatisticsState.Missed:
 					Misses++;
 					ResetCombo();
-					DowngradeTitle(ref Title, CD_StatisticsImpressiveness.Cleared);
+					DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
 					break;
-				case CD_EnemyStatisticsState.Passed:
+				case EnemyStatisticsState.Passed:
 					Passes++;
 					break;
-				case CD_EnemyStatisticsState.Great:
+				case EnemyStatisticsState.Great:
 					Greats++;
 					UpCombo();
-					DowngradeTitle(ref Title, CD_StatisticsImpressiveness.FullCombo);
+					DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
 					break;
-				case CD_EnemyStatisticsState.Perfect:
+				case EnemyStatisticsState.Perfect:
 					Perfects++;
 					UpCombo();
 					break;
 
-				case CD_EnemyStatisticsState.InPlay:
+				case EnemyStatisticsState.InPlay:
 					break;
 			}
 		}
 
 
-		if (Title == CD_StatisticsImpressiveness.AllPerfect) {
+		if (Title == StatisticsImpressiveness.AllPerfect) {
 			Accuracy = 100d;
-			Grade = CD_StatisticsGrade.SSS;
+			Grade = StatisticsGrade.SSS;
 		}
 		else {
 			double gradePercentage = (Perfects + Greats * .5d) / (Perfects + Greats + Misses) * 100d;
-			if (gradePercentage >= 95d) Grade = CD_StatisticsGrade.SS;
-			else if (gradePercentage >= 90d) Grade = CD_StatisticsGrade.S;
-			else if (gradePercentage >= 80d) Grade = CD_StatisticsGrade.A;
-			else if (gradePercentage >= 70d) Grade = CD_StatisticsGrade.B;
-			else if (gradePercentage >= 60d) Grade = CD_StatisticsGrade.C;
-			else Grade = CD_StatisticsGrade.D;
+			if (gradePercentage >= 95d) Grade = StatisticsGrade.SS;
+			else if (gradePercentage >= 90d) Grade = StatisticsGrade.S;
+			else if (gradePercentage >= 80d) Grade = StatisticsGrade.A;
+			else if (gradePercentage >= 70d) Grade = StatisticsGrade.B;
+			else if (gradePercentage >= 60d) Grade = StatisticsGrade.C;
+			else Grade = StatisticsGrade.D;
 
 			Accuracy = gradePercentage;
 		}
 	}
 
 	public void Reset() {
-		Title = CD_StatisticsImpressiveness.AllPerfect;
+		Title = StatisticsImpressiveness.AllPerfect;
 		Accuracy = 0;
-		Grade = CD_StatisticsGrade.F;
+		Grade = StatisticsGrade.F;
 		Score = 0;
 		MaxCombo = 0;
 		foreach (var kvp in EnemyInfo) {
@@ -135,22 +135,22 @@ public class CD_StatisticsData
 		}
 	}
 
-	public CD_EnemyStatistics GetStatisticsForEnemy(CD_BaseEnemy enemy)
+	public EnemyStatistics GetStatisticsForEnemy(CD_BaseEnemy enemy)
 		=> EnemyInfo.TryGetValue(enemy, out var stats) ? stats : throw new Exception("Unregistered CD_BaseEnemy.");
 
-	public CD_EnemyStatisticsAccuracy Hit(CD_BaseEnemy enemy, double hitTime) {
+	public EnemyStatisticsAccuracy Hit(CD_BaseEnemy enemy, double hitTime) {
 		var stats = GetStatisticsForEnemy(enemy);
 		var accuracy = stats.Hit(hitTime);
 
-		if (stats.State != CD_EnemyStatisticsState.Perfect) {
-			DowngradeTitle(ref Title, CD_StatisticsImpressiveness.FullCombo);
+		if (stats.State != EnemyStatisticsState.Perfect) {
+			DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
 		}
 
 		return accuracy;
 	}
 
 	public void Miss(CD_BaseEnemy enemy) {
-		DowngradeTitle(ref Title, CD_StatisticsImpressiveness.Cleared);
+		DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
 		GetStatisticsForEnemy(enemy).Miss();
 	}
 
@@ -170,7 +170,7 @@ public class CD_StatisticsData
 		Hit(enemy, hitTime);
 	}
 
-	public CD_StatisticsData(ChartSheet? sheet) {
+	public StatisticsData(ChartSheet? sheet) {
 		Sheet = sheet;
 		Reset();
 	}

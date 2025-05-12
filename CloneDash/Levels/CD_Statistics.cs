@@ -16,14 +16,14 @@ namespace CloneDash.Levels
 	public class CD_Statistics : Level
 	{
 		ChartSheet sheet;
-		CD_StatisticsData stats;
+		StatisticsData stats;
 		ICharacterDescriptor character;
 		ModelInstance model;
 		AnimationHandler anims;
 		public override void Initialize(params object[] args) {
 #nullable disable
 			sheet = args[0] as ChartSheet;
-			stats = args[1] as CD_StatisticsData;
+			stats = args[1] as StatisticsData;
 #nullable enable
 
 			if (sheet == null) throw new NullReferenceException(nameof(sheet));

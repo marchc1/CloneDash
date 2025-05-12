@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Statistics;
 
-public enum CD_StatisticsGrade
+public enum StatisticsGrade
 {
 	SSS = 100,
 	SS = 95,
