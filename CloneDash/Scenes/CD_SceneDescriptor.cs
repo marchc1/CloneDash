@@ -118,6 +118,8 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 			case EntityType.Hammer: return Hammer.GetModelFromPathway(enemy.Pathway, enemy.Flipped);
 			case EntityType.Masher: return Masher.ModelData;
 			case EntityType.Raider: return Raider.GetModelFromPathway(enemy.Pathway, enemy.Flipped);
+			case EntityType.Score: return Score.ModelData;
+			case EntityType.Heart: return Heart.ModelData;
 			default: throw new NotImplementedException();
 		}
 	}
