@@ -1045,12 +1045,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public float GlobalScale => 1f;
 	public float BackgroundScale => 1f;
 
-
 	public override void PreRenderBackground(FrameState frameState) {
 		Boss.Scale = new(GlobalScale);
 		Boss.Position = new(0, 450);
-
-		Scene.RenderBackground(this);
 	}
 
 	public override void PreRender(FrameState frameState) {
@@ -1058,6 +1055,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		//Stopwatch test = Stopwatch.StartNew();
 		Rlgl.PushMatrix();
 		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
+
+		Scene.RenderBackground(this);
+		//if (InFever) Fever.Render(this);
 
 		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);

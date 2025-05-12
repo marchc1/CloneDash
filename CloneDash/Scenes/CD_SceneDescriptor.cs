@@ -173,7 +173,6 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 
 						_ => throw new NotImplementedException()
 					};
-					time /= Model4System.REFERENCE_FPS;
 					return animationName;
 				}
 			case EntityType.Gear: {
@@ -181,7 +180,6 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 						EntityVariant.Boss1 or EntityVariant.Boss2 => BossGears.GetAnimationString(enemy.Pathway, enemy.Speed, out time),
 						_ => Gears.GetAnimationString(enemy.Pathway, enemy.Speed, out time)
 					};
-					time /= Model4System.REFERENCE_FPS;
 					return animationName;
 				}
 			case EntityType.Masher: {
@@ -200,22 +198,13 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 					time = approachSpeeds.Speeds[speedIndex] / Model4System.REFERENCE_FPS;
 					return string.Format(approachSpeeds.Format, approachSpeeds.Speeds[speedIndex]);
 				}
-			case EntityType.Double: {
-					var animation = DoubleEnemy.GetAnimationString(enemy.Speed, out time);
-					time /= Model4System.REFERENCE_FPS;
-					return animation;
-				}
-			case EntityType.Hammer: {
-					var animation = Hammer.GetAnimationString(enemy.Speed, out time);
-					time /= Model4System.REFERENCE_FPS;
-					return animation;
-				}
+			case EntityType.Double: return DoubleEnemy.GetAnimationString(enemy.Speed, out time);
+			case EntityType.Hammer: return Hammer.GetAnimationString(enemy.Speed, out time);
 			case EntityType.Heart: return enemy.Pathway == PathwaySide.Top ? Heart.AirAnimation : Heart.GroundAnimation;
 			case EntityType.Score: return enemy.Pathway == PathwaySide.Top ? Score.AirAnimation : Score.GroundAnimation;
-			case EntityType.Ghost: return enemy.Pathway == PathwaySide.Top ? Ghost.Animation : Ghost.Animation;
+			case EntityType.Ghost: return Ghost.GetAnimationString(enemy.Speed, out time);
 			case EntityType.Raider: {
 					var animation = Raider.GetAnimationString(enemy.Speed, out time);
-					time /= Model4System.REFERENCE_FPS;
 					return animation;
 				}
 			default: throw new NotImplementedException($"{enemy.Type} isn't implemented yet");
