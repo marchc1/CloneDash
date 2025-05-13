@@ -14,6 +14,7 @@ using Nucleus.Files;
 using Nucleus.Extensions;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Characters;
+using Nucleus.Core;
 
 namespace CloneDash.UI;
 
@@ -202,8 +203,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	ICharacterExpression? touchResponse;
 	int click = 0;
+	double startExpressionTime;
+	double nextExpressionTime;
+	string? expressionText;
 	public override void MouseClick(FrameState state, MouseButton button) {
 		if (character == null) return;
+		if (Level.Curtime < nextExpressionTime) return;
+
 		touchResponse = character.GetMainShowExpression();
 		click++;
 
@@ -215,7 +221,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			anims.AddAnimation(0, standby, true);
 		}
 
-		touchResponse?.Run(Level, model, anims, out string text, out double duration);
+		string? text = null;
+		double duration = 0;
+		touchResponse?.Run(Level, model, anims, out text, out duration);
+		startExpressionTime = Level.Curtime;
+		nextExpressionTime = Level.Curtime + duration + 0.1;
+		expressionText = text;
 	}
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {
@@ -226,5 +237,20 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		model?.Render();
 
 		EngineCore.Window.EndMode2D();
+
+		if (NMath.InRange(Level.Curtime, startExpressionTime, nextExpressionTime) && expressionText != null) {
+			float alphaMult1 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.1, 0, 1, true);
+			float alphaMult2 = (float)NMath.Remap(Level.Curtime, nextExpressionTime - 0.2, nextExpressionTime, 0, 1, true);
+			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
+			string font = "Noto Sans";
+			float fontSize = 24 * (height / 900f);
+			Vector2F textSize = Graphics2D.GetTextSize(expressionText, font, fontSize);
+			Vector2F textPos = new(width / 2 - width * .2f, height / 0.75f);
+			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
+			textSize += new Vector2F(16);
+			Graphics2D.DrawRectangle(textPos - (textSize / 2), textSize);
+			Graphics2D.SetDrawColor(255, 255, 255, (int)(alphaMult * 255));
+			Graphics2D.DrawText(textPos, expressionText, font, fontSize, Anchor.Center);
+		}
 	}
 }
