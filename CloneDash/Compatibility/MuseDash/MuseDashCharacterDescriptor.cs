@@ -15,20 +15,37 @@ namespace CloneDash.Compatibility.MuseDash;
 
 public class MuseDashCharacterExpression : ICharacterExpression
 {
+	private CharacterExpression Expression;
+	private string Talk;
+	private string AudioName;
 	string ICharacterExpression.GetEndAnimationName() {
-		throw new NotImplementedException();
+		return $"{Expression.AnimName}_end";
 	}
 
 	string ICharacterExpression.GetIdleAnimationName() {
-		throw new NotImplementedException();
+		return $"{Expression.AnimName}_standby";
 	}
 
 	void ICharacterExpression.GetSpeech(Level level, out string text, out Sound voice) {
-		throw new NotImplementedException();
+		text = Talk;
+		voice = MuseDashCompatibility.LoadSoundFromName(level, AudioName);
 	}
 
 	string ICharacterExpression.GetStartAnimationName() {
-		throw new NotImplementedException();
+		return $"{Expression.AnimName}_start";
+	}
+
+	public static MuseDashCharacterExpression From(CharacterConfigData data) {
+		MuseDashCharacterExpression expression = new MuseDashCharacterExpression();
+		int i = Random.Shared.Next(0, data.Expressions.Count);
+		expression.Expression = data.Expressions[i];
+
+		var audioNames = expression.Expression.AudioNames;
+		var audioI = Random.Shared.Next(0, audioNames.Count);
+
+		expression.Talk = data.Localization["english"].Expressions[i][audioI];
+		expression.AudioName = audioNames[audioI];
+		return expression;
 	}
 }
 public class MuseDashCharacterRetriever : ICharacterProvider
@@ -86,7 +103,8 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 	public string? GetLogicControllerData() => null;
 
 	public ICharacterExpression? GetMainShowExpression() {
-		return null;
+		MuseDashCharacterExpression expression = MuseDashCharacterExpression.From(configData);
+		return expression;
 	}
 
 	public string? GetMainShowInitialExpression() => null;

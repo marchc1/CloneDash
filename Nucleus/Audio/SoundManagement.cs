@@ -76,6 +76,28 @@ namespace Nucleus.Audio
 			return snd;
 		}
 
+		public unsafe Sound LoadSoundFromMemory(byte[] data) {
+			if (data.Length < 4) throw new InvalidDataException();
+
+			Span<byte> byteHeader = stackalloc byte[] { data[3], data[2], data[1], data[0] };
+			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
+			string fileExtension = headerCast[0] switch {
+				MUSIC_HEADER_RIFF => MUSIC_HEADER_RIFF_EXTENSION,
+				MUSIC_HEADER_OGGS => MUSIC_HEADER_OGGS_EXTENSION,
+				MUSIC_HEADER_ID3 => MUSIC_HEADER_ID3_EXTENSION,
+				_ => MUSIC_HEADER_ID3_EXTENSION,
+			};
+
+			unsafe {
+				Wave w = Raylib.LoadWaveFromMemory(fileExtension, data);
+				Raylib_cs.Sound sound = Raylib.LoadSoundFromWave(w);
+				Raylib.UnloadWave(w);
+				Sound snd = new(this, sound, true);
+				Sounds.Add(snd);
+				return snd;
+			}
+		}
+
 		public void EnsureISoundRemoved(ISound isnd) {
 			switch (isnd) {
 				case Sound snd:

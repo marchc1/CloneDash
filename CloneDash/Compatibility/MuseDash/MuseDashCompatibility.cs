@@ -593,6 +593,21 @@ namespace CloneDash.Compatibility.MuseDash
 			modelData.SetupAttachments();
 			return atlas;
 		}
+
+		public static Nucleus.Audio.Sound LoadSoundFromName(Level level, string audioName) {
+			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
+			if (audioclip == null) throw new FileNotFoundException();
+
+			var audiodata = audioclip.m_AudioData.GetData();
+
+			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
+				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
+				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
+				return level.Sounds.LoadSoundFromMemory(at!);
+			}
+
+			throw new NotImplementedException();
+		}
 	}
 
 	public enum MuseDashDifficulty
