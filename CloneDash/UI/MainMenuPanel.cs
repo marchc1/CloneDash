@@ -240,12 +240,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		if (NMath.InRange(Level.Curtime, startExpressionTime, nextExpressionTime) && expressionText != null) {
 			float alphaMult1 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.1, 0, 1, true);
+			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.4, 0, 1, true);
 			float alphaMult2 = (float)NMath.Remap(Level.Curtime, nextExpressionTime - 0.2, nextExpressionTime, 0, 1, true);
 			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
 			string font = "Noto Sans";
 			float fontSize = 24 * (height / 900f);
 			Vector2F textSize = Graphics2D.GetTextSize(expressionText, font, fontSize);
-			Vector2F textPos = new(width / 2 - width * .2f, height * 0.75f);
+			Vector2F textPos = new Vector2F(width / 2 - width * .2f, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
 			textSize += new Vector2F(16);
 			Graphics2D.DrawRectangle(textPos - (textSize / 2), textSize);

@@ -1,11 +1,8 @@
-﻿using System.Collections;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
-using Nucleus.Files;
+﻿using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Util;
 using Raylib_cs;
+using System.Runtime.InteropServices;
 
 namespace Nucleus.Audio
 {
@@ -65,7 +62,7 @@ namespace Nucleus.Audio
 			return snd;
 		}
 		public Sound LoadSoundFromFile(string filepath, bool localToAudio = true) {
-			if(localToAudio)
+			if (localToAudio)
 				return LoadSoundFromFile("audio", filepath);
 
 			Sound snd = new(this, Raylib.LoadSound(filepath), true);
@@ -193,7 +190,7 @@ namespace Nucleus.Audio
 
 		public MusicTrack LoadMusicFromMemory(byte[] bytearray, bool autoplay = false) {
 			if (bytearray.Length < 4) throw new Exception("Can't even determine the file type... file < 4 bytes!");
-			
+
 			Span<byte> byteHeader = stackalloc byte[] { bytearray[3], bytearray[2], bytearray[1], bytearray[0] };
 			Span<int> headerCast = MemoryMarshal.Cast<byte, int>(byteHeader);
 			string fileExtension = headerCast[0] switch {
