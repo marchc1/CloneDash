@@ -1,7 +1,8 @@
 ﻿using CloneDash.Characters;
-using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
+
 using Newtonsoft.Json;
+
 using Nucleus.Audio;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -10,7 +11,8 @@ using Nucleus.Models.Runtime;
 
 namespace CloneDash.Modding.Descriptors;
 
-public class CharacterDescriptor_MainShowExpressionText {
+public class CharacterDescriptor_MainShowExpressionText
+{
 	[JsonProperty("text")] public string Text;
 	[JsonProperty("voice")] public string Voice;
 }

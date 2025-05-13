@@ -1,8 +1,10 @@
-﻿using CloneDash.Game;
+﻿using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
+
 using Nucleus;
+
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
-using CloneDash.Compatibility.MuseDash;
 
 namespace CloneDash.Compatibility.CustomAlbums
 {

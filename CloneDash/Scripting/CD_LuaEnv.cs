@@ -1,11 +1,14 @@
 ﻿using CloneDash.Game;
+
 using Lua;
 using Lua.Standard;
+
 using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
+
 using Raylib_cs;
 
 namespace CloneDash.Scripting;

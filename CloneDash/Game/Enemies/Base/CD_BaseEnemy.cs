@@ -1,9 +1,8 @@
 ﻿using CloneDash.Game.Entities;
 using CloneDash.Scenes;
-using CloneDash.Settings;
-using Nucleus;
-using Nucleus.Engine;
+
 using Nucleus.Models.Runtime;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game;

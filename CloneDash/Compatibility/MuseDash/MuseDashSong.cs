@@ -1,18 +1,27 @@
 ﻿using AssetStudio;
+
+using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
+
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
+
 using Newtonsoft.Json;
+
 using Nucleus;
 using Nucleus.Audio;
+
 using OdinSerializer;
+
 using Raylib_cs;
+
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+
+using static CloneDash.Compatibility.Unity.UnityAssetUtils;
+
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
-using static CloneDash.Compatibility.Unity.UnityAssetUtils;
-using CloneDash.Compatibility.Unity;
 
 namespace CloneDash.Compatibility.MuseDash;
 

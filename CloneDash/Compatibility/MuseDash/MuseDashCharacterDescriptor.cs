@@ -1,15 +1,18 @@
 ﻿using AssetStudio;
+
+using CloneDash.Characters;
 using CloneDash.Game;
-using Fmod5Sharp.FmodTypes;
+
 using Fmod5Sharp;
+using Fmod5Sharp.FmodTypes;
+
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Engine;
-using Nucleus.Models.Runtime;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using Nucleus.Extensions;
-using CloneDash.Characters;
+using Nucleus.Models.Runtime;
+
+using System.Collections.Specialized;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -81,7 +84,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		bool next = false;
 		foreach (var character in retriever.GetAvailable()) {
 			if (character == clonedash_character_value) next = true;
-			else if (next) { 
+			else if (next) {
 				clonedash_character.SetValue(character);
 				Logs.Info($"Selecting '{character}'");
 				return;

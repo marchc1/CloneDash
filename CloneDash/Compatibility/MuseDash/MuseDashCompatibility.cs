@@ -1,30 +1,33 @@
 ﻿using AssetStudio;
+
 using CloneDash.Compatibility.CustomAlbums;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
+
+using Fmod5Sharp;
+using Fmod5Sharp.FmodTypes;
+
 using Nucleus;
+using Nucleus.Engine;
+using Nucleus.Files;
+using Nucleus.Models;
 using Nucleus.Models.Runtime;
+using Nucleus.Util;
+
+using Raylib_cs;
+
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Text;
-using Raylib_cs;
-using Texture2D = AssetStudio.Texture2D;
-using Color = Raylib_cs.Color;
-using Nucleus.Audio;
-using Nucleus.Engine;
-using Fmod5Sharp.FmodTypes;
-using Fmod5Sharp;
-using CloneDash.Compatibility.MuseDash;
-using CloneDash.Modding.Descriptors;
-using Nucleus.Models;
-using System.Buffers;
-using System.Runtime.InteropServices;
-using Nucleus.Types;
-using Nucleus.Files;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Text;
+
+using Color = Raylib_cs.Color;
 using Material = AssetStudio.Material;
-using Nucleus.Util;
+using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash
 {
@@ -44,7 +47,7 @@ namespace CloneDash.Compatibility.MuseDash
 			var texWidth = Parameters.Read<int>("size", 0);
 			var texHeight = Parameters.Read<int>("size", 1);
 
-			if (texWidth != Texture.Width || texHeight != Texture.Height) 
+			if (texWidth != Texture.Width || texHeight != Texture.Height)
 				Texture.Resize(texWidth, texHeight);
 		}
 	}
@@ -576,7 +579,7 @@ namespace CloneDash.Compatibility.MuseDash
 				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
 				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
 				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
-				
+
 				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
 				if (degrees != 0)
 					Raylib.ImageRotate(ref newImg, degrees);
@@ -1252,7 +1255,7 @@ public static class MuseDashModelConverter
 						break;
 					case ATTACHMENT_MESH: {
 							string path = (skeleton.MD_ReadRefString(refStrings) ?? name)!;
-							
+
 							Color color = skeleton.MD_ReadColor();
 
 							var vertexCount = skeleton.MD_ReadVarInt(true);

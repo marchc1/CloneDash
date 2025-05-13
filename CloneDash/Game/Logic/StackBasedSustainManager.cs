@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game.Entities;
+
 using Nucleus;
 
 namespace CloneDash.Game.Logic;

@@ -1,5 +1,4 @@
-﻿using CloneDash.Scenes;
-using Nucleus;
+﻿using Nucleus;
 using Nucleus.Files;
 using Nucleus.Util;
 
@@ -27,7 +26,7 @@ namespace CloneDash.Fevers
 
 		public static IFeverDescriptor? GetFeverData() {
 			string? name = clonedash_fever?.GetString();
-			if (string.IsNullOrWhiteSpace(name)) 
+			if (string.IsNullOrWhiteSpace(name))
 				return null;
 
 			IFeverProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();

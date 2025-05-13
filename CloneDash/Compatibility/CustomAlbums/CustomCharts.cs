@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
-using Nucleus;
-using Raylib_cs;
-using System.IO.Compression;
+﻿using CloneDash.Compatibility.MDMC;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
+using CloneDash.Game;
+
+using Newtonsoft.Json;
+
+using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Files;
-using SpirV;
-using System.Security.Cryptography;
-using CloneDash.Game;
-using CloneDash.Compatibility.MuseDash;
-using CloneDash.Compatibility.MDMC;
+
+using Raylib_cs;
 
 namespace CloneDash.Compatibility.CustomAlbums
 {

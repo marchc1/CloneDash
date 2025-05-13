@@ -1,4 +1,5 @@
 ﻿using Nucleus.Util;
+
 using System.Reflection;
 
 namespace CloneDash;
@@ -6,7 +7,7 @@ namespace CloneDash;
 public struct GameVersion
 {
 	public static GameVersion FromAssembly(Assembly assembly, string? extra = null) {
-		if(assembly.TryGetLinkerTime(out var dt)) {
+		if (assembly.TryGetLinkerTime(out var dt)) {
 			return new($"{dt.Year}", $"{dt.Month:00}", $"{dt.Day:00}", extra);
 		}
 

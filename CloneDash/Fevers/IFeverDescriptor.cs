@@ -2,7 +2,8 @@
 
 namespace CloneDash.Fevers;
 
-public interface IFeverDescriptor {
+public interface IFeverDescriptor
+{
 	public void Initialize(CD_GameLevel game);
 	public void Start(CD_GameLevel game);
 	public void Think(CD_GameLevel game);

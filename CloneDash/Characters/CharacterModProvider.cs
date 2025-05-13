@@ -1,4 +1,5 @@
 ﻿using CloneDash.Modding.Descriptors;
+
 using Nucleus.Files;
 
 namespace CloneDash.Characters

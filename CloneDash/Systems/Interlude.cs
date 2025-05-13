@@ -1,7 +1,9 @@
 ﻿using AssetStudio;
+
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+
 using Nucleus;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -9,8 +11,11 @@ using Nucleus.Files;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.Util;
+
 using Raylib_cs;
+
 using System.Diagnostics;
+
 using Texture2D = Raylib_cs.Texture2D;
 
 namespace CloneDash;

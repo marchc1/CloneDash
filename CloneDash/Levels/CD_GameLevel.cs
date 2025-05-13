@@ -1,28 +1,32 @@
-﻿using Nucleus.Engine;
-using Nucleus.Core;
-using CloneDash.Game.Input;
-using Nucleus.Types;
-using CloneDash.Game.Entities;
-using Nucleus;
-using Raylib_cs;
-using Nucleus.UI;
-using MouseButton = Nucleus.Input.MouseButton;
-using CloneDash.Game.Logic;
-using CloneDash.Levels;
-using CloneDash.Data;
-using Nucleus.Audio;
-using Nucleus.ManagedMemory;
-using CloneDash.Animation;
-using CloneDash.Scripting;
-using Color = Raylib_cs.Color;
-using Nucleus.Entities;
-using System.Diagnostics.CodeAnalysis;
-using CloneDash.Game.Statistics;
-using CloneDash.Settings;
-using CloneDash.Compatibility.MuseDash;
-using CloneDash.Fevers;
+﻿using CloneDash.Animation;
 using CloneDash.Characters;
+using CloneDash.Compatibility.MuseDash;
+using CloneDash.Data;
+using CloneDash.Fevers;
+using CloneDash.Game.Entities;
+using CloneDash.Game.Input;
+using CloneDash.Game.Logic;
+using CloneDash.Game.Statistics;
+using CloneDash.Levels;
 using CloneDash.Scenes;
+using CloneDash.Scripting;
+using CloneDash.Settings;
+
+using Nucleus;
+using Nucleus.Audio;
+using Nucleus.Core;
+using Nucleus.Engine;
+using Nucleus.Entities;
+using Nucleus.ManagedMemory;
+using Nucleus.Types;
+using Nucleus.UI;
+
+using Raylib_cs;
+
+using System.Diagnostics.CodeAnalysis;
+
+using Color = Raylib_cs.Color;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.Game;
 
@@ -1056,7 +1060,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
 
 		Scene.RenderBackground(this);
-		if (InFever) 
+		if (InFever)
 			FeverFX?.Render(this);
 
 		Rlgl.PopMatrix();

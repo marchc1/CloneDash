@@ -1,6 +1,8 @@
 ﻿using CloneDash.Settings;
+
 using Nucleus.Input;
 using Nucleus.Types;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game.Input

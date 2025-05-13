@@ -1,11 +1,13 @@
 ﻿using CloneDash.Game;
 using CloneDash.Settings;
+
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.UI;

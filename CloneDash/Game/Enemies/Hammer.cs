@@ -1,34 +1,29 @@
-﻿
-using Nucleus;
-using Nucleus.Types;
-using Raylib_cs;
-
-namespace CloneDash.Game.Entities
+﻿namespace CloneDash.Game.Entities
 {
-    public class Hammer : CD_BaseEnemy
-    {
-        public Hammer() : base(EntityType.Hammer) {
-            Interactivity = EntityInteractivity.Hit;
-            DoesDamagePlayer = true;
-        }
+	public class Hammer : CD_BaseEnemy
+	{
+		public Hammer() : base(EntityType.Hammer) {
+			Interactivity = EntityInteractivity.Hit;
+			DoesDamagePlayer = true;
+		}
 
-        protected override void OnHit(PathwaySide side, double distanceToHit) {
-            Kill();
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
+			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}
 
-        protected override void OnMiss() {
-            PunishPlayer();
+		protected override void OnMiss() {
+			PunishPlayer();
 			GetStats().Miss(this);
 			if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
-                DamagePlayer();
-            }
-        }
+				DamagePlayer();
+			}
+		}
 
-        public override void Initialize() {
-            base.Initialize();
-        }
-        float whenDidHammerHit = -1;
+		public override void Initialize() {
+			base.Initialize();
+		}
+		float whenDidHammerHit = -1;
 		public override void OnReset() {
 			base.OnReset();
 		}
@@ -42,8 +37,8 @@ namespace CloneDash.Game.Entities
 			base.DetermineAnimationPlayback();
 		}
 		public override void Build() {
-			base.Build(); 
+			base.Build();
 			BasicSetup();
 		}
-    }
+	}
 }

@@ -1,15 +1,17 @@
 ﻿using CloneDash.Animation;
+
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
 using Nucleus.Extensions;
 using Nucleus.Types;
+
 using Raylib_cs;
 
 namespace CloneDash.Game
 {
 	public class Pathway : LogicalEntity
-    {
+	{
 
 		public static readonly Color PATHWAY_TOP_COLOR = new Color(178, 255, 252, 120);
 		public static readonly Color PATHWAY_BOTTOM_COLOR = new Color(248, 178, 255, 120);
@@ -53,60 +55,60 @@ namespace CloneDash.Game
 		/// </summary>
 		public PathwaySide Side { get; set; } = PathwaySide.None;
 
-        private bool checkSide(PathwaySide side) {
-            if (Side == PathwaySide.None || Side == PathwaySide.Both)
-                throw new NotImplementedException("A pathway must be attached to either the top or bottom side of the screen.");
+		private bool checkSide(PathwaySide side) {
+			if (Side == PathwaySide.None || Side == PathwaySide.Both)
+				throw new NotImplementedException("A pathway must be attached to either the top or bottom side of the screen.");
 
-            return Side == side;
-        }
+			return Side == side;
+		}
 
-        /// <summary>
-        /// Is this the top pathway?
-        /// </summary>
-        public bool IsTopPathway => checkSide(PathwaySide.Top);
-        /// <summary>
-        /// Is this the bottom pathway?
-        /// </summary>
-        public bool IsBottomPathway => checkSide(PathwaySide.Bottom);
+		/// <summary>
+		/// Is this the top pathway?
+		/// </summary>
+		public bool IsTopPathway => checkSide(PathwaySide.Top);
+		/// <summary>
+		/// Is this the bottom pathway?
+		/// </summary>
+		public bool IsBottomPathway => checkSide(PathwaySide.Bottom);
 
-        /// <summary>
-        /// The size of the pathway hit marker is changed by both every quarter note and when an input event occurs; this animation smoother is used for input events.
-        /// </summary>
-        public SecondOrderSystem InputAnimator { get; private set; } = new(0.4f, 0.5f, 1f, 1);
+		/// <summary>
+		/// The size of the pathway hit marker is changed by both every quarter note and when an input event occurs; this animation smoother is used for input events.
+		/// </summary>
+		public SecondOrderSystem InputAnimator { get; private set; } = new(0.4f, 0.5f, 1f, 1);
 
-        public Pathway(PathwaySide side) : base() {
-            Side = side;
+		public Pathway(PathwaySide side) : base() {
+			Side = side;
 
-        }
+		}
 
-        public static bool ComparePathwayType(PathwaySide a, PathwaySide b) {
-            if (a == b)
-                return true;
-            else if (a == PathwaySide.Both || b == PathwaySide.Both)
-                return true;
+		public static bool ComparePathwayType(PathwaySide a, PathwaySide b) {
+			if (a == b)
+				return true;
+			else if (a == PathwaySide.Both || b == PathwaySide.Both)
+				return true;
 
-            return false;
-        }
+			return false;
+		}
 
-        public static T ValueDependantOnPathway<T>(PathwaySide input, T topResult, T bottomResult) {
-            return input == PathwaySide.Top ? topResult : bottomResult;
-        }
+		public static T ValueDependantOnPathway<T>(PathwaySide input, T topResult, T bottomResult) {
+			return input == PathwaySide.Top ? topResult : bottomResult;
+		}
 
-        public static Color GetColor(PathwaySide side, int alpha = -1) {
-            var c = ValueDependantOnPathway(side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR);
+		public static Color GetColor(PathwaySide side, int alpha = -1) {
+			var c = ValueDependantOnPathway(side, Game.Pathway.PATHWAY_TOP_COLOR, Game.Pathway.PATHWAY_BOTTOM_COLOR);
 
-            return new(c.R, c.G, c.B, alpha == -1 ? c.A : alpha);
-        }
-        public Color Color => GetColor(Side);
+			return new(c.R, c.G, c.B, alpha == -1 ? c.A : alpha);
+		}
+		public Color Color => GetColor(Side);
 
-        public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
-        public Vector2F Position { get; private set; }
-        public override void Think(FrameState frameState) {
-            Position = new Vector2F(GetPathwayLeft(), GetPathwayY(Side));
-        }
-        public override void PostRender(FrameState frameState) {
+		public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
+		public Vector2F Position { get; private set; }
+		public override void Think(FrameState frameState) {
+			Position = new Vector2F(GetPathwayLeft(), GetPathwayY(Side));
+		}
+		public override void PostRender(FrameState frameState) {
 
-        }
+		}
 
 		public void Render() {
 			var lvl = Level.As<CD_GameLevel>();
@@ -135,5 +137,5 @@ namespace CloneDash.Game
 				Graphics2D.DrawRing(Position, size, size / 1.15f, curtimeOffset + i, curtimeOffset + i + (ringPartSize - ring_offset));
 			}
 		}
-    }
+	}
 }

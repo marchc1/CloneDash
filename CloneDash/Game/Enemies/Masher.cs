@@ -1,8 +1,4 @@
-﻿using CloneDash.Modding.Descriptors;
-using CloneDash.Settings;
-using Nucleus;
-using Nucleus.Engine;
-using Nucleus.Models.Runtime;
+﻿using Nucleus.Engine;
 using Nucleus.Types;
 
 namespace CloneDash.Game.Entities

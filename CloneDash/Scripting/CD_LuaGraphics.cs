@@ -1,6 +1,8 @@
 ﻿using Lua;
+
 using Nucleus;
 using Nucleus.Engine;
+
 using Raylib_cs;
 
 namespace CloneDash.Scripting;

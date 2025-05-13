@@ -1,20 +1,19 @@
-﻿using CloneDash.Modding.Descriptors;
-using Nucleus.Types;
+﻿using Nucleus.Types;
 namespace CloneDash.Game.Entities
 {
-    public class Gear : CD_BaseEnemy
-    {
-        public Gear() : base(EntityType.Gear) {
-            Interactivity = EntityInteractivity.Avoid;
-            DoesDamagePlayer = true;
-        }
+	public class Gear : CD_BaseEnemy
+	{
+		public Gear() : base(EntityType.Gear) {
+			Interactivity = EntityInteractivity.Avoid;
+			DoesDamagePlayer = true;
+		}
 
-        public override void Initialize() {
-            base.Initialize();
-        }
+		public override void Initialize() {
+			base.Initialize();
+		}
 
-        protected override void OnPass() {
-            RewardPlayer();
+		protected override void OnPass() {
+			RewardPlayer();
 			GetStats().Pass(this);
 		}
 

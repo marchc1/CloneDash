@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace CloneDash.Game;
 
-public class ProfilerResult : IDisposable {
+public class ProfilerResult : IDisposable
+{
 	public string Identifier = "???";
 	public Stopwatch Timer = new();
 	public ProfilerResult? Parent;
@@ -24,7 +19,7 @@ public class ProfilerResult : IDisposable {
 
 	List<string> WriteToStringArray(List<string> input, int iteration = 0) {
 		input.Add($"{new string(' ', iteration * 4)} > {Identifier}: {Timer.Elapsed.TotalMilliseconds:F4}ms");
-		foreach(var child in Children) {
+		foreach (var child in Children) {
 			child.WriteToStringArray(input, iteration + 1);
 		}
 		return input;
@@ -45,7 +40,8 @@ public class ProfilerResult : IDisposable {
 		End();
 	}
 }
-public class ProfilerAccumulator : IDisposable {
+public class ProfilerAccumulator : IDisposable
+{
 	public Stopwatch Timer = new();
 	public int Calls { get; private set; } = 0;
 	public ProfilerAccumulator() { }
@@ -86,7 +82,7 @@ public static class CD_StaticSequentialProfiler
 	}
 
 	public static ProfilerAccumulator AccumulateTime(string key) {
-		if(!accumulators.TryGetValue(key, out var accumulator)) {
+		if (!accumulators.TryGetValue(key, out var accumulator)) {
 			accumulator = new();
 			accumulators[key] = accumulator;
 		}

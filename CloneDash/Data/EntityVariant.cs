@@ -3,7 +3,8 @@
 	/// <summary>
 	/// Only applicable to <see cref="EntityType.Single"/>.
 	/// </summary>
-	public enum EntityVariant {
+	public enum EntityVariant
+	{
 		NotApplicable,
 
 		Boss1,

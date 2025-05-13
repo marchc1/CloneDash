@@ -121,7 +121,7 @@ namespace CloneDash.Game
 			var game = Level.As<CD_GameLevel>();
 			if (!game.AutoPlayer.Enabled) return;
 
-			if (dragSeconds != null) 
+			if (dragSeconds != null)
 				game.SeekTo(dragSeconds.Value);
 
 			if (!wasPaused)
@@ -180,7 +180,7 @@ namespace CloneDash.Game
 
 				currentInaccurateTime += ft;
 			}
-			else if(game.Music != null) {
+			else if (game.Music != null) {
 				game.Music.Update();
 
 				var now = game.Music.Playhead;
@@ -237,7 +237,7 @@ namespace CloneDash.Game
 				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
 				var change = TempoChanges[i];
 
-				if(i == TempoChanges.Count - 1 || change.Measure > measure) {
+				if (i == TempoChanges.Count - 1 || change.Measure > measure) {
 					return lastChange.Time + ((measure - lastChange.Measure) * (60 / change.BPM));
 				}
 			}

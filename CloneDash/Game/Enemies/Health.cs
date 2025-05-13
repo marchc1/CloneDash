@@ -1,4 +1,5 @@
 ﻿using CloneDash.Scenes;
+
 using Nucleus.Engine;
 
 namespace CloneDash.Game.Entities

@@ -1,25 +1,25 @@
 ﻿namespace CloneDash.Game.Entities
 {
-    public class DoubleHitEnemy : CD_BaseEnemy
-    {
-        public DoubleHitEnemy() : base(EntityType.Double) {
-            Interactivity = EntityInteractivity.Hit;
-            DoesDamagePlayer = true;
-        }
+	public class DoubleHitEnemy : CD_BaseEnemy
+	{
+		public DoubleHitEnemy() : base(EntityType.Double) {
+			Interactivity = EntityInteractivity.Hit;
+			DoesDamagePlayer = true;
+		}
 		public override void OnReset() {
 			base.OnReset();
 		}
 		public override void Initialize() {
-            base.Initialize();
-        }
+			base.Initialize();
+		}
 
-        protected override void OnHit(PathwaySide side, double distanceToHit) {
-            Kill();
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
+			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}
 
-        protected override void OnMiss() {
-            DamagePlayer();
+		protected override void OnMiss() {
+			DamagePlayer();
 			GetStats().Miss(this);
 		}
 

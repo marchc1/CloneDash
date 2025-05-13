@@ -1,7 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using AssetStudio;
-using Nucleus;
+﻿using AssetStudio;
+
 using CloneDash.Compatibility.MuseDash;
+
+using Nucleus;
+
+using System.Collections.ObjectModel;
 
 namespace CloneDash.Compatibility.CustomAlbums
 {

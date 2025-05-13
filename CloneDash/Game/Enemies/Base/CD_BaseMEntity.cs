@@ -2,11 +2,12 @@
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
 using CloneDash.Settings;
+
 using Nucleus;
-using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
 using Nucleus.Types;
+
 using Raylib_cs;
 
 namespace CloneDash.Game
@@ -327,7 +328,7 @@ namespace CloneDash.Game
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
 			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
 		}
-		
+
 		/// <summary>
 		/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 		/// </summary>

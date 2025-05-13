@@ -1,13 +1,18 @@
 ﻿using AssetStudio;
-using Fmod5Sharp.FmodTypes;
+
+using BCnEncoder.Decoder;
+
 using Fmod5Sharp;
+using Fmod5Sharp.FmodTypes;
+
 using Newtonsoft.Json;
-using Nucleus.Audio;
+
 using Nucleus;
+using Nucleus.Audio;
+using Nucleus.Extensions;
+
 using System.Text;
 using System.Text.RegularExpressions;
-using BCnEncoder.Decoder;
-using Nucleus.Extensions;
 
 namespace CloneDash.Compatibility.Unity;
 

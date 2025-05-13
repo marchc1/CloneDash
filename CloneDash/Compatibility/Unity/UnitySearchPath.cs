@@ -1,9 +1,8 @@
 ﻿using AssetStudio;
+
 using Nucleus.Files;
-using System.ComponentModel;
+
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace CloneDash.Compatibility.Unity;

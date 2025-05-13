@@ -1,20 +1,22 @@
-﻿using Nucleus;
+﻿using CloneDash.Characters;
+using CloneDash.Compatibility.MuseDash;
+using CloneDash.Data;
+using CloneDash.Game;
+using CloneDash.Levels;
+
+using Nucleus;
+using Nucleus.Audio;
+using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Extensions;
+using Nucleus.Files;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
-using MouseButton = Nucleus.Input.MouseButton;
-using CloneDash.Data;
-using Nucleus.Audio;
+
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
-using Nucleus.Models.Runtime;
-using CloneDash.Levels;
-using CloneDash.Game;
-using Nucleus.Files;
-using Nucleus.Extensions;
-using CloneDash.Compatibility.MuseDash;
-using CloneDash.Characters;
-using Nucleus.Core;
+
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.UI;
 

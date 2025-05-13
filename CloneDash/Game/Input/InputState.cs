@@ -1,15 +1,15 @@
 ﻿namespace CloneDash.Game.Input
 {
-    public struct InputState
-    {
-        /// <summary>
-        /// How many times has the top key been clicked this frame
-        /// </summary>
-        public int TopClicked;
-        /// <summary>
-        /// How many times has the bottom key been clicked this frame
-        /// </summary>
-        public int BottomClicked;
+	public struct InputState
+	{
+		/// <summary>
+		/// How many times has the top key been clicked this frame
+		/// </summary>
+		public int TopClicked;
+		/// <summary>
+		/// How many times has the bottom key been clicked this frame
+		/// </summary>
+		public int BottomClicked;
 
 		/// <summary>
 		/// Is the top key held?
@@ -34,14 +34,14 @@
 		/// </summary>
 		public bool TryFever;
 
-        /// <summary>
-        /// Was the pause button pressed?
-        /// </summary>
-        public bool PauseButton;
+		/// <summary>
+		/// Was the pause button pressed?
+		/// </summary>
+		public bool PauseButton;
 
-        public InputState() {
+		public InputState() {
 			Reset();
-        }
+		}
 
 		public void Reset() {
 			TopClicked = 0;
@@ -51,5 +51,5 @@
 			TryFever = false;
 			PauseButton = false;
 		}
-    }
+	}
 }

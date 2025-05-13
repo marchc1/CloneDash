@@ -1,11 +1,10 @@
 ﻿using CloneDash.Game;
+
 using Nucleus;
-using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-using static AssetStudio.BundleFile;
 
 namespace CloneDash.Levels;
 
@@ -56,7 +55,7 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 		var options = menubar.AddButton("Scene");
 		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(clonedash_sceneedit));
 		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
-		options.AddButton("PlayScale = 1.2", null,  () => PlayScale = 1.2f);
+		options.AddButton("PlayScale = 1.2", null, () => PlayScale = 1.2f);
 
 		ConsoleSystem.AddScreenBlocker(this.UI);
 	}

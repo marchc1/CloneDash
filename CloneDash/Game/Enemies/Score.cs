@@ -1,5 +1,7 @@
 ﻿using CloneDash.Scenes;
+
 using Nucleus.Engine;
+
 using Raylib_cs;
 
 namespace CloneDash.Game.Entities

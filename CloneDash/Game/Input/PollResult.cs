@@ -1,6 +1,4 @@
-﻿using CloneDash.Game.Entities;
-using Nucleus;
-using Nucleus.Engine;
+﻿using Nucleus;
 
 namespace CloneDash.Game.Input
 {

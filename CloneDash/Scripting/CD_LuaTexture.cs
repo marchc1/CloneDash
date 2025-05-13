@@ -1,6 +1,8 @@
 ﻿using Lua;
+
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
+
 using Raylib_cs;
 
 namespace CloneDash.Scripting;

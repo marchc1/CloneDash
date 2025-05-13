@@ -1,7 +1,8 @@
-﻿using CloneDash.Game;
-using CloneDash.Settings;
+﻿using CloneDash.Settings;
+
 using Nucleus;
 using Nucleus.Audio;
+
 using Raylib_cs;
 
 namespace CloneDash.Data

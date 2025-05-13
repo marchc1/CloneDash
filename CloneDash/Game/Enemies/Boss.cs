@@ -1,7 +1,8 @@
 ﻿using CloneDash.Scenes;
+
 using Nucleus.Engine;
+
 using Raylib_cs;
-using System.Runtime.Intrinsics.X86;
 namespace CloneDash.Game.Entities;
 
 public class Boss : CD_BaseEnemy
@@ -101,7 +102,7 @@ public class Boss : CD_BaseEnemy
 					}
 				}
 
-				if(signalType == CD_EntitySignalType.FirstHit) {
+				if (signalType == CD_EntitySignalType.FirstHit) {
 					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Hurt), false);
 					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 				}

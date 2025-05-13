@@ -1,11 +1,12 @@
 ﻿
 using CloneDash.Animation;
 using CloneDash.Settings;
+
 using Nucleus;
-using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
+
 using Raylib_cs;
 
 namespace CloneDash.Game.Entities
@@ -106,7 +107,7 @@ namespace CloneDash.Game.Entities
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
-			
+
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
 			var maxLength = (xEnd - xStart) / (tex.Width * 2);
