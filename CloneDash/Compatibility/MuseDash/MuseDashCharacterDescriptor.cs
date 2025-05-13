@@ -118,6 +118,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		var materials = (List<object>)atlasInfo["materials"]!;
 
 		long[] textureIDs = new long[materials.Count];
+		Material[] materialsIn = new Material[materials.Count];
 		int i = 0;
 		foreach (var materialBaseObj in materials) {
 			var materialBase = (OrderedDictionary)materialBaseObj;
@@ -128,10 +129,11 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 			var texPtr = materialMB.m_SavedProperties.m_TexEnvs.First()!.Value.m_Texture;
 			if (!texPtr.TryGet(out var tex)) throw new Exception();
 			textureIDs[i] = tex.m_PathID;
+			materialsIn[i] = materialMB;
 			i++;
 		}
 
-		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs);
+		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
 	}
 
 	public static ModelData PullModelDataFromGameObject(Level level, string name) {

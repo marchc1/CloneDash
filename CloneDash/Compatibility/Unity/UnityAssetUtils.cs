@@ -25,7 +25,6 @@ public static class UnityAssetUtils
 		var imgData = tex2D.image_data.GetData();
 		int width = tex2D.m_Width;
 		int height = tex2D.m_Height;
-
 		Raylib_cs.PixelFormat pixelFormat;
 		switch (tex2D.m_TextureFormat) {
 			case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;

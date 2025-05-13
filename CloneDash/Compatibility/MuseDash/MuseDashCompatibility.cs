@@ -23,12 +23,15 @@ using System.Runtime.InteropServices;
 using Nucleus.Types;
 using Nucleus.Files;
 using System.Diagnostics.CodeAnalysis;
+using Material = AssetStudio.Material;
+using Nucleus.Util;
 
 namespace CloneDash.Compatibility.MuseDash
 {
 	public class MDAtlasPage : IDisposable
 	{
 		public string Name;
+		public bool StraightAlpha;
 		public Raylib.ImageRef Texture;
 		public List<MDAtlasRegion> Regions = [];
 		public ParametersReader Parameters = new ParametersReader([]);
@@ -41,7 +44,7 @@ namespace CloneDash.Compatibility.MuseDash
 			var texWidth = Parameters.Read<int>("size", 0);
 			var texHeight = Parameters.Read<int>("size", 1);
 
-			if (texWidth != Texture.Width || texHeight != Texture.Height)
+			if (texWidth != Texture.Width || texHeight != Texture.Height) 
 				Texture.Resize(texWidth, texHeight);
 		}
 	}
@@ -495,7 +498,7 @@ namespace CloneDash.Compatibility.MuseDash
 			values = line.Substring(colon + 1).Trim().Split(',');
 			return true;
 		}
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images) {
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images, Material[] materials) {
 			using var ms = new MemoryStream(atlasAsset.m_Script);
 			using var sr = new StreamReader(ms);
 
@@ -516,8 +519,11 @@ namespace CloneDash.Compatibility.MuseDash
 				switch (buildStep) {
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
-						atlasBuilder.StartPage(line).Texture = new(images.First(x => x.m_Name == imageName).ToRaylib(), flipV: true);
+						var index = images.IndexOf(x => x.m_Name == imageName);
+						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: true);
 						buildStep = MDAtlasBuildStep.ReadingPage;
+
+						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
 						break;
 					case MDAtlasBuildStep.ReadingPage: {
 							if (!tryReadProperty(line, out var key, out var values))
@@ -570,11 +576,14 @@ namespace CloneDash.Compatibility.MuseDash
 				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
 				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
 				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
-
+				
 				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
 				if (degrees != 0)
 					Raylib.ImageRotate(ref newImg, degrees);
 				Raylib.ImageResizeCanvas(ref newImg, originalWidth, originalHeight, offsetX, (originalHeight - height) - offsetY, Color.Blank);
+
+				if (region.Page.StraightAlpha) Raylib.ImageAlphaPremultiply(ref newImg);
+
 				modelData.TextureAtlas.AddTexture(regionKVP.Key, newImg);
 			}
 
@@ -582,7 +591,6 @@ namespace CloneDash.Compatibility.MuseDash
 			modelData.TextureAtlas.Validate();
 
 			modelData.SetupAttachments();
-
 			return atlas;
 		}
 	}
@@ -1344,20 +1352,21 @@ public static class MuseDashModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths) {
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
 		ModelData md_data = new ModelData();
 
-		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath);
-		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath);
+		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
+		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
 		Texture2D[] textures = new Texture2D[texturePaths.Length];
 		for (int i = 0, c = texturePaths.Length; i < c; i++) {
-			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i]);
+			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i])!;
 		}
 
+		bool straightAlpha;
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
-			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, textures)
+			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
 		);
 
 		return md_data;

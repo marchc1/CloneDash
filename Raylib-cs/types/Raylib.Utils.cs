@@ -164,6 +164,10 @@ public static unsafe partial class Raylib
 		public int Height => img.Height;
 
 		public void Resize(int width, int height) => Raylib.ImageResize(ref img, width, height);
+		public void AlphaPremultiply() => ImageAlphaPremultiply(ref img);
+		public void AlphaCrop(float threshold) => ImageAlphaCrop(ref img, threshold);
+		public void AlphaMask(Image src) => ImageAlphaMask(ref img, src);
+		public void AlphaClear(Color color, float threshold) => ImageAlphaClear(ref img, color, threshold);
 
 		public ImageRef(Image img, bool flipH = false, bool flipV = false) {
 			this.img = img;
@@ -214,6 +218,9 @@ public static unsafe partial class Raylib
 			Dispose(disposing: true);
 			GC.SuppressFinalize(this);
 		}
+
+		public void Draw(Image src, Rectangle? srcRect = null, Rectangle? dstRect = null, Color? tint = null)
+			=> ImageDraw(ref img, src, srcRect ?? new(0, 0, src.Width, src.Height), dstRect ?? new(0, 0, img.Width, img.Height), tint ?? Color.White);
 	}
 
 	/// <summary>Export image data to file</summary>
