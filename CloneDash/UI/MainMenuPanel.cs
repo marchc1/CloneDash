@@ -245,7 +245,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			string font = "Noto Sans";
 			float fontSize = 24 * (height / 900f);
 			Vector2F textSize = Graphics2D.GetTextSize(expressionText, font, fontSize);
-			Vector2F textPos = new(width / 2 - width * .2f, height / 0.75f);
+			Vector2F textPos = new(width / 2 - width * .2f, height * 0.75f);
 			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
 			textSize += new Vector2F(16);
 			Graphics2D.DrawRectangle(textPos - (textSize / 2), textSize);
