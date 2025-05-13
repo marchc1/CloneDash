@@ -103,6 +103,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 			var standby = character.GetMainShowStandby();
 			if (model.Data.FindAnimation(standby) == null) standby = "standby";
+			if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
 			anims.SetAnimation(0, standby, true);
 
 			music = character.GetMainShowMusic(Level);
