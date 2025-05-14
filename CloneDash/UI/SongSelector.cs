@@ -29,7 +29,7 @@ public abstract class SearchFilter
 	public abstract void Populate(SongSearchDialog dialog);
 	public abstract Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog);
 
-	public void TextInput(SongSearchDialog dialog, string field, string helperText, bool enterReturns = false) {
+	public void TextInput(SongSearchDialog dialog, string field, string helperText, bool enterReturns = false, bool keyboardFocus = false) {
 		var type = this.GetType();
 		var fieldInfo = type.GetField(field);
 		if (fieldInfo == null) throw new NotImplementedException();
@@ -37,6 +37,7 @@ public abstract class SearchFilter
 		dialog.Add(out Textbox textbox);
 		textbox.Dock = Dock.Top;
 		textbox.Size = new(0.12f);
+
 		if (enterReturns)
 			textbox.OnUserPressedEnter += (_, _, _) => dialog.Submit();
 
@@ -48,6 +49,10 @@ public abstract class SearchFilter
 		textbox.TextSize = 20;
 		textbox.BorderSize = 0;
 		textbox.OnTextChanged += (_, _, nt) => fieldInfo.SetValue(this, nt);
+		if (keyboardFocus) {
+			textbox.DemandKeyboardFocus();
+			textbox.SelectAll();
+		}
 		dialog.SetTag(field, textbox);
 	}
 
@@ -87,7 +92,7 @@ public class MuseDashSearchFilter : SearchFilter
 	public string FilterText;
 
 	public override void Populate(SongSearchDialog dialog) {
-		TextInput(dialog, nameof(FilterText), "Filter by name, song author, etc..", true);
+		TextInput(dialog, nameof(FilterText), "Filter by name, song author, etc..", true, true);
 	}
 
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
@@ -111,7 +116,7 @@ public class MDMCSearchFilter : SearchFilter
 
 
 	public override void Populate(SongSearchDialog dialog) {
-		TextInput(dialog, nameof(Query), "Search Query", true);
+		TextInput(dialog, nameof(Query), "Search Query", true, true);
 		EnumInput(dialog, nameof(Sort), Sort);
 		CheckboxInput(dialog, nameof(OnlyRanked), "Only ranked charts?");
 	}

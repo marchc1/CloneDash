@@ -93,6 +93,11 @@ namespace Nucleus.UI
 		}
 		public DateTime LastKeyboardInteraction { get; private set; } = DateTime.Now;
 
+		public void SelectAll() {
+			Caret.Start = 0;
+			Caret.End = Text.Length;
+			Caret.Pointer = Text.Length;
+		}
 		public void DeleteSelection() {
 			Text = Caret.RemoveStringSelection(Text);
 			Caret.Pointer = Math.Clamp(Caret.End ?? Text.Length - 1, 0, Math.Max(0, Text.Length - 1));
