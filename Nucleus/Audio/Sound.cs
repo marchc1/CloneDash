@@ -22,7 +22,7 @@ namespace Nucleus.Audio
 
 		public double Duration => (Underlying.FrameCount) / (double)SAMPLE_RATE;
 
-		public ulong UsedBits =>
+		public ulong UsedBits => Underlying.FrameCount == 0 ? 0 :
 			// size * rate * channels = bits per second
 			Underlying.Stream.SampleSize * Underlying.Stream.SampleRate * Underlying.Stream.Channels
 			/ Underlying.FrameCount; // this is wrong...

@@ -5,15 +5,31 @@ using Nucleus.Models.Runtime;
 
 namespace CloneDash.Scenes;
 
+public enum SceneSound {
+	Begin,
+	Fever,
+	Unpause,
+	FullCombo,
+
+	Mash,
+	HP,
+	Score,
+	Jump,
+	EmptyAttack,
+	EmptyJump,
+	Loud1,
+	Loud2,
+	Medium1,
+	Medium2,
+	Quiet,
+	PressIdle,
+	PressTop
+}
 public interface ISceneDescriptor
 {
 	public void Initialize(CD_GameLevel game);
 
-	public void PlayBeginSound();
-	public void PlayFeverSound();
-	public void PlayUnpauseSound();
-	public void PlayFullComboSound();
-	public void PlayHitSound(CD_BaseEnemy enemy, int hits);
+	public void PlaySound(SceneSound sound, int hits);
 
 	public void Think(CD_GameLevel game);
 	public void RenderBackground(CD_GameLevel game);

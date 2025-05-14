@@ -65,8 +65,6 @@ namespace CloneDash.Game.Entities
 				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation());
 			}
 
-			level.Scene.PlayHitSound(this, Hits);
-
 			CheckIfComplete();
 		}
 

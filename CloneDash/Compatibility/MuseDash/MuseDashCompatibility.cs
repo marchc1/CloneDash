@@ -5,11 +5,13 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
+using CloneDash.Scripting;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 
 using Nucleus;
+using Nucleus.Audio;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.Models;
@@ -24,9 +26,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 using Color = Raylib_cs.Color;
 using Material = AssetStudio.Material;
+using Sound = Nucleus.Audio.Sound;
 using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash
@@ -501,6 +505,35 @@ namespace CloneDash.Compatibility.MuseDash
 			values = line.Substring(colon + 1).Trim().Split(',');
 			return true;
 		}
+
+		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
+			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
+			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
+			return ntex;
+		}
+
+		public static byte[] GetSoundBytes(Level level, AudioClip audioclip, out string? fileExtension) {
+			fileExtension = null;
+
+			if (audioclip == null) return null;
+
+			var audiodata = audioclip.m_AudioData.GetData();
+
+			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
+				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
+				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out fileExtension);
+				return at!;
+			}
+
+			throw new NotImplementedException();
+		}
+		public static Sound GetSound(Level level, AudioClip clip) {
+			return level.Sounds.LoadSoundFromMemory(GetSoundBytes(level, clip, out _));
+		}
+		public static MusicTrack GetMusic(Level level, AudioClip clip) {
+			return level.Sounds.LoadMusicFromMemory(GetSoundBytes(level, clip, out _));
+		}
+
 		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images, Material[] materials) {
 			using var ms = new MemoryStream(atlasAsset.m_Script);
 			using var sr = new StreamReader(ms);

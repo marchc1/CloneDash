@@ -1,5 +1,8 @@
 ﻿// This entire file is a nightmare of inheritance.
 
+using AssetStudio;
+
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Modding;
 using CloneDash.Scripting;
@@ -15,6 +18,8 @@ using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
+using Texture = Nucleus.ManagedMemory.Texture;
+
 namespace CloneDash.Scenes;
 
 public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
@@ -22,49 +27,41 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 	LuaFunction? renderScene;
 	LuaFunction? thinkScene;
 
+	[JsonProperty("mdassets")] public bool UseMDAssets;
+
 	public void Initialize(CD_GameLevel game) {
 		SetupLua(game, game.Lua);
 
-		Interlude.Spin(submessage: "Initializing sounds...");
-		AnnouncerLines.BeginSound = game.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Begin); Interlude.Spin();
-		AnnouncerLines.FeverSound = game.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Fever); Interlude.Spin();
-		AnnouncerLines.UnpauseSound = game.Sounds.LoadSoundFromFile("scene", AnnouncerLines.Unpause); Interlude.Spin();
-		AnnouncerLines.FullComboSound = game.Sounds.LoadSoundFromFile("scene", AnnouncerLines.FullCombo); Interlude.Spin();
+		Interlude.Spin(submessage: "Initializing sounds..."); AnnouncerLines.Load(game, UseMDAssets);
+		Hitsounds.Load(game, UseMDAssets); Interlude.Spin(submessage: "Initializing hitsounds...");
 
-		AnnouncerLines.BeginSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-		AnnouncerLines.FeverSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-		AnnouncerLines.UnpauseSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-		AnnouncerLines.FullComboSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+		Boss.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing boss...");
+		Sustains.LoadData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing sustain models...");
+		Gears.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing gear models...");
+		BossGears.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing boss gear models...");
+		Masher.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing masher models...");
+		DoubleEnemy.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing double models...");
 
-		Hitsounds.Load(game); Interlude.Spin(submessage: "Initializing hitsounds...");
+		BossEnemy1.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing boss enemy models...");
+		BossEnemy2.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing boss enemy models...");
+		BossEnemy3.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing boss enemy models...");
 
-		Boss.LoadModelData(game); Interlude.Spin(submessage: "Initializing boss...");
-		Sustains.LoadData(game); Interlude.Spin(submessage: "Initializing sustain models...");
-		Gears.LoadModelData(game); Interlude.Spin(submessage: "Initializing gear models...");
-		BossGears.LoadModelData(game); Interlude.Spin(submessage: "Initializing boss gear models...");
-		Masher.LoadModelData(game); Interlude.Spin(submessage: "Initializing masher models...");
-		DoubleEnemy.LoadModelData(game); Interlude.Spin(submessage: "Initializing double models...");
+		SmallEnemy.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing small enemy models...");
 
-		BossEnemy1.LoadModelData(game); Interlude.Spin(submessage: "Initializing boss enemy models...");
-		BossEnemy2.LoadModelData(game); Interlude.Spin(submessage: "Initializing boss enemy models...");
-		BossEnemy3.LoadModelData(game); Interlude.Spin(submessage: "Initializing boss enemy models...");
+		MediumEnemy1.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing medium enemy models...");
+		MediumEnemy2.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing medium enemy models...");
 
-		SmallEnemy.LoadModelData(game); Interlude.Spin(submessage: "Initializing small enemy models...");
+		LargeEnemy1.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing large enemy models...");
+		LargeEnemy2.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing large enemy models...");
 
-		MediumEnemy1.LoadModelData(game); Interlude.Spin(submessage: "Initializing medium enemy models...");
-		MediumEnemy2.LoadModelData(game); Interlude.Spin(submessage: "Initializing medium enemy models...");
+		Hammer.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing hammer models...");
 
-		LargeEnemy1.LoadModelData(game); Interlude.Spin(submessage: "Initializing large enemy models...");
-		LargeEnemy2.LoadModelData(game); Interlude.Spin(submessage: "Initializing large enemy models...");
+		Raider.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing raider models...");
 
-		Hammer.LoadModelData(game); Interlude.Spin(submessage: "Initializing hammer models...");
+		Ghost.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing ghost models...");
 
-		Raider.LoadModelData(game); Interlude.Spin(submessage: "Initializing raider models...");
-
-		Ghost.LoadModelData(game); Interlude.Spin(submessage: "Initializing ghost models...");
-
-		Score.LoadModelData(game); Interlude.Spin(submessage: "Initializing extra models...");
-		Heart.LoadModelData(game); Interlude.Spin(submessage: "Initializing extra models...");
+		Score.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing extra models...");
+		Heart.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing extra models...");
 	}
 
 	public void Think(CD_GameLevel game) {
@@ -291,7 +288,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 
 		[JsonIgnore] public ModelData ModelData;
 #nullable enable
-		public void LoadModelData(Level level) {
+		public void LoadModelData(Level level, bool useMDAssets) {
 			ModelData = level.Models.LoadModelFromFile("scene", Model);
 		}
 	}
@@ -304,7 +301,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public ModelData AirModelData;
 		[JsonIgnore] public ModelData GroundModelData;
 #nullable enable
-		public virtual void LoadModelData(Level level) {
+		public virtual void LoadModelData(Level level, bool useMDAssets) {
 			AirModelData = level.Models.LoadModelFromFile("scene", AirModel);
 			GroundModelData = level.Models.LoadModelFromFile("scene", GroundModel);
 		}
@@ -327,6 +324,27 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public Sound FeverSound;
 		[JsonIgnore] public Sound UnpauseSound;
 		[JsonIgnore] public Sound FullComboSound;
+
+		internal void Load(CD_GameLevel game, bool useMDAssets) {
+			if (useMDAssets) {
+				BeginSound = MuseDashCompatibility.LoadSoundFromName(game, Begin);
+				FeverSound = MuseDashCompatibility.LoadSoundFromName(game, Fever);
+				UnpauseSound = MuseDashCompatibility.LoadSoundFromName(game, Unpause);
+				FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, FullCombo);
+			}
+			else {
+				BeginSound = game.Sounds.LoadSoundFromFile("scene", Begin); Interlude.Spin();
+				FeverSound = game.Sounds.LoadSoundFromFile("scene", Fever); Interlude.Spin();
+				UnpauseSound = game.Sounds.LoadSoundFromFile("scene", Unpause); Interlude.Spin();
+				FullComboSound = game.Sounds.LoadSoundFromFile("scene", FullCombo); Interlude.Spin();
+			}
+
+			BeginSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+			FeverSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+			UnpauseSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+			FullComboSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+
+		}
 #nullable enable
 	}
 	public class SceneDescriptor_Boss : SceneDescriptor_ContainsOneModelData
@@ -344,6 +362,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 #nullable enable
 	}
 
+
 #nullable disable
 	public class SceneDescriptor_OneSustain
 	{
@@ -359,12 +378,21 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public Texture UpTexture;
 		[JsonIgnore] public Texture DownTexture;
 
-		public void LoadData(Level level) {
-			StartTexture = level.Textures.LoadTextureFromFile("scene", Start);
-			EndTexture = level.Textures.LoadTextureFromFile("scene", End);
-			BodyTexture = level.Textures.LoadTextureFromFile("scene", Body);
-			UpTexture = level.Textures.LoadTextureFromFile("scene", Up);
-			DownTexture = level.Textures.LoadTextureFromFile("scene", Down);
+		public void LoadData(Level level, bool useMDAssets) {
+			if (useMDAssets) {
+				StartTexture = MuseDashCompatibility.ConvertTexture(level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(Start));
+				EndTexture = MuseDashCompatibility.ConvertTexture(level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(End));
+				BodyTexture = MuseDashCompatibility.ConvertTexture(level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(Body));
+				UpTexture = MuseDashCompatibility.ConvertTexture(level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(Up));
+				DownTexture = MuseDashCompatibility.ConvertTexture(level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(Down));
+			}
+			else {
+				StartTexture = level.Textures.LoadTextureFromFile("scene", Start);
+				EndTexture = level.Textures.LoadTextureFromFile("scene", End);
+				BodyTexture = level.Textures.LoadTextureFromFile("scene", Body);
+				UpTexture = level.Textures.LoadTextureFromFile("scene", Up);
+				DownTexture = level.Textures.LoadTextureFromFile("scene", Down);
+			}
 
 			BodyTexture.SetWrap(Raylib_cs.TextureWrap.TEXTURE_WRAP_REPEAT);
 			UpTexture.SetWrap(Raylib_cs.TextureWrap.TEXTURE_WRAP_REPEAT);
@@ -376,9 +404,9 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("degrees")] public float RotationDegsPerSecond = 120;
 		[JsonProperty("air")] public SceneDescriptor_OneSustain Air;
 		[JsonProperty("ground")] public SceneDescriptor_OneSustain Ground;
-		public void LoadData(Level level) {
-			Air.LoadData(level);
-			Ground.LoadData(level);
+		public void LoadData(Level level, bool useMDAssets) {
+			Air.LoadData(level, useMDAssets);
+			Ground.LoadData(level, useMDAssets);
 		}
 
 		public Texture GetStartTexture(PathwaySide pathway) => pathway == PathwaySide.Top ? Air.StartTexture : Ground.StartTexture;
@@ -442,9 +470,9 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("air")] public __Gear Air;
 		[JsonProperty("ground")] public __Gear Ground;
 
-		public void LoadModelData(Level level) {
-			Air.LoadModelData(level);
-			Ground.LoadModelData(level);
+		public void LoadModelData(Level level, bool useMDAssets) {
+			Air.LoadModelData(level, useMDAssets);
+			Ground.LoadModelData(level, useMDAssets);
 		}
 		public virtual ModelData GetModelFromPathway(PathwaySide pathway) => pathway switch {
 			PathwaySide.Top => Air.ModelData,
@@ -491,9 +519,9 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("air")] public __BossGear Air;
 		[JsonProperty("ground")] public __BossGear Ground;
 
-		public void LoadModelData(Level level) {
-			Air.LoadModelData(level);
-			Ground.LoadModelData(level);
+		public void LoadModelData(Level level, bool useMDAssets) {
+			Air.LoadModelData(level, useMDAssets);
+			Ground.LoadModelData(level, useMDAssets);
 		}
 
 		public virtual ModelData GetModelFromPathway(PathwaySide pathway) => pathway switch {
@@ -646,8 +674,8 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public ModelData UpsideDownAirModelData;
 		[JsonIgnore] public ModelData UpsideDownGroundModelData;
 
-		public override void LoadModelData(Level level) {
-			base.LoadModelData(level);
+		public override void LoadModelData(Level level, bool useMDAssets) {
+			base.LoadModelData(level, useMDAssets);
 			UpsideDownAirModelData = level.Models.LoadModelFromFile("scene", UpsideDownAirModel);
 			UpsideDownGroundModelData = level.Models.LoadModelFromFile("scene", UpsideDownGroundModel);
 		}
@@ -668,8 +696,8 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public ModelData UpsideDownAirModelData;
 		[JsonIgnore] public ModelData UpsideDownGroundModelData;
 
-		public override void LoadModelData(Level level) {
-			base.LoadModelData(level);
+		public override void LoadModelData(Level level, bool useMDAssets) {
+			base.LoadModelData(level, useMDAssets);
 			UpsideDownAirModelData = level.Models.LoadModelFromFile("scene", UpsideDownAirModel);
 			UpsideDownGroundModelData = level.Models.LoadModelFromFile("scene", UpsideDownGroundModel);
 		}
@@ -698,7 +726,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("out")] public string OutAnimation;
 
 		[JsonIgnore] public ModelData ModelData;
-		public void LoadModelData(Level level) {
+		public void LoadModelData(Level level, bool useMDAssets) {
 			ModelData = level.Models.LoadModelFromFile("scene", Model);
 		}
 #nullable enable
@@ -767,25 +795,120 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("hurt_end")] public string HurtEnd;
 		[JsonProperty("atk_out")] public string AttackOut;
 	}
+	public class SceneDescriptor_Mashsounds {
+		[JsonProperty("sound")] public string Sound;
+		[JsonProperty("start")] public int Start;
+		[JsonProperty("end")] public int End;
+
+
+		Sound[] sounds;
+		public int Count => (End - Start) + 1;
+		public Sound GetHitSound(int hit) => sounds[hit - 1];
+		public string GetHitSoundName(int hit) {
+			int index = Start + (hit - 1);
+			index = Math.Clamp(index, Start, End);
+			return string.Format(Sound, index);
+		}
+
+		public void Load(Level level, bool useMDAssets) {
+			sounds = new Sound[Count];
+			for (int i = 1; i <= Count; i++) {
+				sounds[i - 1] = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, GetHitSoundName(i)) : throw new Exception();
+				sounds[i - 1].BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			}
+		}
+
+		internal void Play(int hits) {
+			hits = Math.Clamp(hits, 1, Count) - 1;
+			sounds[hits].Play();
+		}
+	}
 	public class SceneDescriptor_Hitsounds
 	{
 #nullable disable
-		[JsonProperty("punch")] public string Punch;
+		[JsonProperty("mash")] public SceneDescriptor_Mashsounds Mash;
+		[JsonProperty("hp")] public string HP;
+		[JsonProperty("score")] public string Score;
+		[JsonProperty("jump")] public string Jump;
+		[JsonProperty("empty_attack")] public string EmptyAttack;
+		[JsonProperty("empty_jump")] public string EmptyJump;
+		[JsonProperty("loud_1")] public string Loud1;
+		[JsonProperty("loud_2")] public string Loud2;
+		[JsonProperty("medium_1")] public string Medium1;
+		[JsonProperty("medium_2")] public string Medium2;
+		[JsonProperty("quiet")] public string Quiet;
+		[JsonProperty("press_idle")] public string PressIdle;
+		[JsonProperty("press_top")] public string PressTop;
 
-		[JsonIgnore] public Sound PunchSound;
+		[JsonIgnore] public Sound HPSound;
+		[JsonIgnore] public Sound ScoreSound;
+		[JsonIgnore] public Sound JumpSound;
+		[JsonIgnore] public Sound EmptyAttackSound;
+		[JsonIgnore] public Sound EmptyJumpSound;
+		[JsonIgnore] public Sound Loud1Sound;
+		[JsonIgnore] public Sound Loud2Sound;
+		[JsonIgnore] public Sound Medium1Sound;
+		[JsonIgnore] public Sound Medium2Sound;
+		[JsonIgnore] public Sound QuietSound;
+		[JsonIgnore] public Sound PressIdleSound;
+		[JsonIgnore] public Sound PressTopSound;
+
 #nullable enable
-		public void Load(Level level) {
-			PunchSound = level.Sounds.LoadSoundFromFile("scene", Punch);
-			PunchSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+		public void Load(Level level, bool useMDAssets) {
+			Mash.Load(level, useMDAssets);
+
+			HPSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, HP) : level.Sounds.LoadSoundFromFile("scene", HP);
+			ScoreSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Score) : level.Sounds.LoadSoundFromFile("scene", Score);
+			JumpSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Jump) : level.Sounds.LoadSoundFromFile("scene", Jump);
+			EmptyAttackSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, EmptyAttack) : level.Sounds.LoadSoundFromFile("scene", EmptyAttack);
+			EmptyJumpSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, EmptyJump) : level.Sounds.LoadSoundFromFile("scene", EmptyJump);
+			Loud1Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Loud1) : level.Sounds.LoadSoundFromFile("scene", Loud1);
+			Loud2Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Loud2) : level.Sounds.LoadSoundFromFile("scene", Loud2);
+			Medium1Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium1) : level.Sounds.LoadSoundFromFile("scene", Medium1);
+			Medium2Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium2) : level.Sounds.LoadSoundFromFile("scene", Medium2);
+			QuietSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Quiet) : level.Sounds.LoadSoundFromFile("scene", Quiet);
+			PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressIdle) : level.Sounds.LoadSoundFromFile("scene", PressIdle);
+			PressTopSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressTop) : level.Sounds.LoadSoundFromFile("scene", PressTop);
+
+			HPSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			ScoreSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			JumpSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			EmptyAttackSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			EmptyJumpSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			Loud1Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			Loud2Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			Medium1Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			Medium2Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			QuietSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			PressIdleSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			PressTopSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+
 			Interlude.Spin();
 		}
 	}
 
-	public void PlayBeginSound() => AnnouncerLines.BeginSound.Play(.8f);
-	public void PlayFeverSound() => AnnouncerLines.FeverSound.Play(.8f);
-	public void PlayUnpauseSound() => AnnouncerLines.UnpauseSound.Play(.8f);
-	public void PlayFullComboSound() => AnnouncerLines.FullComboSound.Play(.8f);
-	public void PlayHitSound(CD_BaseEnemy enemy, int hits) => Hitsounds.PunchSound.Play(.3f, 1 + hits / 50f);
+	public void PlaySound(SceneSound sound, int hits) {
+		switch (sound) {
+			case SceneSound.Begin: AnnouncerLines.BeginSound.Play(); break;
+			case SceneSound.Fever: AnnouncerLines.FeverSound.Play(); break;
+			case SceneSound.Unpause: AnnouncerLines.UnpauseSound.Play(); break;
+			case SceneSound.FullCombo: AnnouncerLines.FullComboSound.Play(); break;
+
+			case SceneSound.Quiet: Hitsounds.Medium1Sound.Play(); break;
+
+			case SceneSound.Medium1: Hitsounds.Medium1Sound.Play(); break;
+			case SceneSound.Medium2: Hitsounds.Medium2Sound.Play(); break;
+
+			case SceneSound.Loud1: Hitsounds.Loud1Sound.Play(); break;
+			case SceneSound.Loud2: Hitsounds.Loud2Sound.Play(); break;
+
+			case SceneSound.HP: Hitsounds.HPSound.Play(); break;
+			case SceneSound.Score: Hitsounds.ScoreSound.Play(); break;
+			case SceneSound.Mash: Hitsounds.Mash.Play(hits); break;
+			case SceneSound.PressTop: Hitsounds.PressTopSound.Play(hits); break;
+			
+		}
+	}
 
 	public static CD_SceneDescriptor? ParseFile(string filepath) => ParseFile<CD_SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
 	public static CD_SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CD_SceneDescriptor>(text, filename) : null;

@@ -294,7 +294,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		return true;
 	}
 	private void startUnpause() {
-		Scene.PlayUnpauseSound();
+		Scene.PlaySound(SceneSound.Unpause, 0);
 		UnpauseTime = Realtime;
 		Timers.Simple(3, () => {
 			fullUnpause();
@@ -528,7 +528,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Scorebar.Size = new(0, 128);
 
 			if (CommandLineArguments.GetParam("pretime", 5d) > 0)
-				Scene.PlayBeginSound();
+				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 
 		if (CD_StaticSequentialProfiler.Profiling) {
@@ -735,7 +735,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
-				Scene.PlayFullComboSound();
+				Scene.PlaySound(SceneSound.FullCombo, 0);
 			}
 		}
 
@@ -791,7 +791,11 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						PathwaySide pathCurrentCharacter = Pathway;
 						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
-
+							Scene.PlaySound(entity.Type switch {
+								EntityType.Heart => SceneSound.HP,
+								EntityType.Score => SceneSound.Score,
+								_ => SceneSound.Score
+							}, 1);
 						}
 					}
 					break;
@@ -1186,11 +1190,26 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				if (poll.Hit) {
 					poll.HitEntity.WasHitPerfect = poll.IsPerfect;
 					poll.HitEntity.Hit(pathway, poll.DistanceToHit);
-					Scene.PlayHitSound((CD_BaseEnemy)poll.HitEntity, poll.HitEntity.Hits);
 
 					if (SuppressHitMessages == false) {
 						Color c = poll.HitEntity.HitColor;
 						SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+						Scene.PlaySound(poll.HitEntity.Type switch {
+							EntityType.Single => poll.HitEntity.Variant switch {
+								EntityVariant.Small => SceneSound.Quiet,
+								EntityVariant.Medium1 => SceneSound.Medium1,
+								EntityVariant.Medium2 => SceneSound.Medium2,
+								EntityVariant.Large1 => SceneSound.Loud1,
+								EntityVariant.Large2 => SceneSound.Loud2,
+								EntityVariant.Boss1 => SceneSound.Quiet,
+								EntityVariant.Boss2 => SceneSound.Medium1,
+								EntityVariant.Boss3 => SceneSound.Medium2,
+								_ => SceneSound.Medium1
+							},
+							EntityType.SustainBeam => SceneSound.PressTop,
+							EntityType.Raider => SceneSound.Loud1,
+							_ => SceneSound.Medium1
+						}, 1);
 					}
 				}
 			}
@@ -1335,7 +1354,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
 		FeverFX?.Start(this);
-		Scene.PlayFeverSound();
+		Scene.PlaySound(SceneSound.Fever, 0);
 	}
 	/// <summary>
 	/// Exits fever.
