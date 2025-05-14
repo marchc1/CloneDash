@@ -97,55 +97,29 @@ public class MuseDashSong : ChartSong
 	public Dictionary<int, ChartSheet> DashSheetOverrides { get; set; } = [];
 
 	protected override MusicTrack ProduceAudioTrack() {
-		LoadAssetFile();
 		if (IValidatable.IsValid(AudioTrack))
 			return AudioTrack;
-		if (AssetsFile == null)
-			return null;
 
-		var audioclip = AssetsFile.assetsFileList[0].Objects.First(x => x.type == ClassIDType.AudioClip) as AudioClip;
-		var audiodata = audioclip.m_AudioData.GetData();
-
-		if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
-			FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-			bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-			AudioTrack = EngineCore.Level.Sounds.LoadMusicFromMemory(at);
-			return AudioTrack;
-		}
-		throw new Exception("ProduceAudioTrack: Could not load audio track");
+		AudioClip audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Music)!;
+		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
 	protected override MusicTrack? ProduceDemoTrack() {
-		LoadAssetFile();
 		if (IValidatable.IsValid(DemoTrack))
 			return DemoTrack;
-		if (DemoFile == null)
-			return null;
 
-		AudioClip audioClip = (AudioClip)DemoFile.assetsFileList[0].Objects.First(x => x is AudioClip audio && audio.m_Name.EndsWith("_demo"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
-		byte[] musicStream;
-		var audiodata = audioClip.m_AudioData.GetData();
-
-		if (audioClip.m_Type == FMODSoundType.UNKNOWN) {
-			FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-			bank.Samples[0].RebuildAsStandardFileFormat(out musicStream, out var fileExtension);
-
-			DemoTrack = EngineCore.Level.Sounds.LoadMusicFromMemory(musicStream);
-			return DemoTrack;
-		}
-
-		throw new Exception("ProduceDemoTrack: Could not load demo track");
+		AudioClip? audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Demo);
+		if (audioclip == null) return null;
+		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
 	protected override ChartCover? ProduceCover() {
-		LoadAssetFile();
-		if (DemoFile == null) return null;
-
-		LoadAssetFile();
 		if (CoverTexture != null)
 			return CoverTexture;
 
-		Texture2D tex2D = (Texture2D)DemoFile.assetsFileList[0].Objects.First(x => x is Texture2D tex2D && tex2D.m_Name.EndsWith("_cover"));  //.Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
+		Texture2D? tex2D = MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(__jsonInfo.Cover);
+		if (tex2D == null) return null;
+
 		var img = tex2D.ToRaylib();
 
 		var tex = Raylib.LoadTextureFromImage(img);
@@ -166,7 +140,8 @@ public class MuseDashSong : ChartSong
 
 		LoadAssetFile(); Interlude.Spin();
 
-		MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
+		//MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
+		MonoBehaviour map = MuseDashCompatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{{__jsonInfo.NoteJSON}{mapID}}.asset")!;
 		var obj = map.ToType();
 		var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 

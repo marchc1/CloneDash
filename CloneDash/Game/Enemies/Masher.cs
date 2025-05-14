@@ -44,6 +44,8 @@ namespace CloneDash.Game.Entities
 		protected override void OnHit(PathwaySide side, double distanceToHit) {
 			var level = Level.As<CD_GameLevel>();
 
+			level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
+
 			if (MaxHits == 1) {
 				Hits = 1;
 				Complete();
