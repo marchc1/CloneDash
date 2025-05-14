@@ -32,7 +32,9 @@ public static class UnityAssetUtils
 		int height = tex2D.m_Height;
 		Raylib_cs.PixelFormat pixelFormat;
 		switch (tex2D.m_TextureFormat) {
+			case TextureFormat.RGB24: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8; break;
 			case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;
+			case TextureFormat.RGBA32: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8; break;
 			case TextureFormat.BC7:
 				BcDecoder decoder = new BcDecoder();
 				var rgba32 = decoder.DecodeRaw(imgData, width, height, BCnEncoder.Shared.CompressionFormat.Bc7);
