@@ -6,7 +6,7 @@
         public int MaxRepetitions { get; set; }
         public int Repetitions { get; set; } = 0;
         public Action? Method { get; set; }
-    }
+	}
     public class TimerManagement(Level level)
     {
         private Dictionary<ThreadExecutionTime, List<Timer>> Timers = [];
@@ -15,9 +15,7 @@
         /// Creates a simple timer, which executes in <paramref name="delay"/> seconds.
         /// <br></br>
         /// <br></br>
-        /// This is thread-safe; operates similarly to 
-        /// <see cref="MainThread.RunASAP(Action, ThreadExecutionTime)"/> where a <see cref="ThreadExecutionTime"/> 
-        /// (by default, <see cref="ThreadExecutionTime.BeforeFrame"/>) controls where in the game loop this timer will be ran.
+		/// This is NOT thread safe yet
         /// </summary>
         /// <param name="delay"></param>
         /// <param name="on"></param>
@@ -37,6 +35,11 @@
             return t;
         }
 
+		public void Stop(Timer timer, ThreadExecutionTime exTime = ThreadExecutionTime.BeforeFrame) {
+			if (!Timers.TryGetValue(exTime, out var t)) return;
+			t.Remove(timer);
+		}
+
         public void Run(ThreadExecutionTime exTime) {
             var now = level.Realtime;
             List<Timer> toRemove = [];
@@ -44,7 +47,7 @@
             Timers.TryGetValue(exTime, out var timers);
             if (timers == null) return;
 
-            foreach (Timer timer in timers) {
+            foreach (Timer timer in timers.ToArray()) {
                 if(now - timer.LastRun > timer.Delay) {
                     timer.Method?.Invoke();
                     timer.Repetitions += 1;

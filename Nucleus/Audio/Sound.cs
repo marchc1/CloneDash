@@ -1,5 +1,8 @@
 ﻿using FftSharp;
+
 using Raylib_cs;
+
+using System;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -22,14 +25,40 @@ namespace Nucleus.Audio
 
 		public double Duration => (Underlying.FrameCount) / (double)SAMPLE_RATE;
 
+		private double? playTime;
+		public bool Playing => playTime != null && (EngineCore.Level.Curtime - playTime.Value) < Duration;
+
 		public ulong UsedBits => Underlying.FrameCount == 0 ? 0 :
 			// size * rate * channels = bits per second
 			Underlying.Stream.SampleSize * Underlying.Stream.SampleRate * Underlying.Stream.Channels
 			/ Underlying.FrameCount; // this is wrong...
 
-		public void Play(float volume = 1.0f, float pitch = 1.0f, float pan = 0.5f) {
+		Engine.Timer? loopTimer;
+		private float __loopVolume, __loopPitch, __loopPan;
+		public void Play(float volume = 1.0f, float pitch = 1.0f, float pan = 0.5f, bool looping = false) {
 			Debug.Assert(Parent != null);
 			Parent?.PlaySound(this, volume * __volumeMultiplier, pitch, pan);
+			playTime = EngineCore.Level.Curtime;
+			if (looping) {
+				__loopVolume = volume;
+				__loopPitch = pitch;
+				__loopPan = pan;
+				loopTimer = EngineCore.Level.Timers.Simple((float)Duration, LoopSelf);
+			}
+		}
+
+		private void LoopSelf() {
+			playTime = EngineCore.Level.Curtime;
+			Parent?.PlaySound(this, __loopVolume * __volumeMultiplier, __loopPitch, __loopPan);
+			loopTimer = EngineCore.Level.Timers.Simple((float)Duration, LoopSelf);
+		}
+
+		public void Stop() {
+			playTime = null;
+			Debug.Assert(Parent != null);
+			Parent?.StopSound(this);
+			if (loopTimer != null)
+				EngineCore.Level.Timers.Stop(loopTimer);
 		}
 
 		protected virtual void Dispose(bool disposing) {

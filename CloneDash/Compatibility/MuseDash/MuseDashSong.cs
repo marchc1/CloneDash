@@ -141,7 +141,7 @@ public class MuseDashSong : ChartSong
 		LoadAssetFile(); Interlude.Spin();
 
 		//MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
-		MonoBehaviour map = MuseDashCompatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{{__jsonInfo.NoteJSON}{mapID}}.asset")!;
+		MonoBehaviour map = MuseDashCompatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{__jsonInfo.NoteJSON}{mapID}.asset")!;
 		var obj = map.ToType();
 		var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 

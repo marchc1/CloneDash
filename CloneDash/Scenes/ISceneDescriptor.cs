@@ -1,5 +1,6 @@
 ﻿using CloneDash.Game;
 
+using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
@@ -22,7 +23,6 @@ public enum SceneSound {
 	Medium1,
 	Medium2,
 	Quiet,
-	PressIdle,
 	PressTop
 }
 public interface ISceneDescriptor
@@ -30,6 +30,7 @@ public interface ISceneDescriptor
 	public void Initialize(CD_GameLevel game);
 
 	public void PlaySound(SceneSound sound, int hits);
+	public MusicTrack GetPressIdleSound();
 
 	public void Think(CD_GameLevel game);
 	public void RenderBackground(CD_GameLevel game);

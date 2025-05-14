@@ -274,6 +274,33 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		return null;
 	}
 
+	public void PlaySound(SceneSound sound, int hits) {
+		switch (sound) {
+			case SceneSound.Begin: AnnouncerLines.BeginSound.Play(); break;
+			case SceneSound.Fever: AnnouncerLines.FeverSound.Play(); break;
+			case SceneSound.Unpause: AnnouncerLines.UnpauseSound.Play(); break;
+			case SceneSound.FullCombo: AnnouncerLines.FullComboSound.Play(); break;
+
+			case SceneSound.Quiet: Hitsounds.Medium1Sound.Play(); break;
+
+			case SceneSound.Medium1: Hitsounds.Medium1Sound.Play(); break;
+			case SceneSound.Medium2: Hitsounds.Medium2Sound.Play(); break;
+
+			case SceneSound.Loud1: Hitsounds.Loud1Sound.Play(); break;
+			case SceneSound.Loud2: Hitsounds.Loud2Sound.Play(); break;
+
+			case SceneSound.HP: Hitsounds.HPSound.Play(); break;
+			case SceneSound.Score: Hitsounds.ScoreSound.Play(); break;
+			case SceneSound.Mash: Hitsounds.Mash.Play(hits); break;
+			case SceneSound.PressTop: Hitsounds.PressTopSound.Play(hits); break;
+
+		}
+	}
+
+	public MusicTrack GetPressIdleSound() {
+		return Hitsounds.PressIdleSound;
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Data
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -850,7 +877,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public Sound Medium1Sound;
 		[JsonIgnore] public Sound Medium2Sound;
 		[JsonIgnore] public Sound QuietSound;
-		[JsonIgnore] public Sound PressIdleSound;
+		[JsonIgnore] public MusicTrack PressIdleSound;
 		[JsonIgnore] public Sound PressTopSound;
 
 #nullable enable
@@ -867,8 +894,10 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 			Medium1Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium1) : level.Sounds.LoadSoundFromFile("scene", Medium1);
 			Medium2Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium2) : level.Sounds.LoadSoundFromFile("scene", Medium2);
 			QuietSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Quiet) : level.Sounds.LoadSoundFromFile("scene", Quiet);
-			PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressIdle) : level.Sounds.LoadSoundFromFile("scene", PressIdle);
+			//PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadMusicFromName(level, PressIdle) : level.Sounds.LoadMusicFromFile("scene", PressIdle);
 			PressTopSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressTop) : level.Sounds.LoadSoundFromFile("scene", PressTop);
+
+			//PressIdleSound.Loops = true;
 
 			HPSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 			ScoreSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
@@ -884,29 +913,6 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 			PressTopSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 
 			Interlude.Spin();
-		}
-	}
-
-	public void PlaySound(SceneSound sound, int hits) {
-		switch (sound) {
-			case SceneSound.Begin: AnnouncerLines.BeginSound.Play(); break;
-			case SceneSound.Fever: AnnouncerLines.FeverSound.Play(); break;
-			case SceneSound.Unpause: AnnouncerLines.UnpauseSound.Play(); break;
-			case SceneSound.FullCombo: AnnouncerLines.FullComboSound.Play(); break;
-
-			case SceneSound.Quiet: Hitsounds.Medium1Sound.Play(); break;
-
-			case SceneSound.Medium1: Hitsounds.Medium1Sound.Play(); break;
-			case SceneSound.Medium2: Hitsounds.Medium2Sound.Play(); break;
-
-			case SceneSound.Loud1: Hitsounds.Loud1Sound.Play(); break;
-			case SceneSound.Loud2: Hitsounds.Loud2Sound.Play(); break;
-
-			case SceneSound.HP: Hitsounds.HPSound.Play(); break;
-			case SceneSound.Score: Hitsounds.ScoreSound.Play(); break;
-			case SceneSound.Mash: Hitsounds.Mash.Play(hits); break;
-			case SceneSound.PressTop: Hitsounds.PressTopSound.Play(hits); break;
-			
 		}
 	}
 

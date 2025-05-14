@@ -27,6 +27,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Color = Raylib_cs.Color;
 using MouseButton = Nucleus.Input.MouseButton;
+using Sound = Nucleus.Audio.Sound;
 
 namespace CloneDash.Game;
 
@@ -415,6 +416,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
 				FeverFX?.Initialize(this);
+
+				pressIdle = Scene.GetPressIdleSound();
 			}
 
 			Interlude.Spin();
@@ -1411,7 +1414,16 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		playeranim_startsustain = playeranim_startsustain || (playeranim_startsustain_top && playeranim_startsustain_bottom);
 
 		playeranim_insustain = nowInsustain;
+
+		if (pressIdle != null) {
+			if (pressIdle.Playing && !nowInsustain)
+				pressIdle.Playing = false;
+			else if (!pressIdle.Playing && nowInsustain)
+				pressIdle.Playing = true;
+		}
 	}
+
+	MusicTrack? pressIdle;
 
 	public delegate void AttackEvent(CD_GameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;

@@ -118,29 +118,18 @@ namespace Nucleus.Audio
 			}
 		}
 
-		public Sound PlaySound(string soundpath, bool localToAudio = true, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
-			var sound = LoadSoundFromFile(soundpath, localToAudio);
-			return PlaySound(sound, volume, pitch, pan);
-		}
-		public Sound PlaySound(string pathID, string path, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
-			var sound = LoadSoundFromFile(pathID, path);
-			return PlaySound(sound, volume, pitch, pan);
-		}
-
-		public Sound PlaySound(Sound sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
+		public void PlaySound(Sound sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) {
 			Raylib.StopSound(sound);
 			Raylib.SetSoundVolume(sound, volume);
 			Raylib.SetSoundPitch(sound, pitch);
 			Raylib.SetSoundPan(sound, pan);
 
 			Raylib.PlaySound(sound);
-
-			//var ready = Raylib.IsSoundReady(sound);
-			//var playing = Raylib.IsSoundPlaying(sound);
-
-			return sound;
 		}
 
+		public void StopSound(Sound sound) {
+			Raylib.StopSound(sound);
+		}
 		public MusicTrack LoadMusicFromFile(string pathID, string file, bool autoplay = false) {
 			unsafe {
 				var data = Filesystem.ReadAllBytes(pathID, file);
