@@ -72,7 +72,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
 	}
-	private static void clonedash_openmdlevel_autocomplete(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		var songs = MuseDashCompatibility.Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
 		int len = Math.Clamp(songs.Length, 0, 20);
 		if (len == 0) return;

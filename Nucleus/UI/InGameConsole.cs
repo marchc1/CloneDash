@@ -3,6 +3,7 @@ using Nucleus.Engine;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus
@@ -237,12 +238,10 @@ namespace Nucleus
 			}
 			else {
 				ConCommandBase? match = ConCommandBase.Get(basename);
-				if (match is ConCommand ccmd) {
-					autoComplete.SetPotentialMatches(ConCommand.Autocomplete(ccmd, args.Raw, consoleInput.Caret.Column));
-				}
-				else {
+				if (match != null)
+					autoComplete.SetPotentialMatches(ConCommandBase.Autocomplete(match, args.Raw, consoleInput.Caret.Column));
+				else
 					autoComplete.SetNoMatches();
-				}
 			}
 		}
 

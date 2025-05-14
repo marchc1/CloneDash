@@ -56,6 +56,8 @@ namespace Nucleus
 	}
 	public abstract class ConCommandBase
 	{
+		public delegate void AutocompleteDelegate(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? helpReturns);
+		public AutocompleteDelegate? OnAutocomplete;
 		protected static Dictionary<string, ConCommandBase> lookup { get; } = [];
 		protected static List<ConCommandBase> __all = [];
 		public static ConCommandBase[] All => __all.ToArray();
@@ -101,6 +103,24 @@ namespace Nucleus
 			ret.Sort((x, y) => x.Name.CompareTo(y.Name));
 
 			return ret.ToArray();
+		}
+
+		public static string[] Autocomplete(ConCommandBase concmd, string argsStr, int curWritePos) {
+			if (concmd.OnAutocomplete == null)
+				return [];
+
+			string[]? helpStrs = null;
+#nullable disable
+			string[] strs = null;
+#nullable enable
+			concmd.OnAutocomplete(concmd, argsStr, ConCommandArguments.FromString(argsStr, curWritePos, out int pos), pos,
+#nullable disable
+			ref strs,
+#nullable enable
+			ref helpStrs);
+
+			if (strs == null) return [];
+			return strs;
 		}
 
 		public static ConCommandBase[] FindMatchesThatStartWith(string startWith, int startAt, int max) {
@@ -282,10 +302,9 @@ namespace Nucleus
 	{
 		public override bool IsCommand => true;
 		public delegate void ExecutedDelegate(ConCommand cmd, ConCommandArguments args);
-		public delegate void AutocompleteDelegate(ConCommand cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? helpReturns);
-
+		
 		public ExecutedDelegate? OnExecuted;
-		public AutocompleteDelegate? OnAutocomplete;
+		
 		public ConCommand(string name, ExecutedDelegate executed, AutocompleteDelegate? autocomplete, ConsoleFlags flags, string helpString) : base(name, helpString, flags) {
 			OnExecuted = executed;
 			OnAutocomplete = autocomplete;
@@ -328,24 +347,6 @@ namespace Nucleus
 				return;
 
 			concmd.OnExecuted(concmd, ConCommandArguments.FromString(args));
-		}
-
-		public static string[] Autocomplete(ConCommand concmd, string argsStr, int curWritePos) {
-			if (concmd.OnAutocomplete == null)
-				return [];
-
-			string[]? helpStrs = null;
-#nullable disable
-			string[] strs = null;
-#nullable enable
-			concmd.OnAutocomplete(concmd, argsStr, ConCommandArguments.FromString(argsStr, curWritePos, out int pos), pos,
-#nullable disable
-			ref strs,
-#nullable enable
-			ref helpStrs);
-
-			if (strs == null) return [];
-			return strs;
 		}
 
 		public static void Execute(string concmd, params string[] args) {
@@ -394,12 +395,13 @@ namespace Nucleus
 				Clamp();
 			}
 		}
-		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString) : base(name, helpString, flags) {
+		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString, AutocompleteDelegate? autocomplete = null) : base(name, helpString, flags) {
 			DefaultValue = defaultValue;
+			OnAutocomplete = autocomplete;
 			Update(DefaultValue, true);
 		}
-		public ConVar(string name, string defaultValue, ConsoleFlags flags) : this(name, defaultValue, flags, "") { }
-		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString, double? min = null, double? max = null) : this(name, defaultValue, flags, helpString) {
+		public ConVar(string name, string defaultValue, ConsoleFlags flags) : this(name, defaultValue, flags, "", null) { }
+		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString, double? min = null, double? max = null, AutocompleteDelegate? autocomplete = null) : this(name, defaultValue, flags, helpString, autocomplete) {
 			Minimum = min;
 			Maximum = max;
 		}
@@ -450,7 +452,8 @@ namespace Nucleus
 			double? min = null,
 			double? max = null,
 			ChangeCallback? callback = null,
-			bool callback_first = true
+			bool callback_first = true,
+			AutocompleteDelegate? autocomplete = null
 		) {
 			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, defaultValue, flags);
 
@@ -460,7 +463,7 @@ namespace Nucleus
 					return cv;
 				throw new Exception($"ConCommandBase '{name}' already existed and was not a ConVar");
 			}
-			ConVar? cmd = (ConVar?)Activator.CreateInstance(typeof(ConVar), [name, defaultValue, flags, helpString, min, max]);
+			ConVar? cmd = (ConVar?)Activator.CreateInstance(typeof(ConVar), [name, defaultValue, flags, helpString, min, max, autocomplete]);
 			if (cmd == null) throw new Exception("ConVar: null?");
 			if (__startupParms.TryGetValue(name, out string? sv)) cmd.SetValue(sv);
 			if (callback != null) {
