@@ -33,11 +33,21 @@ public static class UnityAssetUtils
 		Raylib_cs.PixelFormat pixelFormat;
 		switch (tex2D.m_TextureFormat) {
 			case TextureFormat.RGB24: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8; break;
-			case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;
 			case TextureFormat.RGBA32: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8; break;
+			case TextureFormat.DXT3: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT3_RGBA; break;
+			case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;
+			case TextureFormat.BC4:
+			case TextureFormat.BC5:
+			case TextureFormat.BC6H:
 			case TextureFormat.BC7:
 				BcDecoder decoder = new BcDecoder();
-				var rgba32 = decoder.DecodeRaw(imgData, width, height, BCnEncoder.Shared.CompressionFormat.Bc7);
+				var rgba32 = decoder.DecodeRaw(imgData, width, height, tex2D.m_TextureFormat switch {
+					TextureFormat.BC4 => BCnEncoder.Shared.CompressionFormat.Bc4,
+					TextureFormat.BC5 => BCnEncoder.Shared.CompressionFormat.Bc5,
+					TextureFormat.BC6H => BCnEncoder.Shared.CompressionFormat.Bc6U,
+					TextureFormat.BC7 => BCnEncoder.Shared.CompressionFormat.Bc7,
+					_ => throw new InvalidOperationException()
+				});
 
 				imgData = new byte[rgba32.Length * 4];
 				for (int i = 0; i < rgba32.Length; i += 1) {
