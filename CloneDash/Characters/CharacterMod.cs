@@ -1,4 +1,6 @@
-﻿using Nucleus;
+﻿using CloneDash.Compatibility.MuseDash;
+
+using Nucleus;
 using Nucleus.Util;
 
 namespace CloneDash.Characters;
@@ -13,7 +15,11 @@ public static class CharacterMod
 		activeDescriptor = null;
 		activeDescriptor = GetCharacterData();
 		CharacterUpdated?.Invoke(activeDescriptor);
-	});
+	}, autocomplete: clonedash_character_autocomplete);
+	private static void clonedash_character_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+		var availableCharacters = CharacterMod.GetAvailableCharacters().Where(x => x.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
+		returns = availableCharacters;
+	}
 	public static ConCommand clonedash_characterinfo = ConCommand.Register("clonedash_characterinfo", (_, _) => {
 		var info = GetCharacterData();
 		if (info == null) {
