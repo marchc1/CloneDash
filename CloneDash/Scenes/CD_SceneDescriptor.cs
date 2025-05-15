@@ -909,7 +909,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 			Medium1Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 			Medium2Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 			QuietSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			PressIdleSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			//PressIdleSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 			PressTopSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
 
 			Interlude.Spin();
