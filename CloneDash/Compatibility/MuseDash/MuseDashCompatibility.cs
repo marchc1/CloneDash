@@ -509,6 +509,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
 			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
 			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
+			ntex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
 			return ntex;
 		}
 
