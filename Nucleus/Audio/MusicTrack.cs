@@ -98,7 +98,10 @@ namespace Nucleus.Audio
 		/// </summary>
 		public float Volume {
 			get { return _volume; }
-			set { _volume = value; Raylib.SetMusicVolume(underlying, value * __volumeMultiplier); }
+			set { 
+				_volume = value; 
+				Raylib.SetMusicVolume(underlying, value * __volumeMultiplier); 
+			}
 		}
 		/// <summary>
 		/// Get/sets the pitch of the music track. <b>This will cause the track to slow down. Not recommended to use it.</b> <br></br>
