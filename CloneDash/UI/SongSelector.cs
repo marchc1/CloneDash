@@ -387,7 +387,6 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			activeTrack.Restart();
 			activeTrack.Playing = true;
-			activeTrack.Volume = 0.5f;
 		}
 	}
 
