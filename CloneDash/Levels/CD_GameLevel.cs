@@ -510,8 +510,6 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (Sheet != null) {
 					Music = Sheet.Song.GetAudioTrack();
-					Music.Volume = 0.25f;
-
 					Music.Loops = false;
 					Music.Playing = true;
 					if (args.Length > 1) {
