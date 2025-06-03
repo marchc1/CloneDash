@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+
 using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Entities;
@@ -7,13 +8,16 @@ using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+
 using Raylib_cs;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.Engine
@@ -49,21 +53,6 @@ namespace Nucleus.Engine
 		public T As<T>() where T : Level => (T)this;
 		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
-		private RectangleF? __view = null;
-		private bool __viewDirty = true;
-
-		/// <summary>
-		/// Specifies a viewing rectangle for this level. If null, scales to the screen. Currently not functional
-		/// </summary>
-		public RectangleF? View {
-			get {
-				return __view;
-			}
-			set {
-				__view = value;
-				__viewDirty = true;
-			}
-		}
 		public void ResetUI() {
 			UI = Element.Create<UserInterface>();
 		}
@@ -147,9 +136,6 @@ namespace Nucleus.Engine
 
 			OnUnload();
 			Unloaded?.Invoke();
-			if (RenderTarget.HasValue) {
-				Raylib.UnloadRenderTexture(RenderTarget.Value);
-			}
 		}
 		public delegate void UnloadDelegate();
 		public event UnloadDelegate? Unloaded;
@@ -285,8 +271,6 @@ namespace Nucleus.Engine
 		public float CurtimeF => (float)Curtime;
 		public float CurtimeDeltaF => (float)CurtimeDelta;
 
-		private RenderTexture2D? RenderTarget = null;
-
 		public bool Paused { get; set; } = false;
 
 		public FrameState LastFrameState { get; private set; } = FrameState.Default;
@@ -392,37 +376,18 @@ namespace Nucleus.Engine
 
 			float x, y, width, height;
 
-			if (__view != null) {
-				x = __view.Value.X;
-				y = __view.Value.Y;
-				width = __view.Value.W;
-				height = __view.Value.H;
-			}
-			else {
-				x = 0;
-				y = 0;
-				var size = EngineCore.GetScreenSize();
-				width = size.X;
-				height = size.Y;
-			}
+			// TODO: reconsider the "view" system. Need a good way to set the viewport of a level, multiple levels, etc
+			// unfortunately engine infrastructure wasnt built for this like it should have been...
+			x = 0;
+			y = 0;
+			var size = EngineCore.GetScreenSize();
+			width = size.X;
+			height = size.Y;
 
 			frameState.WindowX = x;
 			frameState.WindowY = y;
 			frameState.WindowWidth = width;
 			frameState.WindowHeight = height;
-
-			if (frameState.WindowWidth != LastFrameState.WindowWidth || frameState.WindowHeight != LastFrameState.WindowHeight) {
-				__viewDirty = true;
-			}
-
-			if (__viewDirty) {
-				if (RenderTarget.HasValue) {
-					Raylib.UnloadRenderTexture(RenderTarget.Value);
-				}
-
-				RenderTarget = Raylib.LoadRenderTexture((int)width, (int)height);
-				__viewDirty = false;
-			}
 
 			frameState.Keyboard.Clear();
 			EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
