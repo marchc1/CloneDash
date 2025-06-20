@@ -1,27 +1,25 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Scenes;
 
-namespace CloneDash.Game.Events
+namespace CloneDash.Game.Events;
+
+public class BossSingleHit(CD_GameLevel game) : CD_BaseEvent(game)
 {
-    public class BossSingleHit : MapEvent
-    {
-        public BossSingleHit(DashGame game) : base(game) {
-            this.Offset = -0.95;
-        }
+	public override void Activate() {
+		Game.Boss.SingleHit();
+	}
 
-        public override void Build() {
-            AssociatedEntity = Game.GameplayManager.CreateEntity<SingleHitEnemy>();
-            AssociatedEntity.Invisible = true;
-            AssociatedEntity.HitTime = Time;
-            AssociatedEntity.ShowTime = Time + this.Offset;
-            AssociatedEntity.Pathway = PathwaySide.Both;
-            AssociatedEntity.DamageTaken = Damage.HasValue ? Damage.Value : 0;
-            AssociatedEntity.FeverGiven = Fever.HasValue ? Fever.Value : 0;
-            AssociatedEntity.ScoreGiven = Score.HasValue ? Score.Value : 0;
-        }
+	public override void OnBuild() {
+		base.OnBuild();
 
-        public override void OnCall(double time) {
-            Game.Boss.WindupForSingleAttack(this);
-        }
-    }
+		var boss = Game.Boss;
+		var animation = Game.Scene.GetBossAnimation(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, out var speed);
 
+		Game.LoadEntity(new() {
+			Type = EntityType.Single,
+			Pathway = PathwaySide.Both,
+			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,
+			ShowTime = Time - speed,
+			HitTime = Time
+		});
+	}
 }

@@ -2,76 +2,123 @@
     A *LOT* of this is subject to change. This is a prototype, and just a testbed of basic game functionality.
 */
 
-using CloneDash.Systems;
-using Raylib_cs;
+using CloneDash.Compatibility.MuseDash;
+using CloneDash.Data;
+using CloneDash.Game;
 
-namespace CloneDash
+using Nucleus;
+using Nucleus.Engine;
+using Nucleus.Files;
+
+using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+
+namespace CloneDash;
+
+// I've been testing with these levels:
+/*
+        8bit_adventurer_map3
+        bass_telekinesis_map3
+        can_i_friend_you_on_bassbook_lol_map3
+        night_of_knights_map3
+        hg_makaizou_polyvinyl_shounen_map3
+
+        kyouki_ranbu_map3
+        ourovoros_map3
+        mujinku_vacuum_track_add8e6_map3
+        the_89s_momentum_map3
+    */
+
+
+internal class Program
 {
-    internal class Program
-    {
-        static string TurnMDAssetBundlePathToMapName(string filepath) {
-            string ret = Path.GetFileNameWithoutExtension(filepath).Replace("noteasset_assets_", "");
-            return ret.Substring(0, ret.LastIndexOf("_"));
-        }
+	static void Main(string[] args) {
+		MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
 
-        static void Main(string[] args) {
-            MuseDashCompatibility.InitializeCompatibilityLayer();
-            
-            string requestedMap = "";
-            string realMapName = "";
+		EngineCore.GameInfo = new() {
+			GameName = "Clone Dash"
+		};
+		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
+		EngineCore.StartMainThread();
+	}
+	static void GameMain() {
+		Interlude.ShouldSelectInterludeTexture = false;
+		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
 
-            while (true) {
-                Console.Write("Type a Muse Dash map name: ");
-                requestedMap = Console.ReadLine();
+		{
+			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
+			MuseDashCompatibility.InitializeCompatibilityLayer();
+		}
 
-                string[] mapMatches = Array.FindAll(MuseDashCompatibility.StreamingFiles.ToArray(), x => x.Contains("noteasset") && x.ToLower().Contains(requestedMap.Replace(" ", "_")));
-                
-                if (mapMatches.Length > 0) {
-                    Console.WriteLine("The following maps were found:");
-                    for (int i = 0; i < mapMatches.Length; i++) {
-                        Console.WriteLine($"    [{i + 1}]: {TurnMDAssetBundlePathToMapName(mapMatches[i])}");
-                    }
+		Interlude.Spin();
 
-                    while (true) {
-                        int index = 0;
-                        Console.WriteLine($"\r\nType the number of the map you wish to load");
-                        if (int.TryParse(Console.ReadLine(), out index)) {
-                            if (!DashMath.InRange(index, 1, mapMatches.Length))
-                                Console.WriteLine($"Index out of range (needs a value between 1 -> {mapMatches.Length}");
-                            else {
-                                realMapName = mapMatches[index - 1];
-                                break;
-                            }
-                        }
-                        else
-                            Console.WriteLine("Input is not a number, try again");
-                    }
+		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
+		DiskSearchPath? musedash = null;
+		if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
+			musedash = Filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
 
-                    break;
-                }
-                else {
-                    Console.WriteLine("No maps found, try again");
-                }
-            }
+		var game = Filesystem.GetSearchPathID("game")[0];
+		{
+			// Custom assets should always be top priority for the filesystem
+			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
+				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums"));
 
-            Raylib.InitAudioDevice();
-            Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-            Raylib.SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE);
-            Raylib.InitWindow((int)1600, (int)900, "Clone Dash");
-            Raylib.SetExitKey(KeyboardKey.KEY_NULL);
-            TextureSystem.LoadTextures();
-            GameLogic.Startup(realMapName);
+			var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(game, "custom"));
+			{
+				Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
+				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
+				Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/"));
+				Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
+				Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
+			}
 
+			// Downloaded charts, etc, mostly for MDMC API
+			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(game, "download"));
+			{
+				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
+			}
 
-            while (!Raylib.WindowShouldClose()) {
-                Raylib.BeginDrawing();
-                Raylib.ClearBackground(Color.BLACK);
-                //game.Draw();
-                Graphics.SetDrawColor(255, 255, 255);
-                GameLogic.Tick();
-                ConsoleSystem.Draw();
-                Raylib.EndDrawing();
-            }
-        }
-    }
+			// tail: default asset fallbacks
+			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/"));
+			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/"));
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
+			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
+			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
+		}
+
+		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
+			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
+			var sheet = song.GetSheet(difficulty);
+
+			var lvl = new CD_GameLevel(sheet);
+
+			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
+		}
+
+		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
+			Logs.Info($"cam_level specified: {cam_level}");
+			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+
+			CustomChartsSong song = new CustomChartsSong(cam_level);
+			ChartSheet sheet;
+			switch (Path.GetExtension(cam_level)) {
+				case ".bms":
+					sheet = song.LoadFromDiskBMS(cam_level);
+					break;
+				default:
+					sheet = song.GetSheet(difficulty);
+					break;
+			}
+
+			var lvl = new CD_GameLevel(sheet);
+			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"), CommandLineArguments.GetParam("startmeasure", 0d));
+		}
+
+		else {
+			EngineCore.LoadLevel(new CD_MainMenu());
+		}
+
+		Interlude.Spin();
+		Interlude.End();
+	}
 }

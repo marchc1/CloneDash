@@ -1,5 +1,9 @@
 # Clone Dash
- 
+
+## Notes about "Engine Restructure"
+The core of the game was redone from the ground up. Now uses a lot more of a coherent system. There's still work to do, but this will be merged into main soon.
+If you're looking to contribute, please contribute to this branch,
+
 This is a WIP open-source clone of 'Muse Dash', a parkour-rhythm game combination. It can currently load the base game levels and provides the core gameplay functionality.
 
 It currently implements:
@@ -7,9 +11,10 @@ It currently implements:
  - Console-based searching for songs (you'll need to know the song name as it is stored in the files, and this is a temporary solution)
  - Pausing/resuming the song using the ESC key. Note that it does not tell you visually when it's paused right now, and unpausing gives you 3 seconds before it resumes game playback. Haven't figured out a good UI solution yet
 
-![clonedash_screenshot](https://github.com/marchc1/CloneDash/assets/106459595/71e79231-f632-4f38-afee-3e1f0ca891f1)
+![CloneDash_iK1pd9AlJL](https://github.com/user-attachments/assets/02ec7e9e-8e9a-4a20-93a9-0d4c851ceac7)
+![CloneDash_BF52fggWJg](https://github.com/user-attachments/assets/2fed8c0f-9e92-42ea-9747-ab82cc72d2f9)
 
-This is a hastily-put-together alpha of game functionality. It kind of matches the base gameplay, but there's still work that needs to be done. The current core of the project is a bit of a mess and a lot of this will change as I further work on the project. You will need to own the game to play this currently, as it relies on finding a valid Steam installation of the game, and does not have any custom level support (yet...)
+This is a hastily-put-together alpha of game functionality. It kind of matches the base gameplay, but there's still work that needs to be done. The current core of the project is a bit of a mess and a lot of this will change as I further work on the project. You will need to own the game to play this currently, as it relies on finding a valid Steam installation of the game. Custom albums are supported (in the https://github.com/MDMods/CustomAlbums .mdm format), however support is limited, your mileage may vary.
 
 There are still a lot of things I'd like to implement that are currently missing, for starters, custom levels. It would be nice to provide a lot of customizability and accessibility options the base game does not allow for as well.
 

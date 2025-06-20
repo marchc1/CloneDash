@@ -1,26 +1,51 @@
-﻿using Raylib_cs;
+﻿using CloneDash.Settings;
+
+using Nucleus.Input;
+using Nucleus.Types;
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game.Input
 {
-    public class MouseInput : IPlayerInput
-    {
-        public static MouseButton[] TopKeys = [MouseButton.MOUSE_BUTTON_RIGHT]; //sdfg
-        public static MouseButton[] BottomKeys = [MouseButton.MOUSE_BUTTON_LEFT]; //hjkl
-        public static MouseButton? StartFever = null;
+	public class MouseInput : ICloneDashInputSystem
+	{
+		public static MouseButton[] TopButtons;
+		public static MouseButton[] BottomButtons;
+		public static MouseButton[] StartFever;
+		public static MouseButton[] Pause;
+		public MouseInput() {
+			CD_InputSettings_OnSettingsChanged();
+			InputSettings.OnSettingsChanged += CD_InputSettings_OnSettingsChanged;
+		}
 
-        public void Poll(ref InputState state) {
-            foreach (var key in TopKeys) {
-                state.TopClicked += Raylib.IsMouseButtonPressed(key) ? 1 : 0;
-                state.TopHeld |= Raylib.IsMouseButtonDown(key);
-            }
+		[MemberNotNull(nameof(TopButtons), nameof(BottomButtons), nameof(StartFever), nameof(Pause))]
+		private void CD_InputSettings_OnSettingsChanged() {
+			TopButtons = InputSettings.GetMouseButtonsOfAction(InputAction.AirAttack).ToArray();
+			BottomButtons = InputSettings.GetMouseButtonsOfAction(InputAction.GroundAttack).ToArray();
+			StartFever = InputSettings.GetMouseButtonsOfAction(InputAction.FeverStart).ToArray();
+			Pause = InputSettings.GetMouseButtonsOfAction(InputAction.PauseGame).ToArray();
+		}
 
-            foreach (var key in BottomKeys) {
-                state.BottomClicked += Raylib.IsMouseButtonPressed(key) ? 1 : 0;
-                state.BottomHeld |= Raylib.IsMouseButtonDown(key);
-            }
+		public void Poll(ref FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
+			bool pollForTop = actionFilter == null || actionFilter == InputAction.AirAttack;
+			bool pollForBottom = actionFilter == null || actionFilter == InputAction.GroundAttack;
+			bool pollForFever = actionFilter == null || actionFilter == InputAction.FeverStart;
 
-            if (StartFever.HasValue)
-                state.TryFever |= Raylib.IsMouseButtonPressed(StartFever.Value);
-        }
-    }
+			if (pollForTop)
+				foreach (var btn in TopButtons) {
+					inputState.TopClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
+					inputState.TopHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
+				}
+
+			if (pollForBottom)
+				foreach (var btn in BottomButtons) {
+					inputState.BottomClicked += frameState.Mouse.Clicked(btn) ? 1 : 0;
+					inputState.BottomHeldCount += frameState.Mouse.Held(btn) ? 1 : 0;
+				}
+
+			if (pollForFever)
+				foreach (var btn in StartFever)
+					inputState.TryFever |= frameState.Mouse.Clicked(btn);
+		}
+	}
 }

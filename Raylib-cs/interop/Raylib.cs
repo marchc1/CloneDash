@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Raylib_cs;
 
@@ -24,285 +26,285 @@ public static unsafe partial class Raylib
     /// </summary>
     public static Color Fade(Color color, float alpha) => ColorAlpha(color, alpha);
 
-    //------------------------------------------------------------------------------------
-    // Window and Graphics Device Functions (Module: core)
-    //------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------
+	// Window and Graphics Device Functions (Module: core)
+	//------------------------------------------------------------------------------------
 
-    // Window-related functions
-
-    /// <summary>Initialize window and OpenGL context</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void InitWindow(int width, int height, sbyte* title);
-
-    /// <summary>Check if KEY_ESCAPE pressed or Close icon pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool WindowShouldClose();
-
-    /// <summary>Close window and unload OpenGL context</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void CloseWindow();
-
-    /// <summary>Check if window has been initialized successfully</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowReady();
-
-    /// <summary>Check if window is currently fullscreen</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowFullscreen();
-
-    /// <summary>Check if window is currently hidden (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowHidden();
-
-    /// <summary>Check if window is currently minimized (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowMinimized();
-
-    /// <summary>Check if window is currently maximized (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowMaximized();
-
-    /// <summary>Check if window is currently focused (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowFocused();
-
-    /// <summary>Check if window has been resized last frame</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowResized();
-
-    /// <summary>Check if one specific window flag is enabled</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsWindowState(ConfigFlags flag);
-
-    /// <summary>Set window configuration state using flags</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool SetWindowState(ConfigFlags flag);
-
-    /// <summary>Clear window configuration state flags</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ClearWindowState(ConfigFlags flag);
-
-    /// <summary>Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ToggleFullscreen();
-
-    /// <summary>Toggle window state: borderless windowed (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ToggleBorderlessWindowed();
-
-    /// <summary>Set window state: maximized, if resizable (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void MaximizeWindow();
-
-    /// <summary>Set window state: minimized, if resizable (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void MinimizeWindow();
-
-    /// <summary>Set window state: not minimized/maximized (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void RestoreWindow();
-
-    /// <summary>Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowIcon(Image image);
-
-    /// <summary>Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowIcons(Image* images, int count);
-
-    /// <summary>Set title for window (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowTitle(sbyte* title);
-
-    /// <summary>Set window position on screen (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowPosition(int x, int y);
-
-    /// <summary>Set monitor for the current window (fullscreen mode)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowMonitor(int monitor);
-
-    /// <summary>Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowMinSize(int width, int height);
-
-    /// <summary>Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowMaxSize(int width, int height);
-
-    /// <summary>Set window dimensions</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowSize(int width, int height);
-
-    /// <summary>Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowOpacity(float opacity);
-
-    /// <summary>Set window focused (only PLATFORM_DESKTOP)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetWindowFocused();
+	// Window-related functions
+
+	///// <summary>Initialize window and OpenGL context</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void InitWindow(int width, int height, sbyte* title);
+
+	///// <summary>Check if KEY_ESCAPE pressed or Close icon pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool WindowShouldClose();
+
+	///// <summary>Close window and unload OpenGL context</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void CloseWindow();
+
+	///// <summary>Check if window has been initialized successfully</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowReady();
+
+	///// <summary>Check if window is currently fullscreen</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowFullscreen();
+
+	///// <summary>Check if window is currently hidden (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowHidden();
+
+	///// <summary>Check if window is currently minimized (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowMinimized();
+
+	///// <summary>Check if window is currently maximized (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowMaximized();
+
+	///// <summary>Check if window is currently focused (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowFocused();
+
+	///// <summary>Check if window has been resized last frame</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowResized();
+
+	///// <summary>Check if one specific window flag is enabled</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsWindowState(ConfigFlags flag);
+
+	///// <summary>Set window configuration state using flags</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool SetWindowState(ConfigFlags flag);
+
+	///// <summary>Clear window configuration state flags</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void ClearWindowState(ConfigFlags flag);
+
+	///// <summary>Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void ToggleFullscreen();
+
+	///// <summary>Toggle window state: borderless windowed (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void ToggleBorderlessWindowed();
+
+	///// <summary>Set window state: maximized, if resizable (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void MaximizeWindow();
+
+	///// <summary>Set window state: minimized, if resizable (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void MinimizeWindow();
+
+	///// <summary>Set window state: not minimized/maximized (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void RestoreWindow();
+
+	///// <summary>Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowIcon(Image image);
+
+	///// <summary>Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowIcons(Image* images, int count);
+
+	///// <summary>Set title for window (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowTitle(sbyte* title);
+
+	///// <summary>Set window position on screen (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowPosition(int x, int y);
+
+	///// <summary>Set monitor for the current window (fullscreen mode)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowMonitor(int monitor);
+
+	///// <summary>Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowMinSize(int width, int height);
+
+	///// <summary>Set window maximum dimensions (for FLAG_WINDOW_RESIZABLE)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowMaxSize(int width, int height);
+
+	///// <summary>Set window dimensions</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowSize(int width, int height);
+
+	///// <summary>Set window opacity [0.0f..1.0f] (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowOpacity(float opacity);
+
+	///// <summary>Set window focused (only PLATFORM_DESKTOP)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetWindowFocused();
 
-    /// <summary>Get native window handle</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void* GetWindowHandle();
+	///// <summary>Get native window handle</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void* GetWindowHandle();
 
-    /// <summary>Get current screen width</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetScreenWidth();
+	///// <summary>Get current screen width</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetScreenWidth();
 
-    /// <summary>Get current screen height</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetScreenHeight();
+	///// <summary>Get current screen height</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetScreenHeight();
 
-    /// <summary>Get current render width (it considers HiDPI)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetRenderWidth();
+	///// <summary>Get current render width (it considers HiDPI)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetRenderWidth();
 
-    /// <summary>Get current render height (it considers HiDPI)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetRenderHeight();
+	///// <summary>Get current render height (it considers HiDPI)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetRenderHeight();
 
-    /// <summary>Get number of connected monitors</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorCount();
+	///// <summary>Get number of connected monitors</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorCount();
 
-    /// <summary>Get current connected monitor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetCurrentMonitor();
+	///// <summary>Get current connected monitor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetCurrentMonitor();
 
-    /// <summary>Get specified monitor position</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMonitorPosition(int monitor);
+	///// <summary>Get specified monitor position</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMonitorPosition(int monitor);
 
-    /// <summary>Get specified monitor width</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorWidth(int monitor);
+	///// <summary>Get specified monitor width</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorWidth(int monitor);
 
-    /// <summary>Get specified monitor height</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorHeight(int monitor);
+	///// <summary>Get specified monitor height</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorHeight(int monitor);
 
-    /// <summary>Get specified monitor physical width in millimetres</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorPhysicalWidth(int monitor);
+	///// <summary>Get specified monitor physical width in millimetres</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorPhysicalWidth(int monitor);
 
-    /// <summary>Get specified monitor physical height in millimetres</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorPhysicalHeight(int monitor);
+	///// <summary>Get specified monitor physical height in millimetres</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorPhysicalHeight(int monitor);
 
-    /// <summary>Get specified monitor refresh rate</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMonitorRefreshRate(int monitor);
+	///// <summary>Get specified monitor refresh rate</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMonitorRefreshRate(int monitor);
 
-    /// <summary>Get window position XY on monitor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetWindowPosition();
+	///// <summary>Get window position XY on monitor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetWindowPosition();
 
-    /// <summary>Get window scale DPI factor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetWindowScaleDPI();
+	///// <summary>Get window scale DPI factor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetWindowScaleDPI();
 
-    /// <summary>Get the human-readable, UTF-8 encoded name of the specified monitor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte* GetMonitorName(int monitor);
+	///// <summary>Get the human-readable, UTF-8 encoded name of the specified monitor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern sbyte* GetMonitorName(int monitor);
 
-    /// <summary>Get clipboard text content</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte* GetClipboardText();
+	///// <summary>Get clipboard text content</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern sbyte* GetClipboardText();
 
-    /// <summary>Set clipboard text content</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetClipboardText(sbyte* text);
+	///// <summary>Set clipboard text content</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetClipboardText(sbyte* text);
 
-    /// <summary>Enable waiting for events on EndDrawing(), no automatic event polling</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EnableEventWaiting();
+	///// <summary>Enable waiting for events on EndDrawing(), no automatic event polling</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void EnableEventWaiting();
 
-    /// <summary>Disable waiting for events on EndDrawing(), automatic events polling</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void DisableEventWaiting();
+	///// <summary>Disable waiting for events on EndDrawing(), automatic events polling</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void DisableEventWaiting();
 
-    // Custom frame control functions
-    // NOTE: Those functions are intended for advance users that want full control over the frame processing
-    // By default EndDrawing() does this job: draws everything + SwapScreenBuffer() + manage frame timming + PollInputEvents()
-    // To avoid that behaviour and control frame processes manually, enable in config.h: SUPPORT_CUSTOM_FRAME_CONTROL
+	// Custom frame control functions
+	// NOTE: Those functions are intended for advance users that want full control over the frame processing
+	// By default EndDrawing() does this job: draws everything + SwapScreenBuffer() + manage frame timming + PollInputEvents()
+	// To avoid that behaviour and control frame processes manually, enable in config.h: SUPPORT_CUSTOM_FRAME_CONTROL
 
-    /// <summary>Swap back buffer with front buffer (screen drawing)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SwapScreenBuffer();
+	///// <summary>Swap back buffer with front buffer (screen drawing)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SwapScreenBuffer();
 
-    /// <summary>Register all input events</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PollInputEvents();
+	///// <summary>Register all input events</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void PollInputEvents();
 
-    /// <summary>Wait for some time (halt program execution)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void WaitTime(double seconds);
+	///// <summary>Wait for some time (halt program execution)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void WaitTime(double seconds);
 
-    // Cursor-related functions
+	// Cursor-related functions
 
-    /// <summary>Shows cursor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ShowCursor();
+	///// <summary>Shows cursor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void ShowCursor();
 
-    /// <summary>Hides cursor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void HideCursor();
+	///// <summary>Hides cursor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void HideCursor();
 
-    /// <summary>Check if cursor is not visible</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsCursorHidden();
+	///// <summary>Check if cursor is not visible</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsCursorHidden();
 
-    /// <summary>Enables cursor (unlock cursor)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EnableCursor();
+	///// <summary>Enables cursor (unlock cursor)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void EnableCursor();
 
-    /// <summary>Disables cursor (lock cursor)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void DisableCursor();
+	///// <summary>Disables cursor (lock cursor)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void DisableCursor();
 
-    /// <summary>Check if cursor is on the screen</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsCursorOnScreen();
+	///// <summary>Check if cursor is on the screen</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsCursorOnScreen();
 
 
-    // Drawing-related functions
+	// Drawing-related functions
 
-    /// <summary>Set background color (framebuffer clear color)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ClearBackground(Color color);
+	///// <summary>Set background color (framebuffer clear color)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void ClearBackground(Color color);
 
-    /// <summary>Setup canvas (framebuffer) to start drawing</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginDrawing();
+	///// <summary>Setup canvas (framebuffer) to start drawing</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void BeginDrawing();
 
-    /// <summary>End canvas drawing and swap buffers (double buffering)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndDrawing();
+	///// <summary>End canvas drawing and swap buffers (double buffering)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void EndDrawing();
 
-    /// <summary>Initialize 2D mode with custom camera (2D)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginMode2D(Camera2D camera);
+	///// <summary>Initialize 2D mode with custom camera (2D)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void BeginMode2D(Camera2D camera);
 
-    /// <summary>Ends 2D mode with custom camera</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndMode2D();
+	///// <summary>Ends 2D mode with custom camera</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void EndMode2D();
 
-    /// <summary>Initializes 3D mode with custom camera (3D)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginMode3D(Camera3D camera);
+	///// <summary>Initializes 3D mode with custom camera (3D)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void BeginMode3D(Camera3D camera);
 
-    /// <summary>Ends 3D mode and returns to default 2D orthographic mode</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndMode3D();
+	///// <summary>Ends 3D mode and returns to default 2D orthographic mode</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void EndMode3D();
 
-    /// <summary>Initializes render texture for drawing</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginTextureMode(RenderTexture2D target);
+	///// <summary>Initializes render texture for drawing</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginTextureMode(RenderTexture2D target);
 
-    /// <summary>Ends drawing to render texture</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndTextureMode();
+    ///// <summary>Ends drawing to render texture</summary>
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndTextureMode();
 
     /// <summary>Begin custom shader drawing</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -320,13 +322,13 @@ public static unsafe partial class Raylib
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void EndBlendMode();
 
-    /// <summary>Begin scissor mode (define screen area for following drawing)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginScissorMode(int x, int y, int width, int height);
-
-    /// <summary>End scissor mode</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void EndScissorMode();
+    ///// <summary>Begin scissor mode (define screen area for following drawing)</summary>
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void BeginScissorMode(int x, int y, int width, int height);
+	
+    ///// <summary>End scissor mode</summary>
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void EndScissorMode();
 
     /// <summary>Begin stereo rendering (requires VR simulator)</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -436,20 +438,20 @@ public static unsafe partial class Raylib
     // Timing-related functions
 
     /// <summary>Set target FPS (maximum)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetTargetFPS(int fps);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void SetTargetFPS(int fps);
 
     /// <summary>Get current FPS</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetFPS();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern int GetFPS();
 
     /// <summary>Get time in seconds for last frame drawn</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetFrameTime();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern float GetFrameTime();
 
     /// <summary>Get elapsed time in seconds since InitWindow()</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern double GetTime();
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern double GetTime();
 
 
     // Misc. functions
@@ -475,8 +477,8 @@ public static unsafe partial class Raylib
     public static extern void TakeScreenshot(sbyte* fileName);
 
     /// <summary>Setup window configuration flags (view FLAGS)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetConfigFlags(ConfigFlags flags);
+    //[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+    //public static extern void SetConfigFlags(ConfigFlags flags);
 
     /// <summary>Show trace log messages (LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR)</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -658,216 +660,215 @@ public static unsafe partial class Raylib
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void OpenURL(sbyte* url);
 
-    //------------------------------------------------------------------------------------
-    // Input Handling Functions (Module: core)
-    //------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------
+	// Input Handling Functions (Module: core)
+	//------------------------------------------------------------------------------------
 
-    // Input-related functions: keyboard
+	// Input-related functions: keyboard
 
-    /// <summary>Detect if a key has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyPressed(KeyboardKey key);
+	///// <summary>Detect if a key has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyPressed(KeyboardKey key);
 
-    /// <summary>Detect if a key has been pressed again</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyPressedRepeat(KeyboardKey key);
+	///// <summary>Detect if a key has been pressed again</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyPressedRepeat(KeyboardKey key);
 
-    /// <summary>Detect if a key is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyDown(KeyboardKey key);
+	///// <summary>Detect if a key is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyDown(KeyboardKey key);
 
-    /// <summary>Detect if a key has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyReleased(KeyboardKey key);
+	///// <summary>Detect if a key has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyReleased(KeyboardKey key);
 
-    /// <summary>Detect if a key is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsKeyUp(KeyboardKey key);
+	///// <summary>Detect if a key is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsKeyUp(KeyboardKey key);
 
-    /// <summary>Set a custom key to exit program (default is ESC)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetExitKey(KeyboardKey key);
+	///// <summary>Set a custom key to exit program (default is ESC)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetExitKey(KeyboardKey key);
 
-    /// <summary>
-    /// Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty
-    /// </summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetKeyPressed();
+	///// <summary>
+	///// Get key pressed (keycode), call it multiple times for keys queued, returns 0 when the queue is empty
+	///// </summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetKeyPressed();
 
-    /// <summary>
-    /// Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
-    /// </summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetCharPressed();
-
-
-    // Input-related functions: gamepads
-
-    /// <summary>Detect if a gamepad is available</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadAvailable(int gamepad);
-
-    /// <summary>Get gamepad internal name id</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte* GetGamepadName(int gamepad);
-
-    /// <summary>Detect if a gamepad button has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonPressed(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonDown(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonReleased(int gamepad, GamepadButton button);
-
-    /// <summary>Detect if a gamepad button is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGamepadButtonUp(int gamepad, GamepadButton button);
-
-    /// <summary>Get the last gamepad button pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetGamepadButtonPressed();
-
-    /// <summary>Get gamepad axis count for a gamepad</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetGamepadAxisCount(int gamepad);
-
-    /// <summary>Get axis movement value for a gamepad axis</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGamepadAxisMovement(int gamepad, GamepadAxis axis);
-
-    /// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int SetGamepadMappings(sbyte* mappings);
+	///// <summary>
+	///// Get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
+	///// </summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetCharPressed();
 
 
-    // Input-related functions: mouse
+	// Input-related functions: gamepads
 
-    /// <summary>Detect if a mouse button has been pressed once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonPressed(MouseButton button);
+	///// <summary>Detect if a gamepad is available</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadAvailable(int gamepad);
 
-    /// <summary>Detect if a mouse button is being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonDown(MouseButton button);
+	///// <summary>Get gamepad internal name id</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern sbyte* GetGamepadName(int gamepad);
 
-    /// <summary>Detect if a mouse button has been released once</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonReleased(MouseButton button);
+	///// <summary>Detect if a gamepad button has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonPressed(int gamepad, GamepadButton button);
 
-    /// <summary>Detect if a mouse button is NOT being pressed</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsMouseButtonUp(MouseButton button);
+	///// <summary>Detect if a gamepad button is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonDown(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position X</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMouseX();
+	///// <summary>Detect if a gamepad button has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonReleased(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position Y</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetMouseY();
+	///// <summary>Detect if a gamepad button is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGamepadButtonUp(int gamepad, GamepadButton button);
 
-    /// <summary>Get mouse position XY</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMousePosition();
+	///// <summary>Get the last gamepad button pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetGamepadButtonPressed();
 
-    /// <summary>Get mouse delta between frames</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMouseDelta();
+	/// <summary>Get gamepad axis count for a gamepad</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetGamepadAxisCount(int gamepad);
 
-    /// <summary>Set mouse position XY</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMousePosition(int x, int y);
+	///// <summary>Get axis movement value for a gamepad axis</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGamepadAxisMovement(int gamepad, GamepadAxis axis);
 
-    /// <summary>Set mouse offset</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseOffset(int offsetX, int offsetY);
-
-    /// <summary>Set mouse scaling</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseScale(float scaleX, float scaleY);
-
-    /// <summary>Get mouse wheel movement for X or Y, whichever is larger</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetMouseWheelMove();
-
-    /// <summary>Get mouse wheel movement for both X and Y</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetMouseWheelMoveV();
-
-    /// <summary>Set mouse cursor</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetMouseCursor(MouseCursor cursor);
+	///// <summary>Set internal gamepad mappings (SDL_GameControllerDB)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int SetGamepadMappings(sbyte* mappings);
 
 
-    // Input-related functions: touch
+	// Input-related functions: mouse
 
-    /// <summary>Get touch position X for touch point 0 (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchX();
+	/// <summary>Detect if a mouse button has been pressed once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonPressed(MouseButton button);
 
-    /// <summary>Get touch position Y for touch point 0 (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchY();
+	///// <summary>Detect if a mouse button is being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonDown(MouseButton button);
 
-    /// <summary>Get touch position XY for a touch point index (relative to screen size)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetTouchPosition(int index);
+	///// <summary>Detect if a mouse button has been released once</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonReleased(MouseButton button);
 
-    /// <summary>Get touch point identifier for given index</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchPointId(int index);
+	///// <summary>Detect if a mouse button is NOT being pressed</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsMouseButtonUp(MouseButton button);
 
-    /// <summary>Get number of touch points</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetTouchPointCount();
+	///// <summary>Get mouse position X</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMouseX();
 
-    //------------------------------------------------------------------------------------
-    // Gestures and Touch Handling Functions (Module: gestures)
-    //------------------------------------------------------------------------------------
+	///// <summary>Get mouse position Y</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetMouseY();
 
-    /// <summary>Enable a set of gestures using flags</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetGesturesEnabled(Gesture flags);
+	/// <summary>Get mouse position XY</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMousePosition();
 
-    /// <summary>Check if a gesture has been detected</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsGestureDetected(Gesture gesture);
+	///// <summary>Get mouse delta between frames</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMouseDelta();
 
-    /// <summary>Get latest detected gesture</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Gesture GetGestureDetected();
+	///// <summary>Set mouse position XY</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMousePosition(int x, int y);
 
-    /// <summary>Get gesture hold time in milliseconds</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGestureHoldDuration();
+	///// <summary>Set mouse offset</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseOffset(int offsetX, int offsetY);
 
-    /// <summary>Get gesture drag vector</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetGestureDragVector();
+	///// <summary>Set mouse scaling</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseScale(float scaleX, float scaleY);
 
-    /// <summary>Get gesture drag angle</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGestureDragAngle();
+	///// <summary>Get mouse wheel movement for X or Y, whichever is larger</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetMouseWheelMove();
 
-    /// <summary>Get gesture pinch delta</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Vector2 GetGesturePinchVector();
+	///// <summary>Get mouse wheel movement for both X and Y</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetMouseWheelMoveV();
 
-    /// <summary>Get gesture pinch angle</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern float GetGesturePinchAngle();
+	///// <summary>Set mouse cursor</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetMouseCursor(MouseCursor cursor);
 
 
-    //------------------------------------------------------------------------------------
-    // Camera System Functions (Module: camera)
-    //------------------------------------------------------------------------------------
+	// Input-related functions: touch
 
-    /// <summary>Update camera position for selected mode</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	///// <summary>Get touch position X for touch point 0 (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchX();
+
+	///// <summary>Get touch position Y for touch point 0 (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchY();
+
+	///// <summary>Get touch position XY for a touch point index (relative to screen size)</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetTouchPosition(int index);
+
+	///// <summary>Get touch point identifier for given index</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchPointId(int index);
+
+	///// <summary>Get number of touch points</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern int GetTouchPointCount();
+
+	//------------------------------------------------------------------------------------
+	// Gestures and Touch Handling Functions (Module: gestures)
+	//------------------------------------------------------------------------------------
+
+	///// <summary>Enable a set of gestures using flags</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern void SetGesturesEnabled(Gesture flags);
+	//
+	///// <summary>Check if a gesture has been detected</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern CBool IsGestureDetected(Gesture gesture);
+	//
+	///// <summary>Get latest detected gesture</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Gesture GetGestureDetected();
+	//
+	///// <summary>Get gesture hold time in milliseconds</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGestureHoldDuration();
+	//
+	///// <summary>Get gesture drag vector</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetGestureDragVector();
+	//
+	///// <summary>Get gesture drag angle</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGestureDragAngle();
+	//
+	///// <summary>Get gesture pinch delta</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern Vector2 GetGesturePinchVector();
+	//
+	///// <summary>Get gesture pinch angle</summary>
+	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	//public static extern float GetGesturePinchAngle();
+
+	//------------------------------------------------------------------------------------
+	// Camera System Functions (Module: camera)
+	//------------------------------------------------------------------------------------
+
+	/// <summary>Update camera position for selected mode</summary>
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void UpdateCamera(Camera3D* camera, CameraMode mode);
 
     /// <summary>Update camera movement/rotation</summary>
@@ -1676,8 +1677,15 @@ public static unsafe partial class Raylib
     public static extern Texture2D LoadTexture(sbyte* fileName);
 
     /// <summary>Load texture from image data</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Texture2D LoadTextureFromImage(Image image);
+    [DllImport(NativeLibName, EntryPoint = "LoadTextureFromImage", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Texture2D __LoadTextureFromImage(Image image);
+	private static Dictionary<uint, Texture2D> loadedTextures = new();
+	public static Texture2D LoadTextureFromImage(Image image) {
+		var tex = __LoadTextureFromImage(image);
+		loadedTextures[tex.Id] = tex;
+		return tex;
+	}
+
 
     /// <summary>Load cubemap from image, multiple image cubemap layouts supported</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1692,11 +1700,26 @@ public static unsafe partial class Raylib
     public static extern CBool IsTextureReady(Texture2D texture);
 
     /// <summary>Unload texture from GPU memory (VRAM)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void UnloadTexture(Texture2D texture);
+    [DllImport(NativeLibName, EntryPoint = "UnloadTexture", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void __UnloadTexture(Texture2D texture);
+	public static void UnloadTexture(Texture2D texture) {
+		__UnloadTexture(texture);
+		loadedTextures.Remove(texture.Id);
+	}
 
-    /// <summary>Check if a render texture is ready</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	public static IEnumerable<uint> GetLoadedTextureIds() {
+		foreach (var kvp in loadedTextures) {
+			yield return kvp.Key;
+		}
+	}
+	public static IEnumerable<Texture2D> GetLoadedTextures() {
+		foreach (var kvp in loadedTextures) {
+			yield return kvp.Value;
+		}
+	}
+	
+	/// <summary>Check if a render texture is ready</summary>
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern CBool IsRenderTextureReady(RenderTexture2D target);
 
     /// <summary>Unload render texture from GPU memory (VRAM)</summary>

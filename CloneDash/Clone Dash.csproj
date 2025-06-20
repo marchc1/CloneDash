@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+		<AssemblyName>Clone Dash</AssemblyName>
+		<RootNamespace>CloneDash</RootNamespace>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BCnEncoder.Net" Version="2.2.0" />
+		<PackageReference Include="Fmod5Sharp" Version="3.0.1" />
+		<PackageReference Include="LuaCSharp" Version="0.4.2" />
+		<PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+		<PackageReference Include="System.Text.Json" Version="9.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AssetStudioUtility\AssetStudioUtility.csproj" />
+		<ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
+		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
+		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
+		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="K4os.Compression.LZ4">
+			<HintPath>..\BuildAssets\universal\K4os.Compression.LZ4.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<Exec Condition=" $(IsWindows) == 'true'" Command="xcopy &quot;$(SolutionDir)BuildAssets/universal/.&quot; &quot;$(OutDir)&quot; /Y /E" />
+		<Exec Condition=" $(IsOSX) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/universal/.&quot; &quot;$(OutDir)&quot;" />
+		<Exec Condition=" $(IsLinux) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/universal/.&quot; &quot;$(OutDir)&quot;" />
+
+		<Exec Condition=" $(IsWindows) == 'true'" Command="xcopy &quot;$(SolutionDir)BuildAssets/winnt/.&quot; &quot;$(OutDir)&quot; /Y /E" />
+		<Exec Condition=" $(IsOSX) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/intel_osx/.&quot; &quot;$(OutDir)&quot;" />
+		<Exec Condition=" $(IsLinux) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/linux/.&quot; &quot;$(OutDir)&quot;" />
+	</Target>
+
+	<PropertyGroup Condition="'$(IsWindows)'=='true'">
+		<DefineConstants>COMPILED_WINDOWS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(IsOSX)'=='true'">
+		<DefineConstants>COMPILED_OSX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(IsLinux)'=='true'">
+		<DefineConstants>COMPILED_LINUX</DefineConstants>
+	</PropertyGroup>
+</Project>

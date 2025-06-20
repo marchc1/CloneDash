@@ -1,27 +1,25 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Scenes;
 
-namespace CloneDash.Game.Events
+namespace CloneDash.Game.Events;
+
+public class BossMasher(CD_GameLevel game) : CD_BaseEvent(game)
 {
-    public class BossMasher : MapEvent
-    {
-        public BossMasher(DashGame game) : base(game) {
-            this.Offset = -0.95;
-        }
+	public override void Activate() {
+		Game.Boss.Masher();
+	}
 
-        public override void Build() {
-            AssociatedEntity = Game.GameplayManager.CreateEntity<Masher>();
-            AssociatedEntity.Invisible = true;
-            AssociatedEntity.HitTime = Time;
-            AssociatedEntity.ShowTime = Time + this.Offset;
-            AssociatedEntity.DamageTaken = Damage.HasValue ? Damage.Value : 0;
-            AssociatedEntity.FeverGiven = Fever.HasValue ? Fever.Value : 0;
-            AssociatedEntity.Length = Length;
-            AssociatedEntity.ScoreGiven = Score.HasValue ? Score.Value : 0;
-        }
+	public override void OnBuild() {
+		base.OnBuild();
 
-        public override void OnCall(double time) {
-            Game.Boss.WindupForMasherAttack(this);
-        }
-    }
+		var boss = Game.Boss;
+		var animation = Game.Scene.GetBossAnimation(BossAnimationType.MultiAttack, out var time);
 
+		Game.LoadEntity(new() {
+			Type = EntityType.Masher,
+			Pathway = PathwaySide.Both,
+			Variant = EntityVariant.BossMash,
+			ShowTime = Time - time,
+			HitTime = Time
+		});
+	}
 }

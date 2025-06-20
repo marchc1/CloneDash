@@ -49,7 +49,7 @@ namespace OdinSerializer
             // worst until we get more info about the platform we are on.
             Architecture_Supports_Unaligned_Float32_Reads = true;
             Architecture_Supports_All_Unaligned_ReadWrites = true;
-            Console.WriteLine("Odin Serializer ArchitectureInfo initialization with defaults (all unaligned read/writes disabled).");
+            //Console.WriteLine("Odin Serializer ArchitectureInfo initialization with defaults (all unaligned read/writes disabled).");
 #endif
         }
   public enum RuntimePlatform
