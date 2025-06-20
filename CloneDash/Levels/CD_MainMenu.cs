@@ -135,8 +135,10 @@ public class CD_MainMenu : Level
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
+		header.BorderSize = 0;
+		header.BackgroundColor = header.BackgroundColor.Adjust(0, 0, value: 0.5f);
 
-		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
+	   backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
 			PopActiveElement();
 		});
 
