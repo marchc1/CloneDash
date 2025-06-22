@@ -1,4 +1,6 @@
-﻿using AssetStudio;
+﻿// TODO: this file is WAY too bloated!!!
+
+using AssetStudio;
 
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
@@ -409,11 +411,8 @@ namespace CloneDash.Compatibility.MuseDash
 			return sheet;
 		}
 
-
 		public static List<MuseDashAlbum> Albums { get; private set; } = [];
 		public static List<MuseDashSong> Songs { get; private set; }
-
-
 
 		private struct __musedashSong
 		{
@@ -424,7 +423,6 @@ namespace CloneDash.Compatibility.MuseDash
 		public static void BuildDashStructures() {
 			Stopwatch s = new Stopwatch();
 			s.Start();
-
 
 			Albums = Filesystem.ReadJSON<List<MuseDashAlbum>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
 			Albums.RemoveAll(x => x.JsonName == "");
@@ -446,8 +444,7 @@ namespace CloneDash.Compatibility.MuseDash
 				}
 			});
 
-			Songs = workSongs.ToList();
-
+			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
 		}
 
