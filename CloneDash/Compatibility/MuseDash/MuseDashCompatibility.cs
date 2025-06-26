@@ -939,11 +939,11 @@ public static class MuseDashModelConverter
 				nucleusModelData.Skins.Add(MD_ReadSkin(skeleton, nucleusModelData, mdatlas, refStrings, false, nonessential));
 
 			for (int i = 0, events = skeleton.MD_ReadVarInt(true); i < events; i++) {
-				skeleton.MD_ReadRefString(refStrings);
-				skeleton.MD_ReadVarInt(false);
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadNullableString();
-				skeleton.MD_ReadNullableString();
+				var name = skeleton.MD_ReadRefString(refStrings);
+				var @int = skeleton.MD_ReadVarInt(false);
+				var @float = skeleton.MD_ReadFloat();
+				var @string = skeleton.MD_ReadNullableString();
+				var @audioPath = skeleton.MD_ReadNullableString();
 				if (hadAudio) {
 					skeleton.MD_ReadFloat();
 					skeleton.MD_ReadFloat();
