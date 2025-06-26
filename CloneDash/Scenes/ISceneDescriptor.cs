@@ -7,7 +7,8 @@ using Nucleus.Models.Runtime;
 namespace CloneDash.Scenes;
 
 /// <summary>
-/// An interface to various scene operations.
+/// An interface to various scene operations and information. This is abstracted away into an interface to allow some form of scene descriptor versions 
+/// and potentially, in the future, loading straight from Muse Dash (requires a LOT of work!)
 /// </summary>
 public interface ISceneDescriptor
 {

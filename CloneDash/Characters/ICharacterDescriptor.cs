@@ -6,6 +6,9 @@ using Nucleus.Models.Runtime;
 
 namespace CloneDash.Characters;
 
+/// <summary>
+/// An interface for character operations and information.
+/// </summary>
 public interface ICharacterDescriptor
 {
 	public string GetName();

@@ -2,6 +2,9 @@
 
 namespace CloneDash.Fevers;
 
+/// <summary>
+/// Provides a way to render fevers.
+/// </summary>
 public interface IFeverDescriptor
 {
 	public void Initialize(CD_GameLevel game);
