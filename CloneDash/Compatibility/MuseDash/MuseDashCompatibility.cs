@@ -944,7 +944,7 @@ public static class MuseDashModelConverter
 				var @float = skeleton.MD_ReadFloat();
 				var @string = skeleton.MD_ReadNullableString();
 				var @audioPath = skeleton.MD_ReadNullableString();
-				if (hadAudio) {
+				if (@audioPath != null) {
 					skeleton.MD_ReadFloat();
 					skeleton.MD_ReadFloat();
 				}
