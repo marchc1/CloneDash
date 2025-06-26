@@ -27,6 +27,10 @@ public class CD_BaseEnemy : CD_BaseMEntity
 	};
 
 
+	protected void SetupHitAnimations(ISceneDescriptor scene) {
+		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
+		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+	}
 	protected void BasicSetup() {
 		var level = GetGameLevel();
 		var scene = level.Scene;
@@ -37,8 +41,7 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		SetShowTimeViaLength(showtime);
 
 		ApproachAnimation = Model.Data.FindAnimation(animationName);
-		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+		SetupHitAnimations(scene);
 
 		Scale = new(level.GlobalScale);
 	}

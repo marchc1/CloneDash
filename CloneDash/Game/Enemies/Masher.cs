@@ -115,9 +115,11 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<CD_GameLevel>();
 			var scene = level.Scene;
 
+
 			if (Variant != EntityVariant.BossMash) {
 				Model = scene.GetEnemyModel(this).Instantiate();
 				ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out var showtime));
+				SetupHitAnimations(scene);
 				SetShowTimeViaLength(showtime);
 			}
 		}
