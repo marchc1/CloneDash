@@ -5,6 +5,10 @@ using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 namespace CloneDash.Scenes;
+
+/// <summary>
+/// An interface to various scene operations.
+/// </summary>
 public interface ISceneDescriptor
 {
 	public void Initialize(CD_GameLevel game);
