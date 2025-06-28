@@ -535,11 +535,30 @@ public unsafe class OSWindow : IValidatable
 						CurrentFbo.H = height;
 						ResizedLastFrame = true;
 					}
+					break;
 				}
+			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
+				HandleTextInput(ev.Event.text);
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: UserWantsToClose = true; break;
 		}
 	}
+
+	#region Text Input
+
+	public event Action<string>? OnTextInput;
+
+	private void HandleTextInput(SDL_TextInputEvent eventText)
+	{
+		var text = eventText.GetText();
+		if (text is null) return;
+		OnTextInput?.Invoke(text);
+	}
+
+	public void StartTextInput() => SDL3.SDL_StartTextInput(handle);
+	public void StopTextInput() => SDL3.SDL_StopTextInput(handle);
+
+	#endregion
 
 	public struct OSEventTimestamped
 	{
