@@ -158,6 +158,12 @@ namespace Nucleus.UI
 			Editor.KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 			Editor.OnKeyPressed += Editor_OnKeyPressed;
 
+			if (!Readonly)
+			{
+				EngineCore.Window.OnTextInput += OnWindowInput;
+				EngineCore.Window.StartTextInput();
+			}
+
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.A], () => {
 				SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);
 			});
@@ -187,6 +193,17 @@ namespace Nucleus.UI
 			Editor.Thinking += Editor_Thinking;
 
 			SetFont("Consolas", 16);
+		}
+
+		public override void OnRemoval()
+		{
+			base.OnRemoval();
+
+			if (!Readonly)
+			{
+				EngineCore.Window.OnTextInput -= OnWindowInput;
+				EngineCore.Window.StopTextInput();
+			}
 		}
 
 		private void Scrollbar_OnScrolled(float value) {
@@ -632,27 +649,14 @@ namespace Nucleus.UI
 
 			if (Readonly) return;
 
-			int endCol = 0, endRow = 0;
-			string? add = null;
-
-			if (t.Type == CharacterType.VisibleCharacter) {
-				DeleteSelection();
-
-				endCol = Caret.EndCol;
-				endRow = Caret.EndRow;
-				add = t.Extra;
-			}
-			else if (t.Type == CharacterType.Tab) {
+			if (t.Type == CharacterType.Tab) {
 				if (OnTab != null) {
 					OnTab.Invoke(this);
 					return;
 				}
 				if (!HasSelection()) {
-					endCol = Caret.EndCol;
-					endRow = Caret.EndRow;
-					add = "    ";
-				}
-				else {
+					AddText("    ");
+				} else {
 					var tl = GetCaretTopLeft();
 					var br = GetCaretBottomRight();
 
@@ -675,22 +679,38 @@ namespace Nucleus.UI
 					}
 
 					OnEdit();
-					return;
 				}
 			}
+		}
+
+		private void AddText(string text)
+		{
+			if (Readonly)
+				return;
+
+			int endCol = Caret.EndCol, endRow = Caret.EndRow;
 
 			if (endRow >= Rows.Count) {
-				if (add != null)
-					Rows.Add(add);
-			}
-			else {
+				Rows.Add(text);
+			} else {
 				var rowContent = Rows[endRow];
+				if (rowContent is null) return;
+
 				var ec = Math.Clamp(endCol, 0, rowContent?.Length ?? 0);
-				Rows[endRow] = rowContent.Substring(0, ec) + (add ?? "") + rowContent.Substring(ec);
+				Rows[endRow] = rowContent.Substring(0, ec) + text + rowContent.Substring(ec);
 			}
 
-			SetCaret(endCol + (add != null ? add.Length : 0), endRow);
+			SetCaret(endCol + text.Length, endRow);
 			OnEdit();
+		}
+
+		private void OnWindowInput(string text)
+		{
+			if (Readonly)
+				return;
+
+			DeleteSelection();
+			AddText(text);
 		}
 
 		public delegate void OnVoid(TextEditor self);
