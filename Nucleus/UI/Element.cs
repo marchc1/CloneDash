@@ -1170,21 +1170,28 @@ namespace Nucleus.UI
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
-		public void KeyPressedOccur(KeyboardState keyboardState, Input.KeyboardKey key) {
-			KeyPressed(keyboardState, key);
-			OnKeyPressed?.Invoke(this, keyboardState, key);
+		public void KeyPressedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+			KeyPressed(in keyboardState, key);
+			OnKeyPressed?.Invoke(this, in keyboardState, key);
 		}
-		public void KeyReleasedOccur(KeyboardState keyboardState, Input.KeyboardKey key) {
-			KeyReleased(keyboardState, key);
-			OnKeyReleased?.Invoke(this, keyboardState, key);
+		public void KeyReleasedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+			KeyReleased(in keyboardState, key);
+			OnKeyReleased?.Invoke(this, in keyboardState, key);
+		}
+		public void TextInputOccur(in KeyboardState keyboardState, string text) {
+			TextInput(in keyboardState, text);
+			OnTextInput?.Invoke(this, in keyboardState, text);
 		}
 
-		public virtual void KeyPressed(KeyboardState keyboardState, Input.KeyboardKey key) { }
-		public virtual void KeyReleased(KeyboardState keyboardState, Input.KeyboardKey key) { }
+		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { }
+		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { }
+		public virtual void TextInput(in KeyboardState keyboardState, string text) { }
 
-		public delegate void KeyDelegate(Element self, KeyboardState state, Input.KeyboardKey key);
+		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
+		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
 		public event KeyDelegate? OnKeyPressed;
 		public event KeyDelegate? OnKeyReleased;
+		public event TextDelegate? OnTextInput;
 
 		public bool IsIndirectChildOf(Element parent) {
 			var p = this;

@@ -82,6 +82,7 @@ public static class EngineCore
 
 		KeyboardFocusedElement = self;
 		self.KeyboardFocusGained(DemandedFocus);
+		Window.StartTextInput();
 	}
 	public static void DemandKeyboardFocus(Element self) {
 		DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
@@ -104,6 +105,7 @@ public static class EngineCore
 
 		KeyboardFocusedElement.KeyboardFocusLost(self, false);
 		KeyboardFocusedElement = null;
+		Window.StopTextInput();
 	}
 
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]

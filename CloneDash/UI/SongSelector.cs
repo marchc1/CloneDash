@@ -633,8 +633,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.AutoSize = true;
 	}
 
-	public override void KeyPressed(KeyboardState keyboardState, Nucleus.Input.KeyboardKey key) {
-		base.KeyPressed(keyboardState, key);
+	public override void KeyPressed(in KeyboardState keyboardState, Nucleus.Input.KeyboardKey key) {
+		base.KeyPressed(in keyboardState, key);
 		if (key == KeyboardLayout.USA.Left || key == KeyboardLayout.USA.A) {
 			MoveLeft();
 			InvalidateLayout();

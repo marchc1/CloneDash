@@ -397,6 +397,7 @@ namespace Nucleus.Engine
 			if (IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
 				KeyboardState emulatedState = EngineCore.KeyboardFocusedElement.KeyboardInputMarshal.State(ref frameState.Keyboard);
 				ranKeybinds = EngineCore.KeyboardFocusedElement.Keybinds.TestKeybinds(emulatedState);
+
 				if (!ranKeybinds) {
 					ranKeybinds = UI.Keybinds.TestKeybinds(emulatedState);
 
@@ -406,6 +407,10 @@ namespace Nucleus.Engine
 							var released = emulatedState.WasKeyReleased(i);
 							if (pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 							if (released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+						}
+
+						foreach(var textInputEvent in emulatedState.GetTextInputsThisFrame()) {
+							EngineCore.KeyboardFocusedElement.TextInputOccur(in emulatedState, textInputEvent);
 						}
 					}
 				}

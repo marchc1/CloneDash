@@ -1,4 +1,6 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Engine;
+
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -401,6 +403,7 @@ namespace Nucleus.Input
 	public struct KeyboardState()
 	{
 		public const int MAXIMUM_KEY_ARRAY_LENGTH = 512;
+		public const int MAX_TEXT_INPUTS = WindowKeyboardState.MAX_TEXT_INPUTS;
 		public const int MAXIMUM_FRAME_ORDERED_KEYS_LENGTH = 64;
 
 		public double[] KeyTimesThisFrame = new double[MAXIMUM_FRAME_ORDERED_KEYS_LENGTH];
@@ -411,6 +414,16 @@ namespace Nucleus.Input
 		public bool[] KeysDown = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
 		public byte[] KeysPressed = new byte[MAXIMUM_KEY_ARRAY_LENGTH];
 		public bool[] KeysReleased = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
+
+		public string?[] TextInputs = new string?[MAX_TEXT_INPUTS];
+
+		public IEnumerable<string> GetTextInputsThisFrame() {
+			for (int i = 0; i < TextInputs.Length; i++) {
+				string? str = TextInputs[i];
+				if (str == null) continue;
+				yield return str;
+			}
+		}
 
 		public IEnumerable<int> GetKeysThisFrame() {
 			for (int i = 0; i < TotalKeysThisFrame; i++) {

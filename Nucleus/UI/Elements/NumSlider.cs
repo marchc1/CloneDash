@@ -131,7 +131,7 @@ namespace Nucleus.UI
 			}
 			workType = null;
 		}
-		public override void KeyPressed(KeyboardState keyboardState, Input.KeyboardKey key) {
+		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) {
 				double? v = ParseString(Text);
 				if (v != null) {
@@ -141,7 +141,7 @@ namespace Nucleus.UI
 				workType = null;
 			}
 			else {
-				base.KeyPressed(keyboardState, key);
+				base.KeyPressed(in keyboardState, key);
 			}
 		}
 

@@ -207,7 +207,7 @@ namespace Nucleus.UI
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
-		public override void KeyPressed(KeyboardState state, KeyboardKey key) {
+		public override void KeyPressed(in KeyboardState state, KeyboardKey key) {
 			var vischar = state.GetKeyActionFromKey(key);
 			if (vischar.Type == CharacterType.NoAction)
 				return;

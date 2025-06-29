@@ -17,6 +17,7 @@ namespace Nucleus.Engine;
 public class WindowKeyboardState(OSWindow window)
 {
 	public const int MAX_KEYBOARD_KEYS = 512;
+	public const int MAX_TEXT_INPUTS = 256;
 	public const int MAX_KEY_PRESSED_QUEUE = 32;
 	public const int MAX_CHAR_PRESSED_QUEUE = 32;
 
@@ -31,8 +32,17 @@ public class WindowKeyboardState(OSWindow window)
 	public KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
 	public int KeyPressQueueCount = 0;
 
+	public string?[] EnqueuedTextInputs = new string?[MAX_TEXT_INPUTS];
+	public int TextInputPtr = 0;
+	public void EnqueueTextEvent(string text) {
+		if (TextInputPtr >= MAX_TEXT_INPUTS - 1)
+			return; // prevent overflow crash
+		EnqueuedTextInputs[TextInputPtr++] = text;
+	}
+
 	internal void Reset() {
 		KeyPressQueueCount = 0;
+		TextInputPtr = 0;
 		for (int i = 0; i < MAX_KEY_PRESSED_QUEUE; i++) {
 			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
 			KeyPressTimeQueue[i] = 0;
@@ -40,6 +50,9 @@ public class WindowKeyboardState(OSWindow window)
 		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
+		}
+		for (int i = 0; i < MAX_TEXT_INPUTS; i++) {
+			EnqueuedTextInputs[i] = null;
 		}
 	}
 
@@ -67,6 +80,7 @@ public class WindowMouseState(OSWindow window)
 
 	public byte[] CurrentMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
 	public byte[] PreviousMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
+
 	public Vector2F CurrentMouseScroll;
 	public Vector2F PreviousMouseScroll;
 
@@ -231,6 +245,8 @@ public unsafe class OSWindow : IValidatable
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable)) SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop)) SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
 		}
+
+		handleSDLTextInputState();
 
 		lastFlags = curFlags;
 		hasLastWinflags = true;
@@ -538,7 +554,7 @@ public unsafe class OSWindow : IValidatable
 					break;
 				}
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
-				HandleTextInput(ev.Event.text);
+				HandleTextInput(in ev);
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: UserWantsToClose = true; break;
 		}
@@ -546,17 +562,44 @@ public unsafe class OSWindow : IValidatable
 
 	#region Text Input
 
-	public event Action<string>? OnTextInput;
+	// We use the OS event union here because the SDL_TextInputEvent frees the pointer
+	// and so we run into race conditions for some input events
+	private void HandleTextInput(in OSEventTimestamped ev) {
+		var text = ev.String;
+		if (text == null) return;
 
-	private void HandleTextInput(SDL_TextInputEvent eventText)
-	{
-		var text = eventText.GetText();
-		if (text is null) return;
-		OnTextInput?.Invoke(text);
+		Keyboard.EnqueueTextEvent(text);
 	}
 
-	public void StartTextInput() => SDL3.SDL_StartTextInput(handle);
-	public void StopTextInput() => SDL3.SDL_StopTextInput(handle);
+	private int textinputQueued;
+
+	private bool hasTextInputChanged(out bool start) {
+		int queuedState = Interlocked.Exchange(ref textinputQueued, 0);
+		if (queuedState == 0) {
+			start = false;
+			return false;
+		}
+
+		start = queuedState == 1;
+		return true;
+	}
+
+	private void handleSDLTextInputState() {
+		bool newTextState = hasTextInputChanged(out bool start);
+		if (newTextState)
+			if (start)
+				SDL3.SDL_StartTextInput(handle);
+			else
+				SDL3.SDL_StopTextInput(handle);
+	}
+
+
+	public void StartTextInput() {
+		Interlocked.Exchange(ref textinputQueued, 1);
+	}
+	public void StopTextInput() {
+		Interlocked.Exchange(ref textinputQueued, -1);
+	}
 
 	#endregion
 
@@ -564,9 +607,15 @@ public unsafe class OSWindow : IValidatable
 	{
 		public double Timestamp;
 		public SDL_Event Event;
+
+		// annoying, but needed for a custom event
+		public string? String;
 	}
 	private static ConcurrentQueue<OSEventTimestamped> EventBuffer = new();
 
+	/// <summary>
+	/// Game thread calls this to start pushing OS events
+	/// </summary>
 	public static void PropagateEventBuffer() {
 		while (EventBuffer.TryDequeue(out OSEventTimestamped ev)) {
 			switch (ev.Event.Type) {
@@ -597,10 +646,19 @@ public unsafe class OSWindow : IValidatable
 		unsafe {
 			while (SDL3.SDL_WaitEventTimeout(&ev, 5)) {
 				var time = OS.GetTime();
-				EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
+				switch (ev.Type) {
+					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
+						// We need to read the text now to avoid race conditioning.
+						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
+						break;
+					default:
+						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
+						break;
+				}
 			}
 
-			foreach(var window in windowLookup_id2window) window.Value.UpdateWindowState();
+			foreach (var window in windowLookup_id2window)
+				window.Value.UpdateWindowState();
 		}
 	}
 	public void Close() {
@@ -999,6 +1057,10 @@ public unsafe class OSWindow : IValidatable
 
 			keyboardState.KeysDown[j] = curr == 1;
 			keyboardState.KeysReleased[j] = prev > 0 && curr == 0;
+		}
+
+		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++) {
+			keyboardState.TextInputs[j] = Keyboard.EnqueuedTextInputs[j];
 		}
 
 		Keyboard.Reset();

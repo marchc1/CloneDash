@@ -157,12 +157,7 @@ namespace Nucleus.UI
 			Editor.MouseScrollEvent += Editor_MouseScrollEvent;
 			Editor.KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 			Editor.OnKeyPressed += Editor_OnKeyPressed;
-
-			if (!Readonly)
-			{
-				EngineCore.Window.OnTextInput += OnWindowInput;
-				EngineCore.Window.StartTextInput();
-			}
+			Editor.OnTextInput += Editor_OnTextInput;
 
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.A], () => {
 				SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);
@@ -195,15 +190,8 @@ namespace Nucleus.UI
 			SetFont("Consolas", 16);
 		}
 
-		public override void OnRemoval()
-		{
-			base.OnRemoval();
-
-			if (!Readonly)
-			{
-				EngineCore.Window.OnTextInput -= OnWindowInput;
-				EngineCore.Window.StopTextInput();
-			}
+		private void Editor_OnTextInput(Element self, in KeyboardState state, string text) {
+			OnWindowInput(text);
 		}
 
 		private void Scrollbar_OnScrolled(float value) {
@@ -433,7 +421,7 @@ namespace Nucleus.UI
 			return targLine < topRow ? LineOverflow.Above : LineOverflow.Below;
 		}
 
-		private void Editor_OnKeyPressed(Element self, KeyboardState state, Input.KeyboardKey key) {
+		private void Editor_OnKeyPressed(Element self, in KeyboardState state, Input.KeyboardKey key) {
 			TextEditorCaret c = Caret;
 			bool caretPointerOnTop = MathF.Min(c.StartRow, c.EndRow) == c.EndRow;
 			int eRow = c.EndRow, eCol = c.EndCol;

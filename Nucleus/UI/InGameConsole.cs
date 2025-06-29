@@ -246,7 +246,7 @@ namespace Nucleus
 		}
 
 		private int userHistoryPos = 0;
-		private void ConsoleInput_OnKeyPressed(Element self, KeyboardState state, KeyboardKey key) {
+		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, KeyboardKey key) {
 			if (IValidatable.IsValid(autoComplete)) {
 				if (key == KeyboardLayout.USA.Space && autoComplete.TryGetTabSelection(out string? tabSelection)) {
 					// Remove one character because this is a post-hook
