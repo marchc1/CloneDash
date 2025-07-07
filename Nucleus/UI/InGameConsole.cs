@@ -262,7 +262,7 @@ namespace Nucleus
 					}
 
 					consoleInput.SetSelection(startX, 0, userLen, 0);
-					consoleInput.InsertText(tabSelection + " ");
+					consoleInput.InsertText(tabSelection);
 					autoComplete.Reset();
 					autoCompleteStr = null;
 				}
