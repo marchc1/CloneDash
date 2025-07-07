@@ -11,7 +11,7 @@ public static class CharacterMod
 	private static ICharacterDescriptor? activeDescriptor;
 	public delegate void CharacterUpdatedDelegate(ICharacterDescriptor? charDescriptor);
 	public static event CharacterUpdatedDelegate? CharacterUpdated;
-	public static ConVar character = ConVar.Register(nameof(character), "", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
+	public static ConVar character = ConVar.Register(nameof(character), "md_char_1_rock", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
 		activeDescriptor = null;
 		activeDescriptor = GetCharacterData();
 		CharacterUpdated?.Invoke(activeDescriptor);
