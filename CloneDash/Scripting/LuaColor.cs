@@ -3,7 +3,7 @@
 namespace CloneDash.Scripting;
 
 [LuaObject]
-public partial class CD_LuaColor : ILuaWrappedObject<Raylib_cs.Color>
+public partial class LuaColor : ILuaWrappedObject<Raylib_cs.Color>
 {
 	Raylib_cs.Color color;
 
@@ -33,7 +33,7 @@ public partial class CD_LuaColor : ILuaWrappedObject<Raylib_cs.Color>
 	public Raylib_cs.Color Unwrap() => color;
 
 	[LuaMetamethod(LuaObjectMetamethod.Call)]
-	public static CD_LuaColor __call(int r, int g, int b, int a = 255) {
+	public static LuaColor __call(int r, int g, int b, int a = 255) {
 		return new() { color = new(Math.Clamp(r, 0, 255), Math.Clamp(g, 0, 255), Math.Clamp(b, 0, 255), Math.Clamp(a, 0, 255)) };
 	}
 }

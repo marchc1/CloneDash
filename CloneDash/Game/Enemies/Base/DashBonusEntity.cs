@@ -2,7 +2,7 @@
 
 namespace CloneDash.Game
 {
-	public class CD_BonusEntity(EntityType type) : CD_BaseEnemy(type)
+	public class DashBonusEntity(EntityType type) : DashEnemy(type)
 	{
 		public Nucleus.Models.Runtime.Animation? OutAnimation;
 

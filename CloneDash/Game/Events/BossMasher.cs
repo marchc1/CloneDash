@@ -2,7 +2,7 @@
 
 namespace CloneDash.Game.Events;
 
-public class BossMasher(CD_GameLevel game) : CD_BaseEvent(game)
+public class BossMasher(DashGameLevel game) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.Masher();

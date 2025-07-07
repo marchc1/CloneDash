@@ -32,12 +32,12 @@ using Sound = Nucleus.Audio.Sound;
 namespace CloneDash.Game;
 
 [Nucleus.MarkForStaticConstruction]
-public partial class CD_GameLevel(ChartSheet? Sheet) : Level
+public partial class DashGameLevel(ChartSheet? Sheet) : Level
 {
-	public CD_LuaEnv Lua;
+	public LuaEnv Lua;
 
 	public static ConCommand musicseek = ConCommand.Register(nameof(musicseek), (_, args) => {
-		var level = EngineCore.Level.AsNullable<CD_GameLevel>();
+		var level = EngineCore.Level.AsNullable<DashGameLevel>();
 		if (level == null) {
 			Logs.Warn("Not in game context!");
 			return;
@@ -71,7 +71,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			return;
 		}
 
-		CD_GameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
+		DashGameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		var songs = MuseDashCompatibility.Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
@@ -111,17 +111,17 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	public static ConVar profilegameload = ConVar.Register(nameof(profilegameload), "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 
-	public static CD_GameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
+	public static DashGameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {
 			Logs.Debug("Starting the sequential profiler.");
-			CD_StaticSequentialProfiler.Start();
+			StaticSequentialProfiler.Start();
 		}
 
-		CD_GameLevel? workingLevel = null;
+		DashGameLevel? workingLevel = null;
 		try {
 			var sheet = song.GetSheet(mapID);
-			workingLevel = new CD_GameLevel(sheet);
+			workingLevel = new DashGameLevel(sheet);
 
 		}
 		catch (Exception ex) {
@@ -146,7 +146,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
-			if (entity is not CD_BaseEnemy entCD)
+			if (entity is not DashEnemy entCD)
 				continue;
 
 			entCD.Reset();
@@ -163,7 +163,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		AutoPlayer.Reset();
 
 		foreach (var entity in Entities) {
-			if (entity is CD_BaseMEntity mEnt && mEnt.HitTime < time) {
+			if (entity is DashModelEntity mEnt && mEnt.HitTime < time) {
 				switch (mEnt.Interactivity) {
 					case EntityInteractivity.Hit:
 						mEnt.Hit(mEnt.Pathway, 0);
@@ -208,7 +208,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
 
-	public CD_BaseMEntity? MashingEntity;
+	public DashModelEntity? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	private TextEffect mashTextEffect;
 
@@ -216,7 +216,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// Enters the mash state, which causes all attacks to be redirected into this entity.
 	/// </summary>
 	/// <param name="ent"></param>
-	public void EnterMashState(CD_BaseMEntity ent) {
+	public void EnterMashState(DashModelEntity ent) {
 		if (IValidatable.IsValid(mashTextEffect))
 			mashTextEffect.Remove();
 
@@ -389,10 +389,10 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	public override void Initialize(params object[] args) {
 		Stats = new(Sheet);
-		using (CD_StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
+		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 			Interlude.Spin(submessage: "Retrieving descriptors...");
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
+			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
 				Character = charData;
@@ -406,13 +406,13 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			}
 
 			Interlude.Spin(submessage: "Initializing Lua...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
+			using (StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
 				Lua = new(this);
-				Lua.State.Environment["game"] = new CD_LuaGame(this);
+				Lua.State.Environment["game"] = new LuaGame(this);
 			}
 
 			Interlude.Spin(submessage: "Initializing the scene...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
+			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
 				FeverFX?.Initialize(this);
 
@@ -428,7 +428,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 
 			Interlude.Spin(submessage: "Initializing input...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
+			using (StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
 				// build the input system
 				var inputInterface = typeof(ICloneDashInputSystem);
 				var inputs = AppDomain.CurrentDomain.GetAssemblies()
@@ -442,7 +442,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 
 			Interlude.Spin(submessage: "Initializing your character...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
+			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
 				Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
@@ -460,14 +460,14 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 
 			Interlude.Spin(submessage: "Loading boss...");
-			using (CD_StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
+			using (StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
 				Boss = Add(new Boss());
 				Boss.RendersItself = false;
 			}
 
 			Interlude.Spin(submessage: "Loading internal entities...");
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
+			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 				HologramPlayer.Visible = false;
 				AutoPlayer = Add<AutoPlayer>();
 				AutoPlayer.Enabled = args.Length == 0 ? false : (bool)args[0];
@@ -479,9 +479,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				Interlude.Spin();
 			}
 
-			Lua.State.Environment["conductor"] = new CD_LuaConductor(Conductor);
+			Lua.State.Environment["conductor"] = new LuaConductor(Conductor);
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
+			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
 				if (Sheet != null) {
 					if (!__deferringAsync) {
 						foreach (var ent in Sheet.Entities)
@@ -490,7 +490,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						foreach (var ev in Sheet.Events)
 							LoadEvent(ev);
 
-						Entities.Sort((x, y) => (x is CD_BaseEnemy xE && y is CD_BaseEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
+						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
 					}
 				}
 				Boss.Build();
@@ -506,7 +506,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			else
 				Conductor.AddTempoChange(0, 0, 120);
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
+			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (Sheet != null) {
 					Music = Sheet.Song.GetAudioTrack();
 					Music.Loops = false;
@@ -531,8 +531,8 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 
-		if (CD_StaticSequentialProfiler.Profiling) {
-			CD_StaticSequentialProfiler.End(out var stack, out var accumulators);
+		if (StaticSequentialProfiler.Profiling) {
+			StaticSequentialProfiler.End(out var stack, out var accumulators);
 			EngineCore.Interrupt(() => {
 				Graphics2D.SetDrawColor(255, 255, 255);
 				var lines = stack.ToStringArray();
@@ -570,7 +570,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		if (Music != null && lastNoteHit && Music.Paused && Sheet != null) {
 			Stats.UploadScore(Score);
-			EngineCore.LoadLevel(new CD_Statistics(), Sheet, Stats);
+			EngineCore.LoadLevel(new StatisticsLevel(), Sheet, Stats);
 			return;
 		}
 
@@ -633,9 +633,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 
 						if (profilegameload.GetBool())
-							CD_StaticSequentialProfiler.Start();
+							StaticSequentialProfiler.Start();
 
-						EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);
+						EngineCore.LoadLevel(new DashGameLevel(Sheet), AutoPlayer.Enabled);
 					};
 					restart.PaintOverride += Button_PaintOverride;
 
@@ -657,7 +657,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 					back2menu.ImageOrientation = ImageOrientation.Fit;
 					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						EngineCore.LoadLevel(new CD_MainMenu());
+						EngineCore.LoadLevel(new MainMenuLevel());
 					};
 					back2menu.PaintOverride += Button_PaintOverride;
 				}
@@ -715,10 +715,10 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		foreach (var entity in Entities) {
 			if (entity is Boss) continue;
-			if (entity is not CD_BaseEnemy)
+			if (entity is not DashEnemy)
 				continue;
 
-			var entCD = entity as CD_BaseEnemy;
+			var entCD = entity as DashEnemy;
 			// Visibility testing
 			// ShouldDraw overrides ForceDraw here, which is intentional, although the naming convention is confusing and should be adjusted (maybe the names swapped?)
 			if ((entCD.CheckVisTest(frameState) || entCD.ForceDraw) && entCD.ShouldDraw) {
@@ -729,7 +729,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			}
 		}
 
-		var lastEntity = (CD_BaseMEntity)Entities.Last(x => x is CD_BaseEnemy);
+		var lastEntity = (DashModelEntity)Entities.Last(x => x is DashEnemy);
 
 		if (lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
@@ -748,7 +748,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 		// Removes entities marked for removal safely
 		foreach (var entity in Entities)
-			if (entity is CD_BaseMEntity && ((CD_BaseMEntity)entity).MarkedForRemoval)
+			if (entity is DashModelEntity && ((DashModelEntity)entity).MarkedForRemoval)
 				Remove(entity);
 
 		//UnlockEntityBuffer(); LockEntityBuffer();
@@ -875,7 +875,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		throw new ArgumentException("pathway");
 	}
 
-	public Pathway GetPathway(CD_BaseMEntity ent) => GetPathway(ent.Pathway);
+	public Pathway GetPathway(DashModelEntity ent) => GetPathway(ent.Pathway);
 
 	/// <summary>
 	/// Creates an entity from a C# type and adds it to <see cref="GameplayManager.Entities"/>.
@@ -884,7 +884,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <returns></returns>
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8604 // Possible null reference argument.
-	public T CreateEntity<T>() where T : CD_BaseMEntity => (T)Add((T)Activator.CreateInstance(typeof(T)));
+	public T CreateEntity<T>() where T : DashModelEntity => (T)Add((T)Activator.CreateInstance(typeof(T)));
 #pragma warning restore CS8604 // Possible null reference argument.
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
@@ -905,7 +905,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <param name="pathway"></param>
 	/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
 	public PollResult Poll(PathwaySide pathway) {
-		foreach (CD_BaseEnemy entity in VisibleEntities) {
+		foreach (DashEnemy entity in VisibleEntities) {
 			// If the entity has no interactivity, ignore it in the poll
 			if (!entity.Interactive)
 				continue;
@@ -949,16 +949,16 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		return Add(new TextEffect(text, position, transitionOut, color.Value));
 	}
 
-	public List<CD_BaseEvent> Events = [];
-	public HashSet<CD_BaseEvent> ActiveEvents = [];
-	public HashSet<CD_BaseEvent> HandledEvents = [];
+	public List<DashEvent> Events = [];
+	public HashSet<DashEvent> ActiveEvents = [];
+	public HashSet<DashEvent> HandledEvents = [];
 
-	private bool shouldActivateEvent(CD_BaseEvent ev) => ev.TriggerType switch {
+	private bool shouldActivateEvent(DashEvent ev) => ev.TriggerType switch {
 		EventTriggerType.AtTimeMinusLength => Conductor.Time >= (ev.Time - ev.Length),
 		EventTriggerType.AtTime => Conductor.Time >= ev.Time,
 		_ => false
 	};
-	private bool shouldDeactivateEvent(CD_BaseEvent ev) => ev.TriggerType switch {
+	private bool shouldDeactivateEvent(DashEvent ev) => ev.TriggerType switch {
 		EventTriggerType.AtTimeMinusLength => Conductor.Time >= ev.Time,
 		EventTriggerType.AtTime => Conductor.Time >= (ev.Time + ev.Length),
 		_ => false
@@ -993,7 +993,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <param name="ChartEvent"></param>
 	public void LoadEvent(ChartEvent ChartEvent) {
 		Interlude.Spin(submessage: "Loading events...");
-		var ev = CD_BaseEvent.CreateFromType(this, ChartEvent.Type);
+		var ev = DashEvent.CreateFromType(this, ChartEvent.Type);
 
 		ev.Time = ChartEvent.Time;
 		ev.Length = ChartEvent.Length;
@@ -1015,7 +1015,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	public void LoadEntity(ChartEntity ChartEntity) {
 		Interlude.Spin(submessage: "Loading entities...");
 
-		if (!CD_BaseEnemy.TryCreateFromType(this, ChartEntity.Type, out CD_BaseEnemy? ent)) {
+		if (!DashEnemy.TryCreateFromType(this, ChartEntity.Type, out DashEnemy? ent)) {
 			Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
 			return;
 		}
@@ -1082,9 +1082,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
 		//cam.Target = cam.Offset;
 	}
-	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<CD_BaseEnemy> enemyPredicate) {
+	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
 		foreach (Entity ent in VisibleEntities) {
-			if (ent is not CD_BaseEnemy entCD) continue;
+			if (ent is not DashEnemy entCD) continue;
 			if (!enemyPredicate(entCD)) continue;
 
 			float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
@@ -1131,10 +1131,10 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		base.Render2D(frameState);
 
 		foreach (Entity ent in VisibleEntities) {
-			if (ent is not CD_BaseEnemy)
+			if (ent is not DashEnemy)
 				continue;
 
-			var entCD = (CD_BaseEnemy)ent;
+			var entCD = (DashEnemy)ent;
 			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
 		}
 	}
@@ -1142,23 +1142,23 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// <summary>
 	/// Currently visible entities this tick
 	/// </summary>
-	public List<CD_BaseEnemy> VisibleEntities { get; private set; } = [];
+	public List<DashEnemy> VisibleEntities { get; private set; } = [];
 
 	private double LastAttackTime;
 	private PathwaySide LastAttackPathway;
 
-	public void BroadcastEntitySignal(Entity entityFrom, CD_EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not CD_BaseMEntity mentFrom) return;
+	public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
+		if (entityFrom is not DashModelEntity mentFrom) return;
 
 		foreach (var entity in Entities) {
-			if (entity is not CD_BaseMEntity ment) continue;
+			if (entity is not DashModelEntity ment) continue;
 			ment.OnSignalReceived(mentFrom, signalType, data);
 		}
 	}
-	public void SendEntitySignal(Entity entityFrom, Entity entityTo, CD_EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not CD_BaseMEntity mentFrom) return;
+	public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
+		if (entityFrom is not DashModelEntity mentFrom) return;
 
-		if (entityTo is not CD_BaseMEntity ment) return;
+		if (entityTo is not DashModelEntity ment) return;
 		ment.OnSignalReceived(mentFrom, signalType, data);
 	}
 
@@ -1329,7 +1329,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 	/// </summary>
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
-	public void Damage(CD_BaseMEntity? entity, float damage) {
+	public void Damage(DashModelEntity? entity, float damage) {
 		Health -= damage;
 		ResetCombo();
 	}
@@ -1422,7 +1422,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 
 	MusicTrack? pressIdle;
 
-	public delegate void AttackEvent(CD_GameLevel game, PathwaySide side);
+	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
 	public event AttackEvent? OnGroundAttack;
 
@@ -1692,7 +1692,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Dock = Dock.Bottom;
 		}
 		public override void Paint(float width, float height) {
-			var lvl = Level.As<CD_GameLevel>();
+			var lvl = Level.As<DashGameLevel>();
 
 			var startAtX = width / 4f;
 			var totalW = width / 2f;
@@ -1747,7 +1747,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Graphics2D.SetDrawColor(255, 255, 255, 255);
 			//if (Level.AutoPlayer.Enabled)
 			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
-			var lvl = Level.As<CD_GameLevel>();
+			var lvl = Level.As<DashGameLevel>();
 			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", "Noto Sans", (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
 			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Noto Sans", 24, Anchor.Center);
 

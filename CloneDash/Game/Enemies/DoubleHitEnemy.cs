@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Entities
 {
-	public class DoubleHitEnemy : CD_BaseEnemy
+	public class DoubleHitEnemy : DashEnemy
 	{
 		public DoubleHitEnemy() : base(EntityType.Double) {
 			Interactivity = EntityInteractivity.Hit;

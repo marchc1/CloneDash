@@ -6,7 +6,7 @@ using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
-	public class Score : CD_BonusEntity
+	public class Score : DashBonusEntity
 	{
 		public Score() : base(EntityType.Score) {
 			Interactivity = EntityInteractivity.SamePath;
@@ -28,7 +28,7 @@ namespace CloneDash.Game.Entities
 
 		public override void Build() {
 			base.Build();
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
 			Model = scene.GetEnemyModel(this).Instantiate();

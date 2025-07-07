@@ -13,7 +13,7 @@ using Raylib_cs;
 namespace CloneDash.Game
 {
 
-	public class CD_BaseMEntity : ModelEntity
+	public class DashModelEntity : ModelEntity
 	{
 		/// <summary>
 		/// Does the death of this entity add to the characters combo score?
@@ -164,17 +164,17 @@ namespace CloneDash.Game
 		public double Length { get; set; }
 		public int Speed { get; set; }
 
-		public virtual void OnSignalReceived(CD_BaseMEntity from, CD_EntitySignalType signalType, object? data = null) {
+		public virtual void OnSignalReceived(DashModelEntity from, EntitySignalType signalType, object? data = null) {
 
 		}
-		public void SendSignal(CD_BaseMEntity to, CD_EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
-		public void BroadcastSignal(CD_EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
+		public void SendSignal(DashModelEntity to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
+		public void BroadcastSignal(EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
 
 		/// <summary>
 		/// Damages the player as a punishment (which also resets their combo)
 		/// </summary>
 		public void DamagePlayer() {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			if (DidDamagePlayer) // Is the player already hurt
 				return;
@@ -194,7 +194,7 @@ namespace CloneDash.Game
 		/// Resets the players combo as a punishment
 		/// </summary>
 		public void PunishPlayer() {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			if (DidPunishPlayer) // Was the player punished
 				return;
 
@@ -209,11 +209,11 @@ namespace CloneDash.Game
 		}
 
 		protected virtual void OnPunishment() {
-			Level.As<CD_GameLevel>().ResetCombo();
+			Level.As<DashGameLevel>().ResetCombo();
 		}
 
 		public void RewardPlayer(bool heal = false) {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			if (DidRewardPlayer) // Did the entity reward the player already
 				return;
 
@@ -240,7 +240,7 @@ namespace CloneDash.Game
 		}
 
 		protected virtual void OnReward() {
-			var game = Level.As<CD_GameLevel>();
+			var game = Level.As<DashGameLevel>();
 			game.AddScore(CDUtils.DetermineScoreMultiplied(game, ScoreGiven, game.LastPollResult));
 		}
 
@@ -262,7 +262,7 @@ namespace CloneDash.Game
 		/// Kills the entity, which removes a lot of functionality from the entity. Will also mark down FinalBlow time and the Dead field.
 		/// </summary>
 		public void Kill() {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			Dead = true;
 
 			if (DeathAddsToCombo)
@@ -279,14 +279,14 @@ namespace CloneDash.Game
 		/// <br/>
 		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
-		public double DistanceToHit => HitTime - Level.As<CD_GameLevel>().Conductor.Time;
+		public double DistanceToHit => HitTime - Level.As<DashGameLevel>().Conductor.Time;
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
 		/// <br/>
 		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
-		public double DistanceToEnd => (HitTime + Length) - Level.As<CD_GameLevel>().Conductor.Time;
+		public double DistanceToEnd => (HitTime + Length) - Level.As<DashGameLevel>().Conductor.Time;
 
 		/// <summary>
 		/// Where is the entity in game-space?
@@ -294,7 +294,7 @@ namespace CloneDash.Game
 		public double XPos { get; protected set; }
 
 		public double XPosFromTimeOffset(float timeOffset = 0) {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.GetVisualHitTime();
@@ -306,7 +306,7 @@ namespace CloneDash.Game
 		public bool Shown { get; protected set; } = false;
 
 		public bool CheckVisTest(FrameState frameState) {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
 			float w = frameState.WindowWidth, h = frameState.WindowHeight;
@@ -322,7 +322,7 @@ namespace CloneDash.Game
 
 		protected virtual void OnFirstVisible() {
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, CD_EntitySignalType.FirstAppearance);
+				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
@@ -334,7 +334,7 @@ namespace CloneDash.Game
 		/// </summary>
 		protected virtual void OnHit(PathwaySide side, double distanceToHit) {
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, CD_EntitySignalType.FirstHit);
+				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstHit);
 		}
 		protected virtual void OnMiss() {
 
@@ -352,8 +352,8 @@ namespace CloneDash.Game
 
 		}
 
-		public delegate void EntityPathwayEvent(CD_BaseMEntity entity, PathwaySide side);
-		public delegate void EntityNoArgumentEvent(CD_BaseMEntity entity);
+		public delegate void EntityPathwayEvent(DashModelEntity entity, PathwaySide side);
+		public delegate void EntityNoArgumentEvent(DashModelEntity entity);
 
 		/// <summary>
 		/// Per-entity event hook for when an entity is hit.
@@ -386,9 +386,9 @@ namespace CloneDash.Game
 		/// </summary>
 		public static event EntityNoArgumentEvent GlobalOnReleaseEvent;
 
-		public CD_GameLevel GetGameLevel() => Level.As<CD_GameLevel>();
-		public StatisticsData GetStats() => Level.As<CD_GameLevel>().Stats;
-		public Conductor GetConductor() => Level.As<CD_GameLevel>().Conductor;
+		public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
+		public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
+		public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
 
 
 		public int Hits { get; set; } = 0;
@@ -418,7 +418,7 @@ namespace CloneDash.Game
 			if (DidPass)
 				return;
 
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			level.SpawnTextEffect("PASS", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
 			OnPass();
@@ -448,7 +448,7 @@ namespace CloneDash.Game
 
 		private Color? __hitColor;
 		public Color HitColor {
-			get { return __hitColor.HasValue ? __hitColor.Value : Level.As<CD_GameLevel>().GetPathway(Pathway).Color; }
+			get { return __hitColor.HasValue ? __hitColor.Value : Level.As<DashGameLevel>().GetPathway(Pathway).Color; }
 			set { __hitColor = value; }
 		}
 

@@ -8,7 +8,7 @@ using Raylib_cs;
 namespace CloneDash.Scripting;
 
 [LuaObject]
-public partial class CD_LuaTexture(Level level, TextureManagement textures, Texture texture) : ILuaWrappedObject<Texture>
+public partial class LuaTexture(Level level, TextureManagement textures, Texture texture) : ILuaWrappedObject<Texture>
 {
 	public Texture Unwrap() => texture;
 

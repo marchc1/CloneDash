@@ -10,17 +10,17 @@ using Nucleus.Files;
 
 namespace CloneDash.Fevers;
 
-public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
+public class CloneDashFever : CloneDashDescriptor, IFeverDescriptor
 {
-	public CD_FeverDescriptor() : base(CloneDashDescriptorType.Fever, "fevers", "fever", "fever", "2025-05-06-01") { }
+	public CloneDashFever() : base(CloneDashDescriptorType.Fever, "fevers", "fever", "fever", "2025-05-06-01") { }
 
-	public static CD_FeverDescriptor? ParseFever(string filename) => Filesystem.ReadAllText("fevers", filename, out var text) ? ParseFile<CD_FeverDescriptor>(text, filename) : null;
+	public static CloneDashFever? ParseFever(string filename) => Filesystem.ReadAllText("fevers", filename, out var text) ? ParseFile<CloneDashFever>(text, filename) : null;
 
 	LuaFunction? startFever;
 	LuaFunction? thinkFever;
 	LuaFunction? renderFever;
 
-	private void SetupLua(CD_GameLevel game, CD_LuaEnv lua, bool first = true) {
+	private void SetupLua(DashGameLevel game, LuaEnv lua, bool first = true) {
 		if (first) {
 			lua.State.Environment["fever"] = new LuaTable();
 
@@ -35,19 +35,19 @@ public class CD_FeverDescriptor : CloneDashDescriptor, IFeverDescriptor
 		}
 	}
 
-	public void Initialize(CD_GameLevel game) {
+	public void Initialize(DashGameLevel game) {
 		SetupLua(game, game.Lua);
 	}
 
-	public void Start(CD_GameLevel game) {
+	public void Start(DashGameLevel game) {
 		game.Lua.ProtectedCall(startFever);
 	}
 
-	public void Think(CD_GameLevel game) {
+	public void Think(DashGameLevel game) {
 		game.Lua.ProtectedCall(thinkFever);
 	}
 
-	public void Render(CD_GameLevel game) {
+	public void Render(DashGameLevel game) {
 		game.Lua.Graphics.StartRenderingLuaContext();
 		game.Lua.ProtectedCall(renderFever);
 		game.Lua.Graphics.EndRenderingLuaContext();

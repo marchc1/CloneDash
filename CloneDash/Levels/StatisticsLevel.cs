@@ -13,7 +13,7 @@ using Nucleus.UI;
 
 namespace CloneDash.Levels
 {
-	public class CD_Statistics : Level
+	public class StatisticsLevel : Level
 	{
 		ChartSheet sheet;
 		StatisticsData stats;
@@ -44,7 +44,7 @@ namespace CloneDash.Levels
 			tempPanel.PaintOverride += TempPanel_PaintOverride;
 
 			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => {
-				EngineCore.LoadLevel(new CD_Statistics(), sheet, stats);
+				EngineCore.LoadLevel(new StatisticsLevel(), sheet, stats);
 			});
 
 			var bottom = UI.Add<Panel>();
@@ -65,7 +65,7 @@ namespace CloneDash.Levels
 			back.Size = new(.2f);
 			back.Text = "Main Menu";
 			back.Dock = Dock.Right;
-			back.MouseReleaseEvent += (_, _, _) => EngineCore.LoadLevel(new CD_MainMenu());
+			back.MouseReleaseEvent += (_, _, _) => EngineCore.LoadLevel(new MainMenuLevel());
 		}
 
 		private void TempPanel_PaintOverride(Element self, float width, float height) {

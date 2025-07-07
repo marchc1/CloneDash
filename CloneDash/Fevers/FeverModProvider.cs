@@ -13,7 +13,7 @@ public class FeverModProvider : IFeverProvider
 	}
 
 	IFeverDescriptor? IFeverProvider.FindByName(string name) {
-		CD_FeverDescriptor? descriptor = CD_FeverDescriptor.ParseFever(Path.Combine(name, "fever.cdd"));
+		CloneDashFever? descriptor = CloneDashFever.ParseFever(Path.Combine(name, "fever.cdd"));
 		if (descriptor == null) {
 			Logs.Warn($"WARNING: The fever '{name}' could not be found!");
 			return null;

@@ -7,8 +7,8 @@ public class StatisticsData
 	public StatisticsImpressiveness Title;
 	public StatisticsGrade Grade;
 	public ChartSheet? Sheet;
-	public List<CD_BaseEnemy> OrderedEnemies = [];
-	public Dictionary<CD_BaseEnemy, EnemyStatistics> EnemyInfo = [];
+	public List<DashEnemy> OrderedEnemies = [];
+	public Dictionary<DashEnemy, EnemyStatistics> EnemyInfo = [];
 
 	public int Score { get; private set; } = 0;
 	public double Accuracy { get; private set; } = 0;
@@ -23,7 +23,7 @@ public class StatisticsData
 	public int Lates { get; private set; } = 0;
 
 
-	public void RegisterEnemy(CD_BaseEnemy enemy) {
+	public void RegisterEnemy(DashEnemy enemy) {
 		if (EnemyInfo.ContainsKey(enemy)) return;
 
 		OrderedEnemies.Add(enemy);
@@ -135,10 +135,10 @@ public class StatisticsData
 		}
 	}
 
-	public EnemyStatistics GetStatisticsForEnemy(CD_BaseEnemy enemy)
+	public EnemyStatistics GetStatisticsForEnemy(DashEnemy enemy)
 		=> EnemyInfo.TryGetValue(enemy, out var stats) ? stats : throw new Exception("Unregistered CD_BaseEnemy.");
 
-	public EnemyStatisticsAccuracy Hit(CD_BaseEnemy enemy, double hitTime) {
+	public EnemyStatisticsAccuracy Hit(DashEnemy enemy, double hitTime) {
 		var stats = GetStatisticsForEnemy(enemy);
 		var accuracy = stats.Hit(hitTime);
 
@@ -149,24 +149,24 @@ public class StatisticsData
 		return accuracy;
 	}
 
-	public void Miss(CD_BaseEnemy enemy) {
+	public void Miss(DashEnemy enemy) {
 		DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
 		GetStatisticsForEnemy(enemy).Miss();
 	}
 
-	public void Pass(CD_BaseEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
+	public void Pass(DashEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
 
 
-	public void Miss(CD_BaseMEntity ent) {
-		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+	public void Miss(DashModelEntity ent) {
+		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
 		Miss(enemy);
 	}
-	public void Pass(CD_BaseMEntity ent) {
-		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+	public void Pass(DashModelEntity ent) {
+		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
 		Pass(enemy);
 	}
-	public void Hit(CD_BaseMEntity ent, double hitTime) {
-		if (ent is not CD_BaseEnemy enemy) throw new Exception(); // ugh
+	public void Hit(DashModelEntity ent, double hitTime) {
+		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
 		Hit(enemy, hitTime);
 	}
 

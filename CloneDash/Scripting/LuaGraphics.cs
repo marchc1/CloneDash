@@ -8,7 +8,7 @@ using Raylib_cs;
 namespace CloneDash.Scripting;
 
 [LuaObject]
-public partial class CD_LuaGraphics
+public partial class LuaGraphics
 {
 	private Level level;
 
@@ -25,7 +25,7 @@ public partial class CD_LuaGraphics
 		}
 	}
 
-	public CD_LuaGraphics(Level level) {
+	public LuaGraphics(Level level) {
 		this.level = level;
 
 		this.setDrawColor = new LuaFunction(async (ctx, buffer, ct) => {
@@ -37,7 +37,7 @@ public partial class CD_LuaGraphics
 					var arg0 = ctx.GetArgument(1);
 					if (tryGetRGBAPiece(arg0, out int rgbaPiece))
 						drawColor = new(rgbaPiece, rgbaPiece, rgbaPiece, 255);
-					else if (arg0.TryRead(out CD_LuaColor luaColor)) {
+					else if (arg0.TryRead(out LuaColor luaColor)) {
 						drawColor = luaColor.Unwrap();
 					}
 					else {
@@ -71,7 +71,7 @@ public partial class CD_LuaGraphics
 	}
 
 	private Raylib_cs.Color drawColor = Raylib_cs.Color.White;
-	private CD_LuaTexture? activeTexture;
+	private LuaTexture? activeTexture;
 	private int matricesCreated = -1;
 
 	public void StartRenderingLuaContext() {
@@ -134,7 +134,7 @@ public partial class CD_LuaGraphics
 
 
 	[LuaMember("setTexture")]
-	public void SetTexture(CD_LuaTexture tex) {
+	public void SetTexture(LuaTexture tex) {
 		activeTexture = tex;
 	}
 
@@ -187,10 +187,10 @@ public partial class CD_LuaGraphics
 	}
 
 	[LuaMember("drawGradientH")]
-	public void DrawGradientH(float x, float y, float width, float height, CD_LuaColor color1, CD_LuaColor color2)
+	public void DrawGradientH(float x, float y, float width, float height, LuaColor color1, LuaColor color2)
 		=> Raylib.DrawRectangleGradientH((int)x, (int)y, (int)width, (int)height, color1.Unwrap(), color2.Unwrap());
 
 	[LuaMember("drawGradientV")]
-	public void DrawGradientV(float x, float y, float width, float height, CD_LuaColor color1, CD_LuaColor color2)
+	public void DrawGradientV(float x, float y, float width, float height, LuaColor color1, LuaColor color2)
 		=> Raylib.DrawRectangleGradientV((int)x, (int)y, (int)width, (int)height, color1.Unwrap(), color2.Unwrap());
 }

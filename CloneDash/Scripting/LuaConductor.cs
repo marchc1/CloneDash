@@ -6,7 +6,7 @@ using Nucleus;
 namespace CloneDash.Game;
 
 [LuaObject]
-public partial class CD_LuaConductor(Conductor conductor)
+public partial class LuaConductor(Conductor conductor)
 {
 	[LuaMember("time")]
 	public double Time {

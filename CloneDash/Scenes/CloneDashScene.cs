@@ -22,14 +22,14 @@ using Texture = Nucleus.ManagedMemory.Texture;
 
 namespace CloneDash.Scenes;
 
-public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
+public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 {
 	LuaFunction? renderScene;
 	LuaFunction? thinkScene;
 
 	[JsonProperty("mdassets")] public bool UseMDAssets;
 
-	public void Initialize(CD_GameLevel game) {
+	public void Initialize(DashGameLevel game) {
 		SetupLua(game, game.Lua);
 
 		Interlude.Spin(submessage: "Initializing sounds..."); AnnouncerLines.Load(game, UseMDAssets);
@@ -64,11 +64,11 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		Heart.LoadModelData(game, UseMDAssets); Interlude.Spin(submessage: "Initializing extra models...");
 	}
 
-	public void Think(CD_GameLevel game) {
+	public void Think(DashGameLevel game) {
 		game.Lua.ProtectedCall(thinkScene);
 	}
 
-	public void RenderBackground(CD_GameLevel game) {
+	public void RenderBackground(DashGameLevel game) {
 		var lua = game.Lua;
 
 		lua.Graphics.StartRenderingLuaContext();
@@ -76,7 +76,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		lua.Graphics.EndRenderingLuaContext();
 	}
 
-	private void SetupLua(CD_GameLevel game, CD_LuaEnv lua, bool first = true) {
+	private void SetupLua(DashGameLevel game, LuaEnv lua, bool first = true) {
 		if (first) {
 			lua.State.Environment["scene"] = new LuaTable();
 
@@ -90,7 +90,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		}
 	}
 
-	public ModelData GetEnemyModel(CD_BaseEnemy enemy) {
+	public ModelData GetEnemyModel(DashEnemy enemy) {
 		switch (enemy.Type) {
 			case EntityType.Boss: return Boss.ModelData;
 			case EntityType.Single:
@@ -156,7 +156,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		}
 	}
 
-	public string GetEnemyApproachAnimation(CD_BaseEnemy enemy, out double time) {
+	public string GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
 		time = 0;
 
 		switch (enemy.Type) {
@@ -237,7 +237,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 
 	public string GetMasherHitAnimation() => Masher.Hurt.GetAnimation();
 
-	public string GetEnemyHitAnimation(CD_BaseEnemy enemy, HitAnimationType type) {
+	public string GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
 		switch (enemy.Type) {
 			case EntityType.Single: return type == HitAnimationType.Great ? fromVariantSHE(enemy.Variant).GetGreatAnimation() : fromVariantSHE(enemy.Variant).GetPerfectAnimation();
 			case EntityType.Double: return type == HitAnimationType.Great ? DoubleEnemy.GetGreatAnimation() : DoubleEnemy.GetPerfectAnimation();
@@ -260,7 +260,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		down = Sustains.GetDownTexture(pathway);
 	}
 
-	public BoneInstance? GetHPMount(CD_BaseEnemy enemy) {
+	public BoneInstance? GetHPMount(DashEnemy enemy) {
 		switch (enemy.Type) {
 			case EntityType.Single: {
 					IContainsGreatPerfectAndHPMount? greatPerfectHP = fromVariantSHE(enemy.Variant);
@@ -306,7 +306,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 	////////////////////////////////////////////////////////////////////////////////////////////
 
 #nullable disable
-	public CD_SceneDescriptor() : base(CloneDashDescriptorType.Scene, "scenes", "scene", "scene", "2025-05-06-01") { }
+	public CloneDashScene() : base(CloneDashDescriptorType.Scene, "scenes", "scene", "scene", "2025-05-06-01") { }
 #nullable enable
 	public abstract class SceneDescriptor_ContainsOneModelData
 	{
@@ -352,7 +352,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public Sound UnpauseSound;
 		[JsonIgnore] public Sound FullComboSound;
 
-		internal void Load(CD_GameLevel game, bool useMDAssets) {
+		internal void Load(DashGameLevel game, bool useMDAssets) {
 			if (useMDAssets) {
 				BeginSound = MuseDashCompatibility.LoadSoundFromName(game, Begin);
 				FeverSound = MuseDashCompatibility.LoadSoundFromName(game, Fever);
@@ -915,8 +915,8 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 		}
 	}
 
-	public static CD_SceneDescriptor? ParseFile(string filepath) => ParseFile<CD_SceneDescriptor>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
-	public static CD_SceneDescriptor? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CD_SceneDescriptor>(text, filename) : null;
+	public static CloneDashScene? ParseFile(string filepath) => ParseFile<CloneDashScene>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
+	public static CloneDashScene? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CloneDashScene>(text, filename) : null;
 
 	internal void MountToFilesystem() {
 		if (Filename == null) throw new FileNotFoundException("SceneDescriptor.MountToFilesystem: Cannot mount the file, because Filename == null!");

@@ -31,9 +31,9 @@ public class ProfilerResult : IDisposable
 	/// Releases the profiler result.
 	/// </summary>
 	public void End() {
-		Debug.Assert(CD_StaticSequentialProfiler.Profiling);
-		Debug.Assert(CD_StaticSequentialProfiler.CurrentStackFrame == this);
-		CD_StaticSequentialProfiler.EndStackFrame();
+		Debug.Assert(StaticSequentialProfiler.Profiling);
+		Debug.Assert(StaticSequentialProfiler.CurrentStackFrame == this);
+		StaticSequentialProfiler.EndStackFrame();
 	}
 
 	public void Dispose() {
@@ -56,7 +56,10 @@ public class ProfilerAccumulator : IDisposable
 	}
 }
 
-public static class CD_StaticSequentialProfiler
+/// <summary>
+/// Note that this is Clone Dash specific
+/// </summary>
+public static class StaticSequentialProfiler
 {
 	private static ProfilerResult? currentStackFrame;
 	public static ProfilerResult CurrentStackFrame => currentStackFrame ?? throw new Exception("Please start the sequential profiler");
@@ -78,7 +81,7 @@ public static class CD_StaticSequentialProfiler
 		currentStackFrame = null;
 
 		stack = r;
-		accumulators = CD_StaticSequentialProfiler.accumulators.ToList();
+		accumulators = StaticSequentialProfiler.accumulators.ToList();
 	}
 
 	public static ProfilerAccumulator AccumulateTime(string key) {

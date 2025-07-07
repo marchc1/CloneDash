@@ -3,7 +3,7 @@
 namespace CloneDash.Game;
 
 [LuaObject]
-public partial class CD_LuaGame(CD_GameLevel game)
+public partial class LuaGame(DashGameLevel game)
 {
 	[LuaMember("inFever")] public bool InFever { get => game.InFever; set { } }
 	[LuaMember("feverTimeMax")] public double FeverTimeMax { get => game.FeverTime; set { } }

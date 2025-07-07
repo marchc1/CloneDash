@@ -108,17 +108,17 @@ namespace CloneDash.Game
 		private bool wasPaused = false;
 		private double? dragSeconds;
 
-		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, Level.As<CD_GameLevel>()?.Music?.Length ?? throw new Exception());
+		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, Level.As<DashGameLevel>()?.Music?.Length ?? throw new Exception());
 
 		private void UIBar_DragUpdate() {
-			var game = Level.As<CD_GameLevel>();
+			var game = Level.As<DashGameLevel>();
 			if (!game.AutoPlayer.Enabled) return;
 
 			dragSeconds = uiSeconds;
 		}
 
 		private void UIBar_DragEnd() {
-			var game = Level.As<CD_GameLevel>();
+			var game = Level.As<DashGameLevel>();
 			if (!game.AutoPlayer.Enabled) return;
 
 			if (dragSeconds != null)
@@ -131,7 +131,7 @@ namespace CloneDash.Game
 		}
 
 		private void UIBar_DragStart() {
-			var game = Level.As<CD_GameLevel>();
+			var game = Level.As<DashGameLevel>();
 			if (!game.AutoPlayer.Enabled) return;
 
 			wasPaused = game.Paused;
@@ -167,7 +167,7 @@ namespace CloneDash.Game
 		private double lastTime;
 		public override void Think(FrameState frameState) {
 			lastTime = Time;
-			var game = Level.As<CD_GameLevel>();
+			var game = Level.As<DashGameLevel>();
 			Level.FrameDebuggingStrings.Add($"Conductor Time: {Time}");
 
 			if (firstTick) {

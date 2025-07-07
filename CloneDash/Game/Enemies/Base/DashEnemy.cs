@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game;
 
-public class CD_BaseEnemy : CD_BaseMEntity
+public class DashEnemy : DashModelEntity
 {
 	public ModelInstance? MountedHeart;
 	public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
@@ -46,13 +46,13 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		Scale = new(level.GlobalScale);
 	}
 
-	protected CD_BaseEnemy(EntityType type) {
+	protected DashEnemy(EntityType type) {
 		Type = type;
 	}
 
 	public string DebuggingInfo { get; internal set; }
 
-	public static bool TryCreateFromType(CD_GameLevel game, EntityType type, [NotNullWhen(true)] out CD_BaseEnemy? entity) {
+	public static bool TryCreateFromType(DashGameLevel game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
 		if (!TypeConvert.TryGetValue(type, out var ctype)) {
 			entity = null;
 			return false;
@@ -60,9 +60,9 @@ public class CD_BaseEnemy : CD_BaseMEntity
 		entity = CreateFromType(game, ctype);
 		return true;
 	}
-	public static CD_BaseEnemy CreateFromType(CD_GameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
-	public static CD_BaseEnemy CreateFromType(CD_GameLevel game, Type type) {
-		var enemy = game.Add((CD_BaseEnemy)Activator.CreateInstance(type));
+	public static DashEnemy CreateFromType(DashGameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
+	public static DashEnemy CreateFromType(DashGameLevel game, Type type) {
+		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type));
 		return enemy;
 	}
 

@@ -122,7 +122,7 @@ public class MDMCSearchFilter : SearchFilter
 	}
 
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
-		var menu = dialog.Level.As<CD_MainMenu>();
+		var menu = dialog.Level.As<MainMenuLevel>();
 		Page = 0;
 		dialog.Selector.ClearSongs();
 		//PopulateMDMCCharts(dialog.Selector);
@@ -592,10 +592,10 @@ public class SongSelector : Panel, IMainMenuPanel
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(0);
 				if (song is CustomChartsSong customChartsSong) {
-					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, c));
+					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(this, c));
 				}
 				else
-					EngineCore.Level.As<CD_MainMenu>().LoadChartSelector(this, song);
+					EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(this, song);
 			};
 			disc.BorderSize = 0;
 			var midpoint = Discs.Length / 2;

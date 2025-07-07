@@ -5,7 +5,7 @@ using Nucleus.Engine;
 using Raylib_cs;
 namespace CloneDash.Game.Entities;
 
-public class Boss : CD_BaseEnemy
+public class Boss : DashEnemy
 {
 	public Boss() : base(EntityType.Boss) {
 		Interactivity = EntityInteractivity.Noninteractive;
@@ -69,7 +69,7 @@ public class Boss : CD_BaseEnemy
 
 	}
 
-	public override void OnSignalReceived(CD_BaseMEntity from, CD_EntitySignalType signalType, object? data = null) {
+	public override void OnSignalReceived(DashModelEntity from, EntitySignalType signalType, object? data = null) {
 		// If not visible, ignore the signal
 		// Just so things don't get clogged up and a fire animation plays
 		// when nothing is being fired.
@@ -79,7 +79,7 @@ public class Boss : CD_BaseEnemy
 		switch (from) {
 			case SingleHitEnemy she:
 				// Confirm that this is boss related, and the first appearance
-				if (she.Variant.IsBoss() && signalType == CD_EntitySignalType.FirstAppearance) {
+				if (she.Variant.IsBoss() && signalType == EntitySignalType.FirstAppearance) {
 					// Figure out which animation to play.
 
 					// Attack2 is defined with the same class as Attack1; less code typed out here
@@ -102,14 +102,14 @@ public class Boss : CD_BaseEnemy
 					}
 				}
 
-				if (signalType == CD_EntitySignalType.FirstHit) {
+				if (signalType == EntitySignalType.FirstHit) {
 					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Hurt), false);
 					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 				}
 				break;
 			case Masher me:
 				if (me.Variant.IsBoss()) {
-					if (signalType == CD_EntitySignalType.FirstAppearance) {
+					if (signalType == EntitySignalType.FirstAppearance) {
 						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttack), false);
 						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 					}

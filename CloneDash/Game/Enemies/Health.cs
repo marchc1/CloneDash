@@ -4,7 +4,7 @@ using Nucleus.Engine;
 
 namespace CloneDash.Game.Entities
 {
-	public class Health : CD_BonusEntity
+	public class Health : DashBonusEntity
 	{
 		public Health() : base(EntityType.Heart) {
 			Interactivity = EntityInteractivity.SamePath;
@@ -23,7 +23,7 @@ namespace CloneDash.Game.Entities
 
 		public override void Build() {
 			base.Build();
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 			Model = scene.GetEnemyModel(this).Instantiate();
 			ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));

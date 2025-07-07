@@ -3,7 +3,7 @@ using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-	public class Masher : CD_BaseEnemy
+	public class Masher : DashEnemy
 	{
 		public const int MASHER_MAX_HITS_PER_SECOND = 25;
 
@@ -18,7 +18,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		private void CheckIfComplete() {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			if ((Hits >= MaxHits || level.Conductor.Time > (GetJudgementHitTime() + Length)) && !Dead) {
 				Complete();
@@ -31,7 +31,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		private void Complete() {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			level.SpawnTextEffect($"PERFECT {Hits}/{MaxHits}", level.GetPathway(PathwaySide.Top).Position, TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
 			Kill();
 			ForceDraw = false;
@@ -42,7 +42,7 @@ namespace CloneDash.Game.Entities
 			CheckIfComplete();
 		}
 		protected override void OnHit(PathwaySide side, double distanceToHit) {
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
 
@@ -112,7 +112,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
 

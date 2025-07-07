@@ -26,15 +26,15 @@ namespace CloneDash.Compatibility.MuseDash
 			if (Initialized)
 				return MDCompatLayerInitResult.OK;
 
-			CD_StaticSequentialProfiler.Start();
+			StaticSequentialProfiler.Start();
 
 			MDCompatLayerInitResult result;
-			using (CD_StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
+			using (StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
 				result = LightInitialize();
 			}
 
 			if (result != MDCompatLayerInitResult.OK) {
-				CD_StaticSequentialProfiler.End(out _, out _);
+				StaticSequentialProfiler.End(out _, out _);
 				return result;
 			}
 
@@ -42,15 +42,15 @@ namespace CloneDash.Compatibility.MuseDash
 			Interlude.ShouldSelectInterludeTexture = true;
 			Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Mount to Filesystem")) {
+			using (StaticSequentialProfiler.StartStackFrame("Mount to Filesystem")) {
 				using (Stream stream = Filesystem.Open("assets", "mdlut.dat") ?? throw new Exception("Cannot find the mdlut.dat file"))
 					StreamingAssets = Filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa/{StandalonePlatform}"), stream));
 			}
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))
+			using (StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))
 				NoteDataManager = Filesystem.ReadJSON<List<NoteConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/notedata.json");
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Deserialize Characters")) {
+			using (StaticSequentialProfiler.StartStackFrame("Deserialize Characters")) {
 				Characters = Filesystem.ReadJSON<List<CharacterConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/character.json");
 				CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json");
 				System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
@@ -61,7 +61,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 			Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("Process NoteDataManager"))
+			using (StaticSequentialProfiler.StartStackFrame("Process NoteDataManager"))
 				foreach (var notedata in NoteDataManager) {
 					IDToNote[notedata.id] = notedata;
 					IBMSToNote[notedata.ibms_id] = notedata;
@@ -72,13 +72,13 @@ namespace CloneDash.Compatibility.MuseDash
 					IBMSToDesc[notedata.ibms_id].Add(notedata.des);
 				}
 
-			using (CD_StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
+			using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 				BuildDashStructures();
 			Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
 
 			Initialized = true;
 
-			CD_StaticSequentialProfiler.End(out var stack, out var acumulators);
+			StaticSequentialProfiler.End(out var stack, out var acumulators);
 
 			Logs.Debug($"MuseDashCompat.Init(): profiling complete, results:\n  Stack:\n{string.Join(Environment.NewLine, stack.ToStringArray())}\n");
 

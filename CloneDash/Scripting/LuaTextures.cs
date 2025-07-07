@@ -15,15 +15,15 @@ using SixLabors.Fonts;
 namespace CloneDash.Scripting;
 
 [LuaObject]
-public partial class CD_LuaTextures
+public partial class LuaTextures
 {
 	private Level Level;
 	private TextureManagement Textures;
 	private Dictionary<long, Raylib.ImageRef> imageCache = [];
-	private Dictionary<string, CD_LuaTexture> texCache = [];
-	private Dictionary<string, CD_LuaTexture> spriteCache = [];
+	private Dictionary<string, LuaTexture> texCache = [];
+	private Dictionary<string, LuaTexture> spriteCache = [];
 
-	public CD_LuaTextures(Level level, TextureManagement textures) {
+	public LuaTextures(Level level, TextureManagement textures) {
 		this.Level = level;
 		this.Textures = textures;
 
@@ -31,12 +31,12 @@ public partial class CD_LuaTextures
 	}
 
 	[LuaMember("loadTextureFromFile")]
-	public CD_LuaTexture LoadTextureFromFile(string pathID, string path) {
+	public LuaTexture LoadTextureFromFile(string pathID, string path) {
 		return new(Level, Textures, Textures.LoadTextureFromFile(pathID, path));
 	}
 	[LuaMember("loadMuseDashSprite")]
-	public CD_LuaTexture LoadMuseDashSprite(string path) {
-		if (spriteCache.TryGetValue(path, out CD_LuaTexture? luaTex))
+	public LuaTexture LoadMuseDashSprite(string path) {
+		if (spriteCache.TryGetValue(path, out LuaTexture? luaTex))
 			return luaTex;
 		// Loads a Muse Dash sprite from a named sprite asset
 		// Find the sprite
@@ -47,20 +47,20 @@ public partial class CD_LuaTextures
 		using Raylib.ImageRef cutout = img.Crop(sprite.m_RD.textureRect.x, img.Height - sprite.m_RD.textureRect.y - sprite.m_RD.textureRect.height, sprite.m_RD.textureRect.width, sprite.m_RD.textureRect.height);
 
 		Nucleus.ManagedMemory.Texture tex = new Nucleus.ManagedMemory.Texture(Textures, Raylib.LoadTextureFromImage(cutout), true);
-		luaTex = new CD_LuaTexture(Level, Textures, tex);
+		luaTex = new LuaTexture(Level, Textures, tex);
 		spriteCache[path] = luaTex;
 		return luaTex;
 	}
 	[LuaMember("loadMuseDashTexture")]
-	public CD_LuaTexture LoadMuseDashTexture(string path) {
-		if (texCache.TryGetValue(path, out CD_LuaTexture? luaTex))
+	public LuaTexture LoadMuseDashTexture(string path) {
+		if (texCache.TryGetValue(path, out LuaTexture? luaTex))
 			return luaTex;
 		// Loads a Muse Dash sprite from a named sprite asset
 		// Find the sprite
 		AssetStudio.Texture2D tex = MuseDashCompatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(path!)!;
 		using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
 		Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(Textures, Raylib.LoadTextureFromImage(img), true);
-		luaTex = new CD_LuaTexture(Level, Textures, ntex);
+		luaTex = new LuaTexture(Level, Textures, ntex);
 		return luaTex;
 	}
 

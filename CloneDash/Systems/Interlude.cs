@@ -210,7 +210,7 @@ public static class Interlude
 		if (submessage != null)
 			loadSubMsg = submessage; // changes the subtitle message
 
-		using (CD_StaticSequentialProfiler.AccumulateTime("Interlude.Spin")) {
+		using (StaticSequentialProfiler.AccumulateTime("Interlude.Spin")) {
 			var msNow = limiter.Elapsed.TotalSeconds;
 			if (lastFrame < 0 || (msNow - lastFrame) >= (1d / 30d)) {
 				lastFrame = msNow;

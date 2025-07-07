@@ -13,7 +13,7 @@ using Raylib_cs;
 
 namespace CloneDash.Scripting;
 
-public class CD_LuaEnv
+public class LuaEnv
 {
 	public LuaState State;
 	private Level level;
@@ -50,7 +50,7 @@ public class CD_LuaEnv
 		}
 	}
 
-	public CD_LuaEnv(Level level) {
+	public LuaEnv(Level level) {
 		this.level = level;
 
 		State = LuaState.Create();
@@ -62,7 +62,7 @@ public class CD_LuaEnv
 		State.OpenTableLibrary();
 
 		// Types
-		State.Environment["Color"] = new CD_LuaColor();
+		State.Environment["Color"] = new LuaColor();
 		State.Environment["print"] = new LuaFunction("print", print);
 
 		// Enums
@@ -84,12 +84,12 @@ public class CD_LuaEnv
 		// Libraries
 		// TODO: CD_LuaAudio
 		State.Environment["graphics"] = Graphics = new(level);
-		State.Environment["level"] = new CD_LuaLevel(level);
+		State.Environment["level"] = new LuaLevel(level);
 		// TODO: CD_LuaModels
-		State.Environment["textures"] = new CD_LuaTextures(level, level.Textures);
+		State.Environment["textures"] = new LuaTextures(level, level.Textures);
 	}
 
-	public CD_LuaGraphics Graphics;
+	public LuaGraphics Graphics;
 
 	public LuaValue[] DoFile(string pathID, string path) {
 		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), IManagedMemory.MergePath(pathID, path)).AsTask();

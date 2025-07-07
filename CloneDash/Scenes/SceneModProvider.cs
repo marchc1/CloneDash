@@ -15,7 +15,7 @@ public class SceneModProvider : ISceneProvider
 	}
 
 	ISceneDescriptor? ISceneProvider.FindByName(string name) {
-		var descriptor = CD_SceneDescriptor.ParseScene(Path.Combine(name, "scene.cdd"));
+		var descriptor = CloneDashScene.ParseScene(Path.Combine(name, "scene.cdd"));
 		if (descriptor == null) return null;
 
 		descriptor.Filename = name;

@@ -8,10 +8,10 @@ public enum EventTriggerType
 	AtTimeMinusLength,
 	AtTime
 }
-public class CD_BaseEvent
+public class DashEvent
 {
-	public CD_GameLevel Game;
-	public CD_BaseEvent(CD_GameLevel game) {
+	public DashGameLevel Game;
+	public DashEvent(DashGameLevel game) {
 		Game = game;
 	}
 
@@ -41,7 +41,7 @@ public class CD_BaseEvent
 	}
 
 	public virtual void OnBuild() { }
-	public static CD_BaseEvent CreateFromType(CD_GameLevel game, EventType type) {
+	public static DashEvent CreateFromType(DashGameLevel game, EventType type) {
 		switch (type) {
 			case EventType.BossIn: return new BossInEvent(game);
 			case EventType.BossOut: return new BossOutEvent(game);

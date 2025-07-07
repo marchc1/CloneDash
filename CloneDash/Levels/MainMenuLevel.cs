@@ -31,7 +31,7 @@ public interface IMainMenuPanel
 
 
 [Nucleus.MarkForStaticConstruction]
-public class CD_MainMenu : Level
+public class MainMenuLevel : Level
 {
 	public static ConCommand hologramtest = ConCommand.Register(nameof(hologramtest), (_, _) => {
 		var level = EngineCore.Level;
@@ -150,7 +150,7 @@ public class CD_MainMenu : Level
 		test2.AutoSize = true;
 		test2.DockMargin = RectangleF.TLRB(4);
 
-		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new CD_MainMenu()));
+		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new MainMenuLevel()));
 
 		PushActiveElement(UI.Add<MainMenuPanel>());
 		ConsoleSystem.AddScreenBlocker(UI);
@@ -382,16 +382,16 @@ public class CD_MainMenu : Level
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
 		=> CreateDifficulty(levelSelector, (mapID, state) => {
-			levelSelector.Level.As<CD_MainMenu>().LoadChartSheetLevel(song, mapID, state.Keyboard.AltDown);
+			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(song, mapID, state.Keyboard.AltDown);
 		}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
 
 
-	private CD_GameLevel? workingLevel;
+	private DashGameLevel? workingLevel;
 
 	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
 		if (workingLevel != null) return;
 
-		workingLevel = CD_GameLevel.LoadLevel(song, mapID, autoplay);
+		workingLevel = DashGameLevel.LoadLevel(song, mapID, autoplay);
 	}
 
 	public override void Think(FrameState frameState) {

@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Entities
 {
-	public class Hammer : CD_BaseEnemy
+	public class Hammer : DashEnemy
 	{
 		public Hammer() : base(EntityType.Hammer) {
 			Interactivity = EntityInteractivity.Hit;
@@ -15,7 +15,7 @@
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
+			if (Level.As<DashGameLevel>().Pathway == this.Pathway) {
 				DamagePlayer();
 			}
 		}

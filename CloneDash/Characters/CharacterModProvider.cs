@@ -14,7 +14,7 @@ namespace CloneDash.Characters
 		}
 
 		ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
-			var descriptor = CD_CharacterDescriptor.ParseCharacter(Path.Combine(name, "character.cdd"));
+			var descriptor = CloneDashCharacter.ParseCharacter(Path.Combine(name, "character.cdd"));
 			if (descriptor == null) return null;
 
 			descriptor.Filename = name;

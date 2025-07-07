@@ -90,7 +90,7 @@ internal class Program
 			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
-			var lvl = new CD_GameLevel(sheet);
+			var lvl = new DashGameLevel(sheet);
 
 			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"));
 		}
@@ -110,12 +110,12 @@ internal class Program
 					break;
 			}
 
-			var lvl = new CD_GameLevel(sheet);
+			var lvl = new DashGameLevel(sheet);
 			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"), CommandLine.GetParam("startmeasure", 0d));
 		}
 
 		else {
-			EngineCore.LoadLevel(new CD_MainMenu());
+			EngineCore.LoadLevel(new MainMenuLevel());
 		}
 
 		Interlude.Spin();

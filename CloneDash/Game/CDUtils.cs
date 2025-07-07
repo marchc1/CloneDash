@@ -24,5 +24,5 @@ public static class CDUtils
 		return (int)MathF.Round(baseScore);
 	}
 
-	public static int DetermineScoreMultiplied(this CD_GameLevel game, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, game.InFever, game.Combo, pollResult.DistanceToHit);
+	public static int DetermineScoreMultiplied(this DashGameLevel game, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, game.InFever, game.Combo, pollResult.DistanceToHit);
 }

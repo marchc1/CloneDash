@@ -38,9 +38,9 @@ namespace CloneDash.Game
 			return ((height * PATHWAY_TOP_PERCENTAGE) + (height * PATHWAY_BOTTOM_PERCENTAGE)) / 2;
 		}
 
-		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopClicked > 0, Level.As<CD_GameLevel>().InputState.BottomClicked > 0);
-		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeld, Level.As<CD_GameLevel>().InputState.BottomHeld);
-		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<CD_GameLevel>().InputState.TopHeldCount, Level.As<CD_GameLevel>().InputState.BottomHeldCount);
+		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopClicked > 0, Level.As<DashGameLevel>().InputState.BottomClicked > 0);
+		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeld, Level.As<DashGameLevel>().InputState.BottomHeld);
+		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeldCount, Level.As<DashGameLevel>().InputState.BottomHeldCount);
 
 
 		public static float GetPathwayY(PathwaySide side) => side switch {
@@ -111,7 +111,7 @@ namespace CloneDash.Game
 		}
 
 		public void Render() {
-			var lvl = Level.As<CD_GameLevel>();
+			var lvl = Level.As<DashGameLevel>();
 			var conductor = lvl.Conductor;
 			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);

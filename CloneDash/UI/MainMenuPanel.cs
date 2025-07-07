@@ -67,8 +67,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
-	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<CD_MainMenu>? action = null) {
-		CD_MainMenu menu = Level.As<CD_MainMenu>();
+	private MainMenuButton MakeNavigationButton(string text, string icon, string description, float hue, Action<MainMenuLevel>? action = null) {
+		MainMenuLevel menu = Level.As<MainMenuLevel>();
 		var menuBtns = btns.Peek();
 
 		Add(out MainMenuButton btn);
@@ -159,10 +159,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		DestroyNavigationMenu();
 	}
 
-	private void ModdingTools_OpenMenuButtons(CD_MainMenu menu) {
+	private void ModdingTools_OpenMenuButtons(MainMenuLevel menu) {
 		CreateNavigationMenu();
 		MakeNavigationButton("Scene Editor", "ui/sceneselect.png", "Opens the scene editor & previewer", 160, (menu) => {
-			ConCommand.Execute(CD_SceneEdit.sceneedit);
+			ConCommand.Execute(SceneEditorLevel.sceneedit);
 		});
 	}
 

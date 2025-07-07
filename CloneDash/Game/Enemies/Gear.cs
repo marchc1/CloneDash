@@ -1,7 +1,7 @@
 ﻿using Nucleus.Types;
 namespace CloneDash.Game.Entities
 {
-	public class Gear : CD_BaseEnemy
+	public class Gear : DashEnemy
 	{
 		public Gear() : base(EntityType.Gear) {
 			Interactivity = EntityInteractivity.Avoid;
@@ -34,7 +34,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
 			Model = scene.GetEnemyModel(this).Instantiate();

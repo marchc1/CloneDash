@@ -4,7 +4,7 @@ namespace CloneDash.Game.Statistics;
 
 public class EnemyStatistics
 {
-	public CD_BaseEnemy Enemy;
+	public DashEnemy Enemy;
 	public EnemyStatisticsState State;
 	public EnemyStatisticsAccuracy Accuracy;
 
@@ -13,7 +13,7 @@ public class EnemyStatistics
 		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
 	}
 
-	public EnemyStatistics(CD_BaseEnemy enemy) {
+	public EnemyStatistics(DashEnemy enemy) {
 		Enemy = enemy;
 		Reset();
 	}

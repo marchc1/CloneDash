@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Events;
 
-public class BossOutEvent(CD_GameLevel game) : CD_BaseEvent(game)
+public class BossOutEvent(DashGameLevel game) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.Out();

@@ -5,7 +5,7 @@ using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-	public class SingleHitEnemy : CD_BaseEnemy
+	public class SingleHitEnemy : DashEnemy
 	{
 		public SingleHitEnemy() : base(EntityType.Single) {
 			Interactivity = EntityInteractivity.Hit;
@@ -23,7 +23,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<CD_GameLevel>().Pathway == this.Pathway) {
+			if (Level.As<DashGameLevel>().Pathway == this.Pathway) {
 				DamagePlayer();
 			}
 		}
@@ -64,7 +64,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
 			switch (Variant) {

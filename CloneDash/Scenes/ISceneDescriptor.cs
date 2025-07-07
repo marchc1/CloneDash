@@ -12,15 +12,15 @@ namespace CloneDash.Scenes;
 /// </summary>
 public interface ISceneDescriptor
 {
-	public void Initialize(CD_GameLevel game);
+	public void Initialize(DashGameLevel game);
 
 	public void PlaySound(SceneSound sound, int hits);
 	public MusicTrack GetPressIdleSound();
 
-	public void Think(CD_GameLevel game);
-	public void RenderBackground(CD_GameLevel game);
+	public void Think(DashGameLevel game);
+	public void RenderBackground(DashGameLevel game);
 
-	public ModelData GetEnemyModel(CD_BaseEnemy enemy);
+	public ModelData GetEnemyModel(DashEnemy enemy);
 
 	public ModelData GetHP(out string mountAnimation);
 
@@ -34,14 +34,14 @@ public interface ISceneDescriptor
 	/// <returns></returns>
 	public string GetBossAnimation(BossAnimationType type, out double time);
 	public string GetBossAnimation(BossAnimationType type) => GetBossAnimation(type, out _);
-	public string GetBossAnimation(CD_BaseEnemy fired, out double time) =>
+	public string GetBossAnimation(DashEnemy fired, out double time) =>
 		fired.Variant == EntityVariant.Boss1
 			? fired.Pathway == PathwaySide.Top ? GetBossAnimation(BossAnimationType.AttackAir1, out time) : GetBossAnimation(BossAnimationType.AttackGround1, out time)
 			: fired.Pathway == PathwaySide.Top ? GetBossAnimation(BossAnimationType.AttackAir2, out time) : GetBossAnimation(BossAnimationType.AttackGround2, out time);
-	public string GetBossAnimation(CD_BaseEnemy fired) => GetBossAnimation(fired, out _);
-	public string GetEnemyApproachAnimation(CD_BaseEnemy enemy, out double time);
+	public string GetBossAnimation(DashEnemy fired) => GetBossAnimation(fired, out _);
+	public string GetEnemyApproachAnimation(DashEnemy enemy, out double time);
 
-	public string GetEnemyHitAnimation(CD_BaseEnemy enemy, HitAnimationType hitType);
-	public BoneInstance? GetHPMount(CD_BaseEnemy enemy);
+	public string GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
+	public BoneInstance? GetHPMount(DashEnemy enemy);
 	public void GetSustainResources(PathwaySide pathway, out Texture start, out Texture end, out Texture body, out Texture up, out Texture down, out float rotationDegsPerSecond);
 }

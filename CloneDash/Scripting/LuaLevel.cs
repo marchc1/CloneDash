@@ -5,7 +5,7 @@ using Nucleus.Engine;
 namespace CloneDash.Game;
 
 [LuaObject]
-public partial class CD_LuaLevel(Level game)
+public partial class LuaLevel(Level game)
 {
 	[LuaMember("curtime")] public double Curtime { get => game.Curtime; set { } }
 	[LuaMember("curtimeDelta")] public double CurtimeDelta { get => game.CurtimeDelta; set { } }

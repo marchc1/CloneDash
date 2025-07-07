@@ -7,8 +7,8 @@ namespace CloneDash.Fevers;
 /// </summary>
 public interface IFeverDescriptor
 {
-	public void Initialize(CD_GameLevel game);
-	public void Start(CD_GameLevel game);
-	public void Think(CD_GameLevel game);
-	public void Render(CD_GameLevel game);
+	public void Initialize(DashGameLevel game);
+	public void Start(DashGameLevel game);
+	public void Think(DashGameLevel game);
+	public void Render(DashGameLevel game);
 }

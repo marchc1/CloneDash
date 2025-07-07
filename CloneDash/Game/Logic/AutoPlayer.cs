@@ -22,7 +22,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Entities the autoplayer has passed already.
 		/// </summary>
-		private static HashSet<CD_BaseMEntity> Passed { get; set; } = new();
+		private static HashSet<DashModelEntity> Passed { get; set; } = new();
 		/// <summary>
 		/// Last time the autoplayer hit a masher. Used to limit masher hits.
 		/// </summary>
@@ -40,7 +40,7 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="entity"></param>
 		/// <returns></returns>
-		private bool PassedEntity(CD_BaseMEntity entity) => Passed.Contains(entity);
+		private bool PassedEntity(DashModelEntity entity) => Passed.Contains(entity);
 
 		/// <summary>
 		/// This method automatically scans the visible entities for the next entity to hit at an almost-perfect time, and then hits the entity by simulating input presses
@@ -50,7 +50,7 @@ namespace CloneDash.Game.Logic
 			if (!Enabled)
 				return;
 
-			var level = Level.As<CD_GameLevel>();
+			var level = Level.As<DashGameLevel>();
 
 			// Mash state functionality
 			if (level.InMashState && CanHitMasher) {

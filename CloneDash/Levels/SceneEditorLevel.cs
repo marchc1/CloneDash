@@ -8,12 +8,12 @@ using Nucleus.UI.Elements;
 
 namespace CloneDash.Levels;
 
-public class CD_SceneEdit() : CD_GameLevel(null)
+public class SceneEditorLevel() : DashGameLevel(null)
 {
 	public static ConCommand sceneedit = ConCommand.Register(nameof(sceneedit), (_, _) => {
 		Interlude.Begin("Loading the Scene Editor...");
 		Interlude.Spin();
-		EngineCore.LoadLevel(new CD_SceneEdit());
+		EngineCore.LoadLevel(new SceneEditorLevel());
 	}, "Opens the scene editor");
 
 	Menubar menubar;
