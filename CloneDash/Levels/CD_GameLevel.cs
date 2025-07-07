@@ -527,7 +527,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if (CommandLineArguments.GetParam("pretime", 5d) > 0)
+			if (CommandLine.GetParam("pretime", 5d) > 0)
 				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 

@@ -2,7 +2,7 @@
 
 namespace Nucleus.Engine
 {
-	public static class CommandLineArguments
+	public static class CommandLine
 	{
 		private static Dictionary<string, object> parameters = [];
 		public static Dictionary<string, object> Params => parameters.ToDictionary();

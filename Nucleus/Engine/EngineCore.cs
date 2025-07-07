@@ -196,8 +196,8 @@ public static class EngineCore
 			MainThread.Thread = Thread.CurrentThread;
 
 		Host.ReadConfig();
-		CommandLineArguments.FromArgs(args ?? []);
-		ShowDebuggingInfo = CommandLineArguments.IsParamTrue("debug");
+		CommandLine.FromArgs(args ?? []);
+		ShowDebuggingInfo = CommandLine.IsParamTrue("debug");
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -238,7 +238,7 @@ public static class EngineCore
 		GameThread.Start();
 		lock (GameThread_GLLock) ;
 
-		if (CommandLineArguments.TryGetParam("monitor", out int monitor)) {
+		if (CommandLine.TryGetParam("monitor", out int monitor)) {
 			var monitorPos = OS.GetMonitorPosition(monitor);
 			var monitorW = OS.GetMonitorWidth(monitor);
 			var monitorH = OS.GetMonitorHeight(monitor);

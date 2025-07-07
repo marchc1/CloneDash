@@ -85,19 +85,19 @@ internal class Program
 			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
 		}
 
-		if (CommandLineArguments.TryGetParam<string>("md_level", out var md_level)) {
-			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+		if (CommandLine.TryGetParam<string>("md_level", out var md_level)) {
+			CommandLine.TryGetParam<int>("difficulty", out var difficulty);
 			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
 			var lvl = new CD_GameLevel(sheet);
 
-			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"));
+			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"));
 		}
 
-		else if (CommandLineArguments.TryGetParam<string>("cam_level", out var cam_level)) {
+		else if (CommandLine.TryGetParam<string>("cam_level", out var cam_level)) {
 			Logs.Info($"cam_level specified: {cam_level}");
-			CommandLineArguments.TryGetParam<int>("difficulty", out var difficulty);
+			CommandLine.TryGetParam<int>("difficulty", out var difficulty);
 
 			CustomChartsSong song = new CustomChartsSong(cam_level);
 			ChartSheet sheet;
@@ -111,7 +111,7 @@ internal class Program
 			}
 
 			var lvl = new CD_GameLevel(sheet);
-			EngineCore.LoadLevel(lvl, CommandLineArguments.IsParamTrue("autoplay"), CommandLineArguments.GetParam("startmeasure", 0d));
+			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"), CommandLine.GetParam("startmeasure", 0d));
 		}
 
 		else {

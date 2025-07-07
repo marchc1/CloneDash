@@ -44,7 +44,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Offsets the conductor time
 		/// </summary>
-		public double PreStartTime { get; set; } = CommandLineArguments.GetParam("pretime", 5d);
+		public double PreStartTime { get; set; } = CommandLine.GetParam("pretime", 5d);
 
 		public double BPM => GetTempoAtTime(Time);
 
