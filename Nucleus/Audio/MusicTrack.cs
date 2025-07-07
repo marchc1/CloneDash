@@ -18,17 +18,9 @@ namespace Nucleus.Audio
 		public delegate void OnProcessDelegate(MusicTrack self, Span<float> frames);
 		public event OnProcessDelegate? Processing;
 
-		[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-		private static unsafe void FUCKFUCKFUCKFUCK(void* buffer, uint frames) {
-			float* floatBuffer = (float*)buffer;
-			Span<float> stackAllocatedBuffer = stackalloc float[(int)frames];
-			for (int i = 0; i < frames; i++) {
-				stackAllocatedBuffer[i] = floatBuffer[i];
-			}
-
-			Current?.Processing?.Invoke(Current, stackAllocatedBuffer);
-		}
-
+		// I want to rename this, but it captures my anger at the time so perfectly
+		[UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+		private static unsafe void FUCKFUCKFUCKFUCK(void* buffer, uint frames) => Current?.Processing?.Invoke(Current, new(buffer, (int)frames));
 
 		private float __volumeMultiplier = 1f;
 		List<ConVar> boundConVars = [];
