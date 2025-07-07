@@ -2,7 +2,8 @@
 using CloneDash.Characters;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
-using CloneDash.UI;
+using CloneDash.Menu;
+using CloneDash.Menu.Searching;
 
 using Nucleus;
 using Nucleus.Audio;
@@ -21,13 +22,6 @@ using Raylib_cs;
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.Game;
-
-public interface IMainMenuPanel
-{
-	public string GetName();
-	public void OnHidden();
-	public void OnShown();
-}
 
 
 [Nucleus.MarkForStaticConstruction]

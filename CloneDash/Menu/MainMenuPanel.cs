@@ -3,6 +3,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Levels;
+using CloneDash.Menu.Searching;
 
 using Nucleus;
 using Nucleus.Audio;
@@ -18,7 +19,7 @@ using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 using MouseButton = Nucleus.Input.MouseButton;
 
-namespace CloneDash.UI;
+namespace CloneDash.Menu;
 
 public class MainMenuPanel : Panel, IMainMenuPanel
 {
@@ -251,7 +252,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			Vector2F textPos = new Vector2F(width / 2 - width * .2f, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
 			textSize += new Vector2F(16);
-			Graphics2D.DrawRectangle(textPos - (textSize / 2), textSize);
+			Graphics2D.DrawRectangle(textPos - textSize / 2, textSize);
 			Graphics2D.SetDrawColor(255, 255, 255, (int)(alphaMult * 255));
 			Graphics2D.DrawText(textPos, expressionText, font, fontSize, Anchor.Center);
 		}

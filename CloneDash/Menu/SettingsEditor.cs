@@ -10,7 +10,7 @@ using Nucleus.UI;
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace CloneDash.UI;
+namespace CloneDash.Menu;
 
 public class SettingsCategory : Button
 {
@@ -25,7 +25,7 @@ public class SettingsCategory : Button
 		Panel.Category = this;
 		Panel.Dock = Dock.Fill;
 
-		TextAlignment = Nucleus.Types.Anchor.CenterLeft; ;
+		TextAlignment = Anchor.CenterLeft; ;
 		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		TextSize = 16;
 
@@ -33,7 +33,7 @@ public class SettingsCategory : Button
 		BorderSize = 0;
 		Icon.DrawPanelBackground = false;
 		Icon.ImagePadding = new(4);
-		Icon.ImageOrientation = Nucleus.Types.ImageOrientation.Zoom;
+		Icon.ImageOrientation = ImageOrientation.Zoom;
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -67,7 +67,7 @@ public class SettingsPanel : ScrollPanel
 
 		var name = top.Add<Label>();
 		name.Dock = Dock.Left;
-		name.TextAlignment = Nucleus.Types.Anchor.CenterLeft;
+		name.TextAlignment = Anchor.CenterLeft;
 		name.DynamicallySized = true;
 		name.TextPadding = new(16);
 		name.AutoSize = true;
@@ -76,7 +76,7 @@ public class SettingsPanel : ScrollPanel
 
 		var desc = top.Add<Label>();
 		desc.Dock = Dock.Fill;
-		desc.TextAlignment = Nucleus.Types.Anchor.CenterLeft;
+		desc.TextAlignment = Anchor.CenterLeft;
 		desc.DynamicallySized = true;
 		desc.TextPadding = new(16);
 		desc.Text = descTxt;
@@ -209,7 +209,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 	public float CalculateJudgementOffset(float localToPlayhead) {
 		var mld2 = track.Length / 2f;
-		return (localToPlayhead > mld2 ? ((track.Length - localToPlayhead) * -1) : localToPlayhead) / mld2;
+		return (localToPlayhead > mld2 ? (track.Length - localToPlayhead) * -1 : localToPlayhead) / mld2;
 	}
 
 	public override void Paint(float width, float height) {
@@ -218,22 +218,22 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
 		var h = height / 2;
-		Graphics2D.DrawRectangle(0, (height / 2) - (h / 2), width, h);
+		Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
 
 		var offset = InputSettings.JudgementOffset;
 		var midpoint = width / 2f;
 
 		Graphics2D.SetDrawColor(255, 255, 255);
-		var musicPlayhead = midpoint + (CalculateJudgementOffset((float)offset) * (width / 2));
-		var offsetPlayhead = midpoint + (CalculateJudgementOffset(track.Playhead) * (width / 2));
+		var musicPlayhead = midpoint + CalculateJudgementOffset((float)offset) * (width / 2);
+		var offsetPlayhead = midpoint + CalculateJudgementOffset(track.Playhead) * (width / 2);
 		var padding = h * 0.25f;
-		var ls = (height / 2) - (h / 2) + padding;
-		Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - (padding * 2)), height / 100f);
+		var ls = height / 2 - h / 2 + padding;
+		Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - padding * 2), height / 100f);
 
 		var triangleSize = height / 26f;
 		Graphics2D.SetDrawColor(200, 220, 255, 150);
-		var startY = h - (h / 2);
-		var endY = (h - (h / 2)) + h;
+		var startY = h - h / 2;
+		var endY = h - h / 2 + h;
 		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
 		Graphics2D.SetDrawColor(BackgroundColor);
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));

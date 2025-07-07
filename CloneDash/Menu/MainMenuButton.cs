@@ -7,7 +7,7 @@ using Nucleus.UI;
 
 using Raylib_cs;
 
-namespace CloneDash.UI;
+namespace CloneDash.Menu;
 
 public class MainMenuButton : Button
 {

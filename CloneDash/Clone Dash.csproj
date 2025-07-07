@@ -41,6 +41,10 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="UI\" />
+	</ItemGroup>
+
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
 			<UniversalAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\universal\**\*" />

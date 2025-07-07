@@ -1,9 +1,8 @@
-﻿using Nucleus.Extensions;
-using Nucleus.Input;
+﻿using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 
-namespace CloneDash.UI;
+namespace CloneDash.Menu.Searching;
 
 public class SongSearchDialog : Panel
 {
@@ -40,7 +39,7 @@ public class SongSearchDialog : Panel
 	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
-		this.Remove();
+		Remove();
 	}
 
 	public override void Paint(float width, float height) {
@@ -50,27 +49,6 @@ public class SongSearchDialog : Panel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		applyButton.Size = new(height * 0.1f);
-	}
-}
-
-public class SongSearchBar : Button
-{
-	public string? SearchQuery = null;
-	protected override void Initialize() {
-		base.Initialize();
-		Origin = Anchor.Center;
-	}
-
-	protected override void PerformLayout(float width, float height) {
-		base.PerformLayout(width, height);
-		TextSize = height / 1.5f;
-	}
-
-	public override void Paint(float width, float height) {
-		Text = SearchQuery ?? "Search...";
-		TextColor = SearchQuery == null ? DefaultTextColor.Adjust(0, 0, -0.3f) : DefaultTextColor;
-
-		base.Paint(width, height);
 	}
 }
 
