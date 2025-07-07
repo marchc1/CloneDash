@@ -36,7 +36,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 {
 	public CD_LuaEnv Lua;
 
-	public static ConCommand clonedash_seek = ConCommand.Register("clonedash_seek", (_, args) => {
+	public static ConCommand musicseek = ConCommand.Register(nameof(musicseek), (_, args) => {
 		var level = EngineCore.Level.AsNullable<CD_GameLevel>();
 		if (level == null) {
 			Logs.Warn("Not in game context!");
@@ -88,9 +88,9 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		}
 	}
 
-	public static ConCommand clonedash_openmdlevel = ConCommand.Register(nameof(clonedash_openmdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
+	public static ConCommand mdlevel = ConCommand.Register(nameof(mdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
 
-	public static ConCommand clonedash_restest = ConCommand.Register("clonedash_restest", (_, args) => {
+	public static ConCommand cdrestest = ConCommand.Register(nameof(cdrestest), (_, args) => {
 		Vector2F winSize;
 		switch (args.GetString(0)) {
 			case "16:9": winSize = new(1600, 900); break;
@@ -109,13 +109,12 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 		EngineCore.Window.Size = new((int)winSize.X, (int)winSize.Y);
 	});
 
-	public static ConVar clonedash_profilegameload = ConVar.Register("clonedash_profilegameload", "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
-	public static ConVar clonedash_offset = ConVar.Register("clonedash_offset", "0", ConsoleFlags.Saved, "Seconds-based chart offset", -1, 1);
+	public static ConVar profilegameload = ConVar.Register(nameof(profilegameload), "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 
 	public static CD_GameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
-		if (clonedash_profilegameload.GetBool()) {
-			Logs.Info("Starting the sequential profiler.");
+		if (profilegameload.GetBool()) {
+			Logs.Debug("Starting the sequential profiler.");
 			CD_StaticSequentialProfiler.Start();
 		}
 
@@ -633,7 +632,7 @@ public partial class CD_GameLevel(ChartSheet? Sheet) : Level
 					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
 						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 
-						if (clonedash_profilegameload.GetBool())
+						if (profilegameload.GetBool())
 							CD_StaticSequentialProfiler.Start();
 
 						EngineCore.LoadLevel(new CD_GameLevel(Sheet), AutoPlayer.Enabled);

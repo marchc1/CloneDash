@@ -363,6 +363,7 @@ namespace Nucleus
 	}
 	public class ConVar : ConCommandBase
 	{
+		public static new ConVar Get(string name) => (ConVar)ConCommandBase.Get(name)!;
 		public delegate void OnConvarChangeDelegate(ConVar self, CVValue old, CVValue now);
 		private static Dictionary<string, string> __startupParms = [];
 		public static void SetStartupParameter(string parameterName, string parameterStringValue) {
@@ -443,6 +444,7 @@ namespace Nucleus
 		public static ConVar Register(string name, double defaultValue) => Register(name, $"{defaultValue}", ConsoleFlags.None, "");
 		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags) => Register(name, $"{defaultValue}", flags, "");
 		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags, double min, double max) => Register(name, $"{defaultValue}", flags, "", min, max);
+		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags, string helpText, double min, double max) => Register(name, $"{defaultValue}", flags, helpText, min, max);
 
 		public static ConVar Register(
 			string name,

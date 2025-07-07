@@ -84,7 +84,7 @@ namespace CloneDash.Data
 				return AudioTrack;
 
 			AudioTrack = ProduceAudioTrack();
-			AudioTrack.BindVolumeToConVar(AudioSettings.clonedash_music_volume);
+			AudioTrack.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			return AudioTrack;
 		}
 
@@ -106,7 +106,7 @@ namespace CloneDash.Data
 				return DemoTrack;
 
 			DemoTrack = ProduceDemoTrack();
-			DemoTrack?.BindVolumeToConVar(AudioSettings.clonedash_music_volume);
+			DemoTrack?.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			__gotDemoTrack = true;
 			return DemoTrack;
 		}

@@ -158,9 +158,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	private void BuildAudioPanel(SettingsPanel panel) {
 		panel.PercentageNumber(SoundManagement.snd_volume, "Sound Volume");
-		panel.PercentageNumber(AudioSettings.clonedash_music_volume, "Music Volume");
-		panel.PercentageNumber(AudioSettings.clonedash_voice_volume, "Voice Volume");
-		panel.PercentageNumber(AudioSettings.clonedash_hitsound_volume, "Hit-sound Volume");
+		panel.PercentageNumber(AudioSettings.snd_musicvolume, "Music Volume");
+		panel.PercentageNumber(AudioSettings.snd_voicevolume, "Voice Volume");
+		panel.PercentageNumber(AudioSettings.snd_hitvolume, "Hit-sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) {
 
@@ -182,8 +182,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		var offsets = panel.Blank("Wizards", "Input offset wizards.");
 		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
-		var judgementSlider = panel.Number(InputSettings.clonedash_judgementoffset, "Judgement Offset", "{0:0} ms");
-		var visualSlider = panel.Number(InputSettings.clonedash_visualoffset, "Visual Offset", "{0:0} ms");
+		var judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
+		var visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
 	}
 }
 

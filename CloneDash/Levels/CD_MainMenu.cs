@@ -33,7 +33,7 @@ public interface IMainMenuPanel
 [Nucleus.MarkForStaticConstruction]
 public class CD_MainMenu : Level
 {
-	public static ConCommand clonedash_hologramtest = ConCommand.Register("clonedash_hologramtest", (_, _) => {
+	public static ConCommand hologramtest = ConCommand.Register(nameof(hologramtest), (_, _) => {
 		var level = EngineCore.Level;
 		var window = level.UI.Add<Window>();
 		window.Title = "Hologram Test";

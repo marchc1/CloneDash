@@ -39,8 +39,8 @@ public static class InputSettings
 {
 	private static InputDataStore data;
 
-	public static ConVar clonedash_visualoffset = ConVar.Register(nameof(clonedash_visualoffset), 0, ConsoleFlags.Saved, -500, 500);
-	public static ConVar clonedash_judgementoffset = ConVar.Register(nameof(clonedash_judgementoffset), 0, ConsoleFlags.Saved, -500, 500);
+	public static ConVar offset_visual = ConVar.Register(nameof(offset_visual), 0, ConsoleFlags.Saved, -500, 500);
+	public static ConVar offset_judgement = ConVar.Register(nameof(offset_judgement), 0, ConsoleFlags.Saved, -500, 500);
 
 
 	static InputSettings() {
@@ -104,6 +104,6 @@ public static class InputSettings
 		}
 	}
 
-	public static double VisualOffset => clonedash_visualoffset.GetDouble() / 1000d;
-	public static double JudgementOffset => clonedash_judgementoffset.GetDouble() / 1000d;
+	public static double VisualOffset => offset_visual.GetDouble() / 1000d;
+	public static double JudgementOffset => offset_judgement.GetDouble() / 1000d;
 }

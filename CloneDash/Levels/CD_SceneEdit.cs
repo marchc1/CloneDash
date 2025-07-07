@@ -10,7 +10,7 @@ namespace CloneDash.Levels;
 
 public class CD_SceneEdit() : CD_GameLevel(null)
 {
-	public static ConCommand clonedash_sceneedit = ConCommand.Register(nameof(clonedash_sceneedit), (_, _) => {
+	public static ConCommand sceneedit = ConCommand.Register(nameof(sceneedit), (_, _) => {
 		Interlude.Begin("Loading the Scene Editor...");
 		Interlude.Spin();
 		EngineCore.LoadLevel(new CD_SceneEdit());
@@ -53,7 +53,7 @@ public class CD_SceneEdit() : CD_GameLevel(null)
 		events.AddButton("Enter Fever", null, () => AddFever(MaxFever));
 
 		var options = menubar.AddButton("Scene");
-		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(clonedash_sceneedit));
+		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(sceneedit));
 		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
 		options.AddButton("PlayScale = 1.2", null, () => PlayScale = 1.2f);
 

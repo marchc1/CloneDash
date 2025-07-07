@@ -124,7 +124,7 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 [Nucleus.MarkForStaticConstruction]
 public static class Interlude
 {
-	public static ConVar clonedash_usemdinterludes = ConVar.Register("clonedash_usemdinterludes", "1", ConsoleFlags.Saved, "If Muse Dash is installed, adds the interludes from the base game.", 0, 1);
+	public static ConVar usemdinterludes = ConVar.Register(nameof(usemdinterludes), "1", ConsoleFlags.Saved, "If Muse Dash is installed, adds the interludes from the base game.", 0, 1);
 	private static Stopwatch limiter = new();
 	private static double lastFrame = -100;
 	private static bool inInterlude;
@@ -155,7 +155,7 @@ public static class Interlude
 		var providers = ReflectionTools.InstantiateAllInheritorsOfAbstractType<InterludeTextureProvider>().ToList();
 		while (providers.Count > 0) {
 			var provider = providers.Random();
-			if (provider.Empty || (provider is MuseDashInterludeProvider && !clonedash_usemdinterludes.GetBool())) {
+			if (provider.Empty || (provider is MuseDashInterludeProvider && !usemdinterludes.GetBool())) {
 				providers.Remove(provider);
 				continue;
 			}

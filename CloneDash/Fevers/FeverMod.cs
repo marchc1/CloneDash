@@ -10,7 +10,7 @@ namespace CloneDash.Fevers
 		private static IFeverDescriptor? activeDescriptor;
 		public delegate void UpdatedDelegate(IFeverDescriptor? descriptor);
 		public static event UpdatedDelegate? FeverUpdated;
-		public static ConVar clonedash_fever = ConVar.Register("clonedash_fever", "default", ConsoleFlags.Saved, "Your fever effect.", null, null, (cv, o, n) => {
+		public static ConVar fever = ConVar.Register(nameof(fever), "default", ConsoleFlags.Saved, "Your fever effect.", null, null, (cv, o, n) => {
 			activeDescriptor = null;
 			activeDescriptor = GetFeverData();
 			FeverUpdated?.Invoke(activeDescriptor);
@@ -25,7 +25,7 @@ namespace CloneDash.Fevers
 		}
 
 		public static IFeverDescriptor? GetFeverData() {
-			string? name = clonedash_fever?.GetString();
+			string? name = fever?.GetString();
 			if (string.IsNullOrWhiteSpace(name))
 				return null;
 

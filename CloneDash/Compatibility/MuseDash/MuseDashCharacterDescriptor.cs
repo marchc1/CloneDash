@@ -77,15 +77,15 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 [Nucleus.MarkForStaticConstruction]
 public class MuseDashCharacterDescriptor(CharacterConfigData configData) : ICharacterDescriptor
 {
-	public static ConCommand clonedash_nextmdchar = ConCommand.Register(nameof(clonedash_nextmdchar), (_, _) => {
-		var clonedash_character = ((ConVar)ConVar.Get("clonedash_character")!);
-		var clonedash_character_value = clonedash_character.GetString();
+	public static ConCommand nextmdchar = ConCommand.Register(nameof(nextmdchar), (_, _) => {
+		var chvar = ConVar.Get(nameof(CharacterMod.character))!;
+		var clonedash_character_value = chvar.GetString();
 		ICharacterProvider retriever = new MuseDashCharacterRetriever();
 		bool next = false;
 		foreach (var character in retriever.GetAvailable()) {
 			if (character == clonedash_character_value) next = true;
 			else if (next) {
-				clonedash_character.SetValue(character);
+				chvar.SetValue(character);
 				Logs.Info($"Selecting '{character}'");
 				return;
 			}

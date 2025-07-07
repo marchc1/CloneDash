@@ -9,9 +9,9 @@ namespace CloneDash.Scenes;
 [MarkForStaticConstruction]
 public static class SceneMod
 {
-	public static ConVar clonedash_scene = ConVar.Register("clonedash_scene", "clonedash", ConsoleFlags.Saved, "Your scene.");
-	public static ConVar clonedash_allowsceneoverride = ConVar.Register("clonedash_allowsceneoverride", "1", ConsoleFlags.Saved, "If true (and the scene specified exists on-disk), allows charts to specify the scene used during gameplay. If false, will always use clonedash_scene.", 0, 1);
-	public static ConCommand clonedash_allscenes = ConCommand.Register("clonedash_allscenes", (_, _) => {
+	public static ConVar scene = ConVar.Register(nameof(scene), "clonedash", ConsoleFlags.Saved, "Your scene.");
+	public static ConVar allowsceneoverride = ConVar.Register(nameof(allowsceneoverride), "1", ConsoleFlags.Saved, $"If true (and the scene specified exists on-disk), allows charts to specify the scene used during gameplay. If false, will always use ConVar \"{nameof(scene)}\"'s value.", 0, 1);
+	public static ConCommand scenes = ConCommand.Register(nameof(scenes), (_, _) => {
 		var scenes = GetAvailableScenes();
 		foreach (var scene in scenes)
 			Logs.Print($"    {scene}");
@@ -25,7 +25,7 @@ public static class SceneMod
 	}
 
 	public static ISceneDescriptor? GetSceneData(ChartSong? song = null) {
-		string? name = clonedash_scene?.GetString();
+		string? name = scene?.GetString();
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;

@@ -11,7 +11,7 @@ public static class CharacterMod
 	private static ICharacterDescriptor? activeDescriptor;
 	public delegate void CharacterUpdatedDelegate(ICharacterDescriptor? charDescriptor);
 	public static event CharacterUpdatedDelegate? CharacterUpdated;
-	public static ConVar clonedash_character = ConVar.Register("clonedash_character", "", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
+	public static ConVar character = ConVar.Register(nameof(character), "", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
 		activeDescriptor = null;
 		activeDescriptor = GetCharacterData();
 		CharacterUpdated?.Invoke(activeDescriptor);
@@ -20,7 +20,7 @@ public static class CharacterMod
 		var availableCharacters = CharacterMod.GetAvailableCharacters().Where(x => x.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
 		returns = availableCharacters;
 	}
-	public static ConCommand clonedash_characterinfo = ConCommand.Register("clonedash_characterinfo", (_, _) => {
+	public static ConCommand characterinfo = ConCommand.Register(nameof(characterinfo), (_, _) => {
 		var info = GetCharacterData();
 		if (info == null) {
 			Logs.Error("Info was null!");
@@ -32,7 +32,7 @@ public static class CharacterMod
 		Logs.Print($"    Author:    {info.GetAuthor()}");
 		Logs.Print($"    Perk:      {info.GetPerk()}");
 	}, "Your characters info, based on the Clone Dash Descriptor");
-	public static ConCommand clonedash_allcharacters = ConCommand.Register("clonedash_allcharacters", (_, _) => {
+	public static ConCommand characters = ConCommand.Register(nameof(characters), (_, _) => {
 		var characters = GetAvailableCharacters();
 		foreach (var character in characters)
 			Logs.Print($"    {character}");
@@ -50,7 +50,7 @@ public static class CharacterMod
 
 	public static ICharacterDescriptor? GetCharacterData() {
 		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
-		string? name = clonedash_character?.GetString();
+		string? name = character?.GetString();
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;

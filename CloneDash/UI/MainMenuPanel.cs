@@ -162,7 +162,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	private void ModdingTools_OpenMenuButtons(CD_MainMenu menu) {
 		CreateNavigationMenu();
 		MakeNavigationButton("Scene Editor", "ui/sceneselect.png", "Opens the scene editor & previewer", 160, (menu) => {
-			ConCommand.Execute(CD_SceneEdit.clonedash_sceneedit);
+			ConCommand.Execute(CD_SceneEdit.sceneedit);
 		});
 	}
 

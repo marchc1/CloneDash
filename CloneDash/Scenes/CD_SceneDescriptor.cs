@@ -366,10 +366,10 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 				FullComboSound = game.Sounds.LoadSoundFromFile("scene", FullCombo); Interlude.Spin();
 			}
 
-			BeginSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-			FeverSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-			UnpauseSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
-			FullComboSound.BindVolumeToConVar(AudioSettings.clonedash_voice_volume);
+			BeginSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+			FeverSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+			UnpauseSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+			FullComboSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 
 		}
 #nullable enable
@@ -841,7 +841,7 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 			sounds = new Sound[Count];
 			for (int i = 1; i <= Count; i++) {
 				sounds[i - 1] = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, GetHitSoundName(i)) : throw new Exception();
-				sounds[i - 1].BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+				sounds[i - 1].BindVolumeToConVar(AudioSettings.snd_hitvolume);
 			}
 		}
 
@@ -899,18 +899,17 @@ public class CD_SceneDescriptor : CloneDashDescriptor, ISceneDescriptor
 
 			//PressIdleSound.Loops = true;
 
-			HPSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			ScoreSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			JumpSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			EmptyAttackSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			EmptyJumpSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			Loud1Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			Loud2Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			Medium1Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			Medium2Sound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			QuietSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			//PressIdleSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
-			PressTopSound.BindVolumeToConVar(AudioSettings.clonedash_hitsound_volume);
+			HPSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			ScoreSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			JumpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			EmptyAttackSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			EmptyJumpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			Loud1Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			Loud2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			Medium1Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			Medium2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			QuietSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			PressTopSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 
 			Interlude.Spin();
 		}
