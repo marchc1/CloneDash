@@ -249,7 +249,24 @@ namespace Nucleus
 		private int userHistoryPos = 0;
 		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, KeyboardKey key) {
 			if (IValidatable.IsValid(autoComplete)) {
-				if (key == KeyboardLayout.USA.Up) {
+				if (key == KeyboardLayout.USA.Space && autoComplete.TryGetTabSelection(out string? tabSelection)) {
+					// Remove one character because this is a post-hook
+					var text = consoleInput.GetText();
+					var userLen = text.Length;
+					var currentCaret = consoleInput.Caret.StartCol;
+
+					var args = ConCommandArguments.FromString(text);
+					int startX = 0;
+					for (int i = 0; i < args.Length - 1; i++) {
+						startX += (args.GetString(i)?.Length ?? 0) + 1;
+					}
+
+					consoleInput.SetSelection(startX, 0, userLen, 0);
+					consoleInput.InsertText(tabSelection + " ");
+					autoComplete.Reset();
+					autoCompleteStr = null;
+				}
+				else if (key == KeyboardLayout.USA.Up) {
 					int newPos = userHistoryPos + 1;
 					string? txt;
 					if (newPos == 0)
@@ -289,26 +306,6 @@ namespace Nucleus
 			SetupAutocomplete();
 		}
 		private void ConsoleInput_OnTextInput(Element self, in KeyboardState state, string inText) {
-			if (IValidatable.IsValid(autoComplete)) {
-				if (inText == " " && autoComplete.TryGetTabSelection(out string? tabSelection)) {
-					// Remove one character because this is a post-hook
-					var text = consoleInput.GetText();
-					var userLen = text.Length;
-					var currentCaret = consoleInput.Caret.StartCol;
-
-					var args = ConCommandArguments.FromString(text);
-					int startX = 0;
-					for (int i = 0; i < args.Length - 1; i++) {
-						startX += (args.GetString(i)?.Length ?? 0) + 1;
-					}
-
-					consoleInput.SetSelection(startX, 0, userLen, 0);
-					consoleInput.InsertText(tabSelection + " ");
-					autoComplete.Reset();
-					autoCompleteStr = null;
-				}
-			}
-
 			SetupAutocomplete();
 		}
 
