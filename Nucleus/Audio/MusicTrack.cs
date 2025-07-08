@@ -1,26 +1,32 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using Raylib_cs;
 
 namespace Nucleus.Audio
 {
+	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+	public unsafe delegate void AudioCallback(void* buffer, uint frames);
+
 	public class MusicTrack : ISound
 	{
 		SoundManagement? parent;
 		Music underlying;
 		bool selfDisposing = true;
 
-		/// <summary>
-		/// Note: If anything ever becomes multithreaded and uses this stuff it will all crash and burn
-		/// </summary>
-		public static MusicTrack? Current { get; private set; }
-
 		public delegate void OnProcessDelegate(MusicTrack self, Span<float> frames);
 		public event OnProcessDelegate? Processing;
 
 		// I want to rename this, but it captures my anger at the time so perfectly
-		[UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-		private static unsafe void FUCKFUCKFUCKFUCK(void* buffer, uint frames) => Current?.Processing?.Invoke(Current, new(buffer, (int)frames));
+		private unsafe AudioCallback? FUCKFUCKFUCKFUCK { get; set; }
+
+		[MemberNotNull(nameof(FUCKFUCKFUCKFUCK))]
+		private unsafe void InitializeAudioProcessor() {
+			FUCKFUCKFUCKFUCK = new((buffer, frames) => {
+				Processing?.Invoke(this, new(buffer, (int)frames));
+			});
+		}
 
 		private float __volumeMultiplier = 1f;
 		List<ConVar> boundConVars = [];
@@ -48,7 +54,10 @@ namespace Nucleus.Audio
 			this.selfDisposing = selfDisposing;
 			__isMemoryBound = memoryBound;
 			Raylib.PlayMusicStream(underlying);
-			Raylib.AttachAudioStreamProcessor(underlying.Stream, &FUCKFUCKFUCKFUCK);
+
+			InitializeAudioProcessor();
+
+			Raylib.AttachAudioStreamProcessor(underlying.Stream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(FUCKFUCKFUCKFUCK));
 			recalculateVolumeMultiplier();
 		}
 		private bool disposedValue;
@@ -63,6 +72,7 @@ namespace Nucleus.Audio
 		protected virtual void Dispose(bool disposing) {
 			if (!disposedValue && selfDisposing) {
 				MainThread.RunASAP(() => {
+					FUCKFUCKFUCKFUCK = null;
 					Raylib.UnloadMusicStream(underlying);
 					unsafe {
 						foreach (var cv in boundConVars)
@@ -159,7 +169,6 @@ namespace Nucleus.Audio
 		public bool Complete => Playhead == Length;
 
 		public void Update() {
-			Current = this;
 			Raylib.UpdateMusicStream(underlying);
 		}
 
