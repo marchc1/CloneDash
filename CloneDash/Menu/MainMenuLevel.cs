@@ -217,9 +217,13 @@ public class MainMenuLevel : Level
 				lineBufferL[i] = new(xL, y);
 				lineBufferR[i] = new(xR, y);
 			}
-			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 140));
+			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 190));
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(2);
 			Graphics2D.DrawLineStrip(lineBufferL);
 			Graphics2D.DrawLineStrip(lineBufferR);
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.SetLineWidth(1);
 
 			var distance = 16;
 			var size = (distance * 2) - Math.Clamp(Math.Abs(animationSmoother.Update(currentAvgVolume) * 80), 0, 16);
