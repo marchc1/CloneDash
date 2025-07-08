@@ -574,7 +574,7 @@ public static class EngineCore
 		Started = true;
 		if (Debugger.IsAttached) {
 			// Skip panic routine.
-			Logs.Info("PANIC: Disabled due to the presence of a debugger.");
+			Logs.Info("PANIC: Disabled immediate thread panicking due to the presence of a debugger.");
 			LoadingScreen?.Initialize([]);
 			while (Running) {
 				shouldThrow = false;
@@ -582,7 +582,7 @@ public static class EngineCore
 			}
 		}
 		try {
-			Logs.Info("PANIC: Active.");
+			Logs.Info("PANIC: Immediate thread panicking active.");
 			LoadingScreen?.Initialize([]);
 			while (Running) {
 				shouldThrow = false;
