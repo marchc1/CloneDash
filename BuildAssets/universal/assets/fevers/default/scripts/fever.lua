@@ -13,7 +13,7 @@ local beams = {}
 
 local function drawStar(x, y, size, rotation)
     graphics:setTexture(fever_fx)
-    graphics:drawTextureUVRotated(x, y, size, size, 0.01, 0.01, 0.5 - 0.01, 1 - 0.01, rotation)
+    graphics:drawTextureUVRotated(x, y, size, size * 2, 0.01, 0.01, 0.5 - 0.01, 1 - 0.01, rotation)
 end
 
 local function drawBeam(x, y, w, h)
@@ -109,7 +109,7 @@ function fever.think()
         else
             star.x = star.x + (star.vel * deltaTime)
             star.rotation = star.rotation + (star.rotVel * deltaTime)
-            star.vel = star.vel * star.resistance
+            star.vel = clamp(star.vel * star.resistance, -30000000, 2000)
             star.rotVel = star.rotVel * star.resistance
         end
     end
@@ -139,8 +139,8 @@ function fever.start()
             math.random(1024 - 128, 1024 + 128), -HALF_HEIGHT + ((i / 20) * HEIGHT),
             math.random(256, 512), math.random(-40, 40),
             math.random(120, 170), 60, 255,
-            -math.random(7000, 11000),
-            math.random(200, 350), .992)
+            -math.random(9000, 12000),
+            math.random(200, 230), .995)
     end
 end
 
