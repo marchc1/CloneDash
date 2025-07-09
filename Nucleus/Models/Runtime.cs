@@ -497,7 +497,8 @@ public class RegionAttachment : Attachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		Debug.Assert(data.TextureAtlas.TryGetTextureRegion(Path, out Region));
+		bool OK = data.TextureAtlas.TryGetTextureRegion(Path, out Region);
+		Debug.Assert(OK, "TextureAtlas couldn't find the texture region!");
 	}
 
 	public override void Render(SlotInstance slot) {
