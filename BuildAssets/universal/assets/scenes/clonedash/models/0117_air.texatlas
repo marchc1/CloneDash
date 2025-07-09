@@ -1,0 +1,26 @@
+TextureAtlasVersion1
+0117/images_air/body
+	X: 0
+	Y: 0
+	W: 95
+	H: 102
+0117/images_air/mouth
+	X: 95
+	Y: 0
+	W: 38
+	H: 22
+0117/images_air/hand
+	X: 95
+	Y: 22
+	W: 20
+	H: 24
+0117/images_air/eye
+	X: 95
+	Y: 46
+	W: 18
+	H: 18
+0117/images_air/eyebrow
+	X: 95
+	Y: 64
+	W: 22
+	H: 14

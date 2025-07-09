@@ -1,0 +1,286 @@
+TextureAtlasVersion1
+images/ufo_body
+	X: 0
+	Y: 0
+	W: 474
+	H: 462
+images/multi_hit_1
+	X: 0
+	Y: 462
+	W: 286
+	H: 312
+images/ufo_top
+	X: 286
+	Y: 462
+	W: 468
+	H: 190
+images/ufo_end_1
+	X: 474
+	Y: 0
+	W: 370
+	H: 210
+images/head
+	X: 474
+	Y: 210
+	W: 219
+	H: 209
+images/Weapon_box
+	X: 286
+	Y: 652
+	W: 227
+	H: 184
+images/shadow
+	X: 513
+	Y: 652
+	W: 288
+	H: 104
+images/R1_Fx1
+	X: 754
+	Y: 462
+	W: 169
+	H: 169
+images/fx_fire
+	X: 513
+	Y: 756
+	W: 284
+	H: 87
+images/tail_L
+	X: 693
+	Y: 210
+	W: 131
+	H: 169
+images/Weapon_b_4
+	X: 0
+	Y: 774
+	W: 146
+	H: 135
+images/multi_hit_2
+	X: 797
+	Y: 756
+	W: 79
+	H: 224
+images/wingman_3
+	X: 146
+	Y: 774
+	W: 130
+	H: 133
+images/body
+	X: 286
+	Y: 836
+	W: 101
+	H: 148
+images/ufo_end_2
+	X: 801
+	Y: 652
+	W: 234
+	H: 63
+images/hair_1
+	X: 387
+	Y: 836
+	W: 121
+	H: 113
+images/Weapon_a_1
+	X: 513
+	Y: 843
+	W: 115
+	H: 114
+images/tail_R
+	X: 844
+	Y: 0
+	W: 98
+	H: 133
+images/R1_Fx2
+	X: 876
+	Y: 756
+	W: 105
+	H: 119
+images/hair_2
+	X: 844
+	Y: 133
+	W: 81
+	H: 153
+images/Weapon_a_2
+	X: 693
+	Y: 379
+	W: 134
+	H: 79
+images/eyes_2
+	X: 628
+	Y: 843
+	W: 126
+	H: 81
+images/Weapon_b_3
+	X: 844
+	Y: 286
+	W: 72
+	H: 136
+images/Weapon_box_bg
+	X: 876
+	Y: 875
+	W: 85
+	H: 114
+images/hair_3
+	X: 0
+	Y: 909
+	W: 71
+	H: 132
+images/eyes_3
+	X: 71
+	Y: 909
+	W: 116
+	H: 78
+images/R1_Fx3
+	X: 923
+	Y: 462
+	W: 61
+	H: 146
+images/eyes_1
+	X: 942
+	Y: 0
+	W: 115
+	H: 73
+images/buruo_accessory
+	X: 187
+	Y: 909
+	W: 91
+	H: 91
+images/Weapon_b_2
+	X: 513
+	Y: 957
+	W: 116
+	H: 64
+images/fx_fire_circle
+	X: 942
+	Y: 73
+	W: 33
+	H: 197
+images/Weapon_b_1
+	X: 474
+	Y: 419
+	W: 152
+	H: 41
+images/ufo_top_ring_L2
+	X: 942
+	Y: 270
+	W: 77
+	H: 80
+images/mouth
+	X: 942
+	Y: 350
+	W: 87
+	H: 70
+images/mouth_hurt
+	X: 961
+	Y: 875
+	W: 92
+	H: 65
+images/ufo_tool_a_2
+	X: 801
+	Y: 715
+	W: 126
+	H: 40
+images/ufo_light_2
+	X: 961
+	Y: 940
+	W: 54
+	H: 88
+images/Weapon_b_fx
+	X: 975
+	Y: 73
+	W: 37
+	H: 118
+images/hand_R
+	X: 629
+	Y: 957
+	W: 70
+	H: 59
+images/ufo_top_ring_R2
+	X: 975
+	Y: 191
+	W: 56
+	H: 71
+images/ufo_tool_b_2
+	X: 699
+	Y: 957
+	W: 73
+	H: 49
+images/button_R_2
+	X: 797
+	Y: 980
+	W: 55
+	H: 62
+images/ufo_top_ring_L1
+	X: 981
+	Y: 756
+	W: 55
+	H: 59
+images/ufo_foot
+	X: 286
+	Y: 984
+	W: 45
+	H: 72
+images/wingman_2
+	X: 754
+	Y: 843
+	W: 42
+	H: 73
+images/mouth_2
+	X: 984
+	Y: 462
+	W: 59
+	H: 49
+images/button_L_2
+	X: 981
+	Y: 815
+	W: 50
+	H: 57
+images/hand_L
+	X: 331
+	Y: 984
+	W: 45
+	H: 63
+images/ufo_tool_b_1
+	X: 984
+	Y: 511
+	W: 35
+	H: 60
+images/ufo_top_ring_R1
+	X: 376
+	Y: 984
+	W: 40
+	H: 52
+images/ufo_light_1
+	X: 923
+	Y: 608
+	W: 44
+	H: 44
+images/wingman_1
+	X: 984
+	Y: 571
+	W: 32
+	H: 56
+images/ufo_tool_a_1
+	X: 416
+	Y: 984
+	W: 28
+	H: 63
+images/button_L_1
+	X: 626
+	Y: 419
+	W: 37
+	H: 35
+images/button_R_1
+	X: 844
+	Y: 422
+	W: 34
+	H: 36
+images/wingman_4
+	X: 663
+	Y: 419
+	W: 30
+	H: 35
+images/mouth_3
+	X: 878
+	Y: 422
+	W: 33
+	H: 30

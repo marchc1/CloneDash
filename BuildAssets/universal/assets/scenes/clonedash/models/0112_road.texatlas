@@ -1,0 +1,36 @@
+TextureAtlasVersion1
+0112/images_road/body1
+	X: 0
+	Y: 0
+	W: 109
+	H: 78
+0112/images_road/shadow
+	X: 0
+	Y: 78
+	W: 148
+	H: 56
+0112/images_road/left_wing
+	X: 109
+	Y: 0
+	W: 67
+	H: 59
+0112/images_road/right_wing
+	X: 0
+	Y: 134
+	W: 64
+	H: 59
+0112/images_road/body2
+	X: 64
+	Y: 134
+	W: 78
+	H: 48
+0112/images_road/trail
+	X: 142
+	Y: 134
+	W: 35
+	H: 44
+0112/images_road/tongue
+	X: 148
+	Y: 78
+	W: 27
+	H: 45

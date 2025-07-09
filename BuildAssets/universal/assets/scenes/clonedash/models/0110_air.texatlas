@@ -1,0 +1,21 @@
+TextureAtlasVersion1
+0110/images_air/shadow
+	X: 0
+	Y: 0
+	W: 148
+	H: 56
+0110/images_air/body
+	X: 0
+	Y: 56
+	W: 93
+	H: 85
+0110/images_air/airscrew1
+	X: 93
+	Y: 56
+	W: 83
+	H: 22
+0110/images_air/airscrew2
+	X: 93
+	Y: 78
+	W: 83
+	H: 22

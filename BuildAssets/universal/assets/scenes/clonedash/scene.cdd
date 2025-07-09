@@ -1,0 +1,423 @@
+{
+    "version": "2025-05-13-01",
+    
+    "name": "Space Station",
+    "author": "PeroPeroGames",
+	"mdassets": true,
+    "background_controller": "scripts/background.lua",
+	
+    "announcer": {
+        "begin": "sfx_readygo",
+        "fever": "char_common_fever",
+        "unpause": "sfx_pause321",
+        "fullcombo": "sfx_full_combo"
+    },
+    
+	"hitsounds": {
+        "mash": {
+            "sound": "hitsound_{0:000}",
+            "start": 0,
+            "end": 15
+        },
+        "hp": "sfx_hp",
+        "score": "sfx_score",
+        "jump": "sfx_jump",
+        "empty_attack": "char_common_empty_atk",
+        "empty_jump": "char_common_empty_jump",
+        "loud_1": "sfx_forte_2",
+        "loud_2": "sfx_forte_3",
+        "medium_1": "sfx_mezzo_1",
+        "medium_2": "sfx_mezzo_3",
+        "quiet": "sfx_piano_2",
+        "press_idle": "sfx_press",
+        "press_top": "sfx_press_top"
+	},
+	
+    "boss": {
+        "model": "models/0101.nm4b",
+        "in": "in",
+        "out": "out",
+        "hurt": "hurt",
+        "standby": {
+            "0": "standby",
+            "1": "far_atk_1_standby",
+            "2": "far_atk_2_standby"
+        },
+        "attacks": {
+            "1": {
+                "air": "far_atk_1_air",
+                "ground": "far_atk_1_road"
+            },
+            "2": "far_atk_2"
+        },
+        "transitions": {
+            "0": {
+                "1": "far_atk_1_start",
+                "2": "far_atk_2_start"
+            },
+            "1": {
+                "0": "far_atk_1_end",
+                "2": "atk_1_to_2"
+            },
+            "2": {
+                "0": "far_atk_2_end",
+                "1": "atk_2_to_1"
+            }
+        },
+        "close": {
+            "fast": {
+				"name": "close_atk_2_24",
+				"speed": 24
+			},
+			"slow": {
+				"name": "close_atk_1_48",
+				"speed": 48
+			}
+        },
+        "multi": {
+            "atk": {
+				"name": "multi_atk_48",
+				"speed": 48
+			},
+            "atk_end": "multi_atk_48_end",
+            "hurt": "multi_atk_hurt",
+            "hurt_end": "multi_atk_hurt_end",
+            "atk_out": "multi_atk_out"
+        }
+    },
+    "sustains": {
+		"air": {
+			"start": "0102_air_top",
+			"end": "0102_air_top",
+			"body": "0102_air_body",
+			"up": "0102_air_note_up",
+			"down": "0102_air_note_down"
+		},
+		"ground": {
+			"start": "0102_road_top",
+			"end": "0102_road_top",
+			"body": "0102_road_body",
+			"up": "0102_road_note_up",
+			"down": "0102_road_note_down"
+		}
+	},
+    "gears": {
+        "air": {
+			"format": "in_nor_{0}",
+			"model": "models/0103_air.nm4b",
+			"speeds": [
+				33,
+				38,
+				44
+			],
+			"destroy": "destroy"
+		},
+		"ground": {
+			"format": "in_nor_{0}",
+			"model": "models/0103.nm4b",
+			"speeds": [
+				33,
+				38,
+				44
+			],
+			"destroy": "destroy"
+		}
+    },
+	"boss_gears": {
+		"air": {
+			"format_1": "boss_1_nor_{0}",
+			"format_2": "boss_2_nor_{0}",
+			"model": "models/0109_air.nm4b",
+			"speeds_1": [15, 18, 21],
+			"speeds_2": [17, 20, 23],
+			"destroy": "destroy"
+		},
+		"ground": {
+			"format_1": "boss_1_nor_{0}",
+			"format_2": "boss_2_nor_{0}",
+			"model": "models/0109_road.nm4b",
+			"speeds_1": [15, 18, 21],
+			"speeds_2": [17, 20, 23],
+			"destroy": "destroy"
+		}
+	},
+    "masher": {
+        "model": "models/0104.nm4b",
+        "hurt": {
+            "format": "hurt_{0}",
+            "count": 4
+        },
+        "in": {
+            "down": {
+				"format": "in_down_{0}",
+				"speeds": [
+					20,
+					23,
+					27
+				]
+			},
+            "normal": {
+				"format": "in_nor_{0}",
+				"speeds": [
+					33,
+					38,
+					44
+				]	
+			}
+        },
+        "miss": {
+            "format": "out_{0}_{1}",
+            "normal": [
+                33,
+                38,
+                44
+            ]
+        },
+        "complete": {
+            "great": "out_g",
+            "perfect": "out_p"
+        }
+    },
+    "double": {
+        "airmodel": "models/0105_air.nm4b",
+        "groundmodel": "models/0105_road.nm4b",
+        "animation": "in_nor_{0}",
+        "charge": "{0}_charge",
+        "speeds": [
+            33,
+            38,
+            44
+        ],
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "boss1": {
+        "airmodel": "models/0106_air.nm4b",
+        "groundmodel": "models/0106_road.nm4b",
+        "animation": "in_boss_1_{0}",
+        "speeds": [
+            15,
+            18,
+            20
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "boss2": {
+        "airmodel": "models/0107_air.nm4b",
+        "groundmodel": "models/0107_road.nm4b",
+        "animation": "in_boss_2_{0}",
+        "speeds": [
+            17,
+            20,
+            23
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "boss3": {
+        "airmodel": "models/0108_air.nm4b",
+        "groundmodel": "models/0108_road.nm4b",
+        "animation": "in_boss_2_{0}",
+        "speeds": [
+            17,
+            20,
+            23
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "boss_gear": {
+        "airmodel": "models/0109_air.nm4b",
+        "groundmodel": "models/0109_road.nm4b",
+        "animation": "in_boss_{0}_{1}",
+        "speed1": [
+            15,
+            18,
+            21
+        ],
+        "speed2": [
+            17,
+            20,
+            23
+        ],
+        "destroy": "destroy"
+    },
+    "small": {
+        "airmodel": "models/0110_air.nm4b",
+        "groundmodel": "models/0110_road.nm4b",
+        "normal": {
+            "format": "in_nor_{0}",
+            "speeds": [
+                33,
+                38,
+                44
+            ]
+        },
+        "up": {
+            "format": "in_up_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+        "down": {
+            "format": "in_down_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "medium1": {
+        "airmodel": "models/0111_air.nm4b",
+        "groundmodel": "models/0111_road.nm4b",
+        "normal": {
+            "format": "in_nor_{0}",
+            "speeds": [
+                33,
+                38,
+                44
+            ]
+        },
+        "up": {
+            "format": "in_up_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+        "down": {
+            "format": "in_down_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "medium2": {
+        "airmodel": "models/0112_air.nm4b",
+        "groundmodel": "models/0112_road.nm4b",
+        "normal": {
+            "format": "in_nor_{0}",
+            "speeds": [
+                33,
+                38,
+                44
+            ]
+        },
+        "up": {
+            "format": "in_up_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+        "down": {
+            "format": "in_down_{0}",
+            "speeds": [
+                23,
+                26,
+                30
+            ]
+        },
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "large1": {
+        "airmodel": "models/0113_air.nm4b",
+        "groundmodel": "models/0113_road.nm4b",
+        "animation": "in_nor_{0}",
+        "speeds": [
+            33,
+            38,
+            44
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "large2": {
+        "airmodel": "models/0114_air.nm4b",
+        "groundmodel": "models/0114_road.nm4b",
+        "animation": "in_nor_{0}",
+        "speeds": [
+            33,
+            38,
+            44
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "hammer": {
+        "airmodel": "models/0115_air.nm4b",
+        "groundmodel": "models/0115_road.nm4b",
+        "upsidedown_airmodel": "models/0115_air_b.nm4b",
+        "upsidedown_groundmodel": "models/0115_road_b.nm4b",
+        "animation": "in_{0}",
+        "speeds": [
+            18,
+            21,
+            26
+        ],
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "raider": {
+        "airmodel": "models/0116_air.nm4b",
+        "groundmodel": "models/0116_road.nm4b",
+        "upsidedown_airmodel": "models/0116_air_b.nm4b",
+        "upsidedown_groundmodel": "models/0116_road_b.nm4b",
+        "animation": "in_up_{0}",
+        "speeds": [
+            24,
+            30,
+            39
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "ghost": {
+        "airmodel": "models/0117_air.nm4b",
+        "groundmodel": "models/0117_road.nm4b",
+        "animation": "in_nor_{0}",
+        "speeds": [
+            33,
+            38,
+            44
+        ],
+		"hp_mount": "hp",
+        "great": "out_g",
+        "perfect": "out_p"
+    },
+    "heart": {
+		"model": "models/0002_hp.nm4b",
+		"air": "in_air",
+		"ground": "in_road",
+		"mount": "in_mount",
+		"out": "out"
+	},
+    "score": {
+		"model": "models/0003_score.nm4b",
+		"air": "in_air",
+		"ground": "in_road",
+		"out": "out"
+	}
+}

@@ -1,0 +1,61 @@
+TextureAtlasVersion1
+0103/images_road/sawtooth
+	X: 0
+	Y: 0
+	W: 152
+	H: 158
+0109/images_road/scrap_5
+	X: 152
+	Y: 0
+	W: 98
+	H: 91
+0109/images_road/scrap_8
+	X: 152
+	Y: 91
+	W: 83
+	H: 89
+0109/images_road/scrap_6
+	X: 0
+	Y: 158
+	W: 71
+	H: 96
+0109/images_road/scrap_1
+	X: 152
+	Y: 180
+	W: 82
+	H: 82
+0109/images_road/scrap_7
+	X: 71
+	Y: 158
+	W: 80
+	H: 77
+0109/images_road/scrap_2
+	X: 234
+	Y: 180
+	W: 92
+	H: 66
+0109/images_road/scrap_3
+	X: 235
+	Y: 91
+	W: 84
+	H: 66
+0103/images_road/line
+	X: 234
+	Y: 246
+	W: 281
+	H: 14
+0103/images_road/fx
+	X: 250
+	Y: 0
+	W: 58
+	H: 58
+0109/images_road/scrap_4
+	X: 0
+	Y: 254
+	W: 46
+	H: 42
+0103/images_road/smoke
+	X: 250
+	Y: 58
+	W: 30
+	H: 27
