@@ -91,7 +91,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		List<ChartSong> ret = [];
 
 		foreach (var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
-			ret.Add(new CustomChartsSong("charts", file));
+			try {
+				ret.Add(new CustomChartsSong("charts", file));
+			}
+			catch(Exception ex) {
+				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");
+			}
 		}
 
 		return ret;
