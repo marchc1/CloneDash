@@ -1,0 +1,3 @@
+scene.cdd describes animations, textures, and a few other things. This format is volitile and I plan to change it a lot as time goes on. See ISceneDescriptor - more specifically CD_SceneDescriptor - for what scene.cdd currently describes.
+
+Scenes are mounted to the tail of the Filesystem in Clone Dash upon loading a chart. This is a temporary mount (upon unloading the chart, the search path is destroyed). So you should treat your scene similarly to how you'd treat other assets (audio, image, models, scripts folders).

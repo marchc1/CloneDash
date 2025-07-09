@@ -1,0 +1,31 @@
+TextureAtlasVersion1
+0113/images_road/body
+	X: 0
+	Y: 0
+	W: 123
+	H: 132
+0113/images_road/head
+	X: 123
+	Y: 0
+	W: 97
+	H: 108
+0113/images_road/shadow
+	X: 123
+	Y: 108
+	W: 148
+	H: 56
+0113/images_road/hand_right
+	X: 0
+	Y: 132
+	W: 77
+	H: 60
+0113/images_road/hand_left
+	X: 123
+	Y: 164
+	W: 79
+	H: 47
+0113/images_road/fire
+	X: 77
+	Y: 132
+	W: 45
+	H: 46

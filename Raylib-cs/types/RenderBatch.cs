@@ -181,17 +181,17 @@ public enum MatrixMode
     /// <summary>
     /// GL_MODELVIEW
     /// </summary>
-    MODELVIEW = 0x1700,
+    ModelView = 0x1700,
 
     /// <summary>
     /// GL_PROJECTION
     /// </summary>
-    PROJECTION = 0x1701,
+    Projection = 0x1701,
 
     /// <summary>
     /// GL_TEXTURE
     /// </summary>
-    TEXTURE = 0x1702
+    Texture = 0x1702
 }
 
 /// <summary>

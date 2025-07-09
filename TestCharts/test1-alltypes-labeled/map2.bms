@@ -1,0 +1,156 @@
+﻿
+*---------------------- HEADER FIELD
+
+#PLAYER 3
+#GENRE scene_01
+#TITLE Test 1 - All Types
+#ARTIST March
+#LEVELDESIGN March
+#BPM 120
+#PLAYLEVEL 1
+#RANK 1
+
+
+#LNTYPE 1
+
+#WAV01 Small
+#WAV02 Small (Up)
+#WAV03 Small (Down)
+#WAV04 Medium 1
+#WAV05 Medium 1 (Up)
+#WAV06 Medium 1 (Down)
+#WAV07 Medium 2
+#WAV08 Medium 2 (Up)
+#WAV09 Medium 2 (Down)
+#WAV0A Large 1
+#WAV0B Large 2
+#WAV0C Raider
+#WAV0D Hammer
+#WAV0E Gemini
+#WAV0F Hold
+#WAV0G Masher
+#WAV0H Gear
+#WAV0I Raider (Upside-down)
+#WAV0J Hammer (Upside-down)
+#WAV0O Speed 1 (Both)
+#WAV0P Speed 2 (Both)
+#WAV0Q Speed 3 (Both)
+#WAV0R Speed 1 (Low)
+#WAV0S Speed 2 (Low)
+#WAV0T Speed 3 (Low)
+#WAV0U Speed 1 (High)
+#WAV0V Speed 2 (High)
+#WAV0W Speed 3 (High)
+#WAV10 music
+#WAV11 Boss Melee 1
+#WAV12 Boss Melee 2
+#WAV13 Boss Projectile 1
+#WAV14 Boss Projectile 2
+#WAV15 Boss Projectile 3
+#WAV16 Boss Masher 1
+#WAV17 Boss Masher 2
+#WAV18 Boss Gear
+#WAV1A Boss Entrance
+#WAV1B Boss Exit
+#WAV1C Boss Ready Phase 1
+#WAV1D Boss End Phase 1
+#WAV1E Boss Ready Phase 2
+#WAV1F Boss End Phase 2
+#WAV1G Boss Swap Phase 1-2
+#WAV1H Boss Swap Phase 2-1
+#WAV1J Hide Notes
+#WAV1K Unhide Notes
+#WAV1L Hide Boss
+#WAV1M Unhide boss
+#WAV1O Scene Switch (Space Station)
+#WAV1P Scene Switch (Retrocity)
+#WAV1Q Scene Switch (Castle)
+#WAV1R Scene Switch (Rainy Night)
+#WAV1S Scene Switch (Candyland)
+#WAV1T Scene Switch (Oriental)
+#WAV1U Scene Switch (Groove Coaster)
+#WAV1V Scene Switch (Touhou)
+#WAV1W Scene Switch (DJMAX)
+#WAV1X Scene Switch (Miku)
+#WAV20 P Item
+#WAV21 Ghost
+#WAV22 Heart
+#WAV23 Note
+#WAV25 Hide Background
+#WAV26 Unhide Background
+#WAV27 Screen Scroll UP
+#WAV28 Screen Scroll DOWN
+#WAV29 Screen Scroll OFF
+#WAV2A Scanline Ripples ON
+#WAV2B Scanline Ripples OFF
+#WAV2C Chromatic Aberration ON
+#WAV2D Chromatic Aberration OFF
+#WAV2E Vignette ON
+#WAV2F Vignette OFF
+#WAV2G TV Static ON
+#WAV2H TV Static OFF
+#WAV2I Flashbang START
+#WAV2J Flashbang MID
+#WAV2K Flashbang END
+#WAV2N BG Stop ON
+#WAV2O BG Stop OFF
+#WAV2P Mosaic ON
+#WAV2Q Mosaic OFF
+#WAV2R Sepia ON
+#WAV2S Sepia OFF
+#WAV2T Focus Lines BLACK
+#WAV2U Focus Lines WHITE
+#WAV2V Focus Lines OFF
+#WAV2W Film Grain ON
+#WAV2X Film Grain OFF
+#WAV2Y Autoplay ON
+#WAV2Z Autoplay OFF
+#WAV30 Medium Bullet
+#WAV31 Medium Bullet (Up)
+#WAV32 Medium Bullet (Down)
+#WAV33 Medium Bullet (Laneshift)
+#WAV34 Small Bullet
+#WAV35 Small Bullet (Up)
+#WAV36 Small Bullet (Down)
+#WAV37 Small Bullet (Laneshift)
+#WAV38 Large Bullet
+#WAV39 Large Bullet (Up)
+#WAV3A Large Bullet (Down)
+#WAV3B Large Bullet (Laneshift)
+#WAV3C Boss Bullet 1
+#WAV3D Boss Bullet 1 (Laneshift)
+#WAV3E Boss Bullet 2
+#WAV3F Boss Bullet 2 (Laneshift)
+#WAVCM Flashbang Color (White)
+#WAVCN Flashbang Color (Black)
+#WAVCO Flashbang Color (Red)
+#WAVCP Flashbang Color (Green)
+#WAVCQ Flashbang Color (Blue)
+#WAVCR Flashbang Color (Cyan)
+#WAVCS Flashbang Color (Magenta)
+#WAVCT Flashbang Color (Yellow)
+
+
+
+*---------------------- MAIN DATA FIELD
+
+
+#00013:0000000H
+#00014:000H0000
+
+#00113:0000000H
+#00114:000H0000
+#00153:0F00000F00000000
+#00154:000000000F00000F
+
+#00213:000H000H
+#00214:000H0H00
+#00251:0F0000000000000F
+#00252:0F0000000000000F
+
+#00353:0F00000000000F000F0000000000000F
+#00354:00000F0F000F0F0F
+
+#00454:0F
+
+

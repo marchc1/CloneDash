@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "CloneDash": {
+      "commandName": "Project",
+      "commandLineArgs": "-debug",
+      "nativeDebugging": false
+    }
+  }
+}

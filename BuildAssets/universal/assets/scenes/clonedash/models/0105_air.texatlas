@@ -1,0 +1,71 @@
+TextureAtlasVersion1
+0105/images/body
+	X: 0
+	Y: 0
+	W: 106
+	H: 106
+0105/images/laser_circle
+	X: 0
+	Y: 106
+	W: 87
+	H: 87
+0105/images/laser_line
+	X: 106
+	Y: 0
+	W: 196
+	H: 28
+0105/images/laser_alpha
+	X: 87
+	Y: 106
+	W: 34
+	H: 144
+0105/images/laser_blur
+	X: 106
+	Y: 28
+	W: 96
+	H: 48
+0105/images/dust_back
+	X: 121
+	Y: 106
+	W: 153
+	H: 27
+0105/images/laser
+	X: 121
+	Y: 133
+	W: 86
+	H: 38
+0105/images/laser_ball
+	X: 121
+	Y: 171
+	W: 51
+	H: 51
+0105/images/dust
+	X: 172
+	Y: 171
+	W: 54
+	H: 44
+0105/images/leg_Back
+	X: 0
+	Y: 193
+	W: 50
+	H: 46
+0105/images/leg_R
+	X: 202
+	Y: 28
+	W: 45
+	H: 49
+0105/images/leg_L
+	X: 172
+	Y: 215
+	W: 42
+	H: 52
+0105/images/laser_line_small
+	X: 106
+	Y: 76
+	W: 66
+	H: 14
+0105/images/particle
+	X: 172
+	Y: 76
+	W: 16
+	H: 27

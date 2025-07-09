@@ -1,0 +1,21 @@
+TextureAtlasVersion1
+0002_hp
+	X: 0
+	Y: 0
+	W: 264
+	H: 264
+hp_glow
+	X: 0
+	Y: 264
+	W: 106
+	H: 96
+shadow
+	X: 264
+	Y: 0
+	W: 148
+	H: 56
+hp
+	X: 106
+	Y: 264
+	W: 77
+	H: 68

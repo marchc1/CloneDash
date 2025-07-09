@@ -1,0 +1,26 @@
+TextureAtlasVersion1
+0108/images_road/shadow
+	X: 0
+	Y: 0
+	W: 148
+	H: 56
+0108/images_road/bomb_body
+	X: 0
+	Y: 56
+	W: 90
+	H: 90
+0108/images_road/body_shadow
+	X: 90
+	Y: 56
+	W: 83
+	H: 58
+0108/images_road/bomb_top
+	X: 90
+	Y: 114
+	W: 50
+	H: 36
+0108/images_road/highlight
+	X: 140
+	Y: 114
+	W: 23
+	H: 24

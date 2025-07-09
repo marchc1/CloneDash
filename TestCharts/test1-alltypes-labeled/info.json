@@ -1,0 +1,9 @@
+{
+	"name": "Test Chart",
+	"author": "March",
+	"bpm": "120",
+	"scene": "scene_01",
+	"levelDesigner": "March",
+	"difficulty2": "500",
+	"searchTags": ["test"]
+}

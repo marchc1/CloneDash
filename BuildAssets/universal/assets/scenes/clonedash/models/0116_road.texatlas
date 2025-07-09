@@ -1,0 +1,31 @@
+TextureAtlasVersion1
+0116/images_road/sud_fx
+	X: 0
+	Y: 0
+	W: 145
+	H: 145
+0116/images_road/body
+	X: 0
+	Y: 145
+	W: 105
+	H: 101
+0116/images_road/shadow
+	X: 145
+	Y: 0
+	W: 148
+	H: 56
+0116/images_road/hand
+	X: 105
+	Y: 145
+	W: 39
+	H: 41
+0116/images_road/foot_left
+	X: 145
+	Y: 56
+	W: 27
+	H: 30
+0116/images_road/foot_right
+	X: 144
+	Y: 145
+	W: 26
+	H: 31
