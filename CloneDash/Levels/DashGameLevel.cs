@@ -8,6 +8,7 @@ using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
 using CloneDash.Levels;
+using CloneDash.Menu;
 using CloneDash.Scenes;
 using CloneDash.Scripting;
 using CloneDash.Settings;
@@ -17,9 +18,11 @@ using Nucleus.Audio;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
+using Nucleus.Input;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
@@ -646,7 +649,27 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 					settings.ImageOrientation = ImageOrientation.Fit;
 					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+						var panel = UI.Add<Panel>();
+						panel.DrawPanelBackground = false;
+						panel.Anchor = Anchor.Center;
+						panel.Origin = Anchor.Center;
+						panel.DynamicallySized = true;
+						panel.Size = new(0.9f);
 
+						var titlebar = panel.Add<Titlebar>();
+						titlebar.Dock = Dock.Top;
+						titlebar.MinimizeButton.Visible = false;
+						titlebar.MaximizeButton.Visible = false;
+						titlebar.CloseButton.MouseReleaseEvent += (_, _, _) => {
+							panel.Remove();
+						};
+						titlebar.Title = "Settings";
+
+						var settings = panel.Add<SettingsEditor>();
+						settings.Dock = Dock.Fill;
+						settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
+
+						panel.MakePopup();
 					};
 					settings.PaintOverride += Button_PaintOverride;
 

@@ -167,7 +167,12 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 
 	public void OpenOffsetWizard() {
-		var offsetWizard = Level.As<MainMenuLevel>().PushActiveElement(UI.Add<JudgementOffsetWizard>());
+		if (Level is MainMenuLevel level)
+			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
+		else {
+			// todo: tell user this isn't supported on non-MainMenuLevel
+			// or even better; make this level-agnostic
+		}
 	}
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
