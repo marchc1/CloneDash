@@ -20,7 +20,7 @@ namespace Nucleus;
 [MarkForStaticConstruction]
 public static class EngineCore
 {
-	public static ConCommand gc_collect = ConCommand.Register("gc_collect", (_, _) => {
+	public static ConCommand gc_collect = ConCommand.Register(nameof(gc_collect), (_, _) => {
 		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
 		GC.WaitForPendingFinalizers();
 		var status = GC.WaitForFullGCComplete();
@@ -33,7 +33,7 @@ public static class EngineCore
 		}
 	}, "Performs an immediate GC collection of all generations");
 
-	public static ConVar engine_wireframe = ConVar.Register("engine_wireframe", "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
+	public static ConVar engine_wireframe = ConVar.Register(nameof(engine_wireframe), "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
 		// Queued so there's actually a GL context to work with
 		MainThread.RunASAP(() => {
 			if (cv.GetBool())
@@ -613,6 +613,8 @@ public static class EngineCore
 							  where attributes != null && attributes.Length > 0
 							  select t) {
 				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+				foreach (var ccmd in ConCommandAttribute.GetAttributes(t))
+					ConCommandAttribute.RegisterAttribute(t, ccmd.baseMethod, ccmd.attr);
 			}
 
 			Logs.Info("BOOT: Running JIT early where possible...");

@@ -1,9 +1,12 @@
 ﻿using Nucleus;
 using Nucleus.Core;
+
 using Raylib_cs;
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 
 namespace Nucleus
 {
@@ -12,7 +15,7 @@ namespace Nucleus
 	{
 		None = 0,
 		Saved = 1 << 0,
-		DevelopmentOnly = 1 << 60 
+		DevelopmentOnly = 1 << 60
 	}
 	public struct CVValue
 	{
@@ -298,13 +301,41 @@ namespace Nucleus
 		}
 		public string? GetString(int pos) => GetString(pos, out string? ret) ? ret : null;
 	}
+
+	// Registers a method as a ConCommand via attribute
+	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+	public class ConCommandAttribute : Attribute
+	{
+		public readonly string Description;
+		public readonly string? AutoComplete;
+		public ConCommandAttribute(string Help = "", string? autoComplete = null) {
+			Description = Help;
+			AutoComplete = autoComplete;
+		}
+		public static IEnumerable<(MethodInfo baseMethod, ConCommandAttribute attr)> GetAttributes(Type t) {
+			foreach (var method in t.GetMethods()) {
+				ConCommandAttribute? attr = method.GetCustomAttribute<ConCommandAttribute>();
+				if (attr == null) continue;
+
+				yield return new(method, attr);
+			}
+		}
+		internal static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
+			ConCommand.ExecutedDelegate executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
+			if (attr.AutoComplete == null)
+				ConCommand.Register(baseMethod.Name, executedDelegate, attr.Description);
+			else
+				ConCommand.Register(baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<ConCommand.AutocompleteDelegate>(), attr.Description);
+		}
+	}
+
 	public class ConCommand : ConCommandBase
 	{
 		public override bool IsCommand => true;
 		public delegate void ExecutedDelegate(ConCommand cmd, ConCommandArguments args);
-		
+
 		public ExecutedDelegate? OnExecuted;
-		
+
 		public ConCommand(string name, ExecutedDelegate executed, AutocompleteDelegate? autocomplete, ConsoleFlags flags, string helpString) : base(name, helpString, flags) {
 			OnExecuted = executed;
 			OnAutocomplete = autocomplete;
@@ -592,7 +623,7 @@ namespace Nucleus
 				Graphics2D.DrawRectangle(x, y + 2 + (i * 15), textSize.W + 4, textSize.H + 4);
 				Graphics2D.SetDrawColor(Logs.LevelToColor(message.Level), (int)(fade * 255));
 				Graphics2D.DrawText(new(x - 1, y + 4 + (i * 15) + 1), text, "Consolas", TextSize);
-				i+= 1 + text.Count(x => x == '\n');
+				i += 1 + text.Count(x => x == '\n');
 			}
 		}
 

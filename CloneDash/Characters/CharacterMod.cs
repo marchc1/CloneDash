@@ -17,10 +17,12 @@ public static class CharacterMod
 		CharacterUpdated?.Invoke(activeDescriptor);
 	}, autocomplete: clonedash_character_autocomplete);
 	private static void clonedash_character_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		var availableCharacters = CharacterMod.GetAvailableCharacters().Where(x => x.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
+		var availableCharacters = GetAvailableCharacters().Where(x => x.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
 		returns = availableCharacters;
 	}
-	public static ConCommand characterinfo = ConCommand.Register(nameof(characterinfo), (_, _) => {
+
+	[ConCommand(Help: "Your characters info, based on the Clone Dash Descriptor")]
+	public static void characterinfo(ConCommand cmd, ConCommandArguments args) {
 		var info = GetCharacterData();
 		if (info == null) {
 			Logs.Error("Info was null!");
@@ -31,12 +33,13 @@ public static class CharacterMod
 		Logs.Print($"    Name:      {info.GetName()}");
 		Logs.Print($"    Author:    {info.GetAuthor()}");
 		Logs.Print($"    Perk:      {info.GetPerk()}");
-	}, "Your characters info, based on the Clone Dash Descriptor");
-	public static ConCommand characters = ConCommand.Register(nameof(characters), (_, _) => {
+	}
+	[ConCommand(Help: "Prints all available characters")]
+	public static void characters(ConCommand cmd, ConCommandArguments args) {
 		var characters = GetAvailableCharacters();
 		foreach (var character in characters)
 			Logs.Print($"    {character}");
-	}, "Prints all available characters");
+	}
 
 	static CharacterMod() {
 	}
