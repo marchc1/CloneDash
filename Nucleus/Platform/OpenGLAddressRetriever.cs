@@ -94,7 +94,7 @@ public static partial class Platform
         private const int RTLD_NOW = 2;
         private const int RTLD_GLOBAL = 0x100;
 
-        [DllImport("dl")]
+        [DllImport("libc")]
         private static extern int dlclose(IntPtr handle);
 #endif
 }
