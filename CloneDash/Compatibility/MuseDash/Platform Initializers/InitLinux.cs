@@ -9,21 +9,22 @@ namespace CloneDash.Compatibility.MuseDash
 				return MDCompatLayerInitResult.OperatingSystemNotCompatible;
 
 			// Where is Steam installed?
-			string steamClassicInstallPath = Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".local", "share", "Steam");
-			string steamFlatpakInstallPath = Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
-			string steamInstallPath = Directory.Exists(steamClassicInstallPath) ? steamClassicInstallPath : Directory.Exists(steamFlatpakInstallPath) ? steamFlatpakInstallPath : "";
+			string home = Environment.GetEnvironmentVariable("HOME")!;
+			string steamClassicInstallPath = Path.Combine(home, ".local", "share", "Steam");
+			string steamFlatpakInstallPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
+			
+			string? steamInstallPath = Directory.Exists(steamClassicInstallPath) ? steamClassicInstallPath : Directory.Exists(steamFlatpakInstallPath) ? steamFlatpakInstallPath : null;
+			if(steamInstallPath == null)
+				return MDCompatLayerInitResult.SteamNotInstalled;
 
 			// Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
-			ValveDataFile games = new ValveDataFile();
-			if (steamInstallPath != "") {
-				games = ValveDataFile.FromFile(Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf"));
-			}
+			ValveDataFile games = ValveDataFile.FromFile(Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf"));
 			string musedash_appid = "" + MUSEDASH_APPID;
 			string musedash_installdir = "";
 			bool musedash_installed = false;
 
 			foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
-				var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
+				var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
 				if (apps.Contains(musedash_appid)) {
 					ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
 					musedash_installed = true;
