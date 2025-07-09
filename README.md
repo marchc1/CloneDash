@@ -1,12 +1,20 @@
 # Clone Dash
+[![Discord Invite](https://img.shields.io/discord/1332799392729665556?label=Discord&style=flat-square)](https://discord.gg/s98G9dKxHB)
 
 This is a WIP open-source and cross-platform clone of 'Muse Dash', a parkour-rhythm game combination. It can currently load the base game levels and provides the core gameplay functionality. The goals are to provide various accessibility, training, and customizability features that the base game does not.
 
-This is what I'd consider "vertical slice 1" of the project - everything works to some varying extent but there's a lot that still needs to happen.
+This is what I'd consider "vertical slice 1" of the project - almost everything works to some varying extent but there's a lot that still needs to happen. Contributions are welcome if you're willing and can understand the engine! I'm willing to explain anything in the Discord if need be.
 
-## Screenshots
+## Screenshots & Videos
 
-(todo put screenshots here on GitHub)
+[![Clone Dash Preview Video](https://img.youtube.com/vi/3hFUoRz_uuk/0.jpg)](https://www.youtube.com/watch?v=3hFUoRz_uuk)
+![image](https://github.com/user-attachments/assets/e87b782b-3a25-4000-acc4-b4b0f3a12877)
+![image](https://github.com/user-attachments/assets/96cb2dd6-6d88-481c-8e37-2ed1fbb19d3c)
+![image](https://github.com/user-attachments/assets/bd1d2f4a-c198-4ec5-92a9-33e5605e9103)
+![image](https://github.com/user-attachments/assets/5ba660e7-eec5-4361-b367-4aa6471c0390)
+![image](https://github.com/user-attachments/assets/992a5a89-3c25-4568-98ae-2fb4190e81ed)
+![image](https://github.com/user-attachments/assets/55139795-eb76-4bed-9a28-984203332c55)
+
 
 ## Notes
 
