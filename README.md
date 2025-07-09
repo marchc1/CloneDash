@@ -1,4 +1,5 @@
 # Clone Dash
+
 [![Discord Invite](https://img.shields.io/discord/1332799392729665556?label=Discord&style=flat-square)](https://discord.gg/s98G9dKxHB)
 
 This is a WIP open-source and cross-platform clone of 'Muse Dash', a parkour-rhythm game combination. It can currently load the base game levels and provides the core gameplay functionality. The goals are to provide various accessibility, training, and customizability features that the base game does not.
