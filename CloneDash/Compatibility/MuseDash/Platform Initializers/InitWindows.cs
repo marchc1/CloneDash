@@ -11,7 +11,7 @@ namespace CloneDash.Compatibility.MuseDash
 				return MDCompatLayerInitResult.OperatingSystemNotCompatible;
 
 			// Where is Steam installed?
-			string steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) as string;
+			string? steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) as string;
 			if (steamInstallPath == null) { // Sometimes the install path will be here instead
 				steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432NODE\\Valve\\Steam", "InstallPath", null) as string;
 				if (steamInstallPath == null)
@@ -25,7 +25,7 @@ namespace CloneDash.Compatibility.MuseDash
 			bool musedash_installed = false;
 
 			foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
-				var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
+				var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
 				if (apps.Contains(musedash_appid)) {
 					ValveDataFile appManifest = ValveDataFile.FromFile(vdfItemPair.Value.GetString("path") + $"\\steamapps\\appmanifest_{musedash_appid}.acf");
 					musedash_installed = true;

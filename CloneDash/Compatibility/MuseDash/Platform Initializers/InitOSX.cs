@@ -18,7 +18,7 @@ namespace CloneDash.Compatibility.MuseDash
 			bool musedash_installed = false;
 
 			foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
-				var apps = vdfItemPair.Value["apps"] as ValveDataFile.VDFDict;
+				var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
 				if (apps.Contains(musedash_appid)) {
 					ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
 					musedash_installed = true;
