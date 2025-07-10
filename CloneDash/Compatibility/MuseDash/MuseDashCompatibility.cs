@@ -208,9 +208,10 @@ namespace CloneDash.Compatibility.MuseDash
 		/// <summary>
 		/// Dumps the <see cref="IBMSCode"/> enumeration to console
 		/// </summary>
+		[ConCommand(Name: "ibmscodes", Help: "Dumps the IBMSCode enum to console.")]
 		public static void DumpIBMSCodes() {
 			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode))) {
-				Console.WriteLine($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr)})");
+				Logs.Print($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr)})");
 			}
 		}
 
@@ -407,7 +408,7 @@ namespace CloneDash.Compatibility.MuseDash
 			sheet.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
 			Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-			Console.WriteLine($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
+			Logs.Info($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
 			return sheet;
 		}
 
