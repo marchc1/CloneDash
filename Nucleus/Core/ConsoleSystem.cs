@@ -329,7 +329,13 @@ namespace Nucleus
 			}
 		}
 		internal static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
-			ConCommand.ExecutedDelegate executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
+			ConCommand.ExecutedDelegate executedDelegate;
+			var parameters = baseMethod.GetParameters();
+			if (parameters.Length != 2 || parameters[0].ParameterType != typeof(ConCommand) || parameters[1].ParameterType != typeof(ConCommandArguments))
+				executedDelegate = (_, _) => baseMethod.Invoke(null, null);
+			else
+				executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
+
 			if (attr.AutoComplete == null)
 				ConCommand.Register(attr.NameOverride ?? baseMethod.Name, executedDelegate, attr.Description);
 			else
