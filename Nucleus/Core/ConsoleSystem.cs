@@ -306,9 +306,11 @@ namespace Nucleus
 	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 	public class ConCommandAttribute : Attribute
 	{
+		public readonly string? NameOverride;
 		public readonly string Description;
 		public readonly string? AutoComplete;
-		public ConCommandAttribute(string Help = "", string? autoComplete = null) {
+		public ConCommandAttribute(string? Name = null, string Help = "", string? autoComplete = null) {
+			NameOverride = Name;
 			Description = Help;
 			AutoComplete = autoComplete;
 		}
@@ -323,9 +325,9 @@ namespace Nucleus
 		internal static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
 			ConCommand.ExecutedDelegate executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
 			if (attr.AutoComplete == null)
-				ConCommand.Register(baseMethod.Name, executedDelegate, attr.Description);
+				ConCommand.Register(attr.NameOverride ?? baseMethod.Name, executedDelegate, attr.Description);
 			else
-				ConCommand.Register(baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<ConCommand.AutocompleteDelegate>(), attr.Description);
+				ConCommand.Register(attr.NameOverride ?? baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<ConCommand.AutocompleteDelegate>(), attr.Description);
 		}
 	}
 
