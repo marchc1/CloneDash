@@ -116,6 +116,7 @@ namespace CloneDash.Compatibility.MuseDash
 	/// <summary>
 	/// Muse Dash style level converter
 	/// </summary>
+	[MarkForStaticConstruction]
 	public static partial class MuseDashCompatibility
 	{
 		public const uint MUSEDASH_APPID = 774171;
