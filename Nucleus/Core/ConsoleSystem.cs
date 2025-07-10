@@ -309,6 +309,12 @@ namespace Nucleus
 		public readonly string? NameOverride;
 		public readonly string Description;
 		public readonly string? AutoComplete;
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="Name">Name override. By default, the name is pulled from the method name</param>
+		/// <param name="Help">The help text for the user</param>
+		/// <param name="autoComplete">Optional name of an autocomplete delegate, contained in the same class. Must be static! (use nameof(autocompleteFunc))</param>
 		public ConCommandAttribute(string? Name = null, string Help = "", string? autoComplete = null) {
 			NameOverride = Name;
 			Description = Help;
