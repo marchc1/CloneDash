@@ -244,6 +244,7 @@ public static class EngineCore
 		if (fullscreen.GetBool()) {
 			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 			// Fix monitor sizing for fullscreens first frame
+			// todo: is there a better way to do this? This interferes with a few things I think
 			int curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : (int)OS.GetPrimaryMonitor();
 			windowWidth = OS.GetMonitorWidth(curMonitor);
 			windowHeight = OS.GetMonitorHeight(curMonitor);
