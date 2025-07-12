@@ -191,6 +191,15 @@ public static class EngineCore
 		StartGameThread();
 	}
 	private static string? prgIcon;
+
+	static ConVar borderless = ConVar.Register(nameof(borderless), "0", ConsoleFlags.Saved, "Hide window decorations", min: 0, max: 1, callback_first: true, callback: borderlessChange);
+	private static bool cachedBorderless;
+	private static void borderlessChange(ConVar self, CVValue old, CVValue now) {
+		cachedBorderless = now.AsInt >= 1;
+		if (Window != null)
+			Window.Undecorated = cachedBorderless;
+	}
+
 	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
@@ -215,17 +224,15 @@ public static class EngineCore
 		Logs.Info($"    > Display server:     {Platform.DisplayServer}");
 
 		ConfigFlags add = (ConfigFlags)0;
-		bool undecorated = false;
 
 		if (flags != null) {
 			foreach (var flag in flags) {
 				add |= flag;
-				if (flag == ConfigFlags.FLAG_WINDOW_UNDECORATED) {
-					undecorated = true;
-					//add |= ConfigFlags.FLAG_WINDOW_TRANSPARENT;
-				}
 			}
 		}
+
+		if (cachedBorderless)
+			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
