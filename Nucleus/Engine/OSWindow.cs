@@ -249,6 +249,7 @@ public unsafe class OSWindow : IValidatable
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, out bool hidden)) if (hidden) SDL3.SDL_HideWindow(handle); else SDL3.SDL_ShowWindow(handle);
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable)) SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
 			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop)) SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, out bool fullscreenMode)) SDL3.SDL_SetWindowFullscreen(handle, fullscreenMode);
 		}
 
 		handleSDLTextInputState();
@@ -267,8 +268,8 @@ public unsafe class OSWindow : IValidatable
 	}
 	// todo
 	public bool Fullscreen {
-		get => false;
-		set { }
+		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_FULLSCREEN);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, value);
 	}
 	public bool Maximized {
 		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_MAXIMIZED);
