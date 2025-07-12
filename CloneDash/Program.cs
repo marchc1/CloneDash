@@ -46,7 +46,17 @@ internal class Program
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
-			MuseDashCompatibility.InitializeCompatibilityLayer();
+			MDCompatLayerInitResult res;
+			if ((res = MuseDashCompatibility.InitializeCompatibilityLayer()) != MDCompatLayerInitResult.OK) {
+				throw new Exception($"Muse Dash compatibility layer failed to initialize: {res switch {
+					MDCompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
+					MDCompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
+					MDCompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
+					MDCompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
+					MDCompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
+					_ => res.ToString()
+				}}");
+			}
 		}
 
 		Interlude.Spin();
