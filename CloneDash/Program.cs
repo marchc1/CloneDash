@@ -32,6 +32,8 @@ namespace CloneDash;
 internal class Program
 {
 	static void Main(string[] args) {
+		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
+			return;
 		MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
 
 		EngineCore.GameInfo = new() {
@@ -41,6 +43,7 @@ internal class Program
 		EngineCore.StartMainThread();
 	}
 	static void GameMain() {
+		NucleusSingleton.Request("Clone Dash");
 		Interlude.ShouldSelectInterludeTexture = false;
 		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
 
@@ -95,19 +98,39 @@ internal class Program
 			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
 		}
 
-		if (CommandLine.TryGetParam<string>("md_level", out var md_level)) {
-			CommandLine.TryGetParam<int>("difficulty", out var difficulty);
+		DoCmdLineOps(CommandLine.Singleton, true);
+
+		Interlude.Spin();
+		Interlude.End();
+
+		// Add an event listener to the singleton
+		// this would run pre-anything in EngineCore Frame()
+		NucleusSingleton.Redirect += NucleusSingleton_Redirect;
+	}
+
+	private static void NucleusSingleton_Redirect(string[] args) {
+		Logs.Info("Received interprocess redirect!");
+		CommandLineParser cmd = new CommandLineParser();
+		cmd.FromArgs(args);
+		EngineCore.Window.FocusWindow();
+		DoCmdLineOps(cmd, false);
+	}
+
+	private static void DoCmdLineOps(CommandLineParser cmd, bool first) {
+		if (cmd.TryGetParam<string>("md_level", out var md_level)) {
+			cmd.TryGetParam<int>("difficulty", out var difficulty);
 			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
 			var lvl = new DashGameLevel(sheet);
-
-			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"));
+			if (!first) Interlude.Begin("Interprocess load started!");
+			EngineCore.LoadLevel(lvl, cmd.IsParamTrue("autoplay"));
+			if (!first) Interlude.End();
 		}
 
-		else if (CommandLine.TryGetParam<string>("cam_level", out var cam_level)) {
+		else if (cmd.TryGetParam<string>("cam_level", out var cam_level)) {
 			Logs.Info($"cam_level specified: {cam_level}");
-			CommandLine.TryGetParam<int>("difficulty", out var difficulty);
+			cmd.TryGetParam<int>("difficulty", out var difficulty);
 
 			CustomChartsSong song = new CustomChartsSong(cam_level);
 			ChartSheet sheet;
@@ -121,14 +144,13 @@ internal class Program
 			}
 
 			var lvl = new DashGameLevel(sheet);
-			EngineCore.LoadLevel(lvl, CommandLine.IsParamTrue("autoplay"), CommandLine.GetParam("startmeasure", 0d));
+			if (!first) Interlude.Begin("Interprocess load started!");
+			EngineCore.LoadLevel(lvl, cmd.IsParamTrue("autoplay"), cmd.GetParam("startmeasure", 0d));
+			if (!first) Interlude.End();
 		}
 
-		else {
+		else if(first) {
 			EngineCore.LoadLevel(new MainMenuLevel());
 		}
-
-		Interlude.Spin();
-		Interlude.End();
 	}
 }

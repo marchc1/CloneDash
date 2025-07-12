@@ -432,6 +432,7 @@ public static class EngineCore
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 
 	public static void Frame() {
+		NucleusSingleton.Spin();
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
 		CurrentAppTime = OS.GetTime();

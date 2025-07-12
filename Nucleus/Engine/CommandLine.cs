@@ -2,12 +2,12 @@
 
 namespace Nucleus.Engine
 {
-	public static class CommandLine
+	public class CommandLineParser
 	{
-		private static Dictionary<string, object> parameters = [];
-		public static Dictionary<string, object> Params => parameters.ToDictionary();
-		public static bool HasParam(string parm) => parameters.TryGetValue(parm, out var _);
-		private static bool getStrBoolVal(string parm) {
+		private Dictionary<string, object> parameters = [];
+		public Dictionary<string, object> Params => parameters.ToDictionary();
+		public bool HasParam(string parm) => parameters.TryGetValue(parm, out var _);
+		private bool getStrBoolVal(string parm) {
 			switch (parm.ToLower()) {
 				case "t":
 				case "true":
@@ -25,13 +25,13 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public static bool IsParamTrue(string parm, bool def = false) => parameters.TryGetValue(parm, out var p) ? (
+		public bool IsParamTrue(string parm, bool def = false) => parameters.TryGetValue(parm, out var p) ? (
 				(p is int i && i >= 1) ||
 				(p is int d && d >= 1) ||
 				(p is string s && getStrBoolVal(s))
 			) : def;
 
-		public static T GetParam<T>(string parm, T def) {
+		public T GetParam<T>(string parm, T def) {
 			if (!parameters.TryGetValue(parm, out object? obj)) return def;
 
 			var tAs = def switch {
@@ -46,7 +46,7 @@ namespace Nucleus.Engine
 			return tAs;
 		}
 
-		public static bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) {
+		public bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) {
 			var has = parameters.TryGetValue(parm, out object? obj);
 			if (has)
 				ret = (obj is T ? (T)obj : default);
@@ -55,13 +55,13 @@ namespace Nucleus.Engine
 			return has;
 		}
 
-		public static void SetParam<T>(string parm, T val) {
+		public void SetParam<T>(string parm, T val) {
 			object? oVal = val;
 			if (oVal == null) parameters.Remove(parm);
 			else parameters[parm] = oVal;
 		}
 
-		private static string readUntil(string str, ref int i, char stopChar) {
+		private string readUntil(string str, ref int i, char stopChar) {
 			string build = "";
 			while (i < str.Length) {
 				char c = str[i];
@@ -74,7 +74,7 @@ namespace Nucleus.Engine
 			return build;
 		}
 
-		private static string readValue(string str, ref int i) {
+		private string readValue(string str, ref int i) {
 			string build = "";
 			bool willBeQuoted = str[i] == '"';
 			if (willBeQuoted) i++;
@@ -92,12 +92,12 @@ namespace Nucleus.Engine
 			return build;
 		}
 
-		private static void skipWhitespace(string args, ref int i) {
+		private void skipWhitespace(string args, ref int i) {
 			while (i < args.Length && char.IsWhiteSpace(args[i]))
 				i++;
 		}
 
-		private static object trueValueType(string input) {
+		private object trueValueType(string input) {
 			if (int.TryParse(input, out int i))
 				return i;
 
@@ -107,13 +107,13 @@ namespace Nucleus.Engine
 			return input;
 		}
 
-		private static bool checkIfValue(string input, int i) {
+		private bool checkIfValue(string input, int i) {
 			if (i < input.Length && input[i] != '-' && input[i] != '+')
 				return true;
 			return false;
 		}
 
-		public static void FromString(string args) {
+		public void FromString(string args) {
 			parameters.Clear();
 			for (int i = 0; i < args.Length;) {
 				skipWhitespace(args, ref i);
@@ -149,11 +149,23 @@ namespace Nucleus.Engine
 			}
 		}
 
-		public static void FromArgs(string[] args) {
+		public void FromArgs(string[] args) {
 			for (int i = 0; i < args.Length; i++)
 				args[i] = args[i].IndexOf(' ') > -1 ? ('"' + args[i] + '"') : args[i];
 
 			FromString(string.Join(' ', args));
 		}
+	}
+
+	public static class CommandLine
+	{
+		public readonly static CommandLineParser Singleton = new();
+		public static bool HasParam(string parm) => Singleton.HasParam(parm);
+		public static bool IsParamTrue(string parm, bool def = false) => Singleton.IsParamTrue(parm, def);
+		public static T GetParam<T>(string parm, T def) => Singleton.GetParam(parm, def);
+		public static bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) => Singleton.TryGetParam(parm, out ret);
+		public static void SetParam<T>(string parm, T val) => Singleton.SetParam(parm, val);
+		public static void FromString(string args) => Singleton.FromString(args);
+		public static void FromArgs(string[] args) => Singleton.FromArgs(args);
 	}
 }
