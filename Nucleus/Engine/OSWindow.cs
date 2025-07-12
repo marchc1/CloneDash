@@ -165,8 +165,11 @@ public unsafe class OSWindow : IValidatable
 
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
+		
 		if (confFlags.HasFlag(ConfigFlags.FLAG_WINDOW_UNDECORATED))
 			flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
+		if (confFlags.HasFlag(ConfigFlags.FLAG_FULLSCREEN_MODE))
+			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");

@@ -193,11 +193,15 @@ public static class EngineCore
 	private static string? prgIcon;
 
 	static ConVar borderless = ConVar.Register(nameof(borderless), "0", ConsoleFlags.Saved, "Hide window decorations", min: 0, max: 1, callback_first: true, callback: borderlessChange);
-	private static bool cachedBorderless;
 	private static void borderlessChange(ConVar self, CVValue old, CVValue now) {
-		cachedBorderless = now.AsInt >= 1;
 		if (Window != null)
-			Window.Undecorated = cachedBorderless;
+			Window.Undecorated = now.AsInt >= 1;
+	}
+
+	static ConVar fullscreen = ConVar.Register(nameof(fullscreen), "0", ConsoleFlags.Saved, "Fullscreen mode", min: 0, max: 1, callback_first: true, callback: fullscreenChange);
+	private static void fullscreenChange(ConVar self, CVValue old, CVValue now) {
+		if (Window != null)
+			Window.Fullscreen = now.AsInt >= 1;
 	}
 
 	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
@@ -231,8 +235,10 @@ public static class EngineCore
 			}
 		}
 
-		if (cachedBorderless)
+		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
+		if (fullscreen.GetBool())
+			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
