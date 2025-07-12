@@ -235,14 +235,19 @@ public static class EngineCore
 			}
 		}
 
-		if (borderless.GetBool())
-			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
-		if (fullscreen.GetBool())
-			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
 		OS.InitSDL();
+		if (borderless.GetBool())
+			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
+		if (fullscreen.GetBool()) {
+			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
+			// Fix monitor sizing for fullscreens first frame
+			int curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : (int)OS.GetPrimaryMonitor();
+			windowWidth = OS.GetMonitorWidth(curMonitor);
+			windowHeight = OS.GetMonitorHeight(curMonitor);
+		}
 		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;

@@ -60,6 +60,7 @@ public static unsafe class OS
 
 	public static bool IsMonitorIDValid(int idx) => idx > 0 && idx < GetMonitorCount();
 	public static int GetMonitorCount() => SDL3.SDL_GetDisplays()?.Count ?? 0;
+	public static int GetPrimaryMonitor() => (int)SDL3.SDL_GetPrimaryDisplay();
 	public static int GetMonitorWidth(int monitor) {
 		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return 0; }
 		return SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)monitor)->w;
