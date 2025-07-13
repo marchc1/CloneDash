@@ -165,7 +165,7 @@ public unsafe class OSWindow : IValidatable
 
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
-		
+
 		if (confFlags.HasFlag(ConfigFlags.FLAG_WINDOW_UNDECORATED))
 			flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
 		if (confFlags.HasFlag(ConfigFlags.FLAG_FULLSCREEN_MODE))
@@ -253,7 +253,7 @@ public unsafe class OSWindow : IValidatable
 		}
 
 		handleSDLTextInputState();
-
+		flushWindowGeometry();
 		lastFlags = curFlags;
 		hasLastWinflags = true;
 	}
@@ -313,6 +313,74 @@ public unsafe class OSWindow : IValidatable
 		get => false;
 		set => Logs.Warn("Mouse passthrough is unsupported on a SDL backend.");
 	}
+
+
+	private Vector2F queuedPos, queuedSize, queuedMin, queuedMax;
+	private string queuedTitle;
+	private float queuedOpacity;
+	public bool isPosQueued, isSizeQueued, isMinQueued, isMaxQueued, isTitleQueued, isOpacityQueued;
+
+	private void flushWindowGeometry() {
+		if (isPosQueued) 
+			SDL3.SDL_SetWindowPosition(handle, (int)queuedPos.X, (int)queuedPos.Y);
+		if (isSizeQueued) 
+			SDL3.SDL_SetWindowSize(handle, (int)queuedSize.X, (int)queuedSize.Y);
+		if (isMinQueued) 
+			SDL3.SDL_SetWindowMinimumSize(handle, (int)queuedMin.X, (int)queuedMin.Y);
+		if (isMaxQueued) 
+			SDL3.SDL_SetWindowMaximumSize(handle, (int)queuedMax.X, (int)queuedMax.Y);
+		if (isTitleQueued)
+			SDL3.SDL_SetWindowTitle(handle, queuedTitle);
+		if (isOpacityQueued)
+			SDL3.SDL_SetWindowOpacity(handle, queuedOpacity);
+
+		isPosQueued = isSizeQueued = isMinQueued = isMaxQueued = isTitleQueued = isOpacityQueued = false;
+	}
+
+	public Vector2F Position {
+		get {
+			int _x, _y;
+			SDL3.SDL_GetWindowPosition(handle, &_x, &_y);
+			return new(_x, _y);
+		}
+		set { queuedPos = value; isPosQueued = true; }
+	}
+
+	public Vector2F Size {
+		get {
+			int _x, _y;
+			SDL3.SDL_GetWindowSize(handle, &_x, &_y);
+			return new(_x, _y);
+		}
+		set { queuedSize = value; isSizeQueued = true; }
+	}
+	public Vector2F MinSize {
+		get {
+			int _x, _y;
+			SDL3.SDL_GetWindowMinimumSize(handle, &_x, &_y);
+			return new(_x, _y);
+		}
+		set { queuedMin = value; isMinQueued = true; }
+	}
+	public Vector2F MaxSize {
+		get {
+			int _x, _y;
+			SDL3.SDL_GetWindowMaximumSize(handle, &_x, &_y);
+			return new(_x, _y);
+		}
+		set { queuedMax = value; isMaxQueued = true; }
+	}
+	public string Title {
+		get => SDL3.SDL_GetWindowTitle(handle) ?? "";
+		set { queuedTitle = value; isTitleQueued = true; }
+	}
+	public float Opacity {
+		get => SDL3.SDL_GetWindowOpacity(handle);
+		set { queuedOpacity = value; isOpacityQueued = true; }
+	}
+
+
+
 
 	public void SwapScreenBuffer() {
 		if (!IsValid()) return;
@@ -762,57 +830,9 @@ public unsafe class OSWindow : IValidatable
 			SDL3.SDL_DestroySurface(iconSurface);
 		}
 	}
-
-	public Vector2F Position {
-		get {
-			int _x, _y;
-			SDL3.SDL_GetWindowPosition(handle, &_x, &_y);
-			return new(_x, _y);
-		}
-		set => SDL3.SDL_SetWindowPosition(handle, (int)value.X, (int)value.Y);
-	}
-
-	public Vector2F Size {
-		get {
-			int _x, _y;
-			SDL3.SDL_GetWindowSize(handle, &_x, &_y);
-			return new(_x, _y);
-		}
-		set => SDL3.SDL_SetWindowSize(handle, (int)value.X, (int)value.Y);
-	}
-
-	public Vector2F MinSize {
-		get {
-			int _x, _y;
-			SDL3.SDL_GetWindowMinimumSize(handle, &_x, &_y);
-			return new(_x, _y);
-		}
-		set => SDL3.SDL_SetWindowMinimumSize(handle, (int)value.X, (int)value.Y);
-	}
-
-	public Vector2F MaxSize {
-		get {
-			int _x, _y;
-			SDL3.SDL_GetWindowMaximumSize(handle, &_x, &_y);
-			return new(_x, _y);
-		}
-		set => SDL3.SDL_SetWindowMaximumSize(handle, (int)value.X, (int)value.Y);
-	}
-
-	public string Title {
-		get => SDL3.SDL_GetWindowTitle(handle) ?? "";
-		set => SDL3.SDL_SetWindowTitle(handle, value);
-	}
-
 	public int Monitor {
 		get => (int)SDL3.SDL_GetDisplayForWindow(handle);
 	}
-
-	public float Opacity {
-		get => SDL3.SDL_GetWindowOpacity(handle);
-		set => SDL3.SDL_SetWindowOpacity(handle, Math.Clamp(value, 0, 1));
-	}
-
 	public void FocusWindow() => SDL3.SDL_RaiseWindow(handle);
 
 	public void* Handle => handle;
