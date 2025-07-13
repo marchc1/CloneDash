@@ -100,7 +100,7 @@ public class UnitySearchPath : SearchPath
 
 		int entries = ReadHeader(reader, out DateTime time);
 		int i = -1;
-		string[] actualFiles = Directory.GetFiles(root);
+		var actualFiles = Directory.GetFiles(root, "*.bundle").Select(x => Path.GetFileName(x));
 		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
