@@ -293,7 +293,6 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 			case SceneSound.Score: Hitsounds.ScoreSound.Play(); break;
 			case SceneSound.Mash: Hitsounds.Mash.Play(hits); break;
 			case SceneSound.PressTop: Hitsounds.PressTopSound.Play(hits); break;
-
 		}
 	}
 

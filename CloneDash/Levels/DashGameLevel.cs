@@ -1237,6 +1237,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 							},
 							EntityType.SustainBeam => SceneSound.PressTop,
 							EntityType.Raider => SceneSound.Loud1,
+							EntityType.Ghost => SceneSound.Quiet,
 							_ => SceneSound.Medium1
 						}, 1);
 					}
