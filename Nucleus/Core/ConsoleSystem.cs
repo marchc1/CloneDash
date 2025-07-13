@@ -181,7 +181,7 @@ namespace Nucleus
 		}
 		[ConCommand(Help: "Find a convar/concommand by name")]
 		static void find(ConCommand cmd, ConCommandArguments args) {
-			var found = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered) && x.Name.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase));
+			var found = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered) && (x.Name.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase) || x.HelpString.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase)));
 			int maxWidth = 0;
 			foreach (var cvar in found) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
 			foreach (var cvar in found.OrderBy(x => x.Name)) {
