@@ -57,6 +57,7 @@ namespace Nucleus
 			return cv.AsDouble != oldD || cv.AsInt != oldI;
 		}
 	}
+	[MarkForStaticConstruction]
 	public abstract class ConCommandBase
 	{
 		public delegate void AutocompleteDelegate(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? helpReturns);
@@ -162,6 +163,15 @@ namespace Nucleus
 		public virtual bool IsFlagSet(ConsoleFlags flag) => (flag & Flags) == flag;
 		public virtual void AddFlags(ConsoleFlags flags) => Flags = Flags | flags;
 		public virtual void RemoveFlags(ConsoleFlags flags) => Flags = Flags & ~flags;
+
+		[ConCommand(Help: "Lists all available convars/concommands")]
+		static void cvarlist() {
+			int maxWidth = 0;
+			foreach (var cvar in __all) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
+			foreach (var cvar in __all.OrderBy(x => x.Name)) {
+				Logs.Print($"{cvar.Name.PadRight(maxWidth, ' ')}: {cvar.HelpString}");
+			}
+		}
 	}
 	public class ConCommandArguments
 	{
@@ -321,7 +331,7 @@ namespace Nucleus
 			AutoComplete = autoComplete;
 		}
 		public static IEnumerable<(MethodInfo baseMethod, ConCommandAttribute attr)> GetAttributes(Type t) {
-			foreach (var method in t.GetMethods()) {
+			foreach (var method in t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)) {
 				ConCommandAttribute? attr = method.GetCustomAttribute<ConCommandAttribute>();
 				if (attr == null) continue;
 
