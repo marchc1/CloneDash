@@ -5,6 +5,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace CD_UnityGenAssetLUT;
 
@@ -64,10 +65,11 @@ internal class Program
 				foreach (var container in obj.m_Container) {
 					var pathID = container.Value.asset.m_PathID;
 					if (pathID == 0) continue;
+					var stripped = Regex.Replace(filename, @"(_[a-f0-9]{32})\.bundle$", "");
 					lookup.Add(new(
 						$"{container.Key}/{(IsNamed(asset.ObjectsDic[pathID], out var name1) ? name1 : pathID)}",
 						(IsNamed(container.Value.asset, out var name2) ? name2 : ""),
-						filename, pathID));
+						stripped, pathID));
 				}
 
 			ret:

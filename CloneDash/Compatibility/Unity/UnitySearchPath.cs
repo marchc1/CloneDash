@@ -4,6 +4,7 @@ using Nucleus.Files;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -98,6 +99,15 @@ public class UnitySearchPath : SearchPath
 
 		int entries = ReadHeader(reader, out DateTime time);
 		int i = -1;
+
+		// Stripped paths to real paths
+		Dictionary<string, string> strippedToReal = [];
+		foreach(var file in Directory.GetFiles(root)) {
+			string localPath = Path.GetFileName(file);
+			string stripped = Regex.Replace(localPath, @"(_[a-f0-9]{32})\.bundle$", "");
+			strippedToReal[stripped] = localPath;
+		}
+
 		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
@@ -106,7 +116,7 @@ public class UnitySearchPath : SearchPath
 				LookupAbsFolders[string.Join('/', parts[..(i2 + 1)])] = folder;
 			}
 			var file = folder.File(parts[parts.Length - 1]);
-			file.PointsToBundle = bundle;
+			file.PointsToBundle = strippedToReal[bundle];
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
