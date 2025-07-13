@@ -392,6 +392,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 	public override void Initialize(params object[] args) {
 		Stats = new(Sheet);
+		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
+			RichPresenceSystem.SetPresence(new() {
+				Details = "In Game",
+				State = $"Playing {Sheet?.Song?.Name ?? "<null>"}"
+			});
+		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 			Interlude.Spin(submessage: "Retrieving descriptors...");
 

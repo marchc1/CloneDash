@@ -98,6 +98,7 @@ public class MainMenuLevel : Level
 		}
 
 		ActiveElements.Push(element);
+		element.SetRichPresence();
 
 		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
 
@@ -118,7 +119,10 @@ public class MainMenuLevel : Level
 
 		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
 
-		if (next is IMainMenuPanel mmp) mmp.OnShown();
+		if (next is IMainMenuPanel mmp) {
+			mmp.OnShown();
+			mmp.SetRichPresence();
+		}
 
 		return next;
 	}
@@ -132,7 +136,7 @@ public class MainMenuLevel : Level
 		header.BorderSize = 0;
 		header.BackgroundColor = header.BackgroundColor.Adjust(0, 0, value: 0.5f);
 
-	   backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
+		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
 			PopActiveElement();
 		});
 

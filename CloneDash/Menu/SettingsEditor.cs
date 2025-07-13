@@ -105,6 +105,12 @@ public class SettingsPanel : ScrollPanel
 
 public class SettingsEditor : Panel, IMainMenuPanel
 {
+	public void SetRichPresence() {
+		RichPresenceSystem.SetPresence(new() {
+			Details = "Main Menu",
+			State = "In Settings"
+		});
+	}
 	public string GetName() => "";
 	public void OnHidden() { }
 	public void OnShown() { }
@@ -194,6 +200,12 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
+	public void SetRichPresence() {
+		RichPresenceSystem.SetPresence(new() {
+			Details = "Main Menu",
+			State = "In Settings"
+		});
+	}
 	public string GetName() => "Offset Wizard";
 	public void OnHidden() { }
 	public void OnShown() { }

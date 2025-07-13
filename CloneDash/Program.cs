@@ -35,12 +35,14 @@ internal class Program
 		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
 			return;
 		MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
+		RichPresenceSystem.Initialize();
 
 		EngineCore.GameInfo = new() {
 			GameName = "Clone Dash"
 		};
 		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
 		EngineCore.StartMainThread();
+		RichPresenceSystem.Shutdown();
 	}
 	static void GameMain() {
 		NucleusSingleton.Request("Clone Dash");

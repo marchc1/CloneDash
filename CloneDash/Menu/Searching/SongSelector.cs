@@ -22,6 +22,12 @@ namespace CloneDash.Menu.Searching;
 
 public class SongSelector : Panel, IMainMenuPanel
 {
+	public void SetRichPresence() {
+		RichPresenceSystem.SetPresence(new() {
+			Details = "Main Menu",
+			State = "Picking a chart"
+		});
+	}
 	public string GetName() => "Song Selector";
 	public void OnHidden() { }
 	public void OnShown() { }

@@ -23,6 +23,12 @@ namespace CloneDash.Menu;
 
 public class MainMenuPanel : Panel, IMainMenuPanel
 {
+	public void SetRichPresence() {
+		RichPresenceSystem.SetPresence(new() {
+			Details = "Main Menu",
+			State = "Idle"
+		});
+	}
 	public string GetName() => "Main Menu";
 	public void OnHidden() { }
 	public void OnShown() {
@@ -130,7 +136,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.ImageOrientation = ImageOrientation.Zoom;
 		back.Text = "";
 		back.MouseReleaseEvent += Back_MouseReleaseEvent;
-
 		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
