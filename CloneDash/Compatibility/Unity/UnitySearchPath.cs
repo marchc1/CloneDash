@@ -4,6 +4,7 @@ using Nucleus.Files;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -91,6 +92,7 @@ public class UnitySearchPath : SearchPath
 
 	public Dictionary<string, List<UnityFile>> NamedObjects = [];
 	public Dictionary<long, UnityFile> PathIDObjects = [];
+	public Dictionary<string, string> StrippedHashLookup = [];
 
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
 		this.root = root;
@@ -106,7 +108,9 @@ public class UnitySearchPath : SearchPath
 				LookupAbsFolders[string.Join('/', parts[..(i2 + 1)])] = folder;
 			}
 			var file = folder.File(parts[parts.Length - 1]);
-			file.PointsToBundle = bundle;
+			string stripped = Regex.Replace(bundle, @"(_[a-f0-9]{32})\.bundle$", "");
+			file.PointsToBundle = stripped;
+			StrippedHashLookup[stripped] = bundle;
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
@@ -125,12 +129,13 @@ public class UnitySearchPath : SearchPath
 	}
 
 	public void GetAssetBundle(UnityFile file, [NotNull] out AssetsManager manager) {
-		if (assetsManagers.TryGetValue(file.PointsToBundle, out manager))
+		string hashed = StrippedHashLookup[file.PointsToBundle];
+		if (assetsManagers.TryGetValue(hashed, out manager))
 			return;
 
 		manager = new AssetsManager();
-		manager.LoadFiles(Path.Combine(root, file.PointsToBundle));
-		assetsManagers.Add(file.PointsToBundle, manager);
+		manager.LoadFiles(Path.Combine(root, hashed));
+		assetsManagers.Add(hashed, manager);
 	}
 
 	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
