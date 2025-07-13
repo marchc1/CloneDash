@@ -823,7 +823,7 @@ public static class EngineCore
 				Window.SwapScreenBuffer();
 				while (true) {
 					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(ref i, out _, out _)) {
+					if (Window.KeyAvailable(ref i, out _, out _) || Window.UserClosed()) {
 						Raylib.SetMasterVolume(oldMaster);
 						return false;
 					}
