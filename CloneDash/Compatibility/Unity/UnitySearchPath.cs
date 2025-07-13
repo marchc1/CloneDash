@@ -4,7 +4,6 @@ using Nucleus.Files;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -92,7 +91,6 @@ public class UnitySearchPath : SearchPath
 
 	public Dictionary<string, List<UnityFile>> NamedObjects = [];
 	public Dictionary<long, UnityFile> PathIDObjects = [];
-	public Dictionary<string, string> StrippedHashLookup = [];
 
 	public UnitySearchPath(string root, Stream serializedAssetBundleContents) {
 		this.root = root;
@@ -100,7 +98,6 @@ public class UnitySearchPath : SearchPath
 
 		int entries = ReadHeader(reader, out DateTime time);
 		int i = -1;
-		var actualFiles = Directory.GetFiles(root, "*.bundle").Select(x => Path.GetFileName(x));
 		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
@@ -109,9 +106,7 @@ public class UnitySearchPath : SearchPath
 				LookupAbsFolders[string.Join('/', parts[..(i2 + 1)])] = folder;
 			}
 			var file = folder.File(parts[parts.Length - 1]);
-			string stripped = Regex.Replace(bundle, @"(_[a-f0-9]{32})\.bundle$", "");
-			file.PointsToBundle = stripped;
-			StrippedHashLookup[stripped] = actualFiles.First(x => x.StartsWith(stripped));
+			file.PointsToBundle = bundle;
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
@@ -130,13 +125,12 @@ public class UnitySearchPath : SearchPath
 	}
 
 	public void GetAssetBundle(UnityFile file, [NotNull] out AssetsManager manager) {
-		string hashed = StrippedHashLookup[file.PointsToBundle];
-		if (assetsManagers.TryGetValue(hashed, out manager))
+		if (assetsManagers.TryGetValue(file.PointsToBundle, out manager))
 			return;
 
 		manager = new AssetsManager();
-		manager.LoadFiles(Path.Combine(root, hashed));
-		assetsManagers.Add(hashed, manager);
+		manager.LoadFiles(Path.Combine(root, file.PointsToBundle));
+		assetsManagers.Add(file.PointsToBundle, manager);
 	}
 
 	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
