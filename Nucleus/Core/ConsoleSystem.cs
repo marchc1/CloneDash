@@ -10,11 +10,11 @@ using System.Reflection;
 
 namespace Nucleus
 {
-	// to-do
 	public enum ConsoleFlags : ulong
 	{
 		None = 0,
-		Saved = 1 << 0,
+		Unregistered = 1 << 0,
+		Saved = 1 << 7,
 		DevelopmentOnly = 1 << 60
 	}
 	public struct CVValue
@@ -167,8 +167,24 @@ namespace Nucleus
 		[ConCommand(Help: "Lists all available convars/concommands")]
 		static void cvarlist() {
 			int maxWidth = 0;
-			foreach (var cvar in __all) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
-			foreach (var cvar in __all.OrderBy(x => x.Name)) {
+			var all = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered));
+			foreach (var ccbase in all) if (ccbase.Name.Length > maxWidth) maxWidth = ccbase.Name.Length;
+			int ccmds = 0, cvars = 0;
+			foreach (var ccbase in all.OrderBy(x => x.Name)) {
+				Logs.Print($"{ccbase.Name.PadRight(maxWidth, ' ')}: {ccbase.HelpString}");
+				if (ccbase.IsCommand)
+					ccmds++;
+				else
+					cvars++;
+			}
+			Logs.Print($"{ccmds + cvars} registered, {ccmds} commands, {cvars} vars.");
+		}
+		[ConCommand(Help: "Find a convar/concommand by name")]
+		static void find(ConCommand cmd, ConCommandArguments args) {
+			var found = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered) && x.Name.StartsWith(args.Raw, StringComparison.InvariantCultureIgnoreCase));
+			int maxWidth = 0;
+			foreach (var cvar in found) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
+			foreach (var cvar in found.OrderBy(x => x.Name)) {
 				Logs.Print($"{cvar.Name.PadRight(maxWidth, ' ')}: {cvar.HelpString}");
 			}
 		}
