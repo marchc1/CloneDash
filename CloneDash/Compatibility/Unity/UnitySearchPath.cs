@@ -100,6 +100,7 @@ public class UnitySearchPath : SearchPath
 
 		int entries = ReadHeader(reader, out DateTime time);
 		int i = -1;
+		string[] actualFiles = Directory.GetFiles(root);
 		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
@@ -110,7 +111,7 @@ public class UnitySearchPath : SearchPath
 			var file = folder.File(parts[parts.Length - 1]);
 			string stripped = Regex.Replace(bundle, @"(_[a-f0-9]{32})\.bundle$", "");
 			file.PointsToBundle = stripped;
-			StrippedHashLookup[stripped] = bundle;
+			StrippedHashLookup[stripped] = actualFiles.First(x => x.StartsWith(stripped));
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
