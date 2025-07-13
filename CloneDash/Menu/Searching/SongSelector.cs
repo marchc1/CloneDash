@@ -254,8 +254,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (DiscRotateAnimation % 360 > 180) {
 			var v = DiscRotateAnimation % 180 - 180;
 			DiscRotateSOS.ResetTo(v);
+			DiscRotateAnimation = 0;
 		}
-		DiscRotateAnimation = (int)(DiscRotateAnimation / 360) * 360;
+		else
+			DiscRotateAnimation = (int)(DiscRotateAnimation / 360) * 360;
 		FlyAway = 0;
 		DiscVibrate = 0;
 		InvalidateLayout();
