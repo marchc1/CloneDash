@@ -405,12 +405,12 @@ namespace Nucleus.Engine
 						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
 							var pressed = emulatedState.WasKeyPressed(i);
 							var released = emulatedState.WasKeyReleased(i);
-							if (pressed) EngineCore.KeyboardFocusedElement.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
-							if (released) EngineCore.KeyboardFocusedElement.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if (pressed) EngineCore.KeyboardFocusedElement?.KeyPressedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
+							if (released) EngineCore.KeyboardFocusedElement?.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 
 						foreach(var textInputEvent in emulatedState.GetTextInputsThisFrame()) {
-							EngineCore.KeyboardFocusedElement.TextInputOccur(in emulatedState, textInputEvent);
+							EngineCore.KeyboardFocusedElement?.TextInputOccur(in emulatedState, textInputEvent);
 						}
 					}
 				}
