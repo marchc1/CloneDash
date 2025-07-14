@@ -11,7 +11,8 @@ using System.Threading.Tasks;
 
 namespace CloneDash;
 
-public struct RichPresenceState {
+public struct RichPresenceState
+{
 	public string Details;
 	public string State;
 }
@@ -21,7 +22,7 @@ internal class NucleusDiscordLogger : ILogger
 	public DiscordRPC.Logging.LogLevel Level { get; set; } = DiscordRPC.Logging.LogLevel.Warning;
 
 	public void Error(string message, params object[] args) {
-		if(Level <= DiscordRPC.Logging.LogLevel.Error)
+		if (Level <= DiscordRPC.Logging.LogLevel.Error)
 			Logs.Error(string.Format(message, args));
 	}
 	public void Info(string message, params object[] args) {
@@ -37,28 +38,52 @@ internal class NucleusDiscordLogger : ILogger
 			Logs.Warn(string.Format(message, args));
 	}
 }
+[MarkForStaticConstruction]
 public static class RichPresenceSystem
 {
-	static DiscordRpcClient DiscordClient;
+	static DiscordRpcClient? DiscordClient;
+	static bool initialized;
+	public static ConVar richpresence = ConVar.Register(nameof(richpresence), "1", ConsoleFlags.Saved, "Enables/disables rich presence systems", 0, 1, (_, _, cv) => {
+		if ((cv.AsInt ?? 0) >= 1) {
+			if (!initialized) 
+				Initialize();
+		}
+		else {
+			Shutdown();
+		}
+
+	}, callback_first: false);
 
 	public static void Initialize() {
+		if (!richpresence.GetBool()) return;
 		DiscordClient = new DiscordRpcClient("1372433185115476018");
 		DiscordClient.Logger = new NucleusDiscordLogger();
-		DiscordClient.OnReady += (_, e) => Logs.Info($"Received Ready from user {e.User.Username}");
-		DiscordClient.OnPresenceUpdate += (_, e) => 
+		DiscordClient.OnReady += (_, e) => {
+			Logs.Info($"Received Ready from user {e.User.Username}");
+			if (hasPrevPresence)
+				SetPresence(in lastPresence);
+		};
+		DiscordClient.OnPresenceUpdate += (_, e) =>
 			Logs.Info($"Received Update! {e.Presence}");
 		DiscordClient.Initialize();
+		initialized = true;
 	}
 	public static void Shutdown() {
-		DiscordClient.Dispose();
+		DiscordClient?.Dispose();
+		DiscordClient = null;
+		initialized = false;
 	}
-
+	static bool hasPrevPresence;
+	static RichPresenceState lastPresence;
 	public static void SetPresence(in RichPresenceState state) {
-		DiscordClient.SetPresence(new() {
+		lastPresence = state;
+		hasPrevPresence = true;
+		DiscordClient?.SetPresence(new() {
 			Details = state.Details,
 			State = state.State,
 			Assets = new Assets() {
-				LargeImageKey = "clonedashguy512wip", LargeImageText = "Clone Dash"
+				LargeImageKey = "clonedashguy512wip",
+				LargeImageText = "Clone Dash"
 			}
 		});
 	}
