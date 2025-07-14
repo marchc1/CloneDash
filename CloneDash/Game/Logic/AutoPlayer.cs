@@ -65,6 +65,7 @@ namespace CloneDash.Game.Logic
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
+			bool avoidedTop = false, avoidedBottom = false;
 			if (entIndex != -1) {
 				while (entIndex < ents.Count) {
 					var ent = ents[entIndex];
@@ -80,9 +81,9 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f)) {
-									if (ent.Pathway == PathwaySide.Top)
+									if (ent.Pathway == PathwaySide.Top && !avoidedTop)
 										input.TopClicked += 1;
-									else {
+									else if(!avoidedBottom) {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
 											if (level.InAir || level.Sustains.IsSustaining())
 												input.BottomClicked += 1;
@@ -98,6 +99,7 @@ namespace CloneDash.Game.Logic
 
 									// Record the entity as passed
 									Passed.Add(ent);
+									Logs.Debug($"Hit [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;
 							// Entities that need to be avoided
@@ -105,13 +107,18 @@ namespace CloneDash.Game.Logic
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, -0.001f)) {
 									if (level.Pathway == ent.Pathway) {
 										// The entity needs to be avoided, so pick the opposite side the entity is on
-										if (ent.Pathway == PathwaySide.Bottom)
+										if (ent.Pathway == PathwaySide.Bottom && input.TopClicked <= 0) {
 											input.TopClicked += 1;
-										else
+											avoidedTop = true;
+										}
+										else if (input.BottomClicked <= 0) {
 											input.BottomClicked += 1;
+											avoidedBottom = true;
+										}
 									}
 									// Record the entity as passed
 									Passed.Add(ent);
+									Logs.Debug($"Avoided [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;
 							default:
