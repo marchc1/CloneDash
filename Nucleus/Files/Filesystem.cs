@@ -231,6 +231,7 @@ public static class Filesystem
 		byte[]? data = ReadAllBytes(pathID, path);
 		if (data == null) throw NotFound(pathID, path);
 		var wav = Raylib.LoadWaveFromMemory(GetExtension(path), data);
+		Audio.SoundManagement.DoWaveFormat(ref wav);
 		var snd = Raylib.LoadSoundFromWave(wav);
 		Raylib.UnloadWave(wav);
 		return snd;

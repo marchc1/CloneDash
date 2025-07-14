@@ -4,6 +4,8 @@ using Nucleus.Util;
 using Raylib_cs;
 using System.Runtime.InteropServices;
 
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace Nucleus.Audio
 {
 	[MarkForStaticConstruction]
@@ -65,14 +67,21 @@ namespace Nucleus.Audio
 			if (localToAudio)
 				return LoadSoundFromFile("audio", filepath);
 
-			Sound snd = new(this, Raylib.LoadSound(filepath), true);
+			Wave w = Raylib.LoadWave(filepath);
+			DoWaveFormat(ref w);
+			Raylib_cs.Sound sound = Raylib.LoadSoundFromWave(w);
+			Sound snd = new(this, sound, true);
 			LoadedSoundsFromFile.Add(filepath, snd);
 			LoadedFilesFromSound.Add(snd, filepath);
 			Sounds.Add(snd);
 
 			return snd;
 		}
-
+		public static void DoWaveFormat(ref Wave w) {
+			if (Raylib.IsWaveReady(w)) {
+				Raylib.WaveFormat(ref w, 44100, 32, 2);
+			}
+		}
 		public unsafe Sound LoadSoundFromMemory(byte[] data) {
 			if (data.Length < 4) throw new InvalidDataException();
 
@@ -87,6 +96,7 @@ namespace Nucleus.Audio
 
 			unsafe {
 				Wave w = Raylib.LoadWaveFromMemory(fileExtension, data);
+				DoWaveFormat(ref w);
 				Raylib_cs.Sound sound = Raylib.LoadSoundFromWave(w);
 				Raylib.UnloadWave(w);
 				Sound snd = new(this, sound, true);
