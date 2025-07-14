@@ -29,7 +29,7 @@ namespace Nucleus.Audio
 		}
 
 		private float __volumeMultiplier = 1f;
-		List<ConVar> boundConVars = [];
+		HashSet<ConVar> boundConVars = [];
 		private void recalculateVolumeMultiplier() {
 			__volumeMultiplier = 1;
 			if (boundConVars.Count == 0)
@@ -41,9 +41,10 @@ namespace Nucleus.Audio
 			Raylib.SetMusicVolume(underlying, _volume * __volumeMultiplier);
 		}
 		public void BindVolumeToConVar(ConVar cv) {
-			boundConVars.Add(cv);
-			cv.OnChange += Cv_OnChange;
-			recalculateVolumeMultiplier();
+			if (boundConVars.Add(cv)) {
+				cv.OnChange += Cv_OnChange;
+				recalculateVolumeMultiplier();
+			}
 		}
 		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) => recalculateVolumeMultiplier();
 
