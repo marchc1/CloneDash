@@ -1,5 +1,7 @@
 ﻿using Raylib_cs;
 
+using System.Diagnostics;
+
 namespace Nucleus
 {
 	public enum LogLevel
@@ -139,6 +141,7 @@ namespace Nucleus
 		public static string Source { get; internal set; } = "nucleus";
 
 		public static void Print(params object?[] items) => Log(LogLevel.Print, PrintColor, Newline, items);
+		[Conditional("DEBUG")]
 		public static void Debug(params object?[] items) => Log(LogLevel.Debug, PrintColor, Newline, items);
 		public static void Info(params object?[] items) => Log(LogLevel.Info, PrintColor, Newline, items);
 		public static void Success(params object?[] items) => Log(LogLevel.Success, PrintColor, Newline, items);
