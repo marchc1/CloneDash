@@ -460,8 +460,10 @@ namespace CloneDash.Game
 			DidPunishPlayer = false;
 			WasHitPerfect = false;
 			DidPass = false;
-			Dead = false;
 			Shown = false;
+			ShouldDraw = true;
+			ForceDraw = false;
+			Dead = false;
 			OnReset();
 		}
 

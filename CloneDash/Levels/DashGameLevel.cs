@@ -137,9 +137,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		EngineCore.LoadLevel(workingLevel, autoplay);
 		return workingLevel;
 	}
-
-
+	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
+		IsSeeking = true;
+
 		InMashState = false;
 		MashingEntity = null;
 
@@ -149,7 +150,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
-			if (entity is not DashEnemy entCD)
+			if (entity is not DashModelEntity entCD)
 				continue;
 
 			entCD.Reset();
@@ -158,12 +159,16 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		Combo = 0;
 		Health = 250;
 		InFever = false;
-		WhenDidFeverStart = 0;
+		WhenDidFeverStart = -1000000d;
+		LastFeverIncreaseTime = -2000;
 		lastNoteHit = false;
 		Score = 0;
 		Fever = 0;
-
+		resetPlayerAnimState();
+		Sustains.Reset();
 		AutoPlayer.Reset();
+		__whenjump = - 2000000000000d;
+		__whenHjump = -2000000000000d;
 
 		foreach (var entity in Entities) {
 			if (entity is DashModelEntity mEnt && mEnt.HitTime < time) {
@@ -183,6 +188,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 				}
 			}
 		}
+
+		IsSeeking = false;
 	}
 
 	public const string STRING_HP = "HP: {0}";
@@ -213,7 +220,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 	public DashModelEntity? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
-	private TextEffect mashTextEffect;
+	private TextEffect? mashTextEffect;
 
 	/// <summary>
 	/// Enters the mash state, which causes all attacks to be redirected into this entity.
@@ -223,10 +230,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		if (IValidatable.IsValid(mashTextEffect))
 			mashTextEffect.Remove();
 
-		mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
-		mashTextEffect.SuppressAutoDeath = true;
-		UpdateMashTextEffect();
-
+		if (!IsSeeking) {
+			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
+			if (IValidatable.IsValid(mashTextEffect))
+				mashTextEffect.SuppressAutoDeath = true;
+			UpdateMashTextEffect();
+		}
 		InMashState = true;
 		MashingEntity = ent;
 	}
@@ -971,7 +980,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	/// <param name="text">The text</param>
 	/// <param name="position">Where it spawns (it will rise upwards after being spawned)</param>
 	/// <param name="color">The color of the text</param>
-	public TextEffect SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
+	public TextEffect? SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
+		if (IsSeeking) return null;
 		if (color == null)
 			color = new Color(255, 255, 255, 255);
 
@@ -1369,8 +1379,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	/// </summary>
 	/// <param name="fever"></param>
 	public void AddFever(float fever) {
-		if (InFever)
-			return;
+		if (InFever) return;
+		if (IsSeeking) return; // We should handle this better. Fever should be able to increase during seeking as long as it can decrease...
 
 		Fever = Math.Clamp(Fever + fever, 0, MaxFever);
 		LastFeverIncreaseTime = Conductor.Time;

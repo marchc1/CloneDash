@@ -95,4 +95,8 @@ public class StackBasedSustainManager : ISustainManager
 	}
 
 	public int ActiveSustains(PathwaySide side) => side == PathwaySide.Top ? TopPathway.Count : BottomPathway.Count;
+	public void Reset() {
+		TopPathway.Clear();
+		BottomPathway.Clear();
+	}
 }

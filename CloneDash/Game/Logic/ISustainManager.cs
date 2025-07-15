@@ -21,4 +21,6 @@ public interface ISustainManager
 
 	public int ActiveSustains(PathwaySide pathway);
 	public int ActiveSustains() => ActiveSustains(PathwaySide.Top) + ActiveSustains(PathwaySide.Bottom);
+
+	public void Reset();
 }
