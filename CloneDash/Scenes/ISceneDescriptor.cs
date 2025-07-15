@@ -13,6 +13,7 @@ namespace CloneDash.Scenes;
 public interface ISceneDescriptor
 {
 	public void Initialize(DashGameLevel game);
+	public void Refresh(DashGameLevel game);
 
 	public void PlaySound(SceneSound sound, int hits);
 	public MusicTrack GetPressIdleSound();

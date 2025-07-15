@@ -43,7 +43,7 @@ public class SceneEditorLevel() : DashGameLevel(null)
 
 		bgrEditRecompile.MouseReleaseEvent += (_, _, _) => {
 			Lua.DoString(bgrEdit.GetText());
-			//SetupLua(false);
+			Scene.Refresh(this);
 		};
 
 		menubar = UI.Add<Menubar>();

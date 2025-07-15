@@ -76,6 +76,9 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 		lua.Graphics.EndRenderingLuaContext();
 	}
 
+	public void Refresh(DashGameLevel game) {
+		SetupLua(game, game.Lua, false);
+	}
 	private void SetupLua(DashGameLevel game, LuaEnv lua, bool first = true) {
 		if (first) {
 			lua.State.Environment["scene"] = new LuaTable();
