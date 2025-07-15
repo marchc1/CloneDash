@@ -45,15 +45,28 @@ jobs:
     - name: Zip for Release (Windows)
       if: matrix.os == 'windows-latest'
       shell: powershell
-      run: Compress-Archive -Path ./CloneDash/bin/Release/net8.0/* -Destination ./CloneDash-Game-Windows.zip
-
+      run: >
+        Compress-Archive -Path
+        (Get-ChildItem -Recurse -Path ./CloneDash/bin/Release/net8.0/*, ./Nucleus.ModelEditor/bin/Release/net8.0/*)
+        -DestinationPath ./CloneDash-Game-Windows.zip
+    
     - name: Zip for Release (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: tar -cf ./CloneDash-Game-Linux.zip ./CloneDash/bin/Release/net8.0/*
-
+      run: |
+        mkdir tempzip
+        cp -r ./CloneDash/bin/Release/net8.0/* tempzip/
+        cp -r ./Nucleus.ModelEditor/bin/Release/net8.0/* tempzip/
+        zip -r ./CloneDash-Game-Linux.zip tempzip
+        rm -r tempzip
+    
     - name: Zip for Release (macOS)
       if: matrix.os == 'macos-latest'
-      run: tar -cf ./CloneDash-Game-macOS.zip ./CloneDash/bin/Release/net8.0/*
+      run: |
+        mkdir tempzip
+        cp -r ./CloneDash/bin/Release/net8.0/* tempzip/
+        cp -r ./Nucleus.ModelEditor/bin/Release/net8.0/* tempzip/
+        zip -r ./CloneDash-Game-macOS.zip tempzip
+        rm -r tempzip
 
     - name: Upload artifacts (Windows)
       if: matrix.os == 'windows-latest'
