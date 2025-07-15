@@ -46,7 +46,8 @@ public class DashEvent
 			case EventType.BossIn: return new BossInEvent(game);
 			case EventType.BossOut: return new BossOutEvent(game);
 			case EventType.BossSingleHit: return new BossSingleHit(game);
-			case EventType.BossMasher: return new BossMasher(game);
+			case EventType.BossMasher1: return new BossMasher(game, 1);
+			case EventType.BossMasher2: return new BossMasher(game, 2);
 			case EventType.BossFar1Start: return new BossFar1Start(game);
 			case EventType.BossFar1End: return new BossFar1End(game);
 			case EventType.BossFar1To2: return new BossFar1To2(game);

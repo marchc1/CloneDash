@@ -116,7 +116,7 @@ namespace CloneDash.Game.Entities
 			var scene = level.Scene;
 
 
-			if (Variant != EntityVariant.BossMash) {
+			if (!Variant.IsBoss()) {
 				Model = scene.GetEnemyModel(this).Instantiate();
 				ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out var showtime));
 				SetupHitAnimations(scene);

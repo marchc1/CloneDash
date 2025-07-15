@@ -291,7 +291,8 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.BossOut => EventType.BossOut,
 
 						IBMSCode.BossNear2 => EventType.BossSingleHit,
-						IBMSCode.BossMul2 => EventType.BossMasher,
+						IBMSCode.BossMul1 => EventType.BossMasher1,
+						IBMSCode.BossMul2 => EventType.BossMasher2,
 
 						IBMSCode.BossFar1Start => EventType.BossFar1Start,
 						IBMSCode.BossFar1End => EventType.BossFar1End,

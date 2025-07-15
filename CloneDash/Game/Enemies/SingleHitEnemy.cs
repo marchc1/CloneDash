@@ -70,7 +70,6 @@ namespace CloneDash.Game.Entities
 			switch (Variant) {
 				case EntityVariant.BossHitFast:
 				case EntityVariant.BossHitSlow:
-				case EntityVariant.BossMash:
 					break;
 				default:
 					var model = scene.GetEnemyModel(this).Instantiate();

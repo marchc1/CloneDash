@@ -2,7 +2,7 @@
 
 namespace CloneDash.Game.Events;
 
-public class BossMasher(DashGameLevel game) : DashEvent(game)
+public class BossMasher(DashGameLevel game, int type) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.Masher();
@@ -17,7 +17,7 @@ public class BossMasher(DashGameLevel game) : DashEvent(game)
 		Game.LoadEntity(new() {
 			Type = EntityType.Masher,
 			Pathway = PathwaySide.Both,
-			Variant = EntityVariant.BossMash,
+			Variant = type == 1 ? EntityVariant.BossMash1 : EntityVariant.BossMash2,
 			ShowTime = Time - time,
 			HitTime = Time
 		});
