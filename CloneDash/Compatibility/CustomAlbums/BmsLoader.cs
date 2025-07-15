@@ -399,11 +399,17 @@ namespace CloneDash.Compatibility.CustomAlbums
 			{ "atk_1_to_2", AnimAlignment.Right },
 			{ "atk_2_to_1", AnimAlignment.Right }
 		};
+		public static bool IsBossNote(this MusicData mData) => !string.IsNullOrEmpty(mData.noteData?.boss_action) && mData.noteData?.boss_action != "0";
+
 		internal static void ProcessBossData(Bms bms) {
-			var bossData = MusicDataManager.Data.Where(mData => !string.IsNullOrEmpty(mData.noteData?.boss_action) && mData.noteData?.boss_action != "0").ToList();
+			var bossData = MusicDataManager.Data.Where(mData => mData.IsBossNote()).ToList();
 			if (bossData.Count == 0) 
 				return;
 
+			// TODO: Add a boss exit animation if it is missing.
+			// Need to convert the code they use for MD to use Model4System animation stuff
+
+			// Incorrect phase gears
 			var phaseGearConfig = new NoteConfigData();
 			phaseGearConfig.ibms_id = "";
 
