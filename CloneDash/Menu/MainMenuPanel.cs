@@ -112,24 +112,9 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	protected override void Initialize() {
 		base.Initialize();
 		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
-		if (character != null) {
-			this.character = character;
-
-			model = character.GetMainShowModel(Level).Instantiate();
-			anims = new(model.Data);
-
-			var standby = character.GetMainShowStandby();
-			if (model.Data.FindAnimation(standby) == null) standby = "standby";
-			if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
-			anims.SetAnimation(0, standby, true);
-
-			music = character.GetMainShowMusic(Level);
-			if (music != null) {
-				music.Playing = true;
-				music.Loops = true;
-				music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-			}
-		}
+		if (character != null) 
+			CharacterMod_CharacterUpdated(character);
+		CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
 
 		Add(out back);
 		back.Origin = Anchor.Center;
@@ -167,6 +152,26 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
+	}
+
+	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
+		if (charDescriptor == null) return;
+		this.character = charDescriptor;
+
+		model = charDescriptor.GetMainShowModel(Level).Instantiate();
+		anims = new(model.Data);
+
+		var standby = charDescriptor.GetMainShowStandby();
+		if (model.Data.FindAnimation(standby) == null) standby = "standby";
+		if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
+		anims.SetAnimation(0, standby, true);
+
+		music = charDescriptor.GetMainShowMusic(Level);
+		if (music != null) {
+			music.Playing = true;
+			music.Loops = true;
+			music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		}
 	}
 
 	private void Back_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
