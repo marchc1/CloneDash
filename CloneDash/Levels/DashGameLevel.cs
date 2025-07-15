@@ -648,16 +648,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
 					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
-						/*Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
+						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 
 						if (profilegameload.GetBool())
 							StaticSequentialProfiler.Start();
 
-						EngineCore.LoadLevel(new DashGameLevel(Sheet), AutoPlayer.Enabled);*/
-						SeekTo(0);
-						VisibleEntities.Clear();
-						PauseWindow.Remove();
-						startUnpause();
+						EngineCore.LoadLevel(new DashGameLevel(Sheet), AutoPlayer.Enabled);
 					};
 					restart.PaintOverride += Button_PaintOverride;
 
