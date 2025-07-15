@@ -116,9 +116,18 @@ public class Boss : DashEnemy
 				break;
 			case Masher me:
 				if (me.Variant.IsBoss()) {
-					if (signalType == EntitySignalType.FirstAppearance) {
-						Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttack), false);
-						Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
+					switch (signalType) {
+						case EntitySignalType.FirstAppearance:
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttack), false);
+							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
+							break;
+						case EntitySignalType.FirstHit:
+						case EntitySignalType.HitAgain:
+
+							break;
+						case EntitySignalType.MashOver:
+
+							break;
 					}
 				}
 				break;
