@@ -59,6 +59,8 @@ public class SceneEditorLevel() : DashGameLevel(null)
 		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
 		options.AddButton("PlayScale = 1.2", null, () => PlayScale = 1.2f);
 
+		menubar.AddButton("Back to Menu", action: () => EngineCore.LoadLevel(new MainMenuLevel()));
+
 		ConsoleSystem.AddScreenBlocker(this.UI);
 	}
 

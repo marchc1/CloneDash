@@ -31,17 +31,16 @@ namespace Nucleus.UI.Elements
 			this.Size = new(0, 32);
 			this.Dock = Dock.Top;
 		}
-		public MenuContext AddButton(string text, string? icon = null) {
+		public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 			MenuContext context = new MenuContext(this.UI);
 			Button b = Add<Button>();
+			action = action ?? (() => context.Show());
 			b.TextPadding = new(8);
 			b.Dock = Dock.Left;
 			b.AutoSize = true;
 			b.Text = text;
 			b.BorderSize = 0;
-			b.MouseReleaseEvent += (self, state, btn) => {
-				context.Show();
-			};
+			b.MouseReleaseEvent += (self, state, btn) => action?.Invoke();
 
 			return context;
 		}
