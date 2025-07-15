@@ -1,6 +1,7 @@
 ﻿using CloneDash.Animation;
 using CloneDash.Data;
 using CloneDash.Game;
+using CloneDash.Settings;
 
 using Nucleus;
 using Nucleus.Audio;
@@ -245,6 +246,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			}
 
 			activeTrack.Restart();
+			activeTrack.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			activeTrack.Playing = true;
 		}
 	}
