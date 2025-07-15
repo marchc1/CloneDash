@@ -1,6 +1,9 @@
-﻿using Nucleus.Audio;
+﻿using CloneDash.Settings;
+
+using Nucleus.Audio;
 using Nucleus.Engine;
 using Nucleus.Models.Runtime;
+
 
 namespace CloneDash.Characters;
 
@@ -28,6 +31,7 @@ public interface ICharacterExpression
 		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
 		anims.AddAnimation(1, GetEndAnimationName());
 		voice.Play();
+		voice.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 
 		return false;
 	}
