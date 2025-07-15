@@ -7,7 +7,9 @@ public class DiskSearchPath : SearchPath
 	public string RootDirectory;
 	private Dictionary<string, string> LocalToAbsolute = [];
 	private HashSet<string> LocalExists = [];
-
+	public override string ToString() {
+		return $"Disk SearchPath @ {RootDirectory}";
+	}
 	public DiskSearchPath(string rootDirectory) {
 		RootDirectory = rootDirectory;
 		Directory.CreateDirectory(rootDirectory);

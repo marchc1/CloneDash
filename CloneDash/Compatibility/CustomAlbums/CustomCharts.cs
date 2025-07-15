@@ -173,7 +173,16 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 			protected override ChartInfo? ProduceInfo() {
 				if (Archive != null) {
-					var info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(Archive, "info.json")) ?? throw new Exception("Bad info.json!");
+					CustomChartInfoJSON? info = null;
+					try {
+						info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(Archive, "info.json")) ?? throw new Exception("Bad info.json!");
+					}
+					catch(Exception ex) {
+						Logs.Error($"The CustomCharts SearchPath '{Archive.ToString()}' failed to produce info.json: {ex.Message}");
+					}
+					if (info == null) 
+						return null;
+
 					Name = info.name;
 					Author = info.author;
 					ChartInfo ret = new() {

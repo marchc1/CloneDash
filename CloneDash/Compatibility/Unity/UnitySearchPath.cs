@@ -58,6 +58,10 @@ public class UnitySearchPath : SearchPath
 	public Dictionary<string, UnityFolder> LookupAbsFolders = [];
 	public Dictionary<string, UnityFile> LookupAbsFiles = [];
 
+	public override string ToString() {
+		return $"Unity SearchPath @ {root}";
+	}
+
 	public static string ReadUSPString(BinaryReader br, Encoding? encoding = null) {
 		encoding = encoding ?? Encoding.UTF8;
 		return br.ReadString();

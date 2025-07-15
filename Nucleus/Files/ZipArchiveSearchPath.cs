@@ -8,8 +8,12 @@ public class ZipArchiveSearchPath : SearchPath
 	private HashSet<string> LocalExists = [];
 	private ZipArchive archive;
 	private bool disposedValue;
-
+	private string rootArchive;
+	public override string ToString() {
+		return $"ZIP Archive SearchPath @ {rootArchive}";
+	}
 	public ZipArchiveSearchPath(string rootArchive) {
+		this.rootArchive = rootArchive;
 		archive = new ZipArchive(new FileStream(rootArchive, FileMode.Open), ZipArchiveMode.Read, false);
 	}
 	public ZipArchiveSearchPath(string pathID, string path) {
