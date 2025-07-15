@@ -893,10 +893,10 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 			Medium1Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium1) : level.Sounds.LoadSoundFromFile("scene", Medium1);
 			Medium2Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium2) : level.Sounds.LoadSoundFromFile("scene", Medium2);
 			QuietSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Quiet) : level.Sounds.LoadSoundFromFile("scene", Quiet);
-			//PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadMusicFromName(level, PressIdle) : level.Sounds.LoadMusicFromFile("scene", PressIdle);
+			PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadMusicFromName(level, PressIdle) : level.Sounds.LoadMusicFromFile("scene", PressIdle);
 			PressTopSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressTop) : level.Sounds.LoadSoundFromFile("scene", PressTop);
 
-			//PressIdleSound.Loops = true;
+			PressIdleSound.Loops = true;
 
 			HPSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 			ScoreSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
@@ -908,6 +908,7 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 			Medium1Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 			Medium2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 			QuietSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+			PressIdleSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 			PressTopSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 
 			Interlude.Spin();

@@ -861,6 +861,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		Scene.Think(this);
 		if (InFever)
 			FeverFX?.Think(this);
+
+		if (!Paused && IValidatable.IsValid(pressIdle))
+			pressIdle.Update();
 	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
@@ -1455,8 +1458,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		playeranim_insustain = nowInsustain;
 
 		if (pressIdle != null) {
-			if (pressIdle.Playing && !nowInsustain)
+			if (pressIdle.Playing && !nowInsustain) {
 				pressIdle.Playing = false;
+				pressIdle.Restart();
+			}
 			else if (!pressIdle.Playing && nowInsustain)
 				pressIdle.Playing = true;
 		}
