@@ -13,7 +13,6 @@ public class MusicData
 	public decimal longPressPTick;
 	public int endIndex;
 	public decimal dt;
-	public bool isBossNote;
 	public int longPressNum;
 	public decimal showTick;
 

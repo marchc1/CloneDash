@@ -296,6 +296,211 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 			Logs.Info("Processed geminis!");
 		}
+		public enum AnimAlignment
+		{
+			Left = -1,
+			Right = 1
+		}
+
+		public enum BossState
+		{
+			OffScreen,
+			Idle,
+			Phase1,
+			Phase2
+		}
+
+		public static readonly Dictionary<string, BossState> AnimStatesLeft = new()
+		{
+			{ "in", BossState.OffScreen },
+			{ "out", BossState.Idle },
+			{ "boss_close_atk_1", BossState.Idle },
+			{ "boss_close_atk_2", BossState.Idle },
+			{ "multi_atk_48", BossState.Idle },
+			{ "multi_atk_48_end", BossState.Idle },
+			{ "boss_far_atk_1_L", BossState.Phase1 },
+			{ "boss_far_atk_1_R", BossState.Phase1 },
+			{ "boss_far_atk_2", BossState.Phase2 },
+			{ "boss_far_atk_1_start", BossState.Idle },
+			{ "boss_far_atk_2_start", BossState.Idle },
+			{ "boss_far_atk_1_end", BossState.Phase1 },
+			{ "boss_far_atk_2_end", BossState.Phase2 },
+			{ "atk_1_to_2", BossState.Phase1 },
+			{ "atk_2_to_1", BossState.Phase2 }
+		};
+
+		public static readonly Dictionary<string, BossState> AnimStatesRight = new()
+		{
+			{ "in", BossState.Idle },
+			{ "out", BossState.OffScreen },
+			{ "boss_close_atk_1", BossState.Idle },
+			{ "boss_close_atk_2", BossState.Idle },
+			{ "multi_atk_48", BossState.Idle },
+			{ "multi_atk_48_end", BossState.OffScreen },
+			{ "boss_far_atk_1_L", BossState.Phase1 },
+			{ "boss_far_atk_1_R", BossState.Phase1 },
+			{ "boss_far_atk_2", BossState.Phase2 },
+			{ "boss_far_atk_1_start", BossState.Phase1 },
+			{ "boss_far_atk_2_start", BossState.Phase2 },
+			{ "boss_far_atk_1_end", BossState.Idle },
+			{ "boss_far_atk_2_end", BossState.Idle },
+			{ "atk_1_to_2", BossState.Phase2 },
+			{ "atk_2_to_1", BossState.Phase1 }
+		};
+
+		public static readonly Dictionary<BossState, Dictionary<BossState, string>> StateTransferAnims = new()
+		{
+			{
+				BossState.OffScreen, new Dictionary<BossState, string>
+				{
+					{ BossState.OffScreen, "0" },
+					{ BossState.Idle, "in" },
+					{ BossState.Phase1, "boss_far_atk_1_start" },
+					{ BossState.Phase2, "boss_far_atk_2_start" }
+				}
+			},
+			{
+				BossState.Idle, new Dictionary<BossState, string>
+				{
+					{ BossState.OffScreen, "out" },
+					{ BossState.Idle, "0" },
+					{ BossState.Phase1, "boss_far_atk_1_start" },
+					{ BossState.Phase2, "boss_far_atk_2_start" }
+				}
+			},
+			{
+				BossState.Phase1, new Dictionary<BossState, string>
+				{
+					{ BossState.OffScreen, "out" },
+					{ BossState.Idle, "boss_far_atk_1_end" },
+					{ BossState.Phase1, "0" },
+					{ BossState.Phase2, "atk_1_to_2" }
+				}
+			},
+			{
+				BossState.Phase2, new Dictionary<BossState, string>
+				{
+					{ BossState.OffScreen, "out" },
+					{ BossState.Idle, "boss_far_atk_2_end" },
+					{ BossState.Phase1, "atk_2_to_1" },
+					{ BossState.Phase2, "0" }
+				}
+			}
+		};
+
+		public static readonly Dictionary<string, AnimAlignment> TransferAlignment = new()
+		{
+			{ "in", AnimAlignment.Right },
+			{ "out", AnimAlignment.Left },
+			{ "boss_far_atk_1_start", AnimAlignment.Right },
+			{ "boss_far_atk_2_start", AnimAlignment.Right },
+			{ "boss_far_atk_1_end", AnimAlignment.Left },
+			{ "boss_far_atk_2_end", AnimAlignment.Left },
+			{ "atk_1_to_2", AnimAlignment.Right },
+			{ "atk_2_to_1", AnimAlignment.Right }
+		};
+		internal static void ProcessBossData(Bms bms) {
+			var bossData = MusicDataManager.Data.Where(mData => !string.IsNullOrEmpty(mData.noteData?.boss_action) && mData.noteData?.boss_action != "0").ToList();
+			if (bossData.Count == 0) 
+				return;
+
+			var phaseGearConfig = new NoteConfigData();
+			phaseGearConfig.ibms_id = "";
+
+			for (var i = 0; i < bossData.Count; i++) {
+				var data = bossData[i]!;
+				var thisNoteData = data.noteData!;
+
+				if (thisNoteData.GetNoteType() != NoteType.Block) continue;
+
+				// Find the next boss animation that is not a gear
+				var bossAnimAhead = new MusicData() {
+					configData = new MusicConfigData()
+				};
+				bossAnimAhead.configData.time = Decimal.MinValue;
+
+				for (var j = i + 1; j < bossData.Count; j++) {
+					var dataAhead = bossData[j]!;
+					if (dataAhead.noteData!.GetNoteType() == NoteType.Block) continue;
+
+					bossAnimAhead = dataAhead;
+					break;
+				}
+
+				MusicData bossAnimBefore;
+				if (i > 0) {
+					bossAnimBefore = bossData[i - 1];
+				}
+				else {
+					bossAnimBefore = new MusicData() {
+						configData = new MusicConfigData()
+					};
+					bossAnimBefore.configData.time = Decimal.MinValue;
+				}
+
+				var diffToAhead = Math.Abs((float)data.configData.time - (float)bossAnimAhead.configData.time);
+				var diffToBefore = Math.Abs((float)data.configData.time - (float)bossAnimBefore.configData.time);
+				var ahead = diffToAhead < diffToBefore;
+
+				var stateBehind = i > 0 ? AnimStatesRight[bossAnimBefore.noteData.boss_action] : BossState.OffScreen;
+				var stateAhead = AnimStatesLeft.TryGetValue(bossAnimAhead.noteData.boss_action, out var state)
+					? state
+					: BossState.OffScreen;
+				var usedState = ahead ? stateAhead : stateBehind;
+				var correctState = usedState is BossState.Phase1 or BossState.Phase2;
+				if (!correctState) {
+					ahead = !ahead;
+					usedState = ahead ? stateAhead : stateBehind;
+					correctState = usedState is BossState.Phase1 or BossState.Phase2;
+				}
+
+				if (!correctState) continue;
+				if (usedState is not (BossState.Phase1 or BossState.Phase2)) continue;
+
+				if ((ahead && AnimStatesLeft[data.noteData.boss_action] == usedState) ||
+					(!ahead && AnimStatesRight[data.noteData.boss_action] == usedState))
+					continue;
+
+				var phase = usedState == BossState.Phase1 ? 1 : 2;
+
+				var noteData = MuseDashCompatibility.NoteDataManager;
+				if (phaseGearConfig.ibms_id != data.noteData.ibms_id
+					|| phaseGearConfig.pathway != data.noteData.pathway
+					|| phaseGearConfig.scene != data.noteData.scene
+					|| phaseGearConfig.speed != data.noteData.speed
+					|| !phaseGearConfig.boss_action.StartsWith($"boss_far_atk_{phase}"))
+					foreach (var d in noteData) {
+						if (d.ibms_id != data.noteData.ibms_id
+							|| d.pathway != data.noteData.pathway
+							|| d.scene != data.noteData.scene
+							|| d.speed != data.noteData.speed
+							|| !d.boss_action.StartsWith($"boss_far_atk_{phase}")) continue;
+
+						phaseGearConfig = d;
+						break;
+					}
+
+				var fixedConfigData = new MusicConfigData();
+				fixedConfigData.blood = data.configData.blood;
+				fixedConfigData.id = data.configData.id;
+				fixedConfigData.length = data.configData.length;
+				fixedConfigData.note_uid = phaseGearConfig.uid;
+				fixedConfigData.pathway = data.configData.pathway;
+				fixedConfigData.time = data.configData.time;
+
+				var fixedGear = new MusicData();
+				fixedGear.objId = data.objId;
+				fixedGear.tick = data.tick;
+				fixedGear.configData = fixedConfigData;
+				fixedGear.isLongPressEnd = data.isLongPressEnd;
+				fixedGear.isLongPressing = data.isLongPressing;
+				fixedGear.noteData = phaseGearConfig;
+
+				MusicDataManager.Set(fixedGear.objId, fixedGear);
+				bossData[i] = fixedGear;
+				Logs.Info($"Customs: fixed gear at tick {data.tick}");
+			}
+		}
 		internal static StageInfo TransmuteData(Bms bms) {
 			MusicDataManager.Clear();
 			_delay = 0;
@@ -306,7 +511,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			LoadMusicData(noteData); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
-			//ProcessBossData(bms);
+			ProcessBossData(bms);
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			ProcessGeminis(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
