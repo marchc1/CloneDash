@@ -630,7 +630,8 @@ public unsafe class OSWindow : IValidatable
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 				HandleTextInput(in ev);
 				break;
-			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: UserWantsToClose = true; break;
+			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: 
+				UserWantsToClose = true; break;
 		}
 	}
 
@@ -698,8 +699,7 @@ public unsafe class OSWindow : IValidatable
 				case SDL_EventType.SDL_EVENT_LOCALE_CHANGED: break;
 				case SDL_EventType.SDL_EVENT_SYSTEM_THEME_CHANGED: break;
 				case SDL_EventType.SDL_EVENT_CLIPBOARD_UPDATE: break;
-				// Todo: a way to intercept this
-				case SDL_EventType.SDL_EVENT_QUIT: Environment.Exit(0); break;
+
 				default:
 					var window = SDL3.SDL_GetWindowFromEvent(&ev.Event);
 					var windowID = SDL3.SDL_GetWindowID(window);
