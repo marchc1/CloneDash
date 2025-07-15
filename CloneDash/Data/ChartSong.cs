@@ -88,7 +88,7 @@ namespace CloneDash.Data
 			return AudioTrack;
 		}
 
-		public ChartInfo GetInfo() {
+		public ChartInfo? GetInfo() {
 			if (Info != null)
 				return Info;
 

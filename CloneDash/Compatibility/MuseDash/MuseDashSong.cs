@@ -66,7 +66,7 @@ public class MuseDashSong : ChartSong
 	public StageDemo? DemoObject { get; internal set; }
 
 	[JsonIgnore]
-	public string BaseName => GetInfo().Music.Substring(0, GetInfo().Music.Length - 6);
+	public string BaseName => GetInfo()!.Music.Substring(0, GetInfo()!.Music.Length - 6);
 	public override string ToString() => $"{Name} by {Author}";
 
 

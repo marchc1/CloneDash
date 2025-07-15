@@ -171,13 +171,16 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
+			bool corruptInfo = false;
 			protected override ChartInfo? ProduceInfo() {
+				if (corruptInfo) return null;
 				if (Archive != null) {
 					CustomChartInfoJSON? info = null;
 					try {
 						info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(Archive, "info.json")) ?? throw new Exception("Bad info.json!");
 					}
 					catch(Exception ex) {
+						corruptInfo = true;
 						Logs.Error($"The CustomCharts SearchPath '{Archive.ToString()}' failed to produce info.json: {ex.Message}");
 					}
 					if (info == null) 
