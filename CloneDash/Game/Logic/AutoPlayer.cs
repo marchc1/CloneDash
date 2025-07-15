@@ -99,7 +99,7 @@ namespace CloneDash.Game.Logic
 
 									// Record the entity as passed
 									Passed.Add(ent);
-									Logs.Debug($"Hit [{level.Entities.IndexOf(ent)}] {ent}");
+									//Logs.Debug($"Hit [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;
 							// Entities that need to be avoided
@@ -118,7 +118,7 @@ namespace CloneDash.Game.Logic
 									}
 									// Record the entity as passed
 									Passed.Add(ent);
-									Logs.Debug($"Avoided [{level.Entities.IndexOf(ent)}] {ent}");
+									//Logs.Debug($"Avoided [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;
 							default:
