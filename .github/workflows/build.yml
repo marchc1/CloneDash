@@ -45,10 +45,16 @@ jobs:
     - name: Zip for Release (Windows)
       if: matrix.os == 'windows-latest'
       shell: powershell
-      run: >
-        Compress-Archive -Path
-        (Get-ChildItem -Recurse -Path ./CloneDash/bin/Release/net8.0/*, ./Nucleus.ModelEditor/bin/Release/net8.0/*)
-        -DestinationPath ./CloneDash-Game-Windows.zip
+      run: |
+        $tempDir = "tempzip"
+        Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $tempDir | Out-Null
+    
+        Copy-Item -Recurse -Force ./CloneDash/bin/Release/net8.0/* $tempDir
+        Copy-Item -Recurse -Force ./Nucleus.ModelEditor/bin/Release/net8.0/* $tempDir
+    
+        Compress-Archive -Path "$tempDir\*" -DestinationPath ./CloneDash-Game-Windows.zip
+        Remove-Item -Recurse -Force $tempDir
     
     - name: Zip for Release (Linux)
       if: matrix.os == 'ubuntu-latest'
