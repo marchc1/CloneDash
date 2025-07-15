@@ -20,7 +20,8 @@ namespace Nucleus;
 [MarkForStaticConstruction]
 public static class EngineCore
 {
-	public static ConCommand gc_collect = ConCommand.Register(nameof(gc_collect), (_, _) => {
+	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
+	static void gc_collect() {
 		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
 		GC.WaitForPendingFinalizers();
 		var status = GC.WaitForFullGCComplete();
@@ -31,7 +32,10 @@ public static class EngineCore
 			case GCNotificationStatus.Timeout: Logs.Info("GC: Timed out."); break;
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
-	}, "Performs an immediate GC collection of all generations");
+	}
+
+	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
+	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 
 	public static ConVar engine_wireframe = ConVar.Register(nameof(engine_wireframe), "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
 		// Queued so there's actually a GL context to work with
