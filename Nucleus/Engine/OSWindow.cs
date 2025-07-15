@@ -910,7 +910,7 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.EnableScissorTest();
 
 		if (!UsingFbo) {
-			Vector2F scale = GetWindowScaleDPI();
+			Vector2F scale = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Vector2F.One : GetWindowScaleDPI();
 			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));
 		}
 		else {
