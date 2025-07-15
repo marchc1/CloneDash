@@ -4,6 +4,7 @@ using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Levels;
 using CloneDash.Menu.Searching;
+using CloneDash.Settings;
 
 using Nucleus;
 using Nucleus.Audio;
@@ -125,6 +126,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			if (music != null) {
 				music.Playing = true;
 				music.Loops = true;
+				music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			}
 		}
 
