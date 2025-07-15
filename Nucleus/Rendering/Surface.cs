@@ -3,6 +3,7 @@ using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,7 +15,8 @@ namespace Nucleus.Rendering
 	public static class Surface
 	{
 		public static void SetViewport(float x, float y, float w, float h) {
-			var DPIFactor = EngineCore.Window.GetWindowScaleDPI();
+			// Why is Windows like this?????????????????
+			var DPIFactor = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Vector2F.One : EngineCore.Window.GetWindowScaleDPI();
 			x *= DPIFactor.X;
 			y *= DPIFactor.Y;
 			w *= DPIFactor.X;
