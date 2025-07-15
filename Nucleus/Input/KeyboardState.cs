@@ -67,7 +67,7 @@ namespace Nucleus.Input
 			return ret;
 		}
 
-		public KeyboardKey FromInt(int key) => KeyToNamedKey[key];
+		public KeyboardKey FromInt(int key) => KeyToNamedKey.TryGetValue(key, out var kbk) ? kbk : new("NULL", 0);
 		public KeyboardKey FromKeyStr(string key) => KeyStrToNamedKey[key];
 
 		public abstract KeyAction GetKeyAction(KeyboardState state, KeyboardKey key);
