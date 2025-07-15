@@ -30,8 +30,8 @@ public interface ICharacterExpression
 		anims.SetAnimation(1, GetStartAnimationName());
 		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
 		anims.AddAnimation(1, GetEndAnimationName());
-		voice.Play();
 		voice.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		voice.Play();
 
 		return false;
 	}
