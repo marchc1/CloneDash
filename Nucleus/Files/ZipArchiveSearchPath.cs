@@ -17,6 +17,7 @@ public class ZipArchiveSearchPath : SearchPath
 		archive = new ZipArchive(new FileStream(rootArchive, FileMode.Open), ZipArchiveMode.Read, false);
 	}
 	public ZipArchiveSearchPath(string pathID, string path) {
+		this.rootArchive = $"(disk path, {pathID}/{path})";
 		var stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open);
 
 		archive = new ZipArchive(stream, ZipArchiveMode.Read, false);
