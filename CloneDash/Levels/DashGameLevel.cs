@@ -654,7 +654,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 							StaticSequentialProfiler.Start();
 
 						EngineCore.LoadLevel(new DashGameLevel(Sheet), AutoPlayer.Enabled);*/
-						SeekTo(0); 
+						SeekTo(0);
+						VisibleEntities.Clear();
+						PauseWindow.Remove();
 						startUnpause();
 					};
 					restart.PaintOverride += Button_PaintOverride;
