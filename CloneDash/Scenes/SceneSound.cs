@@ -1,6 +1,7 @@
 ﻿namespace CloneDash.Scenes;
 
-public enum SceneSound {
+public enum SceneSound
+{
 	Begin,
 	Fever,
 	Unpause,
@@ -17,5 +18,6 @@ public enum SceneSound {
 	Medium1,
 	Medium2,
 	Quiet,
-	PressTop
+	PressTop,
+	PressIdle
 }

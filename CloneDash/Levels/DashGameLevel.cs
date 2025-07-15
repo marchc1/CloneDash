@@ -167,7 +167,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		resetPlayerAnimState();
 		Sustains.Reset();
 		AutoPlayer.Reset();
-		__whenjump = - 2000000000000d;
+		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
 
 		foreach (var entity in Entities) {
@@ -1243,6 +1243,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 								EntityVariant.Boss1 => SceneSound.Quiet,
 								EntityVariant.Boss2 => SceneSound.Medium1,
 								EntityVariant.Boss3 => SceneSound.Medium2,
+								EntityVariant.BossHitFast => SceneSound.Loud2,
+								EntityVariant.BossHitSlow => SceneSound.Loud2,
 								_ => SceneSound.Medium1
 							},
 							EntityType.SustainBeam => SceneSound.PressTop,
