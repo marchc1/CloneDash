@@ -1,5 +1,6 @@
 ﻿using CloneDash.Scenes;
 
+using Nucleus;
 using Nucleus.Engine;
 
 using Raylib_cs;
@@ -98,11 +99,17 @@ public class Boss : DashEnemy
 							break;
 						default:
 							Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, scene.GetBossAnimation(she), false);
+							Logs.Info(she.Variant);
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, she.Variant switch {
+								EntityVariant.Boss1 => scene.GetBossAnimation(BossAnimationType.Standby1),
+								EntityVariant.Boss2 => scene.GetBossAnimation(BossAnimationType.Standby1),
+								EntityVariant.Boss3 => scene.GetBossAnimation(BossAnimationType.Standby2),
+							}, true);
 							break;
 					}
 				}
 
-				if (signalType == EntitySignalType.FirstHit) {
+				if (signalType == EntitySignalType.FirstHit && (she.Variant == EntityVariant.BossHitSlow || she.Variant == EntityVariant.BossHitFast)) {
 					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Hurt), false);
 					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 				}
