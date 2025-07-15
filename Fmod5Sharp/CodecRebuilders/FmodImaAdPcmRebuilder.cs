@@ -198,7 +198,7 @@ namespace Fmod5Sharp.CodecRebuilders
 
             writer.WriteSamples(pcmShorts, 0, pcmShorts.Length);
 
-            return stream.ToArray();
+            return stream.GetBuffer();
         }
     }
 }
