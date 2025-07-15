@@ -4,6 +4,7 @@ using Nucleus;
 using Nucleus.Engine;
 
 using Raylib_cs;
+
 namespace CloneDash.Game.Entities;
 
 public class Boss : DashEnemy
@@ -123,6 +124,7 @@ public class Boss : DashEnemy
 				break;
 			case Gear ge: {
 					Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, scene.GetBossAnimation(ge), false);
+					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby1), true);
 				}
 				break;
 		}
