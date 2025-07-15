@@ -99,10 +99,9 @@ public class Boss : DashEnemy
 							break;
 						default:
 							Animations.SetAnimation(ANIMATION_CHANNEL_FIRE, scene.GetBossAnimation(she), false);
-							Logs.Info(she.Variant);
 							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, she.Variant switch {
 								EntityVariant.Boss1 => scene.GetBossAnimation(BossAnimationType.Standby1),
-								EntityVariant.Boss2 => scene.GetBossAnimation(BossAnimationType.Standby1),
+								EntityVariant.Boss2 => scene.GetBossAnimation(BossAnimationType.Standby2),
 								EntityVariant.Boss3 => scene.GetBossAnimation(BossAnimationType.Standby2),
 							}, true);
 							break;
