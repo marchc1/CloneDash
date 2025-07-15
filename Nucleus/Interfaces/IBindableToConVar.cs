@@ -1,4 +1,6 @@
-﻿namespace Nucleus.Interfaces
+﻿using Nucleus.Commands;
+
+namespace Nucleus.Interfaces
 {
 	public interface IBindableToConVar
 	{

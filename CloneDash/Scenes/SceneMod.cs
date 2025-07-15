@@ -2,6 +2,7 @@
 using CloneDash.Modding.Descriptors;
 
 using Nucleus;
+using Nucleus.Commands;
 using Nucleus.Util;
 
 namespace CloneDash.Scenes;

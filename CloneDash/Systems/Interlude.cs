@@ -5,6 +5,7 @@ using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 
 using Nucleus;
+using Nucleus.Commands;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Files;

@@ -1,4 +1,4 @@
-﻿using Nucleus;
+﻿using Nucleus.Commands;
 using Nucleus.Core;
 using Nucleus.Input;
 

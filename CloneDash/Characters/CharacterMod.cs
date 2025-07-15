@@ -1,6 +1,7 @@
 ﻿using CloneDash.Compatibility.MuseDash;
 
 using Nucleus;
+using Nucleus.Commands;
 using Nucleus.Util;
 
 namespace CloneDash.Characters;

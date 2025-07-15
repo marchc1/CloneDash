@@ -1,6 +1,8 @@
 ﻿// TODO: This file needs to be split apart!
 
 using Newtonsoft.Json;
+
+using Nucleus.Commands;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
@@ -9,11 +11,15 @@ using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+
 using Poly2Tri;
+
 using Raylib_cs;
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor

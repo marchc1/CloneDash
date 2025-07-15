@@ -2,6 +2,7 @@
 using DiscordRPC.Logging;
 
 using Nucleus;
+using Nucleus.Commands;
 
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,8 @@
 ﻿using CloneDash.Game;
 
 using Nucleus;
+using Nucleus.Commands;
+using Nucleus.Core;
 using Nucleus.Files;
 using Nucleus.Types;
 using Nucleus.UI;
