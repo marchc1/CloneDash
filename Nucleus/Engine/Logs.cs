@@ -135,7 +135,7 @@ namespace Nucleus
 
 		public static void Log(LogLevel level, bool printColor = true, bool newlineAfter = true, params object?[] items) {
 			if (MainThread.GameThreadSet 
-				? (MainThread.GameThread.ThreadState == System.Threading.ThreadState.Running && MainThread.GameThread == Thread.CurrentThread) 
+				? (MainThread.GameThread == Thread.CurrentThread) 
 				: (MainThread.Thread == Thread.CurrentThread))
 				__writeLog(level, printColor, newlineAfter, items);
 			else 

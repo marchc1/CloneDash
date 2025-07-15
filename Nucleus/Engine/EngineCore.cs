@@ -605,20 +605,23 @@ public static class EngineCore
 				Frame();
 			}
 		}
-		try {
-			Logs.Info("PANIC: Immediate thread panicking active.");
-			LoadingScreen?.Initialize([]);
-			while (Running) {
-				shouldThrow = false;
-				Frame();
+		else {
+			try {
+				Logs.Info("PANIC: Immediate thread panicking active.");
+				LoadingScreen?.Initialize([]);
+				while (Running) {
+					shouldThrow = false;
+					Frame();
+				}
+			}
+			catch (Exception ex) {
+				edi = ExceptionDispatchInfo.Capture(ex);
+				if (!Panic(edi)) {
+					edi.Throw();
+				}
 			}
 		}
-		catch (Exception ex) {
-			edi = ExceptionDispatchInfo.Capture(ex);
-			if (!Panic(edi)) {
-				edi.Throw();
-			}
-		}
+		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
 
 	public static void StartMainThread() {
@@ -663,8 +666,6 @@ public static class EngineCore
 			OSWindow.PumpOSEvents();
 			if (!Running) {
 				Window.Close();
-
-				Logs.Info("Nucleus Engine has halted peacefully.");
 				return;
 			}
 		}
