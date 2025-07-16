@@ -165,7 +165,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
 		if (skeletonMecanim == null)
 			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonAnimation");
-		if(skeletonMecanim == null) {
+		if (skeletonMecanim == null) {
 			// OK time to go through the depths of hell for a victory model
 			var rectTransform = mainshowObject.GetFirstComponent<RectTransform>()!;
 			rectTransform.m_Children[0].TryGet(out rectTransform!);
@@ -264,7 +264,15 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 
 	public string GetPlayAnimation(CharacterAnimationType animationType) {
 		convertAnimations();
-		return anims[animationType].Random();
+		switch (animationType) {
+			case CharacterAnimationType.AirHurt:
+			case CharacterAnimationType.AirPressHurt:
+			case CharacterAnimationType.JumpHurt:
+			case CharacterAnimationType.RoadHurt:
+				return anims[animationType].First();
+			default:
+				return anims[animationType].Random();
+		}
 	}
 
 	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, configData.BattleShow);

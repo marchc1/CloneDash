@@ -354,6 +354,21 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		return Character.GetPlayAnimation(type);
 	}
 
+	public void PlayerAnim_DoDamage() {
+		playeranim_hurt = true;
+		
+	}
+	// TODO; more in depth
+	public void PlayerAnim_ForceHurt() {
+		Player.Model.SetToSetupPose();
+		if (InAir)
+			if (Sustains.IsSustaining(PathwaySide.Top))
+				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPressHurt));
+			else
+				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.JumpHurt));
+		else
+			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadHurt));
+	}
 	public void PlayerAnim_EnqueueRun(ModelEntity model) {
 		model.Model.SetToSetupPose();
 		model.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.Run), true);
@@ -1400,6 +1415,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		if (!InIFrame) {
 			Health -= damage;
 			SetIFrameTime();
+			PlayerAnim_DoDamage();
 		}
 		ResetCombo();
 	}
@@ -1502,6 +1518,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
 
 
+	private bool playeranim_hurt = false;
 	private bool playeranim_miss = false;
 	private bool playeranim_jump = false;
 	private bool playeranim_attackair = false;
@@ -1518,6 +1535,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 	private void resetPlayerAnimState() {
 		playeranim_miss = false;
+		playeranim_hurt = false;
 		playeranim_jump = false;
 
 		playeranim_attackair = false;
@@ -1572,6 +1590,14 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			// Suppress any hologram animations.
 			logTests("Suppressing further hologram animations.");
 			suppress_hologram = true;
+		}
+
+		if (playeranim_hurt) {
+			PlayerAnim_ForceHurt();
+			PlayerAnim_EnqueueRun(Player);
+
+			resetPlayerAnimState();
+			return;
 		}
 
 		if (playeranim_attackdouble) {
