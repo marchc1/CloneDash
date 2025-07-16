@@ -31,7 +31,10 @@ namespace Nucleus.Commands
 		internal static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
 			ConCommand.ExecutedDelegate executedDelegate;
 			var parameters = baseMethod.GetParameters();
-			if (parameters.Length != 2 || parameters[0].ParameterType != typeof(ConCommand) || parameters[1].ParameterType != typeof(ConCommandArguments))
+
+			if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ConCommandArguments))
+				executedDelegate = (_, args) => baseMethod.Invoke(null, [args]);
+			else if (parameters.Length != 2 || parameters[0].ParameterType != typeof(ConCommand) || parameters[1].ParameterType != typeof(ConCommandArguments))
 				executedDelegate = (_, _) => baseMethod.Invoke(null, null);
 			else
 				executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();

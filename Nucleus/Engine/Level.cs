@@ -29,7 +29,7 @@ namespace Nucleus.Engine
 	/// <br></br>
 	/// Remember: levels store LOGIC, and, when needed, game-level-specific data. But any data such as entities, UI panels, textures etc. should remain within the engine core
 	/// </summary>
-	public abstract class Level
+	public abstract class Level : IValidatable
 	{
 		// Managed memory
 		public TextureManagement Textures { get; } = new();
@@ -37,6 +37,9 @@ namespace Nucleus.Engine
 		public TimerManagement Timers { get; }
 		public ModelManagement Models { get; } = new();
 		public ShaderManagement Shaders { get; } = new();
+
+		internal bool __isValid = false;
+		public bool IsValid() => __isValid;
 
 		public Level() {
 			Timers = new(this);
@@ -134,6 +137,7 @@ namespace Nucleus.Engine
 
 			EntityList.Clear();
 			EntityHash.Clear();
+			__isValid = false;
 
 			OnUnload();
 			Unloaded?.Invoke();

@@ -15,6 +15,7 @@ using System.Numerics;
 using SDL;
 using Nucleus.Util;
 using Nucleus.Commands;
+using Nucleus.Input;
 
 namespace Nucleus;
 
@@ -37,6 +38,36 @@ public static class EngineCore
 
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
+	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
+	[ConCommand(Help: "ries to create a new level with the first argument. Will not work if the level requires initialization parameters.")] 
+	static void level(ConCommandArguments args) {
+		var level = args.Raw;
+		var listOfLevels = (
+			from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+			from type in domainAssembly.GetTypes()
+			where typeof(Level).IsAssignableFrom(type) && type.Name != "Level"
+			select type).ToArray();
+
+		if (level == "") {
+			Logs.Info($"Found {listOfLevels.Length} levels.");
+			int i = 1;
+			foreach (var lvl in listOfLevels) {
+				Logs.Info($"    #{i}: {lvl.FullName}");
+				i += 1;
+			}
+			return;
+		}
+
+		foreach (var lvl in listOfLevels) {
+			if (lvl.FullName?.ToLower() == level.ToLower()) {
+				Logs.Info($"Attempting to load {level}...");
+				EngineCore.LoadLevel(Activator.CreateInstance(lvl) as Level, []);
+				return;
+			}
+		}
+
+		Logs.Error($"No level with the name '{level}'.");
+	}
 
 	public static ConVar engine_wireframe = ConVar.Register(nameof(engine_wireframe), "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
 		// Queued so there's actually a GL context to work with
@@ -47,6 +78,7 @@ public static class EngineCore
 				Rlgl.DisableWireMode();
 		});
 	});
+
 	public static ConCommand engine_activetextures = ConCommand.Register(nameof(engine_activetextures), (_, _) => {
 		var texs = new List<string>();
 		foreach (var texIDPair in Raylib.GetLoadedTextures()) {
@@ -298,6 +330,7 @@ public static class EngineCore
 		level.PreInitialize();
 		level.InitializeUI();
 		Level.Initialize(args);
+		Level.__isValid = true;
 		InGameConsole.HookToLevel(Level);
 		LoadingLevel = false;
 
@@ -354,6 +387,8 @@ public static class EngineCore
 			Level.Unload();
 			LoadingScreen?.Unload();
 		}
+		StopSound();
+		Level = null;
 
 		ConsoleSystem.ClearScreenBlockers();
 
@@ -454,7 +489,7 @@ public static class EngineCore
 		}
 	}
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
-
+	private static string WorkConsole = "";
 	public static void Frame() {
 		NucleusSingleton.Spin();
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
@@ -487,14 +522,59 @@ public static class EngineCore
 			}
 		}
 
-		if (Level != null)
+
+		if (IValidatable.IsValid(Level))
 			Level.Frame();
 		else {
 			Graphics2D.SetDrawColor(30, 5, 0);
 			Graphics2D.DrawRectangle(0, 0, Window.Size.W, Window.Size.H);
 			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "<No level loaded!>", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Center);
+			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+
+			int y = 0;
+			var msgs = ConsoleSystem.GetMessages();
+			int txS = 12;
+			foreach (var cmsg in msgs.Reverse()) {
+				int c = 1;
+				for (int ci = 0; ci < cmsg.Message.Length; ci++) {
+					char curchar = cmsg.Message[ci];
+					if (curchar == '\r' && ((ci < cmsg.Message.Length - 1 && cmsg.Message[ci + 1] == '\n') || ci == cmsg.Message.Length - 1)) {
+						c++;
+						ci++;
+					}
+					else if (curchar == '\n')
+						c++;
+				}
+				y += c;
+				Graphics2D.DrawText(4, screenBounds.Y - 24 - (y * txS), cmsg.Message.Replace('\r', ' '), "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
+
+			}
+			// mini game loop
+			KeyboardState keyboardState = new();
+			Window.FlushKeyboardStateInto(ref keyboardState);
+
+			int i = 0;
+			while(keyboardState.KeyAvailable(ref i, out int k, out _)) {
+				KeyAction action = KeyboardLayout.USA.GetKeyAction(keyboardState, KeyboardLayout.USA.FromInt(k));
+				switch (action.Type) {
+					case CharacterType.Enter:
+						Logs.Info($"] {WorkConsole}");
+						ConsoleSystem.ParseOneCommand(WorkConsole);
+						WorkConsole = "";
+						break;
+					case CharacterType.DeleteBackwards:
+						if (WorkConsole.Length > 0) {
+							WorkConsole = WorkConsole.Substring(0, WorkConsole.Length - 1);
+						}
+						break;
+					case CharacterType.VisibleCharacter:
+						WorkConsole += action.Extra;
+						break;
+				}
+			}
+
+			Graphics2D.DrawText(4, screenBounds.Y - 16, $"user> {WorkConsole}", "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
 		}
 
 		InLevelFrame = false;
