@@ -44,6 +44,14 @@ internal class Program
 		RichPresenceSystem.Shutdown();
 	}
 	static void GameMain() {
+		new Platform.MessageBoxBuilder()
+			.WithTitle("This is a message box test!")
+			.WithMessage("Wow! A message!\r\nAnd it supports newlines? Wow!!!")
+			.WithIcon(MessageBoxIcon.Information)
+			.WithButton("OK")
+			.WithButton("Cancel")
+			.Show();
+
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
 		Interlude.ShouldSelectInterludeTexture = false;

@@ -3,17 +3,29 @@
 using System.Runtime.InteropServices;
 
 namespace Nucleus;
-public static partial class Platform {
-	public enum MessageBoxIcon {
-		Error,
-		Warning,
-		Information
-	}
 
+public enum MessageBoxIcon
+{
+	Error,
+	Warning,
+	Information
+}
+
+[Flags]
+public enum MessageBoxButtonFlags : uint
+{
+	None,
+	ReturnKeyDefault = 1u,
+	EscapeKeyDefault = 2u
+}
+
+
+public static partial class Platform
+{
 	public unsafe ref struct MessageBoxBuilder()
 	{
 		public const int MAX_STRINGS = 128;
-		public const int MAX_BUTTONS = 8;
+		public const int MAX_BUTTONS = 16;
 
 		byte*[] cleanup = new byte*[MAX_STRINGS];
 		nint cleanupPtr = 0;
@@ -35,6 +47,7 @@ public static partial class Platform {
 		SDL_MessageBoxData data;
 		SDL_MessageBoxFlags flags;
 		SDL_MessageBoxButtonData[] buttons = new SDL_MessageBoxButtonData[MAX_BUTTONS];
+		Action?[] actions = new Action?[MAX_BUTTONS];
 		nint buttonPtr = 0;
 
 		SDL_MessageBoxColor color;
@@ -67,15 +80,29 @@ public static partial class Platform {
 			}
 			return this;
 		}
-	
-	public int Show() {
+
+		public MessageBoxBuilder WithButton(string text, MessageBoxButtonFlags flags = MessageBoxButtonFlags.None) {
+			int buttonPtrThisBtn = (int)buttonPtr++;
+			ref SDL_MessageBoxButtonData btnData = ref buttons[buttonPtrThisBtn];
+			btnData.buttonID = buttonPtrThisBtn;
+			btnData.text = allocStr(text);
+			btnData.flags = (SDL_MessageBoxButtonFlags)flags;
+			return this;
+		}
+
+		public bool Show() {
 			fixed (SDL_MessageBoxButtonData* btns = buttons) {
 				data.buttons = btns;
 				data.numbuttons = (int)buttonPtr;
 				int buttonID;
 				SDL_MessageBoxData dataLocal = data; // :(
 				bool ret = SDL3.SDL_ShowMessageBox(&dataLocal, &buttonID);
-				return buttonID;
+
+				deallocAllStrs(); // message box done, garbage collect
+				if (buttonID >= 0)
+					actions[buttonID]?.Invoke();
+
+				return ret;
 			}
 		}
 	}
