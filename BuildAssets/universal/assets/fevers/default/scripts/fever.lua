@@ -84,7 +84,7 @@ local function hsvToRgb(h, s, v, a)
 end
 
 local lastStarSpawn = 0
-local starSpawnRate = 20 -- 20 per second
+local starSpawnRate = 12 -- per second
 function fever.think()
     local deltaTime = level.curtimeDelta
     local inFever   = game.inFever
