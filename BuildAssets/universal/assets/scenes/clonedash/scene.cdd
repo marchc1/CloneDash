@@ -79,7 +79,10 @@
 				"name": "multi_atk_48",
 				"speed": 48
 			},
-            "atk_end": "multi_atk_48_end",
+            "atk_end": {
+				"name": "multi_atk_48_end",
+				"speed": 48
+			},
             "hurt": "multi_atk_hurt",
             "hurt_end": "multi_atk_hurt_end",
             "atk_out": "multi_atk_out"

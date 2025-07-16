@@ -156,8 +156,8 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 				time = Boss.Multi.Attack.Speed / Model4System.REFERENCE_FPS; 
 				return Boss.Multi.Attack.Name;
 			case BossAnimationType.MultiAttackEnd:
-				time = Boss.Multi.AttackOut.Speed / Model4System.REFERENCE_FPS;
-				return Boss.Multi.AttackOut.Name;
+				time = Boss.Multi.AttackEnd.Speed / Model4System.REFERENCE_FPS;
+				return Boss.Multi.AttackEnd.Name;
 			case BossAnimationType.MultiAttackHurt: return Boss.Multi.Hurt;
 			case BossAnimationType.MultiAttackHurtEnd: return Boss.Multi.HurtEnd;
 
@@ -166,7 +166,6 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 			default: throw new NotImplementedException();
 		}
 	}
-
 	public string GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
 		time = 0;
 
@@ -827,10 +826,10 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 	public class SceneDescriptor_BossMulti
 	{
 		[JsonProperty("atk")] public SceneDescriptor_BossNameSpeed Attack;
-		[JsonProperty("atk_out")] public SceneDescriptor_BossNameSpeed AttackOut;
-		[JsonProperty("atk_end")] public string AttackEnd;
+		[JsonProperty("atk_end")] public SceneDescriptor_BossNameSpeed AttackEnd;
 		[JsonProperty("hurt")] public string Hurt;
 		[JsonProperty("hurt_end")] public string HurtEnd;
+		[JsonProperty("atk_out")] public string AttackOut;
 	}
 	public class SceneDescriptor_Mashsounds {
 		[JsonProperty("sound")] public string Sound;

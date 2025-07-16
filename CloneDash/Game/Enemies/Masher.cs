@@ -36,12 +36,15 @@ namespace CloneDash.Game.Entities
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();
+			if (Variant.IsBoss())
+				SendSignal(GetGameLevel().Boss, EntitySignalType.MashOver);
 		}
 
 		public override void Think(FrameState frameState) {
 			CheckIfComplete();
 		}
 		protected override void OnHit(PathwaySide side, double distanceToHit) {
+			base.OnHit(side, distanceToHit);
 			var level = Level.As<DashGameLevel>();
 
 			level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
