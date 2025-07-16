@@ -738,8 +738,17 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	public static void PumpOSEvents() {
 		SDL_Event ev;
+		const int mswait = 5;
 		unsafe {
-			while (SDL3.SDL_WaitEventTimeout(&ev, 5)) {
+			// The LINUX specific check here tries to fix an issue I was having with latencies.
+			// I believe it's related to WaitEventTimeout
+			// This would be more CPU intensive on the input thread...
+#if COMPILED_LINUX
+			SDL3.SDL_PumpEvents();
+			while (SDL3.SDL_PollEvent(&ev)) {
+#else
+			while (SDL3.SDL_WaitEventTimeout(&ev, mswait)) {
+#endif
 				var time = OS.GetTime();
 				switch (ev.Type) {
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
@@ -754,6 +763,10 @@ public unsafe class OSWindow : IValidatable
 
 			foreach (var window in windowLookup_id2window)
 				window.Value.UpdateWindowState();
+
+#if COMPILED_LINUX
+			OS.Wait(mswait / 1000d);
+#endif
 		}
 	}
 	public void Close() {
