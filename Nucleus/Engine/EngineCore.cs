@@ -788,6 +788,9 @@ public static class EngineCore
 
 		}
 
+		// Fixes event delays on linux, but all operating systems should benefit
+		Thread.CurrentThread.Priority = ThreadPriority.Highest;
+
 		while (Running) {
 			OSWindow.PumpOSEvents();
 			if (!Running) {
