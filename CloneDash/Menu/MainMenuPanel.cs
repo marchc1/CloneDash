@@ -13,6 +13,7 @@ using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -149,7 +150,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
 			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
 			settings.DrawPanelBackground = false;
-
 		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}

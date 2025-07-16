@@ -506,12 +506,16 @@ public class SongSelector : Panel, IMainMenuPanel
 			MoveRight();
 			InvalidateLayout();
 		}
-		else if (key == KeyboardLayout.USA.Escape) {
-			// hacky but it should work
-			var lvl = Level.As<MainMenuLevel>();
-			if (lvl.ActiveElements.Peek() == this)
-				lvl.PopActiveElement();
+	}
+
+	public bool InterceptEscape() {
+		Panel? selectedSong = Level.As<MainMenuLevel>().SelectedSong;
+		if (IValidatable.IsValid(selectedSong)) {
+			selectedSong.Remove();
+			return false;
 		}
+
+		return true;
 	}
 
 	public override void Paint(float width, float height) {

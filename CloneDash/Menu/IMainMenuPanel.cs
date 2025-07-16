@@ -6,4 +6,5 @@ public interface IMainMenuPanel
 	public void OnHidden();
 	public void OnShown();
 	public void SetRichPresence();
+	public bool InterceptEscape() => true;
 }

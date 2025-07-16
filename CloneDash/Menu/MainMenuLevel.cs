@@ -19,6 +19,7 @@ using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
+using KeyboardKey = Nucleus.Input.KeyboardKey;
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.Game;
@@ -154,6 +155,19 @@ public class MainMenuLevel : Level
 		ConsoleSystem.AddScreenBlocker(UI);
 	}
 
+	public override void PreThink(ref FrameState frameState) {
+		base.PreThink(ref frameState);
+		if (frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Escape)) {
+			// hacky but it should work
+			if (ActiveElements.Count > 1) {
+				var element = (ActiveElements.Peek() as IMainMenuPanel)!;
+				if (element.InterceptEscape())
+					PopActiveElement();
+			}
+		}
+	}
+
+
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
 
@@ -189,6 +203,8 @@ public class MainMenuLevel : Level
 	// At some point, this should just become an element type. This whole thing is a wreck otherwise and injects a bunch of callbacks into
 	// random things... I hate it
 
+	public Panel? SelectedSong { get; private set; }
+
 	internal void LoadChartSelector(SongSelector selector, ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
 		MusicTrack? track = selector.ActiveTrack;
@@ -198,6 +214,7 @@ public class MainMenuLevel : Level
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
 
 		Panel levelSelector = UI.Add<Panel>();
+		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
 		levelSelector.ForegroundColor = Color.Blank;
 		levelSelector.Dock = Dock.Fill;
@@ -249,7 +266,7 @@ public class MainMenuLevel : Level
 			if (selector != null) {
 				selector.ExitSheetSelection();
 			}
-
+			SelectedSong = null;
 		};
 
 		var back = levelSelector.Add<Button>();
