@@ -25,6 +25,9 @@ public enum BossAnimationType
 	CloseAttackFast,
 
 	MultiAttack,
+	MultiAttackEnd,
+	MultiAttackHurt,
+	MultiAttackHurtEnd,
 
 	Hurt,
 }

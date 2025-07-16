@@ -17,7 +17,7 @@ public class BossMasher(DashGameLevel game, int type) : DashEvent(game)
 		Game.LoadEntity(new() {
 			Type = EntityType.Masher,
 			Pathway = PathwaySide.Both,
-			Variant = type == 1 ? EntityVariant.BossMash1 : EntityVariant.BossMash2,
+			Variant = type == 1 ? EntityVariant.BossMasher : EntityVariant.BossMasherEnd,
 			ShowTime = Time - time,
 			HitTime = Time,
 			Length = Length

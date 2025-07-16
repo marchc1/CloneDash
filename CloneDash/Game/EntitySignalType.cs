@@ -3,8 +3,7 @@
 	public enum EntitySignalType
 	{
 		FirstAppearance,
-		FirstHit,
-		HitAgain,
+		Hit,
 		MashOver
 	}
 }

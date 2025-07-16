@@ -334,7 +334,7 @@ namespace CloneDash.Game
 		/// </summary>
 		protected virtual void OnHit(PathwaySide side, double distanceToHit) {
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, EntitySignalType.FirstHit);
+				SendSignal(GetGameLevel().Boss, EntitySignalType.Hit);
 		}
 		protected virtual void OnMiss() {
 

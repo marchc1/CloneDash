@@ -109,7 +109,7 @@ public class Boss : DashEnemy
 					}
 				}
 
-				if (signalType == EntitySignalType.FirstHit && (she.Variant == EntityVariant.BossHitSlow || she.Variant == EntityVariant.BossHitFast)) {
+				if (signalType == EntitySignalType.Hit && (she.Variant == EntityVariant.BossHitSlow || she.Variant == EntityVariant.BossHitFast)) {
 					Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Hurt), false);
 					Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
 				}
@@ -118,15 +118,13 @@ public class Boss : DashEnemy
 				if (me.Variant.IsBoss()) {
 					switch (signalType) {
 						case EntitySignalType.FirstAppearance:
-							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttack), false);
-							Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.Standby0), true);
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(me.Variant == EntityVariant.BossMasher ? BossAnimationType.MultiAttack : BossAnimationType.MultiAttackEnd), false);
 							break;
-						case EntitySignalType.FirstHit:
-						case EntitySignalType.HitAgain:
-
+						case EntitySignalType.Hit:
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(BossAnimationType.MultiAttackHurt), false);
 							break;
 						case EntitySignalType.MashOver:
-
+							Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, scene.GetBossAnimation(me.Variant == EntityVariant.BossMasher ? BossAnimationType.Hurt : BossAnimationType.MultiAttackHurtEnd), false);
 							break;
 					}
 				}

@@ -13,8 +13,8 @@
 
 		BossHitFast,
 		BossHitSlow,
-		BossMash1,
-		BossMash2,
+		BossMasher,
+		BossMasherEnd,
 
 		Small,
 
