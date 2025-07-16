@@ -90,7 +90,7 @@ namespace Nucleus.UI
 			}
 		}
 		/// <summary>
-		/// Lua's reserved keywords, along with one extra variable I want to be special ('music')
+		/// Lua's reserved keywords
 		/// </summary>
 		private static HashSet<string> Keywords { get; } = ["break",
 			"do",
@@ -114,9 +114,8 @@ namespace Nucleus.UI
 			"until",
 			"while",
 			"return",
-
 		];
-		private static HashSet<string> SpecialVariables { get; } = ["_G", "self", "music", "keyframer", "track"];
+		private static HashSet<string> SpecialVariables { get; } = ["_G", "self"];
 
 		// to-do: cleanup
 		public override void Rebuild(SafeArray<string> rows) {
