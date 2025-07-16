@@ -34,7 +34,7 @@ namespace Nucleus.Commands
 
 			if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ConCommandArguments))
 				executedDelegate = (_, args) => baseMethod.Invoke(null, [args]);
-			else if (parameters.Length != 2 || parameters[0].ParameterType != typeof(ConCommand) || parameters[1].ParameterType != typeof(ConCommandArguments))
+			else if (parameters.Length == 0)
 				executedDelegate = (_, _) => baseMethod.Invoke(null, null);
 			else
 				executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
