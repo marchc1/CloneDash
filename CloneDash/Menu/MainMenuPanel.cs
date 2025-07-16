@@ -216,7 +216,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		if (model != null) {
 			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(frameState.WindowWidth / 2), 0);
 
-			anims?.AddDeltaTime(Level.CurtimeDelta);
+			anims?.AddDeltaTime(Level.RendertimeDelta);
 			anims?.Apply(model);
 		}
 

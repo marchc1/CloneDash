@@ -64,7 +64,7 @@ namespace Nucleus.Entities
 			if (!Visible) return;
 			if (Model == null) return;
 
-			if (!Level.Paused) __anim.AddDeltaTime(Level.CurtimeDelta);
+			if (!Level.Paused) __anim.AddDeltaTime(Level.RendertimeDelta);
 
 			__anim.Apply(Model);
 			Model.Position = Position;

@@ -40,7 +40,7 @@ public static class EngineCore
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
-	[ConCommand(Help: "ries to create a new level with the first argument. Will not work if the level requires initialization parameters.")] 
+	[ConCommand(Help: "ries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
 	static void level(ConCommandArguments args) {
 		var level = args.Raw;
 		var listOfLevels = (
@@ -528,7 +528,10 @@ public static class EngineCore
 			return MathF.Round(1.0f / fps_average);
 		}
 	}
-	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
+	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default frames per second. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
+	public static ConVar r_renderat = ConVar.Register("renderrate", "60", ConsoleFlags.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
+	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
+
 	private static string WorkConsole = "";
 	public static void Frame() {
 		NProfiler.Reset();
@@ -596,7 +599,7 @@ public static class EngineCore
 			Window.FlushKeyboardStateInto(ref keyboardState);
 
 			int i = 0;
-			while(keyboardState.KeyAvailable(ref i, out int k, out _)) {
+			while (keyboardState.KeyAvailable(ref i, out int k, out _)) {
 				KeyAction action = KeyboardLayout.USA.GetKeyAction(keyboardState, KeyboardLayout.USA.FromInt(k));
 				switch (action.Type) {
 					case CharacterType.Enter:
@@ -625,7 +628,8 @@ public static class EngineCore
 		}
 
 		Rlgl.DrawRenderBatchActive();
-		Window.SwapScreenBuffer();
+		if (Level == null || Level.RenderedFrame)
+			Window.SwapScreenBuffer();
 
 		CurrentAppTime = OS.GetTime();
 		DrawTime = CurrentAppTime - PreviousAppTime;

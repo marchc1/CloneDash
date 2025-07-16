@@ -276,6 +276,10 @@ namespace Nucleus.Engine
 		public float CurtimeF => (float)Curtime;
 		public float CurtimeDeltaF => (float)CurtimeDelta;
 
+		public double LastRendertime { get; private set; } = 0;
+		public double Rendertime { get; private set; } = 0;
+		public double RendertimeDelta { get; private set; } = 0;
+
 		public bool Paused { get; set; } = false;
 
 		public FrameState LastFrameState { get; private set; } = FrameState.Default;
@@ -352,11 +356,13 @@ namespace Nucleus.Engine
 			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
 			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
 		}
-
+		double lastRenderTime = -10;
+		public bool RenderedFrame { get; set; } = false;
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
 		public void Frame() {
+			RenderedFrame = false;
 			profiler.Reset();
 			profiler.Start();
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
@@ -533,82 +539,89 @@ namespace Nucleus.Engine
 					}
 				}
 			}*/
+			if ((Realtime - lastRenderTime) >= EngineCore.RenderRate) {
+				lastRenderTime = Realtime;
+				RenderedFrame = true;
 
-			System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
+				if (!Paused) {
+					LastRendertime = Rendertime;
+					Rendertime = Curtime;
+					RendertimeDelta = Rendertime - LastRendertime;
+				}
 
-			Surface.Clear(0, 0, 0, 255);
+				System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
 
-			bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
-			if (render3D) {
-				var cam3d = new Camera3D() {
-					Projection = CameraProjection.Orthographic,
-					FovY = frameState.WindowHeight * 1,
-					Position = offset + new System.Numerics.Vector3(0, 0, -500),
-					Target = offset + new System.Numerics.Vector3(0, 0, 0),
-					Up = new(0, -1, 0)
-				};
+				Surface.Clear(0, 0, 0, 255);
 
-				CalcView3D(frameState, ref cam3d);
-				RunEventPreRenderBackground(frameState);
-				frameState.Camera3D = cam3d;
+				bool render3D = Render3D; // Store state in case a mid frame update happens to that variable (which would almost certainly break state?)
+				if (render3D) {
+					var cam3d = new Camera3D() {
+						Projection = CameraProjection.Orthographic,
+						FovY = frameState.WindowHeight * 1,
+						Position = offset + new System.Numerics.Vector3(0, 0, -500),
+						Target = offset + new System.Numerics.Vector3(0, 0, 0),
+						Up = new(0, -1, 0)
+					};
 
-				EngineCore.Window.BeginMode3D(cam3d);
-			}
-			else {
-				var cam2d = new Camera2D() { };
+					CalcView3D(frameState, ref cam3d);
+					RunEventPreRenderBackground(frameState);
+					frameState.Camera3D = cam3d;
 
-				CalcView2D(frameState, ref cam2d);
-				RunEventPreRenderBackground(frameState);
-				frameState.Camera2D = cam2d;
+					EngineCore.Window.BeginMode3D(cam3d);
+				}
+				else {
+					var cam2d = new Camera2D() { };
 
-				EngineCore.Window.BeginMode2D(cam2d);
-			}
-			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
-			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
+					CalcView2D(frameState, ref cam2d);
+					RunEventPreRenderBackground(frameState);
+					frameState.Camera2D = cam2d;
 
-			RunEventPreRender(frameState);
+					EngineCore.Window.BeginMode2D(cam2d);
+				}
+				//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
+				//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
 
-			RunEventRender(frameState);
-			if (render3D)
-				EngineCore.Window.EndMode3D();
-			else
-				EngineCore.Window.EndMode2D();
-			//Graphics.ScissorRect();
+				RunEventPreRender(frameState);
 
-			RunEventRender2D(frameState);
-			Element.DrawRecursive(UI);
-			//Raylib.EndTextureMode();
+				RunEventRender(frameState);
+				if (render3D)
+					EngineCore.Window.EndMode3D();
+				else
+					EngineCore.Window.EndMode2D();
+				//Graphics.ScissorRect();
 
-			/*Raylib.DrawTexturePro(RenderTarget.Value.Texture,
-                new Rectangle(0, 0, RenderTarget.Value.Texture.Width, -RenderTarget.Value.Texture.Height),
-                new Rectangle(0, 0, RenderTarget.Value.Texture.Width, RenderTarget.Value.Texture.Height),
-                new System.Numerics.Vector2(0, 0),
-                0,
-                Color.WHITE);*/
+				RunEventRender2D(frameState);
+				Element.DrawRecursive(UI);
+				//Raylib.EndTextureMode();
 
-			// Only really exists for REALLY late rendering
-			RunEventPostRender(frameState);
+				/*Raylib.DrawTexturePro(RenderTarget.Value.Texture,
+					new Rectangle(0, 0, RenderTarget.Value.Texture.Width, -RenderTarget.Value.Texture.Height),
+					new Rectangle(0, 0, RenderTarget.Value.Texture.Width, RenderTarget.Value.Texture.Height),
+					new System.Numerics.Vector2(0, 0),
+					0,
+					Color.WHITE);*/
 
-			DebugOverlay.Render();
+				// Only really exists for REALLY late rendering
+				RunEventPostRender(frameState);
 
-			if (ui_hoverresult.GetBool() && UI.Hovered != null) {
-				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
-				Graphics2D.DrawText(UI.Hovered.GetGlobalPosition() + new Vector2F(0, UI.Hovered.RenderBounds.H), $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
-			}
+				DebugOverlay.Render();
 
-			Graphics2D.ResetDrawingOffset();
-			if (ui_showupdates.GetBool()) RenderShowUpdates();
-			if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
+				if (ui_hoverresult.GetBool() && UI.Hovered != null) {
+					Graphics2D.SetDrawColor(255, 255, 255);
+					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
+					Graphics2D.DrawText(UI.Hovered.GetGlobalPosition() + new Vector2F(0, UI.Hovered.RenderBounds.H), $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
+				}
 
-
-			UnlockEntityBuffer();
-			var FPS = EngineCore.FPS;
-			List<DebugRecord> fields;
-			if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
 				Graphics2D.ResetDrawingOffset();
-				fields = [
-					$"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
+				if (ui_showupdates.GetBool()) RenderShowUpdates();
+				if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
+
+				var FPS = EngineCore.FPS;
+				List<DebugRecord> fields;
+				if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
+					Graphics2D.ResetDrawingOffset();
+					fields = [
+						$"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
 					"",
 					// $"Engine",
 					// $"    [CPU]  Sound Memory   : {IManagedMemory.NiceBytes(Sounds.UsedBits / 8)}",
@@ -627,33 +640,36 @@ namespace Nucleus.Engine
 					// $"    Mouse State           : {frameState.Mouse}",
 					// $"    Keyboard State        : {frameState.Keyboard}",
 				];
+				}
+				else
+					fields = [
+					//$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"
+					];
+
+				if (EngineCore.ShowDebuggingInfo && FrameDebuggingStrings.Count > 0) {
+					fields.Add("");
+					fields.Add("Game-specific Debug Fields:");
+					foreach (string s in FrameDebuggingStrings)
+						fields.Add("    " + s);
+				}
+
+				int maxKey = 0;
+				int maxValue = 0;
+
+				for (int i = 0; i < fields.Count; i++) {
+					var tx = 12;
+					var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 12);
+
+					var t = fields[i].ToString();
+					Graphics2D.SetDrawColor(new(255, 255, 255, 255));
+					Graphics2D.DrawText(tx, ty, t, "Consolas", 11, Anchor.TopLeft);
+				}
+
+				if (EngineCore.ShowDebuggingInfo)
+					ConsoleSystem.Draw();
 			}
-			else
-				fields = [
-                    //$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"
-                ];
 
-			if (EngineCore.ShowDebuggingInfo && FrameDebuggingStrings.Count > 0) {
-				fields.Add("");
-				fields.Add("Game-specific Debug Fields:");
-				foreach (string s in FrameDebuggingStrings)
-					fields.Add("    " + s);
-			}
-
-			int maxKey = 0;
-			int maxValue = 0;
-
-			for (int i = 0; i < fields.Count; i++) {
-				var tx = 12;
-				var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 12);
-
-				var t = fields[i].ToString();
-				Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-				Graphics2D.DrawText(tx, ty, t, "Consolas", 11, Anchor.TopLeft);
-			}
-
-			if (EngineCore.ShowDebuggingInfo)
-				ConsoleSystem.Draw();
+			UnlockEntityBuffer();
 
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrame);
 			profiler.Stop();

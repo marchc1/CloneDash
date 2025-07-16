@@ -60,9 +60,9 @@ public class MainMenuLevel : Level
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
 
-			anims.AddDeltaTime(EngineCore.Level.CurtimeDelta);
+			anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
 			anims.Apply(model);
-			time += EngineCore.Level.CurtimeDeltaF;
+			time += (float)EngineCore.Level.RendertimeDelta;
 			shader.SetShaderValue("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
 			if (Raylib.IsShaderReady(shader)) {
 				Raylib.BeginShaderMode(shader);

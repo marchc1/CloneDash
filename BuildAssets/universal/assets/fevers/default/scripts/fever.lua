@@ -82,7 +82,7 @@ local function hsvToRgb(h, s, v, a)
 end
 
 function fever.think()
-    local deltaTime = level.curtimeDelta
+    local deltaTime = level.rendertimeDelta
     local inFever   = game.inFever
 
     if not inFever then return end
