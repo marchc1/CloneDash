@@ -5,7 +5,9 @@ fever_bg_edge.wrap = TEXTURE_WRAP_CLAMP
 local function easeInCubic(x) return x * x * x end
 local function easeOutCubic(x) return 1 - math.pow(1 - x, 3) end
 local function clamp(x, mi, ma) return math.min(math.max(x, mi), ma) end
-
+local function remap(value, inMin, inMax, outMin, outMax)
+    return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin
+end
 local fever_fx = textures:loadMuseDashTexture("FxFever")
 
 local stars = {}
@@ -81,8 +83,10 @@ local function hsvToRgb(h, s, v, a)
     return r * 255, g * 255, b * 255, a * 255
 end
 
+local lastStarSpawn = 0
+local starSpawnRate = 20 -- 20 per second
 function fever.think()
-    local deltaTime = level.rendertimeDelta
+    local deltaTime = level.curtimeDelta
     local inFever   = game.inFever
 
     if not inFever then return end
@@ -109,30 +113,37 @@ function fever.think()
         else
             star.x = star.x + (star.vel * deltaTime)
             star.rotation = star.rotation + (star.rotVel * deltaTime)
-            star.vel = clamp(star.vel * star.resistance, -30000000, 2000)
-            star.rotVel = star.rotVel * star.resistance
+			-- calculate resistance based on deltaTime
+			local resistance = star.resistance
+			resistance = remap(deltaTime, 0, 1, 1, resistance)
+            star.vel = clamp(star.vel * resistance, -30000000, 2000)
+            star.rotVel = star.rotVel * resistance
         end
     end
 
-    local addStarChance = math.random(1, 20)
-    if addStarChance > 19.4 then
-        -- 0 == close, 1 == far
-        local dist = math.random(0, 1)
-        local velocity = 2000 + ((1 - dist) * 2500)
-        local darkness = 0.3 + ((1 - dist) * 0.65)
-        local r, g, b, _ = hsvToRgb(math.random(290, 320) / 360, math.random(0.7, 0.9), darkness, 1)
+    local starsToAdd = (level.curtime - lastStarSpawn) * starSpawnRate
+	if starsToAdd >= 1 then
+		lastStarSpawn = level.curtime
+		for i = 1, starsToAdd do
+			-- 0 == close, 1 == far
+			local dist = math.random(0, 1)
+			local velocity = 2000 + ((1 - dist) * 2500)
+			local darkness = 0.3 + ((1 - dist) * 0.65)
+			local r, g, b, _ = hsvToRgb(math.random(290, 320) / 360, math.random(0.7, 0.9), darkness, 1)
 
-        addStar(width, math.random(-HALF_HEIGHT, HALF_HEIGHT),
-                math.random(90, 200), math.random(-60, 60),
-                r, g, b,
-                -velocity,
-                math.random(200, 350), 1)
-    end
+			addStar(width, math.random(-HALF_HEIGHT, HALF_HEIGHT),
+					math.random(90, 200), math.random(-60, 60),
+					r, g, b,
+					-velocity,
+					math.random(200, 350), 1)
+		end
+	end
 end
 
 function fever.start()
     stars = {}
     beams = {}
+	lastStarSpawn = level.curtime -- don't spawn 5,000 stars at once
 
     for i = 1, 20 do
         addStar(
@@ -140,7 +151,7 @@ function fever.start()
             math.random(256, 512), math.random(-40, 40),
             math.random(120, 170), 60, 255,
             -math.random(9000, 12000),
-            math.random(200, 230), .995)
+            math.random(200, 230), .45)
     end
 end
 

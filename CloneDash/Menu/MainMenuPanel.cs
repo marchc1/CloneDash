@@ -257,8 +257,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			model.Render();
 		}
 
-
-
 		EngineCore.Window.EndMode2D();
 
 		if (NMath.InRange(Level.Curtime, startExpressionTime, nextExpressionTime) && expressionText != null) {
