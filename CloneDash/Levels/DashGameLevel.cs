@@ -1290,6 +1290,28 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	/// Default: 0
 	/// </summary>
 	public float HealthDrain { get; set; } = 0;
+
+	/// <summary>
+	/// How long an invincibility frame lasts in seconds.
+	/// </summary>
+	public double IFrameLength { get; set; } = 1.25;
+	private double lastIFrameGivenTime = -200000;
+
+	/// <summary>
+	/// Time since the last invincibility frame was given
+	/// </summary>
+	public double TimeSinceLastIFrame => Conductor.Time - lastIFrameGivenTime;
+	/// <summary>
+	/// Currently in an invincibility frame?
+	/// </summary>
+	public bool InIFrame => TimeSinceLastIFrame < IFrameLength;
+	/// <summary>
+	/// Gives the player an invincibility frame. No checks are performed here
+	/// </summary>
+	internal void SetIFrameTime() {
+		lastIFrameGivenTime = Conductor.Time;
+	}
+
 	/// <summary>
 	/// Current fever bar.<br></br>
 	/// Default: 0
@@ -1375,7 +1397,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
 	public void Damage(DashModelEntity? entity, float damage) {
-		Health -= damage;
+		if (!InIFrame) {
+			Health -= damage;
+			SetIFrameTime();
+		}
 		ResetCombo();
 	}
 	public double LastFeverIncreaseTime { get; private set; } = -2000;
