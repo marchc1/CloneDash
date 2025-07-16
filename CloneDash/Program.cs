@@ -44,13 +44,13 @@ internal class Program
 		RichPresenceSystem.Shutdown();
 	}
 	static void GameMain() {
-		new Platform.MessageBoxBuilder()
+		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
 			.WithMessage(Environment.StackTrace)
 			.WithIcon(MessageBoxIcon.Information)
 			.WithButton("Print 'OK!'", () => Logs.Print("OK!"))
 			.WithButton("Print 'No!'", () => Logs.Print("No!"))
-			.Show();
+			.Show();*/
 
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
