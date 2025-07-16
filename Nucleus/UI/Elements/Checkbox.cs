@@ -36,7 +36,7 @@ namespace Nucleus.UI
 	}
 	public class Checkbox : Button, IBindableToConVar
 	{
-		public bool Checked { get; set; } = false;
+		public DataBinder<bool> Checked { get; set; } = new(false);
 		protected override void Initialize() {
 			Text = "";
 		}
@@ -55,13 +55,13 @@ namespace Nucleus.UI
 		}
 
 		public void BindToConVar(ConVar cv) {
-			Checked = cv.GetBool();
+			Checked.SetNoUpdate(cv.GetBool());
 			OnCheckedChanged += (_) 
 				=> cv.SetValue(Checked);
 		}
 
 		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) {
-			Checked = self.GetBool();
+			Checked.SetNoUpdate(self.GetBool());
 		}
 
 		public bool Radio { get; set; } = false;
@@ -70,7 +70,7 @@ namespace Nucleus.UI
 			__otherRadioButtons.Add(other);
 			other.OnCheckedChanged += (e) => {
 				if (other.Checked && other.Radio)
-					this.Checked = false;
+					this.Checked.SetBackingObject(false);
 			};
 			other.LinkRadioButton(this);
 		}
@@ -115,9 +115,9 @@ namespace Nucleus.UI
 
 		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
 			if (Radio)
-				Checked = true;
+				Checked.SetBackingObject(true);
 			else
-				Checked = !Checked;
+				Checked.SetBackingObject(!Checked);
 			OnCheckedChanged?.Invoke(this);
 		}
 	}

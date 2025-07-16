@@ -154,5 +154,12 @@ namespace Nucleus
 			if (cond) Log(LogLevel.Warn, PrintColor, Newline, items);
 		}
 		public static void Error(params object?[] items) => Log(LogLevel.Error, PrintColor, Newline, items);
+
+		public static void Assert(bool condition, string message) {
+			if (!condition) {
+				System.Diagnostics.Debug.Assert(condition, message);
+				Warn(message);
+			}
+		}
 	}
 }

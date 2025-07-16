@@ -116,5 +116,9 @@
 			}
 			throw new NotImplementedException();
 		}
+
+		public static Vector2F ToVector2(this Anchor anchor) {
+			return new Vector2F(GetHorizontalRatio(anchor), GetVerticalRatio(anchor));
+		}
 	}
 }

@@ -332,6 +332,7 @@ namespace Nucleus.UI
 		#region Generic element methods
 
 		private bool __markedForRemoval = false;
+		public bool MarkedForDeath => __markedForRemoval;
 		public virtual void OnRemoval() { }
 		public delegate void RemoveDelegate(Element e);
 		public event RemoveDelegate? Removed;
@@ -765,6 +766,11 @@ namespace Nucleus.UI
 		public virtual void Paint(float width, float height) {
 			ImageDrawing();
 		}
+		public void UnregisterPaintOverrides() {
+			if (PaintOverride == null) return;
+			foreach (Delegate d in PaintOverride.GetInvocationList())
+				PaintOverride -= (PaintEvent)d;
+		}
 		public delegate void PaintEvent(Element self, float width, float height);
 		public event PaintEvent? PaintOverride;
 
@@ -1017,7 +1023,7 @@ namespace Nucleus.UI
 			if (element.Clipping)
 				Graphics2D.ScissorRect();
 
-			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", "Arial", 20);
+			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", "Noto Sans", 20);
 
 			Graphics2D.OffsetDrawing(-element.RenderBounds.Pos);
 			if (IValidatable.IsValid(element.Parent))
@@ -1238,7 +1244,7 @@ namespace Nucleus.UI
 
 		public bool ImageFollowsText { get; set; } = false;
 		public Color? ImageColor { get; set; } = null;
-		public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
+		public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null, Color? color = null) {
 			if (Image == null)
 				return;
 
@@ -1330,10 +1336,10 @@ namespace Nucleus.UI
 					sourceRect.Height *= -1;
 				}
 
-				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, thisC);
+				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, color ?? thisC);
 			}
 			else
-				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), ImageRotation, thisC);
+				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), ImageRotation, color ?? thisC);
 		}
 
 		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");

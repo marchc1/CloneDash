@@ -134,7 +134,19 @@ namespace Nucleus.UI.Elements
                     Titlebar.Title = value;
             }
         }
-        public Window() {
+		private bool __resizable = true;
+		public bool Resizable {
+			get => __resizable;
+			set {
+				__resizable = value;
+				if (ResizeTL != null) ResizeTL.Enabled = value;
+				if (ResizeTR != null) ResizeTR.Enabled = value;
+				if (ResizeBL != null) ResizeBL.Enabled = value;
+				if (ResizeBR != null) ResizeBR.Enabled = value;
+			}
+		}
+
+		public Window() {
             Position = new(64, 64);
             Size = new(640, 480);
             Windows.Add(new(this));
@@ -142,8 +154,14 @@ namespace Nucleus.UI.Elements
         ~Window() {
             MainThread.RunASAP(() => Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this), ThreadExecutionTime.AfterFrame);
         }
-        public Titlebar Titlebar { get; private set; }
-        protected override void Initialize() {
+		public Titlebar Titlebar { get; private set; }
+
+		public Button ResizeTL { get; private set; }
+		public Button ResizeTR { get; private set; }
+		public Button ResizeBL { get; private set; }
+		public Button ResizeBR { get; private set; }
+		public static float CornerSize => 8;
+		protected override void Initialize() {
             Titlebar = Add<Titlebar>();
             Titlebar.Title = _title;
             Titlebar.OnClosePressed += Titlebar_OnTitlebarClosePressed;
@@ -160,11 +178,127 @@ namespace Nucleus.UI.Elements
                 Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
             };
             ap.DockMargin = RectangleF.TLRB(4, 8, 8, 4);
-            this.AddParent = ap;
+
+			ResizeTL = Add<Button>();
+			ResizeTL.Size = new(24, 24);
+			ResizeTL.Origin = Anchor.TopLeft;
+			ResizeTL.Anchor = Anchor.TopLeft;
+			ResizeTL.Enabled = Resizable;
+
+			ResizeTR = Add<Button>();
+			ResizeTR.Size = new(24, 24);
+			ResizeTR.Origin = Anchor.TopRight;
+			ResizeTR.Anchor = Anchor.TopRight;
+			ResizeTR.Enabled = Resizable;
+
+			ResizeBL = Add<Button>();
+			ResizeBL.Size = new(24, 24);
+			ResizeBL.Origin = Anchor.BottomLeft;
+			ResizeBL.Anchor = Anchor.BottomLeft;
+			ResizeBL.Enabled = Resizable;
+
+			ResizeBR = Add<Button>();
+			ResizeBR.Size = new(24, 24);
+			ResizeBR.Origin = Anchor.BottomRight;
+			ResizeBR.Anchor = Anchor.BottomRight;
+			ResizeBR.Enabled = Resizable;
+
+			ResizeTL.OnHoverTest += (self, bounds, mouse) => {
+				var bounds1 = RectangleF.FromPosAndSize(bounds.Pos, new(CornerSize, bounds.H));
+				var bounds2 = RectangleF.FromPosAndSize(bounds.Pos, new(bounds.W, CornerSize));
+
+				return bounds1.ContainsPoint(mouse) || bounds2.ContainsPoint(mouse);
+			};
+
+			ResizeTR.OnHoverTest += (self, bounds, mouse) => {
+				var bounds1 = RectangleF.FromPosAndSize(bounds.Pos + new Vector2F(bounds.W - CornerSize, 0), new(CornerSize, bounds.H));
+				var bounds2 = RectangleF.FromPosAndSize(bounds.Pos, new(bounds.W, CornerSize));
+
+				return bounds1.ContainsPoint(mouse) || bounds2.ContainsPoint(mouse);
+			};
+
+			ResizeBL.OnHoverTest += (self, bounds, mouse) => {
+				var bounds1 = RectangleF.FromPosAndSize(bounds.Pos, new(CornerSize, bounds.H));
+				var bounds2 = RectangleF.FromPosAndSize(bounds.Pos + new Vector2F(0, bounds.H - CornerSize), new(bounds.W, CornerSize));
+
+				return bounds1.ContainsPoint(mouse) || bounds2.ContainsPoint(mouse);
+			};
+
+			ResizeBR.OnHoverTest += (self, bounds, mouse) => {
+				var bounds1 = RectangleF.FromPosAndSize(bounds.Pos + new Vector2F(bounds.W - CornerSize, 0), new(CornerSize, bounds.H));
+				var bounds2 = RectangleF.FromPosAndSize(bounds.Pos + new Vector2F(0, bounds.H - CornerSize), new(bounds.W, CornerSize));
+
+				return bounds1.ContainsPoint(mouse) || bounds2.ContainsPoint(mouse);
+			};
+
+			ResizeBL.Position = new(4, 0);
+			ResizeBR.Position = new(-4, 0);
+
+			ResizeTL.MouseDragEvent += ResizeTL_MouseDragEvent;
+			ResizeTR.MouseDragEvent += ResizeTR_MouseDragEvent;
+			ResizeBL.MouseDragEvent += ResizeBL_MouseDragEvent;
+			ResizeBR.MouseDragEvent += ResizeBR_MouseDragEvent;
+
+			ResizeTL.Text = "";
+			ResizeTR.Text = "";
+			ResizeBL.Text = "";
+			ResizeBR.Text = "";
+
+			ResizeTL.PaintOverride += ResizeTL_PaintOverride;
+			ResizeTR.PaintOverride += ResizeTR_PaintOverride;
+			ResizeBL.PaintOverride += ResizeBL_PaintOverride;
+			ResizeBR.PaintOverride += ResizeBR_PaintOverride;
+
+
+			this.AddParent = ap;
             this.UsesRenderTarget = true;
         }
+		private void ResizeBR_PaintOverride(Element self, float width, float height) {
+			var fore = MixColorBasedOnMouseState(self, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			Graphics2D.SetDrawColor(fore);
+			Graphics2D.DrawRectangle(width / 2, height - 2, width / 2, 2);
+			Graphics2D.DrawRectangle(width - 2, height / 2, 2, height / 2);
+		}
 
-        private void Titlebar_OnTitlebarClosePressed(Element self, FrameState state, MouseButton button) {
+		private void ResizeBL_PaintOverride(Element self, float width, float height) {
+			var fore = MixColorBasedOnMouseState(self, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			Graphics2D.SetDrawColor(fore);
+			Graphics2D.DrawRectangle(0, height - 2, width / 2, 2);
+			Graphics2D.DrawRectangle(0, height / 2, 2, height / 2);
+		}
+
+		private void ResizeTR_PaintOverride(Element self, float width, float height) {
+			var fore = MixColorBasedOnMouseState(self, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			Graphics2D.SetDrawColor(fore);
+			Graphics2D.DrawRectangle(width / 2, 0, width / 2, 2);
+			Graphics2D.DrawRectangle(width - 2, 0, 2, height / 2);
+		}
+
+		private void ResizeTL_PaintOverride(Element self, float width, float height) {
+			var fore = MixColorBasedOnMouseState(self, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			Graphics2D.SetDrawColor(fore);
+			Graphics2D.DrawRectangle(0, 0, width / 2, 2);
+			Graphics2D.DrawRectangle(0, 0, 2, height / 2);
+		}
+
+		private void ResizeTL_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+			this.Position += delta;
+			this.Size -= delta;
+		}
+
+		private void ResizeTR_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+			this.Position += delta.Mutate(zeroX: true);
+			this.Size -= delta.Mutate(negateX: true);
+		}
+		private void ResizeBL_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+			this.Position += delta.Mutate(zeroY: true);
+			this.Size -= delta.Mutate(negateY: true);
+		}
+		private void ResizeBR_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
+			this.Size += delta;
+		}
+
+		private void Titlebar_OnTitlebarClosePressed(Element self, FrameState state, MouseButton button) {
             this.Remove();
         }
 

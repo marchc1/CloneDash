@@ -242,14 +242,29 @@ public unsafe class OSWindow : IValidatable
 
 		if (lastFlags != curFlags) {
 			// On a per-parameter basis, check for updates
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, out bool resizable)) SDL3.SDL_SetWindowResizable(handle, resizable);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, out bool borderless)) SDL3.SDL_SetWindowBordered(handle, !borderless);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, out bool maximized)) if (maximized) SDL3.SDL_MaximizeWindow(handle); else SDL3.SDL_RestoreWindow(handle);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, out bool minimized)) if (minimized) SDL3.SDL_MinimizeWindow(handle); else SDL3.SDL_RestoreWindow(handle);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, out bool hidden)) if (hidden) SDL3.SDL_HideWindow(handle); else SDL3.SDL_ShowWindow(handle);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable)) SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop)) SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
-			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, out bool fullscreenMode)) SDL3.SDL_SetWindowFullscreen(handle, fullscreenMode);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, out bool resizable))
+				SDL3.SDL_SetWindowResizable(handle, resizable);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, out bool borderless))
+				SDL3.SDL_SetWindowBordered(handle, !borderless);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, out bool maximized))
+				if (maximized) SDL3.SDL_MaximizeWindow(handle);
+				else SDL3.SDL_RestoreWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, out bool minimized))
+				if (minimized)
+					SDL3.SDL_MinimizeWindow(handle);
+				else
+					SDL3.SDL_RestoreWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, out bool hidden))
+				if (hidden)
+					SDL3.SDL_HideWindow(handle);
+				else
+					SDL3.SDL_ShowWindow(handle);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, out bool notFocusable))
+				SDL3.SDL_SetWindowFocusable(handle, !notFocusable);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, out bool alwaysOnTop))
+				SDL3.SDL_SetWindowAlwaysOnTop(handle, alwaysOnTop);
+			if (flagChanged(lastFlags, curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, out bool fullscreenMode))
+				SDL3.SDL_SetWindowFullscreen(handle, fullscreenMode);
 		}
 
 		handleSDLTextInputState();
@@ -280,8 +295,8 @@ public unsafe class OSWindow : IValidatable
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, value);
 	}
 	public bool Visible {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
-		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, value);
+		get => !curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, !value);
 	}
 	public bool InputFocused {
 		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS);
@@ -321,13 +336,13 @@ public unsafe class OSWindow : IValidatable
 	public bool isPosQueued, isSizeQueued, isMinQueued, isMaxQueued, isTitleQueued, isOpacityQueued;
 
 	private void flushWindowGeometry() {
-		if (isPosQueued) 
+		if (isPosQueued)
 			SDL3.SDL_SetWindowPosition(handle, (int)queuedPos.X, (int)queuedPos.Y);
-		if (isSizeQueued) 
+		if (isSizeQueued)
 			SDL3.SDL_SetWindowSize(handle, (int)queuedSize.X, (int)queuedSize.Y);
-		if (isMinQueued) 
+		if (isMinQueued)
 			SDL3.SDL_SetWindowMinimumSize(handle, (int)queuedMin.X, (int)queuedMin.Y);
-		if (isMaxQueued) 
+		if (isMaxQueued)
 			SDL3.SDL_SetWindowMaximumSize(handle, (int)queuedMax.X, (int)queuedMax.Y);
 		if (isTitleQueued)
 			SDL3.SDL_SetWindowTitle(handle, queuedTitle);
@@ -335,6 +350,12 @@ public unsafe class OSWindow : IValidatable
 			SDL3.SDL_SetWindowOpacity(handle, queuedOpacity);
 
 		isPosQueued = isSizeQueued = isMinQueued = isMaxQueued = isTitleQueued = isOpacityQueued = false;
+
+
+		if (queuedIcon != null) {
+			SDL3.SDL_SetWindowIcon(handle, queuedIcon);
+			SDL3.SDL_DestroySurface(queuedIcon);
+		}
 	}
 
 	public Vector2F Position {
@@ -630,7 +651,7 @@ public unsafe class OSWindow : IValidatable
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 				HandleTextInput(in ev);
 				break;
-			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: 
+			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 				UserWantsToClose = true; break;
 		}
 	}
@@ -746,8 +767,9 @@ public unsafe class OSWindow : IValidatable
 		windowLookup_id2window.Remove(windowID);
 	}
 
+	SDL_Surface* queuedIcon;
 	public void SetIcon(Image image) {
-		SDL_Surface* iconSurface = null;
+		queuedIcon = null;
 
 		uint rmask, gmask, bmask, amask;
 		int depth = 0, pitch = 0;
@@ -823,13 +845,9 @@ public unsafe class OSWindow : IValidatable
 				return;
 		}
 
-		iconSurface = SDL3.SDL_CreateSurfaceFrom(image.Width, image.Height, SDL3.SDL_GetPixelFormatForMasks(depth, rmask, gmask, bmask, amask), (nint)image.Data, pitch);
-
-		if (iconSurface != null) {
-			SDL3.SDL_SetWindowIcon(handle, iconSurface);
-			SDL3.SDL_DestroySurface(iconSurface);
-		}
+		queuedIcon = SDL3.SDL_CreateSurfaceFrom(image.Width, image.Height, SDL3.SDL_GetPixelFormatForMasks(depth, rmask, gmask, bmask, amask), (nint)image.Data, pitch);
 	}
+
 	public int Monitor {
 		get => (int)SDL3.SDL_GetDisplayForWindow(handle);
 	}
@@ -1098,4 +1116,56 @@ public unsafe class OSWindow : IValidatable
 
 	private bool isValid = true;
 	public bool IsValid() => isValid;
+
+	public Ray GetMouseRay(Vector2 mouse, Camera3D camera) {
+		const float DEG2RAD = MathF.PI / 180.0f;
+		Ray ray = new();
+
+		// Calculate normalized device coordinates
+		// NOTE: y value is negative
+		float x = (2.0f * mouse.X) / (float)Size.W - 1.0f;
+		float y = 1.0f - (2.0f * mouse.Y) / Size.H;
+		float z = 1.0f;
+
+		// Store values in a vector
+		Vector3 deviceCoords = new(x, y, z);
+
+		// Calculate view matrix from camera look at
+		Matrix4x4 matView = Raymath.MatrixLookAt(camera.Position, camera.Target, camera.Up);
+
+		Matrix4x4 matProj = Raymath.MatrixIdentity();
+
+		if (camera.Projection == CameraProjection.Perspective) {
+			// Calculate projection matrix from perspective
+			matProj = Raymath.MatrixPerspective(camera.FovY * DEG2RAD, ((double)Size.W / (double)Size.H), RL_CULL_DISTANCE_NEAR, RL_CULL_DISTANCE_FAR);
+		}
+		else if (camera.Projection == CameraProjection.Orthographic) {
+			double aspect = (double)Size.W / (double)Size.H;
+			double top = camera.FovY / 2.0;
+			double right = top * aspect;
+
+			// Calculate projection matrix from orthographic
+			matProj = Raymath.MatrixOrtho(-right, right, -top, top, 0.01, 1000.0);
+		}
+
+		// Unproject far/near points
+		Vector3 nearPoint = Raymath.Vector3Unproject(new(deviceCoords.X, deviceCoords.Y, 0.0f ), matProj, matView);
+		Vector3 farPoint = Raymath.Vector3Unproject(new( deviceCoords.X, deviceCoords.Y, 1.0f ), matProj, matView);
+
+		// Unproject the mouse cursor in the near plane.
+		// We need this as the source position because orthographic projects, compared to perspective doesn't have a
+		// convergence point, meaning that the "eye" of the camera is more like a plane than a point.
+		Vector3 cameraPlanePointerPos = Raymath.Vector3Unproject(new(deviceCoords.X, deviceCoords.Y, -1.0f), matProj, matView);
+
+		// Calculate normalized direction vector
+		Vector3 direction = Raymath.Vector3Normalize(Raymath.Vector3Subtract(farPoint, nearPoint));
+
+		if (camera.Projection == CameraProjection.Perspective) ray.Position = camera.Position;
+		else if (camera.Projection == CameraProjection.Orthographic) ray.Position = cameraPlanePointerPos;
+
+		// Apply calculated vectors to ray
+		ray.Direction = direction;
+
+		return ray;
+	}
 }

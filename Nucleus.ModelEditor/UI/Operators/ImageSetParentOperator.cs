@@ -46,8 +46,8 @@ namespace Nucleus.ModelEditor.UI.Operators
 					DropdownSelector<EditorSlot>? dropdownSlot = null;
 					if (bone.Slots.Count <= 0) {
 						existingSlotPanel.Panel.Enabled = false;
-						existingSlotPanel.Checkbox.Checked = false;
-						newSlotPanel.Checkbox.Checked = true;
+						existingSlotPanel.Checkbox.Checked.SetBackingObject(false);
+						newSlotPanel.Checkbox.Checked.SetBackingObject(true);
 					}
 					else {
 						dropdownSlot = existingSlotPanel.Panel.Add<DropdownSelector<EditorSlot>>();

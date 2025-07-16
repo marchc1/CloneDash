@@ -65,6 +65,13 @@
 			return $"RectangleF [X: {X}, Y: {Y}, W: {W}, H: {H}]";
 		}
 
+		public static RectangleF From2Points(Vector2F p1, Vector2F p2) {
+			Vector2F tl = new(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y));
+			Vector2F br = new(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y));
+			Vector2F size = br - tl;
+			return FromPosAndSize(tl, size);
+		}
+
 		/// <summary>
 		/// Convenience property, internally equivalent to <see cref="right"/>
 		/// </summary>

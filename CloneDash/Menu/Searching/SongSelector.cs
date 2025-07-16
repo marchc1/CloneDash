@@ -1,5 +1,4 @@
-﻿using CloneDash.Animation;
-using CloneDash.Data;
+﻿using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Settings;
 

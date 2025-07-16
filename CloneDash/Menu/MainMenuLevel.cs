@@ -1,5 +1,4 @@
-﻿using CloneDash.Animation;
-using CloneDash.Characters;
+﻿using CloneDash.Characters;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Menu;

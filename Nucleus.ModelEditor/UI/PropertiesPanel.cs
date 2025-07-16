@@ -125,7 +125,7 @@ namespace Nucleus.ModelEditor
 
 			checkbox.Dock = Dock.Left;
 			checkbox.DockMargin = RectangleF.TLRB(4, 6, 7, 4);
-			checkbox.Checked = @checked;
+			checkbox.Checked.SetBackingObject(@checked);
 
 			label.Dock = Dock.Fill;
 			label.Text = text;
@@ -176,7 +176,7 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Left;
 			selector.Size = new(96);
-			selector.SelectedColor = currentColor ?? Color.White;
+			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
 			selector.BorderSize = 0;
 
 			return selector;
@@ -203,10 +203,10 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Fill;
 			selector.Size = new(64);
-			selector.SelectedColor = currentColor ?? Color.White;
+			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
 			selector.BorderSize = 0;
-			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = slot.GetColor();
-			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = slot.GetColor();
+			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
+			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
 
 
 			return selector;

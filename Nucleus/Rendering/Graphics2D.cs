@@ -26,7 +26,54 @@ namespace Nucleus.Core
 			{ "Noto Sans Mono", new FontEntry("NotoSansMono-VariableFont_wdth,wght.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
-		private static Color __drawColor = Color.White;
+		private static Color ___drawColor = Color.White;
+		private static Color __drawColor {
+			get {
+				if (CurAlpha != 1)
+					return new(___drawColor.R, ___drawColor.G, ___drawColor.B, (byte)(___drawColor.A * CurAlpha));
+				else
+					return ___drawColor;
+			}
+			set {
+				___drawColor = value;
+			}
+		}
+		public const int MAX_ALPHA_STACK = 2048;
+		private static int ALPHA_STACK_POINTER = 0;
+		public static float[] Alphas { get; private set; } = new float[MAX_ALPHA_STACK];
+		public static float CurAlpha { get; private set; } = 1;
+
+		public static void PushAlpha(float v) {
+			Alphas[ALPHA_STACK_POINTER] = v;
+			ALPHA_STACK_POINTER++;
+			CalcAlpha();
+		}
+
+		public static void ClearAlphaStack() => ALPHA_STACK_POINTER = 0;
+
+
+		private static void CalcAlpha() {
+			if (ALPHA_STACK_POINTER == 0) {
+				CurAlpha = 1;
+				return;
+			}
+			float alphaNow = 1;
+			for (int i = 0; i < ALPHA_STACK_POINTER; i++) {
+				alphaNow *= (Alphas[i] / 255f);
+			}
+			CurAlpha = Math.Clamp(alphaNow, 0, 1);
+		}
+
+		public static float? PopAlpha() {
+			if (ALPHA_STACK_POINTER <= 0)
+				return null;
+
+			float alpha = Alphas[ALPHA_STACK_POINTER - 1];
+			ALPHA_STACK_POINTER--;
+			CalcAlpha();
+			return alpha;
+		}
+
 		public static Shader shader_hsvtransform = Filesystem.ReadFragmentShader("shaders", "change_color.fshader"); 
 		public static float Hue { get; set; } = 0;
 		public static float Saturation { get; set; } = 1;
@@ -91,6 +138,9 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __offset = __offset + by;
 		public static void SetOffset(Vector2F offset) => __offset = offset;
 
+		public static Font GetFont(string fontName, float fontSize) {
+			return FontManager["", fontName, (int)fontSize];
+		}
 		public static Vector2F GetTextSize(string message, string font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);
 			return new(s.X, s.Y);
@@ -152,6 +202,10 @@ namespace Nucleus.Core
 				case Dock.Top: Raylib.DrawRectangleGradientV(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, start, end); break;
 				case Dock.Bottom: Raylib.DrawRectangleGradientV(offsetX(pos.X), offsetY(pos.Y), (int)size.X, (int)size.Y, end, start); break;
 			}
+		}
+
+		public static unsafe void SetScreenpixelShader(bool unset = false) {
+			Rlgl.SetShader(Rlgl.GetShaderIdDefault(), Rlgl.GetShaderLocsDefault());
 		}
 
 		private static Texture2D __texture;

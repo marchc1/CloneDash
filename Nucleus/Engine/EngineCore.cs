@@ -16,6 +16,7 @@ using SDL;
 using Nucleus.Util;
 using Nucleus.Commands;
 using Nucleus.Input;
+using Nucleus.Extensions;
 
 namespace Nucleus;
 
@@ -172,6 +173,45 @@ public static class EngineCore
 				break;
 		}
 		Logs.Source = "nucleus";
+	}
+
+	public static Window OpenProfiler() {
+		Window window = Level.UI.Add<Window>();
+
+		window.Title = "Nucleus Profiler";
+		window.AddParent.PaintOverride += AddParent_PaintOverride;
+		window.Titlebar.MinimizeButton.Enabled = false;
+		window.Titlebar.MaximizeButton.Enabled = false;
+
+		return window;
+	}
+
+	private static void AddParent_PaintOverride(Element self, float width, float height) {
+		int y = 12;
+		self.Parent.BorderSize = 0;
+
+		DrawBar("Frame Time", new Color(225, 225, 225, 255), width, y, NProfiler.TotalFrameTime);
+		y += 18 + 4;
+
+		foreach (var profileResult in NProfiler.Results()) {
+			DrawBar(profileResult.Name, profileResult.Color, width, y, profileResult.Elapsed.TotalMilliseconds);
+			y += 18 + 4;
+		}
+	}
+	private static void DrawBar(string text, Color color, float width, float y, double ms) {
+		float ratio = (float)ms / NProfiler.TotalFrameTime;
+		float rectPadding = 4;
+		float textWidth = 288;
+		float msWidth = 80;
+		var fnWidth = (width - rectPadding - rectPadding - textWidth - msWidth);
+
+		Graphics2D.SetDrawColor(color);
+
+		Graphics2D.DrawRectangle(rectPadding + textWidth, rectPadding + y + 2, fnWidth * ratio, 14);
+		Graphics2D.DrawRectangle(rectPadding + textWidth + fnWidth, rectPadding + y, 2, 18);
+		Graphics2D.SetDrawColor(color.Adjust(0, -0.4f, 0));
+		Graphics2D.DrawText(rectPadding + textWidth - 6, y + (12), text, "Noto Sans", 18, Anchor.CenterRight);
+		Graphics2D.DrawText(rectPadding + textWidth + fnWidth + 8, y + (12), $"{ms:0.00} ms", "Noto Sans", 20, Anchor.CenterLeft);
 	}
 
 	public static MouseCursor MouseCursor_Frame { get; private set; }
@@ -491,6 +531,7 @@ public static class EngineCore
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default FPS. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 	private static string WorkConsole = "";
 	public static void Frame() {
+		NProfiler.Reset();
 		NucleusSingleton.Spin();
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
@@ -631,6 +672,7 @@ public static class EngineCore
 		if (!Maximized)
 			return;
 
+		Window.Maximized = false;
 		Window.Visible = true;
 	}
 	public static void Minimize() {
@@ -644,14 +686,13 @@ public static class EngineCore
 		if (!Minimized)
 			return;
 
+		Window.Minimized = false;
 		Window.Visible = true;
 	}
 
 	public static unsafe Vector2F MousePos {
 		get => EngineCore.Window.Mouse.CurrentMousePosition;
 	}
-
-
 
 	public static void LimitFramerate(int fps) {
 		if (fps < 1)

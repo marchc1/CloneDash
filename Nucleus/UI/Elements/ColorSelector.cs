@@ -2,24 +2,28 @@
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Types;
+
 using Raylib_cs;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
+
+using static Nucleus.UI.Elements.ColorSelector;
 
 namespace Nucleus.UI.Elements
 {
 	public class ColorSelector : Element
 	{
-		private Color selectedColor = Color.White;
-		public Color SelectedColor {
-			get => selectedColor;
-			set {
-				selectedColor = value;
-				ColorChanged?.Invoke(this, value);
-			}
-		}
+		public DataBinder<Color> SelectedColor { get; set; } = new(Color.White);
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
-		public delegate void OnColorChange(ColorSelector self, Color newColor);
-		public event OnColorChange? ColorChanged;
+		protected override void Initialize() {
+			base.Initialize();
+		}
 
 		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
 			if (IValidatable.IsValid(CurrentDialog))
@@ -27,7 +31,8 @@ namespace Nucleus.UI.Elements
 
 			CurrentDialog = UI.Add<ColorSelectorDialog>();
 			CurrentDialog.Position = state.Mouse.MousePos;
-			CurrentDialog.Setup(this);
+			CurrentDialog.SelectedColor = this.SelectedColor;
+			CurrentDialog.Setup();
 			CurrentDialog.FitToParent(8);
 		}
 		public override void Paint(float width, float height) {
@@ -40,50 +45,17 @@ namespace Nucleus.UI.Elements
 				Graphics2D.DrawRectangle(1, 1, width - 2, height - 2);
 			}
 
-			Graphics2D.SetTexture(checkerboardTex);
-			Graphics2D.SetDrawColor(255, 255, 255);
-
-			Vector2F pos = new(3, 3), size = new(width / 2, height - 6);
-
-			Raylib.DrawTexturePro(checkerboardTex, new(0, 0, size.W, size.H), new(Graphics2D.Offset.X + pos.X, Graphics2D.Offset.Y + pos.Y, size.W, size.H), new(0), 0, Color.White);
-
 			Graphics2D.SetDrawColor(SelectedColor);
-			Graphics2D.DrawRectangle(3, 3, (width / 2) - 2, height - 6);
+			Graphics2D.DrawRectangle(3, 3, width - 6, height - 6);
 
-			Graphics2D.SetDrawColor(SelectedColor, 255);
-			Graphics2D.DrawRectangle(1 + (width / 2), 3, (width / 2) - 4, height - 6);
-		}
-
-		private static Raylib_cs.Texture2D checkerboardTex;
-		static ColorSelector() {
-			using (Raylib.ImageRef img = new(Raylib.GenImageChecked(64, 64, 4, 4, Color.Gray, Color.DarkGray)))
-				checkerboardTex = Raylib.LoadTextureFromImage(img);
+			Graphics2D.SetDrawColor(120 + (SelectedColor.Backing.R / 2), 120 + (SelectedColor.Backing.G / 2), 120 + (SelectedColor.Backing.B / 2), 255);
+			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 		}
 	}
 
 	public class ColorSelectorDialog : Panel
 	{
-		public Color SelectedColor {
-			get => selector.SelectedColor;
-			set {
-				selector.SelectedColor = value;
-				UpdateNumsliders();
-			}
-		}
-
-		private void UpdateNumsliders() {
-			var hsv = SelectedColor.ToHSV();
-			HSlider.SetValueNoUpdate(hsv.X);
-			SSlider.SetValueNoUpdate(hsv.Y);
-			VSlider.SetValueNoUpdate(hsv.Z);
-
-			RSlider.SetValueNoUpdate(SelectedColor.R);
-			GSlider.SetValueNoUpdate(SelectedColor.G);
-			BSlider.SetValueNoUpdate(SelectedColor.B);
-			ASlider.SetValueNoUpdate(SelectedColor.A / 255f);
-
-			Hexbox.Text = $"{SelectedColor.ToHex(true)}";
-		}
+		public DataBinder<Color> SelectedColor { get; set; }
 
 		Panel ColorWheel;
 
@@ -107,24 +79,17 @@ namespace Nucleus.UI.Elements
 
 		public ColorSelectorDragMode DragMode { get; set; } = ColorSelectorDragMode.None;
 
-		private void UpdateHSVValues() {
-			var hsv = SelectedColor.ToHSV();
-			_workingHue = hsv.X;
-			_workingSat = hsv.Y;
-			_workingVal = hsv.Z;
-		}
-
 		public float Hue {
 			get => _workingHue;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
+				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
 				_workingHue = value;
 			}
 		}
 		public float Saturation {
 			get => _workingSat;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
+				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
 				_workingSat = value;
 
 			}
@@ -132,29 +97,17 @@ namespace Nucleus.UI.Elements
 		public float Value {
 			get => _workingVal;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
+				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
 				_workingVal = value;
 			}
 		}
-		ColorSelector selector;
-		public void Setup(ColorSelector selector) {
-			this.selector = selector;
-			var hsv = SelectedColor.ToHSV();
+		public void Setup() {
+			var hsv = SelectedColor.Backing.ToHSV();
+
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
 			_workingVal = hsv.Z;
-			UpdateNumsliders();
 		}
-		NumSlider RSlider;
-		NumSlider GSlider;
-		NumSlider BSlider;
-		NumSlider HSlider;
-		NumSlider SSlider;
-		NumSlider VSlider;
-		NumSlider ASlider;
-		Textbox Hexbox;
-		FlexPanel SepPanel;
-
 		protected override void Initialize() {
 			base.Initialize();
 
@@ -178,8 +131,6 @@ namespace Nucleus.UI.Elements
 
 			this.Origin = Anchor.BottomCenter;
 			this.UI.OnElementClicked += delegate (Element el, FrameState fs, Input.MouseButton mb) {
-				if (el == null) return;
-
 				if (!el.IsIndirectChildOf(this)) {
 					this.Remove();
 				}
@@ -190,96 +141,7 @@ namespace Nucleus.UI.Elements
 			ColorWheel.MouseClickEvent += ColorWheel_MouseClickEvent;
 			ColorWheel.MouseDragEvent += ColorWheel_MouseDragEvent;
 			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
-
-			SepPanel = Add<FlexPanel>();
-			SepPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			SepPanel.Direction = Directional180.Horizontal;
-
-			var rgbPanel = SepPanel.Add<FlexPanel>();
-			rgbPanel.Direction = Directional180.Vertical;
-			rgbPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-
-			var hsvPanel = SepPanel.Add<FlexPanel>();
-			hsvPanel.Direction = Directional180.Vertical;
-			hsvPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-
-			RSlider = rgbPanel.Add<NumSlider>();
-			GSlider = rgbPanel.Add<NumSlider>();
-			BSlider = rgbPanel.Add<NumSlider>();
-
-			RSlider.MinimumValue = 0; RSlider.MaximumValue = 255; RSlider.Digits = 0;
-			GSlider.MinimumValue = 0; GSlider.MaximumValue = 255; GSlider.Digits = 0;
-			BSlider.MinimumValue = 0; BSlider.MaximumValue = 255; BSlider.Digits = 0;
-			RSlider.Prefix = "R: ";
-			GSlider.Prefix = "G: ";
-			BSlider.Prefix = "B: ";
-			RSlider.Value = 0;
-			GSlider.Value = 0;
-			BSlider.Value = 0;
-
-			HSlider = hsvPanel.Add<NumSlider>();
-			SSlider = hsvPanel.Add<NumSlider>();
-			VSlider = hsvPanel.Add<NumSlider>();
-
-			HSlider.Digits = 3;
-			SSlider.MinimumValue = 0; SSlider.MaximumValue = 1; SSlider.Digits = 3;
-			VSlider.MinimumValue = 0; VSlider.MaximumValue = 1; VSlider.Digits = 3;
-			HSlider.Prefix = "H: ";
-			SSlider.Prefix = "S: ";
-			VSlider.Prefix = "V: ";
-			HSlider.Value = 0;
-			SSlider.Value = 0;
-			VSlider.Value = 0;
-
-			ASlider = Add<NumSlider>();
-			ASlider.MinimumValue = 0;
-			ASlider.MaximumValue = 1;
-			ASlider.Digits = 3;
-			ASlider.TextFormat = "Alpha: {0:0.000}";
-			ASlider.Value = 0;
-
-			Hexbox = Add<Textbox>();
-
-			HSlider.OnValueChanged += (_, _, v) => Hue = (float)v;
-			SSlider.OnValueChanged += (_, _, v) => Saturation = (float)Math.Clamp(v, 0, 1);
-			VSlider.OnValueChanged += (_, _, v) => Value = (float)Math.Clamp(v, 0, 1);
-
-
-			RSlider.OnValueChanged += (_, _, v) => {
-				Color c = SelectedColor;
-				c.R = (byte)(Math.Clamp(v, 0, 255));
-				SelectedColor = c;
-				UpdateHSVValues();
-			};
-
-			GSlider.OnValueChanged += (_, _, v) => {
-				Color c = SelectedColor;
-				c.G = (byte)(Math.Clamp(v, 0, 255));
-				SelectedColor = c;
-				UpdateHSVValues();
-			};
-
-			BSlider.OnValueChanged += (_, _, v) => {
-				Color c = SelectedColor;
-				c.B = (byte)(Math.Clamp(v, 0, 255));
-				SelectedColor = c;
-				UpdateHSVValues();
-			};
-
-			ASlider.OnValueChanged += (_, _, v) => {
-				Color c = SelectedColor;
-				c.A = (byte)(Math.Clamp(v, 0, 1) * 255f);
-				SelectedColor = c;
-			};
-
-			Hexbox.TextChangedEvent += (_, _, txt) => {
-				if (txt.TryParseHexToColor(out Color c))
-					SelectedColor = c;
-			};
-
-			BackgroundColor = new Color(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, (byte)225);
 		}
-
 
 		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, Input.MouseButton button) {
 			DragMode = ColorSelectorDragMode.None;
@@ -436,12 +298,6 @@ namespace Nucleus.UI.Elements
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
 			ColorWheel.Size = new(width, width);
-			SepPanel.Position = new(0, width + 4);
-			SepPanel.Size = new(width, 80);
-			ASlider.Position = new(4, width + 4 + 80);
-			ASlider.Size = new(width - 8, 24);
-			Hexbox.Position = new(4, width + 8 + 104);
-			Hexbox.Size = new(width - 8, 24);
 		}
 	}
 }

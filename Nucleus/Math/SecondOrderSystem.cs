@@ -1,16 +1,25 @@
-﻿using Nucleus;
-using Nucleus.Commands;
+﻿using Nucleus.Commands;
 using Nucleus.Core;
+using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 
-namespace CloneDash.Animation
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Nucleus
 {
-	/// <summary>
-	/// Second order system, for animation smoothing mostly
-	/// </summary>
+	public interface ISecondOrderSystem<T>
+	{
+		public T Value { get; set; }
+		public T Update(T x, float? xd_ = null);
+	}
 	[Nucleus.MarkForStaticConstruction]
-	public class SecondOrderSystem
+	public class SecondOrderSystem : ISecondOrderSystem<float>
 	{
 		public static ConCommand sos_tuner = ConCommand.Register(nameof(sos_tuner), (_, _) => {
 			var window = EngineCore.Level.UI.Add<Window>();
@@ -77,7 +86,6 @@ namespace CloneDash.Animation
 				output[i] = sos.Update(0.01f, input[i]);
 			}
 		}
-
 		private static readonly float PI = (float)Math.PI;
 		private float xp;
 		private float y, yd;
@@ -118,6 +126,10 @@ namespace CloneDash.Animation
 			float deltatime = (float)((EngineCore.Level?.Curtime ?? 0) - last);
 			return Update(deltatime, x);
 		}
+		public float Update(float x, float? xdIn = null) {
+			float deltatime = (float)((EngineCore.Level?.Curtime ?? 0) - last);
+			return Update(deltatime, x, xdIn);
+		}
 		public float Update(float T, float x, float? xdIn = null) {
 			float xd = 0f;
 
@@ -141,5 +153,46 @@ namespace CloneDash.Animation
 		}
 
 		public float Out => y;
+		public float Value { get => y; set { } } // :( - make it just use Out!!! Or Value!!!!! Just be consistent!!!!!!!!
+	}
+
+	public class SecondOrderSystem2F : ISecondOrderSystem<Vector2F>
+	{
+		public SecondOrderSystem X;
+		public SecondOrderSystem Y;
+		public SecondOrderSystem2F(float f, float z, float r, Vector2F? t_ = null) {
+			var t = t_ ?? Vector2F.Zero;
+			X = new(f, z, r, t.X);
+			Y = new(f, z, r, t.Y);
+		}
+		public Vector2F Value { get; set; }
+		public Vector2F Update(Vector2F x, float? xd_ = null) {
+			Value = new(
+				X.Update(x.X, xd_),
+				Y.Update(x.Y, xd_)
+			);
+			return Value;
+		}
+	}
+	public class SecondOrderSystem3F : ISecondOrderSystem<Vector3>
+	{
+		public SecondOrderSystem X;
+		public SecondOrderSystem Y;
+		public SecondOrderSystem Z;
+		public SecondOrderSystem3F(float f, float z, float r, Vector3? t_ = null) {
+			var t = t_ ?? Vector3.Zero;
+			X = new(f, z, r, t.X);
+			Y = new(f, z, r, t.Y);
+			Z = new(f, z, r, t.Z);
+		}
+		public Vector3 Value { get; set; }
+		public Vector3 Update(Vector3 x, float? xd_ = null) {
+			Value = new(
+				X.Update(x.X, xd_),
+				Y.Update(x.Y, xd_),
+				Z.Update(x.Z, xd_)
+			);
+			return Value;
+		}
 	}
 }

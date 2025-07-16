@@ -30,7 +30,7 @@ namespace Nucleus.ModelEditor.UI
 			Checkbox c = p.Add<Checkbox>();
 			c.Dock = Dock.Left;
 			c.Size = new(28);
-			c.Checked = isChecked;
+			c.Checked.SetBackingObject(isChecked);
 
 			var l = p.Add<Label>();
 			l.AutoSize = true;

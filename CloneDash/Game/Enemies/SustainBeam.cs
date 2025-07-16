@@ -1,6 +1,4 @@
-﻿
-using CloneDash.Animation;
-using CloneDash.Scenes;
+﻿using CloneDash.Scenes;
 using CloneDash.Settings;
 
 using Nucleus;

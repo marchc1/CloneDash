@@ -90,15 +90,8 @@ namespace Nucleus.ModelEditor
 
 			slotDarkColorSelector.Parent.EngineDisabled = !TintBlack;
 
-			slotColorSelector.ColorChanged += (_, c) => {
-				if(AnimationMode) Color = c;
-				else SetupColor = c;
-			};
-
-			slotDarkColorSelector.ColorChanged += (_, c) => {
-				if (AnimationMode) DarkColor = c;
-				else SetupDarkColor = c;
-			};
+			slotColorSelector.SelectedColor = Core.DataBinder<Color>.New((c) => Color, (oc, nc) => { Color = nc; return true; });
+			slotDarkColorSelector.SelectedColor = Core.DataBinder<Color>.New((c) => DarkColor, (oc, nc) => { DarkColor = nc; return true; });
 
 			slotTintCheck.OnCheckedChanged += (s) => {
 				TintBlack = s.Checked;

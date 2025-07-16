@@ -54,9 +54,11 @@ namespace Nucleus
 			}
 		}
 
+		private static ConcurrentBag<MainThreadExecutionTask> Callbacks { get; } = [];
 		private static ConcurrentQueue<MainThreadExecutionTask> Actions { get; } = [];
 
 		public static void RunASAP(Action a, ThreadExecutionTime when = ThreadExecutionTime.BeforeFrame) => Actions.Enqueue(new(a, when));
+		public static void AddCallback(Action a, ThreadExecutionTime when = ThreadExecutionTime.BeforeFrame) => Callbacks.Add(new(a, when));
 
 		public static void Run(ThreadExecutionTime when) {
 			lock (Actions) {
@@ -71,6 +73,11 @@ namespace Nucleus
 
 				foreach (var task in putBack)
 					Actions.Enqueue(task);
+
+				foreach (var callback in Callbacks) {
+					if (callback.When == when)
+						callback.Action();
+				}
 			}
 		}
 	}

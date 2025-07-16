@@ -92,16 +92,17 @@ namespace Nucleus.ManagedMemory
     public class TextureManagement : IManagedMemory
     {
         private List<ITexture> Textures = [];
+        private List<RenderTexture2D> RenderTextures = [];
         private bool disposedValue;
         public ulong UsedBits {
             get {
                 ulong ret = 0;
 
-                foreach (var tex in Textures) {
-                    ret += tex.UsedBits;
-                }
+				foreach (var tex in Textures) {
+					ret += tex.UsedBits;
+				}
 
-                return ret;
+				return ret;
             }
         }
 
@@ -244,5 +245,55 @@ namespace Nucleus.ManagedMemory
                 }
             }
         }
-    }
+		public unsafe RenderTexture2D LoadRenderTexture(int width, int height, PixelFormat format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+			RenderTexture2D target = new();
+
+			target.Id = Rlgl.LoadFramebuffer(width, height);   // Load an empty framebuffer
+
+			if (target.Id > 0) {
+				Rlgl.EnableFramebuffer(target.Id);
+
+				// Create color texture (default to RGBA)
+				target.Texture.Id = Rlgl.LoadTexture(null, width, height, format, 1);
+				target.Texture.Width = width;
+				target.Texture.Height = height;
+				target.Texture.Format = format;
+				target.Texture.Mipmaps = 1;
+
+				// Create depth renderbuffer/texture
+				target.Depth.Id = Rlgl.LoadTextureDepth(width, height, true);
+				target.Depth.Width = width;
+				target.Depth.Height = height;
+				target.Depth.Format = (PixelFormat)19;       //DEPTH_COMPONENT_24BIT?
+				target.Depth.Mipmaps = 1;
+
+				// Attach color texture and depth renderbuffer/texture to FBO
+				Rlgl.FramebufferAttach(target.Id, target.Texture.Id, FramebufferAttachType.RL_ATTACHMENT_COLOR_CHANNEL0, FramebufferAttachTextureType.RL_ATTACHMENT_TEXTURE2D, 0);
+				Rlgl.FramebufferAttach(target.Id, target.Depth.Id, FramebufferAttachType.RL_ATTACHMENT_DEPTH, FramebufferAttachTextureType.RL_ATTACHMENT_RENDERBUFFER, 0);
+
+				// Check if fbo is complete with attachments (valid)
+				if (Rlgl.FramebufferComplete(target.Id)) Raylib.TraceLog(TraceLogLevel.LOG_INFO, $"FBO: [ID {target.Id}] Framebuffer object created successfully");
+
+				Rlgl.DisableFramebuffer();
+			}
+			else Raylib.TraceLog(TraceLogLevel.LOG_WARNING, "FBO: Framebuffer object can not be created");
+			RenderTextures.Add(target);
+			return target;
+		}
+		public void UnloadRenderTexture(RenderTexture2D? tex) {
+			if (!tex.HasValue)
+				return;
+
+			RenderTextures.Remove(tex.Value);
+			if (Thread.CurrentThread != MainThread.Thread) {
+				MainThread.RunASAP(() => Raylib.UnloadRenderTexture(tex.Value));
+			}
+			else {
+				Raylib.UnloadRenderTexture(tex.Value);
+			}
+		}
+		public unsafe ComplexRenderTexture CreateComplexRenderTexture(int width, int height, PixelFormat pixelFormat = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+			return new ComplexRenderTexture(width, height);
+		}
+	}
 }

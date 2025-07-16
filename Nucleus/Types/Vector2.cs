@@ -223,6 +223,17 @@ namespace Nucleus.Types
 		public bool TestPointInQuad(Vector2F q1, Vector2F q2, Vector2F q3, Vector2F q4) {
 			return InTriangle(new Triangle2D(q1, q2, q3)) || InTriangle(new Triangle2D(q2, q3, q4));
 		}
+
+		public Vector2F Mutate(bool zeroX = false, bool zeroY = false, bool negateX = false, bool negateY = false, bool flip = false) {
+			Vector2F ret = new(
+				zeroX ? 0 : negateX ? -X : X,
+				zeroY ? 0 : negateY ? -Y : Y
+				);
+			if (flip)
+				return new(ret.Y, ret.X);
+
+			return ret;
+		}
 	}
     public static class VectorConverters
     {

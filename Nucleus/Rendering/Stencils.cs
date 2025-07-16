@@ -1,4 +1,6 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Types;
+
+using Raylib_cs;
 
 namespace Nucleus.Rendering;
 
@@ -64,10 +66,14 @@ public static class Stencils
 	public static void BeginMask() {
 		OpenGL.Clear(OpenGL.STENCIL_BUFFER_BIT);
 		OpenGL.ColorMask(false, false, false, false);
-		OpenGL.StencilFunc((int)Function, Reference, Mask);
-		OpenGL.StencilOp((int)OnFail, (int)OnDepthFail, (int)OnDepthPass);
 		OpenGL.Enable(GLEnum.ALPHA_TEST);
 		OpenGL.AlphaFunc(OpenGL.GREATER, 0.5f);
+		Update();
+	}
+
+	public static void Update() {
+		OpenGL.StencilFunc((int)Function, Reference, Mask);
+		OpenGL.StencilOp((int)OnFail, (int)OnDepthFail, (int)OnDepthPass);
 	}
 
 	public static void EndMask() {

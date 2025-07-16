@@ -703,5 +703,28 @@ namespace Nucleus.Engine
 			= ConCommand.Register("ui_elementcount", (_, _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), ConsoleFlags.None, "Highlights the currently hovered element");
 
 		public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
+		public T GetEntity<T>(Predicate<Entity> predicate) where T : Entity {
+			foreach (var entity in Entities) {
+				if (predicate(entity))
+					return entity as T ?? throw new Exception("The entity was found, but could not be cast to generic type");
+			}
+
+			throw new Exception("Predicate failed in GetEntity.");
+		}
+		public bool TryGetEntity<T>(Predicate<Entity> predicate, out T? found) where T : Entity {
+			foreach (var entity in Entities) {
+				if (predicate(entity)) {
+					if (entity is not T) {
+						found = default;
+						return false;
+					}
+					found = entity as T;
+					return true;
+				}
+			}
+
+			found = default;
+			return false;
+		}
 	}
 }
