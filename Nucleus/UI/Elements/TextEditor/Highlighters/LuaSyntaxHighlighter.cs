@@ -1,4 +1,7 @@
-﻿using Raylib_cs;
+﻿using Nucleus.Types;
+
+using Raylib_cs;
+
 using System.Text.RegularExpressions;
 
 namespace Nucleus.UI
@@ -87,7 +90,7 @@ namespace Nucleus.UI
 			}
 		}
 		/// <summary>
-		/// Lua's reserved keywords
+		/// Lua's reserved keywords, along with one extra variable I want to be special ('music')
 		/// </summary>
 		private static HashSet<string> Keywords { get; } = ["break",
 			"do",
@@ -111,15 +114,17 @@ namespace Nucleus.UI
 			"until",
 			"while",
 			"return",
+
 		];
-		private static HashSet<string> SpecialVariables { get; } = ["_G", "self"];
+		private static HashSet<string> SpecialVariables { get; } = ["_G", "self", "music", "keyframer", "track"];
 
 		// to-do: cleanup
 		public override void Rebuild(SafeArray<string> rows) {
 			Rows.Clear();
 			bool commentMulti = false;
+			int rowI = 0;
 			foreach (var row in rows) {
-				List<RowDecorator> rowDecs = [];
+				var rowDecs = Rows[rowI++] ?? new();
 				int rowPtr = 0;
 
 				if (row.Length > 0) {

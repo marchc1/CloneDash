@@ -4,8 +4,8 @@ namespace Nucleus.UI
 {
 	public struct RowDecorator
 	{
-		public Color Color { get; set; }
-		public string Text { get; set; }
+		public Color Color;
+		public string Text;
 		public RowDecorator() {
 			Color = Color.White;
 		}

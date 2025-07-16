@@ -2,7 +2,8 @@
 {
 	public struct UndoFrame
 	{
-		public TextEditorCaret Caret { get; set; }
-		public string[] Rows { get; set; }
+		public TextEditorCaret CaretBefore;
+		public TextEditorCaret CaretAfter;
+		public string[] Rows;
 	}
 }

@@ -1,24 +1,32 @@
-﻿using Nucleus.Core;
+﻿using Nucleus;
+using Nucleus.Commands;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+
 using Raylib_cs;
+
 using System.Text.RegularExpressions;
+
+using KeyboardKey = Nucleus.Input.KeyboardKey;
+using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {
 
-	public class TextEditorCaret
+	public struct TextEditorCaret
 	{
 		public int StartCol = 0;
 		public int EndCol = 0;
 		public int StartRow = 0;
 		public int EndRow = 0;
 
-		public TextEditorCaret() { }
-		public TextEditorCaret Copy() => new(StartRow, StartCol, EndRow, EndCol);
+		public TextEditorCaret() {
+
+		}
 		public TextEditorCaret(int row, int col) {
 			StartRow = row;
 			StartCol = col;
@@ -50,7 +58,16 @@ namespace Nucleus.UI
 		public Panel? Gutter { get; set; }
 		public Scrollbar? VScrollbar { get; set; }
 		public Scrollbar? HScrollbar { get; set; }
-		public TextEditorCaret Caret { get; set; } = new(0, 0);
+		public TextEditorCaret LastCaret = new(0, 0);
+		public TextEditorCaret Caret = new(0, 0);
+
+		public delegate void EditorPaintDelegate(TextEditor self, float w, float h);
+		public event EditorPaintDelegate? PreRenderEditorLines;
+
+		public void WriteLastCaret() {
+			LastCaret = Caret;
+		}
+
 		public SafeArray<string> Rows { get; set; } = [""];
 
 		private bool _showGutter = true, _showDetails = true;
@@ -100,14 +117,18 @@ namespace Nucleus.UI
 		public void UpdateCaretLeftHold() {
 			CaretLeftHold = Caret.Column;
 		}
+
+		public static ConVar textedit_fontwidthpad = ConVar.Register(nameof(textedit_fontwidthpad), "0", ConsoleFlags.Saved, "Additive offset to FontWidth");
+		public static ConVar textedit_fontheightpad = ConVar.Register(nameof(textedit_fontheightpad), "1", ConsoleFlags.Saved, "Additive offset to FontHeight");
+
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
 			this.Width = width;
 			this.Height = height;
 
 			var s = Graphics2D.GetTextSize("W", Font, TextSize);
-			FontWidth = s.X;
-			FontHeight = s.Y + 2;
+			FontWidth = s.X + textedit_fontwidthpad.GetInt();
+			FontHeight = s.Y + textedit_fontheightpad.GetInt();
 
 			MaxVisibleRows = MathF.Floor(Height / FontHeight);
 			MaxVisibleCols = MathF.Floor(Width / FontWidth);
@@ -172,7 +193,9 @@ namespace Nucleus.UI
 			});
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.V], () => {
 				if (Readonly) return;
+				WriteLastCaret();
 				InsertText(Clipboard.Text);
+				OnEdit();
 			});
 
 			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => {
@@ -189,13 +212,44 @@ namespace Nucleus.UI
 
 			SetFont("Consolas", 16);
 		}
-
 		private void Editor_OnTextInput(Element self, in KeyboardState state, string text) {
 			OnWindowInput(text);
 		}
+		private void OnWindowInput(string text) {
+			if (Readonly)
+				return;
+			WriteLastCaret();
+			DeleteSelection();
+			AddText(text);
+		}
+		private void AddText(string text) {
+			if (Readonly)
+				return;
+
+			int endCol = Caret.EndCol, endRow = Caret.EndRow;
+
+			if (endRow >= Rows.Count) {
+				Rows.Add(text);
+			}
+			else {
+				var rowContent = Rows[endRow];
+				if (rowContent is null) return;
+
+				var ec = Math.Clamp(endCol, 0, rowContent?.Length ?? 0);
+				Rows[endRow] = rowContent.Substring(0, ec) + text + rowContent.Substring(ec);
+			}
+
+			SetCaret(endCol + text.Length, endRow);
+			OnEdit();
+		}
+
 
 		private void Scrollbar_OnScrolled(float value) {
-			TopRow = Math.Clamp(value, 0, 1200000);
+			int maxRows = (int)MaxVisibleRows;
+
+			float v = Math.Max(MathF.Round(value), 0);
+			TopRow = Math.Clamp(v, 0, Math.Max(Rows.Count - maxRows, 0));
+
 			ConsumeScrollEvent();
 		}
 
@@ -209,15 +263,23 @@ namespace Nucleus.UI
 			wasHovered = self.Hovered;
 		}
 
-		public delegate void EditorPaintDelegate(TextEditor self, float w, float h);
-		public event EditorPaintDelegate? PreRenderEditorLines;
+		static readonly Color BACKGROUND_FOCUSED = new(20, 32, 25, 127);
+		static readonly Color BACKGROUND_UNFOCUSED = new(20, 25, 32, 127);
+		static readonly Color FOREGROUND_FOCUSED = new(85, 110, 95, 255);
+		static readonly Color FOREGROUND_UNFOCUSED = new(85, 95, 110, 255);
+
+		public void RenderRowPiece(int character, int row, string text, Color color) {
+			Graphics2D.SetDrawColor(color);
+			Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
+		}
 
 		private void Editor_PaintOverride(Element self, float width, float height) {
+
 			int i = 0;
 			int row = (int)TopRow;
-
-			BackgroundColor = self.KeyboardFocused ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
-			ForegroundColor = self.KeyboardFocused ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
+			PreRenderEditorLines?.Invoke(this, width, height);
+			BackgroundColor = self.KeyboardFocused ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED;
+			ForegroundColor = self.KeyboardFocused ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED;
 
 			while (i < MaxVisibleRows) {
 				if (row >= Rows.Count)
@@ -240,28 +302,35 @@ namespace Nucleus.UI
 
 			i = 0;
 			row = (int)TopRow;
-			PreRenderEditorLines?.Invoke(this, width, height);
+
 			while (i < MaxVisibleRows) {
 				if (row >= Rows.Count)
 					break;
 
 				var content = Rows[row];
 
-				float y = PaddingTop + (row * FontHeight);
-				var xOffset = 0;
-				string txt = "";
-				foreach (var item in Highlighter.Rows[row] ?? []) {
-					RenderRowPiece(xOffset, i, item.Text, item.Color);
-					xOffset += item.Text.Length;
-					txt += item.Text;
-				}
+				var y = PaddingTop + ((i) * FontHeight);
+				var x = PaddingLeft;
 
-				var whitespace = 0;
-				for (int wc = 0; wc < txt.Length; wc++) {
-					if (!char.IsWhiteSpace(txt[wc]))
-						break;
-					else
-						whitespace += 1;
+				var textPos = new Vector2F(x, y);
+				var xOffset = 0;
+
+				int whitespace = 0;
+				var decs = Highlighter.Rows[row];
+				if (decs != null) {
+					for (int ip = 0; ip < decs.Count; ip++) {
+						ref RowDecorator dec = ref decs[ip];
+						RenderRowPiece(xOffset, i, dec.Text, dec.Color);
+						string txt = dec.Text;
+						int txtlen = txt.Length;
+						xOffset += txtlen;
+
+						for (int ti = 0; ti < txtlen; ti++) {
+							if (!char.IsWhiteSpace(txt[ti]))
+								break;
+							whitespace++;
+						}
+					}
 				}
 
 				var whitespaceCounter = MathF.Ceiling((whitespace - 1f) / 4);
@@ -278,7 +347,7 @@ namespace Nucleus.UI
 
 			float aF = (1 - ((EngineCore.Level.CurtimeF * 3) % 1)) * 255.5f;
 			byte a = (byte)(int)aF;
-			if (this.Editor.KeyboardFocused) {
+			if (this.Editor!.KeyboardFocused) {
 				Graphics2D.SetDrawColor(255, 255, 255, a);
 				Graphics2D.DrawRectangle(PaddingLeft + (Caret.EndCol) * FontWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, CaretWidth, FontHeight);
 				Graphics2D.SetDrawColor(255, 255, 255, a / 2);
@@ -322,11 +391,6 @@ namespace Nucleus.UI
 				Graphics2D.SetDrawColor(ForegroundColor);
 				Graphics2D.DrawRectangleOutline(0, 0, width, height);
 			}
-		}
-
-		public void RenderRowPiece(int character, int row, string text, Color color) {
-			Graphics2D.SetDrawColor(color);
-			Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
 		}
 
 		private void Editor_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
@@ -401,12 +465,14 @@ namespace Nucleus.UI
 		public void MoveCenterToLine(int line) => ScrollToLine(line, 0.5f);
 		public void MoveBottomToLine(int line) => ScrollToLine(line, 1);
 
-		public enum LineOverflow {
+		public enum LineOverflow
+		{
 			Above = -1,
 			Within = 0,
 			Below = 1
 		}
-		public enum SideOverflow {
+		public enum SideOverflow
+		{
 			Left = -1,
 			Within = 0,
 			Right = 1
@@ -421,11 +487,18 @@ namespace Nucleus.UI
 			return targLine < topRow ? LineOverflow.Above : LineOverflow.Below;
 		}
 
-		private void Editor_OnKeyPressed(Element self, in KeyboardState state, Input.KeyboardKey key) {
+		private void Editor_OnKeyPressed(Element self, in KeyboardState state, KeyboardKey key) {
 			TextEditorCaret c = Caret;
 			bool caretPointerOnTop = MathF.Min(c.StartRow, c.EndRow) == c.EndRow;
 			int eRow = c.EndRow, eCol = c.EndCol;
 
+
+			if (key == KeyboardLayout.USA.PageUp) {
+				// TODO
+			}
+			else if (key == KeyboardLayout.USA.PageDown) {
+				// TODO
+			}
 			if (key == KeyboardLayout.USA.Right) {
 				var bottom = GetCaretBottomRight();
 				if (state.ShiftDown) {
@@ -433,7 +506,7 @@ namespace Nucleus.UI
 						if (state.ControlDown) {
 							string r = Rows[bottom.Row];
 							int rlen = r.Length;
-							Caret.EndCol = GetEndGroupRight(r, bottom.Column) ?? rlen + 1;
+							Caret.EndCol = GetSkipGroupRight(r, bottom.Column, SkipMode.KeyboardSkip) ?? rlen + 1;
 						}
 						else {
 							Caret.EndCol = Caret.EndCol + 1;
@@ -450,14 +523,17 @@ namespace Nucleus.UI
 							string r = Rows[bottom.Row];
 							int rlen = r.Length;
 
-							SetCaret(GetEndGroupRight(r, bottom.Column) ?? rlen + 1, bottom.Row);
+							SetCaret(GetSkipGroupRight(r, bottom.Column, SkipMode.KeyboardSkip) ?? rlen + 1, bottom.Row);
 						}
-						else if (HasSelection()) SetCaret(bottom.Column, bottom.Row);
-						else SetCaret(bottom.Column + 1, bottom.Row);
+						else if (HasSelection())
+							SetCaret(bottom.Column, bottom.Row);
+						else
+							SetCaret(bottom.Column + 1, bottom.Row);
 					}
-					else if (bottom.Row < MaxVisibleRows && bottom.Row < Rows.Count - 1) SetCaret(0, bottom.Row + 1);
-
-					else SetCaret(Rows[bottom.Row].Length, bottom.Row);
+					else if (bottom.Row < (MaxVisibleRows + TopRow) && bottom.Row < Rows.Count - 1)
+						SetCaret(0, bottom.Row + 1);
+					else
+						SetCaret(Rows[bottom.Row].Length, bottom.Row);
 				}
 				OnEdit();
 				UpdateCaretLeftHold();
@@ -467,7 +543,7 @@ namespace Nucleus.UI
 				if (state.ShiftDown) {
 					if (eCol > 0) {
 						if (state.ControlDown)
-							Caret.EndCol = GetDeletionGroupLeft(Rows[top.Row] ?? "", top.Column) ?? 0;
+							Caret.EndCol = GetSkipGroupLeft(Rows[top.Row] ?? "", top.Column, SkipMode.KeyboardSkip) ?? 0;
 						else
 							Caret.EndCol -= 1;
 					}
@@ -481,7 +557,7 @@ namespace Nucleus.UI
 				}
 				else {
 					if (top.Column > 0) {
-						if (state.ControlDown) SetCaret(GetDeletionGroupLeft(Rows[top.Row], top.Column) ?? 0, top.Row);
+						if (state.ControlDown) SetCaret(GetSkipGroupLeft(Rows[top.Row], top.Column, SkipMode.KeyboardSkip) ?? 0, top.Row);
 						else if (HasSelection()) SetCaret(top.Column, top.Row);
 						else SetCaret(top.Column - 1, top.Row);
 					}
@@ -542,6 +618,8 @@ namespace Nucleus.UI
 			else if (key == KeyboardLayout.USA.Backspace && !DeleteSelection()) {
 				if (Readonly) return;
 
+				WriteLastCaret();
+
 				int col = Caret.EndCol, row = Caret.EndRow;
 				string rowContent = Rows[row] ?? "";
 				col = Math.Clamp(col, 0, rowContent.Length);
@@ -555,7 +633,7 @@ namespace Nucleus.UI
 					}
 				}
 				else if (state.ControlDown) {
-					int endColC = GetDeletionGroupLeft(rowContent, col) ?? throw new Exception();
+					int endColC = GetSkipGroupLeft(rowContent, col, SkipMode.KeyboardSkip) ?? throw new Exception();
 					Rows[row] = rowContent.Substring(0, Math.Clamp(endColC, 0, rowContent.Length)) + rowContent.Substring(Math.Clamp(col, 0, rowContent.Length));
 					SetCaret(endColC, row);
 				}
@@ -579,6 +657,7 @@ namespace Nucleus.UI
 				if (Readonly) return;
 
 				if (!HasSelection()) {
+					WriteLastCaret();
 					int col = Caret.EndCol, row = Caret.EndRow;
 					var rowContent = Rows[row] ?? "";
 					Rows.Insert(row + 1, rowContent);
@@ -596,6 +675,8 @@ namespace Nucleus.UI
 
 				if (Multiline) {
 					bool deleted = DeleteSelection();
+
+					WriteLastCaret();
 
 					int col = Caret.EndCol, row = Caret.EndRow;
 					string? rowContent = Rows[row];
@@ -629,6 +710,37 @@ namespace Nucleus.UI
 			else if (key == KeyboardLayout.USA.Delete && !DeleteSelection()) {
 				if (Readonly) return;
 
+				WriteLastCaret();
+
+				int col = Caret.EndCol, row = Caret.EndRow;
+				string rowContent = Rows[row] ?? "";
+				col = Math.Clamp(col, 0, rowContent.Length);
+
+				if (col == rowContent.Length) {
+					if (row < Rows.Count) {
+						var rest = Rows[row + 1];
+						if (rest == null) return;
+						Rows[row] = Rows[row] + rest;
+						Rows.RemoveAt(row + 1);
+					}
+				}
+				else if (state.ControlDown) {
+					int endColC = GetSkipGroupRight(rowContent, col, SkipMode.KeyboardSkip) ?? throw new Exception();
+					int startColC = GetSkipGroupLeft(rowContent, endColC, SkipMode.KeyboardSkip) ?? throw new Exception();
+					Rows[row] = rowContent.Substring(0, Math.Clamp(col, 0, rowContent.Length)) + rowContent.Substring(startColC);
+					SetCaret(col, row);
+				}
+				else {
+					if (col > 3 && rowContent.Substring(col - 4, 4) == "    ") {
+						Rows[row] = rowContent.Substring(0, col - 4) + rowContent.Substring(col);
+						SetCaret(col - 4, row);
+					}
+					else {
+						Rows[row] = rowContent.Substring(0, col - 1) + rowContent.Substring(col);
+						SetCaret(col - 1, row);
+					}
+				}
+
 				OnEdit();
 			}
 			var t = KeyboardLayout.USA.GetKeyAction(state, key);
@@ -644,7 +756,8 @@ namespace Nucleus.UI
 				}
 				if (!HasSelection()) {
 					AddText("    ");
-				} else {
+				}
+				else {
 					var tl = GetCaretTopLeft();
 					var br = GetCaretBottomRight();
 
@@ -667,38 +780,9 @@ namespace Nucleus.UI
 					}
 
 					OnEdit();
+					return;
 				}
 			}
-		}
-
-		private void AddText(string text)
-		{
-			if (Readonly)
-				return;
-
-			int endCol = Caret.EndCol, endRow = Caret.EndRow;
-
-			if (endRow >= Rows.Count) {
-				Rows.Add(text);
-			} else {
-				var rowContent = Rows[endRow];
-				if (rowContent is null) return;
-
-				var ec = Math.Clamp(endCol, 0, rowContent?.Length ?? 0);
-				Rows[endRow] = rowContent.Substring(0, ec) + text + rowContent.Substring(ec);
-			}
-
-			SetCaret(endCol + text.Length, endRow);
-			OnEdit();
-		}
-
-		private void OnWindowInput(string text)
-		{
-			if (Readonly)
-				return;
-
-			DeleteSelection();
-			AddText(text);
 		}
 
 		public delegate void OnVoid(TextEditor self);
@@ -728,14 +812,16 @@ namespace Nucleus.UI
 			self.ConsumeScrollEvent();
 		}
 
-		private void Editor_MouseReleaseEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void Editor_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 
 		}
 
+		double LastDoublePress;
 		double LastPress;
 		bool doubleClicked = false;
-		private void Editor_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
-			if (button == Input.MouseButton.Mouse1) {
+		bool tripleClicked = false;
+		private void Editor_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+			if (button == MouseButton.Mouse1) {
 				self.DemandKeyboardFocus();
 
 				Vector2F xy = self.CursorPos();
@@ -743,16 +829,33 @@ namespace Nucleus.UI
 
 				var now = EngineCore.Level.Curtime;
 				doubleClicked = now - LastPress < 0.2;
+				tripleClicked = now - LastDoublePress < 0.2;
 
-				if (doubleClicked) {
+				if (tripleClicked) {
+					// Select the whole line
 					var content = Rows[pos.Row];
+					if (content == null) {
+						Logs.Warn("Content was null here? How??");
+						return;
+					}
+					SetCaret(0, pos.Row, content.Length, pos.Row);
+				}
+				else if (doubleClicked) {
+					// Select a skip group piece
+					LastDoublePress = now;
+					var content = Rows[pos.Row];
+					if (content == null) {
+						Logs.Warn("Content was null here? How??");
+						return;
+					}
 
-					var right = GetEndGroupRight(content, pos.Column) ?? pos.Column;
-					var left = GetDeletionGroupLeft(content, pos.Column) ?? pos.Column;
+					var right = GetSkipGroupRight(content, pos.Column, SkipMode.MouseClickSkip) ?? pos.Column;
+					var left = GetSkipGroupLeft(content, pos.Column, SkipMode.MouseClickSkip) ?? pos.Column;
 
 					SetCaret(left, pos.Row, right, pos.Row);
 				}
 				else {
+					// Set the caret
 					SetCaret(pos.Column, pos.Row);
 				}
 
@@ -769,10 +872,11 @@ namespace Nucleus.UI
 
 		public void UndoBackwards() {
 			if (Undos.Count > 1) {
-				Redos.Push(Undos.Pop());
+				var frame = Undos.Pop();
+				Redos.Push(frame);
 				var t = Undos.Peek();
 				Rows = new SafeArray<string>(t.Rows);
-				Caret = t.Caret;
+				Caret = frame.CaretBefore;
 				OnEdit(false);
 			}
 		}
@@ -783,7 +887,7 @@ namespace Nucleus.UI
 			var t = Redos.Pop();
 			Undos.Push(t);
 			Rows = new SafeArray<string>(t.Rows);
-			Caret = t.Caret;
+			Caret = t.CaretAfter;
 			OnEdit(false);
 		}
 
@@ -796,10 +900,9 @@ namespace Nucleus.UI
 
 			if (modifyUndoStack) {
 				Redos.Clear();
-				Undos.Push(new() { Caret = Caret.Copy(), Rows = Rows.ToArray() });
+				Undos.Push(new() { CaretBefore = LastCaret, CaretAfter = Caret, Rows = Rows.ToArray() });
 			}
 			OnTextEdited?.Invoke(this);
-
 
 			if ((Caret.Row + 1) >= Rows.Count)
 				MoveBottomToLine(Caret.Row);
@@ -819,7 +922,7 @@ namespace Nucleus.UI
 				Redos.Clear();
 			if (Undos.Count > 0)
 				Undos.Clear();
-			Undos.Push(new() { Caret = Caret.Copy(), Rows = Rows.ToArray() });
+			Undos.Push(new() { CaretBefore = Caret, Rows = Rows.ToArray() });
 		}
 
 		public void SetText(string? text) {
@@ -830,9 +933,6 @@ namespace Nucleus.UI
 		public void RemoveLine(int index = 0) {
 			Rows.RemoveAt(index);
 			OnEdit();
-		}
-		public void AppendText(string text) {
-			SetText(GetText() + text);
 		}
 		public void AppendLine(string text) {
 			if (Rows.Count > 0 && (Rows[Rows.Count - 1]?.Length ?? 0) <= 0)
@@ -874,75 +974,69 @@ namespace Nucleus.UI
 		private static bool isHexDigit(char c) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 		private static bool isIdentifierStartSymbol(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 
-		public static int? GetDeletionGroupLeft(string row, int column) {
-			char firstC = '\0';
-			int i;
-			for (i = column - 1; i > 0; i--) {
-				char c = row[i];
-				if (firstC == '\0') {
-					if (!char.IsWhiteSpace(c) && c != ',')
-						firstC = row[i];
-				}
-				else {
-					bool isWhitespace = char.IsWhiteSpace(c);
+		public enum SkipMode
+		{
+			KeyboardSkip,
+			MouseClickSkip,
+		}
 
-					switch (firstC) {
-						case ')':
-						case '}':
-						case ']':
-							if (!isWhitespace)
-								return i + 1;
-							break;
-						case '"':
-							if (c == '"' && i > 0 && row[i - 1] != '\\')
-								return i;
-							break;
-						case '(':
-						case '{':
-						case '[':
-							return i + 1;
-							break;
-						default:
-							// Read characters until reaching something else.
-							if (isDigit(c) || isHexDigit(c) || isIdentifierStartSymbol(c)) {
 
-							}
-							else {
-								// determine digit or identifier here
-								var str = row.Substring(i + 1, column - i - 1);
-								var isDigit = Regex.IsMatch(str, "(0[xX][0-9a-fA-F]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][+-]?\\d+)?|\\d+\\.\\d*)\\b");
-								if (isDigit) {
-									return i + 1;
-								}
-								else {
-									switch (c) {
-										case '[':
-										case '(':
-										case '{':
-											return i + 1;
-										case '"':
-											return i;
-										default:
-											return i + 1;
-									}
-								}
-							}
-							break;
-					}
+		private static bool skippable(char c, string row, int i, int len) {
+			switch (c) {
+				case ' ':
+				case ',':
+				case '[':
+				case ']':
+				case '{':
+				case '}':
+				case '(':
+				case ')':
+				case ':':
+				case '"':
+					return true;
+				case '.':
+					if (i <= len - 1 && !char.IsDigit(row[i + 1]))
+						return true;
+					return false;
+			}
+			return false;
+		}
+
+		public static int? GetSkipGroupLeft(string row, int column, SkipMode mode) {
+			int len = row.Length, ty = -1;
+			if (column >= len)
+				column = len - 1;
+			// If we're on a end character, continue forwards until we arent
+			if (column > 0 && skippable(row[column], row, column, len)) {
+				column--;
+				for (; column >= 0; column--) {
+					if (!skippable(row[column], row, column, len))
+						break;
 				}
 			}
 
-			return i;
+			for (int i = column; i >= 0; i--) {
+				var c = row[i];
+				if (skippable(c, row, i, len)) return i + 1;
+			}
+
+			return 0;
 		}
 		public static bool CharInRange(char input, char min, char max) => input >= min && input <= max;
-		public static int? GetEndGroupRight(string row, int column) {
+		public static int? GetSkipGroupRight(string row, int column, SkipMode mode) {
 			int len = row.Length, ty = -1;
+			// If we're on a end character, continue forwards until we arent in keyboard mode
+			if (mode == SkipMode.KeyboardSkip && column < len && skippable(row[column], row, column, len)) {
+				column++;
+				for (; column < len; column++) {
+					if (!skippable(row[column], row, column, len))
+						break;
+				}
+			}
 
 			for (int i = column; i < len; i++) {
 				var c = row[i];
-				if (c == ' ' || c == '(' || c == ',' || c == ')' || c == ':' || (c == '.' && i <= len - 1 && !char.IsDigit(row[i + 1]))) {
-					return i;
-				}
+				if (skippable(c, row, i, len)) return i;
 			}
 
 			return len;
@@ -1061,8 +1155,6 @@ namespace Nucleus.UI
 
 				SetCaret(Caret.Column + newLines.Last().Length, row);
 			}
-
-			OnEdit();
 			return true;
 		}
 		public bool DeleteSelection() {
@@ -1070,6 +1162,8 @@ namespace Nucleus.UI
 
 			var top = GetCaretTopLeft();
 			var bottom = GetCaretBottomRight();
+
+			WriteLastCaret();
 
 			Rows[top.Row] = Rows[top.Row].Substring(0, top.Column) + Rows[bottom.Row].Substring(bottom.Column);
 			for (int i = top.Row + 1; i < bottom.Row + 1; i++) {

@@ -159,9 +159,9 @@ namespace Nucleus.Core
 		public static void SetTexture(Texture2D tex) => __texture = tex;
 		public static void SetTexture(RenderTexture2D tex) => __texture = tex.Texture;
 
-		public static Color GetDrawColor(Color c) => __drawColor;
-		public static void SetDrawColor(Color c) => __drawColor = c;
-		public static void SetDrawColor(Color c, int alpha) => __drawColor = new(c.R, c.G, c.B, alpha);
+		public static Color GetDrawColor() => __drawColor;
+		public static void SetDrawColor(in Color c) => __drawColor = c;
+		public static void SetDrawColor(in Color c, int alpha) => __drawColor = new(c.R, c.G, c.B, alpha);
 		public static void SetDrawColor(int r, int g, int b) => __drawColor = new Color(r, g, b, 255);
 		public static void SetDrawColor(int r, int g, int b, int a) => __drawColor = new Color(r, g, b, a);
 
