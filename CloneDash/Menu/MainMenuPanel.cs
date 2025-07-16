@@ -110,6 +110,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		return ret;
 	}
+	public override void OnRemoval() {
+		base.OnRemoval();
+		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+	}
 	protected override void Initialize() {
 		base.Initialize();
 		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
