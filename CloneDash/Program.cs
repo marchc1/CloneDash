@@ -46,10 +46,10 @@ internal class Program
 	static void GameMain() {
 		new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
-			.WithMessage("Wow! A message!\r\nAnd it supports newlines? Wow!!!")
+			.WithMessage(Environment.StackTrace)
 			.WithIcon(MessageBoxIcon.Information)
-			.WithButton("OK")
-			.WithButton("Cancel")
+			.WithButton("Print 'OK!'", () => Logs.Print("OK!"))
+			.WithButton("Print 'No!'", () => Logs.Print("No!"))
 			.Show();
 
 		RichPresenceSystem.Initialize();

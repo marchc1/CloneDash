@@ -81,12 +81,13 @@ public static partial class Platform
 			return this;
 		}
 
-		public MessageBoxBuilder WithButton(string text, MessageBoxButtonFlags flags = MessageBoxButtonFlags.None) {
+		public MessageBoxBuilder WithButton(string text, Action? action = null, MessageBoxButtonFlags flags = MessageBoxButtonFlags.None) {
 			int buttonPtrThisBtn = (int)buttonPtr++;
 			ref SDL_MessageBoxButtonData btnData = ref buttons[buttonPtrThisBtn];
 			btnData.buttonID = buttonPtrThisBtn;
 			btnData.text = allocStr(text);
 			btnData.flags = (SDL_MessageBoxButtonFlags)flags;
+			actions[buttonPtrThisBtn] = action;
 			return this;
 		}
 
