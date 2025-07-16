@@ -102,7 +102,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			try {
 				ret.Add(new CustomChartsSong("charts", file));
 			}
-			catch(Exception ex) {
+			catch (Exception ex) {
 				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");
 			}
 		}
@@ -112,7 +112,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	protected override void Initialize() {
 		base.Initialize();
 		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
-		if (character != null) 
+		if (character != null)
 			CharacterMod_CharacterUpdated(character);
 		CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
 
@@ -213,13 +213,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		if (model != null) {
-			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(frameState.WindowWidth / 2), 0);
-
-			anims?.AddDeltaTime(Level.RendertimeDelta);
-			anims?.Apply(model);
-		}
-
 		music?.Update();
 	}
 	ICharacterExpression? touchResponse;
@@ -255,7 +248,16 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			Offset = new(width / 2 - width * .2f, height / 1)
 		});
 
-		model?.Render();
+		if (model != null) {
+			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
+
+			anims?.AddDeltaTime(Level.RendertimeDelta);
+			anims?.Apply(model);
+
+			model.Render();
+		}
+
+
 
 		EngineCore.Window.EndMode2D();
 
