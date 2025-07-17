@@ -274,42 +274,42 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public bool Resizable {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_RESIZABLE) == SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, value);
 	}
 	public bool Undecorated {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_BORDERLESS);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, value);
 	}
 	// todo
 	public bool Fullscreen {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_FULLSCREEN);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, value);
 	}
 	public bool Maximized {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_MAXIMIZED);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) == SDL_WindowFlags.SDL_WINDOW_MAXIMIZED;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, value);
 	}
 	public bool Minimized {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_MINIMIZED);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) == SDL_WindowFlags.SDL_WINDOW_MINIMIZED; 
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, value);
 	}
 	public bool Visible {
-		get => !curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_HIDDEN) == SDL_WindowFlags.SDL_WINDOW_HIDDEN;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, !value);
 	}
 	public bool InputFocused {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS);
+		get => (SDL3.SDL_GetWindowFlags(handle) & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) == SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS;
 	}
 	public bool MouseFocused {
-		get => SDL3.SDL_GetWindowFlags(handle).HasFlag(SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS);
+		get => (SDL3.SDL_GetWindowFlags(handle) & SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS) == SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS;
 	}
 	public bool NotFocusable {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE) == SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, value);
 	}
 	public bool Topmost {
-		get => curFlags.HasFlag(SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP);
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP) == SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, value);
 	}
 	public bool AlwaysRun {

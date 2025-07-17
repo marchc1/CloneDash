@@ -83,7 +83,7 @@ namespace Nucleus.UI.Elements
 				Graphics2D.DrawText(new(5, 18 + 2), lbl2, "Consolas", 11);
 			}
 
-			DateTime now = DateTime.Now;
+			DateTime now = DateTime.UtcNow;
 			switch (Mode) {
 				case PerfGraphMode.CPU_Frametime:
 					MSMean += EngineCore.FrameCostMS;
