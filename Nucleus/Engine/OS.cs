@@ -4,9 +4,70 @@ using Raylib_cs;
 
 using SDL;
 
+using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Nucleus.Engine;
+
+public struct OSMonitor : IValidatable
+{
+	public int DisplayID;
+	public OSMonitor(int id) => DisplayID = id;
+	public static implicit operator OSMonitor(int id) => new(id);
+	public static implicit operator OSMonitor(SDL_DisplayID id) => new((int)id);
+
+	public bool IsValid() {
+		if (!OS.IsMonitorIDValid(DisplayID)) {
+			Logs.Warn("OSDisplay: Failed to find the monitor.");
+			return false;
+		}
+
+		return true;
+	}
+
+	public unsafe int X => (int)Position.X;
+	public unsafe int Y => (int)Position.Y;
+	public unsafe int Width => (int)Size.W;
+	public unsafe int Height => (int)Size.H;
+	public unsafe Vector2F Position {
+		get {
+			if (!IsValid())
+				return Vector2F.Zero;
+
+			SDL_Rect rect;
+			SDL3.SDL_GetDisplayUsableBounds((SDL_DisplayID)DisplayID, &rect);
+
+			return new(rect.x, rect.y);
+		}
+	}
+	public unsafe Vector2F Size {
+		get {
+			if (!IsValid())
+				return Vector2F.Zero;
+			var dpm = SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)DisplayID);
+			return new(dpm->w, dpm->h);
+		}
+	}
+
+
+	public unsafe float RefreshRate {
+		get {
+			if (!IsValid())
+				return 0;
+			return SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)DisplayID)->refresh_rate;
+		}
+	}
+
+	public unsafe string DisplayName {
+		get {
+			if (!IsValid())
+				return "<no-monitor>";
+			return SDL3.SDL_GetDisplayName((SDL_DisplayID)DisplayID) ?? "<null>";
+		}
+	}
+}
+
 
 public static unsafe class OS
 {
@@ -60,41 +121,7 @@ public static unsafe class OS
 
 	public static bool IsMonitorIDValid(int idx) => idx > 0 && idx < GetMonitorCount();
 	public static int GetMonitorCount() => SDL3.SDL_GetDisplays()?.Count ?? 0;
-	public static int GetPrimaryMonitor() => (int)SDL3.SDL_GetPrimaryDisplay();
-	public static int GetMonitorWidth(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return 0; }
-		return SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)monitor)->w;
-	}
-	public static int GetMonitorHeight(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return 0; }
-		return SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)monitor)->h;
-	}
-	public static Vector2F GetMonitorPosition(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return new(0); }
-
-		SDL_Rect rect;
-		SDL3.SDL_GetDisplayUsableBounds((SDL_DisplayID)monitor, &rect);
-
-		return new(rect.x, rect.y);
-	}
-	public static Vector2F GetMonitorSize(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return new(0); }
-
-		SDL_Rect rect;
-		SDL3.SDL_GetDisplayUsableBounds((SDL_DisplayID)monitor, &rect);
-
-		return new(rect.w, rect.h);
-	}
-
-	public static float GetMonitorRefreshRate(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return 0; }
-		return SDL3.SDL_GetCurrentDisplayMode((SDL_DisplayID)monitor)->refresh_rate;
-	}
-
-	public static string GetDisplayName(int monitor) {
-		if (!IsMonitorIDValid(monitor)) { Logs.Warn("(SDL) Failed to find the monitor."); return "<no monitor>"; }
-		return SDL3.SDL_GetDisplayName((SDL_DisplayID)monitor) ?? "<null>";
-	}
+	public static OSMonitor GetPrimaryMonitor() => SDL3.SDL_GetPrimaryDisplay();
 
 	public static string GetClipboardText() => SDL3.SDL_GetClipboardText() ?? "";
 	public static void SetClipboardText(string text) => SDL3.SDL_SetClipboardText(text);

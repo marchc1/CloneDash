@@ -861,8 +861,8 @@ public unsafe class OSWindow : IValidatable
 		queuedIcon = SDL3.SDL_CreateSurfaceFrom(image.Width, image.Height, SDL3.SDL_GetPixelFormatForMasks(depth, rmask, gmask, bmask, amask), (nint)image.Data, pitch);
 	}
 
-	public int Monitor {
-		get => (int)SDL3.SDL_GetDisplayForWindow(handle);
+	public OSMonitor Monitor {
+		get => SDL3.SDL_GetDisplayForWindow(handle);
 	}
 	public void FocusWindow() => SDL3.SDL_RaiseWindow(handle);
 

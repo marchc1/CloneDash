@@ -322,9 +322,10 @@ public static class EngineCore
 			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 			// Fix monitor sizing for fullscreens first frame
 			// todo: is there a better way to do this? This interferes with a few things I think
-			int curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : (int)OS.GetPrimaryMonitor();
-			windowWidth = OS.GetMonitorWidth(curMonitor);
-			windowHeight = OS.GetMonitorHeight(curMonitor);
+			OSMonitor curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : OS.GetPrimaryMonitor();
+			var size = curMonitor.Size;
+			windowWidth = (int)size.W;
+			windowHeight = (int)size.H;
 		}
 		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
 		// We need to start the gane thread and allow it to initialize.
@@ -334,11 +335,9 @@ public static class EngineCore
 		GameThread.Start();
 		lock (GameThread_GLLock) ;
 
-		if (CommandLine.TryGetParam("monitor", out int monitor)) {
-			var monitorPos = OS.GetMonitorPosition(monitor);
-			var monitorW = OS.GetMonitorWidth(monitor);
-			var monitorH = OS.GetMonitorHeight(monitor);
-			var monitorSize = new Vector2F(monitorW, monitorH);
+		if (CommandLine.TryGetParam("monitor", out OSMonitor monitor)) {
+			var monitorPos = monitor.Position;
+			var monitorSize = monitor.Size;
 			var windowSize = new Vector2F(windowWidth, windowHeight);
 
 			// monitor TL + (monitor size / 2) == centerMonitor

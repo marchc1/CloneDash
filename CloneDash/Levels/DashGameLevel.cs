@@ -105,8 +105,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		}
 
-		Vector2F monPos = OS.GetMonitorPosition(0);
-		Vector2F monSize = OS.GetMonitorSize(0);
+		OSMonitor monitor = EngineCore.Window.Monitor;
+		Vector2F monPos = monitor.Position;
+		Vector2F monSize = monitor.Size;
 		Vector2F winPos = (monPos + (monSize / 2)) - (winSize / 2);
 		EngineCore.Window.Position = new((int)winPos.X, (int)winPos.Y);
 		EngineCore.Window.Size = new((int)winSize.X, (int)winSize.Y);
