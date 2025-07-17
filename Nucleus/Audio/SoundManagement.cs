@@ -5,6 +5,8 @@ using Nucleus.Util;
 
 using Raylib_cs;
 
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -14,14 +16,14 @@ namespace Nucleus.Audio
 	[MarkForStaticConstruction]
 	public class SoundManagement : IManagedMemory
 	{
-		private List<ISound> Sounds = [];
+		private ConcurrentDictionary<ISound, bool> Sounds = [];
 		private bool disposedValue;
 		public ulong UsedBits {
 			get {
 				ulong ret = 0;
 
 				foreach (var snd in Sounds) {
-					ret += snd.UsedBits;
+					ret += snd.Key.UsedBits;
 				}
 
 				return ret;
@@ -32,7 +34,7 @@ namespace Nucleus.Audio
 		protected virtual void Dispose(bool usercall) {
 			if (!disposedValue) {
 				lock (Sounds) {
-					foreach (ISound t in Sounds) {
+					foreach (ISound t in Sounds.Keys) {
 						t.Dispose();
 					}
 					disposedValue = true;
@@ -62,7 +64,7 @@ namespace Nucleus.Audio
 
 			LoadedSoundsFromFile.Add(filepath, snd);
 			LoadedFilesFromSound.Add(snd, filepath);
-			Sounds.Add(snd);
+			Sounds.TryAdd(snd, true);
 
 			return snd;
 		}
@@ -76,7 +78,7 @@ namespace Nucleus.Audio
 			Sound snd = new(this, sound, true);
 			LoadedSoundsFromFile.Add(filepath, snd);
 			LoadedFilesFromSound.Add(snd, filepath);
-			Sounds.Add(snd);
+			Sounds.TryAdd(snd, true);
 
 			return snd;
 		}
@@ -103,7 +105,7 @@ namespace Nucleus.Audio
 				Raylib_cs.Sound sound = Raylib.LoadSoundFromWave(w);
 				Raylib.UnloadWave(w);
 				Sound snd = new(this, sound, true);
-				Sounds.Add(snd);
+				Sounds.TryAdd(snd, true);
 				return snd;
 			}
 		}
@@ -114,7 +116,7 @@ namespace Nucleus.Audio
 					if (LoadedFilesFromSound.TryGetValue(snd, out var sndFilepath)) {
 						LoadedSoundsFromFile.Remove(sndFilepath);
 						LoadedFilesFromSound.Remove(snd);
-						Sounds.Remove(snd);
+						Sounds.TryRemove(snd, out _);
 
 						snd.Dispose();
 					}
@@ -123,7 +125,7 @@ namespace Nucleus.Audio
 					if (LoadedFilesFromMusicTrack.TryGetValue(mus, out var musFilepath)) {
 						LoadedMusicTracksFromFile.Remove(musFilepath);
 						LoadedFilesFromMusicTrack.Remove(mus);
-						Sounds.Remove(mus);
+						Sounds.TryRemove(mus, out _);
 
 						mus.Dispose();
 					}
@@ -186,7 +188,7 @@ namespace Nucleus.Audio
 			if (!autoplay)
 				music.Playing = false;
 
-			Sounds.Add(music);
+			Sounds.TryAdd(music, true);
 			return music;
 		}
 
@@ -212,7 +214,7 @@ namespace Nucleus.Audio
 				if (!autoplay)
 					music.Playing = false;
 
-				Sounds.Add(music);
+				Sounds.TryAdd(music, true);
 				return music;
 			}
 		}
