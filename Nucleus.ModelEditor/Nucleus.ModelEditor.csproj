@@ -1,25 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-	<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-	<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Nucleus\Nucleus.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
+	</ItemGroup>
 
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-	<Exec Condition=" $(IsWindows) == 'true'" Command="xcopy &quot;$(SolutionDir)BuildAssets/universal/.&quot; &quot;$(OutDir)&quot; /Y /E" />
-	<Exec Condition=" $(IsOSX) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/universal/.&quot; &quot;$(OutDir)&quot;" />
-	<Exec Condition=" $(IsLinux) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/universal/.&quot; &quot;$(OutDir)&quot;" />
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<ItemGroup>
+			<UniversalAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\universal\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(UniversalAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
-	<Exec Condition=" $(IsWindows) == 'true'" Command="xcopy &quot;$(SolutionDir)BuildAssets/winnt/.&quot; &quot;$(OutDir)&quot; /Y /E" />
-	<Exec Condition=" $(IsOSX) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/intel_osx/.&quot; &quot;$(OutDir)&quot;" />
-	<Exec Condition=" $(IsLinux) == 'true'" Command="cp -a &quot;$(MSBuildThisFileDirectory)../BuildAssets/linux/.&quot; &quot;$(OutDir)&quot;" />
-  </Target>
+		<ItemGroup Condition="'$(IsWindows)' == 'true'">
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\winnt\**\*" />
+		</ItemGroup>
+		<ItemGroup Condition="'$(IsOSX)' == 'true'">
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\intel_osx\**\*" />
+		</ItemGroup>
+		<ItemGroup Condition="'$(IsLinux)' == 'true'">
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\linux\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+	</Target>
 </Project>
