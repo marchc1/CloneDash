@@ -102,7 +102,7 @@ namespace CloneDash.Levels
 			if (model != null) {
 				model.Position = new(frameState.WindowWidth / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Curtime * 0.2, 0, 1))) * (frameState.WindowHeight));
 
-				anims?.AddDeltaTime(RendertimeDelta);
+				anims?.AddDeltaTime(CurtimeDelta);
 				anims?.Apply(model);
 			}
 		}
