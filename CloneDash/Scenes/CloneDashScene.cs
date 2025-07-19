@@ -873,6 +873,7 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 		[JsonProperty("medium_1")] public string Medium1;
 		[JsonProperty("medium_2")] public string Medium2;
 		[JsonProperty("quiet")] public string Quiet;
+		[JsonProperty("ghost")] public string Ghost;
 		[JsonProperty("press_idle")] public string PressIdle;
 		[JsonProperty("press_top")] public string PressTop;
 
@@ -886,6 +887,7 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 		[JsonIgnore] public Sound Medium1Sound;
 		[JsonIgnore] public Sound Medium2Sound;
 		[JsonIgnore] public Sound QuietSound;
+		[JsonIgnore] public Sound GhostSound;
 		[JsonIgnore] public MusicTrack PressIdleSound;
 		[JsonIgnore] public Sound PressTopSound;
 
@@ -903,6 +905,7 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 			Medium1Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium1) : level.Sounds.LoadSoundFromFile("scene", Medium1);
 			Medium2Sound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Medium2) : level.Sounds.LoadSoundFromFile("scene", Medium2);
 			QuietSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Quiet) : level.Sounds.LoadSoundFromFile("scene", Quiet);
+			GhostSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, Ghost) : level.Sounds.LoadSoundFromFile("scene", Ghost);
 			PressIdleSound = useMDAssets ? MuseDashCompatibility.LoadMusicFromName(level, PressIdle) : level.Sounds.LoadMusicFromFile("scene", PressIdle);
 			PressTopSound = useMDAssets ? MuseDashCompatibility.LoadSoundFromName(level, PressTop) : level.Sounds.LoadSoundFromFile("scene", PressTop);
 
