@@ -132,10 +132,8 @@ public struct MDMCChart
 
 	public void GetCoverAsTextureAsync(Action<Texture?> callback) {
 		string coverURL = CoverURL;
-		ThreadSystem.SpawnBackgroundWorker(() => {
-			var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(coverURL));
-			task.Wait();
-			var response = task.Result;
+		Task.Run(async () => {
+			var response = await MDMCWebAPI.Http.GetAsync(coverURL);
 
 			MainThread.RunASAP(() => {
 				if (!response.IsSuccessStatusCode)
@@ -176,16 +174,10 @@ public struct MDMCChart
 	public void GetMusicTrackAsync(Action<MusicTrack?> callback, bool demo) {
 		string oggURL = demo ? DemoOGGURL : OGGURL;
 		string mp3URL = demo ? DemoMP3URL : MP3URL;
-		ThreadSystem.SpawnBackgroundWorker(() => {
-			var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(oggURL));
-			task.Wait();
-			var response = task.Result;
-
-			if (!response.IsSuccessStatusCode) {
-				task = Task.Run(() => MDMCWebAPI.Http.GetAsync(mp3URL));
-				task.Wait();
-				response = task.Result;
-			}
+		Task.Run(async () => {
+			var response = await MDMCWebAPI.Http.GetAsync(oggURL);
+			if (!response.IsSuccessStatusCode) 
+				response = await MDMCWebAPI.Http.GetAsync(mp3URL);
 
 			MainThread.RunASAP(() => {
 				if (!response.IsSuccessStatusCode)
@@ -210,7 +202,7 @@ public struct MDMCChart
 	public void DownloadTo(string filename, Action<bool> callback) {
 		var id = ID;
 
-		ThreadSystem.SpawnBackgroundWorker(async () => {
+		Task.Run(async () => {
 			Directory.CreateDirectory(Path.GetDirectoryName(filename));
 			using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
 				var progress = new checkProgressTemp();
@@ -300,10 +292,8 @@ public class MDMCWebAPIPromise
 	public void Then(Action<MDMCWebAPIResponse> callback) => __callback = callback;
 
 	public MDMCWebAPIPromise(string url) {
-		ThreadSystem.SpawnBackgroundWorker(() => {
-			var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(url));
-			task.Wait();
-			var response = task.Result;
+		Task.Run(async () => {
+			var response = await MDMCWebAPI.Http.GetAsync(url);
 
 			MainThread.RunASAP(() => {
 				__finished = true;
