@@ -33,9 +33,7 @@ internal class Program
 {
 	static void Main(string[] args) {
 		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
-			return;
-		MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
-		
+			return;		
 		EngineCore.GameInfo = new() {
 			GameName = "Clone Dash"
 		};

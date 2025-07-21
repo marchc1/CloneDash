@@ -913,7 +913,6 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			MainThread.Thread = Thread.CurrentThread;
 			EngineCore.GameInfo = new() {
 				GameName = "Nucleus - Model v4 Editor"
 			};

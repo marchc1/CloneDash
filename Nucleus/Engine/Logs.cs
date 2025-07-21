@@ -134,9 +134,11 @@ namespace Nucleus
 		}
 
 		public static void Log(LogLevel level, bool printColor = true, bool newlineAfter = true, params object?[] items) {
-			if (MainThread.GameThreadSet 
-				? (MainThread.GameThread == Thread.CurrentThread) 
-				: (MainThread.Thread == Thread.CurrentThread))
+			if (MainThread.ThreadSet
+				? MainThread.GameThreadSet 
+					? (MainThread.GameThread == Thread.CurrentThread) 
+					: (MainThread.Thread == Thread.CurrentThread)
+				: true)
 				__writeLog(level, printColor, newlineAfter, items);
 			else 
 				MainThread.RunASAP(() => __writeLog(level, printColor, newlineAfter, items));

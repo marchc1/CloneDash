@@ -21,8 +21,6 @@ namespace Nucleus.HelloWorld
 			}
 		}
 		static void Main(string[] args) {
-			MainThread.Thread = Thread.CurrentThread; // allows logging before engine core fully gets setup
-
 			EngineCore.Initialize(1600, 900, "Clone Dash", args);
 			EngineCore.GameInfo = new() {
 				GameName = "Hello World"
