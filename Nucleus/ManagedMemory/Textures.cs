@@ -8,6 +8,7 @@ using Nucleus.Files;
 using Nucleus.Types;
 using Raylib_cs;
 
+
 namespace Nucleus.ManagedMemory
 {
 	public interface ITexture : IManagedMemory {
@@ -208,7 +209,7 @@ namespace Nucleus.ManagedMemory
 			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
 
 			Texture tex = new(this, Filesystem.ReadTexture(pathID, path), true);
-
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
 			LoadedTexturesFromFile.Add(managedPath, tex);
 			LoadedFilesFromTexture.Add(tex, managedPath);

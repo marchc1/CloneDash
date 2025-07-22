@@ -218,6 +218,8 @@ public static class EngineCore
 	public static MouseCursor? MouseCursor_Persist { get; private set; }
 
 	public static void SetMouseCursor(MouseCursor? mouseCursor, bool persist = false) {
+		if (Level != null && Level.IsRendering)
+			Logs.Warn("Trying to set the mouse cursor in a rendering context!");
 		if (persist) {
 			MouseCursor_Persist = mouseCursor;
 		}
@@ -647,7 +649,6 @@ public static class EngineCore
 		}
 
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
-
 		Host.CheckDirty();
 
 		if (Window.UserClosed()) {

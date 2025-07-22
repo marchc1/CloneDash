@@ -1281,13 +1281,13 @@ namespace Nucleus.UI
 					break;
 				case ImageOrientation.Zoom:
 					if (width <= height) { // Width is the bottleneck
-						var ratio = Image.Height / Image.Width;
+						var ratio = (float)Image.Height / Image.Width;
 						destRect.Width = width;
 						destRect.Height = width * ratio;
 						destRect.Y += (height / 2) - (width / 2);
 					}
 					else {
-						var ratio = Image.Width / Image.Height;
+						var ratio = (float)Image.Width / Image.Height;
 						destRect.Height = height;
 						destRect.Width = height * ratio;
 						destRect.X += (width / 2) - (height / 2);
@@ -1298,13 +1298,13 @@ namespace Nucleus.UI
 					var clampWidth = Math.Clamp(width, 0, Image.Width);
 					var clampHeight = Math.Clamp(height, 0, Image.Height);
 					if (clampWidth <= clampHeight) { // Width is the bottleneck
-						var ratio = Image.Height / Image.Width;
+						var ratio = (float)Image.Height / Image.Width;
 						destRect.Width = clampWidth;
 						destRect.Height = clampWidth * ratio;
 						destRect.Y += (height / 2) - (width / 2);
 					}
 					else {
-						var ratio = Image.Width / Image.Height;
+						var ratio = (float)Image.Width / Image.Height;
 						destRect.Height = clampHeight;
 						destRect.Width = clampHeight * ratio;
 						destRect.X += (width / 2) - (height / 2);

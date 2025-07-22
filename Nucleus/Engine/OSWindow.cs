@@ -269,6 +269,7 @@ public unsafe class OSWindow : IValidatable
 
 		handleSDLTextInputState();
 		flushWindowGeometry();
+		SDL3.SDL_SetCursor(this.cursor);
 		lastFlags = curFlags;
 		hasLastWinflags = true;
 	}
@@ -375,6 +376,14 @@ public unsafe class OSWindow : IValidatable
 		}
 		set { queuedSize = value; isSizeQueued = true; }
 	}
+
+	public void Center() {
+		// Enqueue centered information
+		var bounds = Monitor.Bounds;
+		var queuePos = (bounds / 2) - ((isSizeQueued ? queuedSize : Size) / 2);
+		Position = queuePos;
+	}
+
 	public Vector2F MinSize {
 		get {
 			int _x, _y;
@@ -894,8 +903,12 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	SDL_Cursor* cursor;
-
+	MouseCursor lastCursorValue = MouseCursor.MOUSE_CURSOR_DEFAULT;
 	public void SetMouseCursor(MouseCursor cursor) {
+		if (lastCursorValue == cursor)
+			return;
+		lastCursorValue = cursor;
+
 		var lastCursor = this.cursor;
 		this.cursor = SDL3.SDL_CreateSystemCursor(cursor switch {
 			MouseCursor.MOUSE_CURSOR_DEFAULT => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT,
@@ -911,7 +924,6 @@ public unsafe class OSWindow : IValidatable
 			MouseCursor.MOUSE_CURSOR_NOT_ALLOWED => SDL_SystemCursor.SDL_SYSTEM_CURSOR_NOT_ALLOWED,
 			_ => SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT
 		});
-		SDL3.SDL_SetCursor(this.cursor);
 		if (lastCursor != null)
 			SDL3.SDL_DestroyCursor(lastCursor);
 	}

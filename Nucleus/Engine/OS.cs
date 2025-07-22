@@ -50,6 +50,15 @@ public struct OSMonitor : IValidatable
 		}
 	}
 
+	public unsafe Vector2F Bounds {
+		get {
+			if (!IsValid())
+				return Vector2F.Zero;
+			SDL_Rect bounds;
+			SDL3.SDL_GetDisplayUsableBounds((SDL_DisplayID)DisplayID, &bounds);
+			return new(bounds.w, bounds.h);
+		}
+	}
 
 	public unsafe float RefreshRate {
 		get {

@@ -101,7 +101,7 @@ namespace Nucleus.UI
 		public override void Center() {
 			OSMonitor screen = EngineCore.Window.Monitor;
 			var mpos = screen.Position;
-			var msize = screen.Size;
+			var msize = screen.Bounds;
 
 			var mposCenter = mpos + (msize / 2);
 			var mposFinal = mposCenter - (EngineCore.Window.Size / 2);

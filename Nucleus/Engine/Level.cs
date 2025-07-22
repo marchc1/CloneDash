@@ -358,6 +358,7 @@ namespace Nucleus.Engine
 		}
 		double lastRenderTime = -10;
 		public bool RenderedFrame { get; set; } = false;
+		public bool IsRendering { get; set; } = false;
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -542,6 +543,7 @@ namespace Nucleus.Engine
 			if ((Realtime - lastRenderTime) >= EngineCore.RenderRate) {
 				lastRenderTime = Realtime;
 				RenderedFrame = true;
+				IsRendering = true;
 
 				if (!Paused) {
 					LastRendertime = Rendertime;
@@ -667,6 +669,8 @@ namespace Nucleus.Engine
 
 				if (EngineCore.ShowDebuggingInfo)
 					ConsoleSystem.Draw();
+
+				IsRendering = false;
 			}
 
 			UnlockEntityBuffer();
