@@ -8,11 +8,11 @@ namespace Raylib_cs;
 /// </summary>
 public enum CameraMode
 {
-    CAMERA_CUSTOM = 0,
-    CAMERA_FREE,
-    CAMERA_ORBITAL,
-    CAMERA_FIRST_PERSON,
-    CAMERA_THIRD_PERSON
+    Custom = 0,
+    Free,
+    Orbital,
+    FirstPerson,
+    ThirdPerson
 }
 
 /// <summary>
@@ -63,4 +63,55 @@ public partial struct Camera3D
         this.FovY = fovY;
         this.Projection = projection;
     }
+
+	// rcamera reimplementations
+
+	public Vector3 GetForward() => Vector3.Normalize(Target - Position);
+	public Vector3 GetUp() => Vector3.Normalize(Up);
+	public Vector3 GetRight() => Vector3.Cross(GetForward(), GetUp());
+
+	public void MoveForward(float distance, bool moveInWorldPlane) {
+		Vector3 forward = GetForward();
+
+		if (moveInWorldPlane) {
+			forward.Z = 0;
+			forward = Vector3.Normalize(forward);
+		}
+
+		forward *= distance;
+		Position += forward;
+		Target += forward;
+	}
+	public void MoveUp(float distance) {
+		Vector3 up = GetUp();
+
+		up *= distance;
+		Position += up;
+		Target += up;
+	}
+
+	public void MoveRight(float distance, bool moveInWorldPlane) {
+		Vector3 right = GetRight();
+
+		if (moveInWorldPlane) {
+			right.Z = 0;
+			right = Vector3.Normalize(right);
+		}
+
+		right *= distance;
+		Position += right;
+		Target += right;
+	}
+
+	public void MoveToTarget(float delta) {
+		float distance = Vector3.Distance(Position, Target);
+
+		distance += delta;
+		if (distance <= 0) 
+			distance = 0.001f;
+
+		// Set new distance by moving the position along the forward vector
+		Vector3 forward = GetForward();
+		Position = Target + (forward * -distance);
+	}
 }

@@ -22,6 +22,7 @@ namespace Nucleus.Rendering
 			w *= DPIFactor.X;
 			h *= DPIFactor.Y;
 
+			Rlgl.DrawRenderBatchActive();
 			EngineCore.Window.Viewport((int)x, (int)y, (int)w, (int)h);
 		}
 

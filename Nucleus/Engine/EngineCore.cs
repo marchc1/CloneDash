@@ -478,7 +478,7 @@ public static class EngineCore
 		return ret;
 	}
 
-	public static RectangleF GetScreenBounds() => RectangleF.FromPosAndSize(new(0, 0), GetScreenSize());
+	public static RectangleF GetScreenBounds() => RectangleF.FromPosAndSize(new(0, 0), Window.Size);
 
 	public static Vector2F GetGlobalScreenOffset() {
 		if (!IsUndecorated || Maximized)
