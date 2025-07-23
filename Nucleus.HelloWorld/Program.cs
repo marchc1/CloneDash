@@ -42,7 +42,7 @@ namespace Nucleus.HelloWorld
 			}
 		}
 		static void Main(string[] args) {
-			EngineCore.Initialize(1600, 900, "Clone Dash", args);
+			EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
 			EngineCore.GameInfo = new() {
 				GameName = "Hello World"
 			};
