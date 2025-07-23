@@ -292,7 +292,7 @@ public unsafe class OSWindow : IValidatable
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, value);
 	}
 	public bool Minimized {
-		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) == SDL_WindowFlags.SDL_WINDOW_MINIMIZED; 
+		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) == SDL_WindowFlags.SDL_WINDOW_MINIMIZED;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, value);
 	}
 	public bool Visible {
@@ -337,6 +337,12 @@ public unsafe class OSWindow : IValidatable
 	public bool isPosQueued, isSizeQueued, isMinQueued, isMaxQueued, isTitleQueued, isOpacityQueued;
 
 	private void flushWindowGeometry() {
+		if (isCenterEnqueued) {
+			var bounds = Monitor.Bounds;
+			var queuePos = (bounds / 2) - ((isSizeQueued ? queuedSize : Size) / 2);
+			Position = queuePos;
+		}
+
 		if (isPosQueued)
 			SDL3.SDL_SetWindowPosition(handle, (int)queuedPos.X, (int)queuedPos.Y);
 		if (isSizeQueued)
@@ -350,7 +356,7 @@ public unsafe class OSWindow : IValidatable
 		if (isOpacityQueued)
 			SDL3.SDL_SetWindowOpacity(handle, queuedOpacity);
 
-		isPosQueued = isSizeQueued = isMinQueued = isMaxQueued = isTitleQueued = isOpacityQueued = false;
+		isPosQueued = isSizeQueued = isMinQueued = isMaxQueued = isTitleQueued = isOpacityQueued = isCenterEnqueued = false;
 
 
 		if (queuedIcon != null) {
@@ -377,11 +383,9 @@ public unsafe class OSWindow : IValidatable
 		set { queuedSize = value; isSizeQueued = true; }
 	}
 
+	bool isCenterEnqueued;
 	public void Center() {
-		// Enqueue centered information
-		var bounds = Monitor.Bounds;
-		var queuePos = (bounds / 2) - ((isSizeQueued ? queuedSize : Size) / 2);
-		Position = queuePos;
+		isCenterEnqueued = true;
 	}
 
 	public Vector2F MinSize {
@@ -586,9 +590,13 @@ public unsafe class OSWindow : IValidatable
 		return false;
 	}
 
+	/// <summary>
+	/// Will focus being gained be treated as a mouse click as well, if applicable.
+	/// </summary>
+	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = true;
 
 
-	public void PushEvent(ref OSEventTimestamped ev) {
+	public unsafe void PushEvent(ref OSEventTimestamped ev) {
 		switch (ev.Event.Type) {
 			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
 					if (!ev.Event.key.repeat) {
@@ -760,6 +768,10 @@ public unsafe class OSWindow : IValidatable
 #endif
 				var time = OS.GetTime();
 				switch (ev.Type) {
+					case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
+						if (WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY) 
+							SDL3.SDL_CaptureMouse(true);
+						break;
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 						// We need to read the text now to avoid race conditioning.
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
@@ -1174,8 +1186,8 @@ public unsafe class OSWindow : IValidatable
 		}
 
 		// Unproject far/near points
-		Vector3 nearPoint = Raymath.Vector3Unproject(new(deviceCoords.X, deviceCoords.Y, 0.0f ), matProj, matView);
-		Vector3 farPoint = Raymath.Vector3Unproject(new( deviceCoords.X, deviceCoords.Y, 1.0f ), matProj, matView);
+		Vector3 nearPoint = Raymath.Vector3Unproject(new(deviceCoords.X, deviceCoords.Y, 0.0f), matProj, matView);
+		Vector3 farPoint = Raymath.Vector3Unproject(new(deviceCoords.X, deviceCoords.Y, 1.0f), matProj, matView);
 
 		// Unproject the mouse cursor in the near plane.
 		// We need this as the source position because orthographic projects, compared to perspective doesn't have a

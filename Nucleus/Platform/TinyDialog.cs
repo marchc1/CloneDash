@@ -22,17 +22,24 @@ public static partial class Platform
 		public static implicit operator DialogResult((bool cancelled, string text) fromTDN) => new() { result = fromTDN.cancelled ? null : [fromTDN.text] };
 		public static implicit operator DialogResult((bool cancelled, IEnumerable<string> paths) fromTDN) => new() { result = fromTDN.cancelled ? null : fromTDN.paths.ToArray() };
 	}
+	static string platStr(string str) =>
+#if COMPILED_WINDOWS
+		str;
+#else
+		$"{str}\0";
+#endif
+	static string[] platStr(string[] strs) => strs.Select(platStr).ToArray();
 
 	public static DialogResult InputBox(InputBoxType type, string title, string message, string? def = null)
-		=> TinyDialogs.InputBox(type, title, message, def ?? "");
+		=> TinyDialogs.InputBox(type, platStr(title), platStr(message), platStr(def ?? ""));
 	public static void NotifyPopup(string title, string message, NotificationIconType iconType = NotificationIconType.Information)
-		=> TinyDialogs.NotifyPopup(iconType, title, message);
+		=> TinyDialogs.NotifyPopup(iconType, platStr(title), platStr(message));
 	public static DialogResult SaveFileDialog(string title, string defaultPathOrFile, string[] filterPatterns, string filterDescription)
-		=> TinyDialogs.SaveFileDialog(title, defaultPathOrFile, new(filterDescription, filterPatterns));
+		=> TinyDialogs.SaveFileDialog(platStr(title), platStr(defaultPathOrFile), new(platStr(filterDescription), platStr(filterPatterns)));
 
 	public static DialogResult OpenFileDialog(string title, string defaultPathOrFile, string[] filterPatterns, string filterDescription, bool allowMultipleSelects = false)
-		=> TinyDialogs.OpenFileDialog(title, defaultPathOrFile, allowMultipleSelects, new(filterDescription, filterPatterns));
+		=> TinyDialogs.OpenFileDialog(platStr(title), platStr(defaultPathOrFile), allowMultipleSelects, new(platStr(filterDescription), platStr(filterPatterns)));
 
 	public static DialogResult SelectFolderDialog(string title, string defaultPathOrFile)
-		=> TinyDialogs.SelectFolderDialog(title, defaultPathOrFile);
+		=> TinyDialogs.SelectFolderDialog(platStr(title), platStr(defaultPathOrFile));
 }
