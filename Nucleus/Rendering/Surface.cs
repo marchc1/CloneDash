@@ -22,7 +22,7 @@ namespace Nucleus.Rendering
 			w *= DPIFactor.X;
 			h *= DPIFactor.Y;
 
-			Rlgl.Viewport((int)x, (int)y, (int)w, (int)h);
+			EngineCore.Window.Viewport((int)x, (int)y, (int)w, (int)h);
 		}
 
 		public static void SetViewport(Vector2F pos, Vector2F size) => SetViewport(pos.X, pos.Y, size.W, size.H);

@@ -421,6 +421,16 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_GL_SwapWindow(handle);
 	}
 
+	int vpX, vpY, vpW, vpH;
+	private void viewport(int x, int y, int w, int h) {
+		vpX = x;
+		vpY = y;
+		vpW = w;
+		vpH = h;
+		Rlgl.Viewport(x, y, w, h);
+	}
+	public void Viewport(int x, int y, int w, int h) => viewport(x, y, w, h);
+
 	public void SetupViewport(float width, float height) => SetupViewport((int)width, (int)height);
 	public void SetupViewport(int width, int height) {
 		RenderSize.W = width;
@@ -428,9 +438,9 @@ public unsafe class OSWindow : IValidatable
 
 #if COMPILED_OSX
 		Vector2F scale = GetWindowScaleDPI();
-		Rlgl.Viewport((int)(RenderOffset.x/2*scale.x), (int)(RenderOffset.y/2*scale.y), (int)((RenderSize.W)*scale.x), (int)((RenderSize.H)*scale.y));
+		viewport((int)(RenderOffset.x/2*scale.x), (int)(RenderOffset.y/2*scale.y), (int)((RenderSize.W)*scale.x), (int)((RenderSize.H)*scale.y));
 #else
-		Rlgl.Viewport((int)(RenderOffset.x / 2), ((int)RenderOffset.y / 2), (int)RenderSize.W, (int)RenderSize.H);
+		viewport((int)(RenderOffset.x), ((int)RenderOffset.y), (int)RenderSize.W, (int)RenderSize.H);
 #endif
 
 		Rlgl.MatrixMode(MatrixMode.Projection);
@@ -980,6 +990,7 @@ public unsafe class OSWindow : IValidatable
 
 	public void BeginMode2D(Camera2D camera) {
 		Rlgl.DrawRenderBatchActive();
+		Rlgl.PushMatrix();
 		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(Raylib.GetCameraMatrix2D(camera)));
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
@@ -987,6 +998,7 @@ public unsafe class OSWindow : IValidatable
 
 	public void EndMode2D() {
 		Rlgl.DrawRenderBatchActive();
+		Rlgl.PopMatrix();
 		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
 	}
@@ -998,7 +1010,7 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.PushMatrix();
 		Rlgl.LoadIdentity();
 
-		float aspect = (float)Rlgl.GetFramebufferWidth() / (float)Rlgl.GetFramebufferHeight();
+		float aspect = (float)vpW / (float)vpH;
 
 		if (camera.Projection == CameraProjection.Perspective) {
 			double top = RL_CULL_DISTANCE_NEAR * MathF.Tan(camera.FovY * 0.5f * (MathF.PI / 180f));
@@ -1040,7 +1052,7 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.EnableFramebuffer(target.Id); // Enable render target
 
 		// Set viewport and RLGL internal framebuffer size
-		Rlgl.Viewport(0, 0, target.Texture.Width, target.Texture.Height);
+		viewport(0, 0, target.Texture.Width, target.Texture.Height);
 		Rlgl.SetFramebufferWidth(target.Texture.Width);
 		Rlgl.SetFramebufferHeight(target.Texture.Height);
 
