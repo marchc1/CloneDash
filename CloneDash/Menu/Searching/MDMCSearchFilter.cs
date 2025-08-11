@@ -12,14 +12,16 @@ public class MDMCSearchFilter : SearchFilter
 {
 	public int Page = 0;
 	public string Query = "";
-	public MDMCWebAPI.Sort Sort;
+	public MDMCWebAPI.Sort Sort = MDMCWebAPI.Sort.Likes;
+	public MDMCWebAPI.SortOrder Order = MDMCWebAPI.SortOrder.Descending;
 	public bool OnlyRanked = false;
 
 
 	public override void Populate(SongSearchDialog dialog) {
 		TextInput(dialog, nameof(Query), "Search Query", true, true);
 		EnumInput(dialog, nameof(Sort), Sort);
-		CheckboxInput(dialog, nameof(OnlyRanked), "Only ranked charts?");
+		EnumInput(dialog, nameof(Order), Order);
+        CheckboxInput(dialog, nameof(OnlyRanked), "Only ranked charts?");
 	}
 
 	public override Predicate<ChartSong> BuildPredicate(SongSearchDialog dialog) {
@@ -44,7 +46,7 @@ public class MDMCSearchFilter : SearchFilter
 	internal void PopulateMDMCCharts(SongSelector selector) {
 		Page++;
 
-		MDMCWebAPI.SearchCharts(string.IsNullOrWhiteSpace(Query) ? null : Query, Sort, Page, OnlyRanked).Then((resp) => {
+		MDMCWebAPI.SearchCharts(string.IsNullOrWhiteSpace(Query) ? null : Query, Sort, Order, Page, OnlyRanked).Then((resp) => {
 			mdmcChartsWithCount charts = resp.FromJSON<mdmcChartsWithCount>() ?? throw new Exception("Parsing failure");
 
 			if (charts.Count == 0) {

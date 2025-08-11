@@ -280,7 +280,7 @@ public class MDMCWebAPIPromise
 
 	public MDMCWebAPIPromise(string url) {
 		Task.Run(async () => {
-			var response = await MDMCWebAPI.Http.GetAsync(url);
+            var response = await MDMCWebAPI.Http.GetAsync(url);
 
 			MainThread.RunASAP(() => {
 				__finished = true;
@@ -350,7 +350,18 @@ public static class MDMCWebAPI
 		_ => throw new Exception("Unsupported Sort value!")
 	};
 
-	private static string buildParameters(Dictionary<string, object> parameters) {
+	public enum SortOrder
+	{
+		Ascending,
+		Descending
+    }
+	private static string getSortOrder(SortOrder order) => order switch {
+		SortOrder.Ascending => "asc",
+		SortOrder.Descending => "desc",
+		_ => throw new Exception("Unsupported SortOrder value!")
+	};
+
+    private static string buildParameters(Dictionary<string, object> parameters) {
 		string[] list = new string[parameters.Count];
 		int i = 0;
 		foreach (var kvp in parameters) {
@@ -358,7 +369,8 @@ public static class MDMCWebAPI
 			string value = kvp.Value switch {
 				string s => s,
 				Sort s => getSort(s),
-				_ => kvp.Value.ToString() ?? throw new Exception("null")
+				SortOrder s => getSortOrder(s),
+                _ => kvp.Value.ToString() ?? throw new Exception("null")
 			};
 
 			list[i] = $"{key}={value}";
@@ -371,11 +383,12 @@ public static class MDMCWebAPI
 	public static string BuildFetchRequestURL(string endpoint, Dictionary<string, object> parameters) =>
 		$"{WEBAPI_ENDPOINT}/{endpoint}?{buildParameters(parameters)}";
 
-	public static MDMCWebAPIPromise SearchCharts(string? query = null, Sort sort = Sort.Likes, int page = 1, bool rankedOnly = false) {
+	public static MDMCWebAPIPromise SearchCharts(string? query = null, Sort sort = Sort.Likes, SortOrder order = SortOrder.Descending, int page = 1, bool rankedOnly = false) {
 		var url = BuildFetchRequestURL("charts", new() {
 			{ "q", query ?? "" },
 			{ "sort", sort },
-			{ "page", page },
+			{ "order", order },
+            { "page", page },
 			{ "rankedOnly", rankedOnly.ToString().ToLower() }
 		});
 
