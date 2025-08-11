@@ -5,7 +5,6 @@ using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;
-using System.Diagnostics;
 using System.Net;
 
 namespace CloneDash.Compatibility.MDMC;
@@ -281,7 +280,6 @@ public class MDMCWebAPIPromise
 
 	public MDMCWebAPIPromise(string url) {
 		Task.Run(async () => {
-			Debug.WriteLine("GET " + url);
 			var response = await MDMCWebAPI.Http.GetAsync(url);
 
 			MainThread.RunASAP(() => {
