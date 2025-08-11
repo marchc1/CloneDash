@@ -38,7 +38,7 @@ public class MDMCSearchFilter : SearchFilter
 	private class mdmcChartsWithCount
 	{
 		[JsonProperty("charts")] public MDMCChart[] Charts;
-		[JsonProperty("count")] public int Count;
+		[JsonProperty("total")] public int Count;
 	}
 
 	internal void PopulateMDMCCharts(SongSelector selector) {

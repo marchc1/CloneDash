@@ -5,23 +5,23 @@ using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;
-
+using System.Diagnostics;
 using System.Net;
 
 namespace CloneDash.Compatibility.MDMC;
 
 public struct MDMCSheet
 {
-	[JsonProperty("_id")]
+	[JsonProperty("id")]
 	public string ID;
 
-	[JsonProperty("chart_id")]
+	[JsonProperty("chart")]
 	public string ChartID;
 
 	[JsonProperty("difficulty")]
 	public string Difficulty;
 
-	[JsonProperty("ranked_difficulty")]
+	[JsonProperty("rankedDifficulty")]
 	public float? RankedDifficulty;
 
 	[JsonProperty("charter")]
@@ -53,13 +53,13 @@ public struct MDMCChartAnalytics
 
 public struct MDMCChart
 {
-	[JsonProperty("_id")]
+	[JsonProperty("id")]
 	public string ID;
 
 	[JsonProperty("title")]
 	public string Title;
 
-	[JsonProperty("title_romanized")]
+	[JsonProperty("titleRomanized")]
 	public string? TitleRomanized;
 
 	[JsonProperty("artist")]
@@ -74,8 +74,8 @@ public struct MDMCChart
 	[JsonProperty("length")]
 	public double Length;
 
-	[JsonProperty("owner_uid")]
-	public int OwnerUID;
+	[JsonProperty("owner")]
+	public string Owner;
 
 	[JsonProperty("sheets")]
 	public MDMCSheet[] Sheets;
@@ -86,30 +86,19 @@ public struct MDMCChart
 	[JsonProperty("ranked")]
 	public bool Ranked;
 
-	[JsonProperty("searchTags")]
+	[JsonProperty("tags")]
 	public string[] SearchTags;
 
-	/// <summary>
-	/// ISO 8601 timestamp
-	/// </summary>
-	[JsonProperty("timestamp")]
-	public string Timestamp;
+	[JsonProperty("uploadedAt")]
+	public DateTime Timestamp;
 
-	public DateTime TimestampDateTime => DateTime.Parse(Timestamp);
+	public string CoverURL => $"https://cdn.mdmc.moe/charts/{ID}/cover.png";
+	public string MP3URL => $"https://cdn.mdmc.moe/charts/{ID}/music.mp3";
+	public string OGGURL => $"https://cdn.mdmc.moe/charts/{ID}/music.ogg";
+	public string DemoMP3URL => $"https://cdn.mdmc.moe/charts/{ID}/demo.mp3";
+	public string DemoOGGURL => $"https://cdn.mdmc.moe/charts/{ID}/demo.ogg";
 
-	[JsonProperty("likes")]
-	public int? Likes;
-
-	[JsonProperty("maxDifficulty")]
-	public int MaxDifficulty;
-
-	public string CoverURL => $"https://cdn.mdmc.moe/{ID}/cover.png";
-	public string MP3URL => $"https://cdn.mdmc.moe/{ID}/music.mp3";
-	public string OGGURL => $"https://cdn.mdmc.moe/{ID}/music.ogg";
-	public string DemoMP3URL => $"https://cdn.mdmc.moe/{ID}/demo.mp3";
-	public string DemoOGGURL => $"https://cdn.mdmc.moe/{ID}/demo.ogg";
-
-	public int GetLikes() => Likes ?? Analytics.Likes.Length;
+	public int GetLikes() => Analytics.Likes.Length;
 
 	public Texture? GetCoverAsTexture() {
 		string coverURL = CoverURL;
@@ -208,7 +197,7 @@ public struct MDMCChart
 				var progress = new checkProgressTemp();
 				progress.id = id;
 
-				await MDMCWebAPI.Http.DownloadDataAsync($"https://api.mdmc.moe/v2/charts/{id}/download", fileOut, progress);
+				await MDMCWebAPI.Http.DownloadDataAsync($"https://api.mdmc.moe/v3/charts/{id}/download", fileOut, progress);
 
 				MainThread.RunASAP(() => {
 					callback?.Invoke(true);
@@ -222,7 +211,7 @@ public struct MDMCProfile
 {
 	[JsonProperty("bio")] public string Bio;
 	[JsonProperty("badges")] public string[] Badges;
-	[JsonProperty("peropero_id")] public string? PeroperoID;
+	[JsonProperty("peroperoId")] public string? PeroperoID;
 	[JsonProperty("avatar")] public string Avatar;
 	[JsonProperty("banner")] public string Banner;
 }
@@ -230,20 +219,20 @@ public struct MDMCProfile
 public struct MDMCTopScore
 {
 	[JsonProperty("hash")] public string Hash;
-	[JsonProperty("rankedScore")] public double RankedScore;
+	[JsonProperty("melonPoints")] public double MelonPoints;
 }
 
 public struct MDMCRanking
 {
-	[JsonProperty("ranked_score")] public double RankedScore;
-	[JsonProperty("top_scores")] public MDMCTopScore[] TopScores;
+	[JsonProperty("melonPoints")] public double MelonPoints;
+	[JsonProperty("topScores")] public MDMCTopScore[] TopScores;
 }
 
 public struct MDMCSheetUser
 {
-	[JsonProperty("_id")] public string ID;
+	[JsonProperty("id")] public string ID;
 	[JsonProperty("uid")] public int UserID;
-	[JsonProperty("discord_id")] public string DiscordID;
+	[JsonProperty("discordId")] public string DiscordID;
 	[JsonProperty("username")] public string Username;
 	[JsonProperty("banned")] public bool Banned;
 	[JsonProperty("profile")] public MDMCProfile Profile;
@@ -252,17 +241,16 @@ public struct MDMCSheetUser
 
 public struct MDMCScore
 {
-	[JsonProperty("_id")] public string ID;
-	[JsonProperty("uid")] public int UserID;
+	[JsonProperty("id")] public string ID;
 	[JsonProperty("user")] public MDMCSheetUser User;
-	[JsonProperty("hash")] public string Hash;
 	[JsonProperty("sheet")] public string SheetID;
+    [JsonProperty("hash")] public string Hash;
 	[JsonProperty("score")] public int Score;
-	[JsonProperty("acc")] public float Accuracy;
+	[JsonProperty("accuracy")] public float Accuracy;
 	[JsonProperty("combo")] public int Combo;
-	[JsonProperty("character_id")] public int CharacterID;
-	[JsonProperty("elfin_id")] public int ElfinID;
-	[JsonProperty("timestamp")] public string Timestamp;
+	[JsonProperty("characterId")] public int CharacterID;
+	[JsonProperty("elfinId")] public int ElfinID;
+	[JsonProperty("achievedAt")] public DateTime Timestamp;
 }
 
 
@@ -293,6 +281,7 @@ public class MDMCWebAPIPromise
 
 	public MDMCWebAPIPromise(string url) {
 		Task.Run(async () => {
+			Debug.WriteLine("GET " + url);
 			var response = await MDMCWebAPI.Http.GetAsync(url);
 
 			MainThread.RunASAP(() => {
@@ -348,20 +337,18 @@ public static class MDMCWebAPI
 		}
 	}
 	public static readonly HttpClient Http = new HttpClient();
-	public const string WEBAPI_ENDPOINT = "https://api.mdmc.moe/v2";
+	public const string WEBAPI_ENDPOINT = "https://api.mdmc.moe/v3";
 
 	public enum Sort
 	{
-		LikesCount,
-		Title,
-		Timestamp,
-		MaxDifficulty
+		Likes,
+		Latest,
+		Difficulty
 	}
 	private static string getSort(Sort sort) => sort switch {
-		Sort.LikesCount => "likesCount",
-		Sort.Title => "title",
-		Sort.Timestamp => "timestamp",
-		Sort.MaxDifficulty => "maxDifficulty",
+		Sort.Likes => "likes",
+		Sort.Latest => "latest",
+		Sort.Difficulty => "difficulty",
 		_ => throw new Exception("Unsupported Sort value!")
 	};
 
@@ -386,13 +373,12 @@ public static class MDMCWebAPI
 	public static string BuildFetchRequestURL(string endpoint, Dictionary<string, object> parameters) =>
 		$"{WEBAPI_ENDPOINT}/{endpoint}?{buildParameters(parameters)}";
 
-	public static MDMCWebAPIPromise SearchCharts(string? query = null, Sort sort = Sort.LikesCount, int page = 1, bool rankedOnly = false) {
-		var url = BuildFetchRequestURL("charts/search", new() {
+	public static MDMCWebAPIPromise SearchCharts(string? query = null, Sort sort = Sort.Likes, int page = 1, bool rankedOnly = false) {
+		var url = BuildFetchRequestURL("charts", new() {
 			{ "q", query ?? "" },
 			{ "sort", sort },
 			{ "page", page },
-			{ "rankedOnly", rankedOnly.ToString().ToLower() },
-			{ "includeCount", "true" }
+			{ "rankedOnly", rankedOnly.ToString().ToLower() }
 		});
 
 		return new MDMCWebAPIPromise(url);
@@ -401,11 +387,6 @@ public static class MDMCWebAPI
 	public static MDMCWebAPIPromise ChartInfo(string chartID) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}");
 	public static MDMCWebAPIPromise ChartInfo(MDMCChart chart) => ChartInfo(chart.ID);
 
-	public static MDMCWebAPIPromise ChartSheets(string chartID) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}/sheets");
-	public static MDMCWebAPIPromise ChartSheets(MDMCChart chart) => ChartSheets(chart.ID);
-
-	public static MDMCWebAPIPromise ChartLeaderboards(string chartID, string sheetID, int pageID = 1) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/charts/{chartID}/sheets/{sheetID}?page={pageID}");
-	public static MDMCWebAPIPromise ChartLeaderboards(MDMCChart chart, string sheetID, int pageID = 1) => ChartLeaderboards(chart.ID, sheetID, pageID);
-	public static MDMCWebAPIPromise ChartLeaderboards(MDMCChart chart, MDMCSheet sheet, int pageID = 1) => ChartLeaderboards(chart.ID, sheet.ID, pageID);
-	public static MDMCWebAPIPromise ChartLeaderboards(MDMCSheet sheet, int pageID = 1) => ChartLeaderboards(sheet.ChartID, sheet.ID, pageID);
+	public static MDMCWebAPIPromise ChartLeaderboards(string sheetID, int pageID = 1) => new MDMCWebAPIPromise($"{WEBAPI_ENDPOINT}/sheets/{sheetID}/scores?page={pageID}");
+	public static MDMCWebAPIPromise ChartLeaderboards(MDMCSheet sheet, int pageID = 1) => ChartLeaderboards(sheet.ID, pageID);
 }
