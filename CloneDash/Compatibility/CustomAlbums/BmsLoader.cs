@@ -450,6 +450,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 				if (bossAnimBefore.noteData == null || bossAnimAhead.noteData == null) {
 					Logs.Warn("Ran into weird case in BmsLoader where bossAnimBefore or bossAnimAhead were missing noteData...?");
+					continue;
 				}
 
 				var stateBehind = i > 0 ? AnimStatesRight[bossAnimBefore.noteData.boss_action] : BossState.OffScreen;
