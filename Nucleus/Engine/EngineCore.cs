@@ -841,9 +841,10 @@ public static class EngineCore
 
 		textY++;
 	}
+	// Commented out lines don't have font support yet. Can add them back when they work again
 	private static readonly string[] ErrorMessageInAutoTranslatedLanguages = [
 		"A fatal error has occured. Press any key to exit.",
-		"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
+		//"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
 		"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.",
 		"出现致命错误。按任意键退出。              發生致命錯誤。按任意鍵退出。",
 		"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.",
@@ -858,7 +859,7 @@ public static class EngineCore
 		"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.",
 		"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.",
 		"致命的なエラーが発生しました。いずれかのキーを押して終了してください。",
-		"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
+		//"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
 		"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.",
 		"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.",
 		"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.",
