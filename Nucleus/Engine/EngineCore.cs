@@ -901,7 +901,6 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
-			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -909,7 +908,11 @@ public static class EngineCore
 
 			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 1150);
-				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(70, 170));
+				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
+					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+					Rlgl.DrawRenderBatchActive();
+					Window.SwapScreenBuffer();
+				}
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -951,10 +954,11 @@ public static class EngineCore
 				}
 
 				hasRenderedOverlay = true;
+				Rlgl.DrawRenderBatchActive();
+				Window.SwapScreenBuffer();
 			}
 			else {
 				int i = 0;
-				Window.SwapScreenBuffer();
 				while (true) {
 					OSWindow.PropagateEventBuffer();
 					if (Window.KeyAvailable(ref i, out _, out _) || Window.UserClosed()) {
@@ -965,7 +969,6 @@ public static class EngineCore
 			}
 
 			Rlgl.DrawRenderBatchActive();
-			Window.SwapScreenBuffer();
 			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
@@ -992,7 +995,6 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
-			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -1000,7 +1002,11 @@ public static class EngineCore
 
 			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 5000);
-				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
+					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+					Rlgl.DrawRenderBatchActive();
+					Window.SwapScreenBuffer();
+				}
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -1038,23 +1044,20 @@ public static class EngineCore
 
 				draw();
 				hasRenderedOverlay = true;
+				Rlgl.DrawRenderBatchActive();
+				Window.SwapScreenBuffer();
 			}
 			else {
 				int i = 0;
-				Window.SwapScreenBuffer();
-				while (true) {
-					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(ref i, out _, out _)) {
-						Raylib.SetMasterVolume(oldMaster);
-						interrupting = false;
-						return;
-					}
+				OSWindow.PropagateEventBuffer();
+				if (Window.KeyAvailable(ref i, out _, out _)) {
+					Raylib.SetMasterVolume(oldMaster);
+					interrupting = false;
+					return;
 				}
 			}
 
-			Rlgl.DrawRenderBatchActive();
-			Window.SwapScreenBuffer();
-			OS.Wait(hasRenderedOverlay ? 0.2 : 0.002);
+			OS.Wait(hasRenderedOverlay ? 0.2 : 1 / 60f);
 		}
 	}
 
