@@ -337,6 +337,8 @@ public static class MDMCWebAPI
 	public static readonly HttpClient Http = new HttpClient();
 	public const string WEBAPI_ENDPOINT = "https://api.mdmc.moe/v3";
 
+	public static void CancelPendingRequests() => Http.CancelPendingRequests();
+
 	public enum Sort
 	{
 		Likes,

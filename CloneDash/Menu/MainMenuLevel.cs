@@ -1,4 +1,5 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Menu;
@@ -108,7 +109,10 @@ public class MainMenuLevel : Level
 	}
 
 	private Button backButton;
-
+	public override void OnUnload() {
+		base.OnUnload();
+		MDMCWebAPI.CancelPendingRequests();
+	}
 	public Element PopActiveElement() {
 		if (ActiveElements.Count <= 1) return ActiveElements.Peek();
 		var element = ActiveElements.Pop();
