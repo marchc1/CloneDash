@@ -1,11 +1,14 @@
-# this workflow will build a .NET project
-# for more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 name: Build Release
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-    
+
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -15,194 +18,266 @@ jobs:
           - ubuntu-latest
           - macos-latest
     runs-on: ${{ matrix.os }}
-    outputs:
-      tag: ${{ env.SHORT_SHA }}
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
-    - name: Set SHORT Sha
-      shell: bash
-      run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-        
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Checkout Repo
+        uses: actions/checkout@v4
       
-    - name: Build
-      run: dotnet build --no-restore
+      - name: Create Directory.Build.props to suppress NU1605
+        shell: bash
+        run: |
+          cat > Directory.Build.props <<'EOF'
+          <Project>
+            <PropertyGroup>
+              <RestoreNoWarn>$(RestoreNoWarn);NU1605</RestoreNoWarn>
+              <NoWarn>$(NoWarn);NU1605</NoWarn>
+            </PropertyGroup>
+          </Project>
+          EOF
       
-    - name: Package CloneDash (Windows .exe)
-      if: matrix.os == 'windows-latest'
-      run: |
-        dotnet publish ./CloneDash/CloneDash.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishTrimmed=false --output ./publish-clonedash-exe
-        
-    - name: Package ModelEditor (Windows .exe)
-      if: matrix.os == 'windows-latest'
-      run: |
-        dotnet publish ./Nucleus.ModelEditor/Nucleus.ModelEditor.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishTrimmed=false --output ./publish-modeleditor-exe
-    
-    - name: Package for Linux (preparation for AppImage)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        dotnet publish ./CloneDash/CloneDash.csproj -c Release -r linux-x64 --self-contained false --output ./AppDir/usr/bin
-        dotnet publish ./Nucleus.ModelEditor/Nucleus.ModelEditor.csproj -c Release -r linux-x64 --self-contained false --output ./AppDir-ModelEditor/usr/bin
-    
-    - name: Create AppImage for CloneDash (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        # download AppImageTool
-        wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-        chmod +x appimagetool-x86_64.AppImage
-        
-        # create desktop entry for CloneDash
-        mkdir -p ./AppDir/usr/share/applications
-        cat > ./AppDir/usr/share/applications/CloneDash.desktop <<EOF
-        [Desktop Entry]
-        Type=Application
-        Name=CloneDash
-        Exec=CloneDash
-        Icon=clonedash
-        Categories=Game;
-        EOF
-        
-        # create a simple icon (you should replace this with actual icon)
-        mkdir -p ./AppDir/usr/share/icons/hicolor/256x256/apps
-        touch ./AppDir/usr/share/icons/hicolor/256x256/apps/clonedash.png
-        
-        # create AppRun script
-        cat > ./AppDir/AppRun <<EOF
-        #!/bin/bash
-        SELF=\$(readlink -f "\$0")
-        HERE=\${SELF%/*}
-        export PATH="\${HERE}/usr/bin:\${PATH}"
-        exec "\${HERE}/usr/bin/CloneDash" "\$@"
-        EOF
-        chmod +x ./AppDir/AppRun
-        
-        # build AppImage
-        ./appimagetool-x86_64.AppImage ./AppDir CloneDash-Linux-x86_64.AppImage
-    
-    - name: Create AppImage for ModelEditor (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        # create desktop entry for ModelEditor
-        mkdir -p ./AppDir-ModelEditor/usr/share/applications
-        cat > ./AppDir-ModelEditor/usr/share/applications/ModelEditor.desktop <<EOF
-        [Desktop Entry]
-        Type=Application
-        Name=Nucleus ModelEditor
-        Exec=Nucleus.ModelEditor
-        Icon=modeleditor
-        Categories=Development;
-        EOF
-        
-        # create a simple icon (you should replace this with actual icon)
-        mkdir -p ./AppDir-ModelEditor/usr/share/icons/hicolor/256x256/apps
-        touch ./AppDir-ModelEditor/usr/share/icons/hicolor/256x256/apps/modeleditor.png
-        
-        # create AppRun script
-        cat > ./AppDir-ModelEditor/AppRun <<EOF
-        #!/bin/bash
-        SELF=\$(readlink -f "\$0")
-        HERE=\${SELF%/*}
-        export PATH="\${HERE}/usr/bin:\${PATH}"
-        exec "\${HERE}/usr/bin/Nucleus.ModelEditor" "\$@"
-        EOF
-        chmod +x ./AppDir-ModelEditor/AppRun
-        
-        # build AppImage
-        ./appimagetool-x86_64.AppImage ./AppDir-ModelEditor ModelEditor-Linux-x86_64.AppImage
-        
-    - name: Zip for Release (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: powershell
-      run: |
-        $tempDir = "tempzip"
-        Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
-        New-Item -ItemType Directory -Path $tempDir | Out-Null
-    
-        Copy-Item -Recurse -Force ./CloneDash/bin/Release/net8.0/* $tempDir
-        Copy-Item -Recurse -Force ./Nucleus.ModelEditor/bin/Release/net8.0/* $tempDir
-    
-        Compress-Archive -Path "$tempDir\*" -DestinationPath ./CloneDash-Game-Windows.zip
-        Remove-Item -Recurse -Force $tempDir
-    
-    - name: Zip for Release (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        mkdir tempzip
-        cp -r ./CloneDash/bin/Release/net8.0/* tempzip/
-        cp -r ./Nucleus.ModelEditor/bin/Release/net8.0/* tempzip/
-        zip -r ./CloneDash-Game-Linux.zip tempzip
-        rm -r tempzip
-    
-    - name: Zip for Release (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        mkdir tempzip
-        cp -r ./CloneDash/bin/Release/net8.0/* tempzip/
-        cp -r ./Nucleus.ModelEditor/bin/Release/net8.0/* tempzip/
-        zip -r ./CloneDash-Game-macOS.zip tempzip
-        rm -r tempzip
-        
-    - name: Upload artifacts (Windows .zip)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        path: ./CloneDash-Game-Windows.zip
-        name: CloneDash-Game-Windows-zip
-        
-    - name: Upload artifacts (Windows .exe files)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        path: |
-          ./publish-clonedash-exe/CloneDash.exe
-          ./publish-modeleditor-exe/Nucleus.ModelEditor.exe
-        name: CloneDash-Game-Windows-exe
-        
-    - name: Upload artifacts (Linux .zip)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        path: ./CloneDash-Game-Linux.zip
-        name: CloneDash-Game-Linux-zip
-        
-    - name: Upload artifacts (Linux .AppImage)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        path: |
-          ./CloneDash-Linux-x86_64.AppImage
-          ./ModelEditor-Linux-x86_64.AppImage
-        name: CloneDash-Game-Linux-AppImage
-        
-    - name: Upload artifacts (macOS)
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        path: ./CloneDash-Game-macOS.zip
-        name: CloneDash-Game-macOS
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      
+      - name: Restore dependencies
+        run: dotnet restore ./CloneDash.sln -p:RestoreNoWarn=NU1605
+      
+      - name: Build (Release)
+        run: dotnet build ./CloneDash.sln --configuration Release --no-restore
+      
+      - name: Publish Windows single-file exe (framework-dependent)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          dotnet publish "./CloneDash" `
+            -c Release `
+            -f net8.0 `
+            -r win-x64 `
+            -p:SelfContained=false `
+            -p:PublishSingleFile=true `
+            -p:UseAppHost=true `
+            -p:RestoreNoWarn=NU1605 `
+            -o "./publish/win-x64-single"
+          $exe = Get-ChildItem -Path "./publish/win-x64-single" -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "No exe produced in ./publish/win-x64-single" }
+          Copy-Item $exe.FullName "./CloneDash-Game-Windows-Portable.exe" -Force
+      
+      - name: Zip for Release (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $tempDir = "tempzip"
+          Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $tempDir | Out-Null
+          Copy-Item -Recurse -Force "./CloneDash/bin/Release/net8.0/*" $tempDir
+          Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net8.0/*" $tempDir
+          Compress-Archive -Path "$tempDir\*" -DestinationPath "./CloneDash-Game-Windows.zip" -Force
+          Remove-Item -Recurse -Force $tempDir
+      
+      # Build AppImage directly from the same bin output as the working ZIP,
+      # but run the app from a writable per-user directory at runtime so files like mdlut.dat
+      # can be created or found reliably.
+      - name: Build AppImage (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPDIR=AppDir
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin"
+          
+          # Copy exactly what the ZIP uses so assets match
+          cp -a "./CloneDash/bin/Release/net8.0/." "$APPDIR/usr/bin/"
+          # Include any shared/editor assets if they are used at runtime
+          if [ -d "./Nucleus.ModelEditor/bin/Release/net8.0" ]; then
+            cp -a "./Nucleus.ModelEditor/bin/Release/net8.0/." "$APPDIR/usr/bin/" || true
+          fi
+          
+          # Ensure main executable(s) are executable when present
+          [ -f "$APPDIR/usr/bin/CloneDash" ] && chmod +x "$APPDIR/usr/bin/CloneDash" || true
+          [ -f "$APPDIR/usr/bin/Clone Dash" ] && chmod +x "$APPDIR/usr/bin/Clone Dash" || true
+          
+          echo "== Listing key files in AppImage payload =="
+          (cd "$APPDIR/usr/bin" && ls -la | sed -n '1,200p') || true
+          echo "== Searching for mdlut.dat in payload =="
+          find "$APPDIR/usr/bin" -maxdepth 6 -type f -iname 'mdlut.dat' -printf '%p\n' || true
+          
+          # AppRun: copy payload to a writable per-user dir and run from there.
+          # This avoids failures when the game tries to create or update files like mdlut.dat.
+          cat > "$APPDIR/AppRun" << 'EOF'
+          #!/bin/sh
+          set -eu
+          
+          # Resolve payload dir inside the mounted AppImage
+          HERE="$(dirname "$(readlink -f "$0")")"
+          PAYLOAD="$HERE/usr/bin"
+          
+          # Ensure native libs in usr/bin are discoverable
+          export LD_LIBRARY_PATH="$PAYLOAD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          
+          # Choose a writable run dir for the user
+          APPNAME="CloneDash"
+          if [ -n "${HOME:-}" ]; then
+            DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+            RUN_DIR="$DATA_HOME/$APPNAME/AppImageRun"
+          else
+            # Fallback to /tmp if HOME is not set
+            RUN_DIR="/tmp/${APPNAME}-run"
+          fi
+          mkdir -p "$RUN_DIR"
+          
+          # Sync payload into the writable run dir (idempotent)
+          # cp -a preserves permissions, times, symlinks
+          cp -a "$PAYLOAD/." "$RUN_DIR/"
+          
+          # Quality-of-life: place/alias mdlut.dat in common lookup spots
+          if [ -f "$RUN_DIR/Compatibility/MuseDash/mdlut.dat" ] && [ ! -e "$RUN_DIR/mdlut.dat" ]; then
+            ln -sf "Compatibility/MuseDash/mdlut.dat" "$RUN_DIR/mdlut.dat"
+          fi
+          if [ -n "${HOME:-}" ] && [ -f "$RUN_DIR/mdlut.dat" ]; then
+            CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/$APPNAME"
+            DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/$APPNAME"
+            mkdir -p "$CONF_DIR" "$DATA_DIR" || true
+            [ ! -f "$CONF_DIR/mdlut.dat" ] && cp -f "$RUN_DIR/mdlut.dat" "$CONF_DIR/mdlut.dat" || true
+            [ ! -f "$DATA_DIR/mdlut.dat" ] && cp -f "$RUN_DIR/mdlut.dat" "$DATA_DIR/mdlut.dat" || true
+          fi
+          
+          # Run from the writable directory so relative asset paths and generated files work
+          cd "$RUN_DIR"
+          
+          # Prefer native host; otherwise use dotnet if only DLL is present
+          if [ -x "./CloneDash" ]; then
+            exec "./CloneDash" "$@"
+          elif [ -x "./Clone Dash" ]; then
+            exec "./Clone Dash" "$@"
+          elif [ -f "./CloneDash.dll" ]; then
+            exec dotnet "./CloneDash.dll" "$@"
+          else
+            CANDIDATE="$(find . -maxdepth 1 -type f -perm -111 | head -n1 || true)"
+            if [ -z "$CANDIDATE" ]; then
+              echo "No executable found in $RUN_DIR" >&2
+              exit 1
+            fi
+            exec "$CANDIDATE" "$@"
+          fi
+          EOF
+          chmod +x "$APPDIR/AppRun"
+          
+          cat > "$APPDIR/CloneDash.desktop" << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=CloneDash
+          Comment=CloneDash Game
+          Exec=AppRun %F
+          Icon=CloneDash
+          Categories=Game;
+          Terminal=false
+          EOF
+          
+          # Minimal placeholder icon
+          base64 -d > "$APPDIR/CloneDash.png" << 'EOF'
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAvoB9B9l60wAAAAASUVORK5CYII=
+          EOF
+          ln -sf CloneDash.png "$APPDIR/.DirIcon"
+          
+          # Build AppImage without requiring FUSE on the runner
+          curl -fsSL -o appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun "$APPDIR"
+          
+          # Normalize output filename
+          mv CloneDash-*.AppImage ./CloneDash-Game-Linux.AppImage 2>/dev/null || \
+          mv AppDir-*.AppImage ./CloneDash-Game-Linux.AppImage
+      
+      - name: Zip for Release (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -e
+          rm -rf tempzip
+          mkdir -p tempzip
+          cp -r "./CloneDash/bin/Release/net8.0/"* tempzip/
+          cp -r "./Nucleus.ModelEditor/bin/Release/net8.0/"* tempzip/
+          zip -r "./CloneDash-Game-Linux.zip" tempzip
+          rm -rf tempzip
+      
+      - name: Zip for Release (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -e
+          rm -rf tempzip
+          mkdir -p tempzip
+          cp -r "./CloneDash/bin/Release/net8.0/"* tempzip/
+          cp -r "./Nucleus.ModelEditor/bin/Release/net8.0/"* tempzip/
+          zip -r "./CloneDash-Game-macOS.zip" tempzip
+          rm -rf tempzip
+      
+      - name: Upload artifact - Windows zip
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloneDash-Game-Windows
+          path: ./CloneDash-Game-Windows.zip
+          if-no-files-found: error
+      
+      - name: Upload artifact - Windows Portable exe
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloneDash-Game-Windows-Portable
+          path: ./CloneDash-Game-Windows-Portable.exe
+          if-no-files-found: error
+      
+      - name: Upload artifact - Linux zip
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloneDash-Game-Linux
+          path: ./CloneDash-Game-Linux.zip
+          if-no-files-found: error
+      
+      - name: Upload artifact - Linux AppImage
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloneDash-Game-Linux-AppImage
+          path: ./CloneDash-Game-Linux.AppImage
+          if-no-files-found: error
+      
+      - name: Upload artifact - macOS zip
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloneDash-Game-macOS
+          path: ./CloneDash-Game-macOS.zip
+          if-no-files-found: error
   
   release:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Get artifacts 
-      uses: actions/download-artifact@v4
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          CloneDash-Game-Windows-zip/CloneDash-Game-Windows.zip
-          CloneDash-Game-Windows-exe/CloneDash.exe
-          CloneDash-Game-Windows-exe/Nucleus.ModelEditor.exe
-          CloneDash-Game-Linux-zip/CloneDash-Game-Linux.zip
-          CloneDash-Game-Linux-AppImage/CloneDash-Linux-x86_64.AppImage
-          CloneDash-Game-Linux-AppImage/ModelEditor-Linux-x86_64.AppImage
-          CloneDash-Game-macOS/CloneDash-Game-macOS.zip
-        tag_name: ${{ needs.build.outputs.tag }}
-        fail_on_unmatched_files: true
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+      
+      - name: Compute short SHA tag
+        id: meta
+        shell: bash
+        run: |
+          SHORT="${GITHUB_SHA::7}"
+          echo "tag=$SHORT" >> "$GITHUB_OUTPUT"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
+            dist/CloneDash-Game-Windows-Portable/CloneDash-Game-Windows-Portable.exe
+            dist/CloneDash-Game-Linux/CloneDash-Game-Linux.zip
+            dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
+            dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
