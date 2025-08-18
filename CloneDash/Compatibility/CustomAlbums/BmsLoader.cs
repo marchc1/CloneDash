@@ -448,6 +448,11 @@ namespace CloneDash.Compatibility.CustomAlbums
 				var diffToBefore = Math.Abs((float)data.configData.time - (float)bossAnimBefore.configData.time);
 				var ahead = diffToAhead < diffToBefore;
 
+				if (bossAnimBefore.noteData == null || bossAnimAhead.noteData == null) {
+					Logs.Warn("Ran into weird case in BmsLoader where bossAnimBefore or bossAnimAhead were missing noteData...?");
+					continue;
+				}
+
 				var stateBehind = i > 0 ? AnimStatesRight[bossAnimBefore.noteData.boss_action] : BossState.OffScreen;
 				var stateAhead = AnimStatesLeft.TryGetValue(bossAnimAhead.noteData.boss_action, out var state)
 					? state

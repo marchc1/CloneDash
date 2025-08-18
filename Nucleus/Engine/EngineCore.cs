@@ -841,9 +841,10 @@ public static class EngineCore
 
 		textY++;
 	}
+	// Commented out lines don't have font support yet. Can add them back when they work again
 	private static readonly string[] ErrorMessageInAutoTranslatedLanguages = [
 		"A fatal error has occured. Press any key to exit.",
-		"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
+		//"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
 		"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.",
 		"出现致命错误。按任意键退出。              發生致命錯誤。按任意鍵退出。",
 		"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.",
@@ -858,7 +859,7 @@ public static class EngineCore
 		"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.",
 		"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.",
 		"致命的なエラーが発生しました。いずれかのキーを押して終了してください。",
-		"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
+		//"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
 		"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.",
 		"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.",
 		"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.",
@@ -901,7 +902,6 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
-			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -909,7 +909,11 @@ public static class EngineCore
 
 			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 1150);
-				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(70, 170));
+				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
+					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+					Rlgl.DrawRenderBatchActive();
+					Window.SwapScreenBuffer();
+				}
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -951,10 +955,11 @@ public static class EngineCore
 				}
 
 				hasRenderedOverlay = true;
+				Rlgl.DrawRenderBatchActive();
+				Window.SwapScreenBuffer();
 			}
 			else {
 				int i = 0;
-				Window.SwapScreenBuffer();
 				while (true) {
 					OSWindow.PropagateEventBuffer();
 					if (Window.KeyAvailable(ref i, out _, out _) || Window.UserClosed()) {
@@ -965,7 +970,6 @@ public static class EngineCore
 			}
 
 			Rlgl.DrawRenderBatchActive();
-			Window.SwapScreenBuffer();
 			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
 		}
 	}
@@ -992,7 +996,6 @@ public static class EngineCore
 		bool hasRenderedOverlay = false;
 
 		while (true) {
-			Window.SwapScreenBuffer();
 			var now = time.Elapsed.TotalSeconds;
 			double elapsed = now - lastTime;
 			lastTime = now;
@@ -1000,7 +1003,11 @@ public static class EngineCore
 
 			if (y < Window.Size.H) {
 				int elapsedY = (int)((float)elapsed * 5000);
-				Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
+					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
+					Rlgl.DrawRenderBatchActive();
+					Window.SwapScreenBuffer();
+				}
 				y += elapsedY;
 			}
 			else if (!hasRenderedOverlay) {
@@ -1038,23 +1045,20 @@ public static class EngineCore
 
 				draw();
 				hasRenderedOverlay = true;
+				Rlgl.DrawRenderBatchActive();
+				Window.SwapScreenBuffer();
 			}
 			else {
 				int i = 0;
-				Window.SwapScreenBuffer();
-				while (true) {
-					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(ref i, out _, out _)) {
-						Raylib.SetMasterVolume(oldMaster);
-						interrupting = false;
-						return;
-					}
+				OSWindow.PropagateEventBuffer();
+				if (Window.KeyAvailable(ref i, out _, out _)) {
+					Raylib.SetMasterVolume(oldMaster);
+					interrupting = false;
+					return;
 				}
 			}
 
-			Rlgl.DrawRenderBatchActive();
-			Window.SwapScreenBuffer();
-			OS.Wait(hasRenderedOverlay ? 0.2 : 0.002);
+			OS.Wait(hasRenderedOverlay ? 0.2 : 1 / 60f);
 		}
 	}
 

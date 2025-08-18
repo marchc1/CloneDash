@@ -455,7 +455,14 @@ public class SongSelector : Panel, IMainMenuPanel
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(0);
 				if (song is CustomChartsSong customChartsSong) {
-					customChartsSong.DownloadOrPullFromCache((c) => EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(this, c));
+					customChartsSong.DownloadOrPullFromCache((c) => {
+						if(EngineCore.Level is not MainMenuLevel mml) {
+							Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
+							return;
+						}
+
+						mml.LoadChartSelector(this, c);
+					});
 				}
 				else
 					EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(this, song);

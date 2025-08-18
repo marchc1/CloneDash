@@ -440,16 +440,29 @@ namespace CloneDash.Compatibility.MuseDash
 				var songsFinal = new MuseDashSong[songs.Count];
 
 				for (int i = 0; i < songs.Count; i++) {
-					workSongs.Add(new MuseDashSong(songs[i]) {
+					PatchSong(songs, i);
+					var song = new MuseDashSong(songs[i]) {
 						Name = songsEN[i].name,
 						Author = songsEN[i].author,
 						Album = album
-					});
+					};
+					workSongs.Add(song);
 				}
 			});
 
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
+		}
+
+		const string CHAOS_UID = "33-4";
+		const string CHAOS_GLITCH_UID = "33-12";
+		private static void PatchSong(List<MuseDashSongInfoJSON> songs, int i) {
+			switch (songs[i].UID) {
+				case CHAOS_GLITCH_UID: // "CHAOS (Glitch)" by Aesir points to seemingly non-existant demo assets #18
+					songs[i].Cover = "chaos_cover";
+					songs[i].Demo = "chaos_demo";
+					break;
+			}
 		}
 
 		private enum MDAtlasBuildStep
