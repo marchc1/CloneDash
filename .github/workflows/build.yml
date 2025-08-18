@@ -19,21 +19,21 @@ jobs:
           - macos-latest
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
-
-    - name: Set SHORT Sha
-      shell: bash
-      run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+    
+      - name: Set SHORT Sha
+        shell: bash
+        run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
+    
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          
+      - name: Restore dependencies
+        run: dotnet restore
         
-    - name: Restore dependencies
-      run: dotnet restore
-      
       - name: Create Directory.Build.props to suppress NU1605
         shell: bash
         run: |
@@ -45,12 +45,12 @@ jobs:
             </PropertyGroup>
           </Project>
           EOF
-      
+        
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      
+    
       - name: Restore dependencies
         run: dotnet restore ./CloneDash.sln -p:RestoreNoWarn=NU1605
       
