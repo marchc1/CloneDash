@@ -48,7 +48,7 @@ public static class Filesystem
 				// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
 				var PlatformApplicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 				var PlatformApplicationDataSearchPath = new DiskSearchPath(PlatformApplicationDataPath);
-				cfg = AddSearchPath("cfg", DiskSearchPath.Combine(PlatformApplicationDataSearchPath, "CloneDash"));
+				cfg = AddSearchPath("cfg", DiskSearchPath.Combine(PlatformApplicationDataSearchPath, EngineCore.GameInfo.GameName));
 			}
 			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 			{
