@@ -36,7 +36,20 @@ public static class Filesystem
 	static Filesystem() {
 		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
 		{
-			var cfg = AddSearchPath("cfg", DiskSearchPath.Combine(game, "cfg"));
+			DiskSearchPath cfg;
+			var LegacyCfgSearchPath = DiskSearchPath.Combine(game, "cfg");
+			if (Directory.Exists(LegacyCfgSearchPath.RootDirectory)) {
+				cfg = AddSearchPath("cfg", LegacyCfgSearchPath);
+			}
+			else {
+				// PlatformApplicationDataPath value:
+				// Windows: <user-directory>\AppData\Roaming
+				// Linux/macOS: ~/.config
+				// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
+				var PlatformApplicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+				var PlatformApplicationDataSearchPath = new DiskSearchPath(PlatformApplicationDataPath);
+				cfg = AddSearchPath("cfg", DiskSearchPath.Combine(PlatformApplicationDataSearchPath, EngineCore.GameInfo.GameName));
+			}
 			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 			{
 				AddSearchPath("audio", DiskSearchPath.Combine(assets, "audio"));
