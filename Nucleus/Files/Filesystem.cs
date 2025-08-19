@@ -39,14 +39,14 @@ public static class Filesystem
 		if (initialized)
 			return;
 		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
+		// PlatformApplicationDataPath value:
+		//     Windows: <user-directory>\AppData\Roaming
+		//     Linux/macOS: ~/.config
+		// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
+		var appdata = AddSearchPath<DiskSearchPath>("appdata", System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), gameName));
 		{
-			// PlatformApplicationDataPath value:
-			//     Windows: <user-directory>\AppData\Roaming
-			//     Linux/macOS: ~/.config
-			// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
 			// This acts as the primary config search path (mounted at the head of the filesystem),
-			var platformApplicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-			AddSearchPath("cfg", new DiskSearchPath(System.IO.Path.Combine(platformApplicationDataPath, gameName, "cfg")));
+			AddSearchPath("cfg", DiskSearchPath.Combine(appdata, "cfg"));
 			// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail
 			var cfgLegacy = DiskSearchPath.Combine(game, "cfg");
 			if (cfgLegacy.Exists())
