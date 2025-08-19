@@ -11,6 +11,8 @@ public static class Filesystem
 {
 	public static Dictionary<string, SearchPathID> Path { get; } = [];
 
+	private static bool initialized = false;
+
 	/// <summary>
 	/// This stores some images in-code for the UI
 	/// todo; a MUCH better way to do this, ie. something encoding in the application itself. I just haven't done much of that before
@@ -33,7 +35,9 @@ public static class Filesystem
 
 		return mempath;
 	}
-	static Filesystem() {
+	public static void Initialize(string GameName) {
+		if (initialized)
+			return;
 		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
 		{
 			DiskSearchPath cfg;
@@ -48,7 +52,7 @@ public static class Filesystem
 				// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
 				var PlatformApplicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 				var PlatformApplicationDataSearchPath = new DiskSearchPath(PlatformApplicationDataPath);
-				cfg = AddSearchPath("cfg", DiskSearchPath.Combine(PlatformApplicationDataSearchPath, EngineCore.GameInfo.GameName));
+				cfg = AddSearchPath("cfg", DiskSearchPath.Combine(PlatformApplicationDataSearchPath, GameName));
 			}
 			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 			{
@@ -60,6 +64,7 @@ public static class Filesystem
 				AddSearchPath("shaders", DiskSearchPath.Combine(assets, "shaders"));
 			}
 		}
+		initialized = true;
 	}
 
 	/// <summary>
