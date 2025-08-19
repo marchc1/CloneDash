@@ -25,6 +25,7 @@ public class DiskSearchPath : SearchPath
 			throw new NotSupportedException("Cannot use a non-DiskSearchPath as a root.");
 		RootDirectory = Path.Combine(dsp.RootDirectory.TrimEnd('/').TrimEnd('\\'), rootDirectory.TrimStart('/').TrimStart('\\').TrimEnd('/').TrimEnd('\\'));
 	}
+	public bool Exists() => Directory.Exists(RootDirectory);
 
 	public static DiskSearchPath Combine(SearchPath root, string rootDirectory) => new DiskSearchPath(root, rootDirectory);
 
