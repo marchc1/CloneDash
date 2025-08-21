@@ -35,15 +35,49 @@ public static class Filesystem
 
 		return mempath;
 	}
+
+	/// <summary>Get base directory of config files.</summary>
+	/// <returns>A string representing the path of the base directory.</returns>
+	/// <remarks>
+	/// Values on different platforms:
+	///     Windows: <user>\AppData\Roaming
+	///     Linux/macOS: ${XDG_CONFIG_HOME:-$HOME/.config}
+	/// </remarks>
+	/// <seealso href="https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/" /> 
+	private static string GetConfigBaseDir() => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+	/// <summary>Get base directory of data files.</summary>
+	/// <returns>A string representing the path of the base directory.</returns>
+	/// <remarks>
+	/// Values on different platforms:
+	///     Windows: <user>\AppData\Local
+	///     Linux/macOS: ${XDG_DATA_HOME:-$HOME/.local/share} 
+	/// </remarks>
+	/// <seealso href="https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/" />
+	private static string GetDataBaseDir() => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+	/// <summary>Get base directory of cache files.</summary>
+	/// <returns>A string representing the path of the base directory.</returns>
+	/// <remarks>
+	/// Values on different platforms:
+	///     Windows: %TEMP% or %TMP% or <user>\AppData\Local\Temp
+	///     Linux/macOS: ${XDG_CACHE_HOME:-$HOME/.cache}
+	/// </remarks>
+	/// <seealso href="https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/" />
+	/// <seealso href="https://en.wikipedia.org/wiki/Environment_variable#Default_values" />
+	/// <seealso href="https://specifications.freedesktop.org/basedir-spec/latest/#variables" />  
+	private static string GetCacheBaseDir() =>
+		OperatingSystem.IsWindows() ?
+			Environment.GetEnvironmentVariable("TEMP") ?? Environment.GetEnvironmentVariable("TMP") ??
+			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp") :
+			Environment.GetEnvironmentVariable("XDG_CACHE_HOME") ??
+			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache");
+	
 	public static void Initialize(string gameName) {
 		if (initialized)
 			return;
 		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
-		// PlatformApplicationDataPath value:
-		//     Windows: <user-directory>\AppData\Roaming
-		//     Linux/macOS: ~/.config
-		// See also: https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/
-		var appdata = AddSearchPath<DiskSearchPath>("appdata", System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), gameName));
+		var appdata = AddSearchPath<DiskSearchPath>("appdata", System.IO.Path.Combine(GetConfigBaseDir(), gameName));
 		{
 			// This acts as the primary config search path (mounted at the head of the filesystem),
 			AddSearchPath("cfg", DiskSearchPath.Combine(appdata, "cfg"));
