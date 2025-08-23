@@ -96,6 +96,15 @@ public static class Filesystem
 		{
 			// This acts as the primary config search path (mounted at the head of the filesystem),
 			AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(GetConfigBaseDir()), gameName));
+			// XDG base directory support
+			// XDG_CONFIG_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_CONFIG_HOME:-$HOME/.config}.
+			// As DiskSearchPath will try creating that directory, we only add it when actually exists.
+			if (!OperatingSystem.IsWindows()) {
+				string xdgConfigDirs = Environment.GetEnvironmentVariable("XDG_CONFIG_DIRS") ?? "/etc/xdg";
+				foreach (string path in xdgConfigDirs.Split(':'))
+					if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+						AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
+			}
 			// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail
 			var cfgLegacy = DiskSearchPath.Combine(game, "cfg");
 			if (cfgLegacy.Exists())
