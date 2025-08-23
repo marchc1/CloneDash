@@ -72,6 +72,22 @@ public static class Filesystem
 			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp") :
 			Environment.GetEnvironmentVariable("XDG_CACHE_HOME") ??
 			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache");
+
+	/// <summary>Get base directory of state files.</summary>
+	/// <returns>A string representing the path of the base directory.</returns>
+	/// <remarks>
+	/// Values on different platforms:
+	///     Windows: Same to <see cref="GetCacheBaseDir" />
+	///     Linux/macOS: ${XDG_STATE_HOME:-$HOME/.local/state}
+	/// As Windows does not have similar concept, we use cache directory here instead.
+	/// </remarks>
+	/// <seealso href="https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/" />
+	/// <seealso href="https://specifications.freedesktop.org/basedir-spec/latest/#variables" />
+	private static string GetStateBaseDir() =>
+		OperatingSystem.IsWindows() ?
+		GetCacheBaseDir() :
+		Environment.GetEnvironmentVariable("XDG_STATE_HOME") ??
+		System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
 	
 	public static void Initialize(string gameName) {
 		if (initialized)
@@ -89,6 +105,8 @@ public static class Filesystem
 			AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
 			// This is where we storage cache data, game can generate them again if needed.
 			AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
+			// This is where we storate persist data but not important like `appdata`, like history, logs, etc.
+			AddSearchPath("appstate", DiskSearchPath.Combine(new DiskSearchPath(GetStateBaseDir()), gameName));
 
 			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 			{
