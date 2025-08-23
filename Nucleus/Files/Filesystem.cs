@@ -103,6 +103,16 @@ public static class Filesystem
 
 			// This is where we storage persist data, game will not work correctly without them.
 			AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
+			// XDG base directory support
+			// XDG_DATA_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_DATA_HOME:-$HOME/.local/share}.
+			// As DiskSearchPath will try creating that directory, we only add it when actually exists.
+			if (!OperatingSystem.IsWindows()) {
+				string xdgDataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share";
+				foreach (string path in xdgDataDirs.Split(':'))
+					if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+						AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
+			}
+
 			// This is where we storage cache data, game can generate them again if needed.
 			AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
 			// This is where we storate persist data but not important like `appdata`, like history, logs, etc.
