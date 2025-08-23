@@ -77,14 +77,18 @@ public static class Filesystem
 		if (initialized)
 			return;
 		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
-		var appdata = AddSearchPath<DiskSearchPath>("appdata", System.IO.Path.Combine(GetConfigBaseDir(), gameName));
 		{
 			// This acts as the primary config search path (mounted at the head of the filesystem),
-			AddSearchPath("cfg", DiskSearchPath.Combine(appdata, "cfg"));
+			AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(GetConfigBaseDir()), gameName));
 			// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail
 			var cfgLegacy = DiskSearchPath.Combine(game, "cfg");
 			if (cfgLegacy.Exists())
 				AddSearchPath("cfg", cfgLegacy);
+
+			// This is where we storage persist data, game will not work correctly without them.
+			AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
+			// This is where we storage cache data, game can generate them again if needed.
+			AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
 
 			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
 			{
