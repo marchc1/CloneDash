@@ -41,6 +41,16 @@ internal class Program
 		EngineCore.StartMainThread();
 		RichPresenceSystem.Shutdown();
 	}
+	static void AddCustomPath(SearchPath basePath) {
+		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom"));
+		{
+			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
+			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/"));
+			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
+			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
+		}
+	}
 	static void GameMain() {
 		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
@@ -78,27 +88,25 @@ internal class Program
 			musedash = Filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
 
 		var game = Filesystem.GetSearchPathID("game")[0];
+		var appcache = Filesystem.GetSearchPathID("appcache")[0];
+		var appdata = Filesystem.GetSearchPathID("appdata")[0];
 		{
 			// Custom assets should always be top priority for the filesystem
 			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
 				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums"));
 
-			var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(game, "custom"));
-			{
-				Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
-				Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/"));
-				Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
-				Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
-			}
+			// Prioritize custom assets in order of new appdata/ -> game/
+			AddCustomPath(appdata);
+			AddCustomPath(game);
 
 			// Downloaded charts, etc, mostly for MDMC API
-			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(game, "download"));
+			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
 			{
 				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
 			}
 
-			// tail: default asset fallbacks
+			// tail: default asset fallbacks.
+			// These get shipped with the game so they are static
 			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/"));
 			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/"));
 			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
