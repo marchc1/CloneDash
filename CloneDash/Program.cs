@@ -106,12 +106,12 @@ internal class Program
 			}
 
 			// tail: default asset fallbacks.
-			// These get shipped with the game so they are static
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/"));
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/"));
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/"));
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/"));
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/"));
+			// These get shipped with the game so they are readonly
+			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/").MakeReadOnly());
+			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/").MakeReadOnly());
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/").MakeReadOnly());
+			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/").MakeReadOnly());
+			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/").MakeReadOnly());
 		}
 
 		DoCmdLineOps(CommandLine.Singleton, true);

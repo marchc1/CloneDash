@@ -7,6 +7,7 @@ public class DiskSearchPath : SearchPath
 	public string RootDirectory;
 	private Dictionary<string, string> LocalToAbsolute = [];
 	private HashSet<string> LocalExists = [];
+	private bool ReadOnly;
 	public override string ToString() {
 		return $"Disk SearchPath @ {RootDirectory}";
 	}
@@ -14,6 +15,11 @@ public class DiskSearchPath : SearchPath
 		RootDirectory = rootDirectory;
 		Directory.CreateDirectory(rootDirectory);
 	}
+	public DiskSearchPath MakeReadOnly() {
+		ReadOnly = true;
+		return this;
+	}
+
 	/// <summary>
 	/// <b>Note:</b> <paramref name="root"/> must be a <see cref="DiskSearchPath"/>.
 	/// </summary>
@@ -50,6 +56,9 @@ public class DiskSearchPath : SearchPath
 			}
 
 			if (access.HasFlag(FileAccess.Write)) {
+				if (ReadOnly)
+					return false;
+
 				if (info.Exists && info.IsReadOnly) return false;
 			}
 
