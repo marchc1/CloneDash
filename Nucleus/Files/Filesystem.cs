@@ -67,11 +67,14 @@ public static class Filesystem
 	/// <seealso href="https://en.wikipedia.org/wiki/Environment_variable#Default_values" />
 	/// <seealso href="https://specifications.freedesktop.org/basedir-spec/latest/#variables" />  
 	private static string GetCacheBaseDir() =>
-		OperatingSystem.IsWindows() ?
-			Environment.GetEnvironmentVariable("TEMP") ?? Environment.GetEnvironmentVariable("TMP") ??
-			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp") :
-			Environment.GetEnvironmentVariable("XDG_CACHE_HOME") ??
-			System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache");
+#if COMPILED_WINDOWS
+		Environment.GetEnvironmentVariable("TEMP")
+	?? Environment.GetEnvironmentVariable("TMP")
+	?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp");
+#else
+		Environment.GetEnvironmentVariable("XDG_CACHE_HOME") 
+	??	System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache");
+#endif
 
 	/// <summary>Get base directory of state files.</summary>
 	/// <returns>A string representing the path of the base directory.</returns>
@@ -84,59 +87,84 @@ public static class Filesystem
 	/// <seealso href="https://jimrich.sk/environment-specialfolder-on-windows-linux-and-os-x/" />
 	/// <seealso href="https://specifications.freedesktop.org/basedir-spec/latest/#variables" />
 	private static string GetStateBaseDir() =>
-		OperatingSystem.IsWindows() ?
-		GetCacheBaseDir() :
-		Environment.GetEnvironmentVariable("XDG_STATE_HOME") ??
-		System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
-	
+#if COMPILED_WINDOWS
+		GetCacheBaseDir();
+#else
+		Environment.GetEnvironmentVariable("XDG_STATE_HOME") 
+	?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
+#endif
+
+	private static DiskSearchPath AddBaseGameSearchPaths() {
+		return AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
+	}
+
+	private static void AddConfigSearchPaths(DiskSearchPath gameDiskSearchPath, string gameName) {
+		// This acts as the primary config search path (mounted at the head of the filesystem),
+		AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(GetConfigBaseDir()), gameName));
+
+		// XDG base directory support
+		// XDG_CONFIG_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_CONFIG_HOME:-$HOME/.config}.
+		// As DiskSearchPath will try creating that directory, we only add it when actually exists.
+#if !COMPILED_WINDOWS
+		string xdgConfigDirs = Environment.GetEnvironmentVariable("XDG_CONFIG_DIRS") ?? "/etc/xdg";
+		foreach (string path in xdgConfigDirs.Split(':'))
+			if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+				AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
+#endif
+		// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail.
+		// New cfg writes will happen to the new folders at the head
+		var cfgLegacy = DiskSearchPath.Combine(gameDiskSearchPath, "cfg");
+		if (cfgLegacy.Exists())
+			AddSearchPath("cfg", cfgLegacy);
+	}
+
+	private static void AddAppDataSearchPaths(string gameName) {
+		// This is where we storage persist data, game will not work correctly without them.
+		AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
+		// XDG base directory support
+		// XDG_DATA_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_DATA_HOME:-$HOME/.local/share}.
+		// As DiskSearchPath will try creating that directory, we only add it when actually exists.
+#if !COMPILED_WINDOWS
+		string xdgDataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share";
+		foreach (string path in xdgDataDirs.Split(':'))
+			if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+				AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
+#endif
+	}
+
+	private static void AddAppCacheSearchPaths(string gameName) {
+		// This is where we storage cache data, game can generate them again if needed.
+		AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
+	}
+
+	private static void AddAppStateSearchPaths(string gameName) {
+		// This is where we storate persist data but not important like `appdata`, like history, logs, etc.
+		AddSearchPath("appstate", DiskSearchPath.Combine(new DiskSearchPath(GetStateBaseDir()), gameName));
+	}
+
+	private static void AddUserAssets(DiskSearchPath gameDiskSearchPath) {
+		var assets = AddSearchPath("assets", DiskSearchPath.Combine(gameDiskSearchPath, "assets"));
+		{
+			AddSearchPath("audio", DiskSearchPath.Combine(assets, "audio"));
+			AddSearchPath("fonts", DiskSearchPath.Combine(assets, "fonts"));
+			AddSearchPath("images", MemBackedImages());
+			AddSearchPath("images", DiskSearchPath.Combine(assets, "images"));
+			AddSearchPath("models", DiskSearchPath.Combine(assets, "models"));
+			AddSearchPath("shaders", DiskSearchPath.Combine(assets, "shaders"));
+		}
+	}
+
 	public static void Initialize(string gameName) {
 		if (initialized)
 			return;
-		var game = AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
-		{
-			// This acts as the primary config search path (mounted at the head of the filesystem),
-			AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(GetConfigBaseDir()), gameName));
-			// XDG base directory support
-			// XDG_CONFIG_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_CONFIG_HOME:-$HOME/.config}.
-			// As DiskSearchPath will try creating that directory, we only add it when actually exists.
-			if (!OperatingSystem.IsWindows()) {
-				string xdgConfigDirs = Environment.GetEnvironmentVariable("XDG_CONFIG_DIRS") ?? "/etc/xdg";
-				foreach (string path in xdgConfigDirs.Split(':'))
-					if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
-						AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
-			}
-			// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail
-			var cfgLegacy = DiskSearchPath.Combine(game, "cfg");
-			if (cfgLegacy.Exists())
-				AddSearchPath("cfg", cfgLegacy);
 
-			// This is where we storage persist data, game will not work correctly without them.
-			AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
-			// XDG base directory support
-			// XDG_DATA_DIRS sets a set of extra base directories which each one needs to be searched like ${XDG_DATA_HOME:-$HOME/.local/share}.
-			// As DiskSearchPath will try creating that directory, we only add it when actually exists.
-			if (!OperatingSystem.IsWindows()) {
-				string xdgDataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share";
-				foreach (string path in xdgDataDirs.Split(':'))
-					if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
-						AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
-			}
+		var gameDiskSearchPath = AddBaseGameSearchPaths();
+		AddConfigSearchPaths(gameDiskSearchPath, gameName);
+		AddAppDataSearchPaths(gameName);
+		AddAppCacheSearchPaths(gameName);
+		AddAppStateSearchPaths(gameName);
+		AddUserAssets(gameDiskSearchPath);
 
-			// This is where we storage cache data, game can generate them again if needed.
-			AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
-			// This is where we storate persist data but not important like `appdata`, like history, logs, etc.
-			AddSearchPath("appstate", DiskSearchPath.Combine(new DiskSearchPath(GetStateBaseDir()), gameName));
-
-			var assets = AddSearchPath("assets", DiskSearchPath.Combine(game, "assets"));
-			{
-				AddSearchPath("audio", DiskSearchPath.Combine(assets, "audio"));
-				AddSearchPath("fonts", DiskSearchPath.Combine(assets, "fonts"));
-				AddSearchPath("images", MemBackedImages());
-				AddSearchPath("images", DiskSearchPath.Combine(assets, "images"));
-				AddSearchPath("models", DiskSearchPath.Combine(assets, "models"));
-				AddSearchPath("shaders", DiskSearchPath.Combine(assets, "shaders"));
-			}
-		}
 		initialized = true;
 	}
 
