@@ -41,14 +41,14 @@ internal class Program
 		EngineCore.StartMainThread();
 		RichPresenceSystem.Shutdown();
 	}
-	static void AddCustomPath(SearchPath basePath) {
-		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom"));
+	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
+		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
 		{
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/"));
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/"));
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/"));
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/"));
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/"));
+			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/", createIfMissing: createIfMissing));
+			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/", createIfMissing: createIfMissing));
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/", createIfMissing: createIfMissing));
+			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/", createIfMissing: createIfMissing));
+			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/", createIfMissing: createIfMissing));
 		}
 	}
 	static void GameMain() {
@@ -93,11 +93,11 @@ internal class Program
 		{
 			// Custom assets should always be top priority for the filesystem
 			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums"));
+				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
 
 			// Prioritize custom assets in order of new appdata/ -> game/
-			AddCustomPath(appdata);
-			AddCustomPath(game);
+			AddCustomPath(appdata, createIfMissing: true);
+			AddCustomPath(game, createIfMissing: false);
 
 			// Downloaded charts, etc, mostly for MDMC API
 			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
@@ -107,11 +107,11 @@ internal class Program
 
 			// tail: default asset fallbacks.
 			// These get shipped with the game so they are readonly
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/").MakeReadOnly());
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/").MakeReadOnly());
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/").MakeReadOnly());
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/").MakeReadOnly());
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/").MakeReadOnly());
+			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/", createIfMissing: false).MakeReadOnly());
+			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/", createIfMissing: false).MakeReadOnly());
+			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/", createIfMissing: false).MakeReadOnly());
+			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/", createIfMissing: false).MakeReadOnly());
+			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/", createIfMissing: false).MakeReadOnly());
 		}
 
 		DoCmdLineOps(CommandLine.Singleton, true);

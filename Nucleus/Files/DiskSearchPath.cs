@@ -11,10 +11,24 @@ public class DiskSearchPath : SearchPath
 	public override string ToString() {
 		return $"Disk SearchPath @ {RootDirectory}";
 	}
+
+	void TryCreateDirectory(bool createIfMissing = true) {
+		try {
+			if (!Directory.Exists(RootDirectory) && createIfMissing)
+				Directory.CreateDirectory(RootDirectory);
+		}
+		catch (Exception e) {
+			Logs.Warn($"Could not create directory for {RootDirectory}.");
+			Logs.Warn($"    Error:   {e.GetType().Name}");
+			Logs.Warn($"    Message: {e.Message}");
+		}
+	}
+
 	public DiskSearchPath(string rootDirectory) {
 		RootDirectory = rootDirectory;
-		Directory.CreateDirectory(rootDirectory);
+		TryCreateDirectory();
 	}
+
 	public DiskSearchPath MakeReadOnly() {
 		ReadOnly = true;
 		return this;
@@ -26,14 +40,16 @@ public class DiskSearchPath : SearchPath
 	/// <param name="root"></param>
 	/// <param name="rootDirectory"></param>
 	/// <exception cref="NotSupportedException"></exception>
-	public DiskSearchPath(SearchPath root, string rootDirectory) {
+	public DiskSearchPath(SearchPath root, string rootDirectory, bool createIfMissing = true) {
 		if (root is not DiskSearchPath dsp)
 			throw new NotSupportedException("Cannot use a non-DiskSearchPath as a root.");
+
 		RootDirectory = Path.Combine(dsp.RootDirectory.TrimEnd('/').TrimEnd('\\'), rootDirectory.TrimStart('/').TrimStart('\\').TrimEnd('/').TrimEnd('\\'));
+		TryCreateDirectory(createIfMissing);
 	}
 	public bool Exists() => Directory.Exists(RootDirectory);
 
-	public static DiskSearchPath Combine(SearchPath root, string rootDirectory) => new DiskSearchPath(root, rootDirectory);
+	public static DiskSearchPath Combine(SearchPath root, string rootDirectory, bool createIfMissing = true) => new DiskSearchPath(root, rootDirectory, createIfMissing);
 
 	public string ResolveToAbsolute(string localPath) {
 		return Path.Combine(RootDirectory, localPath.TrimStart('/').TrimStart('\\'));
@@ -79,7 +95,7 @@ public class DiskSearchPath : SearchPath
 		try {
 			var absPath = ResolveToAbsolute(path);
 			var absFolder = Path.GetDirectoryName(absPath);
-			if (access.HasFlag(FileAccess.Write) && absFolder != null && !Directory.Exists(absFolder)) 
+			if (access.HasFlag(FileAccess.Write) && absFolder != null && !Directory.Exists(absFolder))
 				Directory.CreateDirectory(absFolder);
 			return new FileStream(absPath, open, access);
 		}
