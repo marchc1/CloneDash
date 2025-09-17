@@ -95,13 +95,13 @@ public static unsafe class OS
 	public static bool InitSDL(ref readonly GameInfo gameInfo) {
 		if (initialized) return true;
 
-		if (!SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_NAME_STRING", gameInfo.AppName)
-				|| !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_VERSION_STRING", gameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0")
-				|| !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_IDENTIFIER_STRING", gameInfo.AppIdentifier)
-				|| (gameInfo.AppCreator != null && !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_CREATOR_STRING", gameInfo.AppCreator))
-				|| (gameInfo.AppCopyright != null && !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_COPYRIGHT_STRING", gameInfo.AppCopyright))
-				|| (gameInfo.AppURL != null && !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_URL_STRING", gameInfo.AppURL))
-				|| (gameInfo.AppType != AppType.NotSpecified && !SDL3.SDL_SetAppMetadataProperty("SDL_PROP_APP_METADATA_TYPE_STRING", gameInfo.AppType switch {
+		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_NAME_STRING, gameInfo.AppName)
+				|| !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_VERSION_STRING, gameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0")
+				|| !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_IDENTIFIER_STRING, gameInfo.AppIdentifier)
+				|| (gameInfo.AppCreator != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_CREATOR_STRING, gameInfo.AppCreator))
+				|| (gameInfo.AppCopyright != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, gameInfo.AppCopyright))
+				|| (gameInfo.AppURL != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_URL_STRING, gameInfo.AppURL))
+				|| (gameInfo.AppType != AppType.NotSpecified && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_TYPE_STRING, gameInfo.AppType switch {
 					AppType.Application => "application",
 					AppType.Game => "game",
 					AppType.MediaPlayer => "mediaplayer",
