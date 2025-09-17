@@ -338,7 +338,8 @@ public static class EngineCore
 		GameThread.Start();
 		lock (GameThread_GLLock) ;
 
-		if (CommandLine.TryGetParam("monitor", out OSMonitor monitor)) {
+		if (CommandLine.TryGetParam("monitor", out int monitorIdx)) {
+			OSMonitor monitor = new OSMonitor(monitorIdx);
 			var monitorPos = monitor.Position;
 			var monitorSize = monitor.Size;
 			var windowSize = new Vector2F(windowWidth, windowHeight);
