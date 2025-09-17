@@ -329,7 +329,6 @@ namespace Nucleus.Engine
 			Timers.Run(t);
 		}
 
-		Stopwatch profiler = new();
 		Stopwatch timing = new();
 
 		public bool Render3D { get; set; } = true;
@@ -359,13 +358,20 @@ namespace Nucleus.Engine
 		double lastRenderTime = -10;
 		public bool RenderedFrame { get; set; } = false;
 		public bool IsRendering { get; set; } = false;
+
+		readonly Stopwatch updateTrack = new();
+		readonly Stopwatch renderTrack = new();
+
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
 		public void Frame() {
 			RenderedFrame = false;
-			profiler.Reset();
-			profiler.Start();
+			
+			updateTrack.Reset();
+			renderTrack.Reset();
+
+			updateTrack.Start();
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
 
 			SwapFrameStates();
@@ -541,6 +547,8 @@ namespace Nucleus.Engine
 				}
 			}*/
 			if ((Realtime - lastRenderTime) >= EngineCore.RenderRate) {
+				updateTrack.Stop();
+				renderTrack.Start();
 				lastRenderTime = Realtime;
 				RenderedFrame = true;
 				IsRendering = true;
@@ -671,25 +679,16 @@ namespace Nucleus.Engine
 					ConsoleSystem.Draw();
 
 				IsRendering = false;
+				renderTrack.Stop();
+				EngineCore.SetTimeToRender(renderTrack.Elapsed);
 			}
-
+			updateTrack.Start();
 			UnlockEntityBuffer();
 
 			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrame);
-			profiler.Stop();
-			EngineCore.FrameCostMS = (float)profiler.Elapsed.TotalMilliseconds;
-			var nanoseconds = (float)profiler.Elapsed.TotalNanoseconds;
 
-			if (nanoseconds < 1000) // less than 1 microsecond
-				EngineCore.FrameCost = $"{nanoseconds} ns";
-			else if (nanoseconds < 2000) // between 1 and 2 microseconds
-				EngineCore.FrameCost = $"{nanoseconds / 1000.0} us";
-			else if (nanoseconds < 100_000) // less than 0.1 milliseconds
-				EngineCore.FrameCost = $"{nanoseconds / 1000.0} us";
-			else if (nanoseconds < 2_000_000) // between 0.1 and 2 milliseconds
-				EngineCore.FrameCost = $"{nanoseconds / 1_000_000.0} ms";
-			else // greater than or equal to 2 milliseconds
-				EngineCore.FrameCost = $"{nanoseconds / 1_000_000_000.0} s";
+			updateTrack.Stop();
+			EngineCore.SetTimeToUpdate(updateTrack.Elapsed);
 		}
 
 		private void RenderShowUpdates() {

@@ -133,7 +133,7 @@ namespace Nucleus.ModelEditor
 				Origin = Anchor.BottomRight,
 				Position = new(-8, -8 + -32 + -8),
 				Size = new(300, 32),
-				Mode = PerfGraphMode.CPU_Frametime
+				Mode = PerfGraphMode.CPU_UpdateTime
 			});
 			Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,

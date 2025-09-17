@@ -12,7 +12,8 @@ namespace Nucleus.UI.Elements
 {
 	public enum PerfGraphMode
 	{
-		CPU_Frametime,
+		CPU_UpdateTime,
+		CPU_RenderTime,
 		RAM_Usage
 	}
 	public class PerfGraph : Panel
@@ -21,8 +22,8 @@ namespace Nucleus.UI.Elements
 		public PerfGraphMode Mode;
 		ConstantLengthNumericalQueue<float> MillisecondsOverTime = new(MAX_PERFGRAPH_ITEMS);
 		ConstantLengthNumericalQueue<float> MemoryOverTime = new(MAX_PERFGRAPH_ITEMS);
-		float MSMean = 0;
-		int MSCount = 0;
+		double MSMean = 0;
+		long MSCount = 0;
 		DateTime lastQuery;
 		private void DrawGraph(float start, float end, float height, ConstantLengthNumericalQueue<float> items, int maxItems, Color startColor, Color endColor, float? divider = null, float offset = 32) {
 			var count = items.Length;
@@ -31,8 +32,8 @@ namespace Nucleus.UI.Elements
 			end = start + end;
 			float min = items.Min();
 			float max = items.Max();
-			Graphics2D.DrawText(new(start + offset - 2, height - 0), $"{min:0.##}", "Consolas", 10, Types.Anchor.BottomRight);
-			Graphics2D.DrawText(new(start + offset - 2, 4), $"{max:0.##}", "Consolas", 10, Types.Anchor.TopRight);
+			Graphics2D.DrawText(new(start + offset - 2, height - 2), $"{min:0.##}", "Consolas", 9, Types.Anchor.BottomRight);
+			Graphics2D.DrawText(new(start + offset - 2, 4), $"{max:0.##}", "Consolas", 9, Types.Anchor.TopRight);
 
 			for (int i = 0; i < maxItems; i += 1) {
 				if (i + 1 >= count)
@@ -65,37 +66,41 @@ namespace Nucleus.UI.Elements
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			string lbl1 = "UNDEFINED 1", lbl2 = "UNDEFINED 2";
+			double statistic = Mode switch {
+				PerfGraphMode.CPU_UpdateTime => EngineCore.GetTimeToUpdate().TotalMilliseconds,
+				PerfGraphMode.CPU_RenderTime => EngineCore.GetTimeToRender().TotalMilliseconds,
+				PerfGraphMode.RAM_Usage => System.GC.GetTotalMemory(false) / 1024d / 1024d,
+				_ => throw new NotImplementedException()
+			};
+
 			switch (Mode) {
-				case PerfGraphMode.CPU_Frametime:
-					lbl1 = $"FPS: {EngineCore.FPS}";
-					lbl2 = $"PERF: {EngineCore.FrameCostMS:0.##}";
+				case PerfGraphMode.CPU_UpdateTime:
+					lbl1 = $"UPS: {1000f / statistic:0.##}";
+					lbl2 = $"PERF: {statistic:0.##} ms";
+					break;
+				case PerfGraphMode.CPU_RenderTime:
+					lbl1 = $"FPS: {1000f / statistic:0.##}";
+					lbl2 = $"PERF: {statistic:0.##} ms";
 					break;
 				case PerfGraphMode.RAM_Usage:
-					lbl1 = $"GC: {(System.GC.GetTotalMemory(false) / 1024f / 1024f):0.#} MB";
+					lbl1 = $"GC: {statistic:0.#} MB";
 					lbl2 = "";
 					break;
 			}
-			if (lbl2 == "") {
-				Graphics2D.DrawText(new(4 + 6, (height / 2) - 4), lbl1, "Consolas", 11);
-			}
+
+			if (lbl2 == "") 
+				Graphics2D.DrawText(new(8, (height / 2) - 4), lbl1, "Consolas", 12);
 			else {
-				Graphics2D.DrawText(new(5, 4 + 2), lbl1, "Consolas", 11);
-				Graphics2D.DrawText(new(5, 18 + 2), lbl2, "Consolas", 11);
+				Graphics2D.DrawText(new(4, 5), lbl1, "Consolas", 10);
+				Graphics2D.DrawText(new(4, 15), lbl2, "Consolas", 10);
 			}
 
 			DateTime now = DateTime.UtcNow;
-			switch (Mode) {
-				case PerfGraphMode.CPU_Frametime:
-					MSMean += EngineCore.FrameCostMS;
-					break;
-				case PerfGraphMode.RAM_Usage:
-					MSMean += (System.GC.GetTotalMemory(false) / 1024f / 1024f);
-					break;
-			}
+			MSMean += statistic;
 
 			MSCount++;
 			if ((now - lastQuery).TotalMilliseconds > 100) {
-				MillisecondsOverTime.Add(MSMean / MSCount);
+				MillisecondsOverTime.Add((float)(MSMean / MSCount));
 
 				lastQuery = now;
 				MSCount = 0;
@@ -105,7 +110,11 @@ namespace Nucleus.UI.Elements
 			Color color2 = Color.White;
 
 			switch (Mode) {
-				case PerfGraphMode.CPU_Frametime:
+				case PerfGraphMode.CPU_UpdateTime:
+					color1 = new Color(30, 255, 90, 255);
+					color2 = new Color(255, 70, 30, 255);
+					break;
+				case PerfGraphMode.CPU_RenderTime:
 					color1 = new Color(30, 255, 90, 255);
 					color2 = new Color(255, 70, 30, 255);
 					break;

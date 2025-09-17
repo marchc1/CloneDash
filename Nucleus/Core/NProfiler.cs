@@ -50,9 +50,6 @@ namespace Nucleus.Core
 	public static class NProfiler
 	{
 		private static Dictionary<NProfilable, Stopwatch> timers = [];
-		private static float LastTimeMS;
-
-		public static float TotalFrameTime => LastTimeMS;
 
 		[MemberNotNull(nameof(results))]
 		public static void PotentiallyRebuild() {
@@ -75,7 +72,6 @@ namespace Nucleus.Core
 
 				i += 1;
 			}
-			LastTimeMS = EngineCore.FrameCostMS;
 
 			foreach (var kvp in timers)
 				kvp.Value.Reset();

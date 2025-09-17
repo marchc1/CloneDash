@@ -190,7 +190,8 @@ public static class EngineCore
 		int y = 12;
 		self.Parent.BorderSize = 0;
 
-		DrawBar("Frame Time", new Color(225, 225, 225, 255), width, y, NProfiler.TotalFrameTime);
+		DrawBar("Time to Update", new Color(225, 225, 225, 255), width, y, GetTimeToUpdate().TotalSeconds);
+		DrawBar("Time to Render", new Color(225, 225, 225, 255), width, y, GetTimeToRender().TotalSeconds);
 		y += 18 + 4;
 
 		foreach (var profileResult in NProfiler.Results()) {
@@ -198,8 +199,9 @@ public static class EngineCore
 			y += 18 + 4;
 		}
 	}
+	private const float BAR_BASELINE = 1000f / 60f; // 60 fps/ups
 	private static void DrawBar(string text, Color color, float width, float y, double ms) {
-		float ratio = (float)ms / NProfiler.TotalFrameTime;
+		float ratio = (float)ms / BAR_BASELINE;
 		float rectPadding = 4;
 		float textWidth = 288;
 		float msWidth = 80;
@@ -381,18 +383,25 @@ public static class EngineCore
 		__nextFrameLevel = null;
 		__nextFrameArgs = null;
 		if (EngineCore.ShowDebuggingInfo) {
-			var CPUGraph = Level.UI.Add(new PerfGraph() {
+			var UpdateGraph = Level.UI.Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,
 				Origin = Anchor.BottomRight,
-				Position = new(-8, -8 + -32 + -8),
-				Size = new(400, 32),
-				Mode = PerfGraphMode.CPU_Frametime
+				Position = new(-8, -8 + -52 + -16),
+				Size = new(400, 26),
+				Mode = PerfGraphMode.CPU_UpdateTime
+			});
+			var RenderGraph = Level.UI.Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8 + -26 + -8),
+				Size = new(400, 26),
+				Mode = PerfGraphMode.CPU_RenderTime
 			});
 			var MemGraph = Level.UI.Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,
 				Origin = Anchor.BottomRight,
 				Position = new(-8, -8),
-				Size = new(400, 32),
+				Size = new(400, 26),
 				Mode = PerfGraphMode.RAM_Usage
 			});
 		}
@@ -501,8 +510,22 @@ public static class EngineCore
 
 	public static bool ShowConsoleLogsInCorner { get; set; } = true;
 	public static bool ShowDebuggingInfo { get; set; } = false;
-	public static string FrameCost { get; set; } = "";
-	public static float FrameCostMS { get; set; }
+
+
+	static TimeSpan lastTimeToUpdate;
+	static TimeSpan lastTimeToRender;
+	/// <summary>
+	/// How long did the last update-frame take?
+	/// </summary>
+	/// <returns></returns>
+	public static TimeSpan GetTimeToUpdate() => lastTimeToUpdate;
+	/// <summary>
+	/// How long did the last render-frame take?
+	/// </summary>
+	/// <returns></returns>
+	public static TimeSpan GetTimeToRender() => lastTimeToRender;
+	internal static void SetTimeToUpdate(TimeSpan value) => lastTimeToUpdate = value;
+	internal static void SetTimeToRender(TimeSpan value) => lastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
 	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
