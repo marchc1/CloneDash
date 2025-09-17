@@ -37,7 +37,11 @@ internal class Program
 		EngineCore.GameInfo = new() {
 			GameName = "Clone Dash"
 		};
-		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
+		EngineCore.Initialize(1600, 900,
+			new ("Clone Dash",
+				 GameVersion.Current.ToString(),
+				 "com.github.marchc1.CloneDash"),
+			"Clone Dash", args, gameThreadInit: GameMain);
 		EngineCore.StartMainThread();
 		RichPresenceSystem.Shutdown();
 	}

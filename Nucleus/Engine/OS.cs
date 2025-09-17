@@ -77,11 +77,20 @@ public struct OSMonitor : IValidatable
 	}
 }
 
+public struct SDL3AppMetaData
+{
+	public readonly string appname;
+	public readonly string appversion;
+	public readonly string appidentifier;
+
+	public SDL3AppMetaData(string appName, string appVersion, string appIdentifier) =>
+		(appname, appversion, appidentifier) = (appName, appVersion, appIdentifier);
+}
 
 public static unsafe class OS
 {
 	private static bool initialized = false;
-	public static bool InitSDL() {
+	public static bool InitSDL(SDL3AppMetaData metaData) {
 		if (initialized) return true;
 
 		if (!SDL3.SDL_Init(
@@ -119,6 +128,9 @@ public static unsafe class OS
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_ES)) return false;
 				break;
 		}
+
+		if (!SDL3.SDL_SetAppMetadata(metaData.appname, metaData.appversion, metaData.appidentifier))
+			Logs.Warn("Failed to set app metadata for SDL3");
 
 		initialized = true;
 		return true;

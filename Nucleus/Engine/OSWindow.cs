@@ -158,8 +158,8 @@ public unsafe class OSWindow : IValidatable
 		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
 		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
 	}
-	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
-		if (!OS.InitSDL()) {
+	public static OSWindow Create(int width, int height, SDL3AppMetaData metaData ,string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+		if (!OS.InitSDL(metaData)) {
 			throw Util.Util.MessageBoxException("Cannot initialize SDL.");
 		}
 
