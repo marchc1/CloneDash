@@ -37,7 +37,10 @@ internal class Program
 		EngineCore.GameInfo = new() {
 			AppName = "Clone Dash",
 			AppVersion = GameVersion.Current.ToString(),
-			AppIdentifier = "com.github.marchc1.CloneDash"
+			AppIdentifier = "com.github.marchc1.CloneDash",
+			AppCreator = "March (github/marchc1)",
+			AppURL = "https://github.com/marchc1/CloneDash",
+			AppType = Nucleus.Types.AppType.Game
 		};
 		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
 		EngineCore.StartMainThread();

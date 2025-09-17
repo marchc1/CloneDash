@@ -318,7 +318,7 @@ public static class EngineCore
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
-		OS.InitSDL(new(GameInfo.AppName, GameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0", GameInfo.AppIdentifier));
+		OS.InitSDL(ref GameInfo);
 		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 		if (fullscreen.GetBool()) {
@@ -490,7 +490,7 @@ public static class EngineCore
 	}
 
 	public static FrameState CurrentFrameState { get; set; }
-	public static GameInfo GameInfo { get; set; }
+	public static GameInfo GameInfo;
 
 	public static double TargetFrameTime { get; private set; } = 0;
 	public static double CurrentAppTime { get; private set; } = 0;
