@@ -90,7 +90,13 @@ public struct SDL3AppMetaData
 public static unsafe class OS
 {
 	private static bool initialized = false;
-	public static bool InitSDL(SDL3AppMetaData metaData) {
+	private static SDL3AppMetaData MetaData;
+	public static void GetAppMetaData(out SDL3AppMetaData metadata) {
+		if (!initialized)
+			throw new InvalidOperationException("Cannot get app metadata until OS static class initialized!");
+		metadata = MetaData;
+	}
+	public static bool InitSDL(SDL3AppMetaData metadata) {
 		if (initialized) return true;
 
 		if (!SDL3.SDL_Init(
@@ -129,9 +135,10 @@ public static unsafe class OS
 				break;
 		}
 
-		if (!SDL3.SDL_SetAppMetadata(metaData.appname, metaData.appversion, metaData.appidentifier))
+		if (!SDL3.SDL_SetAppMetadata(metadata.appname, metadata.appversion, metadata.appidentifier))
 			Logs.Warn("Failed to set app metadata for SDL3");
 
+		MetaData = metadata;
 		initialized = true;
 		return true;
 	}

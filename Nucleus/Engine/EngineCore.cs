@@ -283,11 +283,11 @@ public static class EngineCore
 			Window.Fullscreen = now.AsInt >= 1;
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, SDL3AppMetaData metaData, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
-		Filesystem.Initialize(GameInfo.GameName);
+		Filesystem.Initialize(GameInfo.AppName);
 		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
 		ShowDebuggingInfo = CommandLine.IsParamTrue("debug");
@@ -318,7 +318,7 @@ public static class EngineCore
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
-		OS.InitSDL(metaData);
+		OS.InitSDL(new(GameInfo.AppName, GameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0", GameInfo.AppIdentifier));
 		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 		if (fullscreen.GetBool()) {
@@ -330,7 +330,7 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		Window = OSWindow.Create(windowWidth, windowHeight, metaData, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);

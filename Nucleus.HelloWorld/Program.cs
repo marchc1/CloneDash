@@ -43,13 +43,10 @@ namespace Nucleus.HelloWorld
 		}
 		static void Main(string[] args) {
 			EngineCore.GameInfo = new() {
-				GameName = "Hello World"
+				AppName = "Hello World",
+				AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
 			};
-			EngineCore.Initialize(1600, 900,
-				new ("Nucleus Testing Project",
-					 System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.1.0",
-					 "com.github.marchc1.NucleusHelloWorld"),
-				"Nucleus Testing Project", args);
+			EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
 			EngineCore.ShowDebuggingInfo = true;
 			EngineCore.LoadLevel(new HelloWorldLevel());
 			EngineCore.StartMainThread();
