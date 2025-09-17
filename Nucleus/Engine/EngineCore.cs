@@ -287,6 +287,7 @@ public static class EngineCore
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
+		Filesystem.Initialize(GameInfo.GameName);
 		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
 		ShowDebuggingInfo = CommandLine.IsParamTrue("debug");
