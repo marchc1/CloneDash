@@ -42,10 +42,10 @@ namespace Nucleus.HelloWorld
 			}
 		}
 		static void Main(string[] args) {
-			EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
 			EngineCore.GameInfo = new() {
 				GameName = "Hello World"
 			};
+			EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
 			EngineCore.ShowDebuggingInfo = true;
 			EngineCore.LoadLevel(new HelloWorldLevel());
 			EngineCore.StartMainThread();
