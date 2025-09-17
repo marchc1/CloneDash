@@ -99,6 +99,9 @@ public static unsafe class OS
 	public static bool InitSDL(SDL3AppMetaData metadata) {
 		if (initialized) return true;
 
+		if (!SDL3.SDL_SetAppMetadata(metadata.appname, metadata.appversion, metadata.appidentifier))
+			Logs.Warn("Failed to set app metadata for SDL3");
+
 		if (!SDL3.SDL_Init(
 			SDL_InitFlags.SDL_INIT_AUDIO |
 			//SDL_InitFlags.SDL_INIT_CAMERA |
@@ -134,9 +137,6 @@ public static unsafe class OS
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_ES)) return false;
 				break;
 		}
-
-		if (!SDL3.SDL_SetAppMetadata(metadata.appname, metadata.appversion, metadata.appidentifier))
-			Logs.Warn("Failed to set app metadata for SDL3");
 
 		MetaData = metadata;
 		initialized = true;
