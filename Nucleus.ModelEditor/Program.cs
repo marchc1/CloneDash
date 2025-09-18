@@ -914,7 +914,8 @@ namespace Nucleus.ModelEditor
 	{
 		static void Main(string[] args) {
 			EngineCore.GameInfo = new() {
-				GameName = "Nucleus - Model v4 Editor"
+				AppName = "Nucleus - Model v4 Editor",
+				AppIdentifier = "com.github.marchc1.NucleusModelEditor"
 			};
 			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args, gameThreadInit: GameMain);
 			EngineCore.StartMainThread();

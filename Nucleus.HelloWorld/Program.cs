@@ -43,7 +43,8 @@ namespace Nucleus.HelloWorld
 		}
 		static void Main(string[] args) {
 			EngineCore.GameInfo = new() {
-				GameName = "Hello World"
+				AppName = "Hello World",
+				AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
 			};
 			EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
 			EngineCore.ShowDebuggingInfo = true;

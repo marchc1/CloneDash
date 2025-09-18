@@ -35,7 +35,12 @@ internal class Program
 		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
 			return;		
 		EngineCore.GameInfo = new() {
-			GameName = "Clone Dash"
+			AppName = "Clone Dash",
+			AppVersion = GameVersion.Current.ToString(),
+			AppIdentifier = "com.github.marchc1.CloneDash",
+			AppCreator = "March (github/marchc1)",
+			AppURL = "https://github.com/marchc1/CloneDash",
+			AppType = Nucleus.Types.AppType.Game
 		};
 		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
 		EngineCore.StartMainThread();

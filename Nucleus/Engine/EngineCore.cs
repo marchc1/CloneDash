@@ -289,7 +289,7 @@ public static class EngineCore
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
-		Filesystem.Initialize(GameInfo.GameName);
+		Filesystem.Initialize(GameInfo.AppName);
 		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
 		ShowDebuggingInfo = CommandLine.IsParamTrue("debug");
@@ -320,7 +320,7 @@ public static class EngineCore
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
-		OS.InitSDL();
+		OS.InitSDL(ref GameInfo);
 		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 		if (fullscreen.GetBool()) {
@@ -499,7 +499,7 @@ public static class EngineCore
 	}
 
 	public static FrameState CurrentFrameState { get; set; }
-	public static GameInfo GameInfo { get; set; }
+	public static GameInfo GameInfo;
 
 	public static double TargetFrameTime { get; private set; } = 0;
 	public static double CurrentAppTime { get; private set; } = 0;
