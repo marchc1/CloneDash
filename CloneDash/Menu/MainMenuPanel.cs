@@ -148,7 +148,9 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				(selector.SearchFilter as MDMCSearchFilter).PopulateMDMCCharts(selector);
 			};
 		});
-		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
+		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+		});
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {

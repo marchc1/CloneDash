@@ -19,7 +19,6 @@ using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.Menu.Searching;
 
-
 public class SongSelector : Panel, IMainMenuPanel
 {
 	public void SetRichPresence() {
