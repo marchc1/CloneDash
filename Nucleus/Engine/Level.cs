@@ -427,9 +427,8 @@ namespace Nucleus.Engine
 							if (released) EngineCore.KeyboardFocusedElement?.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 
-						foreach(var textInputEvent in emulatedState.GetTextInputsThisFrame()) {
-							EngineCore.KeyboardFocusedElement?.TextInputOccur(in emulatedState, textInputEvent);
-						}
+						for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++) 
+							EngineCore.KeyboardFocusedElement?.TextInputOccur(in emulatedState, emulatedState.GetTextInputThisFrameAtIndex(i));
 					}
 				}
 			}

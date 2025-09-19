@@ -156,7 +156,9 @@ namespace Nucleus.Core
 			}
 		}
 
+		// TODO: Fully deprecate string based API's
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[null, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
 			int fontSizeI = (int)fontSize;

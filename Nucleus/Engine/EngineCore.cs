@@ -605,7 +605,9 @@ public static class EngineCore
 			int y = 0;
 			var msgs = ConsoleSystem.GetMessages();
 			int txS = 12;
-			foreach (var cmsg in msgs.Reverse()) {
+			for (int j = ConsoleSystem.GetMessagesCount() - 1; j >= 0; j--) {
+				ref readonly ConsoleMessage cmsg = ref msgs[j];
+
 				int c = 1;
 				for (int ci = 0; ci < cmsg.Message.Length; ci++) {
 					char curchar = cmsg.Message[ci];

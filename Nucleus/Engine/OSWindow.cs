@@ -2,6 +2,7 @@
 
 using Nucleus.Core;
 using Nucleus.Types;
+using Nucleus.Util;
 
 using Raylib_cs;
 
@@ -23,16 +24,16 @@ public class WindowKeyboardState(OSWindow window)
 
 	public bool ExitKey;
 
-	public byte[] CurrentKeyState = new byte[MAX_KEYBOARD_KEYS];
-	public byte[] PreviousKeyState = new byte[MAX_KEYBOARD_KEYS];
+	public InlineArray512<byte> CurrentKeyState;
+	public InlineArray512<byte> PreviousKeyState;
 
-	public byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
+	public InlineArray512<byte> KeyRepeatInFrame;
 
-	public double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
-	public KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
+	public InlineArray32<double> KeyPressTimeQueue;
+	public InlineArray32<KeyboardKey> KeyPressQueue;
 	public int KeyPressQueueCount = 0;
 
-	public string?[] EnqueuedTextInputs = new string?[MAX_TEXT_INPUTS];
+	public InlineArray256<string> EnqueuedTextInputs;
 	public int TextInputPtr = 0;
 	public void EnqueueTextEvent(string text) {
 		if (TextInputPtr >= MAX_TEXT_INPUTS - 1)

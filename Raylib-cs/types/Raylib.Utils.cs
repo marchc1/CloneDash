@@ -963,6 +963,18 @@ public static unsafe partial class Raylib
 		DrawTextEx(font, str1.AsPointer(), position, fontSize, spacing, tint);
 	}
 
+	public static void DrawTextEx(
+		Font font,
+		ReadOnlySpan<char> text,
+		Vector2 position,
+		float fontSize,
+		float spacing,
+		Color tint
+	) {
+		using var str1 = text.ToUtf8Buffer();
+		DrawTextEx(font, str1.AsPointer(), position, fontSize, spacing, tint);
+	}
+
 	/// <summary>Draw text using Font and pro parameters (rotation)</summary>
 	public static void DrawTextPro(
 		Font font,

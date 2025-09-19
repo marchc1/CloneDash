@@ -5,6 +5,8 @@ using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 
+using SDL;
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus
@@ -172,10 +174,10 @@ namespace Nucleus
 
 			consoleInput.DemandKeyboardFocus();
 			consoleInput.Editor.MouseReleaseEvent += (_, _, _) => SetupAutocomplete();
-
-			foreach (var msg in ConsoleSystem.GetMessages()) {
-				SetupRow(msg);
-			}
+			var msgs = ConsoleSystem.GetMessages();
+			for (int i = 0, length = ConsoleSystem.GetMessagesCount(); i < length; i++) 
+				SetupRow(ref msgs[i]);
+			
 			ConsoleSystem.ConsoleMessageWrittenEvent += ConsoleSystem_ConsoleMessageWrittenEvent;
 
 			this.InvalidateChildren(recursive: true);
@@ -187,14 +189,14 @@ namespace Nucleus
 			self.RenderRowPiece(0, 0, autoCompleteStr, new Raylib_cs.Color(255, 255, 255, 150));
 		}
 
-		private void SetupRow(ConsoleMessage message) {
+		private void SetupRow(ref readonly ConsoleMessage message) {
 			consoleLogs.AppendLine($"[{message.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Level)}] {message.Message}");
 			if (consoleLogs.Rows.Count > ConsoleSystem.MaxConsoleMessages)
 				consoleLogs.RemoveLine(0);
 			consoleLogs.ScrollToLine(consoleLogs.Rows.Count, 1f);
 		}
-		private void ConsoleSystem_ConsoleMessageWrittenEvent(ref ConsoleMessage message) {
-			SetupRow(message);
+		private void ConsoleSystem_ConsoleMessageWrittenEvent(ref readonly ConsoleMessage message) {
+			SetupRow(in message);
 		}
 
 		private string? autoCompleteStr;

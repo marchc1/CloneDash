@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,32 +10,45 @@ namespace Raylib_cs;
 /// </summary>
 public readonly ref struct Utf8Buffer
 {
-    private readonly IntPtr _data;
+	private readonly IntPtr Data;
+	private readonly int Length;
 
-    public Utf8Buffer(string text)
-    {
-        _data = Marshal.StringToCoTaskMemUTF8(text);
-    }
+	public unsafe Utf8Buffer(ReadOnlySpan<char> text) {
+		if(text == null || text.IsEmpty) {
+			Data = 0;
+			Length = 0;
+			return;
+		}
 
-    public unsafe sbyte* AsPointer()
-    {
-        return (sbyte*)_data.ToPointer();
-    }
+		Length = Encoding.UTF8.GetByteCount(text);
+		Data = Marshal.AllocCoTaskMem(Length + 1);
 
-    public void Dispose()
-    {
-        Marshal.ZeroFreeCoTaskMemUTF8(_data);
-    }
+		var span = new Span<byte>((void*)Data, Length + 1);
+		span.Clear();
+		Encoding.UTF8.GetBytes(text, span);
+	}
+
+	public unsafe sbyte* AsPointer() => (sbyte*)Data.ToPointer();
+
+	public unsafe void Dispose() {
+		if (Data == 0)
+			return;
+
+		new Span<byte>((void*)Data, Length + 1).Clear();
+		Marshal.FreeCoTaskMem(Data);
+	}
 }
 
 public static class Utf8StringUtils
 {
-    public static Utf8Buffer ToUtf8Buffer(this string text)
-    {
-        return new Utf8Buffer(text);
-    }
+	public static Utf8Buffer ToUtf8Buffer(this string text) {
+		return new Utf8Buffer(text);
+	}
+	public static Utf8Buffer ToUtf8Buffer(this ReadOnlySpan<char> text) {
+		return new Utf8Buffer(text);
+	}
 
-    public static byte[] ToUtf8String(this string text)
+	public static byte[] ToUtf8String(this string text)
     {
         if (text == null)
         {
