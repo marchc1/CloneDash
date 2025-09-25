@@ -34,10 +34,9 @@ namespace Nucleus.Core
                     if (AreFontsDirty && wasFirst) {
                         // run font unloading here
                         MainThread.RunASAP(() => {
-                            foreach(var fsDict in fonttable) 
-                                foreach(var fs in fsDict.Value) 
-                                    Raylib.UnloadFont(fs.Value);
-
+                            foreach (Font f in fonttable.Values.SelectMany(kv => kv.Values, (_, v) => v))
+                                Raylib.UnloadFont(f);
+                                
                             fonttable.Clear();
                             AreFontsDirty = false;
                         }, ThreadExecutionTime.BeforeFrame);
