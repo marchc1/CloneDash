@@ -6,27 +6,14 @@ namespace Nucleus.Core
 {
 	public class FontManager
     {
-        private int[] RegisteredCodepoints = [];
         private HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 
         public Dictionary<string, FontEntry> FontNameToFilepath = new();
         private Dictionary<string, Dictionary<int, Font>> fonttable = new();
         private bool AreFontsDirty = false;
 
-        public bool RegisterCodepoint(int c) {
-            if (RegisteredCodepointsHash.Add(c)) {
-                RegisteredCodepoints = RegisteredCodepointsHash.ToArray();
-                return true;
-            }
-
-            return false;
-        }
-
-        public void RegisterCodepoints(string charsIn) {
-            for (int i = 0; i < charsIn.Length; i += char.IsSurrogatePair(charsIn, i) ? 2 : 1) {
-                RegisterCodepoint(char.ConvertToUtf32(charsIn, i));
-            }
-        }
+        public void RegisterCodepoints(string charsIn) =>
+            RegisteredCodepointsHash.UnionWith(charsIn.EnumerateRunes().Select((r) => r.Value));
 
         public FontManager(Dictionary<string, FontEntry> fonttable, string[]? codepoints = null) {
             codepoints = codepoints ?? [];
@@ -41,9 +28,9 @@ namespace Nucleus.Core
 
                 bool wasFirst = !AreFontsDirty;
                 if (text != null) {
-                    for (int i = 0; i < text.Length; i += char.IsSurrogatePair(text, i) ? 2 : 1) 
-                        AreFontsDirty |= RegisterCodepoint(char.ConvertToUtf32(text, i));
-                    
+                    foreach (bool registerResult in text.EnumerateRunes().Select((r) => RegisteredCodepointsHash.Add(r.Value)))
+                        AreFontsDirty |= registerResult;
+
                     if (AreFontsDirty && wasFirst) {
                         // run font unloading here
                         MainThread.RunASAP(() => {
@@ -67,7 +54,7 @@ namespace Nucleus.Core
                 if (!f1.TryGetValue(fontSize, out font)) {
 					var entry = FontNameToFilepath[fontName];
 
-					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepoints, RegisteredCodepoints.Length);
+					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepointsHash.ToArray(), RegisteredCodepointsHash.Count);
 					Raylib.GenTextureMipmaps(ref newFont.Texture);
 					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.TEXTURE_FILTER_TRILINEAR); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
 					f1[fontSize] = newFont;
