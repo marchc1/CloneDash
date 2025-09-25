@@ -40,8 +40,10 @@ namespace Nucleus.Core
 		public static FontManager FontManager { get; private set; } = new(new() {
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
-			{ "Noto Sans", new FontEntry("NotoSans" +notoSansRegionName + "-Regular.ttf", "fonts") },
+			{ "Noto Sans", new FontEntry("NotoSans" + notoSansRegionName + "-Regular.ttf", "fonts") },
+			{ "Noto Sans Bold", new FontEntry("NotoSans" + notoSansRegionName + "-Bold.ttf", "fonts") },
 			{ "Noto Sans Mono", new FontEntry("NotoSansMono-Regular.ttf", "fonts") },
+			{ "Noto Sans Mono Bold", new FontEntry("NotoSansMono-Bold.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color ___drawColor = Color.White;
