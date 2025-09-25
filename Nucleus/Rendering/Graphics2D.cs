@@ -8,6 +8,7 @@ using Raylib_cs;
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace Nucleus.Core
 {
@@ -21,11 +22,26 @@ namespace Nucleus.Core
 	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
+		// See here for possible values of CultureInfo.Name:
+		// https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
+		private readonly static string notoSansRegionName = CultureInfo.CurrentCulture.Name switch {
+			"zh-Hant" => "TC",
+			"zh-HK" => "HK",
+			"zh-MO" => "HK",
+			"zh-TW" => "TC",
+			"ja" => "JP",
+			"ja-JP" => "JP",
+			"ko" => "KR",
+			"ko-KR" => "KR",
+			"ko-KP" => "KR",
+			_ => "SC"
+		};
+		
 		public static FontManager FontManager { get; private set; } = new(new() {
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
-			{ "Noto Sans", new FontEntry("noto-sans-en-jp.ttf", "fonts") },
-			{ "Noto Sans Mono", new FontEntry("NotoSansMono-VariableFont_wdth,wght.ttf", "fonts") },
+			{ "Noto Sans", new FontEntry("NotoSans" +notoSansRegionName + "-Regular.ttf", "fonts") },
+			{ "Noto Sans Mono", new FontEntry("NotoSansMono-Regular.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color ___drawColor = Color.White;
