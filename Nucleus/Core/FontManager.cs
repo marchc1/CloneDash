@@ -6,10 +6,10 @@ namespace Nucleus.Core
 {
 	public class FontManager
     {
-        private HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
+        private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 
-        public Dictionary<string, FontEntry> FontNameToFilepath = new();
-        private Dictionary<string, Dictionary<int, Font>> fonttable = new();
+        public readonly Dictionary<string, FontEntry> FontNameToFilepath = new();
+        private readonly Dictionary<string, Dictionary<int, Font>> fonttable = new();
         private bool AreFontsDirty = false;
 
         public void RegisterCodepoints(string charsIn) =>
