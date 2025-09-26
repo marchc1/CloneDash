@@ -67,7 +67,10 @@ namespace Nucleus.Core
                 if (!f1.TryGetValue(fontSize, out font)) {
 					var entry = FontNameToFilepath[fontName];
 
-					f1[fontSize] = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepoints, RegisteredCodepoints.Length);
+					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepoints, RegisteredCodepoints.Length);
+					Raylib.GenTextureMipmaps(ref newFont.Texture);
+					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.TEXTURE_FILTER_TRILINEAR); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+					f1[fontSize] = newFont;
                     font = f1[fontSize]; // how did I miss this
                 }
 

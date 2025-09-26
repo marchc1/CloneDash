@@ -941,6 +941,7 @@ namespace Nucleus.UI
 		public event ElementSingleArg? Thinking;
 
 		public static void ThinkRecursive(Element element, FrameState frameState) {
+			if (element == null) return; // wtf?
 			if (!element.Enabled) return;
 
 			element.Think(frameState);
