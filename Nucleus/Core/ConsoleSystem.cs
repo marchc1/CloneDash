@@ -107,6 +107,9 @@ namespace Nucleus.Core
 				float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 				int len = 0;
 
+				if (textMessage.Length <= 0)
+					break;
+
 				if (message.Message.Length > 950)
 					// Excessive message; skipping
 					continue;
