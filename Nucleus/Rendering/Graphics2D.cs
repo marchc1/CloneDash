@@ -252,26 +252,32 @@ namespace Nucleus.Core
 		public static void DrawPixel(int x, int y) => Raylib.DrawPixel(offsetX(x), offsetY(x), __drawColor);
 		public static void DrawPixel(Vector2F pos) => Raylib.DrawPixelV(AFV2ToSNV2(pos), __drawColor);
 
+		static float potentialLineWidthFlush(float newWidth) {
+			if(MathF.Abs(Rlgl.GetLineWidth() - newWidth) > 0.01f) {
+				Rlgl.DrawRenderBatchActive();
+				Rlgl.SetLineWidth(newWidth);
+			}
+			return newWidth;
+		}
+
 		public static void DrawLine(int startX, int startY, int endX, int endY) => Raylib.DrawLine(offsetX(startX), offsetY(startY), offsetX(endX), offsetY(endY), __drawColor);
 		public static void DrawLine(float startX, float startY, float endX, float endY) => Raylib.DrawLine(offsetX(startX), offsetY(startY), offsetX(endX), offsetY(endY), __drawColor);
 		public static void DrawLine(int startX, int startY, int endX, int endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetX(startX), offsetY(startY)), new Vector2(offsetX(endX), offsetY(endY)), thick, __drawColor);
 		public static void DrawLine(float startX, float startY, float endX, float endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetXF(startX), offsetYF(startY)), new Vector2(offsetXF(endX), offsetYF(endY)), thick, __drawColor);
 		public static void DrawLine(Vector2F start, Vector2F end) => Raylib.DrawLineV(AFV2ToSNV2(start), AFV2ToSNV2(end), __drawColor);
-		public static void DrawLine(Vector2F start, Vector2F end, float width) => Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
+		public static void DrawLine(Vector2F start, Vector2F end, float width) =>  Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), potentialLineWidthFlush(width), __drawColor);
 
 		public static void DrawLine(Vector2F startPos, Color startColor, Vector2F endPos, Color endColor, float width = 1) {
 			var _startPos = AFV2ToSNV2(startPos.Round());
 			var _endPos = AFV2ToSNV2(endPos.Round());
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.SetLineWidth(width);
+			potentialLineWidthFlush(width);
+
 			Rlgl.Begin(DrawMode.LINES);
 			Rlgl.Color4ub(startColor.R, startColor.G, startColor.B, startColor.A);
 			Rlgl.Vertex2f(_startPos.X + 0.5f, _startPos.Y + 0.5f);
 			Rlgl.Color4ub(endColor.R, endColor.G, endColor.B, startColor.A);
 			Rlgl.Vertex2f(_endPos.X + 0.5f, _endPos.Y + 0.5f);
 			Rlgl.End();
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.SetLineWidth(1);
 		}
 
 		public static void DrawLineStrip(Vector2F[] points) => Raylib.DrawLineStrip(Array.ConvertAll<Vector2F, Vector2>(points, AFV2ToSNV2), points.Length, __drawColor);
