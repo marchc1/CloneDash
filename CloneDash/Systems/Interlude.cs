@@ -16,6 +16,7 @@ using Nucleus.Util;
 using Raylib_cs;
 
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 using Texture2D = Raylib_cs.Texture2D;
 
@@ -242,9 +243,9 @@ public static class Interlude
 				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
 				Graphics2D.SetDrawColor(255, 255, 255);
 				if (loadSubMsg == null)
-					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
 				else {
-					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
+					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
 					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, "Noto Sans", texSize * 0.6f, Anchor.CenterRight);
 				}
 
@@ -252,6 +253,50 @@ public static class Interlude
 				Surface.Spin();
 			}
 		}
+	}
+
+	private static void DrawLoadMsg(Vector2F position, string loadMsg, string fontName, float fontSize, Anchor fontAnchor) {
+		// Strawberry Godzilla from Muse Dash
+		// TODO: More accurate Regex?
+		Regex boldRegex = new ("^(.+)<b>(.+)<\\/b>(.+)$");
+		Match boldRegexMatch= boldRegex.Match(loadMsg);
+		if (boldRegexMatch.Success) {
+			// Basically a copy of Graphics2D.DrawText(float, float, string, string, float, TextAlignment, TextAlignment).
+			System.Numerics.Vector2 prefixSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[1].Value, fontName, (int)fontSize],
+																		boldRegexMatch.Groups[1].Value, fontSize, 0);
+			System.Numerics.Vector2 songTitleSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[2].Value, fontName + " Mono Bold", (int)fontSize],
+																		boldRegexMatch.Groups[2].Value, fontSize, 0);
+			System.Numerics.Vector2 suffixSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[3].Value, fontName, (int)fontSize],
+																		boldRegexMatch.Groups[3].Value, fontSize, 0);
+			Vector2F combinedSize = new (prefixSize.X + songTitleSize.X + suffixSize.X, new float[3]{prefixSize.Y, songTitleSize.Y, suffixSize.Y}.Max());
+			float xOffset = 0, yOffset = 0;
+			(TextAlignment horizontalAlignment, TextAlignment verticalAlignment) = fontAnchor.ToTextAlignment();
+			switch (horizontalAlignment.Alignment) {
+				case 1:
+					xOffset = -combinedSize.X / 2;
+					break;
+				case 2:
+					xOffset = -combinedSize.X;
+					break;
+			}
+			switch (verticalAlignment.Alignment) {
+				case 1:
+					yOffset = -combinedSize.Y / 2;
+					break;
+				case 2:
+					yOffset = -combinedSize.Y;
+					break;
+			}
+			position.X += xOffset;
+			position.Y += yOffset;
+			Graphics2D.DrawText(position, boldRegexMatch.Groups[1].Value, fontName, fontSize);
+			position.X += prefixSize.X;
+			Graphics2D.DrawText(position, boldRegexMatch.Groups[2].Value, fontName + " Mono Bold", fontSize);
+			position.X += songTitleSize.X;
+			Graphics2D.DrawText(position, boldRegexMatch.Groups[3].Value, fontName, fontSize);
+		}
+		else
+			Graphics2D.DrawText(position, loadMsg, fontName, fontSize, fontAnchor);
 	}
 
 	public static void End() {
