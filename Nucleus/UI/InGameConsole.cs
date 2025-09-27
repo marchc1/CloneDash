@@ -159,7 +159,7 @@ namespace Nucleus
 			consoleLogs = Add<TextEditor>();
 			consoleLogs.Dock = Dock.Fill;
 			consoleLogs.TextSize = 12;
-			consoleLogs.DockMargin = new(0, 0, 0, 74);
+			consoleLogs.DockMargin = new(0, 0, 0, 0);
 			consoleLogs.Readonly = true;
 			consoleLogs.ShowDetails = false;
 			consoleLogs.ShowGutter = false;
