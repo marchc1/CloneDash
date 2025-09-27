@@ -92,7 +92,9 @@ public class LuaEnv
 	public LuaGraphics Graphics;
 
 	public LuaValue[] DoFile(string pathID, string path) {
-		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), IManagedMemory.MergePath(pathID, path)).AsTask();
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), new string(finalPath) /* << FIXME? */).AsTask();
 		try {
 			t.Wait();
 			return t.Result;
