@@ -69,11 +69,21 @@ public class NeverShrinkingList<T> : IEnumerable, IEnumerable<T>, ICollection<T>
 		return ref fragments[abs][local];
 	}
 
+	public ref T AddNoZero() {
+		allocateFragment(out int abs, out int local);
+		count++;
 
-	public void Clear() {
-		for (int i = 0; i < count; i++) 
-			this[i] = default;
-		
+		return ref fragments[abs][local];
+	}
+
+
+	public void Clear() => Clear(false);
+
+	public void Clear(bool zeroOut = true) {
+		if (zeroOut)
+			for (int i = 0; i < count; i++)
+				this[i] = default;
+
 		count = 0;
 	}
 
