@@ -61,7 +61,21 @@ public class NeverShrinkingList<T> : IEnumerable, IEnumerable<T>, ICollection<T>
 		count++;
 	}
 
-	public void Clear() => count = 0;
+	public ref T Add() {
+		allocateFragment(out int abs, out int local);
+		fragments[abs][local] = default;
+		count++;
+
+		return ref fragments[abs][local];
+	}
+
+
+	public void Clear() {
+		for (int i = 0; i < count; i++) 
+			this[i] = default;
+		
+		count = 0;
+	}
 
 	public bool Contains(T item) => IndexOf(item) != -1;
 

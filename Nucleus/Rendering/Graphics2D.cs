@@ -3,7 +3,9 @@ using Nucleus.Files;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+
 using Raylib_cs;
+
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -74,7 +76,7 @@ namespace Nucleus.Core
 			return alpha;
 		}
 
-		public static Shader shader_hsvtransform = Filesystem.ReadFragmentShader("shaders", "change_color.fshader"); 
+		public static Shader shader_hsvtransform = Filesystem.ReadFragmentShader("shaders", "change_color.fshader");
 		public static float Hue { get; set; } = 0;
 		public static float Saturation { get; set; } = 1;
 		public static float Value { get; set; } = 1;
@@ -253,7 +255,7 @@ namespace Nucleus.Core
 		public static void DrawPixel(Vector2F pos) => Raylib.DrawPixelV(AFV2ToSNV2(pos), __drawColor);
 
 		static float potentialLineWidthFlush(float newWidth) {
-			if(MathF.Abs(Rlgl.GetLineWidth() - newWidth) > 0.01f) {
+			if (MathF.Abs(Rlgl.GetLineWidth() - newWidth) > 0.01f) {
 				Rlgl.DrawRenderBatchActive();
 				Rlgl.SetLineWidth(newWidth);
 			}
@@ -265,7 +267,7 @@ namespace Nucleus.Core
 		public static void DrawLine(int startX, int startY, int endX, int endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetX(startX), offsetY(startY)), new Vector2(offsetX(endX), offsetY(endY)), thick, __drawColor);
 		public static void DrawLine(float startX, float startY, float endX, float endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetXF(startX), offsetYF(startY)), new Vector2(offsetXF(endX), offsetYF(endY)), thick, __drawColor);
 		public static void DrawLine(Vector2F start, Vector2F end) => Raylib.DrawLineV(AFV2ToSNV2(start), AFV2ToSNV2(end), __drawColor);
-		public static void DrawLine(Vector2F start, Vector2F end, float width) =>  Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), potentialLineWidthFlush(width), __drawColor);
+		public static void DrawLine(Vector2F start, Vector2F end, float width) => Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), potentialLineWidthFlush(width), __drawColor);
 
 		public static void DrawLine(Vector2F startPos, Color startColor, Vector2F endPos, Color endColor, float width = 1) {
 			var _startPos = AFV2ToSNV2(startPos.Round());

@@ -40,7 +40,11 @@ namespace Nucleus.ManagedMemory
 
         public bool IsValid() => !disposed;
 
-		public void GenerateMipmaps() => Raylib.GenTextureMipmaps(ref underlying);
+		public void GenerateMipmaps() {
+			if (underlying.Mipmaps <= 1) {
+				Raylib.GenTextureMipmaps(ref underlying);
+			}
+		}
 
 		private TextureFilter filter;
 		private TextureWrap wrap;
