@@ -212,8 +212,8 @@ public static class EngineCore
 		Graphics2D.DrawRectangle(rectPadding + textWidth, rectPadding + y + 2, fnWidth * ratio, 14);
 		Graphics2D.DrawRectangle(rectPadding + textWidth + fnWidth, rectPadding + y, 2, 18);
 		Graphics2D.SetDrawColor(color.Adjust(0, -0.4f, 0));
-		Graphics2D.DrawText(rectPadding + textWidth - 6, y + (12), text, "Noto Sans", 18, Anchor.CenterRight);
-		Graphics2D.DrawText(rectPadding + textWidth + fnWidth + 8, y + (12), $"{ms:0.00} ms", "Noto Sans", 20, Anchor.CenterLeft);
+		Graphics2D.DrawText(rectPadding + textWidth - 6, y + (12), text, Graphics2D.UiFontName, 18, Anchor.CenterRight);
+		Graphics2D.DrawText(rectPadding + textWidth + fnWidth + 8, y + (12), $"{ms:0.00} ms", Graphics2D.UiFontName, 20, Anchor.CenterLeft);
 	}
 
 	public static MouseCursor MouseCursor_Frame { get; private set; }
@@ -586,7 +586,7 @@ public static class EngineCore
 				Graphics2D.SetDrawColor(10, 15, 20);
 				Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
 				Graphics2D.SetDrawColor(240, 245, 255);
-				Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Top);
+				Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", Graphics2D.UiFontName, 24, TextAlignment.Center, TextAlignment.Top);
 			}
 			else {
 				LoadingScreen.Frame();
@@ -600,8 +600,8 @@ public static class EngineCore
 			Graphics2D.SetDrawColor(30, 5, 0);
 			Graphics2D.DrawRectangle(0, 0, Window.Size.W, Window.Size.H);
 			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "<No level loaded!>", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Center);
-			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "<No level loaded!>", Graphics2D.UiFontName, 24, TextAlignment.Center, TextAlignment.Center);
+			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UiFontName, 18, TextAlignment.Center, TextAlignment.Top);
 
 			int y = 0;
 			var msgs = ConsoleSystem.GetMessages();

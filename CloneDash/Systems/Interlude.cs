@@ -246,7 +246,7 @@ public static class Interlude
 					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
 				else {
 					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
-					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, "Noto Sans", texSize * 0.6f, Anchor.CenterRight);
+					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UiFontName, texSize * 0.6f, Anchor.CenterRight);
 				}
 
 				Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
@@ -263,14 +263,14 @@ public static class Interlude
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position,
 								new (string, string)[] {
-									(boldRegexMatch.Groups[1].Value, fontName),
+									(boldRegexMatch.Groups[1].Value, fontName + " " + Graphics2D.NotoSansCJKRegionName),
 									(boldRegexMatch.Groups[2].Value, fontName + " Mono Bold"),
-									(boldRegexMatch.Groups[3].Value, fontName)
+									(boldRegexMatch.Groups[3].Value, fontName + " " + Graphics2D.NotoSansCJKRegionName)
 								},
 								3, fontSize, fontAnchor);
 		}
 		else
-			Graphics2D.DrawText(position, loadMsg, fontName, fontSize, fontAnchor);
+			Graphics2D.DrawText(position, loadMsg, fontName + " " + Graphics2D.NotoSansCJKRegionName, fontSize, fontAnchor);
 	}
 
 	public static void End() {

@@ -98,11 +98,11 @@ namespace CloneDash.Levels
 			Match boldRegexMatch = boldRegex.Match(sheet.Song.Name);
 			Graphics2D.DrawText(16, 16 + y,
 								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : sheet.Song.Name,
-								boldRegexMatch.Success ? "Noto Sans Mono Bold" : "Noto Sans",
+								boldRegexMatch.Success ? "Noto Sans Mono Bold" : "Noto Sans " + Graphics2D.NotoSansCJKRegionName,
 								fs);
 			y += fs + 4;
 			foreach (var line in lines) {
-				Graphics2D.DrawText(16, 16 + y, line, "Noto Sans", fs);
+				Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UiFontName, fs);
 				y += fs + 4;
 			}
 		}
