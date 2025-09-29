@@ -261,39 +261,13 @@ public static class Interlude
 		Regex boldRegex = new ("^(.+)<b>(.+)<\\/b>(.+)$");
 		Match boldRegexMatch= boldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
-			// Basically a copy of Graphics2D.DrawText(float, float, string, string, float, TextAlignment, TextAlignment).
-			System.Numerics.Vector2 prefixSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[1].Value, fontName, (int)fontSize],
-																		boldRegexMatch.Groups[1].Value, fontSize, 0);
-			System.Numerics.Vector2 songTitleSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[2].Value, fontName + " Mono Bold", (int)fontSize],
-																		boldRegexMatch.Groups[2].Value, fontSize, 0);
-			System.Numerics.Vector2 suffixSize = Raylib.MeasureTextEx(Graphics2D.FontManager[boldRegexMatch.Groups[3].Value, fontName, (int)fontSize],
-																		boldRegexMatch.Groups[3].Value, fontSize, 0);
-			Vector2F combinedSize = new (prefixSize.X + songTitleSize.X + suffixSize.X, new float[3]{prefixSize.Y, songTitleSize.Y, suffixSize.Y}.Max());
-			float xOffset = 0, yOffset = 0;
-			(TextAlignment horizontalAlignment, TextAlignment verticalAlignment) = fontAnchor.ToTextAlignment();
-			switch (horizontalAlignment.Alignment) {
-				case 1:
-					xOffset = -combinedSize.X / 2;
-					break;
-				case 2:
-					xOffset = -combinedSize.X;
-					break;
-			}
-			switch (verticalAlignment.Alignment) {
-				case 1:
-					yOffset = -combinedSize.Y / 2;
-					break;
-				case 2:
-					yOffset = -combinedSize.Y;
-					break;
-			}
-			position.X += xOffset;
-			position.Y += yOffset;
-			Graphics2D.DrawText(position, boldRegexMatch.Groups[1].Value, fontName, fontSize);
-			position.X += prefixSize.X;
-			Graphics2D.DrawText(position, boldRegexMatch.Groups[2].Value, fontName + " Mono Bold", fontSize);
-			position.X += songTitleSize.X;
-			Graphics2D.DrawText(position, boldRegexMatch.Groups[3].Value, fontName, fontSize);
+			Graphics2D.DrawText(position,
+								new (string, string)[] {
+									(boldRegexMatch.Groups[1].Value, fontName),
+									(boldRegexMatch.Groups[2].Value, fontName + " Mono Bold"),
+									(boldRegexMatch.Groups[3].Value, fontName)
+								},
+								3, fontSize, fontAnchor);
 		}
 		else
 			Graphics2D.DrawText(position, loadMsg, fontName, fontSize, fontAnchor);

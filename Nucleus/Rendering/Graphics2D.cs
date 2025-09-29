@@ -180,34 +180,49 @@ namespace Nucleus.Core
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[null, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
-			int fontSizeI = (int)fontSize;
-			var size = Raylib.MeasureTextEx(FontManager[message, font, fontSizeI], message, fontSize, 0);
-			float xOffset = 0f, yOffset = 0f;
-
-			switch (horizontal.Alignment) {
-				case 1:
-					xOffset = -size.X / 2f;
-					break;
-				case 2:
-					xOffset = -size.X;
-					break;
-			}
-
-			switch (vertical.Alignment) {
-				case 1:
-					yOffset = -size.Y / 2f;
-					break;
-				case 2:
-					yOffset = -size.Y;
-					break;
-			}
-
-			DrawText(x + xOffset, y + yOffset, message, font, fontSize);
-		}
+		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, new (string, string)[] { (message, font) }, 1, fontSize, horizontal, vertical);
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
 		public static void DrawText(float x, float y, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
+		public static Vector2F DrawText(Vector2F pos, IEnumerable<(string, string)> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment().horizontal, drawAnchor.ToTextAlignment().vertical);
+		public static Vector2F DrawText(float x, float y, IEnumerable<KeyValuePair<string, string>> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(x, y, textsFontsMap, chunkCount, fontSize, drawAnchor);
+		public static Vector2F DrawText(float x, float y, IEnumerable<(string, string)> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
+		public static Vector2F DrawText(float x, float y, IEnumerable<(string, string)> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+			Vector2F combinedSize = new ();
+			List<(string, string, Vector2F)> mappedTexts = new ();
+			foreach(IEnumerable<(string, string)> chunked in textsFontsMap.Chunk(chunkCount)) {
+				Vector2F chunkedSize = new ();
+				foreach ((string textPart, string fontName) in chunked) {
+					Font font = FontManager[textPart, fontName, (int)fontSize];
+					Vector2 measuredSize = Raylib.MeasureTextEx(font, textPart, fontSize, fontSpacing);
+					mappedTexts.Add((textPart, fontName, new (chunkedSize.X, combinedSize.Y)));
+					chunkedSize.X += measuredSize.X + fontSpacing;
+					chunkedSize.Y = Math.Max(chunkedSize.Y, measuredSize.Y);
+				}
+				combinedSize.X = Math.Max(combinedSize.X, chunkedSize.X);
+				combinedSize.Y += chunkedSize.Y + lineSpacing;
+			}
+			switch (horizontal.Alignment) {
+				case 1:
+					x += -combinedSize.X / 2;
+					break;
+				case 2:
+					x += -combinedSize.X;
+					break;
+			}
+			switch (vertical.Alignment) {
+				case 1:
+					y += -combinedSize.Y / 2;
+					break;
+				case 2:
+					y += -combinedSize.Y;
+					break;
+			}
+			foreach((string textPart, string fontName, Vector2F relativePos) in mappedTexts) {
+				DrawText(x + relativePos.X, y + relativePos.Y, textPart, fontName, fontSize);
+			}
+			return combinedSize;
+		}
 
 		// Untested; need to make sure these all work as expected
 		/// <summary>
