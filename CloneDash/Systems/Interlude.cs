@@ -263,14 +263,14 @@ public static class Interlude
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position,
 								new (string, string)[] {
-									(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJKRegionFontName),
+									(boldRegexMatch.Groups[1].Value, Graphics2D.UiFontName),
 									(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
-									(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJKRegionFontName)
+									(boldRegexMatch.Groups[3].Value, Graphics2D.UiFontName)
 								},
 								3, fontSize, fontAnchor);
 		}
 		else
-			Graphics2D.DrawText(position, loadMsg, Graphics2D.NotoSansCJKRegionFontName, fontSize, fontAnchor);
+			Graphics2D.DrawText(position, loadMsg, Graphics2D.UiFontName, fontSize, fontAnchor);
 	}
 
 	public static void End() {

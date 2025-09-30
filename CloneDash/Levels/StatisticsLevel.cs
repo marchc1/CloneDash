@@ -98,7 +98,7 @@ namespace CloneDash.Levels
 			Match boldRegexMatch = boldRegex.Match(sheet.Song.Name);
 			Graphics2D.DrawText(16, 16 + y,
 								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : sheet.Song.Name,
-								boldRegexMatch.Success ? Graphics2D.NotoSansMonoBoldFontName : Graphics2D.NotoSansCJKRegionFontName,
+								boldRegexMatch.Success ? Graphics2D.NotoSansMonoBoldFontName : Graphics2D.UiFontName,
 								fs);
 			y += fs + 4;
 			foreach (var line in lines) {
