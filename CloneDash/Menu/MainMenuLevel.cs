@@ -294,7 +294,7 @@ public class MainMenuLevel : Level
 			self.Paint(w, h);
 		};
 
-		var title = levelSelector.Add<Label>();
+		SongLabel title = levelSelector.Add<SongLabel>();
 		title.TextSize = 48;
 		title.Text = song.Name;
 		title.AutoSize = true;
