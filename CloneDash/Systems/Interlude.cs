@@ -243,9 +243,9 @@ public static class Interlude
 				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
 				Graphics2D.SetDrawColor(255, 255, 255);
 				if (loadSubMsg == null)
-					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", texSize, Anchor.CenterRight);
 				else {
-					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
+					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", texSize * 0.9f, Anchor.CenterRight);
 					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UiFontName, texSize * 0.6f, Anchor.CenterRight);
 				}
 
@@ -255,7 +255,7 @@ public static class Interlude
 		}
 	}
 
-	private static void DrawLoadMsg(Vector2F position, string loadMsg, string fontName, float fontSize, Anchor fontAnchor) {
+	private static void DrawLoadMsg(Vector2F position, string loadMsg, float fontSize, Anchor fontAnchor) {
 		// Strawberry Godzilla from Muse Dash
 		// TODO: More accurate Regex?
 		Regex boldRegex = new ("^(.+)<b>(.+)<\\/b>(.+)$");
@@ -263,14 +263,14 @@ public static class Interlude
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position,
 								new (string, string)[] {
-									(boldRegexMatch.Groups[1].Value, fontName + " " + Graphics2D.NotoSansCJKRegionName),
-									(boldRegexMatch.Groups[2].Value, fontName + " Mono Bold"),
-									(boldRegexMatch.Groups[3].Value, fontName + " " + Graphics2D.NotoSansCJKRegionName)
+									(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJKRegionFontName),
+									(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
+									(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJKRegionFontName)
 								},
 								3, fontSize, fontAnchor);
 		}
 		else
-			Graphics2D.DrawText(position, loadMsg, fontName + " " + Graphics2D.NotoSansCJKRegionName, fontSize, fontAnchor);
+			Graphics2D.DrawText(position, loadMsg, Graphics2D.NotoSansCJKRegionFontName, fontSize, fontAnchor);
 	}
 
 	public static void End() {
