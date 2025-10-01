@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using static System.Net.Mime.MediaTypeNames;
@@ -862,8 +863,14 @@ public static unsafe partial class Raylib
     public static extern Image LoadImageFromScreen();
 
     /// <summary>Check if an image is ready</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsImageReady(Image image);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsImageReady(Image image) {
+		return ((image.Data != null) &&     // Validate pixel data available
+			(image.Width > 0) &&
+			(image.Height > 0) &&       // Validate image size
+			(image.Format > 0) &&       // Validate image format
+			(image.Mipmaps > 0));       // Validate image mipmaps (at least 1 for basic mipmap level)
+	}
 
     /// <summary>Unload image from CPU memory (RAM)</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1201,9 +1208,15 @@ public static unsafe partial class Raylib
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern RenderTexture2D LoadRenderTexture(int width, int height);
 
-    /// <summary>Check if a texture is ready</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern CBool IsTextureReady(Texture2D texture);
+	/// <summary>Check if a texture is ready</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsTextureReady(Texture2D texture) {
+		return ((texture.Id > 0) &&         // Validate OpenGL id
+			(texture.Width > 0) &&
+			(texture.Height > 0) &&     // Validate texture size
+			(texture.Format > 0) &&     // Validate texture pixel format
+			(texture.Mipmaps > 0));     // Validate texture mipmaps (at least 1 for basic mipmap level)
+	}
 
     /// <summary>Unload texture from GPU memory (VRAM)</summary>
     [DllImport(NativeLibName, EntryPoint = "UnloadTexture", CallingConvention = CallingConvention.Cdecl)]

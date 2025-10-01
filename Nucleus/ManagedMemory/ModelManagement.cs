@@ -1,12 +1,13 @@
 ﻿using Nucleus.Core;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
+using Nucleus.Util;
 
 namespace Nucleus.ManagedMemory;
 
 public class ModelManagement : IManagedMemory
 {
-	private Dictionary<string, ModelData> ModelDatas = [];
+	private Dictionary<UtlSymId_t, ModelData> ModelDatas = [];
 	private bool disposedValue;
 	public ulong UsedBits => 0; // todo
 
@@ -39,18 +40,22 @@ public class ModelManagement : IManagedMemory
 	public ModelRefJSON JSONModelLoader = new();
 	public ModelBinary BinaryModelLoader = new();
 
-	public string CombinePath(string pathID, string path) => IManagedMemory.MergePath(pathID, path);
 	public bool IsCached(string pathID, string path) {
-		var savePath = CombinePath(pathID, path);
-		return ModelDatas.TryGetValue(savePath, out _);
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		return ModelDatas.TryGetValue(new UtlSymbol(finalPath), out _);
 	}
 
 	public void Cache(ModelData data, string pathID, string path) {
-		ModelDatas[CombinePath(pathID, path)] = data;
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		ModelDatas[new UtlSymbol(finalPath)] = data;
 	}
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		var savePath = CombinePath(pathID, path);
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		UtlSymbol savePath = new UtlSymbol(finalPath);
 		if (ModelDatas.TryGetValue(savePath, out var data) && data != null) {
 			return data;
 		}

@@ -25,7 +25,7 @@ public static class EngineCore
 {
 	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
 	static void gc_collect() {
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 		GC.WaitForPendingFinalizers();
 		var status = GC.WaitForFullGCComplete();
 		switch (status) {
@@ -408,9 +408,8 @@ public static class EngineCore
 
 		s.Stop();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
 		GC.WaitForPendingFinalizers();
-		GC.Collect();
 
 		Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
 		//GC.Collect();
@@ -444,7 +443,7 @@ public static class EngineCore
 
 		ConsoleSystem.ClearScreenBlockers();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
 
 		LoadingLevel = false;
 	}

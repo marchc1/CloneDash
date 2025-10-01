@@ -19,6 +19,7 @@
 		<PackageReference Include="Colorful.Console" Version="1.2.15" />
 		<PackageReference Include="Delaunator" Version="1.0.11" />
 		<PackageReference Include="FftSharp" Version="2.2.0" />
+		<PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.220.0" />
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
