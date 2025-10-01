@@ -1,6 +1,9 @@
 ﻿using Nucleus.Files;
+using Nucleus.Types;
+
 using Raylib_cs;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Nucleus.Core
 {
@@ -9,7 +12,12 @@ namespace Nucleus.Core
         private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 
         public readonly Dictionary<string, FontEntry> FontNameToFilepath = new();
-        private readonly Dictionary<string, Dictionary<int, Font>> fonttable = new();
+
+		// A dictionary of live fonts.
+        private readonly Dictionary<string, Dictionary<int, Font>> FontTable = new();
+		// A dictionary of fonts marked to be killed.
+        private readonly Dictionary<string, Dictionary<int, Font>> FontsMarkedForDeath = new();
+
         private bool AreFontsDirty = false;
 
         public void RegisterCodepoints(string charsIn) =>
@@ -28,29 +36,40 @@ namespace Nucleus.Core
 
                 bool wasFirst = !AreFontsDirty;
                 if (text != null) {
-                    foreach (bool registerResult in text.EnumerateRunes().Select((r) => RegisteredCodepointsHash.Add(r.Value)))
-                        AreFontsDirty |= registerResult;
+					for (int i = 0; i < text.Length; i++) {
+						Rune unicodeRune = Rune.GetRuneAt(text, i);
+						AreFontsDirty |= RegisteredCodepointsHash.Add(unicodeRune.Value);
+					}
 
                     if (AreFontsDirty && wasFirst) {
-                        // run font unloading here
-                        MainThread.RunASAP(() => {
-                            foreach (Font f in fonttable.Values.SelectMany(kv => kv.Values, (_, v) => v))
-                                Raylib.UnloadFont(f);
-                                
-                            fonttable.Clear();
-                            AreFontsDirty = false;
+						// We have to unload all fonts and reload them with new codepoints.
+						// We will do that before the next frame to ensure nothing is stuck with invalid font textures.
+
+						foreach (var kvp1 in FontTable)
+							FontsMarkedForDeath[kvp1.Key] = kvp1.Value;
+
+						MainThread.RunASAP(() => {
+							if (!AreFontsDirty)
+								return;
+
+							foreach(var kvp in FontsMarkedForDeath) {
+								foreach (var fontPair in kvp.Value)
+									Raylib.UnloadFont(fontPair.Value);
+								FontTable.Remove(kvp.Key);
+							}
+
+							FontsMarkedForDeath.Clear();
+							AreFontsDirty = false;
                         }, ThreadExecutionTime.BeforeFrame);
                     }
                 }
 
-                Font font;
-                Dictionary<int, Font> f1;
-                if (!fonttable.TryGetValue(fontName, out f1)) {
-                    fonttable[fontName] = new();
-                    f1 = fonttable[fontName];
+                if (!FontTable.TryGetValue(fontName, out Dictionary<int, Font>? f1)) {
+                    FontTable[fontName] = new();
+                    f1 = FontTable[fontName];
                 }
 
-                if (!f1.TryGetValue(fontSize, out font)) {
+                if (!f1.TryGetValue(fontSize, out Font font)) {
 					var entry = FontNameToFilepath[fontName];
 
 					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepointsHash.ToArray(), RegisteredCodepointsHash.Count);
