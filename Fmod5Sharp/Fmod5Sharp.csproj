@@ -30,7 +30,7 @@
         <PackageReference Include="IndexRange" Version="1.1.0" />
         <PackageReference Include="NAudio" Version="2.2.1" />
         <PackageReference Include="NAudio.Core" Version="2.2.1" />
-        <PackageReference Include="OggVorbisEncoder" Version="1.2.0" />
+        <PackageReference Include="OggVorbisEncoder" Version="1.2.2" />
         <PackageReference Include="System.Text.Json" Version="9.0.0" />
     </ItemGroup>
 
