@@ -854,6 +854,7 @@ public static class EngineCore
 	}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
 
 	private const string PANIC_FONT = "Noto Sans";
+	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
 	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch
 	{
 		"zh-HK"   => "Noto Sans HK",
@@ -884,7 +885,7 @@ public static class EngineCore
 	private static readonly Dictionary<string, string> ErrorMessages = new (){
 		{"A fatal error has occured. Press any key to exit.", PANIC_FONT},
 		{"حدث خطأ فادح. اضغط على أي مفتاح للخروج.", PANIC_FONT},
-		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT},
+		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT_ARABIC},
 		{"出现致命错误。按任意键退出。", PANIC_FONT_SC},
 		{"發生致命錯誤。按任意鍵退出。", PANIC_FONT_TC},
 		{"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.", PANIC_FONT},

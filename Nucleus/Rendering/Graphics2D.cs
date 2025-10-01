@@ -43,6 +43,8 @@ namespace Nucleus.Core
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
 			{ "Noto Sans", new FontEntry("NotoSans-Regular.ttf", "fonts") },
 			{ "Noto Sans Bold", new FontEntry("NotoSans-Bold.ttf", "fonts") },
+			{ "Noto Sans Arabic", new FontEntry("NotoSansArabic-Regular.ttf", "fonts") },
+			{ "Noto Sans Arabic Bold", new FontEntry("NotoSansArabic-Bold.ttf", "fonts") },
 			{ "Noto Sans HK", new FontEntry("NotoSansHK-Regular.ttf", "fonts") },
 			{ "Noto Sans HK Bold", new FontEntry("NotoSansHK-Bold.ttf", "fonts") },
 			{ "Noto Sans JP", new FontEntry("NotoSansJP-Regular.ttf", "fonts") },
