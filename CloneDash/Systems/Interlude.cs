@@ -262,9 +262,9 @@ public static class Interlude
 		Match boldRegexMatch = boldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position, [
-									(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJRegionFontName),
-									(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
-									(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJRegionFontName)
+									new(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJRegionFontName),
+									new(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
+									new(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJRegionFontName)
 								], 3, fontSize, fontAnchor);
 		}
 		else
