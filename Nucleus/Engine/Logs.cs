@@ -22,7 +22,8 @@ namespace Nucleus
 		public static bool Newline { get; set; } = true;
 		public static bool ShowLevel { get; set; } = true;
 
-		public static string TimeFormat { get; set; } = "M-dd-yyyy h:mm:ss tt";
+		// 2025-09-30 23:59:59
+		public static string TimeFormat { get; set; } = "yyyy-MM-dd HH:mm:ss";
 		public static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
 		private static bool _initializedColorConsole = false;

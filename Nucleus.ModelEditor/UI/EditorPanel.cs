@@ -843,13 +843,13 @@ namespace Nucleus.ModelEditor
 			if (selectedTransformable != null) {
 				if (!ModelEditor.Active.File.IsOperatorActive)
 					DefaultOperator?.GizmoRender(this, selectedTransformable);
-				string font = "Noto Sans", text = $"{selectedTransformable.GetName()}";
+				string text = $"{selectedTransformable.GetName()}";
 				int fontSize = 20;
-				Vector2F textSize = Graphics2D.GetTextSize(text, font, fontSize) + new Vector2F(6);
+				Vector2F textSize = Graphics2D.GetTextSize(text, Graphics2D.UiFontName, fontSize) + new Vector2F(6);
 				Graphics2D.SetDrawColor(10, 10, 10, 190);
 				Graphics2D.DrawRectangle((width / 2) - (textSize.W / 2), (height - 140) - (textSize.H / 2), textSize.W, textSize.H);
 				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawText(width / 2, height - 140, text, font, fontSize, Anchor.Center);
+				Graphics2D.DrawText(width / 2, height - 140, text, Graphics2D.UiFontName, fontSize, Anchor.Center);
 			}
 
 			Rlgl.DrawRenderBatchActive();
@@ -865,7 +865,7 @@ namespace Nucleus.ModelEditor
 
 			Operator? op = ModelEditor.Active.File.ActiveOperator;
 			if (op != null) {
-				Graphics2D.DrawText(new(width / 2, 32), $"{op.Name ?? "<NULL>"}", "Noto Sans", 32, Anchor.TopCenter);
+				Graphics2D.DrawText(new(width / 2, 32), $"{op.Name ?? "<NULL>"}", Graphics2D.UiFontName, 32, Anchor.TopCenter);
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 ﻿using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
-using System.Text.RegularExpressions;
 
 namespace Nucleus.UI
 {
@@ -51,15 +50,8 @@ namespace Nucleus.UI
 			}
 
             Vector2F textDrawingPosition = TextAlignment.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
-
-			// Strawberry Godzilla from Muse Dash
-			Regex boldRegex = new("^<b>(.+)<\\/b>$");
-			Match boldRegexMatch = boldRegex.Match(Text);
-			string displayText = boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : Text;
-			string fontName = boldRegexMatch.Success ? Font + " Mono Bold" : Font;
-
             Graphics2D.SetDrawColor(textC);
-            Graphics2D.DrawText(textDrawingPosition, displayText, fontName, TextSize, TextAlignment);
+            Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, TextAlignment);
         }
     }
 }

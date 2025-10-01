@@ -23,7 +23,7 @@ namespace Nucleus.HelloWorld
 			public override void PostRender(FrameState frameState) {
 				base.PostRender(frameState);
 				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawText(0, 0, "Hello SDL!", "Noto Sans", 32);
+				Graphics2D.DrawText(0, 0, "Hello SDL!", Graphics2D.UiFontName, 32);
 				Graphics2D.DrawRectangle(500, 500, 120, 120);
 
 				Surface.SetViewport(256, 256, 256, 256);

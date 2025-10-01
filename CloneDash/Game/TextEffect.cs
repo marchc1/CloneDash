@@ -55,7 +55,7 @@ namespace CloneDash.Game
 			Rlgl.Translatef((Position.X / 2) - (pos0to1_two * (frameState.WindowWidth * 0.15f)), (Position.Y / 2) - pos, 0);
 			Rlgl.Scalef(size, size, size);
 			Graphics2D.SetDrawColor(Color, (int)(Color.A * Raymath.Remap((float)lifetime, 0, ageToDie, 1, 0)));
-			Graphics2D.DrawText(new(0), Text, "Noto Sans", 42, TextAlignment.Center, TextAlignment.Center);
+			Graphics2D.DrawText(new(0), Text, Graphics2D.UiFontName, 42, TextAlignment.Center, TextAlignment.Center);
 			Rlgl.PopMatrix();
 		}
 	}
