@@ -1164,8 +1164,21 @@ public static class MuseDashModelConverter
 			throw new Exception();
 		}
 
+		// Dummy parse
 		for (int pathI = 0, paths = skeleton.MD_ReadVarInt(true); pathI < paths; pathI++) {
-			throw new Exception();
+			Logs.Warn("This model has path animations - which are being dummy-parsed out.");
+			skeleton.MD_ReadVarInt(true);
+			for (int i = 0, c = skeleton.MD_ReadVarInt(true); i < c; i++) {
+				int type = skeleton.MD_ReadByte(), frames = skeleton.MD_ReadVarInt(true);
+				for (int frame = 0; frame < frames; frame++) {
+					skeleton.MD_ReadFloat();
+					skeleton.MD_ReadFloat();
+					if(type == PATH_MIX)
+						skeleton.MD_ReadFloat();
+					if (frame < frames - 1)
+						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+				}
+			}
 		}
 
 		for (int deformI = 0, deforms = skeleton.MD_ReadVarInt(true); deformI < deforms; deformI++) {
