@@ -198,7 +198,6 @@ namespace Nucleus.Core
 		public static void DrawText(float x, float y, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
 		public static Vector2F DrawText(Vector2F pos, IEnumerable<(string, string)> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment().horizontal, drawAnchor.ToTextAlignment().vertical);
-		public static Vector2F DrawText(float x, float y, IEnumerable<KeyValuePair<string, string>> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(x, y, textsFontsMap, chunkCount, fontSize, drawAnchor);
 		public static Vector2F DrawText(float x, float y, IEnumerable<(string, string)> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
 		public static Vector2F DrawText(float x, float y, IEnumerable<(string, string)> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
 			Vector2F combinedSize = new ();
