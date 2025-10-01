@@ -59,6 +59,7 @@ namespace Nucleus.Core
 		}
 
 		public static void Reset() {
+			if (true) return; // Stubbing for now
 			PotentiallyRebuild();
 
 			int i = 0;
@@ -85,6 +86,7 @@ namespace Nucleus.Core
 			return stopwatch;
 		}
 		public static void Start(NProfilable profilable) {
+			if (true) return; // Stubbing for now
 			Stopwatch s = Get(profilable);
 			s.Start();
 		}
@@ -92,6 +94,7 @@ namespace Nucleus.Core
 			return MathF.Abs((s.GetHashCode() / 329.248f) % 360);
 		}
 		public static void Start(string name) {
+			if (true) return; // Stubbing for now
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
@@ -100,10 +103,14 @@ namespace Nucleus.Core
 			Start(profilable);
 		}
 		public static void End(NProfilable profilable) {
+			if (true) return; // Stubbing for now
+
 			Stopwatch s = Get(profilable);
 			s.Stop();
 		}
 		public static void End(string name) {
+			if (true) return; // Stubbing for now
+
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
