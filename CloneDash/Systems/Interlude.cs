@@ -243,9 +243,9 @@ public static class Interlude
 				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
 				Graphics2D.SetDrawColor(255, 255, 255);
 				if (loadSubMsg == null)
-					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", texSize, Anchor.CenterRight);
+					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", texSize, Anchor.CenterRight);
 				else {
-					DrawLoadMsg(new (windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", texSize * 0.9f, Anchor.CenterRight);
+					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", texSize * 0.9f, Anchor.CenterRight);
 					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UiFontName, texSize * 0.6f, Anchor.CenterRight);
 				}
 
@@ -255,19 +255,17 @@ public static class Interlude
 		}
 	}
 
+	static readonly Regex boldRegex = new("^(.+)<b>(.+)<\\/b>(.+)$");
 	private static void DrawLoadMsg(Vector2F position, string loadMsg, float fontSize, Anchor fontAnchor) {
 		// Strawberry Godzilla from Muse Dash
 		// TODO: More accurate Regex?
-		Regex boldRegex = new ("^(.+)<b>(.+)<\\/b>(.+)$");
-		Match boldRegexMatch= boldRegex.Match(loadMsg);
+		Match boldRegexMatch = boldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
-			Graphics2D.DrawText(position,
-								new (string, string)[] {
+			Graphics2D.DrawText(position, [
 									(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJRegionFontName),
 									(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
 									(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJRegionFontName)
-								},
-								3, fontSize, fontAnchor);
+								], 3, fontSize, fontAnchor);
 		}
 		else
 			Graphics2D.DrawText(position, loadMsg, Graphics2D.NotoSansCJRegionFontName, fontSize, fontAnchor);
