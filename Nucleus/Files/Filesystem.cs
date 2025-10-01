@@ -422,12 +422,13 @@ public static class Filesystem
 			return music;
 		}
 	}
-	public static Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
-		byte[]? data = ReadAllBytes(pathID, path);
-		if (data == null) throw NotFound(pathID, path);
-
-		var font = Raylib.LoadFontFromMemory(GetExtension(path), data, fontSize, codepoints, codepointCount);
-		return font;
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (int* codepointsPtr = codepoints) 
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			return font;
+		}
 	}
 	public static Shader ReadVertexShader(string pathID, string vertexShader) {
 		string? data = ReadAllText(pathID, vertexShader);
