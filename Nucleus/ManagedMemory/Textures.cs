@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Nucleus.Files;
@@ -14,6 +15,7 @@ using Raylib_cs;
 namespace Nucleus.ManagedMemory
 {
 	public interface ITexture : IManagedMemory {
+        public uint HardwareID { get; }
         public int Width { get; }
         public int Height { get; }
         public PixelFormat Format { get; }
@@ -226,6 +228,7 @@ namespace Nucleus.ManagedMemory
 			return tex;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]	
 		public Texture LoadTextureFromFile(ReadOnlySpan<char> filepath, bool localToImages = true) =>
 			localToImages ? LoadTextureFromFile("images", filepath)
 			: LoadTextureFromFileDisk(filepath);
