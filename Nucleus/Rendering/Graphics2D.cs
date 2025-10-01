@@ -220,7 +220,7 @@ namespace Nucleus.Core
 
 			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
 				Vector2F chunkedSize = new();
-				Span<TextChunk> chunk = textsFontsMap[i..Math.Min(i + chunkCount, textsFontsMap.Length - 1)];
+				Span<TextChunk> chunk = textsFontsMap[i..Math.Min(i + chunkCount, textsFontsMap.Length)];
 
 				for (int j = 0; j < chunk.Length; j++) {
 					ref TextChunk piece = ref chunk[j];
