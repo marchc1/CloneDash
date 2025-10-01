@@ -260,7 +260,8 @@ public static class EngineCore
 			// Some korean
 			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
 
-			Graphics2D.RegisterCodepoints(ErrorMessages.Keys.SelectMany((c) => c));
+			foreach (var languageLine in ErrorMessages.Keys)
+				Graphics2D.RegisterCodepoints(languageLine);
 
 			// Set GameThread_GLReady flag so the main thread can finish its work
 		}

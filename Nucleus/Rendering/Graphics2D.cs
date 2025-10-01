@@ -125,7 +125,7 @@ namespace Nucleus.Core
 		/// This should be done before starting EngineCore or loading a level.
 		/// </summary>
 		/// <param name="codepointsStr"></param>
-		public static void RegisterCodepoints(IEnumerable<char> codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
+		public static void RegisterCodepoints(string codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
 
 		private static void beginShading() {
 			if (HSV.Equals(new(0, 1, 1)))

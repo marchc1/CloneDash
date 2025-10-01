@@ -12,8 +12,8 @@ namespace Nucleus.Core
         private readonly Dictionary<string, Dictionary<int, Font>> fonttable = new();
         private bool AreFontsDirty = false;
 
-        public void RegisterCodepoints(IEnumerable<char> charsIn) =>
-            RegisteredCodepointsHash.UnionWith(string.Concat(charsIn).EnumerateRunes().Select((r) => r.Value));
+        public void RegisterCodepoints(string charsIn) =>
+            RegisteredCodepointsHash.UnionWith(charsIn.EnumerateRunes().Select((r) => r.Value));
 
         public FontManager(Dictionary<string, FontEntry> fonttable, string[]? codepoints = null) {
             codepoints = codepoints ?? [];
