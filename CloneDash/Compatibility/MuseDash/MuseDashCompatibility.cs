@@ -1014,7 +1014,7 @@ public static class MuseDashModelConverter
 
 	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio) {
 		Nucleus.Models.Runtime.Animation animation = new Nucleus.Models.Runtime.Animation();
-		animation.Name = skeleton.MD_ReadString();
+		animation.Name = skeleton.MD_ReadNullableString() ?? "";
 		nucleusModelData.Animations.Add(animation);
 
 		for (int slotI = 0, slots = skeleton.MD_ReadVarInt(true); slotI < slots; slotI++) {
