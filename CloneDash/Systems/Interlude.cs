@@ -255,11 +255,8 @@ public static class Interlude
 		}
 	}
 
-	static readonly Regex boldRegex = new("^(.+)<b>(.+)<\\/b>(.+)$");
 	private static void DrawLoadMsg(Vector2F position, string loadMsg, float fontSize, Anchor fontAnchor) {
-		// Strawberry Godzilla from Muse Dash
-		// TODO: More accurate Regex?
-		Match boldRegexMatch = boldRegex.Match(loadMsg);
+		Match boldRegexMatch = Util.BoldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position, [
 									new(boldRegexMatch.Groups[1].Value, Graphics2D.UI_CN_JP_FONT_NAME),

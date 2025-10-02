@@ -93,9 +93,7 @@ namespace CloneDash.Levels
 			];
 			Graphics2D.SetDrawColor(255, 255, 255);
 			var fs = 24;
-			// Strawberry Godzilla from Muse Dash
-			Regex boldRegex = new("^<b>(.+)<\\/b>$");
-			Match boldRegexMatch = boldRegex.Match(sheet.Song.Name);
+			Match boldRegexMatch = Util.BoldRegex.Match(sheet.Song.Name);
 			Graphics2D.DrawText(16, 16 + y,
 								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : sheet.Song.Name,
 								boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
