@@ -22,13 +22,13 @@ namespace Nucleus.Core
 	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
-		public const string UiFontName = "Noto Sans";
+		public const string UI_FONT_NAME = "Noto Sans";
 
-		public const string NotoSansMonoBoldFontName = "Noto Sans Mono Bold";
+		public const string UI_MONO_BOLD_FONT_NAME = "Noto Sans Mono Bold";
 		
 		// See here for possible values of CultureInfo.Name:
 		// https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
-		public readonly static string NotoSansCJRegionFontName = CultureInfo.CurrentCulture.Name switch {
+		public readonly static string UI_CN_JP_FONT_NAME = CultureInfo.CurrentCulture.Name switch {
 			"zh-Hant" => "Noto Sans TC",
 			"zh-HK" => "Noto Sans HK",
 			"zh-MO" => "Noto Sans HK",

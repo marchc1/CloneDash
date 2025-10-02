@@ -48,7 +48,7 @@ namespace Nucleus.UI
 			var text = TooltipText;
 			if (text != "" && text != null) {
 				var fontsize = 20;
-				var size = Graphics2D.GetTextSize(text, Graphics2D.UiFontName, fontsize) + new Vector2F(8, 4);
+				var size = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, fontsize) + new Vector2F(8, 4);
 				var mousepos = EngineCore.CurrentFrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
 
 				// determine if tooltip goes over screen bounds and fix it if so
@@ -63,7 +63,7 @@ namespace Nucleus.UI
 				Graphics2D.SetDrawColor(10, 15, 25, 225);
 				Graphics2D.SetDrawColor(235, 235, 235, 255);
 				Graphics2D.DrawRectangleOutline(mousepos + drawingOffset, size + new Vector2F(4, 4), 1);
-				Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, Graphics2D.UiFontName, fontsize);
+				Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, Graphics2D.UI_FONT_NAME, fontsize);
 			}
 		}
 

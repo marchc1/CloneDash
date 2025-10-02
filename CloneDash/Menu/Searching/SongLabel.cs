@@ -20,7 +20,7 @@ public class SongLabel : Label
 			Regex boldRegex = new ("^<b>(.+)<\\/b>$");
 			Match boldRegexMatch = boldRegex.Match(value);
 			textRaw = boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : value;
-			Font = boldRegexMatch.Success ? Graphics2D.NotoSansMonoBoldFontName : Graphics2D.NotoSansCJRegionFontName;
+			Font = boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME;
 			base.Text = textRaw;
 		}
 	}

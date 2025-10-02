@@ -246,7 +246,7 @@ public static class Interlude
 					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", texSize, Anchor.CenterRight);
 				else {
 					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", texSize * 0.9f, Anchor.CenterRight);
-					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UiFontName, texSize * 0.6f, Anchor.CenterRight);
+					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UI_FONT_NAME, texSize * 0.6f, Anchor.CenterRight);
 				}
 
 				Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
@@ -262,13 +262,13 @@ public static class Interlude
 		Match boldRegexMatch = boldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
 			Graphics2D.DrawText(position, [
-									new(boldRegexMatch.Groups[1].Value, Graphics2D.NotoSansCJRegionFontName),
-									new(boldRegexMatch.Groups[2].Value, Graphics2D.NotoSansMonoBoldFontName),
-									new(boldRegexMatch.Groups[3].Value, Graphics2D.NotoSansCJRegionFontName)
+									new(boldRegexMatch.Groups[1].Value, Graphics2D.UI_CN_JP_FONT_NAME),
+									new(boldRegexMatch.Groups[2].Value, Graphics2D.UI_MONO_BOLD_FONT_NAME),
+									new(boldRegexMatch.Groups[3].Value, Graphics2D.UI_CN_JP_FONT_NAME)
 								], 3, fontSize, fontAnchor);
 		}
 		else
-			Graphics2D.DrawText(position, loadMsg, Graphics2D.NotoSansCJRegionFontName, fontSize, fontAnchor);
+			Graphics2D.DrawText(position, loadMsg, Graphics2D.UI_CN_JP_FONT_NAME, fontSize, fontAnchor);
 	}
 
 	public static void End() {

@@ -224,7 +224,7 @@ public class WeightsPanel : View
 		int index = meshAttachment.Weights.IndexOf(bonepair);
 
 		Graphics2D.SetDrawColor(255, 255, 255);
-		Graphics2D.DrawText(32, height / 2, bonepair.Bone.Name, Graphics2D.UiFontName, 18, Anchor.CenterLeft);
+		Graphics2D.DrawText(32, height / 2, bonepair.Bone.Name, Graphics2D.UI_FONT_NAME, 18, Anchor.CenterLeft);
 
 		bool isSelected = bonepair == ActiveWeights;
 
@@ -261,7 +261,7 @@ public class WeightsPanel : View
 
 		if (hasWeight) {
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(width - 8, height / 2, sharesWeight ? $"{weight:P2}" : "*", Graphics2D.UiFontName, 18, Anchor.CenterRight);
+			Graphics2D.DrawText(width - 8, height / 2, sharesWeight ? $"{weight:P2}" : "*", Graphics2D.UI_FONT_NAME, 18, Anchor.CenterRight);
 		}
 	}
 }
