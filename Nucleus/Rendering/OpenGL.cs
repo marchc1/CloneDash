@@ -154,7 +154,6 @@ namespace Nucleus.Rendering
 		/// </summary>
 		/// <param name="cap">Specifies a symbolic constant indicating a GL capability.</param>
 		public static void Enable(int cap) => _glEnable(cap);
-		public static void AlphaFunc(int cond, float threshold) => _glAlphaFunc(cond, threshold);
 
 		/// <summary>
 		///     Disable server-side GL capabilities.

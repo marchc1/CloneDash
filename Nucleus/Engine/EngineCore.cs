@@ -17,6 +17,7 @@ using Nucleus.Util;
 using Nucleus.Commands;
 using Nucleus.Input;
 using Nucleus.Extensions;
+using System.Globalization;
 
 namespace Nucleus;
 
@@ -25,7 +26,7 @@ public static class EngineCore
 {
 	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
 	static void gc_collect() {
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Forced);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 		GC.WaitForPendingFinalizers();
 		var status = GC.WaitForFullGCComplete();
 		switch (status) {
@@ -212,8 +213,8 @@ public static class EngineCore
 		Graphics2D.DrawRectangle(rectPadding + textWidth, rectPadding + y + 2, fnWidth * ratio, 14);
 		Graphics2D.DrawRectangle(rectPadding + textWidth + fnWidth, rectPadding + y, 2, 18);
 		Graphics2D.SetDrawColor(color.Adjust(0, -0.4f, 0));
-		Graphics2D.DrawText(rectPadding + textWidth - 6, y + (12), text, "Noto Sans", 18, Anchor.CenterRight);
-		Graphics2D.DrawText(rectPadding + textWidth + fnWidth + 8, y + (12), $"{ms:0.00} ms", "Noto Sans", 20, Anchor.CenterLeft);
+		Graphics2D.DrawText(rectPadding + textWidth - 6, y + (12), text, Graphics2D.UI_FONT_NAME, 18, Anchor.CenterRight);
+		Graphics2D.DrawText(rectPadding + textWidth + fnWidth + 8, y + (12), $"{ms:0.00} ms", Graphics2D.UI_FONT_NAME, 20, Anchor.CenterLeft);
 	}
 
 	public static MouseCursor MouseCursor_Frame { get; private set; }
@@ -259,8 +260,7 @@ public static class EngineCore
 			// Some korean
 			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
 
-			foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages)
-				Graphics2D.RegisterCodepoints(languageLine);
+			Graphics2D.RegisterCodepoints(string.Join("", ErrorMessages.Keys));
 
 			// Set GameThread_GLReady flag so the main thread can finish its work
 		}
@@ -408,9 +408,8 @@ public static class EngineCore
 
 		s.Stop();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
 		GC.WaitForPendingFinalizers();
-		GC.Collect();
 
 		Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
 		//GC.Collect();
@@ -444,7 +443,7 @@ public static class EngineCore
 
 		ConsoleSystem.ClearScreenBlockers();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
 
 		LoadingLevel = false;
 	}
@@ -556,6 +555,7 @@ public static class EngineCore
 	}
 	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default frames per second. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 	public static ConVar r_renderat = ConVar.Register("renderrate", "60", ConsoleFlags.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
+	public static ConVar gc_collectperframe = ConVar.Register("gc_collectperframe", "0", ConsoleFlags.Saved, "If set to 1, Nucleus will perform a forced gen-0 garbage collection after every frame. This is an experiment, mileage may vary.", 0, 1);
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
@@ -585,7 +585,7 @@ public static class EngineCore
 				Graphics2D.SetDrawColor(10, 15, 20);
 				Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
 				Graphics2D.SetDrawColor(240, 245, 255);
-				Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Top);
+				Graphics2D.DrawText(screenBounds.W / 2, screenBounds.H / 2, "LOADING", Graphics2D.UI_FONT_NAME, 24, TextAlignment.Center, TextAlignment.Top);
 			}
 			else {
 				LoadingScreen.Frame();
@@ -599,13 +599,15 @@ public static class EngineCore
 			Graphics2D.SetDrawColor(30, 5, 0);
 			Graphics2D.DrawRectangle(0, 0, Window.Size.W, Window.Size.H);
 			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "<No level loaded!>", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Center);
-			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "<No level loaded!>", Graphics2D.UI_FONT_NAME, 24, TextAlignment.Center, TextAlignment.Center);
+			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
 
 			int y = 0;
 			var msgs = ConsoleSystem.GetMessages();
 			int txS = 12;
-			foreach (var cmsg in msgs.Reverse()) {
+			for (int j = ConsoleSystem.GetMessagesCount() - 1; j >= 0; j--) {
+				ref readonly ConsoleMessage cmsg = ref msgs[j];
+
 				int c = 1;
 				for (int ci = 0; ci < cmsg.Message.Length; ci++) {
 					char curchar = cmsg.Message[ci];
@@ -656,6 +658,10 @@ public static class EngineCore
 		Rlgl.DrawRenderBatchActive();
 		if (Level == null || Level.RenderedFrame)
 			Window.SwapScreenBuffer();
+
+		// EXPERIMENT: Before any timing checks, perform a GC generation 0 collection
+		if (gc_collectperframe.GetBool())
+			GC.Collect(0, GCCollectionMode.Forced, true);
 
 		CurrentAppTime = OS.GetTime();
 		DrawTime = CurrentAppTime - PreviousAppTime;
@@ -848,6 +854,16 @@ public static class EngineCore
 	}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
 
 	private const string PANIC_FONT = "Noto Sans";
+	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
+	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch
+	{
+		"zh-HK"   => "Noto Sans HK",
+		"zh-MO"   => "Noto Sans HK",
+		_         => "Noto Sans TC",
+	};
+	private const string PANIC_FONT_SC = "Noto Sans SC";
+	private const string PANIC_FONT_KR = "Noto Sans KR";
+	private const string PANIC_FONT_JP = "Noto Sans JP";
 	private const string PANIC_FONT_CONSOLE = "Noto Sans Mono";
 	private const float PANIC_SIZE = 18;
 	private const float PANIC_SIZE_CONSOLE = 16;
@@ -866,40 +882,40 @@ public static class EngineCore
 
 		textY++;
 	}
-	// Commented out lines don't have font support yet. Can add them back when they work again
-	private static readonly string[] ErrorMessageInAutoTranslatedLanguages = [
-		"A fatal error has occured. Press any key to exit.",
-		//"حدث خطأ فادح. اضغط على أي مفتاح للخروج.",
-		"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.",
-		"出现致命错误。按任意键退出。              發生致命錯誤。按任意鍵退出。",
-		"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.",
-		"Der er opstået en fatal fejl. Tryk på en vilkårlig tast for at afslutte.",
-		"Er is een fatale fout opgetreden. Druk op een willekeurige toets om af te sluiten.",
-		"On ilmnenud fataalne viga. Väljumiseks vajutage suvalist klahvi.",
-		"On tapahtunut kohtalokas virhe. Poistu painamalla mitä tahansa näppäintä.",
-		"Une erreur fatale s'est produite. Appuyez sur n'importe quelle touche pour quitter.",
-		"Es ist ein schwerwiegender Fehler aufgetreten. Drücken Sie eine beliebige Taste zum Beenden.",
-		"Προέκυψε ένα μοιραίο σφάλμα. Πατήστε οποιοδήποτε πλήκτρο για έξοδο.",
-		"Végzetes hiba történt. Nyomja meg bármelyik billentyűt a kilépéshez.",
-		"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.",
-		"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.",
-		"致命的なエラーが発生しました。いずれかのキーを押して終了してください。",
-		//"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.",
-		"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.",
-		"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.",
-		"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.",
-		"Wystąpił błąd krytyczny. Naciśnij dowolny przycisk, aby wyjść.",
-		"Ocorreu um erro fatal. Prima qualquer tecla para sair.",
-		"Ocorreu um erro fatal. Pressione qualquer tecla para sair.",
-		"A apărut o eroare fatală. Apăsați orice tastă pentru a ieși.",
-		"Произошла фатальная ошибка. Нажмите любую клавишу, чтобы выйти.",
-		"Vyskytla sa fatálna chyba. Stlačte ľubovoľné tlačidlo, aby ste ukončili prácu.",
-		"Zgodila se je usodna napaka. Za izhod pritisnite katero koli tipko.",
-		"Se ha producido un error fatal. Pulse cualquier tecla para salir.",
-		"Ett allvarligt fel har inträffat. Tryck på valfri tangent för att avsluta.",
-		"Ölümcül bir hata oluştu. Çıkmak için herhangi bir tuşa basın.",
-		"Виникла фатальна помилка. Натисніть будь-яку клавішу для виходу."
-	];
+	private static readonly Dictionary<string, string> ErrorMessages = new (){
+		{"A fatal error has occured. Press any key to exit.", PANIC_FONT},
+		{"حدث خطأ فادح. اضغط على أي مفتاح للخروج.", PANIC_FONT},
+		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT_ARABIC},
+		{"出现致命错误。按任意键退出。", PANIC_FONT_SC},
+		{"發生致命錯誤。按任意鍵退出。", PANIC_FONT_TC},
+		{"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.", PANIC_FONT},
+		{"Der er opstået en fatal fejl. Tryk på en vilkårlig tast for at afslutte.", PANIC_FONT},
+		{"Er is een fatale fout opgetreden. Druk op een willekeurige toets om af te sluiten.", PANIC_FONT},
+		{"On ilmnenud fataalne viga. Väljumiseks vajutage suvalist klahvi.", PANIC_FONT},
+		{"On tapahtunut kohtalokas virhe. Poistu painamalla mitä tahansa näppäintä.", PANIC_FONT},
+		{"Une erreur fatale s'est produite. Appuyez sur n'importe quelle touche pour quitter.", PANIC_FONT},
+		{"Es ist ein schwerwiegender Fehler aufgetreten. Drücken Sie eine beliebige Taste zum Beenden.", PANIC_FONT},
+		{"Προέκυψε ένα μοιραίο σφάλμα. Πατήστε οποιοδήποτε πλήκτρο για έξοδο.", PANIC_FONT},
+		{"Végzetes hiba történt. Nyomja meg bármelyik billentyűt a kilépéshez.", PANIC_FONT},
+		{"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.", PANIC_FONT},
+		{"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.", PANIC_FONT},
+		{"致命的なエラーが発生しました。いずれかのキーを押して終了してください。", PANIC_FONT_JP},
+		{"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.", PANIC_FONT_KR},
+		{"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.", PANIC_FONT},
+		{"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.", PANIC_FONT},
+		{"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.", PANIC_FONT},
+		{"Wystąpił błąd krytyczny. Naciśnij dowolny przycisk, aby wyjść.", PANIC_FONT},
+		{"Ocorreu um erro fatal. Prima qualquer tecla para sair.", PANIC_FONT},
+		{"Ocorreu um erro fatal. Pressione qualquer tecla para sair.", PANIC_FONT},
+		{"A apărut o eroare fatală. Apăsați orice tastă pentru a ieși.", PANIC_FONT},
+		{"Произошла фатальная ошибка. Нажмите любую клавишу, чтобы выйти.", PANIC_FONT},
+		{"Vyskytla sa fatálna chyba. Stlačte ľubovoľné tlačidlo, aby ste ukončili prácu.", PANIC_FONT},
+		{"Zgodila se je usodna napaka. Za izhod pritisnite katero koli tipko.", PANIC_FONT},
+		{"Se ha producido un error fatal. Pulse cualquier tecla para salir.", PANIC_FONT},
+		{"Ett allvarligt fel har inträffat. Tryck på valfri tangent för att avsluta.", PANIC_FONT},
+		{"Ölümcül bir hata oluştu. Çıkmak için herhangi bir tuşa basın.", PANIC_FONT},
+		{"Виникла фатальна помилка. Натисніть будь-яку клавішу для виходу.", PANIC_FONT},
+	};
 
 	public static bool Panic(ExceptionDispatchInfo ex) {
 		if (shouldThrow)
@@ -945,9 +961,9 @@ public static class EngineCore
 				// Hopefully it wasnt the font manager that broke!
 				Graphics2D.SetDrawColor(255, 255, 255);
 
-				var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessageInAutoTranslatedLanguages.Length);
-				foreach (var languageLine in ErrorMessageInAutoTranslatedLanguages) {
-					var size = Graphics2D.GetTextSize(languageLine, PANIC_FONT, PANIC_SIZE);
+				var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessages.Count);
+				foreach ((var languageLine, var languageFont) in ErrorMessages) {
+					var size = Graphics2D.GetTextSize(languageLine, languageFont, PANIC_SIZE);
 					if (size.X > box.X)
 						box.X = size.X;
 				}
@@ -956,8 +972,8 @@ public static class EngineCore
 				var center = new System.Numerics.Vector2((Window.Size.W / 2) - (box.X / 2), (Window.Size.H / 2) - (box.Y / 2));
 				Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
 				var langLineY = 0;
-				foreach (var line in ErrorMessageInAutoTranslatedLanguages) {
-					Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE, Anchor.TopCenter);
+				foreach ((var line, var font) in ErrorMessages) {
+					Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, font, PANIC_SIZE, Anchor.TopCenter);
 
 					langLineY++;
 				}

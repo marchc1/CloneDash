@@ -1014,7 +1014,7 @@ public static class MuseDashModelConverter
 
 	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio) {
 		Nucleus.Models.Runtime.Animation animation = new Nucleus.Models.Runtime.Animation();
-		animation.Name = skeleton.MD_ReadString();
+		animation.Name = skeleton.MD_ReadNullableString() ?? "";
 		nucleusModelData.Animations.Add(animation);
 
 		for (int slotI = 0, slots = skeleton.MD_ReadVarInt(true); slotI < slots; slotI++) {
@@ -1161,11 +1161,32 @@ public static class MuseDashModelConverter
 		}
 
 		for (int trI = 0, transforms = skeleton.MD_ReadVarInt(true); trI < transforms; trI++) {
-			throw new Exception();
+			skeleton.MD_ReadVarInt(true);
+			for (int frame = 0, frames = skeleton.MD_ReadVarInt(true); frame < frames; frame++) {
+				skeleton.MD_ReadFloat();
+				skeleton.MD_ReadFloat();
+				skeleton.MD_ReadFloat();
+				skeleton.MD_ReadFloat();
+				if (frame < frames - 1)
+					MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+			}
 		}
 
+		// Dummy parse
 		for (int pathI = 0, paths = skeleton.MD_ReadVarInt(true); pathI < paths; pathI++) {
-			throw new Exception();
+			Logs.Warn("This model has path animations - which are being dummy-parsed out.");
+			skeleton.MD_ReadVarInt(true);
+			for (int i = 0, c = skeleton.MD_ReadVarInt(true); i < c; i++) {
+				int type = skeleton.MD_ReadByte(), frames = skeleton.MD_ReadVarInt(true);
+				for (int frame = 0; frame < frames; frame++) {
+					skeleton.MD_ReadFloat();
+					skeleton.MD_ReadFloat();
+					if(type == PATH_MIX)
+						skeleton.MD_ReadFloat();
+					if (frame < frames - 1)
+						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+				}
+			}
 		}
 
 		for (int deformI = 0, deforms = skeleton.MD_ReadVarInt(true); deformI < deforms; deformI++) {

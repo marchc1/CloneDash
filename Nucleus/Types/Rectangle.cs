@@ -118,7 +118,7 @@
 			}
 		}
 
-		public RectangleF(float top, float left, float right, float bottom) => new RectangleF() { top = top, bottom = bottom, left = left, right = right };
+		public RectangleF(float top, float left, float right, float bottom) { this.top = top; this.bottom = bottom; this.left = left; this.right = right; }
 
 		/// <summary>
 		/// Creates a rectangle from X, Y, W, and H

@@ -1,4 +1,7 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Engine;
+using Nucleus.Extensions;
+using Nucleus.Types;
 
 using Raylib_cs;
 
@@ -11,7 +14,8 @@ namespace Nucleus.Core
 		private static List<ConsoleMessage> AllMessages = new();
 		private static List<ConsoleMessage> ScreenMessages = new();
 
-		public static ConsoleMessage[] GetMessages() => AllMessages.ToArray();
+		public static Span<ConsoleMessage> GetMessages() => AllMessages.AsSpan();
+		public static int GetMessagesCount() => AllMessages.Count;
 		public static int MaxConsoleMessages { get; set; } = 300;
 		public static int MaxScreenMessages { get; set; } = 24;
 
@@ -74,7 +78,7 @@ namespace Nucleus.Core
 			if (ScreenMessages.Count > MaxScreenMessages)
 				ScreenMessages.RemoveAt(0);
 		}
-		public delegate void ConsoleMessageWritten(ref ConsoleMessage message);
+		public delegate void ConsoleMessageWritten(ref readonly ConsoleMessage message);
 		public static event ConsoleMessageWritten? ConsoleMessageWrittenEvent;
 		public static void Draw() {
 			if (!EngineCore.ShowConsoleLogsInCorner || IsScreenBlockerActive)
@@ -89,20 +93,60 @@ namespace Nucleus.Core
 			int i = 0;
 			ScreenMessages.RemoveAll(x => x.Age > MaxMessageTime);
 
-			var currentMessages = ScreenMessages.ToArray();
-			foreach (ConsoleMessage message in currentMessages) {
+			const int MAX_CHARS_PER_LINE = 1024;
+			var currentMessages = ScreenMessages.AsSpan();
+			Span<float> fades = stackalloc float[ScreenMessages.Count];
+			Span<RectangleF> rectangles = stackalloc RectangleF[ScreenMessages.Count];
+			Span<int> textLengths = stackalloc int[ScreenMessages.Count];
+			Span<char> textMessages = stackalloc char[MAX_CHARS_PER_LINE * ScreenMessages.Count];
+			Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * ScreenMessages.Count];
+			const string START_BRACKET = "[";
+			const string END_BRACKET = "] ";
+			foreach (ref readonly ConsoleMessage message in currentMessages) {
+				Span<char> textMessage = textMessages[(i * MAX_CHARS_PER_LINE)..];
 				float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
+				int len = 0;
+
+				if (textMessage.Length <= 0)
+					break;
+
+				if (message.Message.Length > 950)
+					// Excessive message; skipping
+					continue;
+
+				START_BRACKET.CopyTo(textMessage[len..]); len += START_BRACKET.Length;
+				var messageLevel = Logs.LevelToConsoleString(message.Level);
+				messageLevel.CopyTo(textMessage[len..]); len += messageLevel.Length;
+				END_BRACKET.CopyTo(textMessage[len..]); len += END_BRACKET.Length;
+				message.Message.CopyTo(textMessage[len..]); len += message.Message.Length;
 
 				var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
 				var textSize = Graphics2D.GetTextSize(text, "Consolas", TextSize);
+				rectangles[i] = RectangleF.XYWH(x, y + i * 15, textSize.W, textSize.H);
+				fades[i] = fade;
+				logLevels[i] = message.Level;
+				textLengths[i] = len;
+
+				i += 1 + text.Count(CountNewlines);
+			}
+
+			for (int j = 0; j < ScreenMessages.Count; j++) {
+				RectangleF drawRectangle = rectangles[j];
+				float fade = fades[j];
 				Graphics2D.SetDrawColor(30, 30, 30, (int)(110 * fade));
-				Graphics2D.DrawRectangle(x, y + 2 + i * 15, textSize.W + 4, textSize.H + 4);
-				Graphics2D.SetDrawColor(Logs.LevelToColor(message.Level), (int)(fade * 255));
-				Graphics2D.DrawText(new(x - 1, y + 4 + i * 15 + 1), text, "Consolas", TextSize);
-				i += 1 + text.Count(x => x == '\n');
+				Graphics2D.DrawRectangle(drawRectangle.X, drawRectangle.Y + 2, drawRectangle.W + 4, drawRectangle.H + 4);
+			}
+
+			for (int j = 0; j < ScreenMessages.Count; j++) {
+				Span<char> textMessage = textMessages[(j * MAX_CHARS_PER_LINE)..];
+				RectangleF drawRectangle = rectangles[j];
+				float fade = fades[j];
+				LogLevel level = logLevels[j];
+				Graphics2D.SetDrawColor(Logs.LevelToColor(level), (int)(fade * 255));
+				Graphics2D.DrawText(new(drawRectangle.X - 1, drawRectangle.Y + 4 + 1), textMessage[..textLengths[j]], "Consolas", TextSize);
 			}
 		}
-
+		static bool CountNewlines(char x) => x == '\n';
 		private static List<object> scrblockers = [];
 
 		public static void AddScreenBlocker(object blocker) {

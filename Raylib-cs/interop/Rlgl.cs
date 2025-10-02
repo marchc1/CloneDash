@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -92,50 +93,61 @@ public static unsafe partial class Rlgl
     // ------------------------------------------------------------------------------------
 
     /// <summary>Choose the current matrix to be transformed</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlMatrixMode", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void MatrixMode(int mode);
+    [LibraryImport(NativeLibName, EntryPoint = "rlMatrixMode")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void MatrixMode(int mode);
 
     /// <inheritdoc cref="MatrixMode(int)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void MatrixMode(MatrixMode mode)
     {
         MatrixMode((int)mode);
     }
 
     /// <summary>Push the current matrix to stack</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlPushMatrix", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PushMatrix();
+    [LibraryImport(NativeLibName, EntryPoint = "rlPushMatrix")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void PushMatrix();
 
     /// <summary>Pop lattest inserted matrix from stack</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlPopMatrix", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void PopMatrix();
+    [LibraryImport(NativeLibName, EntryPoint = "rlPopMatrix")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void PopMatrix();
 
     /// <summary>Reset current matrix to identity matrix</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlLoadIdentity", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void LoadIdentity();
+    [LibraryImport(NativeLibName, EntryPoint = "rlLoadIdentity")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void LoadIdentity();
 
     /// <summary>Multiply the current matrix by a translation matrix</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlTranslatef", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Translatef(float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlTranslatef")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void Translatef(float x, float y, float z);
 
     /// <summary>Multiply the current matrix by a rotation matrix</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlRotatef", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Rotatef(float angle, float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlRotatef")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void Rotatef(float angle, float x, float y, float z);
 
     /// <summary>Multiply the current matrix by a scaling matrix</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlScalef", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Scalef(float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlScalef")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void Scalef(float x, float y, float z);
 
     /// <summary>
     /// Multiply the current matrix by another matrix<br/>
     /// Current Matrix can be set via <see cref="MatrixMode(int)"/>
     /// </summary>
-    [DllImport(NativeLibName, EntryPoint = "rlMultMatrixf", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void MultMatrixf(float* matf);
+    [LibraryImport(NativeLibName, EntryPoint = "rlMultMatrixf")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(CallConvCdecl) })]
+	public static partial void MultMatrixf(float* matf);
 
 	/// <inheritdoc cref="MultMatrixf(float*)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void MultMatrixf(Float16 f) {
 		MultMatrixf(f.v);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void MultMatrixf(Matrix4x4 matf) {
 		Float16 f = Raymath.MatrixToFloatV(matf);
 		MultMatrixf(f.v);
@@ -179,49 +191,60 @@ public static unsafe partial class Rlgl
 	// ------------------------------------------------------------------------------------
 
 	/// <summary>Initialize drawing mode (how to organize vertex)</summary>
-	[DllImport(NativeLibName, EntryPoint = "rlBegin", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Begin(int mode);
+	[LibraryImport(NativeLibName, EntryPoint = "rlBegin")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Begin(int mode);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Begin(DrawMode mode)
     {
         Begin((int)mode);
     }
 
     /// <summary>Finish vertex providing</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlEnd", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void End();
+    [LibraryImport(NativeLibName, EntryPoint = "rlEnd")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void End();
 
     /// <summary>Define one vertex (position) - 2 int</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlVertex2i", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Vertex2i(int x, int y);
+    [LibraryImport(NativeLibName, EntryPoint = "rlVertex2i")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Vertex2i(int x, int y);
 
     /// <summary>Define one vertex (position) - 2 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlVertex2f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Vertex2f(float x, float y);
+    [LibraryImport(NativeLibName, EntryPoint = "rlVertex2f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Vertex2f(float x, float y);
 
     /// <summary>Define one vertex (position) - 3 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlVertex3f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Vertex3f(float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlVertex3f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Vertex3f(float x, float y, float z);
 
     /// <summary>Define one vertex (texture coordinate) - 2 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlTexCoord2f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void TexCoord2f(float x, float y);
+    [LibraryImport(NativeLibName, EntryPoint = "rlTexCoord2f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void TexCoord2f(float x, float y);
 
     /// <summary>Define one vertex (normal) - 3 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlNormal3f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Normal3f(float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlNormal3f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Normal3f(float x, float y, float z);
 
     /// <summary>Define one vertex (color) - 4 byte</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlColor4ub", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Color4ub(byte r, byte g, byte b, byte a);
+    [LibraryImport(NativeLibName, EntryPoint = "rlColor4ub")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Color4ub(byte r, byte g, byte b, byte a);
 
     /// <summary>Define one vertex (color) - 3 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlColor3f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Color3f(float x, float y, float z);
+    [LibraryImport(NativeLibName, EntryPoint = "rlColor3f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Color3f(float x, float y, float z);
 
     /// <summary>Define one vertex (color) - 4 float</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlColor4f", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Color4f(float x, float y, float z, float w);
+    [LibraryImport(NativeLibName, EntryPoint = "rlColor4f")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void Color4f(float x, float y, float z, float w);
 
 
     // ------------------------------------------------------------------------------------
@@ -438,8 +461,9 @@ public static unsafe partial class Rlgl
     public static extern void CheckErrors();
 
     /// <summary>Set blending mode</summary>
-    [DllImport(NativeLibName, EntryPoint = "rlSetBlendMode", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetBlendMode(BlendMode mode);
+    [LibraryImport(NativeLibName, EntryPoint = "rlSetBlendMode")]
+	[UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	public static partial void SetBlendMode(BlendMode mode);
 
     /// <summary>Set blending mode factor and equation (using OpenGL factors)</summary>
     [DllImport(NativeLibName, EntryPoint = "rlSetBlendFactors", CallingConvention = CallingConvention.Cdecl)]

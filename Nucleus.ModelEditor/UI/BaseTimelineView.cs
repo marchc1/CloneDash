@@ -375,7 +375,7 @@ public abstract class BaseTimelineView : View
 
 		var curframeText = $"{(tl.PlayDirection != 0 ? Math.Round(curframe) : Math.Round(curframe, 2))}";
 
-		Vector2F frameTextSize = Graphics2D.GetTextSize(curframeText, "Noto Sans", 20);
+		Vector2F frameTextSize = Graphics2D.GetTextSize(curframeText, Graphics2D.UI_FONT_NAME, 20);
 
 		for (double x = xstart - widthPer; x < width; x += widthPer) {
 			frame += xMajorDivisions;
@@ -389,7 +389,7 @@ public abstract class BaseTimelineView : View
 
 			var closeness = Math.Abs(curframeX - x);
 			if (closeness > (frameTextSize.X * 1.5f))
-				Graphics2D.DrawText(xf, (height / 2) + 2, $"{frame}", "Noto Sans", 20, Anchor.BottomCenter);
+				Graphics2D.DrawText(xf, (height / 2) + 2, $"{frame}", Graphics2D.UI_FONT_NAME, 20, Anchor.BottomCenter);
 
 			var maxMinor = xMajorDivisions == 2 ? 1 : xMajorDivisions == 1 ? 0 : 4;
 			for (int sx = 0; sx < maxMinor; sx++) {
@@ -416,7 +416,7 @@ public abstract class BaseTimelineView : View
 	}
 
 	public static void RenderGradientFrameText(Element self, float x, float height, string text, Color color) {
-		var frameTextSize = Graphics2D.GetTextSize(text, "Noto Sans", 20);
+		var frameTextSize = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, 20);
 		Graphics2D.SetDrawColor(self.BackgroundColor);
 
 		var rectPos = new Vector2F(x - (frameTextSize.W / 2), (height / 2) - frameTextSize.H);
@@ -426,7 +426,7 @@ public abstract class BaseTimelineView : View
 		Graphics2D.DrawGradient(rectPos + new Vector2F(frameTextSize.W, 0), new(12, frameTextSize.H), self.BackgroundColor, colorGradientEnd, Dock.Right);
 
 		Graphics2D.SetDrawColor(color);
-		Graphics2D.DrawText(x, (height / 2) + 2, text, "Noto Sans", 20, Anchor.BottomCenter);
+		Graphics2D.DrawText(x, (height / 2) + 2, text, Graphics2D.UI_FONT_NAME, 20, Anchor.BottomCenter);
 	}
 
 	public double FrameToX(double frame)

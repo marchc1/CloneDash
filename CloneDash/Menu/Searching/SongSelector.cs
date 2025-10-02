@@ -19,7 +19,6 @@ using MouseButton = Nucleus.Input.MouseButton;
 
 namespace CloneDash.Menu.Searching;
 
-
 public class SongSelector : Panel, IMainMenuPanel
 {
 	public void SetRichPresence() {
@@ -39,7 +38,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public List<ChartSong> GetSongsList() => SongsPostFilter ?? Songs;
 
 	public SongSearchBar SearchBar;
-	public Label FilterResults;
+	public SongLabel FilterResults;
 	public SearchFilter? SearchFilter;
 	public SongSearchDialog? ActiveDialog;
 
@@ -144,8 +143,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		UserWantsMoreSongs?.Invoke();
 	}
 
-	public Label CurrentTrackName;
-	public Label CurrentTrackAuthor;
+	public SongLabel CurrentTrackName;
+	public SongLabel CurrentTrackAuthor;
 
 	public int DiscIndex = 0;
 	public Button[] Discs;

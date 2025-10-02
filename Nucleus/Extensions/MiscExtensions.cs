@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +13,8 @@ namespace Nucleus.Extensions
 {
 	public static class MiscExtensions
 	{
+		public static unsafe Span<T> AsSpan<T>(this List<T>? data)
+			=> CollectionsMarshal.AsSpan(data);
 		public static unsafe Image ToImage(this byte[] data, int width, int height, PixelFormat format, int mipmaps) {
 			var ptr = Raylib.New<byte>(data.Length);
 			for (int i = 0; i < data.Length; i++) {

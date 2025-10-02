@@ -294,7 +294,7 @@ public class MainMenuLevel : Level
 			self.Paint(w, h);
 		};
 
-		var title = levelSelector.Add<Label>();
+		SongLabel title = levelSelector.Add<SongLabel>();
 		title.TextSize = 48;
 		title.Text = song.Name;
 		title.AutoSize = true;
@@ -312,7 +312,7 @@ public class MainMenuLevel : Level
 			s.Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(s, 1.35f, 6));
 		};
 
-		var author = levelSelector.Add<Label>();
+		SongLabel author = levelSelector.Add<SongLabel>();
 		author.TextSize = 22;
 		author.Text = $"by {song.Author}";
 		author.AutoSize = true;
@@ -448,7 +448,7 @@ public class MainMenuLevel : Level
 		int mapID = (int)difficulty;
 
 
-		Label mapper = play.Add<Label>();
+		SongLabel mapper = play.Add<SongLabel>();
 		mapper.AutoSize = true;
 		mapper.Text = $"by {designer}";
 		mapper.TextSize = 15;

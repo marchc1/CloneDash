@@ -352,8 +352,8 @@ namespace Nucleus.Engine
 			Graphics2D.SetDrawColor(30, 5, 0);
 			Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
 			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", "Noto Sans", 24, TextAlignment.Center, TextAlignment.Bottom);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", "Noto Sans", 18, TextAlignment.Center, TextAlignment.Top);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", Graphics2D.UI_FONT_NAME, 24, TextAlignment.Center, TextAlignment.Bottom);
+			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
 		}
 		double lastRenderTime = -10;
 		public bool RenderedFrame { get; set; } = false;
@@ -427,9 +427,8 @@ namespace Nucleus.Engine
 							if (released) EngineCore.KeyboardFocusedElement?.KeyReleasedOccur(emulatedState, KeyboardLayout.USA.FromInt(i));
 						}
 
-						foreach(var textInputEvent in emulatedState.GetTextInputsThisFrame()) {
-							EngineCore.KeyboardFocusedElement?.TextInputOccur(in emulatedState, textInputEvent);
-						}
+						for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++) 
+							EngineCore.KeyboardFocusedElement?.TextInputOccur(in emulatedState, emulatedState.GetTextInputThisFrameAtIndex(i));
 					}
 				}
 			}

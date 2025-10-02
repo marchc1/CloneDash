@@ -359,11 +359,45 @@ public static class Filesystem
 
 	// Extra Raylib macros.
 
-	public static Image ReadImage(string pathID, string path) {
-		byte[]? data = ReadAllBytes(pathID, path);
-		if (data == null) throw NotFound(pathID, path);
-		return Raylib.LoadImageFromMemory(GetExtension(path), data);
+	// We use this scratch buffer to write files to before uploading to Raylib.
+	// The strategy is to allocate 8mb buffers in a local thread context. 
+	// The buffer is incremented when overflows would occur and never shrinks.
+	internal static ThreadLocal<byte[]> ScratchBuffer = new(() => new byte[1024 * 1024 * 8]);
+
+
+	/// <summary>
+	/// Prepares a file into memory for use with the scratch buffer system.
+	/// </summary>
+	/// <param name="pathID"></param>
+	/// <param name="path"></param>
+	/// <param name="scratchBuffer"></param>
+	static unsafe Span<byte> ScratchUpload(string pathID, string path) {
+		using (var stream = Open(pathID, path, FileAccess.Read, FileMode.Open)) {
+			if (stream == null)
+				throw NotFound(pathID, path);
+
+			var scratchBuffer = ScratchBuffer.Value!;
+			if (scratchBuffer.Length < stream.Length) {
+				int oldLength = scratchBuffer.Length;
+				int newLength = oldLength;
+				while (newLength < stream.Length)
+					newLength = newLength * 2;
+				scratchBuffer = new byte[newLength];
+				ScratchBuffer.Value = scratchBuffer;
+				Logs.Info($"ScratchUpload: incremented thread #{Thread.CurrentThread.ManagedThreadId}'s scratchbuffer from {oldLength} -> {newLength} bytes");
+			}
+
+			int size = stream.Read(scratchBuffer);
+			return scratchBuffer.AsSpan()[..size];
+		}
 	}
+
+	public static unsafe Image ReadImage(string pathID, string path) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (byte* data = buffer)
+			return Raylib.LoadImageFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
+	}
+
 	public static Texture2D ReadTexture(string pathID, string path, TextureFilter filter = TextureFilter.TEXTURE_FILTER_BILINEAR) {
 		using (Raylib.ImageRef img = new(ReadImage(pathID, path))) {
 			var tex = Raylib.LoadTextureFromImage(img);
@@ -371,27 +405,30 @@ public static class Filesystem
 			return tex;
 		}
 	}
-	public static Sound ReadSound(string pathID, string path) {
-		byte[]? data = ReadAllBytes(pathID, path);
-		if (data == null) throw NotFound(pathID, path);
-		var wav = Raylib.LoadWaveFromMemory(GetExtension(path), data);
-		Audio.SoundManagement.DoWaveFormat(ref wav);
-		var snd = Raylib.LoadSoundFromWave(wav);
-		Raylib.UnloadWave(wav);
-		return snd;
+	public static unsafe Sound ReadSound(string pathID, string path) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (byte* data = buffer) {
+			var wav = Raylib.LoadWaveFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
+			Audio.SoundManagement.DoWaveFormat(ref wav);
+			var snd = Raylib.LoadSoundFromWave(wav);
+			Raylib.UnloadWave(wav);
+			return snd;
+		}
 	}
-	public static Music ReadMusic(string pathID, string path) {
-		byte[]? data = ReadAllBytes(pathID, path);
-		if (data == null) throw NotFound(pathID, path);
-		var music = Raylib.LoadMusicStreamFromMemory(GetExtension(path), data);
-		return music;
+	public static unsafe Music ReadMusic(string pathID, string path) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (byte* data = buffer) {
+			var music = Raylib.LoadMusicStreamFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
+			return music;
+		}
 	}
-	public static Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
-		byte[]? data = ReadAllBytes(pathID, path);
-		if (data == null) throw NotFound(pathID, path);
-
-		var font = Raylib.LoadFontFromMemory(GetExtension(path), data, fontSize, codepoints, codepointCount);
-		return font;
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (int* codepointsPtr = codepoints) 
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			return font;
+		}
 	}
 	public static Shader ReadVertexShader(string pathID, string vertexShader) {
 		string? data = ReadAllText(pathID, vertexShader);

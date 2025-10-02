@@ -52,9 +52,9 @@ public static class CharacterMod
 				yield return characterName;
 	}
 
-	public static ICharacterDescriptor? GetCharacterData() {
+	public static ICharacterDescriptor? GetCharacterData(string? name = null) {
 		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
-		string? name = character?.GetString();
+		name ??= character?.GetString();
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;

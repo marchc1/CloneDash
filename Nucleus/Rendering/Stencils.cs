@@ -67,7 +67,6 @@ public static class Stencils
 		OpenGL.Clear(OpenGL.STENCIL_BUFFER_BIT);
 		OpenGL.ColorMask(false, false, false, false);
 		OpenGL.Enable(GLEnum.ALPHA_TEST);
-		OpenGL.AlphaFunc(OpenGL.GREATER, 0.5f);
 		Update();
 	}
 

@@ -186,7 +186,7 @@ namespace Nucleus.UI
 				if (_dockMargin == value)
 					return;
 
-				_dockMargin = value; 
+				_dockMargin = value;
 				InvalidateParentAndItsChildren();
 			}
 		}
@@ -349,8 +349,9 @@ namespace Nucleus.UI
 			}
 
 			UI.Elements.Remove(this);
-			foreach (Element element in this.Children.ToArray())
+			foreach (Element element in this.LockAndEnumerateChildren())
 				element.REMOVE();
+			this.UnlockChildren();
 		}
 		public void Remove() {
 			REMOVE();
@@ -386,6 +387,28 @@ namespace Nucleus.UI
 		#region Parenting system
 		public Element Parent { get; internal set; }
 		internal List<Element> Children = [];
+		internal Element?[] FlushedChildren = [];
+		internal int CurrentChildrenCount;
+
+		/// <summary>
+		/// Use this for child-critical contexts rather than creating a full copy to throw away!!!
+		/// </summary>
+		/// <returns></returns>
+		internal Span<Element> LockAndEnumerateChildren() {
+			CurrentChildrenCount = Children.Count;
+
+			if (CurrentChildrenCount > FlushedChildren.Length)
+				FlushedChildren = new Element[CurrentChildrenCount];
+
+			for (int i = 0; i < CurrentChildrenCount; i++)
+				FlushedChildren[i] = Children[i];
+
+			return FlushedChildren.AsSpan()[..CurrentChildrenCount]!;
+		}
+		internal void UnlockChildren() {
+			for (int i = 0; i < CurrentChildrenCount; i++)
+				FlushedChildren[i] = null;
+		}
 
 		/// <summary>
 		/// Returns all children of this element. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
@@ -799,7 +822,7 @@ namespace Nucleus.UI
 		public event TextChangedDelegate? TextChangedEvent;
 
 		private float __textSize = 18;
-		public string Font { get; set; } = "Noto Sans";
+		public string Font { get; set; } = Graphics2D.UI_FONT_NAME;
 		public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
 
 		public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
@@ -843,7 +866,7 @@ namespace Nucleus.UI
 
 				returning += 1;
 			}
-			foreach (Element child in element.Children.ToArray()) {
+			foreach (Element child in element.LockAndEnumerateChildren()) {
 				returning += LayoutRecursive(child, ref frameState);
 				if (child.Enabled) {
 					var ps = (child.RenderBounds.Pos + child.RenderBounds.Size);
@@ -854,6 +877,7 @@ namespace Nucleus.UI
 					child.RenderBounds = RectangleF.Zero;
 				}
 			}
+			element.UnlockChildren();
 			if (wasInvalid) {
 				element.OnPostLayoutChildren?.Invoke(element);
 				element.PostLayoutChildren();
@@ -917,14 +941,16 @@ namespace Nucleus.UI
 		public event ElementSingleArg? Thinking;
 
 		public static void ThinkRecursive(Element element, FrameState frameState) {
+			if (element == null) return; // wtf?
 			if (!element.Enabled) return;
 
 			element.Think(frameState);
 			element.Thinking?.Invoke(element);
 
 			element.Children.RemoveAll(x => x.__markedForRemoval);
-			foreach (Element child in element.Children.ToArray())
+			foreach (Element child in element.LockAndEnumerateChildren())
 				ThinkRecursive(child, frameState);
+			element.UnlockChildren();
 		}
 
 		~Element() {
@@ -1023,7 +1049,7 @@ namespace Nucleus.UI
 			if (element.Clipping)
 				Graphics2D.ScissorRect();
 
-			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", "Noto Sans", 20);
+			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", Graphics2D.UI_FONT_NAME, 20);
 
 			Graphics2D.OffsetDrawing(-element.RenderBounds.Pos);
 			if (IValidatable.IsValid(element.Parent))
@@ -1065,9 +1091,10 @@ namespace Nucleus.UI
 		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { }
 
 		public void ClearChildren() {
-			foreach (var child in this.AddParent.Children.ToArray()) {
+			foreach (var child in this.AddParent.LockAndEnumerateChildren())
 				child.Remove();
-			}
+			this.AddParent.UnlockChildren();
+
 			this.AddParent.Children.Clear();
 			InvalidateLayout();
 		}

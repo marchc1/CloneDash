@@ -11,6 +11,8 @@ using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 
+using System.Text.RegularExpressions;
+
 namespace CloneDash.Levels
 {
 	public class StatisticsLevel : Level
@@ -72,7 +74,7 @@ namespace CloneDash.Levels
 			stats.Compute();
 			var y = 0;
 			string[] lines = [
-				$"[{sheet.Rating}] -  {sheet.Song.Name}",
+				$"      Rating: {sheet.Rating}",
 				$"      Grade: {stats.Grade}",
 				$"      Accuracy: {stats.Accuracy}",
 				$"      Score: {stats.Score}",
@@ -91,8 +93,14 @@ namespace CloneDash.Levels
 			];
 			Graphics2D.SetDrawColor(255, 255, 255);
 			var fs = 24;
+			Match boldRegexMatch = Util.BoldRegex.Match(sheet.Song.Name);
+			Graphics2D.DrawText(16, 16 + y,
+								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : sheet.Song.Name,
+								boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
+								fs);
+			y += fs + 4;
 			foreach (var line in lines) {
-				Graphics2D.DrawText(16, 16 + y, line, "Noto Sans", fs);
+				Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
 				y += fs + 4;
 			}
 		}

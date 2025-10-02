@@ -198,7 +198,6 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	public const string STRING_FEVERN = "FEVER: {0}/{1}";
 	public const string STRING_COMBO = "COMBO";
 	public const string STRING_SCORE = "SCORE";
-	public const string FONT = "Noto Sans";
 
 	public const float PLAYER_OFFSET_X = 0.25f;
 	public const float PLAYER_OFFSET_Y = 0.775f;
@@ -1804,7 +1803,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
 			Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
 			Graphics2D.SetDrawColor(255, 220, 200);
-			Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", "Noto Sans", 22, Anchor.Center);
+			Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
 			float feverRatio;
 			if (lvl.InFever)
 				feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
@@ -1826,7 +1825,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
 			Graphics2D.DrawRectangleOutline(startAtX, 32, (width / 2f), 24, 2);
 			Graphics2D.SetDrawColor(200, 220, 255);
-			Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", "Noto Sans", 22, Anchor.Center);
+			Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
 
 			Graphics2D.ScissorRect();
 		}
@@ -1845,13 +1844,13 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		public override void Paint(float width, float height) {
 			Graphics2D.SetDrawColor(255, 255, 255, 255);
 			//if (Level.AutoPlayer.Enabled)
-			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", "Noto Sans", 32, Anchor.Center);
+			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
 			var lvl = Level.As<DashGameLevel>();
-			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", "Noto Sans", (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
-			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", "Noto Sans", 24, Anchor.Center);
+			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", Graphics2D.UI_FONT_NAME, (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
+			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
 
-			Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", "Noto Sans", 32, Anchor.Center);
-			Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", "Noto Sans", 24, Anchor.Center);
+			Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
+			Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
 		}
 	}
 }

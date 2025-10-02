@@ -2,6 +2,7 @@
 
 using Nucleus.Core;
 using Nucleus.Types;
+using Nucleus.Util;
 
 using Raylib_cs;
 
@@ -23,16 +24,16 @@ public class WindowKeyboardState(OSWindow window)
 
 	public bool ExitKey;
 
-	public byte[] CurrentKeyState = new byte[MAX_KEYBOARD_KEYS];
-	public byte[] PreviousKeyState = new byte[MAX_KEYBOARD_KEYS];
+	public readonly byte[] CurrentKeyState = new byte[MAX_KEYBOARD_KEYS];
+	public readonly byte[] PreviousKeyState = new byte[MAX_KEYBOARD_KEYS];
 
-	public byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
+	public readonly byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
 
-	public double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
-	public KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
+	public readonly double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
+	public readonly KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
 	public int KeyPressQueueCount = 0;
 
-	public string?[] EnqueuedTextInputs = new string?[MAX_TEXT_INPUTS];
+	public readonly string[] EnqueuedTextInputs = new string[MAX_TEXT_INPUTS];
 	public int TextInputPtr = 0;
 	public void EnqueueTextEvent(string text) {
 		if (TextInputPtr >= MAX_TEXT_INPUTS - 1)
@@ -1140,17 +1141,20 @@ public unsafe class OSWindow : IValidatable
 			keyboardState.PushKeyPress((int)key, now - timePressed);
 		}
 
+		Span<bool> keysDown = keyboardState.KeysDown;
+		Span<bool> keysReleased = keyboardState.KeysReleased;
+		Span<string?> textInputs = keyboardState.TextInputs;
+
 		for (int j = 0; j < WindowKeyboardState.MAX_KEYBOARD_KEYS; j++) {
 			var prev = Keyboard.PreviousKeyState[j];
 			var curr = Keyboard.CurrentKeyState[j];
 
-			keyboardState.KeysDown[j] = curr == 1;
-			keyboardState.KeysReleased[j] = prev > 0 && curr == 0;
+			keysDown[j] = curr == 1;
+			keysReleased[j] = prev > 0 && curr == 0;
 		}
 
-		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++) {
-			keyboardState.TextInputs[j] = Keyboard.EnqueuedTextInputs[j];
-		}
+		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++) 
+			textInputs[j] = Keyboard.EnqueuedTextInputs[j];
 
 		Keyboard.Reset();
 	}

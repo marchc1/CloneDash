@@ -1,4 +1,5 @@
 ﻿using Nucleus.Engine;
+using Nucleus.Util;
 
 using Raylib_cs;
 using System;
@@ -406,23 +407,28 @@ namespace Nucleus.Input
 		public const int MAX_TEXT_INPUTS = WindowKeyboardState.MAX_TEXT_INPUTS;
 		public const int MAXIMUM_FRAME_ORDERED_KEYS_LENGTH = 64;
 
-		public double[] KeyTimesThisFrame = new double[MAXIMUM_FRAME_ORDERED_KEYS_LENGTH];
-		public int[] KeysThisFrame = new int[MAXIMUM_FRAME_ORDERED_KEYS_LENGTH];
+		public InlineArray64<double> KeyTimesThisFrame;
+		public InlineArray64<int> KeysThisFrame;
 
 		public int TotalKeysThisFrame = 0;
 
-		public bool[] KeysDown = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
-		public byte[] KeysPressed = new byte[MAXIMUM_KEY_ARRAY_LENGTH];
-		public bool[] KeysReleased = new bool[MAXIMUM_KEY_ARRAY_LENGTH];
+		public InlineArray512<bool> KeysDown;
+		public InlineArray512<byte> KeysPressed;
+		public InlineArray512<bool> KeysReleased;
 
-		public string?[] TextInputs = new string?[MAX_TEXT_INPUTS];
+		public InlineArray256<string?> TextInputs;
 
-		public IEnumerable<string> GetTextInputsThisFrame() {
-			for (int i = 0; i < TextInputs.Length; i++) {
-				string? str = TextInputs[i];
-				if (str == null) continue;
-				yield return str;
+		public int GetTextInputsThisFrame() {
+			int len = 0;
+			for (len = 0; len < 256; len++) {
+				if (TextInputs[len] == null)
+					break;
 			}
+			return len;
+		}
+
+		public string GetTextInputThisFrameAtIndex(int i) {
+			return TextInputs[i]!;
 		}
 
 		public IEnumerable<int> GetKeysThisFrame() {

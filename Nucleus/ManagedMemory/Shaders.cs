@@ -2,6 +2,8 @@
 using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.UI;
+using Nucleus.Util;
+
 using Raylib_cs;
 
 namespace Nucleus.ManagedMemory;
@@ -96,8 +98,8 @@ public class ShaderManagement : IManagedMemory
 		GC.SuppressFinalize(this);
 	}
 
-	private Dictionary<string, ShaderInstance> LoadedShadersFromFile = [];
-	private Dictionary<ShaderInstance, string> LoadedFilesFromShader = [];
+	private Dictionary<UtlSymId_t, ShaderInstance> LoadedShadersFromFile = [];
+	private Dictionary<ShaderInstance, UtlSymId_t> LoadedFilesFromShader = [];
 	public void EnsureIShaderRemoved(IShader isnd) {
 		switch (isnd) {
 			case ShaderInstance shader:
@@ -113,7 +115,10 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadFragmentShaderFromFile(string pathID, string path) {
-		var searchName = IManagedMemory.MergePath(pathID, path);
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		UtlSymbol searchName = new(finalPath);
+
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))
 			return shader;
 
@@ -127,7 +132,10 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadVerterxShaderFromFile(string pathID, string path) {
-		var searchName = IManagedMemory.MergePath(pathID, path);
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		UtlSymbol searchName = new(finalPath);
+
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))
 			return shader;
 
@@ -141,7 +149,10 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadShaderFromFile(string pathID, string path) {
-		var searchName = IManagedMemory.MergePath(pathID, path);
+		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+		IManagedMemory.MergePath(pathID, path, finalPath);
+		UtlSymbol searchName = new(finalPath);
+
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))
 			return shader;
 

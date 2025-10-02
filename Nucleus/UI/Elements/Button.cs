@@ -21,6 +21,11 @@ namespace Nucleus.UI
 			}
 		}
 
+		public override void MouseClick(FrameState state, Input.MouseButton button) {
+			base.MouseClick(state, button);
+			Level.Sounds.PlaySound(Level.Sounds.LoadSoundFromFile("click.wav"));
+		}
+
 		public bool TriggeredWhenEnterPressed {
 			get => __triggeredWhenEnterPressed;
 			set {

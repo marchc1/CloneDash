@@ -2,16 +2,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Nucleus.Files;
 using Nucleus.Types;
+using Nucleus.Util;
+
 using Raylib_cs;
 
 
 namespace Nucleus.ManagedMemory
 {
 	public interface ITexture : IManagedMemory {
+        public uint HardwareID { get; }
         public int Width { get; }
         public int Height { get; }
         public PixelFormat Format { get; }
@@ -40,7 +44,11 @@ namespace Nucleus.ManagedMemory
 
         public bool IsValid() => !disposed;
 
-		public void GenerateMipmaps() => Raylib.GenTextureMipmaps(ref underlying);
+		public void GenerateMipmaps() {
+			if (underlying.Mipmaps <= 1) {
+				Raylib.GenTextureMipmaps(ref underlying);
+			}
+		}
 
 		private TextureFilter filter;
 		private TextureWrap wrap;
@@ -201,14 +209,16 @@ namespace Nucleus.ManagedMemory
             GC.SuppressFinalize(this);
         }
 
-        private Dictionary<string, Texture> LoadedTexturesFromFile = [];
-        private Dictionary<Texture, string> LoadedFilesFromTexture = [];
+        private Dictionary<UtlSymId_t, Texture> LoadedTexturesFromFile = [];
+        private Dictionary<Texture, UtlSymId_t> LoadedFilesFromTexture = [];
 
-		public Texture LoadTextureFromFile(string pathID, string path) {
-			var managedPath = IManagedMemory.MergePath(pathID, path);
+		public Texture LoadTextureFromFile(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
+			Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
+			IManagedMemory.MergePath(pathID, path, finalPath);
+			var managedPath = new UtlSymbol(finalPath);
 			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
 
-			Texture tex = new(this, Filesystem.ReadTexture(pathID, path), true);
+			Texture tex = new(this, Filesystem.ReadTexture(new(pathID), new(path) /* << TODO */), true);
 			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
 			LoadedTexturesFromFile.Add(managedPath, tex);
@@ -218,18 +228,20 @@ namespace Nucleus.ManagedMemory
 			return tex;
 		}
 
-		public Texture LoadTextureFromFile(string filepath, bool localToImages = true) =>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]	
+		public Texture LoadTextureFromFile(ReadOnlySpan<char> filepath, bool localToImages = true) =>
 			localToImages ? LoadTextureFromFile("images", filepath)
 			: LoadTextureFromFileDisk(filepath);
 
-		private Texture LoadTextureFromFileDisk(string filepath) {
-			if (LoadedTexturesFromFile.TryGetValue(filepath, out Texture? texFromFile)) return texFromFile;
+		private Texture LoadTextureFromFileDisk(ReadOnlySpan<char> filepath) {
+			UtlSymbol filepathSymbol = new UtlSymbol(filepath);
+			if (LoadedTexturesFromFile.TryGetValue(filepathSymbol, out Texture? texFromFile)) return texFromFile;
 
-			Texture tex = new(this, Raylib.LoadTexture(filepath), true);
+			Texture tex = new(this, Raylib.LoadTexture(new string(filepath) /* << TODO */), true);
 			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
-			LoadedTexturesFromFile.Add(filepath, tex);
-			LoadedFilesFromTexture.Add(tex, filepath);
+			LoadedTexturesFromFile.Add(filepathSymbol, tex);
+			LoadedFilesFromTexture.Add(tex, filepathSymbol);
 			Textures.Add(tex);
 
 			return tex;

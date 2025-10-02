@@ -148,7 +148,9 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				(selector.SearchFilter as MDMCSearchFilter).PopulateMDMCCharts(selector);
 			};
 		});
-		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20);
+		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
+			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+		});
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
@@ -268,15 +270,14 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.4, 0, 1, true);
 			float alphaMult2 = (float)NMath.Remap(Level.Curtime, nextExpressionTime - 0.2, nextExpressionTime, 0, 1, true);
 			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
-			string font = "Noto Sans";
 			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
-			Vector2F textSize = Graphics2D.GetTextSize(expressionText, font, fontSize);
+			Vector2F textSize = Graphics2D.GetTextSize(expressionText, Graphics2D.UI_FONT_NAME, fontSize);
 			Vector2F textPos = new Vector2F(width / 2 - width * .2f, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
 			textSize += new Vector2F(16);
 			Graphics2D.DrawRectangle(textPos - textSize / 2, textSize);
 			Graphics2D.SetDrawColor(255, 255, 255, (int)(alphaMult * 255));
-			Graphics2D.DrawText(textPos, expressionText, font, fontSize, Anchor.Center);
+			Graphics2D.DrawText(textPos, expressionText, Graphics2D.UI_FONT_NAME, fontSize, Anchor.Center);
 		}
 	}
 }
