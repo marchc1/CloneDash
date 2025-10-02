@@ -8,6 +8,7 @@ using Raylib_cs;
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace Nucleus.Core
 {
@@ -21,11 +22,41 @@ namespace Nucleus.Core
 	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
+		public const string UI_FONT_NAME = "Noto Sans";
+
+		public const string UI_MONO_BOLD_FONT_NAME = "Noto Sans Mono Bold";
+		
+		// See here for possible values of CultureInfo.Name:
+		// https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
+		public readonly static string UI_CN_JP_FONT_NAME = CultureInfo.CurrentCulture.Name switch {
+			"zh-Hant" => "Noto Sans TC",
+			"zh-HK" => "Noto Sans HK",
+			"zh-MO" => "Noto Sans HK",
+			"zh-TW" => "Noto Sans TC",
+			"ja" => "Noto Sans JP",
+			"ja-JP" => "Noto Sans JP",
+			_ => "Noto Sans SC"
+		};
+		
 		public static FontManager FontManager { get; private set; } = new(new() {
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
-			{ "Noto Sans", new FontEntry("noto-sans-en-jp.ttf", "fonts") },
-			{ "Noto Sans Mono", new FontEntry("NotoSansMono-VariableFont_wdth,wght.ttf", "fonts") },
+			{ "Noto Sans", new FontEntry("NotoSans-Regular.ttf", "fonts") },
+			{ "Noto Sans Bold", new FontEntry("NotoSans-Bold.ttf", "fonts") },
+			{ "Noto Sans Arabic", new FontEntry("NotoSansArabic-Regular.ttf", "fonts") },
+			{ "Noto Sans Arabic Bold", new FontEntry("NotoSansArabic-Bold.ttf", "fonts") },
+			{ "Noto Sans HK", new FontEntry("NotoSansHK-Regular.ttf", "fonts") },
+			{ "Noto Sans HK Bold", new FontEntry("NotoSansHK-Bold.ttf", "fonts") },
+			{ "Noto Sans JP", new FontEntry("NotoSansJP-Regular.ttf", "fonts") },
+			{ "Noto Sans JP Bold", new FontEntry("NotoSansJP-Bold.ttf", "fonts") },
+			{ "Noto Sans KR", new FontEntry("NotoSansKR-Regular.ttf", "fonts") },
+			{ "Noto Sans KR Bold", new FontEntry("NotoSansKR-Regular.ttf", "fonts") },
+			{ "Noto Sans SC", new FontEntry("NotoSansSC-Regular.ttf", "fonts") },
+			{ "Noto Sans SC Bold", new FontEntry("NotoSansSC-Bold.ttf", "fonts") },
+			{ "Noto Sans TC", new FontEntry("NotoSansTC-Regular.ttf", "fonts") },
+			{ "Noto Sans TC Bold", new FontEntry("NotoSansTC-Bold.ttf", "fonts") },
+			{ "Noto Sans Mono", new FontEntry("NotoSansMono-Regular.ttf", "fonts") },
+			{ "Noto Sans Mono Bold", new FontEntry("NotoSansMono-Bold.ttf", "fonts") },
 		});
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color ___drawColor = Color.White;
@@ -158,38 +189,84 @@ namespace Nucleus.Core
 			}
 		}
 
+		public struct TextChunk {
+			public string Text;
+			public string Font;
+			public TextChunk(string text, string font) {
+				Text = text;
+				Font = font;
+			}
+		}
+		public struct MappedText {
+			public string Text;
+			public string Font;
+			public Vector2F RelativePos;
+		}
+
 		// TODO: Fully deprecate string based API's
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[null, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
-			int fontSizeI = (int)fontSize;
-			var size = Raylib.MeasureTextEx(FontManager[message, font, fontSizeI], message, fontSize, 0);
-			float xOffset = 0f, yOffset = 0f;
-
-			switch (horizontal.Alignment) {
-				case 1:
-					xOffset = -size.X / 2f;
-					break;
-				case 2:
-					xOffset = -size.X;
-					break;
-			}
-
-			switch (vertical.Alignment) {
-				case 1:
-					yOffset = -size.Y / 2f;
-					break;
-				case 2:
-					yOffset = -size.Y;
-					break;
-			}
-
-			DrawText(x + xOffset, y + yOffset, message, font, fontSize);
-		}
+		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
 		public static void DrawText(float x, float y, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
 		public static void DrawText(Vector2F pos, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
+		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment().horizontal, drawAnchor.ToTextAlignment().vertical);
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
+		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+			Vector2F combinedSize = new ();
+			mappedTextsCache.Clear();
+
+			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
+				Vector2F chunkedSize = new();
+				Span<TextChunk> chunk = textsFontsMap[i..Math.Min(i + chunkCount, textsFontsMap.Length)];
+
+				for (int j = 0; j < chunk.Length; j++) {
+					ref TextChunk piece = ref chunk[j];
+					string textPart = piece.Text;
+					string fontName = piece.Font;
+					Font font = FontManager[textPart, fontName, (int)fontSize];
+					Vector2F measuredSize = Raylib.MeasureTextEx(font, textPart, fontSize, fontSpacing).ToNucleus();
+
+					ref MappedText textPiece = ref mappedTextsCache.Add();
+					textPiece.Text = textPart;
+					textPiece.Font = fontName;
+					textPiece.RelativePos = chunkedSize;
+
+					chunkedSize.X += measuredSize.X + fontSpacing;
+					chunkedSize.Y = Math.Max(chunkedSize.Y, measuredSize.Y);
+				}
+
+				combinedSize.X = Math.Max(combinedSize.X, chunkedSize.X);
+				combinedSize.Y += chunkedSize.Y + lineSpacing;
+			}
+
+			switch (horizontal.Alignment) {
+				case 1:
+					x += -combinedSize.X / 2;
+					break;
+				case 2:
+					x += -combinedSize.X;
+					break;
+			}
+			switch (vertical.Alignment) {
+				case 1:
+					y += -combinedSize.Y / 2;
+					break;
+				case 2:
+					y += -combinedSize.Y;
+					break;
+			}
+
+			for (int i = 0; i < mappedTextsCache.Count; i++) {
+				ref MappedText mappedText = ref mappedTextsCache[i];
+				Vector2F relativePos = mappedText.RelativePos;
+				DrawText(x + relativePos.X, y + relativePos.Y, mappedText.Text, mappedText.Font, fontSize);
+			}
+
+			return combinedSize;
+		}
 
 		// Untested; need to make sure these all work as expected
 		/// <summary>

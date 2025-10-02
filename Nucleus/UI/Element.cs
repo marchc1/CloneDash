@@ -822,7 +822,7 @@ namespace Nucleus.UI
 		public event TextChangedDelegate? TextChangedEvent;
 
 		private float __textSize = 18;
-		public string Font { get; set; } = "Noto Sans";
+		public string Font { get; set; } = Graphics2D.UI_FONT_NAME;
 		public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
 
 		public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
@@ -1049,7 +1049,7 @@ namespace Nucleus.UI
 			if (element.Clipping)
 				Graphics2D.ScissorRect();
 
-			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", "Noto Sans", 20);
+			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", Graphics2D.UI_FONT_NAME, 20);
 
 			Graphics2D.OffsetDrawing(-element.RenderBounds.Pos);
 			if (IValidatable.IsValid(element.Parent))

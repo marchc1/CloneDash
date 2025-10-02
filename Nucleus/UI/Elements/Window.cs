@@ -66,7 +66,7 @@ namespace Nucleus.UI.Elements
 				ImageRenderer.Size = new(height, height);
 				ImageRenderer.Position = TitlePos switch {
 					Anchor.CenterLeft => new(0, 0),
-					Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(Title, "Noto Sans", TextSize).W / 2), 0),
+					Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(Title, Graphics2D.UI_FONT_NAME, TextSize).W / 2), 0),
 					_ => new(0, 0),
 				};
 				ImageRenderer.ImageOrientation = ImageOrientation.Zoom;
@@ -173,7 +173,7 @@ namespace Nucleus.UI.Elements
 			if (base.Image != null)
 				pnt.X += height - 4;
 
-			Graphics2D.DrawText(pnt.X, pnt.Y, Title, "Noto Sans", TextSize, TitlePos);
+			Graphics2D.DrawText(pnt.X, pnt.Y, Title, Graphics2D.UI_FONT_NAME, TextSize, TitlePos);
 		}
 	}
 	public class Taskbar : Element

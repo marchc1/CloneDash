@@ -16,6 +16,7 @@ using Nucleus.Util;
 using Raylib_cs;
 
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 using Texture2D = Raylib_cs.Texture2D;
 
@@ -242,16 +243,29 @@ public static class Interlude
 				var midBottom = (windowSize.H - bottomSize) + (bottomSize / 2);
 				Graphics2D.SetDrawColor(255, 255, 255);
 				if (loadSubMsg == null)
-					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", "Noto Sans", texSize, Anchor.CenterRight);
+					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom), loadMsg ?? "Loading...", texSize, Anchor.CenterRight);
 				else {
-					Graphics2D.DrawText(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", "Noto Sans", texSize * 0.9f, Anchor.CenterRight);
-					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, "Noto Sans", texSize * 0.6f, Anchor.CenterRight);
+					DrawLoadMsg(new(windowSize.W - 42 - 8, midBottom - 6), loadMsg ?? "Loading...", texSize * 0.9f, Anchor.CenterRight);
+					Graphics2D.DrawText(new(windowSize.W - 42 - 2, midBottom + 12), loadSubMsg, Graphics2D.UI_FONT_NAME, texSize * 0.6f, Anchor.CenterRight);
 				}
 
 				Graphics2D.DrawLoader(windowSize.W - 24, midBottom, time: msNow, inner: 8, outer: 12);
 				Surface.Spin();
 			}
 		}
+	}
+
+	private static void DrawLoadMsg(Vector2F position, string loadMsg, float fontSize, Anchor fontAnchor) {
+		Match boldRegexMatch = Util.BoldRegex.Match(loadMsg);
+		if (boldRegexMatch.Success) {
+			Graphics2D.DrawText(position, [
+									new(boldRegexMatch.Groups[1].Value, Graphics2D.UI_CN_JP_FONT_NAME),
+									new(boldRegexMatch.Groups[2].Value, Graphics2D.UI_MONO_BOLD_FONT_NAME),
+									new(boldRegexMatch.Groups[3].Value, Graphics2D.UI_CN_JP_FONT_NAME)
+								], 3, fontSize, fontAnchor);
+		}
+		else
+			Graphics2D.DrawText(position, loadMsg, Graphics2D.UI_CN_JP_FONT_NAME, fontSize, fontAnchor);
 	}
 
 	public static void End() {
