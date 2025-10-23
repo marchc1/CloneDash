@@ -106,47 +106,6 @@ public static class EngineCore
 	/// </summary>
 	public static bool LoadingLevel { get; private set; } = false;
 
-	public static Element? KeyboardFocusedElement { get; internal set; } = null;
-	public static bool DemandedFocus { get; private set; } = false;
-	public static void RequestKeyboardFocus(Element self) {
-		if (!IValidatable.IsValid(self))
-			return;
-
-		if (IValidatable.IsValid(KeyboardFocusedElement)) {
-			if (DemandedFocus)
-				return;
-
-			KeyboardFocusedElement.KeyboardFocusLost(self, true);
-		}
-
-		KeyboardFocusedElement = self;
-		self.KeyboardFocusGained(DemandedFocus);
-		Window.StartTextInput();
-	}
-	public static void DemandKeyboardFocus(Element self) {
-		DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
-		RequestKeyboardFocus(self);
-		DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
-	}
-	internal static void KeyboardUnfocus(Element self, bool force = false) {
-		if (!IValidatable.IsValid(KeyboardFocusedElement))
-			return;
-		if (!IValidatable.IsValid(self))
-			return;
-		if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
-			KeyboardFocusedElement.KeyboardFocusLost(self, false);
-			KeyboardFocusedElement = null;
-
-			return;
-		}
-		if (self != KeyboardFocusedElement && force == false)
-			return;
-
-		KeyboardFocusedElement.KeyboardFocusLost(self, false);
-		KeyboardFocusedElement = null;
-		Window.StopTextInput();
-	}
-
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static unsafe void LogCustom(int logLevel, sbyte* text, sbyte* args) {
 		var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
@@ -432,7 +391,6 @@ public static class EngineCore
 
 	public static void UnloadLevel() {
 		LoadingLevel = true;
-		KeyboardFocusedElement = null;
 
 		if (Level != null) {
 			Level.Unload();
@@ -497,7 +455,6 @@ public static class EngineCore
 		return new(4);
 	}
 
-	public static FrameState CurrentFrameState { get; set; }
 	public static GameInfo GameInfo;
 
 	public static double TargetFrameTime { get; private set; } = 0;

@@ -25,6 +25,7 @@ namespace Nucleus.UI
 			popup.Titlebar.MinimizeButton.Visible = false;
 			popup.Titlebar.MaximizeButton.Visible = false;
 			popup.MakePopup();
+			popup.MakeModal();
 
 			FlexPanel containButtons = popup.Add<FlexPanel>();
 			containButtons.Dock = Dock.Bottom;

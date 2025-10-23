@@ -128,7 +128,7 @@ namespace Nucleus.UI.Elements
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
 					pos, size), 1);
 
-				if (EngineCore.CurrentFrameState.Keyboard.ShiftDown && self.Hovered) {
+				if (Level.FrameState.Keyboard.ShiftDown && self.Hovered) {
 					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
 					pos - new Vector2F(2), size + new Vector2F(4)), 1);
 					Graphics2D.DrawLine(pos + new Vector2F(-2, -2), new(4, 4));
@@ -227,6 +227,7 @@ namespace Nucleus.UI.Elements
 			Titlebar.OnClosePressed += Titlebar_OnTitlebarClosePressed;
 			Titlebar.OnTitlebarDragged += dragWindow;
 
+			MakePopup();
 			Panel ap = this.Add<Panel>();
 			ap.Dock = Dock.Fill;
 			ap.Size = new(0, 36);
@@ -372,7 +373,7 @@ namespace Nucleus.UI.Elements
 		}
 		public override void PreRender() {
 			if (Lifetime >= 0.5) return;
-			float t = Lifetime % 0.5f;
+			float t = (float)Lifetime % 0.5f;
 
 			float mul = (t) * 2;
 			float mulf = (0.5f + (mul / 2)) - 1;

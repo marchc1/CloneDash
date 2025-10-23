@@ -16,9 +16,16 @@ namespace Nucleus.UI
 		protected override void OnThink(FrameState frameState) {
 			if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
-			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Enter)) {
-				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
+		}
+		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
+			if (!TriggeredWhenEnterPressed) {
+				UI.MarkEventNotConsumed();
+				return;
 			}
+
+			if(key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter)
+				MouseReleaseOccur(Level.FrameState, Input.MouseButton.MouseLeft, true);
+
 		}
 
 		public override void MouseClick(FrameState state, Input.MouseButton button) {

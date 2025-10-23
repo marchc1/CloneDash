@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using Nucleus.Engine;
+using Nucleus.Input;
 using Nucleus.UI;
 
 namespace Nucleus.Types
@@ -14,18 +15,13 @@ namespace Nucleus.Types
 		}
 
 		public void Reset() {
-			HoveredUIElement = null;
 			WindowSize = new(0, 0);
 			WindowX = 0;
 			WindowY = 0;
 			Mouse = new();
 			Keyboard = new();
-			Camera2D = new();
-			Camera3D = new();
 		}
 
-		public Element? HoveredUIElement;
-        public bool HoveringUIElement => IValidatable.IsValid(HoveredUIElement);
 
 		public Vector2F WindowSize;
 		public float WindowX;
@@ -41,8 +37,7 @@ namespace Nucleus.Types
         }
 		public MouseState Mouse;
 		public KeyboardState Keyboard;
-		public Raylib_cs.Camera2D Camera2D;
-		public Raylib_cs.Camera3D Camera3D;
+		public OSWindow ActiveWindow = null!;
 
         public bool MouseClicked(MouseButton button) => Mouse.Clicked(button);
         public bool MouseHeld(MouseButton button) => Mouse.Held(button);
