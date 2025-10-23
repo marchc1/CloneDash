@@ -631,5 +631,9 @@ namespace Nucleus.Engine
 			found = default;
 			return false;
 		}
+
+		internal void RunKeybinds() {
+			Keybinds.TestKeybinds(FrameState.Keyboard);
+		}
 	}
 }

@@ -306,7 +306,7 @@ namespace Nucleus.UI
 			}
 
 			if (!ranKeybinds)
-				ranKeybinds = Keybinds.TestKeybinds(frameState.Keyboard);
+				Level.RunKeybinds();
 
 			int rebuilds = Element.LayoutRecursive(this, ref frameState);
 
