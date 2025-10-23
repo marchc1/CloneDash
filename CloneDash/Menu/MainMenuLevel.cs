@@ -290,7 +290,7 @@ public class MainMenuLevel : Level
 			self.ImageColor = Element.MixColorBasedOnMouseState(self, new(200, 200, 200,
 				(int)(Math.Clamp(NMath.Ease.OutCubic(self.Lifetime - 0.35f), 0, 1) * 255)
 				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
-			self.Position = new((levelSelector.RenderBounds.W / -5) - (NMath.Ease.InCubic(Math.Clamp(1 - (self.Lifetime - 0.3f), 0, 1)) * -64), 0);
+			self.Position = new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (self.Lifetime - 0.3), 0, 1)) * -64), 0);
 			self.Paint(w, h);
 		};
 
@@ -389,7 +389,7 @@ public class MainMenuLevel : Level
 			btn.PaintOverride += (s, w, h) => {
 				var life = s.Lifetime - (thisOffset * .15f);
 				var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
-				var xOffset = NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
+				var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 
 				var a = s.BackgroundColor.A;
 				s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, (int)(a * alpha));
@@ -479,7 +479,7 @@ public class MainMenuLevel : Level
 		};
 
 		play.Thinking += delegate (Element self) {
-			if (EngineCore.CurrentFrameState.Keyboard.AltDown) {
+			if (EngineCore.Level.FrameState.Keyboard.AltDown) {
 				play.Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
 			}
 			else {

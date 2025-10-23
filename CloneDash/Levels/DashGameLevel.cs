@@ -616,7 +616,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState, InputAction.PauseGame);
 		}
-		else if (!IValidatable.IsValid(EngineCore.KeyboardFocusedElement)) {
+		else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);
 		}

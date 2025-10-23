@@ -124,7 +124,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public bool NoMoreSongsLeft { get; set; } = false;
 	public bool InfiniteList { get; set; } = true;
 
-	public float DiscRotateAnimation { get; set; } = 0;
+	public double DiscRotateAnimation { get; set; } = 0;
 
 	public SecondOrderSystem DiscRotateSOS = new(2f, 0.94f, 1.1f, 0);
 	public SecondOrderSystem FlyAwaySOS = new(1.5f, 0.94f, 1.1f, 0);
@@ -259,7 +259,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		InSheetSelection = false;
 		if (DiscRotateAnimation % 360 > 180) {
 			var v = DiscRotateAnimation % 180 - 180;
-			DiscRotateSOS.ResetTo(v);
+			DiscRotateSOS.ResetTo((float)v);
 			DiscRotateAnimation = 0;
 		}
 		else
@@ -287,10 +287,10 @@ public class SongSelector : Panel, IMainMenuPanel
 			var index = DiscIndex + disc.GetTagSafely<int>("localDiscIndex");
 
 			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
-				disc.ImageRotation = DiscRotateSOS.Update(
-					MathF.Floor(DiscRotateAnimation / 360) * 360
+				disc.ImageRotation = DiscRotateSOS.Update((float)(
+					Math.Floor(DiscRotateAnimation / 360) * 360
 					+ DiscRotateAnimation % 360
-				);
+				));
 
 				var discWidth = GetDiscSize(width, disc);
 				float size = discWidth * (FlyAwaySOS.Out / 4 + 1) - DiscVibrate;
