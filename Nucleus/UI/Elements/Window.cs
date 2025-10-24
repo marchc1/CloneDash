@@ -214,6 +214,20 @@ namespace Nucleus.UI.Elements
 		~Window() {
 			MainThread.RunASAP(() => Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this), ThreadExecutionTime.AfterFrame);
 		}
+		public override void OnRemoval() {
+			base.OnRemoval();
+			Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this);
+		}
+		bool opening = true;
+		bool closing = false;
+		double closeTime;
+		public void Close() {
+			closing = true;
+			closeTime = Lifetime;
+			Backdrop = false;
+			UsesRenderTarget = true;
+		}
+
 		public Titlebar Titlebar { get; private set; }
 
 		public Button ResizeTL { get; private set; }
@@ -360,7 +374,7 @@ namespace Nucleus.UI.Elements
 		}
 
 		private void Titlebar_OnTitlebarClosePressed(Element self, FrameState state, MouseButton button) {
-			this.Remove();
+			this.Close();
 		}
 
 		private void dragWindow(Element self, FrameState state, Vector2F delta) {
@@ -368,33 +382,67 @@ namespace Nucleus.UI.Elements
 		}
 
 		protected override void OnThink(FrameState frameState) {
-			if (Lifetime >= 0.5)
+			if (closing) {
+				if ((Lifetime - closeTime) >= CLOSE_TIME) {
+					Remove();
+					return;
+				}
+			}
+			else if (Lifetime >= OPEN_TIME) {
+				opening = false;
 				UsesRenderTarget = false;
+			}
 		}
+		static float OPEN_TIME => 0.5f;
+		static float CLOSE_TIME => 0.25f;
+		public bool Closing => closing;
 		public override void PreRender() {
-			if (Lifetime >= 0.5) return;
-			float t = (float)Lifetime % 0.5f;
+			if (!closing && !opening) return;
+			float t = (float)(closing ? Lifetime - closeTime : Lifetime);
 
-			float mul = (t) * 2;
-			float mulf = (0.5f + (mul / 2)) - 1;
+			float mul = NMath.Remap(t, 0, closing ? CLOSE_TIME : OPEN_TIME, 0, 1, true, false);
+			float mulf = ((closing ? CLOSE_TIME : OPEN_TIME) + (mul / 2)) - 1;
 
-			mul = NMath.Ease.OutCubic(mul);
-			mulf = NMath.Ease.InCubic(mulf);
+			if (closing) {
+				float originalMul = mul;
+				mul = 1 - NMath.Ease.InCubic(mul);
+				mulf = NMath.Ease.OutCubic(mulf);
 
-			EngineCore.Window.BeginMode2D(new Camera2D() {
-				Offset = new((Position.X * -mulf) + ((Size.X / 2) * -mulf), (Position.Y * -mulf) + ((Size.Y / 2) * -mulf)),
-				Rotation = 0,
-				Target = new(0, mulf),
-				Zoom = 1.0f + mulf
-			});
+				Rlgl.PushMatrix();
 
-			Rlgl.PushMatrix();
-			Rlgl.Scalef(1, 1.0f + ((1 - NMath.Ease.OutCubic(mul)) * 0.5f), 1);
+				float mulX = 1 - (NMath.Ease.InBack(originalMul) * 0.2f);
+				float mulY = 1-(NMath.Ease.InBack(originalMul) * -2);
+
+				Vector2F sizeOffset = new(
+					((Position.X + (Size.X / 2)) * 0.5f * (mulX - 1)),
+					((Position.Y + (Size.Y / 2)) * 0.5f * (mulY - 1))
+				);
+
+				Rlgl.Translatef(sizeOffset.X, sizeOffset.Y, 0);
+				Rlgl.Scalef(1.0f + ((1 - mulX) * 0.5f), 1.0f + ((1 - mulY) * 0.5f), 1);
+			}
+			else {
+				mul = NMath.Ease.OutCubic(mul);
+				mulf = NMath.Ease.InCubic(mulf);
+
+				EngineCore.Window.BeginMode2D(new Camera2D() {
+					Offset = new((Position.X * -mulf) + ((Size.X / 2) * -mulf), (Position.Y * -mulf) + ((Size.Y / 2) * -mulf)),
+					Rotation = 0,
+					Target = new(0, mulf),
+					Zoom = 1.0f + mulf
+				});
+
+				Rlgl.PushMatrix();
+				Rlgl.Scalef(1, 1.0f + ((1 - NMath.Ease.OutCubic(mul)) * 0.5f), 1);
+			}
 
 			Opacity = mul;
 		}
 		public override void PostRender() {
-			if (Lifetime < 0.5) {
+			if (closing) {
+				Rlgl.PopMatrix();
+			}
+			else if (opening) {
 				Rlgl.PopMatrix();
 				Rlgl.PopMatrix();
 				EngineCore.Window.EndMode2D();

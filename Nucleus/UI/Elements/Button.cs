@@ -2,7 +2,10 @@
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
+
 using Raylib_cs;
+
+using System.Numerics;
 
 
 namespace Nucleus.UI
@@ -23,7 +26,7 @@ namespace Nucleus.UI
 				return;
 			}
 
-			if(key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter)
+			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter)
 				MouseReleaseOccur(Level.FrameState, Input.MouseButton.MouseLeft, true);
 
 		}
@@ -53,7 +56,14 @@ namespace Nucleus.UI
 			}
 		}
 
+		public bool PulsePreservesAlpha;
+
 		public bool DrawAsCircle { get; set; } = false;
+
+		public Vector4 HoveredMultiplier = new(0, 0.8f, 2.5f, 1f);
+		public Vector4 DepressedMultiplier = new(0, 1.2f, 0.6f, 1f);
+
+		public bool DrawBackgroundWhenMouseIdle = true;
 
 		public static void ColorStateSetup(Button b, out Color back, out Color fore) {
 			var backpre = b.BackgroundColor;
@@ -62,16 +72,24 @@ namespace Nucleus.UI
 			var canInput = b.CanInput();
 
 			if ((b.TriggeredWhenEnterPressed || b.Pulsing) && canInput) {
-				backpre = backpre.Adjust(0, 0, 1 + (Math.Sin(b.PulseTime * 6) * 1.9));
-				forepre = forepre.Adjust(0, 0, 1 + (Math.Sin(b.PulseTime * 6) * 0.1f));
+				double val = ((Math.Sin(b.PulseTime * 6) + 1) / 2);
+				backpre = backpre.Adjust(0, 0, 1 + (val * 1.9));
+				forepre = forepre.Adjust(0, 0, 1 + (val * 0.1f));
+				if (!b.PulsePreservesAlpha)
+					backpre.A = (byte)(int)(float)Math.Clamp(backpre.A * val, byte.MinValue, byte.MaxValue);
 			}
 
-			back = MixColorBasedOnMouseState(b, backpre, new(0, 0.8f, 2.5f, 1f), new(0, 1.2f, 0.6f, 1f));
-			fore = MixColorBasedOnMouseState(b, forepre, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			back = MixColorBasedOnMouseState(b, backpre, b.HoveredMultiplier, b.DepressedMultiplier);
+			fore = MixColorBasedOnMouseState(b, forepre, b.HoveredMultiplier, b.DepressedMultiplier);
 
 			if (!canInput) {
 				back = back.Adjust(0, 0, -0.5f);
 				fore = fore.Adjust(0, 0, -0.5f);
+			}
+
+			if (!b.DrawBackgroundWhenMouseIdle && !b.Hovered && !b.Pulsing) {
+				back.A = 0;
+				fore.A = 0;
 			}
 		}
 

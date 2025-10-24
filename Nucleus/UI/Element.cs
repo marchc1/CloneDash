@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+
+using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
 using Nucleus.Commands;
@@ -760,20 +762,33 @@ namespace Nucleus.UI
 
 		double backdropTime;
 		bool backdrop;
+		bool hasBackdropped;
 		public bool Backdrop {
 			get => backdrop;
 			set {
 				backdrop = value;
 				// TODO: set this to accommodate for mid-backdrop-alpha values
 				backdropTime = Lifetime;
+				if (value)
+					hasBackdropped = true;
 			}
 		}
+		public double TimeToBackdropAlpha = 0.3;
+		public double TimeToNoBackdropAlpha = 0.15;
 		public double BackdropAlpha {
 			get {
+				if (!hasBackdropped)
+					return 0;
+
+				double ret;
 				if (backdrop)
-					return NMath.Remap(Lifetime - backdropTime, 0, 0.3, 0, 1, true);
+					ret = NMath.Remap(Lifetime - backdropTime, 0, TimeToBackdropAlpha, 0, 1, true);
 				else
-					return NMath.Remap(Lifetime - backdropTime, 0.3, 0, 0, 1, true);
+					ret = NMath.Remap(Lifetime - backdropTime, TimeToNoBackdropAlpha, 0, 0, 1, false, true);
+
+				if (ret <= 0 && !backdrop)
+					hasBackdropped = false;
+				return ret;
 			}
 		}
 
@@ -1029,7 +1044,7 @@ namespace Nucleus.UI
 				popups.Add(element);
 				return;
 			}
-			if (element.Backdrop) {
+			if (element.BackdropAlpha >= 0) {
 				Raylib.DrawRectangle(0, 0, (int)element.UI.Size.X, (int)element.UI.Size.Y, new(0, 0, 0,
 					(int)(float)double.Lerp(0, 100, element.BackdropAlpha)
 					));
@@ -1088,7 +1103,7 @@ namespace Nucleus.UI
 				Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, element.RenderBounds.Size)); // ?
 																																			 //else
 																																			 //Graphics2D.ScissorRect();
-
+			Graphics2D.PushAlpha(element.Opacity * 255);
 			element.PreRender();
 			if (element.PaintOverride != null)
 				element.PaintOverride?.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
@@ -1100,6 +1115,7 @@ namespace Nucleus.UI
 			foreach (Element child in element.Children)
 				DrawRecursive(child, popups, iteration + 1);
 			element.PostRenderChildren();
+			Graphics2D.PopAlpha();
 
 			if (element.Clipping)
 				Graphics2D.ScissorRect();
@@ -1209,14 +1225,26 @@ namespace Nucleus.UI
 		public bool ConsumedScrollEvent { get; internal set; }
 		public void ConsumeScrollEvent() => ConsumedScrollEvent = true;
 
+#if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+		private SecondOrderSystem? __mouseColorableHoverState;
+		private SecondOrderSystem? __mouseColorableDepressState;
+#endif
+
 		public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
+#if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+			e.__mouseColorableHoverState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
+			e.__mouseColorableDepressState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
+			return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.Hovered ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
+#else
 			return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
+#endif
 		}
 		/// <summary>
 		/// This function expects HSVA in the format of hueAdditional, saturationMultiplied, valueMultiplied, alphaMultiplied
 		/// </summary>
 		public static Color MixColorBasedOnMouseState(float hoverRatio, float depressedRatio, Color original, Vector4 hoveredHSVA, Vector4 depressedHSVA) {
 			var originalHSV = original.ToHSV();
+
 
 			var hoveredColor = ColorExtensions.FromHSV(originalHSV.X + hoveredHSVA.X, originalHSV.Y * hoveredHSVA.Y, originalHSV.Z * hoveredHSVA.Z);
 			hoveredColor.A = (byte)Math.Clamp(original.A * hoveredHSVA.W, 0, 255);
@@ -1317,6 +1345,7 @@ namespace Nucleus.UI
 		public Texture? Image { get; set; }
 		public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
+		public Vector2F ImageOffset { get; set; } = new(0);
 		public Vector2F ImagePadding { get; set; } = new(0);
 		public float ImageRotation { get; set; } = 0;
 		public bool ImageFlipX { get; set; } = false;
@@ -1405,8 +1434,8 @@ namespace Nucleus.UI
 					break;
 			}
 
-			destRect.X += ImagePadding.X;
-			destRect.Y += ImagePadding.Y;
+			destRect.X += ImagePadding.X + ImageOffset.X;
+			destRect.Y += ImagePadding.Y + ImageOffset.Y;
 			destRect.Width -= ImagePadding.X * 2;
 			destRect.Height -= ImagePadding.Y * 2;
 
