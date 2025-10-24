@@ -45,6 +45,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public void TriggerUserInitializeSearch() {
 		if (SearchFilter == null) return;
 		UI.Add(out ActiveDialog);
+		ActiveDialog.MakeModal();
 		ActiveDialog.Selector = this;
 		ActiveDialog.Bar = SearchBar;
 		ActiveDialog.OnUserSubmit += () => TriggerUserSubmittedSearch();

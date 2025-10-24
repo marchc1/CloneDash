@@ -414,8 +414,8 @@ namespace Nucleus.UI.Elements
 				float mulY = 1-(NMath.Ease.InBack(originalMul) * -2);
 
 				Vector2F sizeOffset = new(
-					((Position.X + (Size.X / 2)) * 0.5f * (mulX - 1)),
-					((Position.Y + (Size.Y / 2)) * 0.5f * (mulY - 1))
+					((RenderBounds.X + (RenderBounds.W / 2)) * 0.5f * (mulX - 1)),
+					((RenderBounds.Y + (RenderBounds.H / 2)) * 0.5f * (mulY - 1))
 				);
 
 				Rlgl.Translatef(sizeOffset.X, sizeOffset.Y, 0);
@@ -426,7 +426,7 @@ namespace Nucleus.UI.Elements
 				mulf = NMath.Ease.InCubic(mulf);
 
 				EngineCore.Window.BeginMode2D(new Camera2D() {
-					Offset = new((Position.X * -mulf) + ((Size.X / 2) * -mulf), (Position.Y * -mulf) + ((Size.Y / 2) * -mulf)),
+					Offset = new((RenderBounds.X * -mulf) + ((RenderBounds.W / 2) * -mulf), (RenderBounds.Y * -mulf) + ((RenderBounds.H / 2) * -mulf)),
 					Rotation = 0,
 					Target = new(0, mulf),
 					Zoom = 1.0f + mulf
