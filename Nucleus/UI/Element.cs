@@ -1036,6 +1036,9 @@ namespace Nucleus.UI
 
 		public float Opacity { get; set; } = 1.0f;
 
+		public delegate void PaintRenderTargetOverrideFn(Element self, in RenderTexture2D texture, in RectangleF renderBounds);
+		public event PaintRenderTargetOverrideFn? PaintRenderTargetOverride;
+
 		public static void DrawRecursive(Element element, List<Element>? popups = null, int iteration = 0) {
 			if (!element.Enabled) return;
 			if (!element.Visible) return;
@@ -1081,7 +1084,10 @@ namespace Nucleus.UI
 							element.PreRender();
 							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
 							Graphics2D.SetDrawColor(t, t, t, t);
-							Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
+							if (element.PaintRenderTargetOverride != null)
+								element.PaintRenderTargetOverride(element, element.__RT1.Value, element.RenderBounds);
+							else
+								Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
 							element.PostRender();
 						}
 
@@ -1141,10 +1147,11 @@ namespace Nucleus.UI
 		public virtual void MouseClick(FrameState state, MouseButton button) { UI.KeyboardUnfocus(this, true); UI.MarkEventNotConsumed(); }
 
 		public Dictionary<string, object> Tags { get; } = [];
+		public bool HasTag(string key) => Tags.ContainsKey(key);
 		public T GetTag<T>(string key) => (T)Tags[key];
 		public T? GetTagSafely<T>(string key) => Tags.ContainsKey(key) ? (T)Tags[key] : default(T);
 		public void SetTag<T>(string key, T value) => Tags[key] = value;
-		public void UnsetTag<T>(string key) => Tags.Remove(key);
+		public void UnsetTag(string key) => Tags.Remove(key);
 
 
 		public event MouseEventDelegate MouseReleaseEvent;

@@ -78,6 +78,7 @@ namespace Nucleus.UI.Elements
 		[MemberNotNull(nameof(ImageRenderer))]
 		void setupImageRenderer() {
 			ImageRenderer = Add<Panel>();
+			ImageRenderer.OnHoverTest += Element.Passthru;
 		}
 
 		protected override void Initialize() {
@@ -388,7 +389,7 @@ namespace Nucleus.UI.Elements
 					return;
 				}
 			}
-			else if (Lifetime >= OPEN_TIME) {
+			else if (Lifetime >= OPEN_TIME && opening) {
 				opening = false;
 				UsesRenderTarget = false;
 			}
