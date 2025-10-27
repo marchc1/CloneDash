@@ -22,7 +22,7 @@ namespace Nucleus.UI
 		}
 		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			if (!TriggeredWhenEnterPressed) {
-				UI.MarkEventNotConsumed();
+				UI.MarkKeyEventNotConsumed();
 				return;
 			}
 

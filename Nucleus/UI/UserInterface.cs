@@ -275,12 +275,12 @@ namespace Nucleus.UI
 							var pressed = emulatedState.WasKeyPressed(i);
 							var released = emulatedState.WasKeyReleased(i);
 							if (pressed) 
-								DoKeyPressed(target, emulatedState, KeyboardLayout.USA.FromInt(i), target != KeyboardFocusedElement);
+								DoKeyPressed(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal);
 							if (released) 
-								DoKeyReleased(target, emulatedState, KeyboardLayout.USA.FromInt(i), target != KeyboardFocusedElement);
+								DoKeyReleased(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal && !lastModal.MarkedForDeath);
 
 							if (!ranKeybinds)
-								ranKeybinds = WasEventConsumed();
+								ranKeybinds = WasKeyEventConsumed();
 						}
 
 						for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++)
@@ -413,9 +413,9 @@ namespace Nucleus.UI
 
 
 		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
-			ResetEventConsumed();
+			ResetKeyEventConsumed();
 			element.KeyPressedOccur(in emulatedState, keyboardKey);
-			if (WasEventConsumed())
+			if (WasKeyEventConsumed())
 				return true;
 
 			if (recurseChildren) 
@@ -427,9 +427,9 @@ namespace Nucleus.UI
 		}
 
 		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
-			ResetEventConsumed();
+			ResetKeyEventConsumed();
 			element.KeyReleasedOccur(in emulatedState, keyboardKey);
-			if (WasEventConsumed())
+			if (WasKeyEventConsumed())
 				return true;
 
 			if (recurseChildren)
@@ -451,10 +451,15 @@ namespace Nucleus.UI
 
 		internal void HandleThinking() => Element.ThinkRecursive(UI, Level.FrameState);
 
-		bool EventConsumed = true;
-		public bool ResetEventConsumed() => EventConsumed = true;
-		public bool MarkEventNotConsumed() => EventConsumed = false;
-		public bool WasEventConsumed() => EventConsumed;
+		bool KeyEventConsumed = true;
+		public bool ResetKeyEventConsumed() => KeyEventConsumed = true;
+		public bool MarkKeyEventNotConsumed() => KeyEventConsumed = false;
+		public bool WasKeyEventConsumed() => KeyEventConsumed;
+
+		bool MouseEventConsumed = true;
+		public bool ResetMouseEventConsumed() => MouseEventConsumed = true;
+		public bool MarkMouseEventNotConsumed() => MouseEventConsumed = false;
+		public bool WasMouseEventConsumed() => MouseEventConsumed;
 
 		private void DoMouseClick(Element hovered, FrameState frameState, MouseButton button) {
 			if (hovered.IsPopup)

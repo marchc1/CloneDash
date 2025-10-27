@@ -1144,7 +1144,7 @@ namespace Nucleus.UI
 		public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
 
 		public event MouseEventDelegate? MouseClickEvent;
-		public virtual void MouseClick(FrameState state, MouseButton button) { UI.KeyboardUnfocus(this, true); UI.MarkEventNotConsumed(); }
+		public virtual void MouseClick(FrameState state, MouseButton button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
 
 		public Dictionary<string, object> Tags { get; } = [];
 		public bool HasTag(string key) => Tags.ContainsKey(key);
@@ -1155,18 +1155,18 @@ namespace Nucleus.UI
 
 
 		public event MouseEventDelegate MouseReleaseEvent;
-		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { UI.MarkEventNotConsumed(); }
+		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseEventDelegate? MouseLostEvent;
-		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { UI.MarkEventNotConsumed(); }
+		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 		public event MouseReleaseDelegate? MouseReleasedOrLostEvent;
-		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { UI.MarkEventNotConsumed(); }
+		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseV2Delegate? MouseDragEvent;
-		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkEventNotConsumed(); }
+		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseV2Delegate? MouseScrollEvent;
-		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkEventNotConsumed(); }
+		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
 		public void ClearChildren() {
 			foreach (var child in this.AddParent.LockAndEnumerateChildren())
@@ -1198,11 +1198,14 @@ namespace Nucleus.UI
 			if (!Hovered && !forced)
 				return;
 
+			
 			MouseRelease(this, state, button);
 			MouseReleaseEvent?.Invoke(this, state, button);
 
-			MouseReleasedOrLost(this, state, button);
-			MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
+			if (!UI.WasMouseEventConsumed()) {
+				MouseReleasedOrLost(this, state, button);
+				MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
+			}
 
 			Dragged = false;
 			DragVector = Vector2F.Zero;
@@ -1302,28 +1305,28 @@ namespace Nucleus.UI
 		public void KeyPressedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyPressed(in keyboardState, key);
 			if (OnKeyPressed != null) {
-				UI.ResetEventConsumed();
+				UI.ResetKeyEventConsumed();
 				OnKeyPressed?.Invoke(this, in keyboardState, key);
 			}
 		}
 		public void KeyReleasedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyReleased(in keyboardState, key);
 			if (OnKeyReleased != null) {
-				UI.ResetEventConsumed();
+				UI.ResetKeyEventConsumed();
 				OnKeyReleased?.Invoke(this, in keyboardState, key);
 			}
 		}
 		public void TextInputOccur(in KeyboardState keyboardState, string text) {
 			TextInput(in keyboardState, text);
 			if (OnTextInput != null) {
-				UI.ResetEventConsumed();
+				UI.ResetKeyEventConsumed();
 				OnTextInput?.Invoke(this, in keyboardState, text);
 			}
 		}
 
-		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkEventNotConsumed(); }
-		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkEventNotConsumed(); }
-		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkEventNotConsumed(); }
+		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
 
 		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
 		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
