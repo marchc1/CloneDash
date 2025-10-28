@@ -93,13 +93,11 @@ public static class EngineCore
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
-	/// <summary>
-	/// A special loading screen level. Always kept "loaded" in some fashion, although only runs its frame function when LoadingLevel == true.
-	/// </summary>
 	public static Level LoadingScreen { get; set; }
 	/// <summary>
 	/// The current level; if null, you'll get a big red complaint
 	/// </summary>
+	public static readonly Dictionary<OSWindow, Level> Levels = [];
 	public static Level Level { get; private set; }
 	/// <summary>
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
@@ -202,7 +200,7 @@ public static class EngineCore
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
-			Window.SetupGL();
+			MainWindow.SetupGL();
 
 			if (prgIcon != null)
 				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
@@ -291,7 +289,8 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		Levels[MainWindow] = null!;
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
@@ -315,7 +314,19 @@ public static class EngineCore
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
 	}
 
-	private static void __loadLevel(Level level, object[] args) {
+	public static void MakeWindowCurrent(OSWindow window) {
+		Rlgl.SetFramebufferWidth((int)window.Size.W);
+		Rlgl.SetFramebufferHeight((int)window.Size.H);
+		window.ActivateGL();
+		window.SetupViewport(window.Size.W, window.Size.H);
+		Window = window;
+		if (Levels.TryGetValue(window, out Level? level))
+			Level = level;
+		else
+			Level = null!;
+	}
+
+	private static void __loadLevel(OSWindow window, Level level, object[] args) {
 		if (level == null) {
 			Level = null;
 			LoadingLevel = false;
@@ -329,7 +340,9 @@ public static class EngineCore
 		Stopwatch s = new Stopwatch();
 		s.Start();
 
-		Level = level;
+		Levels[window] = level;
+		MakeWindowCurrent(window);
+
 		LoadingLevel = true;
 		level.PreInitialize();
 		level.InitializeUI();
@@ -339,8 +352,8 @@ public static class EngineCore
 		LoadingLevel = false;
 
 		LoadingScreen?.Unload();
-		__nextFrameLevel = null;
-		__nextFrameArgs = null;
+		__nextFrameLevel[window] = null;
+		__nextFrameArgs[window] = null;
 		if (EngineCore.ShowDebuggingInfo) {
 			var UpdateGraph = Level.UI.Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,
@@ -375,18 +388,29 @@ public static class EngineCore
 		//GC.WaitForPendingFinalizers();
 	}
 
-	private static Level? __nextFrameLevel;
-	private static object[]? __nextFrameArgs;
+	private static readonly Dictionary<OSWindow, Level?> __nextFrameLevel = [];
+	private static readonly Dictionary<OSWindow, object[]?> __nextFrameArgs = [];
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
-	public static void LoadLevel(Level level, params object[] args) {
+	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
-			__nextFrameLevel = level;
-			__nextFrameArgs = args;
+			__nextFrameLevel[window] = level;
+			__nextFrameArgs[window] = args;
 			LoadingScreen?.Initialize([]);
 		}
 		else
-			__loadLevel(level, args);
+			__loadLevel(MainWindow, level, args);
+	}
+	public static void LoadLevel(Level level, params object[] args) => LoadLevel(MainWindow, level, args);
+	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
+		OSWindow window = OSWindow.CreateSubwindow(width, height, title, flags);
+		window.SetupGL();
+		OSWindow lastWindow = Window;
+		MakeWindowCurrent(window);
+		{
+			__loadLevel(window, level, args);
+		}
+		MakeWindowCurrent(lastWindow);
 	}
 
 	public static void UnloadLevel() {
@@ -397,7 +421,8 @@ public static class EngineCore
 			LoadingScreen?.Unload();
 		}
 		StopSound();
-		Level = null;
+		Levels[Window] = null!;
+		Level = null!;
 
 		ConsoleSystem.ClearScreenBlockers();
 
@@ -490,7 +515,8 @@ public static class EngineCore
 	private static float[] fps_history = new float[FPS_CAPTURE_FRAMES_COUNT];
 	private static float fps_average = 0, fps_last = 0;
 
-	public static OSWindow Window;
+	public static OSWindow Window { get; private set; }
+	public static OSWindow MainWindow;
 
 	public static float FPS {
 		get {
@@ -516,7 +542,18 @@ public static class EngineCore
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
+	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
+		windowsThisFrame.Clear();
+		foreach (var window in Levels)
+			windowsThisFrame.Add(window.Key);
+
+		foreach (var window in windowsThisFrame) {
+			MakeWindowCurrent(window);
+			PerWindowFrame();
+		}
+	}
+	static void PerWindowFrame() {
 		NProfiler.Reset();
 		NucleusSingleton.Spin();
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
@@ -607,9 +644,9 @@ public static class EngineCore
 		}
 
 		InLevelFrame = false;
-		if (__nextFrameLevel != null) {
-			__loadLevel(__nextFrameLevel, __nextFrameArgs);
-			__nextFrameLevel = null;
+		if (__nextFrameLevel.TryGetValue(Window, out Level? value) && value != null) {
+			__loadLevel(Window, value, __nextFrameArgs.TryGetValue(Window, out object[]? args) ? args ?? [] : []);
+			__nextFrameLevel[Window] = null;
 		}
 
 		Rlgl.DrawRenderBatchActive();

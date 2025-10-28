@@ -143,6 +143,7 @@ public unsafe class OSWindow : IValidatable
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
+	static bool FirstWindow = true;
 	public void SetupGL() {
 #if !COMPILED_OSX
 		setupGL(this);
@@ -152,13 +153,79 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
 		ActivateGL();
-		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
+		if (FirstWindow) {
+			Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
+			Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+			Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+		}
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
 
-		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+		FirstWindow = false;
 	}
+	public static OSWindow CreateSubwindow(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+		if (Thread.CurrentThread != MainThread.Thread) {
+			OSWindow.AwaitSubWindow(out OSWindow newWindow, width, height, "Nucleus Engine - Window", confFlags);
+			return newWindow;
+		}
+		OSWindow window = new OSWindow();
+		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
+
+		if (confFlags.HasFlag(ConfigFlags.FLAG_WINDOW_UNDECORATED))
+			flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
+		if (confFlags.HasFlag(ConfigFlags.FLAG_FULLSCREEN_MODE))
+			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+
+		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
+		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
+
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+#if COMPILED_OSX
+		EngineCore.MainWindow.ActivateGL();
+		setupGL(window);
+#endif
+
+		window.windowID = SDL3.SDL_GetWindowID(window.handle);
+		windowLookup_id2window[window.windowID] = window;
+		windowLookup_window2id[window] = window.windowID;
+
+		int wx, wy;
+		SDL3.SDL_GetWindowPosition(window.handle, &wx, &wy);
+		window.ScreenPos = new(wx, wy);
+		window.ScreenSize.X = width;
+		window.ScreenSize.Y = height;
+		window.ScreenScale = Raymath.MatrixIdentity();
+
+		window.Resizable = true;
+
+		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
+		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
+
+		return window;
+	}
+
+	struct SubWindowEnqueuedEv
+	{
+		public Action<OSWindow> Callback;
+		public int Width;
+		public int Height;
+		public string Title;
+		public ConfigFlags Flags;
+	}
+	static readonly ConcurrentQueue<SubWindowEnqueuedEv> WaitingSubwindows = [];
+	private static void AwaitSubWindow(out OSWindow window, int width, int height, string title, ConfigFlags flags) {
+		OSWindow win = null!;
+		WaitingSubwindows.Enqueue(new() {
+			Callback = (x) => win = x,
+			Width = width,
+			Height = height,
+			Title = title,
+			Flags = flags
+		});
+		while (win == null) ;
+		window = win;
+	}
+
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
@@ -409,9 +476,6 @@ public unsafe class OSWindow : IValidatable
 		get => SDL3.SDL_GetWindowOpacity(handle);
 		set { queuedOpacity = value; isOpacityQueued = true; }
 	}
-
-
-
 
 	public void SwapScreenBuffer() {
 		if (!IsValid()) return;
@@ -761,6 +825,10 @@ public unsafe class OSWindow : IValidatable
 	/// Pumps the event queue continuously.
 	/// </summary>
 	public static void PumpOSEvents() {
+		// If any OS windows are waiting to be created, create them.
+		while (WaitingSubwindows.TryDequeue(out SubWindowEnqueuedEv swev)) {
+			swev.Callback(OSWindow.CreateSubwindow(swev.Width, swev.Height, swev.Title, swev.Flags));
+		}
 		SDL_Event ev;
 		const int mswait = 5;
 		unsafe {
@@ -776,7 +844,7 @@ public unsafe class OSWindow : IValidatable
 				var time = OS.GetTime();
 				switch (ev.Type) {
 					case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
-						if (WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY) 
+						if (WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY)
 							SDL3.SDL_CaptureMouse(true);
 						break;
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
@@ -1153,7 +1221,7 @@ public unsafe class OSWindow : IValidatable
 			keysReleased[j] = prev > 0 && curr == 0;
 		}
 
-		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++) 
+		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++)
 			textInputs[j] = Keyboard.EnqueuedTextInputs[j];
 
 		Keyboard.Reset();
