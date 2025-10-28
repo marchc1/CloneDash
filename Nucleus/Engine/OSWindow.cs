@@ -335,6 +335,7 @@ public unsafe class OSWindow : IValidatable
 		flushWindowGeometry();
 		SDL3.SDL_SetCursor(this.cursor);
 		lastFlags = curFlags;
+		curFlags = SDL3.SDL_GetWindowFlags(handle);
 		hasLastWinflags = true;
 	}
 
@@ -664,7 +665,7 @@ public unsafe class OSWindow : IValidatable
 	/// <summary>
 	/// Will focus being gained be treated as a mouse click as well, if applicable.
 	/// </summary>
-	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = true;
+	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = false;
 
 
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
