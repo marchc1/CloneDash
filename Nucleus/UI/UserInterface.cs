@@ -296,43 +296,41 @@ namespace Nucleus.UI
 
 			FrameState frameState = Level.FrameState;
 
-			bool ranKeybinds = false;
-			Element? target;
-			if (IValidatable.IsValid(lastModal)) {
-				if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+			if (frameState.Keyboard.TotalKeysThisFrame > 0) {
+				bool ranKeybinds = false;
+				Element? target;
+				if (IValidatable.IsValid(lastModal)) {
+					if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+						target = KeyboardFocusedElement;
+					else if (lastModal.Enabled && lastModal.Visible)
+						target = lastModal;
+					else
+						target = null;
+				}
+				else if (IValidatable.IsValid(lastPopup)) {
+					if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+						target = KeyboardFocusedElement;
+					else if (lastPopup.Enabled && lastPopup.Visible)
+						target = lastPopup;
+					else
+						target = null;
+				}
+				else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
 					target = KeyboardFocusedElement;
-				else if (lastModal.Enabled && lastModal.Visible)
-					target = lastModal;
 				else
 					target = null;
-			}
-			else if (IValidatable.IsValid(lastPopup)) {
-				if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
-					target = KeyboardFocusedElement;
-				else if (lastPopup.Enabled && lastPopup.Visible)
-					target = lastPopup;
-				else
-					target = null;
-			}
-			else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
-				target = KeyboardFocusedElement;
-			else
-				target = null;
 
-			ranKeybinds = tryRunKeybinds(target, frameState);
-			if (!ranKeybinds) {
-				// Lets try again, but only if the target wasnt keyboard focused.
-				// Because we might have a passive keyboard focused element that wants keybinds.
-				if (target != KeyboardFocusedElement)
-					ranKeybinds = tryRunKeybinds(KeyboardFocusedElement, frameState);
+				ranKeybinds = tryRunKeybinds(target, frameState);
+				if (!ranKeybinds) {
+					// Lets try again, but only if the target wasnt keyboard focused.
+					// Because we might have a passive keyboard focused element that wants keybinds.
+					if (target != KeyboardFocusedElement)
+						ranKeybinds = tryRunKeybinds(KeyboardFocusedElement, frameState);
+				}
+
+				if (!ranKeybinds)
+					Level.RunKeybinds();
 			}
-
-			// Only run keybinds on the level when we've ran no other prioritized keybinds.
-			// But also don't run them if our target is the keyboard focused element. Because then, if some
-			// element registers a weird keybind (like just H or something) the keyboard input will trigger that!
-			if (!ranKeybinds && target != KeyboardFocusedElement)
-				Level.RunKeybinds();
-
 			int rebuilds = Element.LayoutRecursive(this, ref frameState);
 
 			Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
