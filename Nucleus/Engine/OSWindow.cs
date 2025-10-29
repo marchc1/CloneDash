@@ -249,10 +249,9 @@ public unsafe class OSWindow : IValidatable
 
 	unsafe void applyHitTest() {
 		if (incomingHitTestChange) {
-			if(newHitTestValue)
+			if (newHitTestValue)
 				SDL3.SDL_SetWindowHitTest(handle, &WINDOW_HITTEST_RESULT, 0);
 			else
-
 				SDL3.SDL_SetWindowHitTest(handle, null, 0);
 
 			incomingHitTestChange = false;
@@ -342,6 +341,7 @@ public unsafe class OSWindow : IValidatable
 
 		handleSDLTextInputState();
 		flushWindowGeometry();
+		applyHitTest();
 		SDL3.SDL_SetCursor(this.cursor);
 		lastFlags = curFlags;
 		curFlags = SDL3.SDL_GetWindowFlags(handle);
@@ -678,6 +678,7 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = false;
 
+	public static OSWindow? Hovered { get; set; }
 
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
 		switch (ev.Event.Type) {
@@ -748,6 +749,13 @@ public unsafe class OSWindow : IValidatable
 					}
 					break;
 				}
+			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
+				Hovered = this;
+				break;
+			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
+				if (Hovered == this)
+					Hovered = null;
+				break;
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 				HandleTextInput(in ev);
 				break;

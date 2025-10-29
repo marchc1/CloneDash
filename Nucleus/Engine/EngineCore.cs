@@ -357,6 +357,11 @@ public static class EngineCore
 		Level = GetWindowCtx(Window).Level!;
 	}
 
+	// Specific things that need to get called (because a level usually calls these like hittesting)
+	static void ResetWindowLevelSpecificEnv(OSWindow window) {
+		window.DisableHitTest();
+	}
+
 	private static void __loadLevel(OSWindow window, Level level, object[] args) {
 		if (level == null) {
 			Level = null;
@@ -373,7 +378,7 @@ public static class EngineCore
 
 		GetWindowCtx(window).Level = level;
 		MakeWindowCurrent(window);
-
+		ResetWindowLevelSpecificEnv(window);
 		LoadingLevel = true;
 		level.PreInitialize();
 		level.InitializeUI();
