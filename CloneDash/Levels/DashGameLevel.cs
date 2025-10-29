@@ -1256,8 +1256,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 								EntityVariant.Small => SceneSound.Quiet,
 								EntityVariant.Medium1 => SceneSound.Medium1,
 								EntityVariant.Medium2 => SceneSound.Medium2,
-								EntityVariant.Large1 => SceneSound.Loud1,
-								EntityVariant.Large2 => SceneSound.Loud2,
+								EntityVariant.Large1 => SceneSound.Quiet,
+								EntityVariant.Large2 => SceneSound.Loud1,
 								EntityVariant.Boss1 => SceneSound.Quiet,
 								EntityVariant.Boss2 => SceneSound.Medium1,
 								EntityVariant.Boss3 => SceneSound.Medium2,
@@ -1265,9 +1265,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 								EntityVariant.BossHitSlow => SceneSound.Loud2,
 								_ => SceneSound.Medium1
 							},
+							EntityType.Hammer => SceneSound.Loud2,
 							EntityType.SustainBeam => SceneSound.PressTop,
-							EntityType.Raider => SceneSound.Loud1,
-							EntityType.Ghost => SceneSound.Quiet,
+							EntityType.Raider => SceneSound.Quiet,
+							EntityType.Ghost => SceneSound.Medium2,
 							_ => SceneSound.Medium1
 						}, 1);
 					}
