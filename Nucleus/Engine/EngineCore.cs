@@ -497,6 +497,11 @@ public static class EngineCore
 
 		WindowContexts.Remove(Window);
 		Window.Close();
+
+		if(Window == MainWindow) {
+			// Uh oh! We just deleted the main window! Try to choose a new window?
+			MainWindow = WindowContexts.Keys.First();
+		}
 	}
 
 	public static Vector2F GetScreenSize() {
