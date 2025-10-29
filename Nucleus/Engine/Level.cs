@@ -74,7 +74,7 @@ namespace Nucleus.Engine
 		public virtual void Render(FrameState frameState) { }
 		public virtual void Render2D(FrameState frameState) { }
 		public virtual void PostRender(FrameState frameState) { }
-		public virtual void ShouldEngineClose() { }
+		public virtual void PreWindowClose() { }
 
 		public void RunEventPreThink(ref FrameState frameState) {
 			PreThink(ref frameState);
