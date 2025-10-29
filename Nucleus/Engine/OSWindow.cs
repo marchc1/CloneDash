@@ -144,6 +144,7 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	static bool FirstWindow = true;
+	unsafe RenderBatch* renderBatch;
 	public void SetupGL() {
 #if !COMPILED_OSX
 		setupGL(this);
@@ -158,6 +159,9 @@ public unsafe class OSWindow : IValidatable
 			Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
 			Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
 		}
+
+		renderBatch = Raylib.New<RenderBatch>(1);
+		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
 
@@ -514,6 +518,8 @@ public unsafe class OSWindow : IValidatable
 
 	public void ActivateGL() {
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
+		if (renderBatch != null)
+			Rlgl.SetRenderBatchActive(renderBatch);
 	}
 
 	public const int SCANCODE_MAPPED_NUM = 232;
