@@ -280,19 +280,17 @@ public unsafe class OSWindow : IValidatable
 	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
 		var type = ev->Type;
 		if (ev->Type == SDL_EventType.SDL_EVENT_WINDOW_EXPOSED && !EngineCore.InLevelFrame) {
-			var now = OS.GetTime();
-			if ((now - lastUpdate) > (1 / 60d)) {
-				var winObj = windowLookup_id2window[ev->window.windowID];
-				OSEventTimestamped evP = new() {
-					Event = new SDL_Event() {
-						type = (uint)SDL_EventType.SDL_EVENT_WINDOW_EXPOSED,
-						window = ev->window
-					},
-					Timestamp = OS.GetTime()
-				};
-				EventBuffer.Enqueue(evP);
-				lastUpdate = now;
-			}
+			EngineCore.WaitForGameThread();
+			var winObj = windowLookup_id2window[ev->window.windowID];
+			OSEventTimestamped evP = new() {
+				Event = new SDL_Event() {
+					type = (uint)SDL_EventType.SDL_EVENT_WINDOW_EXPOSED,
+					window = ev->window
+				},
+				Timestamp = OS.GetTime()
+			};
+			EventBuffer.Enqueue(evP);
+			EngineCore.ReleaseGameThread();
 		}
 		return false;
 	}
@@ -732,6 +730,7 @@ public unsafe class OSWindow : IValidatable
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
 			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+					EngineCore.WaitForGameThread();
 					int width = ev.Event.window.data1;
 					int height = ev.Event.window.data2;
 					SetupViewport(width, height);
@@ -740,10 +739,12 @@ public unsafe class OSWindow : IValidatable
 					CurrentFbo.W = width;
 					CurrentFbo.H = height;
 					ResizedLastFrame = true;
+					EngineCore.ReleaseGameThread();
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
 					int width, height;
+					EngineCore.WaitForGameThread();
 					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.Event.window.windowID), &width, &height);
 					if (ScreenSize.W != width || ScreenSize.H != height) {
 						SetupViewport(width, height);
@@ -753,6 +754,7 @@ public unsafe class OSWindow : IValidatable
 						CurrentFbo.H = height;
 						ResizedLastFrame = true;
 					}
+					EngineCore.ReleaseGameThread();
 					break;
 				}
 			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
