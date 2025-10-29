@@ -167,43 +167,11 @@ public unsafe class OSWindow : IValidatable
 	}
 	public static OSWindow CreateSubwindow(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		if (Thread.CurrentThread != MainThread.Thread) {
-			OSWindow.AwaitSubWindow(out OSWindow newWindow, width, height, "Nucleus Engine - Window", confFlags);
+			AwaitSubWindow(out OSWindow newWindow, width, height, "Nucleus Engine - Window", confFlags);
 			return newWindow;
 		}
-		OSWindow window = new OSWindow();
-		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
-		if (confFlags.HasFlag(ConfigFlags.FLAG_WINDOW_UNDECORATED))
-			flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
-		if (confFlags.HasFlag(ConfigFlags.FLAG_FULLSCREEN_MODE))
-			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
-
-		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
-		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
-
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-#if COMPILED_OSX
-		EngineCore.MainWindow.ActivateGL();
-		setupGL(window);
-#endif
-
-		window.windowID = SDL3.SDL_GetWindowID(window.handle);
-		windowLookup_id2window[window.windowID] = window;
-		windowLookup_window2id[window] = window.windowID;
-
-		int wx, wy;
-		SDL3.SDL_GetWindowPosition(window.handle, &wx, &wy);
-		window.ScreenPos = new(wx, wy);
-		window.ScreenSize.X = width;
-		window.ScreenSize.Y = height;
-		window.ScreenScale = Raymath.MatrixIdentity();
-
-		window.Resizable = true;
-
-		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
-		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
-
-		return window;
+		return Create(width, height, title, confFlags, shareContext: true);
 	}
 
 	struct SubWindowEnqueuedEv
@@ -228,7 +196,7 @@ public unsafe class OSWindow : IValidatable
 		window = win;
 	}
 
-	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0, bool shareContext = false) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
@@ -240,10 +208,12 @@ public unsafe class OSWindow : IValidatable
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
+		if (shareContext)
+			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 #if COMPILED_OSX
+		EngineCore.MainWindow.ActivateGL();
 		setupGL(window);
 #endif
-
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
 		windowLookup_id2window[window.windowID] = window;
@@ -262,6 +232,25 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
 
 		return window;
+	}
+
+	public void EnableHitTesting() {
+		SDL3.SDL_SetWindowHitTest(handle, &WINDOW_HITTEST_RESULT, 0);
+	}
+	public void DisableHitTesting() {
+		SDL3.SDL_SetWindowHitTest(handle, null, 0);
+	}
+
+	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
+		Vector2F p = new(point->x, point->y);
+		OSWindow osWindow = windowLookup_id2window[SDL3.SDL_GetWindowID(window)];
+		Level? level = EngineCore.GetWindowLevel(osWindow);
+		osWindow.Mouse.CurrentMousePosition.X = p.x;
+		osWindow.Mouse.CurrentMousePosition.Y = p.y;
+		if (level != null)
+			return (SDL_HitTestResult)level.WindowHitTest(p);
+		return SDL_HitTestResult.SDL_HITTEST_NORMAL;
 	}
 	private static double lastUpdate;
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]

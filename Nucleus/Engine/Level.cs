@@ -12,6 +12,8 @@ using Nucleus.UI;
 
 using Raylib_cs;
 
+using SDL;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +22,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 using MouseButton = Nucleus.Input.MouseButton;
+
+public enum HitTestResult : byte
+{
+	Normal,
+	Draggable,
+	ResizeTopLeft,
+	ResizeTop,
+	ResizeTopRight,
+	ResizeRight,
+	ResizeBottomRight,
+	ResizeBottom,
+	ResizeBottomLeft,
+	ResizeLeft
+}
 
 namespace Nucleus.Engine
 {
@@ -75,6 +91,7 @@ namespace Nucleus.Engine
 		public virtual void Render2D(FrameState frameState) { }
 		public virtual void PostRender(FrameState frameState) { }
 		public virtual void PreWindowClose() { }
+		public virtual HitTestResult WindowHitTest(Vector2F point) => HitTestResult.Normal;
 
 		public void RunEventPreThink(ref FrameState frameState) {
 			PreThink(ref frameState);

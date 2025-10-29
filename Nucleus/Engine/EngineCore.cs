@@ -37,11 +37,15 @@ public static class EngineCore
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
 	}
+	[ConCommand(Help: "Creates a new null subwindow")]
+	static void nullwindow(ConCommandArguments args) {
+		EngineCore.SubWindow(args.GetInt(0, out int x) ? x : 640, args.GetInt(1, out int y) ? y : 480, args.GetString(2) ?? "Nucleus Subwindow");
+	}
 
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
-	[ConCommand(Help: "ries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
+	[ConCommand(Help: "Tries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
 	static void level(ConCommandArguments args) {
 		var level = args.Raw;
 		var listOfLevels = (
@@ -113,7 +117,7 @@ public static class EngineCore
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
 	static readonly OSWindowCtx DUMMY = new();
 	static OSWindowCtx GetWindowCtx(OSWindow window) {
-		if(window == null)
+		if (window == null)
 			return DUMMY;
 		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
 			return value;
@@ -369,6 +373,7 @@ public static class EngineCore
 
 		GetWindowCtx(window).Level = level;
 		MakeWindowCurrent(window);
+		window.DisableHitTesting(); // << Levels change this, default it to null
 
 		LoadingLevel = true;
 		level.PreInitialize();
@@ -427,9 +432,13 @@ public static class EngineCore
 			__loadLevel(window, level, args);
 	}
 	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
+	public static OSWindow SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
 		OSWindow window = OSWindow.CreateSubwindow(width, height, title, flags);
 		window.SetupGL();
+		return window;
+	}
+	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
+		OSWindow window = SubWindow(width, height, title, flags);
 		OSWindow lastWindow = Window;
 		MakeWindowCurrent(window);
 		{
@@ -447,6 +456,7 @@ public static class EngineCore
 		}
 		StopSound();
 		GetWindowCtx(Window).Level = null;
+		Window.DisableHitTesting(); // << Levels change this, default it to null
 		Level = null!;
 
 		ConsoleSystem.ClearScreenBlockers();
@@ -484,12 +494,12 @@ public static class EngineCore
 		_blockClosure = false;
 		ShouldEngineClose?.Invoke();
 		Level?.PreWindowClose();
-		if (_blockClosure == false) 
+		if (_blockClosure == false)
 			ExitWindow();
 	}
 
 	public static void ExitWindow() {
-		if(WindowContexts.Count == 1) {
+		if (WindowContexts.Count == 1) {
 			// just exit
 			_running = false;
 			return;
@@ -498,7 +508,7 @@ public static class EngineCore
 		WindowContexts.Remove(Window);
 		Window.Close();
 
-		if(Window == MainWindow) {
+		if (Window == MainWindow) {
 			// Uh oh! We just deleted the main window! Try to choose a new window?
 			MainWindow = WindowContexts.Keys.First();
 		}
@@ -836,6 +846,8 @@ public static class EngineCore
 		}
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
+
+	internal static Level? GetWindowLevel(OSWindow window) => GetWindowCtx(window).Level;
 
 	public static void StartMainThread() {
 		lock (GameThread_GLLock) {
