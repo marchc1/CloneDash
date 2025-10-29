@@ -342,7 +342,7 @@ public static class EngineCore
 			// centerMonitor - (window size / 2) to center window to monitor
 			var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
 
-			Window.Position = new((int)windowPos.X, (int)windowPos.Y);
+			MainWindow.Position = new((int)windowPos.X, (int)windowPos.Y);
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
