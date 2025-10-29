@@ -400,9 +400,9 @@ public static class EngineCore
 			LoadingScreen?.Initialize([]);
 		}
 		else
-			__loadLevel(Window, level, args);
+			__loadLevel(window, level, args);
 	}
-	public static void LoadLevel(Level level, params object[] args) => LoadLevel(MainWindow, level, args);
+	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
 	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
 		OSWindow window = OSWindow.CreateSubwindow(width, height, title, flags);
 		window.SetupGL();
