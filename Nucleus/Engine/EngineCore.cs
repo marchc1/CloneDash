@@ -477,16 +477,26 @@ public static class EngineCore
 		if (!_running) return;
 
 		if (forced) {
-			_running = false;
+			ExitWindow();
 			return;
 		}
 
 		_blockClosure = false;
 		ShouldEngineClose?.Invoke();
-		Level?.ShouldEngineClose();
-		if (_blockClosure == false) {
+		Level?.PreWindowClose();
+		if (_blockClosure == false) 
+			ExitWindow();
+	}
+
+	public static void ExitWindow() {
+		if(WindowContexts.Count == 1) {
+			// just exit
 			_running = false;
+			return;
 		}
+
+		WindowContexts.Remove(Window);
+		Window.Close();
 	}
 
 	public static Vector2F GetScreenSize() {
