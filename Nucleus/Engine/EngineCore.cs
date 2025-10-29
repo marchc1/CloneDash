@@ -434,6 +434,7 @@ public static class EngineCore
 	public static OSWindow SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
 		OSWindow window = OSWindow.CreateSubwindow(width, height, title, flags);
 		window.SetupGL();
+		WindowContexts[window] = new();
 		return window;
 	}
 	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
