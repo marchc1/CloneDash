@@ -93,11 +93,40 @@ public static class EngineCore
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
+	class OSWindowCtx
+	{
+		public Level? Level;
+		public Level? NextFrameLevel;
+		public object[]? NextFrameArgs;
+
+		public TimeSpan LastTimeToUpdate;
+		public TimeSpan LastTimeToRender;
+
+		public double TargetFrameTime;
+		public double CurrentAppTime;
+		public double PreviousAppTime;
+		public double UpdateTime;
+		public double DrawTime;
+		public double FrameTime;
+	}
+
+	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
+	static readonly OSWindowCtx DUMMY = new();
+	static OSWindowCtx GetWindowCtx(OSWindow window) {
+		if(window == null)
+			return DUMMY;
+		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
+			return value;
+		value = new();
+		WindowContexts.Add(window, value);
+		return value;
+	}
+
+	static readonly Dictionary<OSWindow, OSWindowCtx> WindowContexts = [];
 	public static Level LoadingScreen { get; set; }
 	/// <summary>
 	/// The current level; if null, you'll get a big red complaint
 	/// </summary>
-	public static readonly Dictionary<OSWindow, Level> Levels = [];
 	public static Level Level { get; private set; }
 	/// <summary>
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
@@ -291,7 +320,7 @@ public static class EngineCore
 			windowHeight = (int)size.H;
 		}
 		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
-		Levels[MainWindow] = null!;
+		GetWindowCtx(MainWindow).Level = null;
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
@@ -321,10 +350,7 @@ public static class EngineCore
 		window.ActivateGL();
 		window.SetupViewport(window.Size.W, window.Size.H);
 		Window = window;
-		if (Levels.TryGetValue(window, out Level? level))
-			Level = level;
-		else
-			Level = null!;
+		Level = GetWindowCtx(Window).Level!;
 	}
 
 	private static void __loadLevel(OSWindow window, Level level, object[] args) {
@@ -341,7 +367,7 @@ public static class EngineCore
 		Stopwatch s = new Stopwatch();
 		s.Start();
 
-		Levels[window] = level;
+		GetWindowCtx(window).Level = level;
 		MakeWindowCurrent(window);
 
 		LoadingLevel = true;
@@ -353,8 +379,8 @@ public static class EngineCore
 		LoadingLevel = false;
 
 		LoadingScreen?.Unload();
-		__nextFrameLevel[window] = null;
-		__nextFrameArgs[window] = null;
+		GetWindowCtx(Window).NextFrameLevel = null;
+		GetWindowCtx(Window).NextFrameArgs = null;
 		if (EngineCore.ShowDebuggingInfo) {
 			var UpdateGraph = Level.UI.Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,
@@ -389,14 +415,12 @@ public static class EngineCore
 		//GC.WaitForPendingFinalizers();
 	}
 
-	private static readonly Dictionary<OSWindow, Level?> __nextFrameLevel = [];
-	private static readonly Dictionary<OSWindow, object[]?> __nextFrameArgs = [];
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
-			__nextFrameLevel[window] = level;
-			__nextFrameArgs[window] = args;
+			GetWindowCtx(Window).NextFrameLevel = level;
+			GetWindowCtx(Window).NextFrameArgs = args;
 			LoadingScreen?.Initialize([]);
 		}
 		else
@@ -422,7 +446,7 @@ public static class EngineCore
 			LoadingScreen?.Unload();
 		}
 		StopSound();
-		Levels[Window] = null!;
+		GetWindowCtx(Window).Level = null;
 		Level = null!;
 
 		ConsoleSystem.ClearScreenBlockers();
@@ -483,31 +507,52 @@ public static class EngineCore
 
 	public static GameInfo GameInfo;
 
-	public static double TargetFrameTime { get; private set; } = 0;
-	public static double CurrentAppTime { get; private set; } = 0;
-	public static double PreviousAppTime { get; private set; } = 0;
-	public static double UpdateTime { get; private set; } = 0;
-	public static double DrawTime { get; private set; } = 0;
-	public static double FrameTime { get; private set; } = 0;
+	public static double TargetFrameTime {
+		get => GetWindowCtx(Window).TargetFrameTime;
+		set => GetWindowCtx(Window).TargetFrameTime = value;
+	}
+
+	public static double CurrentAppTime {
+		get => GetWindowCtx(Window).CurrentAppTime;
+		set => GetWindowCtx(Window).CurrentAppTime = value;
+	}
+
+	public static double PreviousAppTime {
+		get => GetWindowCtx(Window).PreviousAppTime;
+		set => GetWindowCtx(Window).PreviousAppTime = value;
+	}
+
+	public static double UpdateTime {
+		get => GetWindowCtx(Window).UpdateTime;
+		set => GetWindowCtx(Window).UpdateTime = value;
+	}
+
+	public static double DrawTime {
+		get => GetWindowCtx(Window).DrawTime;
+		set => GetWindowCtx(Window).DrawTime = value;
+	}
+
+	public static double FrameTime {
+		get => GetWindowCtx(Window).FrameTime;
+		set => GetWindowCtx(Window).FrameTime = value;
+	}
 
 	public static bool ShowConsoleLogsInCorner { get; set; } = true;
 	public static bool ShowDebuggingInfo { get; set; } = false;
 
 
-	static TimeSpan lastTimeToUpdate;
-	static TimeSpan lastTimeToRender;
 	/// <summary>
 	/// How long did the last update-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToUpdate() => lastTimeToUpdate;
+	public static TimeSpan GetTimeToUpdate() => GetWindowCtx(Window).LastTimeToUpdate;
 	/// <summary>
 	/// How long did the last render-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToRender() => lastTimeToRender;
-	internal static void SetTimeToUpdate(TimeSpan value) => lastTimeToUpdate = value;
-	internal static void SetTimeToRender(TimeSpan value) => lastTimeToRender = value;
+	public static TimeSpan GetTimeToRender() => GetWindowCtx(Window).LastTimeToRender;
+	internal static void SetTimeToUpdate(TimeSpan value) => GetWindowCtx(Window).LastTimeToUpdate = value;
+	internal static void SetTimeToRender(TimeSpan value) => GetWindowCtx(Window).LastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
 	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
@@ -546,7 +591,7 @@ public static class EngineCore
 	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
 		windowsThisFrame.Clear();
-		foreach (var window in Levels)
+		foreach (var window in WindowContexts)
 			windowsThisFrame.Add(window.Key);
 
 		foreach (var window in windowsThisFrame) {
@@ -645,9 +690,10 @@ public static class EngineCore
 		}
 
 		InLevelFrame = false;
-		if (__nextFrameLevel.TryGetValue(Window, out Level? value) && value != null) {
-			__loadLevel(Window, value, __nextFrameArgs.TryGetValue(Window, out object[]? args) ? args ?? [] : []);
-			__nextFrameLevel[Window] = null;
+		Level? nextFrameLevel = GetWindowCtx(Window).NextFrameLevel;
+		if (nextFrameLevel != null) {
+			__loadLevel(Window, nextFrameLevel, GetWindowCtx(Window).NextFrameArgs ?? []);
+			GetWindowCtx(Window).NextFrameLevel = null;
 		}
 
 		Rlgl.DrawRenderBatchActive();
@@ -850,11 +896,10 @@ public static class EngineCore
 
 	private const string PANIC_FONT = "Noto Sans";
 	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
-	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch
-	{
-		"zh-HK"   => "Noto Sans HK",
-		"zh-MO"   => "Noto Sans HK",
-		_         => "Noto Sans TC",
+	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch {
+		"zh-HK" => "Noto Sans HK",
+		"zh-MO" => "Noto Sans HK",
+		_ => "Noto Sans TC",
 	};
 	private const string PANIC_FONT_SC = "Noto Sans SC";
 	private const string PANIC_FONT_KR = "Noto Sans KR";
@@ -877,7 +922,7 @@ public static class EngineCore
 
 		textY++;
 	}
-	private static readonly Dictionary<string, string> ErrorMessages = new (){
+	private static readonly Dictionary<string, string> ErrorMessages = new(){
 		{"A fatal error has occured. Press any key to exit.", PANIC_FONT},
 		{"حدث خطأ فادح. اضغط على أي مفتاح للخروج.", PANIC_FONT},
 		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT_ARABIC},
