@@ -373,7 +373,6 @@ public static class EngineCore
 
 		GetWindowCtx(window).Level = level;
 		MakeWindowCurrent(window);
-		window.DisableHitTesting(); // << Levels change this, default it to null
 
 		LoadingLevel = true;
 		level.PreInitialize();
@@ -456,7 +455,6 @@ public static class EngineCore
 		}
 		StopSound();
 		GetWindowCtx(Window).Level = null;
-		Window.DisableHitTesting(); // << Levels change this, default it to null
 		Level = null!;
 
 		ConsoleSystem.ClearScreenBlockers();

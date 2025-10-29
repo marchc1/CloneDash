@@ -228,19 +228,12 @@ public unsafe class OSWindow : IValidatable
 
 		window.Resizable = true;
 
+		SDL3.SDL_SetWindowHitTest(window.handle, &WINDOW_HITTEST_RESULT, 0);
 		// This fixes a Windows issue where the window becomes unresponsive while moving/resizing
 		SDL3.SDL_AddEventWatch(&HandleWin32Resize, (nint)window.handle);
 
 		return window;
 	}
-
-	public void EnableHitTesting() {
-		SDL3.SDL_SetWindowHitTest(handle, &WINDOW_HITTEST_RESULT, 0);
-	}
-	public void DisableHitTesting() {
-		SDL3.SDL_SetWindowHitTest(handle, null, 0);
-	}
-
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
 		Vector2F p = new(point->x, point->y);
