@@ -1255,12 +1255,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 							EntityType.Single => poll.HitEntity.Variant switch {
 								EntityVariant.Small => SceneSound.Quiet,
 								EntityVariant.Medium1 => SceneSound.Medium1,
-								EntityVariant.Medium2 => SceneSound.Medium2,
+								EntityVariant.Medium2 => SceneSound.Medium1,
 								EntityVariant.Large1 => SceneSound.Quiet,
 								EntityVariant.Large2 => SceneSound.Loud1,
 								EntityVariant.Boss1 => SceneSound.Quiet,
 								EntityVariant.Boss2 => SceneSound.Medium1,
-								EntityVariant.Boss3 => SceneSound.Medium2,
+								EntityVariant.Boss3 => SceneSound.Medium1,
 								EntityVariant.BossHitFast => SceneSound.Loud2,
 								EntityVariant.BossHitSlow => SceneSound.Loud2,
 								_ => SceneSound.Medium1
