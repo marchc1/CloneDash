@@ -462,6 +462,7 @@ public static class EngineCore
 		StopSound();
 		GetWindowCtx(Window).Level = null;
 		Level = null!;
+		ResetWindowLevelSpecificEnv(Window);
 
 		ConsoleSystem.ClearScreenBlockers();
 

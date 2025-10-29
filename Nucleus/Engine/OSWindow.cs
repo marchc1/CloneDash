@@ -181,18 +181,24 @@ public unsafe class OSWindow : IValidatable
 		public int Height;
 		public string Title;
 		public ConfigFlags Flags;
+		public ManualResetEventSlim? Completion;
 	}
 	static readonly ConcurrentQueue<SubWindowEnqueuedEv> WaitingSubwindows = [];
 	private static void AwaitSubWindow(out OSWindow window, int width, int height, string title, ConfigFlags flags) {
 		OSWindow win = null!;
+		var completionEvent = new ManualResetEventSlim(false);
 		WaitingSubwindows.Enqueue(new() {
-			Callback = (x) => win = x,
+			Callback = (x) => {
+				win = x;
+				completionEvent.Set();
+			},
 			Width = width,
 			Height = height,
 			Title = title,
 			Flags = flags
 		});
-		while (win == null) ;
+		completionEvent.Wait();
+		completionEvent.Dispose();
 		window = win;
 	}
 
