@@ -154,11 +154,9 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
 		ActivateGL();
-		if (FirstWindow) {
-			Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
-			Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-			Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
-		}
+		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
+		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
 
 		renderBatch = Raylib.New<RenderBatch>(1);
 		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
