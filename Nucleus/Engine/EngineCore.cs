@@ -620,6 +620,7 @@ public static class EngineCore
 	private static string WorkConsole = "";
 	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
+		WaitForGameThread();
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
 			windowsThisFrame.Add(window.Key);
@@ -628,6 +629,7 @@ public static class EngineCore
 			MakeWindowCurrent(window);
 			PerWindowFrame();
 		}
+		ReleaseGameThread();
 	}
 	static void PerWindowFrame() {
 		NProfiler.Reset();
@@ -853,6 +855,14 @@ public static class EngineCore
 	}
 
 	internal static Level? GetWindowLevel(OSWindow window) => GetWindowCtx(window).Level;
+
+	static readonly Mutex GameThreadMutex = new();
+	public static void WaitForGameThread() {
+		GameThreadMutex.WaitOne();
+	}
+	public static void ReleaseGameThread() {
+		GameThreadMutex.ReleaseMutex();
+	}
 
 	public static void StartMainThread() {
 		lock (GameThread_GLLock) {
