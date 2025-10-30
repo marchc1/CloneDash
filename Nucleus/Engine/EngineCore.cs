@@ -436,20 +436,28 @@ public static class EngineCore
 			__loadLevel(window, level, args);
 	}
 	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
-	public static OSWindow SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
-		OSWindow window = OSWindow.CreateSubwindow(width, height, title, flags);
-		window.SetupGL();
-		WindowContexts[window] = new();
-		return window;
+	public static void SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
+		OSWindow.CreateSubwindow((window) => {
+			window.SetupGL();
+			WindowContexts[window] = new();
+		}, width, height, title, flags);
+	}
+	public static void SubWindow(Action<OSWindow> callback, int width, int height, string title, ConfigFlags flags = 0) {
+		OSWindow.CreateSubwindow((window) => {
+			window.SetupGL();
+			WindowContexts[window] = new();
+			callback(window);
+		}, width, height, title, flags);
 	}
 	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
-		OSWindow window = SubWindow(width, height, title, flags);
-		OSWindow lastWindow = Window;
-		MakeWindowCurrent(window);
-		{
-			__loadLevel(window, level, args);
-		}
-		MakeWindowCurrent(lastWindow);
+		SubWindow((window) => {
+			OSWindow lastWindow = Window;
+			MakeWindowCurrent(window);
+			{
+				__loadLevel(window, level, args);
+			}
+			MakeWindowCurrent(lastWindow);
+		}, width, height, title, flags);
 	}
 
 	public static void UnloadLevel() {
@@ -624,6 +632,8 @@ public static class EngineCore
 		NucleusSingleton.Spin();
 		OSWindow.PropagateEventBuffer();
 
+		MainThread.Run(ThreadExecutionTime.BeforeFrame);
+
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
 			windowsThisFrame.Add(window.Key);
@@ -634,11 +644,12 @@ public static class EngineCore
 		}
 		ReleaseGameThread();
 		Host.CheckDirty();
+		MainThread.Run(ThreadExecutionTime.AfterFrame);
 	}
 	static void PerWindowFrame() {
 		NProfiler.Reset();
 
-		if(Window.MouseFocused)
+		if (Window.MouseFocused)
 			MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
 		CurrentAppTime = OS.GetTime();

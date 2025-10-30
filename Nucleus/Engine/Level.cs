@@ -392,7 +392,6 @@ namespace Nucleus.Engine
 			renderTrack.Reset();
 
 			updateTrack.Start();
-			RunThreadExecutionTimeMethods(ThreadExecutionTime.BeforeFrame);
 
 			SwapFrameStates();
 
@@ -442,14 +441,8 @@ namespace Nucleus.Engine
 			if (IValidatable.IsValid(UI.KeyboardFocusedElement))
 				frameState.Keyboard = new();
 
-			// The frame state is basically complete after PreThink and UI layout/hover resolving, so it should be stored
-			// Last change will be after element thinking
-			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrameStateConstructed);
-
 			if (!Paused) RunEventThink(frameState);
 			if (!Paused) RunEventPostThink(frameState);
-
-			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterThink);
 
 			if ((Realtime - lastRenderTime) >= EngineCore.RenderRate) {
 				updateTrack.Stop();
@@ -588,8 +581,6 @@ namespace Nucleus.Engine
 			}
 			updateTrack.Start();
 			UnlockEntityBuffer();
-
-			RunThreadExecutionTimeMethods(ThreadExecutionTime.AfterFrame);
 
 			updateTrack.Stop();
 			EngineCore.SetTimeToUpdate(updateTrack.Elapsed);

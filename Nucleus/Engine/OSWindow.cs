@@ -158,13 +158,21 @@ public unsafe class OSWindow : IValidatable
 
 		FirstWindow = false;
 	}
-	public static OSWindow CreateSubwindow(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+	/// <summary>
+	/// ONLY returns a value when ran on the OS thread!!!
+	/// </summary>
+	/// <param name="width"></param>
+	/// <param name="height"></param>
+	/// <param name="title"></param>
+	/// <param name="confFlags"></param>
+	/// <returns></returns>
+	public static void CreateSubwindow(Action<OSWindow> callback, int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		if (Thread.CurrentThread != MainThread.Thread) {
-			AwaitSubWindow(out OSWindow newWindow, width, height, "Nucleus Engine - Window", confFlags);
-			return newWindow;
+			AwaitSubWindow(callback, width, height, "Nucleus Engine - Window", confFlags);
+			return;
 		}
 
-		return Create(width, height, title, confFlags, shareContext: true);
+		callback(Create(width, height, title, confFlags, shareContext: true));
 	}
 
 	struct SubWindowEnqueuedEv
@@ -177,22 +185,14 @@ public unsafe class OSWindow : IValidatable
 		public ManualResetEventSlim? Completion;
 	}
 	static readonly ConcurrentQueue<SubWindowEnqueuedEv> WaitingSubwindows = [];
-	private static void AwaitSubWindow(out OSWindow window, int width, int height, string title, ConfigFlags flags) {
-		OSWindow win = null!;
-		var completionEvent = new ManualResetEventSlim(false);
+	private static void AwaitSubWindow(Action<OSWindow>? window, int width, int height, string title, ConfigFlags flags) {
 		WaitingSubwindows.Enqueue(new() {
-			Callback = (x) => {
-				win = x;
-				completionEvent.Set();
-			},
+			Callback = (x) => MainThread.RunASAP(() => window?.Invoke(x), ThreadExecutionTime.AfterFrame),
 			Width = width,
 			Height = height,
 			Title = title,
 			Flags = flags
 		});
-		completionEvent.Wait();
-		completionEvent.Dispose();
-		window = win;
 	}
 
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0, bool shareContext = false) {
@@ -848,7 +848,8 @@ public unsafe class OSWindow : IValidatable
 	public static void PumpOSEvents() {
 		// If any OS windows are waiting to be created, create them.
 		while (WaitingSubwindows.TryDequeue(out SubWindowEnqueuedEv swev)) {
-			swev.Callback(OSWindow.CreateSubwindow(swev.Width, swev.Height, swev.Title, swev.Flags));
+			// This is never null since its running on the OS thread
+			OSWindow.CreateSubwindow(swev.Callback, swev.Width, swev.Height, swev.Title, swev.Flags);
 		}
 		SDL_Event ev;
 		const int mswait = 5;
