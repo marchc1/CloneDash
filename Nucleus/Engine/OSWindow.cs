@@ -765,6 +765,7 @@ public unsafe class OSWindow : IValidatable
 					Hovered = null;
 				break;
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
+				Logs.Info($"SDL_EVENT_TEXT_INPUT: {ev.String}");
 				HandleTextInput(in ev);
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:

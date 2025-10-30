@@ -621,6 +621,9 @@ public static class EngineCore
 	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
 		WaitForGameThread();
+		NucleusSingleton.Spin();
+		OSWindow.PropagateEventBuffer();
+
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
 			windowsThisFrame.Add(window.Key);
@@ -630,16 +633,17 @@ public static class EngineCore
 			PerWindowFrame();
 		}
 		ReleaseGameThread();
+		Host.CheckDirty();
 	}
 	static void PerWindowFrame() {
 		NProfiler.Reset();
-		NucleusSingleton.Spin();
-		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+
+		if(Window.MouseFocused)
+			MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
-		OSWindow.PropagateEventBuffer();
 
 		Rlgl.LoadIdentity();
 		unsafe {
@@ -753,7 +757,6 @@ public static class EngineCore
 		}
 
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
-		Host.CheckDirty();
 
 		if (Window.UserClosed()) {
 			Close();
