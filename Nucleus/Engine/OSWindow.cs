@@ -15,6 +15,10 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
 
+public struct WindowKey {
+	public KeyboardKey Key;
+	public double Timestamp;
+}
 public class WindowKeyboardState(OSWindow window)
 {
 	public const int MAX_KEYBOARD_KEYS = 512;
@@ -29,9 +33,7 @@ public class WindowKeyboardState(OSWindow window)
 
 	public readonly byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
 
-	public readonly double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
-	public readonly KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
-	public int KeyPressQueueCount = 0;
+	public readonly ConcurrentQueue<WindowKey> KeyPressQueue = new();
 
 	public readonly ConcurrentQueue<string> EnqueuedTextInputs = new();
 	public void EnqueueTextEvent(string text) {
@@ -39,11 +41,6 @@ public class WindowKeyboardState(OSWindow window)
 	}
 
 	internal void Reset() {
-		KeyPressQueueCount = 0;
-		for (int i = 0; i < MAX_KEY_PRESSED_QUEUE; i++) {
-			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
-			KeyPressTimeQueue[i] = 0;
-		}
 		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
@@ -52,14 +49,10 @@ public class WindowKeyboardState(OSWindow window)
 
 	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(OS.TicksToTime(ev.key.timestamp), (int)ev.key.scancode);
 	public void EnqueueKeyPress(double timestamp, int scancode) {
-		if (KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
-			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
-			return;
-		}
-
-		KeyPressTimeQueue[KeyPressQueueCount] = timestamp;
-		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(scancode);
-		KeyPressQueueCount++;
+		KeyPressQueue.Enqueue(new() {
+			Key = OSWindow.TranslateKeyboardKey(scancode),
+			Timestamp = timestamp,
+		});
 	}
 }
 
@@ -656,12 +649,11 @@ public unsafe class OSWindow : IValidatable
 		return KeyboardKey.KEY_NULL;
 	}
 
-	public bool KeyAvailable(ref int i, out KeyboardKey key, out double time) {
-		if (i < Keyboard.KeyPressQueueCount) {
-			key = Keyboard.KeyPressQueue[i];
-			time = Keyboard.KeyPressTimeQueue[i];
+	public bool KeyAvailable(out KeyboardKey key, out double time) {
+		if(Keyboard.KeyPressQueue.TryDequeue(out WindowKey result)) {
+			key = result.Key;
+			time = result.Timestamp;
 
-			i++;
 			return true;
 		}
 
@@ -1219,11 +1211,9 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	/// <param name="keyboardState"></param>
 	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
-		int i = 0;
-
 		var now = OS.GetTime();
 
-		while (KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
+		while (KeyAvailable(out KeyboardKey key, out double timePressed)) {
 			int keyPressed = (int)key;
 			// now - timePressed: this is done to get a relative-to-frame time
 			// since not everything will use SDL's time and know how to handle it

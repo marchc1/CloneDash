@@ -1099,7 +1099,7 @@ public static class EngineCore
 				int i = 0;
 				while (true) {
 					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(ref i, out _, out _) || Window.UserClosed()) {
+					if (Window.KeyAvailable(out _, out _) || Window.UserClosed()) {
 						Raylib.SetMasterVolume(oldMaster);
 						return false;
 					}
@@ -1188,7 +1188,7 @@ public static class EngineCore
 			else {
 				int i = 0;
 				OSWindow.PropagateEventBuffer();
-				if (Window.KeyAvailable(ref i, out _, out _)) {
+				if (Window.KeyAvailable(out _, out _)) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;
 					return;
