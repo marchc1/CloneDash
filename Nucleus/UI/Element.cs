@@ -1319,14 +1319,13 @@ namespace Nucleus.UI
 		public void TextInputOccur(in KeyboardState keyboardState, string text) {
 			TextInput(in keyboardState, text);
 			if (OnTextInput != null) {
-				UI.ResetKeyEventConsumed();
 				OnTextInput?.Invoke(this, in keyboardState, text);
 			}
 		}
 
 		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
 		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
-		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void TextInput(in KeyboardState keyboardState, string text) {  }
 
 		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
 		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
