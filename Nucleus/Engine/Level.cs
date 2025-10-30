@@ -387,7 +387,7 @@ namespace Nucleus.Engine
 		/// </summary>
 		public void Frame() {
 			RenderedFrame = false;
-			
+
 			updateTrack.Reset();
 			renderTrack.Reset();
 
@@ -427,12 +427,13 @@ namespace Nucleus.Engine
 			frameState.WindowHeight = height;
 
 			frameState.Keyboard.Clear();
-			EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
-			EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
-			frameState.ActiveWindow = EngineCore.Window;
+			if (EngineCore.Window.MouseFocused)
+				EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
+			if (EngineCore.Window.InputFocused)
+				EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			UI.HandleInput();
-			
+
 			if (!Paused) RunEventPreThink(ref frameState);
 
 			UI.HandleThinking();
