@@ -296,7 +296,7 @@ namespace Nucleus.UI
 
 			FrameState frameState = Level.FrameState;
 
-			if (frameState.Keyboard.TotalKeysThisFrame > 0) {
+			if (frameState.Keyboard.TotalKeysThisFrame > 0 || frameState.Keyboard.GetTextInputsThisFrame() > 0) {
 				bool ranKeybinds = false;
 				Element? target;
 				if (IValidatable.IsValid(lastModal)) {

@@ -33,17 +33,13 @@ public class WindowKeyboardState(OSWindow window)
 	public readonly KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
 	public int KeyPressQueueCount = 0;
 
-	public readonly string[] EnqueuedTextInputs = new string[MAX_TEXT_INPUTS];
-	public int TextInputPtr = 0;
+	public readonly ConcurrentQueue<string> EnqueuedTextInputs = new();
 	public void EnqueueTextEvent(string text) {
-		if (TextInputPtr >= MAX_TEXT_INPUTS - 1)
-			return; // prevent overflow crash
-		EnqueuedTextInputs[TextInputPtr++] = text;
+		EnqueuedTextInputs.Enqueue(text);
 	}
 
 	internal void Reset() {
 		KeyPressQueueCount = 0;
-		TextInputPtr = 0;
 		for (int i = 0; i < MAX_KEY_PRESSED_QUEUE; i++) {
 			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
 			KeyPressTimeQueue[i] = 0;
@@ -51,9 +47,6 @@ public class WindowKeyboardState(OSWindow window)
 		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
-		}
-		for (int i = 0; i < MAX_TEXT_INPUTS; i++) {
-			EnqueuedTextInputs[i] = null;
 		}
 	}
 
@@ -765,7 +758,6 @@ public unsafe class OSWindow : IValidatable
 					Hovered = null;
 				break;
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
-				Logs.Info($"SDL_EVENT_TEXT_INPUT: {ev.String}");
 				HandleTextInput(in ev);
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -1250,8 +1242,9 @@ public unsafe class OSWindow : IValidatable
 			keysReleased[j] = prev > 0 && curr == 0;
 		}
 
-		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++)
-			textInputs[j] = Keyboard.EnqueuedTextInputs[j];
+		int k = 0;
+		while(Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
+			textInputs[k++] = str;
 
 		Keyboard.Reset();
 	}
