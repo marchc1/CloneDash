@@ -9,6 +9,7 @@ using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 using KeyboardKey = Nucleus.Input.KeyboardKey;
@@ -52,6 +53,73 @@ namespace Nucleus.UI
 		public int Column => StartCol;
 	}
 
+	public class AutocompletePanel : Panel
+	{
+		public TextEditor Editor;
+		public int SelectionIndex;
+		public int LastPulsingIndex;
+		public ScrollPanel OptionsParent;
+		protected override void Initialize() {
+			base.Initialize();
+			Size = new(480, 180);
+			OptionsParent = Add<ScrollPanel>();
+			OptionsParent.DrawPanelBackground = false;
+			OptionsParent.Dock = Dock.Fill;
+		}
+		public override void Paint(float width, float height) {
+			base.Paint(width, height);
+		}
+		public readonly List<string> Options = [];
+		public readonly List<Button> Buttons = [];
+		public delegate void SelectedFn(string selectedText);
+		public event SelectedFn? Selected;
+
+		public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
+			Options.Add(new(text));
+			Button btn = OptionsParent.Add<Button>();
+			btn.Dock = Dock.Top;
+			btn.AutoSize = true;
+			btn.TextSize = fontHeight;
+			btn.Font = Graphics2D.UI_MONO_BOLD_FONT_NAME;
+			btn.Text = new(text);
+			btn.TextAlignment = Anchor.CenterLeft;
+			btn.TextPadding = new(12, 0);
+			btn.BorderSize = 0;
+			btn.PulsePreservesAlpha = true;
+			if (Buttons.Count == 0)
+				btn.Pulsing = true;
+			btn.MouseReleaseEvent += (_, _, _) => Selected?.Invoke(btn.Text);
+			Buttons.Add(btn);
+		}
+		public void Reset() {
+			OptionsParent.ClearChildren();
+			Options.Clear();
+			Buttons.Clear();
+			SelectionIndex = 0;
+			LastPulsingIndex = 0;
+		}
+
+		public void MoveSelectUp() {
+			if (Buttons.Count < LastPulsingIndex)
+				Buttons[LastPulsingIndex].Pulsing = false;
+
+			if (--LastPulsingIndex < 0)
+				LastPulsingIndex = Options.Count - 1;
+
+			Buttons[LastPulsingIndex].Pulsing = true;
+		}
+
+		public void MoveSelectDown() {
+			if (Buttons.Count < LastPulsingIndex)
+				Buttons[LastPulsingIndex].Pulsing = false;
+
+			if (++LastPulsingIndex >= Options.Count)
+				LastPulsingIndex = 0;
+
+			Buttons[LastPulsingIndex].Pulsing = true;
+		}
+	}
+
 	public class TextEditor : Panel
 	{
 		public Panel? Editor { get; set; }
@@ -63,6 +131,79 @@ namespace Nucleus.UI
 
 		public delegate void EditorPaintDelegate(TextEditor self, float w, float h);
 		public event EditorPaintDelegate? PreRenderEditorLines;
+		public event AutoCompletePopulateFn? PopulateAutoComplete;
+		public event DetermineAutoCompleteStartPositionFn? DetermineAutoCompleteStartPosition;
+
+		public delegate int DetermineAutoCompleteStartPositionFn(TextEditor self, ReadOnlySpan<char> subRowUpToCaret);
+		public delegate int AutoCompletePopulateFn(TextEditor self, ReadOnlySpan<char> left, ReadOnlySpan<char> right, Span<char> solutions);
+
+		public bool Autocomplete { get; set; }
+
+		public AutocompletePanel? AutocompletePanel;
+		[MemberNotNullWhen(true, nameof(AutocompletePanel))]
+		public bool IsAutocompleteActive => IValidatable.IsValid(AutocompletePanel);
+		public string? AutocompleteOption => AutocompletePanel?.Options[AutocompletePanel?.SelectionIndex ?? -1];
+
+		[MemberNotNull(nameof(AutocompletePanel))]
+		public void ShowAutocomplete() {
+			if (!IValidatable.IsValid(AutocompletePanel)) {
+				AutocompletePanel = Editor!.Add<AutocompletePanel>();
+				AutocompletePanel.Editor = this;
+				AutocompletePanel.Selected += AutocompletePanel_Selected;
+			}
+		}
+
+		private void AutocompletePanel_Selected(string selectedText) {
+			string option = AutocompleteOption!;
+			Logs.Info(option);
+			CloseAutocomplete();
+		}
+
+		public void PopulateAutocomplete() {
+			Span<char> writeBuffer = stackalloc char[1024 * 8];
+			string? completionRow = Rows[Caret.Row];
+			if (completionRow == null) {
+				CloseAutocomplete();
+				return;
+			}
+			ReadOnlySpan<char> completionWork = completionRow.AsSpan()[..Math.Min(Caret.Column, completionRow.Length)];
+			int start = DetermineAutoCompleteStartPosition?.Invoke(this, completionWork) ?? -1;
+			if (start == -1) {
+				CloseAutocomplete();
+				return;
+			}
+
+			int solutions = PopulateAutoComplete?.Invoke(this, completionWork[..start], completionWork[start..], writeBuffer) ?? 0;
+			if (solutions == 0) {
+				CloseAutocomplete();
+				return;
+			}
+
+			ShowAutocomplete();
+
+			AutocompletePanel!.Reset();
+			AutocompletePanel.SelectionIndex = 0;
+			for (int i = 0; i < solutions; i++) {
+				Span<char> oneString = writeBuffer[..writeBuffer.IndexOf('\0')];
+				AutocompletePanel.AddOption((int)FontHeight, oneString);
+
+				writeBuffer = writeBuffer[oneString.Length..];
+			}
+			lastAutocompleteStart = start;
+		}
+		int lastAutocompleteStart;
+
+		public void MoveAutocompletePanel(int row, int column) {
+			if (AutocompletePanel == null)
+				return;
+
+			AutocompletePanel.Position = new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight));
+		}
+
+		public void CloseAutocomplete() {
+			if (IValidatable.IsValid(AutocompletePanel))
+				AutocompletePanel.Remove();
+		}
 
 		public void WriteLastCaret() {
 			LastCaret = Caret;
@@ -221,6 +362,7 @@ namespace Nucleus.UI
 			WriteLastCaret();
 			DeleteSelection();
 			AddText(text);
+			PopulateAutocomplete();
 		}
 		private void AddText(string text) {
 			if (Readonly)
@@ -255,12 +397,16 @@ namespace Nucleus.UI
 
 		bool wasHovered = false;
 		private void Editor_Thinking(Element self) {
+			// The second part is a hack, but it allows mouse selecting autocomplete items.
+			if (UI.KeyboardFocusedElement != self && (!IValidatable.IsValid(UI.Hovered) || !UI.Hovered.IsIndirectChildOf(self)))
+				CloseAutocomplete();
 			if (self.Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 			else if (wasHovered)
 				EngineCore.ResetMouseCursor();
 
 			wasHovered = self.Hovered;
+			MoveAutocompletePanel(Caret.Row, lastAutocompleteStart);
 		}
 
 		static readonly Color BACKGROUND_FOCUSED = new(20, 32, 25, 127);
@@ -569,6 +715,10 @@ namespace Nucleus.UI
 			}
 			else if (key == KeyboardLayout.USA.Up) {
 				var top = GetCaretTopLeft();
+				if (IsAutocompleteActive) {
+					AutocompletePanel.MoveSelectUp();
+					return;
+				}
 				if (state.ShiftDown) {
 					if (eRow > 0) {
 						Caret.EndCol = (int)MathF.Min(eCol, Rows[eRow - 1].Length);
@@ -594,6 +744,10 @@ namespace Nucleus.UI
 			}
 			else if (key == KeyboardLayout.USA.Down) {
 				var bottom = GetCaretBottom();
+				if (IsAutocompleteActive) {
+					AutocompletePanel.MoveSelectDown();
+					return;
+				}
 				if (state.ShiftDown) {
 					if (eRow < Rows.Count) {
 						if (Rows[eRow + 1] != null) {
@@ -648,6 +802,7 @@ namespace Nucleus.UI
 					}
 				}
 				OnEdit();
+				PopulateAutocomplete();
 			}
 			else if (key == KeyboardLayout.USA.S && state.ControlDown) {
 				OnSave?.Invoke(this);
@@ -670,8 +825,19 @@ namespace Nucleus.UI
 				OnExecute?.Invoke(this);
 				return;
 			}
+			else if (key == KeyboardLayout.USA.Escape) {
+				if (IsAutocompleteActive) {
+					CloseAutocomplete();
+					return;
+				}
+			}
 			else if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) {
 				if (Readonly) return;
+
+				if (IsAutocompleteActive) {
+					AutocompletePanel_Selected(AutocompleteOption!);
+					return;
+				}
 
 				if (Multiline) {
 					bool deleted = DeleteSelection();
@@ -821,6 +987,7 @@ namespace Nucleus.UI
 		bool doubleClicked = false;
 		bool tripleClicked = false;
 		private void Editor_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+			CloseAutocomplete();
 			if (button == MouseButton.Mouse1) {
 				self.DemandKeyboardFocus();
 
