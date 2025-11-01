@@ -228,7 +228,7 @@ jobs:
       
       - name: Upload artifact - Windows zip
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CloneDash-Game-Windows
           path: ./CloneDash-Game-Windows.zip
@@ -236,7 +236,7 @@ jobs:
       
       - name: Upload artifact - Windows Portable exe
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CloneDash-Game-Windows-Portable
           path: ./CloneDash-Game-Windows-Portable.exe
@@ -244,7 +244,7 @@ jobs:
       
       - name: Upload artifact - Linux zip
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CloneDash-Game-Linux
           path: ./CloneDash-Game-Linux.zip
@@ -252,7 +252,7 @@ jobs:
       
       - name: Upload artifact - Linux AppImage
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CloneDash-Game-Linux-AppImage
           path: ./CloneDash-Game-Linux.AppImage
@@ -260,7 +260,7 @@ jobs:
       
       - name: Upload artifact - macOS zip
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: CloneDash-Game-macOS
           path: ./CloneDash-Game-macOS.zip
