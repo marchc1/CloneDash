@@ -21,27 +21,22 @@
 
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
-			<UniversalAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
-			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\universal\**\*" />
+			<UniversalAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
 		</ItemGroup>
-		<Copy SourceFiles="@(UniversalAssets_Project)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(UniversalAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
 		<ItemGroup Condition="'$(IsWindows)' == 'true'">
-			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\winnt\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsOSX)' == 'true'">
-			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\intel_osx\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsLinux)' == 'true'">
-			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\linux\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
 		</ItemGroup>
-		<Copy SourceFiles="@(PlatformAssets_Project)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="@(PlatformAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
+	<Import Project ="..\Nucleus\NucleusAssets.targets"/>
 	<!-- ================================================================= -->
 	<!-- ================================================================= -->
 	<!-- ================================================================= -->

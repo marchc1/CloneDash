@@ -1,0 +1,29 @@
+﻿<Project>
+	<PropertyGroup>
+		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(IsWindows)' == 'true'">
+		<Content Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup Condition="'$(IsOSX)' == 'true'">
+		<Content Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup Condition="'$(IsLinux)' == 'true'">
+		<Content Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+</Project>
