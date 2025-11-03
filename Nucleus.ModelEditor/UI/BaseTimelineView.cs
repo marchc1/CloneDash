@@ -334,7 +334,7 @@ public abstract class BaseTimelineView : View
 	public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetVisualPlayhead(true);
 	public void SetCurFrame() {
 		var xLocal = TimeInfoPanel.GetMousePos();
-		var precise = EngineCore.CurrentFrameState.Keyboard.ShiftDown;
+		var precise = EngineCore.Level.FrameState.Keyboard.ShiftDown;
 		ModelEditor.Active.File.Timeline.SetFrame(precise ? XToFrameExact(xLocal.X) : XToFrame(xLocal.X));
 	}
 

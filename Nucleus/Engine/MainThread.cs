@@ -9,14 +9,6 @@ namespace Nucleus
 		/// </summary>
 		BeforeFrame,
 		/// <summary>
-		/// The function will run after a FrameState is constructed, and before <see cref="Level.Think"/> happens.
-		/// </summary>
-		AfterFrameStateConstructed,
-		/// <summary>
-		/// The function will run after <see cref="Level.Think"/> executes.
-		/// </summary>
-		AfterThink,
-		/// <summary>
 		/// The function will run after frame-code is complete.
 		/// </summary>
 		AfterFrame

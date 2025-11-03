@@ -1,8 +1,0 @@
-{
-    "version": "2025-05-06-01",
-    
-    "name": "Default Fever",
-    "author": "March",
-
-    "background_controller": "scripts/fever.lua"
-}

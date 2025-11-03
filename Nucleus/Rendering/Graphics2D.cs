@@ -531,7 +531,7 @@ namespace Nucleus.Core
 
 			EngineCore.Window.BeginTextureMode(texture);
 			Surface.Clear(0, 0, 0, 0);
-			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.DST_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
+			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 			Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM_SEPARATE);
 		}
 
@@ -542,8 +542,8 @@ namespace Nucleus.Core
 		public static void DrawRenderTexture(RenderTexture2D texture, Vector2F size) {
 			SetTexture(texture);
 			SetDrawColor(__drawColor);
-			Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA_PREMULTIPLY);
-			//DrawRectangleOutline(0, 0, size.W, size.H, 2);
+			Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM);
+			Rlgl.SetBlendFactors(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD);
 			DrawRendertarget(0, 0, size.W, size.H);
 			Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA);
 		}

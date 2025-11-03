@@ -8,6 +8,14 @@ namespace Nucleus
 {
 	public static partial class NMath
 	{
+		public static float Normalize(float input, float start, float end) {
+			return Math.Clamp(Remap(input, start, end, 0, 1), 0, 1);
+		}
+
+		public static double Normalize(double input, double start, double end) {
+			return Math.Clamp(Remap(input, start, end, 0, 1), 0, 1);
+		}
+
 		/// <summary>
 		/// Remapping function. Given an <paramref name="input"/>, converts that input from the input range <paramref name="inStart"/> -> <paramref name="inEnd"/> into a range from <paramref name="outStart"/> -> <paramref name="outEnd"/>.
 		/// </summary>

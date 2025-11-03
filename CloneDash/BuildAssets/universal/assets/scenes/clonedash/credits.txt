@@ -1,0 +1,8 @@
+punch.wav: Cartoon_Punch_05.wav by RSilveira_88 -- https://freesound.org/s/216199/ -- License: Attribution 4.0
+All other assets: Pero Pero Games.
+
+The ideal is that we would be able to load this content via the basegame, like we already do for characters.
+However, this is currently infeasible both due to how long it takes to load and due to some weird glitches with the model loader.
+So for the sake of playability I'm putting this up - especially since for *everything* else you need to have the game content.
+
+We likely need a better asset-ripping library that runs better before we can approach that again.

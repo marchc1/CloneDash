@@ -1,0 +1,21 @@
+TextureAtlasVersion1
+0003_score
+	X: 0
+	Y: 0
+	W: 264
+	H: 264
+score_glow
+	X: 0
+	Y: 264
+	W: 107
+	H: 106
+shadow
+	X: 264
+	Y: 0
+	W: 148
+	H: 56
+score
+	X: 107
+	Y: 264
+	W: 77
+	H: 78

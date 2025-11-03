@@ -10,6 +10,6 @@ public static partial class Util
 	/// </summary>
 	public static readonly Regex BoldRegex = BoldRegexGenerator();
 
-	[GeneratedRegex("^(.+)<b>(.+)<\\/b>(.+)$")]
+	[GeneratedRegex("^(.*)<b>(.+)<\\/b>(.*)$")]
 	private static partial Regex BoldRegexGenerator();
 }

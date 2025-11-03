@@ -15,6 +15,10 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
 
+public struct WindowKey {
+	public KeyboardKey Key;
+	public double Timestamp;
+}
 public class WindowKeyboardState(OSWindow window)
 {
 	public const int MAX_KEYBOARD_KEYS = 512;
@@ -29,44 +33,26 @@ public class WindowKeyboardState(OSWindow window)
 
 	public readonly byte[] KeyRepeatInFrame = new byte[MAX_KEYBOARD_KEYS];
 
-	public readonly double[] KeyPressTimeQueue = new double[MAX_KEY_PRESSED_QUEUE];
-	public readonly KeyboardKey[] KeyPressQueue = new KeyboardKey[MAX_KEY_PRESSED_QUEUE];
-	public int KeyPressQueueCount = 0;
+	public readonly ConcurrentQueue<WindowKey> KeyPressQueue = new();
 
-	public readonly string[] EnqueuedTextInputs = new string[MAX_TEXT_INPUTS];
-	public int TextInputPtr = 0;
+	public readonly ConcurrentQueue<string> EnqueuedTextInputs = new();
 	public void EnqueueTextEvent(string text) {
-		if (TextInputPtr >= MAX_TEXT_INPUTS - 1)
-			return; // prevent overflow crash
-		EnqueuedTextInputs[TextInputPtr++] = text;
+		EnqueuedTextInputs.Enqueue(text);
 	}
 
 	internal void Reset() {
-		KeyPressQueueCount = 0;
-		TextInputPtr = 0;
-		for (int i = 0; i < MAX_KEY_PRESSED_QUEUE; i++) {
-			KeyPressQueue[i] = KeyboardKey.KEY_NULL;
-			KeyPressTimeQueue[i] = 0;
-		}
 		for (int i = 0; i < MAX_KEYBOARD_KEYS; i++) {
 			PreviousKeyState[i] = CurrentKeyState[i];
 			KeyRepeatInFrame[i] = 0;
-		}
-		for (int i = 0; i < MAX_TEXT_INPUTS; i++) {
-			EnqueuedTextInputs[i] = null;
 		}
 	}
 
 	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(OS.TicksToTime(ev.key.timestamp), (int)ev.key.scancode);
 	public void EnqueueKeyPress(double timestamp, int scancode) {
-		if (KeyPressQueueCount >= MAX_KEY_PRESSED_QUEUE) {
-			Logs.Error($"Somehow; the user typed > {MAX_KEY_PRESSED_QUEUE} in a single frame. Preventing a crash.");
-			return;
-		}
-
-		KeyPressTimeQueue[KeyPressQueueCount] = timestamp;
-		KeyPressQueue[KeyPressQueueCount] = OSWindow.TranslateKeyboardKey(scancode);
-		KeyPressQueueCount++;
+		KeyPressQueue.Enqueue(new() {
+			Key = OSWindow.TranslateKeyboardKey(scancode),
+			Timestamp = timestamp,
+		});
 	}
 }
 
@@ -143,6 +129,8 @@ public unsafe class OSWindow : IValidatable
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
+	static bool FirstWindow = true;
+	unsafe RenderBatch* renderBatch;
 	public void SetupGL() {
 #if !COMPILED_OSX
 		setupGL(this);
@@ -153,13 +141,54 @@ public unsafe class OSWindow : IValidatable
 
 		ActivateGL();
 		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
+		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+
+		renderBatch = Raylib.New<RenderBatch>(1);
+		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
 
-		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
-		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+		FirstWindow = false;
 	}
-	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+	/// <summary>
+	/// ONLY returns a value when ran on the OS thread!!!
+	/// </summary>
+	/// <param name="width"></param>
+	/// <param name="height"></param>
+	/// <param name="title"></param>
+	/// <param name="confFlags"></param>
+	/// <returns></returns>
+	public static void CreateSubwindow(Action<OSWindow> callback, int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
+		if (Thread.CurrentThread != MainThread.Thread) {
+			AwaitSubWindow(callback, width, height, "Nucleus Engine - Window", confFlags);
+			return;
+		}
+
+		callback(Create(width, height, title, confFlags, shareContext: true));
+	}
+
+	struct SubWindowEnqueuedEv
+	{
+		public Action<OSWindow> Callback;
+		public int Width;
+		public int Height;
+		public string Title;
+		public ConfigFlags Flags;
+		public ManualResetEventSlim? Completion;
+	}
+	static readonly ConcurrentQueue<SubWindowEnqueuedEv> WaitingSubwindows = [];
+	private static void AwaitSubWindow(Action<OSWindow>? window, int width, int height, string title, ConfigFlags flags) {
+		WaitingSubwindows.Enqueue(new() {
+			Callback = (x) => MainThread.RunASAP(() => window?.Invoke(x), ThreadExecutionTime.AfterFrame),
+			Width = width,
+			Height = height,
+			Title = title,
+			Flags = flags
+		});
+	}
+
+	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0, bool shareContext = false) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
@@ -169,12 +198,15 @@ public unsafe class OSWindow : IValidatable
 			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
+		SDL3.SDL_SetHint("SDL_MOUSE_FOCUS_CLICKTHROUGH", "1");
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
+		if (shareContext)
+			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 #if COMPILED_OSX
+		EngineCore.MainWindow.ActivateGL();
 		setupGL(window);
 #endif
-
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
 		windowLookup_id2window[window.windowID] = window;
@@ -194,24 +226,58 @@ public unsafe class OSWindow : IValidatable
 
 		return window;
 	}
+
+	public bool incomingHitTestChange;
+	public bool newHitTestValue;
+
+	public void EnableHitTest() {
+		incomingHitTestChange = true;
+		newHitTestValue = true;
+	}
+
+	public void DisableHitTest() {
+		incomingHitTestChange = true;
+		newHitTestValue = false;
+	}
+
+	unsafe void applyHitTest() {
+		if (incomingHitTestChange) {
+			if (newHitTestValue)
+				SDL3.SDL_SetWindowHitTest(handle, &WINDOW_HITTEST_RESULT, 0);
+			else
+				SDL3.SDL_SetWindowHitTest(handle, null, 0);
+
+			incomingHitTestChange = false;
+		}
+	}
+
+	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+	static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
+		Vector2F p = new(point->x, point->y);
+		OSWindow osWindow = windowLookup_id2window[SDL3.SDL_GetWindowID(window)];
+		Level? level = EngineCore.GetWindowLevel(osWindow);
+		osWindow.Mouse.CurrentMousePosition.X = p.x;
+		osWindow.Mouse.CurrentMousePosition.Y = p.y;
+		if (level != null)
+			return (SDL_HitTestResult)level.WindowHitTest(p);
+		return SDL_HitTestResult.SDL_HITTEST_NORMAL;
+	}
 	private static double lastUpdate;
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
 		var type = ev->Type;
 		if (ev->Type == SDL_EventType.SDL_EVENT_WINDOW_EXPOSED && !EngineCore.InLevelFrame) {
-			var now = OS.GetTime();
-			if ((now - lastUpdate) > (1 / 60d)) {
-				var winObj = windowLookup_id2window[ev->window.windowID];
-				OSEventTimestamped evP = new() {
-					Event = new SDL_Event() {
-						type = (uint)SDL_EventType.SDL_EVENT_WINDOW_EXPOSED,
-						window = ev->window
-					},
-					Timestamp = OS.GetTime()
-				};
-				EventBuffer.Enqueue(evP);
-				lastUpdate = now;
-			}
+			EngineCore.WaitForGameThread();
+			var winObj = windowLookup_id2window[ev->window.windowID];
+			OSEventTimestamped evP = new() {
+				Event = new SDL_Event() {
+					type = (uint)SDL_EventType.SDL_EVENT_WINDOW_EXPOSED,
+					window = ev->window
+				},
+				Timestamp = OS.GetTime()
+			};
+			EventBuffer.Enqueue(evP);
+			EngineCore.ReleaseGameThread();
 		}
 		return false;
 	}
@@ -266,8 +332,10 @@ public unsafe class OSWindow : IValidatable
 
 		handleSDLTextInputState();
 		flushWindowGeometry();
+		applyHitTest();
 		SDL3.SDL_SetCursor(this.cursor);
 		lastFlags = curFlags;
+		curFlags = SDL3.SDL_GetWindowFlags(handle);
 		hasLastWinflags = true;
 	}
 
@@ -410,9 +478,6 @@ public unsafe class OSWindow : IValidatable
 		set { queuedOpacity = value; isOpacityQueued = true; }
 	}
 
-
-
-
 	public void SwapScreenBuffer() {
 		if (!IsValid()) return;
 		SDL3.SDL_GL_SwapWindow(handle);
@@ -449,6 +514,8 @@ public unsafe class OSWindow : IValidatable
 
 	public void ActivateGL() {
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
+		if (renderBatch != null)
+			Rlgl.SetRenderBatchActive(renderBatch);
 	}
 
 	public const int SCANCODE_MAPPED_NUM = 232;
@@ -583,12 +650,11 @@ public unsafe class OSWindow : IValidatable
 		return KeyboardKey.KEY_NULL;
 	}
 
-	public bool KeyAvailable(ref int i, out KeyboardKey key, out double time) {
-		if (i < Keyboard.KeyPressQueueCount) {
-			key = Keyboard.KeyPressQueue[i];
-			time = Keyboard.KeyPressTimeQueue[i];
+	public bool KeyAvailable(out KeyboardKey key, out double time) {
+		if(Keyboard.KeyPressQueue.TryDequeue(out WindowKey result)) {
+			key = result.Key;
+			time = result.Timestamp;
 
-			i++;
 			return true;
 		}
 
@@ -597,11 +663,7 @@ public unsafe class OSWindow : IValidatable
 		return false;
 	}
 
-	/// <summary>
-	/// Will focus being gained be treated as a mouse click as well, if applicable.
-	/// </summary>
-	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = true;
-
+	public static OSWindow? Hovered { get; set; }
 
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
 		switch (ev.Event.Type) {
@@ -649,6 +711,7 @@ public unsafe class OSWindow : IValidatable
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
 			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+					EngineCore.WaitForGameThread();
 					int width = ev.Event.window.data1;
 					int height = ev.Event.window.data2;
 					SetupViewport(width, height);
@@ -657,10 +720,12 @@ public unsafe class OSWindow : IValidatable
 					CurrentFbo.W = width;
 					CurrentFbo.H = height;
 					ResizedLastFrame = true;
+					EngineCore.ReleaseGameThread();
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
 					int width, height;
+					EngineCore.WaitForGameThread();
 					SDL3.SDL_GetWindowSize(SDL3.SDL_GetWindowFromID(ev.Event.window.windowID), &width, &height);
 					if (ScreenSize.W != width || ScreenSize.H != height) {
 						SetupViewport(width, height);
@@ -670,8 +735,16 @@ public unsafe class OSWindow : IValidatable
 						CurrentFbo.H = height;
 						ResizedLastFrame = true;
 					}
+					EngineCore.ReleaseGameThread();
 					break;
 				}
+			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
+				Hovered = this;
+				break;
+			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
+				if (Hovered == this)
+					Hovered = null;
+				break;
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 				HandleTextInput(in ev);
 				break;
@@ -761,6 +834,11 @@ public unsafe class OSWindow : IValidatable
 	/// Pumps the event queue continuously.
 	/// </summary>
 	public static void PumpOSEvents() {
+		// If any OS windows are waiting to be created, create them.
+		while (WaitingSubwindows.TryDequeue(out SubWindowEnqueuedEv swev)) {
+			// This is never null since its running on the OS thread
+			OSWindow.CreateSubwindow(swev.Callback, swev.Width, swev.Height, swev.Title, swev.Flags);
+		}
 		SDL_Event ev;
 		const int mswait = 5;
 		unsafe {
@@ -775,10 +853,6 @@ public unsafe class OSWindow : IValidatable
 #endif
 				var time = OS.GetTime();
 				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
-						if (WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY) 
-							SDL3.SDL_CaptureMouse(true);
-						break;
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 						// We need to read the text now to avoid race conditioning.
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
@@ -816,70 +890,13 @@ public unsafe class OSWindow : IValidatable
 		int depth = 0, pitch = 0;
 
 		switch (image.Format) {
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:
-				rmask = 0xFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 8; pitch = image.Width;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:
-				rmask = 0xFF; gmask = 0xFF00;
-				bmask = 0; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G6B5:
-				rmask = 0xF800; gmask = 0x07E0;
-				bmask = 0x001F; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8:
-				rmask = 0xFF0000; gmask = 0x00FF00;
-				bmask = 0x0000FF; amask = 0;
-				depth = 24; pitch = image.Width * 3;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
-				rmask = 0xF800; gmask = 0x07C0;
-				bmask = 0x003E; amask = 0x0001;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
-				rmask = 0xF000; gmask = 0x0F00;
-				bmask = 0x00F0; amask = 0x000F;
-				depth = 16; pitch = image.Width * 2;
-				break;
+			// Can look into other formats later.
 			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
-				rmask = 0xFF000000; gmask = 0x00FF0000;
-				bmask = 0x0000FF00; amask = 0x000000FF;
+				rmask = 0x000000FF;
+				gmask = 0x0000FF00;
+				bmask = 0x00FF0000;
+				amask = 0xFF000000;
 				depth = 32; pitch = image.Width * 4;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32:
-				rmask = 0xFFFFFFFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 32; pitch = image.Width * 4;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32:
-				rmask = 0xFFFFFFFF; gmask = 0xFFFFFFFF;
-				bmask = 0xFFFFFFFF; amask = 0;
-				depth = 96; pitch = image.Width * 12;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
-				rmask = 0xFFFFFFFF; gmask = 0xFFFFFFFF;
-				bmask = 0xFFFFFFFF; amask = 0xFFFFFFFF;
-				depth = 128; pitch = image.Width * 16;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16:
-				rmask = 0xFFFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16G16B16:
-				rmask = 0xFFFF; gmask = 0xFFFF;
-				bmask = 0xFFFF; amask = 0;
-				depth = 48; pitch = image.Width * 6;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:
-				rmask = 0xFFFF; gmask = 0xFFFF;
-				bmask = 0xFFFF; amask = 0xFFFF;
-				depth = 64; pitch = image.Width * 8;
 				break;
 			default:
 				// Compressed formats are not supported
@@ -970,7 +987,9 @@ public unsafe class OSWindow : IValidatable
 	public void BeginScissorMode(int x, int y, int width, int height) {
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.EnableScissorTest();
-
+		// TODO: Is this actually even a solution for this problem...
+		width += (int)EngineCore.GetGlobalScreenOffset().X;
+		height += (int)EngineCore.GetGlobalScreenOffset().Y;
 		if (!UsingFbo) {
 			Vector2F scale = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Vector2F.One : GetWindowScaleDPI();
 			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));
@@ -1129,11 +1148,9 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	/// <param name="keyboardState"></param>
 	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
-		int i = 0;
-
 		var now = OS.GetTime();
 
-		while (KeyAvailable(ref i, out KeyboardKey key, out double timePressed)) {
+		while (KeyAvailable(out KeyboardKey key, out double timePressed)) {
 			int keyPressed = (int)key;
 			// now - timePressed: this is done to get a relative-to-frame time
 			// since not everything will use SDL's time and know how to handle it
@@ -1153,8 +1170,9 @@ public unsafe class OSWindow : IValidatable
 			keysReleased[j] = prev > 0 && curr == 0;
 		}
 
-		for (int j = 0; j < WindowKeyboardState.MAX_TEXT_INPUTS; j++) 
-			textInputs[j] = Keyboard.EnqueuedTextInputs[j];
+		int k = 0;
+		while(Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
+			textInputs[k++] = str;
 
 		Keyboard.Reset();
 	}

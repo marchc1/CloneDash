@@ -1,0 +1,61 @@
+TextureAtlasVersion1
+0103/images_air/sawtooth
+	X: 0
+	Y: 0
+	W: 151
+	H: 158
+0103/images_air/scrap_5
+	X: 151
+	Y: 0
+	W: 71
+	H: 77
+0103/images_air/scrap_1
+	X: 151
+	Y: 77
+	W: 78
+	H: 67
+0103/images_air/scrap_7
+	X: 151
+	Y: 144
+	W: 76
+	H: 67
+0103/images_air/scrap_8
+	X: 0
+	Y: 158
+	W: 68
+	H: 71
+0103/images_air/scrap_6
+	X: 151
+	Y: 211
+	W: 58
+	H: 81
+0103/images_air/scrap_2
+	X: 68
+	Y: 158
+	W: 74
+	H: 59
+0103/images_air/scrap_3
+	X: 209
+	Y: 211
+	W: 81
+	H: 53
+0103/images_air/fx
+	X: 222
+	Y: 0
+	W: 58
+	H: 58
+0103/images_air/scrap_4
+	X: 227
+	Y: 144
+	W: 39
+	H: 36
+0103/images_air/smoke
+	X: 227
+	Y: 180
+	W: 30
+	H: 27
+0103/images_road/smoke
+	X: 229
+	Y: 77
+	W: 30
+	H: 27

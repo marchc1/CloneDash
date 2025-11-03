@@ -5,10 +5,6 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-
-		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -20,17 +16,15 @@
 		<PackageReference Include="Delaunator" Version="1.0.11" />
 		<PackageReference Include="FftSharp" Version="2.2.0" />
 		<PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.920.0" />
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Poly2Tri\Poly2Tri.csproj" />
-		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
-	</ItemGroup>
-
+	<Import Project ="$(MSBuildThisFileDirectory)\NucleusAssets.targets"/>
+	
 	<PropertyGroup Condition="'$(IsWindows)'=='true'">
 		<DefineConstants>COMPILED_WINDOWS</DefineConstants>
 	</PropertyGroup>

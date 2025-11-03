@@ -1,10 +1,11 @@
 ﻿using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 namespace CloneDash.Menu.Searching;
 
-public class SongSearchDialog : Panel
+public class SongSearchDialog : Window
 {
 	public SongSearchBar Bar;
 	Button applyButton;
@@ -19,10 +20,12 @@ public class SongSearchDialog : Panel
 	protected override void Initialize() {
 		base.Initialize();
 		MakePopup();
-		Origin = Anchor.Center;
-		Anchor = Anchor.Center;
+
 		DynamicallySized = true;
 		Size = new(0.4f);
+		Resizable = false;
+		HideNonCloseButtons();
+		Title = "Song Search Dialog";
 
 		Add(out applyButton);
 		applyButton.Text = "Apply";
@@ -34,12 +37,14 @@ public class SongSearchDialog : Panel
 		Add(out parameters);
 		parameters.Dock = Dock.Fill;
 		AddParent = parameters;
+		
+		Center();
 	}
 
 	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
-		Remove();
+		Close();
 	}
 
 	public override void Paint(float width, float height) {

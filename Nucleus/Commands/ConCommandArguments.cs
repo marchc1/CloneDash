@@ -94,21 +94,21 @@ namespace Nucleus.Commands
 			return ret;
 		}
 		public static ConCommandArguments FromString(string args) => FromString(args, 0, out _);
-		public bool GetInt(int pos, [NotNullWhen(true)] out int? ret) {
+		public bool GetInt(int pos, [NotNullWhen(true)] out int ret) {
 			if (pos < 0) goto IsNull;
 			if (pos >= __args.Length) goto IsNull;
 
 			CVValue v = __args[pos];
 			if (v.AsInt == null) goto IsNull;
 
-			ret = v.AsInt;
-			return true;
+			ret = v.AsInt ?? default;
+			return v.AsInt.HasValue;
 
 		IsNull:
-			ret = null;
+			ret = default;
 			return false;
 		}
-		public int? GetInt(int pos) => GetInt(pos, out int? ret) ? ret : null;
+		public int? GetInt(int pos) => GetInt(pos, out int ret) ? ret : null;
 
 		public bool GetDouble(int pos, [NotNullWhen(true)] out double? ret) {
 			if (pos < 0) goto IsNull;

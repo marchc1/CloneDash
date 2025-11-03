@@ -89,9 +89,16 @@ namespace Nucleus.Core
 		public static bool IsScreenBlockerActive => scrblockers.Count > 0;
 		public static int VisibleLines => ScreenMessages.Count;
 		public static int TextSize { get; set; } = 13;
+		static bool Expired(in ConsoleMessage x) {
+			return x.Age > MaxMessageTime;
+		}
 		public static void RenderToScreen(int x, int y) {
 			int i = 0;
-			ScreenMessages.RemoveAll(x => x.Age > MaxMessageTime);
+
+			for (int j = ScreenMessages.Count - 1; j >= 0; j--) {
+				if (Expired(in ScreenMessages.AsSpan()[j]))
+					ScreenMessages.RemoveAt(j);
+			}
 
 			const int MAX_CHARS_PER_LINE = 1024;
 			var currentMessages = ScreenMessages.AsSpan();
@@ -127,7 +134,7 @@ namespace Nucleus.Core
 				logLevels[i] = message.Level;
 				textLengths[i] = len;
 
-				i += 1 + text.Count(CountNewlines);
+				i += 1 + CountNewlines(text);
 			}
 
 			for (int j = 0; j < ScreenMessages.Count; j++) {
@@ -146,7 +153,14 @@ namespace Nucleus.Core
 				Graphics2D.DrawText(new(drawRectangle.X - 1, drawRectangle.Y + 4 + 1), textMessage[..textLengths[j]], "Consolas", TextSize);
 			}
 		}
-		static bool CountNewlines(char x) => x == '\n';
+		static int CountNewlines(ReadOnlySpan<char> x) {
+			int ret = 0;
+			for (int i = 0; i < x.Length; i++) 
+				if (x[i] == '\n')
+					ret++;
+
+			return ret;
+		}
 		private static List<object> scrblockers = [];
 
 		public static void AddScreenBlocker(object blocker) {
