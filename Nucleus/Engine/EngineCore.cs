@@ -115,8 +115,12 @@ public static class EngineCore
 	}
 
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
+	static readonly OSWindowCtx StartCache = new();
 	static readonly OSWindowCtx DUMMY = new();
 	static OSWindowCtx GetWindowCtx(OSWindow window) {
+		if (!Started)
+			return StartCache;
+
 		if (window == null)
 			return DUMMY;
 		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
@@ -234,6 +238,8 @@ public static class EngineCore
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
 			MainWindow.SetupGL();
+			WindowContexts[MainWindow] = StartCache;
+
 			MakeWindowCurrent(MainWindow);
 
 			if (prgIcon != null)
