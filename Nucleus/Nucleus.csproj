@@ -27,8 +27,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Poly2Tri\Poly2Tri.csproj" />
 		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Rendering\Raylib\" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(IsWindows)'=='true'">
