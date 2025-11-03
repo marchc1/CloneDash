@@ -602,7 +602,7 @@ namespace Nucleus.Engine
 			foreach (var element in e.Children) {
 				if (!element.Visible || element.EngineInvisible) continue;
 				Graphics2D.SetDrawColor(255, 255, 255);
-				Graphics2D.DrawRectangleOutline(element.GetGlobalPosition(), element.RenderBounds.Size);
+				Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.RenderBounds.Size);
 				VisRenderBounds(element);
 			}
 		}

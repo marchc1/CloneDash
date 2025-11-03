@@ -1052,7 +1052,9 @@ public unsafe class OSWindow : IValidatable
 	public void BeginScissorMode(int x, int y, int width, int height) {
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.EnableScissorTest();
-
+		// TODO: Is this actually even a solution for this problem...
+		width += (int)EngineCore.GetGlobalScreenOffset().X;
+		height += (int)EngineCore.GetGlobalScreenOffset().Y;
 		if (!UsingFbo) {
 			Vector2F scale = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Vector2F.One : GetWindowScaleDPI();
 			Rlgl.Scissor((int)(x * scale.x), (int)(Size.H * scale.y - (((y + height) * scale.y))), (int)(width * scale.x), (int)(height * scale.y));

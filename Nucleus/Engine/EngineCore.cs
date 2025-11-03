@@ -123,6 +123,8 @@ public static class EngineCore
 
 		if (window == null)
 			return DUMMY;
+		if(!window.IsValid())
+			return DUMMY;
 		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
 			return value;
 		value = new();
