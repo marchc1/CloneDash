@@ -49,18 +49,18 @@
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
 			<UniversalAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
-			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\NucleusBuildAssets\universal\**\*" />
+			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\universal\**\*" />
 		</ItemGroup>
 		<Copy SourceFiles="@(UniversalAssets_Project)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
 		<ItemGroup Condition="'$(IsWindows)' == 'true'">
 			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\NucleusBuildAssets\winnt\**\*" />
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\winnt\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsOSX)' == 'true'">
 			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\NucleusBuildAssets\intel_osx\**\*" />
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)..\Nucleus\BuildAssets\intel_osx\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsLinux)' == 'true'">
 			<PlatformAssets_Project Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
