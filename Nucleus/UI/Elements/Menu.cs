@@ -1,6 +1,8 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
+
 using Raylib_cs;
+
 using System.Collections.Generic;
 
 namespace Nucleus.UI.Elements
@@ -73,12 +75,12 @@ namespace Nucleus.UI.Elements
 									ultimateMenu = parentMenu;
 								}
 
-								ultimateMenu?.Remove();
+								ultimateMenu?.Close();
 							});
 							b.Thinking += (s) => {
 								if (s.Hovered) {
 									if (lastHoveredPiece != s) {
-										activeSubmenu?.Remove();
+										activeSubmenu?.Close();
 									}
 									lastHoveredPiece = s;
 								}
@@ -113,14 +115,14 @@ namespace Nucleus.UI.Elements
 							b.Thinking += (s) => {
 								if (s.Hovered) {
 									if (lastHoveredPiece != s) {
-										activeSubmenu?.Remove();
+										activeSubmenu?.Close();
 										activeSubmenu = this.Add<Menu>();
 										var shouldUse = submenu.invoke?.Invoke(activeSubmenu) ?? false;
 										if (shouldUse) {
 											activeSubmenu.Open(new Vector2F(s.RenderBounds.W + 8, s.GetGlobalPosition().Y - 7), false, this);
 										}
 										else {
-											activeSubmenu.Remove();
+											activeSubmenu.Close();
 											activeSubmenu = null;
 										}
 									}
@@ -174,8 +176,10 @@ namespace Nucleus.UI.Elements
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
 			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
-			if(popup)
+			if (popup)
 				this.MakePopup();
+			this.Backdrop = true;
+			this.TimeToBackdropAlpha = 0.15;
 
 			UI.OnElementClicked += UI_OnElementClicked;
 		}
@@ -186,9 +190,26 @@ namespace Nucleus.UI.Elements
 			Graphics2D.DrawLine(8, height / 2, (width) - (8 * 2), height / 2);
 		}
 
+		bool closing = false;
+		public void Close() {
+			closing = true;
+			Backdrop = false;
+		}
+
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+
+			Opacity = (float)BackdropAlpha;
+
+			if (closing) {
+				if (BackdropAlpha <= 0)
+					Remove();
+			}
+		}
+
 		private void UI_OnElementClicked(Element el, FrameState fs, Input.MouseButton mb) {
 			if (this.Lifetime > 0.2f && (el == null || !el.IsIndirectChildOf(this))) {
-				this.Remove();
+				this.Close();
 				UI.OnElementClicked -= UI_OnElementClicked;
 			}
 		}

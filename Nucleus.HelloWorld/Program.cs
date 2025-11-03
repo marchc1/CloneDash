@@ -2,6 +2,7 @@
 using Nucleus.Engine;
 using Nucleus.Rendering;
 using Nucleus.Types;
+using Nucleus.UI;
 
 using Raylib_cs;
 
@@ -17,6 +18,15 @@ namespace Nucleus.HelloWorld
 		{
 			public override void Initialize(params object[] args) {
 				base.Initialize(args);
+
+				var b  =  UI.Add<Button>();
+				b.Text = "Open Subwindow";
+				b.Dock = Dock.Top;
+				b.MouseClickEvent += B_MouseClickEvent;
+			}
+
+			private void B_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+				EngineCore.LoadLevelSubWindow(new HelloWorldLevel(), 640, 480, "test");
 			}
 
 			Camera3D cam;

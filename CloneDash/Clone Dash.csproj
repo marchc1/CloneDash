@@ -5,10 +5,6 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-
-		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
 		<AssemblyName>Clone Dash</AssemblyName>
 		<RootNamespace>CloneDash</RootNamespace>
 	</PropertyGroup>
@@ -25,7 +21,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-		<PackageReference Include="System.Text.Json" Version="9.0.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -34,30 +30,42 @@
 		<ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
-		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="UI\" />
 	</ItemGroup>
 
+	<!-- ================================================================= -->
+	<!-- Asset copying from BuildAssets -->
+	<!-- ================================================================= -->
+	<PropertyGroup>
+		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+	</PropertyGroup>
+	
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
-			<UniversalAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\universal\**\*" />
+			<UniversalAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
 		</ItemGroup>
 		<Copy SourceFiles="@(UniversalAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
 		<ItemGroup Condition="'$(IsWindows)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\winnt\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsOSX)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\intel_osx\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsLinux)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)..\BuildAssets\linux\**\*" />
+			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
 		</ItemGroup>
 		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
+	<Import Project ="..\Nucleus\NucleusAssets.targets"/>
+	<!-- ================================================================= -->
+	<!-- ================================================================= -->
+	<!-- ================================================================= -->
 
 	<PropertyGroup Condition="'$(IsWindows)'=='true'">
 		<DefineConstants>$(DefineConstants);COMPILED_WINDOWS</DefineConstants>

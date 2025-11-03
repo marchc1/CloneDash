@@ -37,11 +37,15 @@ public static class EngineCore
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
 	}
+	[ConCommand(Help: "Creates a new null subwindow")]
+	static void nullwindow(ConCommandArguments args) {
+		EngineCore.SubWindow(args.GetInt(0, out int x) ? x : 640, args.GetInt(1, out int y) ? y : 480, args.GetString(2) ?? "Nucleus Subwindow");
+	}
 
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
-	[ConCommand(Help: "ries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
+	[ConCommand(Help: "Tries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
 	static void level(ConCommandArguments args) {
 		var level = args.Raw;
 		var listOfLevels = (
@@ -93,9 +97,42 @@ public static class EngineCore
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
-	/// <summary>
-	/// A special loading screen level. Always kept "loaded" in some fashion, although only runs its frame function when LoadingLevel == true.
-	/// </summary>
+	class OSWindowCtx
+	{
+		public Level? Level;
+		public Level? NextFrameLevel;
+		public object[]? NextFrameArgs;
+
+		public TimeSpan LastTimeToUpdate;
+		public TimeSpan LastTimeToRender;
+
+		public double TargetFrameTime;
+		public double CurrentAppTime;
+		public double PreviousAppTime;
+		public double UpdateTime;
+		public double DrawTime;
+		public double FrameTime;
+	}
+
+	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
+	static readonly OSWindowCtx StartCache = new();
+	static readonly OSWindowCtx DUMMY = new();
+	static OSWindowCtx GetWindowCtx(OSWindow window) {
+		if (!Started)
+			return StartCache;
+
+		if (window == null)
+			return DUMMY;
+		if(!window.IsValid())
+			return DUMMY;
+		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
+			return value;
+		value = new();
+		WindowContexts.Add(window, value);
+		return value;
+	}
+
+	static readonly Dictionary<OSWindow, OSWindowCtx> WindowContexts = [];
 	public static Level LoadingScreen { get; set; }
 	/// <summary>
 	/// The current level; if null, you'll get a big red complaint
@@ -105,47 +142,6 @@ public static class EngineCore
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
 	/// </summary>
 	public static bool LoadingLevel { get; private set; } = false;
-
-	public static Element? KeyboardFocusedElement { get; internal set; } = null;
-	public static bool DemandedFocus { get; private set; } = false;
-	public static void RequestKeyboardFocus(Element self) {
-		if (!IValidatable.IsValid(self))
-			return;
-
-		if (IValidatable.IsValid(KeyboardFocusedElement)) {
-			if (DemandedFocus)
-				return;
-
-			KeyboardFocusedElement.KeyboardFocusLost(self, true);
-		}
-
-		KeyboardFocusedElement = self;
-		self.KeyboardFocusGained(DemandedFocus);
-		Window.StartTextInput();
-	}
-	public static void DemandKeyboardFocus(Element self) {
-		DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
-		RequestKeyboardFocus(self);
-		DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
-	}
-	internal static void KeyboardUnfocus(Element self, bool force = false) {
-		if (!IValidatable.IsValid(KeyboardFocusedElement))
-			return;
-		if (!IValidatable.IsValid(self))
-			return;
-		if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
-			KeyboardFocusedElement.KeyboardFocusLost(self, false);
-			KeyboardFocusedElement = null;
-
-			return;
-		}
-		if (self != KeyboardFocusedElement && force == false)
-			return;
-
-		KeyboardFocusedElement.KeyboardFocusLost(self, false);
-		KeyboardFocusedElement = null;
-		Window.StopTextInput();
-	}
 
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static unsafe void LogCustom(int logLevel, sbyte* text, sbyte* args) {
@@ -243,7 +239,10 @@ public static class EngineCore
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
-			Window.SetupGL();
+			MainWindow.SetupGL();
+			WindowContexts[MainWindow] = StartCache;
+
+			MakeWindowCurrent(MainWindow);
 
 			if (prgIcon != null)
 				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
@@ -332,7 +331,8 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		GetWindowCtx(MainWindow).Level = null;
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
@@ -350,13 +350,27 @@ public static class EngineCore
 			// centerMonitor - (window size / 2) to center window to monitor
 			var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
 
-			Window.Position = new((int)windowPos.X, (int)windowPos.Y);
+			MainWindow.Position = new((int)windowPos.X, (int)windowPos.Y);
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
 	}
 
-	private static void __loadLevel(Level level, object[] args) {
+	public static void MakeWindowCurrent(OSWindow window) {
+		Rlgl.SetFramebufferWidth((int)window.Size.W);
+		Rlgl.SetFramebufferHeight((int)window.Size.H);
+		window.ActivateGL();
+		window.SetupViewport(window.Size.W, window.Size.H);
+		Window = window;
+		Level = GetWindowCtx(Window).Level!;
+	}
+
+	// Specific things that need to get called (because a level usually calls these like hittesting)
+	static void ResetWindowLevelSpecificEnv(OSWindow window) {
+		window.DisableHitTest();
+	}
+
+	private static void __loadLevel(OSWindow window, Level level, object[] args) {
 		if (level == null) {
 			Level = null;
 			LoadingLevel = false;
@@ -370,7 +384,9 @@ public static class EngineCore
 		Stopwatch s = new Stopwatch();
 		s.Start();
 
-		Level = level;
+		GetWindowCtx(window).Level = level;
+		MakeWindowCurrent(window);
+		ResetWindowLevelSpecificEnv(window);
 		LoadingLevel = true;
 		level.PreInitialize();
 		level.InitializeUI();
@@ -380,8 +396,8 @@ public static class EngineCore
 		LoadingLevel = false;
 
 		LoadingScreen?.Unload();
-		__nextFrameLevel = null;
-		__nextFrameArgs = null;
+		GetWindowCtx(Window).NextFrameLevel = null;
+		GetWindowCtx(Window).NextFrameArgs = null;
 		if (EngineCore.ShowDebuggingInfo) {
 			var UpdateGraph = Level.UI.Add(new PerfGraph() {
 				Anchor = Anchor.BottomRight,
@@ -416,30 +432,53 @@ public static class EngineCore
 		//GC.WaitForPendingFinalizers();
 	}
 
-	private static Level? __nextFrameLevel;
-	private static object[]? __nextFrameArgs;
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
-	public static void LoadLevel(Level level, params object[] args) {
+	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
-			__nextFrameLevel = level;
-			__nextFrameArgs = args;
+			GetWindowCtx(Window).NextFrameLevel = level;
+			GetWindowCtx(Window).NextFrameArgs = args;
 			LoadingScreen?.Initialize([]);
 		}
 		else
-			__loadLevel(level, args);
+			__loadLevel(window, level, args);
+	}
+	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
+	public static void SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
+		OSWindow.CreateSubwindow((window) => {
+			window.SetupGL();
+			WindowContexts[window] = new();
+		}, width, height, title, flags);
+	}
+	public static void SubWindow(Action<OSWindow> callback, int width, int height, string title, ConfigFlags flags = 0) {
+		OSWindow.CreateSubwindow((window) => {
+			window.SetupGL();
+			WindowContexts[window] = new();
+			callback(window);
+		}, width, height, title, flags);
+	}
+	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
+		SubWindow((window) => {
+			OSWindow lastWindow = Window;
+			MakeWindowCurrent(window);
+			{
+				__loadLevel(window, level, args);
+			}
+			MakeWindowCurrent(lastWindow);
+		}, width, height, title, flags);
 	}
 
 	public static void UnloadLevel() {
 		LoadingLevel = true;
-		KeyboardFocusedElement = null;
 
 		if (Level != null) {
 			Level.Unload();
 			LoadingScreen?.Unload();
 		}
 		StopSound();
-		Level = null;
+		GetWindowCtx(Window).Level = null;
+		Level = null!;
+		ResetWindowLevelSpecificEnv(Window);
 
 		ConsoleSystem.ClearScreenBlockers();
 
@@ -469,15 +508,30 @@ public static class EngineCore
 		if (!_running) return;
 
 		if (forced) {
-			_running = false;
+			ExitWindow();
 			return;
 		}
 
 		_blockClosure = false;
 		ShouldEngineClose?.Invoke();
-		Level?.ShouldEngineClose();
-		if (_blockClosure == false) {
+		Level?.PreWindowClose();
+		if (_blockClosure == false)
+			ExitWindow();
+	}
+
+	public static void ExitWindow() {
+		if (WindowContexts.Count == 1) {
+			// just exit
 			_running = false;
+			return;
+		}
+
+		WindowContexts.Remove(Window);
+		Window.Close();
+
+		if (Window == MainWindow) {
+			// Uh oh! We just deleted the main window! Try to choose a new window?
+			MainWindow = WindowContexts.Keys.First();
 		}
 	}
 
@@ -497,34 +551,54 @@ public static class EngineCore
 		return new(4);
 	}
 
-	public static FrameState CurrentFrameState { get; set; }
 	public static GameInfo GameInfo;
 
-	public static double TargetFrameTime { get; private set; } = 0;
-	public static double CurrentAppTime { get; private set; } = 0;
-	public static double PreviousAppTime { get; private set; } = 0;
-	public static double UpdateTime { get; private set; } = 0;
-	public static double DrawTime { get; private set; } = 0;
-	public static double FrameTime { get; private set; } = 0;
+	public static double TargetFrameTime {
+		get => GetWindowCtx(Window).TargetFrameTime;
+		set => GetWindowCtx(Window).TargetFrameTime = value;
+	}
+
+	public static double CurrentAppTime {
+		get => GetWindowCtx(Window).CurrentAppTime;
+		set => GetWindowCtx(Window).CurrentAppTime = value;
+	}
+
+	public static double PreviousAppTime {
+		get => GetWindowCtx(Window).PreviousAppTime;
+		set => GetWindowCtx(Window).PreviousAppTime = value;
+	}
+
+	public static double UpdateTime {
+		get => GetWindowCtx(Window).UpdateTime;
+		set => GetWindowCtx(Window).UpdateTime = value;
+	}
+
+	public static double DrawTime {
+		get => GetWindowCtx(Window).DrawTime;
+		set => GetWindowCtx(Window).DrawTime = value;
+	}
+
+	public static double FrameTime {
+		get => GetWindowCtx(Window).FrameTime;
+		set => GetWindowCtx(Window).FrameTime = value;
+	}
 
 	public static bool ShowConsoleLogsInCorner { get; set; } = true;
 	public static bool ShowDebuggingInfo { get; set; } = false;
 
 
-	static TimeSpan lastTimeToUpdate;
-	static TimeSpan lastTimeToRender;
 	/// <summary>
 	/// How long did the last update-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToUpdate() => lastTimeToUpdate;
+	public static TimeSpan GetTimeToUpdate() => GetWindowCtx(Window).LastTimeToUpdate;
 	/// <summary>
 	/// How long did the last render-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToRender() => lastTimeToRender;
-	internal static void SetTimeToUpdate(TimeSpan value) => lastTimeToUpdate = value;
-	internal static void SetTimeToRender(TimeSpan value) => lastTimeToRender = value;
+	public static TimeSpan GetTimeToRender() => GetWindowCtx(Window).LastTimeToRender;
+	internal static void SetTimeToUpdate(TimeSpan value) => GetWindowCtx(Window).LastTimeToUpdate = value;
+	internal static void SetTimeToRender(TimeSpan value) => GetWindowCtx(Window).LastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
 	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
@@ -533,7 +607,8 @@ public static class EngineCore
 	private static float[] fps_history = new float[FPS_CAPTURE_FRAMES_COUNT];
 	private static float fps_average = 0, fps_last = 0;
 
-	public static OSWindow Window;
+	public static OSWindow Window { get; private set; }
+	public static OSWindow MainWindow;
 
 	public static float FPS {
 		get {
@@ -559,15 +634,35 @@ public static class EngineCore
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
+	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
-		NProfiler.Reset();
+		WaitForGameThread();
 		NucleusSingleton.Spin();
-		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+		OSWindow.PropagateEventBuffer();
+
+		MainThread.Run(ThreadExecutionTime.BeforeFrame);
+
+		windowsThisFrame.Clear();
+		foreach (var window in WindowContexts)
+			windowsThisFrame.Add(window.Key);
+
+		foreach (var window in windowsThisFrame) {
+			MakeWindowCurrent(window);
+			PerWindowFrame();
+		}
+		ReleaseGameThread();
+		Host.CheckDirty();
+		MainThread.Run(ThreadExecutionTime.AfterFrame);
+	}
+	static void PerWindowFrame() {
+		NProfiler.Reset();
+
+		if (Window.MouseFocused)
+			MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
-		OSWindow.PropagateEventBuffer();
 
 		Rlgl.LoadIdentity();
 		unsafe {
@@ -650,9 +745,10 @@ public static class EngineCore
 		}
 
 		InLevelFrame = false;
-		if (__nextFrameLevel != null) {
-			__loadLevel(__nextFrameLevel, __nextFrameArgs);
-			__nextFrameLevel = null;
+		Level? nextFrameLevel = GetWindowCtx(Window).NextFrameLevel;
+		if (nextFrameLevel != null) {
+			__loadLevel(Window, nextFrameLevel, GetWindowCtx(Window).NextFrameArgs ?? []);
+			GetWindowCtx(Window).NextFrameLevel = null;
 		}
 
 		Rlgl.DrawRenderBatchActive();
@@ -680,7 +776,6 @@ public static class EngineCore
 		}
 
 		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
-		Host.CheckDirty();
 
 		if (Window.UserClosed()) {
 			Close();
@@ -781,6 +876,16 @@ public static class EngineCore
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
 
+	internal static Level? GetWindowLevel(OSWindow window) => GetWindowCtx(window).Level;
+
+	static readonly Mutex GameThreadMutex = new();
+	public static void WaitForGameThread() {
+		GameThreadMutex.WaitOne();
+	}
+	public static void ReleaseGameThread() {
+		GameThreadMutex.ReleaseMutex();
+	}
+
 	public static void StartMainThread() {
 		lock (GameThread_GLLock) {
 			var ea = Assembly.GetEntryAssembly();
@@ -855,11 +960,10 @@ public static class EngineCore
 
 	private const string PANIC_FONT = "Noto Sans";
 	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
-	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch
-	{
-		"zh-HK"   => "Noto Sans HK",
-		"zh-MO"   => "Noto Sans HK",
-		_         => "Noto Sans TC",
+	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch {
+		"zh-HK" => "Noto Sans HK",
+		"zh-MO" => "Noto Sans HK",
+		_ => "Noto Sans TC",
 	};
 	private const string PANIC_FONT_SC = "Noto Sans SC";
 	private const string PANIC_FONT_KR = "Noto Sans KR";
@@ -882,7 +986,7 @@ public static class EngineCore
 
 		textY++;
 	}
-	private static readonly Dictionary<string, string> ErrorMessages = new (){
+	private static readonly Dictionary<string, string> ErrorMessages = new(){
 		{"A fatal error has occured. Press any key to exit.", PANIC_FONT},
 		{"حدث خطأ فادح. اضغط على أي مفتاح للخروج.", PANIC_FONT},
 		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT_ARABIC},
@@ -1003,7 +1107,7 @@ public static class EngineCore
 				int i = 0;
 				while (true) {
 					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(ref i, out _, out _) || Window.UserClosed()) {
+					if (Window.KeyAvailable(out _, out _) || Window.UserClosed()) {
 						Raylib.SetMasterVolume(oldMaster);
 						return false;
 					}
@@ -1092,7 +1196,7 @@ public static class EngineCore
 			else {
 				int i = 0;
 				OSWindow.PropagateEventBuffer();
-				if (Window.KeyAvailable(ref i, out _, out _)) {
+				if (Window.KeyAvailable(out _, out _)) {
 					Raylib.SetMasterVolume(oldMaster);
 					interrupting = false;
 					return;

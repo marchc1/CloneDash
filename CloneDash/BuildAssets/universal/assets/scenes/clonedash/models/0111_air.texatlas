@@ -1,0 +1,21 @@
+TextureAtlasVersion1
+0111/images_air/body
+	X: 0
+	Y: 0
+	W: 103
+	H: 97
+0111/images_air/shadow
+	X: 0
+	Y: 97
+	W: 148
+	H: 56
+0111/images_air/ear_L
+	X: 103
+	Y: 0
+	W: 47
+	H: 40
+0111/images_air/ear_R
+	X: 103
+	Y: 40
+	W: 38
+	H: 41

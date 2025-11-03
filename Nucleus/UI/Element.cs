@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+
+using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
 using Nucleus.Commands;
@@ -344,9 +346,12 @@ namespace Nucleus.UI
 			Removed?.Invoke(this);
 
 			__markedForRemoval = true;
-			if (IsPopup) {
+
+			if (IsPopup)
 				UI.RemovePopup(this);
-			}
+
+			if (IsModal)
+				UI.RemoveModal(this);
 
 			UI.Elements.Remove(this);
 			foreach (Element element in this.LockAndEnumerateChildren())
@@ -755,10 +760,70 @@ namespace Nucleus.UI
 		public bool Parented => Parent != null;
 		public bool HasChildren => Children.Count > 0;
 
+		double backdropTime;
+		bool backdrop;
+		bool hasBackdropped;
+		public bool Backdrop {
+			get => backdrop;
+			set {
+				backdrop = value;
+				// TODO: set this to accommodate for mid-backdrop-alpha values
+				backdropTime = Lifetime;
+				if (value)
+					hasBackdropped = true;
+			}
+		}
+		public double TimeToBackdropAlpha = 0.3;
+		public double TimeToNoBackdropAlpha = 0.15;
+		public double BackdropAlpha {
+			get {
+				if (!hasBackdropped)
+					return 0;
+
+				double ret;
+				if (backdrop)
+					ret = NMath.Remap(Lifetime - backdropTime, 0, TimeToBackdropAlpha, 0, 1, true);
+				else
+					ret = NMath.Remap(Lifetime - backdropTime, TimeToNoBackdropAlpha, 0, 0, 1, false, true);
+
+				if (ret <= 0 && !backdrop)
+					hasBackdropped = false;
+				return ret;
+			}
+		}
+
 		public bool IsPopup { get; private set; }
 		public void MakePopup() {
 			IsPopup = true;
 			UI.Popups.Add(this);
+		}
+
+		public bool IsModal { get; private set; }
+		public void MakeModal() {
+			IsModal = true;
+			UI.Modals.Add(this);
+			Backdrop = true;
+		}
+
+
+		public bool IsParentedToPopup([NotNullWhen(true)] out Element? parent) {
+			parent = Parent;
+			while (parent != null) {
+				if (parent.IsPopup)
+					return true;
+				parent = parent.Parent;
+			}
+			return false;
+		}
+
+		public bool IsParentedToModal([NotNullWhen(true)] out Element? parent) {
+			parent = Parent;
+			while (parent != null) {
+				if (parent.IsModal)
+					return true;
+				parent = parent.Parent;
+			}
+			return false;
 		}
 
 		// NOTE: the three checks in these MoveToX methods confirm the following conditions are not true:
@@ -897,7 +962,7 @@ namespace Nucleus.UI
 
 			return containsPoint;
 		}
-		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool popupActive = false) {
+		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
 			if (!element.Enabled) return lastHovered;
 			if (!element.Visible) return lastHovered;
 			if (!element.CanInput()) return lastHovered;
@@ -907,16 +972,16 @@ namespace Nucleus.UI
 
 			var boundsOfSelf = lastBounds.FitInto(element.RenderBounds.AddPosition(offset));
 
-			if (popupActive || (element is UserInterface ui && ui.PopupActive)) {
-				if (element == element.UI.Popups.Last())
-					popupActive = false;
+			if (modalActive || (element is UserInterface ui && ui.ModalActive)) {
+				if (element == element.UI.Modals.Last())
+					modalActive = false;
 				else
-					popupActive = true;
+					modalActive = true;
 
 				offset += element.RenderBounds.Pos;
 
 				foreach (Element child in element.Children)
-					lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered, popupActive);
+					lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered, modalActive);
 
 				return lastHovered;
 			}
@@ -971,12 +1036,20 @@ namespace Nucleus.UI
 
 		public float Opacity { get; set; } = 1.0f;
 
-		public static void DrawRecursive(Element element, int iteration = 0) {
+		public delegate void PaintRenderTargetOverrideFn(Element self, in RenderTexture2D texture, in RectangleF renderBounds);
+		public event PaintRenderTargetOverrideFn? PaintRenderTargetOverride;
+
+		public static void DrawRecursive(Element element, List<Element>? popups = null, int iteration = 0) {
 			if (!element.Enabled) return;
 			if (!element.Visible) return;
-			if (element.IsPopup) {
+			if (element.IsPopup && popups != null) {
+				// We are in pre-popup mode, because popups isnt null, so add the element to the popups list and short circuit
+				popups.Add(element);
+				return;
+			}
+			if (element.BackdropAlpha >= 0) {
 				Raylib.DrawRectangle(0, 0, (int)element.UI.Size.X, (int)element.UI.Size.Y, new(0, 0, 0,
-					(int)NMath.Remap(element.Lifetime, 0, 0.2f, 0, 100, clampOutput: true)
+					(int)(float)double.Lerp(0, 100, element.BackdropAlpha)
 					));
 			}
 			if (element.UsesRenderTarget) {
@@ -999,7 +1072,7 @@ namespace Nucleus.UI
 						element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
 
 					foreach (Element child in element.Children)
-						DrawRecursive(child, iteration + 1);
+						DrawRecursive(child, popups, iteration + 1);
 
 					Graphics2D.EndRenderTarget();
 					Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
@@ -1011,7 +1084,10 @@ namespace Nucleus.UI
 							element.PreRender();
 							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
 							Graphics2D.SetDrawColor(t, t, t, t);
-							Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
+							if (element.PaintRenderTargetOverride != null)
+								element.PaintRenderTargetOverride(element, element.__RT1.Value, element.RenderBounds);
+							else
+								Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
 							element.PostRender();
 						}
 
@@ -1033,7 +1109,7 @@ namespace Nucleus.UI
 				Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, element.RenderBounds.Size)); // ?
 																																			 //else
 																																			 //Graphics2D.ScissorRect();
-
+			Graphics2D.PushAlpha(element.Opacity * 255);
 			element.PreRender();
 			if (element.PaintOverride != null)
 				element.PaintOverride?.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
@@ -1043,8 +1119,9 @@ namespace Nucleus.UI
 
 
 			foreach (Element child in element.Children)
-				DrawRecursive(child, iteration + 1);
+				DrawRecursive(child, popups, iteration + 1);
 			element.PostRenderChildren();
+			Graphics2D.PopAlpha();
 
 			if (element.Clipping)
 				Graphics2D.ScissorRect();
@@ -1067,28 +1144,29 @@ namespace Nucleus.UI
 		public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
 
 		public event MouseEventDelegate? MouseClickEvent;
-		public virtual void MouseClick(FrameState state, MouseButton button) { EngineCore.KeyboardUnfocus(this, true); }
+		public virtual void MouseClick(FrameState state, MouseButton button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
 
 		public Dictionary<string, object> Tags { get; } = [];
+		public bool HasTag(string key) => Tags.ContainsKey(key);
 		public T GetTag<T>(string key) => (T)Tags[key];
 		public T? GetTagSafely<T>(string key) => Tags.ContainsKey(key) ? (T)Tags[key] : default(T);
 		public void SetTag<T>(string key, T value) => Tags[key] = value;
-		public void UnsetTag<T>(string key) => Tags.Remove(key);
+		public void UnsetTag(string key) => Tags.Remove(key);
 
 
 		public event MouseEventDelegate MouseReleaseEvent;
-		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { }
+		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseEventDelegate? MouseLostEvent;
-		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { }
+		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 		public event MouseReleaseDelegate? MouseReleasedOrLostEvent;
-		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { }
+		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseV2Delegate? MouseDragEvent;
-		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { }
+		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseV2Delegate? MouseScrollEvent;
-		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { }
+		public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
 		public void ClearChildren() {
 			foreach (var child in this.AddParent.LockAndEnumerateChildren())
@@ -1113,17 +1191,21 @@ namespace Nucleus.UI
 			MouseClickEvent?.Invoke(this, state, button);
 			UI.TriggerElementClicked(this, state, button);
 		}
+
 		internal void MouseReleaseOccur(FrameState state, MouseButton button, bool forced = false) {
 			Depressed = false;
 
 			if (!Hovered && !forced)
 				return;
 
+			
 			MouseRelease(this, state, button);
 			MouseReleaseEvent?.Invoke(this, state, button);
 
-			MouseReleasedOrLost(this, state, button);
-			MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
+			if (!UI.WasMouseEventConsumed()) {
+				MouseReleasedOrLost(this, state, button);
+				MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
+			}
 
 			Dragged = false;
 			DragVector = Vector2F.Zero;
@@ -1153,14 +1235,26 @@ namespace Nucleus.UI
 		public bool ConsumedScrollEvent { get; internal set; }
 		public void ConsumeScrollEvent() => ConsumedScrollEvent = true;
 
+#if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+		private SecondOrderSystem? __mouseColorableHoverState;
+		private SecondOrderSystem? __mouseColorableDepressState;
+#endif
+
 		public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
+#if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+			e.__mouseColorableHoverState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
+			e.__mouseColorableDepressState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
+			return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.Hovered ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
+#else
 			return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
+#endif
 		}
 		/// <summary>
 		/// This function expects HSVA in the format of hueAdditional, saturationMultiplied, valueMultiplied, alphaMultiplied
 		/// </summary>
 		public static Color MixColorBasedOnMouseState(float hoverRatio, float depressedRatio, Color original, Vector4 hoveredHSVA, Vector4 depressedHSVA) {
 			var originalHSV = original.ToHSV();
+
 
 			var hoveredColor = ColorExtensions.FromHSV(originalHSV.X + hoveredHSVA.X, originalHSV.Y * hoveredHSVA.Y, originalHSV.Z * hoveredHSVA.Z);
 			hoveredColor.A = (byte)Math.Clamp(original.A * hoveredHSVA.W, 0, 255);
@@ -1172,7 +1266,7 @@ namespace Nucleus.UI
 		}
 
 		public DateTime Birth { get; private set; } = DateTime.Now;
-		public float Lifetime => (float)(DateTime.Now - Birth).TotalSeconds;
+		public double Lifetime => (DateTime.Now - Birth).TotalSeconds;
 
 		public virtual void Center() {
 			ValidateLayout();
@@ -1196,34 +1290,43 @@ namespace Nucleus.UI
 		/// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
 		/// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
 		/// </summary>
-		public virtual void RequestKeyboardFocus() => EngineCore.RequestKeyboardFocus(this);
+		public virtual void RequestKeyboardFocus() => UI.RequestKeyboardFocus(this);
 		/// <summary>
 		/// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br>
 		/// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs <br></br>
 		/// keyboard focus, you dont want hovering over something else to cause the textbox to lose focus; in this case, you'd demand keyboard focus from the textbox to avoid that.<br></br>
 		/// Note that demands don't respect demands.
 		/// </summary>
-		public virtual void DemandKeyboardFocus() => EngineCore.DemandKeyboardFocus(this);
-		public virtual void KeyboardUnfocus() => EngineCore.KeyboardUnfocus(this);
+		public virtual void DemandKeyboardFocus() => UI.DemandKeyboardFocus(this);
+		public virtual void KeyboardUnfocus() => UI.KeyboardUnfocus(this);
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
 		public void KeyPressedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyPressed(in keyboardState, key);
-			OnKeyPressed?.Invoke(this, in keyboardState, key);
+			if (OnKeyPressed != null) {
+				UI.ResetKeyEventConsumed();
+				OnKeyPressed?.Invoke(this, in keyboardState, key);
+			}
 		}
 		public void KeyReleasedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
 			KeyReleased(in keyboardState, key);
-			OnKeyReleased?.Invoke(this, in keyboardState, key);
+			if (OnKeyReleased != null) {
+				UI.ResetKeyEventConsumed();
+				OnKeyReleased?.Invoke(this, in keyboardState, key);
+			}
 		}
 		public void TextInputOccur(in KeyboardState keyboardState, string text) {
 			TextInput(in keyboardState, text);
-			OnTextInput?.Invoke(this, in keyboardState, text);
+			if (OnTextInput != null) {
+				UI.ResetKeyEventConsumed();
+				OnTextInput?.Invoke(this, in keyboardState, text);
+			}
 		}
 
-		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { }
-		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { }
-		public virtual void TextInput(in KeyboardState keyboardState, string text) { }
+		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
 
 		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
 		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
@@ -1243,7 +1346,7 @@ namespace Nucleus.UI
 			return false;
 		}
 
-		public bool KeyboardFocused => EngineCore.KeyboardFocusedElement == this;
+		public bool KeyboardFocused => UI.KeyboardFocusedElement == this;
 
 		public KeybindSystem Keybinds { get; } = new();
 		public Anchor Anchor { get; set; } = Anchor.TopLeft;
@@ -1252,6 +1355,7 @@ namespace Nucleus.UI
 		public Texture? Image { get; set; }
 		public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
+		public Vector2F ImageOffset { get; set; } = new(0);
 		public Vector2F ImagePadding { get; set; } = new(0);
 		public float ImageRotation { get; set; } = 0;
 		public bool ImageFlipX { get; set; } = false;
@@ -1340,8 +1444,8 @@ namespace Nucleus.UI
 					break;
 			}
 
-			destRect.X += ImagePadding.X;
-			destRect.Y += ImagePadding.Y;
+			destRect.X += ImagePadding.X + ImageOffset.X;
+			destRect.Y += ImagePadding.Y + ImageOffset.Y;
 			destRect.Width -= ImagePadding.X * 2;
 			destRect.Height -= ImagePadding.Y * 2;
 
@@ -1384,7 +1488,7 @@ namespace Nucleus.UI
 		}
 
 		public Vector2F CursorPos() {
-			return EngineCore.CurrentFrameState.Mouse.MousePos - GetGlobalPosition();
+			return Level.FrameState.Mouse.MousePos - GetGlobalPosition();
 		}
 
 		public bool ShouldDrawImage { get; set; } = true;

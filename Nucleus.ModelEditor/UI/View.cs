@@ -195,7 +195,6 @@ public class DragRenderer : LogicalEntity {
 
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
-		var hovered = frameState.HoveredUIElement;
 
 		ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(Dragging, this.Level.UI);
 		if (dividerAddingTo.Failed) return;
@@ -325,7 +324,6 @@ public class ViewDivision : Panel
 			};
 			switcher.MouseReleasedOrLostEvent += (self, state, btn, lost) => {
 				if (dragging) {
-					Element? hoveredUI = state.HoveredUIElement;
 					int index = 0;
 					ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(view, UI);
 					

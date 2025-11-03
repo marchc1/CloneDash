@@ -25,6 +25,7 @@ namespace Nucleus.UI
 			popup.Titlebar.MinimizeButton.Visible = false;
 			popup.Titlebar.MaximizeButton.Visible = false;
 			popup.MakePopup();
+			popup.MakeModal();
 
 			FlexPanel containButtons = popup.Add<FlexPanel>();
 			containButtons.Dock = Dock.Bottom;
@@ -37,13 +38,13 @@ namespace Nucleus.UI
 			close.Text = "Cancel";
 			close.MouseReleaseEvent += (_, _, _) => {
 				onCancel?.Invoke();
-				popup.Remove();
+				popup.Close();
 			};
 			Button ok = containButtons.Add<Button>();
 			ok.Text = "OK";
 			ok.MouseReleaseEvent += (_, _, _) => {
 				onOK?.Invoke();
-				popup.Remove();
+				popup.Close();
 			};
 			if (okHighlighted)
 				ok.TriggeredWhenEnterPressed = true;

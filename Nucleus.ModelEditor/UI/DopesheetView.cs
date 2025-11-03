@@ -164,7 +164,7 @@ public class DopesheetView : BaseTimelineView
 		Graphics2D.SetDrawColor(FrameDraggingColor);
 		Graphics2D.DrawLine(xDrag, height / 2, xDrag, height);
 
-		string curframeText = $"{(EngineCore.CurrentFrameState.Keyboard.ShiftDown ? Math.Round(curframe, 2) : curframe)}";
+		string curframeText = $"{(EngineCore.Level.FrameState.Keyboard.ShiftDown ? Math.Round(curframe, 2) : curframe)}";
 
 		RenderGradientFrameText(KeyframeInfoPanel, xDrag, height, curframeText, FrameDraggingColor);
 	}

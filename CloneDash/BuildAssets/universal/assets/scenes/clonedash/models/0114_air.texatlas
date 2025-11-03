@@ -1,0 +1,21 @@
+TextureAtlasVersion1
+0114/images_air/body
+	X: 0
+	Y: 0
+	W: 197
+	H: 161
+0114/images_air/shadow
+	X: 0
+	Y: 161
+	W: 148
+	H: 56
+0114/images_air/wheel_left
+	X: 148
+	Y: 161
+	W: 35
+	H: 34
+0114/images_air/wheel_right
+	X: 183
+	Y: 161
+	W: 34
+	H: 34

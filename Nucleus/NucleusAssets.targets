@@ -1,0 +1,25 @@
+﻿<Project>
+	<PropertyGroup>
+		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+	</PropertyGroup>
+	
+	<Target Name="NucleusPreBuild" BeforeTargets="PreBuildEvent">
+		<ItemGroup>
+			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+
+		<ItemGroup Condition="'$(IsWindows)' == 'true'">
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
+		</ItemGroup>
+		<ItemGroup Condition="'$(IsOSX)' == 'true'">
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
+		</ItemGroup>
+		<ItemGroup Condition="'$(IsLinux)' == 'true'">
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PlatformAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+	</Target>
+</Project>
