@@ -198,6 +198,7 @@ public unsafe class OSWindow : IValidatable
 			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
+		SDL3.SDL_SetHint("SDL_MOUSE_FOCUS_CLICKTHROUGH", "1");
 		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
 
 		if (shareContext)
@@ -662,11 +663,6 @@ public unsafe class OSWindow : IValidatable
 		return false;
 	}
 
-	/// <summary>
-	/// Will focus being gained be treated as a mouse click as well, if applicable.
-	/// </summary>
-	public const bool WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY = false;
-
 	public static OSWindow? Hovered { get; set; }
 
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
@@ -857,10 +853,6 @@ public unsafe class OSWindow : IValidatable
 #endif
 				var time = OS.GetTime();
 				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
-						if (WILL_FOCUS_GAINED_RESULT_IN_MOUSE_QUERY)
-							SDL3.SDL_CaptureMouse(true);
-						break;
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 						// We need to read the text now to avoid race conditioning.
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
@@ -898,70 +890,13 @@ public unsafe class OSWindow : IValidatable
 		int depth = 0, pitch = 0;
 
 		switch (image.Format) {
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:
-				rmask = 0xFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 8; pitch = image.Width;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:
-				rmask = 0xFF; gmask = 0xFF00;
-				bmask = 0; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G6B5:
-				rmask = 0xF800; gmask = 0x07E0;
-				bmask = 0x001F; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8:
-				rmask = 0xFF0000; gmask = 0x00FF00;
-				bmask = 0x0000FF; amask = 0;
-				depth = 24; pitch = image.Width * 3;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
-				rmask = 0xF800; gmask = 0x07C0;
-				bmask = 0x003E; amask = 0x0001;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
-				rmask = 0xF000; gmask = 0x0F00;
-				bmask = 0x00F0; amask = 0x000F;
-				depth = 16; pitch = image.Width * 2;
-				break;
+			// Can look into other formats later.
 			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
-				rmask = 0xFF000000; gmask = 0x00FF0000;
-				bmask = 0x0000FF00; amask = 0x000000FF;
+				rmask = 0x000000FF;
+				gmask = 0x0000FF00;
+				bmask = 0x00FF0000;
+				amask = 0xFF000000;
 				depth = 32; pitch = image.Width * 4;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32:
-				rmask = 0xFFFFFFFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 32; pitch = image.Width * 4;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32:
-				rmask = 0xFFFFFFFF; gmask = 0xFFFFFFFF;
-				bmask = 0xFFFFFFFF; amask = 0;
-				depth = 96; pitch = image.Width * 12;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
-				rmask = 0xFFFFFFFF; gmask = 0xFFFFFFFF;
-				bmask = 0xFFFFFFFF; amask = 0xFFFFFFFF;
-				depth = 128; pitch = image.Width * 16;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16:
-				rmask = 0xFFFF; gmask = 0;
-				bmask = 0; amask = 0;
-				depth = 16; pitch = image.Width * 2;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16G16B16:
-				rmask = 0xFFFF; gmask = 0xFFFF;
-				bmask = 0xFFFF; amask = 0;
-				depth = 48; pitch = image.Width * 6;
-				break;
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R16G16B16A16:
-				rmask = 0xFFFF; gmask = 0xFFFF;
-				bmask = 0xFFFF; amask = 0xFFFF;
-				depth = 64; pitch = image.Width * 8;
 				break;
 			default:
 				// Compressed formats are not supported
