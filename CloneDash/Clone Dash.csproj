@@ -30,7 +30,6 @@
 		<ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
-		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

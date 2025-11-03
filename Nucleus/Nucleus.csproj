@@ -20,18 +20,11 @@
 		<PackageReference Include="Delaunator" Version="1.0.11" />
 		<PackageReference Include="FftSharp" Version="2.2.0" />
 		<PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.920.0" />
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Raylib-cs\Raylib-cs.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Rendering\Raylib\" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(IsWindows)'=='true'">
