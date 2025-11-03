@@ -23,7 +23,7 @@
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
 	</ItemGroup>
 
-	<Import Project ="..\Nucleus\NucleusAssets.targets"/>
+	<Import Project ="..\NucleusAssets.targets"/>
 	
 	<PropertyGroup Condition="'$(IsWindows)'=='true'">
 		<DefineConstants>COMPILED_WINDOWS</DefineConstants>
