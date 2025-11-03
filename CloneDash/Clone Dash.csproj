@@ -20,7 +20,7 @@
 		<PackageReference Include="LuaCSharp" Version="0.4.2" />
 		<PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="System.Text.Json" Version="9.0.10" />
 	</ItemGroup>
 
