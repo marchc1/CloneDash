@@ -256,8 +256,6 @@ public unsafe class OSWindow : IValidatable
 		Vector2F p = new(point->x, point->y);
 		OSWindow osWindow = windowLookup_id2window[SDL3.SDL_GetWindowID(window)];
 		Level? level = EngineCore.GetWindowLevel(osWindow);
-		osWindow.Mouse.CurrentMousePosition.X = p.x;
-		osWindow.Mouse.CurrentMousePosition.Y = p.y;
 		if (level != null)
 			return (SDL_HitTestResult)level.WindowHitTest(p);
 		return SDL_HitTestResult.SDL_HITTEST_NORMAL;
