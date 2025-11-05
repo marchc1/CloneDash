@@ -115,7 +115,7 @@ public class MuseDashSong : ChartSong
 	}
 
 	protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
-		if (CoverTexture != null) {
+		if (IValidatable.IsValid(CoverTexture)) {
 			callback(CoverTexture);
 			return;
 		}
