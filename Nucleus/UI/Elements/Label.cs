@@ -75,7 +75,7 @@ namespace Nucleus.UI
 			textRanges.Clear();
 			fullTextSize = default;
 
-			if(wordWrap == false) {
+			if (wordWrap == false) {
 				return;
 			}
 
@@ -95,6 +95,10 @@ namespace Nucleus.UI
 			void pushWorkingRange() {
 				if (textRanges.Count >= 1)
 					textHeightOffset += textRanges[textRanges.Count - 1].Height;
+
+				if (workingRange.Length > 0)
+					workingRange.End -= 1; // Cut off the space
+
 				textRanges.Add(workingRange);
 
 				fullTextSize.W = Math.Max(fullTextSize.W, workingRange.Width);
@@ -124,7 +128,7 @@ namespace Nucleus.UI
 					workingRange.Width += Graphics2D.GetTextSize(" ", Font, TextSize).W;
 
 				workingRange.Height = Math.Max(wordSize.H, workingRange.Height);
-				workingRange.End += word.Length + (lastWord ? 0 : 1);
+				workingRange.End += word.Length + 1;
 
 				wordPos += spacePos + 1;
 			}
@@ -191,7 +195,7 @@ namespace Nucleus.UI
 					startDrawingPosition.Y -= textHeightOffset;
 			}
 
-			
+
 			foreach (var range in ranges) {
 				Graphics2D.DrawText(startDrawingPosition, Text.AsSpan()[range.Start..range.End], Font, TextSize, TextAlignment);
 				startDrawingPosition.Y += range.Height;
