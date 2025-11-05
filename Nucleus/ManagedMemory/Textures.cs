@@ -219,8 +219,8 @@ namespace Nucleus.ManagedMemory
 			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
 
 			Texture tex = new(this, Filesystem.ReadTexture(new(pathID), new(path) /* << TODO */), true);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
-
+			tex.GenerateMipmaps();
+			tex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
 			LoadedTexturesFromFile.Add(managedPath, tex);
 			LoadedFilesFromTexture.Add(tex, managedPath);
 			Textures.Add(tex);
