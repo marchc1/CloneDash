@@ -123,7 +123,7 @@ public static class EngineCore
 
 		if (window == null)
 			return DUMMY;
-		if(!window.IsValid())
+		if (!window.IsValid())
 			return DUMMY;
 		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
 			return value;
@@ -662,8 +662,7 @@ public static class EngineCore
 	static void PerWindowFrame() {
 		NProfiler.Reset();
 
-		if (Window.MouseFocused)
-			MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
+		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
@@ -780,7 +779,8 @@ public static class EngineCore
 			FrameTime += waitTime;
 		}
 
-		Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
+		if (Window.MouseFocused)
+			Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
 
 		if (Window.UserClosed()) {
 			Close();

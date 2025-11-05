@@ -331,7 +331,8 @@ public unsafe class OSWindow : IValidatable
 		handleSDLTextInputState();
 		flushWindowGeometry();
 		applyHitTest();
-		SDL3.SDL_SetCursor(this.cursor);
+		if(MouseFocused)
+			SDL3.SDL_SetCursor(cursor);
 		lastFlags = curFlags;
 		curFlags = SDL3.SDL_GetWindowFlags(handle);
 		hasLastWinflags = true;
