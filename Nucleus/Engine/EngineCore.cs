@@ -633,7 +633,7 @@ public static class EngineCore
 			return MathF.Round(1.0f / fps_average);
 		}
 	}
-	public static ConVar fps_max = ConVar.Register("fps_max", "0", ConsoleFlags.Saved, "Default frames per second. By default, unlimited.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
+	public static ConVar fps_max = ConVar.Register("fps_max", "300", ConsoleFlags.Saved, "Default frames per second.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 	public static ConVar r_renderat = ConVar.Register("renderrate", "60", ConsoleFlags.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
 	public static ConVar gc_collectperframe = ConVar.Register("gc_collectperframe", "0", ConsoleFlags.Saved, "If set to 1, Nucleus will perform a forced gen-0 garbage collection after every frame. This is an experiment, mileage may vary.", 0, 1);
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
