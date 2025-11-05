@@ -160,6 +160,9 @@ namespace Nucleus.UI
 		}
 
 		public void PopulateAutocomplete() {
+			if (!Autocomplete)
+				return;
+
 			Span<char> writeBuffer = stackalloc char[1024 * 8];
 			string? completionRow = Rows[Caret.Row];
 			if (completionRow == null) {
@@ -187,7 +190,7 @@ namespace Nucleus.UI
 				Span<char> oneString = writeBuffer[..writeBuffer.IndexOf('\0')];
 				AutocompletePanel.AddOption((int)FontHeight, oneString);
 
-				writeBuffer = writeBuffer[oneString.Length..];
+				writeBuffer = writeBuffer[(oneString.Length + 1)..];
 			}
 			lastAutocompleteStart = start;
 		}

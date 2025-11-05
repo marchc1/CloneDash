@@ -1,5 +1,6 @@
 ﻿using Nucleus.Files;
 using Nucleus.Types;
+using Nucleus.Util;
 
 using Raylib_cs;
 using System.Runtime.InteropServices;
@@ -11,12 +12,12 @@ namespace Nucleus.Core
     {
         private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 
-        public readonly Dictionary<string, FontEntry> FontNameToFilepath = new();
+        public readonly Dictionary<UtlSymId_t, FontEntry> FontNameToFilepath = new();
 
 		// A dictionary of live fonts.
-        private readonly Dictionary<string, Dictionary<int, Font>> FontTable = new();
+        private readonly Dictionary<UtlSymId_t, Dictionary<int, Font>> FontTable = new();
 		// A dictionary of fonts marked to be killed.
-        private readonly Dictionary<string, Dictionary<int, Font>> FontsMarkedForDeath = new();
+        private readonly Dictionary<UtlSymId_t, Dictionary<int, Font>> FontsMarkedForDeath = new();
 
         private bool AreFontsDirty = false;
 
@@ -25,23 +26,26 @@ namespace Nucleus.Core
 
         public FontManager(Dictionary<string, FontEntry> fonttable, string[]? codepoints = null) {
             codepoints = codepoints ?? [];
-            FontNameToFilepath = fonttable;
+            FontNameToFilepath = [];
+			foreach (var kvp in fonttable) 
+				FontNameToFilepath[kvp.Key.AsSpan().Hash()] = kvp.Value;
             foreach (var codepointStr in codepoints)
                 RegisterCodepoints(codepointStr);
         }
-        public Font this[string text, string fontName, int fontSize] {
+        public Font this[ReadOnlySpan<char> text, ReadOnlySpan<char> fontName, int fontSize] {
             get {
                 // determine if fonts need to be cleaned due to new codepoints
                 // is there a better way to do this?
 
                 bool wasFirst = !AreFontsDirty;
                 if (text != null) {
-					for (int i = 0; i < text.Length; i++) {
-						Rune unicodeRune = Rune.GetRuneAt(text, i);
+					for (int i = 0; i < text.Length;) {
+						Rune unicodeRune = text.GetRuneAt(i);
 						AreFontsDirty |= RegisteredCodepointsHash.Add(unicodeRune.Value);
+						i += unicodeRune.Utf16SequenceLength;
 					}
 
-                    if (AreFontsDirty && wasFirst) {
+					if (AreFontsDirty && wasFirst) {
 						// We have to unload all fonts and reload them with new codepoints.
 						// We will do that before the next frame to ensure nothing is stuck with invalid font textures.
 
@@ -64,13 +68,14 @@ namespace Nucleus.Core
                     }
                 }
 
-                if (!FontTable.TryGetValue(fontName, out Dictionary<int, Font>? f1)) {
-                    FontTable[fontName] = new();
-                    f1 = FontTable[fontName];
+				UtlSymId_t fontHash = fontName.Hash();
+				if (!FontTable.TryGetValue(fontHash, out Dictionary<int, Font>? f1)) {
+                    FontTable[fontHash] = new();
+                    f1 = FontTable[fontHash];
                 }
 
                 if (!f1.TryGetValue(fontSize, out Font font)) {
-					var entry = FontNameToFilepath[fontName];
+					var entry = FontNameToFilepath[fontHash];
 
 					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepointsHash.ToArray(), RegisteredCodepointsHash.Count);
 					Raylib.GenTextureMipmaps(ref newFont.Texture);

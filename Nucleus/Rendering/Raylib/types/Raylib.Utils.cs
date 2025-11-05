@@ -1002,6 +1002,11 @@ public static unsafe partial class Raylib
 		return MeasureTextEx(font, str1.AsPointer(), fontSize, spacing);
 	}
 
+	public static Vector2 MeasureTextEx(Font font, ReadOnlySpan<char> text, float fontSize, float spacing) {
+		using var str1 = text.ToUtf8Buffer();
+		return MeasureTextEx(font, str1.AsPointer(), fontSize, spacing);
+	}
+
 	/// <summary>Get all codepoints in a string, codepoints count returned by parameters</summary>
 	public static int[] LoadCodepoints(string text, ref int count) {
 		using var str1 = text.ToUtf8Buffer();

@@ -171,10 +171,10 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __offset = __offset + by;
 		public static void SetOffset(Vector2F offset) => __offset = offset;
 
-		public static Font GetFont(string fontName, float fontSize) {
+		public static Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
 			return FontManager["", fontName, (int)fontSize];
 		}
-		public static Vector2F GetTextSize(string message, string font, float fontSize) {
+		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);
 			return new(s.X, s.Y);
 		}
@@ -192,9 +192,9 @@ namespace Nucleus.Core
 		public struct TextChunk {
 			public string Text;
 			public string Font;
-			public TextChunk(string text, string font) {
-				Text = text;
-				Font = font;
+			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
+				Text = new(text);
+				Font = new(font);
 			}
 		}
 		public struct MappedText {
@@ -204,13 +204,12 @@ namespace Nucleus.Core
 		}
 
 		// TODO: Fully deprecate string based API's
-		public static void DrawText(Vector2F pos, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[null, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, string message, string font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
-		public static void DrawText(Vector2F pos, string message, string font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
-		public static void DrawText(float x, float y, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
-		public static void DrawText(Vector2F pos, string message, string font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) => DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
 		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) => DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment().horizontal, drawAnchor.ToTextAlignment().vertical);
 		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
