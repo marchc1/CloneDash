@@ -70,7 +70,7 @@ namespace Nucleus.UI.Elements
 					_ => new(0, 0),
 				};
 				ImageRenderer.ImageOrientation = ImageOrientation.Zoom;
-				ImageRenderer.ImagePadding = new(6, 6);
+				ImageRenderer.ImagePadding = ImagePadding;
 				ImageRenderer.DrawPanelBackground = false;
 			}
 		}
@@ -83,6 +83,7 @@ namespace Nucleus.UI.Elements
 
 		protected override void Initialize() {
 			base.Initialize();
+			ImagePadding = new(6, 6);
 			Dock = Dock.Top;
 			Size = new(0, this.Parent is UserInterface ? 34 : 42);
 			if (this.Parent is not UserInterface)
