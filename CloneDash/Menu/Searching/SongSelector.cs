@@ -303,7 +303,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			if (GetSongsList().Count > 0) {
 				var song = GetDiscSong(disc);
-				var cover = song.GetCover();
+				ChartCover? cover = song.GetCoverWhenAvailable(this);
 
 				disc.Text = "";
 				if (cover != null) {

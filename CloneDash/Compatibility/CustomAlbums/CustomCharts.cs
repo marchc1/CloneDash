@@ -120,32 +120,28 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
-			protected override ChartCover? ProduceCover() {
+			protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
 				if (Archive != null) {
 					var coverBytes = GetByteArray(Archive, "cover.png");
-					using (Raylib.ImageRef img = new(".png", coverBytes)) {
-						var tex = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+					Raylib.ImageRef img = new(".png", coverBytes);
+					var tex = Raylib.LoadTextureFromImage(img);
+					Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
-						return new() {
+					MainThread.RunASAP(() => {
+						callback(new() {
 							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
-						};
-					}
+						});
+						img.Dispose();
+					});
 				}
 				else {
-					DeferringCoverToAsyncHandler = true;
-
 					WebChart.GetCoverAsTextureAsync((tex) => {
 						if (tex == null) return;
 
-						lock (AsyncLock) {
-							CoverTexture = new() {
-								Texture = tex
-							};
-						}
+						CoverTexture = new() {
+							Texture = tex
+						};
 					});
-
-					return null;
 				}
 			}
 
@@ -179,11 +175,11 @@ namespace CloneDash.Compatibility.CustomAlbums
 					try {
 						info = JsonConvert.DeserializeObject<CustomChartInfoJSON>(GetString(Archive, "info.json")) ?? throw new Exception("Bad info.json!");
 					}
-					catch(Exception ex) {
+					catch (Exception ex) {
 						corruptInfo = true;
 						Logs.Error($"The CustomCharts SearchPath '{Archive.ToString()}' failed to produce info.json: {ex.Message}");
 					}
-					if (info == null) 
+					if (info == null)
 						return null;
 
 					Name = info.name;

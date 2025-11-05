@@ -5,8 +5,11 @@ using Nucleus.Audio;
 
 using Raylib_cs;
 
+using System.Collections.Concurrent;
+
 namespace CloneDash.Data
 {
+	public delegate void ChartCoverAvailableToMainThreadFn(ChartCover? cover);
 	public abstract class ChartSong
 	{
 		private bool __gotDemoTrack = false;
@@ -47,15 +50,13 @@ namespace CloneDash.Data
 			__gotCover = false;
 			CoverTexture = null;
 			Sheets.Clear();
-
-			DeferringCoverToAsyncHandler = false;
 		}
 
 		// These methods will be called when their respective data is not set. They are protected for that reason.
 
 		protected object AsyncLock { get; } = new object();
 		protected bool DeferringDemoToAsyncHandler { get; set; }
-		protected bool DeferringCoverToAsyncHandler { get; set; }
+
 
 		public bool IsLoadingDemoAsync {
 			get {
@@ -64,17 +65,10 @@ namespace CloneDash.Data
 				}
 			}
 		}
-		public bool IsLoadingCoverAsync {
-			get {
-				lock (AsyncLock) {
-					return DeferringCoverToAsyncHandler && CoverTexture == null;
-				}
-			}
-		}
 
 		protected abstract MusicTrack ProduceAudioTrack();
 		protected abstract MusicTrack? ProduceDemoTrack();
-		protected abstract ChartCover? ProduceCover();
+		protected abstract void ProduceCover(ChartCoverAvailableToMainThreadFn callback);
 		protected abstract ChartInfo? ProduceInfo();
 		protected abstract ChartSheet ProduceSheet(int id);
 
@@ -111,19 +105,35 @@ namespace CloneDash.Data
 			return DemoTrack;
 		}
 
-		public ChartCover? GetCover() {
-			if (DeferringCoverToAsyncHandler) {
-				lock (AsyncLock) {
-					return CoverTexture;
-				}
+		// TODO: This all really sucks!
+		readonly ConcurrentDictionary<object, ChartCoverAvailableToMainThreadFn> chartCoverCallbacks = [];
+		public ChartCover? GetCoverWhenAvailable(object consumer) {
+			ChartCover? cover = null;
+			GetCoverWhenAvailable(consumer, (c) => cover = c);
+			return cover;
+		}
+		public void GetCoverWhenAvailable(object consumer, ChartCoverAvailableToMainThreadFn fn) {
+			if(CoverTexture != null) {
+				fn(CoverTexture);
+				return;
 			}
 
-			if (__gotCover == true)
-				return CoverTexture;
+			if (chartCoverCallbacks.ContainsKey(consumer))
+				return;
 
-			CoverTexture = ProduceCover();
-			__gotCover = true;
-			return CoverTexture;
+			int count = chartCoverCallbacks.Count;
+			chartCoverCallbacks[consumer] = fn;
+			if (count == 0)
+				Task.Run(StartRetrievingCover);
+		}
+
+		private void StartRetrievingCover() {
+			ProduceCover((cover) => {
+				CoverTexture = cover;
+					foreach (var callback in chartCoverCallbacks)
+						callback.Value(cover);
+					chartCoverCallbacks.Clear();
+			});
 		}
 
 		public virtual bool ShouldReproduceSheet(int difficulty) => false;

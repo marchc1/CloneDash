@@ -213,7 +213,6 @@ public class MainMenuLevel : Level
 		// Load all slow-to-get info now before the Window loads
 		MusicTrack? track = selector.ActiveTrack;
 		var info = song.GetInfo();
-		var cover = song.GetCover();
 
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
 

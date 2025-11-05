@@ -5,6 +5,7 @@ using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;
+
 using System.Net;
 
 namespace CloneDash.Compatibility.MDMC;
@@ -123,18 +124,21 @@ public struct MDMCChart
 		Task.Run(async () => {
 			var response = await MDMCWebAPI.Http.GetAsync(coverURL);
 
-			MainThread.RunASAP(() => {
-				if (!response.IsSuccessStatusCode)
+			if (!response.IsSuccessStatusCode)
+				MainThread.RunASAP(() => {
 					callback?.Invoke(null);
-				else {
-					using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
-						var tex2d = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
-						Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
-						callback?.Invoke(tex);
-					}
-				}
-			});
+				});
+			else {
+				Raylib.ImageRef img = new(".png", response.Content.ReadAsStream());
+				MainThread.RunASAP(() => {
+					var tex2d = Raylib.LoadTextureFromImage(img);
+					Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+					Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+					callback?.Invoke(tex);
+					img.Dispose();
+				});
+			}
+
 		});
 	}
 
@@ -164,7 +168,7 @@ public struct MDMCChart
 		string mp3URL = demo ? DemoMP3URL : MP3URL;
 		Task.Run(async () => {
 			var response = await MDMCWebAPI.Http.GetAsync(oggURL);
-			if (!response.IsSuccessStatusCode) 
+			if (!response.IsSuccessStatusCode)
 				response = await MDMCWebAPI.Http.GetAsync(mp3URL);
 
 			MainThread.RunASAP(() => {
@@ -243,7 +247,7 @@ public struct MDMCScore
 	[JsonProperty("id")] public string ID;
 	[JsonProperty("user")] public MDMCSheetUser User;
 	[JsonProperty("sheet")] public string SheetID;
-    [JsonProperty("hash")] public string Hash;
+	[JsonProperty("hash")] public string Hash;
 	[JsonProperty("score")] public int Score;
 	[JsonProperty("accuracy")] public float Accuracy;
 	[JsonProperty("combo")] public int Combo;
@@ -280,7 +284,7 @@ public class MDMCWebAPIPromise
 
 	public MDMCWebAPIPromise(string url) {
 		Task.Run(async () => {
-            var response = await MDMCWebAPI.Http.GetAsync(url);
+			var response = await MDMCWebAPI.Http.GetAsync(url);
 
 			MainThread.RunASAP(() => {
 				__finished = true;
@@ -356,14 +360,14 @@ public static class MDMCWebAPI
 	{
 		Ascending,
 		Descending
-    }
+	}
 	private static string getSortOrder(SortOrder order) => order switch {
 		SortOrder.Ascending => "asc",
 		SortOrder.Descending => "desc",
 		_ => throw new Exception("Unsupported SortOrder value!")
 	};
 
-    private static string buildParameters(Dictionary<string, object> parameters) {
+	private static string buildParameters(Dictionary<string, object> parameters) {
 		string[] list = new string[parameters.Count];
 		int i = 0;
 		foreach (var kvp in parameters) {
@@ -372,7 +376,7 @@ public static class MDMCWebAPI
 				string s => s,
 				Sort s => getSort(s),
 				SortOrder s => getSortOrder(s),
-                _ => kvp.Value.ToString() ?? throw new Exception("null")
+				_ => kvp.Value.ToString() ?? throw new Exception("null")
 			};
 
 			list[i] = $"{key}={value}";
@@ -390,7 +394,7 @@ public static class MDMCWebAPI
 			{ "q", query ?? "" },
 			{ "sort", sort },
 			{ "order", order },
-            { "page", page },
+			{ "page", page },
 			{ "rankedOnly", rankedOnly.ToString().ToLower() }
 		});
 

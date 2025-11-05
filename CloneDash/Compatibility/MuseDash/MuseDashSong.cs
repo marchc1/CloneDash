@@ -15,6 +15,7 @@ using OdinSerializer;
 
 using Raylib_cs;
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
@@ -113,25 +114,41 @@ public class MuseDashSong : ChartSong
 		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
-	protected override ChartCover? ProduceCover() {
-		if (CoverTexture != null)
-			return CoverTexture;
+	protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
+		if (CoverTexture != null) {
+			callback(CoverTexture);
+			return;
+		}
 
+		// var start = new Stopwatch();
+		// start.Start();
 		Texture2D? tex2D = MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(__jsonInfo.Cover);
-		if (tex2D == null) return null;
+		if (tex2D == null) {
+			callback(null);
+			return;
+		} 
 
 		var img = tex2D.ToRaylib();
+		// start.Stop();
+		// Logs.Debug($"Took {start.Elapsed.TotalMilliseconds} milliseconds to load cover of size {img.Width}x{img.Height} on task thread");
 
-		var tex = Raylib.LoadTextureFromImage(img);
-		Raylib.GenTextureMipmaps(ref tex);
-		Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
-		Raylib.UnloadImage(img);
-		CoverTexture = new() {
-			Texture = new(EngineCore.Level.Textures, tex, true),
-			Flipped = true
-		};
+		MainThread.RunASAP(() => {
+			// var start = new Stopwatch();
+			// start.Start();
 
-		return CoverTexture;
+			var tex = Raylib.LoadTextureFromImage(img);
+			Raylib.GenTextureMipmaps(ref tex);
+			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+			Raylib.UnloadImage(img);
+			CoverTexture = new() {
+				Texture = new(EngineCore.Level.Textures, tex, true),
+				Flipped = true
+			};
+			// start.Stop();
+			// Logs.Debug($"Took {start.Elapsed.TotalMilliseconds} milliseconds to load cover of size {img.Width}x{img.Height} on main thread");
+
+			callback(CoverTexture);
+		});
 	}
 
 	protected override ChartSheet ProduceSheet(int mapID) {
