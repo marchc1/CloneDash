@@ -174,7 +174,7 @@ namespace Nucleus.UI
 			}
 
 			Span<TextRange> ranges = textRanges.AsSpan();
-			Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
+			Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), TextPadding);
 			TextAlignment vertical = TextAlignment.ToTextAlignment().vertical;
 
 			Graphics2D.SetDrawColor(textC);
