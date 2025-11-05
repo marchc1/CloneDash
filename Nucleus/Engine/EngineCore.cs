@@ -535,10 +535,12 @@ public static class EngineCore
 		}
 	}
 
+	public static int BorderlessScreenPadding = 2;
+
 	public static Vector2F GetScreenSize() {
 		Vector2F ret = Window.Size;
 		if (IsUndecorated && !Maximized)
-			ret -= new Vector2F(8);
+			ret -= new Vector2F(BorderlessScreenPadding * 2);
 		return ret;
 	}
 
@@ -548,7 +550,7 @@ public static class EngineCore
 		if (!IsUndecorated || Maximized)
 			return Vector2F.Zero;
 
-		return new(4);
+		return new(BorderlessScreenPadding);
 	}
 
 	public static GameInfo GameInfo;
