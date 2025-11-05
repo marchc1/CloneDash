@@ -457,16 +457,19 @@ public static class EngineCore
 			callback(window);
 		}, width, height, title, flags);
 	}
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level {
+	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, Action<OSWindow>? callback = null, params object[] args) where T : Level {
 		SubWindow((window) => {
 			OSWindow lastWindow = Window;
 			MakeWindowCurrent(window);
 			{
 				__loadLevel(window, level, args);
 			}
+			callback?.Invoke(window);
 			MakeWindowCurrent(lastWindow);
 		}, width, height, title, flags);
 	}
+	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level
+		=> LoadLevelSubWindow(level, width, height, title, flags, null, args);
 
 	public static void UnloadLevel() {
 		LoadingLevel = true;
