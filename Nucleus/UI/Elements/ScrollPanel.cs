@@ -16,6 +16,22 @@ namespace Nucleus.UI
 		public Scrollbar HorizontalScrollbar { get; private set; }
 		public ScrollMainPanel MainPanel { get; private set; }
 
+		bool horizontalOverflow = true, verticalOverflow = true;
+
+		public bool HorizontalOverflow {
+			get => horizontalOverflow; set {
+				horizontalOverflow = value;
+				InvalidateLayout();
+			}
+		}
+
+		public bool VerticalOverflow {
+			get => verticalOverflow; set {
+				verticalOverflow = value;
+				InvalidateLayout();
+			}
+		}
+
 		protected override void Initialize() {
 			base.Initialize();
 			VerticalScrollbar = base.Add<Scrollbar>();
@@ -64,14 +80,26 @@ namespace Nucleus.UI
 		protected override void OnThink(FrameState frameState) {
 			base.OnThink(frameState);
 
-			VerticalScrollbar.PageContents = AddParent.SizeOfAllChildren;
-			VerticalScrollbar.PageSize = AddParent.RenderBounds.Size;
-			HorizontalScrollbar.PageContents = AddParent.SizeOfAllChildren;
-			HorizontalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			if (VerticalOverflow) {
+				VerticalScrollbar.PageContents = AddParent.SizeOfAllChildren;
+				VerticalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			}
+			else {
+				VerticalScrollbar.PageContents = new(0);
+			}
+
+			if (HorizontalOverflow) {
+				HorizontalScrollbar.PageContents = AddParent.SizeOfAllChildren;
+				HorizontalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			}
+			else {
+				HorizontalScrollbar.PageContents = new(0);
+			}
 
 			MainPanel.Clipping = true;
 
 			VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
+			HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
 			foreach (Element child in MainPanel.Children) {
 				if (ShouldItemBeVisible(child)) {
