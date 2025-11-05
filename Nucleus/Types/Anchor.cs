@@ -71,12 +71,12 @@
 		public static Vector2F CornerEdgeOffset(this Anchor anchor, Vector2F textPadding) {
 			var offset = Vector2F.Zero;
 			switch (anchor.GetHorizontalRatio()) {
-				case 0: offset.X = textPadding.X; break;
-				case 1: offset.X = -textPadding.X; break;
+				case 0f: offset.X = textPadding.X; break;
+				case 1f: offset.X = -textPadding.X; break;
 			}
 			switch (anchor.GetVerticalRatio()) {
-				case 0: offset.Y = textPadding.Y; break;
-				case 1: offset.Y = -textPadding.Y; break;
+				case 0f: offset.Y = textPadding.Y; break;
+				case 1f: offset.Y = -textPadding.Y; break;
 			}
 			return offset;
 		}
@@ -111,7 +111,7 @@
 				case Anchor.Center: return 0.5f;
 				case Anchor.CenterRight: return 0.5f;
 				case Anchor.BottomLeft: return 1f;
-				case Anchor.BottomCenter: return 15f;
+				case Anchor.BottomCenter: return 1f;
 				case Anchor.BottomRight: return 1f;
 			}
 			throw new NotImplementedException();

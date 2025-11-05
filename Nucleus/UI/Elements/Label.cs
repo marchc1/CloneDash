@@ -52,7 +52,6 @@ namespace Nucleus.UI
 		}
 		readonly List<TextRange> textRanges = [];
 		Vector2F fullTextSize;
-		float textHeightOffset;
 
 		bool wordWrap;
 		public bool WordWrap {
@@ -84,7 +83,6 @@ namespace Nucleus.UI
 			int startPos = 0;
 			int endPos = 0;
 
-
 			ReadOnlySpan<char> text = Text;
 			TextRange workingRange = new() { OriginalText = Text };
 			Vector2F workingArea = RenderBounds.Size - TextPadding - new Vector2F(4, 4);
@@ -93,9 +91,6 @@ namespace Nucleus.UI
 			int spacePos;
 
 			void pushWorkingRange() {
-				if (textRanges.Count >= 1)
-					textHeightOffset += textRanges[textRanges.Count - 1].Height;
-
 				if (workingRange.Length > 0)
 					workingRange.End -= 1; // Cut off the space
 
@@ -190,9 +185,9 @@ namespace Nucleus.UI
 
 			if (ranges.Length > 1) {
 				if (vertical == Types.TextAlignment.Center)
-					startDrawingPosition.Y -= textHeightOffset / 2;
+					startDrawingPosition.Y -= (fullTextSize.H - ranges[0].Height) / 2;
 				else if (vertical == Types.TextAlignment.Bottom)
-					startDrawingPosition.Y -= textHeightOffset;
+					startDrawingPosition.Y -= fullTextSize.H - ranges[0].Height;
 			}
 
 
