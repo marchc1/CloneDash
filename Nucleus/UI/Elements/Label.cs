@@ -87,7 +87,7 @@ namespace Nucleus.UI
 
 			ReadOnlySpan<char> text = Text;
 			TextRange workingRange = new() { OriginalText = Text };
-			Vector2F workingArea = RenderBounds.Size - TextPadding;
+			Vector2F workingArea = RenderBounds.Size - TextPadding - new Vector2F(4, 4);
 
 			int wordPos = 0;
 			int spacePos;
