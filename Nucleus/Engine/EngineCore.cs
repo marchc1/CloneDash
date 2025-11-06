@@ -39,7 +39,8 @@ public static class EngineCore
 	}
 	[ConCommand(Help: "Creates a new null subwindow")]
 	static void nullwindow(ConCommandArguments args) {
-		EngineCore.SubWindow(args.GetInt(0, out int x) ? x : 640, args.GetInt(1, out int y) ? y : 480, args.GetString(2) ?? "Nucleus Subwindow");
+		for (int i = 0, c = args.GetInt(3, out int count) ? count : 1; i < c; i++)
+			EngineCore.SubWindow(args.GetInt(0, out int x) ? x : 640, args.GetInt(1, out int y) ? y : 480, args.GetString(2) ?? "Nucleus Subwindow");
 	}
 
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
