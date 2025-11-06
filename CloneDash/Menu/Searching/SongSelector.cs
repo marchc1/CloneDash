@@ -279,6 +279,19 @@ public class SongSelector : Panel, IMainMenuPanel
 		float width = RenderBounds.W, height = RenderBounds.H;
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
+		// Hack... but no better way right now
+		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f) {
+			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
+			if (keyboard.IsKeyDown(KeyboardLayout.USA.Left) || keyboard.IsKeyDown(KeyboardLayout.USA.A)) {
+				MoveLeft();
+				InvalidateLayout();
+			}
+			else if (keyboard.IsKeyDown(KeyboardLayout.USA.Right) || keyboard.IsKeyDown(KeyboardLayout.USA.D)) {
+				MoveRight();
+				InvalidateLayout();
+			}
+		}
+
 		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
 			LayoutDiscs(width, height);
 		}
