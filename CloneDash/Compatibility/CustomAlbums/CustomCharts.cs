@@ -124,10 +124,10 @@ namespace CloneDash.Compatibility.CustomAlbums
 				if (Archive != null) {
 					var coverBytes = GetByteArray(Archive, "cover.png");
 					Raylib.ImageRef img = new(".png", coverBytes);
-					var tex = Raylib.LoadTextureFromImage(img);
-					Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 
 					MainThread.RunASAP(() => {
+						var tex = Raylib.LoadTextureFromImage(img);
+						Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
 						callback(new() {
 							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
 						});
