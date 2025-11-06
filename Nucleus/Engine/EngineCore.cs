@@ -105,13 +105,6 @@ public static class EngineCore
 
 		public TimeSpan LastTimeToUpdate;
 		public TimeSpan LastTimeToRender;
-
-		public double TargetFrameTime;
-		public double CurrentAppTime;
-		public double PreviousAppTime;
-		public double UpdateTime;
-		public double DrawTime;
-		public double FrameTime;
 	}
 
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
@@ -558,35 +551,12 @@ public static class EngineCore
 
 	public static GameInfo GameInfo;
 
-	public static double TargetFrameTime {
-		get => GetWindowCtx(Window).TargetFrameTime;
-		set => GetWindowCtx(Window).TargetFrameTime = value;
-	}
-
-	public static double CurrentAppTime {
-		get => GetWindowCtx(Window).CurrentAppTime;
-		set => GetWindowCtx(Window).CurrentAppTime = value;
-	}
-
-	public static double PreviousAppTime {
-		get => GetWindowCtx(Window).PreviousAppTime;
-		set => GetWindowCtx(Window).PreviousAppTime = value;
-	}
-
-	public static double UpdateTime {
-		get => GetWindowCtx(Window).UpdateTime;
-		set => GetWindowCtx(Window).UpdateTime = value;
-	}
-
-	public static double DrawTime {
-		get => GetWindowCtx(Window).DrawTime;
-		set => GetWindowCtx(Window).DrawTime = value;
-	}
-
-	public static double FrameTime {
-		get => GetWindowCtx(Window).FrameTime;
-		set => GetWindowCtx(Window).FrameTime = value;
-	}
+	public static double TargetFrameTime { get; set; }
+	public static double CurrentAppTime { get; set; }
+	public static double PreviousAppTime { get; set; }
+	public static double UpdateTime { get; set; }
+	public static double DrawTime { get; set; }
+	public static double FrameTime { get; set; }
 
 	public static bool ShowConsoleLogsInCorner { get; set; } = true;
 	public static bool ShowDebuggingInfo { get; set; } = false;
@@ -645,6 +615,10 @@ public static class EngineCore
 		NucleusSingleton.Spin();
 		OSWindow.PropagateEventBuffer();
 
+		CurrentAppTime = OS.GetTime();
+		UpdateTime = CurrentAppTime - PreviousAppTime;
+		PreviousAppTime = CurrentAppTime;
+
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
 
 		windowsThisFrame.Clear();
@@ -655,18 +629,31 @@ public static class EngineCore
 			MakeWindowCurrent(window);
 			PerWindowFrame();
 		}
+
 		ReleaseGameThread();
 		Host.CheckDirty();
 		MainThread.Run(ThreadExecutionTime.AfterFrame);
+
+		CurrentAppTime = OS.GetTime();
+		DrawTime = CurrentAppTime - PreviousAppTime;
+		PreviousAppTime = CurrentAppTime;
+		FrameTime = UpdateTime + DrawTime;
+
+		if (FrameTime < TargetFrameTime) {
+			double waitFor = TargetFrameTime - FrameTime;
+			OS.Wait(waitFor);
+
+			CurrentAppTime = OS.GetTime();
+			double waitTime = CurrentAppTime - PreviousAppTime;
+			PreviousAppTime = CurrentAppTime;
+
+			FrameTime += waitTime;
+		}
 	}
 	static void PerWindowFrame() {
 		NProfiler.Reset();
 
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
-
-		CurrentAppTime = OS.GetTime();
-		UpdateTime = CurrentAppTime - PreviousAppTime;
-		PreviousAppTime = CurrentAppTime;
 
 		Rlgl.LoadIdentity();
 		unsafe {
@@ -762,22 +749,6 @@ public static class EngineCore
 		// EXPERIMENT: Before any timing checks, perform a GC generation 0 collection
 		if (gc_collectperframe.GetBool())
 			GC.Collect(0, GCCollectionMode.Forced, true);
-
-		CurrentAppTime = OS.GetTime();
-		DrawTime = CurrentAppTime - PreviousAppTime;
-		PreviousAppTime = CurrentAppTime;
-		FrameTime = UpdateTime + DrawTime;
-
-		if (FrameTime < TargetFrameTime) {
-			double waitFor = TargetFrameTime - FrameTime;
-			OS.Wait(waitFor);
-
-			CurrentAppTime = OS.GetTime();
-			double waitTime = CurrentAppTime - PreviousAppTime;
-			PreviousAppTime = CurrentAppTime;
-
-			FrameTime += waitTime;
-		}
 
 		if (Window.MouseFocused)
 			Window.SetMouseCursor(MouseCursor_Persist ?? MouseCursor_Frame);
