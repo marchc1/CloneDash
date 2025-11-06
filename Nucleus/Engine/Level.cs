@@ -344,11 +344,6 @@ namespace Nucleus.Engine
 			}
 		}
 
-		private void RunThreadExecutionTimeMethods(ThreadExecutionTime t) {
-			MainThread.Run(t);
-			Timers.Run(t);
-		}
-
 		Stopwatch timing = new();
 
 		public bool Render3D { get; set; } = true;
@@ -392,7 +387,7 @@ namespace Nucleus.Engine
 			renderTrack.Reset();
 
 			updateTrack.Start();
-
+			Timers.Run(ThreadExecutionTime.BeforeFrame);
 			SwapFrameStates();
 
 			LastRealtime = Realtime;
