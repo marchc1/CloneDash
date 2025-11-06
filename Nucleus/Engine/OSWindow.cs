@@ -875,6 +875,7 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_DestroyCursor(cursor);
 		SDL3.SDL_GL_DestroyContext(glctx);
 		SDL3.SDL_DestroyWindow(handle);
+		Raylib.MemFree(renderBatch);
 
 		// Remove ourselves from the windowID lookup tables
 		windowLookup_window2id.Remove(this);
