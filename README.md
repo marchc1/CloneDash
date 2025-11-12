@@ -25,7 +25,7 @@ You will need to own the game to play this currently, as it relies on finding a 
 
 ## Building
 - Make sure you have Visual Studio 2022 or some IDE you like for C# development
-- Make sure you have .NET 8.0
+- Make sure you have .NET 10.0
 - Clone the repository, build the game, it should just work
 
 If there's any issues, let me know and I'll try to resolve them. The game targets Windows, OSX, and Linux - with varying levels of support for each (Windows is the primary target, Linux secondary, OSX last - I don't have an M-series Mac to even test with, so mileage *really* might vary there...)
