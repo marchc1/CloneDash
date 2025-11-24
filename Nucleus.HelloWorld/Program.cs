@@ -38,7 +38,7 @@ internal class Program
 						column.Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
 						column.Size = new(window.Size.W / 3, 0);
 						column.TextAlignment = alignment;
-						column.WordWrap = true;
+						column.TextOverflowMode = TextOverflowMode.WordWrap;
 						return column;
 					}
 
@@ -58,7 +58,7 @@ internal class Program
 				var mid = row(Dock.Fill);
 				window.Center();
 			}),
-			new("Subwindow Test", (_) => EngineCore.LoadLevelSubWindow(new HelloWorldLevel(), 640, 480, "test")),
+			new("Subwindow Test", (_) => EngineCore.LoadLevelSubWindow(new HelloWorldLevel(), 640, 480, "test", 0)),
 		];
 
 		public override void Initialize(params object[] args) {
