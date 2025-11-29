@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CloneDash;
+namespace CloneDash.Systems;
 
 public struct RichPresenceState
 {
