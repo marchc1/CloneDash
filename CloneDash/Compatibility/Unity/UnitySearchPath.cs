@@ -147,8 +147,8 @@ public class UnitySearchPath : SearchPath
 		assetsManagers.Add(file.PointsToBundle, manager);
 	}
 
-	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
-	public override bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode) => true;
+	protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
+	public override bool CheckFile(ReadOnlySpan<char> path, FileAccess? specificAccess, FileMode? specificMode) => true;
 	public UnityFile GetBundleNameFromFullPath(string path) {
 		if (LookupAbsFiles.TryGetValue(path, out var bundleInfo)) return bundleInfo;
 		if (LookupAbsFolders.TryGetValue(path, out var folder)) return folder.Single();
@@ -167,18 +167,18 @@ public class UnitySearchPath : SearchPath
 		throw new FileNotFoundException(path);
 	}
 
-	public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
+	public override IEnumerable<string> FindDirectories(ReadOnlySpan<char> path, ReadOnlySpan<char> searchQuery, SearchOption options) {
 		throw new NotImplementedException();
 	}
 
-	public override IEnumerable<string> FindFiles(string path, string searchQuery, SearchOption options) {
+	public override IEnumerable<string> FindFiles(ReadOnlySpan<char> path, ReadOnlySpan<char> searchQuery, SearchOption options) {
 		throw new NotImplementedException();
 	}
 
 	private object l = new();
-	protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
+	protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {
 		lock (l) {
-			var file = GetBundleNameFromFullPath(path);
+			var file = GetBundleNameFromFullPath(new(path));
 			GetAssetBundle(file, out var manager);
 			var asset = manager.assetsFileList[0].ObjectsDic[file.PathID];
 

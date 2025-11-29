@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nucleus.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,36 +31,37 @@ public class MemoryFile : Stream
 }
 public class MemorySearchPath : SearchPath
 {
-	public Dictionary<string, MemoryFile> __encoded = [];
+	public Dictionary<UtlSymId_t, MemoryFile> __encoded = [];
 
-	public override bool CheckFile(string path, FileAccess? specificAccess, FileMode? specificMode) {
+	public override bool CheckFile(ReadOnlySpan<char> path, FileAccess? specificAccess, FileMode? specificMode) {
 		switch (specificMode) {
 			case FileMode.Open:
-				return __encoded.ContainsKey(path);
+				return __encoded.ContainsKey(path.Hash());
 			case FileMode.CreateNew:
-				return !__encoded.ContainsKey(path);
+				return !__encoded.ContainsKey(path.Hash());
 			case FileMode.Create:
 			case FileMode.OpenOrCreate:
 			default:
 				return true;
 		}
 	}
-	public override IEnumerable<string> FindDirectories(string path, string searchQuery, SearchOption options) {
+	public override IEnumerable<string> FindDirectories(ReadOnlySpan<char> path, ReadOnlySpan<char> searchQuery, SearchOption options) {
 		yield break; // unimplemented, but i don't want things to die on it
 	}
-	public override IEnumerable<string> FindFiles(string path, string searchQuery, SearchOption options) {
+	public override IEnumerable<string> FindFiles(ReadOnlySpan<char> path, ReadOnlySpan<char> searchQuery, SearchOption options) {
 		yield break; // unimplemented, but i don't want things to die on it
 	}
-	protected override bool CheckDirectory(string path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		return false; // todo
 	}
-	protected override Stream? OnOpen(string path, FileAccess access, FileMode open) {
-		if (!__encoded.TryGetValue(path, out MemoryFile? data)){
+	protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {
+		ulong hash = path.Hash();
+		if (!__encoded.TryGetValue(hash, out MemoryFile? data)){
 			if (access == FileAccess.Read) 
 				return null;
 
 			MemoryFile writeStream = new();
-			__encoded[path] = writeStream;
+			__encoded[hash] = writeStream;
 			return writeStream;
 		}
 

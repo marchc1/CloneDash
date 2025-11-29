@@ -1,15 +1,16 @@
 ﻿using Newtonsoft.Json;
-
+using Nucleus.Util;
 using Raylib_cs;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Nucleus.Files;
 
 public static class Filesystem
 {
-	public static Dictionary<string, SearchPathID> Path { get; } = [];
+	public static Dictionary<UtlSymId_t, SearchPathID> Path { get; } = [];
 
 	private static bool initialized = false;
 
@@ -118,7 +119,7 @@ public static class Filesystem
 			AddSearchPath("cfg", cfgLegacy);
 	}
 
-	private static void AddAppDataSearchPaths(string gameName) {
+	private static void AddAppDataSearchPaths(ReadOnlySpan<char> gameName) {
 		// This is where we store persist data, game will not work correctly without them.
 		AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(GetDataBaseDir()), gameName));
 		// XDG base directory support
@@ -132,12 +133,12 @@ public static class Filesystem
 #endif
 	}
 
-	private static void AddAppCacheSearchPaths(string gameName) {
+	private static void AddAppCacheSearchPaths(ReadOnlySpan<char> gameName) {
 		// This is where we store cache data, game can generate them again if needed.
 		AddSearchPath("appcache", DiskSearchPath.Combine(new DiskSearchPath(GetCacheBaseDir()), gameName));
 	}
 
-	private static void AddAppStateSearchPaths(string gameName) {
+	private static void AddAppStateSearchPaths(ReadOnlySpan<char> gameName) {
 		// This is where we store persistent data that isn't important `appdata`, like history, logs, etc.
 		AddSearchPath("appstate", DiskSearchPath.Combine(new DiskSearchPath(GetStateBaseDir()), gameName));
 	}
@@ -173,17 +174,17 @@ public static class Filesystem
 	/// </summary>
 	/// <param name="pathID"></param>
 	/// <returns></returns>
-	public static SearchPathID GetSearchPathID(string pathID) {
-		if (Path.TryGetValue(pathID, out var pathIDObj))
+	public static SearchPathID GetSearchPathID(ReadOnlySpan<char> pathID) {
+		if (Path.TryGetValue(pathID.Hash(), out var pathIDObj))
 			return pathIDObj;
 
 		pathIDObj = new();
-		Path[pathID] = pathIDObj;
+		Path[pathID.Hash()] = pathIDObj;
 
 		return pathIDObj;
 	}
 
-	public static T AddSearchPath<T>(string pathID, T searchPath, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
+	public static T AddSearchPath<T>(ReadOnlySpan<char> pathID, T searchPath, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
 		var pathIDObj = GetSearchPathID(pathID);
 		switch (add) {
 			case SearchPathAdd.ToHead:
@@ -234,12 +235,12 @@ public static class Filesystem
 	}
 
 	public static bool RemoveSearchPath(string pathID, SearchPath path) {
-		if (!Path.TryGetValue(pathID, out var pathIDObj)) return false;
+		if (!Path.TryGetValue(pathID.Hash(), out var pathIDObj)) return false;
 		return pathIDObj.Remove(path);
 	}
 
 	public static bool RemoveSearchPath(string pathID) {
-		if (!Path.TryGetValue(pathID, out var pathIDObj)) return false;
+		if (!Path.TryGetValue(pathID.Hash(), out var pathIDObj)) return false;
 		return pathIDObj.RemoveAll(x => true) > 0;
 	}
 
@@ -251,29 +252,53 @@ public static class Filesystem
 		return null;
 	}
 
-	public static IEnumerable<string> FindFiles(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-		foreach (var pathIDObj in GetSearchPathID(pathID))
-			foreach (var file in pathIDObj.FindFiles("", searchPattern, searchOptions))
-				yield return file;
-	}
+	// Fixes annoying complaints about ref types crossing yield boundaries
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static IEnumerable<string> findFiles(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        foreach (var pathIDObj in GetSearchPathID(pathID))
+            foreach (var file in pathIDObj.FindFiles("", searchPattern, searchOptions))
+                yield return file;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static IEnumerable<string> findDirectories(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        foreach (var pathIDObj in GetSearchPathID(pathID))
+            foreach (var file in pathIDObj.FindDirectories("", searchPattern, searchOptions))
+                yield return file;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static IEnumerable<string> findFiles(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        foreach (var pathIDObj in GetSearchPathID(pathID))
+            foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
+                yield return file;
+    }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static IEnumerable<string> findDirectories(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        foreach (var pathIDObj in GetSearchPathID(pathID))
+            foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
+                yield return file;
+    }
 
-	public static IEnumerable<string> FindDirectories(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-		foreach (var pathIDObj in GetSearchPathID(pathID))
-			foreach (var file in pathIDObj.FindDirectories("", searchPattern, searchOptions))
-				yield return file;
-	}
+    //=========================================================================================================================================================//
+    //=========================================================================================================================================================//
+    //=========================================================================================================================================================//
+    //=========================================================================================================================================================//
+    //=========================================================================================================================================================//
 
-	public static IEnumerable<string> FindFiles(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-		foreach (var pathIDObj in GetSearchPathID(pathID))
-			foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
-				yield return file;
-	}
+    public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		return findFiles(new(pathID), new(searchPattern), searchOptions);
+    }
 
-	public static IEnumerable<string> FindDirectories(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-		foreach (var pathIDObj in GetSearchPathID(pathID))
-			foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
-				yield return file;
-	}
+	public static IEnumerable<string> FindDirectories(ReadOnlySpan<char> pathID, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        return findDirectories(new(pathID), new(searchPattern), searchOptions);
+    }
+
+    public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        return findFiles(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
+    }
+
+    public static IEnumerable<string> FindDirectories(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+        return findDirectories(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
+    }
 
 	public static bool CanOpen(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
@@ -284,7 +309,7 @@ public static class Filesystem
 		return false;
 	}
 
-	public static Stream? Open(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
+	public static Stream? Open(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			if (pathObj.CheckFile(path, access, mode)) {
 				var stream = pathObj.Open(path, access, mode);
