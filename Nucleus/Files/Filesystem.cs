@@ -99,7 +99,7 @@ public static class Filesystem
 		return AddSearchPath<DiskSearchPath>("game", AppContext.BaseDirectory);
 	}
 
-	private static void AddConfigSearchPaths(DiskSearchPath gameDiskSearchPath, string gameName) {
+	private static void AddConfigSearchPaths(DiskSearchPath gameDiskSearchPath, ReadOnlySpan<char> gameName) {
 		// This acts as the primary config search path (mounted at the head of the filesystem),
 		AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(GetConfigBaseDir()), gameName));
 
@@ -155,7 +155,7 @@ public static class Filesystem
 		}
 	}
 
-	public static void Initialize(string gameName) {
+	public static void Initialize(ReadOnlySpan<char> gameName) {
 		if (initialized)
 			return;
 
@@ -197,7 +197,7 @@ public static class Filesystem
 		return searchPath;
 	}
 
-	public static T AddSearchPath<T>(string pathID, string path, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
+	public static T AddSearchPath<T>(ReadOnlySpan<char> pathID, string path, SearchPathAdd add = SearchPathAdd.ToTail) where T : SearchPath {
 		T ret;
 		switch (typeof(T).Name) {
 			case nameof(DiskSearchPath):
@@ -234,17 +234,17 @@ public static class Filesystem
 		return pathObj;
 	}
 
-	public static bool RemoveSearchPath(string pathID, SearchPath path) {
+	public static bool RemoveSearchPath(ReadOnlySpan<char> pathID, SearchPath path) {
 		if (!Path.TryGetValue(pathID.Hash(), out var pathIDObj)) return false;
 		return pathIDObj.Remove(path);
 	}
 
-	public static bool RemoveSearchPath(string pathID) {
+	public static bool RemoveSearchPath(ReadOnlySpan<char> pathID) {
 		if (!Path.TryGetValue(pathID.Hash(), out var pathIDObj)) return false;
 		return pathIDObj.RemoveAll(x => true) > 0;
 	}
 
-	public static SearchPath? FindSearchPath(string pathID, string path) {
+	public static SearchPath? FindSearchPath(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
 		foreach (var pathIDObj in GetSearchPathID(pathID))
 			if (pathIDObj.Exists(path))
 				return pathIDObj;
@@ -300,7 +300,7 @@ public static class Filesystem
         return findDirectories(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
     }
 
-	public static bool CanOpen(string pathID, string path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
+	public static bool CanOpen(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			if (pathObj.CheckFile(path, access, mode))
 				return true;
@@ -352,7 +352,7 @@ public static class Filesystem
 		return bytes != null;
 	}
 
-	public static bool WriteAllText(string pathID, string path, string text, Encoding encoding) {
+	public static bool WriteAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> text, Encoding encoding) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var succeeded = pathObj.WriteText(path, text, encoding);
 			if (succeeded) return true;
@@ -361,7 +361,7 @@ public static class Filesystem
 		return false;
 	}
 
-	public static bool WriteAllText(string pathID, string path, string text) {
+	public static bool WriteAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> text) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var succeeded = pathObj.WriteText(path, text);
 			if (succeeded) return true;
@@ -370,7 +370,7 @@ public static class Filesystem
 		return false;
 	}
 
-	public static bool WriteAllBytes(string pathID, string path, byte[] data) {
+	public static bool WriteAllBytes(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, byte[] data) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var succeeded = pathObj.WriteBytes(path, data);
 			if (succeeded) return true;
@@ -379,7 +379,7 @@ public static class Filesystem
 		return false;
 	}
 
-	private static FileNotFoundException NotFound(string pathID, string path) => new FileNotFoundException($"Cannot find '{path}' in '{pathID}'!");
+	private static FileNotFoundException NotFound(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) => new FileNotFoundException($"Cannot find '{path}' in '{pathID}'!");
 	public static string GetExtension(string path) => System.IO.Path.GetExtension(path) ?? "";
 
 	// Extra Raylib macros.
