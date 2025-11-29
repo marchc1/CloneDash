@@ -6,15 +6,21 @@ namespace CloneDash;
 
 public struct GameVersion
 {
-	public static GameVersion FromAssembly(Assembly assembly, string? extra = null) {
+	/*public static GameVersion FromAssembly(Assembly assembly, string? extra = null) {
 		if (assembly.TryGetLinkerTime(out var dt)) {
 			return new($"{dt.Year}", $"{dt.Month:00}", $"{dt.Day:00}", extra);
 		}
 
 		return default;
-	}
+	}*/
 
-	public static readonly GameVersion Current = FromAssembly(Assembly.GetExecutingAssembly(), "alpha");
+	public static GameVersion FromBuildInfo(string extra)
+	{
+		DateTime dt = DateTime.Parse(BuildInfo.BuildDate).ToUniversalTime();
+		return new($"{dt.Year}", $"{dt.Month:00}", $"{dt.Day:00}", extra);
+    }
+
+	public static readonly GameVersion Current = FromBuildInfo("alpha");
 
 	public string Year;
 	public string Month;
