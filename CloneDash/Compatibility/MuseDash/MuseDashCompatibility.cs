@@ -434,8 +434,8 @@ namespace CloneDash.Compatibility.MuseDash
 			ConcurrentBag<MuseDashSong> workSongs = [];
 
 			var res = Parallel.ForEach(Albums, (album) => {
-				var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-				var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+				var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json/{album.JsonName}");
+				var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json/{album.JsonName}_English");
 
 				var songsFinal = new MuseDashSong[songs.Count];
 
