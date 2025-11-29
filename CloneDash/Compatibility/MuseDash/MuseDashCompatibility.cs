@@ -432,23 +432,23 @@ namespace CloneDash.Compatibility.MuseDash
 			Albums.RemoveAll(x => x.JsonName == "");
 
 			ConcurrentBag<MuseDashSong> workSongs = [];
+			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
+				Parallel.ForEach(Albums, (album) => {
+					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json/{album.JsonName}");
+					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json/{album.JsonName}_English");
 
-			var res = Parallel.ForEach(Albums, (album) => {
-				var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json/{album.JsonName}");
-				var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json/{album.JsonName}_English");
+					var songsFinal = new MuseDashSong[songs.Count];
 
-				var songsFinal = new MuseDashSong[songs.Count];
-
-				for (int i = 0; i < songs.Count; i++) {
-					PatchSong(songs, i);
-					var song = new MuseDashSong(songs[i]) {
-						Name = songsEN[i].name,
-						Author = songsEN[i].author,
-						Album = album
-					};
-					workSongs.Add(song);
-				}
-			});
+					for (int i = 0; i < songs.Count; i++) {
+						PatchSong(songs, i);
+						var song = new MuseDashSong(songs[i]) {
+							Name = songsEN[i].name,
+							Author = songsEN[i].author,
+							Album = album
+						};
+						workSongs.Add(song);
+					}
+				});
 
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
@@ -1181,7 +1181,7 @@ public static class MuseDashModelConverter
 				for (int frame = 0; frame < frames; frame++) {
 					skeleton.MD_ReadFloat();
 					skeleton.MD_ReadFloat();
-					if(type == PATH_MIX)
+					if (type == PATH_MIX)
 						skeleton.MD_ReadFloat();
 					if (frame < frames - 1)
 						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
