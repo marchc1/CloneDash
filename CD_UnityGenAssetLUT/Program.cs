@@ -37,7 +37,7 @@ internal class Program
 
 	static void Main(string[] args) {
 		var directoryExeAssets = Path.Combine(AppContext.BaseDirectory, "../../../../CloneDash/bin/Debug/net8.0/assets");
-		var directoryBuildAssets = Path.Combine(AppContext.BaseDirectory, "../../../../BuildAssets/universal/assets");
+		var directoryBuildAssets = Path.Combine(AppContext.BaseDirectory, "../../../../CloneDash/BuildAssets/universal/assets");
 		if (!Directory.Exists(directoryBuildAssets)) {
 			Console.WriteLine("Can't find the Clone Dash build assets, exiting. Press any key to shut down");
 			Console.ReadKey();
