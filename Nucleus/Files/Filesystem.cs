@@ -253,52 +253,52 @@ public static class Filesystem
 	}
 
 	// Fixes annoying complaints about ref types crossing yield boundaries
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static IEnumerable<string> findFiles(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        foreach (var pathIDObj in GetSearchPathID(pathID))
-            foreach (var file in pathIDObj.FindFiles("", searchPattern, searchOptions))
-                yield return file;
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static IEnumerable<string> findDirectories(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        foreach (var pathIDObj in GetSearchPathID(pathID))
-            foreach (var file in pathIDObj.FindDirectories("", searchPattern, searchOptions))
-                yield return file;
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static IEnumerable<string> findFiles(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        foreach (var pathIDObj in GetSearchPathID(pathID))
-            foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
-                yield return file;
-    }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static IEnumerable<string> findDirectories(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        foreach (var pathIDObj in GetSearchPathID(pathID))
-            foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
-                yield return file;
-    }
+	static IEnumerable<string> findFiles(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		foreach (var pathIDObj in GetSearchPathID(pathID))
+			foreach (var file in pathIDObj.FindFiles("", searchPattern, searchOptions))
+				yield return file;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static IEnumerable<string> findDirectories(string pathID, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		foreach (var pathIDObj in GetSearchPathID(pathID))
+			foreach (var file in pathIDObj.FindDirectories("", searchPattern, searchOptions))
+				yield return file;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static IEnumerable<string> findFiles(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		foreach (var pathIDObj in GetSearchPathID(pathID))
+			foreach (var file in pathIDObj.FindFiles(path, searchPattern, searchOptions))
+				yield return file;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static IEnumerable<string> findDirectories(string pathID, string path, string searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		foreach (var pathIDObj in GetSearchPathID(pathID))
+			foreach (var file in pathIDObj.FindDirectories(path, searchPattern, searchOptions))
+				yield return file;
+	}
 
-    //=========================================================================================================================================================//
-    //=========================================================================================================================================================//
-    //=========================================================================================================================================================//
-    //=========================================================================================================================================================//
-    //=========================================================================================================================================================//
+	//=========================================================================================================================================================//
+	//=========================================================================================================================================================//
+	//=========================================================================================================================================================//
+	//=========================================================================================================================================================//
+	//=========================================================================================================================================================//
 
-    public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+	public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
 		return findFiles(new(pathID), new(searchPattern), searchOptions);
-    }
+	}
 
 	public static IEnumerable<string> FindDirectories(ReadOnlySpan<char> pathID, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        return findDirectories(new(pathID), new(searchPattern), searchOptions);
-    }
+		return findDirectories(new(pathID), new(searchPattern), searchOptions);
+	}
 
-    public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        return findFiles(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
-    }
+	public static IEnumerable<string> FindFiles(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		return findFiles(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
+	}
 
-    public static IEnumerable<string> FindDirectories(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
-        return findDirectories(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
-    }
+	public static IEnumerable<string> FindDirectories(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, ReadOnlySpan<char> searchPattern, SearchOption searchOptions = SearchOption.TopDirectoryOnly) {
+		return findDirectories(new(pathID), new(searchPattern), new(searchPattern), searchOptions);
+	}
 
 	public static bool CanOpen(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
@@ -449,7 +449,7 @@ public static class Filesystem
 	}
 	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
 		var buffer = ScratchUpload(pathID, path);
-		fixed (int* codepointsPtr = codepoints) 
+		fixed (int* codepointsPtr = codepoints)
 		fixed (byte* data = buffer) {
 			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
 			return font;
