@@ -37,6 +37,29 @@
 	</ItemGroup>
 
 	<!-- ================================================================= -->
+	<!-- Thing for writing BuildInfo for the update checker -->
+	<!-- ================================================================= -->
+	<Target Name="GenerateBuildDate" BeforeTargets="CoreCompile">
+		<PropertyGroup>
+			<BuildDateUtc>$([System.DateTime]::UtcNow.ToString("O"))</BuildDateUtc>
+
+			<GeneratedCode>
+				namespace CloneDash%3B
+
+				public static class BuildInfo
+				{
+				public const string BuildDate = "$(BuildDateUtc)"%3B
+				}
+			</GeneratedCode>
+		</PropertyGroup>
+
+		<WriteLinesToFile File="$(IntermediateOutputPath)BuildInfo.generated.cs" Lines="$(GeneratedCode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+		<ItemGroup>
+			<Compile Include="$(IntermediateOutputPath)BuildInfo.generated.cs" />
+		</ItemGroup>
+	</Target>
+
+	<!-- ================================================================= -->
 	<!-- Asset copying from BuildAssets -->
 	<!-- ================================================================= -->
 	<PropertyGroup>

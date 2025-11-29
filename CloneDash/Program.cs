@@ -5,11 +5,13 @@
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Game;
+using CloneDash.Systems;
 
 using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Files;
-
+using Nucleus.UI;
+using System.Diagnostics;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
@@ -127,7 +129,45 @@ internal class Program
 		// Add an event listener to the singleton
 		// this would run pre-anything in EngineCore Frame()
 		NucleusSingleton.Redirect += NucleusSingleton_Redirect;
-	}
+
+        // Update checker
+        new Task(async () =>
+        {
+            var release = await UpdateChecker.CheckForNewReleaseAsync();
+
+            if (release != null)
+            {
+                MainThread.RunASAP(() => {
+                    try
+                    {
+                        var ui = EngineCore.Level?.UI;
+                        if (ui == null)
+                        {
+                            Logs.Warn("Update available but UI is not ready to show popup.");
+                            return;
+                        }
+
+                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+                        ui.DialogOKCancel("Update available", message, () => {
+                            try
+                            {
+                                var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
+                                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+                            }
+                            catch (Exception ex)
+                            {
+                                Logs.Warn($"Failed to open release URL: {ex.Message}");
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Logs.Warn($"Failed to display update popup: {ex.Message}");
+                    }
+                });
+            }
+        }).Start();
+    }
 
 	private static void NucleusSingleton_Redirect(string[] args) {
 		Logs.Info("Received interprocess redirect!");
