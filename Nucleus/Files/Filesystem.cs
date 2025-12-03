@@ -109,7 +109,7 @@ public static class Filesystem
 #if !COMPILED_WINDOWS
 		string xdgConfigDirs = Environment.GetEnvironmentVariable("XDG_CONFIG_DIRS") ?? "/etc/xdg";
 		foreach (string path in xdgConfigDirs.Split(':'))
-			if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+			if (Directory.Exists(System.IO.Path.Combine(path, gameName.ToString())))
 				AddSearchPath("cfg", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
 #endif
 		// For older Nucleus application installs; if game/cfg exists, we'll mount it at the tail.
@@ -128,7 +128,7 @@ public static class Filesystem
 #if !COMPILED_WINDOWS
 		string xdgDataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share";
 		foreach (string path in xdgDataDirs.Split(':'))
-			if (Directory.Exists(System.IO.Path.Combine(path, gameName)))
+			if (Directory.Exists(System.IO.Path.Combine(path, gameName.ToString())))
 				AddSearchPath("appdata", DiskSearchPath.Combine(new DiskSearchPath(path), gameName));
 #endif
 	}
