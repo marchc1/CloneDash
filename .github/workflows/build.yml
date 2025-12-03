@@ -29,7 +29,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
           
       - name: Restore dependencies
         run: dotnet restore
@@ -49,7 +49,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
     
       - name: Restore dependencies
         run: dotnet restore ./CloneDash.sln -p:RestoreNoWarn=NU1605
@@ -63,7 +63,7 @@ jobs:
         run: |
           dotnet publish "./CloneDash" `
             -c Release `
-            -f net8.0 `
+            -f net10.0 `
             -r win-x64 `
             -p:SelfContained=false `
             -p:PublishSingleFile=true `
@@ -81,8 +81,8 @@ jobs:
           $tempDir = "tempzip"
           Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $tempDir | Out-Null
-          Copy-Item -Recurse -Force "./CloneDash/bin/Release/net8.0/*" $tempDir
-          Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net8.0/*" $tempDir
+          Copy-Item -Recurse -Force "./CloneDash/bin/Release/net10.0/*" $tempDir
+          Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $tempDir
           Compress-Archive -Path "$tempDir\*" -DestinationPath "./CloneDash-Game-Windows.zip" -Force
           Remove-Item -Recurse -Force $tempDir
       
@@ -99,10 +99,10 @@ jobs:
           mkdir -p "$APPDIR/usr/bin"
           
           # Copy exactly what the ZIP uses so assets match
-          cp -a "./CloneDash/bin/Release/net8.0/." "$APPDIR/usr/bin/"
+          cp -a "./CloneDash/bin/Release/net10.0/." "$APPDIR/usr/bin/"
           # Include any shared/editor assets if they are used at runtime
-          if [ -d "./Nucleus.ModelEditor/bin/Release/net8.0" ]; then
-            cp -a "./Nucleus.ModelEditor/bin/Release/net8.0/." "$APPDIR/usr/bin/" || true
+          if [ -d "./Nucleus.ModelEditor/bin/Release/net10.0" ]; then
+            cp -a "./Nucleus.ModelEditor/bin/Release/net10.0/." "$APPDIR/usr/bin/" || true
           fi
           
           # Ensure main executable(s) are executable when present
@@ -209,8 +209,8 @@ jobs:
           set -e
           rm -rf tempzip
           mkdir -p tempzip
-          cp -r "./CloneDash/bin/Release/net8.0/"* tempzip/
-          cp -r "./Nucleus.ModelEditor/bin/Release/net8.0/"* tempzip/
+          cp -r "./CloneDash/bin/Release/net10.0/"* tempzip/
+          cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
           zip -r "./CloneDash-Game-Linux.zip" tempzip
           rm -rf tempzip
       
@@ -221,8 +221,8 @@ jobs:
           set -e
           rm -rf tempzip
           mkdir -p tempzip
-          cp -r "./CloneDash/bin/Release/net8.0/"* tempzip/
-          cp -r "./Nucleus.ModelEditor/bin/Release/net8.0/"* tempzip/
+          cp -r "./CloneDash/bin/Release/net10.0/"* tempzip/
+          cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
           zip -r "./CloneDash-Game-macOS.zip" tempzip
           rm -rf tempzip
       
