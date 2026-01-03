@@ -31,11 +31,11 @@
         <PackageReference Include="NAudio" Version="2.2.1" />
         <PackageReference Include="NAudio.Core" Version="2.2.1" />
         <PackageReference Include="OggVorbisEncoder" Version="1.2.2" />
-        <PackageReference Include="System.Text.Json" Version="9.0.10" />
+        <PackageReference Include="System.Text.Json" Version="10.0.1" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.0.21" />
+      <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.0.22" />
         <None Remove="FmodVorbis\vorbis_headers_converted.json" />
         <EmbeddedResource Include="Util\vorbis_headers_converted.json" />
     </ItemGroup>
