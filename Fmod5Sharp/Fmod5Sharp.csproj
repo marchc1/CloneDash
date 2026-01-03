@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.0.21" />
+      <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="8.0.22" />
         <None Remove="FmodVorbis\vorbis_headers_converted.json" />
         <EmbeddedResource Include="Util\vorbis_headers_converted.json" />
     </ItemGroup>
