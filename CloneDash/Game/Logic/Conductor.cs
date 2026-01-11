@@ -36,10 +36,15 @@ namespace CloneDash.Game
 
 		public void AddTempoChange(double time, double measure, double bpm) => TempoChanges.Add(new(time, measure, bpm));
 
+		// Used for seeking the playhead.
+		double? forcedTime;
+		public void ForceTimeTo(double time) => forcedTime = time;
+		public void RemoveForcedTime() => forcedTime = null;
+
 		/// <summary>
 		/// The current music playhead, adjusted for inaccuracies.
 		/// </summary>
-		public double Time => currentInaccurateTime;
+		public double Time => forcedTime ?? currentInaccurateTime;
 
 		/// <summary>
 		/// Offsets the conductor time

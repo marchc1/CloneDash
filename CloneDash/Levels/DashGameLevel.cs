@@ -173,6 +173,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		foreach (var entity in Entities) {
 			if (entity is DashModelEntity mEnt && mEnt.HitTime < time) {
+				// Hack...
+				Conductor.ForceTimeTo(mEnt.HitTime);
 				switch (mEnt.Interactivity) {
 					case EntityInteractivity.Hit:
 						mEnt.Hit(mEnt.Pathway, 0);
@@ -187,6 +189,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 						mEnt.RewardPlayer();
 						break;
 				}
+				Conductor.RemoveForcedTime();
 			}
 		}
 
