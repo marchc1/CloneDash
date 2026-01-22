@@ -28,7 +28,7 @@ public class DashEnemy : DashModelEntity
 
 	public override void OnReset() {
 		base.OnReset();
-		Model.SetToSetupPose();
+		Model?.SetToSetupPose();
 	}
 
 	protected void SetupHitAnimations(ISceneDescriptor scene) {
