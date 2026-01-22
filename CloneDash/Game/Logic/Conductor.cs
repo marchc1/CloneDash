@@ -58,6 +58,16 @@ namespace CloneDash.Game
 		// What is the current time + the frametime values
 		private double currentInaccurateTime = 0;
 
+		/// <summary>
+		/// Invalidates the current time. The time is determined by inaccurate music playhead + frametime delta updates until a new time
+		/// update comes in from the music track. This method forces the current inaccurate time to music playhead immediately.
+		/// </summary>
+		public void InvalidateTime(){
+			var game = Level.As<DashGameLevel>();
+			if (game.Music == null) return;
+			currentInaccurateTime = game.Music.Playhead;
+		}
+
 		private class CD_Conductor_UIBar : Element
 		{
 			public float Playhead { get; set; }

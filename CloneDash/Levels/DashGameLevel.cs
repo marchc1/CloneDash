@@ -142,8 +142,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	public void SeekTo(double time) {
 		IsSeeking = true;
 
-		InMashState = false;
-		MashingEntity = null;
+		ExitMashState();
 
 		if (Music != null) {
 			Music.Playhead = (float)time;
@@ -172,21 +171,31 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		__whenHjump = -2000000000000d;
 
 		foreach (var entity in Entities) {
-			if (entity is DashModelEntity mEnt && mEnt.HitTime < time) {
-				// Hack...
-				Conductor.ForceTimeTo(mEnt.HitTime);
-				switch (mEnt.Interactivity) {
-					case EntityInteractivity.Hit:
-						mEnt.Hit(mEnt.Pathway, 0);
-						mEnt.RewardPlayer();
+			if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
+				Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
+				switch (mEnt) {
+					case Masher masher: // Mashers need a bit more trickery
+						EnterMashState(masher);
+						for (int i = 0; i < masher.MaxHits; i++) 
+							masher.Hit(mEnt.Pathway, 0);
+						ExitMashState();
+						masher.RewardPlayer();
 						break;
-					case EntityInteractivity.SamePath:
-						mEnt.Hit(mEnt.Pathway, 0);
-						mEnt.RewardPlayer();
-						break;
-					case EntityInteractivity.Avoid:
-						mEnt.Pass();
-						mEnt.RewardPlayer();
+					default:
+						switch (mEnt.Interactivity) {
+							case EntityInteractivity.Hit:
+								mEnt.Hit(mEnt.Pathway, 0);
+								mEnt.RewardPlayer();
+								break;
+							case EntityInteractivity.SamePath:
+								mEnt.Hit(mEnt.Pathway, 0);
+								mEnt.RewardPlayer();
+								break;
+							case EntityInteractivity.Avoid:
+								mEnt.Pass();
+								mEnt.RewardPlayer();
+								break;
+						}
 						break;
 				}
 				Conductor.RemoveForcedTime();
@@ -194,6 +203,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		}
 
 		IsSeeking = false;
+		Conductor.InvalidateTime();
 	}
 
 	public const string STRING_HP = "HP: {0}";
@@ -359,7 +369,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 	public void PlayerAnim_DoDamage() {
 		playeranim_hurt = true;
-		
+
 	}
 	// TODO; more in depth
 	public void PlayerAnim_ForceHurt() {
@@ -1251,7 +1261,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					poll.HitEntity.WasHitPerfect = poll.IsPerfect;
 					poll.HitEntity.Hit(pathway, poll.DistanceToHit);
 
-					if (SuppressHitMessages == false) {
+					if (SuppressHitMessages == false && !IsSeeking) {
 						Color c = poll.HitEntity.HitColor;
 						SpawnTextEffect(poll.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
 						Scene.PlaySound(poll.HitEntity.Type switch {

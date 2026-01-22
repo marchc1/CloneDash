@@ -26,6 +26,10 @@ public class DashEnemy : DashModelEntity
 		{ EntityType.SustainBeam, typeof(SustainBeam) },
 	};
 
+	public override void OnReset() {
+		base.OnReset();
+		Model.SetToSetupPose();
+	}
 
 	protected void SetupHitAnimations(ISceneDescriptor scene) {
 		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));

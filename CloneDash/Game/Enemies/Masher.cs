@@ -1,4 +1,5 @@
-﻿using Nucleus.Engine;
+﻿using Nucleus;
+using Nucleus.Engine;
 using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
@@ -47,7 +48,8 @@ namespace CloneDash.Game.Entities
 			base.OnHit(side, distanceToHit);
 			var level = Level.As<DashGameLevel>();
 
-			level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
+			if (!level.IsSeeking)
+				level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
 
 			if (MaxHits == 1) {
 				Hits = 1;
@@ -89,6 +91,8 @@ namespace CloneDash.Game.Entities
 		public override void OnReset() {
 			base.OnReset();
 			StartedHitting = false;
+			lastHitTime = 0;
+			currentAnim = null;
 		}
 
 		Nucleus.Models.Runtime.Animation? currentAnim;
@@ -96,6 +100,7 @@ namespace CloneDash.Game.Entities
 			if (Model == null) return;
 
 			Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(PathwaySide.Both));
+
 			if (Dead) {
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));

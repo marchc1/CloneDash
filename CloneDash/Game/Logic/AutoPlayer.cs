@@ -164,6 +164,9 @@ namespace CloneDash.Game.Logic
 
 		public void Reset() {
 			Passed.Clear();
+			CurrentSustains[PathwaySide.Top].Clear();
+			CurrentSustains[PathwaySide.Bottom].Clear();
+			LastMasherHit = default;
 		}
 	}
 }
