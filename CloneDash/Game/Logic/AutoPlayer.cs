@@ -20,13 +20,20 @@ namespace CloneDash.Game.Logic
 		};
 
 		/// <summary>
+		/// Mark an entity as passed. Only used externally during seeking, for the sake of not confusing the autoplayer
+		/// </summary>
+		/// <param name="ent"></param>
+		public void MarkEntityAsPassed(DashModelEntity ent) => Passed.Add(ent);
+
+		/// <summary>
 		/// Entities the autoplayer has passed already.
 		/// </summary>
-		private static HashSet<DashModelEntity> Passed { get; set; } = new();
+		private readonly HashSet<DashModelEntity> Passed = [];
+
 		/// <summary>
 		/// Last time the autoplayer hit a masher. Used to limit masher hits.
 		/// </summary>
-		private static DateTime LastMasherHit { get; set; }
+		private DateTime LastMasherHit { get; set; }
 		/// <summary>
 		/// How many times the auto-player will hit a masher per second.
 		/// </summary>
@@ -98,7 +105,7 @@ namespace CloneDash.Game.Logic
 									}
 
 									// Record the entity as passed
-									Passed.Add(ent);
+									MarkEntityAsPassed(ent);
 									//Logs.Debug($"Hit [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;
@@ -117,7 +124,7 @@ namespace CloneDash.Game.Logic
 										}
 									}
 									// Record the entity as passed
-									Passed.Add(ent);
+									MarkEntityAsPassed(ent);
 									//Logs.Debug($"Avoided [{level.Entities.IndexOf(ent)}] {ent}");
 								}
 								break;

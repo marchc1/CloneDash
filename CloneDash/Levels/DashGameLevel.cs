@@ -198,6 +198,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 						}
 						break;
 				}
+				AutoPlayer.MarkEntityAsPassed(mEnt);
 				Conductor.RemoveForcedTime();
 			}
 		}
