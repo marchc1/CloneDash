@@ -36,10 +36,15 @@ namespace CloneDash.Game
 
 		public void AddTempoChange(double time, double measure, double bpm) => TempoChanges.Add(new(time, measure, bpm));
 
+		// Used for seeking the playhead.
+		double? forcedTime;
+		public void ForceTimeTo(double time) => forcedTime = time;
+		public void RemoveForcedTime() => forcedTime = null;
+
 		/// <summary>
 		/// The current music playhead, adjusted for inaccuracies.
 		/// </summary>
-		public double Time => currentInaccurateTime;
+		public double Time => forcedTime ?? currentInaccurateTime;
 
 		/// <summary>
 		/// Offsets the conductor time
@@ -52,6 +57,16 @@ namespace CloneDash.Game
 		private float lastTimeFromFunctionCall = 0;
 		// What is the current time + the frametime values
 		private double currentInaccurateTime = 0;
+
+		/// <summary>
+		/// Invalidates the current time. The time is determined by inaccurate music playhead + frametime delta updates until a new time
+		/// update comes in from the music track. This method forces the current inaccurate time to music playhead immediately.
+		/// </summary>
+		public void InvalidateTime(){
+			var game = Level.As<DashGameLevel>();
+			if (game.Music == null) return;
+			currentInaccurateTime = game.Music.Playhead;
+		}
 
 		private class CD_Conductor_UIBar : Element
 		{

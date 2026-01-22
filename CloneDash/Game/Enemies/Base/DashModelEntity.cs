@@ -455,14 +455,22 @@ namespace CloneDash.Game
 
 		public void Reset() {
 			Hits = 0;
+			WasHitPerfect = false;
+			LastHitTime = 0;
+
+			MarkedForRemoval = false;
+
 			DidDamagePlayer = false;
 			DidRewardPlayer = false;
 			DidPunishPlayer = false;
-			WasHitPerfect = false;
+			DidMiss = false;
 			DidPass = false;
 			Shown = false;
+
+			FinalBlow = default;
 			ShouldDraw = true;
 			ForceDraw = false;
+			XPos = 0;
 			Dead = false;
 			OnReset();
 		}

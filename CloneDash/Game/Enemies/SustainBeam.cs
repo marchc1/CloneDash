@@ -172,7 +172,8 @@ namespace CloneDash.Game.Entities
 			lvl.AddCombo();
 			lvl.AddFever(FeverGiven);
 			lvl.Sustains.CompleteSustainBeam(this);
-			lvl.Scene.PlaySound(SceneSound.PressTop, 1);
+			if (!lvl.IsSeeking)
+				lvl.Scene.PlaySound(SceneSound.PressTop, 1);
 		}
 		internal void Fail() {
 			var lvl = GetGameLevel();
