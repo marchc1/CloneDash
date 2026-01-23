@@ -24,6 +24,36 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="ent"></param>
 		public void MarkEntityAsPassed(DashModelEntity ent) => Passed.Add(ent);
+		public void MarkSustainAsActive(DashModelEntity ent){
+			if (ent.Type == EntityType.SustainBeam) 
+				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
+		}
+		public void SustainHoldThink(ref InputState input) {
+			foreach (var kvp in CurrentSustains) {
+				// Is there a sustain in progress on this pathway?
+				while (kvp.Value.TryPeek(out SustainBeam? sustain)) {
+					bool holding = false;
+
+					if (sustain.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
+						holding = false;
+						kvp.Value.Pop();
+						//Logs.Debug("Sustain stopped because it is complete");
+						continue;
+					}
+					else // Keep holding the button otherwise
+						holding = true;
+
+					// Write to input
+					var downOff = holding ? 0 : -1;
+					if (kvp.Key == PathwaySide.Top)
+						input.TopHeldCount += kvp.Value.Count + downOff;
+					else
+						input.BottomHeldCount += kvp.Value.Count + downOff;
+
+					break;
+				}
+			}
+		}
 
 		/// <summary>
 		/// Entities the autoplayer has passed already.
@@ -100,9 +130,8 @@ namespace CloneDash.Game.Logic
 									}
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
-									if (ent.Type == EntityType.SustainBeam) {
+									if (ent.Type == EntityType.SustainBeam) 
 										CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
-									}
 
 									// Record the entity as passed
 									MarkEntityAsPassed(ent);
@@ -137,27 +166,7 @@ namespace CloneDash.Game.Logic
 			}
 
 			// Sustain holding logic
-			foreach (var kvp in CurrentSustains) {
-				// Is there a sustain in progress on this pathway?
-				if (kvp.Value.TryPeek(out SustainBeam? sustain)) {
-					bool holding = false;
-
-					if (sustain.StopAcceptingInput == true) { // Is the sustain beam self-reporting as being complete, and if so, note it doesn't need to be held down anymore
-						holding = false;
-						kvp.Value.Pop();
-						//Logs.Debug("Sustain stopped because it is complete");
-					}
-					else // Keep holding the button otherwise
-						holding = true;
-
-					// Write to input
-					var downOff = holding ? 0 : -1;
-					if (kvp.Key == PathwaySide.Top)
-						input.TopHeldCount += kvp.Value.Count + downOff;
-					else
-						input.BottomHeldCount += kvp.Value.Count + downOff;
-				}
-			}
+			SustainHoldThink(ref input);
 		}
 
 		public const string STRING_AUTO = "AUTO";
