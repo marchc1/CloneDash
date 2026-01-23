@@ -176,10 +176,26 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 				switch (mEnt) {
 					case Masher masher: // Mashers need a bit more trickery
 						EnterMashState(masher);
-						for (int i = 0; i < masher.MaxHits; i++) 
+						for (int i = 0; i < masher.MaxHits; i++)
 							masher.Hit(mEnt.Pathway, 0);
 						ExitMashState();
 						masher.RewardPlayer();
+						AutoPlayer.MarkEntityAsPassed(mEnt);
+						break;
+					case SustainBeam sustain:
+						sustain.Hit(sustain.Pathway, 0);
+						sustain.RewardPlayer();
+
+						AutoPlayer.MarkSustainAsActive(sustain);
+						// Force time to the smaller value: either the end of the sustain, or the seeking time.
+						// This fixes issues when placing an autoplayer in the middle of a sustain.
+						Conductor.ForceTimeTo(Math.Min(sustain.GetJudgementHitTime() + sustain.Length + 0.01, time));
+
+						// hack, but will force sustain to cancel if its ready
+						InputState s = default;
+						AutoPlayer.SustainHoldThink(ref s);
+
+						AutoPlayer.MarkEntityAsPassed(mEnt);
 						break;
 					default:
 						switch (mEnt.Interactivity) {
@@ -196,9 +212,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 								mEnt.RewardPlayer();
 								break;
 						}
+						AutoPlayer.MarkEntityAsPassed(mEnt);
 						break;
 				}
-				AutoPlayer.MarkEntityAsPassed(mEnt);
 				Conductor.RemoveForcedTime();
 			}
 		}
