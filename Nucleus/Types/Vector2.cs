@@ -18,14 +18,14 @@ namespace Nucleus.Types
 	{
 		const int BYTE_OFFSET_X = 0;
 		const int BYTE_OFFSET_Y = sizeof(float);
-		[FieldOffset(BYTE_OFFSET_X)] public float x;
 		[FieldOffset(BYTE_OFFSET_X)] public float X;
-		[FieldOffset(BYTE_OFFSET_X)] public float w;
-		[FieldOffset(BYTE_OFFSET_X)] public float W;
-		[FieldOffset(BYTE_OFFSET_Y)] public float y;
 		[FieldOffset(BYTE_OFFSET_Y)] public float Y;
-		[FieldOffset(BYTE_OFFSET_Y)] public float h;
-		[FieldOffset(BYTE_OFFSET_Y)] public float H;
+		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float x;
+		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float w;
+		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float W;
+		[JsonIgnore] [FieldOffset(BYTE_OFFSET_Y)] public float y;
+		[JsonIgnore] [FieldOffset(BYTE_OFFSET_Y)] public float h;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_Y)] public float H;
 
 		public static readonly Vector2F Zero = new(0, 0);
 		public static readonly Vector2F One = new(1, 1);
