@@ -22,10 +22,10 @@ namespace Nucleus.Models
 
 		// cached values from CalculateWorldTransformation
 		// needed for World/Local rotation operations
-		private float Rotation;
-		private float ShearX;
+		private readonly float Rotation;
+		private readonly float ShearX;
 
-		public Vector2F Translation => new(X, Y);
+		public readonly Vector2F Translation => new(X, Y);
 
 		public Transformation(float a, float b, float c, float d, float x, float y, float rot, float shearX) {
 			A = a;
@@ -38,7 +38,7 @@ namespace Nucleus.Models
 			ShearX = shearX;
 		}
 
-		public static Transformation CalculateWorldTransformation(Vector2F pos, float rot, Vector2F scale, Vector2F shear, TransformMode transformType = TransformMode.Normal, Transformation? parent = null, bool triggerDebugger = false) {
+		public static Transformation CalculateWorldTransformation(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear, TransformMode transformType = TransformMode.Normal, in Transformation? parent = null, bool triggerDebugger = false) {
 			if (triggerDebugger) Debug.Assert(false, "Debugger triggered!");
 
 			float posX = pos.X, posY = pos.Y;
@@ -157,13 +157,13 @@ namespace Nucleus.Models
 				y * A * invDet - x * C * invDet
 			);
 		}
-		public Vector2F WorldToLocal(Vector2F worldPos) => WorldToLocal(worldPos.X, worldPos.Y);
+		public Vector2F WorldToLocal(in Vector2F worldPos) => WorldToLocal(worldPos.X, worldPos.Y);
 
 		public Vector2F LocalToWorld(float localX, float localY) => new(
 			localX * A + localY * B + X,
 			localX * C + localY * D + Y
 		);
-		public Vector2F LocalToWorld(Vector2F localPos) => LocalToWorld(localPos.X, localPos.Y);
+		public Vector2F LocalToWorld(in Vector2F localPos) => LocalToWorld(localPos.X, localPos.Y);
 
 		public float WorldToLocalRotation(float worldRotation) {
 			float sin = MathF.Sin(worldRotation.ToRadians());

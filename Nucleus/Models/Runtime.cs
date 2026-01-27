@@ -355,21 +355,20 @@ public class BoneData : IModel4Nameable
 public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nameable
 {
 	public ModelInstance GetModel() => Model;
-	public ModelInstance Model { get; set; }
+	public ModelInstance Model;
 
 	public string Name => Data.Name;
-	public BoneData Data { get; set; }
+	public BoneData Data;
 
-	public BoneInstance? Parent { get; set; }
-	public List<BoneInstance> Children { get; set; } = [];
+	public BoneInstance? Parent;
+	public List<BoneInstance> Children = [];
 	public Transformation WorldTransform;
-	public TransformMode TransformMode { get; set; }
+	public TransformMode TransformMode;
 
-	public Vector2F Position { get; set; }
-	public float Rotation { get; set; }
-	public Vector2F Scale { get; set; }
-	public Vector2F Shear { get; set; }
-
+	public Vector2F Position;
+	public float Rotation;
+	public Vector2F Scale;
+	public Vector2F Shear;
 
 	public void SetToSetupPose() {
 		Position = Data.Position;
@@ -383,28 +382,27 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nam
 	}
 
 	public Vector2F WorldToLocal(float x, float y) => WorldTransform.WorldToLocal(x, y);
-	public Vector2F WorldToLocal(Vector2F xy) => WorldTransform.WorldToLocal(xy);
+	public Vector2F WorldToLocal(in Vector2F xy) => WorldTransform.WorldToLocal(in xy);
 	public float WorldToLocalRotation(float rot) => WorldTransform.WorldToLocalRotation(rot);
 
 	public Vector2F LocalToWorld(float x, float y) => WorldTransform.LocalToWorld(x, y);
-	public Vector2F LocalToWorld(Vector2F xy) => WorldTransform.LocalToWorld(xy);
+	public Vector2F LocalToWorld(in Vector2F xy) => WorldTransform.LocalToWorld(in xy);
 	public float LocalToWorldRotation(float rot) => WorldTransform.LocalToWorldRotation(rot);
 
-	public void UpdateWorldTransform()
-		=> UpdateWorldTransform(Position, Rotation, Scale, Shear);
-	public void UpdateWorldTransform(Vector2F pos, float rot, Vector2F scale, Vector2F shear)
-		=> WorldTransform = Transformation.CalculateWorldTransformation(pos, rot, scale, shear, TransformMode, Parent?.WorldTransform ?? null);
+	public void UpdateWorldTransform() => UpdateWorldTransform(in Position, Rotation, in Scale, in Shear);
+	public void UpdateWorldTransform(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear)
+		=> WorldTransform = Transformation.CalculateWorldTransformation(in pos, rot, in scale, in shear, TransformMode, Parent?.WorldTransform ?? null);
 }
 public class SlotData : IModel4Nameable
 {
 	public int Index { get; set; }
 	public string Name { get; set; } = "";
-	public BoneData BoneData { get; set; }
-	public Color Color { get; set; }
+	public BoneData BoneData;
+	public Color Color;
 	// not yet implemented
-	public Color? DarkColor { get; set; }
-	public string? Attachment { get; set; }
-	public BlendMode BlendMode { get; set; }
+	public Color? DarkColor;
+	public string? Attachment;
+	public BlendMode BlendMode;
 }
 public class SlotInstance : IContainsSetupPose, IModel4Nameable
 {
@@ -413,12 +411,12 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 
 	public string Name => Data.Name;
 	public int Index => Data.Index;
-	public SlotData Data { get; set; }
+	public SlotData Data;
 
-	public Attachment? Attachment { get; set; }
-	public BoneInstance Bone { get; set; }
-	public Color Color { get; set; }
-	public Color? DarkColor { get; set; }
+	public Attachment? Attachment;
+	public BoneInstance Bone;
+	public Color Color;
+	public Color? DarkColor;
 
 	public byte R => Color.R;
 	public byte G => Color.G;
