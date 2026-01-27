@@ -144,9 +144,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		ExitMashState();
 
-		if (Music != null) {
-			Music.Playhead = (float)time;
-		}
+		Music?.Playhead = (float)time;
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
@@ -173,6 +171,11 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		foreach (var entity in Entities) {
 			if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
 				Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
+
+				// Evaluate if fever must end
+				if (ShouldExitFever && InFever)
+					ExitFever();
+
 				switch (mEnt) {
 					case Masher masher: // Mashers need a bit more trickery
 						EnterMashState(masher);
@@ -1457,7 +1460,6 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	/// <param name="fever"></param>
 	public void AddFever(float fever) {
 		if (InFever) return;
-		if (IsSeeking) return; // We should handle this better. Fever should be able to increase during seeking as long as it can decrease...
 
 		Fever = Math.Clamp(Fever + fever, 0, MaxFever);
 		LastFeverIncreaseTime = Conductor.Time;
