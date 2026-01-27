@@ -10,21 +10,17 @@ namespace Nucleus.Types
 	/// </summary>
 	/// 
 	[StructLayout(LayoutKind.Explicit)]
-#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
-#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	public struct Vector2F
-#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
-#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	{
 		const int BYTE_OFFSET_X = 0;
 		const int BYTE_OFFSET_Y = sizeof(float);
 		[FieldOffset(BYTE_OFFSET_X)] public float X;
 		[FieldOffset(BYTE_OFFSET_Y)] public float Y;
-		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float x;
-		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float w;
-		[JsonIgnore] [FieldOffset(BYTE_OFFSET_X)] public float W;
-		[JsonIgnore] [FieldOffset(BYTE_OFFSET_Y)] public float y;
-		[JsonIgnore] [FieldOffset(BYTE_OFFSET_Y)] public float h;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_X)] public float x;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_X)] public float w;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_X)] public float W;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_Y)] public float y;
+		[JsonIgnore][FieldOffset(BYTE_OFFSET_Y)] public float h;
 		[JsonIgnore][FieldOffset(BYTE_OFFSET_Y)] public float H;
 
 		public static readonly Vector2F Zero = new(0, 0);
@@ -86,10 +82,16 @@ namespace Nucleus.Types
 			else return new(1, Y / X);
 		}
 
-		public readonly float Distance(Vector2F other) => MathF.Sqrt(MathF.Pow(other.X - X, 2) + MathF.Pow(other.Y - Y, 2));
+		public readonly float Distance(Vector2F other) {
+			float dx = other.x - x;
+			float dy = other.y - y;
+			return MathF.Sqrt(dx * dx + dy * dy);
+		}
+
 		public readonly bool InRadiusOfCircle(Vector2F focus, float radius) {
-			var dist = this.Distance(focus);
-			return dist < radius;
+			float dx = x - focus.x;
+			float dy = y - focus.y;
+			return (dx * dx + dy * dy) < (radius * radius);
 		}
 
 		[JsonIgnore] public readonly Vector2F XX { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new(X, X); }
@@ -146,11 +148,15 @@ namespace Nucleus.Types
 		/// Return a normalized <see cref="Vector2F"/> with a <see cref="Length"/> of 1.
 		/// </summary>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Vector2F Normalize() {
-			return new(X / Length, Y / Length);
+			float invLen = 1.0f / MathF.Sqrt(x * x + y * y);
+			return new(X * invLen, Y * invLen);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Dot(Vector2F a, Vector2F b) => a.X * b.X + a.Y * b.Y;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly float Dot(Vector2F other) => Dot(this, other);
 
 		/// <summary>
@@ -159,45 +165,42 @@ namespace Nucleus.Types
 		/// <param name="center"></param>
 		/// <param name="degrees">Rotation in degrees</param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Vector2F RotateAroundPoint(Vector2F center, float degrees) {
 			float radians = degrees / (180f / MathF.PI);
 			float s = MathF.Sin(radians);
 			float c = MathF.Cos(radians);
 
-			Vector2F p = new(this.X, this.Y);
+			float px = x - center.x;
+			float py = y - center.y;
 
-			// translate point back to origin:
-			p.x -= center.X;
-			p.y -= center.Y;
+			float xnew = px * c - py * s;
+			float ynew = px * s + py * c;
 
-			// rotate point
-			float xnew = p.x * c - p.y * s;
-			float ynew = p.x * s + p.y * c;
-
-			// translate point back:
-			p.x = xnew + center.Y;
-			p.y = ynew + center.X;
-
-			return p;
+			return new(xnew + center.x, ynew + center.y);
 		}
 		/// <summary>
 		/// Get the rotation of this point in degrees. Zero means straight Y up, no X.
 		/// </summary>
 		/// <param name="center"></param>
 		/// <returns></returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly float GetRotationFromCenter(Vector2F center) {
 			var normalized = (this - center).Normalize();
 
 			return 360 - (((MathF.Atan2(normalized.X, normalized.Y).ToDegrees()) + 180) % 360);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly bool InTriangle(Triangle2D triangle) => triangle.IsPointInTriangle(this);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly bool InRing(Vector2F focus, float outerRing, float innerRing) {
 			// in the outer ring radius but not in the inner ring radius
 			return InRadiusOfCircle(focus, outerRing) && !InRadiusOfCircle(focus, innerRing);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Vector2F FitInto(RectangleF cropRect) {
 			Vector2F newR = this;
 
@@ -207,24 +210,37 @@ namespace Nucleus.Types
 			return newR;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly bool TestPointInQuad(Vector2F q1, Vector2F q2, Vector2F q3, Vector2F q4) {
 			return InTriangle(new Triangle2D(q1, q2, q3)) || InTriangle(new Triangle2D(q2, q3, q4));
 		}
 
-		public Vector2F Mutate(bool zeroX = false, bool zeroY = false, bool negateX = false, bool negateY = false, bool flip = false) {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public readonly Vector2F Mutate(bool zeroX = false, bool zeroY = false, bool negateX = false, bool negateY = false, bool flip = false) {
 			Vector2F ret = new(
 				zeroX ? 0 : negateX ? -X : X,
 				zeroY ? 0 : negateY ? -Y : Y
 				);
+
 			if (flip)
 				return new(ret.Y, ret.X);
 
 			return ret;
 		}
+
+		public readonly override bool Equals(object? obj) {
+			switch (obj) {
+				case Vector2 v2: return v2.X == X && v2.Y == Y;
+				case Vector2F v2: return v2.X == X && v2.Y == Y;
+				default: return false;
+			}
+		}
+
+		public readonly override int GetHashCode() => HashCode.Combine(X, Y);
 	}
 	public static class VectorConverters
 	{
-		public static Vector2F ToNucleus(this Vector2 vector) => new Vector2F(vector.X, vector.Y);
-		public static Vector2 ToNumerics(this Vector2F vector) => new Vector2(vector.X, vector.Y);
+		public static Vector2F ToNucleus(this Vector2 vector) => new(vector.X, vector.Y);
+		public static Vector2 ToNumerics(this Vector2F vector) => new(vector.X, vector.Y);
 	}
 }
