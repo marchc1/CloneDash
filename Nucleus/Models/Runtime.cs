@@ -851,8 +851,6 @@ public abstract class CurveTimeline<T> : Timeline
 		var first = Curves[0].First;
 		value = default;
 		if (first == null) return true;
-		if (Curves[0].Keyframes.Count <= 1)
-			return true;
 
 		value = first.Value;
 		return time < first.Time;
@@ -1006,7 +1004,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 		float p = curve[frame].Value;
 		float percentage = (float)curve.GetPercentage(frame, time);
 
-		float delta = curve[frame + 1].Value - p;
+		float delta = (curve.Count == 1 ? curve[frame] : curve[frame + 1]).Value - p;
 		delta -= PERFORM_ROT_WRAP(delta);
 		r = p + delta * percentage;
 
