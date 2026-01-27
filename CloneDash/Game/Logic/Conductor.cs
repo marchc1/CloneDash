@@ -107,7 +107,7 @@ namespace CloneDash.Game
 
 				if (Depressed) {
 					Graphics2D.SetDrawColor(230, 235, 255);
-					Graphics2D.DrawRectangle(0, 2, (float)XToSeconds(GetMousePos().X) * Completion, height - 4);
+					Graphics2D.DrawRectangle(0, 2, GetMousePos().X, height - 4);
 				}
 			}
 		}

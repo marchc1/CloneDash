@@ -1,3 +1,4 @@
+using Nucleus.Types;
 using System;
 using System.Runtime.InteropServices;
 
@@ -92,4 +93,9 @@ public partial struct Color
     {
         return $"{{R:{R} G:{G} B:{B} A:{A}}}";
     }
+
+    static byte ftbc(float val_0_to_255) => (byte)(int)Math.Clamp(val_0_to_255, 0, 255);
+	public static Color operator +(Color from, Color by) => new Color(from.R + by.R, from.G + by.G, from.B + by.B, from.A + by.A);
+	public static Color operator -(Color from, Color by) => new Color(from.R - by.R, from.G - by.G, from.B - by.B, from.A - by.A);
+	public static Color operator *(Color from, float by) => new Color(ftbc(from.R * by), ftbc(from.G * by), ftbc(from.B * by), ftbc(from.A * by));
 }

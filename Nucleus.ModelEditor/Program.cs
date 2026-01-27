@@ -494,14 +494,14 @@ namespace Nucleus.ModelEditor
 				//Surface.SetViewport(s.GetGlobalPosition(), s.RenderBounds.Size);
 
 				if (activeAnimation != null) {
-					activeAnimation.Apply(instance, (Curtime - start) );
+					activeAnimation.Apply(instance, (Curtime - start) * 0.3, 1f, MixBlendMode.First);
 				}
 
 				EngineCore.Window.BeginMode2D(new() {
 					Offset = s.GetGlobalPosition().ToNumerics() + (s.RenderBounds.Size / 2).ToNumerics(),
-					Target = new(800, -355),
+					Target = new(-100, -355),
 					Rotation = 0,
-					Zoom = .25f
+					Zoom = .55f
 				});
 
 				Raylib.DrawLineV(new(-w, 0), new(w, 0), Color.Red);

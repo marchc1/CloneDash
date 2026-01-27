@@ -138,6 +138,13 @@ namespace Nucleus.Models
 
 		[JsonIgnore] public bool Invalid => !valid;
 
+		public double GetPercentage(int frameIdx, double time) {
+			Keyframe<T> curframe = Keyframes[frameIdx];
+			if (frameIdx == 0 && time <= curframe.Time)
+				return 0;
+
+			return Keyframe<T>.GetPercentage(time, curframe, Keyframes[frameIdx + 1]);
+		}
 		public T? DetermineValueAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
 

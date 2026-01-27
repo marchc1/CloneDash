@@ -2235,8 +2235,19 @@ public static unsafe partial class Raylib
     public static extern void ResumeMusicStream(Music music);
 
     /// <summary>Seek music to a position (in seconds)</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SeekMusicStream(Music music, float position);
+    [DllImport(NativeLibName, EntryPoint ="SeekMusicStream", CallingConvention = CallingConvention.Cdecl)]
+    static extern void _SeekMusicStream(Music music, float position);
+    public static void SeekMusicStream(Music music, float position){
+        _SeekMusicStream(music, position);
+		// Is this going to cause crashes? The original source locks a mutex in MiniAudio...
+		// https://github.com/raysan5/raylib/commit/11429b48eb244c8e153838cf7d876d75da992815
+		// hoping we can get away with it... would be way more annoying to recompile RL for this fix.
+		unsafe {
+			AudioBuffer* buffer = music.Stream.Buffer;
+			buffer->IsSubBufferProcessed_0 = true;
+			buffer->IsSubBufferProcessed_1 = true;
+		}
+	}
 
     /// <summary>Set volume for music (1.0 is max level)</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]

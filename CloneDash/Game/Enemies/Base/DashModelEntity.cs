@@ -299,7 +299,7 @@ namespace CloneDash.Game
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.GetVisualHitTime();
 			var tickShow = this.GetVisualShowTime();
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, 1500);
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, 1200);
 			return thisPos;
 		}
 
