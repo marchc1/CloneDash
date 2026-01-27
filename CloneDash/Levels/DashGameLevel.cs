@@ -224,6 +224,13 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		// HACK - but it solves fever FX not playing
 		if (InFever) FeverFX?.Start(this);
+
+		// ALSO A HACK - but it solves some animation issues when mid-sustain.
+		if (Sustains.IsSustaining(PathwaySide.Top))
+			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
+		else if (Sustains.IsSustaining(PathwaySide.Bottom))
+			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
+
 		IsSeeking = false;
 		Conductor.InvalidateTime();
 	}
