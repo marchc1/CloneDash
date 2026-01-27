@@ -1049,10 +1049,10 @@ public static class MuseDashModelConverter
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 
-								fillKeyframe(tl.Curve(0), time, color.R * 100, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(1), time, color.G * 100, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(2), time, color.B * 100, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(3), time, color.A * 100, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, color.R, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(1), time, color.G, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(2), time, color.B, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(3), time, color.A, curveType, c1, c2, lc3, lc4);
 
 								lc3 = c3;
 								lc4 = c4;

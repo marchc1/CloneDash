@@ -1138,6 +1138,7 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 		if (BeforeFirstFrame(time))
 			switch (blend) {
 				case MixBlendMode.Setup: Set(slot, GetSetup(slot)); return;
+				case MixBlendMode.First: Set(slot, Get(slot) + ((GetSetup(slot) - Get(slot)) * (float)mix)); return;
 				default: return;
 			}
 
@@ -1145,38 +1146,33 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 		Color rgba;
 
 		if (AfterLastFrame(time)) {
-			r = Curve(0).Last?.Value ?? 100;
-			g = Curve(1).Last?.Value ?? 100;
-			b = Curve(2).Last?.Value ?? 100;
-			a = Curve(3).Last?.Value ?? 100;
-
-			r = Math.Clamp(r * 2.55f, 0, 255);
-			g = Math.Clamp(g * 2.55f, 0, 255);
-			b = Math.Clamp(b * 2.55f, 0, 255);
-			a = Math.Clamp(a * 2.55f, 0, 255);
-
-			rgba = new((byte)r, (byte)g, (byte)b, (byte)a);
-			switch (blend) {
-				case MixBlendMode.Setup: Set(slot, rgba); return;
-				default: return;
-			}
+			r = Curve(0).Last?.Value ?? 1;
+			g = Curve(1).Last?.Value ?? 1;
+			b = Curve(2).Last?.Value ?? 1;
+			a = Curve(3).Last?.Value ?? 1;
+		}
+		else {
+			r = Curve(0).DetermineValueAtTime(time);
+			g = Curve(1).DetermineValueAtTime(time);
+			b = Curve(2).DetermineValueAtTime(time);
+			a = Curve(3).DetermineValueAtTime(time);
 		}
 
-		r = Curve(0).DetermineValueAtTime(time);
-		g = Curve(1).DetermineValueAtTime(time);
-		b = Curve(2).DetermineValueAtTime(time);
-		a = Curve(3).DetermineValueAtTime(time);
+		if (mix != 1) {
+			Color basecolor = blend == MixBlendMode.Setup ? GetSetup(slot) : Get(slot);
+			float baser = basecolor.R / 255f, baseg = basecolor.G / 255f, baseb = basecolor.B / 255f, basea = basecolor.A / 255f;
+			r = (basecolor.R / 255f) + ((r - baser) * (float)mix);
+			g = (basecolor.G / 255f) + ((g - baseg) * (float)mix);
+			b = (basecolor.B / 255f) + ((b - baseb) * (float)mix);
+			a = (basecolor.A / 255f) + ((a - basea) * (float)mix);
+		}
 
-		r = Math.Clamp(r * 2.55f, 0, 255);
-		g = Math.Clamp(g * 2.55f, 0, 255);
-		b = Math.Clamp(b * 2.55f, 0, 255);
-		a = Math.Clamp(a * 2.55f, 0, 255);
-
+		r = Math.Clamp(r * 255f, 0, 255);
+		g = Math.Clamp(g * 255f, 0, 255);
+		b = Math.Clamp(b * 255f, 0, 255);
+		a = Math.Clamp(a * 255f, 0, 255);
 		rgba = new((byte)r, (byte)g, (byte)b, (byte)a);
-
-		switch (blend) {
-			case MixBlendMode.Setup: Set(slot, rgba); break;
-		}
+		Set(slot, rgba);
 	}
 }
 
@@ -1193,7 +1189,9 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 
 		if (BeforeFirstFrame(time))
 			switch (blend) {
-				case MixBlendMode.Setup: Set(slot, GetSetup(slot)); return;
+				case MixBlendMode.Setup:
+					Set(slot, GetSetup(slot));
+					return;
 				default: return;
 			}
 
@@ -1204,16 +1202,17 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 		if (AfterLastFrame(time)) {
 			attachmentID = curve.Last?.Value ?? null;
 			switch (blend) {
-				case MixBlendMode.Setup: Set(slot, attachmentID); return;
+				case MixBlendMode.Setup:
+				case MixBlendMode.First:
+					Set(slot, attachmentID);
+					return;
 				default: return;
 			}
 		}
 
 		attachmentID = Curve(0).DetermineValueAtTime(time);
 
-		switch (blend) {
-			case MixBlendMode.Setup: Set(slot, attachmentID); break;
-		}
+		Set(slot, attachmentID);
 	}
 }
 

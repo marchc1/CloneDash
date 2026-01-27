@@ -420,10 +420,10 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 
 	public override void Apply(EditorModel model, double time) {
 		Slot.Color = new(
-			(int)Math.Clamp(CurveR.DetermineValueAtTime(time) * 2.55f, 0, 255),
-			(int)Math.Clamp(CurveG.DetermineValueAtTime(time) * 2.55f, 0, 255),
-			(int)Math.Clamp(CurveB.DetermineValueAtTime(time) * 2.55f, 0, 255),
-			(int)Math.Clamp(CurveA.DetermineValueAtTime(time) * 2.55f, 0, 255)
+			(int)Math.Clamp(CurveR.DetermineValueAtTime(time) * 255f, 0, 255),
+			(int)Math.Clamp(CurveG.DetermineValueAtTime(time) * 255f, 0, 255),
+			(int)Math.Clamp(CurveB.DetermineValueAtTime(time) * 255f, 0, 255),
+			(int)Math.Clamp(CurveA.DetermineValueAtTime(time) * 255f, 0, 255)
 		);
 	}
 	public Color GetSetupValue() => Slot.SetupColor;
@@ -446,20 +446,20 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 		}
 
 		value = new(
-			(int)Math.Clamp((r?.Value ?? 0) * 2.55f, 0, 255),
-			(int)Math.Clamp((g?.Value ?? 0) * 2.55f, 0, 255),
-			(int)Math.Clamp((b?.Value ?? 0) * 2.55f, 0, 255),
-			(int)Math.Clamp((a?.Value ?? 0) * 2.55f, 0, 255)
+			(int)Math.Clamp((r?.Value ?? 0) * 255f, 0, 255),
+			(int)Math.Clamp((g?.Value ?? 0) * 255f, 0, 255),
+			(int)Math.Clamp((b?.Value ?? 0) * 255f, 0, 255),
+			(int)Math.Clamp((a?.Value ?? 0) * 255f, 0, 255)
 		);
 
 		return true;
 	}
 
 	public void InsertKeyframe(double time, Color value) {
-		CurveR.AddKeyframe(new(time, value.R / 2.55f));
-		CurveG.AddKeyframe(new(time, value.G / 2.55f));
-		CurveB.AddKeyframe(new(time, value.B / 2.55f));
-		CurveA.AddKeyframe(new(time, value.A / 2.55f));
+		CurveR.AddKeyframe(new(time, value.R / 255f));
+		CurveG.AddKeyframe(new(time, value.G / 255f));
+		CurveB.AddKeyframe(new(time, value.B / 255f));
+		CurveA.AddKeyframe(new(time, value.A / 255f));
 	}
 
 	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<SlotColorTimeline, Color>(this, time);
