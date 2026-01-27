@@ -222,6 +222,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			}
 		}
 
+		// HACK - but it solves fever FX not playing
+		if (InFever) FeverFX?.Start(this);
 		IsSeeking = false;
 		Conductor.InvalidateTime();
 	}
@@ -1472,8 +1474,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	private void EnterFever() {
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
-		FeverFX?.Start(this);
-		Scene.PlaySound(SceneSound.Fever, 0);
+		if (!IsSeeking) {
+			FeverFX?.Start(this);
+			Scene.PlaySound(SceneSound.Fever, 0);
+		}
 	}
 	/// <summary>
 	/// Exits fever.
