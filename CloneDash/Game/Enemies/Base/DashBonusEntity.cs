@@ -1,4 +1,5 @@
 ﻿using CloneDash.Settings;
+using Nucleus;
 
 namespace CloneDash.Game
 {
@@ -14,7 +15,11 @@ namespace CloneDash.Game
 			}
 
 			Position = new((float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), 450);
-			ApproachAnimation?.Apply(Model, AnimationTime);
+			ApproachAnimation?.Apply(Model, Math.Max(0, AnimationTime));
+		}
+
+		public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
+			return NMath.InRange(GetVisualTimeUntilHit(), -1, 3);
 		}
 
 		public override void Render() {

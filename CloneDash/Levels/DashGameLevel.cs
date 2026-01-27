@@ -140,11 +140,15 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	}
 	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
+		time = Math.Clamp(time, 0, Music?.Length ?? 0);
 		IsSeeking = true;
 
 		ExitMashState();
 
-		Music?.Playhead = (float)time;
+		if (time < 0.06f)
+			Music?.Restart();
+		else
+			Music?.Playhead = (float)time;
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
@@ -168,68 +172,70 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
 
-		foreach (var entity in Entities) {
-			if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
-				Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
+		if (time > 0) {
+			foreach (var entity in Entities) {
+				if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
+					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
 
-				// Evaluate if fever must end
-				if (ShouldExitFever && InFever)
-					ExitFever();
+					// Evaluate if fever must end
+					if (ShouldExitFever && InFever)
+						ExitFever();
 
-				switch (mEnt) {
-					case Masher masher: // Mashers need a bit more trickery
-						EnterMashState(masher);
-						for (int i = 0; i < masher.MaxHits; i++)
-							masher.Hit(mEnt.Pathway, 0);
-						ExitMashState();
-						masher.RewardPlayer();
-						AutoPlayer.MarkEntityAsPassed(mEnt);
-						break;
-					case SustainBeam sustain:
-						sustain.Hit(sustain.Pathway, 0);
-						sustain.RewardPlayer();
+					switch (mEnt) {
+						case Masher masher: // Mashers need a bit more trickery
+							EnterMashState(masher);
+							for (int i = 0; i < masher.MaxHits; i++)
+								masher.Hit(mEnt.Pathway, 0);
+							ExitMashState();
+							masher.RewardPlayer();
+							AutoPlayer.MarkEntityAsPassed(mEnt);
+							break;
+						case SustainBeam sustain:
+							sustain.Hit(sustain.Pathway, 0);
+							sustain.RewardPlayer();
 
-						AutoPlayer.MarkSustainAsActive(sustain);
-						// Force time to the smaller value: either the end of the sustain, or the seeking time.
-						// This fixes issues when placing an autoplayer in the middle of a sustain.
-						Conductor.ForceTimeTo(Math.Min(sustain.GetJudgementHitTime() + sustain.Length + 0.01, time));
+							AutoPlayer.MarkSustainAsActive(sustain);
+							// Force time to the smaller value: either the end of the sustain, or the seeking time.
+							// This fixes issues when placing an autoplayer in the middle of a sustain.
+							Conductor.ForceTimeTo(Math.Min(sustain.GetJudgementHitTime() + sustain.Length + 0.01, time));
 
-						// hack, but will force sustain to cancel if its ready
-						InputState s = default;
-						AutoPlayer.SustainHoldThink(ref s);
+							// hack, but will force sustain to cancel if its ready
+							InputState s = default;
+							AutoPlayer.SustainHoldThink(ref s);
 
-						AutoPlayer.MarkEntityAsPassed(mEnt);
-						break;
-					default:
-						switch (mEnt.Interactivity) {
-							case EntityInteractivity.Hit:
-								mEnt.Hit(mEnt.Pathway, 0);
-								mEnt.RewardPlayer();
-								break;
-							case EntityInteractivity.SamePath:
-								mEnt.Hit(mEnt.Pathway, 0);
-								mEnt.RewardPlayer();
-								break;
-							case EntityInteractivity.Avoid:
-								mEnt.Pass();
-								mEnt.RewardPlayer();
-								break;
-						}
-						AutoPlayer.MarkEntityAsPassed(mEnt);
-						break;
+							AutoPlayer.MarkEntityAsPassed(mEnt);
+							break;
+						default:
+							switch (mEnt.Interactivity) {
+								case EntityInteractivity.Hit:
+									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.RewardPlayer();
+									break;
+								case EntityInteractivity.SamePath:
+									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.RewardPlayer();
+									break;
+								case EntityInteractivity.Avoid:
+									mEnt.Pass();
+									mEnt.RewardPlayer();
+									break;
+							}
+							AutoPlayer.MarkEntityAsPassed(mEnt);
+							break;
+					}
+					Conductor.RemoveForcedTime();
 				}
-				Conductor.RemoveForcedTime();
 			}
+
+			// HACK - but it solves fever FX not playing
+			if (InFever) FeverFX?.Start(this);
+
+			// ALSO A HACK - but it solves some animation issues when mid-sustain.
+			if (Sustains.IsSustaining(PathwaySide.Top))
+				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
+			else if (Sustains.IsSustaining(PathwaySide.Bottom))
+				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
 		}
-
-		// HACK - but it solves fever FX not playing
-		if (InFever) FeverFX?.Start(this);
-
-		// ALSO A HACK - but it solves some animation issues when mid-sustain.
-		if (Sustains.IsSustaining(PathwaySide.Top))
-			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
-		else if (Sustains.IsSustaining(PathwaySide.Bottom))
-			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
 
 		IsSeeking = false;
 		Conductor.InvalidateTime();
