@@ -45,27 +45,27 @@ namespace Nucleus.ModelEditor
 			return allbones;
 		}
 
-		public EditorBone? FindBone(string name) => GetAllBones().FirstOrDefault(x => x.Name == name);
-		public EditorSlot? FindSlot(string name) => Slots.FirstOrDefault(x => x.Name == name);
-		public EditorSkin? FindSkin(string name) => Skins.FirstOrDefault(x => x.Name == name);
-		public EditorAnimation? FindAnimation(string name) => Animations.FirstOrDefault(x => x.Name == name);
+		public EditorBone? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(GetAllBones(), name);
+		public EditorSlot? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
+		public EditorSkin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
+		public EditorAnimation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
 
-		public bool TryFindBone(string name, [NotNullWhen(true)] out EditorBone? bone) {
+		public bool TryFindBone(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorBone? bone) {
 			bone = FindBone(name);
 			return bone != null;
 		}
 
-		public bool TryFindSlot(string name, [NotNullWhen(true)] out EditorSlot? slot) {
+		public bool TryFindSlot(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorSlot? slot) {
 			slot = FindSlot(name);
 			return slot != null;
 		}
 
-		public bool TryFindSkin(string name, [NotNullWhen(true)] out EditorSkin? skin) {
+		public bool TryFindSkin(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorSkin? skin) {
 			skin = FindSkin(name);
 			return skin != null;
 		}
 
-		public bool TryFindAnimation(string name, [NotNullWhen(true)] out EditorAnimation? animation) {
+		public bool TryFindAnimation(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorAnimation? animation) {
 			animation = FindAnimation(name);
 			return animation != null;
 		}

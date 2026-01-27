@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Models.Runtime;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorSkin : IEditorType
+	public class EditorSkin : IEditorType, IModel4Nameable
 	{
 		public EditorModel GetModel() => Model;
 		public EditorModel Model { get; set; }

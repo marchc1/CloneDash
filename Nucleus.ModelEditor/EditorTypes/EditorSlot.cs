@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Engine;
 using Nucleus.Models;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -14,7 +15,7 @@ using BlendMode = Nucleus.Models.BlendMode;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorSlot : IEditorType
+	public class EditorSlot : IEditorType, IModel4Nameable
 	{
 		public EditorModel GetModel() => Bone.Model;
 		public EditorBone Bone { get; set; }

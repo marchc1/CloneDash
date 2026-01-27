@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Models;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
@@ -7,7 +8,7 @@ using System.Net.Mail;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorBone : PoseableObject, IEditorType
+	public class EditorBone : PoseableObject, IEditorType, IModel4Nameable
 	{
 		public EditorModel GetModel() => Model;
 		[JsonIgnore] public bool Hovered { get; set; } = false;

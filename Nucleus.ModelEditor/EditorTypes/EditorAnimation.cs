@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Nucleus.Models;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Raylib_cs;
 using System.Diagnostics;
@@ -477,7 +478,7 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 	}
 }
 
-public class EditorAnimation : IEditorType
+public class EditorAnimation : IEditorType, IModel4Nameable
 {
 	public EditorModel GetModel() => Model;
 	public EditorModel Model { get; set; }
