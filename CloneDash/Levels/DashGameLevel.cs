@@ -375,16 +375,6 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	int attackP = 0;
 	int failP = 0;
 
-	public enum CharacterAnimation
-	{
-		Walk,
-		AirFail,
-		GroundFail,
-		AirHit,
-		GroundHit,
-		Hold
-	}
-
 	private bool __deferringAsync = false;
 
 	public StatisticsData Stats;

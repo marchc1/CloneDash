@@ -8,6 +8,6 @@ namespace Nucleus.Models;
 
 public interface IModelInterface<BoneType, SlotType>
 {
-	public BoneType? FindBone(string name);
-	public SlotType? FindSlot(string name);
+	public BoneType? FindBone(ReadOnlySpan<char> name);
+	public SlotType? FindSlot(ReadOnlySpan<char> name);
 }

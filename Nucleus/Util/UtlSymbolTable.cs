@@ -93,8 +93,7 @@ public class UtlSymbolTableMT(bool caseInsensitive = false) : ISymbolTable
 
 	public UtlSymId_t AddString(ReadOnlySpan<char> str) {
 		UtlSymId_t hash = str.Hash(invariant: caseInsensitive);
-		if (!Symbols.ContainsKey(hash))
-			Symbols[hash] = new(str);
+		Symbols.TryAdd(hash, new(str));
 		return hash;
 	}
 

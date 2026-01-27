@@ -22,6 +22,7 @@ using System.Globalization;
 using System.Net.Mail;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Nucleus.Models.Runtime;
 
@@ -40,8 +41,33 @@ public static class Model4System
 
 	public static ConVar m4s_wireframe = ConVar.Register(nameof(m4s_wireframe), "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
 	public const double REFERENCE_FPS = 30;
+
+
+	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+		Span<T> items = list.AsSpan();
+		T? item = null;
+		for (int i = 0, c = items.Length; i < c; i++) 
+			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+				return item;
+		
+		return item;
+	}
+	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+		Span<T> items = list.AsSpan();
+		T? item = null;
+		for (int i = 0, c = items.Length; i < c; i++)
+			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+				return i;
+
+		return -1;
+	}
 }
 
+
+public interface IModel4Nameable
+{
+	public string Name { get; }
+}
 
 public interface IContainsSetupPose
 {
@@ -54,7 +80,7 @@ public interface IModelInstanceObject
 
 
 
-public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>
+public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IModel4Nameable
 {
 	private bool disposedValue;
 
@@ -67,13 +93,21 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>
 	/// </summary>
 	public string? Name { get; set; } = null;
 
+
 	public List<BoneData> BoneDatas { get; set; } = [];
 	public List<SlotData> SlotDatas { get; set; } = [];
 	public List<Skin> Skins { get; set; } = [];
 	public Skin DefaultSkin { get; set; }
 	public List<Animation> Animations { get; set; } = [];
+
 	[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; set; }
 
+	// Internal lookup tables (holding off for now)
+	// [JsonIgnore] readonly UtlSymbolTableMT Symbols = new();
+	// [JsonIgnore] readonly Dictionary<UtlSymId_t, BoneData> SymbolToBoneData = [];
+	// [JsonIgnore] readonly Dictionary<UtlSymId_t, SlotData> SymbolToSlotData = [];
+	// [JsonIgnore] readonly Dictionary<UtlSymId_t, Skin> SymbolToSkin = [];
+	// [JsonIgnore] readonly Dictionary<UtlSymId_t, Animation> SymbolToAnimation = [];
 
 	/// <summary>
 	/// Creates a runtime model instance based off the ModelData.
@@ -111,13 +145,28 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>
 		return instance;
 	}
 
-	public Animation? FindAnimation(string name) => Animations.FirstOrDefault(x => x.Name == name);
-	public BoneData? FindBone(string name) => BoneDatas.FirstOrDefault(x => x.Name == name);
-	public Skin? FindSkin(string name) => Skins.FirstOrDefault(x => x.Name == name);
-	public SlotData? FindSlot(string name) => SlotDatas.FirstOrDefault(x => x.Name == name);
+	// May use this later
+	// T? FindFn<T>(ReadOnlySpan<char> name, Dictionary<UtlSymId_t, T> lookups, List<T> contiguous) where T : IModel4Nameable {
+	// 	UtlSymId_t symbol = Symbols.Find(name);
+	// 	if (symbol == UtlSymbol.UTL_INVAL_SYMBOL || !lookups.TryGetValue(symbol, out T? value)) {
+	// 		symbol = Symbols.AddString(name);
+	// 		string str = Symbols.String(symbol)!;
+	// 		value = contiguous.FirstOrDefault(x => str.Equals(x.Name));
+	// 		if (value != null)
+	// 			lookups[symbol] = value;
+	// 	}
+	// 
+	// 	return value;
+	// }
 
-	public int FindBoneIndex(string slot) => BoneDatas.FirstOrDefaultIndex(x => x.Name == slot);
-	public int FindSlotIndex(string slot) => SlotDatas.FirstOrDefaultIndex(x => x.Name == slot);
+
+	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
+	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(BoneDatas, name);
+	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
+	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(SlotDatas, name);
+
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
 
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
@@ -240,13 +289,13 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 	}
 
-	public BoneInstance? FindBone(string name) => Bones.FirstOrDefault(x => x.Name == name);
-	public SlotInstance? FindSlot(string name) => Slots.FirstOrDefault(x => x.Name == name);
-	public int FindBoneIndex(string name) => Bones.FirstOrDefaultIndex(x => x.Name == name);
-	public int FindSlotIndex(string name) => Slots.FirstOrDefaultIndex(x => x.Name == name);
+	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(Bones, name);
+	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Bones, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Slots, name);
 
 
-	public Attachment? GetAttachment(int slot, string name) {
+	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
 		Attachment? attachment;
 		if (Skin?.TryGetAttachment(slot, name, out attachment) ?? false)
 			return attachment;
@@ -256,7 +305,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 		return null;
 	}
-	public Attachment? GetAttachment(string slotName, string attachmentName) => GetAttachment(Data.FindSlotIndex(slotName), attachmentName);
+	public Attachment? GetAttachment(ReadOnlySpan<char> slotName, ReadOnlySpan<char> attachmentName) => GetAttachment(Data.FindSlotIndex(slotName), attachmentName);
 
 	public void SetBonesToSetupPose() {
 		foreach (var bone in Bones)
@@ -289,7 +338,8 @@ public enum MixDirection
 	Out
 }
 
-public class BoneData
+
+public class BoneData : IModel4Nameable
 {
 	public string Name { get; set; } = "";
 	public int Index { get; set; }
@@ -302,7 +352,7 @@ public class BoneData
 	public Vector2F Scale { get; set; }
 	public Vector2F Shear { get; set; }
 }
-public class BoneInstance : IContainsSetupPose, IModelInstanceObject
+public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nameable
 {
 	public ModelInstance GetModel() => Model;
 	public ModelInstance Model { get; set; }
@@ -345,7 +395,7 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject
 	public void UpdateWorldTransform(Vector2F pos, float rot, Vector2F scale, Vector2F shear)
 		=> WorldTransform = Transformation.CalculateWorldTransformation(pos, rot, scale, shear, TransformMode, Parent?.WorldTransform ?? null);
 }
-public class SlotData
+public class SlotData : IModel4Nameable
 {
 	public int Index { get; set; }
 	public string Name { get; set; } = "";
@@ -356,7 +406,7 @@ public class SlotData
 	public string? Attachment { get; set; }
 	public BlendMode BlendMode { get; set; }
 }
-public class SlotInstance : IContainsSetupPose
+public class SlotInstance : IContainsSetupPose, IModel4Nameable
 {
 	public ModelInstance GetModel() => Model;
 	public ModelInstance Model { get; set; }
@@ -426,11 +476,11 @@ public class SkinEntryTypeConverter : TypeConverter
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="SlotIndex"></param>
-[TypeConverter(typeof(SkinEntryTypeConverter))] public record SkinEntry(string Name, int SlotIndex);
+[TypeConverter(typeof(SkinEntryTypeConverter))] public record SkinEntry(UtlSymbol Name, int SlotIndex);
 // iirc, records handle this automatically; saving in case they don't
 // public override int GetHashCode() => HashCode.Combine(Name, SlotIndex);
 
-public class Skin
+public class Skin : IModel4Nameable
 {
 	public string Name { get; set; }
 	public Dictionary<SkinEntry, Attachment> Attachments { get; set; } = [];
@@ -446,13 +496,13 @@ public class Skin
 		Bones.Clear();
 	}
 
-	public Attachment? GetAttachment(int slot, string name) {
+	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
 		if (Attachments.TryGetValue(new(name, slot), out Attachment? attachment))
 			return attachment;
 		return null;
 	}
 
-	public bool TryGetAttachment(int slot, string name, [NotNullWhen(true)] out Attachment? attachment) {
+	public bool TryGetAttachment(int slot, ReadOnlySpan<char> name, [NotNullWhen(true)] out Attachment? attachment) {
 		return Attachments.TryGetValue(new(name, slot), out attachment);
 	}
 
@@ -466,12 +516,11 @@ public class Skin
 		return attachments.Count > lastCount;
 	}
 
-	public void SetAttachment(int slot, string name, Attachment attachment) {
+	public void SetAttachment(int slot, ReadOnlySpan<char> name, Attachment attachment) {
 		Attachments[new(name, slot)] = attachment;
 	}
 }
-
-public class Animation
+public class Animation : IModel4Nameable
 {
 	public double Duration { get; set; }
 	public string Name { get; set; }
@@ -485,7 +534,7 @@ public class Animation
 	}
 }
 
-public abstract class Attachment
+public abstract class Attachment : IModel4Nameable
 {
 	public string Name { get; set; }
 	public virtual void Render(SlotInstance slot) {
@@ -1784,7 +1833,7 @@ public class ModelBinary : IModelFormat
 	}
 
 	private static void writeSkinEntry(BinaryWriter writer, SkinEntry skinEntry) {
-		writer.Write(skinEntry.Name);
+		writer.Write(skinEntry.Name.String()!);
 		writer.Write(skinEntry.SlotIndex);
 	}
 
