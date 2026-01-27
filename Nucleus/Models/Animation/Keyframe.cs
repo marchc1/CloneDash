@@ -229,13 +229,13 @@ public class Keyframe<T> : IKeyframe
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
 
-		if (time >= rightmostOfTime.Time)
+		if (time > rightmostOfTime.Time)
 			return rightmostOfTime.Value;
 
 		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant:
-				return leftmostOfTime.Value;
+				return rightmostOfTime.Value;
 			case KeyframeInterpolation.Linear:
 				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
 			case KeyframeInterpolation.Bezier:
