@@ -2,12 +2,13 @@
 using System.Security.Cryptography.X509Certificates;
 
 namespace Nucleus.Models;
- 
+
 /// <summary>
 /// If you don't know the underlying value type, you can use this interface to have some non-generic
 /// reference to a keyframe.
 /// </summary>
-public interface IKeyframe {
+public interface IKeyframe
+{
 	public double GetTime();
 	public object? GetValue();
 	public T? GetValue<T>();
@@ -54,7 +55,7 @@ public class Keyframe<T> : IKeyframe
 			HandleType = LeftHandle.Value.HandleType,
 			Time = LeftHandle.Value.Time * scale,
 			Value = LeftHandle.Value.Value,
-		}; 
+		};
 		copy.RightHandle = RightHandle == null ? null : new() {
 			HandleType = RightHandle.Value.HandleType,
 			Time = RightHandle.Value.Time * scale,
@@ -194,18 +195,51 @@ public class Keyframe<T> : IKeyframe
 	//	}
 	//}
 
+
+	static readonly Keyframe<float> DUMMY_LEFT = new();
+	static readonly Keyframe<float> DUMMY_RIGHT = new();
+	public static float GetPercentage(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+		if (time < leftmostOfTime.Time)
+			return 0;
+
+		if (time > rightmostOfTime.Time)
+			return 1;
+
+		var interpolation = leftmostOfTime.Interpolation;
+		DUMMY_LEFT.SetTime(leftmostOfTime.Time); DUMMY_LEFT.SetValue(0f);
+		DUMMY_RIGHT.SetTime(rightmostOfTime.Time); DUMMY_RIGHT.SetValue(1f);
+		switch (interpolation) {
+			case KeyframeInterpolation.Constant: return 0;
+			case KeyframeInterpolation.Linear: return Keyframe<float>.LinearInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
+			case KeyframeInterpolation.Bezier: return Keyframe<float>.BezierInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
+			//case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Quadratic: return QuadraticInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Cubic: return CubicInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Quartic: return QuarticInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Quintic: return QuinticInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Exponential: return ExponentialInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Circular: return CircularInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Back: return BackInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Bounce: return BounceInterpolator(time, leftmostOfTime, rightmostOfTime);
+			//case KeyframeInterpolation.Elastic: return ElasticInterpolator(time, leftmostOfTime, rightmostOfTime);
+			default: return 0;
+		}
+	}
 	public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
 
-		if (time > rightmostOfTime.Time)
+		if (time >= rightmostOfTime.Time)
 			return rightmostOfTime.Value;
 
 		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
-			case KeyframeInterpolation.Constant: return rightmostOfTime.Value;
-			case KeyframeInterpolation.Linear: return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
-			case KeyframeInterpolation.Bezier: return BezierInterpolator(time, leftmostOfTime, rightmostOfTime);
+			case KeyframeInterpolation.Constant:
+				return leftmostOfTime.Value;
+			case KeyframeInterpolation.Linear:
+				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
+			case KeyframeInterpolation.Bezier:
+				return BezierInterpolator(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Quadratic: return QuadraticInterpolator(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Cubic: return CubicInterpolator(time, leftmostOfTime, rightmostOfTime);

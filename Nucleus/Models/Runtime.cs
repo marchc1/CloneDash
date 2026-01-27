@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Nucleus.Models.Runtime;
@@ -277,7 +278,15 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 public enum MixBlendMode
 {
-	Setup
+	Setup,
+	First,
+	Replace,
+	Add
+}
+public enum MixDirection
+{
+	In,
+	Out
 }
 
 public class BoneData
@@ -627,7 +636,7 @@ public class VertexAttachment : Attachment
 		var model = slot.GetModel();
 
 		Vector2F pos = Vector2F.Zero;
-	
+
 		foreach (var weightData in vertex.Weights) {
 			if (weightData.IsEmpty) continue;
 			var vertLocalPos = weightData.Position;
@@ -785,7 +794,7 @@ public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 
 public abstract class Timeline
 {
-	public abstract void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend);
+	public abstract void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir = MixDirection.Out);
 }
 public interface IBoneTimeline
 {
@@ -842,6 +851,8 @@ public abstract class CurveTimeline<T> : Timeline
 		var first = Curves[0].First;
 		value = default;
 		if (first == null) return true;
+		if (Curves[0].Keyframes.Count <= 1)
+			return true;
 
 		value = first.Value;
 		return time < first.Time;
@@ -861,42 +872,162 @@ public abstract class CurveTimeline<T> : Timeline
 	public FCurve<T> Curve(int index) => Curves[index];
 }
 
-public abstract class MonoBoneFloatPropertyTimeline(bool multiplicative, bool rotation) : CurveTimeline<float>(1), IBoneTimeline
+public abstract class MonoBoneFloatPropertyTimeline() : CurveTimeline<float>(1), IBoneTimeline
 {
 	public int BoneIndex { get; set; }
 
 	public abstract float Get(BoneInstance bone);
 	public abstract float GetSetup(BoneInstance bone);
 	public abstract void Set(BoneInstance bone, float value);
+}
+public abstract class MonoBoneTranslationPropertyTimeline() : MonoBoneFloatPropertyTimeline
+{
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		float r;
 
-	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
 		var bone = this.Bone(model);
 		if (BeforeFirstFrame(time))
 			switch (blend) {
-				case MixBlendMode.Setup: Set(bone, GetSetup(bone)); return;
+				case MixBlendMode.Setup:
+					Set(bone, GetSetup(bone));
+					return;
+				case MixBlendMode.First:
+					Set(bone, Get(bone) + (GetSetup(bone) - Get(bone)) * (float)mix);
+					return;
 				default: return;
 			}
 
-		if (AfterLastFrame(time, out float r))
-			switch (blend) {
-				case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * r) : (GetSetup(bone) + r)); return;
-				default: return;
-			}
+		if (!AfterLastFrame(time, out r))
+			r = Curve(0).DetermineValueAtTime(time);
 
-		r = Curve(0).DetermineValueAtTime(time);
 		switch (blend) {
 			case MixBlendMode.Setup:
-				if (multiplicative) r = (GetSetup(bone) * r);
-				else if (rotation) {
-					r = (GetSetup(bone) + r);
-				}
-				else r = (GetSetup(bone) + r);
-
-				Set(bone, r);
+				Set(bone, GetSetup(bone) + r * (float)mix);
+				break;
+			case MixBlendMode.First:
+			case MixBlendMode.Replace:
+				Set(bone, Get(bone) + (GetSetup(bone) + r - Get(bone)) * (float)mix);
+				break;
+			case MixBlendMode.Add:
+				Set(bone, Get(bone) + (r * (float)mix));
 				break;
 		}
 	}
 }
+public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPropertyTimeline
+{
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		float r;
+
+		var bone = this.Bone(model);
+		if (BeforeFirstFrame(time))
+			switch (blend) {
+				case MixBlendMode.Setup:
+					Set(bone, GetSetup(bone));
+					return;
+				case MixBlendMode.First:
+					Set(bone, Get(bone) + ((GetSetup(bone) - Get(bone)) * (float)mix));
+					return;
+				default: return;
+			}
+
+		if (!AfterLastFrame(time, out r))
+			r = Curve(0).DetermineValueAtTime(time) * GetSetup(bone);
+
+		if (mix == 1) {
+			if (blend == MixBlendMode.Add)
+				Set(bone, Get(bone) + (r - GetSetup(bone)));
+			else
+				Set(bone, r);
+		}
+
+		else {
+			float v;
+			switch (blend) {
+				case MixBlendMode.Setup:
+					v = MathF.Abs(GetSetup(bone)) * MathF.Sign(r);
+					Set(bone, v + (r - v) * (float)mix);
+					break;
+				case MixBlendMode.First:
+				case MixBlendMode.Replace:
+					v = MathF.Abs(Get(bone)) * MathF.Sign(r);
+					Set(bone, v + (r - v) * (float)mix);
+					break;
+				case MixBlendMode.Add:
+					v = MathF.Sign(r);
+					Set(bone, MathF.Abs(Get(bone)) * v + (r - MathF.Abs(GetSetup(bone)) * v) * (float)mix);
+					break;
+			}
+		}
+	}
+}
+public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatPropertyTimeline
+{
+	public const float ROT_WRAP = 16384f;
+	public const float ROT_WRAP_MIDWAY = 16384.498046875f; // ^141 +255
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float PERFORM_ROT_WRAP(float r) => (ROT_WRAP - (int)(ROT_WRAP_MIDWAY - r / 360)) * 360;
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		float r;
+
+		var bone = this.Bone(model);
+		if (BeforeFirstFrame(time))
+			switch (blend) {
+				case MixBlendMode.Setup:
+					Set(bone, GetSetup(bone));
+					return;
+				case MixBlendMode.First:
+					r = GetSetup(bone) - Get(bone);
+					Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+					return;
+				default: return;
+			}
+
+		if (AfterLastFrame(time, out r))
+			switch (blend) {
+				case MixBlendMode.Setup:
+					Set(bone, GetSetup(bone) + r * (float)mix);
+					return;
+				case MixBlendMode.First:
+				case MixBlendMode.Replace:
+					r += GetSetup(bone) - Get(bone);
+					r -= PERFORM_ROT_WRAP(r);
+					goto case MixBlendMode.Add;
+				case MixBlendMode.Add:
+					Set(bone, Get(bone) + (r * (float)mix));
+					return;
+				default: return;
+			}
+
+		// Some more manual work has to be done for rotation delta..
+		var curve = Curve(0);
+		int frame = curve.BinarySearchKeyframe(time);
+		float p = curve[frame].Value;
+		float percentage = (float)curve.GetPercentage(frame, time);
+
+		float delta = curve[frame + 1].Value - p;
+		delta -= PERFORM_ROT_WRAP(delta);
+		r = p + delta * percentage;
+
+		switch (blend) {
+			case MixBlendMode.Setup:
+				Set(bone, GetSetup(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				break;
+			case MixBlendMode.First:
+			case MixBlendMode.Replace:
+				r += GetSetup(bone) - Get(bone);
+				goto case MixBlendMode.Add;
+			case MixBlendMode.Add:
+				Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				break;
+		}
+	}
+}
+
+// translation == shearing, but this exists for simplicity if that has to change for some reason
+public abstract class MonoBoneShearingPropertyTimeline() : MonoBoneTranslationPropertyTimeline();
+
 public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveTimeline<float>(2), IBoneTimeline
 {
 	public int BoneIndex { get; set; }
@@ -905,33 +1036,91 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 	public abstract Vector2F GetSetup(BoneInstance bone);
 	public abstract void Set(BoneInstance bone, Vector2F value);
 
-	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
-		var bone = this.Bone(model);
-		if (BeforeFirstFrame(time))
-			switch (blend) {
-				case MixBlendMode.Setup: Set(bone, GetSetup(bone)); return;
-				default: return;
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		float x, y;
+		if (multiplicative) {
+			var bone = this.Bone(model);
+
+			if (BeforeFirstFrame(time))
+				switch (blend) {
+					case MixBlendMode.Setup:
+						Set(bone, GetSetup(bone));
+						return;
+					case MixBlendMode.First:
+						Set(bone, Get(bone) + ((GetSetup(bone) - Get(bone)) * (float)mix));
+						return;
+					default: return;
+				}
+
+			if (AfterLastFrame(time)) {
+				x = Curve(0).Last!.Value * GetSetup(bone).X;
+				y = Curve(1).Last!.Value * GetSetup(bone).Y;
+			}
+			else {
+				x = Curve(0).DetermineValueAtTime(time) * GetSetup(bone).X;
+				y = Curve(1).DetermineValueAtTime(time) * GetSetup(bone).Y;
 			}
 
-		float x, y;
-		Vector2F xy;
 
-		if (AfterLastFrame(time)) {
-			x = Curve(0).Last?.Value ?? (multiplicative ? 1 : 0);
-			y = Curve(1).Last?.Value ?? (multiplicative ? 1 : 0);
-			xy = new(x, y);
-			switch (blend) {
-				case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * xy) : (GetSetup(bone) + xy)); return;
-				default: return;
+			if (mix == 1) {
+				if (blend == MixBlendMode.Add)
+					Set(bone, Get(bone) + (new Vector2F(x, y) - GetSetup(bone)));
+				else
+					Set(bone, new Vector2F(x, y));
+			}
+			else {
+				Vector2F v;
+				switch (blend) {
+					case MixBlendMode.Setup:
+						v = Vector2F.Abs(GetSetup(bone)) * Vector2F.Sign(new(x, y));
+						Set(bone, v + (new Vector2F(x, y) - v) * (float)mix);
+						break;
+					case MixBlendMode.First:
+					case MixBlendMode.Replace:
+						v = Vector2F.Abs(Get(bone)) * Vector2F.Sign(new(x, y));
+						Set(bone, v + (new Vector2F(x, y) - v) * (float)mix);
+						break;
+					case MixBlendMode.Add:
+						v = Vector2F.Sign(new Vector2F(x, y));
+						Set(bone, Vector2F.Abs(Get(bone)) * v + (new Vector2F(x, y) - Vector2F.Abs(GetSetup(bone)) * v) * (float)mix);
+						break;
+				}
 			}
 		}
+		else {
+			var bone = this.Bone(model);
+			if (BeforeFirstFrame(time))
+				switch (blend) {
+					case MixBlendMode.Setup:
+						Set(bone, GetSetup(bone));
+						return;
+					case MixBlendMode.First:
+						Set(bone, Get(bone) + (GetSetup(bone) - Get(bone)) * (float)mix);
+						return;
+					default: return;
+				}
 
-		x = Curve(0).DetermineValueAtTime(time);
-		y = Curve(1).DetermineValueAtTime(time);
-		xy = new(x, y);
+			if (AfterLastFrame(time)) {
+				x = Curve(0).Last!.Value;
+				y = Curve(1).Last!.Value;
+			}
+			else {
+				x = Curve(0).DetermineValueAtTime(time);
+				y = Curve(1).DetermineValueAtTime(time);
+			}
 
-		switch (blend) {
-			case MixBlendMode.Setup: Set(bone, multiplicative ? (GetSetup(bone) * xy) : (GetSetup(bone) + xy)); break;
+			switch (blend) {
+				case MixBlendMode.Setup:
+					Set(bone, GetSetup(bone) + new Vector2F(x, y) * (float)mix);
+					break;
+				case MixBlendMode.First:
+				case MixBlendMode.Replace:
+					Set(bone, Get(bone) + (GetSetup(bone) + new Vector2F(x, y) - Get(bone)) * (float)mix);
+					break;
+				case MixBlendMode.Add:
+					Set(bone, Get(bone) + (new Vector2F(x, y) * (float)mix));
+					break;
+			}
 		}
 	}
 }
@@ -944,7 +1133,7 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 	public Color GetSetup(SlotInstance slot) => slot.Data.Color;
 	public void Set(SlotInstance slot, Color value) => slot.Color = value;
 
-	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
 		var slot = this.Slot(model);
 		if (BeforeFirstFrame(time))
 			switch (blend) {
@@ -999,7 +1188,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 	public string? GetSetup(SlotInstance slot) => slot.Data.Attachment;
 	public void Set(SlotInstance slot, string? value) => slot.SetAttachment(value);
 
-	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend) {
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
 		var slot = this.Slot(model);
 
 		if (BeforeFirstFrame(time))
@@ -1049,43 +1238,43 @@ public class ShearTimeline() : DuoBoneFloatPropertyTimeline(false)
 }
 
 
-public class RotationTimeline() : MonoBoneFloatPropertyTimeline(false, true)
+public class RotationTimeline() : MonoBoneRotationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Rotation;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Rotation;
 	public override void Set(BoneInstance bone, float value) => bone.Rotation = value;
 }
-public class TranslateXTimeline() : MonoBoneFloatPropertyTimeline(false, false)
+public class TranslateXTimeline() : MonoBoneTranslationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Position.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.X;
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(value, bone.Position.Y);
 }
-public class TranslateYTimeline() : MonoBoneFloatPropertyTimeline(false, false)
+public class TranslateYTimeline() : MonoBoneTranslationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Position.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.Y;
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(bone.Position.X, value);
 }
-public class ScaleXTimeline() : MonoBoneFloatPropertyTimeline(true, false)
+public class ScaleXTimeline() : MonoBoneMultiplicativePropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Scale.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.X;
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(value, bone.Scale.Y);
 }
-public class ScaleYTimeline() : MonoBoneFloatPropertyTimeline(true, false)
+public class ScaleYTimeline() : MonoBoneMultiplicativePropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Scale.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.Y;
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(bone.Scale.X, value);
 }
-public class ShearXTimeline() : MonoBoneFloatPropertyTimeline(false, false)
+public class ShearXTimeline() : MonoBoneShearingPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Shear.X;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.X;
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(value, bone.Shear.Y);
 }
-public class ShearYTimeline() : MonoBoneFloatPropertyTimeline(false, false)
+public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Shear.Y;
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.Y;
@@ -1106,7 +1295,9 @@ public class AnimationChannel
 	public AnimationChannelEntry? CurrentEntry;
 	public Queue<AnimationChannelEntry> QueuedEntries = [];
 	public double Time;
+	public float Mix = 1;
 	public double ElapsedTime;
+	public MixBlendMode Blending;
 
 	public void ElapseTime(double deltaTime) {
 		Time += deltaTime;
@@ -1172,13 +1363,13 @@ public class AnimationHandler
 			}
 
 			if (channel.Time >= anim.Animation.Duration) {
-				if (anim.Looping) 
+				if (anim.Looping)
 					channel.Time = channel.Time % anim.Animation.Duration;
 				else
 					channel.EnqueueNext();
 			}
 
-			if (anim.LimitedLoop && channel.ElapsedTime >= anim.LoopDuration) 
+			if (anim.LimitedLoop && channel.ElapsedTime >= anim.LoopDuration)
 				channel.EnqueueNext();
 		}
 	}
@@ -1223,10 +1414,14 @@ public class AnimationHandler
 	}
 
 	public void Apply(ModelInstance model) {
+		bool first = true;
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry == null) continue;
 
-			channel.CurrentEntry.Animation.Apply(model, channel.Time);
+			MixBlendMode blending = first ? MixBlendMode.First : channel.Blending;
+			float mix = channel.Mix;
+			channel.CurrentEntry.Animation.Apply(model, channel.Time, mix, blending);
+			first = false;
 		}
 	}
 }

@@ -120,6 +120,8 @@ namespace Nucleus.Types
 		public float Length => MathF.Sqrt(x * x + y * y);
 
 		public Vector2F Abs() => new(MathF.Abs(X), MathF.Abs(Y));
+		public static Vector2F Abs(in Vector2F self) => new(MathF.Abs(self.X), MathF.Abs(self.Y));
+		public static Vector2F Sign(in Vector2F self) => new(MathF.Sign(self.X), MathF.Sign(self.Y));
 
 		/// <summary>
 		/// Performs linear interpolation where ratio (0 -> 1) is translated to a -> b
