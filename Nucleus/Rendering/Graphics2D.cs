@@ -58,6 +58,7 @@ namespace Nucleus.Core
 			{ "Noto Sans Mono", new FontEntry("NotoSansMono-Regular.ttf", "fonts") },
 			{ "Noto Sans Mono Bold", new FontEntry("NotoSansMono-Bold.ttf", "fonts") },
 		});
+
 		private static Vector2F __offset = new Vector2F(0, 0);
 		private static Color ___drawColor = Color.White;
 		private static Color __drawColor {
