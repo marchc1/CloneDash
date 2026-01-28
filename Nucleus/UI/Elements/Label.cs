@@ -210,6 +210,7 @@ public class Label : Element
 			return;
 
 		Vector2F textSize;
+		ValidateText();
 
 		var parentBounds = Parent?.RenderBounds ?? renderBounds;
 		Span<TextRange> ranges = textRanges.AsSpan();
