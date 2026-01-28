@@ -35,13 +35,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public string GetName() => "Main Menu";
 	public void OnHidden() { }
 	public void OnShown() {
-		music?.Restart();
+		Char.Reset();
 	}
 
-	ICharacterDescriptor character;
-	ModelInstance model;
-	AnimationHandler anims;
-	MusicTrack? music;
+	CharacterPanel Char = null!;
 
 	Stack<List<MainMenuButton>> btns = [];
 
@@ -112,14 +109,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	public override void OnRemoval() {
 		base.OnRemoval();
-		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 	}
 	protected override void Initialize() {
 		base.Initialize();
-		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
-		if (character != null)
-			CharacterMod_CharacterUpdated(character);
-		CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
+
+		Add(out Char);
+		Char.Dock = Dock.Fill;
 
 		Add(out back);
 		back.Origin = Anchor.Center;
@@ -160,25 +155,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}
 
-	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
-		if (charDescriptor == null) return;
-		this.character = charDescriptor;
 
-		model = charDescriptor.GetMainShowModel(Level).Instantiate();
-		anims = new(model.Data);
-
-		var standby = charDescriptor.GetMainShowStandby();
-		if (model.Data.FindAnimation(standby) == null) standby = "standby";
-		if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
-		anims.SetAnimation(0, standby, true);
-
-		music = charDescriptor.GetMainShowMusic(Level);
-		if (music != null) {
-			music.Playing = true;
-			music.Loops = true;
-			music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-		}
-	}
 
 	private void Back_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 		DestroyNavigationMenu();
@@ -214,70 +191,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 				btn.Position = new(width * .75f, height / 2 + y * height / 3);
 			}
-		}
-	}
-
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		music?.Update();
-	}
-	ICharacterExpression? touchResponse;
-	int click = 0;
-	double startExpressionTime;
-	double nextExpressionTime;
-	string? expressionText;
-	public override void MouseClick(FrameState state, MouseButton button) {
-		if (character == null) return;
-		if (Level.Curtime < nextExpressionTime) return;
-
-		touchResponse = character.GetMainShowExpression();
-		click++;
-
-		var mainResponse = character.GetMainShowInitialExpression();
-		if (mainResponse != null) {
-			anims.SetAnimation(0, mainResponse);
-			var standby = character.GetMainShowStandby();
-			if (model.Data.FindAnimation(standby) == null) standby = "standby";
-			anims.AddAnimation(0, standby, true);
-		}
-
-		string? text = null;
-		double duration = 0;
-		touchResponse?.Run(Level, model, anims, out text, out duration);
-		startExpressionTime = Level.Curtime;
-		nextExpressionTime = Level.Curtime + duration + 0.1;
-		expressionText = text;
-	}
-	public override void Paint(float width, float height) {
-		EngineCore.Window.BeginMode2D(new() {
-			Zoom = height / 900 / 2.4f,
-			Offset = new(width / 2 - width * .2f, height / 1)
-		});
-
-		if (model != null) {
-			model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
-
-			anims?.AddDeltaTime(Level.RendertimeDelta);
-			anims?.Apply(model);
-
-			model.Render();
-		}
-
-		EngineCore.Window.EndMode2D();
-
-		if (NMath.InRange(Level.Curtime, startExpressionTime, nextExpressionTime) && expressionText != null) {
-			float alphaMult1 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.1, 0, 1, true);
-			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startExpressionTime, startExpressionTime + 0.4, 0, 1, true);
-			float alphaMult2 = (float)NMath.Remap(Level.Curtime, nextExpressionTime - 0.2, nextExpressionTime, 0, 1, true);
-			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
-			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
-			Vector2F textSize = Graphics2D.GetTextSize(expressionText, Graphics2D.UI_FONT_NAME, fontSize);
-			Vector2F textPos = new Vector2F(width / 2 - width * .2f, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
-			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
-			textSize += new Vector2F(16);
-			Graphics2D.DrawRectangle(textPos - textSize / 2, textSize);
-			Graphics2D.SetDrawColor(255, 255, 255, (int)(alphaMult * 255));
-			Graphics2D.DrawText(textPos, expressionText, Graphics2D.UI_FONT_NAME, fontSize, Anchor.Center);
 		}
 	}
 }
