@@ -140,7 +140,8 @@ namespace Nucleus.Models
 
 		public double GetPercentage(int frameIdx, double time) {
 			Keyframe<T> curframe = Keyframes[frameIdx];
-			if (frameIdx == 0 && time <= curframe.Time)
+
+			if (frameIdx == 0 && (time <= curframe.Time || double.IsNaN(time)))
 				return 0;
 
 			return Keyframe<T>.GetPercentage(time, curframe, Keyframes[frameIdx + 1]);
