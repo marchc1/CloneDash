@@ -219,6 +219,7 @@ public class MainMenuLevel : Level
 		Panel levelSelector = UI.Add<Panel>();
 		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
+		levelSelector.MakeModal();
 		levelSelector.ForegroundColor = Color.Blank;
 		levelSelector.Dock = Dock.Fill;
 		selector.FlyAway = 1;
