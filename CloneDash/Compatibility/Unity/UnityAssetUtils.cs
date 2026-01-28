@@ -1,7 +1,8 @@
 ﻿using AssetStudio;
 
 using BCnEncoder.Decoder;
-
+using BCnEncoder.Shared;
+using CommunityToolkit.HighPerformance;
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 
@@ -31,6 +32,7 @@ public static class UnityAssetUtils
 		int width = tex2D.m_Width;
 		int height = tex2D.m_Height;
 		Raylib_cs.PixelFormat pixelFormat;
+		Raylib_cs.Image img;
 		switch (tex2D.m_TextureFormat) {
 			case TextureFormat.RGB24: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8; break;
 			case TextureFormat.RGBA32: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8; break;
@@ -49,20 +51,11 @@ public static class UnityAssetUtils
 					_ => throw new InvalidOperationException()
 				});
 
-				imgData = new byte[rgba32.Length * 4];
-				for (int i = 0; i < rgba32.Length; i += 1) {
-					var px = rgba32[i];
-					var imgDataPtr = i * 4;
-					imgData[imgDataPtr] = px.r;
-					imgData[imgDataPtr + 1] = px.g;
-					imgData[imgDataPtr + 2] = px.b;
-					imgData[imgDataPtr + 3] = px.a;
-				}
-				pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-				break;
+				img = rgba32.AsSpan().Cast<ColorRgba32, byte>().ToImage(width, height, Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, tex2D.m_MipCount);
+				return img;
 			default: throw new NotImplementedException($"Cannot load the Unity texture format '{tex2D.m_TextureFormat}' into Raylib. Must provide a direct enum conversion or pixel format conversion in UnityAssetUtils.ToRaylib(this Texture2D).");
 		}
-		var img = imgData.ToImage(width, height, pixelFormat, tex2D.m_MipCount);
+		img = imgData.ToImage(width, height, pixelFormat, tex2D.m_MipCount);
 		return img;
 	}
 	private static ClassIDType GetClassIDFromType(Type t) {
