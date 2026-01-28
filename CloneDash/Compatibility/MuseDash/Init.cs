@@ -80,7 +80,7 @@ namespace CloneDash.Compatibility.MuseDash
 				BuildDashStructures();
 			Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
 
-			using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
+			using (StaticSequentialProfiler.StartStackFrame("Graphics2D.RegisterCodepoints"))
 				Graphics2D.RegisterCodepoints(MuseDashCompatibility.CodepointsInUse);
 			Interlude.Spin(submessage: "Muse Dash Compat: Fonts ready!");
 
