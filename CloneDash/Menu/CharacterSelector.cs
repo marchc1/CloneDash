@@ -4,6 +4,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Input;
 using Nucleus.UI;
+using System.Diagnostics;
 
 namespace CloneDash.Menu;
 
@@ -19,7 +20,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		});
 	}
 	readonly List<(Button label, ICharacterDescriptor character)> chars = [];
-	Panel backPanel;
+	Panel backPanel = null!;
 	CharacterPanel Character = null!;
 	protected override void Initialize() {
 		base.Initialize();
@@ -30,6 +31,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.BorderSize = 0;
 		foreach (var character in CharacterMod.GetAvailableCharacters()) {
 			var characterInfo = CharacterMod.GetCharacterData(character);
+			Debug.Assert(characterInfo != null);
+
 			var lbl = backPanel.Add<Button>();
 			lbl.Text = characterInfo.GetName();
 			lbl.Dock = Dock.Top;
@@ -44,26 +47,36 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		var currentCharacter = CharacterMod.GetCharacterData();
 		PerformPick(currentCharacter);
+		SetupButtons();
 	}
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
+
+		SetupButtons();
 	}
-	public void PerformPick(ICharacterDescriptor? character) {
-		int f = chars.FindIndex(x => x.character.GetName() == character?.GetName());
-		if(f == -1) {
+	ICharacterDescriptor? lastSelected;
+	int lastSelectedIdx = -1;
+	private void SetupButtons() {
+		lastSelectedIdx = chars.FindIndex(x => x.character.GetName() == lastSelected?.GetName());
+		if (lastSelectedIdx == -1) {
 			Logs.Warn("Unexpectedly couldnt find the character???");
 			return;
 		}
 
+		backPanel.ChildRenderOffset = new(0, (RenderBounds.Height / 2) - 16 - (lastSelectedIdx * 34));
+	}
+
+	public void PerformPick(ICharacterDescriptor? character) {
 		for (int i = 0; i < chars.Count; i++) {
 			var c = chars[i];
-			c.label.ForegroundColor = i == f ? new(255, 255, 255, 255) : new(155, 155, 155, 255);
-			c.label.Pulsing = i == f;
+			c.label.ForegroundColor = i == lastSelectedIdx ? new(255, 255, 255, 255) : new(155, 155, 155, 255);
+			c.label.Pulsing = i == lastSelectedIdx;
 
 			c.label.MouseClickEvent += (_, _, _) => PerformPick(c.character);
 		}
-		backPanel.ChildRenderOffset = new(0, (RenderBounds.Height / 2) - 16 - (f * 34));
 		Character.SetCharacter(character);
+		lastSelected = character;
+		InvalidateLayout();
 	}
 	public override void KeyPressed(in KeyboardState keyboardState, KeyboardKey key) {
 		base.KeyPressed(keyboardState, key);
