@@ -161,7 +161,7 @@ public class CharacterPanel : Panel
 			ExpressionLabel.DrawBackground = true;
 			ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
 			ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
-			ExpressionLabel.TextSize = fontSize;
+			ExpressionLabel.AutoSize = true;
 			ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
 			ExpressionLabel.Text = ExpressionText;
 		}

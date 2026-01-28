@@ -209,7 +209,33 @@ public class Label : Element
 		if (!AutoSize)
 			return;
 
-		Vector2F textSize = Graphics2D.GetTextSize(Text, Font, TextSize);
+		Vector2F textSize;
+
+		var parentBounds = Parent?.RenderBounds ?? renderBounds;
+		Span<TextRange> ranges = textRanges.AsSpan();
+		Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(parentBounds.W, parentBounds.H)), TextPadding);
+		TextAlignment vertical = TextAlignment.ToTextAlignment().vertical;
+
+		if (ranges.Length <= 0) {
+			textSize = Graphics2D.GetTextSize(Text, Font, TextSize);
+		}
+		else {
+			textSize = new(0, 0);
+
+			if (vertical == Types.TextAlignment.Center)
+				startDrawingPosition.Y -= (fullTextSize.H - ranges[0].Height) / 2;
+			else if (vertical == Types.TextAlignment.Bottom)
+				startDrawingPosition.Y -= fullTextSize.H - ranges[0].Height;
+
+			foreach (var range in ranges) {
+				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : Text.AsSpan()[range.Start..range.End];
+				var rangeSize = Graphics2D.GetTextSize(subtext, Font, TextSize);
+				textSize = new(Math.Max(textSize.X, rangeSize.X), textSize.Y + rangeSize.Y);
+				if (range.Truncate)
+					break;
+				startDrawingPosition.Y += range.Height;
+			}
+		}
 
 		renderBounds.W = textSize.X + TextPadding.X;
 		renderBounds.H = textSize.Y + TextPadding.Y;
