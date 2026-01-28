@@ -163,7 +163,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		Boss.Reset();
 
 		Combo = 0;
-		Health = 250;
+		Health = (float)Character.GetDefaultHP();
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
 		LastFeverIncreaseTime = -2000;
