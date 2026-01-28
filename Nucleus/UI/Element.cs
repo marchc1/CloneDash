@@ -1101,8 +1101,10 @@ namespace Nucleus.UI
 				return;
 			}
 
-			if (IValidatable.IsValid(element.Parent))
-				Graphics2D.OffsetDrawing(element.ChildRenderOffset);
+			Vector2F childRenderOffset = IValidatable.IsValid(element.Parent) ? element.ChildRenderOffset : Vector2F.Zero;
+			childRenderOffset = childRenderOffset.Round(5);
+
+			Graphics2D.OffsetDrawing(childRenderOffset);
 			Graphics2D.OffsetDrawing(element.RenderBounds.Pos);
 
 			if (element.Clipping)
@@ -1129,8 +1131,7 @@ namespace Nucleus.UI
 			//Graphics2D.DrawText(new(0, 0), $"Pos: {element.RenderBounds.Pos}", Graphics2D.UI_FONT_NAME, 20);
 
 			Graphics2D.OffsetDrawing(-element.RenderBounds.Pos);
-			if (IValidatable.IsValid(element.Parent))
-				Graphics2D.OffsetDrawing(-element.ChildRenderOffset);
+			Graphics2D.OffsetDrawing(-childRenderOffset);
 
 			/*if (element.Hovered && element.Parent != null) {
                 Graphics2D.SetDrawColor(100, 255, 100, 50);
@@ -1198,7 +1199,7 @@ namespace Nucleus.UI
 			if (!Hovered && !forced)
 				return;
 
-			
+
 			MouseRelease(this, state, button);
 			MouseReleaseEvent?.Invoke(this, state, button);
 

@@ -168,9 +168,10 @@ namespace Nucleus.Core
 		private static int offsetX(float input) => (int)(input + __offset.X);
 		private static int offsetY(float input) => (int)(input + __offset.Y);
 
+		static void __SetOffset(Vector2F o) => __offset = o.Round(3);
 		public static void ResetDrawingOffset() => __offset = new Vector2F(0, 0);
-		public static void OffsetDrawing(Vector2F by) => __offset = __offset + by;
-		public static void SetOffset(Vector2F offset) => __offset = offset;
+		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
+		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
 		public static Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
 			return FontManager["", fontName, (int)fontSize];
