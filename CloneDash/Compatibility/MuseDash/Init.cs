@@ -2,6 +2,7 @@
 using CloneDash.Game;
 
 using Nucleus;
+using Nucleus.Core;
 using Nucleus.Files;
 
 namespace CloneDash.Compatibility.MuseDash
@@ -22,6 +23,9 @@ namespace CloneDash.Compatibility.MuseDash
 			return MDCompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
 		}
+
+		public static char[] CodepointsInUse = null!;
+
 		public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
 			if (Initialized)
 				return MDCompatLayerInitResult.OK;
@@ -75,6 +79,10 @@ namespace CloneDash.Compatibility.MuseDash
 			using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 				BuildDashStructures();
 			Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
+
+			using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
+				Graphics2D.RegisterCodepoints(MuseDashCompatibility.CodepointsInUse);
+			Interlude.Spin(submessage: "Muse Dash Compat: Fonts ready!");
 
 			Initialized = true;
 

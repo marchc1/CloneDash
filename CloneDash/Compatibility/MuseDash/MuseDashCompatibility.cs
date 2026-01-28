@@ -452,6 +452,16 @@ namespace CloneDash.Compatibility.MuseDash
 
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
+
+			HashSet<char> codepoints = [];
+			foreach(var song in Songs){
+				string name = song.Name, author = song.Author;
+				for (int i = 0, c = name.Length; i < c; i++) 
+				codepoints.Add(name[i]);
+				for (int i = 0, c = author.Length; i < c; i++) 
+				codepoints.Add(author[i]);
+			}
+			CodepointsInUse = codepoints.ToArray();
 		}
 
 		const string CHAOS_UID = "33-4";
