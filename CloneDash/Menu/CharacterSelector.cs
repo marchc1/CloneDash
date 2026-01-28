@@ -20,6 +20,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	}
 	readonly List<(Button label, ICharacterDescriptor character)> chars = [];
 	Panel backPanel;
+	CharacterPanel Character = null!;
 	protected override void Initialize() {
 		base.Initialize();
 		backPanel = Add<Panel>();
@@ -37,12 +38,15 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 			chars.Add((lbl, characterInfo));
 		}
-	}
-	protected override void PerformLayout(float width, float height) {
-		base.PerformLayout(width, height);
+
+		Add(out Character);
+		Character.Dock = Dock.Fill;
 
 		var currentCharacter = CharacterMod.GetCharacterData();
 		PerformPick(currentCharacter);
+	}
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
 	}
 	public void PerformPick(ICharacterDescriptor? character) {
 		int f = chars.FindIndex(x => x.character.GetName() == character?.GetName());
@@ -55,8 +59,11 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			var c = chars[i];
 			c.label.ForegroundColor = i == f ? new(255, 255, 255, 255) : new(155, 155, 155, 255);
 			c.label.Pulsing = i == f;
+
+			c.label.MouseClickEvent += (_, _, _) => PerformPick(c.character);
 		}
 		backPanel.ChildRenderOffset = new(0, (RenderBounds.Height / 2) - 16 - (f * 34));
+		Character.SetCharacter(character);
 	}
 	public override void KeyPressed(in KeyboardState keyboardState, KeyboardKey key) {
 		base.KeyPressed(keyboardState, key);

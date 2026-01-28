@@ -54,25 +54,29 @@ public class CharacterPanel : Panel
 
 	public bool LinkToConVar {
 		get => field;
-		set{
+		set {
 			if (field == value) return;
 			field = value;
 
 			if (LinkToConVar) {
-				if (SetCharacter(CharacterMod.GetCharacterData())) 
+				if (SetCharacter(CharacterMod.GetCharacterData()))
 					CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
 				else
 					CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 			}
-			else 
+			else
 				CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 		}
 	} = false;
 
-	public bool SetCharacter<T>(T? character) where T : ICharacterDescriptor{
-		if (character != null) 
+	public bool SetCharacter(ICharacterDescriptor? character) {
+		if (character == Character)
+			return character != null;
+
+		if (character != null)
 			CharacterMod_CharacterUpdated(character);
-		return character!= null;
+
+		return character != null;
 	}
 
 	protected override void OnThink(FrameState frameState) {
@@ -119,7 +123,7 @@ public class CharacterPanel : Panel
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
-			Offset = new(width / 2, height / 1)
+			Offset = ((GetGlobalPosition()) + new Vector2F(width / 2, (height / 1) - 64)).ToNumerics()
 		});
 
 		if (Model != null) {

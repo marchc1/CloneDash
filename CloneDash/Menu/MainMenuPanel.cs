@@ -120,6 +120,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		Char.Dock = Dock.Left;
 		Char.DynamicallySized = true;
 		Char.Size = new(0.6f, 1f);
+		Char.LinkToConVar = true;
 
 		Add(out back);
 		back.Origin = Anchor.Center;
