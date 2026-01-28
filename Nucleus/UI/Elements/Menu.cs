@@ -176,8 +176,11 @@ namespace Nucleus.UI.Elements
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
 			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
-			if (popup)
+			if (popup){
+				this.MakeModal();
 				this.MakePopup();
+			}
+			this.MoveToFront();
 			this.Backdrop = true;
 			this.TimeToBackdropAlpha = 0.15;
 

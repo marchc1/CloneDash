@@ -799,10 +799,10 @@ namespace Nucleus.UI
 		}
 
 		public bool IsModal { get; private set; }
-		public void MakeModal() {
+		public void MakeModal(bool backdrop = true) {
 			IsModal = true;
 			UI.Modals.Add(this);
-			Backdrop = true;
+			Backdrop |= backdrop;
 		}
 
 
