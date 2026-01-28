@@ -100,7 +100,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			return;
 		}
 
-		backPanel.ChildRenderOffset = new(0, (RenderBounds.Height / 2) - 16 - (lastSelectedIdx * 34));
+		backPanel.ChildRenderOffset = new(0, (RenderBounds.Height / 2) - (48 / 2) - (lastSelectedIdx * 48));
 	}
 
 	public void PerformPick(ICharacterDescriptor? character) {
