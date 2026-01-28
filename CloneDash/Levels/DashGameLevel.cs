@@ -158,6 +158,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			entCD.Reset();
 		}
 
+		Boss.Reset();
+
 		Combo = 0;
 		Health = 250;
 		InFever = false;
@@ -171,8 +173,34 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		AutoPlayer.Reset();
 		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
+		ActiveEvents.Clear();
+		HandledEvents.Clear();
 
 		if (time > 0) {
+			foreach (var ev in Events) {
+				switch (ev.TriggerType) {
+					case EventTriggerType.AtTime:
+						Conductor.ForceTimeTo(ev.Time);
+						if (ev.Time < time)
+							ev.Activate();
+
+						Conductor.ForceTimeTo(ev.Time + ev.Length);
+						if (ev.Time + ev.Length < time)
+							ev.Deactivate();
+
+						break;
+					case EventTriggerType.AtTimeMinusLength:
+						Conductor.ForceTimeTo(ev.Time - ev.Length);
+						if (ev.Time - ev.Length < time)
+							ev.Activate();
+
+						Conductor.ForceTimeTo(ev.Time);
+						if (ev.Time < time)
+							ev.Deactivate();
+						break;
+				}
+			}
+
 			foreach (var entity in Entities) {
 				if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
 					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...

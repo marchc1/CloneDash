@@ -1446,11 +1446,24 @@ public class AnimationHandler
 		});
 	}
 
+	public void StopAllAnimation() {
+		for (int channel = 0; channel < Channels.Length; channel++) {
+			Channels[channel].CurrentEntry = null;
+			Channels[channel].Time = 0;
+		}
+	}
 	public void StopAnimation(int channel) {
 		Channels[channel].CurrentEntry = null;
 		Channels[channel].Time = 0;
 	}
 
+	public void ClearAllAnimation() {
+		for (int channel = 0; channel < Channels.Length; channel++) {
+			Channels[channel].QueuedEntries.Clear();
+			Channels[channel].CurrentEntry = null;
+			Channels[channel].Time = 0;
+		}
+	}
 	public void ClearAnimation(int channel) {
 		Channels[channel].QueuedEntries.Clear();
 		Channels[channel].CurrentEntry = null;

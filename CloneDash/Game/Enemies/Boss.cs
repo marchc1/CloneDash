@@ -163,4 +163,10 @@ public class Boss : DashEnemy
 	public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
 		return Visible;
 	}
+	public override void OnReset() {
+		base.OnReset();
+		Model.SetToSetupPose();
+		Visible = false;
+		Animations.ClearAllAnimation();
+	}
 }
