@@ -1041,7 +1041,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
-					bool isValidHit = entity.Interactivity == EntityInteractivity.Hit ? !entity.Dead : !(entity as SustainBeam).HeldState;
+				case EntityInteractivity.SamePath:
+					bool isValidHit = entity.Interactivity != EntityInteractivity.Sustain ? !entity.Dead : !(entity as SustainBeam)!.HeldState;
 					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, pathway)) {
 						double distance = entity.GetJudgementTimeUntilHit();
 						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
@@ -1337,6 +1338,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 							EntityType.SustainBeam => SceneSound.PressTop,
 							EntityType.Raider => SceneSound.Quiet,
 							EntityType.Ghost => SceneSound.Medium2,
+							EntityType.Score => SceneSound.Score,
+							EntityType.Heart => SceneSound.HP,
 							_ => SceneSound.Medium1
 						}, 1);
 					}

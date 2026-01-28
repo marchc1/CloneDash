@@ -24,8 +24,8 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="ent"></param>
 		public void MarkEntityAsPassed(DashModelEntity ent) => Passed.Add(ent);
-		public void MarkSustainAsActive(DashModelEntity ent){
-			if (ent.Type == EntityType.SustainBeam) 
+		public void MarkSustainAsActive(DashModelEntity ent) {
+			if (ent.Type == EntityType.SustainBeam)
 				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 		}
 		public void SustainHoldThink(ref InputState input) {
@@ -120,8 +120,9 @@ namespace CloneDash.Game.Logic
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f)) {
 									if (ent.Pathway == PathwaySide.Top && !avoidedTop)
 										input.TopClicked += 1;
-									else if(!avoidedBottom) {
+									else if (!avoidedBottom) {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
+											// If currently in the air, always try to click a same path ... or if sustaining
 											if (level.InAir || level.Sustains.IsSustaining())
 												input.BottomClicked += 1;
 										}
@@ -130,7 +131,7 @@ namespace CloneDash.Game.Logic
 									}
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
-									if (ent.Type == EntityType.SustainBeam) 
+									if (ent.Type == EntityType.SustainBeam)
 										CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 
 									// Record the entity as passed
