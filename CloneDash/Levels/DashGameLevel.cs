@@ -25,9 +25,9 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 
 using Raylib_cs;
-
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-
+using System.Runtime.ExceptionServices;
 using Color = Raylib_cs.Color;
 using MouseButton = Nucleus.Input.MouseButton;
 using Sound = Nucleus.Audio.Sound;
@@ -130,6 +130,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		}
 		catch (Exception ex) {
 			Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");
+			if (Debugger.IsAttached)
+				ExceptionDispatchInfo.Throw(ex);
 		}
 
 		if (workingLevel == null)
