@@ -105,9 +105,9 @@ namespace Nucleus.Audio
 		/// </summary>
 		public float Volume {
 			get { return _volume; }
-			set { 
-				_volume = value; 
-				Raylib.SetMusicVolume(underlying, value * __volumeMultiplier); 
+			set {
+				_volume = value;
+				Raylib.SetMusicVolume(underlying, value * __volumeMultiplier);
 			}
 		}
 		/// <summary>
@@ -174,7 +174,8 @@ namespace Nucleus.Audio
 		public bool Complete => Playhead == Length;
 
 		public void Update() {
-			Raylib.UpdateMusicStream(underlying);
+			if (Raylib.IsMusicReady(underlying))
+				Raylib.UpdateMusicStream(underlying);
 		}
 
 		public void Restart() {
