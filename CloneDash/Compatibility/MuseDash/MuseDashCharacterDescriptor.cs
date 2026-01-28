@@ -273,6 +273,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 			case CharacterAnimationType.AirPressHurt:
 			case CharacterAnimationType.JumpHurt:
 			case CharacterAnimationType.RoadHurt:
+			case CharacterAnimationType.In:
 				return anims[animationType].First();
 			default:
 				return anims[animationType].Random();
