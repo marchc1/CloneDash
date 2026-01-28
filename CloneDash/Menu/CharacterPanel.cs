@@ -28,6 +28,8 @@ public class CharacterPanel : Panel
 	private double NextExpressionTime;
 	private string? ExpressionText;
 
+	public Vector2F CharacterOffset { get; set; }
+
 	public bool PlaysMusic {
 		get => field;
 		set {
@@ -50,6 +52,29 @@ public class CharacterPanel : Panel
 		}
 	} = true;
 
+	public bool LinkToConVar {
+		get => field;
+		set{
+			if (field == value) return;
+			field = value;
+
+			if (LinkToConVar) {
+				if (SetCharacter(CharacterMod.GetCharacterData())) 
+					CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
+				else
+					CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+			}
+			else 
+				CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+		}
+	} = false;
+
+	public bool SetCharacter<T>(T? character) where T : ICharacterDescriptor{
+		if (character != null) 
+			CharacterMod_CharacterUpdated(character);
+		return character!= null;
+	}
+
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
 		Music?.Update();
@@ -59,16 +84,11 @@ public class CharacterPanel : Panel
 		base.Initialize();
 		BorderSize = 0;
 		DrawPanelBackground = false;
-
-		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
-		if (character != null)
-			CharacterMod_CharacterUpdated(character);
-		CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
 	}
 
 	public override void OnRemoval() {
 		base.OnRemoval();
-		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+		LinkToConVar = false; // Force removal from list
 	}
 
 	public override void MouseClick(FrameState state, MouseButton button) {
@@ -99,11 +119,11 @@ public class CharacterPanel : Panel
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
-			Offset = new(width / 2 - width * .2f, height / 1)
+			Offset = new(width / 2, height / 1)
 		});
 
 		if (Model != null) {
-			Model.Position = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
+			Model.Position = CharacterOffset;
 
 			Anims?.AddDeltaTime(Level.RendertimeDelta);
 			Anims?.Apply(Model);
