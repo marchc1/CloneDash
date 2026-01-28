@@ -261,8 +261,8 @@ namespace CloneDash.Compatibility.CustomAlbums
 				mData.doubleIdx = -1;
 				MusicDataManager.Set(i, mData);
 
-				// if (mData.noteData.GetNoteType() != NoteType.Monster && mData.noteData.GetNoteType() != NoteType.Hide)
-				//  	continue;
+				if (mData.noteData.GetNoteType() != NoteType.Monster && mData.noteData.GetNoteType() != NoteType.Hide)
+				 	continue;
 
 				if (geminiCache.TryGetValue(mData.tick, out var geminiList)) {
 					var isNoteGemini = Bms.BmsIds[mData.noteData.ibms_id ?? "00"] == Bms.BmsId.Gemini;
