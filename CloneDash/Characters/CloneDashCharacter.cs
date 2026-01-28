@@ -7,6 +7,7 @@ using Nucleus.Audio;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 namespace CloneDash.Modding.Descriptors;
@@ -142,6 +143,9 @@ public class CloneDashCharacter : CloneDashDescriptor, ICharacterDescriptor
 	public static CloneDashCharacter? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CloneDashCharacter>(text, filename) : null;
 
 	string ICharacterDescriptor.GetName() => Name;
+	string ICharacterDescriptor.GetCosplayName() => throw new NotImplementedException();
+	string ICharacterDescriptor.GetCharacterName() => throw new NotImplementedException();
+	ITexture ICharacterDescriptor.GetThumbnailTexture() => throw new NotImplementedException();
 	string? ICharacterDescriptor.GetDescription() => Description;
 	string ICharacterDescriptor.GetAuthor() => Author;
 	string ICharacterDescriptor.GetPerk() => Perk;

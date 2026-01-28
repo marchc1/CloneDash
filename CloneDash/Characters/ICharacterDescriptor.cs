@@ -2,6 +2,7 @@
 
 using Nucleus.Audio;
 using Nucleus.Engine;
+using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 namespace CloneDash.Characters;
@@ -12,7 +13,10 @@ namespace CloneDash.Characters;
 public interface ICharacterDescriptor
 {
 	public string GetName();
+	public string GetCosplayName();
+	public string GetCharacterName();
 	public string? GetDescription();
+	public ITexture? GetThumbnailTexture();
 	public string GetAuthor();
 	public string GetPerk();
 

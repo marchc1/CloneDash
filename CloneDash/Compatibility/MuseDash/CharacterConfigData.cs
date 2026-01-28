@@ -13,6 +13,29 @@ public class CharacterLocalizationData
 	[JsonProperty("cvs")] public string[] CVs;
 	[JsonProperty("expressions")] public string[][] Expressions;
 }
+public class CharacterSkinData
+{
+	[JsonProperty("index")] public int Index { get; set; }
+	[JsonProperty("albumJsonIndex")] public int AlbumJsonIndex {get; set;}
+	[JsonProperty("mainShow")] public string MainShow {get; set;}
+	[JsonProperty("battleShow")] public string BattleShow {get; set;}
+	[JsonProperty("battleSubShow")] public string BattleSubShow {get; set;}
+	[JsonProperty("victoryShow")] public string VictoryShow {get; set;}
+	[JsonProperty("failShow")] public string FailShow {get; set;}
+	[JsonProperty("chipName")] public string ChipName {get; set;}
+	[JsonProperty("free")] public bool Free {get; set;}
+	[JsonProperty("hide")] public bool Hide {get; set;}
+	[JsonProperty("exchange")] public bool Exchange {get; set;}
+	[JsonProperty("hexie")] public bool Hexie {get; set;}
+	[JsonProperty("headName")] public string HeadName {get; set;}
+	[JsonProperty("headNameHexie")] public string HeadNameHexie {get; set;}
+	[JsonProperty("achShow")] public string AchShow {get; set;}
+	[JsonProperty("achShowHexie")] public string AchShowHexie {get; set;}
+	[JsonProperty("recordShow")] public string RecordShow {get; set;}
+	[JsonProperty("recordShowHexie")] public string RecordShowHexie {get; set;}
+	[JsonProperty("recordShow_Vic")] public string RecordShow_Vic {get; set;}
+	[JsonProperty("recordShowHexie_Vic")] public string RecordShowHexie_Vic {get; set;}
+}
 public class CharacterConfigData
 
 {
@@ -52,6 +75,7 @@ public class CharacterConfigData
 	[JsonProperty("order")] public int Order { get; set; }
 	[JsonProperty("expressions")] public List<CharacterExpression> Expressions { get; set; }
 	[JsonProperty("listIndex")] public int ListIndex { get; set; }
+	[JsonProperty("skins")] public List<CharacterSkinData> Skins { get; set; }
 }
 
 public class CharacterExpression

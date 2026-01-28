@@ -11,6 +11,7 @@ using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Engine;
 using Nucleus.Extensions;
+using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 using System.Collections.Specialized;
@@ -95,6 +96,9 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 	});
 
 	public string GetName() => $"{configData.Localization["english"].CosName} {configData.Localization["english"].CharacterName}";
+	public string GetCosplayName() => configData.Localization["english"].CosName;
+	public string GetCharacterName() => configData.Localization["english"].CharacterName;
+	public ITexture? GetThumbnailTexture() => MuseDashCompatibility.ConvertTexture(EngineCore.Level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(configData.Skins.First().HeadName)!);
 	public string? GetDescription() => configData.Localization["english"].Description;
 	public string GetAuthor() => "PeroPeroGames";
 	public string GetPerk() => $"{configData.Localization["english"].Skill}";

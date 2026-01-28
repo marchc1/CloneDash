@@ -28,6 +28,8 @@ public static class UnityAssetUtils
 	/// <param name="tex2D"></param>
 	/// <returns></returns>
 	public static Raylib_cs.Image ToRaylib(this Texture2D tex2D) {
+		if (tex2D == null)
+			return default;
 		var imgData = tex2D.image_data.GetData();
 		int width = tex2D.m_Width;
 		int height = tex2D.m_Height;
