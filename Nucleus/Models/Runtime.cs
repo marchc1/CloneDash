@@ -50,7 +50,7 @@ public static class Model4System
 			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
 				return item;
 		
-		return item;
+		return null;
 	}
 	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
