@@ -10,6 +10,7 @@ using Nucleus.UI;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CloneDash.Menu;
 
@@ -84,10 +85,16 @@ public class CharacterPanel : Panel
 		Music?.Update();
 	}
 
+	Label ExpressionLabel = null!;
+
 	protected override void Initialize() {
 		base.Initialize();
 		BorderSize = 0;
 		DrawPanelBackground = false;
+		ExpressionLabel = Add<Label>();
+		ExpressionLabel.Visible = false;
+		ExpressionLabel.Origin = Anchor.Center;
+		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 	}
 
 	public override void OnRemoval() {
@@ -117,6 +124,7 @@ public class CharacterPanel : Panel
 		TouchResponse?.Run(Level, Model, Anims, out text, out duration);
 		StartExpressionTime = Level.Curtime;
 		NextExpressionTime = Level.Curtime + duration + 0.1;
+		ExpressionLabel.TextPadding = new(16);
 		ExpressionText = text;
 	}
 
@@ -144,13 +152,21 @@ public class CharacterPanel : Panel
 			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
 			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
 			Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-			Vector2F textPos = new Vector2F(width / 2 - width * .2f, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
-			Graphics2D.SetDrawColor(10, 20, 25, (int)(alphaMult * 200));
+			Vector2F textPos = new Vector2F(width / 2, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			textSize += new Vector2F(16);
-			Graphics2D.DrawRectangle(textPos - textSize / 2, textSize);
-			Graphics2D.SetDrawColor(255, 255, 255, (int)(alphaMult * 255));
-			Graphics2D.DrawText(textPos, ExpressionText, Graphics2D.UI_FONT_NAME, fontSize, Anchor.Center);
+
+			ExpressionLabel.Position = textPos;
+			ExpressionLabel.Size = textSize;
+			ExpressionLabel.Visible = true;
+			ExpressionLabel.DrawBackground = true;
+			ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
+			ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
+			ExpressionLabel.TextSize = fontSize;
+			ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
+			ExpressionLabel.Text = ExpressionText;
 		}
+		else
+			ExpressionLabel.Visible = false;
 	}
 
 	public void Reset() {

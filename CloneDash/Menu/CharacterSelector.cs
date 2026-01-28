@@ -76,7 +76,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		}
 		Character.SetCharacter(character);
 		lastSelected = character;
-		InvalidateLayout();
+		SetupButtons();
 	}
 	public override void KeyPressed(in KeyboardState keyboardState, KeyboardKey key) {
 		base.KeyPressed(keyboardState, key);
