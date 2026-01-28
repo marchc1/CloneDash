@@ -86,9 +86,9 @@ namespace CloneDash.Compatibility.MuseDash
 
 			Initialized = true;
 
-			StaticSequentialProfiler.End(out var stack, out var acumulators);
+			StaticSequentialProfiler.End(out var stack, out var accumulators);
 
-			Logs.Debug($"MuseDashCompat.Init(): profiling complete, results:\n  Stack:\n{string.Join(Environment.NewLine, stack.ToStringArray())}\n");
+			Logs.Debug($"MuseDashCompat.Init(): profiling complete, results:\n  Stack:\n{string.Join(Environment.NewLine, stack.ToStringArray())}\nAccumulators:\n{string.Join(Environment.NewLine, accumulators.Select(x => $"    {x.Key}: {x.Value.Timer.Elapsed.TotalMilliseconds} ms\n"))}\n");
 
 			return result;
 		}
