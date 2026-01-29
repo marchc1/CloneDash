@@ -1,4 +1,5 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Compatibility.CustomAlbums;
+using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -354,6 +355,12 @@ public class SongSelector : Panel, IMainMenuPanel
 			Discs[i].InputDisabled = disabled;
 		}
 		discsDisabled = disabled;
+	}
+
+	protected override bool OnFileDropped(string filepath) {
+		Level.As<MainMenuLevel>().LoadChartSelector(this, new CustomAlbumsCompatibility.CustomChartsSong(filepath));
+
+		return true;
 	}
 
 	public void LayoutDiscs(float width, float height) {
