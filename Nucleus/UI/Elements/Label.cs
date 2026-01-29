@@ -53,6 +53,7 @@ public class Label : Element
 	public bool AutoSize {
 		get { return __autosize; }
 		set {
+			if (__autosize == value) return;
 			__autosize = value;
 			InvalidateLayout();
 		}
