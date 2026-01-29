@@ -357,7 +357,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		discsDisabled = disabled;
 	}
 
-	protected override bool OnFileDropped(string filepath) {
+	protected override bool OnFileDropped(string filepath, Vector2F pos) {
 		Level.As<MainMenuLevel>().LoadChartSelector(this, new CustomAlbumsCompatibility.CustomChartsSong(filepath));
 
 		return true;

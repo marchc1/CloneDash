@@ -26,6 +26,7 @@ public class WindowDragNDropState(OSWindow window)
 	{
 		public string? File;
 		public string? Text;
+		public Vector2F Pos;
 	}
 	readonly ConcurrentQueue<DragData> Events = [];
 
@@ -698,10 +699,11 @@ public unsafe class OSWindow : IValidatable
 				DragNDrop.Active = true;
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_FILE:
-				DragNDrop.Enqueue(new() { File = ev.String });
+				DragNDrop.Enqueue(new() { File = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_TEXT:
-				DragNDrop.Enqueue(new() { Text = ev.String });
+				
+				DragNDrop.Enqueue(new() { Text = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_POSITION:
 				DragNDrop.Position = new(ev.Event.drop.x, ev.Event.drop.y);
@@ -1166,9 +1168,9 @@ public unsafe class OSWindow : IValidatable
 		int texts = 0, files = 0;
 		while (DragNDrop.TryDequeue(out WindowDragNDropState.DragData data)) {
 			if (data.File != null)
-				dnds.File[files++] = data.File;
+				dnds.File[files++] = new() { Text = data.File, Position = data.Pos };
 			else if (data.Text != null)
-				dnds.Text[texts++] = data.Text;
+				dnds.Text[texts++] = new() { Text = data.Text, Position = data.Pos };
 		}
 
 		dnds.Texts = texts;

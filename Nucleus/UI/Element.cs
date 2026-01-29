@@ -368,11 +368,11 @@ namespace Nucleus.UI
 			}
 		}
 
-		protected virtual bool OnTextDropped(string text) => false;
-		protected virtual bool OnFileDropped(string filepath) => false;
+		protected virtual bool OnTextDropped(string text, Vector2F pos) => false;
+		protected virtual bool OnFileDropped(string filepath, Vector2F pos) => false;
 
-		internal bool TextDropped(string text) => OnTextDropped(text);
-		internal bool FileDropped(string filepath) => OnFileDropped(filepath);
+		internal bool TextDropped(string text, Vector2F pos) => OnTextDropped(text, pos);
+		internal bool FileDropped(string filepath, Vector2F pos) => OnFileDropped(filepath, pos);
 
 		public bool IsValid() => !__markedForRemoval;
 
@@ -968,7 +968,7 @@ namespace Nucleus.UI
 
 			return containsPoint;
 		}
-		public static Element? ResolveElementHoveringState(Element element, FrameState frameState, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
+		public static Element? ResolveElementHoveringState(Element element, Vector2F mousepos, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
 			if (!element.Enabled) return lastHovered;
 			if (!element.Visible) return lastHovered;
 			if (!element.CanInput()) return lastHovered;
@@ -987,7 +987,7 @@ namespace Nucleus.UI
 				offset += element.RenderBounds.Pos;
 
 				foreach (Element child in element.Children)
-					lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered, modalActive);
+					lastHovered = ResolveElementHoveringState(child, mousepos, offset, boundsOfSelf, lastHovered, modalActive);
 
 				return lastHovered;
 			}
@@ -995,16 +995,16 @@ namespace Nucleus.UI
 			var bounds = element.RenderBounds.AddPosition(offset);
 
 			if (element.OnHoverTest == null) {
-				if (element.HoverTest(bounds, frameState.Mouse.MousePos))
+				if (element.HoverTest(bounds, mousepos))
 					lastHovered = element;
 			}
-			else if (element.OnHoverTest(element, bounds, frameState.Mouse.MousePos))
+			else if (element.OnHoverTest(element, bounds, mousepos))
 				lastHovered = element;
 
 			offset += element.RenderBounds.Pos;
 
 			foreach (Element child in element.Children)
-				lastHovered = ResolveElementHoveringState(child, frameState, offset, boundsOfSelf, lastHovered);
+				lastHovered = ResolveElementHoveringState(child, mousepos, offset, boundsOfSelf, lastHovered);
 
 			return lastHovered;
 		}

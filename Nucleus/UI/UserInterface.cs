@@ -333,7 +333,7 @@ namespace Nucleus.UI
 			}
 			int rebuilds = Element.LayoutRecursive(this, ref frameState);
 
-			Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+			Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
 			Hovered = hoveredElement;
 
 			if (frameState.Mouse.MouseClicked) {

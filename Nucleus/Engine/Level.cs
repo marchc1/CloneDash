@@ -377,27 +377,28 @@ namespace Nucleus.Engine
 		readonly Stopwatch updateTrack = new();
 		readonly Stopwatch renderTrack = new();
 
-		public virtual bool OnFileDropped(string filepath) => false;
-		public virtual bool OnTextDropped(string text) => false;
+		public virtual bool OnFileDropped(string filepath, Vector2F pos) => false;
+		public virtual bool OnTextDropped(string text, Vector2F pos) => false;
 
-		public void FileDropped(string filepath) {
-			if (OnFileDropped(filepath)) return;
+		public void FileDropped(Vector2F pos, string filepath) {
+			if (OnFileDropped(filepath, pos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = UI?.Hovered;
-			while(e != null){
-				if (e.FileDropped(filepath))
+			Element? e = Element.ResolveElementHoveringState(UI, pos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+
+			while (e != null){
+				if (e.FileDropped(filepath, pos))
 					break;
 				e = e.Parent;
 			}
 		}
-		public void TextDropped(string text) { 
-			if (OnTextDropped(text)) return;
+		public void TextDropped(Vector2F pos, string text) { 
+			if (OnTextDropped(text, pos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = UI?.Hovered;
+			Element? e = Element.ResolveElementHoveringState(UI, pos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
 			while (e != null) {
-				if (e.TextDropped(text))
+				if (e.TextDropped(text, pos))
 					break;
 				e = e.Parent;
 			}
@@ -448,22 +449,24 @@ namespace Nucleus.Engine
 
 			frameState.Keyboard.Clear();
 
-			EngineCore.Window.FlushDragNDropStateInto(ref frameState.DragNDrop);
-			for (int i = 0; i < frameState.DragNDrop.Files; i++) {
-				string? str;
-				if ((str = frameState.DragNDrop.File[i]) != null)
-					FileDropped(str);
-			}
-			for (int i = 0; i < frameState.DragNDrop.Texts; i++) {
-				string? str;
-				if ((str = frameState.DragNDrop.Text[i]) != null)
-					TextDropped(str);
-			}
-
 			if (EngineCore.Window.MouseFocused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
 			if (EngineCore.Window.InputFocused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			UI.HandleInput();
+
+			EngineCore.Window.FlushDragNDropStateInto(ref frameState.DragNDrop);
+
+			for (int i = 0; i < frameState.DragNDrop.Files; i++) {
+				DragNDropItem item;
+				if ((item = frameState.DragNDrop.File[i]).Text != null)
+					FileDropped(item, item);
+			}
+			for (int i = 0; i < frameState.DragNDrop.Texts; i++) {
+				DragNDropItem item;
+				if ((item = frameState.DragNDrop.Text[i]).Text != null)
+					TextDropped(item, item);
+			}
+
 
 			if (!Paused) RunEventPreThink(ref frameState);
 
