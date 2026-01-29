@@ -380,27 +380,44 @@ namespace Nucleus.Engine
 		public virtual bool OnFileDropped(string filepath, Vector2F pos) => false;
 		public virtual bool OnTextDropped(string text, Vector2F pos) => false;
 
-		public void FileDropped(Vector2F pos, string filepath) {
-			if (OnFileDropped(filepath, pos)) return;
+		readonly Queue<DragNDropItem> DragNDropFileEvents_ForNextMouseHover = [];
+		readonly Queue<DragNDropItem> DragNDropTextEvents_ForNextMouseHover = [];
 
-			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = Element.ResolveElementHoveringState(UI, pos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+		public void FileDropped(DragNDropItem item, bool isWindowFocused) {
+			if (!isWindowFocused) {
+				// Due to position not being available at this; enqueue this event for later. SDL doesn't give us positioning so we need to wait
+				// until the window focuses again.
+				DragNDropFileEvents_ForNextMouseHover.Enqueue(item);
+			}
+			else {
+				if (OnFileDropped(item, FrameState.Mouse.MousePos)) return;
 
-			while (e != null){
-				if (e.FileDropped(filepath, pos))
-					break;
-				e = e.Parent;
+				// Try sending it to the UI element we last hovered over, iterating through parents
+				Element? e = Element.ResolveElementHoveringState(UI, FrameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+
+				while (e != null) {
+					if (e.FileDropped(item, FrameState.Mouse.MousePos))
+						break;
+					e = e.Parent;
+				}
 			}
 		}
-		public void TextDropped(Vector2F pos, string text) { 
-			if (OnTextDropped(text, pos)) return;
+		public void TextDropped(DragNDropItem item, bool isWindowFocused) {
+			if (!isWindowFocused) {
+				// Due to position not being available at this; enqueue this event for later. SDL doesn't give us positioning so we need to wait
+				// until the window focuses again.
+				DragNDropTextEvents_ForNextMouseHover.Enqueue(item);
+			}
+			else {
+				if (OnTextDropped(item, FrameState.Mouse.MousePos)) return;
 
-			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = Element.ResolveElementHoveringState(UI, pos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
-			while (e != null) {
-				if (e.TextDropped(text, pos))
-					break;
-				e = e.Parent;
+				// Try sending it to the UI element we last hovered over, iterating through parents
+				Element? e = Element.ResolveElementHoveringState(UI, FrameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+				while (e != null) {
+					if (e.TextDropped(item, FrameState.Mouse.MousePos))
+						break;
+					e = e.Parent;
+				}
 			}
 		}
 
@@ -459,18 +476,24 @@ namespace Nucleus.Engine
 			for (int i = 0; i < frameState.DragNDrop.Files; i++) {
 				DragNDropItem item;
 				if ((item = frameState.DragNDrop.File[i]).Text != null)
-					FileDropped(item, item);
+					FileDropped(item, false);
 			}
 			for (int i = 0; i < frameState.DragNDrop.Texts; i++) {
 				DragNDropItem item;
 				if ((item = frameState.DragNDrop.Text[i]).Text != null)
-					TextDropped(item, item);
+					TextDropped(item, false);
 			}
-
 
 			if (!Paused) RunEventPreThink(ref frameState);
 
 			UI.HandleThinking();
+
+			if (EngineCore.Window.MouseFocused) {
+				while (DragNDropFileEvents_ForNextMouseHover.TryDequeue(out DragNDropItem item))
+					FileDropped(item, true);
+				while (DragNDropTextEvents_ForNextMouseHover.TryDequeue(out DragNDropItem item))
+					TextDropped(item, true);
+			}
 
 			// If an element has keyboard focus, wipe the keyboard state because the game shouldnt get that information
 			if (IValidatable.IsValid(UI.KeyboardFocusedElement))

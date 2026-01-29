@@ -30,9 +30,7 @@ public class WindowDragNDropState(OSWindow window)
 	}
 	readonly ConcurrentQueue<DragData> Events = [];
 
-	public bool Dragged;
 	public bool Active;
-	public bool Dropped;
 	public Vector2F Position;
 
 	public void Enqueue(in DragData data) => Events.Enqueue(data);
@@ -40,8 +38,6 @@ public class WindowDragNDropState(OSWindow window)
 
 	public void Reset() {
 		Events.Clear();
-		Dragged = false;
-		Dropped = false;
 		Position = default;
 	}
 }
@@ -695,21 +691,20 @@ public unsafe class OSWindow : IValidatable
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
 		switch (ev.Event.Type) {
 			case SDL_EventType.SDL_EVENT_DROP_BEGIN:
-				DragNDrop.Dragged = true;
 				DragNDrop.Active = true;
+
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_FILE:
 				DragNDrop.Enqueue(new() { File = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_TEXT:
-				
+
 				DragNDrop.Enqueue(new() { Text = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_POSITION:
 				DragNDrop.Position = new(ev.Event.drop.x, ev.Event.drop.y);
 				break;
 			case SDL_EventType.SDL_EVENT_DROP_COMPLETE:
-				DragNDrop.Dropped = true;
 				DragNDrop.Active = false;
 
 				break;
@@ -1160,17 +1155,12 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	internal void FlushDragNDropStateInto(ref Input.DragNDropState dnds) {
-		dnds.Dragged = DragNDrop.Dragged;
-		dnds.Active = DragNDrop.Active;
-		dnds.Dropped = DragNDrop.Dropped;
-		dnds.Position = DragNDrop.Position;
-
 		int texts = 0, files = 0;
 		while (DragNDrop.TryDequeue(out WindowDragNDropState.DragData data)) {
 			if (data.File != null)
-				dnds.File[files++] = new() { Text = data.File, Position = data.Pos };
+				dnds.File[files++] = new() { Text = data.File };
 			else if (data.Text != null)
-				dnds.Text[texts++] = new() { Text = data.Text, Position = data.Pos };
+				dnds.Text[texts++] = new() { Text = data.Text };
 		}
 
 		dnds.Texts = texts;
