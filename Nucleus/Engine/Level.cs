@@ -383,14 +383,24 @@ namespace Nucleus.Engine
 		public void FileDropped(string filepath) {
 			if (OnFileDropped(filepath)) return;
 
-			// Try sending it to the UI element we last hovered over.
-			UI?.Hovered?.FileDropped(filepath);
+			// Try sending it to the UI element we last hovered over, iterating through parents
+			Element? e = UI?.Hovered;
+			while(e != null){
+				if (e.FileDropped(filepath))
+					break;
+				e = e.Parent;
+			}
 		}
 		public void TextDropped(string text) { 
 			if (OnTextDropped(text)) return;
-			
-			// Try sending it to the UI element we last hovered over.
-			UI?.Hovered?.TextDropped(text);
+
+			// Try sending it to the UI element we last hovered over, iterating through parents
+			Element? e = UI?.Hovered;
+			while (e != null) {
+				if (e.TextDropped(text))
+					break;
+				e = e.Parent;
+			}
 		}
 
 		/// <summary>
