@@ -37,6 +37,7 @@ namespace Nucleus.Types
         }
 		public MouseState Mouse;
 		public KeyboardState Keyboard;
+		public DragNDropState DragNDrop;
 
         public bool MouseClicked(MouseButton button) => Mouse.Clicked(button);
         public bool MouseHeld(MouseButton button) => Mouse.Held(button);

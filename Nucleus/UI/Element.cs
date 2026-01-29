@@ -368,6 +368,12 @@ namespace Nucleus.UI
 			}
 		}
 
+		protected virtual bool OnTextDropped(string text) => false;
+		protected virtual bool OnFileDropped(string filepath) => false;
+
+		internal bool TextDropped(string text) => OnTextDropped(text);
+		internal bool FileDropped(string filepath) => OnFileDropped(filepath);
+
 		public bool IsValid() => !__markedForRemoval;
 
 		public delegate void ChildParentedDelegate(Element parent, Element child);

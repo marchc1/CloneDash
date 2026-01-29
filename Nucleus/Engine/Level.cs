@@ -377,6 +377,22 @@ namespace Nucleus.Engine
 		readonly Stopwatch updateTrack = new();
 		readonly Stopwatch renderTrack = new();
 
+		public virtual bool OnFileDropped(string filepath) => false;
+		public virtual bool OnTextDropped(string text) => false;
+
+		public void FileDropped(string filepath) {
+			if (OnFileDropped(filepath)) return;
+
+			// Try sending it to the UI element we last hovered over.
+			UI?.Hovered?.FileDropped(filepath);
+		}
+		public void TextDropped(string text) { 
+			if (OnTextDropped(text)) return;
+			
+			// Try sending it to the UI element we last hovered over.
+			UI?.Hovered?.TextDropped(text);
+		}
+
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -421,10 +437,21 @@ namespace Nucleus.Engine
 			frameState.WindowHeight = height;
 
 			frameState.Keyboard.Clear();
-			if (EngineCore.Window.MouseFocused)
-				EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
-			if (EngineCore.Window.InputFocused)
-				EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
+
+			EngineCore.Window.FlushDragNDropStateInto(ref frameState.DragNDrop);
+			for (int i = 0; i < frameState.DragNDrop.Files; i++) {
+				string? str;
+				if ((str = frameState.DragNDrop.File[i]) != null)
+					FileDropped(str);
+			}
+			for (int i = 0; i < frameState.DragNDrop.Texts; i++) {
+				string? str;
+				if ((str = frameState.DragNDrop.Text[i]) != null)
+					TextDropped(str);
+			}
+
+			if (EngineCore.Window.MouseFocused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
+			if (EngineCore.Window.InputFocused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
 			UI.HandleInput();
 

@@ -15,9 +15,34 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
 
-public struct WindowKey {
+public struct WindowKey
+{
 	public KeyboardKey Key;
 	public double Timestamp;
+}
+public class WindowDragNDropState(OSWindow window)
+{
+	public struct DragData
+	{
+		public string? File;
+		public string? Text;
+	}
+	readonly ConcurrentQueue<DragData> Events = [];
+
+	public bool Dragged;
+	public bool Active;
+	public bool Dropped;
+	public Vector2F Position;
+
+	public void Enqueue(in DragData data) => Events.Enqueue(data);
+	public bool TryDequeue(out DragData data) => Events.TryDequeue(out data);
+
+	public void Reset() {
+		Events.Clear();
+		Dragged = false;
+		Dropped = false;
+		Position = default;
+	}
 }
 public class WindowKeyboardState(OSWindow window)
 {
@@ -99,6 +124,7 @@ public unsafe class OSWindow : IValidatable
 	internal bool UserWantsToClose;
 	internal bool UsingFbo;
 
+	public WindowDragNDropState DragNDrop;
 	public WindowKeyboardState Keyboard;
 	public WindowMouseState Mouse;
 
@@ -110,6 +136,7 @@ public unsafe class OSWindow : IValidatable
 	private static Dictionary<SDL_WindowID, OSWindow> windowLookup_id2window = [];
 
 	private OSWindow() {
+		DragNDrop = new(this);
 		Keyboard = new(this);
 		Mouse = new(this);
 	}
@@ -331,7 +358,7 @@ public unsafe class OSWindow : IValidatable
 		handleSDLTextInputState();
 		flushWindowGeometry();
 		applyHitTest();
-		if(MouseFocused)
+		if (MouseFocused)
 			SDL3.SDL_SetCursor(cursor);
 		lastFlags = curFlags;
 		curFlags = SDL3.SDL_GetWindowFlags(handle);
@@ -396,7 +423,7 @@ public unsafe class OSWindow : IValidatable
 
 
 	private Vector2F queuedPos, queuedSize, queuedMin, queuedMax;
-	private string queuedTitle;
+	private string? queuedTitle;
 	private float queuedOpacity;
 	public bool isPosQueued, isSizeQueued, isMinQueued, isMaxQueued, isTitleQueued, isOpacityQueued;
 
@@ -650,7 +677,7 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public bool KeyAvailable(out KeyboardKey key, out double time) {
-		if(Keyboard.KeyPressQueue.TryDequeue(out WindowKey result)) {
+		if (Keyboard.KeyPressQueue.TryDequeue(out WindowKey result)) {
 			key = result.Key;
 			time = result.Timestamp;
 
@@ -666,6 +693,25 @@ public unsafe class OSWindow : IValidatable
 
 	public unsafe void PushEvent(ref OSEventTimestamped ev) {
 		switch (ev.Event.Type) {
+			case SDL_EventType.SDL_EVENT_DROP_BEGIN:
+				DragNDrop.Dragged = true;
+				DragNDrop.Active = true;
+				break;
+			case SDL_EventType.SDL_EVENT_DROP_FILE:
+				DragNDrop.Enqueue(new() { File = ev.String });
+				break;
+			case SDL_EventType.SDL_EVENT_DROP_TEXT:
+				DragNDrop.Enqueue(new() { Text = ev.String });
+				break;
+			case SDL_EventType.SDL_EVENT_DROP_POSITION:
+				DragNDrop.Position = new(ev.Event.drop.x, ev.Event.drop.y);
+				break;
+			case SDL_EventType.SDL_EVENT_DROP_COMPLETE:
+				DragNDrop.Dropped = true;
+				DragNDrop.Active = false;
+
+				break;
+
 			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
 					if (!ev.Event.key.repeat) {
 						KeyboardKey key = TranslateKeyboardKey(ev.Event.key.scancode);
@@ -852,12 +898,17 @@ public unsafe class OSWindow : IValidatable
 #endif
 				var time = OS.GetTime();
 				switch (ev.Type) {
-					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
-						// We need to read the text now to avoid race conditioning.
-						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
-						break;
 					default:
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time });
+						break;
+
+					// In these cases: we need to read the text/data now, to avoid race conditioning.
+					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
+						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
+						break;
+					case SDL_EventType.SDL_EVENT_DROP_FILE:
+					case SDL_EventType.SDL_EVENT_DROP_TEXT:
+						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.drop.GetData() });
 						break;
 				}
 			}
@@ -1106,6 +1157,25 @@ public unsafe class OSWindow : IValidatable
 		UsingFbo = false;
 	}
 
+	internal void FlushDragNDropStateInto(ref Input.DragNDropState dnds) {
+		dnds.Dragged = DragNDrop.Dragged;
+		dnds.Active = DragNDrop.Active;
+		dnds.Dropped = DragNDrop.Dropped;
+		dnds.Position = DragNDrop.Position;
+
+		int texts = 0, files = 0;
+		while (DragNDrop.TryDequeue(out WindowDragNDropState.DragData data)) {
+			if (data.File != null)
+				dnds.File[files++] = data.File;
+			else if (data.Text != null)
+				dnds.Text[texts++] = data.Text;
+		}
+
+		dnds.Texts = texts;
+		dnds.Files = files;
+
+		DragNDrop.Reset();
+	}
 	/// <summary>
 	/// Writes the <see cref="WindowMouseState"/> into a <see cref="Input.MouseState"/> structure, then resets the <see cref="WindowMouseState"/> and prepares it for the next time this method is called.
 	/// <br/>This adds a layer of abstraction over how the engine windows handle input vs. how the game code handles input.
@@ -1171,7 +1241,7 @@ public unsafe class OSWindow : IValidatable
 		}
 
 		int k = 0;
-		while(Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
+		while (Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
 			textInputs[k++] = str;
 
 		Keyboard.Reset();
