@@ -138,6 +138,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		});
 		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			selector.InCustomCharts = true;
 			selector.AddSongs(RefreshLocalSongs());
 		});
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {

@@ -171,6 +171,16 @@ public class SongSelector : Panel, IMainMenuPanel
 		ResetDiskTrack();
 	}
 
+	public void SelectDisc(ChartSong song) => SelectDisc(GetSongsList().IndexOf(song));
+	public void SelectDisc(int index) {
+		if (!InfiniteList && (index < 0 || index >= GetSongsList().Count))
+			return;
+
+		DiscIndex = index;
+		DiscAnimationOffset.ResetTo(0);
+		ResetDiskTrack();
+	}
+
 	public int GetSongIndex(int localIndex) => GetSongsList().Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, GetSongsList().Count);
 	public ChartSong GetDiscSong(int localIndex) {
 		var songIndex = GetSongIndex(localIndex);
@@ -357,10 +367,23 @@ public class SongSelector : Panel, IMainMenuPanel
 		discsDisabled = disabled;
 	}
 
-	protected override bool OnFileDropped(string filepath, Vector2F pos) {
-		Level.As<MainMenuLevel>().LoadChartSelector(this, new CustomAlbumsCompatibility.CustomChartsSong(filepath));
+	// This is so dumb I hate it but w/e
+	// This entire file needs to be revised at this point
+	public bool InCustomCharts;
 
-		return true;
+	protected override bool OnFileDropped(string filepath, Vector2F pos) {
+		if (InCustomCharts) {
+			ChartSong? song = GetSongsList().FirstOrDefault(x => x is CustomChartsSong ccs && ccs.Filepath == filepath);
+			if (song == null) {
+				song = new CustomChartsSong(filepath);
+				GetSongsList().Add(song);
+			}
+			SelectDisc(song);
+
+			Level.As<MainMenuLevel>().LoadChartSelector(this, song);
+		}
+
+		return InCustomCharts;
 	}
 
 	public void LayoutDiscs(float width, float height) {
@@ -476,7 +499,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				var song = GetDiscSong(0);
 				if (song is CustomChartsSong customChartsSong) {
 					customChartsSong.DownloadOrPullFromCache((c) => {
-						if(EngineCore.Level is not MainMenuLevel mml) {
+						if (EngineCore.Level is not MainMenuLevel mml) {
 							Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
 							return;
 						}
