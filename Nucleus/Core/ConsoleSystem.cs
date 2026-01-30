@@ -109,6 +109,7 @@ namespace Nucleus.Core
 			Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * ScreenMessages.Count];
 			const string START_BRACKET = "[";
 			const string END_BRACKET = "] ";
+			int lines = 0;
 			foreach (ref readonly ConsoleMessage message in currentMessages) {
 				Span<char> textMessage = textMessages[(i * MAX_CHARS_PER_LINE)..];
 				float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
@@ -129,12 +130,13 @@ namespace Nucleus.Core
 
 				var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
 				var textSize = Graphics2D.GetTextSize(text, "Consolas", TextSize);
-				rectangles[i] = RectangleF.XYWH(x, y + i * 15, textSize.W, textSize.H);
+				rectangles[i] = RectangleF.XYWH(x, y + lines * 15, textSize.W, textSize.H);
 				fades[i] = fade;
 				logLevels[i] = message.Level;
 				textLengths[i] = len;
 
-				i += 1 + CountNewlines(text);
+				i += 1;
+				lines += 1 + CountNewlines(text);
 			}
 
 			for (int j = 0; j < ScreenMessages.Count; j++) {

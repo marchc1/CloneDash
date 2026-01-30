@@ -175,7 +175,7 @@ public class MainMenuLevel : Level
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
 
-		if (!EngineCore.ShowConsoleLogsInCorner || !CommandLine.IsParamTrue("debug"))
+		if (!EngineCore.ShouldShowDeveloperOverlays())
 			return;
 
 		ConsoleSystem.TextSize = 11;

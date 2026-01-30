@@ -816,6 +816,7 @@ public static class EngineCore
 			// Skip panic routine.
 			Logs.Info("PANIC: Disabled immediate thread panicking due to the presence of a debugger.");
 			LoadingScreen?.Initialize([]);
+			CommandLine.StuffCmds();
 			while (Running) {
 				shouldThrow = false;
 				Frame();
@@ -825,6 +826,7 @@ public static class EngineCore
 			try {
 				Logs.Info("PANIC: Immediate thread panicking active.");
 				LoadingScreen?.Initialize([]);
+				CommandLine.StuffCmds();
 				while (Running) {
 					shouldThrow = false;
 					Frame();

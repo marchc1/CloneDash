@@ -1,11 +1,21 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Nucleus.Commands;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.Engine
 {
 	public class CommandLineParser
 	{
 		private Dictionary<string, object> parameters = [];
-		public Dictionary<string, object> Params => parameters.ToDictionary();
+		private Dictionary<string, string> variables = [];
+
+		public void StuffCmds() {
+			foreach (var var in variables) {
+				ConVar? cv = ConVar.Get(var.Key);
+				if (cv == null) continue;
+				cv.SetValue(var.Value);
+			}
+		}
+
 		public bool HasParam(string parm) => parameters.TryGetValue(parm, out var _);
 		private bool getStrBoolVal(string parm) {
 			switch (parm.ToLower()) {
@@ -134,13 +144,10 @@ namespace Nucleus.Engine
 						else if (isParm)
 							value = "1";
 
-						if (isParm) {
+						if (isParm) 
 							parameters[parm] = trueValueType(value);
-						}
-						else {
-							// no logic right now to handle variables
-							// to do as i figure out how to fit that in
-						}
+						else 
+							variables[parm] = value;
 
 						break;
 					default:
@@ -160,6 +167,7 @@ namespace Nucleus.Engine
 	public static class CommandLine
 	{
 		public readonly static CommandLineParser Singleton = new();
+		public static void StuffCmds() => Singleton.StuffCmds();
 		public static bool HasParam(string parm) => Singleton.HasParam(parm);
 		public static bool IsParamTrue(string parm, bool def = false) => Singleton.IsParamTrue(parm, def);
 		public static T GetParam<T>(string parm, T def) => Singleton.GetParam(parm, def);
