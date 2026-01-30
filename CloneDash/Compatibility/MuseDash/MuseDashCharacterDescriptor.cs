@@ -69,7 +69,7 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 		foreach (var character in MuseDashCompatibility.Characters) {
 			if (name != GetName(character)) continue;
 
-			return new MuseDashCharacterDescriptor(character);
+			return new MuseDashCharacterDescriptor(character, name);
 		}
 
 		return null;
@@ -77,8 +77,10 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 }
 
 [Nucleus.MarkForStaticConstruction]
-public class MuseDashCharacterDescriptor(CharacterConfigData configData) : ICharacterDescriptor
+public class MuseDashCharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
+	public string GetUniqueID() => name;
+
 	public static ConCommand nextmdchar = ConCommand.Register(nameof(nextmdchar), (_, _) => {
 		var chvar = ConVar.Get(nameof(CharacterMod.character))!;
 		var clonedash_character_value = chvar.GetString();
@@ -100,7 +102,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData) : IChar
 	public string GetCharacterName() => configData.Localization["english"].CharacterName;
 	public ITexture? GetThumbnailTexture() => MuseDashCompatibility.ConvertTexture(EngineCore.Level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(configData.Skins.First().HeadName)!);
 	public string? GetDescription() => configData.Localization["english"].Description;
-	public string GetAuthor() => "PeroPeroGames";
+	public string GetAuthor() => configData.Localization["english"].CV;
 	public string GetPerk() => $"{configData.Localization["english"].Skill}";
 	public double GetDefaultHP() => int.TryParse(configData.DefaultHP, out var hp) ? hp : 250;
 

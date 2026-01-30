@@ -12,6 +12,7 @@ namespace CloneDash.Characters;
 /// </summary>
 public interface ICharacterDescriptor
 {
+	public string GetUniqueID();
 	public string GetName();
 	public string GetCosplayName();
 	public string GetCharacterName();

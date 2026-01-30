@@ -103,6 +103,9 @@ public class CharacterPanel : Panel
 	}
 
 	public override void MouseClick(FrameState state, MouseButton button) {
+		PlayRandomExpression();
+	}
+	public void PlayRandomExpression() {
 		if (Character == null) return;
 		if (Model == null) return;
 		if (Anims == null) return;

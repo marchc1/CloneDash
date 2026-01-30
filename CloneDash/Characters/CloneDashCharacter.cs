@@ -141,6 +141,7 @@ public class CloneDashCharacter : CloneDashDescriptor, ICharacterDescriptor
 	[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
 	public static CloneDashCharacter? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CloneDashCharacter>(text, filename) : null;
+	public string GetUniqueID() => Filename!;
 
 	string ICharacterDescriptor.GetName() => Name;
 	string ICharacterDescriptor.GetCosplayName() => throw new NotImplementedException();
