@@ -698,8 +698,12 @@ namespace Nucleus.Engine
 					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
 					{
-						debugrecords.Write("[CPU] Sound Memory", IManagedMemory.NiceBytes(Sounds.UsedBits / 8));
-						debugrecords.Write("[GPU] Texture Memory", IManagedMemory.NiceBytes(Textures.UsedBits));
+						debugrecords.Write("[SND] Count", Sounds.Count);
+						debugrecords.Write("[SND] Memory [CPU]", IManagedMemory.NiceBytes(Sounds.UsedBits / 8));
+						debugrecords.Write();
+						debugrecords.Write("[TEX] Count", Textures.Count);
+						debugrecords.Write("[TEX] Memory [CPU]", IManagedMemory.NiceBytes(Textures.UsedBits_CPU));
+						debugrecords.Write("[TEX] Memory [GPU]", IManagedMemory.NiceBytes(Textures.UsedBits));
 					}
 					debugrecords.ExitScope();
 					debugrecords.Write("Engine - Window");

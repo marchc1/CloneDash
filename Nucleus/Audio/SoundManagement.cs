@@ -18,6 +18,7 @@ namespace Nucleus.Audio
 	{
 		private WeakCollection<ISound> Sounds = [];
 		private bool disposedValue;
+		public int Count => Sounds.ReferencedCount;
 		public ulong UsedBits {
 			get {
 				ulong ret = 0;
