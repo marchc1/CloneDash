@@ -81,7 +81,7 @@ namespace Nucleus.Core
 		public delegate void ConsoleMessageWritten(ref readonly ConsoleMessage message);
 		public static event ConsoleMessageWritten? ConsoleMessageWrittenEvent;
 		public static void Draw() {
-			if (!EngineCore.ShowConsoleLogsInCorner || IsScreenBlockerActive)
+			if (!EngineCore.ShouldShowDeveloperOverlays() || IsScreenBlockerActive)
 				return;
 
 			RenderToScreen(6, 6);

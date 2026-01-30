@@ -285,7 +285,6 @@ public static class EngineCore
 		Filesystem.Initialize(GameInfo.AppName);
 		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
-		ShowDebuggingInfo = CommandLine.IsParamTrue("debug");
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -392,29 +391,8 @@ public static class EngineCore
 		LoadingScreen?.Unload();
 		GetWindowCtx(Window).NextFrameLevel = null;
 		GetWindowCtx(Window).NextFrameArgs = null;
-		if (EngineCore.ShowDebuggingInfo) {
-			var UpdateGraph = Level.UI.Add(new PerfGraph() {
-				Anchor = Anchor.BottomRight,
-				Origin = Anchor.BottomRight,
-				Position = new(-8, -8 + -52 + -16),
-				Size = new(400, 26),
-				Mode = PerfGraphMode.CPU_UpdateTime
-			});
-			var RenderGraph = Level.UI.Add(new PerfGraph() {
-				Anchor = Anchor.BottomRight,
-				Origin = Anchor.BottomRight,
-				Position = new(-8, -8 + -26 + -8),
-				Size = new(400, 26),
-				Mode = PerfGraphMode.CPU_RenderTime
-			});
-			var MemGraph = Level.UI.Add(new PerfGraph() {
-				Anchor = Anchor.BottomRight,
-				Origin = Anchor.BottomRight,
-				Position = new(-8, -8),
-				Size = new(400, 26),
-				Mode = PerfGraphMode.RAM_Usage
-			});
-		}
+
+		Level.SetUpDebugOverlays();
 
 		s.Stop();
 
@@ -426,6 +404,8 @@ public static class EngineCore
 		//GC.WaitForPendingFinalizers();
 	}
 
+
+	
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
@@ -559,8 +539,15 @@ public static class EngineCore
 	public static double DrawTime { get; set; }
 	public static double FrameTime { get; set; }
 
-	public static bool ShowConsoleLogsInCorner { get; set; } = true;
-	public static bool ShowDebuggingInfo { get; set; } = false;
+	public static readonly ConVar developer = new("developer", "0", ConsoleFlags.None, "Enables/disables developer prints and overlays.", null);
+
+	static bool? devoverlay_override;
+	public static void SetDeveloperOverlayOverride(bool? ovr) {
+		devoverlay_override = ovr;
+	}
+	public static bool ShouldShowDeveloperOverlays() {
+		return devoverlay_override ?? developer.GetInt() >= 1;
+	}
 
 
 	/// <summary>

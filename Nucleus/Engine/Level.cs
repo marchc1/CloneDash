@@ -9,6 +9,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 using Nucleus.Util;
 using Raylib_cs;
 
@@ -72,7 +73,7 @@ namespace Nucleus.Engine
 		public void Write(ReadOnlySpan<char> key) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, null, true);
 		public void Write(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, value);
 		static readonly char[] tempformatbuffer = new char[256];
-		public void Write(ReadOnlySpan<char> key, ISpanFormattable value){
+		public void Write(ReadOnlySpan<char> key, ISpanFormattable value) {
 			value.TryFormat(tempformatbuffer, out int chars, default, null);
 			Records[NumRecords++] = new(Spacing * SpacingCharacters, key, tempformatbuffer.AsSpan()[..chars]);
 		}
@@ -544,6 +545,7 @@ namespace Nucleus.Engine
 
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
+			EvaluatePerfGraphVisibility();
 			userdefined_debugrecords.Reset();
 			userdefined_debugrecords.EnterScope();
 			FrameState frameState = FrameState;
@@ -687,27 +689,27 @@ namespace Nucleus.Engine
 				if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
 
 				var FPS = EngineCore.FPS;
-				if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
+				if (EngineCore.ShouldShowDeveloperOverlays() && !IValidatable.IsValid(InGameConsole.Instance)) {
 					Graphics2D.ResetDrawingOffset();
 					debugrecords.Reset();
 
 					debugrecords.Write($"Nucleus Level / {EngineCore.GameInfo} - DebugContext");
 					debugrecords.Write();
-					debugrecords.Write("Engine"); 
+					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("[CPU] Sound Memory", IManagedMemory.NiceBytes(Sounds.UsedBits / 8));
 						debugrecords.Write("[GPU] Texture Memory", IManagedMemory.NiceBytes(Textures.UsedBits));
 					}
 					debugrecords.ExitScope();
-					debugrecords.Write("Engine - Window"); 
+					debugrecords.Write("Engine - Window");
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("Resolution", frameState.WindowSize);
 						debugrecords.Write("FPS", $"{FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
 					}
 					debugrecords.ExitScope();
-					debugrecords.Write("Engine - Current Level"); 
+					debugrecords.Write("Engine - Current Level");
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("Level Classname", this.GetType().Name);
@@ -722,7 +724,7 @@ namespace Nucleus.Engine
 						debugrecords.Write("UI State:", $"hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}");
 					}
 					debugrecords.ExitScope();
-					debugrecords.Write("Engine - State"); 
+					debugrecords.Write("Engine - State");
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("Mouse State", $"{frameState.Mouse}");
@@ -733,30 +735,29 @@ namespace Nucleus.Engine
 				else
 					debugrecords.Reset();
 
-				if (EngineCore.ShowDebuggingInfo && userdefined_debugrecords.NumRecords > 0) {
+				if (EngineCore.ShouldShowDeveloperOverlays() && userdefined_debugrecords.NumRecords > 0) {
 					debugrecords.Write();
 					debugrecords.Write("Game-specific Debug Fields:");
 				}
 
-				int maxKey = 0;
-				int maxValue = 0;
+				if (EngineCore.ShouldShowDeveloperOverlays()) {
+					int totalFields = userdefined_debugrecords.NumRecords + debugrecords.NumRecords;
+					float sizePer = 12;
+					var ty = (frameState.WindowHeight - 8) - (totalFields * sizePer);
 
-				int totalFields = userdefined_debugrecords.NumRecords + debugrecords.NumRecords;
-				float sizePer = 12;
-				var ty = (frameState.WindowHeight - 8) - (totalFields * sizePer);
+					DebugRecordState state = DebugRecordState.Max(debugrecords.CompileState(), userdefined_debugrecords.CompileState());
 
-				DebugRecordState state = DebugRecordState.Max(debugrecords.CompileState(), userdefined_debugrecords.CompileState());
+					DrawDebugRecordList(debugrecords, in state, sizePer, ref ty);
+					DrawDebugRecordList(userdefined_debugrecords, in state, sizePer, ref ty);
 
-				DrawDebugRecordList(debugrecords, in state, sizePer, ref ty);
-				DrawDebugRecordList(userdefined_debugrecords, in state, sizePer, ref ty);
-
-				if (EngineCore.ShowDebuggingInfo)
 					ConsoleSystem.Draw();
+				}
 
 				IsRendering = false;
 				renderTrack.Stop();
 				EngineCore.SetTimeToRender(renderTrack.Elapsed);
 			}
+
 			updateTrack.Start();
 			UnlockEntityBuffer();
 
@@ -842,6 +843,44 @@ namespace Nucleus.Engine
 		public void AddDebugString<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
 			value.TryFormat(formatconvs, out int chars, default, null);
 			userdefined_debugrecords.Write(key, formatconvs.AsSpan()[..chars]);
+		}
+
+		internal void SetUpDebugOverlays() {
+			UpdateGraph = UI.Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8 + -52 + -16),
+				Size = new(400, 26),
+				Mode = PerfGraphMode.CPU_UpdateTime
+			});
+			RenderGraph = UI.Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8 + -26 + -8),
+				Size = new(400, 26),
+				Mode = PerfGraphMode.CPU_RenderTime
+			});
+			MemGraph = UI.Add(new PerfGraph() {
+				Anchor = Anchor.BottomRight,
+				Origin = Anchor.BottomRight,
+				Position = new(-8, -8),
+				Size = new(400, 26),
+				Mode = PerfGraphMode.RAM_Usage
+			});
+
+			EvaluatePerfGraphVisibility();
+		}
+
+		PerfGraph UpdateGraph = null!, RenderGraph = null!, MemGraph = null!;
+		private void EvaluatePerfGraphVisibility() {
+			Debug.Assert(UpdateGraph != null);
+			Debug.Assert(RenderGraph != null);
+			Debug.Assert(MemGraph != null);
+
+			bool vis = EngineCore.ShouldShowDeveloperOverlays();
+			UpdateGraph.Visible = UpdateGraph.Enabled = vis;
+			RenderGraph.Visible = RenderGraph.Enabled = vis;
+			MemGraph.Visible = MemGraph.Enabled = vis;
 		}
 	}
 }
