@@ -801,5 +801,13 @@ namespace Nucleus.Engine
 		internal void RunKeybinds() {
 			Keybinds.TestKeybinds(FrameState.Keyboard);
 		}
+
+		static readonly char[] formatconvs = new char[256];
+		public void AddDebugString(ReadOnlySpan<char> text) => userdefined_debugrecords.Write(text);
+		public void AddDebugString(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => userdefined_debugrecords.Write(key, value);
+		public void AddDebugString<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
+			value.TryFormat(formatconvs, out int chars, default, null);
+			userdefined_debugrecords.Write(key, formatconvs.AsSpan()[..chars]);
+		}
 	}
 }

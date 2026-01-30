@@ -938,8 +938,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			//entity.WhenVisible();
 		}
 
-		FrameDebuggingStrings.Add($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
-		FrameDebuggingStrings.Add($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
+		AddDebugString($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
+		AddDebugString($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
 
 		Scene.Think(this);
 		if (InFever)
@@ -1246,11 +1246,11 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
 
-		FrameDebuggingStrings.Add("Visible Entities: " + VisibleEntities.Count);
-		FrameDebuggingStrings.Add($"Player Animation: {Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
-		FrameDebuggingStrings.Add($"Hologram-Player Animation: {HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>"}");
-		FrameDebuggingStrings.Add($"Player Y: {CharacterYRatio}");
-		FrameDebuggingStrings.Add($"Hologram-Player Y: {HologramCharacterYRatio}");
+		AddDebugString("Visible Entities", VisibleEntities.Count);
+		AddDebugString("Player Animation", Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
+		AddDebugString("Hologram-Player Animation", HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
+		AddDebugString("Player Y", CharacterYRatio);
+		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 	}
 
 	public override void Render2D(FrameState frameState) {

@@ -187,7 +187,7 @@ namespace CloneDash.Game
 		public override void Think(FrameState frameState) {
 			lastTime = Time;
 			var game = Level.As<DashGameLevel>();
-			Level.FrameDebuggingStrings.Add($"Conductor Time: {Time}");
+			Level.AddDebugString("Conductor Time", Time);
 
 			if (firstTick) {
 				currentInaccurateTime = (float)-PreStartTime;
