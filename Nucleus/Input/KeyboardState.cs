@@ -473,16 +473,33 @@ namespace Nucleus.Input
 		public readonly bool WasKeyReleased(int key) => KeysReleased[key];
 		public readonly bool WasKeyReleased(KeyboardKey key) => KeysReleased[key.Key];
 
-		public override string ToString() {
-			List<string> pressed = [];
-			List<string> keys = [];
+		static readonly char[] ros_state = new char[1024];
+		static bool writeToROSState(ref int i, ReadOnlySpan<char> text){
+			return text.TryCopyTo(ros_state.AsSpan()[(i += text.Length)..]);
+		} 
+		public ReadOnlySpan<char> ToReadOnlySpan() {
+			int i = 0;
+
+			writeToROSState(ref i, "Pressed [");
+			bool wroteOne = false;
+
 			foreach (var key in GetKeysHeld()) {
-				keys.Add(KeyboardLayout.USA.FromInt(key).Name);
+				wroteOne = writeToROSState(ref i, KeyboardLayout.USA.FromInt(key).Name);
+				writeToROSState(ref i, ", ");
 			}
+			if (wroteOne) i -= 2; // go back
+			writeToROSState(ref i, "] Held [");
+
+			wroteOne = false;
 			foreach(var key in GetKeysThisFrame()) {
-				pressed.Add(KeyboardLayout.USA.FromInt(key).Name);
+				wroteOne = writeToROSState(ref i, KeyboardLayout.USA.FromInt(key).Name);
+				writeToROSState(ref i, ", ");
 			}
-			return $"Pressed [{string.Join(", ", pressed)}] Held [{string.Join(", ", keys)}]";
+			if (wroteOne) i -= 2; // go back
+			writeToROSState(ref i, "]");
+
+			return ros_state.AsSpan()[..i];
+			// return $"Pressed [{string.Join(", ", pressed)}] Held [{string.Join(", ", keys)}]";
 		}
 
 		public KeyAction GetKeyActionFromKey(KeyboardKey key) {

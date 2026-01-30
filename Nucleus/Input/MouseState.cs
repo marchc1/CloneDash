@@ -67,17 +67,67 @@ namespace Nucleus.Input
 		/// <summary>
 		/// Mouse position, localized to the window.
 		/// </summary>
-		public Vector2F MousePos { get; set; } = new(0);
-		public Vector2F MouseDelta { get; set; } = new(0);
-		public Vector2F MouseScroll { get; set; } = new(0);
+		public Vector2F MousePos = new(0);
+		public Vector2F MouseDelta  = new(0);
+		public Vector2F MouseScroll  = new(0);
 
 		public MouseState() { }
 
-		public override string ToString() {
-			return $"C [{(Mouse1Clicked ? "^" : "_")}{(Mouse2Clicked ? "^" : "_")}{(Mouse3Clicked ? "^" : "_")}{(Mouse4Clicked ? "^" : "_")}{(Mouse5Clicked ? "^" : "_")}] " +
-				$"H [{(Mouse1Held ? "^" : "_")}{(Mouse2Held ? "^" : "_")}{(Mouse3Held ? "^" : "_")}{(Mouse4Held ? "^" : "_")}{(Mouse5Held ? "^" : "_")}] " +
-				$"R [{(Mouse1Released ? "^" : "_")}{(Mouse2Released ? "^" : "_")}{(Mouse3Released ? "^" : "_")}{(Mouse4Released ? "^" : "_")}{(Mouse5Released ? "^" : "_")}] " +
-				$"P [{MousePos}] D [{MouseDelta}] S [{MouseScroll}]";
+		static readonly char[] ros_state = new char[1024];
+		static bool writeToROSState(ref int i, ReadOnlySpan<char> text) {
+			return text.TryCopyTo(ros_state.AsSpan()[(i += text.Length)..]);
+		}
+
+		static bool writeToROSState(ref int i, in Vector2F vec2f) {
+			int written;
+			if (!vec2f.X.TryFormat(ros_state.AsSpan()[i..], out written))
+				return false;
+			i += written;
+			if (!writeToROSState(ref i, " x "))
+				return false;
+			if (!vec2f.Y.TryFormat(ros_state.AsSpan()[i..], out written))
+				return false;
+			i += written;
+			return true;
+		}
+		static bool writeBooleanROS(ref int i, bool value) => writeToROSState(ref i, value ? "^" : "_");
+
+		public ReadOnlySpan<char> ToReadOnlySpan() {
+			int i = 0;
+			writeToROSState(ref i, "C [");
+			writeBooleanROS(ref i, Mouse1Clicked);
+			writeBooleanROS(ref i, Mouse2Clicked);
+			writeBooleanROS(ref i, Mouse3Clicked);
+			writeBooleanROS(ref i, Mouse4Clicked);
+			writeBooleanROS(ref i, Mouse5Clicked);
+			writeToROSState(ref i, "] ");
+
+			writeToROSState(ref i, "H [");
+			writeBooleanROS(ref i, Mouse1Held);
+			writeBooleanROS(ref i, Mouse2Held);
+			writeBooleanROS(ref i, Mouse3Held);
+			writeBooleanROS(ref i, Mouse4Held);
+			writeBooleanROS(ref i, Mouse5Held);
+			writeToROSState(ref i, "] ");
+
+			writeToROSState(ref i, "R [");
+			writeBooleanROS(ref i, Mouse1Released);
+			writeBooleanROS(ref i, Mouse2Released);
+			writeBooleanROS(ref i, Mouse3Released);
+			writeBooleanROS(ref i, Mouse4Released);
+			writeBooleanROS(ref i, Mouse5Released);
+			writeToROSState(ref i, "] ");
+
+			writeToROSState(ref i, "P [");
+			writeToROSState(ref i, in MousePos);
+			writeToROSState(ref i, "] D [");
+			writeToROSState(ref i, in MouseDelta);
+			writeToROSState(ref i, "] S [");
+			writeToROSState(ref i, in MouseScroll);
+			writeToROSState(ref i, "]");
+
+			return ros_state.AsSpan()[..i];
+			
 		}
 	}
 }

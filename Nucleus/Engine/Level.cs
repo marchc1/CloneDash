@@ -9,7 +9,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
-
+using Nucleus.Util;
 using Raylib_cs;
 
 using SDL;
@@ -23,22 +23,136 @@ using System.Threading.Tasks;
 
 using MouseButton = Nucleus.Input.MouseButton;
 
-public enum HitTestResult : byte
-{
-	Normal,
-	Draggable,
-	ResizeTopLeft,
-	ResizeTop,
-	ResizeTopRight,
-	ResizeRight,
-	ResizeBottomRight,
-	ResizeBottom,
-	ResizeBottomLeft,
-	ResizeLeft
-}
-
 namespace Nucleus.Engine
 {
+
+	public enum HitTestResult : byte
+	{
+		Normal,
+		Draggable,
+		ResizeTopLeft,
+		ResizeTop,
+		ResizeTopRight,
+		ResizeRight,
+		ResizeBottomRight,
+		ResizeBottom,
+		ResizeBottomLeft,
+		ResizeLeft
+	}
+
+	public struct DebugRecordState
+	{
+		public int MaxKeySize;
+		public int MaxKeyPlusSpacingSize;
+		public int MaxValueSize;
+		public static DebugRecordState Max(in DebugRecordState state1, in DebugRecordState state2) {
+			return new() {
+				MaxKeySize = Math.Max(state1.MaxKeySize, state2.MaxKeySize),
+				MaxKeyPlusSpacingSize = Math.Max(state1.MaxKeyPlusSpacingSize, state2.MaxKeyPlusSpacingSize),
+				MaxValueSize = Math.Max(state1.MaxValueSize, state2.MaxValueSize),
+			};
+		}
+	}
+	public class DebugRecordList
+	{
+		public InlineArray128<DebugRecord> Records;
+		public int NumRecords;
+		public int Spacing;
+
+		public void Reset() {
+			NumRecords = Spacing = 0;
+		}
+
+		public ref DebugRecord GetRecord(int i) => ref Records[i];
+		public void Write() => Records[NumRecords++] = default;
+		public void Write(ReadOnlySpan<char> key) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, null, true);
+		public void Write(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, value);
+		public void EnterScope() => Spacing += 1;
+		public void ExitScope() => Spacing -= 1;
+
+		public int SpacingCharacters = 2;
+
+		public DebugRecordState CompileState() {
+			DebugRecordState state = new();
+			for (int i = 0; i < NumRecords; i++) {
+				ref DebugRecord record = ref Records[i];
+				state.MaxKeySize = Math.Max(state.MaxKeySize, record.KeySize);
+				state.MaxKeyPlusSpacingSize = Math.Max(state.MaxKeyPlusSpacingSize, record.KeySize + record.Spacing);
+				state.MaxValueSize = Math.Max(state.MaxValueSize, record.ValueSize);
+			}
+
+			return state;
+		}
+	}
+
+	public struct DebugRecord
+	{
+		InlineArray512<char> KeyValueData;
+		public int KeySize;
+		public int ValueSize;
+		public int Spacing;
+		public bool Valueless;
+
+		public bool GetText(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
+		public bool GetKey(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
+		public bool GetValue(Span<char> output) => KeyValueData[KeySize..][..ValueSize].TryCopyTo(output);
+
+		public DebugRecord(int spacing, ReadOnlySpan<char> key, ReadOnlySpan<char> value = default, bool valueless = false) {
+			if (!key.TryCopyTo(KeyValueData) || !value.TryCopyTo(KeyValueData[key.Length..])) {
+				Logs.Warn("DebugRecord overflow (store less text)");
+			}
+
+			Spacing = spacing;
+			KeySize = key.Length;
+			ValueSize = key.Length;
+			Valueless = valueless;
+		}
+
+		static readonly char[] tempprintbuffer = new char[1024];
+		public ReadOnlySpan<char> Print(in DebugRecordState state) {
+			Span<char> buffer = tempprintbuffer.AsSpan();
+			int charIdx = 0;
+			for (int i = 0; i < Spacing; i++) tempprintbuffer[charIdx++] = ' ';
+			GetKey(buffer[(charIdx += KeySize)..]);
+			if (Valueless)
+				return buffer[..charIdx];
+
+			int fillSpacesUntil = state.MaxKeyPlusSpacingSize - (KeySize - Spacing);
+			for (int i = 0; i < fillSpacesUntil; i++) tempprintbuffer[charIdx++] = ' ';
+			tempprintbuffer[charIdx++] = ' ';
+			tempprintbuffer[charIdx++] = ':';
+			tempprintbuffer[charIdx++] = ' ';
+			GetValue(buffer[(charIdx += ValueSize)..]);
+
+			return buffer[..charIdx];
+		}
+
+		// public static implicit operator DebugRecord(string from) {
+		// 	bool containsValue = false;
+		// 	ReadOnlySpan<char> key = "";
+		// 	ReadOnlySpan<char> value = null;
+		// 
+		// 	var colon = from.IndexOf(':');
+		// 	if (colon == -1)
+		// 		containsValue = false;
+		// 	else {
+		// 		if (colon == from.Length - 1)
+		// 			containsValue = false;
+		// 		else
+		// 			containsValue = true;
+		// 	}
+		// 
+		// 	if (containsValue) {
+		// 		key = from.AsSpan()[..colon];
+		// 		value = from.AsSpan()[(colon + 1)..].Trim();
+		// 	}
+		// 	else
+		// 		key = from;
+		// 
+		// 	return new(0, key, value, !containsValue);
+		// }
+	}
+
 	/// <summary>
 	/// Game level, powers *everything*, including menus.
 	/// Which means while designing this, it needs to be kept in mind that menus are just game levels.
@@ -193,7 +307,6 @@ namespace Nucleus.Engine
 		/// </summary>
 		private List<Entity> EntityList { get; } = new();
 
-		public List<string> FrameDebuggingStrings { get; set; } = [];
 
 		public List<Entity> Entities => EntityList;
 
@@ -309,42 +422,8 @@ namespace Nucleus.Engine
 
 		public bool DrawDebuggingGrid { get; private set; } = false;
 
-		public struct DebugRecord(bool containsValue, string key, string? value = null)
-		{
-			public static implicit operator DebugRecord(string from) {
-				bool containsValue = false;
-				string key = "";
-				string? value = null;
 
-				var colon = from.IndexOf(':');
-				if (colon == -1) {
-					containsValue = false;
-				}
-				else {
-					if (colon == from.Length - 1) {
-						containsValue = false;
-					}
-					else
-						containsValue = true;
-				}
-
-				if (containsValue) {
-					key = from.Substring(0, colon);
-					value = from.Substring(colon + 1).Trim();
-				}
-				else {
-					key = from;
-				}
-
-				return new(containsValue, key, value);
-			}
-
-			public override string ToString() {
-				return $"{key}{(containsValue ? $": {value}" : "")}";
-			}
-		}
-
-		Stopwatch timing = new();
+		readonly Stopwatch timing = new();
 
 		public bool Render3D { get; set; } = true;
 
@@ -421,6 +500,9 @@ namespace Nucleus.Engine
 			}
 		}
 
+
+		readonly DebugRecordList debugrecords = new();
+		readonly DebugRecordList userdefined_debugrecords = new();
 		/// <summary>
 		/// Call this every frame.
 		/// </summary>
@@ -446,7 +528,7 @@ namespace Nucleus.Engine
 
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
-			FrameDebuggingStrings.Clear();
+			userdefined_debugrecords.Reset();
 			FrameState frameState = FrameState;
 
 			float x, y, width, height;
@@ -572,9 +654,15 @@ namespace Nucleus.Engine
 				DebugOverlay.Render();
 
 				if (ui_hoverresult.GetBool() && UI.Hovered != null) {
+					var uiPosition = UI.Hovered.GetGlobalPosition();
+					var uiSize = UI.Hovered.RenderBounds.Size;
 					Graphics2D.SetDrawColor(255, 255, 255);
-					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(UI.Hovered.GetGlobalPosition(), UI.Hovered.RenderBounds.Size), 1);
-					Graphics2D.DrawText(UI.Hovered.GetGlobalPosition() + new Vector2F(0, UI.Hovered.RenderBounds.H), $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
+					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(uiPosition, uiSize), 1);
+
+					Vector2F drawpos = uiPosition + new Vector2F(0, uiSize.H);
+					drawpos.Y = Math.Clamp(drawpos.Y, 0, frameState.WindowHeight);
+
+					Graphics2D.DrawText(drawpos, $"Element: {UI.Hovered}", "Consolas", 14, Anchor.BottomLeft);
 				}
 
 				Graphics2D.ResetDrawingOffset();
@@ -582,52 +670,63 @@ namespace Nucleus.Engine
 				if (ui_visrenderbounds.GetBool()) VisRenderBounds(UI);
 
 				var FPS = EngineCore.FPS;
-				List<DebugRecord> fields;
 				if (EngineCore.ShowDebuggingInfo && !IValidatable.IsValid(InGameConsole.Instance)) {
 					Graphics2D.ResetDrawingOffset();
-					fields = [
-						$"Nucleus Level / {EngineCore.GameInfo} - DebugContext",
-					"",
-					// $"Engine",
-					// $"    [CPU]  Sound Memory   : {IManagedMemory.NiceBytes(Sounds.UsedBits / 8)}",
-					// $"    [GPU]  Texture Memory : {IManagedMemory.NiceBytes(Textures.UsedBits)}",
-					// $"Engine - Window",
-					// $"    Resolution            : {frameState.WindowWidth}x{frameState.WindowHeight}",
-					// $"    FPS                   : {FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)",
-					// $"Engine - Current Level",
-					// $"    Level Classname       : {this.GetType().Name}",
-					// $"    Level Entities        : {EntityList.Count}",
-					// $"Engine - User Interface",
-					// $"    UI Elements           : {UI.Elements.Count}",
-					// $"    UI Rebuilds           : {rebuilds}",
-					// $"    UI State:             : hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}",
-					// $"Engine - State",
-					// $"    Mouse State           : {frameState.Mouse}",
-					// $"    Keyboard State        : {frameState.Keyboard}",
-				];
+					debugrecords.Reset();
+
+					debugrecords.Write($"Nucleus Level / {EngineCore.GameInfo} - DebugContext");
+					debugrecords.Write();
+					debugrecords.Write("Engine"); debugrecords.EnterScope();
+					{
+						debugrecords.Write("[CPU] Sound Memory", $"{IManagedMemory.NiceBytes(Sounds.UsedBits / 8)}");
+						debugrecords.Write("[GPU] Texture Memory", $"{IManagedMemory.NiceBytes(Textures.UsedBits)}");
+					}
+					debugrecords.Write("Engine - Window"); debugrecords.EnterScope();
+					{
+						debugrecords.Write("Resolution", $" {frameState.WindowWidth}x{frameState.WindowHeight}");
+						debugrecords.Write("FPS", $" {FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
+					}
+					debugrecords.Write("Engine - Current Level"); debugrecords.EnterScope();
+					{
+						debugrecords.Write("Level Classname", $" {this.GetType().Name}");
+						debugrecords.Write("Level Entities", $" {EntityList.Count}");
+					}
+					debugrecords.Write("Engine - User Interface"); debugrecords.EnterScope();
+					{
+						debugrecords.Write("UI Elements", $" {UI.Elements.Count}");
+						debugrecords.Write("UI Rebuilds", $" {0}");
+						debugrecords.Write("UI State:", $" hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}");
+					}
+					debugrecords.Write("Engine - State"); debugrecords.EnterScope();
+					{
+						debugrecords.Write("Mouse State", $" {frameState.Mouse}");
+						debugrecords.Write("Keyboard State", $" {frameState.Keyboard}");
+					}
+					debugrecords.ExitScope();
 				}
 				else
-					fields = [
-					//$"FPS : {FPS} ({Math.Round(1000f / FPS, 2)}ms render time)"
-					];
+					debugrecords.Reset();
 
-				if (EngineCore.ShowDebuggingInfo && FrameDebuggingStrings.Count > 0) {
-					fields.Add("");
-					fields.Add("Game-specific Debug Fields:");
-					foreach (string s in FrameDebuggingStrings)
-						fields.Add("    " + s);
+				if (EngineCore.ShowDebuggingInfo && userdefined_debugrecords.NumRecords > 0) {
+					debugrecords.Write();
+					debugrecords.Write("Game-specific Debug Fields:");
 				}
 
 				int maxKey = 0;
 				int maxValue = 0;
 
-				for (int i = 0; i < fields.Count; i++) {
-					var tx = 12;
-					var ty = (frameState.WindowHeight - 16) - ((fields.Count - i) * 12);
+				int totalFields = userdefined_debugrecords.NumRecords + debugrecords.NumRecords;
+				float sizePer = 12;
+				var ty = (frameState.WindowHeight - 8) - (totalFields * sizePer);
 
-					var t = fields[i].ToString();
+				DebugRecordState state = DebugRecordState.Max(debugrecords.CompileState(), userdefined_debugrecords.CompileState());
+
+				for (int i = 0; i < debugrecords.NumRecords; i++, ty += sizePer) {
+					ref DebugRecord record = ref debugrecords.GetRecord(i);
+					var tx = 12;
+
 					Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-					Graphics2D.DrawText(tx, ty, t, "Consolas", 11, Anchor.TopLeft);
+					Graphics2D.DrawText(tx, ty, record.Print(in state), "Consolas", 11, Anchor.TopLeft);
 				}
 
 				if (EngineCore.ShowDebuggingInfo)
