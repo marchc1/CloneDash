@@ -545,6 +545,7 @@ namespace Nucleus.Engine
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			userdefined_debugrecords.Reset();
+			userdefined_debugrecords.EnterScope();
 			FrameState frameState = FrameState;
 
 			float x, y, width, height;
@@ -746,16 +747,8 @@ namespace Nucleus.Engine
 
 				DebugRecordState state = DebugRecordState.Max(debugrecords.CompileState(), userdefined_debugrecords.CompileState());
 
-				for (int i = 0; i < debugrecords.NumRecords; i++, ty += sizePer) {
-					ref DebugRecord record = ref debugrecords.GetRecord(i);
-					var tx = 12;
-
-					ReadOnlySpan<char> text = record.Print(in state);
-					Graphics2D.SetDrawColor(new(10, 10, 10, 180));
-					Graphics2D.DrawRectangle(new(tx-1, ty-1), Graphics2D.GetTextSize(text, "Consolas", 11) + new Vector2F(2));
-					Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-					Graphics2D.DrawText(tx, ty, text, "Consolas", 11, Anchor.TopLeft);
-				}
+				DrawDebugRecordList(debugrecords, in state, sizePer, ref ty);
+				DrawDebugRecordList(userdefined_debugrecords, in state, sizePer, ref ty);
 
 				if (EngineCore.ShowDebuggingInfo)
 					ConsoleSystem.Draw();
@@ -769,6 +762,19 @@ namespace Nucleus.Engine
 
 			updateTrack.Stop();
 			EngineCore.SetTimeToUpdate(updateTrack.Elapsed);
+		}
+
+		private static void DrawDebugRecordList(DebugRecordList debugrecords, in DebugRecordState state, float sizePer, ref float ty) {
+			for (int i = 0; i < debugrecords.NumRecords; i++, ty += sizePer) {
+				ref DebugRecord record = ref debugrecords.GetRecord(i);
+				var tx = 12;
+
+				ReadOnlySpan<char> text = record.Print(in state);
+				Graphics2D.SetDrawColor(new(10, 10, 10, 180));
+				Graphics2D.DrawRectangle(new(tx - 1, ty - 1), Graphics2D.GetTextSize(text, "Consolas", 11) + new Vector2F(2));
+				Graphics2D.SetDrawColor(new(255, 255, 255, 255));
+				Graphics2D.DrawText(tx, ty, text, "Consolas", 11, Anchor.TopLeft);
+			}
 		}
 
 		private void RenderShowUpdates() {

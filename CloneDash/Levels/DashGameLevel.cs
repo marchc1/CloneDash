@@ -938,8 +938,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			//entity.WhenVisible();
 		}
 
-		AddDebugString($"HoldingTopPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
-		AddDebugString($"HoldingBottomPathwaySustain {Sustains.GetSustainsActiveCount(PathwaySide.Top)}");
+		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
+		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 
 		Scene.Think(this);
 		if (InFever)
