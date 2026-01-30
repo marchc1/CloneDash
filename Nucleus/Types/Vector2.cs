@@ -10,8 +10,9 @@ namespace Nucleus.Types
 	/// </summary>
 	/// 
 	[StructLayout(LayoutKind.Explicit)]
-	public struct Vector2F
+	public struct Vector2F : ISpanFormattable
 	{
+
 		const int BYTE_OFFSET_X = 0;
 		const int BYTE_OFFSET_Y = sizeof(float);
 		[FieldOffset(BYTE_OFFSET_X)] public float X;
@@ -237,6 +238,17 @@ namespace Nucleus.Types
 		}
 
 		public readonly override int GetHashCode() => HashCode.Combine(X, Y);
+
+		public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
+			if (!X.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
+			if (!" x ".TryCopyTo(destination)) return false; destination = destination[3..];
+			if (!Y.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
+			return true;
+		}
+
+		public string ToString(string? format, IFormatProvider? formatProvider) {
+			throw new NotImplementedException();
+		}
 	}
 	public static class VectorConverters
 	{

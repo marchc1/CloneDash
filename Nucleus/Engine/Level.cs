@@ -45,11 +45,15 @@ namespace Nucleus.Engine
 		public int MaxKeySize;
 		public int MaxKeyPlusSpacingSize;
 		public int MaxValueSize;
+		public int LargestKeyIdx;
+		public int LargestValueIdx;
 		public static DebugRecordState Max(in DebugRecordState state1, in DebugRecordState state2) {
 			return new() {
 				MaxKeySize = Math.Max(state1.MaxKeySize, state2.MaxKeySize),
 				MaxKeyPlusSpacingSize = Math.Max(state1.MaxKeyPlusSpacingSize, state2.MaxKeyPlusSpacingSize),
 				MaxValueSize = Math.Max(state1.MaxValueSize, state2.MaxValueSize),
+				LargestKeyIdx = Math.Max(state1.LargestKeyIdx, state2.LargestKeyIdx),
+				LargestValueIdx = Math.Max(state1.LargestValueIdx, state2.LargestValueIdx),
 			};
 		}
 	}
@@ -67,17 +71,29 @@ namespace Nucleus.Engine
 		public void Write() => Records[NumRecords++] = default;
 		public void Write(ReadOnlySpan<char> key) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, null, true);
 		public void Write(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, value);
+		static readonly char[] tempformatbuffer = new char[256];
+		public void Write(ReadOnlySpan<char> key, ISpanFormattable value){
+			value.TryFormat(tempformatbuffer, out int chars, default, null);
+			Records[NumRecords++] = new(Spacing * SpacingCharacters, key, tempformatbuffer.AsSpan()[..chars]);
+		}
 		public void EnterScope() => Spacing += 1;
 		public void ExitScope() => Spacing -= 1;
 
-		public int SpacingCharacters = 2;
+		public int SpacingCharacters => 4;
 
 		public DebugRecordState CompileState() {
 			DebugRecordState state = new();
 			for (int i = 0; i < NumRecords; i++) {
 				ref DebugRecord record = ref Records[i];
-				state.MaxKeySize = Math.Max(state.MaxKeySize, record.KeySize);
-				state.MaxKeyPlusSpacingSize = Math.Max(state.MaxKeyPlusSpacingSize, record.KeySize + record.Spacing);
+
+				if (record.HasValue) {
+					if (state.MaxKeySize < record.KeySize) state.LargestKeyIdx = i;
+					state.MaxKeySize = Math.Max(state.MaxKeySize, record.KeySize);
+					state.MaxKeyPlusSpacingSize = Math.Max(state.MaxKeyPlusSpacingSize, record.KeySize + record.Spacing);
+				}
+
+				if (state.MaxValueSize < record.ValueSize) state.LargestValueIdx = i;
+
 				state.MaxValueSize = Math.Max(state.MaxValueSize, record.ValueSize);
 			}
 
@@ -91,7 +107,7 @@ namespace Nucleus.Engine
 		public int KeySize;
 		public int ValueSize;
 		public int Spacing;
-		public bool Valueless;
+		public bool HasValue;
 
 		public bool GetText(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
 		public bool GetKey(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
@@ -104,8 +120,8 @@ namespace Nucleus.Engine
 
 			Spacing = spacing;
 			KeySize = key.Length;
-			ValueSize = key.Length;
-			Valueless = valueless;
+			ValueSize = value.Length;
+			HasValue = !valueless;
 		}
 
 		static readonly char[] tempprintbuffer = new char[1024];
@@ -113,8 +129,8 @@ namespace Nucleus.Engine
 			Span<char> buffer = tempprintbuffer.AsSpan();
 			int charIdx = 0;
 			for (int i = 0; i < Spacing; i++) tempprintbuffer[charIdx++] = ' ';
-			GetKey(buffer[(charIdx += KeySize)..]);
-			if (Valueless)
+			GetKey(buffer[charIdx..]); charIdx += KeySize;
+			if (!HasValue)
 				return buffer[..charIdx];
 
 			int fillSpacesUntil = state.MaxKeyPlusSpacingSize - (KeySize - Spacing);
@@ -122,7 +138,7 @@ namespace Nucleus.Engine
 			tempprintbuffer[charIdx++] = ' ';
 			tempprintbuffer[charIdx++] = ':';
 			tempprintbuffer[charIdx++] = ' ';
-			GetValue(buffer[(charIdx += ValueSize)..]);
+			GetValue(buffer[charIdx..]); charIdx += ValueSize;
 
 			return buffer[..charIdx];
 		}
@@ -676,31 +692,40 @@ namespace Nucleus.Engine
 
 					debugrecords.Write($"Nucleus Level / {EngineCore.GameInfo} - DebugContext");
 					debugrecords.Write();
-					debugrecords.Write("Engine"); debugrecords.EnterScope();
+					debugrecords.Write("Engine"); 
+					debugrecords.EnterScope();
 					{
-						debugrecords.Write("[CPU] Sound Memory", $"{IManagedMemory.NiceBytes(Sounds.UsedBits / 8)}");
-						debugrecords.Write("[GPU] Texture Memory", $"{IManagedMemory.NiceBytes(Textures.UsedBits)}");
+						debugrecords.Write("[CPU] Sound Memory", IManagedMemory.NiceBytes(Sounds.UsedBits / 8));
+						debugrecords.Write("[GPU] Texture Memory", IManagedMemory.NiceBytes(Textures.UsedBits));
 					}
-					debugrecords.Write("Engine - Window"); debugrecords.EnterScope();
+					debugrecords.ExitScope();
+					debugrecords.Write("Engine - Window"); 
+					debugrecords.EnterScope();
 					{
-						debugrecords.Write("Resolution", $" {frameState.WindowWidth}x{frameState.WindowHeight}");
-						debugrecords.Write("FPS", $" {FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
+						debugrecords.Write("Resolution", frameState.WindowSize);
+						debugrecords.Write("FPS", $"{FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
 					}
-					debugrecords.Write("Engine - Current Level"); debugrecords.EnterScope();
+					debugrecords.ExitScope();
+					debugrecords.Write("Engine - Current Level"); 
+					debugrecords.EnterScope();
 					{
-						debugrecords.Write("Level Classname", $" {this.GetType().Name}");
-						debugrecords.Write("Level Entities", $" {EntityList.Count}");
+						debugrecords.Write("Level Classname", this.GetType().Name);
+						debugrecords.Write("Level Entities", EntityList.Count);
 					}
-					debugrecords.Write("Engine - User Interface"); debugrecords.EnterScope();
+					debugrecords.ExitScope();
+					debugrecords.Write("Engine - User Interface");
+					debugrecords.EnterScope();
 					{
-						debugrecords.Write("UI Elements", $" {UI.Elements.Count}");
-						debugrecords.Write("UI Rebuilds", $" {0}");
-						debugrecords.Write("UI State:", $" hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}");
+						debugrecords.Write("UI Elements", UI.Elements.Count);
+						debugrecords.Write("UI Rebuilds", 0);
+						debugrecords.Write("UI State:", $"hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}");
 					}
-					debugrecords.Write("Engine - State"); debugrecords.EnterScope();
+					debugrecords.ExitScope();
+					debugrecords.Write("Engine - State"); 
+					debugrecords.EnterScope();
 					{
-						debugrecords.Write("Mouse State", $" {frameState.Mouse}");
-						debugrecords.Write("Keyboard State", $" {frameState.Keyboard}");
+						debugrecords.Write("Mouse State", $"{frameState.Mouse}");
+						debugrecords.Write("Keyboard State", $"{frameState.Keyboard}");
 					}
 					debugrecords.ExitScope();
 				}
@@ -725,8 +750,11 @@ namespace Nucleus.Engine
 					ref DebugRecord record = ref debugrecords.GetRecord(i);
 					var tx = 12;
 
+					ReadOnlySpan<char> text = record.Print(in state);
+					Graphics2D.SetDrawColor(new(10, 10, 10, 180));
+					Graphics2D.DrawRectangle(new(tx-1, ty-1), Graphics2D.GetTextSize(text, "Consolas", 11) + new Vector2F(2));
 					Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-					Graphics2D.DrawText(tx, ty, record.Print(in state), "Consolas", 11, Anchor.TopLeft);
+					Graphics2D.DrawText(tx, ty, text, "Consolas", 11, Anchor.TopLeft);
 				}
 
 				if (EngineCore.ShowDebuggingInfo)
