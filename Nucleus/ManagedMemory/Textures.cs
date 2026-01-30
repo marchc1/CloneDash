@@ -100,7 +100,7 @@ namespace Nucleus.ManagedMemory
     }
     public class TextureManagement : IManagedMemory
     {
-        private List<ITexture> Textures = [];
+        private WeakCollection<ITexture> Textures = [];
         private List<RenderTexture2D> RenderTextures = [];
         private bool disposedValue;
         public ulong UsedBits {
