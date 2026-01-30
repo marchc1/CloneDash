@@ -207,9 +207,9 @@ namespace Nucleus.Models
 		public void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
 			Raylib.ImageDrawRectangleLines(ref workingImage, new(rect.X, rect.Y, rect.Width, rect.Height), 2, (new Vector3(rect.Id * 30, 0.85f, 1f)).ToRGB());
 			var text = $"{key}";
-			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11], text, new((int)rect.X + 4, (int)rect.Y + 4), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
+			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11].GetFont(), text, new((int)rect.X + 4, (int)rect.Y + 4), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
 			text = $"{rect.X}, {rect.Y} [{rect.Width}x{rect.Height}]";
-			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11], text, new((int)rect.X + 16, (int)rect.Y + 4 + (14 * 1)), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
+			Raylib.ImageDrawTextEx(ref workingImage, Graphics2D.FontManager[text, "Consolas", 11].GetFont(), text, new((int)rect.X + 16, (int)rect.Y + 4 + (14 * 1)), 11, 1f, (new Vector3(rect.Id * 30, 0.85f, .3f)).ToRGB());
 		}
 
 		public void SaveTo(string filepath) {

@@ -704,6 +704,7 @@ namespace Nucleus.Engine
 						debugrecords.Write("[TEX] Count", Textures.Count);
 						debugrecords.Write("[TEX] Memory [CPU]", IManagedMemory.NiceBytes(Textures.UsedBits_CPU));
 						debugrecords.Write("[TEX] Memory [GPU]", IManagedMemory.NiceBytes(Textures.UsedBits));
+						debugrecords.Write("[TEX] Font Memory [GPU]", IManagedMemory.NiceBytes(Graphics2D.FontManager.GetUsedGPUBits()));
 					}
 					debugrecords.ExitScope();
 					debugrecords.Write("Engine - Window");

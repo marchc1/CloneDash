@@ -607,6 +607,7 @@ public static class EngineCore
 		UpdateTime = CurrentAppTime - PreviousAppTime;
 		PreviousAppTime = CurrentAppTime;
 
+		Graphics2D.FontManager.CleanUpFontsMarkedForDeath();
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
 
 		windowsThisFrame.Clear();

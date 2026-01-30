@@ -174,10 +174,10 @@ namespace Nucleus.Core
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
 		public static Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
-			return FontManager["", fontName, (int)fontSize];
+			return FontManager["", fontName, (int)fontSize].GetFont();
 		}
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
-			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize], message, (int)fontSize, 0);
+			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, (int)fontSize, 0);
 			return new(s.X, s.Y);
 		}
 		public static void DrawDottedLine(Vector2F start, Vector2F end, float segmentLength = 4) {
@@ -206,8 +206,8 @@ namespace Nucleus.Core
 		}
 
 		// TODO: Fully deprecate string based API's
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize], message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) => Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) => DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) => DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment().horizontal, drawingAnchor.ToTextAlignment().vertical);
@@ -227,7 +227,7 @@ namespace Nucleus.Core
 					ref TextChunk piece = ref chunk[j];
 					string textPart = piece.Text;
 					string fontName = piece.Font;
-					Font font = FontManager[textPart, fontName, (int)fontSize];
+					ref Font font = ref FontManager[textPart, fontName, (int)fontSize].GetFont();
 					Vector2F measuredSize = Raylib.MeasureTextEx(font, textPart, fontSize, fontSpacing).ToNucleus();
 
 					ref MappedText textPiece = ref mappedTextsCache.Add();
