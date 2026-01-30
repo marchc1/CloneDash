@@ -16,14 +16,14 @@ namespace Nucleus.Audio
 	[MarkForStaticConstruction]
 	public class SoundManagement : IManagedMemory
 	{
-		private ConcurrentDictionary<ISound, bool> Sounds = [];
+		private WeakCollection<ISound> Sounds = [];
 		private bool disposedValue;
 		public ulong UsedBits {
 			get {
 				ulong ret = 0;
 
 				foreach (var snd in Sounds) {
-					ret += snd.Key.UsedBits;
+					ret += snd.UsedBits;
 				}
 
 				return ret;
@@ -34,9 +34,9 @@ namespace Nucleus.Audio
 		protected virtual void Dispose(bool usercall) {
 			if (!disposedValue) {
 				lock (Sounds) {
-					foreach (ISound t in Sounds.Keys) {
+					foreach (ISound t in Sounds) 
 						t.Dispose();
-					}
+					
 					disposedValue = true;
 				}
 			}
@@ -64,7 +64,7 @@ namespace Nucleus.Audio
 
 			LoadedSoundsFromFile.Add(filepath, snd);
 			LoadedFilesFromSound.Add(snd, filepath);
-			Sounds.TryAdd(snd, true);
+			Sounds.Add(snd);
 
 			return snd;
 		}
@@ -78,7 +78,7 @@ namespace Nucleus.Audio
 			Sound snd = new(this, sound, true);
 			LoadedSoundsFromFile.Add(filepath, snd);
 			LoadedFilesFromSound.Add(snd, filepath);
-			Sounds.TryAdd(snd, true);
+			Sounds.Add(snd);
 
 			return snd;
 		}
@@ -105,7 +105,7 @@ namespace Nucleus.Audio
 				Raylib_cs.Sound sound = Raylib.LoadSoundFromWave(w);
 				Raylib.UnloadWave(w);
 				Sound snd = new(this, sound, true);
-				Sounds.TryAdd(snd, true);
+				Sounds.Add(snd);
 				return snd;
 			}
 		}
@@ -116,7 +116,7 @@ namespace Nucleus.Audio
 					if (LoadedFilesFromSound.TryGetValue(snd, out var sndFilepath)) {
 						LoadedSoundsFromFile.Remove(sndFilepath);
 						LoadedFilesFromSound.Remove(snd);
-						Sounds.TryRemove(snd, out _);
+						Sounds.Add(snd);
 
 						snd.Dispose();
 					}
@@ -125,7 +125,7 @@ namespace Nucleus.Audio
 					if (LoadedFilesFromMusicTrack.TryGetValue(mus, out var musFilepath)) {
 						LoadedMusicTracksFromFile.Remove(musFilepath);
 						LoadedFilesFromMusicTrack.Remove(mus);
-						Sounds.TryRemove(mus, out _);
+						Sounds.Remove(mus);
 
 						mus.Dispose();
 					}
@@ -188,7 +188,7 @@ namespace Nucleus.Audio
 			if (!autoplay)
 				music.Playing = false;
 
-			Sounds.TryAdd(music, true);
+			Sounds.Add(music);
 			return music;
 		}
 
@@ -214,7 +214,7 @@ namespace Nucleus.Audio
 				if (!autoplay)
 					music.Playing = false;
 
-				Sounds.TryAdd(music, true);
+				Sounds.Add(music);
 				return music;
 			}
 		}
