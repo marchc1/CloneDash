@@ -1,13 +1,16 @@
 ﻿using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
+using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Core;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
-
+using System;
+using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Menu;
@@ -89,6 +92,19 @@ public class SettingsPanel : ScrollPanel
 		return back.Bottom;
 	}
 
+	public Label Label(string text) {
+		var name = Add<Label>();
+		name.Dock = Dock.Top;
+		name.TextAlignment = Anchor.BottomLeft;
+		name.DynamicallySized = true;
+		name.TextPadding = new(16);
+		name.AutoSize = true;
+		name.Text = text;
+		name.TextOverflowMode = TextOverflowMode.WordWrap;
+		name.TextSize = 20;
+		return name;
+	}
+
 	public NumSlider Number(ConVar cv, string name, [StringSyntax(StringSyntaxAttribute.NumericFormat)] string format) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
@@ -101,6 +117,15 @@ public class SettingsPanel : ScrollPanel
 		return slider;
 	}
 	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
+
+	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
+		var back = buildBackPanel(name, "");
+		var buttons = back.Bottom.Add<InputActionKeybindingButtonsPanel>();
+		back.Bottom.Size = new Vector2F(0, 0.13f);
+		buttons.Dock = Dock.Fill;
+		buttons.SetInputAction(action);
+		return buttons;
+	}
 }
 
 public class SettingsEditor : Panel, IMainMenuPanel
@@ -195,6 +220,170 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		var judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
 		var visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
+
+		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
+
+		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
+		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
+	}
+}
+
+public class InputActionKeybindingButtonsPanel : Panel
+{
+	InputAction action = 0;
+	readonly List<KeyboardKey> keys = [];
+	readonly List<Button> buttons = [];
+
+
+	protected override void Initialize() {
+		base.Initialize();
+	}
+
+	public void LoadButtons(IEnumerable<KeyboardKey> keys) {
+		this.keys.Clear();
+		this.keys.AddRange(keys);
+		InvalidateKeyButtons();
+	}
+
+	Button? addButton;
+
+	private void ButtonModal(string action, Action<KeyboardKey> keySubmitted) {
+		var dialog = UI.DialogBase($"{action} Key");
+
+		var lbl = dialog.Add<Label>();
+		lbl.Text = "Press a key...";
+		lbl.AutoSize = true;
+		lbl.Anchor = Anchor.TopCenter;
+		lbl.Origin = Anchor.TopCenter;
+
+		dialog.OnKeyPressed += (_, in _, key) => {
+			keySubmitted(key);
+			dialog.Close();
+		};
+	}
+
+	private void InvalidateKeyButtons() {
+		foreach (var btn in buttons)
+			btn.Remove();
+		buttons.Clear();
+
+		Button b;
+		foreach (var key in keys) {
+			b = Add<Button>();
+			b.BackgroundColor = BackgroundColor;
+			b.ForegroundColor = ForegroundColor;
+			b.Text = key.Name;
+			b.SetTag("key", key);
+
+			b.MouseReleaseEvent += ButtonEditOrRemoveHandler;
+
+			buttons.Add(b);
+		}
+
+		b = Add<Button>();
+		b.BackgroundColor = BackgroundColor;
+		b.ForegroundColor = ForegroundColor;
+		b.Text = "Add...";
+		b.MouseReleaseEvent += ButtonAddHandler;
+		buttons.Add(b);
+		addButton = b;
+
+		InvalidateLayout();
+	}
+
+	private void ButtonAddHandler(Element self, FrameState state, MouseButton button) {
+		if (button == MouseButton.Mouse1)
+			ButtonModal("Bind", AddSubmittedHandler);
+	}
+
+	private void AddSubmittedHandler(KeyboardKey key) {
+		// Confirm that key isn't bound.
+		if (InputSettings.IsKeyBound(key, out InputAction action)) {
+			Logs.Warn($"Keyboard key {key} is already bound to {action}. TODO: notification");
+			return;
+		}
+
+		InputSettings.BindKey(key, this.action);
+
+		InvalidateKeys();
+	}
+
+	private void EditSubmittedHandler(KeyboardKey keyTarget, KeyboardKey keyReplace) {
+		if (!InputSettings.IsKeyBound(keyTarget, out _)) {
+			Logs.Warn($"Keyboard key target {keyTarget} is not bound. TODO: notification");
+			return;
+		}
+
+		if (InputSettings.IsKeyBound(keyReplace, out InputAction action)) {
+			Logs.Warn($"Keyboard key replacement {keyReplace} is already bound to {action}. TODO: notification");
+			return;
+		}
+
+		InputSettings.RebindKey(keyTarget, keyReplace, this.action);
+
+		InvalidateKeys();
+	}
+
+	private void RemoveSubmittedHandler(KeyboardKey key) {
+		if (!InputSettings.IsKeyBound(key, out _)) {
+			Logs.Warn($"Keyboard key target {key} is not bound. TODO: notification");
+			return;
+		}
+
+		InputSettings.UnbindKey(key);
+
+		InvalidateKeys();
+	}
+
+
+	private void ButtonEditOrRemoveHandler(Element self, FrameState state, MouseButton button) {
+		if (button == MouseButton.Mouse2) {
+			RemoveSubmittedHandler(self.GetTag<KeyboardKey>("key"));
+		}
+		else if (button == MouseButton.Mouse1) {
+			ButtonModal("Rebind", x => EditSubmittedHandler(self.GetTag<KeyboardKey>("key"), x));
+		}
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		int padding = 4;
+		int innerPadding = 4;
+		float x = padding;
+		foreach (var btn in buttons) {
+			btn.Position = new(x, innerPadding);
+			float sizeW = height - padding;
+			if (btn == addButton)
+				sizeW = sizeW * 1.5f;
+			btn.Size = new(sizeW, height - (innerPadding * 2));
+			if (btn == addButton)
+				btn.TextSize = height / 2f;
+			else
+				btn.TextSize = height / 1.4f;
+			x += height;
+		}
+	}
+
+	public void SetInputAction(InputAction action) {
+		this.action = action;
+
+		switch (action) {
+			case InputAction.AirAttack:
+				BackgroundColor = Pathway.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5);
+				ForegroundColor = Pathway.GetColor(PathwaySide.Top);
+				InvalidateKeys();
+				break;
+			case InputAction.GroundAttack:
+				BackgroundColor = Pathway.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5);
+				ForegroundColor = Pathway.GetColor(PathwaySide.Bottom);
+				InvalidateKeys();
+				break;
+			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
+		}
+	}
+
+	private void InvalidateKeys() {
+		LoadButtons(InputSettings.GetKeysOfAction(action));
 	}
 }
 

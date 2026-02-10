@@ -16,16 +16,73 @@ namespace Nucleus.UI
 		OpenFolder,
 		Save
 	}
+
+	public class PopupWindow : Window
+	{
+		public bool AutomateLayout {
+			get => field;
+			set {
+				if (field == value)
+					return;
+
+				field = value;
+				InvalidateLayout();
+			}
+		}
+
+		public Vector2F MinimumInternalSize {
+			get => field;
+			set {
+				if (field == value)
+					return;
+
+				field = value;
+				InvalidateLayout();
+			}
+		} = new(320, 260);
+
+		protected override void PostLayoutChildren() {
+			base.PostLayoutChildren();
+
+			if (AutomateLayout) {
+				Vector2F size = new();
+				foreach (var child in Children) {
+					if (child.Dock != Dock.None)
+						continue;
+
+					size = new(
+						MathF.Max(size.X, child.RenderBounds.W),
+						MathF.Max(size.Y, child.RenderBounds.H)
+					);
+				}
+
+				Size = new(
+					MathF.Max(size.X, MinimumInternalSize.W),
+					MathF.Max(size.Y, MinimumInternalSize.H)
+				);
+
+				if (Parent != null)
+					Position = (Parent.Size / 2) - (Size / 2);
+			}
+		}
+	}
+
 	public static class Popups
 	{
-		public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
-			Window popup = UI.Add<Window>();
+		public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
+			PopupWindow popup = UI.Add<PopupWindow>();
 			popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
 			popup.Title = title;
 			popup.Titlebar.MinimizeButton.Visible = false;
 			popup.Titlebar.MaximizeButton.Visible = false;
 			popup.MakePopup();
 			popup.MakeModal();
+			popup.AutomateLayout = automateLayout;
+
+			return popup;
+		}
+		public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
+			PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
 			FlexPanel containButtons = popup.Add<FlexPanel>();
 			containButtons.Dock = Dock.Bottom;
