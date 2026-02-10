@@ -111,7 +111,6 @@ internal class Program
 			AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
 		};
 		EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
-		EngineCore.ShowDebuggingInfo = true;
 		EngineCore.LoadLevel(new HelloWorldLevel());
 		EngineCore.StartMainThread();
 	}
