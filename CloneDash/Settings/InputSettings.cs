@@ -44,24 +44,29 @@ public class InputDataStore_SerializedBeforeFeb9th2026
 
 public class InputDataStore
 {
-	public List<KeyBinding> KeyboardActions = new() {
-		new(KeyboardLayout.USA.S.Key, InputAction.AirAttack),
-		new(KeyboardLayout.USA.D.Key, InputAction.AirAttack),
-		new(KeyboardLayout.USA.F.Key, InputAction.AirAttack),
-		new(KeyboardLayout.USA.G.Key, InputAction.AirAttack),
+	public static InputDataStore NewStockSettings() {
+		InputDataStore store = new();
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.S.Key, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.D.Key, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.F.Key, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.G.Key, InputAction.AirAttack));
 
-		new(KeyboardLayout.USA.H.Key, InputAction.GroundAttack ),
-		new(KeyboardLayout.USA.J.Key, InputAction.GroundAttack ),
-		new(KeyboardLayout.USA.K.Key, InputAction.GroundAttack ),
-		new(KeyboardLayout.USA.L.Key, InputAction.GroundAttack ),
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.H.Key, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.J.Key, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.K.Key, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.L.Key, InputAction.GroundAttack));
 
-		new(KeyboardLayout.USA.Space.Key, InputAction.FeverStart ),
-		new(KeyboardLayout.USA.Escape.Key, InputAction.PauseGame )
-	};
-	public List<MouseBinding> MouseActions = new() {
-		new( MouseButton.MouseRight.Button, InputAction.AirAttack ),
-		new( MouseButton.MouseLeft.Button, InputAction.GroundAttack )
-	};
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.Space.Key, InputAction.FeverStart));
+		store.KeyboardActions.Add(new(KeyboardLayout.USA.Escape.Key, InputAction.PauseGame));
+
+		store.MouseActions.Add(new(MouseButton.MouseRight.Button, InputAction.AirAttack));
+		store.MouseActions.Add(new(MouseButton.MouseLeft.Button, InputAction.GroundAttack));
+		store.ManualFever = false;
+		return store;
+	}
+
+	public List<KeyBinding> KeyboardActions = [];
+	public List<MouseBinding> MouseActions = [];
 	public bool ManualFever = false;
 
 	public bool IsKeyBound(int key, out InputAction action) {
@@ -112,7 +117,7 @@ public static class InputSettings
 		}
 		catch { }
 
-		data ??= Host.GetDataStore<InputDataStore>("CloneDash.InputSettings") ?? new();
+		data ??= Host.GetDataStore<InputDataStore>("CloneDash.InputSettings") ?? InputDataStore.NewStockSettings();
 		Store();
 	}
 	public static void Store() {
