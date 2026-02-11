@@ -94,6 +94,7 @@ public struct TokenizedCommand
 		return argSBuffer.AsSpan()[start..end];
 	}
 
+	public readonly Span<char> GetCommandStringForWrite() => argSBuffer;
 	public readonly ReadOnlySpan<char> GetCommandString() => argSBuffer;
 
 	public readonly void CopyTo(Span<char> target) {
@@ -119,14 +120,34 @@ public struct TokenizedCommand
 		get => Arg(index);
 	}
 
-
 	public bool Tokenize(ReadOnlySpan<char> command) {
 		Reset();
 
 		command.CopyTo(argSBuffer.AsSpan()[..command.Length]);
 		strlen = command.Length;
 
-		throw new Exception();
+		int start = 0;
+		int argIdx = 0;
+		ReadOnlySpan<char> substr = command;
+
+		while (!substr.IsEmpty && argIdx < COMMAND_MAX_ARGC) {
+			int endIndex = substr.IndexOf(' ');
+			if (endIndex == -1)
+				endIndex = substr.Length;
+
+			ppArgs[argIdx++] = new(start, start + endIndex);
+			start += endIndex;
+
+			if (start >= command.Length)
+				break;
+
+			start++;
+			substr = command[start..];
+		}
+
+		argCount = argIdx;
+
+		return true;
 	}
 
 	public readonly ReadOnlySpan<char> FindArg(ReadOnlySpan<char> name) {

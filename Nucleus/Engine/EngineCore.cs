@@ -619,6 +619,7 @@ public static class EngineCore
 
 		Graphics2D.FontManager.CleanUpFontsMarkedForDeath();
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
+		Cbuf.Execute();
 
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
