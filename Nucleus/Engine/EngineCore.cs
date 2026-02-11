@@ -104,9 +104,6 @@ public static class EngineCore
 		public Level? Level;
 		public Level? NextFrameLevel;
 		public object[]? NextFrameArgs;
-
-		public TimeSpan LastTimeToUpdate;
-		public TimeSpan LastTimeToRender;
 	}
 
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
@@ -540,6 +537,9 @@ public static class EngineCore
 	public static double UpdateTime { get; set; }
 	public static double DrawTime { get; set; }
 	public static double FrameTime { get; set; }
+
+
+
 
 	public static readonly ConVar developer = new("developer", "0", ConsoleFlags.None, "Enables/disables developer prints and overlays.", null);
 
