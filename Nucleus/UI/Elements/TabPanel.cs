@@ -130,14 +130,14 @@ namespace Nucleus.UI.Elements
 			return newTab;
 		}
 
-		public void SetActiveTabByName(string name) {
+		public void SetActiveTabByName(ReadOnlySpan<char> name) {
 			foreach(var tab in Tabs) 
-				if (tab.Name.ToLower() == name.ToLower())
+				if (name.Equals(tab.Name, StringComparison.InvariantCultureIgnoreCase))
 					ActiveTab = tab;
 		}
 
 		public void BindTabNameToConVar(ConVar convar) {
-			SetActiveTabByName(convar.GetString() ?? "");
+			SetActiveTabByName(convar.GetString());
 			OnTabChanged += (self, tab) => {
 				convar.SetValue(tab?.Name ?? "");
 			};

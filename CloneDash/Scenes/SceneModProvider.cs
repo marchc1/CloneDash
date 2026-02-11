@@ -14,11 +14,11 @@ public class SceneModProvider : ISceneProvider
 		return dirs;
 	}
 
-	ISceneDescriptor? ISceneProvider.FindByName(string name) {
-		var descriptor = CloneDashScene.ParseScene(Path.Combine(name, "scene.cdd"));
+	ISceneDescriptor? ISceneProvider.FindByName(ReadOnlySpan<char> name) {
+		var descriptor = CloneDashScene.ParseScene(Path.Combine(new(name), "scene.cdd"));
 		if (descriptor == null) return null;
 
-		descriptor.Filename = name;
+		descriptor.Filename = new(name);
 		descriptor.MountToFilesystem();
 		return descriptor;
 	}

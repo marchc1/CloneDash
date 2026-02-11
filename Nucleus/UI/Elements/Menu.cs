@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Types;
 
 using Raylib_cs;
@@ -63,7 +64,7 @@ namespace Nucleus.UI.Elements
 							b.TextPadding = new(12, 12);
 							b.TextSize = 18;
 							b.TextAlignment = Anchor.CenterLeft;
-							b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
+							b.BackgroundColor = new Color(0, 0, 0, 0);
 							b.BorderSize = 0;
 							b.MouseReleaseEvent += new MouseEventDelegate((e, fs, mb) => {
 								btn.invoke?.Invoke();
@@ -110,7 +111,7 @@ namespace Nucleus.UI.Elements
 							b.TextPadding = new(12, 12);
 							b.TextSize = 18;
 							b.TextAlignment = Anchor.CenterLeft;
-							b.BackgroundColor = new Raylib_cs.Color(0, 0, 0, 0);
+							b.BackgroundColor = new Color(0, 0, 0, 0);
 							b.BorderSize = 0;
 							b.Thinking += (s) => {
 								if (s.Hovered) {
@@ -175,7 +176,7 @@ namespace Nucleus.UI.Elements
 			}
 			if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
-			this.Origin = TextAlignment.FromTextAlignment(lr, tb);
+			this.Origin = new TextAlignment2D(lr, tb).ToAnchor();
 			if (popup){
 				this.MakeModal();
 				this.MakePopup();

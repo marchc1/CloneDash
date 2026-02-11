@@ -26,8 +26,8 @@ namespace CloneDash.Fevers
 		}
 
 		public static IFeverDescriptor? GetFeverData() {
-			string? name = fever?.GetString();
-			if (string.IsNullOrWhiteSpace(name))
+			ReadOnlySpan<char> name = fever == null ? null : fever.GetString();
+			if (name.IsEmpty || name.IsWhiteSpace())
 				return null;
 
 			IFeverProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();

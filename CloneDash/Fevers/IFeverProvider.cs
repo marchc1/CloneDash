@@ -7,7 +7,7 @@
 /// </summary>
 public interface IFeverProvider
 {
-	public IFeverDescriptor? FindByName(string name);
+	public IFeverDescriptor? FindByName(ReadOnlySpan<char> name);
 	public int Priority { get; }
 	public IEnumerable<string> GetAvailable();
 }

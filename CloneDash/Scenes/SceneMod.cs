@@ -26,9 +26,9 @@ public static class SceneMod
 	}
 
 	public static ISceneDescriptor? GetSceneData(ChartSong? song = null) {
-		string? name = scene?.GetString();
+		ReadOnlySpan<char> name = scene.GetString();
 
-		if (string.IsNullOrWhiteSpace(name))
+		if (name.IsEmpty || name.IsWhiteSpace())
 			return null;
 
 		ISceneProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();

@@ -12,14 +12,14 @@ public class FeverModProvider : IFeverProvider
 		return dirs;
 	}
 
-	IFeverDescriptor? IFeverProvider.FindByName(string name) {
-		CloneDashFever? descriptor = CloneDashFever.ParseFever(Path.Combine(name, "fever.cdd"));
+	IFeverDescriptor? IFeverProvider.FindByName(ReadOnlySpan<char> name) {
+		CloneDashFever? descriptor = CloneDashFever.ParseFever(Path.Combine(new(name), "fever.cdd"));
 		if (descriptor == null) {
 			Logs.Warn($"WARNING: The fever '{name}' could not be found!");
 			return null;
 		}
 
-		descriptor.Filename = name;
+		descriptor.Filename = new(name);
 		descriptor.MountToFilesystem();
 
 		return descriptor;

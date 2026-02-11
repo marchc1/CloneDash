@@ -54,17 +54,17 @@ public static class AnchorTools
 
 		throw new NotImplementedException();
 	}
-	public static (TextAlignment horizontal, TextAlignment vertical) ToTextAlignment(this Anchor anchor) {
+	public static TextAlignment2D ToTextAlignment(this Anchor anchor) {
 		switch (anchor) {
-			case Anchor.TopLeft: return (TextAlignment.Left, TextAlignment.Top);
-			case Anchor.TopCenter: return (TextAlignment.Center, TextAlignment.Top);
-			case Anchor.TopRight: return (TextAlignment.Right, TextAlignment.Top);
-			case Anchor.CenterLeft: return (TextAlignment.Left, TextAlignment.Center);
-			case Anchor.Center: return (TextAlignment.Center, TextAlignment.Center);
-			case Anchor.CenterRight: return (TextAlignment.Right, TextAlignment.Center);
-			case Anchor.BottomLeft: return (TextAlignment.Left, TextAlignment.Bottom);
-			case Anchor.BottomCenter: return (TextAlignment.Center, TextAlignment.Bottom);
-			case Anchor.BottomRight: return (TextAlignment.Right, TextAlignment.Bottom);
+			case Anchor.TopLeft: return new(TextAlignment.Left, TextAlignment.Top);
+			case Anchor.TopCenter: return new(TextAlignment.Center, TextAlignment.Top);
+			case Anchor.TopRight: return new(TextAlignment.Right, TextAlignment.Top);
+			case Anchor.CenterLeft: return new(TextAlignment.Left, TextAlignment.Center);
+			case Anchor.Center: return new(TextAlignment.Center, TextAlignment.Center);
+			case Anchor.CenterRight: return new(TextAlignment.Right, TextAlignment.Center);
+			case Anchor.BottomLeft: return new(TextAlignment.Left, TextAlignment.Bottom);
+			case Anchor.BottomCenter: return new(TextAlignment.Center, TextAlignment.Bottom);
+			case Anchor.BottomRight: return new(TextAlignment.Right, TextAlignment.Bottom);
 		}
 
 		throw new NotImplementedException();

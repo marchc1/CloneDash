@@ -172,10 +172,10 @@ namespace Nucleus.UI
 				var textSizeAtCaret = Graphics2D.GetTextSize(textAtPointer, Font, TextSize);
 				float x = 0;
 
-				switch (TextAlignment.ToTextAlignment().horizontal.Alignment) {
-					case 0: x = textSize.X + 4; break;
-					case 1: x = ((width / 2) - (textSize.X / 2)) + textSizeAtCaret.X; break;
-					case 2: x = width - textSize.X - 4; break;
+				switch (TextAlignment.ToTextAlignment().Horizontal) {
+					case Types.TextAlignment.Left: x = textSize.X + 4; break;
+					case Types.TextAlignment.Center: x = ((width / 2) - (textSize.X / 2)) + textSizeAtCaret.X; break;
+					case Types.TextAlignment.Right: x = width - textSize.X - 4; break;
 				}
 
 				x += 2;

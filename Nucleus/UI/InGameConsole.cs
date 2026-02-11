@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Input;
@@ -186,7 +187,7 @@ namespace Nucleus
 		private void ConsoleInput_PreRenderEditorLines(TextEditor self, float w, float h) {
 			if (autoCompleteStr == null) return;
 
-			self.RenderRowPiece(0, 0, autoCompleteStr, new Raylib_cs.Color(255, 255, 255, 150));
+			self.RenderRowPiece(0, 0, autoCompleteStr, new Color(255, 255, 255, 150));
 		}
 
 		private void SetupRow(ref readonly ConsoleMessage message) {

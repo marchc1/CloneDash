@@ -54,7 +54,7 @@ public static class CharacterMod
 
 	public static ICharacterDescriptor? GetCharacterData(string? name = null) {
 		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
-		name ??= character?.GetString();
+		name ??= new(character.GetString());
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;
