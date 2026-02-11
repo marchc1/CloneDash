@@ -185,7 +185,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
 		if (LastCharacterSelected == null) return;
-		ConVar cv = ConVar.Get("character");
+		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUniqueID());
 		Character.PlayRandomExpression();
 	}

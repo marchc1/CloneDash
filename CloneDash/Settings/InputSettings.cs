@@ -94,8 +94,8 @@ public static class InputSettings
 {
 	private static InputDataStore data;
 
-	public static ConVar offset_visual = ConVar.Register(nameof(offset_visual), 0, ConsoleFlags.Saved, -500, 500);
-	public static ConVar offset_judgement = ConVar.Register(nameof(offset_judgement), 0, ConsoleFlags.Saved, -500, 500);
+	public static ConVar offset_visual = new(nameof(offset_visual), 0, FCvar.Saved, -500, 500);
+	public static ConVar offset_judgement = new(nameof(offset_judgement), 0, FCvar.Saved, -500, 500);
 
 
 	static InputSettings() {

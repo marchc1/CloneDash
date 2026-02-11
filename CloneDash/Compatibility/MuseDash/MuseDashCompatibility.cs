@@ -684,6 +684,29 @@ namespace CloneDash.Compatibility.MuseDash
 
 			throw new NotImplementedException();
 		}
+
+		internal static MuseDashSong? FindSong(ReadOnlySpan<char> md_level) {
+			foreach(var song in Songs){
+				if (song.BaseName.Equals(md_level, StringComparison.InvariantCulture))
+					return song;
+			}
+			return null;
+		}
+
+		static ThreadLocal<char[]> tempSearchBuffers = new ThreadLocal<char[]>(() => new char[512]);
+		internal static IEnumerable<MuseDashSong> FindSimilarSongs(ReadOnlySpan<char> md_level) {
+			char[] buffer = tempSearchBuffers.Value!;
+			md_level.CopyTo(buffer);
+			int length = md_level.Length;
+			return _FindSimilarSongs(buffer, length);
+		}
+		// If we don't do this we get instance of type cannot be preserved across await or yield boundary issues
+		static IEnumerable<MuseDashSong> _FindSimilarSongs(char[] buffer, int length) {
+			foreach (var song in Songs) {
+				if (song.BaseName.Contains(buffer.AsSpan()[..length], StringComparison.OrdinalIgnoreCase))
+					yield return song;
+			}
+		}
 	}
 
 	public enum MuseDashDifficulty

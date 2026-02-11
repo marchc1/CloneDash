@@ -102,7 +102,7 @@ namespace Nucleus.Audio
 				recalculateVolumeMultiplier();
 			}
 		}
-		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) => recalculateVolumeMultiplier();
+		private void Cv_OnChange(ConVar self, ReadOnlySpan<char> old, double now) => recalculateVolumeMultiplier();
 
 	}
 }

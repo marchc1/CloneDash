@@ -44,8 +44,8 @@ public static class RichPresenceSystem
 {
 	static DiscordRpcClient? DiscordClient;
 	static bool initialized;
-	public static ConVar richpresence = ConVar.Register(nameof(richpresence), "1", ConsoleFlags.Saved, "Enables/disables rich presence systems", 0, 1, (_, _, cv) => {
-		if ((cv.AsInt ?? 0) >= 1) {
+	public static ConVar richpresence = new(nameof(richpresence), "1", FCvar.Saved, "Enables/disables rich presence systems", 0, 1, (cv, _, _) => {
+		if (cv.GetBool()) {
 			if (!initialized) 
 				Initialize();
 		}
@@ -53,7 +53,7 @@ public static class RichPresenceSystem
 			Shutdown();
 		}
 
-	}, callback_first: false);
+	});
 
 	public static void Initialize() {
 		if (!richpresence.GetBool()) return;

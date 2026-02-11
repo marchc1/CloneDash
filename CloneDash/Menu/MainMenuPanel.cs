@@ -174,7 +174,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	private void ModdingTools_OpenMenuButtons(MainMenuLevel menu) {
 		CreateNavigationMenu();
 		MakeNavigationButton("Scene Editor", "ui/sceneselect.png", "Opens the scene editor & previewer", 160, (menu) => {
-			ConCommand.Execute(SceneEditorLevel.sceneedit);
+			// TODO: need engine interface. ConCommand.Execute(SceneEditorLevel.sceneedit);
 		});
 	}
 

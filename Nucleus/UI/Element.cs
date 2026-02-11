@@ -1595,6 +1595,6 @@ namespace Nucleus.UI
 	[Nucleus.MarkForStaticConstruction]
 	public static class ElementConsoleInfo
 	{
-		public static ConCommand nucleus_ui_examples = ConCommand.Register("nucleus_ui_examples", (_, _) => Element.CreateExampleWindow());
+		public static ConCommand nucleus_ui_examples = new("nucleus_ui_examples", (_, in _) => Element.CreateExampleWindow());
 	}
 }

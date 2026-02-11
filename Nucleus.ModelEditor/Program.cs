@@ -32,7 +32,7 @@ namespace Nucleus.ModelEditor
 			public string Path;
 			public DateTime Opened;
 		}
-		public static ConVar modeleditor_maxrecentfiles = ConVar.Register("ModelEditor_maxrecentfiles", "24", ConsoleFlags.Saved, "How many recent files can be available before the least-recent file is forgotten about.", 0, null);
+		public static ConVar modeleditor_maxrecentfiles = new("ModelEditor_maxrecentfiles", "24", FCvar.Saved, "How many recent files can be available before the least-recent file is forgotten about.", 0, null);
 		private static ModelEditor_RecentFile[] recentfiles() {
 			ModelEditor_RecentFile[] files = Host.GetDataStore<ModelEditor_RecentFile[]>("ModelEditor.RecentFiles") ?? [];
 			return files;

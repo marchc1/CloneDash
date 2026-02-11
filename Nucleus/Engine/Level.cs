@@ -812,13 +812,13 @@ namespace Nucleus.Engine
 		}
 
 		public static ConVar ui_hoverresult
-			= ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
+			= new("ui_hoverresult", "0", FCvar.None, "Highlights the currently hovered element", 0, 1);
 		public static ConVar ui_visrenderbounds
-			= ConVar.Register("ui_visrenderbounds", "0", ConsoleFlags.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
+			= new("ui_visrenderbounds", "0", FCvar.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
 		public static ConVar ui_showupdates
-			= ConVar.Register("ui_showupdates", "0", ConsoleFlags.None, "Visualize layout updates.", 0, 1);
+			= new("ui_showupdates", "0", FCvar.None, "Visualize layout updates.", 0, 1);
 		public static ConCommand ui_elementcount
-			= ConCommand.Register("ui_elementcount", (_, _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), ConsoleFlags.None, "Highlights the currently hovered element");
+			= new("ui_elementcount", (_, in _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), FCvar.None, "Highlights the currently hovered element");
 
 		public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
 		public T GetEntity<T>(Predicate<Entity> predicate) where T : Entity {

@@ -58,7 +58,7 @@ public static class DebugOverlay
 	static DebugOverlay() {
 		ClearState();
 	}
-	public static ConVar debugoverlay = ConVar.Register("debugoverlay", "0", ConsoleFlags.Saved, "Enables the debugging overlay.");
+	public static ConVar debugoverlay = new("debugoverlay", "0", FCvar.Saved, "Enables the debugging overlay.");
 	private static ConcurrentQueue<IDebugOverlayItem> items = [];
 	public static bool Enabled => debugoverlay.GetBool();
 

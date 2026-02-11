@@ -98,6 +98,6 @@ namespace Nucleus.Core
 			LastWriteTime = DateTime.Now;
 		}
 
-		public static ConCommand host_writeconfig = ConCommand.Register("host_writeconfig", (_, args) => WriteConfig(), "Writes the current configuration to config.cfg");
+		public static ConCommand host_writeconfig = new("host_writeconfig", (_, in args) => WriteConfig(), "Writes the current configuration to config.cfg");
 	}
 }

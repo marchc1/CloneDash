@@ -30,7 +30,7 @@ namespace CloneDash.Game;
 [Nucleus.MarkForStaticConstruction]
 public class MainMenuLevel : Level
 {
-	public static ConCommand hologramtest = ConCommand.Register(nameof(hologramtest), (_, _) => {
+	public static ConCommand hologramtest = new(nameof(hologramtest), (_, in _) => {
 		var level = EngineCore.Level;
 		var window = level.UI.Add<Window>();
 		window.Title = "Hologram Test";

@@ -213,41 +213,7 @@ namespace Nucleus
 		}
 
 		private void SetupAutocomplete() {
-			var args = ConCommandArguments.FromString(consoleInput.GetText());
-			if (!IValidatable.IsValid(autoComplete))
-				autoComplete = UI.Add<ConsoleAutocomplete>();
-
-			int startX = 0;
-			for (int i = 0; i < args.Length - 1; i++) {
-				startX += (args.GetString(i)?.Length ?? 0) + 1;
-			}
-			autoComplete.Position = consoleInput.GetGlobalPosition() + new Vector2F(startX * consoleInput.FontWidth, 40);
-
-			string? basename = args.GetString(0);
-			if (basename == null) {
-				autoComplete.SetNoMatches();
-				return;
-			}
-
-			if (args.Length <= 1) {
-				var matches = ConCommandBase.FindMatchesThatStartWith(basename, 0, 20);
-				string[] names = new string[matches.Length];
-				string[] descs = new string[matches.Length];
-				for (int i = 0, n = matches.Length; i < n; i++) {
-					var match = matches[i];
-					names[i] = match.Name;
-					descs[i] = match.HelpString;
-				}
-
-				autoComplete.SetPotentialMatches(names, descs);
-			}
-			else {
-				ConCommandBase? match = ConCommandBase.Get(basename);
-				if (match != null)
-					autoComplete.SetPotentialMatches(ConCommandBase.Autocomplete(match, args.Raw, consoleInput.Caret.Column));
-				else
-					autoComplete.SetNoMatches();
-			}
+			// REDO ME
 		}
 
 		private int userHistoryPos = 0;
@@ -259,16 +225,7 @@ namespace Nucleus
 					var userLen = text.Length;
 					var currentCaret = consoleInput.Caret.StartCol;
 
-					var args = ConCommandArguments.FromString(text);
-					int startX = 0;
-					for (int i = 0; i < args.Length - 1; i++) {
-						startX += (args.GetString(i)?.Length ?? 0) + 1;
-					}
-
-					consoleInput.SetSelection(startX, 0, userLen, 0);
-					consoleInput.InsertText(tabSelection);
-					autoComplete.Reset();
-					autoCompleteStr = null;
+					// REDO ME
 				}
 				else if (key == KeyboardLayout.USA.Up) {
 					int newPos = userHistoryPos + 1;
@@ -327,7 +284,7 @@ namespace Nucleus
 		private void ConsoleInput_OnExecute(TextEditor self) {
 			var txt = self.GetText();
 			Logs.Print("> " + txt);
-			ConsoleSystem.ParseOneCommand(txt);
+			Cbuf.AddText(txt);
 			autoComplete?.Remove();
 			MainThread.RunASAP(() => {
 				consoleLogs.SetScroll(1);

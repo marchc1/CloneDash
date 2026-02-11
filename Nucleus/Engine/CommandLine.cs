@@ -10,7 +10,7 @@ namespace Nucleus.Engine
 
 		public void StuffCmds() {
 			foreach (var var in variables) {
-				ConVar? cv = ConVar.Get(var.Key);
+				ConVar? cv = cvar.FindVar(var.Key);
 				if (cv == null) continue;
 				cv.SetValue(var.Value);
 			}

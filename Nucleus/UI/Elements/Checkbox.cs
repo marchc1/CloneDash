@@ -48,7 +48,7 @@ namespace Nucleus.UI
 		private HashSet<Checkbox> __otherRadioButtons = [];
 
 		public void BindToConVar(string convar) {
-			ConVar? cv = (ConVar?)ConCommandBase.Get(convar);
+			ConVar? cv = cvar.FindVar(convar);
 			Debug.Assert(cv != null, "Tried to bind to a non-existant convar");
 			if (cv == null) return;
 
@@ -57,12 +57,7 @@ namespace Nucleus.UI
 
 		public void BindToConVar(IConVar cv) {
 			Checked.SetNoUpdate(cv.GetBool());
-			OnCheckedChanged += (_) 
-				=> cv.SetValue(Checked);
-		}
-
-		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) {
-			Checked.SetNoUpdate(self.GetBool());
+			OnCheckedChanged += _ => cv.SetValue(Checked);
 		}
 
 		public bool Radio { get; set; } = false;

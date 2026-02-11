@@ -50,7 +50,7 @@ namespace Nucleus.Audio
 				recalculateVolumeMultiplier();
 			}
 		}
-		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) => recalculateVolumeMultiplier();
+		private void Cv_OnChange(ConVar self, ReadOnlySpan<char> old, double oldD) => recalculateVolumeMultiplier();
 
 
 		public unsafe MusicTrack(SoundManagement? parent, Music underlying, bool selfDisposing = true, byte* memoryBound = null) {

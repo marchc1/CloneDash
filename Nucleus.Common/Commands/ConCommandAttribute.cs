@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Nucleus.Common.Commands;
+using System.Reflection;
 
 namespace Nucleus.Commands
 {
@@ -29,20 +30,20 @@ namespace Nucleus.Commands
 			}
 		}
 		public static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
-			ConCommand.ExecutedDelegate executedDelegate;
+			CommandExecutedDelegate executedDelegate;
 			var parameters = baseMethod.GetParameters();
 
-			if (parameters.Length == 1 && parameters[0].ParameterType == typeof(ConCommandArguments))
-				executedDelegate = (_, args) => baseMethod.Invoke(null, [args]);
+			if (parameters.Length == 1 && parameters[0].ParameterType == typeof(TokenizedCommand).MakeByRefType())
+				executedDelegate = (_, in args) => baseMethod.Invoke(null, [args]);
 			else if (parameters.Length == 0)
-				executedDelegate = (_, _) => baseMethod.Invoke(null, null);
+				executedDelegate = (_, in _) => baseMethod.Invoke(null, null);
 			else
-				executedDelegate = baseMethod.CreateDelegate<ConCommand.ExecutedDelegate>();
+				executedDelegate = baseMethod.CreateDelegate<CommandExecutedDelegate>();
 
 			if (attr.AutoComplete == null)
-				ConCommand.Register(attr.NameOverride ?? baseMethod.Name, executedDelegate, attr.Description);
+				cvar.RegisterConCommand(new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, null, attr.Description));
 			else
-				ConCommand.Register(attr.NameOverride ?? baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<ConCommandBase.AutocompleteDelegate>(), attr.Description);
+				cvar.RegisterConCommand(new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<AutocompleteDelegate>(), attr.Description));
 		}
 	}
 }

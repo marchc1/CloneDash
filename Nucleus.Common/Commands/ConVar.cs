@@ -1,128 +1,193 @@
-﻿using Nucleus.Common.Commands;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Commands;
 
 using System.Diagnostics;
 using System.Globalization;
+using static Nucleus.Commands.ConCommandBase;
 
 namespace Nucleus.Commands
 {
 	public class ConVar : ConCommandBase, IConVar
 	{
-		public static new ConVar Get(string name) => (ConVar)ConCommandBase.Get(name)!;
 		public delegate void OnConvarChangeDelegate(ConVar self, CVValue old, CVValue now);
-		private static Dictionary<string, string> __startupParms = [];
-		public static void SetStartupParameter(string parameterName, string parameterStringValue) {
-			ConCommandBase? cv = Get(parameterName);
-			if (cv != null && cv is ConVar convar) {
-				convar.SetValue(parameterStringValue);
-			}
-			else __startupParms[parameterName] = parameterStringValue;
-		}
-		public override bool IsCommand => false;
+		public override bool IsCommand() => false;
 		public event ChangeCallback? OnChange;
+
 		public string DefaultValue { get; set; }
 		private double? minimum = null;
 		private double? maximum = null;
 		private CVValue value = new();
 
-		public bool IsDefault => DefaultValue == value.String;
+		public ConVar? Parent;
 
-		public double? Minimum {
-			get => minimum;
-			set {
-				minimum = value;
-				Clamp();
+		private bool ClampValue(ref double value) {
+			if (minimum.HasValue && value < minimum.Value) {
+				value = minimum.Value;
+				return true;
 			}
-		}
-		public double? Maximum {
-			get => maximum;
-			set {
-				maximum = value;
-				Clamp();
-			}
-		}
-		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString, AutocompleteDelegate? autocomplete = null) : base(name, helpString, flags) {
-			DefaultValue = defaultValue;
-			OnAutocomplete = autocomplete;
-			Update(DefaultValue, true);
-		}
-		public ConVar(string name, string defaultValue, ConsoleFlags flags) : this(name, defaultValue, flags, "", null) { }
-		public ConVar(string name, string defaultValue, ConsoleFlags flags, string helpString, double? min = null, double? max = null, AutocompleteDelegate? autocomplete = null) : this(name, defaultValue, flags, helpString, autocomplete) {
-			Minimum = min;
-			Maximum = max;
-		}
-		private void Update(ReadOnlySpan<char> input, bool init = false) {
-			var old = value;
-			var changed = CVValue.Update(ref value, input, Minimum, Maximum);
-			if (changed)
-				OnChange?.Invoke(this, old, value);
 
-			if (!init && (Flags & ConsoleFlags.Saved) == ConsoleFlags.Saved) {
-				if (!IsDefault)
-					cvar.SetConfigCVar(Name, input);
-				else
-					cvar.UnsetConfigCVar(Name);
+			if (maximum.HasValue && value > maximum.Value) {
+				value = maximum.Value;
+				return true;
+			}
+
+			return false;
+		}
+
+		private void InternalSetDoubleValue(double doubleValue) {
+			if (doubleValue == this.value.Double)
+				return;
+
+			Debug.Assert(Parent == this);
+
+			ClampValue(ref doubleValue);
+
+			double oldValue = this.value.Double;
+			this.value.Double = doubleValue;
+			this.value.Int = Convert.ToInt32(doubleValue);
+
+			if ((Flags & FCvar.NeverAsString) != 0) {
+				Span<char> tempVal = stackalloc char[32];
+				this.value.Double.TryFormat(tempVal, out int charsWritten);
+				ChangeStringValue(tempVal[..charsWritten], oldValue);
+			}
+			else
+				Debug.Assert(OnChange == null);
+		}
+
+		private void InternalSetIntValue(int intValue) {
+			if (intValue == this.value.Int)
+				return;
+
+			Debug.Assert(Parent == this);
+
+			double doubleValue = (double)intValue;
+			if (ClampValue(ref doubleValue))
+				intValue = Convert.ToInt32(doubleValue);
+
+			double oldValue = this.value.Double;
+			this.value.Double = doubleValue;
+			this.value.Int = intValue;
+
+			if ((Flags & FCvar.NeverAsString) != 0) {
+				Span<char> tempVal = stackalloc char[32];
+				this.value.Int.TryFormat(tempVal, out int charsWritten);
+				ChangeStringValue(tempVal[..charsWritten], oldValue);
+			}
+			else
+				Debug.Assert(OnChange == null);
+		}
+
+		private void InternalSetValue(ReadOnlySpan<char> value) {
+			double newD;
+			Span<char> temp = stackalloc char[64];
+			scoped ReadOnlySpan<char> val;
+
+			Debug.Assert(Parent == this);
+
+			double oldD = this.value.Double;
+
+			val = value;
+			if (value.IsEmpty) newD = 0.0;
+			else double.TryParse(value, out newD);
+
+			if (ClampValue(ref newD)) {
+				newD.TryFormat(temp, out int charsWritten);
+				val = temp[..charsWritten];
+			}
+
+			this.value.Double = newD;
+			this.value.Int = Convert.ToInt32(newD);
+
+			if ((Flags & FCvar.NeverAsString) == 0)
+				ChangeStringValue(val, oldD);
+		}
+
+		private void ChangeStringValue(scoped ReadOnlySpan<char> val, double oldD) {
+			Debug.Assert((Flags & FCvar.NeverAsString) == 0, "NeverAsString, yet ChangeStringValue still called...");
+
+			Span<char> oldValue = stackalloc char[value.StringLength];
+			value.Chars?.CopyTo(oldValue);
+
+			int len = val.IndexOf('\0');
+			if (len == -1)
+				len = val.Length;
+
+			if (len > value.StringLength) {
+				value.Chars = new char[len];
+				value.StringLength = len;
+			}
+
+			val.CopyTo(value.Chars);
+
+			if (!val.Equals(oldValue, StringComparison.InvariantCulture)) {
+				OnChange?.Invoke(this, oldValue, oldD);
+				cvar.CallGlobalChangeCallbacks(this, oldValue, oldD);
 			}
 		}
-		private void Clamp() {
-			var old = value;
-			var changed = CVValue.Clamp(ref value, Minimum, Maximum);
-			if (changed)
-				OnChange?.Invoke(this, old, value);
+
+		public float GetFloat() => (float)value.Double;
+		public double GetDouble() => value.Double;
+		public int GetInt() => value.Int;
+		public ReadOnlySpan<char> GetString() => value.GetString();
+		public bool GetBool() => value.Int >= 1;
+		public void SetValue(ReadOnlySpan<char> str) {
+			ConVar var = Parent!;
+			var.InternalSetValue(str);
 		}
+		public void SetValue(int i) {
+			ConVar var = Parent!;
+			var.InternalSetIntValue(i);
+		}
+		public void SetValue(double d) {
+			ConVar var = Parent!;
+			var.InternalSetDoubleValue(d);
+		}
+		public void SetValue(bool b) {
+			ConVar var = Parent!;
+			var.InternalSetIntValue(b ? 1 : 0);
+		}
+
+		public ReadOnlySpan<char> GetDefault() => DefaultValue;
+
+		public void SetDefault(string def) {
+			DefaultValue = def;
+		}
+
 		public void Revert() {
-			Update(DefaultValue);
+			ConVar var = Parent!;
+			var.SetValue(var.DefaultValue);
 		}
-		public double GetDouble() => value.AsDouble ?? 0;
-		public int GetInt() => value.AsInt ?? 0;
-		public ReadOnlySpan<char> GetString() => value.String ?? "";
-		public bool GetBool() => (value.AsDouble ?? 0) >= 1;
-		public void SetValue(ReadOnlySpan<char> str) => Update(str);
-		public void SetValue(int i) => Update(Convert.ToString(i, CultureInfo.InvariantCulture));
-		public void SetValue(double d) => Update(Convert.ToString(d, CultureInfo.InvariantCulture));
-		public void SetValue(bool b) => Update(b ? "1" : "0");
 
-		public static ConVar Register(string name, string defaultValue) => Register(name, defaultValue, ConsoleFlags.None, "");
-		public static ConVar Register(string name, string defaultValue, ConsoleFlags flags) => Register(name, defaultValue, flags, "");
-		public static ConVar Register(string name, double defaultValue) => Register(name, $"{defaultValue}", ConsoleFlags.None, "");
-		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags) => Register(name, $"{defaultValue}", flags, "");
-		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags, double min, double max) => Register(name, $"{defaultValue}", flags, "", min, max);
-		public static ConVar Register(string name, double defaultValue, ConsoleFlags flags, string helpText, double min, double max) => Register(name, $"{defaultValue}", flags, helpText, min, max);
+		public double? GetMinimumValue() => minimum;
+		public double? GetMaximumValue() => maximum;
 
-		public static ConVar Register(
-			string name,
-			string defaultValue,
-			ConsoleFlags flags,
-			string helpString,
-			double? min = null,
-			double? max = null,
-			ChangeCallback? callback = null,
-			bool callback_first = true,
-			AutocompleteDelegate? autocomplete = null
-		) {
-			if (flags.HasFlag(ConsoleFlags.DevelopmentOnly) && !Debugger.IsAttached) return new(name, defaultValue, flags);
+		public ConVar(string name, string defaultValue) : this(name, defaultValue, 0, "", null, null, null, null) { }
+		public ConVar(string name, string defaultValue, FCvar flags) : this(name, defaultValue, flags, "", null, null, null, null) { }
+		public ConVar(string name, double defaultValue) : this(name, $"{defaultValue}", 0, "", null, null, null, null) { }
+		public ConVar(string name, double defaultValue, FCvar flags) : this(name, $"{defaultValue}", flags, "", null, null, null, null) { }
+		public ConVar(string name, double defaultValue, FCvar flags, double min, double max) : this(name, $"{defaultValue}", flags, "", min, max, null, null) { }
+		public ConVar(string name, double defaultValue, FCvar flags, string helpText, double min, double max) : this(name, $"{defaultValue}", flags, helpText, min, max, null, null) { }
 
-			if (IsRegistered(name)) {
-				var t = lookup[name];
-				if (t is ConVar cv)
-					return cv;
-				throw new Exception($"ConCommandBase '{name}' already existed and was not a ConVar");
-			}
-			ConVar? cmd = (ConVar?)Activator.CreateInstance(typeof(ConVar), [name, defaultValue, flags, helpString, min, max, autocomplete]);
-			if (cmd == null) throw new Exception("ConVar: null?");
-			if (__startupParms.TryGetValue(name, out string? sv)) cmd.SetValue(sv);
-			if (callback != null) {
-				cmd.OnChange += callback;
-				if (callback_first) {
-					callback(cmd, CVValue.Null, cmd.value);
-				}
-			}
+		public ConVar(string name, string defaultValue, FCvar flags, string helpString, double? min = null, double? max = null, ChangeCallback? callback = null, AutocompleteDelegate? autocomplete = null) : base(name, helpString, flags) {
+			Parent = this;
+			SetDefault(defaultValue);
 
-			ReadOnlySpan<char> val = cvar.GetConfigCVar(name);
-			if (val != null)
-				cmd.SetValue(val);
+			value.StringLength = DefaultValue.IndexOf('\0');
+			if (value.StringLength == -1) value.StringLength = DefaultValue.Length;
+			value.Chars = new char[value.StringLength];
+			DefaultValue.CopyTo(value.Chars);
 
-			lookup[name] = cmd;
-			return cmd;
+			minimum = min;
+			maximum = max;
+
+			if (callback != null)
+				OnChange += callback;
+
+			OnAutocomplete = autocomplete;
+
+			double.TryParse(value.GetString(), out value.Double);
+			int.TryParse(value.GetString(), out value.Int);
 		}
 	}
 }

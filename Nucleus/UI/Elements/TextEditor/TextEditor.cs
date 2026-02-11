@@ -263,8 +263,8 @@ namespace Nucleus.UI
 			CaretLeftHold = Caret.Column;
 		}
 
-		public static ConVar textedit_fontwidthpad = ConVar.Register(nameof(textedit_fontwidthpad), "0", ConsoleFlags.Saved, "Additive offset to FontWidth");
-		public static ConVar textedit_fontheightpad = ConVar.Register(nameof(textedit_fontheightpad), "1", ConsoleFlags.Saved, "Additive offset to FontHeight");
+		public static ConVar textedit_fontwidthpad = new(nameof(textedit_fontwidthpad), "0", FCvar.Saved, "Additive offset to FontWidth");
+		public static ConVar textedit_fontheightpad = new(nameof(textedit_fontheightpad), "1", FCvar.Saved, "Additive offset to FontHeight");
 
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
