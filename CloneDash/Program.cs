@@ -36,7 +36,6 @@ internal class Program
 {
 	static void Main(string[] args) {
 		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-		throw new Exception();
 
 		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
 			return;
