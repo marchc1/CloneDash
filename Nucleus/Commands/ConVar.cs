@@ -1,11 +1,12 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Commands;
+using Nucleus.Core;
 
 using System.Diagnostics;
 using System.Globalization;
 
 namespace Nucleus.Commands
 {
-	public class ConVar : ConCommandBase
+	public class ConVar : ConCommandBase, IConVar
 	{
 		public static new ConVar Get(string name) => (ConVar)ConCommandBase.Get(name)!;
 		public delegate void OnConvarChangeDelegate(ConVar self, CVValue old, CVValue now);
@@ -50,7 +51,7 @@ namespace Nucleus.Commands
 			Minimum = min;
 			Maximum = max;
 		}
-		private void Update(string input, bool init = false) {
+		private void Update(ReadOnlySpan<char> input, bool init = false) {
 			var old = value;
 			var changed = CVValue.Update(ref value, input, Minimum, Maximum);
 			if (changed)
@@ -76,9 +77,9 @@ namespace Nucleus.Commands
 		}
 		public double GetDouble() => value.AsDouble ?? 0;
 		public int GetInt() => value.AsInt ?? 0;
-		public string GetString() => value.String ?? "";
+		public ReadOnlySpan<char> GetString() => value.String ?? "";
 		public bool GetBool() => (value.AsDouble ?? 0) >= 1;
-		public void SetValue(string str) => Update(str);
+		public void SetValue(ReadOnlySpan<char> str) => Update(str);
 		public void SetValue(int i) => Update(Convert.ToString(i, CultureInfo.InvariantCulture));
 		public void SetValue(double d) => Update(Convert.ToString(d, CultureInfo.InvariantCulture));
 		public void SetValue(bool b) => Update(b ? "1" : "0");

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.8.34309.116
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11408.102 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clone Dash", "CloneDash\Clone Dash.csproj", "{3E02540F-8FAE-43D3-9813-C5D5BD2C4090}"
 EndProject
@@ -30,6 +30,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{46DDE2A1-69B3-4C52-843B-B946B56C0A2C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fmod5Sharp", "Fmod5Sharp\Fmod5Sharp.csproj", "{BC946B5D-A3B7-48A8-BEA0-EA931DA19FBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleus.Common", "Nucleus.Common\Nucleus.Common.csproj", "{6BDCB363-2654-4815-A1C7-F336B6445278}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,6 +75,10 @@ Global
 		{BC946B5D-A3B7-48A8-BEA0-EA931DA19FBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC946B5D-A3B7-48A8-BEA0-EA931DA19FBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC946B5D-A3B7-48A8-BEA0-EA931DA19FBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BDCB363-2654-4815-A1C7-F336B6445278}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BDCB363-2654-4815-A1C7-F336B6445278}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BDCB363-2654-4815-A1C7-F336B6445278}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BDCB363-2654-4815-A1C7-F336B6445278}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -89,6 +95,7 @@ Global
 		{CCB5133A-68C3-44D3-B050-0429E059D5A8} = {7B558255-59AF-4CC4-86AC-993E160060E7}
 		{46DDE2A1-69B3-4C52-843B-B946B56C0A2C} = {7B558255-59AF-4CC4-86AC-993E160060E7}
 		{BC946B5D-A3B7-48A8-BEA0-EA931DA19FBA} = {F9CEF194-EA7B-41C5-B9CF-C181EAC5E306}
+		{6BDCB363-2654-4815-A1C7-F336B6445278} = {7B558255-59AF-4CC4-86AC-993E160060E7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2F79997E-69BD-4DF1-AEEF-44938358485B}

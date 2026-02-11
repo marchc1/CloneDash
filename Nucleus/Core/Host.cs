@@ -52,14 +52,14 @@ namespace Nucleus.Core
 			ReadConfig();
 			return Config.CVars.TryGetValue(cvar, out var value) ? value : null;
 		}
-		public static void SetConfigCVar(string cvar, string? val) {
+		public static void SetConfigCVar(string cvar, ReadOnlySpan<char> val) {
 			ReadConfig();
-			if (val == null) {
+			if (val.IsEmpty) {
 				Config.CVars.Remove(cvar);
 				return;
 			}
 
-			Config.CVars[cvar] = val;
+			Config.CVars[cvar] = new(val);
 		}
 
 		/// <summary>

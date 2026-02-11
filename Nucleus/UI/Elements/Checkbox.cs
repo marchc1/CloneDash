@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Commands;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -54,7 +55,7 @@ namespace Nucleus.UI
 			BindToConVar(cv);
 		}
 
-		public void BindToConVar(ConVar cv) {
+		public void BindToConVar(IConVar cv) {
 			Checked.SetNoUpdate(cv.GetBool());
 			OnCheckedChanged += (_) 
 				=> cv.SetValue(Checked);

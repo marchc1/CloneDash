@@ -9,9 +9,9 @@
 		public float? AsFloat => AsDouble.HasValue ? (float)AsDouble.Value : null;
 		public double? AsDouble;
 		public int? AsInt;
-		public static bool Update(ref CVValue cv, string input) {
+		public static bool Update(ref CVValue cv, ReadOnlySpan<char> input) {
 			var different = cv.String != input;
-			cv.String = input;
+			cv.String = new(input);
 			if (double.TryParse(input, out double d)) {
 				cv.AsDouble = d;
 				if (int.TryParse(input, out int i))
@@ -25,7 +25,7 @@
 			}
 			return different;
 		}
-		public static bool Update(ref CVValue cv, string input, double? min, double? max) {
+		public static bool Update(ref CVValue cv, ReadOnlySpan<char> input, double? min, double? max) {
 			var updated = Update(ref cv, input);
 			var clampChanged = Clamp(ref cv, min, max);
 			return updated || clampChanged;
