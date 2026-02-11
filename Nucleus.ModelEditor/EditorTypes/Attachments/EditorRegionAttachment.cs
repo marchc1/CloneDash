@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Common.Types;
 using Nucleus.ManagedMemory;
 using Nucleus.Models;
 using Nucleus.Rendering;
@@ -38,7 +39,7 @@ namespace Nucleus.ModelEditor
 		public float Rotation { get; set; }
 		public Vector2F Scale { get => scale; set => scale = value; }
 
-		public Color Color { get; set; } = Raylib_cs.Color.White;
+		public Color Color { get; set; } = Color.White;
 
 		public override bool CanTranslate() => true;
 		public override bool CanRotate() => true;

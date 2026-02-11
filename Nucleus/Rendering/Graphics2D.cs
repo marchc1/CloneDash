@@ -9,6 +9,7 @@ using Raylib_cs;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Globalization;
+using Nucleus.Common.Types;
 
 namespace Nucleus.Core
 {

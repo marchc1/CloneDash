@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Files;

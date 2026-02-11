@@ -18,6 +18,7 @@ using Nucleus.Commands;
 using Nucleus.Input;
 using Nucleus.Extensions;
 using System.Globalization;
+using Nucleus.Common.Types;
 
 namespace Nucleus;
 

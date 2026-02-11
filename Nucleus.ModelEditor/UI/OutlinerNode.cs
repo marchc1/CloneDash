@@ -1,8 +1,8 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.ModelEditor
@@ -103,7 +103,7 @@ namespace Nucleus.ModelEditor
 			get => Image.Image;
 			set => Image.Image = value;
 		}
-		public new Raylib_cs.Color ImageColor {
+		public new Color ImageColor {
 			get => Image.ImageColor ?? Image.TextColor;
 			set => Image.ImageColor = value;
 		}
@@ -128,7 +128,7 @@ namespace Nucleus.ModelEditor
 			Expander.Size = new(23);
 			Image.Size = new(16);
 
-			Image.ImageColor = Raylib_cs.Color.White;
+			Image.ImageColor = Color.White;
 
 			BorderSize = 0;
 			DockMargin = RectangleF.TLRB(0, 2, 2, 0);

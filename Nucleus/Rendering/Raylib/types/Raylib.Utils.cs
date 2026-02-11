@@ -1,3 +1,4 @@
+using Nucleus.Common.Types;
 using System;
 using System.IO;
 using System.Numerics;

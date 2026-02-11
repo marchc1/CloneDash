@@ -2,6 +2,7 @@
 using CloneDash.Settings;
 
 using Nucleus;
+using Nucleus.Common.Types;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;

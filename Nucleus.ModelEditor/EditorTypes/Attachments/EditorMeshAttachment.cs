@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;

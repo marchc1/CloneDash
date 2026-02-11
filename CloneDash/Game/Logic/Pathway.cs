@@ -1,4 +1,5 @@
 ﻿using Nucleus;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Types;

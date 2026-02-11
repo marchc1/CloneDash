@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Raylib_cs;
 
 namespace Nucleus.Types
 {
@@ -78,9 +77,9 @@ namespace Nucleus.Types
             Vector3 pos = Position, scale = Scale;
             Quaternion rot = Rotation;
 
-            var finalTranslation = Raymath.MatrixTranslate(pos.X, pos.Y, pos.Z);
-            var finalRotation = Raymath.QuaternionToMatrix(rot);
-            var finalScaling = Raymath.MatrixScale(scale.X, scale.Z, scale.Y);
+            var finalTranslation = NMath.MatrixTranslate(pos.X, pos.Y, pos.Z);
+            var finalRotation = NMath.QuaternionToMatrix(rot);
+            var finalScaling = NMath.MatrixScale(scale.X, scale.Z, scale.Y);
 
             switch (TransformOrder) {
                 case TransformOrder.PosRotScale: __cachedTransformMatrix = finalTranslation * finalRotation * finalScaling; break;
@@ -99,7 +98,7 @@ namespace Nucleus.Types
 
         public Vector3 RotationEuler {
             get {
-                var ret = Raymath.QuaternionToEuler(Rotation);
+                var ret = NMath.QuaternionToEuler(Rotation);
 
                 ret *= NMath.RAD2DEG;
                 return ret;

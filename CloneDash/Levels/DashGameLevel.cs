@@ -28,7 +28,7 @@ using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
-using Color = Raylib_cs.Color;
+using Color = Nucleus.Common.Types.Color;
 using MouseButton = Nucleus.Input.MouseButton;
 using Sound = Nucleus.Audio.Sound;
 

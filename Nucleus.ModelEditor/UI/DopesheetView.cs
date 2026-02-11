@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Models;
@@ -153,7 +154,7 @@ public class DopesheetView : BaseTimelineView
 		isDraggingKeyframe = false;
 	}
 
-	public static readonly Raylib_cs.Color FrameDraggingColor = new(255, 90, 15);
+	public static readonly Color FrameDraggingColor = new(255, 90, 15);
 
 	protected override void PaintTimeOverlay(float width, float height) {
 		if (!isKeyframeSelected) return;

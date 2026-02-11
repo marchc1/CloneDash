@@ -1,6 +1,5 @@
-﻿using Nucleus.Extensions;
-
-using Raylib_cs;
+﻿using Nucleus.Common.Types;
+using Nucleus.Extensions;
 
 using System;
 using System.Collections.Generic;

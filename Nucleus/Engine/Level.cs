@@ -200,7 +200,6 @@ namespace Nucleus.Engine
 			finalizers.Clear();
 		}
 
-		public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
 		public T As<T>() where T : Level => (T)this;
 		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
@@ -616,7 +615,7 @@ namespace Nucleus.Engine
 					RendertimeDelta = Rendertime - LastRendertime;
 				}
 
-				System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
+				System.Numerics.Vector3 offset = new(0, 0, 0);
 
 				Surface.Clear(0, 0, 0, 255);
 

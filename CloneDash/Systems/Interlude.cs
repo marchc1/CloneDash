@@ -225,7 +225,7 @@ public static class Interlude
 				if (hasTex) {
 					var tex = interludeTexture;
 					// unity moment; need to flip sometimes
-					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Raylib_cs.Color.White);
+					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Nucleus.Common.Types.Color.White);
 				}
 
 				var originalBottomSize = 48f;

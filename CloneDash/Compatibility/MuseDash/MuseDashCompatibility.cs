@@ -31,7 +31,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-using Color = Raylib_cs.Color;
+using Color = Nucleus.Common.Types.Color;
 using Material = AssetStudio.Material;
 using Sound = Nucleus.Audio.Sound;
 using Texture2D = AssetStudio.Texture2D;

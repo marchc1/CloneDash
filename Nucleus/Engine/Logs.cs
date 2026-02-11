@@ -1,5 +1,4 @@
-﻿using Raylib_cs;
-
+﻿using Nucleus.Common.Types;
 using System.Diagnostics;
 
 namespace Nucleus
@@ -86,7 +85,7 @@ namespace Nucleus
 					return " WTF ";
 			}
 		}
-		private static System.Drawing.Color RLCToSDC(Raylib_cs.Color c) => System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
+		private static System.Drawing.Color RLCToSDC(Color c) => System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
 		public delegate void LogWrittenTextDelegate(LogLevel level, string text);
 		public static event LogWrittenTextDelegate LogWrittenText;
 
