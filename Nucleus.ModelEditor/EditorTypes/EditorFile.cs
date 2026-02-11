@@ -75,6 +75,7 @@ namespace Nucleus.ModelEditor
 		public static JsonSerializerSettings SerializerSettings => new JsonSerializerSettings() {
 			PreserveReferencesHandling = PreserveReferencesHandling.Objects,
 			SerializationBinder = new ModelEditorSerializationBinder(),
+			Converters = new List<JsonConverter>() { new Vector2FJsonConverter() },
 			TypeNameHandling = TypeNameHandling.Auto,
 			MaxDepth = 1024
 		};

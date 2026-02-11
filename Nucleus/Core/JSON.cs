@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Nucleus.Types;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Newtonsoft.Json;
 
 // carryover from slightsand
 // todo; make other things go through this?
@@ -30,6 +30,7 @@ public static class JSON
 	public static string Serialize<T>(T obj) {
 		JsonSerializer serializer = new();
 		serializer.Converters.Add(new NucleusJsonConverter());
+		serializer.Converters.Add(new Vector2FJsonConverter());
 		using (TextWriter text = new StringWriter())
 		using (JsonTextWriter writer = new JsonTextWriter(text)) {
 			serializer.Serialize(writer, obj);
@@ -39,6 +40,7 @@ public static class JSON
 	public static T? Deserialize<T>(string json) {
 		JsonSerializer serializer = new();
 		serializer.Converters.Add(new NucleusJsonConverter());
+		serializer.Converters.Add(new Vector2FJsonConverter());
 		using (TextReader text = new StringReader(json))
 		using (JsonTextReader reader = new JsonTextReader(text)) {
 			return serializer.Deserialize<T>(reader);
