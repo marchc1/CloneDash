@@ -146,6 +146,12 @@ namespace Nucleus
 
 		public static string Source { get; set; } = "nucleus";
 
+		// VERY TEMPORARY
+		// We need to rework the entire logging library.
+		// This is easier, for now.
+		public static void Print(ReadOnlySpan<char> text) => Log(LogLevel.Print, PrintColor, Newline, new string(text));
+
+
 		public static void Print(params object?[] items) => Log(LogLevel.Print, PrintColor, Newline, items);
 		[Conditional("DEBUG")]
 		public static void Debug(params object?[] items) => Log(LogLevel.Debug, PrintColor, Newline, items);

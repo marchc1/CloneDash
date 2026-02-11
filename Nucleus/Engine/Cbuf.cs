@@ -26,7 +26,7 @@ public class CommandBuffer
 	}
 
 	readonly char[] Buffer = new char[ARGS_BUFFER_LENGTH];
-	readonly Queue<Command> _messages = new();
+	readonly Queue<Command> Commands = new();
 
 	int WritePos;
 	int ReadPos;
@@ -38,7 +38,7 @@ public class CommandBuffer
 	public int GetCapacity() => ARGS_BUFFER_LENGTH;
 	public int GetFreeSpace() => ARGS_BUFFER_LENGTH - UsedSpace;
 	public int GetUsedSpace() => UsedSpace;
-	public int GetMessageCount() => _messages.Count;
+	public int GetMessageCount() => Commands.Count;
 
 	public bool IsProcessingCommands() => ProcessingCommands;
 
@@ -54,8 +54,30 @@ public class CommandBuffer
 	public ref TokenizedCommand GetCommand() => ref CurrentCommand;
 
 
-	public bool InsertCommand(ReadOnlySpan<char> message) {
-		int len = message.Length;
+	public ReadOnlySpan<char> FirstTextSlice(ReadOnlySpan<char> message) {
+		int indexOf = message.IndexOf(';'); // command delimiter
+		if (indexOf == -1)
+			return message; // allow ; to be missing the first slice
+		return message[..indexOf];
+	}
+
+	public ReadOnlySpan<char> NextTextSlice(ReadOnlySpan<char> message) {
+		int indexOf = message.IndexOf(';'); // command delimiter
+		if (indexOf == -1)
+			return default; // no remaining delimiter
+		return message[..indexOf];
+	}
+
+	public bool AddText(ReadOnlySpan<char> text) {
+		for (ReadOnlySpan<char> slice = FirstTextSlice(text); !slice.IsEmpty; slice = NextTextSlice(slice))
+			if (!InsertCommand(slice))
+				return false;
+
+		return true;
+	}
+
+	public bool InsertCommand(ReadOnlySpan<char> command) {
+		int len = command.Length;
 
 		if (len > GetCapacity()) {
 			Logs.Warn("CommandBuffer.AddText: command too long, ignoring!");
@@ -71,21 +93,21 @@ public class CommandBuffer
 
 		if (len > 0) {
 			int firstChunk = Math.Min(len, GetCapacity() - WritePos);
-			message[..firstChunk].CopyTo(Buffer.AsSpan(WritePos, firstChunk));
+			command[..firstChunk].CopyTo(Buffer.AsSpan(WritePos, firstChunk));
 
 			if (firstChunk < len)
-				message[firstChunk..].CopyTo(Buffer.AsSpan(0, len - firstChunk));
+				command[firstChunk..].CopyTo(Buffer.AsSpan(0, len - firstChunk));
 
 			WritePos = (WritePos + len) % GetCapacity();
 			UsedSpace += len;
 		}
 
-		_messages.Enqueue(new Command { FirstArgS = start, BufferSize = len });
+		Commands.Enqueue(new Command { FirstArgS = start, BufferSize = len });
 		return true;
 	}
 
 	public bool DequeueNextCommand() {
-		if (!_messages.TryDequeue(out Command nextCommand))
+		if (!Commands.TryDequeue(out Command nextCommand))
 			return false;
 
 		Span<char> destination = stackalloc char[nextCommand.BufferSize];
@@ -124,7 +146,7 @@ public static class Cbuf
 
 	public static void AddText(ReadOnlySpan<char> text) {
 		lock (Buffer) {
-			if (!Buffer.InsertCommand(text))
+			if (!Buffer.AddText(text))
 				Logs.Warn("CBuf.AddText: buffer overflow!!!");
 		}
 	}

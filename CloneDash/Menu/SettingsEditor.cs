@@ -109,8 +109,10 @@ public class SettingsPanel : ScrollPanel
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = back.Bottom.Add<NumSlider>();
 		slider.Dock = Dock.Fill;
-		slider.MinimumValue = cv.GetMinimumValue();
-		slider.MaximumValue = cv.GetMaximumValue();
+
+		if (cv.GetMin(out double min)) slider.MinimumValue = min;
+		if (cv.GetMax(out double max)) slider.MaximumValue = max;
+		
 		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
 		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);

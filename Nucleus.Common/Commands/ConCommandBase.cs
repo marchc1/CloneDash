@@ -18,16 +18,20 @@ public abstract class ConCommandBase : IConCommandBase
 
 	public virtual bool IsCommand() => false;
 	public string Name = "";
-	public string HelpString  = "";
+	public string HelpString = "";
 	public FCvar Flags;
 
 	public ReadOnlySpan<char> GetName() => Name;
-	public ReadOnlySpan<char> GetHelpString() => HelpString;
+	public ReadOnlySpan<char> GetHelpText() => HelpString;
 	public FCvar GetFlags() => Flags;
 
+	static readonly object linkedListLock = new();
+
 	protected ConCommandBase() {
-		Next = Head;
-		Head = this;
+		lock (linkedListLock) {
+			Next = Head;
+			Head = this;
+		}
 	}
 	public ConCommandBase(string name, string helpString = "", FCvar flags = FCvar.None) : this() {
 		Name = name;
@@ -59,11 +63,15 @@ public abstract class ConCommandBase : IConCommandBase
 	}
 	[ConCommand(Help: "Find a convar/concommand by name")]
 	static void find(ConCommand cmd, in TokenizedCommand args) {
-	//	var found = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered) && (x.Name.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase) || x.HelpString.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase)));
-	//	int maxWidth = 0;
-	//	foreach (var cvar in found) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
-	//	foreach (var cvar in found.OrderBy(x => x.Name)) {
-	//		Logs.Print($"{cvar.Name.PadRight(maxWidth, ' ')}: {cvar.HelpString}");
-	//	}
+		//	var found = __all.Where(x => !x.IsFlagSet(ConsoleFlags.Unregistered) && (x.Name.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase) || x.HelpString.Contains(args.Raw, StringComparison.InvariantCultureIgnoreCase)));
+		//	int maxWidth = 0;
+		//	foreach (var cvar in found) if (cvar.Name.Length > maxWidth) maxWidth = cvar.Name.Length;
+		//	foreach (var cvar in found.OrderBy(x => x.Name)) {
+		//		Logs.Print($"{cvar.Name.PadRight(maxWidth, ' ')}: {cvar.HelpString}");
+		//	}
+	}
+
+	public virtual void Init() {
+		cvar.RegisterConCommand(this);
 	}
 }

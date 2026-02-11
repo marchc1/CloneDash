@@ -40,10 +40,12 @@ namespace Nucleus.Commands
 			else
 				executedDelegate = baseMethod.CreateDelegate<CommandExecutedDelegate>();
 
+			ConCommand store;
 			if (attr.AutoComplete == null)
-				cvar.RegisterConCommand(new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, null, attr.Description));
+				store = new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, null, attr.Description);
 			else
-				cvar.RegisterConCommand(new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<AutocompleteDelegate>(), attr.Description));
+				store = new ConCommand(attr.NameOverride ?? baseMethod.Name, executedDelegate, baseType.GetMethod(attr.AutoComplete)!.CreateDelegate<AutocompleteDelegate>(), attr.Description);
+			// The concommand created will not be GC'd after this; it's stored in the internal ConCommandBase linked list.
 		}
 	}
 }

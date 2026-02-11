@@ -1,2 +1,3 @@
 ﻿global using UtlSymId_t = ulong;
+global using static Nucleus.Common.CFormatting;
 global using static Nucleus.Common.VERY_TEMPORARY_GLOBALS_UNTIL_I_AM_ABLE_TO_SET_UP_A_DEPENDENCY_INJECTION_BASED_SYSTEM;

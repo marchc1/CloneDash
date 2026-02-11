@@ -23,6 +23,9 @@ public static class Cmd
 			return commandBase;
 		}
 
+		if (cv.IsCommand(in command))
+			return commandBase;
+
 		Logs.Print($"Unknown command \"{command[0]}\"");
 		return null;
 	}
