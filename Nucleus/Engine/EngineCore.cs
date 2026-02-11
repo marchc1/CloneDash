@@ -283,6 +283,9 @@ public static class EngineCore
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
+		// TEMPORARY
+		TemporaryInitializeDependencies();
+
 		Filesystem.Initialize(GameInfo.AppName);
 		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
@@ -349,6 +352,10 @@ public static class EngineCore
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
+	}
+
+	private static void TemporaryInitializeDependencies() {
+		cvar = new Cvar();
 	}
 
 	public static void MakeWindowCurrent(OSWindow window) {

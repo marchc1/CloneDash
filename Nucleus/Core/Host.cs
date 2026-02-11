@@ -15,8 +15,8 @@ namespace Nucleus.Core
 	{
 		public Dictionary<string, string> CVars { get; set; } = [];
 		public Dictionary<string, string> DataStore { get; set; } = [];
-
 	}
+
 	[Nucleus.MarkForStaticConstruction]
 	public static class Host
 	{
@@ -48,18 +48,29 @@ namespace Nucleus.Core
 			Initialized = true;
 		}
 
-		public static string? GetConfigCVar(string cvar) {
-			ReadConfig();
-			return Config.CVars.TryGetValue(cvar, out var value) ? value : null;
-		}
-		public static void SetConfigCVar(string cvar, ReadOnlySpan<char> val) {
-			ReadConfig();
-			if (val.IsEmpty) {
-				Config.CVars.Remove(cvar);
-				return;
-			}
 
-			Config.CVars[cvar] = new(val);
+		// TODO: STOP new(cvar)!!!!
+		public static bool HasConfigCVar(ReadOnlySpan<char> cvar) {
+			ReadConfig();
+			return Config.CVars.TryGetValue(new(cvar), out _);
+		}
+
+		public static string? GetConfigCVar(ReadOnlySpan<char> cvar) {
+			ReadConfig();
+			return Config.CVars.TryGetValue(new(cvar), out var value) ? value : null;
+		}
+
+		public static void SetConfigCVar(ReadOnlySpan<char> cvar, ReadOnlySpan<char> val) {
+			ReadConfig();
+			Config.CVars[new(cvar)] = new(val);
+			MarkDirty();
+		}
+
+		public static void UnsetConfigCVar(ReadOnlySpan<char> cvar) {
+			ReadConfig();
+
+			if (Config.CVars.Remove(new(cvar)))
+				MarkDirty();
 		}
 
 		/// <summary>

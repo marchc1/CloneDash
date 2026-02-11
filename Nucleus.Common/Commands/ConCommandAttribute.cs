@@ -28,7 +28,7 @@ namespace Nucleus.Commands
 				yield return new(method, attr);
 			}
 		}
-		internal static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
+		public static void RegisterAttribute(Type baseType, MethodInfo baseMethod, ConCommandAttribute attr) {
 			ConCommand.ExecutedDelegate executedDelegate;
 			var parameters = baseMethod.GetParameters();
 

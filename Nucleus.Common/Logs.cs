@@ -144,7 +144,7 @@ namespace Nucleus
 				MainThread.RunASAP(() => __writeLog(level, printColor, newlineAfter, items));
 		}
 
-		public static string Source { get; internal set; } = "nucleus";
+		public static string Source { get; set; } = "nucleus";
 
 		public static void Print(params object?[] items) => Log(LogLevel.Print, PrintColor, Newline, items);
 		[Conditional("DEBUG")]

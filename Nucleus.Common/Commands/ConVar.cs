@@ -1,5 +1,4 @@
 ﻿using Nucleus.Common.Commands;
-using Nucleus.Core;
 
 using System.Diagnostics;
 using System.Globalization;
@@ -59,11 +58,9 @@ namespace Nucleus.Commands
 
 			if (!init && (Flags & ConsoleFlags.Saved) == ConsoleFlags.Saved) {
 				if (!IsDefault)
-					Host.SetConfigCVar(Name, input);
+					cvar.SetConfigCVar(Name, input);
 				else
-					Host.SetConfigCVar(Name, null);
-
-				Host.MarkDirty();
+					cvar.UnsetConfigCVar(Name);
 			}
 		}
 		private void Clamp() {
@@ -120,7 +117,7 @@ namespace Nucleus.Commands
 				}
 			}
 
-			string? val = Host.GetConfigCVar(name);
+			ReadOnlySpan<char> val = cvar.GetConfigCVar(name);
 			if (val != null)
 				cmd.SetValue(val);
 
