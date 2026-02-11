@@ -12,6 +12,7 @@ using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.UI;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
@@ -34,8 +35,11 @@ namespace CloneDash;
 internal class Program
 {
 	static void Main(string[] args) {
+		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+		throw new Exception();
+
 		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
-			return;		
+			return;
 		EngineCore.GameInfo = new() {
 			AppName = "Clone Dash",
 			AppVersion = GameVersion.Current.ToString(),
@@ -48,6 +52,18 @@ internal class Program
 		EngineCore.StartMainThread();
 		RichPresenceSystem.Shutdown();
 	}
+
+	private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+		if (e.ExceptionObject is not Exception ex) return;
+		if (Debugger.IsAttached) return;
+
+		Platform.MessageBoxBuilder builder = new();
+		builder.WithTitle("Unhandled C# Exception");
+		builder.WithMessage(ex.ToString());
+		builder.WithButton("Close");
+		builder.Show();
+	}
+
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
 		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
 		{
@@ -130,44 +146,37 @@ internal class Program
 		// this would run pre-anything in EngineCore Frame()
 		NucleusSingleton.Redirect += NucleusSingleton_Redirect;
 
-        // Update checker
-        new Task(async () =>
-        {
-            var release = await UpdateChecker.CheckForNewReleaseAsync();
+		// Update checker
+		new Task(async () => {
+			var release = await UpdateChecker.CheckForNewReleaseAsync();
 
-            if (release != null)
-            {
-                MainThread.RunASAP(() => {
-                    try
-                    {
-                        var ui = EngineCore.Level?.UI;
-                        if (ui == null)
-                        {
-                            Logs.Warn("Update available but UI is not ready to show popup.");
-                            return;
-                        }
+			if (release != null) {
+				MainThread.RunASAP(() => {
+					try {
+						var ui = EngineCore.Level?.UI;
+						if (ui == null) {
+							Logs.Warn("Update available but UI is not ready to show popup.");
+							return;
+						}
 
-                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
-                        ui.DialogOKCancel("Update available", message, () => {
-                            try
-                            {
-                                var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
-                                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-                            }
-                            catch (Exception ex)
-                            {
-                                Logs.Warn($"Failed to open release URL: {ex.Message}");
-                            }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Logs.Warn($"Failed to display update popup: {ex.Message}");
-                    }
-                });
-            }
-        }).Start();
-    }
+						string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+						ui.DialogOKCancel("Update available", message, () => {
+							try {
+								var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
+								Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+							}
+							catch (Exception ex) {
+								Logs.Warn($"Failed to open release URL: {ex.Message}");
+							}
+						});
+					}
+					catch (Exception ex) {
+						Logs.Warn($"Failed to display update popup: {ex.Message}");
+					}
+				});
+			}
+		}).Start();
+	}
 
 	private static void NucleusSingleton_Redirect(string[] args) {
 		Logs.Info("Received interprocess redirect!");
@@ -210,7 +219,7 @@ internal class Program
 			if (!first) Interlude.End();
 		}
 
-		else if(first) {
+		else if (first) {
 			EngineCore.LoadLevel(new MainMenuLevel());
 		}
 	}
