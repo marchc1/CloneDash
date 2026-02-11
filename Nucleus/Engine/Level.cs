@@ -542,6 +542,10 @@ namespace Nucleus.Engine
 				CurtimeDelta = Curtime - LastCurtime;
 			}
 
+			// Temporary: we need to redo this entire frame loop system.
+			globals.CurTime = Curtime;
+			globals.CurTimeDelta = CurtimeDelta;
+
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			EvaluatePerfGraphVisibility();
@@ -614,6 +618,10 @@ namespace Nucleus.Engine
 					Rendertime = Curtime;
 					RendertimeDelta = Rendertime - LastRendertime;
 				}
+
+				// Temporary: we need to redo this entire frame loop system.
+				globals.CurTime = Rendertime;
+				globals.CurTimeDelta = RendertimeDelta;
 
 				System.Numerics.Vector3 offset = new(0, 0, 0);
 
