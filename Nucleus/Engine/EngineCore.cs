@@ -300,6 +300,7 @@ public static class EngineCore
 		}
 
 		Logs.Info($"    > Display server:     {Platform.DisplayServer}");
+		Logs.Info($"    > OpenGL version:     {Rlgl.GetVersion()}");
 
 		ConfigFlags add = (ConfigFlags)0;
 
