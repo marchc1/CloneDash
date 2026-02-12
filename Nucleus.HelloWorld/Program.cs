@@ -107,12 +107,12 @@ internal class Program
 		}
 	}
 	static void Main(string[] args) {
-		EngineCore.GameInfo = new() {
-			AppName = "Hello World",
-			AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
-		};
-		EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
-		EngineCore.LoadLevel(new HelloWorldLevel());
-		EngineCore.StartMainThread();
+		// EngineCore.GameInfo = new() {
+		// 	AppName = "Hello World",
+		// 	AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
+		// };
+		// EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
+		// EngineCore.LoadLevel(new HelloWorldLevel());
+		// EngineCore.StartMainThread();
 	}
 }
