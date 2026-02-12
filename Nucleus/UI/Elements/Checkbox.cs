@@ -1,5 +1,6 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -30,7 +31,7 @@ namespace Nucleus.UI
 			BackgroundColor = bck;
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 				Checked = !Checked;
 			OnCheckedChanged?.Invoke(this);
 		}
@@ -109,7 +110,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (Radio)
 				Checked.SetBackingObject(true);
 			else

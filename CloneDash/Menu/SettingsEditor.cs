@@ -294,8 +294,8 @@ public class InputActionKeybindingButtonsPanel : Panel
 		InvalidateLayout();
 	}
 
-	private void ButtonAddHandler(Element self, FrameState state, MouseButton button) {
-		if (button == MouseButton.Mouse1)
+	private void ButtonAddHandler(Element self, FrameState state, ButtonCode button) {
+		if (button == ButtonCode.Mouse1)
 			ButtonModal("Bind", AddSubmittedHandler);
 	}
 
@@ -339,11 +339,11 @@ public class InputActionKeybindingButtonsPanel : Panel
 	}
 
 
-	private void ButtonEditOrRemoveHandler(Element self, FrameState state, MouseButton button) {
-		if (button == MouseButton.Mouse2) {
+	private void ButtonEditOrRemoveHandler(Element self, FrameState state, ButtonCode button) {
+		if (button == ButtonCode.Mouse2) {
 			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}
-		else if (button == MouseButton.Mouse1) {
+		else if (button == ButtonCode.Mouse1) {
 			ButtonModal("Rebind", x => EditSubmittedHandler(self.GetTag<ButtonCode>("key"), x));
 		}
 	}

@@ -200,7 +200,7 @@ public class WeightsPanel : View
 		numSlider.SetValueNoUpdate(activeWeights.TryGetVertexWeight(vertex) * 100);
 	}
 
-	private void Btn_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void Btn_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
 			return;
 

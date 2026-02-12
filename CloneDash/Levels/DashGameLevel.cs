@@ -16,6 +16,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
@@ -30,7 +31,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using Color = Nucleus.Common.Types.Color;
-using MouseButton = Nucleus.Input.MouseButton;
+
 using Sound = Nucleus.Audio.Sound;
 
 namespace CloneDash.Game;
@@ -708,7 +709,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					play.TextSize = 24;
 					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 					play.ImageOrientation = ImageOrientation.Fit;
-					play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						PauseWindow.Remove();
 						startUnpause();
 					};
@@ -720,7 +721,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					restart.TextSize = 24;
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
-					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 
 						if (profilegameload.GetBool())
@@ -736,7 +737,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					settings.TextSize = 24;
 					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 					settings.ImageOrientation = ImageOrientation.Fit;
-					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						var panel = UI.Add<Panel>();
 						panel.DrawPanelBackground = false;
 						panel.Anchor = Anchor.Center;
@@ -767,7 +768,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					back2menu.TextSize = 24;
 					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 					back2menu.ImageOrientation = ImageOrientation.Fit;
-					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						EngineCore.LoadLevel(new MainMenuLevel());
 					};
 					back2menu.PaintOverride += Button_PaintOverride;

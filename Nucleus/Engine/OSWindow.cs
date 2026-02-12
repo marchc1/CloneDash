@@ -88,8 +88,8 @@ public class WindowMouseState(OSWindow window)
 	public Vector2F CurrentMousePosition;
 	public Vector2F PreviousMousePosition;
 
-	public byte[] CurrentMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
-	public byte[] PreviousMouseButtonState = new byte[MAX_MOUSE_BUTTONS];
+	public byte[] CurrentButtonCodeState = new byte[MAX_MOUSE_BUTTONS];
+	public byte[] PreviousButtonCodeState = new byte[MAX_MOUSE_BUTTONS];
 
 	public Vector2F CurrentMouseScroll;
 	public Vector2F PreviousMouseScroll;
@@ -104,7 +104,7 @@ public class WindowMouseState(OSWindow window)
 		PreviousMousePosition = CurrentMousePosition;
 
 		for (int i = 0; i < MAX_MOUSE_BUTTONS; i++)
-			PreviousMouseButtonState[i] = CurrentMouseButtonState[i];
+			PreviousButtonCodeState[i] = CurrentButtonCodeState[i];
 	}
 }
 
@@ -733,7 +733,7 @@ public unsafe class OSWindow : IValidatable
 					if (btn == 2) btn = 1;
 					else if (btn == 1) btn = 2;
 
-					Mouse.CurrentMouseButtonState[btn] = 1;
+					Mouse.CurrentButtonCodeState[btn] = 1;
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: {
@@ -741,7 +741,7 @@ public unsafe class OSWindow : IValidatable
 					if (btn == 2) btn = 1;
 					else if (btn == 1) btn = 2;
 
-					Mouse.CurrentMouseButtonState[btn] = 0;
+					Mouse.CurrentButtonCodeState[btn] = 0;
 				}
 				break;
 			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
@@ -1175,14 +1175,14 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	/// <param name="keyboardState"></param>
 	internal void FlushMouseStateInto(ref Input.MouseState ms) {
-		int m1 = (int)MouseButton.MOUSE_LEFT_BUTTON, m2 = (int)MouseButton.MOUSE_RIGHT_BUTTON, m3 = (int)MouseButton.MOUSE_BUTTON_MIDDLE, m4 = (int)MouseButton.MOUSE_BUTTON_FORWARD, m5 = (int)MouseButton.MOUSE_BUTTON_BACK;
+		int m1 = (int)ButtonCode.MouseLeft, m2 = (int)ButtonCode.MouseRight, m3 = (int)ButtonCode.MouseMiddle, m4 = (int)ButtonCode.Mouse4, m5 = (int)ButtonCode.Mouse5;
 
 		ms.MousePos = Mouse.CurrentMousePosition;
 		ms.MouseDelta = Mouse.CurrentMousePosition - Mouse.PreviousMousePosition;
 		ms.MouseScroll = Mouse.CurrentMouseScroll;
 
-		int pm1 = Mouse.PreviousMouseButtonState[m1], pm2 = Mouse.PreviousMouseButtonState[m2], pm3 = Mouse.PreviousMouseButtonState[m3], pm4 = Mouse.PreviousMouseButtonState[m4], pm5 = Mouse.PreviousMouseButtonState[m5];
-		int cm1 = Mouse.CurrentMouseButtonState[m1], cm2 = Mouse.CurrentMouseButtonState[m2], cm3 = Mouse.CurrentMouseButtonState[m3], cm4 = Mouse.CurrentMouseButtonState[m4], cm5 = Mouse.CurrentMouseButtonState[m5];
+		int pm1 = Mouse.PreviousButtonCodeState[m1], pm2 = Mouse.PreviousButtonCodeState[m2], pm3 = Mouse.PreviousButtonCodeState[m3], pm4 = Mouse.PreviousButtonCodeState[m4], pm5 = Mouse.PreviousButtonCodeState[m5];
+		int cm1 = Mouse.CurrentButtonCodeState[m1], cm2 = Mouse.CurrentButtonCodeState[m2], cm3 = Mouse.CurrentButtonCodeState[m3], cm4 = Mouse.CurrentButtonCodeState[m4], cm5 = Mouse.CurrentButtonCodeState[m5];
 
 		ms.Mouse1Clicked = pm1 == 0 && cm1 == 1;
 		ms.Mouse2Clicked = pm2 == 0 && cm2 == 1;

@@ -3,7 +3,7 @@ using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -156,12 +156,12 @@ namespace Nucleus.ModelEditor
 			Dock = Dock.Top;
 		}
 
-		private void Keyframe_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		private void Keyframe_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
 			if (
-				button == MouseButton.Mouse1 
+				button == ButtonCode.Mouse1 
 				&& ModelEditor.Active.CanInsertKeyframes() 
 				&& editorItem.CanKeyframe() 
 				&& editorItem.GetKeyframeParameters(out var target, out var prop, out var index)
@@ -171,7 +171,7 @@ namespace Nucleus.ModelEditor
 				Expander_MouseReleaseEvent(self, state, button);
 		}
 
-		private void Visibility_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		private void Visibility_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
@@ -188,8 +188,8 @@ namespace Nucleus.ModelEditor
 			Expanded = state;
 		}
 
-		private void Expander_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			if (button == MouseButton.Mouse2)
+		private void Expander_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+			if (button == ButtonCode.Mouse2)
 				__setExpandedRecursive(!Expanded);
 			else
 				Expanded = !Expanded;

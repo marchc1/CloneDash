@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.UI
 {
@@ -184,7 +184,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (!ReadOnly) {
 				DemandKeyboardFocus();
 				var textSize = Graphics2D.GetTextSize(Text, Font, TextSize);

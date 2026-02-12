@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using Nucleus.Common.Input;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -41,7 +42,7 @@ public class SongSearchDialog : Window
 		Center();
 	}
 
-	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) => Submit();
+	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
 		Close();

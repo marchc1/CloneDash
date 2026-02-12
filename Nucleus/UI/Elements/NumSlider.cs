@@ -105,12 +105,12 @@ namespace Nucleus.UI
 
 			// TODO: This is a horrible hack
 			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(ButtonCode.KeyEnter)) {
-				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
+				MouseReleaseOccur(frameState, ButtonCode.MouseLeft, true);
 			}
 		}
 		string? workType = null;
 		int caret = 0;
-		public override void MouseClick(FrameState state, Input.MouseButton button) {
+		public override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus();
 			dragStart = state.Mouse.MousePos;
 		}
@@ -166,7 +166,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (!didDrag)
 				base.MouseRelease(self, state, button);
 			didDrag = false;

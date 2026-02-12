@@ -18,7 +18,7 @@ using System.Collections.Concurrent;
 
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace CloneDash.Menu.Searching;
 
@@ -529,11 +529,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		DemandKeyboardFocus();
 	}
 
-	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		TriggerUserInitializeSearch();
 	}
 
-	public override void MouseClick(FrameState state, MouseButton button) {
+	public override void MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
 		DemandKeyboardFocus();
 	}

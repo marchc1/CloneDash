@@ -3,6 +3,7 @@ using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -183,7 +184,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetCharacter(currentCharacter);
 	}
 
-	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUniqueID());

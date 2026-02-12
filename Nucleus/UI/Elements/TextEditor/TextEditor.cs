@@ -14,7 +14,6 @@ using Raylib_cs;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {
@@ -982,7 +981,7 @@ namespace Nucleus.UI
 			self.ConsumeScrollEvent();
 		}
 
-		private void Editor_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+		private void Editor_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 
 		}
 
@@ -990,9 +989,9 @@ namespace Nucleus.UI
 		double LastPress;
 		bool doubleClicked = false;
 		bool tripleClicked = false;
-		private void Editor_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		private void Editor_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			CloseAutocomplete();
-			if (button == MouseButton.Mouse1) {
+			if (button == ButtonCode.Mouse1) {
 				self.DemandKeyboardFocus();
 
 				Vector2F xy = self.CursorPos();

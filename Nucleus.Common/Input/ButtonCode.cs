@@ -155,8 +155,11 @@ public enum ButtonCode : short
 	MouseFirst = KeyLast + 1,
 
 	MouseLeft = MouseFirst,
+	Mouse1 = MouseLeft,
 	MouseRight,
+	Mouse2 = MouseRight,
 	MouseMiddle,
+	Mouse3 = MouseMiddle,
 	Mouse4,
 	Mouse5,
 	MouseWheelUp,

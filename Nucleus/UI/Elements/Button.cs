@@ -29,11 +29,11 @@ namespace Nucleus.UI
 			}
 
 			if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter)
-				MouseReleaseOccur(Level.FrameState, Input.MouseButton.MouseLeft, true);
+				MouseReleaseOccur(Level.FrameState, ButtonCode.MouseLeft, true);
 
 		}
 
-		public override void MouseClick(FrameState state, Input.MouseButton button) {
+		public override void MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
 			Level.Sounds.PlaySound(Level.Sounds.LoadSoundFromFile("click.wav"));
 		}

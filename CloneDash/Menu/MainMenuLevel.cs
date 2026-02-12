@@ -22,8 +22,6 @@ using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
-using MouseButton = Nucleus.Input.MouseButton;
-
 namespace CloneDash.Game;
 
 
@@ -488,7 +486,7 @@ public class MainMenuLevel : Level
 			}
 		};
 
-		play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
+		play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
 			onClick(mapID, state);
 		};
 

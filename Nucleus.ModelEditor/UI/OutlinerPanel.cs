@@ -77,7 +77,7 @@ namespace Nucleus.ModelEditor
 			RootNodes.Clear();
 		}
 
-		public delegate void OnNodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn);
+		public delegate void OnNodeClicked(OutlinerPanel panel, OutlinerNode node, ButtonCode btn);
 		public event OnNodeClicked? NodeClicked;
 
 		private void RegisterAttachmentNode(OutlinerNode parentNode, EditorAttachment attachment) {

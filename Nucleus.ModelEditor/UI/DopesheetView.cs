@@ -120,7 +120,7 @@ public class DopesheetView : BaseTimelineView
 	double frameStart;
 	double frameDrag;
 
-	private void KeyframeBtn_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+	private void KeyframeBtn_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 		isKeyframeSelected = false;
 		isDraggingKeyframe = false;
 		frameStart = 0;
@@ -146,7 +146,7 @@ public class DopesheetView : BaseTimelineView
 			selected?.SetTime(frameNow / ModelEditor.Active.File.Timeline.GetReferenceFPS());
 		}
 	}
-	private void KeyframeBtn_MouseReleaseEvent(Element self, FrameState state, MouseButton button, bool lost) {
+	private void KeyframeBtn_MouseReleaseEvent(Element self, FrameState state, ButtonCode button, bool lost) {
 		if (!isDraggingKeyframe)
 			ModelEditor.Active.File.Timeline.SetFrame(frameStart);
 
@@ -242,10 +242,10 @@ public class DopesheetView : BaseTimelineView
 	}
 
 	Vector2F dragStart;
-	private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+	private void KeyframeInfoPanel_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 		dragStart = state.Mouse.MousePos;
 
-		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
+		ResetDragDirection(button == ButtonCode.Mouse2, Vector2F.Zero);
 		ModelEditor.Active.UnselectAllKeyframes();
 	}
 
@@ -254,10 +254,10 @@ public class DopesheetView : BaseTimelineView
 		EngineCore.Window.SetMousePosition(dragStart);
 	}
 
-	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void KeyframeInfoPanel_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		ResetDragDirection(false, Vector2F.Zero);
 		DraggingFrame = false;
-		if (button == MouseButton.Mouse1)
+		if (button == ButtonCode.Mouse1)
 			SetCurFrame();
 	}
 }

@@ -9,6 +9,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -20,7 +21,7 @@ using Nucleus.UI;
 
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace CloneDash.Menu;
 
@@ -167,7 +168,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		base.OnThink(frameState);
 		Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
 	}
-	private void Back_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void Back_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		DestroyNavigationMenu();
 	}
 

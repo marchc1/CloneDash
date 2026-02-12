@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Types;
 
@@ -211,7 +212,7 @@ namespace Nucleus.UI.Elements
 			}
 		}
 
-		private void UI_OnElementClicked(Element el, FrameState fs, Input.MouseButton mb) {
+		private void UI_OnElementClicked(Element el, FrameState fs, ButtonCode mb) {
 			if (this.Lifetime > 0.2f && (el == null || !el.IsIndirectChildOf(this))) {
 				this.Close();
 				UI.OnElementClicked -= UI_OnElementClicked;

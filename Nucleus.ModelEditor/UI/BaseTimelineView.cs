@@ -5,7 +5,7 @@ using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
 using System.Diagnostics;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor.UI;
 
@@ -254,7 +254,7 @@ public abstract class BaseTimelineView : View
 		panel.Visible = false;
 	}
 
-	private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void TimeInfoPanel_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		ResetDragDirection(false, Vector2F.Zero);
 		DraggingFrame = false;
 	}
@@ -323,9 +323,9 @@ public abstract class BaseTimelineView : View
 			SetCurFrame();
 	}
 
-	private void TimeInfoPanel_MouseClickEvent(Element self, FrameState state, MouseButton button) {
-		ResetDragDirection(button == MouseButton.Mouse2, Vector2F.Zero);
-		DraggingFrame = button == MouseButton.Mouse1;
+	private void TimeInfoPanel_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
+		ResetDragDirection(button == ButtonCode.Mouse2, Vector2F.Zero);
+		DraggingFrame = button == ButtonCode.Mouse1;
 
 		if (DraggingFrame)
 			SetCurFrame();

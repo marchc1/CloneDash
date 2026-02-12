@@ -80,7 +80,7 @@ internal class Program
 			}
 		}
 
-		private void B_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void B_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 
 		}
 

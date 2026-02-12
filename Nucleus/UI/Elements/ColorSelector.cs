@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -26,7 +27,7 @@ namespace Nucleus.UI.Elements
 			base.Initialize();
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (IValidatable.IsValid(CurrentDialog))
 				return;
 
@@ -131,7 +132,7 @@ namespace Nucleus.UI.Elements
 			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
 
 			this.Origin = Anchor.BottomCenter;
-			this.UI.OnElementClicked += delegate (Element el, FrameState fs, Input.MouseButton mb) {
+			this.UI.OnElementClicked += delegate (Element el, FrameState fs, ButtonCode mb) {
 				if (!el.IsIndirectChildOf(this)) {
 					this.Remove();
 				}
@@ -144,7 +145,7 @@ namespace Nucleus.UI.Elements
 			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
 		}
 
-		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 			DragMode = ColorSelectorDragMode.None;
 		}
 
@@ -238,7 +239,7 @@ namespace Nucleus.UI.Elements
 			Value = result.Value;
 		}
 
-		private void ColorWheel_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void ColorWheel_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			DragMode = DetermineDragMode();
 			switch (DragMode) {
 				case ColorSelectorDragMode.Hue:

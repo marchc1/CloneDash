@@ -1,4 +1,5 @@
-﻿using Nucleus.Engine;
+﻿using Nucleus.Common.Input;
+using Nucleus.Engine;
 using Nucleus.Input;
 using Nucleus.UI;
 
@@ -39,8 +40,8 @@ namespace Nucleus.Types
 		public KeyboardState Keyboard;
 		public DragNDropState DragNDrop;
 
-        public bool MouseClicked(MouseButton button) => Mouse.Clicked(button);
-        public bool MouseHeld(MouseButton button) => Mouse.Held(button);
-        public bool MouseReleased(MouseButton button) => Mouse.Released(button);
+        public bool MouseClicked(ButtonCode button) => Mouse.Clicked(button);
+        public bool MouseHeld(ButtonCode button) => Mouse.Held(button);
+        public bool MouseReleased(ButtonCode button) => Mouse.Released(button);
     }
 }

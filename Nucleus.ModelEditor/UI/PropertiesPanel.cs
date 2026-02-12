@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -251,7 +251,7 @@ namespace Nucleus.ModelEditor
 				OnClicked = clicked;
 			}
 		}
-		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, MouseButton>? onClicked = null) {
+		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, ButtonCode>? onClicked = null) {
 			var newBtn = buttons.Add<Button>();
 			newBtn.Text = text;
 			newBtn.AutoSize = true;

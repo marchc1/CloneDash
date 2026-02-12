@@ -1,4 +1,5 @@
 ﻿using Nucleus;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
@@ -83,8 +84,8 @@ namespace CloneDash.Game
 			public event Mouse? DragUpdate;
 			public event Mouse? DragEnd;
 
-			public override void MouseClick(FrameState state, Nucleus.Input.MouseButton button) {
-				if (button != MouseButton.MouseLeft) return;
+			public override void MouseClick(FrameState state, ButtonCode button) {
+				if (button != ButtonCode.MouseLeft) return;
 				base.MouseClick(state, button);
 				DragStart?.Invoke();
 			}
@@ -95,8 +96,8 @@ namespace CloneDash.Game
 				DragUpdate?.Invoke();
 			}
 
-			public override void MouseReleasedOrLost(Element self, FrameState state, Nucleus.Input.MouseButton button) {
-				if (button != MouseButton.MouseLeft) return;
+			public override void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) {
+				if (button != ButtonCode.MouseLeft) return;
 				base.MouseRelease(self, state, button);
 				DragEnd?.Invoke();
 			}

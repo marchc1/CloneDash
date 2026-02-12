@@ -20,7 +20,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -904,7 +904,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn) {
+		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, ButtonCode btn) {
 			var o = node.GetRepresentingObject();
 			if (o == null) return;
 			SelectObject(o);

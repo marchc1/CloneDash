@@ -248,7 +248,7 @@ public class DragRenderer : LogicalEntity {
 	}
 
 	public override void Think(FrameState frameState) {
-		if (!frameState.MouseHeld(MouseButton.Mouse1))
+		if (!frameState.MouseHeld(ButtonCode.Mouse1))
 			this.Remove();
 	}
 }

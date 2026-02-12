@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using Nucleus.Common.Input;
+using Nucleus.Input;
 using Nucleus.Types;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace Nucleus.UI.Elements
 			return selector;
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			Menu m = UI.Menu();
 
 			foreach (var i in Items) {

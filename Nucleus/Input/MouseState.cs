@@ -1,4 +1,5 @@
-﻿using Nucleus.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Types;
 using Raylib_cs;
 using System.Diagnostics;
 
@@ -31,37 +32,37 @@ namespace Nucleus.Input
 		public bool MouseHeld => Mouse1Held || Mouse2Held || Mouse3Held || Mouse4Held || Mouse5Held;
 		public bool MouseReleased => Mouse1Released || Mouse2Released || Mouse3Released || Mouse4Released || Mouse5Released;
 
-		public bool Clicked(MouseButton button) {
-			switch (button.Button) {
-				case 1: return Mouse1Clicked;
-				case 2: return Mouse2Clicked;
-				case 3: return Mouse3Clicked;
-				case 4: return Mouse4Clicked;
-				case 5: return Mouse5Clicked;
+		public bool Clicked(ButtonCode button) {
+			switch (button) {
+				case ButtonCode.Mouse1: return Mouse1Clicked;
+				case ButtonCode.Mouse2: return Mouse2Clicked;
+				case ButtonCode.Mouse3: return Mouse3Clicked;
+				case ButtonCode.Mouse4: return Mouse4Clicked;
+				case ButtonCode.Mouse5: return Mouse5Clicked;
 			}
-			throw new NotImplementedException("No Clicked handler for MouseButton " + button.Button);
+			throw new NotImplementedException("No Clicked handler for ButtonCode " + button);
 		}
 
-		public bool Held(MouseButton button) {
-			switch (button.Button) {
-				case 1: return Mouse1Held;
-				case 2: return Mouse2Held;
-				case 3: return Mouse3Held;
-				case 4: return Mouse4Held;
-				case 5: return Mouse5Held;
+		public bool Held(ButtonCode button) {
+			switch (button) {
+				case ButtonCode.Mouse1: return Mouse1Held;
+				case ButtonCode.Mouse2: return Mouse2Held;
+				case ButtonCode.Mouse3: return Mouse3Held;
+				case ButtonCode.Mouse4: return Mouse4Held;
+				case ButtonCode.Mouse5: return Mouse5Held;
 			}
-			throw new NotImplementedException("No Held handler for MouseButton " + button.Button);
+			throw new NotImplementedException("No Held handler for ButtonCode " + button);
 		}
 
-		public bool Released(MouseButton button) {
-			switch (button.Button) {
-				case 1: return Mouse1Released;
-				case 2: return Mouse2Released;
-				case 3: return Mouse3Released;
-				case 4: return Mouse4Released;
-				case 5: return Mouse5Released;
+		public bool Released(ButtonCode button) {
+			switch (button) {
+				case ButtonCode.Mouse1: return Mouse1Released;
+				case ButtonCode.Mouse2: return Mouse2Released;
+				case ButtonCode.Mouse3: return Mouse3Released;
+				case ButtonCode.Mouse4: return Mouse4Released;
+				case ButtonCode.Mouse5: return Mouse5Released;
 			}
-			throw new NotImplementedException("No Released handler for MouseButton " + button.Button);
+			throw new NotImplementedException("No Released handler for ButtonCode " + button);
 		}
 
 		/// <summary>

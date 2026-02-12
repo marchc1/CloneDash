@@ -2,6 +2,7 @@
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Models.Runtime;
@@ -102,7 +103,7 @@ public class CharacterPanel : Panel
 		LinkToConVar = false; // Force removal from list
 	}
 
-	public override void MouseClick(FrameState state, MouseButton button) {
+	public override void MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
 	}
 	public void PlayRandomExpression() {

@@ -26,10 +26,10 @@ public record class KeyBinding
 }
 public record class MouseBinding
 {
-	public int Button;
+	public ButtonCode Button;
 	public InputAction Action;
 
-	public MouseBinding(int btn, InputAction action) {
+	public MouseBinding(ButtonCode btn, InputAction action) {
 		Button = btn;
 		Action = action;
 	}
@@ -60,8 +60,8 @@ public class InputDataStore
 		store.KeyboardActions.Add(new(ButtonCode.KeySpace, InputAction.FeverStart));
 		store.KeyboardActions.Add(new(ButtonCode.KeyEscape, InputAction.PauseGame));
 
-		store.MouseActions.Add(new(MouseButton.MouseRight.Button, InputAction.AirAttack));
-		store.MouseActions.Add(new(MouseButton.MouseLeft.Button, InputAction.GroundAttack));
+		store.MouseActions.Add(new(ButtonCode.MouseRight, InputAction.AirAttack));
+		store.MouseActions.Add(new(ButtonCode.MouseLeft, InputAction.GroundAttack));
 		store.ManualFever = false;
 		return store;
 	}
@@ -79,7 +79,7 @@ public class InputDataStore
 		action = default;
 		return false;
 	}
-	public bool IsMouseButtonBound(int button, out InputAction action) {
+	public bool IsButtonCodeBound(ButtonCode button, out InputAction action) {
 		foreach (var v in MouseActions)
 			if (v.Button == button) {
 				action = v.Action;
@@ -111,7 +111,7 @@ public static class InputSettings
 				foreach (var key in oldData.KeyboardActions)
 					data.KeyboardActions.Add(new((ButtonCode)key.Key, key.Value));
 				foreach (var btn in oldData.MouseActions)
-					data.MouseActions.Add(new(btn.Key, btn.Value));
+					data.MouseActions.Add(new((ButtonCode)btn.Key, btn.Value));
 
 				data.ManualFever = oldData.ManualFever;
 			}
@@ -135,8 +135,8 @@ public static class InputSettings
 		return false;
 	}
 
-	public static bool IsMouseButtonBound(MouseButton btn, out InputAction action) {
-		if (data.IsMouseButtonBound(btn.Button, out action))
+	public static bool IsButtonCodeBound(ButtonCode btn, out InputAction action) {
+		if (data.IsButtonCodeBound(btn, out action))
 			return true;
 		return false;
 	}
@@ -147,10 +147,10 @@ public static class InputSettings
 				yield return key.Key;
 	}
 
-	public static IEnumerable<MouseButton> GetMouseButtonsOfAction(InputAction action) {
+	public static IEnumerable<ButtonCode> GetButtonCodesOfAction(InputAction action) {
 		foreach (var btn in data.MouseActions)
 			if (btn.Action == action)
-				yield return new(btn.Button);
+				yield return btn.Button;
 	}
 
 	public static void BindKey(ButtonCode key, InputAction action) {
@@ -188,20 +188,20 @@ public static class InputSettings
 		return false;
 	}
 
-	public static void BindMouseButton(MouseButton btn, InputAction action) {
-		if (data.IsMouseButtonBound(btn.Button, out _))
-			UnbindMouseButton(btn);
+	public static void BindMouseCode(ButtonCode btn, InputAction action) {
+		if (data.IsButtonCodeBound(btn, out _))
+			UnbindMouseCode(btn);
 
-		data.MouseActions.Add(new(btn.Button, action));
+		data.MouseActions.Add(new(btn, action));
 		Store();
 	}
 
-	public static bool RebindMouseButton(MouseButton btnReplace, MouseButton btnWith, InputAction action) {
-		UnbindMouseButton(btnWith);
+	public static bool RebindMouseCode(ButtonCode btnReplace, ButtonCode btnWith, InputAction action) {
+		UnbindMouseCode(btnWith);
 
 		for (int i = 0; i < data.MouseActions.Count; i++) {
-			if (data.MouseActions[i].Button == btnReplace.Button) {
-				data.MouseActions[i].Button = btnWith.Button;
+			if (data.MouseActions[i].Button == btnReplace) {
+				data.MouseActions[i].Button = btnWith;
 				data.MouseActions[i].Action = action;
 				Store();
 				return true;
@@ -211,9 +211,9 @@ public static class InputSettings
 		return false;
 	}
 
-	public static bool UnbindMouseButton(MouseButton btn) {
+	public static bool UnbindMouseCode(ButtonCode btn) {
 		for (int i = 0; i < data.MouseActions.Count; i++) {
-			if (data.MouseActions[i].Button == btn.Button) {
+			if (data.MouseActions[i].Button == btn) {
 				data.MouseActions.RemoveAt(i);
 				Store();
 				return true;
