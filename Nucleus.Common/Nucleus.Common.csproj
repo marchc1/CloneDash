@@ -20,6 +20,10 @@
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.1205.0" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <Folder Include="Graphics\" />
+	</ItemGroup>
 
 	<PropertyGroup>
 		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
