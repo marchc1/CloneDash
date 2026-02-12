@@ -281,14 +281,15 @@ public static class EngineCore
 			Window.Fullscreen = self.GetBool();
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine",  string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
 		// TEMPORARY
 		TemporaryInitializeDependencies();
+		windowName ??= startupInfo.AppName;
 
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
-		Filesystem.Initialize(GameInfo.AppName);
+		Filesystem.Initialize(startupInfo.AppName);
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -317,7 +318,7 @@ public static class EngineCore
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
-		OS.InitSDL(ref GameInfo);
+		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 		if (fullscreen.GetBool()) {
@@ -538,9 +539,6 @@ public static class EngineCore
 
 		return new(BorderlessScreenPadding);
 	}
-
-	public static StartupInfo GameInfo;
-
 	public static double TargetFrameTime { get; set; }
 	public static double CurrentAppTime { get; set; }
 	public static double PreviousAppTime { get; set; }

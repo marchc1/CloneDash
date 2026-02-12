@@ -914,11 +914,11 @@ namespace Nucleus.ModelEditor
 	internal class Program
 	{
 		static void Main(string[] args) {
-			EngineCore.GameInfo = new() {
-				AppName = "Nucleus - Model v4 Editor",
-				AppIdentifier = "com.github.marchc1.NucleusModelEditor"
-			};
-			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", gameThreadInit: GameMain);
+			// EngineCore.GameInfo = new() {
+			// 	AppName = "Nucleus - Model v4 Editor",
+			// 	AppIdentifier = "com.github.marchc1.NucleusModelEditor"
+			// };
+			EngineCore.Initialize(1800, 980, new() /* restructure-tests fixme */, gameThreadInit: GameMain);
 			EngineCore.StartMainThread();
 		}
 		static void GameMain() {

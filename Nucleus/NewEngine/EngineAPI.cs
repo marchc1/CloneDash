@@ -24,7 +24,7 @@ public class EngineAPI(IServiceProvider services) : IEngineAPI, IDisposable
 
 	public IEngineAPI.Result Run() {
 		// TODO: Get rid of EngineCore eventually, this is just bootstrapping from here for the sake of testing in slices...
-		EngineCore.Initialize(1600, 900, StartupInfo.AppName, gameThreadInit: BootstrapGameThreadTemp);
+		EngineCore.Initialize(1600, 900, in StartupInfo, gameThreadInit: BootstrapGameThreadTemp);
 		EngineCore.StartMainThread();
 		return IEngineAPI.Result.RunOK;
 	}

@@ -93,6 +93,7 @@ public static class Cmd
 			goto readText;
 		}
 
+		Logs.Print($"exec: executing {file}...");
 		using TextReader reader = new StringReader(text);
 		while (true) {
 			var line = reader.ReadLine();
