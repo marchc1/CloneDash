@@ -23,7 +23,6 @@
 	
 	<ItemGroup>
 	  <Folder Include="Audio\" />
-	  <Folder Include="Graphics\" />
 	</ItemGroup>
 
 	<PropertyGroup>
