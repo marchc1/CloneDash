@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Engine;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -9,6 +10,7 @@ using Nucleus.Input;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
+using Nucleus.NewEngine;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -725,10 +727,10 @@ namespace Nucleus.ModelEditor
 
 		private string createDefaultFolder() {
 			var modelsrc = filesystem.GetSearchPathID("modelsrc");
-			if (modelsrc.Count == 0)
+			if (!modelsrc.Any())
 				filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
 
-			return (modelsrc[0] as DiskSearchPath).RootDirectory;
+			return (modelsrc.First() as DiskSearchPath)!.RootDirectory;
 		}
 
 		private void titleUpdate() 
@@ -911,17 +913,29 @@ namespace Nucleus.ModelEditor
 		}
 	}
 
-	internal class Program
+	internal class Program : IGameDLL
 	{
 		static void Main(string[] args) {
-			// EngineCore.GameInfo = new() {
-			// 	AppName = "Nucleus - Model v4 Editor",
-			// 	AppIdentifier = "com.github.marchc1.NucleusModelEditor"
-			// };
-			EngineCore.Initialize(1800, 980, new() /* restructure-tests fixme */, gameThreadInit: GameMain);
-			EngineCore.StartMainThread();
+			CommandLineParser commandLine = new();
+			commandLine.CreateCmdLine(Environment.CommandLine);
+
+			IEngineAPI engineAPI = new EngineBuilder(commandLine)
+				.WithComponent<IGameDLL, Program>()
+				.WithStandardComponents()
+				.Build();
+
+			engineAPI.SetStartupInfo(new() {
+				AppName = "Nucleus - Model v4 Editor",
+				AppIdentifier = "com.github.marchc1.NucleusModelEditor",
+				AppCreator = "March (github/marchc1)",
+				AppURL = "https://github.com/marchc1/CloneDash",
+				AppType = Nucleus.Types.AppType.Application
+			});
+
+			using ServiceLocatorScope locatorScope = new(engineAPI);
+			engineAPI.Run();
 		}
-		static void GameMain() {
+		public void Init() {
 			EngineCore.LoadLevel(new ModelEditor());
 		}
 	}

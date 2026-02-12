@@ -18,9 +18,23 @@ using static Nucleus.UI.Elements.ColorSelector;
 
 namespace Nucleus.UI.Elements
 {
+	public delegate void ColorChangedFn(ColorSelector selector, ref Color color);
 	public class ColorSelector : Element
 	{
-		public Color SelectedColor { get; set; } = Color.White;
+		public event ColorChangedFn? OnColorChanged;
+		public Color SelectedColor {
+			get {
+				return field;
+			}
+			set {
+				if (field == value)
+					return;
+
+				field = value;
+				OnColorChanged?.Invoke(this, ref field);
+			}
+		} = Color.White;
+
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
 		protected override void Initialize() {
@@ -33,8 +47,7 @@ namespace Nucleus.UI.Elements
 
 			CurrentDialog = UI.Add<ColorSelectorDialog>();
 			CurrentDialog.Position = state.Mouse.MousePos;
-			CurrentDialog.SelectedColor = this.SelectedColor;
-			CurrentDialog.Setup();
+			CurrentDialog.Setup(this);
 			CurrentDialog.FitToParent(8);
 		}
 		public override void Paint(float width, float height) {
@@ -57,7 +70,8 @@ namespace Nucleus.UI.Elements
 
 	public class ColorSelectorDialog : Panel
 	{
-		public Color SelectedColor { get; set; }
+		public ColorSelector Selector = null!;
+		public Color SelectedColor { get => Selector.SelectedColor; set => Selector.SelectedColor = value; }
 
 		Panel ColorWheel;
 
@@ -103,7 +117,9 @@ namespace Nucleus.UI.Elements
 				_workingVal = value;
 			}
 		}
-		public void Setup() {
+		public void Setup(ColorSelector parent) {
+			Selector = parent;
+
 			var hsv = SelectedColor.ToHSV();
 
 			_workingHue = hsv.X;

@@ -126,7 +126,7 @@ namespace Nucleus.ModelEditor
 
 			checkbox.Dock = Dock.Left;
 			checkbox.DockMargin = RectangleF.TLRB(4, 6, 7, 4);
-			checkbox.Checked.SetBackingObject(@checked);
+			checkbox.Checked = (@checked);
 
 			label.Dock = Dock.Fill;
 			label.Text = text;
@@ -153,7 +153,7 @@ namespace Nucleus.ModelEditor
 
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
 			searchBtn.MouseReleaseEvent += (_, _, _) => {
-				var result = Platform.SelectFolderDialog("Select Images Folder", (filesystem.GetSearchPathID("game")[0] as DiskSearchPath).RootDirectory);
+				var result = Platform.SelectFolderDialog("Select Images Folder", (filesystem.GetSearchPathID("game").First() as DiskSearchPath)!.RootDirectory);
 				if (!result.Cancelled)
 					chosenPath(path, result.Result);
 			};
@@ -177,7 +177,7 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Left;
 			selector.Size = new(96);
-			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
+			selector.SelectedColor = (currentColor ?? Color.White);
 			selector.BorderSize = 0;
 
 			return selector;
@@ -204,10 +204,10 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Fill;
 			selector.Size = new(64);
-			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
+			selector.SelectedColor = (currentColor ?? Color.White);
 			selector.BorderSize = 0;
-			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
-			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
+			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = (slot.GetColor());
+			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = (slot.GetColor());
 
 
 			return selector;

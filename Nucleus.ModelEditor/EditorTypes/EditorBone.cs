@@ -174,7 +174,8 @@ namespace Nucleus.ModelEditor
 
 			var boneColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 			var boneColor = PropertiesPanel.AddColorSelector(boneColorRow, Color);
-			boneColor.SelectedColor = Core.DataBinder<Color>.New((c) => Color, (oc, nc) => { Color = nc; return true; });
+			boneColor.SelectedColor = Color;
+			boneColor.OnColorChanged += (_, ref nc) => Color = nc;
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {

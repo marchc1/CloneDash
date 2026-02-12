@@ -95,6 +95,8 @@ public partial struct Color
     }
 
     static byte ftbc(float val_0_to_255) => (byte)(int)Math.Clamp(val_0_to_255, 0, 255);
+    public static bool operator ==(Color a, Color b) => MemoryMarshal.Cast<Color, int>(new ReadOnlySpan<Color>(in a))[0] == MemoryMarshal.Cast<Color, int>(new ReadOnlySpan<Color>(in b))[0];
+    public static bool operator !=(Color a, Color b) => MemoryMarshal.Cast<Color, int>(new ReadOnlySpan<Color>(in a))[0] != MemoryMarshal.Cast<Color, int>(new ReadOnlySpan<Color>(in b))[0];
 	public static Color operator +(Color from, Color by) => new Color(from.R + by.R, from.G + by.G, from.B + by.B, from.A + by.A);
 	public static Color operator -(Color from, Color by) => new Color(from.R - by.R, from.G - by.G, from.B - by.B, from.A - by.A);
 	public static Color operator *(Color from, float by) => new Color(ftbc(from.R * by), ftbc(from.G * by), ftbc(from.B * by), ftbc(from.A * by));
