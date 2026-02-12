@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Types;
@@ -17,7 +18,7 @@ namespace Nucleus.Engine;
 
 public struct WindowKey
 {
-	public KeyboardKey Key;
+	public ButtonCode Key;
 	public double Timestamp;
 }
 public class WindowDragNDropState(OSWindow window)
@@ -542,107 +543,107 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public const int SCANCODE_MAPPED_NUM = 232;
-	public static KeyboardKey[] ScancodeToKey = new KeyboardKey[SCANCODE_MAPPED_NUM] {
-		KeyboardKey.KEY_NULL,           // SDL_SCANCODE_UNKNOWN
+	public static ButtonCode[] ScancodeToKey = new ButtonCode[SCANCODE_MAPPED_NUM] {
+		ButtonCode.None,           // SDL_SCANCODE_UNKNOWN
 		0,
 		0,
 		0,
-		KeyboardKey.KEY_A,              // SDL_SCANCODE_A
-		KeyboardKey.KEY_B,              // SDL_SCANCODE_B
-		KeyboardKey.KEY_C,              // SDL_SCANCODE_C
-		KeyboardKey.KEY_D,              // SDL_SCANCODE_D
-		KeyboardKey.KEY_E,              // SDL_SCANCODE_E
-		KeyboardKey.KEY_F,              // SDL_SCANCODE_F
-		KeyboardKey.KEY_G,              // SDL_SCANCODE_G
-		KeyboardKey.KEY_H,              // SDL_SCANCODE_H
-		KeyboardKey.KEY_I,              // SDL_SCANCODE_I
-		KeyboardKey.KEY_J,              // SDL_SCANCODE_J
-		KeyboardKey.KEY_K,              // SDL_SCANCODE_K
-		KeyboardKey.KEY_L,              // SDL_SCANCODE_L
-		KeyboardKey.KEY_M,              // SDL_SCANCODE_M
-		KeyboardKey.KEY_N,              // SDL_SCANCODE_N
-		KeyboardKey.KEY_O,              // SDL_SCANCODE_O
-		KeyboardKey.KEY_P,              // SDL_SCANCODE_P
-		KeyboardKey.KEY_Q,              // SDL_SCANCODE_Q
-		KeyboardKey.KEY_R,              // SDL_SCANCODE_R
-		KeyboardKey.KEY_S,              // SDL_SCANCODE_S
-		KeyboardKey.KEY_T,              // SDL_SCANCODE_T
-		KeyboardKey.KEY_U,              // SDL_SCANCODE_U
-		KeyboardKey.KEY_V,              // SDL_SCANCODE_V
-		KeyboardKey.KEY_W,              // SDL_SCANCODE_W
-		KeyboardKey.KEY_X,              // SDL_SCANCODE_X
-		KeyboardKey.KEY_Y,              // SDL_SCANCODE_Y
-		KeyboardKey.KEY_Z,              // SDL_SCANCODE_Z
-		KeyboardKey.KEY_ONE,            // SDL_SCANCODE_1
-		KeyboardKey.KEY_TWO,            // SDL_SCANCODE_2
-		KeyboardKey.KEY_THREE,          // SDL_SCANCODE_3
-		KeyboardKey.KEY_FOUR,           // SDL_SCANCODE_4
-		KeyboardKey.KEY_FIVE,           // SDL_SCANCODE_5
-		KeyboardKey.KEY_SIX,            // SDL_SCANCODE_6
-		KeyboardKey.KEY_SEVEN,          // SDL_SCANCODE_7
-		KeyboardKey.KEY_EIGHT,          // SDL_SCANCODE_8
-		KeyboardKey.KEY_NINE,           // SDL_SCANCODE_9
-		KeyboardKey.KEY_ZERO,           // SDL_SCANCODE_0
-		KeyboardKey.KEY_ENTER,          // SDL_SCANCODE_RETURN
-		KeyboardKey.KEY_ESCAPE,         // SDL_SCANCODE_ESCAPE
-		KeyboardKey.KEY_BACKSPACE,      // SDL_SCANCODE_BACKSPACE
-		KeyboardKey.KEY_TAB,            // SDL_SCANCODE_TAB
-		KeyboardKey.KEY_SPACE,          // SDL_SCANCODE_SPACE
-		KeyboardKey.KEY_MINUS,          // SDL_SCANCODE_MINUS
-		KeyboardKey.KEY_EQUAL,          // SDL_SCANCODE_EQUALS
-		KeyboardKey.KEY_LEFT_BRACKET,   // SDL_SCANCODE_LEFTBRACKET
-		KeyboardKey.KEY_RIGHT_BRACKET,  // SDL_SCANCODE_RIGHTBRACKET
-		KeyboardKey.KEY_BACKSLASH,      // SDL_SCANCODE_BACKSLASH
-		0,                  // SDL_SCANCODE_NONUSHASH
-		KeyboardKey.KEY_SEMICOLON,      // SDL_SCANCODE_SEMICOLON
-		KeyboardKey.KEY_APOSTROPHE,     // SDL_SCANCODE_APOSTROPHE
-		KeyboardKey.KEY_GRAVE,          // SDL_SCANCODE_GRAVE
-		KeyboardKey.KEY_COMMA,          // SDL_SCANCODE_COMMA
-		KeyboardKey.KEY_PERIOD,         // SDL_SCANCODE_PERIOD
-		KeyboardKey.KEY_SLASH,          // SDL_SCANCODE_SLASH
-		KeyboardKey.KEY_CAPS_LOCK,      // SDL_SCANCODE_CAPSLOCK
-		KeyboardKey.KEY_F1,             // SDL_SCANCODE_F1
-		KeyboardKey.KEY_F2,             // SDL_SCANCODE_F2
-		KeyboardKey.KEY_F3,             // SDL_SCANCODE_F3
-		KeyboardKey.KEY_F4,             // SDL_SCANCODE_F4
-		KeyboardKey.KEY_F5,             // SDL_SCANCODE_F5
-		KeyboardKey.KEY_F6,             // SDL_SCANCODE_F6
-		KeyboardKey.KEY_F7,             // SDL_SCANCODE_F7
-		KeyboardKey.KEY_F8,             // SDL_SCANCODE_F8
-		KeyboardKey.KEY_F9,             // SDL_SCANCODE_F9
-		KeyboardKey.KEY_F10,            // SDL_SCANCODE_F10
-		KeyboardKey.KEY_F11,            // SDL_SCANCODE_F11
-		KeyboardKey.KEY_F12,            // SDL_SCANCODE_F12
-		KeyboardKey.KEY_PRINT_SCREEN,   // SDL_SCANCODE_PRINTSCREEN
-		KeyboardKey.KEY_SCROLL_LOCK,    // SDL_SCANCODE_SCROLLLOCK
-		KeyboardKey.KEY_PAUSE,          // SDL_SCANCODE_PAUSE
-		KeyboardKey.KEY_INSERT,         // SDL_SCANCODE_INSERT
-		KeyboardKey.KEY_HOME,           // SDL_SCANCODE_HOME
-		KeyboardKey.KEY_PAGE_UP,        // SDL_SCANCODE_PAGEUP
-		KeyboardKey.KEY_DELETE,         // SDL_SCANCODE_DELETE
-		KeyboardKey.KEY_END,            // SDL_SCANCODE_END
-		KeyboardKey.KEY_PAGE_DOWN,      // SDL_SCANCODE_PAGEDOWN
-		KeyboardKey.KEY_RIGHT,          // SDL_SCANCODE_RIGHT
-		KeyboardKey.KEY_LEFT,           // SDL_SCANCODE_LEFT
-		KeyboardKey.KEY_DOWN,           // SDL_SCANCODE_DOWN
-		KeyboardKey.KEY_UP,             // SDL_SCANCODE_UP
-		KeyboardKey.KEY_NUM_LOCK,       // SDL_SCANCODE_NUMLOCKCLEAR
-		KeyboardKey.KEY_KP_DIVIDE,      // SDL_SCANCODE_KP_DIVIDE
-		KeyboardKey.KEY_KP_MULTIPLY,    // SDL_SCANCODE_KP_MULTIPLY
-		KeyboardKey.KEY_KP_SUBTRACT,    // SDL_SCANCODE_KP_MINUS
-		KeyboardKey.KEY_KP_ADD,         // SDL_SCANCODE_KP_PLUS
-		KeyboardKey.KEY_KP_ENTER,       // SDL_SCANCODE_KP_ENTER
-		KeyboardKey.KEY_KP_1,           // SDL_SCANCODE_KP_1
-		KeyboardKey.KEY_KP_2,           // SDL_SCANCODE_KP_2
-		KeyboardKey.KEY_KP_3,           // SDL_SCANCODE_KP_3
-		KeyboardKey.KEY_KP_4,           // SDL_SCANCODE_KP_4
-		KeyboardKey.KEY_KP_5,           // SDL_SCANCODE_KP_5
-		KeyboardKey.KEY_KP_6,           // SDL_SCANCODE_KP_6
-		KeyboardKey.KEY_KP_7,           // SDL_SCANCODE_KP_7
-		KeyboardKey.KEY_KP_8,           // SDL_SCANCODE_KP_8
-		KeyboardKey.KEY_KP_9,           // SDL_SCANCODE_KP_9
-		KeyboardKey.KEY_KP_0,           // SDL_SCANCODE_KP_0
-		KeyboardKey.KEY_KP_DECIMAL,     // SDL_SCANCODE_KP_PERIOD
+		ButtonCode.KeyA,              // SDL_SCANCODE_A
+		ButtonCode.KeyB,              // SDL_SCANCODE_B
+		ButtonCode.KeyC,              // SDL_SCANCODE_C
+		ButtonCode.KeyD,              // SDL_SCANCODE_D
+		ButtonCode.KeyE,              // SDL_SCANCODE_E
+		ButtonCode.KeyF,              // SDL_SCANCODE_F
+		ButtonCode.KeyG,              // SDL_SCANCODE_G
+		ButtonCode.KeyH,              // SDL_SCANCODE_H
+		ButtonCode.KeyI,              // SDL_SCANCODE_I
+		ButtonCode.KeyJ,              // SDL_SCANCODE_J
+		ButtonCode.KeyK,              // SDL_SCANCODE_K
+		ButtonCode.KeyL,              // SDL_SCANCODE_L
+		ButtonCode.KeyM,              // SDL_SCANCODE_M
+		ButtonCode.KeyN,              // SDL_SCANCODE_N
+		ButtonCode.KeyO,              // SDL_SCANCODE_O
+		ButtonCode.KeyP,              // SDL_SCANCODE_P
+		ButtonCode.KeyQ,              // SDL_SCANCODE_Q
+		ButtonCode.KeyR,              // SDL_SCANCODE_R
+		ButtonCode.KeyS,              // SDL_SCANCODE_S
+		ButtonCode.KeyT,              // SDL_SCANCODE_T
+		ButtonCode.KeyU,              // SDL_SCANCODE_U
+		ButtonCode.KeyV,              // SDL_SCANCODE_V
+		ButtonCode.KeyW,              // SDL_SCANCODE_W
+		ButtonCode.KeyX,              // SDL_SCANCODE_X
+		ButtonCode.KeyY,              // SDL_SCANCODE_Y
+		ButtonCode.KeyZ,              // SDL_SCANCODE_Z
+		ButtonCode.Key1,			  // SDL_SCANCODE_1
+		ButtonCode.Key2,			  // SDL_SCANCODE_2
+		ButtonCode.Key3,			  // SDL_SCANCODE_3
+		ButtonCode.Key4,			  // SDL_SCANCODE_4
+		ButtonCode.Key5,			  // SDL_SCANCODE_5
+		ButtonCode.Key6,			  // SDL_SCANCODE_6
+		ButtonCode.Key7,			  // SDL_SCANCODE_7
+		ButtonCode.Key8,			  // SDL_SCANCODE_8
+		ButtonCode.Key9,			  // SDL_SCANCODE_9
+		ButtonCode.Key0,			  // SDL_SCANCODE_0
+		ButtonCode.KeyEnter,          // SDL_SCANCODE_RETURN
+		ButtonCode.KeyEscape,         // SDL_SCANCODE_ESCAPE
+		ButtonCode.KeyBackspace,      // SDL_SCANCODE_BACKSPACE
+		ButtonCode.KeyTab,            // SDL_SCANCODE_TAB
+		ButtonCode.KeySpace,          // SDL_SCANCODE_SPACE
+		ButtonCode.KeyMinus,          // SDL_SCANCODE_MINUS
+		ButtonCode.KeyEqual,          // SDL_SCANCODE_EQUALS
+		ButtonCode.KeyLeftBracket,    // SDL_SCANCODE_LEFTBRACKET
+		ButtonCode.KeyRightBracket,   // SDL_SCANCODE_RIGHTBRACKET
+		ButtonCode.KeyBackslash,      // SDL_SCANCODE_BACKSLASH
+		0,                            // SDL_SCANCODE_NONUSHASH
+		ButtonCode.KeySemicolon,      // SDL_SCANCODE_SEMICOLON
+		ButtonCode.KeyApostrophe,     // SDL_SCANCODE_APOSTROPHE
+		ButtonCode.KeyBackquote,          // SDL_SCANCODE_GRAVE
+		ButtonCode.KeyComma,          // SDL_SCANCODE_COMMA
+		ButtonCode.KeyPeriod,         // SDL_SCANCODE_PERIOD
+		ButtonCode.KeySlash,          // SDL_SCANCODE_SLASH
+		ButtonCode.KeyCapsLock,      // SDL_SCANCODE_CAPSLOCK
+		ButtonCode.KeyF1,             // SDL_SCANCODE_F1
+		ButtonCode.KeyF2,             // SDL_SCANCODE_F2
+		ButtonCode.KeyF3,             // SDL_SCANCODE_F3
+		ButtonCode.KeyF4,             // SDL_SCANCODE_F4
+		ButtonCode.KeyF5,             // SDL_SCANCODE_F5
+		ButtonCode.KeyF6,             // SDL_SCANCODE_F6
+		ButtonCode.KeyF7,             // SDL_SCANCODE_F7
+		ButtonCode.KeyF8,             // SDL_SCANCODE_F8
+		ButtonCode.KeyF9,             // SDL_SCANCODE_F9
+		ButtonCode.KeyF10,            // SDL_SCANCODE_F10
+		ButtonCode.KeyF11,            // SDL_SCANCODE_F11
+		ButtonCode.KeyF12,            // SDL_SCANCODE_F12
+		ButtonCode.KeyPrintScreen,   // SDL_SCANCODE_PRINTSCREEN
+		ButtonCode.KeyScrollLock,    // SDL_SCANCODE_SCROLLLOCK
+		ButtonCode.KeyPause,          // SDL_SCANCODE_PAUSE
+		ButtonCode.KeyInsert,         // SDL_SCANCODE_INSERT
+		ButtonCode.KeyHome,           // SDL_SCANCODE_HOME
+		ButtonCode.KeyPageUp,        // SDL_SCANCODE_PAGEUP
+		ButtonCode.KeyDelete,         // SDL_SCANCODE_DELETE
+		ButtonCode.KeyEnd,            // SDL_SCANCODE_END
+		ButtonCode.KeyPageDown,      // SDL_SCANCODE_PAGEDOWN
+		ButtonCode.KeyRight,          // SDL_SCANCODE_RIGHT
+		ButtonCode.KeyLeft,           // SDL_SCANCODE_LEFT
+		ButtonCode.KeyDown,           // SDL_SCANCODE_DOWN
+		ButtonCode.KeyUp,             // SDL_SCANCODE_UP
+		ButtonCode.KeyNumLock,       // SDL_SCANCODE_NUMLOCKCLEAR
+		ButtonCode.KeyPadDivide,      // SDL_SCANCODE_KP_DIVIDE
+		ButtonCode.KeyPadMultiply,    // SDL_SCANCODE_KP_MULTIPLY
+		ButtonCode.KeyPadMinus,    // SDL_SCANCODE_KP_MINUS
+		ButtonCode.KeyPadPlus,         // SDL_SCANCODE_KP_PLUS
+		ButtonCode.KeyPadEnter,       // SDL_SCANCODE_KP_ENTER
+		ButtonCode.KeyPad1,           // SDL_SCANCODE_KP_1
+		ButtonCode.KeyPad2,           // SDL_SCANCODE_KP_2
+		ButtonCode.KeyPad3,           // SDL_SCANCODE_KP_3
+		ButtonCode.KeyPad4,           // SDL_SCANCODE_KP_4
+		ButtonCode.KeyPad5,           // SDL_SCANCODE_KP_5
+		ButtonCode.KeyPad6,           // SDL_SCANCODE_KP_6
+		ButtonCode.KeyPad7,           // SDL_SCANCODE_KP_7
+		ButtonCode.KeyPad8,           // SDL_SCANCODE_KP_8
+		ButtonCode.KeyPad9,           // SDL_SCANCODE_KP_9
+		ButtonCode.KeyPad0,           // SDL_SCANCODE_KP_0
+		ButtonCode.KeyPadDecimal,     // SDL_SCANCODE_KP_PERIOD
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -656,24 +657,24 @@ public unsafe class OSWindow : IValidatable
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0,
-		KeyboardKey.KEY_LEFT_CONTROL,   //SDL_SCANCODE_LCTRL
-		KeyboardKey.KEY_LEFT_SHIFT,     //SDL_SCANCODE_LSHIFT
-		KeyboardKey.KEY_LEFT_ALT,       //SDL_SCANCODE_LALT
-		KeyboardKey.KEY_LEFT_SUPER,     //SDL_SCANCODE_LGUI
-		KeyboardKey.KEY_RIGHT_CONTROL,  //SDL_SCANCODE_RCTRL
-		KeyboardKey.KEY_RIGHT_SHIFT,    //SDL_SCANCODE_RSHIFT
-		KeyboardKey.KEY_RIGHT_ALT,      //SDL_SCANCODE_RALT
-		KeyboardKey.KEY_RIGHT_SUPER     //SDL_SCANCODE_RGUI
+		ButtonCode.KeyLeftControl,   //SDL_SCANCODE_LCTRL
+		ButtonCode.KeyLeftShift,     //SDL_SCANCODE_LSHIFT
+		ButtonCode.KeyLeftAlt,       //SDL_SCANCODE_LALT
+		ButtonCode.KeyLeftSuper,     //SDL_SCANCODE_LGUI
+		ButtonCode.KeyRightControl,  //SDL_SCANCODE_RCTRL
+		ButtonCode.KeyRightShift,    //SDL_SCANCODE_RSHIFT
+		ButtonCode.KeyRightAlt,      //SDL_SCANCODE_RALT
+		ButtonCode.KeyRightSuper     //SDL_SCANCODE_RGUI
 	};
-	public static KeyboardKey TranslateKeyboardKey(SDL_Scancode scancode) => TranslateKeyboardKey((int)scancode);
-	public static KeyboardKey TranslateKeyboardKey(int scancode) {
+	public static ButtonCode TranslateKeyboardKey(SDL_Scancode scancode) => TranslateKeyboardKey((int)scancode);
+	public static ButtonCode TranslateKeyboardKey(int scancode) {
 		if (scancode >= 0 && scancode < SCANCODE_MAPPED_NUM)
 			return ScancodeToKey[scancode];
 
-		return KeyboardKey.KEY_NULL;
+		return ButtonCode.None;
 	}
 
-	public bool KeyAvailable(out KeyboardKey key, out double time) {
+	public bool KeyAvailable(out ButtonCode key, out double time) {
 		if (Keyboard.KeyPressQueue.TryDequeue(out WindowKey result)) {
 			key = result.Key;
 			time = result.Timestamp;
@@ -681,7 +682,7 @@ public unsafe class OSWindow : IValidatable
 			return true;
 		}
 
-		key = KeyboardKey.KEY_NULL;
+		key = ButtonCode.None;
 		time = 0;
 		return false;
 	}
@@ -711,8 +712,8 @@ public unsafe class OSWindow : IValidatable
 
 			case SDL_EventType.SDL_EVENT_KEY_DOWN: {
 					if (!ev.Event.key.repeat) {
-						KeyboardKey key = TranslateKeyboardKey(ev.Event.key.scancode);
-						if (key != KeyboardKey.KEY_NULL)
+						ButtonCode key = TranslateKeyboardKey(ev.Event.key.scancode);
+						if (key != ButtonCode.None)
 							Keyboard.CurrentKeyState[(int)key] = 1;
 
 						Keyboard.EnqueueKeyPress(ev.Timestamp, (int)ev.Event.key.scancode);
@@ -721,8 +722,8 @@ public unsafe class OSWindow : IValidatable
 				break;
 			case SDL_EventType.SDL_EVENT_KEY_UP: {
 					if (!ev.Event.key.repeat) {
-						KeyboardKey key = TranslateKeyboardKey(ev.Event.key.scancode);
-						if (key != KeyboardKey.KEY_NULL)
+						ButtonCode key = TranslateKeyboardKey(ev.Event.key.scancode);
+						if (key != ButtonCode.None)
 							Keyboard.CurrentKeyState[(int)key] = 0;
 					}
 				}
@@ -1212,7 +1213,7 @@ public unsafe class OSWindow : IValidatable
 	internal void FlushKeyboardStateInto(ref Input.KeyboardState keyboardState) {
 		var now = OS.GetTime();
 
-		while (KeyAvailable(out KeyboardKey key, out double timePressed)) {
+		while (KeyAvailable(out ButtonCode key, out double timePressed)) {
 			int keyPressed = (int)key;
 			// now - timePressed: this is done to get a relative-to-frame time
 			// since not everything will use SDL's time and know how to handle it

@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using Nucleus.Common.Input;
+using Nucleus.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,9 @@ namespace Nucleus.Core
 {
 	public class KeybindSystem
 	{
-		internal Dictionary<KeyboardKey, List<Keybind>> FinalKeybindAssociation { get; } = [];
+		internal Dictionary<ButtonCode, List<Keybind>> FinalKeybindAssociation { get; } = [];
 
-		public Keybind AddKeybind(List<KeyboardKey> requiredKeys, Action bind, bool mustBePure = false) {
+		public Keybind AddKeybind(List<ButtonCode> requiredKeys, Action bind, bool mustBePure = false) {
 			Keybind ret = Keybind.Make(requiredKeys, bind, mustBePure);
 
 			if (!FinalKeybindAssociation.ContainsKey(ret.FinalKey))
@@ -44,8 +45,8 @@ namespace Nucleus.Core
 
 	public class Keybind
 	{
-		public List<KeyboardKey> RequiredKeys;
-		public KeyboardKey FinalKey;
+		public List<ButtonCode> RequiredKeys;
+		public ButtonCode FinalKey;
 		public Action Bind;
 		public string NiceKeybindString;
 		public bool MustBePure = false;
@@ -60,7 +61,7 @@ namespace Nucleus.Core
 
 			if (MustBePure) {
 				foreach (var key in state.GetKeysHeld()) {
-					KeyboardKey k = KeyboardLayout.USA.FromInt(key);
+					ButtonCode k = key.ToButtonCode();
 					if (!RequiredKeys.Contains(k) && k != FinalKey) {
 						return false;
 					}
@@ -70,7 +71,7 @@ namespace Nucleus.Core
 			return state.WasKeyPressed(FinalKey);
 		}
 
-		public static Keybind Make(List<KeyboardKey> requiredKeys, Action bind, bool mustBePure) {
+		public static Keybind Make(List<ButtonCode> requiredKeys, Action bind, bool mustBePure) {
 			Keybind ret = new Keybind();
 
 			ret.RequiredKeys = requiredKeys;
@@ -79,8 +80,8 @@ namespace Nucleus.Core
 			ret.MustBePure = mustBePure;
 
 			List<string> keyNames = [];
-			foreach (KeyboardKey key in requiredKeys) {
-				keyNames.Add(KeyboardLayout.USA.FromInt(key.Key).Name);
+			foreach (ButtonCode key in requiredKeys) {
+				keyNames.Add(key.GetString());
 			}
 			ret.NiceKeybindString = string.Join(" + ", keyNames);
 

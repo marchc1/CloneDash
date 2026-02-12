@@ -1,5 +1,5 @@
 ﻿using CloneDash.Settings;
-
+using Nucleus.Common.Input;
 using Nucleus.Input;
 using Nucleus.Types;
 
@@ -9,10 +9,10 @@ namespace CloneDash.Game.Input
 {
 	public class KeyboardInput : ICloneDashInputSystem
 	{
-		public KeyboardKey[] TopKeys;
-		public KeyboardKey[] BottomKeys;
-		public KeyboardKey[] StartFever;
-		public KeyboardKey[] Pause;
+		public ButtonCode[] TopKeys;
+		public ButtonCode[] BottomKeys;
+		public ButtonCode[] StartFever;
+		public ButtonCode[] Pause;
 
 		public KeyboardInput() {
 			CD_InputSettings_OnSettingsChanged();

@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -275,9 +276,9 @@ namespace Nucleus.UI
 							var pressed = emulatedState.WasKeyPressed(i);
 							var released = emulatedState.WasKeyReleased(i);
 							if (pressed) 
-								DoKeyPressed(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal);
+								DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
 							if (released) 
-								DoKeyReleased(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal && !lastModal.MarkedForDeath);
+								DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.MarkedForDeath);
 
 							if (!ranKeybinds)
 								ranKeybinds = WasKeyEventConsumed();
@@ -410,7 +411,7 @@ namespace Nucleus.UI
 		}
 
 
-		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
+		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
 			ResetKeyEventConsumed();
 			element.KeyPressedOccur(in emulatedState, keyboardKey);
 			if (WasKeyEventConsumed())
@@ -424,7 +425,7 @@ namespace Nucleus.UI
 			return false;
 		}
 
-		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
+		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
 			ResetKeyEventConsumed();
 			element.KeyReleasedOccur(in emulatedState, keyboardKey);
 			if (WasKeyEventConsumed())

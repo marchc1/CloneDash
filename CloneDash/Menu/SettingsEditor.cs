@@ -4,6 +4,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -233,7 +234,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 public class InputActionKeybindingButtonsPanel : Panel
 {
 	InputAction action = 0;
-	readonly List<KeyboardKey> keys = [];
+	readonly List<ButtonCode> keys = [];
 	readonly List<Button> buttons = [];
 
 
@@ -241,7 +242,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 		base.Initialize();
 	}
 
-	public void LoadButtons(IEnumerable<KeyboardKey> keys) {
+	public void LoadButtons(IEnumerable<ButtonCode> keys) {
 		this.keys.Clear();
 		this.keys.AddRange(keys);
 		InvalidateKeyButtons();
@@ -249,7 +250,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 	Button? addButton;
 
-	private void ButtonModal(string action, Action<KeyboardKey> keySubmitted) {
+	private void ButtonModal(string action, Action<ButtonCode> keySubmitted) {
 		var dialog = UI.DialogBase($"{action} Key");
 
 		var lbl = dialog.Add<Label>();
@@ -274,7 +275,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 			b = Add<Button>();
 			b.BackgroundColor = BackgroundColor;
 			b.ForegroundColor = ForegroundColor;
-			b.Text = key.Name;
+			b.Text = key.GetString();
 			b.SetTag("key", key);
 
 			b.MouseReleaseEvent += ButtonEditOrRemoveHandler;
@@ -298,7 +299,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 			ButtonModal("Bind", AddSubmittedHandler);
 	}
 
-	private void AddSubmittedHandler(KeyboardKey key) {
+	private void AddSubmittedHandler(ButtonCode key) {
 		// Confirm that key isn't bound.
 		if (InputSettings.IsKeyBound(key, out InputAction action)) {
 			Logs.Warn($"Keyboard key {key} is already bound to {action}. TODO: notification");
@@ -310,7 +311,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 		InvalidateKeys();
 	}
 
-	private void EditSubmittedHandler(KeyboardKey keyTarget, KeyboardKey keyReplace) {
+	private void EditSubmittedHandler(ButtonCode keyTarget, ButtonCode keyReplace) {
 		if (!InputSettings.IsKeyBound(keyTarget, out _)) {
 			Logs.Warn($"Keyboard key target {keyTarget} is not bound. TODO: notification");
 			return;
@@ -326,7 +327,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 		InvalidateKeys();
 	}
 
-	private void RemoveSubmittedHandler(KeyboardKey key) {
+	private void RemoveSubmittedHandler(ButtonCode key) {
 		if (!InputSettings.IsKeyBound(key, out _)) {
 			Logs.Warn($"Keyboard key target {key} is not bound. TODO: notification");
 			return;
@@ -340,10 +341,10 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 	private void ButtonEditOrRemoveHandler(Element self, FrameState state, MouseButton button) {
 		if (button == MouseButton.Mouse2) {
-			RemoveSubmittedHandler(self.GetTag<KeyboardKey>("key"));
+			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}
 		else if (button == MouseButton.Mouse1) {
-			ButtonModal("Rebind", x => EditSubmittedHandler(self.GetTag<KeyboardKey>("key"), x));
+			ButtonModal("Rebind", x => EditSubmittedHandler(self.GetTag<ButtonCode>("key"), x));
 		}
 	}
 

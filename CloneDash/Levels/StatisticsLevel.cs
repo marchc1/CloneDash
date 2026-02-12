@@ -4,6 +4,7 @@ using CloneDash.Game;
 using CloneDash.Game.Statistics;
 
 using Nucleus;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Input;
@@ -45,7 +46,7 @@ namespace CloneDash.Levels
 			tempPanel.Dock = Dock.Fill;
 			tempPanel.PaintOverride += TempPanel_PaintOverride;
 
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => {
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => {
 				EngineCore.LoadLevel(new StatisticsLevel(), sheet, stats);
 			});
 

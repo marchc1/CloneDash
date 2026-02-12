@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -21,13 +22,13 @@ namespace Nucleus.UI
 			if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
-		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 			if (!TriggeredWhenEnterPressed) {
 				UI.MarkKeyEventNotConsumed();
 				return;
 			}
 
-			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter)
+			if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter)
 				MouseReleaseOccur(Level.FrameState, Input.MouseButton.MouseLeft, true);
 
 		}

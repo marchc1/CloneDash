@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -9,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using KeyboardKey = Nucleus.Input.KeyboardKey;
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
@@ -208,8 +208,8 @@ namespace Nucleus.UI
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
-		public override void KeyPressed(in KeyboardState state, KeyboardKey key) {
-			var vischar = state.GetKeyActionFromKey(key);
+		public override void KeyPressed(in KeyboardState state, ButtonCode key) {
+			var vischar = key.GetAction();
 			if (vischar.Type == CharacterType.NoAction)
 				return;
 
@@ -218,17 +218,17 @@ namespace Nucleus.UI
 
 			if (vischar.Type == CharacterType.VisibleCharacter) {
 				if (state.ControlDown) {
-					switch (key.Key) {
-						case 65:
+					switch (key) {
+						case ButtonCode.KeyA:
 							LastKeyboardInteraction = DateTime.Now;
 							Caret.Set(Text, Text.Length, 0, Text.Length);
 							break;
-						case 67:
+						case ButtonCode.KeyC:
 							if (!Caret.HasSelection) return;
 							Clipboard.Text = Text.Substring(Caret.Start ?? 0, Caret.End ?? 0);
 							Logs.Info("Copied to clipboard!");
 							break;
-						case 86:
+						case ButtonCode.KeyV:
 							
 							string txt = Clipboard.Text;
 							if (Caret.HasSelection) {

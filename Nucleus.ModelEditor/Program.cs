@@ -533,9 +533,9 @@ namespace Nucleus.ModelEditor
 		public override void Initialize(params object[] args) {
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new ModelEditor()));
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyZ], () => Actions.Undo());
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyY], () => Actions.Redo());
 
 			var file = menubar.AddButton("File");
 			file.AddButton("New", null, File_New);
@@ -612,9 +612,9 @@ namespace Nucleus.ModelEditor
 			Outliner.NodeClicked += Outliner_NodeClicked;
 			File.NewFile();
 
-			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
-			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
-			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => {
+			Keybinds.AddKeybind([ButtonCode.KeyDelete], AttemptDelete);
+			Keybinds.AddKeybind([ButtonCode.KeyF2], () => AttemptRename());
+			Keybinds.AddKeybind([ButtonCode.KeyEscape], () => {
 				if (File.ActiveOperator != null)
 					File.DeactivateOperator(true);
 				else {
@@ -628,8 +628,8 @@ namespace Nucleus.ModelEditor
 				}
 
 			});
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], File_Save);
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], File_Open);
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyS], File_Save);
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyO], File_Open);
 
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;

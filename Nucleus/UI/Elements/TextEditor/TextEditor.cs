@@ -1,5 +1,6 @@
 ﻿using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -13,7 +14,6 @@ using Raylib_cs;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-using KeyboardKey = Nucleus.Input.KeyboardKey;
 using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
@@ -325,28 +325,28 @@ namespace Nucleus.UI
 			Editor.OnKeyPressed += Editor_OnKeyPressed;
 			Editor.OnTextInput += Editor_OnTextInput;
 
-			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.A], () => {
+			Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyA], () => {
 				SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);
 			});
-			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.C], () => {
+			Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyC], () => {
 				Clipboard.Text = GetSelection();
 			});
-			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.X], () => {
+			Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyX], () => {
 				if (Readonly) return;
 				Clipboard.Text = GetSelection();
 				DeleteSelection();
 			});
-			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.V], () => {
+			Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyV], () => {
 				if (Readonly) return;
 				WriteLastCaret();
 				InsertText(Clipboard.Text);
 				OnEdit();
 			});
 
-			Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => {
+			Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyZ], () => {
 				if (Readonly) return;
 				UndoBackwards();
-			}); Editor.Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => {
+			}); Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyY], () => {
 				if (Readonly) return;
 				UndoForwards();
 			});
@@ -637,19 +637,19 @@ namespace Nucleus.UI
 			return targLine < topRow ? LineOverflow.Above : LineOverflow.Below;
 		}
 
-		private void Editor_OnKeyPressed(Element self, in KeyboardState state, KeyboardKey key) {
+		private void Editor_OnKeyPressed(Element self, in KeyboardState state, ButtonCode key) {
 			TextEditorCaret c = Caret;
 			bool caretPointerOnTop = MathF.Min(c.StartRow, c.EndRow) == c.EndRow;
 			int eRow = c.EndRow, eCol = c.EndCol;
 
 
-			if (key == KeyboardLayout.USA.PageUp) {
+			if (key == ButtonCode.KeyPageUp) {
 				// TODO
 			}
-			else if (key == KeyboardLayout.USA.PageDown) {
+			else if (key == ButtonCode.KeyPageDown) {
 				// TODO
 			}
-			if (key == KeyboardLayout.USA.Right) {
+			if (key == ButtonCode.KeyRight) {
 				var bottom = GetCaretBottomRight();
 				if (state.ShiftDown) {
 					if (eCol <= Rows[eRow].Length - 1) {
@@ -688,7 +688,7 @@ namespace Nucleus.UI
 				OnEdit();
 				UpdateCaretLeftHold();
 			}
-			else if (key == KeyboardLayout.USA.Left) {
+			else if (key == ButtonCode.KeyLeft) {
 				var top = GetCaretTopLeft();
 				if (state.ShiftDown) {
 					if (eCol > 0) {
@@ -717,7 +717,7 @@ namespace Nucleus.UI
 				OnEdit();
 				UpdateCaretLeftHold();
 			}
-			else if (key == KeyboardLayout.USA.Up) {
+			else if (key == ButtonCode.KeyUp) {
 				var top = GetCaretTopLeft();
 				if (IsAutocompleteActive) {
 					AutocompletePanel.MoveSelectUp();
@@ -746,7 +746,7 @@ namespace Nucleus.UI
 
 				OnEdit();
 			}
-			else if (key == KeyboardLayout.USA.Down) {
+			else if (key == ButtonCode.KeyDown) {
 				var bottom = GetCaretBottom();
 				if (IsAutocompleteActive) {
 					AutocompletePanel.MoveSelectDown();
@@ -773,7 +773,7 @@ namespace Nucleus.UI
 				}
 				OnEdit();
 			}
-			else if (key == KeyboardLayout.USA.Backspace && !DeleteSelection()) {
+			else if (key == ButtonCode.KeyBackspace && !DeleteSelection()) {
 				if (Readonly) return;
 
 				WriteLastCaret();
@@ -808,11 +808,11 @@ namespace Nucleus.UI
 				OnEdit();
 				PopulateAutocomplete();
 			}
-			else if (key == KeyboardLayout.USA.S && state.ControlDown) {
+			else if (key == ButtonCode.KeyS && state.ControlDown) {
 				OnSave?.Invoke(this);
 				return;
 			}
-			else if (key == KeyboardLayout.USA.D && state.ControlDown) {
+			else if (key == ButtonCode.KeyD && state.ControlDown) {
 				if (Readonly) return;
 
 				if (!HasSelection()) {
@@ -825,17 +825,17 @@ namespace Nucleus.UI
 				}
 				return;
 			}
-			else if (key == KeyboardLayout.USA.P && state.AltDown) {
+			else if (key == ButtonCode.KeyP && state.AltDown) {
 				OnExecute?.Invoke(this);
 				return;
 			}
-			else if (key == KeyboardLayout.USA.Escape) {
+			else if (key == ButtonCode.KeyEscape) {
 				if (IsAutocompleteActive) {
 					CloseAutocomplete();
 					return;
 				}
 			}
-			else if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) {
+			else if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
 				if (Readonly) return;
 
 				if (IsAutocompleteActive) {
@@ -877,7 +877,7 @@ namespace Nucleus.UI
 					return;
 				}
 			}
-			else if (key == KeyboardLayout.USA.Delete && !DeleteSelection()) {
+			else if (key == ButtonCode.KeyDelete && !DeleteSelection()) {
 				if (Readonly) return;
 
 				WriteLastCaret();
@@ -913,7 +913,7 @@ namespace Nucleus.UI
 
 				OnEdit();
 			}
-			var t = KeyboardLayout.USA.GetKeyAction(state, key);
+			var t = key.GetAction(ctrl: state.ControlDown, alt: state.AltDown, shift: state.ShiftDown);
 			if (t.Type != CharacterType.VisibleCharacter && t.Type != CharacterType.Tab)
 				return;
 

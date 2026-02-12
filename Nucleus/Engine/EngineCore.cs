@@ -1,25 +1,26 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Extensions;
+using Nucleus.Files;
+using Nucleus.Input;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Nucleus.Util;
 using Raylib_cs;
+using SDL;
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
-using Nucleus.Rendering;
-using Nucleus.Files;
-using System.Numerics;
-using SDL;
-using Nucleus.Util;
-using Nucleus.Commands;
-using Nucleus.Input;
-using Nucleus.Extensions;
-using System.Globalization;
-using Nucleus.Common.Types;
-using Nucleus.Common.Commands;
+using System.Runtime.InteropServices;
 
 namespace Nucleus;
 
@@ -711,8 +712,8 @@ public static class EngineCore
 			Window.FlushKeyboardStateInto(ref keyboardState);
 
 			int i = 0;
-			while (keyboardState.KeyAvailable(ref i, out int k, out _)) {
-				KeyAction action = KeyboardLayout.USA.GetKeyAction(keyboardState, KeyboardLayout.USA.FromInt(k));
+			while (keyboardState.KeyAvailable(ref i, out ButtonCode k, out _)) {
+				ButtonAction action = k.GetAction(ctrl: keyboardState.ControlDown, alt: keyboardState.AltDown, shift: keyboardState.ShiftDown);
 				switch (action.Type) {
 					case CharacterType.Enter:
 						Logs.Info($"] {WorkConsole}");

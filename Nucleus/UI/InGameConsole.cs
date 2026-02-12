@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -153,7 +154,7 @@ namespace Nucleus
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
 			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
 			consoleInput.Editor.OnTextInput += ConsoleInput_OnTextInput;
-			consoleInput.Editor.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], () => InGameConsole.CloseConsole());
+			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => InGameConsole.CloseConsole());
 			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
@@ -217,9 +218,9 @@ namespace Nucleus
 		}
 
 		private int userHistoryPos = 0;
-		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, KeyboardKey key) {
+		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, ButtonCode key) {
 			if (IValidatable.IsValid(autoComplete)) {
-				if (key == KeyboardLayout.USA.Space && autoComplete.TryGetTabSelection(out string? tabSelection)) {
+				if (key == ButtonCode.KeySpace && autoComplete.TryGetTabSelection(out string? tabSelection)) {
 					// Remove one character because this is a post-hook
 					var text = consoleInput.GetText();
 					var userLen = text.Length;
@@ -227,7 +228,7 @@ namespace Nucleus
 
 					// REDO ME
 				}
-				else if (key == KeyboardLayout.USA.Up) {
+				else if (key == ButtonCode.KeyUp) {
 					int newPos = userHistoryPos + 1;
 					string? txt;
 					if (newPos == 0)
@@ -243,7 +244,7 @@ namespace Nucleus
 						consoleInput.SetCaret(consoleInput.GetText().Length, 0);
 					}
 				}
-				else if (key == KeyboardLayout.USA.Down) {
+				else if (key == ButtonCode.KeyDown) {
 					int newPos = userHistoryPos - 1;
 					string? txt;
 					if (newPos == 0)
@@ -259,7 +260,7 @@ namespace Nucleus
 						consoleInput.SetCaret(consoleInput.GetText().Length, 0);
 					}
 				}
-				else if (key != KeyboardLayout.USA.Tab) {
+				else if (key != ButtonCode.KeyTab) {
 					autoComplete.Reset();
 					autoCompleteStr = null;
 				}
@@ -321,6 +322,6 @@ namespace Nucleus
 		private static void OnConsoleClosed() {
 			ConsoleSystem.RemoveScreenBlocker(inputPanel);
 		}
-		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([KeyboardLayout.USA.Tilda], () => OpenConsole(level.UI));
+		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => OpenConsole(level.UI));
 	}
 }

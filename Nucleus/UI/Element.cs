@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -1310,14 +1311,14 @@ namespace Nucleus.UI
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
-		public void KeyPressedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public void KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
 			KeyPressed(in keyboardState, key);
 			if (OnKeyPressed != null) {
 				UI.ResetKeyEventConsumed();
 				OnKeyPressed?.Invoke(this, in keyboardState, key);
 			}
 		}
-		public void KeyReleasedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public void KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
 			KeyReleased(in keyboardState, key);
 			if (OnKeyReleased != null) {
 				UI.ResetKeyEventConsumed();
@@ -1332,11 +1333,11 @@ namespace Nucleus.UI
 			}
 		}
 
-		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
-		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
 		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
 
-		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
+		public delegate void KeyDelegate(Element self, in KeyboardState state, ButtonCode key);
 		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
 		public event KeyDelegate? OnKeyPressed;
 		public event KeyDelegate? OnKeyReleased;
