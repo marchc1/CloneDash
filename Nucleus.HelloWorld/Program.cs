@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Rendering;
@@ -34,7 +35,7 @@ internal class Program
 
 					Label column(Anchor alignment){
 						var column = row.Add<Label>();
-						var h = alignment.ToTextAlignment().horizontal;
+						var h = alignment.ToTextAlignment().Horizontal;
 						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
 						column.Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
 						column.Size = new(window.Size.W / 3, 0);
@@ -45,9 +46,9 @@ internal class Program
 
 					var v = vertical == Dock.Top ? TextAlignment.Top : vertical == Dock.Bottom ? TextAlignment.Bottom : TextAlignment.Center;
 
-					var left = column(TextAlignment.FromTextAlignment(TextAlignment.Left, v));
-					var right = column(TextAlignment.FromTextAlignment(TextAlignment.Right, v));
-					var center = column(TextAlignment.FromTextAlignment(TextAlignment.Center, v));
+					var left = column(  new TextAlignment2D(TextAlignment.Left, v).ToAnchor());
+					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
+					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
 					row.Size = new(0, window.Size.H / 3);
 					row.DrawPanelBackground = false;
 
