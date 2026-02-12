@@ -123,7 +123,6 @@ public static class InputSettings
 	public static void Store() {
 		Host.SetDataStore("CloneDash.InputSettings", data);
 		OnSettingsChanged?.Invoke();
-		Host.WriteConfig();
 	}
 
 	public delegate void SettingsChanged();

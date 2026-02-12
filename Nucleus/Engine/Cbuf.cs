@@ -19,14 +19,15 @@ public class CommandBuffer
 {
 	public const int ARGS_BUFFER_LENGTH = 2 << 13;
 
-	public struct Command
+	public class Command
 	{
 		public int FirstArgS;
 		public int BufferSize;
+		public Command? Next;
 	}
 
 	readonly char[] Buffer = new char[ARGS_BUFFER_LENGTH];
-	readonly Queue<Command> Commands = new();
+	readonly LinkedList<Command> Commands = [];
 
 	int WritePos;
 	int ReadPos;
@@ -38,16 +39,17 @@ public class CommandBuffer
 	public int GetCapacity() => ARGS_BUFFER_LENGTH;
 	public int GetFreeSpace() => ARGS_BUFFER_LENGTH - UsedSpace;
 	public int GetUsedSpace() => UsedSpace;
-	public int GetMessageCount() => Commands.Count;
 
 	public bool IsProcessingCommands() => ProcessingCommands;
 
 
 	public void BeginProcessingCommands() {
+		Debug.Assert(!ProcessingCommands);
 		ProcessingCommands = true;
 	}
 
 	public void EndProcessingCommands() {
+		Debug.Assert(ProcessingCommands);
 		ProcessingCommands = false;
 	}
 
@@ -102,13 +104,23 @@ public class CommandBuffer
 			UsedSpace += len;
 		}
 
-		Commands.Enqueue(new Command { FirstArgS = start, BufferSize = len });
+		Command next = new() { FirstArgS = start, BufferSize = len };
+		Commands.AddLast(next);
+
 		return true;
 	}
 
+	public LinkedListNode<Command>? GetNextCommandHandle() {
+		Debug.Assert(ProcessingCommands);
+		return Commands.First;
+	}
+
 	public bool DequeueNextCommand() {
-		if (!Commands.TryDequeue(out Command nextCommand))
+		if (Commands.First == null)
 			return false;
+
+		Command nextCommand = Commands.First.Value;
+		Commands.RemoveFirst();
 
 		Span<char> destination = stackalloc char[nextCommand.BufferSize];
 
@@ -137,33 +149,32 @@ public static class Cbuf
 	public const int MAX_ALIAS_NAME = 32;
 	public const int MAX_COMMAND_LENGTH = 1024;
 	public static readonly CommandBuffer CommandBuffer = new CommandBuffer();
-
-	public static readonly CommandBuffer Buffer = new();
+	public static readonly object BufferLock = new();
 
 	public static void ExecuteCommand(ref TokenizedCommand command) {
 		Cmd.ExecuteCommand(in command);
 	}
 
 	public static void AddText(ReadOnlySpan<char> text) {
-		lock (Buffer) {
-			if (!Buffer.AddText(text))
+		lock (BufferLock) {
+			if (!CommandBuffer.AddText(text))
 				Logs.Warn("CBuf.AddText: buffer overflow!!!");
 		}
 	}
 
 	public static void InsertText(ReadOnlySpan<char> text) {
-		lock (Buffer) {
-			Debug.Assert(Buffer.IsProcessingCommands());
+		lock (BufferLock) {
+			Debug.Assert(CommandBuffer.IsProcessingCommands());
 			AddText(text);
 		}
 	}
 
 	public static void Execute() {
-		lock (Buffer) {
-			Buffer.BeginProcessingCommands();
-			while (Buffer.DequeueNextCommand())
-				ExecuteCommand(ref Buffer.GetCommand());
-			Buffer.EndProcessingCommands();
+		lock (BufferLock) {
+			CommandBuffer.BeginProcessingCommands();
+			while (CommandBuffer.DequeueNextCommand())
+				ExecuteCommand(ref CommandBuffer.GetCommand());
+			CommandBuffer.EndProcessingCommands();
 		}
 	}
 }

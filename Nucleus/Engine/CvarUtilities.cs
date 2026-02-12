@@ -43,8 +43,9 @@ public class CvarUtilities
 			args.ArgS()[1..].CopyTo(arg);
 		}
 		arg = arg.Trim();
-		if (arg[^1] == '"')
-			arg = arg[..(arg.Length - 1)];
+		if (arg[len - 1] == '"')
+			arg[len - 1] = '\0';
+		arg = arg.Trim('\0');
 		arg = arg.Trim();
 		SetDirect(var, arg);
 		return true;
@@ -55,5 +56,19 @@ public class CvarUtilities
 			var.SetValue(double.TryParse(arg, out double d) ? d : 0);
 		else
 			var.SetValue(arg);
+	}
+
+	public void WriteVariables(StreamWriter writer, bool allVars) {
+		for (ConCommandBase? var = cvar.GetCommands(); var != null; var = var.Next) {
+			if (var.IsCommand())
+				continue;
+
+			bool save = var.IsFlagSet(FCvar.Saved);
+			if (save) {
+				ConVar convar = (ConVar)var;
+				if(allVars || strcmp(convar.GetString(), convar.GetDefault()) != 0)
+					writer.WriteLine($"{var.GetName()} \"{convar.GetString()}\"");
+			}
+		}
 	}
 }

@@ -320,6 +320,14 @@ public static class Filesystem
 		return null;
 	}
 
+	public static bool Exists(string pathID, string path) {
+		foreach (var pathObj in GetSearchPathID(pathID))
+			if (pathObj.Exists(path))
+				return true;
+
+		return false;
+	}
+
 	public static string? ReadAllText(string pathID, string path) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var text = pathObj.ReadText(path);

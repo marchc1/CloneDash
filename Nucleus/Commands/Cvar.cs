@@ -58,6 +58,13 @@ public class Cvar : ICvar
 	}
 
 	public ConCommandBase? GetCommands() => ConCommandList;
+	public IEnumerable<ConCommandBase> GetCommandEnumerable() {
+		ConCommandBase? b = ConCommandList;
+		while(b != null){
+			yield return b;
+			b = b.Next;
+		}
+	}
 
 	public void InstallConsoleDisplayFunc(IConsoleDisplayFunc displayFunc) {
 		throw new NotImplementedException();

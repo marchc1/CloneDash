@@ -66,6 +66,9 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 	}
 
 	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
+		if (MuseDashCompatibility.Characters == null)
+			return null;
+
 		foreach (var character in MuseDashCompatibility.Characters) {
 			if (name != GetName(character)) continue;
 

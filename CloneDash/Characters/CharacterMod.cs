@@ -13,15 +13,27 @@ public static class CharacterMod
 	private static ICharacterDescriptor? activeDescriptor;
 	public delegate void CharacterUpdatedDelegate(ICharacterDescriptor? charDescriptor);
 	public static event CharacterUpdatedDelegate? CharacterUpdated;
+
+	public static ICharacterDescriptor? GetActiveCharacterDescriptor() {
+		if (activeDescriptor == null)
+			activeDescriptor = GetCharacterData();
+
+		return activeDescriptor;
+	}
+
 	public static ConVar character = new(nameof(character), "md_char_1_rock", FCvar.Saved, "Your character.", null, null, (cv, o, n) => {
-		activeDescriptor = null;
+		var lastDescriptor = activeDescriptor;
 		activeDescriptor = GetCharacterData();
-		CharacterUpdated?.Invoke(activeDescriptor);
+		if (lastDescriptor != activeDescriptor)
+			CharacterUpdated?.Invoke(activeDescriptor);
 	}, autocomplete: clonedash_character_autocomplete);
+
 	private static void clonedash_character_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		var availableCharacters = GetAvailableCharacters().Where(x => x.StartsWith(args.ArgS(curArgPos))).ToArray();
 		returns = availableCharacters;
 	}
+
+
 
 	[ConCommand(Help: "Your characters info, based on the Clone Dash Descriptor")]
 	public static void characterinfo(ConCommand cmd, in TokenizedCommand args) {

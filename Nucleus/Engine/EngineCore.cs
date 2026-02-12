@@ -288,7 +288,6 @@ public static class EngineCore
 			MainThread.Thread = Thread.CurrentThread;
 
 		Filesystem.Initialize(GameInfo.AppName);
-		Host.ReadConfig();
 		CommandLine.FromArgs(args ?? []);
 		GameThreadInitializationProcedure = gameThreadInit;
 
@@ -631,7 +630,6 @@ public static class EngineCore
 		}
 
 		ReleaseGameThread();
-		Host.CheckDirty();
 		MainThread.Run(ThreadExecutionTime.AfterFrame);
 
 		CurrentAppTime = OS.GetTime();
@@ -851,6 +849,8 @@ public static class EngineCore
 				}
 			}
 		}
+
+		Host.WriteConfiguration();
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
 
@@ -880,9 +880,17 @@ public static class EngineCore
 							  where attributes != null && attributes.Length > 0
 							  select t) {
 				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			}
+
+			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
+							  from t in a.GetTypes()
+							  select t) {
 				foreach (var ccmd in ConCommandAttribute.GetAttributes(t))
 					ConCommandAttribute.RegisterAttribute(t, ccmd.baseMethod, ccmd.attr);
 			}
+
+			ConVar.Register();
+			Host.ReadConfiguration();
 
 			Logs.Info("BOOT: Running JIT early where possible...");
 			Parallel.ForEach(earlyJITAssemblies

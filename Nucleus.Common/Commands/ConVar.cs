@@ -119,7 +119,7 @@ namespace Nucleus.Commands
 				value.StringLength = len;
 			}
 
-			val.CopyTo(value.Chars);
+			val[..len].CopyTo(value.Chars);
 
 			if (!val.Equals(oldValue, StringComparison.InvariantCulture)) {
 				OnChange?.Invoke(this, oldValue, oldD);
@@ -233,6 +233,9 @@ namespace Nucleus.Commands
 				ctx.Print('"');
 				ctx.Print(var.GetName());
 				ctx.Print('"');
+
+				ctx.Print(" = ");
+				ctx.Print(var.GetString());
 
 				ReadOnlySpan<char> value = var.GetString();
 				if (stricmp(value, var.GetDefault()) != 0) {
