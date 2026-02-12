@@ -6,9 +6,9 @@ namespace Nucleus.ModelEditor
 {
 	public class KeyframeButton : Button
 	{
-		public static readonly Color KEYFRAME_COLOR_NOT_KEYFRAMED = new Raylib_cs.Color(90, 240, 120);
-		public static readonly Color KEYFRAME_COLOR_PENDING_KEYFRAME = new Raylib_cs.Color(240, 90, 20);
-		public static readonly Color KEYFRAME_COLOR_ACTIVE_KEYFRAME = new Raylib_cs.Color(240, 30, 5);
+		public static readonly Color KEYFRAME_COLOR_NOT_KEYFRAMED = new Color(90, 240, 120);
+		public static readonly Color KEYFRAME_COLOR_PENDING_KEYFRAME = new Color(240, 90, 20);
+		public static readonly Color KEYFRAME_COLOR_ACTIVE_KEYFRAME = new Color(240, 30, 5);
 
 		public KeyframeProperty Property { get; set; }
 		public int ArrayIndex { get; set; } = -1;

@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -39,7 +40,6 @@ namespace Nucleus.ModelEditor
 		}
 		private static void compilefiles(ModelEditor_RecentFile[] array) {
 			Host.SetDataStore("ModelEditor.RecentFiles", array);
-			Host.WriteConfig();
 		}
 		public static ModelEditor_RecentFile[] GetRecentFiles() {
 			return recentfiles();
@@ -71,7 +71,7 @@ namespace Nucleus.ModelEditor
 			Properties.Size = new(64);
 			Properties.Dock = Dock.Bottom;
 			Properties.DrawPanelBackground = true;
-			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
+			Properties.BackgroundColor = new Color(5, 7, 12, 200);
 
 			Add(out Outliner);
 			Outliner.Dock = Dock.Fill;

@@ -1,4 +1,5 @@
 ﻿using FftSharp.Windows;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;

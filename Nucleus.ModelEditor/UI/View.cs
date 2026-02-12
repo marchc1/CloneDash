@@ -1,6 +1,7 @@
 ﻿// should this be in Nucleus/UI?
 // TODO: cleanup, kind of hastily made
 
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;

@@ -140,6 +140,8 @@ public unsafe partial struct Image
 	/// </summary>
 	public void* Data;
 
+	public nint GetDataSemiSafe() => (nint)Data;
+
 	/// <summary>
 	/// Image base width
 	/// </summary>

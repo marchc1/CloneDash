@@ -1366,9 +1366,10 @@ public static unsafe partial class Raylib
     /// <summary>Get Color from a source pixel pointer of certain format</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern Color GetPixelColor(void* srcPtr, PixelFormat format);
+    public static Color GetPixelColor(nint srcPtr, PixelFormat format) => GetPixelColor((void*)srcPtr, format);
 
-    /// <summary>Set color formatted into destination pixel pointer</summary>
-    [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	/// <summary>Set color formatted into destination pixel pointer</summary>
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void SetPixelColor(void* dstPtr, Color color, PixelFormat format);
 
     /// <summary>Get pixel data size in bytes for certain format</summary>

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.ModelEditor.UI;
