@@ -81,15 +81,13 @@ public class WindowKeyboardState(OSWindow window)
 
 public class WindowMouseState(OSWindow window)
 {
-	public const int MAX_MOUSE_BUTTONS = 8;
-
 	public Vector2F MouseOffset;
 	public Vector2F MouseScale;
 	public Vector2F CurrentMousePosition;
 	public Vector2F PreviousMousePosition;
 
-	public byte[] CurrentButtonCodeState = new byte[MAX_MOUSE_BUTTONS];
-	public byte[] PreviousButtonCodeState = new byte[MAX_MOUSE_BUTTONS];
+	public byte[] CurrentButtonCodeState = new byte[(int)ButtonCode.MouseCount];
+	public byte[] PreviousButtonCodeState = new byte[(int)ButtonCode.MouseCount];
 
 	public Vector2F CurrentMouseScroll;
 	public Vector2F PreviousMouseScroll;
@@ -103,7 +101,7 @@ public class WindowMouseState(OSWindow window)
 
 		PreviousMousePosition = CurrentMousePosition;
 
-		for (int i = 0; i < MAX_MOUSE_BUTTONS; i++)
+		for (int i = 0; i < (int)ButtonCode.MouseCount; i++)
 			PreviousButtonCodeState[i] = CurrentButtonCodeState[i];
 	}
 }
@@ -1175,7 +1173,11 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	/// <param name="keyboardState"></param>
 	internal void FlushMouseStateInto(ref Input.MouseState ms) {
-		int m1 = (int)ButtonCode.MouseLeft, m2 = (int)ButtonCode.MouseRight, m3 = (int)ButtonCode.MouseMiddle, m4 = (int)ButtonCode.Mouse4, m5 = (int)ButtonCode.Mouse5;
+		int m1 = (int)(ButtonCode.MouseLeft - ButtonCode.MouseFirst);
+		int m2 = (int)(ButtonCode.MouseRight - ButtonCode.MouseFirst);
+		int m3 = (int)(ButtonCode.MouseMiddle - ButtonCode.MouseFirst);
+		int m4 = (int)(ButtonCode.Mouse4 - ButtonCode.MouseFirst);
+		int m5 = (int)(ButtonCode.Mouse5 - ButtonCode.MouseFirst);
 
 		ms.MousePos = Mouse.CurrentMousePosition;
 		ms.MouseDelta = Mouse.CurrentMousePosition - Mouse.PreviousMousePosition;
