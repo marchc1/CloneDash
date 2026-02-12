@@ -13,6 +13,11 @@
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
 	</PropertyGroup>
 
+	<Import Project="..\StandardComponents.targets" />
+	<ItemGroup>
+		<Compile Include="..\StandardComponents.cs" Link="Usings/Globals/StandardComponents.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
 	</ItemGroup>
@@ -36,7 +41,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="UI\" />
+		<Folder Include="UI\" />
 	</ItemGroup>
 
 	<!-- ================================================================= -->
@@ -70,7 +75,7 @@
 		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
 		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
 	</PropertyGroup>
-	
+
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
 			<UniversalAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />

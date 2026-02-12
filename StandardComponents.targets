@@ -1,0 +1,5 @@
+<Project>
+	<ItemGroup>
+	  <ProjectReference Include="..\Nucleus.FileSystem\Nucleus.FileSystem.csproj" />
+	</ItemGroup>
+</Project>

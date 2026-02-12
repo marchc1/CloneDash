@@ -47,6 +47,7 @@ internal class Program
 
 		IEngineAPI engineAPI = new EngineBuilder(commandLine)
 			.WithComponent<IGameDLL, GameDLL>()
+			.WithStandardComponents()
 			.Build();
 
 		engineAPI.SetStartupInfo(new() {

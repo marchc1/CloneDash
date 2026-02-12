@@ -21,7 +21,6 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Nucleus.Common\Nucleus.Common.csproj" />
-	  <ProjectReference Include="..\Nucleus.FileSystem\Nucleus.FileSystem.csproj" />
 	</ItemGroup>
 
 	<Import Project="$(MSBuildThisFileDirectory)\NucleusAssets.targets" />

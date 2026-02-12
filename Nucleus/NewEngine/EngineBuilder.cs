@@ -89,7 +89,6 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 		this.AddSingleton<ICvar, Cvar>();
 		this.AddSingleton<IEngineAPI, EngineAPI>();
 		this.AddSingleton<IEngine, GameEngine>();
-		this.AddSingleton<IFileSystem, FileSystem>();
 
 		List<Type> wantsInjection = [];
 		object?[]? linkInput = [this];
