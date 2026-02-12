@@ -152,7 +152,6 @@ public unsafe class OSWindow : IValidatable
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
-	static bool FirstWindow = true;
 	unsafe RenderBatch* renderBatch;
 	public void SetupGL() {
 #if !COMPILED_OSX
@@ -171,46 +170,7 @@ public unsafe class OSWindow : IValidatable
 		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
-
-		FirstWindow = false;
 	}
-	/// <summary>
-	/// ONLY returns a value when ran on the OS thread!!!
-	/// </summary>
-	/// <param name="width"></param>
-	/// <param name="height"></param>
-	/// <param name="title"></param>
-	/// <param name="confFlags"></param>
-	/// <returns></returns>
-	public static void CreateSubwindow(Action<OSWindow> callback, int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
-		if (Thread.CurrentThread != MainThread.Thread) {
-			AwaitSubWindow(callback, width, height, "Nucleus Engine - Window", confFlags);
-			return;
-		}
-
-		callback(Create(width, height, title, confFlags, shareContext: true));
-	}
-
-	struct SubWindowEnqueuedEv
-	{
-		public Action<OSWindow> Callback;
-		public int Width;
-		public int Height;
-		public string Title;
-		public ConfigFlags Flags;
-		public ManualResetEventSlim? Completion;
-	}
-	static readonly ConcurrentQueue<SubWindowEnqueuedEv> WaitingSubwindows = [];
-	private static void AwaitSubWindow(Action<OSWindow>? window, int width, int height, string title, ConfigFlags flags) {
-		WaitingSubwindows.Enqueue(new() {
-			Callback = (x) => MainThread.RunASAP(() => window?.Invoke(x), ThreadExecutionTime.AfterFrame),
-			Width = width,
-			Height = height,
-			Title = title,
-			Flags = flags
-		});
-	}
-
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0, bool shareContext = false) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
@@ -875,11 +835,6 @@ public unsafe class OSWindow : IValidatable
 	/// Pumps the event queue continuously.
 	/// </summary>
 	public static void PumpOSEvents() {
-		// If any OS windows are waiting to be created, create them.
-		while (WaitingSubwindows.TryDequeue(out SubWindowEnqueuedEv swev)) {
-			// This is never null since its running on the OS thread
-			OSWindow.CreateSubwindow(swev.Callback, swev.Width, swev.Height, swev.Title, swev.Flags);
-		}
 		SDL_Event ev;
 		const int mswait = 5;
 		unsafe {

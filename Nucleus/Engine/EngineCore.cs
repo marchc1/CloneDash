@@ -40,12 +40,6 @@ public static class EngineCore
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
 	}
-	[ConCommand(Help: "Creates a new null subwindow")]
-	static void nullwindow(in TokenizedCommand args) {
-		for (int i = 0, c = args.Arg(4, 1); i < c; i++)
-			EngineCore.SubWindow(args.Arg(1, 640), args.Arg(2, 480), args.ArgS(3, "Nucleus Subwindow"));
-	}
-
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
@@ -428,33 +422,6 @@ public static class EngineCore
 			__loadLevel(window, level, args);
 	}
 	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
-	public static void SubWindow(int width, int height, ReadOnlySpan<char> title, ConfigFlags flags = 0) {
-		OSWindow.CreateSubwindow((window) => {
-			window.SetupGL();
-			WindowContexts[window] = new();
-		}, width, height, new(title), flags);
-	}
-	public static void SubWindow(Action<OSWindow> callback, int width, int height, ReadOnlySpan<char> title, ConfigFlags flags = 0) {
-		OSWindow.CreateSubwindow((window) => {
-			window.SetupGL();
-			WindowContexts[window] = new();
-			callback(window);
-		}, width, height, new(title), flags);
-	}
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, ReadOnlySpan<char> title, ConfigFlags flags = 0, Action<OSWindow>? callback = null, params object[] args) where T : Level {
-		SubWindow((window) => {
-			OSWindow lastWindow = Window;
-			MakeWindowCurrent(window);
-			{
-				__loadLevel(window, level, args);
-			}
-			callback?.Invoke(window);
-			MakeWindowCurrent(lastWindow);
-		}, width, height, title, flags);
-	}
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, ReadOnlySpan<char> title, ConfigFlags flags = 0, params object[] args) where T : Level
-		=> LoadLevelSubWindow(level, width, height, title, flags, null, args);
-
 	public static void UnloadLevel() {
 		LoadingLevel = true;
 

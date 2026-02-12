@@ -59,7 +59,6 @@ internal class Program
 				var mid = row(Dock.Fill);
 				window.Center();
 			}),
-			new("Subwindow Test", (_) => EngineCore.LoadLevelSubWindow(new HelloWorldLevel(), 640, 480, "test", 0)),
 		];
 
 		public override void Initialize(params object[] args) {
