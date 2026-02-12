@@ -283,7 +283,7 @@ public static class EngineCore
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
-		Filesystem.Initialize(startupInfo.AppName);
+		filesystem.Initialize(startupInfo.AppName);
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000

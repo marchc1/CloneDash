@@ -10,6 +10,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Engine;
+using Nucleus.Common.FileSystem;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.NewEngine;
@@ -98,33 +99,33 @@ public class GameDLL : IGameDLL
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
 		if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
-			musedash = Filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
+			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
 
-		var game = Filesystem.GetSearchPathID("game")[0];
-		var appcache = Filesystem.GetSearchPathID("appcache")[0];
-		var appdata = Filesystem.GetSearchPathID("appdata")[0];
+		var game = filesystem.GetSearchPathID("game").First();
+		var appcache = filesystem.GetSearchPathID("appcache").First();
+		var appdata = filesystem.GetSearchPathID("appdata").First();
 		{
 			// Custom assets should always be top priority for the filesystem
 			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
+				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
 
 			// Prioritize custom assets in order of new appdata/ -> game/
 			AddCustomPath(appdata, createIfMissing: true);
 			AddCustomPath(game, createIfMissing: false);
 
 			// Downloaded charts, etc, mostly for MDMC API
-			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
+			var download = filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
 			{
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
+				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
 			}
 
 			// tail: default asset fallbacks.
 			// These get shipped with the game so they are readonly
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/", createIfMissing: false).MakeReadOnly());
 		}
 
 		DoCmdLineOps(CommandLine(), true);
@@ -169,13 +170,13 @@ public class GameDLL : IGameDLL
 	}
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
-		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
+		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
 		{
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/", createIfMissing: createIfMissing));
 		}
 	}
 	private static void NucleusSingleton_Redirect(string args) {

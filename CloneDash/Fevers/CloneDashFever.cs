@@ -14,7 +14,7 @@ public class CloneDashFever : CloneDashDescriptor, IFeverDescriptor
 {
 	public CloneDashFever() : base(CloneDashDescriptorType.Fever, "fevers", "fever", "fever", "2025-05-06-01") { }
 
-	public static CloneDashFever? ParseFever(string filename) => Filesystem.ReadAllText("fevers", filename, out var text) ? ParseFile<CloneDashFever>(text, filename) : null;
+	public static CloneDashFever? ParseFever(string filename) => filesystem.ReadAllText("fevers", filename, out var text) ? ParseFile<CloneDashFever>(text, filename) : null;
 
 	LuaFunction? startFever;
 	LuaFunction? thinkFever;

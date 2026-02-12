@@ -97,7 +97,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public List<ChartSong> RefreshLocalSongs() {
 		List<ChartSong> ret = [];
 
-		foreach (var file in Filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
+		foreach (var file in filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
 			try {
 				ret.Add(new CustomChartsSong("charts", file));
 			}

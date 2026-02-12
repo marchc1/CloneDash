@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nucleus.Common.FileSystem;
+using System;
 using System.IO.Compression;
 
 namespace Nucleus.Files;
@@ -19,7 +20,7 @@ public class ZipArchiveSearchPath : SearchPath
 	}
 	public ZipArchiveSearchPath(string pathID, string path) {
 		this.rootArchive = $"(disk path, {pathID}/{path})";
-		var stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open);
+		var stream = filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open);
 
 		archive = new ZipArchive(stream, ZipArchiveMode.Read, false);
 	}
@@ -35,7 +36,7 @@ public class ZipArchiveSearchPath : SearchPath
         return false;
 	}
 
-	protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		for (int i = 0; i < archive.Entries.Count; i++) {
 			var entry = archive.Entries[i];
 			if (FullNameOf(entry).StartsWith(path))

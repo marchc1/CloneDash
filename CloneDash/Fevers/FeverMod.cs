@@ -21,7 +21,7 @@ namespace CloneDash.Fevers
 		}
 
 		public static string[] GetAvailableFevers() {
-			var dirs = Filesystem.FindDirectories("fevers", "");
+			var dirs = filesystem.FindDirectories("fevers", "");
 			return dirs.ToArray();
 		}
 

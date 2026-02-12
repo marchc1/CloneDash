@@ -46,18 +46,18 @@ public static class Host
 	public static bool Initialized { get; private set; }
 
 	public static void ReadConfiguration() {
-		bool userHasConfig = Filesystem.Exists("cfg", "config.cfg");
+		bool userHasConfig = filesystem.Exists("cfg", "config.cfg");
 
 		if (userHasConfig)
 			Cbuf.AddText("exec config.cfg");
-		else if (Filesystem.Exists("cfg", "config_default.cfg"))
+		else if (filesystem.Exists("cfg", "config_default.cfg"))
 			Cbuf.AddText("exec config_default.cfg");
 		else
 			userHasConfig = false;
 
 		Cbuf.Execute();
 
-		if (Filesystem.ReadAllText("cfg", "datastore.cfg", out string? datastoreText))
+		if (filesystem.ReadAllText("cfg", "datastore.cfg", out string? datastoreText))
 			DataStore = JSON.Deserialize<Dictionary<string, string>>(datastoreText) ?? [];
 
 		if (!userHasConfig)
@@ -89,8 +89,8 @@ public static class Host
 		stream.Seek(0, SeekOrigin.Begin);
 
 		using StreamReader reader = new(stream, leaveOpen: true);
-		Filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
-		Filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(DataStore));
+		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
+		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(DataStore));
 	}
 
 	internal static void ReformatOldHostStore(OldHostStore hoststore) {
@@ -104,8 +104,8 @@ public static class Host
 		stream.Seek(0, SeekOrigin.Begin);
 
 		using StreamReader reader = new(stream, leaveOpen:true);
-		Filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
-		Filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(hoststore.DataStore));
+		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
+		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(hoststore.DataStore));
 	}
 
 	public static ConCommand host_writeconfig = new("host_writeconfig", (_, in args) => WriteConfiguration(), "Writes the current configuration to config.cfg");

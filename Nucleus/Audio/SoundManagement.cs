@@ -148,7 +148,7 @@ namespace Nucleus.Audio
 		}
 		public MusicTrack LoadMusicFromFile(string pathID, string file, bool autoplay = false) {
 			unsafe {
-				var data = Filesystem.ReadAllBytes(pathID, file);
+				var data = filesystem.ReadAllBytes(pathID, file);
 				if (data == null) {
 					throw new Exception();
 				}

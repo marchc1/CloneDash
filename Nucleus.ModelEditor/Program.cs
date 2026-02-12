@@ -724,9 +724,9 @@ namespace Nucleus.ModelEditor
 		}
 
 		private string createDefaultFolder() {
-			var modelsrc = Filesystem.GetSearchPathID("modelsrc");
+			var modelsrc = filesystem.GetSearchPathID("modelsrc");
 			if (modelsrc.Count == 0)
-				Filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
+				filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
 
 			return (modelsrc[0] as DiskSearchPath).RootDirectory;
 		}

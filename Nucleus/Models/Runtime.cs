@@ -1782,7 +1782,7 @@ public class ModelBinary : IModelFormat
 
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		using (Stream? stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
+		using (Stream? stream = filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
 			if (stream == null) throw new NullReferenceException();
 			using (BinaryReader reader = new BinaryReader(stream)) {
 				ModelData data = new ModelData();
@@ -1801,8 +1801,8 @@ public class ModelBinary : IModelFormat
 				data.Animations = reader.ReadList(readAnimation);
 
 				// Try to load the texture atlas
-				string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-				byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+				string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
+				byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
 
 				if (texatlas == null && imagedata == null)
 					return data;
@@ -2070,7 +2070,7 @@ public class ModelRefJSON : IModelFormat
 	};
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		var text = Filesystem.ReadAllText(pathID, path);
+		var text = filesystem.ReadAllText(pathID, path);
 		if (text == null) throw new FileNotFoundException($"Cannot find '{path}' in {pathID}");
 
 		var data = JsonConvert.DeserializeObject<ModelData>(text, Settings);
@@ -2078,8 +2078,8 @@ public class ModelRefJSON : IModelFormat
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
 
 		// Try to load the texture atlas
-		string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-		byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+		string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
+		byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
 
 		if (texatlas == null && imagedata == null)
 			return data;

@@ -8,7 +8,7 @@ public class FeverModProvider : IFeverProvider
 	int IFeverProvider.Priority => 10000000;
 
 	IEnumerable<string> IFeverProvider.GetAvailable() {
-		var dirs = Filesystem.FindDirectories("scenes", "");
+		var dirs = filesystem.FindDirectories("scenes", "");
 		return dirs;
 	}
 

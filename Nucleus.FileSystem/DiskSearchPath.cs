@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Nucleus.Common.FileSystem;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.Files;
@@ -85,13 +86,13 @@ public class DiskSearchPath : SearchPath
             return info.Exists;
     }
 
-    protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
         var info = new DirectoryInfo(ResolveToAbsolute(path));
         if (!info.Exists) return false;
         return true;
     }
 
-    protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {
+	protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {
         // Just in case something *really* goes wrong, a try-catch is done here
         try {
             var absPath = ResolveToAbsolute(path);

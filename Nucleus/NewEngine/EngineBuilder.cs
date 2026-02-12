@@ -3,6 +3,8 @@ using Nucleus.Commands;
 using Nucleus.Common;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Engine;
+using Nucleus.Common.FileSystem;
+using Nucleus.Files;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -87,6 +89,7 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 		this.AddSingleton<ICvar, Cvar>();
 		this.AddSingleton<IEngineAPI, EngineAPI>();
 		this.AddSingleton<IEngine, GameEngine>();
+		this.AddSingleton<IFileSystem, FileSystem>();
 
 		List<Type> wantsInjection = [];
 		object?[]? linkInput = [this];

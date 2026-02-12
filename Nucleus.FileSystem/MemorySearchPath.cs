@@ -1,4 +1,5 @@
-﻿using Nucleus.Util;
+﻿using Nucleus.Common.FileSystem;
+using Nucleus.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +52,7 @@ public class MemorySearchPath : SearchPath
 	public override IEnumerable<string> FindFiles(ReadOnlySpan<char> path, ReadOnlySpan<char> searchQuery, SearchOption options) {
 		yield break; // unimplemented, but i don't want things to die on it
 	}
-	protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
+	public override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) {
 		return false; // todo
 	}
 	protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {

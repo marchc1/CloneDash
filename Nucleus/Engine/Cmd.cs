@@ -72,7 +72,7 @@ public static class Cmd
 		ReadOnlySpan<char> file = args[1];
 
 	readText:
-		string? text = Filesystem.ReadAllText("cfg", new string(file));
+		string? text = filesystem.ReadAllText("cfg", new string(file));
 		if (text == null) {
 			Logs.Print($"exec: couldn't exec {file}");
 			return;

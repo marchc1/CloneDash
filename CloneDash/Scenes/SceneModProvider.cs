@@ -10,7 +10,7 @@ public class SceneModProvider : ISceneProvider
 	int ISceneProvider.Priority => 10000000;
 
 	IEnumerable<string> ISceneProvider.GetAvailable() {
-		var dirs = Filesystem.FindDirectories("scenes", "");
+		var dirs = filesystem.FindDirectories("scenes", "");
 		return dirs;
 	}
 
