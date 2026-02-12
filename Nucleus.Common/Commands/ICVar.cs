@@ -2,6 +2,7 @@
 using Nucleus.Common.Types;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace Nucleus.Common.Commands;
@@ -38,4 +39,5 @@ public interface ICvar
 	void ConsolePrint(ReadOnlySpan<char> message);
 
 	void RevertFlaggedConVars(FCvar flag);
+	void SetAssemblyIdentifier(Assembly assembly);
 }

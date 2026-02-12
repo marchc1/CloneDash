@@ -1,6 +1,6 @@
 ﻿namespace Nucleus.Types
 {
-    public struct GameInfo()
+    public struct StartupInfo()
     {
         public string AppName { get; set; }
         public string? AppVersion { get; set; }

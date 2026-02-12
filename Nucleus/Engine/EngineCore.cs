@@ -281,7 +281,7 @@ public static class EngineCore
 			Window.Fullscreen = self.GetBool();
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine",  string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
 		// TEMPORARY
 		TemporaryInitializeDependencies();
 
@@ -289,7 +289,6 @@ public static class EngineCore
 			MainThread.Thread = Thread.CurrentThread;
 
 		Filesystem.Initialize(GameInfo.AppName);
-		CommandLine.FromArgs(args ?? []);
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -325,7 +324,7 @@ public static class EngineCore
 			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 			// Fix monitor sizing for fullscreens first frame
 			// todo: is there a better way to do this? This interferes with a few things I think
-			OSMonitor curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : OS.GetPrimaryMonitor();
+			OSMonitor curMonitor = CommandLine().ParmValue("monitor", OS.GetPrimaryMonitor().DisplayID);
 			var size = curMonitor.Size;
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
@@ -339,8 +338,8 @@ public static class EngineCore
 		GameThread.Start();
 		lock (GameThread_GLLock) ;
 
-		if (CommandLine.TryGetParam("monitor", out int monitorIdx)) {
-			OSMonitor monitor = new OSMonitor(monitorIdx);
+		if (CommandLine().HasParm("-monitor")) {
+			OSMonitor monitor = new OSMonitor(CommandLine().ParmValue("-monitor", 0));
 			var monitorPos = monitor.Position;
 			var monitorSize = monitor.Size;
 			var windowSize = new Vector2F(windowWidth, windowHeight);
@@ -540,7 +539,7 @@ public static class EngineCore
 		return new(BorderlessScreenPadding);
 	}
 
-	public static GameInfo GameInfo;
+	public static StartupInfo GameInfo;
 
 	public static double TargetFrameTime { get; set; }
 	public static double CurrentAppTime { get; set; }
@@ -827,7 +826,6 @@ public static class EngineCore
 			// Skip panic routine.
 			Logs.Info("PANIC: Disabled immediate thread panicking due to the presence of a debugger.");
 			LoadingScreen?.Initialize([]);
-			CommandLine.StuffCmds();
 			while (Running) {
 				shouldThrow = false;
 				Frame();
@@ -837,7 +835,6 @@ public static class EngineCore
 			try {
 				Logs.Info("PANIC: Immediate thread panicking active.");
 				LoadingScreen?.Initialize([]);
-				CommandLine.StuffCmds();
 				while (Running) {
 					shouldThrow = false;
 					Frame();
@@ -892,6 +889,8 @@ public static class EngineCore
 
 			ConVar.Register();
 			Host.ReadConfiguration();
+
+			Cbuf.AddText("stuffcmds");
 
 			Logs.Info("BOOT: Running JIT early where possible...");
 			Parallel.ForEach(earlyJITAssemblies

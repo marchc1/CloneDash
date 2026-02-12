@@ -14,7 +14,7 @@ namespace Nucleus.Engine
 		private static FileStream? lockFileStream;
 		private static CancellationTokenSource? redirectListenerCancelToken;
 
-		public delegate void OnProcessRedirect(string[] args);
+		public delegate void OnProcessRedirect(string args);
 
 		private static string GetLockFilePath(string name) {
 			string basePath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -46,7 +46,7 @@ namespace Nucleus.Engine
 			Task.Run(() => redirectListener(pipeName(name), redirectListenerCancelToken.Token));
 		}
 
-		public static bool TryRedirect(string name, string[] args) {
+		public static bool TryRedirect(string name, string args) {
 			if (!isDesktop())
 				return false;
 
@@ -56,7 +56,7 @@ namespace Nucleus.Engine
 				client.Connect(100);
 
 				using var writer = new StreamWriter(client, Encoding.UTF8) { AutoFlush = true };
-				writer.WriteLine(string.Join('\0', args.Select(escapeNulls)));
+				writer.WriteLine(escapeNulls(args));
 				return false;
 			}
 			catch {
@@ -65,12 +65,12 @@ namespace Nucleus.Engine
 		}
 
 		public static event OnProcessRedirect? Redirect;
-		static ConcurrentQueue<string[]> argQueue = [];
+		static ConcurrentQueue<string> argQueue = [];
 		public static void Spin() {
 			if (!isDesktop())
 				return;
 
-			while (argQueue.TryDequeue(out string[]? args))
+			while (argQueue.TryDequeue(out string? args))
 				Redirect?.Invoke(args);
 		}
 
@@ -83,7 +83,7 @@ namespace Nucleus.Engine
 					string? line = await reader.ReadLineAsync();
 
 					if (line != null) {
-						string[] args = line.Split('\0').Select(unescapeNulls).ToArray();
+						string args = unescapeNulls(line);
 						argQueue.Enqueue(args);
 					}
 				}

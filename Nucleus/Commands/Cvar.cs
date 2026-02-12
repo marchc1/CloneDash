@@ -122,4 +122,8 @@ public class Cvar : ICvar
 	public void UnregisterConCommand(ConCommandBase commandBase) {
 		throw new NotImplementedException();
 	}
+
+	public void SetAssemblyIdentifier(Assembly assembly) {
+
+	}
 }

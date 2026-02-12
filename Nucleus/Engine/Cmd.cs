@@ -1,4 +1,5 @@
-﻿using Nucleus.Commands;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Core;
 using Nucleus.Files;
@@ -17,6 +18,49 @@ internal class OldHostStore
 
 public static class Cmd
 {
+	[ConCommand(Name: "stuffcmds")]
+	public static void StuffCmds(in TokenizedCommand args) {
+		if (args.ArgC() != 1) {
+			Logs.Print("stuffcmds : execute command line parameters");
+			return;
+		}
+
+		using MemoryStream stream = new();
+		using StreamWriter writer = new(stream);
+
+		for (int i = 1; i < CommandLine().ParmCount(); i++) {
+			ReadOnlySpan<char> parm = CommandLine().GetParm(i);
+			if (parm.IsEmpty)
+				continue;
+
+			if (parm[0] == '-') {
+				ReadOnlySpan<char> value = CommandLine().ParmValueByIndex(i);
+				if (!value.IsEmpty)
+					i++;
+				continue;
+			}
+			else if (parm[0] == '+') {
+				ReadOnlySpan<char> value = CommandLine().ParmValueByIndex(i);
+				if (!value.IsEmpty) {
+					writer.Write($"{parm[1..]} {value}\n");
+					i++;
+				}
+				else {
+					writer.Write($"{parm[1..]}\n");
+				}
+			}
+		}
+
+		writer.Flush();
+		stream.Seek(0, SeekOrigin.Begin);
+
+		if (stream.Length <= 0)
+			return;
+
+		using StreamReader reader = new(stream, leaveOpen: true);
+		Cbuf.InsertText(reader.ReadToEnd());
+	}
+
 	[ConCommand(Name: "exec")]
 	public static void Exec(in TokenizedCommand args) {
 		int argCount = args.ArgC();
@@ -50,7 +94,7 @@ public static class Cmd
 		}
 
 		using TextReader reader = new StringReader(text);
-		while(true){
+		while (true) {
 			var line = reader.ReadLine();
 			if (line != null) {
 				Cbuf.InsertText(line);

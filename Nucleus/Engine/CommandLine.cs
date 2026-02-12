@@ -1,179 +1,213 @@
-﻿using Nucleus.Commands;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-namespace Nucleus.Engine
+namespace Nucleus.Engine;
+
+public class CommandLineParser : ICommandLine
 {
-	public class CommandLineParser
-	{
-		private Dictionary<string, object> parameters = [];
-		private Dictionary<string, string> variables = [];
+	void ParseCommandLine() {
+		CleanUpParms();
+		if (cmdLine == null)
+			return;
 
-		public void StuffCmds() {
-			foreach (var var in variables) {
-				ConVar? cv = cvar.FindVar(var.Key);
-				if (cv == null) continue;
-				cv.SetValue(var.Value);
-			}
-		}
+		ReadOnlySpan<char> chars = cmdLine.AsSpan();
 
-		public bool HasParam(string parm) => parameters.TryGetValue(parm, out var _);
-		private bool getStrBoolVal(string parm) {
-			switch (parm.ToLower()) {
-				case "t":
-				case "true":
-				case "y":
-				case "yes":
-				case "1":
-					return true;
-				case "f":
-				case "false":
-				case "n":
-				case "no":
-				case "0":
-				default:
-					return false;
-			}
-		}
+		while (!chars.IsEmpty && char.IsWhiteSpace(chars[0]))
+			chars = chars[1..];
 
-		public bool IsParamTrue(string parm, bool def = false) => parameters.TryGetValue(parm, out var p) ? (
-				(p is int i && i >= 1) ||
-				(p is int d && d >= 1) ||
-				(p is string s && getStrBoolVal(s))
-			) : def;
+		bool inQuotes = false;
+		ReadOnlySpan<char> firstLetter = ReadOnlySpan<char>.Empty;
 
-		public T GetParam<T>(string parm, T def) {
-			if (!parameters.TryGetValue(parm, out object? obj)) return def;
+		for (; !chars.IsEmpty; chars = chars[1..]) {
+			char c = chars[0];
 
-			var tAs = def switch {
-				double _ => obj switch {
-					int o => (T)(object)Convert.ToDouble(o),
-					_ => throw new InvalidCastException()
-				},
-				_ => (T)obj
-			};
-
-
-			return tAs;
-		}
-
-		public bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) {
-			var has = parameters.TryGetValue(parm, out object? obj);
-			if (has)
-				ret = (obj is T ? (T)obj : default);
-			else
-				ret = default;
-			return has;
-		}
-
-		public void SetParam<T>(string parm, T val) {
-			object? oVal = val;
-			if (oVal == null) parameters.Remove(parm);
-			else parameters[parm] = oVal;
-		}
-
-		private string readUntil(string str, ref int i, char stopChar) {
-			string build = "";
-			while (i < str.Length) {
-				char c = str[i];
-				if (c == stopChar)
-					return build;
-				build += c;
-				i++;
-			}
-
-			return build;
-		}
-
-		private string readValue(string str, ref int i) {
-			string build = "";
-			bool willBeQuoted = str[i] == '"';
-			if (willBeQuoted) i++;
-
-			while (i < str.Length) {
-				char c = str[i];
-				if ((c == ' ' && !willBeQuoted) || (c == '"' && willBeQuoted && str[i - 1] != '\\')) {
-					i++;
-					return build;
+			if (inQuotes) {
+				if (c == '\"') {
+					AddArgument(firstLetter, chars);
+					firstLetter = ReadOnlySpan<char>.Empty;
+					inQuotes = false;
 				}
-				build += c;
-				i++;
+				continue;
 			}
 
-			return build;
-		}
-
-		private void skipWhitespace(string args, ref int i) {
-			while (i < args.Length && char.IsWhiteSpace(args[i]))
-				i++;
-		}
-
-		private object trueValueType(string input) {
-			if (int.TryParse(input, out int i))
-				return i;
-
-			if (double.TryParse(input, out double d))
-				return d;
-
-			return input;
-		}
-
-		private bool checkIfValue(string input, int i) {
-			if (i < input.Length && input[i] != '-' && input[i] != '+')
-				return true;
-			return false;
-		}
-
-		public void FromString(string args) {
-			parameters.Clear();
-			for (int i = 0; i < args.Length;) {
-				skipWhitespace(args, ref i);
-				char c = args[i];
-				switch (c) {
-					case '-': // Read a parameter
-					case '+': // Read a variable
-						bool isParm = c == '-';
-						i++;
-						var parm = readUntil(args, ref i, ' ');
-						skipWhitespace(args, ref i);
-
-						bool hasValue = checkIfValue(args, i);
-						string value = "";
-
-						if (hasValue)
-							value = readValue(args, ref i);
-						else if (isParm)
-							value = "1";
-
-						if (isParm) 
-							parameters[parm] = trueValueType(value);
-						else 
-							variables[parm] = value;
-
-						break;
-					default:
-						break;
+			if (firstLetter.IsEmpty) {
+				if (c == '\"') {
+					inQuotes = true;
+					firstLetter = chars[1..];
+					continue;
 				}
+
+				if (char.IsWhiteSpace(c))
+					continue;
+
+				firstLetter = chars;
+				continue;
+			}
+
+			if (char.IsWhiteSpace(c)) {
+				AddArgument(firstLetter, chars);
+				firstLetter = ReadOnlySpan<char>.Empty;
 			}
 		}
 
-		public void FromArgs(string[] args) {
-			for (int i = 0; i < args.Length; i++)
-				args[i] = args[i].IndexOf(' ') > -1 ? ('"' + args[i] + '"') : args[i];
+		if (!firstLetter.IsEmpty)
+			AddArgument(firstLetter, chars);
+	}
 
-			FromString(string.Join(' ', args));
+	void CleanUpParms() {
+		parms.Clear();
+	}
+
+	
+	void AddArgument(ReadOnlySpan<char> first, ReadOnlySpan<char> last) {
+		if (first.IsEmpty)
+			return;
+
+		int len = first.Length;
+
+		if (!last.IsEmpty) {
+			ref char firstRef = ref MemoryMarshal.GetReference(first);
+			ref char lastRef = ref MemoryMarshal.GetReference(last);
+
+			int offset = Unsafe.ByteOffset(ref firstRef, ref lastRef).ToInt32() / sizeof(char);
+
+			if (offset > 0 && offset <= first.Length)
+				len = offset;
+		}
+
+		if (len > 0)
+			parms.Add(new string(first[..len]));
+	}
+
+	bool IsInvalidIndex(int index) => index == 0 || index == parms.Count - 1;
+	bool IsLikelyCmdLineParameter(int index) {
+		char c = parms[index][0];
+		return c == '-' || c == '+';
+	}
+
+	string? cmdLine;
+	List<string> parms = [];
+
+
+	public CommandLineParser() { }
+	public CommandLineParser(string cmdline) => CreateCmdLine(cmdline);
+
+	public unsafe void CreateCmdLine(ReadOnlySpan<char> commandLine) {
+		const int MAX_BUFFER_LEN = 4096;
+		char* full = stackalloc char[MAX_BUFFER_LEN];
+		full[0] = '\0';
+
+		char* dst = full;
+		fixed (char* pCommandLine = commandLine) {
+			char* src = pCommandLine;
+			bool inQuotes = false;
+			char* inQuotesStart = null;
+			while (*src > 0) {
+				if (*src == '"') {
+					if (src == pCommandLine || (src[-1] != '/' && src[-1] != '\\')) {
+						inQuotes = !inQuotes;
+						inQuotesStart = src + 1;
+					}
+				}
+
+				if (*src == '*') {
+					if (src == pCommandLine || (inQuotes && char.IsWhiteSpace(src[-1])) || (inQuotes && src == inQuotesStart)) {
+						LoadParametersFromFile(src, dst, MAX_BUFFER_LEN - ((nint)dst - (nint)full), inQuotes);
+						continue;
+					}
+				}
+
+				if ((dst - full) >= (MAX_BUFFER_LEN - ((nint)dst - (nint)full) - 1))
+					break;
+
+				*dst++ = *src++;
+			}
+
+			*dst = '\0';
+			string managed = new string(full);
+			cmdLine = managed;
+			ParseCommandLine();
 		}
 	}
 
-	public static class CommandLine
-	{
-		public readonly static CommandLineParser Singleton = new();
-		public static void StuffCmds() => Singleton.StuffCmds();
-		public static bool HasParam(string parm) => Singleton.HasParam(parm);
-		public static bool IsParamTrue(string parm, bool def = false) => Singleton.IsParamTrue(parm, def);
-		public static T GetParam<T>(string parm, T def) => Singleton.GetParam(parm, def);
-		public static bool TryGetParam<T>(string parm, [NotNullWhen(true)] out T? ret) => Singleton.TryGetParam(parm, out ret);
-		public static void SetParam<T>(string parm, T val) => Singleton.SetParam(parm, val);
-		public static void FromString(string args) => Singleton.FromString(args);
-		public static void FromArgs(string[] args) => Singleton.FromArgs(args);
+	private unsafe void LoadParametersFromFile(char* src, char* dst, nint v, bool inQuotes) {
+		throw new NotImplementedException();
+	}
+
+	public void AppendParm(string name, string? values = null) {
+		throw new NotImplementedException();
+	}
+
+	public int FindParm(ReadOnlySpan<char> name) {
+		for (int i = 1; i < parms.Count; i++) {
+			if (name.Equals(parms[i], StringComparison.InvariantCultureIgnoreCase))
+				return i;
+		}
+
+		return 0;
+	}
+
+	public bool HasParm(ReadOnlySpan<char> name) => FindParm(name) != 0;
+
+	public string? GetCmdLine() => cmdLine;
+
+	public string GetParm(int index) {
+		if (IsInvalidIndex(index))
+			return "";
+		return parms[index];
+	}
+
+	public int ParmCount() => parms.Count;
+
+
+	[return: NotNullIfNotNull("defaultValue")]
+	public string? ParmValue(string name, string? defaultValue = null) {
+		int index = FindParm(name);
+		if (IsInvalidIndex(index))
+			return defaultValue;
+
+		if (IsLikelyCmdLineParameter(index + 1))
+			return defaultValue;
+
+		return parms[index + 1];
+	}
+
+	public int ParmValue(string name, int defaultValue) => int.TryParse(ParmValue(name), out int result) ? result : defaultValue;
+	public float ParmValue(string name, float defaultValue) => float.TryParse(ParmValue(name), out float result) ? result : defaultValue;
+	public double ParmValue(string name, double defaultValue) => double.TryParse(ParmValue(name), out double result) ? result : defaultValue;
+
+
+	[return: NotNullIfNotNull("defaultValue")]
+	public string? ParmValueByIndex(int index, string? defaultValue = null) {
+		if (IsInvalidIndex(index))
+			return defaultValue;
+
+		if (IsLikelyCmdLineParameter(index + 1))
+			return defaultValue;
+
+		return parms[index + 1];
+	}
+
+	public unsafe void RemoveParm(string name) {
+		throw new NotImplementedException();
+	}
+
+	public void SetParm(int index, string newParm) {
+		throw new NotImplementedException();
+	}
+
+	public bool CheckParm(string name, out ParmInfo info) {
+		info = default;
+		int i = FindParm(name);
+		if (i == 0)
+			return false;
+
+		info = new(this, i);
+		return true;
 	}
 }
