@@ -20,7 +20,7 @@ namespace Nucleus.UI.Elements
 {
 	public class ColorSelector : Element
 	{
-		public DataBinder<Color> SelectedColor { get; set; } = new(Color.White);
+		public Color SelectedColor { get; set; } = Color.White;
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
 		protected override void Initialize() {
@@ -50,14 +50,14 @@ namespace Nucleus.UI.Elements
 			Graphics2D.SetDrawColor(SelectedColor);
 			Graphics2D.DrawRectangle(3, 3, width - 6, height - 6);
 
-			Graphics2D.SetDrawColor(120 + (SelectedColor.Backing.R / 2), 120 + (SelectedColor.Backing.G / 2), 120 + (SelectedColor.Backing.B / 2), 255);
+			Graphics2D.SetDrawColor(120 + (SelectedColor.R / 2), 120 + (SelectedColor.G / 2), 120 + (SelectedColor.B / 2), 255);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 		}
 	}
 
 	public class ColorSelectorDialog : Panel
 	{
-		public DataBinder<Color> SelectedColor { get; set; }
+		public Color SelectedColor { get; set; }
 
 		Panel ColorWheel;
 
@@ -84,14 +84,14 @@ namespace Nucleus.UI.Elements
 		public float Hue {
 			get => _workingHue;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
 				_workingHue = value;
 			}
 		}
 		public float Saturation {
 			get => _workingSat;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
 				_workingSat = value;
 
 			}
@@ -99,12 +99,12 @@ namespace Nucleus.UI.Elements
 		public float Value {
 			get => _workingVal;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
 				_workingVal = value;
 			}
 		}
 		public void Setup() {
-			var hsv = SelectedColor.Backing.ToHSV();
+			var hsv = SelectedColor.ToHSV();
 
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
