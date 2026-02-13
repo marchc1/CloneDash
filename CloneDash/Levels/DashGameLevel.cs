@@ -605,6 +605,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					Music.Playing = true;
 					if (args.Length > 1) {
 						double measure = (double)args[1];
+						Logs.Info($"Received measure as parameter: {measure}");
 						Music.Playhead = (float)Conductor.MeasureToSeconds(measure);
 					}
 				}

@@ -250,15 +250,29 @@ namespace CloneDash.Game
 			return ((float)NMath.Modulo(Time, div2sec)) / div2sec;
 		}
 
+		public double BeatToSeconds(double measure) {
+			for (int i = 0; i < TempoChanges.Count; i++) {
+				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
+				var change = TempoChanges[i];
+
+				if (i == TempoChanges.Count - 1 || change.Measure > measure) {
+					return lastChange.Time + ((measure - lastChange.Measure) * (60.0 / change.BPM));
+				}
+			}
+
+			return 0;
+		}
+
 		public double MeasureToSeconds(double measure) {
-			double ret = 0;
+			double beatsPerMeasure = 4; // TODO: will we ever receive something not in 4/4... I don't know what MDBMSC supports here. Probably not though I'd figure, if
+			// measure is the only parameter that is ever sent to ubmplay
 
 			for (int i = 0; i < TempoChanges.Count; i++) {
 				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
 				var change = TempoChanges[i];
 
 				if (i == TempoChanges.Count - 1 || change.Measure > measure) {
-					return lastChange.Time + ((measure - lastChange.Measure) * (60 / change.BPM));
+					return lastChange.Time + ((measure - lastChange.Measure) * beatsPerMeasure * (60.0 / change.BPM));
 				}
 			}
 
