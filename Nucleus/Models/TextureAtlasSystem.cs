@@ -194,7 +194,7 @@ namespace Nucleus.Models
 					renderTestData(rect, key, src, ref workingImage);
 				}
 
-				AllRegions[key] = new(rect.X, rect.Y, rect.Width, rect.Height);
+				AllRegions[key] = new((int)(rect.X + additionalPadding), (int)(rect.Y + additionalPadding), (int)(rect.Width - (additionalPadding * 2)), (int)(rect.Height - (additionalPadding * 2)));
 			}
 
 			packedImg = workingImage;
