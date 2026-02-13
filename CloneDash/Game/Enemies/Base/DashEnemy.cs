@@ -13,6 +13,8 @@ public class DashEnemy : DashModelEntity
 	public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
 	public BoneInstance? MountBone;
 
+	public int SortIndex;
+
 	public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
 		{ EntityType.Single, typeof(SingleHitEnemy) },
 		{ EntityType.Double, typeof(DoubleHitEnemy) },
@@ -68,6 +70,7 @@ public class DashEnemy : DashModelEntity
 	public static DashEnemy CreateFromType(DashGameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
 	public static DashEnemy CreateFromType(DashGameLevel game, Type type) {
 		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type));
+		enemy.SortIndex = game.EnemySortIndexCounter++;
 		return enemy;
 	}
 

@@ -853,7 +853,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		}
 
 		// Sort the visible entities by their hit time
-		VisibleEntities.Sort((x, y) => x.GetJudgementHitTime().CompareTo(y.GetJudgementHitTime()));
+		VisibleEntities.Sort(VisibleEntitySorter);
 
 		IterateEvents();
 
@@ -943,6 +943,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 		if (!Paused && IValidatable.IsValid(pressIdle))
 			pressIdle.Update();
+	}
+
+	public int EnemySortIndexCounter;
+
+	private static int VisibleEntitySorter(DashEnemy x, DashEnemy y) {
+		return x.SortIndex.CompareTo(y.SortIndex);
 	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
@@ -1221,12 +1227,14 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		}
 	}
 	public override void Render(FrameState frameState) {
+		Rlgl.DrawRenderBatchActive();
+
 		Rlgl.DisableDepthTest();
+		Rlgl.DisableDepthMask();
 		Rlgl.DisableBackfaceCulling();
 
 		//Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
 		//Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
-		Rlgl.DrawRenderBatchActive();
 
 		// Pathways
 		TopPathway.Render();
@@ -1247,6 +1255,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		AddDebugString("Hologram-Player Animation", HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
+
+		Rlgl.DrawRenderBatchActive();
 	}
 
 	public override void Render2D(FrameState frameState) {
