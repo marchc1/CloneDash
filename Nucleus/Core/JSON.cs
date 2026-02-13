@@ -14,23 +14,23 @@ namespace Nucleus.Core;
 
 public static class JSON
 {
-	static readonly JsonSerializer serializer;
-	static JSON(){
-		serializer = new();
+	static readonly ThreadLocal<JsonSerializer> serializer = new(() => {
+		JsonSerializer serializer = new();
 		serializer.Converters.Add(new Vector2FJsonConverter());
-	}
+		return serializer;
+	});
 
 	public static string Serialize<T>(T obj) {
 		using (TextWriter text = new StringWriter())
 		using (JsonTextWriter writer = new JsonTextWriter(text)) {
-			serializer.Serialize(writer, obj);
+			serializer.Value!.Serialize(writer, obj);
 			return text.ToString() ?? throw new Exception("text.ToString returned null??");
 		}
 	}
 	public static T? Deserialize<T>(string json) {
 		using (TextReader text = new StringReader(json))
 		using (JsonTextReader reader = new JsonTextReader(text)) {
-			return serializer.Deserialize<T>(reader);
+			return serializer.Value!.Deserialize<T>(reader);
 		}
 	}
 }

@@ -436,7 +436,12 @@ namespace CloneDash.Compatibility.MuseDash
 				Parallel.ForEach(Albums, (album) => {
 					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}");
 					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English");
-
+					Debug.Assert(songs.Count == songsEN.Length);
+					// if (songs.Count != songsEN.Length) {
+					// 	Logs.Print($"inconsistency: {album.JsonName} songs length! songs ({songs.Count}) != songsEN ({songsEN.Length})");
+					// 	for (int i = 0; i < songs.Count; i++) Logs.Print($"    song   #{i}: {songs[i].Name}");
+					// 	for (int i = 0; i < songsEN.Length; i++) Logs.Print($"    songEN #{i}: {songsEN[i].name}");
+					// }
 					var songsFinal = new MuseDashSong[songs.Count];
 
 					for (int i = 0; i < songs.Count; i++) {
