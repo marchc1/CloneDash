@@ -16,6 +16,7 @@ public interface IEngineAPI : IServiceProvider
 	}
 
 	public Result Run();
+	public ref readonly StartupInfo GetStartupInfo();
 	public void SetStartupInfo(in StartupInfo info);
 }
 

@@ -33,6 +33,7 @@ public class EngineAPI(IServiceProvider services) : IEngineAPI, IDisposable
 		gameDLL.Init();
 	}
 
+	public ref readonly StartupInfo GetStartupInfo() => ref StartupInfo;
 	public void SetStartupInfo(in StartupInfo info) {
 		StartupInfo = info; // copy off
 	}

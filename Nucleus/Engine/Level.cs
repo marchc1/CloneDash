@@ -700,7 +700,7 @@ namespace Nucleus.Engine
 					Graphics2D.ResetDrawingOffset();
 					debugrecords.Reset();
 
-					debugrecords.Write($"Nucleus Level / {"RESTRUCTURE-TESTS FIXME"} - DebugContext");
+					debugrecords.Write($"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext");
 					debugrecords.Write();
 					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
