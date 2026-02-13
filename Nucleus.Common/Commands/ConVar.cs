@@ -108,7 +108,7 @@ namespace Nucleus.Commands
 			Debug.Assert((Flags & FCvar.NeverAsString) == 0, "NeverAsString, yet ChangeStringValue still called...");
 
 			Span<char> oldValue = stackalloc char[value.StringLength];
-			value.Chars?.CopyTo(oldValue);
+			value.Chars?.AsSpan()[..value.StringLength].CopyTo(oldValue);
 
 			int len = val.IndexOf('\0');
 			if (len == -1)
