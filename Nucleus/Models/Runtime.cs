@@ -47,10 +47,10 @@ public static class Model4System
 	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		T? item = null;
-		for (int i = 0, c = items.Length; i < c; i++) 
+		for (int i = 0, c = items.Length; i < c; i++)
 			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
 				return item;
-		
+
 		return null;
 	}
 	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
@@ -708,7 +708,8 @@ public class VertexAttachment : Attachment
 		=> ComputeWorldVertices(slot, 0, Vertices.Length, worldVertices, 0);
 }
 
-public class LinkedMesh {
+public class LinkedMesh
+{
 	public string? Path;
 	public Color Color;
 	public string? Skin;
@@ -750,8 +751,16 @@ public class MeshAttachment : VertexAttachment
 	public AttachmentTriangle[] GetTriangles() => ParentMesh?.Triangles ?? Triangles;
 
 	public override void Render(SlotInstance slot) {
-		Debug.Assert(Vertices != null); if (Vertices == null) return;
-		Debug.Assert(Triangles != null); if (Triangles == null) return;
+		var vertices = GetVertices();
+		var triangles = GetTriangles();
+
+		Debug.Assert(vertices != null);
+		if (vertices == null)
+			return;
+
+		Debug.Assert(triangles != null);
+		if (triangles == null)
+			return;
 
 		slot.StartBlendModeFor(this);
 
@@ -779,7 +788,7 @@ public class MeshAttachment : VertexAttachment
 
 		Rlgl.DisableBackfaceCulling();
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
-		if (Triangles.Length > 0) {
+		if (triangles.Length > 0) {
 			float uStart, uEnd, vStart, vEnd;
 			uStart = (float)region.X / (float)tex.Width;
 			uEnd = uStart + ((float)region.W / (float)tex.Width);
@@ -788,10 +797,10 @@ public class MeshAttachment : VertexAttachment
 			vEnd = vStart + ((float)region.H / (float)tex.Height);
 
 			bool block = false;
-			foreach (var tri in Triangles) {
-				var av1 = Vertices[tri.V1];
-				var av2 = Vertices[tri.V2];
-				var av3 = Vertices[tri.V3];
+			foreach (var tri in triangles) {
+				var av1 = vertices[tri.V1];
+				var av2 = vertices[tri.V2];
+				var av3 = vertices[tri.V3];
 
 				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
 				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
@@ -817,10 +826,10 @@ public class MeshAttachment : VertexAttachment
 			Rlgl.Begin(DrawMode.LINES);
 			Rlgl.SetTexture(0);
 
-			foreach (var tri in Triangles) {
-				var av1 = Vertices[tri.V1];
-				var av2 = Vertices[tri.V2];
-				var av3 = Vertices[tri.V3];
+			foreach (var tri in triangles) {
+				var av1 = vertices[tri.V1];
+				var av2 = vertices[tri.V2];
+				var av3 = vertices[tri.V3];
 
 				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
 				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
