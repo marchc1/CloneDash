@@ -100,6 +100,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	public List<Skin> Skins { get; set; } = [];
 	public Skin DefaultSkin { get; set; }
 	public List<Animation> Animations { get; set; } = [];
+	public List<LinkedMesh> LinkedMeshes { get; set; } = [];
 
 	[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; set; }
 
@@ -706,10 +707,24 @@ public class VertexAttachment : Attachment
 	public int ComputeWorldVerticesInto(SlotInstance slot, Vector2F[] worldVertices)
 		=> ComputeWorldVertices(slot, 0, Vertices.Length, worldVertices, 0);
 }
+
+public class LinkedMesh {
+	public string? Path;
+	public Color Color;
+	public string? Skin;
+	public int SlotIndex;
+	public string? Parent;
+	public MeshAttachment Mesh = null!;
+	public bool Deform;
+	public int Width;
+	public int Height;
+}
+
 public class MeshAttachment : VertexAttachment
 {
 	public AttachmentTriangle[] Triangles;
 	public string Path;
+	public MeshAttachment? ParentMesh;
 
 	public string ToDesmosPointArray() {
 		string[] triangles = new string[Triangles.Length];
@@ -730,6 +745,9 @@ public class MeshAttachment : VertexAttachment
 	public override void Setup(ModelData data) {
 		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
 	}
+
+	public AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
+	public AttachmentTriangle[] GetTriangles() => ParentMesh?.Triangles ?? Triangles;
 
 	public override void Render(SlotInstance slot) {
 		Debug.Assert(Vertices != null); if (Vertices == null) return;
@@ -825,6 +843,7 @@ public class MeshAttachment : VertexAttachment
 		}
 	}
 }
+
 public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 {
 	public string? EndSlot = null;

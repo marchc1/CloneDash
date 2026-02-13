@@ -461,12 +461,12 @@ namespace CloneDash.Compatibility.MuseDash
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
 
 			HashSet<char> codepoints = [];
-			foreach(var song in Songs){
+			foreach (var song in Songs) {
 				string name = song.Name, author = song.Author;
-				for (int i = 0, c = name.Length; i < c; i++) 
-				codepoints.Add(name[i]);
-				for (int i = 0, c = author.Length; i < c; i++) 
-				codepoints.Add(author[i]);
+				for (int i = 0, c = name.Length; i < c; i++)
+					codepoints.Add(name[i]);
+				for (int i = 0, c = author.Length; i < c; i++)
+					codepoints.Add(author[i]);
 			}
 			CodepointsInUse = codepoints.ToArray();
 		}
@@ -693,7 +693,7 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		internal static MuseDashSong? FindSong(ReadOnlySpan<char> md_level) {
-			foreach(var song in Songs){
+			foreach (var song in Songs) {
 				if (song.BaseName.Equals(md_level, StringComparison.InvariantCulture))
 					return song;
 			}
@@ -994,6 +994,17 @@ public static class MuseDashModelConverter
 
 			for (int i = 0, skins = skeleton.MD_ReadVarInt(true); i < skins; i++)
 				nucleusModelData.Skins.Add(MD_ReadSkin(skeleton, nucleusModelData, mdatlas, refStrings, false, nonessential));
+
+			// When all skins/attachments have been read, linked meshes need to be fully linked up
+			for (int i = 0, lmeshes = nucleusModelData.LinkedMeshes.Count; i < lmeshes; i++) {
+				var linked = nucleusModelData.LinkedMeshes[i];
+				Skin skin = (linked.Skin == null ? nucleusModelData.DefaultSkin : nucleusModelData.FindSkin(linked.Skin)) ?? throw new NullReferenceException("Skin was null (corrupt modeldata");
+				Attachment parent = skin.GetAttachment(linked.SlotIndex, linked.Parent) ?? throw new NullReferenceException("Parent attachment was null (corrupt modeldata)");
+				if (parent is not MeshAttachment parentMesh) throw new InvalidCastException("Parent attachment was not a mesh attachment");
+				MeshAttachment mesh = linked.Mesh;
+				mesh.ParentMesh = parentMesh;
+			}
+			nucleusModelData.LinkedMeshes.Clear();
 
 			for (int i = 0, events = skeleton.MD_ReadVarInt(true); i < events; i++) {
 				var name = skeleton.MD_ReadRefString(refStrings);
@@ -1429,15 +1440,37 @@ public static class MuseDashModelConverter
 						}
 						break;
 					case ATTACHMENT_LINKED_MESH: {
-							skeleton.MD_ReadRefString(refStrings);
-							skeleton.MD_ReadInt();
-							skeleton.MD_ReadRefString(refStrings);
-							skeleton.MD_ReadRefString(refStrings);
-							skeleton.MD_ReadBoolean();
+							var path = skeleton.MD_ReadRefString(refStrings);
+							var color = skeleton.MD_ReadColor();
+							var skinname = skeleton.MD_ReadRefString(refStrings);
+							var parent = skeleton.MD_ReadRefString(refStrings);
+							var deform = skeleton.MD_ReadBoolean(); 
+							float width = 0;
+							float height = 0;
 							if (nonessential) {
-								skeleton.MD_ReadFloat();
-								skeleton.MD_ReadFloat();
+								width = skeleton.MD_ReadFloat();
+								height = skeleton.MD_ReadFloat();
 							}
+
+							path ??= name;
+
+							LinkedMesh linkedMesh = new();
+							MeshAttachment meshAttachment = new();
+							meshAttachment.Name = name!;
+							meshAttachment.Path = path!;
+							meshAttachment.Color = color;
+							meshAttachment.Position = new(0);
+							meshAttachment.Rotation = 0;
+							meshAttachment.Scale = new(1);
+
+							linkedMesh.Mesh = meshAttachment;
+							linkedMesh.Skin = skinname;
+							linkedMesh.SlotIndex = slotIndex;
+							linkedMesh.Deform = deform;
+							linkedMesh.Parent = parent;
+
+							nucleusModelData.LinkedMeshes.Add(linkedMesh);
+							attachment = meshAttachment;
 						}
 						break;
 					case ATTACHMENT_PATH: {
@@ -1475,15 +1508,15 @@ public static class MuseDashModelConverter
 				}
 
 				if (attachment != null)
-					skin.SetAttachment(slotIndex, name, attachment);
-				else
+					skin.SetAttachment(slotIndex, attachmentName, attachment);
+				else {
 					Logs.Warn($"Ignoring unsupported attachment type ({type switch {
 						ATTACHMENT_BOUNDING_BOX => "bounding box",
-						ATTACHMENT_LINKED_MESH => "linked mesh",
 						ATTACHMENT_PATH => "path",
 						ATTACHMENT_POINT => "point",
 						_ => "???"
 					}})");
+				}
 			}
 		}
 		return skin;
