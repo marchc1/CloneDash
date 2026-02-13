@@ -156,17 +156,6 @@ public class UnitySearchPath : SearchPath
 		if (LookupAbsFiles.TryGetValue(path, out var bundleInfo)) return bundleInfo;
 		if (LookupAbsFolders.TryGetValue(path, out var folder)) return folder.Single();
 
-		// More expensive lookup method.
-		// todo: cheapen this with local searching or something
-
-		var tryFind = LookupAbsFiles.FirstOrDefault(x => x.Key.StartsWith(path)).Value ?? LookupAbsFiles.FirstOrDefault(x => x.Key.EndsWith(path)).Value;
-		if (tryFind == null) {
-			var tryFind2 = LookupAbsFolders.FirstOrDefault(x => x.Key.StartsWith(path)).Value;
-			if (tryFind2 != null)
-				return tryFind2.Single();
-		}
-		else return tryFind;
-
 		throw new FileNotFoundException(path);
 	}
 
