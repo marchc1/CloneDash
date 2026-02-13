@@ -49,6 +49,7 @@ namespace CloneDash.Data
 			Info = null;
 			__gotCover = false;
 			CoverTexture = null;
+			chartCoverCallbacks.Clear();
 			Sheets.Clear();
 		}
 
