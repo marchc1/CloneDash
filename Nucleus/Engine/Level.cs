@@ -272,10 +272,15 @@ namespace Nucleus.Engine
 		public void Unload() {
 			runFinalizers();
 
-			Textures.Dispose();
-			Sounds.Dispose();
-			Models.Dispose();
-			Shaders.Dispose();
+			// restructure-tests @ 2-12-2026: These have been commented out for now. The general ownership of textures is way too confusing.
+			// Future works on restructuring the engine will resolve this. For starters, the level shouldn't even be the owner 
+			// of these resources. There should be independent subsystems (IAudioSystem, IMaterialSystem, IModelSystem, etc) which
+			// contain weak references to resources. 
+
+			// Textures.Dispose();
+			// Sounds.Dispose();
+			// Models.Dispose();
+			// Shaders.Dispose();
 
 			UI.Dispose();
 
