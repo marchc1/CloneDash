@@ -53,6 +53,7 @@ public class UnitySearchPath : SearchPath
 	public DateTime WriteTime;
 	private UnityFolder Root = new();
 	private Dictionary<string, AssetsManager> assetsManagers = [];
+	private readonly object assetsManagersLock = new();
 	private string root;
 
 	public Dictionary<string, UnityFolder> LookupAbsFolders = [];
@@ -106,7 +107,7 @@ public class UnitySearchPath : SearchPath
 
 		// Stripped paths to real paths
 		Dictionary<string, string> strippedToReal = [];
-		foreach(var file in Directory.GetFiles(root)) {
+		foreach (var file in Directory.GetFiles(root)) {
 			string localPath = Path.GetFileName(file);
 			string stripped = Regex.Replace(localPath, @"(_[a-f0-9]{32})\.bundle$", "");
 			strippedToReal[stripped] = localPath;
@@ -139,12 +140,14 @@ public class UnitySearchPath : SearchPath
 	}
 
 	public void GetAssetBundle(UnityFile file, [NotNull] out AssetsManager manager) {
-		if (assetsManagers.TryGetValue(file.PointsToBundle, out manager))
-			return;
+		lock (assetsManagersLock)
+			if (assetsManagers.TryGetValue(file.PointsToBundle, out manager!))
+				return;
 
 		manager = new AssetsManager();
 		manager.LoadFiles(Path.Combine(root, file.PointsToBundle));
-		assetsManagers.Add(file.PointsToBundle, manager);
+		lock (assetsManagersLock)
+			assetsManagers.Add(file.PointsToBundle, manager);
 	}
 
 	public override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
