@@ -1,11 +1,12 @@
 ﻿using Lua;
+using Nucleus.Common.Types;
 
 namespace CloneDash.Scripting;
 
 [LuaObject]
-public partial class LuaColor : ILuaWrappedObject<Raylib_cs.Color>
+public partial class LuaColor : ILuaWrappedObject<Color>
 {
-	Raylib_cs.Color color;
+	Color color;
 
 	[LuaMember("r")]
 	public float R {
@@ -30,7 +31,7 @@ public partial class LuaColor : ILuaWrappedObject<Raylib_cs.Color>
 		set => color = color with { A = (byte)(int)Math.Clamp(value, 0, 255) };
 	}
 
-	public Raylib_cs.Color Unwrap() => color;
+	public Color Unwrap() => color;
 
 	[LuaMetamethod(LuaObjectMetamethod.Call)]
 	public static LuaColor __call(int r, int g, int b, int a = 255) {

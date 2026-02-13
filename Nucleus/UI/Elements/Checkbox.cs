@@ -1,4 +1,6 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -29,14 +31,14 @@ namespace Nucleus.UI
 			BackgroundColor = bck;
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 				Checked = !Checked;
 			OnCheckedChanged?.Invoke(this);
 		}
 	}
 	public class Checkbox : Button, IBindableToConVar
 	{
-		public DataBinder<bool> Checked { get; set; } = new(false);
+		public bool Checked { get; set; } = false;
 		protected override void Initialize() {
 			Text = "";
 		}
@@ -47,21 +49,16 @@ namespace Nucleus.UI
 		private HashSet<Checkbox> __otherRadioButtons = [];
 
 		public void BindToConVar(string convar) {
-			ConVar? cv = (ConVar?)ConCommandBase.Get(convar);
+			ConVar? cv = cvar.FindVar(convar);
 			Debug.Assert(cv != null, "Tried to bind to a non-existant convar");
 			if (cv == null) return;
 
 			BindToConVar(cv);
 		}
 
-		public void BindToConVar(ConVar cv) {
-			Checked.SetNoUpdate(cv.GetBool());
-			OnCheckedChanged += (_) 
-				=> cv.SetValue(Checked);
-		}
-
-		private void Cv_OnChange(ConVar self, CVValue old, CVValue now) {
-			Checked.SetNoUpdate(self.GetBool());
+		public void BindToConVar(IConVar cv) {
+			Checked = cv.GetBool();
+			OnCheckedChanged += _ => cv.SetValue(Checked);
 		}
 
 		public bool Radio { get; set; } = false;
@@ -70,7 +67,7 @@ namespace Nucleus.UI
 			__otherRadioButtons.Add(other);
 			other.OnCheckedChanged += (e) => {
 				if (other.Checked && other.Radio)
-					this.Checked.SetBackingObject(false);
+					this.Checked = false;
 			};
 			other.LinkRadioButton(this);
 		}
@@ -113,11 +110,11 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (Radio)
-				Checked.SetBackingObject(true);
+				Checked = true;
 			else
-				Checked.SetBackingObject(!Checked);
+				Checked = !Checked;
 			OnCheckedChanged?.Invoke(this);
 		}
 	}

@@ -140,7 +140,7 @@ public class CloneDashCharacter : CloneDashDescriptor, ICharacterDescriptor
 	/// </summary>
 	[JsonProperty("fail")] public CharacterDescriptor_Fail Fail = new();
 
-	public static CloneDashCharacter? ParseCharacter(string filename) => Filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CloneDashCharacter>(text, filename) : null;
+	public static CloneDashCharacter? ParseCharacter(string filename) => filesystem.ReadAllText("chars", filename, out var text) ? ParseFile<CloneDashCharacter>(text, filename) : null;
 	public string GetUniqueID() => Filename!;
 
 	string ICharacterDescriptor.GetName() => Name;
@@ -166,7 +166,7 @@ public class CloneDashCharacter : CloneDashDescriptor, ICharacterDescriptor
 	}
 
 	double ICharacterDescriptor.GetDefaultHP() => DefaultHP;
-	string? ICharacterDescriptor.GetLogicControllerData() => LogicController == null ? null : Filesystem.ReadAllText("character", LogicController);
+	string? ICharacterDescriptor.GetLogicControllerData() => LogicController == null ? null : filesystem.ReadAllText("character", LogicController);
 
 	string ICharacterDescriptor.GetPlayAnimation(CharacterAnimationType type) {
 		var playData = Play;

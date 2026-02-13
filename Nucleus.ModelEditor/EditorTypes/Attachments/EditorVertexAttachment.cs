@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Extensions;
 using Nucleus.Models;
 using Nucleus.Types;
@@ -118,7 +119,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public static ConCommand nm4_autouvmesh = ConCommand.Register("nm4_autouvmesh", (_, _) => {
+		public static ConCommand nm4_autouvmesh = new("nm4_autouvmesh", (_, in _) => {
 			var modeleditor = ModelEditor.Active;
 			var selected = modeleditor.LastSelectedObject;
 			if (selected is not EditorMeshAttachment meshAttachment) {

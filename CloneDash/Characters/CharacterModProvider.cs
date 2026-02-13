@@ -9,7 +9,7 @@ namespace CloneDash.Characters
 		int ICharacterProvider.Priority => 10000000;
 
 		IEnumerable<string> ICharacterProvider.GetAvailable() {
-			var dirs = Filesystem.FindDirectories("chars", "");
+			var dirs = filesystem.FindDirectories("chars", "");
 			return dirs;
 		}
 

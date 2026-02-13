@@ -24,48 +24,7 @@ namespace Nucleus.Core
 		public static void Initialize() {
 			Logs.LogWrittenText += Logs_LogWrittenText;
 		}
-		public static void ParseSeveralCommands(string input) {
-			// not implemented...
-		}
-		public static void ParseOneCommand(string input) {
-			var whereIsSpace = input.IndexOf(' ');
-
-			string ccname;
-			string usargs;
-
-			if (whereIsSpace == -1) {
-				ccname = input;
-				usargs = "";
-			}
-			else {
-				ccname = input.Substring(0, whereIsSpace).Trim();
-				usargs = input.Substring(whereIsSpace + 1).Trim();
-			}
-
-			ConCommandBase? baseC = ConCommandBase.Get(ccname);
-			if (baseC == null) {
-				Logs.Info($" '{ccname}' not found");
-				return;
-			}
-
-			switch (baseC) {
-				case ConVar cv:
-					// Lets see if usargs is not set, which means a description is given
-					if (usargs.Length == 0) {
-						Logs.Info($"  {ccname} (default '{cv.DefaultValue}'{(cv.DefaultValue != cv.GetString() ? $", 'current {cv.GetString()})'" : ")")}");
-						foreach (var line in cv.HelpString.Split("\n"))
-							Logs.Info($"    {line}");
-					}
-					else {
-						cv.SetValue(usargs);
-					}
-					break;
-				case ConCommand cc:
-					// Always run regardless of no args or not since that's how concommands work
-					ConCommand.Execute(cc, usargs);
-					break;
-			}
-		}
+		
 		private static void Logs_LogWrittenText(LogLevel level, string text) {
 			ConsoleMessage message = new ConsoleMessage(text, level);
 			ConsoleMessageWrittenEvent?.Invoke(ref message);

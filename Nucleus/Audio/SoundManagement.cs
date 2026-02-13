@@ -148,7 +148,7 @@ namespace Nucleus.Audio
 		}
 		public MusicTrack LoadMusicFromFile(string pathID, string file, bool autoplay = false) {
 			unsafe {
-				var data = Filesystem.ReadAllBytes(pathID, file);
+				var data = filesystem.ReadAllBytes(pathID, file);
 				if (data == null) {
 					throw new Exception();
 				}
@@ -220,8 +220,8 @@ namespace Nucleus.Audio
 			}
 		}
 
-		public static ConVar snd_volume = ConVar.Register("snd_volume", "1.0", ConsoleFlags.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => {
-			Raylib.SetMasterVolume(n.AsFloat ?? 1);
+		public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => {
+			Raylib.SetMasterVolume(cv.GetFloat());
 		});
 	}
 }

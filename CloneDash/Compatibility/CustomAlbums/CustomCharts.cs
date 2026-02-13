@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 
 using Raylib_cs;
@@ -97,7 +98,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 					case ".bms":
 					case ".json":
 					case "":
-						Archive = new DiskSearchPath(Filesystem.FindSearchPath(pathID, path), path);
+						Archive = new DiskSearchPath(filesystem.FindSearchPath(pathID, path), path);
 						break;
 					default: throw new NotImplementedException("Bad filetype for CustomChartsSong constructor!");
 				}
@@ -217,7 +218,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			private bool __downloading = false;
 
 			public static string GetDownloadCachePath(string localPath) {
-				var download = Filesystem.GetSearchPathID("download")[0] as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
+				var download = filesystem.GetSearchPathID("download").FirstOrDefault() as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
 
 				return Path.Combine(download.ResolveToAbsolute("charts"), $"{localPath}.mdm");
 			}
@@ -232,7 +233,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 					var filename = GetDownloadCachePath(WebChart.ID);
 					__downloading = true;
 					var mdmFilename = $"{WebChart.ID}.mdm";
-					var canStream = Filesystem.CanOpen("charts", mdmFilename);
+					var canStream = filesystem.CanOpen("charts", mdmFilename);
 					if (!canStream) {
 						WebChart.DownloadTo(filename, (worked) => {
 							System.Diagnostics.Debug.Assert(worked);

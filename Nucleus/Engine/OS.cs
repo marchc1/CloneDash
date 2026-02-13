@@ -92,7 +92,7 @@ public static unsafe class OS
 {
 	private static bool initialized = false;
 
-	public static bool InitSDL(ref readonly GameInfo gameInfo) {
+	public static bool InitSDL(in StartupInfo gameInfo) {
 		if (initialized) return true;
 
 		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_NAME_STRING, gameInfo.AppName)

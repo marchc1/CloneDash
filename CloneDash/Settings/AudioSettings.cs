@@ -6,9 +6,9 @@ namespace CloneDash.Settings;
 [MarkForStaticConstruction]
 public static class AudioSettings
 {
-	public static ConVar snd_hitvolume = ConVar.Register(nameof(snd_hitvolume), 1, ConsoleFlags.Saved, "Hitsound volume", 0, 1);
-	public static ConVar snd_musicvolume = ConVar.Register(nameof(snd_musicvolume), 1, ConsoleFlags.Saved, "Music volume", 0, 1);
-	public static ConVar snd_voicevolume = ConVar.Register(nameof(snd_voicevolume), 1, ConsoleFlags.Saved, "Voice volume", 0, 1);
+	public static ConVar snd_hitvolume = new(nameof(snd_hitvolume), 1, FCvar.Saved, "Hitsound volume", 0, 1);
+	public static ConVar snd_musicvolume = new(nameof(snd_musicvolume), 1, FCvar.Saved, "Music volume", 0, 1);
+	public static ConVar snd_voicevolume = new(nameof(snd_voicevolume), 1, FCvar.Saved, "Voice volume", 0, 1);
 
 	public static float HitsoundVolume => (float)snd_hitvolume.GetDouble();
 	public static float MusicVolume => (float)snd_musicvolume.GetDouble();

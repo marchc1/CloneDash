@@ -1,5 +1,5 @@
 ﻿using CloneDash.Scenes;
-
+using Nucleus.Common.Types;
 using Nucleus.Engine;
 
 using Raylib_cs;

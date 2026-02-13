@@ -1,6 +1,5 @@
-﻿using Nucleus.Types;
-
-using Raylib_cs;
+﻿using Nucleus.Common.Types;
+using Nucleus.Types;
 
 namespace Nucleus.UI
 {

@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
@@ -34,10 +35,10 @@ namespace Nucleus.ModelEditor
 	}
 	public class EditMeshOperator : Operator
 	{
-		public static ConVar meshedit_triangles = ConVar.Register("meshedit_triangles", "0", ConsoleFlags.Saved, "Visualizes the triangulated mesh attachment when using the Edit Mesh operator.");
-		public static ConVar meshedit_dim = ConVar.Register("meshedit_dim", "0", ConsoleFlags.Saved, "Dims the mesh attachment's texture when using the Edit Mesh operator.");
-		public static ConVar meshedit_isolate = ConVar.Register("meshedit_isolate", "0", ConsoleFlags.Saved, "Isolates the active mesh attachment when using the Edit Mesh operator.");
-		public static ConVar meshedit_deformed = ConVar.Register("meshedit_deformed", "1", ConsoleFlags.Saved, "Renders the mesh deformed");
+		public static ConVar meshedit_triangles = new("meshedit_triangles", "0", FCvar.Saved, "Visualizes the triangulated mesh attachment when using the Edit Mesh operator.");
+		public static ConVar meshedit_dim = new("meshedit_dim", "0", FCvar.Saved, "Dims the mesh attachment's texture when using the Edit Mesh operator.");
+		public static ConVar meshedit_isolate = new("meshedit_isolate", "0", FCvar.Saved, "Isolates the active mesh attachment when using the Edit Mesh operator.");
+		public static ConVar meshedit_deformed = new("meshedit_deformed", "1", FCvar.Saved, "Renders the mesh deformed");
 
 		public EditMesh_Mode CurrentMode { get; private set; } = EditMesh_Mode.Modify;
 		public override string Name => $"Edit Mesh: {CurrentMode}";

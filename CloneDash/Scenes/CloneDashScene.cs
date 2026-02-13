@@ -928,20 +928,20 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 		}
 	}
 
-	public static CloneDashScene? ParseFile(string filepath) => ParseFile<CloneDashScene>(Filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
-	public static CloneDashScene? ParseScene(string filename) => Filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CloneDashScene>(text, filename) : null;
+	public static CloneDashScene? ParseFile(string filepath) => ParseFile<CloneDashScene>(filesystem.ReadAllText("scenes", filepath) ?? "", filepath);
+	public static CloneDashScene? ParseScene(string filename) => filesystem.ReadAllText("scenes", filename, out var text) ? ParseFile<CloneDashScene>(text, filename) : null;
 
 	internal void MountToFilesystem() {
 		if (Filename == null) throw new FileNotFoundException("SceneDescriptor.MountToFilesystem: Cannot mount the file, because Filename == null!");
-		Filesystem.RemoveSearchPath("scene");
+		filesystem.RemoveSearchPath("scene");
 
 		// Find the search path that contains the scene descriptor.
 		// TODO: Need to redo this! It doesn't really support zip files (which was the whole
 		// point of the filesystem restructure!)
-		var searchPath = Filesystem.FindSearchPath("scenes", $"{Filename}/scene.cdd");
+		var searchPath = filesystem.FindSearchPath("scenes", $"{Filename}/scene.cdd");
 		switch (searchPath) {
 			case DiskSearchPath diskPath:
-				Filesystem.AddTemporarySearchPath("scene", DiskSearchPath.Combine(searchPath, Filename));
+				filesystem.AddTemporarySearchPath("scene", DiskSearchPath.Combine(searchPath, Filename));
 				break;
 		}
 	}

@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Rendering;
 using Nucleus.Types;
@@ -33,7 +35,7 @@ internal class Program
 
 					Label column(Anchor alignment){
 						var column = row.Add<Label>();
-						var h = alignment.ToTextAlignment().horizontal;
+						var h = alignment.ToTextAlignment().Horizontal;
 						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
 						column.Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
 						column.Size = new(window.Size.W / 3, 0);
@@ -44,9 +46,9 @@ internal class Program
 
 					var v = vertical == Dock.Top ? TextAlignment.Top : vertical == Dock.Bottom ? TextAlignment.Bottom : TextAlignment.Center;
 
-					var left = column(TextAlignment.FromTextAlignment(TextAlignment.Left, v));
-					var right = column(TextAlignment.FromTextAlignment(TextAlignment.Right, v));
-					var center = column(TextAlignment.FromTextAlignment(TextAlignment.Center, v));
+					var left = column(  new TextAlignment2D(TextAlignment.Left, v).ToAnchor());
+					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
+					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
 					row.Size = new(0, window.Size.H / 3);
 					row.DrawPanelBackground = false;
 
@@ -58,7 +60,6 @@ internal class Program
 				var mid = row(Dock.Fill);
 				window.Center();
 			}),
-			new("Subwindow Test", (_) => EngineCore.LoadLevelSubWindow(new HelloWorldLevel(), 640, 480, "test", 0)),
 		];
 
 		public override void Initialize(params object[] args) {
@@ -79,7 +80,7 @@ internal class Program
 			}
 		}
 
-		private void B_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void B_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 
 		}
 
@@ -106,12 +107,12 @@ internal class Program
 		}
 	}
 	static void Main(string[] args) {
-		EngineCore.GameInfo = new() {
-			AppName = "Hello World",
-			AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
-		};
-		EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
-		EngineCore.LoadLevel(new HelloWorldLevel());
-		EngineCore.StartMainThread();
+		// EngineCore.GameInfo = new() {
+		// 	AppName = "Hello World",
+		// 	AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
+		// };
+		// EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
+		// EngineCore.LoadLevel(new HelloWorldLevel());
+		// EngineCore.StartMainThread();
 	}
 }

@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 
@@ -6,7 +7,7 @@ using Raylib_cs;
 
 using System.Diagnostics.CodeAnalysis;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.UI.Elements
 {
@@ -96,7 +97,7 @@ namespace Nucleus.UI.Elements
 			CloseButton.Size = new(48, 0);
 
 			CloseButton.DockMargin = RectangleF.TLRB(3);
-			CloseButton.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
+			CloseButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
 				OnClosePressed?.Invoke(this, state, button);
 			};
 			MaximizeButton = Add<Button>();
@@ -105,7 +106,7 @@ namespace Nucleus.UI.Elements
 			MaximizeButton.Size = new(48, 0);
 
 			MaximizeButton.DockMargin = RectangleF.TLRB(3);
-			MaximizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
+			MaximizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
 				OnMaximizePressed?.Invoke(this, state, button);
 			};
 			MinimizeButton = Add<Button>();
@@ -114,7 +115,7 @@ namespace Nucleus.UI.Elements
 			MinimizeButton.Size = new(48, 0);
 
 			MinimizeButton.DockMargin = RectangleF.TLRB(3);
-			MinimizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
+			MinimizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
 				OnMinimizePressed?.Invoke(this, state, button);
 			};
 
@@ -375,7 +376,7 @@ namespace Nucleus.UI.Elements
 			this.Size += delta;
 		}
 
-		private void Titlebar_OnTitlebarClosePressed(Element self, FrameState state, MouseButton button) {
+		private void Titlebar_OnTitlebarClosePressed(Element self, FrameState state, ButtonCode button) {
 			this.Close();
 		}
 

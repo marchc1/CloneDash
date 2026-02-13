@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Common.Types;
 using Nucleus.ManagedMemory;
 using Nucleus.Models;
 using Nucleus.Rendering;
@@ -38,7 +39,7 @@ namespace Nucleus.ModelEditor
 		public float Rotation { get; set; }
 		public Vector2F Scale { get => scale; set => scale = value; }
 
-		public Color Color { get; set; } = Raylib_cs.Color.White;
+		public Color Color { get; set; } = Color.White;
 
 		public override bool CanTranslate() => true;
 		public override bool CanRotate() => true;
@@ -197,6 +198,23 @@ namespace Nucleus.ModelEditor
 			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
 		}
 
+		// TEMPORARY: Find a better home for these methods - after restructure-tests
+		public static Color GetPixelColor(Image image, Vector2F pos) {
+			// sanity checking
+			if (pos.X < 0) return Color.Blank;
+			if (pos.Y < 0) return Color.Blank;
+			if (pos.X >= image.Width) return Color.Blank;
+			if (pos.Y >= image.Height) return Color.Blank;
+
+			var size = Raylib.GetPixelDataSize(image.Width, image.Height, image.Format);
+			var sizePerPixel = size / (image.Width * image.Height);
+			nint src = nint.Add(image.GetDataSemiSafe(), sizePerPixel * (((int)pos.Y * image.Width) + (int)pos.X));
+			return Raylib.GetPixelColor(src, image.Format);
+		}
+
+		public bool IsTransparent(Image image, Vector2F pos) => GetPixelColor(image, pos).A <= 0;
+
+
 		public bool DidPassOpacity { get; private set; } = false;
 		/// <summary>
 		/// Tests the opacity of the image. Should only be called when you 
@@ -224,7 +242,7 @@ namespace Nucleus.ModelEditor
 			float trueX = (float)NMath.Remap(localPos.X, -regionWidth / 2, regionWidth / 2, region.X, region.X + regionWidth);
 			float trueY = (float)NMath.Remap(localPos.Y, regionHeight / 2, -regionHeight / 2, region.Y, region.Y + regionHeight);
 
-			bool alphatest = !image.IsTransparent(new(trueX, trueY));
+			bool alphatest = !IsTransparent(image, new(trueX, trueY));
 
 			// don't waste debugoverlay calls
 			/*

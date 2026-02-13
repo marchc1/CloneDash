@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -20,18 +22,18 @@ namespace Nucleus.UI
 			if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
-		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 			if (!TriggeredWhenEnterPressed) {
 				UI.MarkKeyEventNotConsumed();
 				return;
 			}
 
-			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter)
-				MouseReleaseOccur(Level.FrameState, Input.MouseButton.MouseLeft, true);
+			if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter)
+				MouseReleaseOccur(Level.FrameState, ButtonCode.MouseLeft, true);
 
 		}
 
-		public override void MouseClick(FrameState state, Input.MouseButton button) {
+		public override void MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
 			Level.Sounds.PlaySound(Level.Sounds.LoadSoundFromFile("click.wav"));
 		}

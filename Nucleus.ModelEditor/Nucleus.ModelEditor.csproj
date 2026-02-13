@@ -10,6 +10,12 @@
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 	</ItemGroup>
 
+	<Import Project="..\StandardComponents.targets" />
+	<ItemGroup>
+		<Compile Include="..\StandardComponents.cs" Link="Usings/Globals/StandardComponents.cs" />
+	</ItemGroup>
+
+
 	<!-- ================================================================= -->
 	<!-- Asset copying from BuildAssets -->
 	<!-- ================================================================= -->
@@ -18,6 +24,10 @@
 		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
 		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
+	</ItemGroup>
 
 	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
@@ -36,7 +46,7 @@
 		</ItemGroup>
 		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
-	<Import Project ="..\Nucleus\NucleusAssets.targets"/>
+	<Import Project="..\Nucleus\NucleusAssets.targets" />
 	<!-- ================================================================= -->
 	<!-- ================================================================= -->
 	<!-- ================================================================= -->

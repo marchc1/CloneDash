@@ -8,8 +8,12 @@ using CloneDash.Game;
 using CloneDash.Systems;
 
 using Nucleus;
+using Nucleus.Common.Commands;
+using Nucleus.Common.Engine;
+using Nucleus.Common.FileSystem;
 using Nucleus.Engine;
 using Nucleus.Files;
+using Nucleus.NewEngine;
 using Nucleus.UI;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -34,46 +38,35 @@ namespace CloneDash;
 
 internal class Program
 {
-	static void Main(string[] args) {
-		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-
-		if (!NucleusSingleton.TryRedirect("Clone Dash", args))
+	static void Main() {
+		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
 			return;
-		EngineCore.GameInfo = new() {
+
+		CommandLineParser commandLine = new();
+		commandLine.CreateCmdLine(Environment.CommandLine);
+
+		IEngineAPI engineAPI = new EngineBuilder(commandLine)
+			.WithComponent<IGameDLL, GameDLL>()
+			.WithStandardComponents()
+			.Build();
+
+		engineAPI.SetStartupInfo(new() {
 			AppName = "Clone Dash",
 			AppVersion = GameVersion.Current.ToString(),
 			AppIdentifier = "com.github.marchc1.CloneDash",
 			AppCreator = "March (github/marchc1)",
 			AppURL = "https://github.com/marchc1/CloneDash",
 			AppType = Nucleus.Types.AppType.Game
-		};
-		EngineCore.Initialize(1600, 900, "Clone Dash", args, gameThreadInit: GameMain);
-		EngineCore.StartMainThread();
-		RichPresenceSystem.Shutdown();
-	}
+		});
 
-	private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
-		if (e.ExceptionObject is not Exception ex) return;
-		if (Debugger.IsAttached) return;
-
-		Platform.MessageBoxBuilder builder = new();
-		builder.WithTitle("Unhandled C# Exception");
-		builder.WithMessage(ex.ToString());
-		builder.WithButton("Close");
-		builder.Show();
+		using ServiceLocatorScope locatorScope = new(engineAPI);
+		engineAPI.Run();
 	}
+}
 
-	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
-		var custom = Filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
-		{
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/", createIfMissing: createIfMissing));
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/", createIfMissing: createIfMissing));
-		}
-	}
-	static void GameMain() {
+public class GameDLL : IGameDLL
+{
+	public void Init() {
 		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
 			.WithMessage(Environment.StackTrace)
@@ -107,36 +100,36 @@ internal class Program
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
 		if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
-			musedash = Filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
+			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
 
-		var game = Filesystem.GetSearchPathID("game")[0];
-		var appcache = Filesystem.GetSearchPathID("appcache")[0];
-		var appdata = Filesystem.GetSearchPathID("appdata")[0];
+		var game = filesystem.GetSearchPathID("game").First();
+		var appcache = filesystem.GetSearchPathID("appcache").First();
+		var appdata = filesystem.GetSearchPathID("appdata").First();
 		{
 			// Custom assets should always be top priority for the filesystem
 			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
+				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
 
 			// Prioritize custom assets in order of new appdata/ -> game/
 			AddCustomPath(appdata, createIfMissing: true);
 			AddCustomPath(game, createIfMissing: false);
 
 			// Downloaded charts, etc, mostly for MDMC API
-			var download = Filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
+			var download = filesystem.AddSearchPath("download", DiskSearchPath.Combine(appcache, "download"));
 			{
-				Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
+				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(download, "charts/"));
 			}
 
 			// tail: default asset fallbacks.
 			// These get shipped with the game so they are readonly
-			Filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/", createIfMissing: false).MakeReadOnly());
-			Filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("chars", DiskSearchPath.Combine(game, "assets/chars/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("charts", DiskSearchPath.Combine(game, "assets/charts/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(game, "assets/fevers/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(game, "assets/interludes/", createIfMissing: false).MakeReadOnly());
+			filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(game, "assets/scenes/", createIfMissing: false).MakeReadOnly());
 		}
 
-		DoCmdLineOps(CommandLine.Singleton, true);
+		DoCmdLineOps(CommandLine(), true);
 
 		Interlude.Spin();
 		Interlude.End();
@@ -177,29 +170,41 @@ internal class Program
 		}).Start();
 	}
 
-	private static void NucleusSingleton_Redirect(string[] args) {
+	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
+		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
+		{
+			filesystem.AddSearchPath("chars", DiskSearchPath.Combine(custom, "chars/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("charts", DiskSearchPath.Combine(custom, "charts/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("fevers", DiskSearchPath.Combine(custom, "fevers/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("interludes", DiskSearchPath.Combine(custom, "interludes/", createIfMissing: createIfMissing));
+			filesystem.AddSearchPath("scenes", DiskSearchPath.Combine(custom, "scenes/", createIfMissing: createIfMissing));
+		}
+	}
+	private static void NucleusSingleton_Redirect(string args) {
 		Logs.Info("Received interprocess redirect!");
 		CommandLineParser cmd = new CommandLineParser();
-		cmd.FromArgs(args);
+		cmd.CreateCmdLine(args);
 		EngineCore.Window.FocusWindow();
 		DoCmdLineOps(cmd, false);
 	}
 
-	private static void DoCmdLineOps(CommandLineParser cmd, bool first) {
-		if (cmd.TryGetParam<string>("md_level", out var md_level)) {
-			cmd.TryGetParam<int>("difficulty", out var difficulty);
+	private static void DoCmdLineOps(ICommandLine cmd, bool first) {
+		if (cmd.HasParm("-md_level")) {
+			string md_level = cmd.ParmValue("-md_level", "");
+			int difficulty = cmd.ParmValue("-difficulty", 0);
 			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
 			var lvl = new DashGameLevel(sheet);
 			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl, cmd.IsParamTrue("autoplay"));
+			EngineCore.LoadLevel(lvl, cmd.ParmValue("-autoplay", 0) != 0);
 			if (!first) Interlude.End();
 		}
 
-		else if (cmd.TryGetParam<string>("cam_level", out var cam_level)) {
+		else if (cmd.HasParm("-cam_level")) {
+			string cam_level = cmd.ParmValue("-cam_level", "");
 			Logs.Info($"cam_level specified: {cam_level}");
-			cmd.TryGetParam<int>("difficulty", out var difficulty);
+			int difficulty = cmd.ParmValue("-difficulty", 0);
 
 			CustomChartsSong song = new CustomChartsSong(cam_level);
 			ChartSheet sheet;
@@ -214,7 +219,7 @@ internal class Program
 
 			var lvl = new DashGameLevel(sheet);
 			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl, cmd.IsParamTrue("autoplay"), cmd.GetParam("startmeasure", 0d));
+			EngineCore.LoadLevel(lvl, cmd.ParmValue("-autoplay", 0) != 0, cmd.ParmValue("-startmeasure", 0));
 			if (!first) Interlude.End();
 		}
 

@@ -15,6 +15,8 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
@@ -28,8 +30,8 @@ using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
-using Color = Raylib_cs.Color;
-using MouseButton = Nucleus.Input.MouseButton;
+using Color = Nucleus.Common.Types.Color;
+
 using Sound = Nucleus.Audio.Sound;
 
 namespace CloneDash.Game;
@@ -39,63 +41,52 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 {
 	public LuaEnv Lua;
 
-	public static ConCommand musicseek = ConCommand.Register(nameof(musicseek), (_, args) => {
+	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<DashGameLevel>();
 		if (level == null) {
 			Logs.Warn("Not in game context!");
 			return;
 		}
 
-		double? d = args.GetDouble(0);
-		if (!d.HasValue) Logs.Warn("Did not specify a time!");
-		else level.SeekTo(d.Value);
+		double d = args.Arg(1, -1d);
+		if (d == -1) Logs.Warn("Did not specify a time!");
+		else level.SeekTo(d);
 	});
 
 
-	private static void clonedash_openmdlevel_execute(ConCommand cmd, ConCommandArguments args) {
-		var md_level = args.GetString(0);
+	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
+		var md_level = args.ArgS(1);
 		if (md_level == null) {
 			Logs.Warn("Provide a name.");
 			return;
 		}
 
-		var map = args.GetInt(1);
-		if (map == null) {
+		var map = args.Arg(2, -1);
+		if (map <= 0) {
 			Logs.Warn("Provide a difficulty.");
 			return;
 		}
 
-		MuseDashSong? song = MuseDashCompatibility.Songs.FirstOrDefault(x => x.BaseName == md_level);
+		MuseDashSong? song = MuseDashCompatibility.FindSong(md_level);
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
-			foreach (var s in MuseDashCompatibility.Songs.Where(x => x.BaseName.ToLower().Contains(md_level.ToLower())))
+			foreach (var s in MuseDashCompatibility.FindSimilarSongs(md_level)) 
 				Logs.Print($"    {s.Name} ({s.BaseName})");
 			return;
 		}
 
-		DashGameLevel.LoadLevel(song, map.Value, (args.GetInt(2) ?? 0) == 1);
+		DashGameLevel.LoadLevel(song, map, args.Arg(3, 0) == 1);
 	}
-	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		var songs = MuseDashCompatibility.Songs.Where(x => x.BaseName.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
-		int len = Math.Clamp(songs.Length, 0, 20);
-		if (len == 0) return;
-
-		returns = new string[len];
-		returnHelp = new string[len];
-
-		for (int i = 0; i < len; i++) {
-			var song = songs[i];
-			returns[i] = song.BaseName;
-			returnHelp[i] = song.Name;
-		}
+	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+		// REDO ME
 	}
 
-	public static ConCommand mdlevel = ConCommand.Register(nameof(mdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
+	public static ConCommand mdlevel = new(nameof(mdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
 
-	public static ConCommand cdrestest = ConCommand.Register(nameof(cdrestest), (_, args) => {
+	public static ConCommand cdrestest = new(nameof(cdrestest), (_, in args) => {
 		Vector2F winSize;
-		switch (args.GetString(0)) {
+		switch (args.ArgS(1)) {
 			case "16:9": winSize = new(1600, 900); break;
 			case "19.5:9": winSize = new(1950, 900); break;
 			case "4:3": winSize = new(1600, 1200); break;
@@ -113,7 +104,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		EngineCore.Window.Size = new((int)winSize.X, (int)winSize.Y);
 	});
 
-	public static ConVar profilegameload = ConVar.Register(nameof(profilegameload), "0", ConsoleFlags.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
+	public static ConVar profilegameload = new(nameof(profilegameload), "0", FCvar.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 
 	public static DashGameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
@@ -628,7 +619,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if (CommandLine.GetParam("pretime", 5d) > 0)
+			if (CommandLine().ParmValue("-pretime", 5d) > 0)
 				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 
@@ -718,7 +709,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					play.TextSize = 24;
 					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 					play.ImageOrientation = ImageOrientation.Fit;
-					play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						PauseWindow.Remove();
 						startUnpause();
 					};
@@ -730,7 +721,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					restart.TextSize = 24;
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
-					restart.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
 
 						if (profilegameload.GetBool())
@@ -746,7 +737,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					settings.TextSize = 24;
 					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 					settings.ImageOrientation = ImageOrientation.Fit;
-					settings.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						var panel = UI.Add<Panel>();
 						panel.DrawPanelBackground = false;
 						panel.Anchor = Anchor.Center;
@@ -777,7 +768,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					back2menu.TextSize = 24;
 					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 					back2menu.ImageOrientation = ImageOrientation.Fit;
-					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton clickedButton) {
+					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
 						EngineCore.LoadLevel(new MainMenuLevel());
 					};
 					back2menu.PaintOverride += Button_PaintOverride;

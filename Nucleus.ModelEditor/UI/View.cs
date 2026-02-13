@@ -1,6 +1,7 @@
 ﻿// should this be in Nucleus/UI?
 // TODO: cleanup, kind of hastily made
 
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
@@ -248,7 +249,7 @@ public class DragRenderer : LogicalEntity {
 	}
 
 	public override void Think(FrameState frameState) {
-		if (!frameState.MouseHeld(MouseButton.Mouse1))
+		if (!frameState.MouseHeld(ButtonCode.Mouse1))
 			this.Remove();
 	}
 }

@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -8,8 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using KeyboardKey = Nucleus.Input.KeyboardKey;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.UI
 {
@@ -171,10 +172,10 @@ namespace Nucleus.UI
 				var textSizeAtCaret = Graphics2D.GetTextSize(textAtPointer, Font, TextSize);
 				float x = 0;
 
-				switch (TextAlignment.ToTextAlignment().horizontal.Alignment) {
-					case 0: x = textSize.X + 4; break;
-					case 1: x = ((width / 2) - (textSize.X / 2)) + textSizeAtCaret.X; break;
-					case 2: x = width - textSize.X - 4; break;
+				switch (TextAlignment.ToTextAlignment().Horizontal) {
+					case Types.TextAlignment.Left: x = textSize.X + 4; break;
+					case Types.TextAlignment.Center: x = ((width / 2) - (textSize.X / 2)) + textSizeAtCaret.X; break;
+					case Types.TextAlignment.Right: x = width - textSize.X - 4; break;
 				}
 
 				x += 2;
@@ -183,7 +184,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (!ReadOnly) {
 				DemandKeyboardFocus();
 				var textSize = Graphics2D.GetTextSize(Text, Font, TextSize);
@@ -207,8 +208,8 @@ namespace Nucleus.UI
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
-		public override void KeyPressed(in KeyboardState state, KeyboardKey key) {
-			var vischar = state.GetKeyActionFromKey(key);
+		public override void KeyPressed(in KeyboardState state, ButtonCode key) {
+			var vischar = key.GetAction();
 			if (vischar.Type == CharacterType.NoAction)
 				return;
 
@@ -217,17 +218,17 @@ namespace Nucleus.UI
 
 			if (vischar.Type == CharacterType.VisibleCharacter) {
 				if (state.ControlDown) {
-					switch (key.Key) {
-						case 65:
+					switch (key) {
+						case ButtonCode.KeyA:
 							LastKeyboardInteraction = DateTime.Now;
 							Caret.Set(Text, Text.Length, 0, Text.Length);
 							break;
-						case 67:
+						case ButtonCode.KeyC:
 							if (!Caret.HasSelection) return;
 							Clipboard.Text = Text.Substring(Caret.Start ?? 0, Caret.End ?? 0);
 							Logs.Info("Copied to clipboard!");
 							break;
-						case 86:
+						case ButtonCode.KeyV:
 							
 							string txt = Clipboard.Text;
 							if (Caret.HasSelection) {

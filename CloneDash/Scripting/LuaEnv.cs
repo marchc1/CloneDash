@@ -94,7 +94,7 @@ public class LuaEnv
 	public LuaValue[] DoFile(string pathID, string path) {
 		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
 		IManagedMemory.MergePath(pathID, path, finalPath);
-		var t = State.DoStringAsync(Filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), new string(finalPath) /* << FIXME? */).AsTask();
+		var t = State.DoStringAsync(filesystem.ReadAllText(pathID, path) ?? throw new FileNotFoundException(), new string(finalPath) /* << FIXME? */).AsTask();
 		try {
 			t.Wait();
 			return t.Result;

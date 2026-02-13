@@ -8,6 +8,8 @@ using CloneDash.Menu.Searching;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -20,16 +22,13 @@ using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
-using KeyboardKey = Nucleus.Input.KeyboardKey;
-using MouseButton = Nucleus.Input.MouseButton;
-
 namespace CloneDash.Game;
 
 
 [Nucleus.MarkForStaticConstruction]
 public class MainMenuLevel : Level
 {
-	public static ConCommand hologramtest = ConCommand.Register(nameof(hologramtest), (_, _) => {
+	public static ConCommand hologramtest = new(nameof(hologramtest), (_, in _) => {
 		var level = EngineCore.Level;
 		var window = level.UI.Add<Window>();
 		window.Title = "Hologram Test";
@@ -153,7 +152,7 @@ public class MainMenuLevel : Level
 		test2.AutoSize = true;
 		test2.DockMargin = RectangleF.TLRB(4);
 
-		Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new MainMenuLevel()));
+		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new MainMenuLevel()));
 
 		PushActiveElement(UI.Add<MainMenuPanel>());
 		ConsoleSystem.AddScreenBlocker(UI);
@@ -161,7 +160,7 @@ public class MainMenuLevel : Level
 
 	public override void PreThink(ref FrameState frameState) {
 		base.PreThink(ref frameState);
-		if (frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Escape)) {
+		if (frameState.Keyboard.WasKeyPressed(ButtonCode.KeyEscape)) {
 			// hacky but it should work
 			if (ActiveElements.Count > 1) {
 				var element = (ActiveElements.Peek() as IMainMenuPanel)!;
@@ -487,7 +486,7 @@ public class MainMenuLevel : Level
 			}
 		};
 
-		play.MouseReleaseEvent += delegate (Element self, FrameState state, MouseButton button) {
+		play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
 			onClick(mapID, state);
 		};
 

@@ -1,92 +1,112 @@
 ﻿using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using Nucleus.Engine;
 using Nucleus.Files;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.Core
+namespace Nucleus.Core;
+
+
+[Nucleus.MarkForStaticConstruction]
+public static class Host
 {
-	public class HostConfig
-	{
-		public Dictionary<string, string> CVars { get; set; } = [];
-		public Dictionary<string, string> DataStore { get; set; } = [];
-
+	static Dictionary<string, string> DataStore = [];
+	static void SerializeDataStore(Stream stream) {
+		using StreamWriter writer = new(stream);
+		writer.Write(JSON.Serialize(DataStore));
 	}
-	[Nucleus.MarkForStaticConstruction]
-	public static class Host
-	{
-		public static HostConfig Config { get; private set; }
-		public static bool Initialized { get; private set; } = false;
-		public static bool IsDirty { get; private set; } = false;
-		public static DateTime LastWriteTime { get; private set; } = DateTime.MinValue;
 
-		public static T? GetDataStore<T>(string key) => Config.DataStore.TryGetValue(key, out var str) ? JsonConvert.DeserializeObject<T>(str) : default;
-		public static void SetDataStore<T>(string key, T? value) {
-			if (value == null) {
-				Config.DataStore.Remove(key);
-				return;
-			}
-
-			Config.DataStore[key] = JsonConvert.SerializeObject(value);
-		}
-
-		public static void ReadConfig(bool forced = false) {
-			if (Initialized && !forced)
-				return;
-
-			if (!Filesystem.ReadAllText("cfg", "config.cfg", out string? cfgText)) {
-				Config = new();
-				return;
-			}
-
-			Config = JsonConvert.DeserializeObject<HostConfig>(cfgText) ?? throw new Exception("Could not parse cfg/config.cfg");
-			Initialized = true;
-		}
-
-		public static string? GetConfigCVar(string cvar) {
-			ReadConfig();
-			return Config.CVars.TryGetValue(cvar, out var value) ? value : null;
-		}
-		public static void SetConfigCVar(string cvar, string? val) {
-			ReadConfig();
-			if (val == null) {
-				Config.CVars.Remove(cvar);
-				return;
-			}
-
-			Config.CVars[cvar] = val;
-		}
-
-		/// <summary>
-		/// Marks the configuration data as outdated and needing to be re-written to disk.
-		/// </summary>
-		public static void MarkDirty() {
-			IsDirty = true;
-		}
-		public static void CheckDirty() {
-			if (!IsDirty)
-				return;
-
-			if ((DateTime.Now - LastWriteTime).TotalMilliseconds < 1000)
-				return;
-
-			WriteConfig();
-			IsDirty = false;
-		}
-
-		public static void WriteConfig() {
-			if (!Filesystem.WriteAllText("cfg", "config.cfg", JsonConvert.SerializeObject(Config)))
-				Logs.Warn("Host: Failed to write config.cfg!");
-			else
-				Logs.Debug("Host: Wrote config to config.cfg");
-			LastWriteTime = DateTime.Now;
-		}
-
-		public static ConCommand host_writeconfig = ConCommand.Register("host_writeconfig", (_, args) => WriteConfig(), "Writes the current configuration to config.cfg");
+	static void DeserializeDataStore(Stream stream) {
+		using StreamReader reader = new(stream);
+		DataStore = JSON.Deserialize<Dictionary<string, string>>(reader.ReadToEnd()) ?? [];
 	}
+
+	public static bool IsDirty { get; private set; } = false;
+	public static DateTime LastWriteTime { get; private set; } = DateTime.MinValue;
+
+	public static T? GetDataStore<T>(string key) => DataStore.TryGetValue(key, out var str) ? JsonConvert.DeserializeObject<T>(str) : default;
+	public static void SetDataStore<T>(string key, T? value) {
+		if (value == null) {
+			DataStore.Remove(key);
+			return;
+		}
+
+		DataStore[key] = JsonConvert.SerializeObject(value);
+	}
+
+	public static bool ConfigCfgExecuted { get; private set; }
+	public static bool Initialized { get; private set; }
+
+	public static void ReadConfiguration() {
+		bool userHasConfig = filesystem.Exists("cfg", "config.cfg");
+
+		if (userHasConfig)
+			Cbuf.AddText("exec config.cfg");
+		else if (filesystem.Exists("cfg", "config_default.cfg"))
+			Cbuf.AddText("exec config_default.cfg");
+		else
+			userHasConfig = false;
+
+		Cbuf.Execute();
+
+		if (filesystem.ReadAllText("cfg", "datastore.cfg", out string? datastoreText))
+			DataStore = JSON.Deserialize<Dictionary<string, string>>(datastoreText) ?? [];
+
+		if (!userHasConfig)
+			WriteConfiguration(force: true);
+
+		ConfigCfgExecuted = true;
+	}
+
+	public static void WriteConfiguration(ReadOnlySpan<char> filename = default, bool allVars = false, bool force = false) {
+		if (filename.IsEmpty)
+			filename = "config.cfg";
+
+		if (!force) {
+			if (!ConfigCfgExecuted)
+				return;
+
+			if (!Initialized)
+				return;
+		}
+
+		using MemoryStream stream = new();
+		using StreamWriter writer = new(stream);
+		{
+			Key.WriteBindings(writer);
+			cv.WriteVariables(writer, allVars);
+		}
+
+		writer.Flush();
+		stream.Seek(0, SeekOrigin.Begin);
+
+		using StreamReader reader = new(stream, leaveOpen: true);
+		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
+		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(DataStore));
+	}
+
+	internal static void ReformatOldHostStore(OldHostStore hoststore) {
+		using MemoryStream stream = new();
+		using StreamWriter writer = new(stream);
+
+		foreach (var cvarKVP in hoststore.CVars) 
+			writer.WriteLine($"{cvarKVP.Key} \"{cvarKVP.Value}\"");
+
+		writer.Flush();
+		stream.Seek(0, SeekOrigin.Begin);
+
+		using StreamReader reader = new(stream, leaveOpen:true);
+		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
+		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(hoststore.DataStore));
+	}
+
+	public static ConCommand host_writeconfig = new("host_writeconfig", (_, in args) => WriteConfiguration(), "Writes the current configuration to config.cfg");
 }

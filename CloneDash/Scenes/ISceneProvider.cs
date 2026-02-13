@@ -9,7 +9,7 @@ namespace CloneDash.Modding.Descriptors;
 /// </summary>
 public interface ISceneProvider
 {
-	public ISceneDescriptor? FindByName(string name);
+	public ISceneDescriptor? FindByName(ReadOnlySpan<char> name);
 	public int Priority { get; }
 	public IEnumerable<string> GetAvailable();
 }

@@ -1,23 +1,26 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Commands;
+using Nucleus.Common.Commands;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Extensions;
+using Nucleus.Files;
+using Nucleus.Input;
+using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Nucleus.Util;
 using Raylib_cs;
+using SDL;
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
-using Nucleus.Rendering;
-using Nucleus.Files;
-using System.Numerics;
-using SDL;
-using Nucleus.Util;
-using Nucleus.Commands;
-using Nucleus.Input;
-using Nucleus.Extensions;
-using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Nucleus;
 
@@ -37,18 +40,12 @@ public static class EngineCore
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
 	}
-	[ConCommand(Help: "Creates a new null subwindow")]
-	static void nullwindow(ConCommandArguments args) {
-		for (int i = 0, c = args.GetInt(3, out int count) ? count : 1; i < c; i++)
-			EngineCore.SubWindow(args.GetInt(0, out int x) ? x : 640, args.GetInt(1, out int y) ? y : 480, args.GetString(2) ?? "Nucleus Subwindow");
-	}
-
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
 	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
 	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
 	[ConCommand(Help: "Tries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
-	static void level(ConCommandArguments args) {
-		var level = args.Raw;
+	static void level(in TokenizedCommand args) {
+		var level = args[1];
 		var listOfLevels = (
 			from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
 			from type in domainAssembly.GetTypes()
@@ -66,9 +63,9 @@ public static class EngineCore
 		}
 
 		foreach (var lvl in listOfLevels) {
-			if (lvl.FullName?.ToLower() == level.ToLower()) {
+			if (lvl.FullName.Equals(level, StringComparison.OrdinalIgnoreCase)) {
 				Logs.Info($"Attempting to load {level}...");
-				EngineCore.LoadLevel(Activator.CreateInstance(lvl) as Level, []);
+				EngineCore.LoadLevel((Activator.CreateInstance(lvl) as Level)!, []);
 				return;
 			}
 		}
@@ -76,7 +73,7 @@ public static class EngineCore
 		Logs.Error($"No level with the name '{level}'.");
 	}
 
-	public static ConVar engine_wireframe = ConVar.Register(nameof(engine_wireframe), "0", ConsoleFlags.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
+	public static ConVar engine_wireframe = new(nameof(engine_wireframe), "0", FCvar.None, "Enables wireframe rendering", 0, 1, (cv, _, _) => {
 		// Queued so there's actually a GL context to work with
 		MainThread.RunASAP(() => {
 			if (cv.GetBool())
@@ -86,7 +83,7 @@ public static class EngineCore
 		});
 	});
 
-	public static ConCommand engine_activetextures = ConCommand.Register(nameof(engine_activetextures), (_, _) => {
+	public static ConCommand engine_activetextures = new(nameof(engine_activetextures), (_, in _) => {
 		var texs = new List<string>();
 		foreach (var texIDPair in Raylib.GetLoadedTextures()) {
 			texs.Add($"{texIDPair.Id} [{texIDPair.Width} x {texIDPair.Height} of format {texIDPair.Format}]");
@@ -266,25 +263,27 @@ public static class EngineCore
 	}
 	private static string? prgIcon;
 
-	static ConVar borderless = ConVar.Register(nameof(borderless), "0", ConsoleFlags.Saved, "Hide window decorations", min: 0, max: 1, callback_first: true, callback: borderlessChange);
-	private static void borderlessChange(ConVar self, CVValue old, CVValue now) {
+	static ConVar borderless = new(nameof(borderless), "0", FCvar.Saved, "Hide window decorations", min: 0, max: 1, callback: borderlessChange);
+	private static void borderlessChange(ConVar self, ReadOnlySpan<char> old, double oldD) {
 		if (Window != null)
-			Window.Undecorated = now.AsInt >= 1;
+			Window.Undecorated = self.GetBool();
 	}
 
-	static ConVar fullscreen = ConVar.Register(nameof(fullscreen), "0", ConsoleFlags.Saved, "Fullscreen mode", min: 0, max: 1, callback_first: true, callback: fullscreenChange);
-	private static void fullscreenChange(ConVar self, CVValue old, CVValue now) {
+	static ConVar fullscreen = new(nameof(fullscreen), "0", FCvar.Saved, "Fullscreen mode", min: 0, max: 1, callback: fullscreenChange);
+	private static void fullscreenChange(ConVar self, ReadOnlySpan<char> old, double oldD) {
 		if (Window != null)
-			Window.Fullscreen = now.AsInt >= 1;
+			Window.Fullscreen = self.GetBool();
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, string windowName = "Nucleus Engine", string[]? args = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+		// TEMPORARY
+		TemporaryInitializeDependencies();
+		windowName ??= startupInfo.AppName;
+
 		if (!MainThread.ThreadSet)
 			MainThread.Thread = Thread.CurrentThread;
 
-		Filesystem.Initialize(GameInfo.AppName);
-		Host.ReadConfig();
-		CommandLine.FromArgs(args ?? []);
+		filesystem.Initialize(startupInfo.AppName);
 		GameThreadInitializationProcedure = gameThreadInit;
 
 		// check build number, 3rd part is days since jan 1st, 2000
@@ -313,14 +312,14 @@ public static class EngineCore
 
 		Raylib.InitAudioDevice();
 		// Initialize SDL. This has to be done on the main thread.
-		OS.InitSDL(ref GameInfo);
+		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
 			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
 		if (fullscreen.GetBool()) {
 			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
 			// Fix monitor sizing for fullscreens first frame
 			// todo: is there a better way to do this? This interferes with a few things I think
-			OSMonitor curMonitor = CommandLine.TryGetParam("monitor", out curMonitor) ? curMonitor : OS.GetPrimaryMonitor();
+			OSMonitor curMonitor = CommandLine().ParmValue("monitor", OS.GetPrimaryMonitor().DisplayID);
 			var size = curMonitor.Size;
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
@@ -334,8 +333,8 @@ public static class EngineCore
 		GameThread.Start();
 		lock (GameThread_GLLock) ;
 
-		if (CommandLine.TryGetParam("monitor", out int monitorIdx)) {
-			OSMonitor monitor = new OSMonitor(monitorIdx);
+		if (CommandLine().HasParm("-monitor")) {
+			OSMonitor monitor = new OSMonitor(CommandLine().ParmValue("-monitor", 0));
 			var monitorPos = monitor.Position;
 			var monitorSize = monitor.Size;
 			var windowSize = new Vector2F(windowWidth, windowHeight);
@@ -348,6 +347,10 @@ public static class EngineCore
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
+	}
+
+	private static void TemporaryInitializeDependencies() {
+		cvar = new Cvar();
 	}
 
 	public static void MakeWindowCurrent(OSWindow window) {
@@ -419,33 +422,6 @@ public static class EngineCore
 			__loadLevel(window, level, args);
 	}
 	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
-	public static void SubWindow(int width, int height, string title, ConfigFlags flags = 0) {
-		OSWindow.CreateSubwindow((window) => {
-			window.SetupGL();
-			WindowContexts[window] = new();
-		}, width, height, title, flags);
-	}
-	public static void SubWindow(Action<OSWindow> callback, int width, int height, string title, ConfigFlags flags = 0) {
-		OSWindow.CreateSubwindow((window) => {
-			window.SetupGL();
-			WindowContexts[window] = new();
-			callback(window);
-		}, width, height, title, flags);
-	}
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, Action<OSWindow>? callback = null, params object[] args) where T : Level {
-		SubWindow((window) => {
-			OSWindow lastWindow = Window;
-			MakeWindowCurrent(window);
-			{
-				__loadLevel(window, level, args);
-			}
-			callback?.Invoke(window);
-			MakeWindowCurrent(lastWindow);
-		}, width, height, title, flags);
-	}
-	public static void LoadLevelSubWindow<T>(T level, int width, int height, string title, ConfigFlags flags = 0, params object[] args) where T : Level
-		=> LoadLevelSubWindow(level, width, height, title, flags, null, args);
-
 	public static void UnloadLevel() {
 		LoadingLevel = true;
 
@@ -530,9 +506,6 @@ public static class EngineCore
 
 		return new(BorderlessScreenPadding);
 	}
-
-	public static GameInfo GameInfo;
-
 	public static double TargetFrameTime { get; set; }
 	public static double CurrentAppTime { get; set; }
 	public static double PreviousAppTime { get; set; }
@@ -540,7 +513,7 @@ public static class EngineCore
 	public static double DrawTime { get; set; }
 	public static double FrameTime { get; set; }
 
-	public static readonly ConVar developer = new("developer", "0", ConsoleFlags.None, "Enables/disables developer prints and overlays.", null);
+	public static readonly ConVar developer = new("developer", "0", FCvar.None, "Enables/disables developer prints and overlays.", null);
 
 	static bool? devoverlay_override;
 	public static void SetDeveloperOverlayOverride(bool? ovr) {
@@ -592,9 +565,9 @@ public static class EngineCore
 			return MathF.Round(1.0f / fps_average);
 		}
 	}
-	public static ConVar fps_max = ConVar.Register("fps_max", "300", ConsoleFlags.Saved, "Default frames per second.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
-	public static ConVar r_renderat = ConVar.Register("renderrate", "60", ConsoleFlags.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
-	public static ConVar gc_collectperframe = ConVar.Register("gc_collectperframe", "0", ConsoleFlags.Saved, "If set to 1, Nucleus will perform a forced gen-0 garbage collection after every frame. This is an experiment, mileage may vary.", 0, 1);
+	public static ConVar fps_max = new("fps_max", "300", FCvar.Saved, "Default frames per second.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
+	public static ConVar r_renderat = new("renderrate", "60", FCvar.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
+	public static ConVar gc_collectperframe = new("gc_collectperframe", "0", FCvar.Saved, "If set to 1, Nucleus will perform a forced gen-0 garbage collection after every frame. This is an experiment, mileage may vary.", 0, 1);
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
@@ -610,6 +583,7 @@ public static class EngineCore
 
 		Graphics2D.FontManager.CleanUpFontsMarkedForDeath();
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
+		Cbuf.Execute();
 
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
@@ -621,7 +595,6 @@ public static class EngineCore
 		}
 
 		ReleaseGameThread();
-		Host.CheckDirty();
 		MainThread.Run(ThreadExecutionTime.AfterFrame);
 
 		CurrentAppTime = OS.GetTime();
@@ -703,12 +676,12 @@ public static class EngineCore
 			Window.FlushKeyboardStateInto(ref keyboardState);
 
 			int i = 0;
-			while (keyboardState.KeyAvailable(ref i, out int k, out _)) {
-				KeyAction action = KeyboardLayout.USA.GetKeyAction(keyboardState, KeyboardLayout.USA.FromInt(k));
+			while (keyboardState.KeyAvailable(ref i, out ButtonCode k, out _)) {
+				ButtonAction action = k.GetAction(ctrl: keyboardState.ControlDown, alt: keyboardState.AltDown, shift: keyboardState.ShiftDown);
 				switch (action.Type) {
 					case CharacterType.Enter:
 						Logs.Info($"] {WorkConsole}");
-						ConsoleSystem.ParseOneCommand(WorkConsole);
+						Cbuf.AddText(WorkConsole);
 						WorkConsole = "";
 						break;
 					case CharacterType.DeleteBackwards:
@@ -818,7 +791,6 @@ public static class EngineCore
 			// Skip panic routine.
 			Logs.Info("PANIC: Disabled immediate thread panicking due to the presence of a debugger.");
 			LoadingScreen?.Initialize([]);
-			CommandLine.StuffCmds();
 			while (Running) {
 				shouldThrow = false;
 				Frame();
@@ -828,7 +800,6 @@ public static class EngineCore
 			try {
 				Logs.Info("PANIC: Immediate thread panicking active.");
 				LoadingScreen?.Initialize([]);
-				CommandLine.StuffCmds();
 				while (Running) {
 					shouldThrow = false;
 					Frame();
@@ -841,6 +812,8 @@ public static class EngineCore
 				}
 			}
 		}
+
+		Host.WriteConfiguration();
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
 
@@ -870,9 +843,19 @@ public static class EngineCore
 							  where attributes != null && attributes.Length > 0
 							  select t) {
 				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+			}
+
+			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
+							  from t in a.GetTypes()
+							  select t) {
 				foreach (var ccmd in ConCommandAttribute.GetAttributes(t))
 					ConCommandAttribute.RegisterAttribute(t, ccmd.baseMethod, ccmd.attr);
 			}
+
+			ConVar.Register();
+			Host.ReadConfiguration();
+
+			Cbuf.AddText("stuffcmds");
 
 			Logs.Info("BOOT: Running JIT early where possible...");
 			Parallel.ForEach(earlyJITAssemblies
@@ -904,7 +887,7 @@ public static class EngineCore
 		}
 	}
 
-	public static ConCommand panic = ConCommand.Register("panic", (_, _) => {
+	public static ConCommand panic = new("panic", (_, in _) => {
 		if (Debugger.IsAttached) {
 			try {
 				throw new Exception("force-panic (despite panic system deactivated due to presence of debugger)");
@@ -917,14 +900,14 @@ public static class EngineCore
 			}
 		}
 		throw new Exception("panic concommand called");
-	}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Panic method (NOTE: this *will* crash the engine!).");
+	}, FCvar.DevelopmentOnly, "Tests the EngineCore.Panic method (NOTE: this *will* crash the engine!).");
 
-	public static ConCommand interrupt = ConCommand.Register("interrupt", (_, a) => {
+	public static ConCommand interrupt = new("interrupt", (_, in a) => {
 		EngineCore.Interrupt(() => {
 			Graphics2D.SetDrawColor(255, 0, 0);
 			Graphics2D.DrawRectangle(64, 64, 256, 256);
-		}, (a.GetInt(0) ?? 0) > 0, "You should see a red square in the top-left!");
-	}, ConsoleFlags.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
+		}, a.Arg(1, 0) > 0, "You should see a red square in the top-left!");
+	}, FCvar.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
 
 	private const string PANIC_FONT = "Noto Sans";
 	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";

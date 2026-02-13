@@ -4,6 +4,8 @@ using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -15,8 +17,6 @@ using Raylib_cs;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-
-using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {
@@ -1146,12 +1146,12 @@ namespace Nucleus.UI
             }*/
 		}
 
-		public delegate void MouseEventDelegate(Element self, FrameState state, MouseButton button);
-		public delegate void MouseReleaseDelegate(Element self, FrameState state, MouseButton button, bool lost);
+		public delegate void MouseEventDelegate(Element self, FrameState state, ButtonCode button);
+		public delegate void MouseReleaseDelegate(Element self, FrameState state, ButtonCode button, bool lost);
 		public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
 
 		public event MouseEventDelegate? MouseClickEvent;
-		public virtual void MouseClick(FrameState state, MouseButton button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
+		public virtual void MouseClick(FrameState state, ButtonCode button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
 
 		public Dictionary<string, object> Tags { get; } = [];
 		public bool HasTag(string key) => Tags.ContainsKey(key);
@@ -1162,12 +1162,12 @@ namespace Nucleus.UI
 
 
 		public event MouseEventDelegate MouseReleaseEvent;
-		public virtual void MouseRelease(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
+		public virtual void MouseRelease(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseEventDelegate? MouseLostEvent;
-		public virtual void MouseLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
+		public virtual void MouseLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
 		public event MouseReleaseDelegate? MouseReleasedOrLostEvent;
-		public virtual void MouseReleasedOrLost(Element self, FrameState state, MouseButton button) { UI.MarkMouseEventNotConsumed(); }
+		public virtual void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
 
 		public event MouseV2Delegate? MouseDragEvent;
 		public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
@@ -1192,14 +1192,14 @@ namespace Nucleus.UI
 		public bool Dragged { get; internal set; } = false;
 		public Vector2F DragVector { get; internal set; } = Vector2F.Zero;
 
-		internal void MouseClickOccur(FrameState state, MouseButton button) {
+		internal void MouseClickOccur(FrameState state, ButtonCode button) {
 			Depressed = true;
 			MouseClick(state, button);
 			MouseClickEvent?.Invoke(this, state, button);
 			UI.TriggerElementClicked(this, state, button);
 		}
 
-		internal void MouseReleaseOccur(FrameState state, MouseButton button, bool forced = false) {
+		internal void MouseReleaseOccur(FrameState state, ButtonCode button, bool forced = false) {
 			Depressed = false;
 
 			if (!Hovered && !forced)
@@ -1218,7 +1218,7 @@ namespace Nucleus.UI
 			DragVector = Vector2F.Zero;
 			UI.TriggerElementReleased(this, state, button);
 		}
-		internal void MouseLostOccur(FrameState state, MouseButton button, bool forced = false) {
+		internal void MouseLostOccur(FrameState state, ButtonCode button, bool forced = false) {
 			Depressed = false;
 
 			MouseLost(this, state, button);
@@ -1309,14 +1309,14 @@ namespace Nucleus.UI
 
 		public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
-		public void KeyPressedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public void KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
 			KeyPressed(in keyboardState, key);
 			if (OnKeyPressed != null) {
 				UI.ResetKeyEventConsumed();
 				OnKeyPressed?.Invoke(this, in keyboardState, key);
 			}
 		}
-		public void KeyReleasedOccur(in KeyboardState keyboardState, Input.KeyboardKey key) {
+		public void KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
 			KeyReleased(in keyboardState, key);
 			if (OnKeyReleased != null) {
 				UI.ResetKeyEventConsumed();
@@ -1331,11 +1331,11 @@ namespace Nucleus.UI
 			}
 		}
 
-		public virtual void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
-		public virtual void KeyReleased(in KeyboardState keyboardState, Input.KeyboardKey key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
+		public virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
 		public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
 
-		public delegate void KeyDelegate(Element self, in KeyboardState state, Input.KeyboardKey key);
+		public delegate void KeyDelegate(Element self, in KeyboardState state, ButtonCode key);
 		public delegate void TextDelegate(Element self, in KeyboardState state, string text);
 		public event KeyDelegate? OnKeyPressed;
 		public event KeyDelegate? OnKeyReleased;
@@ -1594,6 +1594,6 @@ namespace Nucleus.UI
 	[Nucleus.MarkForStaticConstruction]
 	public static class ElementConsoleInfo
 	{
-		public static ConCommand nucleus_ui_examples = ConCommand.Register("nucleus_ui_examples", (_, _) => Element.CreateExampleWindow());
+		public static ConCommand nucleus_ui_examples = new("nucleus_ui_examples", (_, in _) => Element.CreateExampleWindow());
 	}
 }

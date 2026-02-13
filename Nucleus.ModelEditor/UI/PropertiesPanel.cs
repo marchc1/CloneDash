@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.ModelEditor.UI;
@@ -6,14 +8,13 @@ using Nucleus.Models;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -125,7 +126,7 @@ namespace Nucleus.ModelEditor
 
 			checkbox.Dock = Dock.Left;
 			checkbox.DockMargin = RectangleF.TLRB(4, 6, 7, 4);
-			checkbox.Checked.SetBackingObject(@checked);
+			checkbox.Checked = (@checked);
 
 			label.Dock = Dock.Fill;
 			label.Text = text;
@@ -152,7 +153,7 @@ namespace Nucleus.ModelEditor
 
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
 			searchBtn.MouseReleaseEvent += (_, _, _) => {
-				var result = Platform.SelectFolderDialog("Select Images Folder", (Filesystem.GetSearchPathID("game")[0] as DiskSearchPath).RootDirectory);
+				var result = Platform.SelectFolderDialog("Select Images Folder", (filesystem.GetSearchPathID("game").First() as DiskSearchPath)!.RootDirectory);
 				if (!result.Cancelled)
 					chosenPath(path, result.Result);
 			};
@@ -176,7 +177,7 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Left;
 			selector.Size = new(96);
-			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
+			selector.SelectedColor = (currentColor ?? Color.White);
 			selector.BorderSize = 0;
 
 			return selector;
@@ -203,10 +204,10 @@ namespace Nucleus.ModelEditor
 			var selector = panel.Add<ColorSelector>();
 			selector.Dock = Dock.Fill;
 			selector.Size = new(64);
-			selector.SelectedColor.SetBackingObject(currentColor ?? Color.White);
+			selector.SelectedColor = (currentColor ?? Color.White);
 			selector.BorderSize = 0;
-			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
-			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor.SetBackingObject(slot.GetColor());
+			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = (slot.GetColor());
+			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = (slot.GetColor());
 
 
 			return selector;
@@ -251,7 +252,7 @@ namespace Nucleus.ModelEditor
 				OnClicked = clicked;
 			}
 		}
-		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, MouseButton>? onClicked = null) {
+		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, ButtonCode>? onClicked = null) {
 			var newBtn = buttons.Add<Button>();
 			newBtn.Text = text;
 			newBtn.AutoSize = true;

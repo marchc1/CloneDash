@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;

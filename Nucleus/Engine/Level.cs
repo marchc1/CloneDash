@@ -22,7 +22,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.Engine
 {
@@ -200,7 +200,6 @@ namespace Nucleus.Engine
 			finalizers.Clear();
 		}
 
-		public Draw3DCoordinateStart Draw3DCoordinateStart { get; set; } = Draw3DCoordinateStart.Centered0_0;
 		public T As<T>() where T : Level => (T)this;
 		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
@@ -273,10 +272,15 @@ namespace Nucleus.Engine
 		public void Unload() {
 			runFinalizers();
 
-			Textures.Dispose();
-			Sounds.Dispose();
-			Models.Dispose();
-			Shaders.Dispose();
+			// restructure-tests @ 2-12-2026: These have been commented out for now. The general ownership of textures is way too confusing.
+			// Future works on restructuring the engine will resolve this. For starters, the level shouldn't even be the owner 
+			// of these resources. There should be independent subsystems (IAudioSystem, IMaterialSystem, IModelSystem, etc) which
+			// contain weak references to resources. 
+
+			// Textures.Dispose();
+			// Sounds.Dispose();
+			// Models.Dispose();
+			// Shaders.Dispose();
 
 			UI.Dispose();
 
@@ -543,6 +547,10 @@ namespace Nucleus.Engine
 				CurtimeDelta = Curtime - LastCurtime;
 			}
 
+			// Temporary: we need to redo this entire frame loop system.
+			globals.CurTime = Curtime;
+			globals.CurTimeDelta = CurtimeDelta;
+
 			// Construct a FrameState from inputs
 			UnlockEntityBuffer(); LockEntityBuffer();
 			EvaluatePerfGraphVisibility();
@@ -616,7 +624,11 @@ namespace Nucleus.Engine
 					RendertimeDelta = Rendertime - LastRendertime;
 				}
 
-				System.Numerics.Vector3 offset = Draw3DCoordinateStart == Draw3DCoordinateStart.Centered0_0 ? new(0, 0, 0) : new(frameState.WindowWidth / 2, frameState.WindowHeight / 2, 0);
+				// Temporary: we need to redo this entire frame loop system.
+				globals.CurTime = Rendertime;
+				globals.CurTimeDelta = RendertimeDelta;
+
+				System.Numerics.Vector3 offset = new(0, 0, 0);
 
 				Surface.Clear(0, 0, 0, 255);
 
@@ -693,7 +705,7 @@ namespace Nucleus.Engine
 					Graphics2D.ResetDrawingOffset();
 					debugrecords.Reset();
 
-					debugrecords.Write($"Nucleus Level / {EngineCore.GameInfo} - DebugContext");
+					debugrecords.Write($"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext");
 					debugrecords.Write();
 					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
@@ -805,13 +817,13 @@ namespace Nucleus.Engine
 		}
 
 		public static ConVar ui_hoverresult
-			= ConVar.Register("ui_hoverresult", "0", ConsoleFlags.None, "Highlights the currently hovered element", 0, 1);
+			= new("ui_hoverresult", "0", FCvar.None, "Highlights the currently hovered element", 0, 1);
 		public static ConVar ui_visrenderbounds
-			= ConVar.Register("ui_visrenderbounds", "0", ConsoleFlags.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
+			= new("ui_visrenderbounds", "0", FCvar.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
 		public static ConVar ui_showupdates
-			= ConVar.Register("ui_showupdates", "0", ConsoleFlags.None, "Visualize layout updates.", 0, 1);
+			= new("ui_showupdates", "0", FCvar.None, "Visualize layout updates.", 0, 1);
 		public static ConCommand ui_elementcount
-			= ConCommand.Register("ui_elementcount", (_, _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), ConsoleFlags.None, "Highlights the currently hovered element");
+			= new("ui_elementcount", (_, in _) => Logs.Print($"UI Elements: {EngineCore.Level.UI.Elements.Count}"), FCvar.None, "Highlights the currently hovered element");
 
 		public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
 		public T GetEntity<T>(Predicate<Entity> predicate) where T : Entity {

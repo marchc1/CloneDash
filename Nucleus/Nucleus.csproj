@@ -12,14 +12,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Colorful.Console" Version="1.2.15" />
+		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Delaunator" Version="1.0.11" />
-		<PackageReference Include="FftSharp" Version="2.2.0" />
-		<PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="ppy.SDL3-CS" Version="2025.1205.0" />
-		<PackageReference Include="RectpackSharp" Version="1.2.0" />
-		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Nucleus.Common\Nucleus.Common.csproj" />
 	</ItemGroup>
 
 	<Import Project="$(MSBuildThisFileDirectory)\NucleusAssets.targets" />

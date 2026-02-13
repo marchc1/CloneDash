@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Input;
 
@@ -14,21 +15,21 @@ public enum InputAction
 
 public record class KeyBinding
 {
-	public int Key;
+	public ButtonCode Key;
 	public InputAction Action;
 
 	public KeyBinding() { }
-	public KeyBinding(int key, InputAction action) {
+	public KeyBinding(ButtonCode key, InputAction action) {
 		Key = key;
 		Action = action;
 	}
 }
 public record class MouseBinding
 {
-	public int Button;
+	public ButtonCode Button;
 	public InputAction Action;
 
-	public MouseBinding(int btn, InputAction action) {
+	public MouseBinding(ButtonCode btn, InputAction action) {
 		Button = btn;
 		Action = action;
 	}
@@ -46,21 +47,21 @@ public class InputDataStore
 {
 	public static InputDataStore NewStockSettings() {
 		InputDataStore store = new();
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.S.Key, InputAction.AirAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.D.Key, InputAction.AirAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.F.Key, InputAction.AirAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.G.Key, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyS, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyD, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyF, InputAction.AirAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyG, InputAction.AirAttack));
 
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.H.Key, InputAction.GroundAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.J.Key, InputAction.GroundAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.K.Key, InputAction.GroundAttack));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.L.Key, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyH, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyJ, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyK, InputAction.GroundAttack));
+		store.KeyboardActions.Add(new(ButtonCode.KeyL, InputAction.GroundAttack));
 
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.Space.Key, InputAction.FeverStart));
-		store.KeyboardActions.Add(new(KeyboardLayout.USA.Escape.Key, InputAction.PauseGame));
+		store.KeyboardActions.Add(new(ButtonCode.KeySpace, InputAction.FeverStart));
+		store.KeyboardActions.Add(new(ButtonCode.KeyEscape, InputAction.PauseGame));
 
-		store.MouseActions.Add(new(MouseButton.MouseRight.Button, InputAction.AirAttack));
-		store.MouseActions.Add(new(MouseButton.MouseLeft.Button, InputAction.GroundAttack));
+		store.MouseActions.Add(new(ButtonCode.MouseRight, InputAction.AirAttack));
+		store.MouseActions.Add(new(ButtonCode.MouseLeft, InputAction.GroundAttack));
 		store.ManualFever = false;
 		return store;
 	}
@@ -69,7 +70,7 @@ public class InputDataStore
 	public List<MouseBinding> MouseActions = [];
 	public bool ManualFever = false;
 
-	public bool IsKeyBound(int key, out InputAction action) {
+	public bool IsKeyBound(ButtonCode key, out InputAction action) {
 		foreach (var v in KeyboardActions)
 			if (v.Key == key) {
 				action = v.Action;
@@ -78,7 +79,7 @@ public class InputDataStore
 		action = default;
 		return false;
 	}
-	public bool IsMouseButtonBound(int button, out InputAction action) {
+	public bool IsButtonCodeBound(ButtonCode button, out InputAction action) {
 		foreach (var v in MouseActions)
 			if (v.Button == button) {
 				action = v.Action;
@@ -94,8 +95,8 @@ public static class InputSettings
 {
 	private static InputDataStore data;
 
-	public static ConVar offset_visual = ConVar.Register(nameof(offset_visual), 0, ConsoleFlags.Saved, -500, 500);
-	public static ConVar offset_judgement = ConVar.Register(nameof(offset_judgement), 0, ConsoleFlags.Saved, -500, 500);
+	public static ConVar offset_visual = new(nameof(offset_visual), 0, FCvar.Saved, -500, 500);
+	public static ConVar offset_judgement = new(nameof(offset_judgement), 0, FCvar.Saved, -500, 500);
 
 
 	static InputSettings() {
@@ -108,9 +109,9 @@ public static class InputSettings
 				data.KeyboardActions.Clear();
 				data.MouseActions.Clear();
 				foreach (var key in oldData.KeyboardActions)
-					data.KeyboardActions.Add(new(key.Key, key.Value));
+					data.KeyboardActions.Add(new((ButtonCode)key.Key, key.Value));
 				foreach (var btn in oldData.MouseActions)
-					data.MouseActions.Add(new(btn.Key, btn.Value));
+					data.MouseActions.Add(new((ButtonCode)btn.Key, btn.Value));
 
 				data.ManualFever = oldData.ManualFever;
 			}
@@ -123,50 +124,49 @@ public static class InputSettings
 	public static void Store() {
 		Host.SetDataStore("CloneDash.InputSettings", data);
 		OnSettingsChanged?.Invoke();
-		Host.WriteConfig();
 	}
 
 	public delegate void SettingsChanged();
 	public static event SettingsChanged? OnSettingsChanged;
 
-	public static bool IsKeyBound(KeyboardKey key, out InputAction action) {
-		if (data.IsKeyBound(key.Key, out action))
+	public static bool IsKeyBound(ButtonCode key, out InputAction action) {
+		if (data.IsKeyBound(key, out action))
 			return true;
 		return false;
 	}
 
-	public static bool IsMouseButtonBound(MouseButton btn, out InputAction action) {
-		if (data.IsMouseButtonBound(btn.Button, out action))
+	public static bool IsButtonCodeBound(ButtonCode btn, out InputAction action) {
+		if (data.IsButtonCodeBound(btn, out action))
 			return true;
 		return false;
 	}
 
-	public static IEnumerable<KeyboardKey> GetKeysOfAction(InputAction action) {
+	public static IEnumerable<ButtonCode> GetKeysOfAction(InputAction action) {
 		foreach (var key in data.KeyboardActions)
 			if (key.Action == action)
-				yield return KeyboardLayout.USA.FromInt(key.Key);
+				yield return key.Key;
 	}
 
-	public static IEnumerable<MouseButton> GetMouseButtonsOfAction(InputAction action) {
+	public static IEnumerable<ButtonCode> GetButtonCodesOfAction(InputAction action) {
 		foreach (var btn in data.MouseActions)
 			if (btn.Action == action)
-				yield return new(btn.Button);
+				yield return btn.Button;
 	}
 
-	public static void BindKey(KeyboardKey key, InputAction action) {
-		if (data.IsKeyBound(key.Key, out _))
+	public static void BindKey(ButtonCode key, InputAction action) {
+		if (data.IsKeyBound(key, out _))
 			UnbindKey(key);
 
-		data.KeyboardActions.Add(new(key.Key, action));
+		data.KeyboardActions.Add(new(key, action));
 		Store();
 	}
 
-	public static bool RebindKey(KeyboardKey keyReplace, KeyboardKey keyWith, InputAction action) {
+	public static bool RebindKey(ButtonCode keyReplace, ButtonCode keyWith, InputAction action) {
 		UnbindKey(keyWith);
 
 		for (int i = 0; i < data.KeyboardActions.Count; i++) {
-			if (data.KeyboardActions[i].Key == keyReplace.Key) {
-				data.KeyboardActions[i].Key = keyWith.Key;
+			if (data.KeyboardActions[i].Key == keyReplace) {
+				data.KeyboardActions[i].Key = keyWith;
 				data.KeyboardActions[i].Action = action;
 				Store();
 				return true;
@@ -176,9 +176,9 @@ public static class InputSettings
 		return false;
 	}
 
-	public static bool UnbindKey(KeyboardKey key) {
+	public static bool UnbindKey(ButtonCode key) {
 		for (int i = 0; i < data.KeyboardActions.Count; i++) {
-			if (data.KeyboardActions[i].Key == key.Key) {
+			if (data.KeyboardActions[i].Key == key) {
 				data.KeyboardActions.RemoveAt(i);
 				Store();
 				return true;
@@ -188,20 +188,20 @@ public static class InputSettings
 		return false;
 	}
 
-	public static void BindMouseButton(MouseButton btn, InputAction action) {
-		if (data.IsMouseButtonBound(btn.Button, out _))
-			UnbindMouseButton(btn);
+	public static void BindMouseCode(ButtonCode btn, InputAction action) {
+		if (data.IsButtonCodeBound(btn, out _))
+			UnbindMouseCode(btn);
 
-		data.MouseActions.Add(new(btn.Button, action));
+		data.MouseActions.Add(new(btn, action));
 		Store();
 	}
 
-	public static bool RebindMouseButton(MouseButton btnReplace, MouseButton btnWith, InputAction action) {
-		UnbindMouseButton(btnWith);
+	public static bool RebindMouseCode(ButtonCode btnReplace, ButtonCode btnWith, InputAction action) {
+		UnbindMouseCode(btnWith);
 
 		for (int i = 0; i < data.MouseActions.Count; i++) {
-			if (data.MouseActions[i].Button == btnReplace.Button) {
-				data.MouseActions[i].Button = btnWith.Button;
+			if (data.MouseActions[i].Button == btnReplace) {
+				data.MouseActions[i].Button = btnWith;
 				data.MouseActions[i].Action = action;
 				Store();
 				return true;
@@ -211,9 +211,9 @@ public static class InputSettings
 		return false;
 	}
 
-	public static bool UnbindMouseButton(MouseButton btn) {
+	public static bool UnbindMouseCode(ButtonCode btn) {
 		for (int i = 0; i < data.MouseActions.Count; i++) {
-			if (data.MouseActions[i].Button == btn.Button) {
+			if (data.MouseActions[i].Button == btn) {
 				data.MouseActions.RemoveAt(i);
 				Store();
 				return true;

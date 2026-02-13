@@ -55,15 +55,15 @@ namespace CloneDash.Modding
 
 		public void MountToFilesystem() {
 			if (Filename == null) throw new FileNotFoundException("FeverDescriptor.MountToFilesystem: Cannot mount the file, because Filename == null!");
-			Filesystem.RemoveSearchPath(MountPathID);
+			filesystem.RemoveSearchPath(MountPathID);
 
 			// Find the search path that contains the scene descriptor.
 			// TODO: Need to redo this! It doesn't really support zip files (which was the whole
 			// point of the filesystem restructure!)
-			var searchPath = Filesystem.FindSearchPath(SearchPathID, $"{Filename}/{DescriptorFileName}.cdd");
+			var searchPath = filesystem.FindSearchPath(SearchPathID, $"{Filename}/{DescriptorFileName}.cdd");
 			switch (searchPath) {
 				case DiskSearchPath diskPath:
-					Filesystem.AddTemporarySearchPath(MountPathID, DiskSearchPath.Combine(searchPath, Filename));
+					filesystem.AddTemporarySearchPath(MountPathID, DiskSearchPath.Combine(searchPath, Filename));
 					break;
 			}
 		}

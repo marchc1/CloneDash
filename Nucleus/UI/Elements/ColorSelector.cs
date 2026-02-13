@@ -1,4 +1,6 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Types;
@@ -16,23 +18,36 @@ using static Nucleus.UI.Elements.ColorSelector;
 
 namespace Nucleus.UI.Elements
 {
+	public delegate void ColorChangedFn(ColorSelector selector, ref Color color);
 	public class ColorSelector : Element
 	{
-		public DataBinder<Color> SelectedColor { get; set; } = new(Color.White);
+		public event ColorChangedFn? OnColorChanged;
+		public Color SelectedColor {
+			get {
+				return field;
+			}
+			set {
+				if (field == value)
+					return;
+
+				field = value;
+				OnColorChanged?.Invoke(this, ref field);
+			}
+		} = Color.White;
+
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
 		protected override void Initialize() {
 			base.Initialize();
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (IValidatable.IsValid(CurrentDialog))
 				return;
 
 			CurrentDialog = UI.Add<ColorSelectorDialog>();
 			CurrentDialog.Position = state.Mouse.MousePos;
-			CurrentDialog.SelectedColor = this.SelectedColor;
-			CurrentDialog.Setup();
+			CurrentDialog.Setup(this);
 			CurrentDialog.FitToParent(8);
 		}
 		public override void Paint(float width, float height) {
@@ -48,14 +63,15 @@ namespace Nucleus.UI.Elements
 			Graphics2D.SetDrawColor(SelectedColor);
 			Graphics2D.DrawRectangle(3, 3, width - 6, height - 6);
 
-			Graphics2D.SetDrawColor(120 + (SelectedColor.Backing.R / 2), 120 + (SelectedColor.Backing.G / 2), 120 + (SelectedColor.Backing.B / 2), 255);
+			Graphics2D.SetDrawColor(120 + (SelectedColor.R / 2), 120 + (SelectedColor.G / 2), 120 + (SelectedColor.B / 2), 255);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 		}
 	}
 
 	public class ColorSelectorDialog : Panel
 	{
-		public DataBinder<Color> SelectedColor { get; set; }
+		public ColorSelector Selector = null!;
+		public Color SelectedColor { get => Selector.SelectedColor; set => Selector.SelectedColor = value; }
 
 		Panel ColorWheel;
 
@@ -82,14 +98,14 @@ namespace Nucleus.UI.Elements
 		public float Hue {
 			get => _workingHue;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
 				_workingHue = value;
 			}
 		}
 		public float Saturation {
 			get => _workingSat;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
 				_workingSat = value;
 
 			}
@@ -97,12 +113,14 @@ namespace Nucleus.UI.Elements
 		public float Value {
 			get => _workingVal;
 			set {
-				SelectedColor.Backing = (SelectedColor.Backing.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
+				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
 				_workingVal = value;
 			}
 		}
-		public void Setup() {
-			var hsv = SelectedColor.Backing.ToHSV();
+		public void Setup(ColorSelector parent) {
+			Selector = parent;
+
+			var hsv = SelectedColor.ToHSV();
 
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
@@ -130,7 +148,7 @@ namespace Nucleus.UI.Elements
 			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
 
 			this.Origin = Anchor.BottomCenter;
-			this.UI.OnElementClicked += delegate (Element el, FrameState fs, Input.MouseButton mb) {
+			this.UI.OnElementClicked += delegate (Element el, FrameState fs, ButtonCode mb) {
 				if (!el.IsIndirectChildOf(this)) {
 					this.Remove();
 				}
@@ -143,7 +161,7 @@ namespace Nucleus.UI.Elements
 			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
 		}
 
-		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 			DragMode = ColorSelectorDragMode.None;
 		}
 
@@ -237,7 +255,7 @@ namespace Nucleus.UI.Elements
 			Value = result.Value;
 		}
 
-		private void ColorWheel_MouseClickEvent(Element self, FrameState state, Input.MouseButton button) {
+		private void ColorWheel_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			DragMode = DetermineDragMode();
 			switch (DragMode) {
 				case ColorSelectorDragMode.Hue:

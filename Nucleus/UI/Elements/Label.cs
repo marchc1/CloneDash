@@ -216,7 +216,7 @@ public class Label : Element
 		var parentBounds = Parent?.RenderBounds ?? renderBounds;
 		Span<TextRange> ranges = textRanges.AsSpan();
 		Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(parentBounds.W, parentBounds.H)), TextPadding);
-		TextAlignment vertical = TextAlignment.ToTextAlignment().vertical;
+		TextAlignment vertical = TextAlignment.ToTextAlignment().Vertical;
 
 		if (ranges.Length <= 0) {
 			textSize = Graphics2D.GetTextSize(Text, Font, TextSize);
@@ -265,7 +265,7 @@ public class Label : Element
 
 		Span<TextRange> ranges = textRanges.AsSpan();
 		Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), TextPadding);
-		TextAlignment vertical = TextAlignment.ToTextAlignment().vertical;
+		TextAlignment vertical = TextAlignment.ToTextAlignment().Vertical;
 
 		Graphics2D.SetDrawColor(textC);
 

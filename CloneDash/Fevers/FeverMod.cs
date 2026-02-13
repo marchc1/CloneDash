@@ -11,7 +11,7 @@ namespace CloneDash.Fevers
 		private static IFeverDescriptor? activeDescriptor;
 		public delegate void UpdatedDelegate(IFeverDescriptor? descriptor);
 		public static event UpdatedDelegate? FeverUpdated;
-		public static ConVar fever = ConVar.Register(nameof(fever), "default", ConsoleFlags.Saved, "Your fever effect.", null, null, (cv, o, n) => {
+		public static ConVar fever = new(nameof(fever), "default", FCvar.Saved, "Your fever effect.", null, null, (cv, o, n) => {
 			activeDescriptor = null;
 			activeDescriptor = GetFeverData();
 			FeverUpdated?.Invoke(activeDescriptor);
@@ -21,13 +21,13 @@ namespace CloneDash.Fevers
 		}
 
 		public static string[] GetAvailableFevers() {
-			var dirs = Filesystem.FindDirectories("fevers", "");
+			var dirs = filesystem.FindDirectories("fevers", "");
 			return dirs.ToArray();
 		}
 
 		public static IFeverDescriptor? GetFeverData() {
-			string? name = fever?.GetString();
-			if (string.IsNullOrWhiteSpace(name))
+			ReadOnlySpan<char> name = fever == null ? null : fever.GetString();
+			if (name.IsEmpty || name.IsWhiteSpace())
 				return null;
 
 			IFeverProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();

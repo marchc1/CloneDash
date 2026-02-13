@@ -109,7 +109,7 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 	string[] files;
 	public override bool ShouldFlipTexture => false;
 	public CloneDashInterludeProvider() {
-		files = Filesystem.FindFiles("interludes", "*.png").ToArray();
+		files = filesystem.FindFiles("interludes", "*.png").ToArray();
 	}
 	public override int Count => files.Length;
 
@@ -126,7 +126,7 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 [Nucleus.MarkForStaticConstruction]
 public static class Interlude
 {
-	public static ConVar usemdinterludes = ConVar.Register(nameof(usemdinterludes), "1", ConsoleFlags.Saved, "If Muse Dash is installed, adds the interludes from the base game.", 0, 1);
+	public static ConVar usemdinterludes = new(nameof(usemdinterludes), "1", FCvar.Saved, "If Muse Dash is installed, adds the interludes from the base game.", 0, 1);
 	private static Stopwatch limiter = new();
 	private static double lastFrame = -100;
 	private static bool inInterlude;
@@ -225,7 +225,7 @@ public static class Interlude
 				if (hasTex) {
 					var tex = interludeTexture;
 					// unity moment; need to flip sometimes
-					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Raylib_cs.Color.White);
+					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Nucleus.Common.Types.Color.White);
 				}
 
 				var originalBottomSize = 48f;

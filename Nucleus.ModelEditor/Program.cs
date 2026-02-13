@@ -1,4 +1,7 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Engine;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -7,6 +10,7 @@ using Nucleus.Input;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Models;
 using Nucleus.Models.Runtime;
+using Nucleus.NewEngine;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -19,7 +23,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -31,14 +35,13 @@ namespace Nucleus.ModelEditor
 			public string Path;
 			public DateTime Opened;
 		}
-		public static ConVar modeleditor_maxrecentfiles = ConVar.Register("ModelEditor_maxrecentfiles", "24", ConsoleFlags.Saved, "How many recent files can be available before the least-recent file is forgotten about.", 0, null);
+		public static ConVar modeleditor_maxrecentfiles = new("ModelEditor_maxrecentfiles", "24", FCvar.Saved, "How many recent files can be available before the least-recent file is forgotten about.", 0, null);
 		private static ModelEditor_RecentFile[] recentfiles() {
 			ModelEditor_RecentFile[] files = Host.GetDataStore<ModelEditor_RecentFile[]>("ModelEditor.RecentFiles") ?? [];
 			return files;
 		}
 		private static void compilefiles(ModelEditor_RecentFile[] array) {
 			Host.SetDataStore("ModelEditor.RecentFiles", array);
-			Host.WriteConfig();
 		}
 		public static ModelEditor_RecentFile[] GetRecentFiles() {
 			return recentfiles();
@@ -70,7 +73,7 @@ namespace Nucleus.ModelEditor
 			Properties.Size = new(64);
 			Properties.Dock = Dock.Bottom;
 			Properties.DrawPanelBackground = true;
-			Properties.BackgroundColor = new Raylib_cs.Color(5, 7, 12, 200);
+			Properties.BackgroundColor = new Color(5, 7, 12, 200);
 
 			Add(out Outliner);
 			Outliner.Dock = Dock.Fill;
@@ -532,9 +535,9 @@ namespace Nucleus.ModelEditor
 		public override void Initialize(params object[] args) {
 			Active = this;
 			Menubar menubar = UI.Add<Menubar>();
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.R], () => EngineCore.LoadLevel(new ModelEditor()));
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Z], () => Actions.Undo());
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.Y], () => Actions.Redo());
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new ModelEditor()));
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyZ], () => Actions.Undo());
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyY], () => Actions.Redo());
 
 			var file = menubar.AddButton("File");
 			file.AddButton("New", null, File_New);
@@ -611,9 +614,9 @@ namespace Nucleus.ModelEditor
 			Outliner.NodeClicked += Outliner_NodeClicked;
 			File.NewFile();
 
-			Keybinds.AddKeybind([KeyboardLayout.USA.Delete], AttemptDelete);
-			Keybinds.AddKeybind([KeyboardLayout.USA.F2], () => AttemptRename());
-			Keybinds.AddKeybind([KeyboardLayout.USA.Escape], () => {
+			Keybinds.AddKeybind([ButtonCode.KeyDelete], AttemptDelete);
+			Keybinds.AddKeybind([ButtonCode.KeyF2], () => AttemptRename());
+			Keybinds.AddKeybind([ButtonCode.KeyEscape], () => {
 				if (File.ActiveOperator != null)
 					File.DeactivateOperator(true);
 				else {
@@ -627,8 +630,8 @@ namespace Nucleus.ModelEditor
 				}
 
 			});
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.S], File_Save);
-			Keybinds.AddKeybind([KeyboardLayout.USA.LeftControl, KeyboardLayout.USA.O], File_Open);
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyS], File_Save);
+			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyO], File_Open);
 
 			File.OperatorActivated += File_OperatorActivated;
 			File.OperatorDeactivated += File_OperatorDeactivated;
@@ -723,11 +726,11 @@ namespace Nucleus.ModelEditor
 		}
 
 		private string createDefaultFolder() {
-			var modelsrc = Filesystem.GetSearchPathID("modelsrc");
-			if (modelsrc.Count == 0)
-				Filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
+			var modelsrc = filesystem.GetSearchPathID("modelsrc");
+			if (!modelsrc.Any())
+				filesystem.AddSearchPath("modelsrc", new DiskSearchPath(Path.Combine(AppContext.BaseDirectory, "modelsrc")));
 
-			return (modelsrc[0] as DiskSearchPath).RootDirectory;
+			return (modelsrc.First() as DiskSearchPath)!.RootDirectory;
 		}
 
 		private void titleUpdate() 
@@ -903,24 +906,36 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, MouseButton btn) {
+		private void Outliner_NodeClicked(OutlinerPanel panel, OutlinerNode node, ButtonCode btn) {
 			var o = node.GetRepresentingObject();
 			if (o == null) return;
 			SelectObject(o);
 		}
 	}
 
-	internal class Program
+	internal class Program : IGameDLL
 	{
 		static void Main(string[] args) {
-			EngineCore.GameInfo = new() {
+			CommandLineParser commandLine = new();
+			commandLine.CreateCmdLine(Environment.CommandLine);
+
+			IEngineAPI engineAPI = new EngineBuilder(commandLine)
+				.WithComponent<IGameDLL, Program>()
+				.WithStandardComponents()
+				.Build();
+
+			engineAPI.SetStartupInfo(new() {
 				AppName = "Nucleus - Model v4 Editor",
-				AppIdentifier = "com.github.marchc1.NucleusModelEditor"
-			};
-			EngineCore.Initialize(1800, 980, "Nucleus - Model v4 Editor", args, gameThreadInit: GameMain);
-			EngineCore.StartMainThread();
+				AppIdentifier = "com.github.marchc1.NucleusModelEditor",
+				AppCreator = "March (github/marchc1)",
+				AppURL = "https://github.com/marchc1/CloneDash",
+				AppType = Nucleus.Types.AppType.Application
+			});
+
+			using ServiceLocatorScope locatorScope = new(engineAPI);
+			engineAPI.Run();
 		}
-		static void GameMain() {
+		public void Init() {
 			EngineCore.LoadLevel(new ModelEditor());
 		}
 	}

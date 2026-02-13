@@ -1,9 +1,10 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace Nucleus.ModelEditor
 {
@@ -103,7 +104,7 @@ namespace Nucleus.ModelEditor
 			get => Image.Image;
 			set => Image.Image = value;
 		}
-		public new Raylib_cs.Color ImageColor {
+		public new Color ImageColor {
 			get => Image.ImageColor ?? Image.TextColor;
 			set => Image.ImageColor = value;
 		}
@@ -128,7 +129,7 @@ namespace Nucleus.ModelEditor
 			Expander.Size = new(23);
 			Image.Size = new(16);
 
-			Image.ImageColor = Raylib_cs.Color.White;
+			Image.ImageColor = Color.White;
 
 			BorderSize = 0;
 			DockMargin = RectangleF.TLRB(0, 2, 2, 0);
@@ -156,12 +157,12 @@ namespace Nucleus.ModelEditor
 			Dock = Dock.Top;
 		}
 
-		private void Keyframe_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		private void Keyframe_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
 			if (
-				button == MouseButton.Mouse1 
+				button == ButtonCode.Mouse1 
 				&& ModelEditor.Active.CanInsertKeyframes() 
 				&& editorItem.CanKeyframe() 
 				&& editorItem.GetKeyframeParameters(out var target, out var prop, out var index)
@@ -171,7 +172,7 @@ namespace Nucleus.ModelEditor
 				Expander_MouseReleaseEvent(self, state, button);
 		}
 
-		private void Visibility_MouseClickEvent(Element self, FrameState state, MouseButton button) {
+		private void Visibility_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
@@ -188,8 +189,8 @@ namespace Nucleus.ModelEditor
 			Expanded = state;
 		}
 
-		private void Expander_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
-			if (button == MouseButton.Mouse2)
+		private void Expander_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+			if (button == ButtonCode.Mouse2)
 				__setExpandedRecursive(!Expanded);
 			else
 				Expanded = !Expanded;

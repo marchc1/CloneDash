@@ -5,6 +5,8 @@ using CloneDash.Settings;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -16,7 +18,7 @@ using System.Collections.Concurrent;
 
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
-using MouseButton = Nucleus.Input.MouseButton;
+
 
 namespace CloneDash.Menu.Searching;
 
@@ -293,11 +295,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
-			if (keyboard.IsKeyDown(KeyboardLayout.USA.Left) || keyboard.IsKeyDown(KeyboardLayout.USA.A)) {
+			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA)) {
 				MoveLeft();
 				InvalidateLayout();
 			}
-			else if (keyboard.IsKeyDown(KeyboardLayout.USA.Right) || keyboard.IsKeyDown(KeyboardLayout.USA.D)) {
+			else if (keyboard.IsKeyDown(ButtonCode.KeyRight) || keyboard.IsKeyDown(ButtonCode.KeyD)) {
 				MoveRight();
 				InvalidateLayout();
 			}
@@ -527,11 +529,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		DemandKeyboardFocus();
 	}
 
-	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, MouseButton button) {
+	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		TriggerUserInitializeSearch();
 	}
 
-	public override void MouseClick(FrameState state, MouseButton button) {
+	public override void MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
 		DemandKeyboardFocus();
 	}
@@ -546,13 +548,13 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.AutoSize = true;
 	}
 
-	public override void KeyPressed(in KeyboardState keyboardState, Nucleus.Input.KeyboardKey key) {
+	public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		base.KeyPressed(in keyboardState, key);
-		if (key == KeyboardLayout.USA.Left || key == KeyboardLayout.USA.A) {
+		if (key == ButtonCode.KeyLeft || key == ButtonCode.KeyA) {
 			MoveLeft();
 			InvalidateLayout();
 		}
-		else if (key == KeyboardLayout.USA.Right || key == KeyboardLayout.USA.D) {
+		else if (key == ButtonCode.KeyRight || key == ButtonCode.KeyD) {
 			MoveRight();
 			InvalidateLayout();
 		}

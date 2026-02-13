@@ -1,4 +1,5 @@
-﻿using Nucleus.Extensions;
+﻿using Nucleus.Common.Types;
+using Nucleus.Extensions;
 using Nucleus.Files;
 using Raylib_cs;
 using System.Numerics;

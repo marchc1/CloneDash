@@ -1,5 +1,5 @@
 ﻿using AssetStudio;
-
+using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 
 using System.Diagnostics.CodeAnalysis;
@@ -147,7 +147,7 @@ public class UnitySearchPath : SearchPath
 		assetsManagers.Add(file.PointsToBundle, manager);
 	}
 
-	protected override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
+	public override bool CheckDirectory(ReadOnlySpan<char> path, FileAccess? specificAccess = null, FileMode? specificMode = null) => true;
 	public override bool CheckFile(ReadOnlySpan<char> path, FileAccess? specificAccess, FileMode? specificMode) => true;
 	public UnityFile GetBundleNameFromFullPath(string path) {
 		if (LookupAbsFiles.TryGetValue(path, out var bundleInfo)) return bundleInfo;

@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 using Nucleus.Commands;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Files;
@@ -39,7 +40,7 @@ public static class Model4System
 	/// </summary>
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
-	public static ConVar m4s_wireframe = ConVar.Register(nameof(m4s_wireframe), "0", ConsoleFlags.Saved, "Model4 instance wireframe overlay.", 0, 1);
+	public static ConVar m4s_wireframe = new(nameof(m4s_wireframe), "0", FCvar.Saved, "Model4 instance wireframe overlay.", 0, 1);
 	public const double REFERENCE_FPS = 30;
 
 
@@ -1781,7 +1782,7 @@ public class ModelBinary : IModelFormat
 
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		using (Stream? stream = Filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
+		using (Stream? stream = filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
 			if (stream == null) throw new NullReferenceException();
 			using (BinaryReader reader = new BinaryReader(stream)) {
 				ModelData data = new ModelData();
@@ -1800,8 +1801,8 @@ public class ModelBinary : IModelFormat
 				data.Animations = reader.ReadList(readAnimation);
 
 				// Try to load the texture atlas
-				string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-				byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+				string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
+				byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
 
 				if (texatlas == null && imagedata == null)
 					return data;
@@ -2069,7 +2070,7 @@ public class ModelRefJSON : IModelFormat
 	};
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		var text = Filesystem.ReadAllText(pathID, path);
+		var text = filesystem.ReadAllText(pathID, path);
 		if (text == null) throw new FileNotFoundException($"Cannot find '{path}' in {pathID}");
 
 		var data = JsonConvert.DeserializeObject<ModelData>(text, Settings);
@@ -2077,8 +2078,8 @@ public class ModelRefJSON : IModelFormat
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
 
 		// Try to load the texture atlas
-		string? texatlas = Filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-		byte[]? imagedata = Filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+		string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
+		byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
 
 		if (texatlas == null && imagedata == null)
 			return data;

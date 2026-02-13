@@ -2,6 +2,7 @@
 
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Commands;
 using Nucleus.Util;
 
 namespace CloneDash.Characters;
@@ -12,18 +13,30 @@ public static class CharacterMod
 	private static ICharacterDescriptor? activeDescriptor;
 	public delegate void CharacterUpdatedDelegate(ICharacterDescriptor? charDescriptor);
 	public static event CharacterUpdatedDelegate? CharacterUpdated;
-	public static ConVar character = ConVar.Register(nameof(character), "md_char_1_rock", ConsoleFlags.Saved, "Your character.", null, null, (cv, o, n) => {
-		activeDescriptor = null;
+
+	public static ICharacterDescriptor? GetActiveCharacterDescriptor() {
+		if (activeDescriptor == null)
+			activeDescriptor = GetCharacterData();
+
+		return activeDescriptor;
+	}
+
+	public static ConVar character = new(nameof(character), "md_char_1_rock", FCvar.Saved, "Your character.", null, null, (cv, o, n) => {
+		var lastDescriptor = activeDescriptor;
 		activeDescriptor = GetCharacterData();
-		CharacterUpdated?.Invoke(activeDescriptor);
+		if (lastDescriptor != activeDescriptor)
+			CharacterUpdated?.Invoke(activeDescriptor);
 	}, autocomplete: clonedash_character_autocomplete);
-	private static void clonedash_character_autocomplete(ConCommandBase cmd, string argsStr, ConCommandArguments args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		var availableCharacters = GetAvailableCharacters().Where(x => x.StartsWith(args.GetString(curArgPos) ?? "")).ToArray();
+
+	private static void clonedash_character_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+		var availableCharacters = GetAvailableCharacters().Where(x => x.StartsWith(args.ArgS(curArgPos))).ToArray();
 		returns = availableCharacters;
 	}
 
+
+
 	[ConCommand(Help: "Your characters info, based on the Clone Dash Descriptor")]
-	public static void characterinfo(ConCommand cmd, ConCommandArguments args) {
+	public static void characterinfo(ConCommand cmd, in TokenizedCommand args) {
 		var info = GetCharacterData();
 		if (info == null) {
 			Logs.Error("Info was null!");
@@ -36,7 +49,7 @@ public static class CharacterMod
 		Logs.Print($"    Perk:      {info.GetPerk()}");
 	}
 	[ConCommand(Help: "Prints all available characters")]
-	public static void characters(ConCommand cmd, ConCommandArguments args) {
+	public static void characters(ConCommand cmd, in TokenizedCommand args) {
 		var characters = GetAvailableCharacters();
 		foreach (var character in characters)
 			Logs.Print($"    {character}");
@@ -54,7 +67,7 @@ public static class CharacterMod
 
 	public static ICharacterDescriptor? GetCharacterData(string? name = null) {
 		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
-		name ??= character?.GetString();
+		name ??= character == null ? default : new(character.GetString());
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;

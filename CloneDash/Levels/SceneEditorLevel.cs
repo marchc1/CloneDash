@@ -12,7 +12,7 @@ namespace CloneDash.Levels;
 
 public class SceneEditorLevel() : DashGameLevel(null)
 {
-	public static ConCommand sceneedit = ConCommand.Register(nameof(sceneedit), (_, _) => {
+	public static ConCommand sceneedit = new(nameof(sceneedit), (_, in _) => {
 		Interlude.Begin("Loading the Scene Editor...");
 		Interlude.Spin();
 		EngineCore.LoadLevel(new SceneEditorLevel());
@@ -37,7 +37,7 @@ public class SceneEditorLevel() : DashGameLevel(null)
 		bgrEditWindow.Add(out TextEditor bgrEdit);
 		bgrEdit.Dock = Dock.Fill;
 		bgrEdit.Highlighter = new LuaSyntaxHighlighter();
-		bgrEdit.SetText(Filesystem.ReadAllText("scene", "scripts/background.lua"));
+		bgrEdit.SetText(filesystem.ReadAllText("scene", "scripts/background.lua"));
 		bgrEdit.TextSize = 14;
 		bgrEdit.DockMargin = RectangleF.TLRB(4);
 
@@ -55,7 +55,7 @@ public class SceneEditorLevel() : DashGameLevel(null)
 		events.AddButton("Enter Fever", null, () => AddFever(MaxFever));
 
 		var options = menubar.AddButton("Scene");
-		options.AddButton("Refresh Scene", null, () => ConCommand.Execute(sceneedit));
+		// TODO: need engine interface. options.AddButton("Refresh Scene", null, () => ConCommand.Execute(sceneedit));
 		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
 		options.AddButton("PlayScale = 1.2", null, () => PlayScale = 1.2f);
 

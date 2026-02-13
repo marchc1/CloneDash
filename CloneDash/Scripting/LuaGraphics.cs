@@ -1,6 +1,7 @@
 ﻿using Lua;
 
 using Nucleus;
+using Nucleus.Common.Types;
 using Nucleus.Engine;
 
 using Raylib_cs;
@@ -70,7 +71,7 @@ public partial class LuaGraphics
 		});
 	}
 
-	private Raylib_cs.Color drawColor = Raylib_cs.Color.White;
+	private Color drawColor = Color.White;
 	private LuaTexture? activeTexture;
 	private int matricesCreated = -1;
 

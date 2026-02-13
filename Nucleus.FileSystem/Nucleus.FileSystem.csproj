@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nucleus.Common\Nucleus.Common.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(IsWindows)'=='true'">
+		<DefineConstants>COMPILED_WINDOWS</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(IsOSX)'=='true'">
+		<DefineConstants>COMPILED_OSX</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(IsLinux)'=='true'">
+		<DefineConstants>COMPILED_LINUX</DefineConstants>
+	</PropertyGroup>
+</Project>

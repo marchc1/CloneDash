@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Input;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -10,8 +11,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
-
-using MouseButton = Nucleus.Input.MouseButton;
 
 namespace Nucleus.UI
 {
@@ -136,7 +135,7 @@ namespace Nucleus.UI
 			LayoutInvalidated = false;
 		}
 
-		public override void MouseClick(FrameState state, Input.MouseButton button) {
+		public override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus(this, true);
 		}
 
@@ -171,8 +170,8 @@ namespace Nucleus.UI
 		public event MouseEventDelegate? OnElementClicked;
 		public event MouseEventDelegate? OnElementReleased;
 
-		public void TriggerElementClicked(Element? e, FrameState fs, Input.MouseButton mb) => OnElementClicked?.Invoke(e!, fs, mb);
-		public void TriggerElementReleased(Element e, FrameState fs, Input.MouseButton mb) => OnElementReleased?.Invoke(e, fs, mb);
+		public void TriggerElementClicked(Element? e, FrameState fs, ButtonCode mb) => OnElementClicked?.Invoke(e!, fs, mb);
+		public void TriggerElementReleased(Element e, FrameState fs, ButtonCode mb) => OnElementReleased?.Invoke(e, fs, mb);
 		public Menu Menu() {
 			return this.Add<Menu>();
 		}
@@ -275,9 +274,9 @@ namespace Nucleus.UI
 							var pressed = emulatedState.WasKeyPressed(i);
 							var released = emulatedState.WasKeyReleased(i);
 							if (pressed) 
-								DoKeyPressed(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal);
+								DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
 							if (released) 
-								DoKeyReleased(target, emulatedState, KeyboardLayout.USA.FromInt(i), target == lastModal && !lastModal.MarkedForDeath);
+								DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.MarkedForDeath);
 
 							if (!ranKeybinds)
 								ranKeybinds = WasKeyEventConsumed();
@@ -340,18 +339,18 @@ namespace Nucleus.UI
 				if (Hovered != null) {
 					Depressed = Hovered;
 
-					if (frameState.Mouse.Mouse1Clicked) DoMouseClick(Hovered, frameState, MouseButton.Mouse1);
-					if (frameState.Mouse.Mouse2Clicked) DoMouseClick(Hovered, frameState, MouseButton.Mouse2);
-					if (frameState.Mouse.Mouse3Clicked) DoMouseClick(Hovered, frameState, MouseButton.Mouse3);
-					if (frameState.Mouse.Mouse4Clicked) DoMouseClick(Hovered, frameState, MouseButton.Mouse4);
-					if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, MouseButton.Mouse5);
+					if (frameState.Mouse.Mouse1Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse1);
+					if (frameState.Mouse.Mouse2Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse2);
+					if (frameState.Mouse.Mouse3Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse3);
+					if (frameState.Mouse.Mouse4Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse4);
+					if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse5);
 				}
 				else {
-					if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, frameState, MouseButton.Mouse1);
-					if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, frameState, MouseButton.Mouse2);
-					if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, frameState, MouseButton.Mouse3);
-					if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, frameState, MouseButton.Mouse4);
-					if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, frameState, MouseButton.Mouse5);
+					if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse1);
+					if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse2);
+					if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse3);
+					if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse4);
+					if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse5);
 				}
 			}
 
@@ -359,27 +358,27 @@ namespace Nucleus.UI
 				if (Depressed != null) {
 					if (Hovered == Depressed) {
 						if (frameState.Mouse.Mouse1Released)
-							Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse1);
+							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse1);
 						if (frameState.Mouse.Mouse2Released)
-							Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse2);
+							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse2);
 						if (frameState.Mouse.Mouse3Released)
-							Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse3);
+							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse3);
 						if (frameState.Mouse.Mouse4Released)
-							Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse4);
+							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse4);
 						if (frameState.Mouse.Mouse5Released)
-							Hovered.MouseReleaseOccur(frameState, MouseButton.Mouse5);
+							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse5);
 					}
 					else {
 						if (frameState.Mouse.Mouse1Released)
-							Depressed.MouseLostOccur(frameState, MouseButton.Mouse1);
+							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse1);
 						if (frameState.Mouse.Mouse2Released)
-							Depressed.MouseLostOccur(frameState, MouseButton.Mouse2);
+							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse2);
 						if (frameState.Mouse.Mouse3Released)
-							Depressed.MouseLostOccur(frameState, MouseButton.Mouse3);
+							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse3);
 						if (frameState.Mouse.Mouse4Released)
-							Depressed.MouseLostOccur(frameState, MouseButton.Mouse4);
+							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse4);
 						if (frameState.Mouse.Mouse5Released)
-							Depressed.MouseLostOccur(frameState, MouseButton.Mouse5);
+							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse5);
 					}
 					if (Depressed != null) {
 						Depressed.Depressed = false;
@@ -410,7 +409,7 @@ namespace Nucleus.UI
 		}
 
 
-		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
+		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
 			ResetKeyEventConsumed();
 			element.KeyPressedOccur(in emulatedState, keyboardKey);
 			if (WasKeyEventConsumed())
@@ -424,7 +423,7 @@ namespace Nucleus.UI
 			return false;
 		}
 
-		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, Input.KeyboardKey keyboardKey, bool recurseChildren) {
+		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
 			ResetKeyEventConsumed();
 			element.KeyReleasedOccur(in emulatedState, keyboardKey);
 			if (WasKeyEventConsumed())
@@ -459,7 +458,7 @@ namespace Nucleus.UI
 		public bool MarkMouseEventNotConsumed() => MouseEventConsumed = false;
 		public bool WasMouseEventConsumed() => MouseEventConsumed;
 
-		private void DoMouseClick(Element hovered, FrameState frameState, MouseButton button) {
+		private void DoMouseClick(Element hovered, FrameState frameState, ButtonCode button) {
 			if (hovered.IsPopup)
 				hovered.MoveToFront();
 			else if (hovered.IsParentedToPopup(out Element? parent))

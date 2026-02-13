@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -96,17 +98,19 @@ namespace Nucleus.UI
 			SetValueNoUpdate(Value);
 		}
 		protected override void OnThink(FrameState frameState) {
-			if(didDrag && Depressed)
+			if (didDrag && Depressed)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
 			else if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
-			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(KeyboardLayout.USA.Enter)) {
-				MouseReleaseOccur(frameState, Input.MouseButton.MouseLeft, true);
+
+			// TODO: This is a horrible hack
+			if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(ButtonCode.KeyEnter)) {
+				MouseReleaseOccur(frameState, ButtonCode.MouseLeft, true);
 			}
 		}
 		string? workType = null;
 		int caret = 0;
-		public override void MouseClick(FrameState state, Input.MouseButton button) {
+		public override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus();
 			dragStart = state.Mouse.MousePos;
 		}
@@ -131,8 +135,8 @@ namespace Nucleus.UI
 			}
 			workType = null;
 		}
-		public override void KeyPressed(in KeyboardState keyboardState, Input.KeyboardKey key) {
-			if (key == KeyboardLayout.USA.Enter || key == KeyboardLayout.USA.NumpadEnter) {
+		public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+			if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
 				double? v = ParseString(Text);
 				if (v != null) {
 					Value = v.Value;
@@ -162,7 +166,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, Input.MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (!didDrag)
 				base.MouseRelease(self, state, button);
 			didDrag = false;
@@ -178,7 +182,7 @@ namespace Nucleus.UI
 				nmStr = "(not specified)";
 			else if (double.IsPositiveInfinity(Value)) nmStr = "+Infinity";
 			else if (double.IsNegativeInfinity(Value)) nmStr = "-Infinity";
-			else if(TextFormat != null) 
+			else if (TextFormat != null)
 				nmStr = string.Format(TextFormat, Value);
 			else nmStr = string.Format($"{{0:0.{new string('0', Digits)}}}", Value);
 			string text = Prefix + nmStr + Suffix;
@@ -191,7 +195,7 @@ namespace Nucleus.UI
 
 		public float BarPadding = 6;
 		public override void Paint(float width, float height) {
-			if(MinimumValue != null && MaximumValue != null) {
+			if (MinimumValue != null && MaximumValue != null) {
 				var draw = (float)Math.Max(NMath.Remap(Value, MinimumValue.Value, MaximumValue.Value, 0, width - (BarPadding * 2)), BarPadding / 2);
 				Graphics2D.SetDrawColor(100, 149, 237);
 				Graphics2D.DrawRectangle(BarPadding, BarPadding, draw, height - (BarPadding * 2));

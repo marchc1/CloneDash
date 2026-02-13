@@ -1,4 +1,5 @@
-﻿using Nucleus.Input;
+﻿using Nucleus.Common.Input;
+using Nucleus.Input;
 using Nucleus.Types;
 
 namespace Nucleus.UI.Elements
@@ -61,7 +62,7 @@ namespace Nucleus.UI.Elements
 		}
 
 		DateTime LastRelease;
-		public override void MouseRelease(Element self, FrameState state, MouseButton button) {
+		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			base.MouseRelease(self, state, button);
 
 			if ((DateTime.UtcNow - LastRelease).TotalSeconds < 0.3333f) {

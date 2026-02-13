@@ -66,6 +66,9 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 	}
 
 	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
+		if (MuseDashCompatibility.Characters == null)
+			return null;
+
 		foreach (var character in MuseDashCompatibility.Characters) {
 			if (name != GetName(character)) continue;
 
@@ -81,8 +84,8 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 {
 	public string GetUniqueID() => name;
 
-	public static ConCommand nextmdchar = ConCommand.Register(nameof(nextmdchar), (_, _) => {
-		var chvar = ConVar.Get(nameof(CharacterMod.character))!;
+	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
+		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
 		var clonedash_character_value = chvar.GetString();
 		ICharacterProvider retriever = new MuseDashCharacterRetriever();
 		bool next = false;

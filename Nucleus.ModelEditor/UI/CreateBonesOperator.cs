@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
