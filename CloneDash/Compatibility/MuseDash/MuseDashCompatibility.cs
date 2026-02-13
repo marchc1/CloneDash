@@ -434,8 +434,8 @@ namespace CloneDash.Compatibility.MuseDash
 			ConcurrentBag<MuseDashSong> workSongs = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
 				Parallel.ForEach(Albums, (album) => {
-					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}");
+					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English");
 
 					var songsFinal = new MuseDashSong[songs.Count];
 
