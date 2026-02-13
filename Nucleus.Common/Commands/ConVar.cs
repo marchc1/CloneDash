@@ -114,12 +114,11 @@ namespace Nucleus.Commands
 			if (len == -1)
 				len = val.Length;
 
-			if (len > value.StringLength) {
+			if (len > value.Chars?.Length) 
 				value.Chars = new char[len];
-				value.StringLength = len;
-			}
 
 			val[..len].CopyTo(value.Chars);
+			value.StringLength = len;
 
 			if (!val.Equals(oldValue, StringComparison.InvariantCulture)) {
 				OnChange?.Invoke(this, oldValue, oldD);
@@ -214,7 +213,7 @@ namespace Nucleus.Commands
 			}
 
 			public readonly ReadOnlySpan<char> String() => dest[..printStrLength];
-			public void StringThenReset(Action<ReadOnlySpan<char>> output){
+			public void StringThenReset(Action<ReadOnlySpan<char>> output) {
 				output(dest[..printStrLength]);
 				Reset();
 			}
@@ -259,7 +258,7 @@ namespace Nucleus.Commands
 				PrintFlags(var);
 
 				ReadOnlySpan<char> helpText = var.GetHelpText();
-				if(!helpText.IsEmpty && helpText[0] != '\0'){
+				if (!helpText.IsEmpty && helpText[0] != '\0') {
 					ctx.Print(" - ");
 					ctx.Print(helpText);
 					ctx.StringThenReset(Logs.Print);
@@ -279,10 +278,10 @@ namespace Nucleus.Commands
 			ctx.StringThenReset(Logs.Print);
 		}
 
-		public static void Register(){
+		public static void Register() {
 			ConCommandBase? cur, next;
 			cur = Head;
-			while(cur != null){
+			while (cur != null) {
 				next = cur.Next;
 				cur.Init();
 				cur = next;
