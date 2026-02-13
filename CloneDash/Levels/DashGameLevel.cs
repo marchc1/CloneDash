@@ -71,7 +71,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
-			foreach (var s in MuseDashCompatibility.FindSimilarSongs(md_level)) 
+			foreach (var s in MuseDashCompatibility.FindSimilarSongs(md_level))
 				Logs.Print($"    {s.Name} ({s.BaseName})");
 			return;
 		}
@@ -913,6 +913,10 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					}
 					break;
 				case EntityInteractivity.Avoid:
+					// If the player is sustaining on the pathway this entity is on, then ignore
+					if (Sustains.IsSustaining(entity.Pathway))
+						break;
+
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
 
 					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
