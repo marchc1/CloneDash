@@ -22,11 +22,6 @@ public struct PollResult
 	public double DistanceToHit;
 	public string Greatness;
 
-	/// <summary>
-	/// If true, the input will not be counted, which in this context means that the input will be polled again
-	/// </summary>
-	public bool DoNotCount;
-
 	public static readonly PollResult Empty = new PollResult() { Hit = false };
 
 	public static PollResult Create(DashModelEntity hitEntity, double distanceToHit, string greatness) {

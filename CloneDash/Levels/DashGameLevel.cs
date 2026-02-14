@@ -1047,7 +1047,6 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
-				case EntityInteractivity.SamePath:
 					bool isValidHit = entity.Interactivity != EntityInteractivity.Sustain ? !entity.Dead : !(entity as SustainBeam)!.HeldState;
 					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, parms.Pathway)) {
 						double distance = entity.GetJudgementTimeUntilHit();
@@ -1056,8 +1055,6 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 						if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured
 							var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
 							LastPollResult = PollResult.Create(entity, distance, greatness);
-							if (entity.Interactivity == EntityInteractivity.SamePath)
-								LastPollResult.DoNotCount = true;
 							return LastPollResult;
 						}
 					}
@@ -1355,8 +1352,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 					if (SuppressHitMessages == false && !IsSeeking) {
 						Color c = pollResult.HitEntity.HitColor;
-						if (!pollResult.DoNotCount) // Kind of sucks
-							SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
 
 						Scene.PlaySound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
@@ -1393,8 +1389,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 			ExitHitState();
 
-			if (!pollResult.DoNotCount)
-				pollParams.HitsRemaining--;
+			pollParams.HitsRemaining--;
 		}
 		//if (Debug)
 		//Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
