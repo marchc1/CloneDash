@@ -212,11 +212,11 @@ namespace CloneDash.Game
 				}
 				else {
 					if (!paused)
-						currentInaccurateTime += EngineCore.FrameTime;
+						currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
 				}
 			}
 			else {
-				currentInaccurateTime += EngineCore.FrameTime;
+				currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
 			}
 
 			if (game.Music != null) {
