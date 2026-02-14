@@ -360,7 +360,8 @@ public static class ButtonCodeExtensions
 
 				case ButtonCode.KeyEnter: return new(CharacterType.Enter, "Enter");
 				case ButtonCode.KeyTab: return new(CharacterType.Tab, "Tab");
-				case ButtonCode.KeyDelete: return CharacterType.DeleteBackwards; // Numpad0
+				case ButtonCode.KeyBackspace: return CharacterType.DeleteBackwards; // Numpad0
+				case ButtonCode.KeyDelete: return CharacterType.DeleteForwards; // Numpad0
 
 				case ButtonCode.KeyRight: return new(CharacterType.Arrow, "RIGHT");
 				case ButtonCode.KeyLeft: return new(CharacterType.Arrow, "LEFT");
