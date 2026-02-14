@@ -1056,8 +1056,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 						if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured
 							var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
 							LastPollResult = PollResult.Create(entity, distance, greatness);
-							 if (entity.Interactivity == EntityInteractivity.SamePath)
-							 	LastPollResult.DoNotCount = true;
+							if (entity.Interactivity == EntityInteractivity.SamePath)
+								LastPollResult.DoNotCount = true;
 							return LastPollResult;
 						}
 					}
@@ -1355,7 +1355,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 					if (SuppressHitMessages == false && !IsSeeking) {
 						Color c = pollResult.HitEntity.HitColor;
-						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+						if (!pollResult.DoNotCount) // Kind of sucks
+							SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+
 						Scene.PlaySound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
 								EntityVariant.Small => SceneSound.Quiet,
@@ -1622,52 +1624,52 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	MusicTrack? pressIdle;
 
 	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
-public event AttackEvent? OnAirAttack;
-public event AttackEvent? OnGroundAttack;
+	public event AttackEvent? OnAirAttack;
+	public event AttackEvent? OnGroundAttack;
 
-public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
-public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
+	public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
+	public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
 
 
-private bool playeranim_hurt = false;
-private bool playeranim_miss = false;
-private bool playeranim_jump = false;
-private bool playeranim_attackair = false;
-private bool playeranim_attackground = false;
-private bool playeranim_attackdouble = false;
+	private bool playeranim_hurt = false;
+	private bool playeranim_miss = false;
+	private bool playeranim_jump = false;
+	private bool playeranim_attackair = false;
+	private bool playeranim_attackground = false;
+	private bool playeranim_attackdouble = false;
 
-private bool playeranim_perfect = false;
+	private bool playeranim_perfect = false;
 
-private bool playeranim_startsustain = false;
-private bool playeranim_startsustain_top = false;
-private bool playeranim_startsustain_bottom = false;
-private bool playeranim_insustain = false;
-private bool playeranim_endsustain = false;
+	private bool playeranim_startsustain = false;
+	private bool playeranim_startsustain_top = false;
+	private bool playeranim_startsustain_bottom = false;
+	private bool playeranim_insustain = false;
+	private bool playeranim_endsustain = false;
 
-private void resetPlayerAnimState() {
-	playeranim_miss = false;
-	playeranim_hurt = false;
-	playeranim_jump = false;
+	private void resetPlayerAnimState() {
+		playeranim_miss = false;
+		playeranim_hurt = false;
+		playeranim_jump = false;
 
-	playeranim_attackair = false;
-	playeranim_attackground = false;
-	playeranim_attackdouble = false;
+		playeranim_attackair = false;
+		playeranim_attackground = false;
+		playeranim_attackdouble = false;
 
-	playeranim_perfect = false;
+		playeranim_perfect = false;
 
-	playeranim_startsustain = false;
-	playeranim_startsustain_top = false;
-	playeranim_startsustain_bottom = false;
-	playeranim_endsustain = false;
-	playeranim_insustain = Sustains.IsSustaining();
-}
-private double lastHologramHitTime = -20000;
-private void logTests(string testStr) {
-	//Logs.Debug($"PlayerAnimationState: {testStr}");
-}
-private void DrawPlayerState() {
-	string[] lines = [
-		$"__whenjump:                     {__whenjump}",
+		playeranim_startsustain = false;
+		playeranim_startsustain_top = false;
+		playeranim_startsustain_bottom = false;
+		playeranim_endsustain = false;
+		playeranim_insustain = Sustains.IsSustaining();
+	}
+	private double lastHologramHitTime = -20000;
+	private void logTests(string testStr) {
+		//Logs.Debug($"PlayerAnimationState: {testStr}");
+	}
+	private void DrawPlayerState() {
+		string[] lines = [
+			$"__whenjump:                     {__whenjump}",
 				$"__whenHjump:                    {__whenHjump}",
 				$"playeranim_miss:                {playeranim_miss}",
 				$"playeranim_jump:                {playeranim_jump}",
@@ -1680,288 +1682,288 @@ private void DrawPlayerState() {
 				$"playeranim_startsustain_bottom: {playeranim_startsustain_bottom}",
 				$"playeranim_insustain:           {playeranim_insustain}",
 				$"playeranim_endsustain:          {playeranim_endsustain}"
-	];
+		];
 
-	int y = 0;
-	Graphics2D.SetDrawColor(255, 255, 255);
-	foreach (var line in lines) {
-		Graphics2D.DrawText(8, 8 + y, line, "Consolas", 14);
-		y += 14;
+		int y = 0;
+		Graphics2D.SetDrawColor(255, 255, 255);
+		foreach (var line in lines) {
+			Graphics2D.DrawText(8, 8 + y, line, "Consolas", 14);
+			y += 14;
+		}
 	}
-}
-private void determinePlayerAnimationState() {
-	ModelEntity playerTarget;
-	bool suppress_hologram = false;
-	// Call end sustain animation. But only if we're ending a sustain and not starting a new one immediately
-	if (playeranim_endsustain && !playeranim_startsustain) {
-		PlayerAnim_ExitSustain();
-		logTests("Exiting sustain.");
-	}
-	else if (playeranim_endsustain && playeranim_startsustain) {
-		// Suppress any hologram animations.
-		logTests("Suppressing further hologram animations.");
-		suppress_hologram = true;
-	}
-
-	if (playeranim_hurt) {
-		PlayerAnim_ForceHurt();
-		PlayerAnim_EnqueueRun(Player);
-
-		resetPlayerAnimState();
-		return;
-	}
-
-	if (playeranim_attackdouble) {
-		PlayerAnim_ForceAttackDouble(Player);
-		PlayerAnim_EnqueueRun(Player);
-
-		resetPlayerAnimState();
-		logTests("Double attack");
-		__whenjump = -2000000000;
-		__whenHjump = -2000000000;
-		return;
-	}
-
-	if (playeranim_startsustain) {
-		PlayerAnim_EnterSustain();
-
-		logTests("Sustain started");
-
-		if (playeranim_startsustain_bottom && playeranim_startsustain_top) {
-			resetPlayerAnimState();
-			logTests("Not allowing further animation; both sustains pressed at once!");
-			return;
+	private void determinePlayerAnimationState() {
+		ModelEntity playerTarget;
+		bool suppress_hologram = false;
+		// Call end sustain animation. But only if we're ending a sustain and not starting a new one immediately
+		if (playeranim_endsustain && !playeranim_startsustain) {
+			PlayerAnim_ExitSustain();
+			logTests("Exiting sustain.");
+		}
+		else if (playeranim_endsustain && playeranim_startsustain) {
+			// Suppress any hologram animations.
+			logTests("Suppressing further hologram animations.");
+			suppress_hologram = true;
 		}
 
-		if (!suppress_hologram && playeranim_attackair && playeranim_startsustain_bottom && !playeranim_startsustain_top) {
-			// Hologram player attacks the air, while the player starts the bottom sustain.
-			PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
-			//EngineCore.Interrupt(() => DrawPlayerState(), false);
-		}
+		if (playeranim_hurt) {
+			PlayerAnim_ForceHurt();
+			PlayerAnim_EnqueueRun(Player);
 
-		if (!suppress_hologram && playeranim_attackground && playeranim_startsustain_top && !playeranim_startsustain_bottom) {
-			// Hologram player attacks the ground, while the player starts the top sustain.
-			PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
-		}
-
-		resetPlayerAnimState();
-		return;
-	}
-
-	if (!suppress_hologram && playeranim_insustain) { // We use the same things for playeranim_attack etc, but redirect it to the hologram player
-		playerTarget = HologramPlayer;
-
-		if (playeranim_startsustain_top || playeranim_startsustain_bottom) {
 			resetPlayerAnimState();
 			return;
 		}
 
-		if (playeranim_attackair || playeranim_attackground) {
-			lastHologramHitTime = Conductor.Time;
-			Logs.Info("Setting last hologram hit time");
-		}
-
-		if (playeranim_attackair) {
-			PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
-			__whenHjump = Conductor.Time;
-			//EngineCore.Interrupt(() => DrawPlayerState(), false);
-		}
-		else if (playeranim_attackground) {
-			PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
-			//EngineCore.Interrupt(() => DrawPlayerState(), false);
-			__whenHjump = -2000000000000d;
-		}
-	}
-	else {
-		playerTarget = Player;
-		if (playeranim_attackair) {
-			PlayerAnim_ForceAttackAir(Player, playeranim_perfect);
-			__whenjump = Conductor.Time;
+		if (playeranim_attackdouble) {
+			PlayerAnim_ForceAttackDouble(Player);
 			PlayerAnim_EnqueueRun(Player);
+
+			resetPlayerAnimState();
+			logTests("Double attack");
+			__whenjump = -2000000000;
+			__whenHjump = -2000000000;
+			return;
 		}
-		else if (playeranim_attackground) {
-			PlayerAnim_ForceAttackGround(Player, playeranim_perfect);
-			__whenjump = -2000000000000d;
-			PlayerAnim_EnqueueRun(Player);
+
+		if (playeranim_startsustain) {
+			PlayerAnim_EnterSustain();
+
+			logTests("Sustain started");
+
+			if (playeranim_startsustain_bottom && playeranim_startsustain_top) {
+				resetPlayerAnimState();
+				logTests("Not allowing further animation; both sustains pressed at once!");
+				return;
+			}
+
+			if (!suppress_hologram && playeranim_attackair && playeranim_startsustain_bottom && !playeranim_startsustain_top) {
+				// Hologram player attacks the air, while the player starts the bottom sustain.
+				PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
+				//EngineCore.Interrupt(() => DrawPlayerState(), false);
+			}
+
+			if (!suppress_hologram && playeranim_attackground && playeranim_startsustain_top && !playeranim_startsustain_bottom) {
+				// Hologram player attacks the ground, while the player starts the top sustain.
+				PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
+			}
+
+			resetPlayerAnimState();
+			return;
 		}
-		else if (playeranim_jump) {
-			PlayerAnim_ForceJump(Player);
-			__whenjump = Conductor.Time;
-		}
-		else if (playeranim_miss) {
-			__whenjump = -2000000000000d;
-			PlayerAnim_ForceMiss(Player);
-		}
-	}
 
-	/*FrameDebuggingStrings.Add($"PlayerAnimState:");
+		if (!suppress_hologram && playeranim_insustain) { // We use the same things for playeranim_attack etc, but redirect it to the hologram player
+			playerTarget = HologramPlayer;
 
-	FrameDebuggingStrings.Add($"    playeranim_miss                 : {playeranim_miss}");
-	FrameDebuggingStrings.Add($"    playeranim_jump                 : {playeranim_jump}");
-	FrameDebuggingStrings.Add($"    playeranim_attackair            : {playeranim_attackair}");
-	FrameDebuggingStrings.Add($"    playeranim_attackground         : {playeranim_attackground}");
-	FrameDebuggingStrings.Add($"    playeranim_attackdouble         : {playeranim_attackdouble}");
-	FrameDebuggingStrings.Add($"    playeranim_perfect              : {playeranim_perfect}");
-	FrameDebuggingStrings.Add($"    playeranim_startsustain         : {playeranim_startsustain}");
-	FrameDebuggingStrings.Add($"    playeranim_startsustain_top     : {playeranim_startsustain_top}");
-	FrameDebuggingStrings.Add($"    playeranim_startsustain_bottom  : {playeranim_startsustain_bottom}");
-	FrameDebuggingStrings.Add($"    playeranim_insustain            : {playeranim_insustain}");
-	FrameDebuggingStrings.Add($"    playeranim_endsustain           : {playeranim_endsustain}");*/
+			if (playeranim_startsustain_top || playeranim_startsustain_bottom) {
+				resetPlayerAnimState();
+				return;
+			}
 
-	resetPlayerAnimState();
-}
+			if (playeranim_attackair || playeranim_attackground) {
+				lastHologramHitTime = Conductor.Time;
+				Logs.Info("Setting last hologram hit time");
+			}
 
-public bool AttackAir(PollResult result) {
-	if (InMashState) {
-		playeranim_attackair = true;
-		playeranim_perfect = true;
-
-		OnAirAttack?.Invoke(this, PathwaySide.Top);
-		return true;
-	}
-
-	if (CanJump || result.Hit) {
-		var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
-		playeranim_attackdouble = isDHE;
-		playeranim_attackair = result.Hit && !isDHE;
-		playeranim_jump = CanJump;
-		playeranim_perfect |= result.IsPerfect;
-
-		OnAirAttack?.Invoke(this, PathwaySide.Top);
-
-		return true;
-	}
-
-	return false;
-}
-
-public void AttackGround(PollResult result) {
-	if (InMashState) {
-		playeranim_attackdouble = true;
-		playeranim_perfect = true;
-		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
-		return;
-	}
-
-	if (result.Hit) {
-		if (result.HitEntity is DoubleHitEnemy) {
-			playeranim_attackdouble = true;
-			playeranim_miss = false;
+			if (playeranim_attackair) {
+				PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
+				__whenHjump = Conductor.Time;
+				//EngineCore.Interrupt(() => DrawPlayerState(), false);
+			}
+			else if (playeranim_attackground) {
+				PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
+				//EngineCore.Interrupt(() => DrawPlayerState(), false);
+				__whenHjump = -2000000000000d;
+			}
 		}
 		else {
-			playeranim_attackground = true;
-			playeranim_miss = false;
+			playerTarget = Player;
+			if (playeranim_attackair) {
+				PlayerAnim_ForceAttackAir(Player, playeranim_perfect);
+				__whenjump = Conductor.Time;
+				PlayerAnim_EnqueueRun(Player);
+			}
+			else if (playeranim_attackground) {
+				PlayerAnim_ForceAttackGround(Player, playeranim_perfect);
+				__whenjump = -2000000000000d;
+				PlayerAnim_EnqueueRun(Player);
+			}
+			else if (playeranim_jump) {
+				PlayerAnim_ForceJump(Player);
+				__whenjump = Conductor.Time;
+			}
+			else if (playeranim_miss) {
+				__whenjump = -2000000000000d;
+				PlayerAnim_ForceMiss(Player);
+			}
+		}
+
+		/*FrameDebuggingStrings.Add($"PlayerAnimState:");
+
+		FrameDebuggingStrings.Add($"    playeranim_miss                 : {playeranim_miss}");
+		FrameDebuggingStrings.Add($"    playeranim_jump                 : {playeranim_jump}");
+		FrameDebuggingStrings.Add($"    playeranim_attackair            : {playeranim_attackair}");
+		FrameDebuggingStrings.Add($"    playeranim_attackground         : {playeranim_attackground}");
+		FrameDebuggingStrings.Add($"    playeranim_attackdouble         : {playeranim_attackdouble}");
+		FrameDebuggingStrings.Add($"    playeranim_perfect              : {playeranim_perfect}");
+		FrameDebuggingStrings.Add($"    playeranim_startsustain         : {playeranim_startsustain}");
+		FrameDebuggingStrings.Add($"    playeranim_startsustain_top     : {playeranim_startsustain_top}");
+		FrameDebuggingStrings.Add($"    playeranim_startsustain_bottom  : {playeranim_startsustain_bottom}");
+		FrameDebuggingStrings.Add($"    playeranim_insustain            : {playeranim_insustain}");
+		FrameDebuggingStrings.Add($"    playeranim_endsustain           : {playeranim_endsustain}");*/
+
+		resetPlayerAnimState();
+	}
+
+	public bool AttackAir(PollResult result) {
+		if (InMashState) {
+			playeranim_attackair = true;
+			playeranim_perfect = true;
+
+			OnAirAttack?.Invoke(this, PathwaySide.Top);
+			return true;
+		}
+
+		if (CanJump || result.Hit) {
+			var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
+			playeranim_attackdouble = isDHE;
+			playeranim_attackair = result.Hit && !isDHE;
+			playeranim_jump = CanJump;
+			playeranim_perfect |= result.IsPerfect;
+
+			OnAirAttack?.Invoke(this, PathwaySide.Top);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public void AttackGround(PollResult result) {
+		if (InMashState) {
+			playeranim_attackdouble = true;
+			playeranim_perfect = true;
+			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+			return;
+		}
+
+		if (result.Hit) {
+			if (result.HitEntity is DoubleHitEnemy) {
+				playeranim_attackdouble = true;
+				playeranim_miss = false;
+			}
+			else {
+				playeranim_attackground = true;
+				playeranim_miss = false;
+			}
+		}
+		else {
+			playeranim_attackground = false;
+			playeranim_miss = true;
+		}
+
+		playeranim_perfect |= result.IsPerfect;
+		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+	}
+	/// <summary>
+	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
+	/// </summary>
+	public PathwaySide Pathway {
+		get {
+			var state = Sustains.GetSustainState();
+			if (state == PathwaySide.None) return InAir ? PathwaySide.Top : PathwaySide.Bottom;
+			return state;
 		}
 	}
-	else {
-		playeranim_attackground = false;
-		playeranim_miss = true;
+
+	public bool CanHit(PathwaySide pathway) {
+		if (Sustains.IsSustaining(pathway))
+			return false;
+
+		if (pathway == PathwaySide.Top && InAir)
+			return false;
+
+		return true;
 	}
 
-	playeranim_perfect |= result.IsPerfect;
-	OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
-}
-/// <summary>
-/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
-/// </summary>
-public PathwaySide Pathway {
-	get {
-		var state = Sustains.GetSustainState();
-		if (state == PathwaySide.None) return InAir ? PathwaySide.Top : PathwaySide.Bottom;
-		return state;
-	}
-}
+	/// <summary>
+	/// Current combo of the player (how many successful hits/avoids in a row)
+	/// </summary>
+	public int Combo { get; private set; } = 0;
+	private double __lastCombo = -2000; // Last time a combo occured in game-time
 
-public bool CanHit(PathwaySide pathway) {
-	if (Sustains.IsSustaining(pathway))
-		return false;
+	public double LastCombo => __lastCombo;
 
-	if (pathway == PathwaySide.Top && InAir)
-		return false;
+	internal CD_Player_UIBar UIBar;
+	internal class CD_Player_UIBar : Element
+	{
+		public CD_Player_UIBar() {
 
-	return true;
-}
+		}
+		protected override void Initialize() {
+			base.Initialize();
+			Dock = Dock.Bottom;
+		}
+		public override void Paint(float width, float height) {
+			var lvl = Level.As<DashGameLevel>();
 
-/// <summary>
-/// Current combo of the player (how many successful hits/avoids in a row)
-/// </summary>
-public int Combo { get; private set; } = 0;
-private double __lastCombo = -2000; // Last time a combo occured in game-time
+			var startAtX = width / 4f;
+			var totalW = width / 2f;
+			var endAtX = startAtX + totalW;
 
-public double LastCombo => __lastCombo;
+			Graphics2D.ScissorRect(RectangleF.XYWH(startAtX, 0, endAtX, height));
 
-internal CD_Player_UIBar UIBar;
-internal class CD_Player_UIBar : Element
-{
-	public CD_Player_UIBar() {
+			Graphics2D.SetDrawColor(255, 60, 42);
+			Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (lvl.Health / lvl.MaxHealth), 24);
+			Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
+			Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
+			Graphics2D.SetDrawColor(255, 220, 200);
+			Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
+			float feverRatio;
+			if (lvl.InFever)
+				feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
+			else
+				feverRatio = (float)lvl.Fever / lvl.MaxFever;
 
-	}
-	protected override void Initialize() {
-		base.Initialize();
-		Dock = Dock.Bottom;
-	}
-	public override void Paint(float width, float height) {
-		var lvl = Level.As<DashGameLevel>();
+			var lastTimeHit = lvl.LastFeverIncreaseTime;
 
-		var startAtX = width / 4f;
-		var totalW = width / 2f;
-		var endAtX = startAtX + totalW;
+			Graphics2D.SetDrawColor(72, 160, 255);
+			Graphics2D.DrawRectangle(width / 4f, 32, (width / 2f) * feverRatio, 24);
 
-		Graphics2D.ScissorRect(RectangleF.XYWH(startAtX, 0, endAtX, height));
-
-		Graphics2D.SetDrawColor(255, 60, 42);
-		Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (lvl.Health / lvl.MaxHealth), 24);
-		Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
-		Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
-		Graphics2D.SetDrawColor(255, 220, 200);
-		Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
-		float feverRatio;
-		if (lvl.InFever)
-			feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
-		else
-			feverRatio = (float)lvl.Fever / lvl.MaxFever;
-
-		var lastTimeHit = lvl.LastFeverIncreaseTime;
-
-		Graphics2D.SetDrawColor(72, 160, 255);
-		Graphics2D.DrawRectangle(width / 4f, 32, (width / 2f) * feverRatio, 24);
-
-		// when hit gradient
-		var gradSize = 48;
-		var gradColor = new Color(162, 220, 255, (int)(float)NMath.Remap(lvl.Conductor.Time, lastTimeHit, lastTimeHit + .2f, 255, 0, clampOutput: true));
-		Graphics2D.DrawGradient(new(startAtX + ((width / 2f) * feverRatio) - gradSize, 33), new(gradSize, 24 - 2), gradColor, new(gradColor.R, gradColor.G, gradColor.B, (byte)0), Dock.Left);
+			// when hit gradient
+			var gradSize = 48;
+			var gradColor = new Color(162, 220, 255, (int)(float)NMath.Remap(lvl.Conductor.Time, lastTimeHit, lastTimeHit + .2f, 255, 0, clampOutput: true));
+			Graphics2D.DrawGradient(new(startAtX + ((width / 2f) * feverRatio) - gradSize, 33), new(gradSize, 24 - 2), gradColor, new(gradColor.R, gradColor.G, gradColor.B, (byte)0), Dock.Left);
 
 
 
-		Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
-		Graphics2D.DrawRectangleOutline(startAtX, 32, (width / 2f), 24, 2);
-		Graphics2D.SetDrawColor(200, 220, 255);
-		Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
+			Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
+			Graphics2D.DrawRectangleOutline(startAtX, 32, (width / 2f), 24, 2);
+			Graphics2D.SetDrawColor(200, 220, 255);
+			Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
 
-		Graphics2D.ScissorRect();
-	}
+			Graphics2D.ScissorRect();
+		}
 	}
 
 	internal CD_Player_Scorebar Scorebar;
 	internal class CD_Player_Scorebar : Element
-{
-	public CD_Player_Scorebar() {
+	{
+		public CD_Player_Scorebar() {
 
-	}
-	protected override void Initialize() {
-		base.Initialize();
-		Dock = Dock.Top;
-	}
-	public override void Paint(float width, float height) {
-		Graphics2D.SetDrawColor(255, 255, 255, 255);
-		//if (Level.AutoPlayer.Enabled)
-		//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
-		var lvl = Level.As<DashGameLevel>();
-		Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", Graphics2D.UI_FONT_NAME, (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
-		Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
+		}
+		protected override void Initialize() {
+			base.Initialize();
+			Dock = Dock.Top;
+		}
+		public override void Paint(float width, float height) {
+			Graphics2D.SetDrawColor(255, 255, 255, 255);
+			//if (Level.AutoPlayer.Enabled)
+			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
+			var lvl = Level.As<DashGameLevel>();
+			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", Graphics2D.UI_FONT_NAME, (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
+			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
 
-		Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
-		Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
+			Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
+			Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
+		}
 	}
-}
 }
