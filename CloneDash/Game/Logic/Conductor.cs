@@ -132,14 +132,14 @@ namespace CloneDash.Game
 
 		private void UIBar_DragUpdate() {
 			var game = Level.As<DashGameLevel>();
-			if (!game.AutoPlayer.Enabled) return;
+			// if (!game.AutoPlayer.Enabled) return;
 
 			dragSeconds = uiSeconds;
 		}
 
 		private void UIBar_DragEnd() {
 			var game = Level.As<DashGameLevel>();
-			if (!game.AutoPlayer.Enabled) return;
+			// if (!game.AutoPlayer.Enabled) return;
 
 			if (dragSeconds != null)
 				game.SeekTo(dragSeconds.Value);
@@ -152,7 +152,7 @@ namespace CloneDash.Game
 
 		private void UIBar_DragStart() {
 			var game = Level.As<DashGameLevel>();
-			if (!game.AutoPlayer.Enabled) return;
+			// if (!game.AutoPlayer.Enabled) return;
 
 			wasPaused = game.Paused;
 			if (!wasPaused)
