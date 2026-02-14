@@ -298,8 +298,17 @@ namespace CloneDash.Game
 			var current = level.Conductor.Time - timeOffset;
 			var tickHit = this.GetVisualHitTime();
 			var tickShow = this.GetVisualShowTime();
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, 1200);
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, GetXPosTimeSpeedBase());
 			return thisPos;
+		}
+
+		private double GetXPosTimeSpeedBase() {
+			switch (Speed) {
+				case 1: return 1200;
+				case 2: return 1430;
+				case 3: return 1780;
+				default: goto case 1;
+			}
 		}
 
 		public bool Shown { get; protected set; } = false;

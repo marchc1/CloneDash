@@ -55,6 +55,19 @@ public class DashEvent
 			case EventType.BossFar2End: return new BossFar2End(game);
 			case EventType.BossFar2To1: return new BossFar2To1(game);
 			case EventType.BossHide: return new BossHide(game);
+
+			case EventType.AirSpeed1: return new SpeedChange(game, PathwaySide.Top, 1);
+			case EventType.AirSpeed2: return new SpeedChange(game, PathwaySide.Top, 2);
+			case EventType.AirSpeed3: return new SpeedChange(game, PathwaySide.Top, 3);
+
+			case EventType.GroundSpeed1: return new SpeedChange(game, PathwaySide.Bottom, 1);
+			case EventType.GroundSpeed2: return new SpeedChange(game, PathwaySide.Bottom, 2);
+			case EventType.GroundSpeed3: return new SpeedChange(game, PathwaySide.Bottom, 3);
+
+			case EventType.DoubleSpeed1: return new SpeedChange(game, PathwaySide.Both, 1);
+			case EventType.DoubleSpeed2: return new SpeedChange(game, PathwaySide.Both, 2);
+			case EventType.DoubleSpeed3: return new SpeedChange(game, PathwaySide.Both, 3);
+
 			default: throw new Exception();
 		}
 	}

@@ -271,6 +271,7 @@ namespace CloneDash.Compatibility.MuseDash
 						press.Damage = s.noteData.damage;
 						press.Length = (double)s.configData.length;
 						press.Score = s.noteData.score;
+						press.Speed = s.noteData.speed;
 
 						press.RelatedToBoss = false;
 						press.DebuggingInfo = $"ib.code: {ib.code}";
@@ -303,6 +304,16 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.BossFar2To1 => EventType.BossFar2To1,
 
 						IBMSCode.BossHide => EventType.BossHide,
+
+						IBMSCode.AirSpeed1 => EventType.AirSpeed1,
+						IBMSCode.AirSpeed2 => EventType.AirSpeed2,
+						IBMSCode.AirSpeed3 => EventType.AirSpeed3,
+						IBMSCode.RoadSpeed1 => EventType.GroundSpeed1,
+						IBMSCode.RoadSpeed2 => EventType.GroundSpeed2,
+						IBMSCode.RoadSpeed3 => EventType.GroundSpeed3,
+						IBMSCode.DoubleSpeed1 => EventType.DoubleSpeed1,
+						IBMSCode.DoubleSpeed2 => EventType.DoubleSpeed2,
+						IBMSCode.DoubleSpeed3 => EventType.DoubleSpeed3,
 
 						_ => EventType.NotApplicable
 					};
@@ -391,6 +402,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 							ent.RelatedToBoss = isBoss;
 							ent.DebuggingInfo = $"ib.code: {ib.code}";
+
 							sheet.Entities.Add(ent);
 						}
 						else if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
@@ -1444,7 +1456,7 @@ public static class MuseDashModelConverter
 							var color = skeleton.MD_ReadColor();
 							var skinname = skeleton.MD_ReadRefString(refStrings);
 							var parent = skeleton.MD_ReadRefString(refStrings);
-							var deform = skeleton.MD_ReadBoolean(); 
+							var deform = skeleton.MD_ReadBoolean();
 							float width = 0;
 							float height = 0;
 							if (nonessential) {

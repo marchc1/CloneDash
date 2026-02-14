@@ -152,6 +152,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		}
 
 		Boss.Reset();
+		ResetPathwaySpeeds();
 
 		Combo = 0;
 		Health = (float)Character.GetDefaultHP();
@@ -474,6 +475,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 	ShaderInstance hologramShader;
 
 	public override void Initialize(params object[] args) {
+		ResetPathwaySpeeds();
+
 		Stats = new(Sheet);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
@@ -1134,6 +1137,25 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		ev.Build();
 
 		Events.Add(ev);
+	}
+
+	public int CurrentAirSpeed;
+	public int CurrentGroundSpeed;
+
+	public void ResetPathwaySpeeds(){
+		CurrentAirSpeed = 1;
+		CurrentGroundSpeed = 1;
+	}
+
+	public void SetPathwaySpeed(PathwaySide pathway, int speed){
+		System.Diagnostics.Debug.Assert(speed >= 1);
+		System.Diagnostics.Debug.Assert(speed <= 3);
+
+		if ((pathway & PathwaySide.Top) != 0)
+			CurrentAirSpeed = speed;
+
+		if ((pathway & PathwaySide.Bottom) != 0)
+			CurrentGroundSpeed = speed;
 	}
 
 	/// <summary>
