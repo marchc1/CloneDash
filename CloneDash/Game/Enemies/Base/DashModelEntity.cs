@@ -304,7 +304,7 @@ namespace CloneDash.Game
 
 		private double GetXPosTimeSpeedBase() {
 			switch (Speed) {
-				case 1: return 1200;
+				case 1: return 1130;
 				case 2: return 1430;
 				case 3: return 1780;
 				default: goto case 1;
