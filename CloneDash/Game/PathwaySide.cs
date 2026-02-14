@@ -13,14 +13,14 @@
 		/// <summary>
 		/// The top pathway.
 		/// </summary>
-		Top,
+		Top = 1 << 0,
 		/// <summary>
 		/// The bottom pathway.
 		/// </summary>
-		Bottom,
+		Bottom = 1 << 1,
 		/// <summary>
 		/// Applies to both pathways.
 		/// </summary>
-		Both
+		Both = Top | Bottom
 	}
 }
