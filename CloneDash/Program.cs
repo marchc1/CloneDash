@@ -217,7 +217,7 @@ public class GameDLL : IGameDLL
 					break;
 			}
 
-			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0d)));
+			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
 			if (!first) Interlude.Begin("Interprocess load started!");
 			EngineCore.LoadLevel(lvl);
 			if (!first) Interlude.End();

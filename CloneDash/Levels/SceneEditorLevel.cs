@@ -10,7 +10,7 @@ using Nucleus.UI.Elements;
 
 namespace CloneDash.Levels;
 
-public class SceneEditorLevel() : DashGameLevel(null)
+public class SceneEditorLevel() : DashGameLevel(default)
 {
 	public static ConCommand sceneedit = new(nameof(sceneedit), (_, in _) => {
 		Interlude.Begin("Loading the Scene Editor...");
