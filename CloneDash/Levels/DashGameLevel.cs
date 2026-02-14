@@ -36,8 +36,28 @@ using Sound = Nucleus.Audio.Sound;
 
 namespace CloneDash.Game;
 
+public struct DashGameParams {
+	public ChartSheet? Sheet;
+	public bool Autoplay;
+	public int Measure;
+
+	public DashGameParams(ChartSheet sheet){
+		Sheet = sheet;
+	}
+
+	public DashGameParams WithAutoplay(bool autoplay) {
+		Autoplay = autoplay;
+		return this;
+	}
+
+	public DashGameParams WithMeasure(int measure) {
+		Measure = measure;
+		return this;
+	}
+}
+
 [Nucleus.MarkForStaticConstruction]
-public partial class DashGameLevel(ChartSheet? Sheet) : Level
+public partial class DashGameLevel(DashGameParams gameParameters) : Level
 {
 	public LuaEnv Lua;
 
@@ -116,7 +136,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		DashGameLevel? workingLevel = null;
 		try {
 			var sheet = song.GetSheet(mapID);
-			workingLevel = new DashGameLevel(sheet);
+			workingLevel = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(autoplay));
 
 		}
 		catch (Exception ex) {
@@ -474,14 +494,14 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 
 	ShaderInstance hologramShader;
 
-	public override void Initialize(params object[] args) {
+	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
 
-		Stats = new(Sheet);
+		Stats = new(gameParameters.Sheet);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Playing {Sheet?.Song?.Name ?? "<null>"}"
+				State = $"Playing {gameParameters.Sheet?.Song?.Name ?? "<null>"}"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
@@ -565,7 +585,7 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 				HologramPlayer.Visible = false;
 				AutoPlayer = Add<AutoPlayer>();
-				AutoPlayer.Enabled = args.Length == 0 ? false : (bool)args[0];
+				AutoPlayer.Enabled = gameParameters.Autoplay;
 				TopPathway = Add<Pathway>(PathwaySide.Top);
 				BottomPathway = Add<Pathway>(PathwaySide.Bottom);
 				Interlude.Spin();
@@ -577,12 +597,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			Lua.State.Environment["conductor"] = new LuaConductor(Conductor);
 
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
-				if (Sheet != null) {
+				if (gameParameters.Sheet != null) {
 					if (!__deferringAsync) {
-						foreach (var ent in Sheet.Entities)
+						foreach (var ent in gameParameters.Sheet.Entities)
 							LoadEntity(ent);
 
-						foreach (var ev in Sheet.Events)
+						foreach (var ev in gameParameters.Sheet.Events)
 							LoadEvent(ev);
 
 						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
@@ -593,8 +613,8 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 			Interlude.Spin(submessage: "Loading audio...");
 
 			//foreach (var tempoChange in Sheet)
-			if (Sheet != null) {
-				foreach (var bpmChange in Sheet.TempoChanges) {
+			if (gameParameters.Sheet != null) {
+				foreach (var bpmChange in gameParameters.Sheet.TempoChanges) {
 					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Measure, bpmChange.BPM);
 				}
 			}
@@ -602,15 +622,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 				Conductor.AddTempoChange(0, 0, 120);
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
-				if (Sheet != null) {
-					Music = Sheet.Song.GetAudioTrack();
+				if (gameParameters.Sheet != null) {
+					Music = gameParameters.Sheet.Song.GetAudioTrack();
 					Music.Loops = false;
 					Music.Playing = true;
-					if (args.Length > 1) {
-						double measure = (double)args[1];
-						Logs.Info($"Received measure as parameter: {measure}");
-						SeekTo(Conductor.MeasureToSeconds(measure));
-					}
+					if (gameParameters.Measure != 0) 
+						SeekTo(Conductor.MeasureToSeconds(gameParameters.Measure));
 				}
 				else
 					Music = null;
@@ -664,9 +681,9 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 		Ticks++;
 		XPos = Game.Pathway.GetPathwayLeft();
 
-		if (Music != null && lastNoteHit && Music.Paused && Sheet != null) {
+		if (Music != null && lastNoteHit && Music.Paused && gameParameters.Sheet != null) {
 			Stats.UploadScore(Score);
-			EngineCore.LoadLevel(new StatisticsLevel(), Sheet, Stats);
+			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Sheet, Stats);
 			return;
 		}
 
@@ -726,12 +743,12 @@ public partial class DashGameLevel(ChartSheet? Sheet) : Level
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
 					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						Interlude.Begin($"Reloading '{Sheet.Song.Name}'...");
+						Interlude.Begin($"Reloading '{gameParameters.Sheet?.Song?.Name ?? "<NULL>"}'...");
 
 						if (profilegameload.GetBool())
 							StaticSequentialProfiler.Start();
 
-						EngineCore.LoadLevel(new DashGameLevel(Sheet), AutoPlayer.Enabled);
+						EngineCore.LoadLevel(new DashGameLevel(gameParameters));
 					};
 					restart.PaintOverride += Button_PaintOverride;
 
