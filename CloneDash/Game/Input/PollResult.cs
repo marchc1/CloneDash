@@ -1,46 +1,63 @@
 ﻿using Nucleus;
 
-namespace CloneDash.Game.Input
+namespace CloneDash.Game.Input;
+
+
+public struct PollParams {
+	public int AmountOfTimesHit;
+	public int HitsRemaining;
+	public PathwaySide Pathway;
+}
+
+public struct PollResult
 {
-	public struct PollResult
-	{
-		public bool Hit;
-		public DashModelEntity HitEntity;
-		public double DistanceToHit;
-		public string Greatness;
+	/// <summary>
+	/// Did this input hit something?
+	/// </summary>
+	public bool Hit;
+	/// <summary>
+	/// What did it hit?
+	/// </summary>
+	public DashModelEntity HitEntity;
+	public double DistanceToHit;
+	public string Greatness;
 
-		public static readonly PollResult Empty = new PollResult() { Hit = false };
+	/// <summary>
+	/// If true, the input will not be counted, which in this context means that the input will be polled again
+	/// </summary>
+	public bool DoNotCount;
 
-		public static PollResult Create(DashModelEntity hitEntity, double distanceToHit, string greatness) {
-			PollResult result = new PollResult();
-			result.Hit = true;
-			result.HitEntity = hitEntity;
-			result.DistanceToHit = distanceToHit;
-			result.Greatness = greatness;
+	public static readonly PollResult Empty = new PollResult() { Hit = false };
 
-			return result;
+	public static PollResult Create(DashModelEntity hitEntity, double distanceToHit, string greatness) {
+		PollResult result = new PollResult();
+		result.Hit = true;
+		result.HitEntity = hitEntity;
+		result.DistanceToHit = distanceToHit;
+		result.Greatness = greatness;
+
+		return result;
+	}
+
+	public bool IsPerfect {
+		get {
+			if (!Hit) return false;
+
+			double distance = DistanceToHit;
+			double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
+			double preperfect = -HitEntity.PrePerfectRange, postperfect = HitEntity.PostPerfectRange;
+
+			return NMath.InRange(distance, preperfect, postperfect);
 		}
+	}
+	public bool IsAtLeastGreat {
+		get {
+			if (!Hit) return false;
 
-		public bool IsPerfect {
-			get {
-				if (!Hit) return false;
+			double distance = DistanceToHit;
+			double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
 
-				double distance = DistanceToHit;
-				double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
-				double preperfect = -HitEntity.PrePerfectRange, postperfect = HitEntity.PostPerfectRange;
-
-				return NMath.InRange(distance, preperfect, postperfect);
-			}
-		}
-		public bool IsAtLeastGreat {
-			get {
-				if (!Hit) return false;
-
-				double distance = DistanceToHit;
-				double pregreat = -HitEntity.PreGreatRange, postgreat = HitEntity.PostGreatRange;
-
-				return NMath.InRange(distance, pregreat, postgreat);
-			}
+			return NMath.InRange(distance, pregreat, postgreat);
 		}
 	}
 }
