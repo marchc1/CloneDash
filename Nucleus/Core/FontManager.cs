@@ -1,4 +1,5 @@
-﻿using Nucleus.Files;
+﻿using Nucleus.Common.Extensions;
+using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.Util;

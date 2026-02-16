@@ -1,6 +1,5 @@
 ﻿using Nucleus.Common.Input;
 using Nucleus.Types;
-using Raylib_cs;
 using System.Diagnostics;
 
 namespace Nucleus.Input

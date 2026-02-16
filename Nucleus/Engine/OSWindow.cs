@@ -182,7 +182,7 @@ public unsafe class OSWindow : IValidatable
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);
 		SDL3.SDL_SetHint("SDL_MOUSE_FOCUS_CLICKTHROUGH", "1");
-		if (window.handle == null) throw Util.Util.MessageBoxException("SDL could not create a window.");
+		if (window.handle == null) throw NucleusEngineException.Show("SDL could not create a window.");
 
 		if (shareContext)
 			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);

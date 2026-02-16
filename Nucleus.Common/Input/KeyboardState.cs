@@ -1,5 +1,4 @@
 ﻿using Nucleus.Common.Input;
-using Nucleus.Engine;
 using Nucleus.Util;
 
 namespace Nucleus.Input;
@@ -7,7 +6,7 @@ namespace Nucleus.Input;
 public struct KeyboardState()
 {
 	public const int MAXIMUM_KEY_ARRAY_LENGTH = 512;
-	public const int MAX_TEXT_INPUTS = WindowKeyboardState.MAX_TEXT_INPUTS;
+	public const int MAX_TEXT_INPUTS = 256;
 	public const int MAXIMUM_FRAME_ORDERED_KEYS_LENGTH = 64;
 
 	public InlineArray64<double> KeyTimesThisFrame;
