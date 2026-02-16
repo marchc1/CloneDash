@@ -39,7 +39,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			public List<string> searchTags { get; set; } = [];
 		}
 		private static StreamReader GetStreamReader(SearchPath archive, string filename) {
-			return new StreamReader(archive.Open(filename, FileAccess.Read, FileMode.Open) ?? throw new Exception($"Could not create a read stream for {filename}"));
+			return new StreamReader(archive.Open(filename, FileAccess.Read, FileMode.Open) ?? throw new Exception($"Custom Charts: Could not create a read stream for {filename}"));
 		}
 		private static string GetString(SearchPath archive, string filename) {
 			return GetStreamReader(archive, filename).ReadToEnd();
@@ -85,7 +85,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 						Archive = new DiskSearchPath(ext == "" ? filepath : Path.GetDirectoryName(filepath) ?? throw new Exception("Wtf?"));
 						break;
 
-					default: throw new NotImplementedException("Bad filetype for CustomChartsSong constructor!");
+					default: throw new NotImplementedException("Custom Charts: Bad filetype for CustomChartsSong constructor!");
 				}
 			}
 
@@ -100,7 +100,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 					case "":
 						Archive = new DiskSearchPath(filesystem.FindSearchPath(pathID, path), path);
 						break;
-					default: throw new NotImplementedException("Bad filetype for CustomChartsSong constructor!");
+					default: throw new NotImplementedException("Custom Charts: Bad filetype for CustomChartsSong constructor!");
 				}
 			}
 
@@ -116,6 +116,9 @@ namespace CloneDash.Compatibility.CustomAlbums
 					var musicBytes = GetByteArray(Archive, "music.ogg");
 					if (musicBytes.Length == 0) // Try to find mp3 instead
 						musicBytes = GetByteArray(Archive, "music.mp3");
+					if (musicBytes.Length == 0)
+						throw new FileNotFoundException("Custom Charts: Music could not be found! (searched for music.ogg, music.mp3)");
+
 					return EngineCore.Level.Sounds.LoadMusicFromMemory(musicBytes);
 				}
 				else {
@@ -180,7 +183,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 					}
 					catch (Exception ex) {
 						corruptInfo = true;
-						Logs.Error($"The CustomCharts SearchPath '{Archive.ToString()}' failed to produce info.json: {ex.Message}");
+						Logs.Error($"Custom Charts: The CustomCharts SearchPath '{Archive.ToString()}' failed to produce info.json: {ex.Message}");
 					}
 					if (info == null)
 						return null;
