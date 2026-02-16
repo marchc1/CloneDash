@@ -113,8 +113,10 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 			protected override MusicTrack ProduceAudioTrack() {
 				if (Archive != null) {
-					var demoBytes = GetByteArray(Archive, "music.ogg");
-					return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
+					var musicBytes = GetByteArray(Archive, "music.ogg");
+					if (musicBytes.Length == 0) // Try to find mp3 instead
+						musicBytes = GetByteArray(Archive, "music.mp3");
+					return EngineCore.Level.Sounds.LoadMusicFromMemory(musicBytes);
 				}
 				else {
 					return WebChart.GetMusicTrack(false); // this wont even run
