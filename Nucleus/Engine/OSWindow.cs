@@ -187,7 +187,8 @@ public unsafe class OSWindow : IValidatable
 		if (shareContext)
 			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 #if COMPILED_OSX
-		EngineCore.MainWindow.ActivateGL();
+		if (EngineCore.MainWindow != null)
+			EngineCore.MainWindow.ActivateGL();
 		setupGL(window);
 #endif
 

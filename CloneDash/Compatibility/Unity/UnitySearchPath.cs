@@ -1,4 +1,5 @@
 ﻿using AssetStudio;
+using Nucleus;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 
@@ -114,6 +115,12 @@ public class UnitySearchPath : SearchPath
 		}
 
 		while (Read(reader, ref i, entries, out string container, out string name, out string bundle, out long pathID)) {
+			// Skip entries where the bundle file is not found
+			if (!strippedToReal.TryGetValue(bundle, out string actualBundleFile)) {
+				Logger.Warning($"Bundle file not found for '{bundle}' (referenced by '{container}')");
+				continue;
+			}
+
 			var parts = container.Split('/');
 			UnityFolder folder = Root;
 			for (int i2 = 0; i2 < parts.Length - 1; i2++) {
@@ -121,7 +128,7 @@ public class UnitySearchPath : SearchPath
 				LookupAbsFolders[string.Join('/', parts[..(i2 + 1)])] = folder;
 			}
 			var file = folder.File(parts[parts.Length - 1]);
-			file.PointsToBundle = strippedToReal[bundle];
+			file.PointsToBundle = actualBundleFile;
 			file.PathID = pathID;
 
 			LookupAbsFiles[container] = file;
