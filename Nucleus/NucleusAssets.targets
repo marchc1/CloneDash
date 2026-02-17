@@ -15,6 +15,7 @@
 			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsOSX)' == 'true'">
+			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
 			<OSXNativeLibs Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\*.dylib" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsLinux)' == 'true'">
