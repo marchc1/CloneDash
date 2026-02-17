@@ -8,17 +8,21 @@
 		public enum IBMSCode
 		{
 			None,
+
 			SmallNormal,
 			SmallUp,
 			SmallDown,
+
 			Medium1Normal,
 			Medium1Up,
 			Medium1Down,
 			Medium2Normal,
 			Medium2Up,
 			Medium2Down,
+
 			Large1,
 			Large2,
+
 			Raider,
 			Hammer,
 			Gemini,
@@ -27,6 +31,7 @@
 			Block,
 			RaiderFlip,
 			HammerFlip,
+
 			DoubleSpeed1 = 24,
 			DoubleSpeed2,
 			DoubleSpeed3,
@@ -36,6 +41,7 @@
 			AirSpeed1,
 			AirSpeed2,
 			AirSpeed3,
+
 			BossNear1 = 37,
 			BossNear2,
 			BossAttack1,
@@ -52,10 +58,13 @@
 			BossFar2End,
 			BossFar1To2,
 			BossFar2To1,
+
 			NoteHide = 55,
 			NoteShow,
+
 			BossHide,
 			BossShow,
+
 			ToggleScene1 = 60,
 			ToggleScene2,
 			ToggleScene3,
@@ -66,23 +75,31 @@
 			ToggleScene8,
 			ToggleScene9,
 			ToggleScene10,
+
 			TouhouRedPoint = 72,
 			Ghost,
 			Hp,
 			Music,
+			// "Hide/Show Background"
 			SceneHide = 77,
 			SceneShow,
+			// "Screen Scroll"
 			CanvasUpScroll,
 			CanvasDownScroll,
 			CanvasScrollOver,
+			// "Scanlines"
 			RandomWave,
 			RandomWaveOver,
+			// "Chromatic Aberration"
 			RgbSplit,
 			RgbSplitOver,
+			// "Vignette"
 			ShadowEdgeIn,
 			ShadowEdgeOut,
+			// "TV static"
 			OldTv,
 			OldTvOver,
+			// "Flashbang"
 			FlashStart,
 			FlashHigh,
 			FlashEnd,
@@ -90,8 +107,10 @@
 			NoteUnfreeze,
 			BgFreeze,
 			BgUnfreeze,
+			// "Mosaic"
 			PixelStart,
 			PixelEnd,
+			// "Sepia"
 			GrayScaleStart,
 			GrayScaleEnd,
 			OpenAuto = 106,
