@@ -5,7 +5,7 @@ using Nucleus.Util;
 
 namespace Nucleus.ManagedMemory;
 
-public class ModelManagement : IManagedMemory
+public class ModelManagement
 {
 	private Dictionary<UtlSymId_t, ModelData> ModelDatas = [];
 	private bool disposedValue;
@@ -41,20 +41,20 @@ public class ModelManagement : IManagedMemory
 	public ModelBinary BinaryModelLoader = new();
 
 	public bool IsCached(string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		return ModelDatas.TryGetValue(new UtlSymbol(finalPath), out _);
 	}
 
 	public void Cache(ModelData data, string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		ModelDatas[new UtlSymbol(finalPath)] = data;
 	}
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol savePath = new UtlSymbol(finalPath);
 		if (ModelDatas.TryGetValue(savePath, out var data) && data != null) {
 			return data;

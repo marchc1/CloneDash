@@ -14,7 +14,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace Nucleus.Audio
 {
 	[MarkForStaticConstruction]
-	public class SoundManagement : IManagedMemory
+	public class SoundManagement
 	{
 		private WeakCollection<ISound> Sounds = [];
 		private bool disposedValue;

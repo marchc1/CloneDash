@@ -8,12 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Audio\**" />
-	  <EmbeddedResource Remove="Audio\**" />
-	  <None Remove="Audio\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
 	</ItemGroup>
 	
@@ -26,6 +20,10 @@
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.1205.0" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <Folder Include="Audio\" />
 	</ItemGroup>
 
 	<PropertyGroup>

@@ -15,7 +15,7 @@ public static class MemoryExtensions
 			else return $"{data / (ulong)DataUnit.Gigabyte:0.000}GB";
 		}
 	}
-	extension(IManagedMemory inf)
+	extension(IManagedMemoryUnit inf)
 	{
 		public string NiceBytes() => NiceBytes(inf.UsedBytes);
 	}

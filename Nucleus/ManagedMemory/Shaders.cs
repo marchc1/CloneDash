@@ -8,7 +8,7 @@ using Raylib_cs;
 
 namespace Nucleus.ManagedMemory;
 
-public interface IShader : IManagedMemory {
+public interface IShader : IManagedMemoryUnit {
 	public int HardwareID { get; }
 	public void Activate();
 	public void Deactivate();
@@ -59,7 +59,7 @@ public class ShaderInstance : IShader
 		GC.SuppressFinalize(this);
 	}
 }
-public class ShaderManagement : IManagedMemory
+public class ShaderManagement
 {
 	private List<IShader> shaders = [];
 	public IEnumerable<IShader> Shaders {
@@ -115,8 +115,8 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadFragmentShaderFromFile(string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
 
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))
@@ -132,8 +132,8 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadVerterxShaderFromFile(string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
 
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))
@@ -149,8 +149,8 @@ public class ShaderManagement : IManagedMemory
 	}
 
 	public ShaderInstance LoadShaderFromFile(string pathID, string path) {
-		Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-		IManagedMemory.MergePath(pathID, path, finalPath);
+		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
 
 		if (LoadedShadersFromFile.TryGetValue(searchName, out ShaderInstance? shader))

@@ -711,11 +711,11 @@ namespace Nucleus.Engine
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("[SND] Count", Sounds.Count);
-						debugrecords.Write("[SND] Memory [CPU]", Sounds.NiceBytes());
+						debugrecords.Write("[SND] Memory [CPU]", (Sounds.UsedBits >> 3).NiceBytes());
 						debugrecords.Write();
 						debugrecords.Write("[TEX] Count", Textures.Count);
-						debugrecords.Write("[TEX] Memory [CPU]", Textures.UsedBits_CPU.NiceBytes());
-						debugrecords.Write("[TEX] Memory [GPU]", Textures.UsedBits.NiceBytes());
+						debugrecords.Write("[TEX] Memory [CPU]", (Textures.UsedBits_CPU >> 3).NiceBytes());
+						debugrecords.Write("[TEX] Memory [GPU]", (Textures.UsedBits >> 3).NiceBytes());
 						debugrecords.Write("[TEX] Font Memory [GPU]", Graphics2D.FontManager.GetUsedGPUBits().NiceBytes());
 					}
 					debugrecords.ExitScope();

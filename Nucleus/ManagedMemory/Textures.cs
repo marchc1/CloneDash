@@ -14,7 +14,7 @@ using Raylib_cs;
 
 namespace Nucleus.ManagedMemory
 {
-	public interface ITexture : IManagedMemory
+	public interface ITexture : IManagedMemoryUnit
 	{
 		public uint HardwareID { get; }
 		public int Width { get; }
@@ -115,7 +115,7 @@ namespace Nucleus.ManagedMemory
 
 		public static implicit operator Texture2D(Texture self) => self.Underlying;
 	}
-	public class TextureManagement : IManagedMemory
+	public class TextureManagement
 	{
 		private WeakCollection<ITexture> Textures = [];
 		private List<RenderTexture2D> RenderTextures = [];
@@ -247,8 +247,8 @@ namespace Nucleus.ManagedMemory
 		private Dictionary<Texture, UtlSymId_t> LoadedFilesFromTexture = [];
 
 		public Texture LoadTextureFromFile(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
-			Span<char> finalPath = stackalloc char[IManagedMemory.MergePathSize(pathID, path)];
-			IManagedMemory.MergePath(pathID, path, finalPath);
+			Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
+			IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 			var managedPath = new UtlSymbol(finalPath);
 			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
 
