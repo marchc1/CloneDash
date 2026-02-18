@@ -239,6 +239,8 @@ public static class EngineCore
 				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
 
 			OpenGL.Import(Platform.OpenGL_GetProc);
+			gfxHardwareConfig.ConfirmCapabilities();
+
 			// English language
 			Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
 			//Graphics2D.RegisterCodepoints(@"`1234567890");
