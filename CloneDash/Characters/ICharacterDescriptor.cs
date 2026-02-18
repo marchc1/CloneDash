@@ -1,6 +1,7 @@
 ﻿using CloneDash.Game;
 
 using Nucleus.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;

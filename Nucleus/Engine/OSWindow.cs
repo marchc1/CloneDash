@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -163,7 +164,7 @@ public unsafe class OSWindow : IValidatable
 
 		ActivateGL();
 		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
-		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = ImageFormat.R8G8B8A8 };
 		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
 
 		renderBatch = Raylib.New<RenderBatch>(1);
@@ -893,7 +894,7 @@ public unsafe class OSWindow : IValidatable
 
 		switch (image.Format) {
 			// Can look into other formats later.
-			case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
+			case ImageFormat.R8G8B8A8:
 				rmask = 0x000000FF;
 				gmask = 0x0000FF00;
 				bmask = 0x00FF0000;

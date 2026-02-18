@@ -1,3 +1,4 @@
+using Nucleus.Common.Graphics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -621,7 +622,7 @@ public static unsafe partial class Rlgl
 
     /// <summary>Load texture in GPU</summary>
     [DllImport(NativeLibName, EntryPoint = "rlLoadTexture", CallingConvention = CallingConvention.Cdecl)]
-    public static extern uint LoadTexture(void* data, int width, int height, PixelFormat format, int mipmapCount);
+    public static extern uint LoadTexture(void* data, int width, int height, ImageFormat format, int mipmapCount);
 
     /// <summary>Load depth texture/renderbuffer (to be attached to fbo)</summary>
     [DllImport(NativeLibName, EntryPoint = "rlLoadTextureDepth", CallingConvention = CallingConvention.Cdecl)]
@@ -629,7 +630,7 @@ public static unsafe partial class Rlgl
 
     /// <summary>Load texture cubemap</summary>
     [DllImport(NativeLibName, EntryPoint = "rlLoadTextureCubemap", CallingConvention = CallingConvention.Cdecl)]
-    public static extern uint LoadTextureCubemap(void* data, int size, PixelFormat format);
+    public static extern uint LoadTextureCubemap(void* data, int size, ImageFormat format);
 
     /// <summary>Update GPU texture with new data</summary>
     [DllImport(NativeLibName, EntryPoint = "rlUpdateTexture", CallingConvention = CallingConvention.Cdecl)]
@@ -639,14 +640,14 @@ public static unsafe partial class Rlgl
         int offsetY,
         int width,
         int height,
-        PixelFormat format,
+        ImageFormat format,
         void* data
     );
 
     /// <summary>Get OpenGL internal formats</summary>
     [DllImport(NativeLibName, EntryPoint = "rlGetGlTextureFormats", CallingConvention = CallingConvention.Cdecl)]
     public static extern void GetGlTextureFormats(
-        PixelFormat format,
+        ImageFormat format,
         int* glInternalFormat,
         int* glFormat,
         int* glType
@@ -654,7 +655,7 @@ public static unsafe partial class Rlgl
 
     /// <summary>Get OpenGL internal formats</summary>
     [DllImport(NativeLibName, EntryPoint = "rlGetPixelFormatName", CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte* GetPixelFormatName(PixelFormat format);
+    public static extern sbyte* GetPixelFormatName(ImageFormat format);
 
     /// <summary>Unload texture from GPU memory</summary>
     [DllImport(NativeLibName, EntryPoint = "rlUnloadTexture", CallingConvention = CallingConvention.Cdecl)]
@@ -662,11 +663,11 @@ public static unsafe partial class Rlgl
 
     /// <summary>Generate mipmap data for selected texture</summary>
     [DllImport(NativeLibName, EntryPoint = "rlGenTextureMipmaps", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void GenTextureMipmaps(uint id, int width, int height, PixelFormat format, int* mipmaps);
+    public static extern void GenTextureMipmaps(uint id, int width, int height, ImageFormat format, int* mipmaps);
 
     /// <summary>Read texture pixel data</summary>
     [DllImport(NativeLibName, EntryPoint = "rlReadTexturePixels", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void* ReadTexturePixels(uint id, int width, int height, PixelFormat format);
+    public static extern void* ReadTexturePixels(uint id, int width, int height, ImageFormat format);
 
     /// <summary>Read screen pixel data (color buffer)</summary>
     [DllImport(NativeLibName, EntryPoint = "rlReadScreenPixels", CallingConvention = CallingConvention.Cdecl)]

@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Extensions;
+using Nucleus.Common.Graphics;
 using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
@@ -66,7 +67,7 @@ namespace Nucleus.Core
 
 				if (!state.IsMarkedForDeath()) {
 					ref Font f = ref state.GetFont();
-					bits += (ulong)(f.Texture.Width * f.Texture.Height * 8 * TextureManagement.GetBitsPerPixel(f.Texture.Format));
+					bits += (ulong)(f.Texture.Width * f.Texture.Height * 8 * f.Texture.Format.GetBitsPerPixel());
 				}
 			}
 

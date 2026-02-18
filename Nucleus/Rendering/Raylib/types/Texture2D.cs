@@ -1,3 +1,4 @@
+using Nucleus.Common.Graphics;
 using System.Runtime.InteropServices;
 
 namespace Raylib_cs;
@@ -132,5 +133,5 @@ public partial struct Texture2D
     /// <summary>
     /// Data format (PixelFormat type)
     /// </summary>
-    public PixelFormat Format;
+    public ImageFormat Format;
 }

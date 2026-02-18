@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Nucleus.Common.Graphics;
 using Nucleus.Files;
 using Nucleus.Types;
 using Nucleus.Util;
@@ -14,15 +15,6 @@ using Raylib_cs;
 
 namespace Nucleus.ManagedMemory
 {
-	public interface ITexture : IManagedMemoryUnit
-	{
-		public uint HardwareID { get; }
-		public int Width { get; }
-		public int Height { get; }
-		public PixelFormat Format { get; }
-		public ulong UsedBits_CPU { get; }
-	}
-
 	public class Texture : ITexture
 	{
 		readonly TextureManagement? parent;
@@ -50,14 +42,14 @@ namespace Nucleus.ManagedMemory
 		public int Height => underlying.Height;
 		public uint UWidth => (uint)underlying.Width;
 		public uint UHeight => (uint)underlying.Height;
-		public PixelFormat Format => underlying.Format;
+		public ImageFormat Format => underlying.Format;
 
 		private Image? UnderlyingImage => underlyingImage;
 		private Texture2D Underlying => underlying;
 
 		private bool disposed;
-		public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
-		public ulong UsedBits_CPU => underlyingImage == null ? 0 : (ulong)(underlyingImage.Value.Width * underlyingImage.Value.Height * TextureManagement.GetBitsPerPixel(Underlying.Format));
+		public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * Underlying.Format.GetBitsPerPixel());
+		public ulong UsedBits_CPU => underlyingImage == null ? 0 : (ulong)(underlyingImage.Value.Width * underlyingImage.Value.Height * Underlying.Format.GetBitsPerPixel());
 
 		public bool IsValid() => !disposed;
 
@@ -149,75 +141,7 @@ namespace Nucleus.ManagedMemory
 			Textures.Add(tex);
 		}
 
-		public static int GetBitsPerPixel(PixelFormat format) {
-			switch (format) {
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE:
-					return 8;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA:
-					return 16;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G6B5:
-					return 16;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8:
-					return 24;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R5G5B5A1:
-					return 16;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R4G4B4A4:
-					return 16;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8:
-					return 32;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32:
-					return 32;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32:
-					return 96;
-
-				case PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32A32:
-					return 128;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_DXT1_RGB:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_DXT1_RGBA:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_DXT3_RGBA:
-					return 8;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA:
-					return 8;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_ETC1_RGB:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_ETC2_RGB:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA:
-					return 8;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_PVRT_RGB:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_PVRT_RGBA:
-					return 4;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA:
-					return 8;
-
-				case PixelFormat.PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:
-					return 2;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(format), format, null);
-			}
-		}
-		public static int GetBytesPerPixel(PixelFormat format) => (int)Math.Ceiling(GetBitsPerPixel(format) / 8d);
+		
 		public bool IsValid() => !disposedValue;
 
 		protected virtual void Dispose(bool disposing) {
@@ -290,7 +214,7 @@ namespace Nucleus.ManagedMemory
 				}
 			}
 		}
-		public unsafe RenderTexture2D LoadRenderTexture(int width, int height, PixelFormat format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+		public unsafe RenderTexture2D LoadRenderTexture(int width, int height, ImageFormat format = ImageFormat.R8G8B8A8) {
 			RenderTexture2D target = new();
 
 			target.Id = Rlgl.LoadFramebuffer(width, height);   // Load an empty framebuffer
@@ -309,7 +233,7 @@ namespace Nucleus.ManagedMemory
 				target.Depth.Id = Rlgl.LoadTextureDepth(width, height, true);
 				target.Depth.Width = width;
 				target.Depth.Height = height;
-				target.Depth.Format = (PixelFormat)19;       //DEPTH_COMPONENT_24BIT?
+				target.Depth.Format = (ImageFormat)19;       //DEPTH_COMPONENT_24BIT?
 				target.Depth.Mipmaps = 1;
 
 				// Attach color texture and depth renderbuffer/texture to FBO
@@ -337,7 +261,7 @@ namespace Nucleus.ManagedMemory
 				Raylib.UnloadRenderTexture(tex.Value);
 			}
 		}
-		public unsafe ComplexRenderTexture CreateComplexRenderTexture(int width, int height, PixelFormat pixelFormat = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
+		public unsafe ComplexRenderTexture CreateComplexRenderTexture(int width, int height, ImageFormat pixelFormat = ImageFormat.R8G8B8A8) {
 			return new ComplexRenderTexture(width, height);
 		}
 	}

@@ -1,3 +1,4 @@
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using System;
 using System.Collections.Generic;
@@ -839,7 +840,7 @@ public static unsafe partial class Raylib
         sbyte* fileName,
         int width,
         int height,
-        PixelFormat format,
+		ImageFormat format,
         int headerSize
     );
 
@@ -967,7 +968,7 @@ public static unsafe partial class Raylib
 
     /// <summary>Convert image data to desired format</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ImageFormat(Image* image, PixelFormat newFormat);
+    public static extern void ImageFormat(Image* image, ImageFormat newFormat);
 
     /// <summary>Convert image to POT (power-of-two)</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1365,16 +1366,16 @@ public static unsafe partial class Raylib
 
     /// <summary>Get Color from a source pixel pointer of certain format</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern Color GetPixelColor(void* srcPtr, PixelFormat format);
-    public static Color GetPixelColor(nint srcPtr, PixelFormat format) => GetPixelColor((void*)srcPtr, format);
+    public static extern Color GetPixelColor(void* srcPtr, ImageFormat format);
+    public static Color GetPixelColor(nint srcPtr, ImageFormat format) => GetPixelColor((void*)srcPtr, format);
 
 	/// <summary>Set color formatted into destination pixel pointer</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SetPixelColor(void* dstPtr, Color color, PixelFormat format);
+    public static extern void SetPixelColor(void* dstPtr, Color color, ImageFormat format);
 
     /// <summary>Get pixel data size in bytes for certain format</summary>
     [DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern int GetPixelDataSize(int width, int height, PixelFormat format);
+    public static extern int GetPixelDataSize(int width, int height, ImageFormat format);
 
 
     //------------------------------------------------------------------------------------

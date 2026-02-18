@@ -14,6 +14,7 @@ using Nucleus.Extensions;
 
 using System.Text;
 using System.Text.RegularExpressions;
+using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -33,13 +34,13 @@ public static class UnityAssetUtils
 		var imgData = tex2D.image_data.GetData();
 		int width = tex2D.m_Width;
 		int height = tex2D.m_Height;
-		Raylib_cs.PixelFormat pixelFormat;
+		ImageFormat pixelFormat;
 		Raylib_cs.Image img;
 		switch (tex2D.m_TextureFormat) {
-			case TextureFormat.RGB24: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8; break;
-			case TextureFormat.RGBA32: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8; break;
-			case TextureFormat.DXT3: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT3_RGBA; break;
-			case TextureFormat.DXT5: pixelFormat = Raylib_cs.PixelFormat.PIXELFORMAT_COMPRESSED_DXT5_RGBA; break;
+			case TextureFormat.RGB24:  pixelFormat = ImageFormat.R8G8B8; break;
+			case TextureFormat.RGBA32: pixelFormat = ImageFormat.R8G8B8A8; break;
+			case TextureFormat.DXT3:   pixelFormat = ImageFormat.DXT3_RGBA; break;
+			case TextureFormat.DXT5:   pixelFormat = ImageFormat.DXT5_RGBA; break;
 			case TextureFormat.BC4:
 			case TextureFormat.BC5:
 			case TextureFormat.BC6H:
@@ -53,7 +54,7 @@ public static class UnityAssetUtils
 					_ => throw new InvalidOperationException()
 				});
 
-				img = rgba32.AsSpan().Cast<ColorRgba32, byte>().ToImage(width, height, Raylib_cs.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, tex2D.m_MipCount);
+				img = rgba32.AsSpan().Cast<ColorRgba32, byte>().ToImage(width, height, ImageFormat.R8G8B8A8, tex2D.m_MipCount);
 				return img;
 			default: throw new NotImplementedException($"Cannot load the Unity texture format '{tex2D.m_TextureFormat}' into Raylib. Must provide a direct enum conversion or pixel format conversion in UnityAssetUtils.ToRaylib(this Texture2D).");
 		}

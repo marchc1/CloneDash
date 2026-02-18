@@ -1,3 +1,4 @@
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using System;
 using System.IO;
@@ -106,7 +107,7 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Load image from RAW file data</summary>
-	public static Image LoadImageRaw(string fileName, int width, int height, PixelFormat format, int headerSize) {
+	public static Image LoadImageRaw(string fileName, int width, int height, ImageFormat format, int headerSize) {
 		using var str1 = fileName.ToAnsiBuffer();
 		return LoadImageRaw(str1.AsPointer(), width, height, format, headerSize);
 	}
@@ -470,7 +471,7 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Convert image data to desired format</summary>
-	public static void ImageFormat(ref Image image, PixelFormat newFormat) {
+	public static void ImageFormat(ref Image image, ImageFormat newFormat) {
 		fixed (Image* p = &image) {
 			ImageFormat(p, newFormat);
 		}

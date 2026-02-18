@@ -4,6 +4,7 @@ using CloneDash.Game;
 using Newtonsoft.Json;
 
 using Nucleus.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;

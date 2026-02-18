@@ -1,15 +1,14 @@
-﻿using Nucleus.Extensions;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Types;
+using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
-
 using Raylib_cs;
-
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Globalization;
-using Nucleus.Common.Types;
 
 namespace Nucleus.Core
 {
@@ -510,7 +509,7 @@ namespace Nucleus.Core
 		public static void DrawRing(Vector2F center, float innerRadius, float outerRadius, float startAngle = 0, float endAngle = 360, int segments = 32) {
 			Raylib.DrawRing(AFV2ToSNV2(center), innerRadius, outerRadius, startAngle, endAngle, segments, __drawColor);
 		}
-		public static RenderTexture2D CreateRenderTarget(float wF, float hF, PixelFormat pixelFormat = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, int mipmaps = 1) {
+		public static RenderTexture2D CreateRenderTarget(float wF, float hF, ImageFormat pixelFormat = ImageFormat.R8G8B8A8, int mipmaps = 1) {
 			int w = (int)wF;
 			int h = (int)hF;
 
@@ -528,7 +527,7 @@ namespace Nucleus.Core
 					target.Depth.Id = Rlgl.LoadTextureDepth(w, h, true);
 					target.Texture.Width = w;
 					target.Texture.Height = h;
-					target.Texture.Format = PixelFormat.PIXELFORMAT_COMPRESSED_PVRT_RGBA;
+					target.Texture.Format = ImageFormat.PVRT_RGBA;
 					target.Texture.Mipmaps = mipmaps;
 
 					Rlgl.FramebufferAttach(target.Id, target.Texture.Id, FramebufferAttachType.RL_ATTACHMENT_COLOR_CHANNEL0, FramebufferAttachTextureType.RL_ATTACHMENT_TEXTURE2D, 0);

@@ -9,6 +9,7 @@ using Fmod5Sharp.FmodTypes;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.ManagedMemory;

@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Types;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Types;
 using Nucleus.Rendering;
 using Raylib_cs;
 
@@ -147,7 +148,7 @@ public class ComplexRenderTexture : IDisposable
 	}
 
 	public Texture2D Texture => new() {
-		Format = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
+		Format = ImageFormat.R8G8B8A8,
 		Width = Width,
 		Height = Height,
 		Id = TextureID
@@ -155,9 +156,5 @@ public class ComplexRenderTexture : IDisposable
 
 	~ComplexRenderTexture() {
 		Dispose();
-	}
-
-	public static unsafe ComplexRenderTexture CreateComplexRenderTexture(int width, int height, PixelFormat pixelFormat = PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
-		return new ComplexRenderTexture(width, height);
 	}
 }
