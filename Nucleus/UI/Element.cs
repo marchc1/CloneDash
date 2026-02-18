@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -1359,7 +1360,7 @@ namespace Nucleus.UI
 		public Anchor Anchor { get; set; } = Anchor.TopLeft;
 		public Anchor Origin { get; set; } = Anchor.TopLeft;
 
-		public Texture? Image { get; set; }
+		public ITexture? Image { get; set; }
 		public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
 
 		public Vector2F ImageOffset { get; set; } = new(0);
@@ -1474,10 +1475,10 @@ namespace Nucleus.UI
 					sourceRect.Height *= -1;
 				}
 
-				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, color ?? thisC);
+				Raylib.DrawTexturePro((Texture)Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, color ?? thisC);
 			}
 			else
-				Raylib.DrawTexturePro(Image, sourceRect, destRect, new(0, 0), ImageRotation, color ?? thisC);
+				Raylib.DrawTexturePro((Texture)Image, sourceRect, destRect, new(0, 0), ImageRotation, color ?? thisC);
 		}
 
 		public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");

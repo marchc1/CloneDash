@@ -3,6 +3,7 @@ using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -18,12 +19,12 @@ public class CharacterButton : Button
 {
 	public string? CosplayName;
 	public string? CharacterName;
-	public Texture? Texture;
+	public ITexture? Texture;
 
 	public void Setup(string? cosplay, string? character, ITexture? texture) {
 		CosplayName = cosplay;
 		CharacterName = character;
-		Image = (Texture?)texture;
+		Image = texture;
 		ImageOrientation = ImageOrientation.Zoom;
 		BackgroundColor = new(0, 0, 0, 0);
 		BorderSize = 0;
