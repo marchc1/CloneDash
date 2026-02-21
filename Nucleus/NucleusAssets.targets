@@ -16,10 +16,15 @@
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsOSX)' == 'true'">
 			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
+			<OSXNativeLibs Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\*.dylib" />
 		</ItemGroup>
 		<ItemGroup Condition="'$(IsLinux)' == 'true'">
 			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
 		</ItemGroup>
 		<Copy SourceFiles="@(PlatformAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy Condition="'$(IsOSX)' == 'true'" 
+			  SourceFiles="@(OSXNativeLibs)" 
+			  DestinationFolder="$(OutDir)runtimes\osx-arm64\native\" 
+			  SkipUnchangedFiles="true" />
 	</Target>
 </Project>
