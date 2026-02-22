@@ -15,6 +15,7 @@ public struct UtlSymbol
 		id = UTL_INVAL_SYMBOL;
 		ValidId = false;
 	}
+	public override string ToString() => String();
 	public UtlSymbol(ReadOnlySpan<char> str) => id = CurrTable().AddString(str);
 	public UtlSymbol(string str) {
 		id = CurrTable().AddString(str);

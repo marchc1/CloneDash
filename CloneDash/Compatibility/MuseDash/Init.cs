@@ -47,8 +47,7 @@ namespace CloneDash.Compatibility.MuseDash
 			Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
 
 			using (StaticSequentialProfiler.StartStackFrame("Mount to Filesystem")) {
-				using (Stream stream = filesystem.Open("assets", "mdlut.dat", FileAccess.Read, FileMode.Open) ?? throw new Exception("Cannot find the mdlut.dat file"))
-					StreamingAssets = filesystem.AddSearchPath("musedash", new UnitySearchPath(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa/{StandalonePlatform}"), stream));
+					StreamingAssets = filesystem.AddSearchPath("musedash", new UnitySearchPathV2(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa"), StandalonePlatform));
 			}
 
 			using (StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))

@@ -24,6 +24,20 @@ namespace CloneDash.Compatibility.Unity;
 public static class UnityAssetUtils
 {
 	/// <summary>
+	/// Gets the name of various descendants of <see cref="AssetStudio.Object"/>
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="obj"></param>
+	/// <returns></returns>
+	public static string? GetUnityName<T>(this T obj) where T : AssetStudio.Object {
+		switch(obj){
+			case MonoBehaviour mb: return mb.m_Name;
+			case GameObject go: return go.m_Name;
+			case NamedObject no: return no.m_Name;
+			default: return null;
+		}
+	}
+	/// <summary>
 	/// Note this returns a Raylib image, you will need to manually unload the pixel data...
 	/// </summary>
 	/// <param name="tex2D"></param>
