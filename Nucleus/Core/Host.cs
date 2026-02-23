@@ -43,7 +43,7 @@ public static class Host
 	}
 
 	public static bool ConfigCfgExecuted { get; private set; }
-	public static bool Initialized { get; private set; }
+	public static bool Initialized { get; internal set; }
 
 	public static void ReadConfiguration() {
 		bool userHasConfig = filesystem.Exists("cfg", "config.cfg");

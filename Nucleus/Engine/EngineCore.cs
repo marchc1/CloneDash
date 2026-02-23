@@ -859,6 +859,8 @@ public static class EngineCore
 
 			Cbuf.AddText("stuffcmds");
 
+			Host.Initialized = true;
+
 			Logs.Info("BOOT: Running JIT early where possible...");
 			Parallel.ForEach(earlyJITAssemblies
 				   .SelectMany(a => a.GetTypes())
