@@ -42,7 +42,6 @@ public class SceneEditorLevel() : DashGameLevel(default)
 		bgrEdit.DockMargin = RectangleF.TLRB(4);
 
 		bgrEditRecompile.MouseReleaseEvent += (_, _, _) => {
-			Lua.DoString(bgrEdit.GetText());
 			Scene.Refresh(this);
 		};
 
