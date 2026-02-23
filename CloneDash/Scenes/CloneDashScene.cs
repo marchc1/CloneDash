@@ -5,10 +5,7 @@ using AssetStudio;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Modding;
-using CloneDash.Scripting;
 using CloneDash.Settings;
-
-using Lua;
 
 using Newtonsoft.Json;
 
@@ -24,14 +21,9 @@ namespace CloneDash.Scenes;
 
 public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 {
-	LuaFunction? renderScene;
-	LuaFunction? thinkScene;
-
 	[JsonProperty("mdassets")] public bool UseMDAssets;
 
 	public void Initialize(DashGameLevel game) {
-		SetupLua(game, game.Lua);
-
 		Interlude.Spin(submessage: "Initializing sounds..."); AnnouncerLines.Load(game, UseMDAssets);
 		Hitsounds.Load(game, UseMDAssets); Interlude.Spin(submessage: "Initializing hitsounds...");
 
@@ -65,32 +57,15 @@ public class CloneDashScene : CloneDashDescriptor, ISceneDescriptor
 	}
 
 	public void Think(DashGameLevel game) {
-		game.Lua.ProtectedCall(thinkScene);
+
 	}
 
 	public void RenderBackground(DashGameLevel game) {
-		var lua = game.Lua;
 
-		lua.Graphics.StartRenderingLuaContext();
-		lua.ProtectedCall(renderScene, game.FrameState.WindowWidth, game.FrameState.WindowHeight);
-		lua.Graphics.EndRenderingLuaContext();
 	}
 
 	public void Refresh(DashGameLevel game) {
-		SetupLua(game, game.Lua, false);
-	}
-	private void SetupLua(DashGameLevel game, LuaEnv lua, bool first = true) {
-		if (first) {
-			lua.State.Environment["scene"] = new LuaTable();
 
-			lua.DoFile("scene", PathToBackgroundController);
-		}
-
-		var scene = lua.State.Environment["scene"].Read<LuaTable>();
-		{
-			scene["render"].TryRead(out renderScene);
-			scene["think"].TryRead(out thinkScene);
-		}
 	}
 
 	public ModelData GetEnemyModel(DashEnemy enemy) {

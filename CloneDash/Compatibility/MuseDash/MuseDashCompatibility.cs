@@ -7,7 +7,6 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
-using CloneDash.Scripting;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;

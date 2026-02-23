@@ -9,7 +9,6 @@ using CloneDash.Game.Statistics;
 using CloneDash.Levels;
 using CloneDash.Menu;
 using CloneDash.Scenes;
-using CloneDash.Scripting;
 using CloneDash.Settings;
 using CloneDash.Systems;
 using Nucleus;
@@ -59,8 +58,6 @@ public struct DashGameParams {
 [Nucleus.MarkForStaticConstruction]
 public partial class DashGameLevel(DashGameParams gameParameters) : Level
 {
-	public LuaEnv Lua;
-
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<DashGameLevel>();
 		if (level == null) {
@@ -520,12 +517,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				FeverFX = feverFX;
 			}
 
-			Interlude.Spin(submessage: "Initializing Lua...");
-			using (StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
-				Lua = new(this);
-				Lua.State.Environment["game"] = new LuaGame(this);
-			}
-
 			Interlude.Spin(submessage: "Initializing the scene...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
@@ -593,8 +584,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Conductor = Add<Conductor>();
 				Interlude.Spin();
 			}
-
-			Lua.State.Environment["conductor"] = new LuaConductor(Conductor);
 
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
 				if (gameParameters.Sheet != null) {
