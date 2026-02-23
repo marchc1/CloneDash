@@ -544,7 +544,7 @@ namespace AssetStudio
                         {
                             if (m_PackedSprite.TryGet(out var m_Sprite))
                             {
-                                if (m_Sprite.m_SpriteAtlas.IsNull)
+                                if (m_Sprite.m_SpriteAtlas.IsNull())
                                 {
                                     m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                 }

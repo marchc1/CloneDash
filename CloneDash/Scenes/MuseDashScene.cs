@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus.Audio;
 using Nucleus.ManagedMemory;
@@ -13,21 +14,28 @@ namespace CloneDash.Scenes;
 
 public class MuseDashScene : ISceneDescriptor
 {
-	public MuseDashScene(int sceneIDX) {
-		string strSceneIdx = sceneIDX.ToString().PadLeft(2, '0');
-		var scene = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>($"scene_{strSceneIdx}")!;
+	public MuseDashScene() {
 
-		var defaultEggControl = scene.GetComponentByName<MonoBehaviour>("DefaultEggControl");
-		var sceneSubControl = scene.GetComponentByName<MonoBehaviour>("SceneSubControl");
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
 		int sceneIDX = name.IndexOf('_');
-		if (sceneIDX == -1) return null;
+		if (sceneIDX == -1)
+			return null;
 
 		sceneIDX = int.TryParse(name[(sceneIDX + 1)..], out int i) ? i : -1;
-		if (sceneIDX == -1) return null;
-		return new MuseDashScene(sceneIDX);
+		if (sceneIDX == -1)
+			return null;
+
+		string strSceneIdx = sceneIDX.ToString().PadLeft(2, '0');
+		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>($"scene_{strSceneIdx}")!;
+
+		var sceneSubControl = new MonoBehaviourReader(sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl") ?? throw new NullReferenceException("No scene control?"));
+		if (sceneSubControl == null)
+			return null;
+
+		MuseDashScene mdScene = new();
+		return mdScene;
 	}
 
 	public string GetBossAnimation(BossAnimationType type, out double time) {

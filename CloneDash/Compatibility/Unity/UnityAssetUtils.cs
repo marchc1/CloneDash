@@ -11,19 +11,51 @@ using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Extensions;
-
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Text;
 using System.Text.RegularExpressions;
 using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 
 namespace CloneDash.Compatibility.Unity;
 
-public static class MonoBehaviourReader
+public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 {
-	public static T? Read<T>(this MonoBehaviour mb){
-		if (!mb.m_Script.TryGet(out var m_Script)) return default;
-		mb.ConvertToTypeTree
+	public readonly MonoBehaviour MonoBehaviour;
+	public readonly OrderedDictionary Dict;
+	public MonoBehaviourReader(MonoBehaviour mb) {
+		MonoBehaviour = mb;
+		Dict = mb.ToType();
 	}
+
+	public T? Get<T>(object key) where T : AssetStudio.Object {
+		object? o = Dict[key];
+		if (o == null) return null;
+
+		if (o is PPtr<T> ptr)
+			return ptr.TryGet(out var ret) ? ret : null;
+		return null;
+	}
+
+	public MonoBehaviourReader? GetMB(object key) {
+		object? o = Dict[key];
+		if (o == null) return null;
+		if (o is not PPtr<MonoBehaviour> pMb) return null;
+		return pMb.TryGet(out var mb) ? new(mb) : null;
+	}
+
+	public IEnumerator<KeyValuePair<object, object?>> GetEnumerator() {
+		foreach (var kvp in Dict.Keys) {
+			var value = Dict[kvp];
+			if (value is IPPtr ptr)
+				yield return new(kvp, ptr.TryGet(out AssetStudio.Object? o) ? o : null);
+			else
+				yield return new(kvp, value);
+		}
+	}
+
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 /// <summary>
