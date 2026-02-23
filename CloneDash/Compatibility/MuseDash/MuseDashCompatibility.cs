@@ -138,7 +138,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public static string BuildTarget { get; private set; }
 		public static string StandalonePlatform { get; private set; }
 		public static string[] StreamingFiles { get; private set; }
-		public static UnitySearchPath StreamingAssets { get; private set; }
+		public static UnitySearchPathV2 StreamingAssets { get; private set; }
 
 		public static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
 			foreach (var md in stage.musicDatas) {
