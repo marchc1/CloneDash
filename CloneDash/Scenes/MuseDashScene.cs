@@ -1,21 +1,33 @@
-﻿using CloneDash.Game;
+﻿using AssetStudio;
+using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Texture = Nucleus.ManagedMemory.Texture;
 
 namespace CloneDash.Scenes;
 
 public class MuseDashScene : ISceneDescriptor
 {
-	public MuseDashScene(ReadOnlySpan<char> scene) {
+	public MuseDashScene(int sceneIDX) {
+		string strSceneIdx = sceneIDX.ToString().PadLeft(2, '0');
+		var scene = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>($"scene_{strSceneIdx}")!;
 
+		var defaultEggControl = scene.GetComponentByName<MonoBehaviour>("DefaultEggControl");
+		var sceneSubControl = scene.GetComponentByName<MonoBehaviour>("SceneSubControl");
 	}
 
-	public static MuseDashScene GetScene(ReadOnlySpan<char> name) {
-		return new MuseDashScene(name);
+	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
+		int sceneIDX = name.IndexOf('_');
+		if (sceneIDX == -1) return null;
+
+		sceneIDX = int.TryParse(name[(sceneIDX + 1)..], out int i) ? i : -1;
+		if (sceneIDX == -1) return null;
+		return new MuseDashScene(sceneIDX);
 	}
 
 	public string GetBossAnimation(BossAnimationType type, out double time) {

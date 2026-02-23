@@ -18,6 +18,14 @@ using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 
 namespace CloneDash.Compatibility.Unity;
 
+public static class MonoBehaviourReader
+{
+	public static T? Read<T>(this MonoBehaviour mb){
+		if (!mb.m_Script.TryGet(out var m_Script)) return default;
+		mb.ConvertToTypeTree
+	}
+}
+
 /// <summary>
 /// Various Unity asset loading utility methods. Tries to abstract away a lot of the AssetStudio stuff.
 /// </summary>
@@ -30,7 +38,7 @@ public static class UnityAssetUtils
 	/// <param name="obj"></param>
 	/// <returns></returns>
 	public static string? GetUnityName<T>(this T obj) where T : AssetStudio.Object {
-		switch(obj){
+		switch (obj) {
 			case MonoBehaviour mb: return mb.m_Name;
 			case GameObject go: return go.m_Name;
 			case NamedObject no: return no.m_Name;
@@ -51,10 +59,10 @@ public static class UnityAssetUtils
 		ImageFormat pixelFormat;
 		Raylib_cs.Image img;
 		switch (tex2D.m_TextureFormat) {
-			case TextureFormat.RGB24:  pixelFormat = ImageFormat.R8G8B8; break;
+			case TextureFormat.RGB24: pixelFormat = ImageFormat.R8G8B8; break;
 			case TextureFormat.RGBA32: pixelFormat = ImageFormat.R8G8B8A8; break;
-			case TextureFormat.DXT3:   pixelFormat = ImageFormat.DXT3_RGBA; break;
-			case TextureFormat.DXT5:   pixelFormat = ImageFormat.DXT5_RGBA; break;
+			case TextureFormat.DXT3: pixelFormat = ImageFormat.DXT3_RGBA; break;
+			case TextureFormat.DXT5: pixelFormat = ImageFormat.DXT5_RGBA; break;
 			case TextureFormat.BC4:
 			case TextureFormat.BC5:
 			case TextureFormat.BC6H:

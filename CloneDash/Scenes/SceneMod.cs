@@ -10,7 +10,7 @@ namespace CloneDash.Scenes;
 [MarkForStaticConstruction]
 public static class SceneMod
 {
-	public static ConVar scene = new(nameof(scene), "clonedash", FCvar.Saved, "Your scene.");
+	public static ConVar scene = new(nameof(scene), "scene_01", FCvar.Saved, "Your scene.");
 	public static ConVar allowsceneoverride = new(nameof(allowsceneoverride), "1", FCvar.Saved, $"If true (and the scene specified exists on-disk), allows charts to specify the scene used during gameplay. If false, will always use ConVar \"{nameof(scene)}\"'s value.", 0, 1);
 	public static ConCommand scenes = new(nameof(scenes), (_, in _) => {
 		var scenes = GetAvailableScenes();
