@@ -37,12 +37,12 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
-			Model = scene.GetEnemyModel(this).Instantiate();
+			Model = scene.GetEnemyModel(this)?.Instantiate();
 
 			var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 			SetShowTimeViaLength(showtime);
 
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
+			ApproachAnimation = Model?.Data.FindAnimation(animationName);
 
 			Scale = new(level.GlobalScale);
 		}

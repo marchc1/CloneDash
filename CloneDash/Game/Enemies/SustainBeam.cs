@@ -2,6 +2,7 @@
 using CloneDash.Settings;
 
 using Nucleus;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
@@ -25,8 +26,6 @@ namespace CloneDash.Game.Entities
 		public bool HeldState { get; private set; } = false;
 		public bool StopAcceptingInput { get; private set; } = false;
 
-		public Pathway PathwayCheck;
-
 		private double lastCheckTime;
 
 		public override void OnReset() {
@@ -43,7 +42,6 @@ namespace CloneDash.Game.Entities
 				return;
 
 			var lvl = Level.As<DashGameLevel>();
-			PathwayCheck = lvl.GetPathway(attackedPath);
 			HeldState = true;
 			WasHit = true;
 			ForceDraw = true;
@@ -80,24 +78,32 @@ namespace CloneDash.Game.Entities
 		public float RotationDegsPerSecond = 200;
 		private void drawStartQuad(DashGameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
+
 			var tex = start;
+			if (tex == null) return;
+
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
 			var ypos = game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
+			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
 		}
 		private void drawEndQuad(DashGameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 			var tex = end;
+			if (tex == null) return;
+
 			var xpos = (float)XPosFromTimeOffset(x);
 			var ypos = game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
+			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
 		}
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
 		private byte beamAlpha;
-		public void drawScrollQuad(DashGameLevel game, Texture tex, ref FrameState fs, float xOffset, float yOffset) {
+		public void drawScrollQuad(DashGameLevel game, ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
+			if (tex == null)
+				return;
+
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
@@ -147,11 +153,11 @@ namespace CloneDash.Game.Entities
 			drawEndQuad(game, ref frameState, (float)Length);
 		}
 
-		private Texture start;
-		private Texture end;
-		private Texture body;
-		private Texture up;
-		private Texture down;
+		private ITexture? start;
+		private ITexture? end;
+		private ITexture? body;
+		private ITexture? up;
+		private ITexture? down;
 
 		public override void Build() {
 			base.Build();

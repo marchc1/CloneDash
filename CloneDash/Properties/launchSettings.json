@@ -2,7 +2,7 @@
   "profiles": {
     "CloneDash": {
       "commandName": "Project",
-      "commandLineArgs": "+developer 1",
+      "commandLineArgs": "+developer 1 -md_level bass_telekinesis -difficulty 3 -autoplay",
       "nativeDebugging": false
     }
   }

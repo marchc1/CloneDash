@@ -526,7 +526,10 @@ public class Animation : IModel4Nameable
 	public string Name { get; set; }
 	public List<Timeline> Timelines { get; set; } = [];
 
-	public void Apply(ModelInstance model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+	public void Apply(ModelInstance? model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+		if (model == null)
+			return;
+
 		foreach (var tl in Timelines) {
 			// todo: lasttime
 			tl.Apply(model, 0, time, mix, mixBlend);
@@ -1447,7 +1450,10 @@ public class AnimationHandler
 		}
 	}
 
-	public void AddAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
+	public void AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+		if (animation == null)
+			return;
+
 		var channelObj = Channels[channel];
 
 		var anim = model.FindAnimation(animation);
@@ -1460,7 +1466,10 @@ public class AnimationHandler
 		});
 	}
 
-	public void SetAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
+	public void SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+		if (animation == null)
+			return;
+
 		var channelObj = Channels[channel];
 		StopAnimation(channel);
 

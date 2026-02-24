@@ -72,19 +72,20 @@ namespace CloneDash.Game.Entities
 				case EntityVariant.BossHitSlow:
 					break;
 				default:
-					var model = scene.GetEnemyModel(this).Instantiate();
+					var model = scene.GetEnemyModel(this)?.Instantiate();
 
 					if (model != null)
 						Model = model;
 
-					string animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
+					double showtime = 1;
+					string? animationName = scene?.GetEnemyApproachAnimation(this, out showtime);
 					SetShowTimeViaLength(showtime);
 
-					ApproachAnimation = Model.Data.FindAnimation(animationName);
-					GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-					PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+					ApproachAnimation = Model?.Data.FindAnimation(animationName);
+					GreatHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));
+					PerfectHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 					Scale = new(level.GlobalScale);
-					SetMountBoneIfApplicable(scene.GetHPMount(this));
+					SetMountBoneIfApplicable(scene?.GetHPMount(this));
 					break;
 			}
 		}

@@ -1,31 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
+#nullable enable
 namespace AssetStudio
 {
-    public class Transform : Component
-    {
-        public Quaternion m_LocalRotation;
-        public Vector3 m_LocalPosition;
-        public Vector3 m_LocalScale;
-        public PPtr<Transform>[] m_Children;
-        public PPtr<Transform> m_Father;
+	public class Transform : Component
+	{
+		public Quaternion m_LocalRotation;
+		public Vector3 m_LocalPosition;
+		public Vector3 m_LocalScale;
+		public PPtr<Transform>[] m_Children;
+		public PPtr<Transform> m_Father;
 
-        public Transform(ObjectReader reader) : base(reader)
-        {
-            m_LocalRotation = reader.ReadQuaternion();
-            m_LocalPosition = reader.ReadVector3();
-            m_LocalScale = reader.ReadVector3();
+		public Transform? GetFather(){
+			if (m_Father.TryGet(out var t))
+				return t;
 
-            int m_ChildrenCount = reader.ReadInt32();
-            m_Children = new PPtr<Transform>[m_ChildrenCount];
-            for (int i = 0; i < m_ChildrenCount; i++)
-            {
-                m_Children[i] = new PPtr<Transform>(reader);
-            }
-            m_Father = new PPtr<Transform>(reader);
-        }
-    }
+			return null;
+		}
+
+		public Transform? GetTransform(int index) {
+			if (m_Children[index].TryGet(out var t))
+				return t;
+
+			return null;
+		}
+
+		public Transform(ObjectReader reader) : base(reader) {
+			m_LocalRotation = reader.ReadQuaternion();
+			m_LocalPosition = reader.ReadVector3();
+			m_LocalScale = reader.ReadVector3();
+
+			int m_ChildrenCount = reader.ReadInt32();
+			m_Children = new PPtr<Transform>[m_ChildrenCount];
+			for (int i = 0; i < m_ChildrenCount; i++) {
+				m_Children[i] = new PPtr<Transform>(reader);
+			}
+			m_Father = new PPtr<Transform>(reader);
+		}
+	}
 }

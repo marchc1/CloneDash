@@ -35,19 +35,19 @@ public class DashEnemy : DashModelEntity
 	}
 
 	protected void SetupHitAnimations(ISceneDescriptor scene) {
-		GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-		PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+		GreatHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
+		PerfectHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 	}
 	protected void BasicSetup() {
 		var level = GetGameLevel();
 		var scene = level.Scene;
 
-		Model = scene.GetEnemyModel(this).Instantiate();
+		Model = scene.GetEnemyModel(this)?.Instantiate();
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 		SetShowTimeViaLength(showtime);
 
-		ApproachAnimation = Model.Data.FindAnimation(animationName);
+		ApproachAnimation = Model?.Data.FindAnimation(animationName);
 		SetupHitAnimations(scene);
 
 		Scale = new(level.GlobalScale);
@@ -57,7 +57,7 @@ public class DashEnemy : DashModelEntity
 		Type = type;
 	}
 
-	public string DebuggingInfo { get; internal set; }
+	public string? DebuggingInfo { get; internal set; }
 
 	public static bool TryCreateFromType(DashGameLevel game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
 		if (!TypeConvert.TryGetValue(type, out var ctype)) {
@@ -69,7 +69,7 @@ public class DashEnemy : DashModelEntity
 	}
 	public static DashEnemy CreateFromType(DashGameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
 	public static DashEnemy CreateFromType(DashGameLevel game, Type type) {
-		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type));
+		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type)!)!;
 		enemy.SortIndex = game.EnemySortIndexCounter++;
 		return enemy;
 	}
@@ -81,12 +81,14 @@ public class DashEnemy : DashModelEntity
 		var scene = lvl.Scene;
 
 		if (Blood) {
-			MountedHeart = scene.GetHP(out string mountAnimation).Instantiate();
-			MountedHeartAnimation = MountedHeart.Data.FindAnimation(mountAnimation);
+			string? mountAnimation = null;
+			MountedHeart = scene?.GetHP(out mountAnimation)?.Instantiate();
+			MountedHeartAnimation = MountedHeart?.Data.FindAnimation(mountAnimation);
 		}
 	}
 
-	public void SetMountBoneIfApplicable(BoneInstance bone) {
+	public void SetMountBoneIfApplicable(BoneInstance? bone) {
+		if (bone == null) return;
 		if (Model == null) throw new NullReferenceException("Need model first!");
 		MountBone = bone;
 	}

@@ -14,9 +14,9 @@ namespace Nucleus.Entities
 		public void SetShaderUniform(string name, float value) {
 			shaderlocs_float[name] = value;
 		}
-		protected ModelInstance __model;
-		protected AnimationHandler __anim;
-		public ModelInstance Model {
+		protected ModelInstance? __model;
+		protected AnimationHandler? __anim;
+		public ModelInstance? Model {
 			get {
 				return __model;
 			}
@@ -25,12 +25,12 @@ namespace Nucleus.Entities
 			}
 		}
 
-		public AnimationHandler Animations {
+		public AnimationHandler? Animations {
 			get => __anim;
 			set => __anim = value;
 		}
-		public bool PlayingAnimation => __anim.IsPlayingAnimation();
-		public bool AnimationQueued => __anim.IsAnimationQueued();
+		public bool PlayingAnimation => __anim?.IsPlayingAnimation() ?? false;
+		public bool AnimationQueued => __anim?.IsAnimationQueued() ?? false;
 
 		public bool Visible { get; set; } = true;
 
@@ -64,9 +64,9 @@ namespace Nucleus.Entities
 			if (!Visible) return;
 			if (Model == null) return;
 
-			if (!Level.Paused) __anim.AddDeltaTime(Level.RendertimeDelta);
+			if (!Level.Paused) __anim?.AddDeltaTime(Level.RendertimeDelta);
 
-			__anim.Apply(Model);
+			__anim?.Apply(Model);
 			Model.Position = Position;
 			Model.Scale = Scale;
 
