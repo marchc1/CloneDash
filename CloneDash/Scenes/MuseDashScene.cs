@@ -172,7 +172,7 @@ public class SceneSpriteRenderer : SceneRenderer
 	float pivotX, pivotY;
 
 	bool flipX, flipY;
-	byte colR = 255, colG = 255, colB = 255, colA = 255;
+	System.Numerics.Vector4 color;
 
 	public SceneSpriteRenderer(SpriteRenderer sr) {
 		UnitySpriteRenderer = sr;
@@ -206,10 +206,10 @@ public class SceneSpriteRenderer : SceneRenderer
 		flipY = UnitySpriteRenderer.m_FlipY;
 
 		var c = UnitySpriteRenderer.m_Color;
-		colR = (byte)(c.R * 255);
-		colG = (byte)(c.G * 255);
-		colB = (byte)(c.B * 255);
-		colA = (byte)(c.A * 255);
+		color.X = c.R;
+		color.Y = c.G;
+		color.Z = c.B;
+		color.W = c.A;
 
 		SortingOrder = UnitySpriteRenderer.m_SortingOrder;
 		SortingLayerID = (int)UnitySpriteRenderer.m_SortingLayerID;
@@ -245,6 +245,8 @@ public class SceneSpriteRenderer : SceneRenderer
 		float rotDeg = Transform.GetWorldRotationZ();
 		uint texId = texture.HardwareID;
 
+		var color = this.color * this.Object.GetColor();
+
 		if (MathF.Abs(rotDeg) > 0.01f) {
 			float cx = wx;
 			float cy = -wy;
@@ -259,7 +261,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 			Rlgl.SetTexture(texId);
 			Rlgl.Begin(DrawMode.QUADS);
-			Rlgl.Color4ub(colR, colG, colB, colA);
+			Rlgl.Color4f(color.X, color.Y, color.Z, color.W);
 
 			Rlgl.TexCoord2f(u0, v0);
 			Rlgl.Vertex2f(cx + x0 * cos - y0 * sin, cy + x0 * sin + y0 * cos);
@@ -276,7 +278,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		else {
 			Rlgl.SetTexture(texId);
 			Rlgl.Begin(DrawMode.QUADS);
-			Rlgl.Color4ub(colR, colG, colB, colA);
+			Rlgl.Color4f(color.X, color.Y, color.Z, color.W);
 
 			Rlgl.TexCoord2f(u0, v0);
 			Rlgl.Vertex2f(screenX, screenY);
@@ -307,6 +309,8 @@ public class SceneObject
 
 	readonly List<SceneComponent> components = [];
 	public IReadOnlyList<SceneComponent> Components => components;
+
+	public System.Numerics.Vector4 Color = new(1, 1, 1, 1);
 
 	public SceneObject() {
 		Transform.Object = this;
@@ -344,6 +348,16 @@ public class SceneObject
 		foreach (var child in Transform.Children)
 			child.Object.Dump(sb, depth + 1);
 		return sb.ToString();
+	}
+
+	public System.Numerics.Vector4 GetColor() {
+		var c = new System.Numerics.Vector4(1, 1, 1, 1);
+		var p = this;
+		while(p != null){
+			c *= p.Color;
+			p = p.Transform.Parent?.Object;
+		}
+		return c;
 	}
 }
 public class MuseDashScene : ISceneDescriptor
@@ -507,6 +521,8 @@ public class MuseDashScene : ISceneDescriptor
 
 		transform.LocalScaleX = size;
 		transform.LocalScaleY = size;
+
+		obj.Color.W = alpha / 255f;
 	}
 
 	public void Think(DashGameLevel game) { }
