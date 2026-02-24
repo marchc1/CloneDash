@@ -75,7 +75,7 @@ namespace CloneDash.Game
 
 		public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
 		public override void Think(FrameState frameState) {
-			Position = Level.As<DashGameLevel>().GetCurrentScene().GetPathwayPosition(Side);
+			Position = Level.As<DashGameLevel>().GetPathwayPosition(Side);
 		}
 		public override void PostRender(FrameState frameState) {
 

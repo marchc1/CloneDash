@@ -15,7 +15,7 @@ namespace AssetStudio
 		public PPtr<Transform>[] m_Children;
 		public PPtr<Transform> m_Father;
 
-		public Transform? GetFather(){
+		public Transform? GetFather() {
 			if (m_Father.TryGet(out var t))
 				return t;
 
@@ -27,6 +27,13 @@ namespace AssetStudio
 				return t;
 
 			return null;
+		}
+
+		public IEnumerable<Transform> GetChildren() {
+			foreach (var child in m_Children) {
+				if (child.TryGet(out var t))
+					yield return t;
+			}
 		}
 
 		public Transform(ObjectReader reader) : base(reader) {

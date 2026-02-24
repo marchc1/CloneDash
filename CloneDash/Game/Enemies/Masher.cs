@@ -99,7 +99,7 @@ namespace CloneDash.Game.Entities
 		public override void DetermineAnimationPlayback() {
 			if (Model == null) return;
 
-			Position = GetCurrentScene().GetPathwayPosition(Pathway);
+			Position = GetGameLevel().GetPathwayPosition(Pathway);
 
 			if (Dead) {
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;

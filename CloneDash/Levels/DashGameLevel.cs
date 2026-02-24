@@ -28,6 +28,7 @@ using Nucleus.UI.Elements;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.ExceptionServices;
 using Color = Nucleus.Common.Types.Color;
 
@@ -655,11 +656,14 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public Panel PauseWindow { get; private set; }
 	private bool lastNoteHit = false;
 
+	// Its own function in case we have player-specific overrides (not sure if this exists yet)
+	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
+
 	public float GetPlayerY(double jumpRatio) {
 		var height = EngineCore.GetWindowHeight();
 
-		var top = GetCurrentScene().GetPathwayPosition(PathwaySide.Top);
-		var bot = GetCurrentScene().GetPathwayPosition(PathwaySide.Bottom);
+		var top = GetPathwayPosition(PathwaySide.Top);
+		var bot = GetPathwayPosition(PathwaySide.Bottom);
 
 		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + 225; // TODO: re-evaluate
 	}
@@ -792,11 +796,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		bool holdingTop = Sustains.IsSustaining(PathwaySide.Top), holdingBottom = Sustains.IsSustaining(PathwaySide.Bottom);
 		bool holding = holdingTop || holdingBottom;
 		if ((holdingTop && holdingBottom) || InMashState)
-			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Both).Y;
+			yoff = GetPathwayPosition(PathwaySide.Both).Y;
 		else if (holdingTop)
-			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Top).Y;
+			yoff = GetPathwayPosition(PathwaySide.Top).Y;
 		else if (holdingBottom)
-			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Bottom).Y;
+			yoff = GetPathwayPosition(PathwaySide.Bottom).Y;
 
 		if (yoff.HasValue) {
 			if (sos_yoff == null)
@@ -813,7 +817,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
 
 		// This sucks... todo, figure out how to get this proper
-		var leftPlayer = GetCurrentScene().GetPathwayPosition(PathwaySide.Both).X;
+		var leftPlayer = GetPathwayPosition(PathwaySide.Both).X;
 
 		Player.Position = new Vector2F(
 			(leftPlayer - 185) - (conductorInTime * frameState.WindowWidth / 2f),
