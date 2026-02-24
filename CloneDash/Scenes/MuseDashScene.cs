@@ -106,7 +106,10 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 			var gameObject = animatorData.GetGameObject();
 			if (gameObject == null) continue;
 
-			var test = gameObject.Components.ToArray();
+			bool containsSomethingElse = gameObject.Components.Any(x => x is not Transform && x is not Animator);
+			Logs.Info("Game Object");
+			Logs.Info($"  - Name:   {gameObject.m_Name}");
+			Logs.Info($"  - Visual: {containsSomethingElse}");
 		}
 
 		mdScene.FinalSetup();
