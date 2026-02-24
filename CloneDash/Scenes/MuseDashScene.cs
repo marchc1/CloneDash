@@ -7,18 +7,53 @@ using Nucleus.Common.Graphics;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
-using OdinSerializer;
-using System;
-using System.Collections.Generic;
 using System.Text;
 using Texture = Nucleus.ManagedMemory.Texture;
 using Color = Nucleus.Common.Types.Color;
 using Nucleus;
+using System.Diagnostics;
 
 namespace CloneDash.Scenes;
 
+public abstract class MuseDashScenePieceRenderer
+{
+	public readonly Renderer UnityRenderer;
+	public MuseDashScenePieceRenderer(Renderer unityRenderer) {
+		UnityRenderer = unityRenderer;
+	}
+	public abstract void Build(MuseDashScene scene);
+}
+
+public class MuseDashScenePieceSpriteRenderer : MuseDashScenePieceRenderer
+{
+	public readonly SpriteRenderer SpriteRenderer;
+	public MuseDashScenePieceSpriteRenderer(SpriteRenderer unityRenderer) : base(unityRenderer) {
+		SpriteRenderer = unityRenderer;
+	}
+
+	public override void Build(MuseDashScene scene) {
+		
+	}
+}
+
 public class MuseDashScenePiece
 {
+	public Transform Transform = null!;
+	public readonly List<MuseDashScenePieceRenderer> Renderers = [];
+
+	public void AddRenderer(MuseDashScenePieceRenderer renderer) {
+		Renderers.Add(renderer);
+	}
+
+	public bool IsRenderable() => Renderers.Count > 0;
+
+	public string Dump(StringBuilder? sb = null, int recursiveIdx = 0) {
+		sb ??= new();
+		sb.AppendLine(new string(' ', recursiveIdx * 2) + Name);
+		foreach (var child in Children)
+			child.Dump(sb, recursiveIdx + 1);
+		return sb.ToString();
+	}
 	public string Name = "";
 	public const float MUSEDASH_MULTIPLIER_POSITIONS = 200; // seems to be the right base
 
@@ -31,9 +66,16 @@ public class MuseDashScenePiece
 	public MuseDashScenePiece? GetParent() => Parent;
 	public void AddChild(MuseDashScenePiece child) => child.SetParent(this);
 	public void SetParent(MuseDashScenePiece? parent) {
+		if (Parent == parent) return;
+
 		Parent?.Children.Remove(this);
 		Parent = parent;
 		Parent?.Children.Add(this);
+	}
+
+	public void BuildRenderables() {
+		foreach (var renderer in Renderers) 
+			renderer.Build(Scene);
 	}
 }
 
@@ -42,16 +84,19 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 {
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 	readonly List<MuseDashScenePiece> AllPieces = [];
+	readonly List<List<MuseDashScenePiece>> RenderOrder = [];
 	readonly Dictionary<long, MuseDashScenePiece> UnityPathIDToScenePiece = [];
 
-	public T GetOrCreateScenePiece<T>(long pathID) where T : MuseDashScenePiece, new() {
-		if (UnityPathIDToScenePiece.TryGetValue(pathID, out var piece))
+	public T GetOrCreateScenePiece<T>(GameObject? obj) where T : MuseDashScenePiece, new() {
+		ArgumentNullException.ThrowIfNull(obj);
+		if (UnityPathIDToScenePiece.TryGetValue(obj.m_PathID, out var piece))
 			return (T)piece;
 		piece = new T {
-			Scene = this
+			Scene = this,
+			Name = obj.m_Name ?? ""
 		};
 		AllPieces.Add(piece);
-		UnityPathIDToScenePiece[pathID] = piece;
+		UnityPathIDToScenePiece[obj.m_PathID] = piece;
 		return (T)piece;
 	}
 
@@ -65,6 +110,16 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		};
 		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
 		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
+
+		foreach (var item in AllPieces)
+			item.BuildRenderables();
+
+		var layer = new List<MuseDashScenePiece>();
+		RenderOrder.Add(layer);
+		foreach (var item in AllPieces) {
+			if (item.IsRenderable())
+				layer.Add(item);
+		}
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
@@ -98,22 +153,42 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 
-		// OBJECTS
-		// This gets all of the background elements of the scene
-		foreach (var animatorData in sceneSubControl.GetList<Animator>("m_Animators")) {
-			if (animatorData == null) continue;
-
-			var gameObject = animatorData.GetGameObject();
-			if (gameObject == null) continue;
-
-			bool containsSomethingElse = gameObject.Components.Any(x => x is not Transform && x is not Animator);
-			Logs.Info("Game Object");
-			Logs.Info($"  - Name:   {gameObject.m_Name}");
-			Logs.Info($"  - Visual: {containsSomethingElse}");
-		}
+		mdScene.BuildScene(sceneGameObject.GetFirstComponent<Transform>()?.GetGameObject());
 
 		mdScene.FinalSetup();
 		return mdScene;
+	}
+
+	private void BuildScene(GameObject? gameObject) {
+		Scene = new();
+		BuildObject(gameObject, this);
+	}
+
+	private static void BuildObject(GameObject? gameObject, MuseDashScenePiece piece) {
+		if (gameObject == null) return;
+
+		var transform = gameObject.GetFirstComponent<Transform>()!;
+		piece.Transform = transform;
+
+		var mayBeRenderable = gameObject.Components.Any(x => x is not Animator && x is not AssetStudio.Transform);
+		if (mayBeRenderable) {
+			foreach (var comp in gameObject.Components)
+				if (comp is Renderer r)
+					switch (r) {
+						case SpriteRenderer spriteRenderer:
+							piece.AddRenderer(new MuseDashScenePieceSpriteRenderer(spriteRenderer));
+							break;
+					}
+
+			Debugger.Break();
+		}
+
+		foreach (var child in transform.GetChildren()) {
+			var childGameObject = child.GetGameObject()!;
+			var childObj = piece.Scene.GetOrCreateScenePiece<MuseDashScenePiece>(childGameObject);
+			childObj.SetParent(piece);
+			BuildObject(childGameObject, childObj);
+		}
 	}
 
 	public string? GetBossAnimation(BossAnimationType type, out double time) {
