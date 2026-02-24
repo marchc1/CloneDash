@@ -37,39 +37,45 @@ public class MuseDashScenePieceSpriteRenderer : MuseDashScenePieceRenderer
 
 	ITexture? tex;
 
+	float unitW, unitH;
+
 	public override void Build(MuseDashScene scene) {
 		var sprite = SpriteRenderer.GetSprite()!;
 		if (sprite == null) return;
 		tex = scene.LoadTexture(sprite.m_RD.GetTexture());
+
+		float ppu = sprite.m_PixelsToUnits;
+		if (ppu <= 0) ppu = 100f;
+		unitW = tex.Width / ppu;
+		unitH = tex.Height / ppu;
 	}
 
 	public override void Render(MuseDashScenePiece piece) {
 		if (tex == null) return;
 
-		Rlgl.SetTexture(tex.HardwareID);
-
-		Rlgl.Begin(DrawMode.QUADS);
-		float quadSize = 1, z = 0;
-
 		Vector2F pos = piece.GetPos();
 
-		Rlgl.Color4f(1, 1, 1, 1);
-		Rlgl.TexCoord2f(-1, -1);
-		Rlgl.Vertex3f(pos.X +  -quadSize, pos.X + quadSize, z);
+		float hw = unitW * 0.5f;
+		float hh = unitH * 0.5f;
 
+		Rlgl.SetTexture(tex.HardwareID);
+		Rlgl.Begin(DrawMode.QUADS);
 		Rlgl.Color4f(1, 1, 1, 1);
-		Rlgl.TexCoord2f(1, -1);
-		Rlgl.Vertex3f(pos.X + quadSize, pos.X + quadSize, z);
 
-		Rlgl.Color4f(1, 1, 1, 1);
+		Rlgl.TexCoord2f(0, 0);
+		Rlgl.Vertex3f(pos.X - hw, pos.Y - hh, 0);
+		
+		Rlgl.TexCoord2f(0, 1);
+		Rlgl.Vertex3f(pos.X - hw, pos.Y + hh, 0);
+
 		Rlgl.TexCoord2f(1, 1);
-		Rlgl.Vertex3f(pos.X + quadSize, pos.X + -quadSize, z);
+		Rlgl.Vertex3f(pos.X + hw, pos.Y + hh, 0);
 
-		Rlgl.Color4f(1, 1, 1, 1);
-		Rlgl.TexCoord2f(-1, 1);
-		Rlgl.Vertex3f(pos.X + -quadSize, pos.X + -quadSize, z);
+		Rlgl.TexCoord2f(1, 0);
+		Rlgl.Vertex3f(pos.X + hw, pos.Y - hh, 0);
 
 		Rlgl.End();
+		Rlgl.SetTexture(0);
 	}
 }
 
@@ -298,7 +304,7 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		Rlgl.PushMatrix();
 		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS);
 		Rlgl.PushMatrix();
-		foreach (var renderOrder in RenderOrder) 
+		foreach (var renderOrder in RenderOrder)
 			foreach (var renderable in renderOrder)
 				foreach (var renderer in renderable.Renderers)
 					renderer.Render(renderable);
