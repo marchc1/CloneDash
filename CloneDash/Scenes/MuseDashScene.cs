@@ -18,21 +18,84 @@ namespace CloneDash.Scenes;
 public abstract class MuseDashScenePieceRenderer
 {
 	public readonly Renderer UnityRenderer;
+	public int SortingOrder => 0;
+	public int SortingLayerID => 0;
+
 	public MuseDashScenePieceRenderer(Renderer unityRenderer) {
 		UnityRenderer = unityRenderer;
 	}
 	public abstract void Build(MuseDashScene scene);
+	public abstract void Render(MuseDashScene scene, float offsetX, float offsetY);
 }
 
 public class MuseDashScenePieceSpriteRenderer : MuseDashScenePieceRenderer
 {
 	public readonly SpriteRenderer SpriteRenderer;
+
+	// Extracted data
+	public Texture? LoadedTexture;
+	public float Width;
+	public float Height;
+	public float PivotX;
+	public float PivotY;
+	public bool FlipX;
+	public bool FlipY;
+	public Color TintColor = Color.White;
+
 	public MuseDashScenePieceSpriteRenderer(SpriteRenderer unityRenderer) : base(unityRenderer) {
 		SpriteRenderer = unityRenderer;
 	}
 
 	public override void Build(MuseDashScene scene) {
-		
+		// Extract sprite data from the SpriteRenderer
+		// The SpriteRenderer has m_Sprite (PPtr<Sprite>), which contains texture + rect info
+		// It also has m_Color for tinting, and m_FlipX / m_FlipY
+
+		FlipX = SpriteRenderer.m_FlipX;
+		FlipY = SpriteRenderer.m_FlipY;
+
+		// Extract tint color from the renderer
+		var col = SpriteRenderer.m_Color;
+		TintColor = new Color(
+			(byte)(col.R * 255),
+			(byte)(col.G * 255),
+			(byte)(col.B * 255),
+			(byte)(col.A * 255)
+		);
+
+		// Resolve the Sprite reference
+		if (SpriteRenderer.m_Sprite.TryGet(out var sprite)) {
+			// Sprite contains:
+			//   m_Rect (the region within the texture atlas)
+			//   m_Pivot (normalized pivot point)
+			//   m_PixelsToUnits (conversion factor)
+			//   m_RD.texture (PPtr to the actual Texture2D)
+
+			Width = sprite.m_Rect.width;
+			Height = sprite.m_Rect.height;
+			PivotX = sprite.m_Pivot.X;
+			PivotY = sprite.m_Pivot.Y;
+
+			// Get the actual Texture2D and convert it
+			if (sprite.m_RD.texture.TryGet(out var texture2D)) {
+				// TODO: Convert texture2D to your engine's texture format
+				// LoadedTexture = MuseDashCompatibility.ConvertTexture(level, texture2D);
+				//
+				// For sprites that are part of an atlas, you'll also need:
+				//   sprite.m_Rect (x, y, width, height within the atlas)
+				//   sprite.m_TextureRect (actual texture rect after trimming)
+				//   sprite.m_Offset (offset for trimmed sprites)
+				Logs.Info($"  Sprite: {sprite.m_Name} -> Texture: {texture2D.m_Name} ({Width}x{Height}, pivot: {PivotX},{PivotY})");
+			}
+		}
+	}
+
+	public override void Render(MuseDashScene scene, float offsetX, float offsetY) {
+		if (LoadedTexture == null) return;
+
+		// TODO: Draw the sprite using your rendering backend
+		// Position comes from the parent MuseDashScenePiece's computed global transform
+		// Apply pivot, flip, tint, sorting order
 	}
 }
 
@@ -47,9 +110,45 @@ public class MuseDashScenePiece
 
 	public bool IsRenderable() => Renderers.Count > 0;
 
+	// Computed world-space values (filled during FinalSetup)
+	public float WorldX;
+	public float WorldY;
+	public float WorldZ;
+	public float WorldRotationDeg;
+	public float ScaleX = 1;
+	public float ScaleY = 1;
+
+	public void ComputeWorldTransform() {
+		if (Transform == null) return;
+
+		Transform.ComputeGlobalTransform(out var pos, out var rot);
+
+		WorldX = pos.X * MUSEDASH_MULTIPLIER_POSITIONS;
+		WorldY = pos.Y * MUSEDASH_MULTIPLIER_POSITIONS;
+		WorldZ = pos.Z; // Z is used for depth/layer ordering
+
+		// Extract rotation angle from quaternion (2D case: rotation around Z axis)
+		// For a Z-axis rotation quaternion: q = (0, 0, sin(θ/2), cos(θ/2))
+		float sinHalf = rot.Z;
+		float cosHalf = rot.W;
+		WorldRotationDeg = MathF.Atan2(2f * sinHalf * cosHalf, 1f - 2f * sinHalf * sinHalf) * (180f / MathF.PI);
+
+		// Compute cumulative scale by walking the transform chain
+		ScaleX = Transform.m_LocalScale.X;
+		ScaleY = Transform.m_LocalScale.Y;
+		var parent = Transform.GetFather();
+		while (parent != null) {
+			ScaleX *= parent.m_LocalScale.X;
+			ScaleY *= parent.m_LocalScale.Y;
+			parent = parent.GetFather();
+		}
+	}
+
 	public string Dump(StringBuilder? sb = null, int recursiveIdx = 0) {
 		sb ??= new();
-		sb.AppendLine(new string(' ', recursiveIdx * 2) + Name);
+		var rendInfo = IsRenderable() ? $" [renderers: {Renderers.Count}]" : "";
+		var posInfo = Transform != null ? $" ({Transform.m_LocalPosition.X:F2}, {Transform.m_LocalPosition.Y:F2}, {Transform.m_LocalPosition.Z:F2})" : "";
+		sb.AppendLine(new string(' ', recursiveIdx * 2) + Name + posInfo + rendInfo);
 		foreach (var child in Children)
 			child.Dump(sb, recursiveIdx + 1);
 		return sb.ToString();
@@ -74,7 +173,7 @@ public class MuseDashScenePiece
 	}
 
 	public void BuildRenderables() {
-		foreach (var renderer in Renderers) 
+		foreach (var renderer in Renderers)
 			renderer.Build(Scene);
 	}
 }
@@ -84,7 +183,7 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 {
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 	readonly List<MuseDashScenePiece> AllPieces = [];
-	readonly List<List<MuseDashScenePiece>> RenderOrder = [];
+	readonly List<MuseDashScenePiece> RenderList = [];
 	readonly Dictionary<long, MuseDashScenePiece> UnityPathIDToScenePiece = [];
 
 	public T GetOrCreateScenePiece<T>(GameObject? obj) where T : MuseDashScenePiece, new() {
@@ -111,15 +210,39 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
 		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
 
+		// Build all renderable components (extract textures, sprites, etc.)
 		foreach (var item in AllPieces)
 			item.BuildRenderables();
 
-		var layer = new List<MuseDashScenePiece>();
-		RenderOrder.Add(layer);
+		// Compute world transforms for all pieces
+		foreach (var item in AllPieces)
+			item.ComputeWorldTransform();
+
+		// Build sorted render list based on sorting layer + order + Z depth
+		RenderList.Clear();
 		foreach (var item in AllPieces) {
 			if (item.IsRenderable())
-				layer.Add(item);
+				RenderList.Add(item);
 		}
+
+		// Sort by: sorting layer first, then sorting order, then Z position as tiebreaker
+		RenderList.Sort((a, b) => {
+			// Get the "best" renderer from each piece for sorting purposes
+			var ra = a.Renderers[0];
+			var rb = b.Renderers[0];
+
+			int layerCmp = ra.SortingLayerID.CompareTo(rb.SortingLayerID);
+			if (layerCmp != 0) return layerCmp;
+
+			int orderCmp = ra.SortingOrder.CompareTo(rb.SortingOrder);
+			if (orderCmp != 0) return orderCmp;
+
+			// Z depth as final tiebreaker (further = drawn first)
+			return b.WorldZ.CompareTo(a.WorldZ);
+		});
+
+		Logs.Info($"Scene {Name}: {AllPieces.Count} total pieces, {RenderList.Count} renderable");
+		Logs.Info(Dump());
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
@@ -153,41 +276,45 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 
-		mdScene.BuildScene(sceneGameObject.GetFirstComponent<Transform>()?.GetGameObject());
+		// Build the scene tree from the prefab root
+		var rootTransform = sceneGameObject.GetFirstComponent<Transform>();
+		var rootGameObject = rootTransform?.GetGameObject();
+		mdScene.BuildScene(rootGameObject);
 
 		mdScene.FinalSetup();
 		return mdScene;
 	}
 
 	private void BuildScene(GameObject? gameObject) {
-		Scene = new();
-		BuildObject(gameObject, this);
+		Scene = this;
+		Transform = gameObject?.GetFirstComponent<Transform>()!;
+		BuildChildren(gameObject, this);
 	}
 
-	private static void BuildObject(GameObject? gameObject, MuseDashScenePiece piece) {
+	private static void BuildChildren(GameObject? gameObject, MuseDashScenePiece parentPiece) {
 		if (gameObject == null) return;
 
-		var transform = gameObject.GetFirstComponent<Transform>()!;
-		piece.Transform = transform;
+		var transform = gameObject.GetFirstComponent<Transform>();
+		if (transform == null) return;
 
-		var mayBeRenderable = gameObject.Components.Any(x => x is not Animator && x is not AssetStudio.Transform);
-		if (mayBeRenderable) {
-			foreach (var comp in gameObject.Components)
-				if (comp is Renderer r)
-					switch (r) {
-						case SpriteRenderer spriteRenderer:
-							piece.AddRenderer(new MuseDashScenePieceSpriteRenderer(spriteRenderer));
-							break;
-					}
+		foreach (var childTransform in transform.GetChildren()) {
+			var childGameObject = childTransform.GetGameObject();
+			if (childGameObject == null) continue;
 
-			Debugger.Break();
-		}
+			var childPiece = parentPiece.Scene.GetOrCreateScenePiece<MuseDashScenePiece>(childGameObject);
+			childPiece.Transform = childTransform;
+			childPiece.SetParent(parentPiece);
 
-		foreach (var child in transform.GetChildren()) {
-			var childGameObject = child.GetGameObject()!;
-			var childObj = piece.Scene.GetOrCreateScenePiece<MuseDashScenePiece>(childGameObject);
-			childObj.SetParent(piece);
-			BuildObject(childGameObject, childObj);
+			// Check all components for renderers
+			foreach (var comp in childGameObject.Components) {
+				if (comp is SpriteRenderer spriteRenderer) {
+					childPiece.AddRenderer(new MuseDashScenePieceSpriteRenderer(spriteRenderer));
+				}
+				// TODO: Add MeshRenderer, ParticleSystemRenderer, etc. as needed
+			}
+
+			// Recurse into children
+			BuildChildren(childGameObject, childPiece);
 		}
 	}
 
@@ -207,7 +334,6 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
 		return null;
-
 	}
 
 	public ModelData? GetHP(out string? mountAnimation) {
@@ -224,8 +350,7 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 	}
 
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
-
-	public Nucleus.Common.Types.Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
+	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
 
 	public MusicTrack? GetPressIdleSound() {
@@ -239,30 +364,29 @@ public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
 		up = null!;
 		down = null!;
 		rotationDegsPerSecond = 0;
-		// todo: refactor this part of the API.
 	}
 
 	public void Initialize(DashGameLevel game) {
-
 	}
 
 	public void PlaySound(SceneSound sound, int hits) {
-
 	}
 
 	public void Refresh(DashGameLevel game) {
-
 	}
 
 	public void RenderBackground(DashGameLevel game) {
-
+		// Render all scene pieces in sorted order
+		foreach (var piece in RenderList) {
+			foreach (var renderer in piece.Renderers) {
+				renderer.Render(this, piece.WorldX, piece.WorldY);
+			}
+		}
 	}
 
 	public void Think(DashGameLevel game) {
-
 	}
 
 	internal void MountToFilesystem() {
-
 	}
 }

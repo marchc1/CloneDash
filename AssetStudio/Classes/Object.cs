@@ -129,6 +129,12 @@ namespace AssetStudio
 				case ClassIDType.MovieTexture:
 					return new MovieTexture(objectReader);
 					
+				case ClassIDType.ParticleSystem:
+					return new ParticleSystem(objectReader);
+
+				case ClassIDType.ParticleSystemRenderer:
+					return new ParticleSystemRenderer(objectReader);
+
 				case ClassIDType.PlayerSettings:
 					return new PlayerSettings(objectReader);
 					
