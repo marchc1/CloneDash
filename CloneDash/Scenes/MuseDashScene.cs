@@ -18,6 +18,7 @@ namespace CloneDash.Scenes;
 
 public class MuseDashScene : ISceneDescriptor
 {
+	const float MUSEDASH_MULTIPLIER_POSITIONS = 200; // seems to be the right base
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 
 	public MuseDashScene() {
@@ -60,9 +61,10 @@ public class MuseDashScene : ISceneDescriptor
 		var mdScene = new MuseDashScene();
 		var v1 = transform.m_LocalPosition + child1!.m_LocalPosition;
 		var v2 = transform.m_LocalPosition + child2!.m_LocalPosition;
-		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v2.X, v2.Y);
-		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v1.X, v1.Y);
-
+		int tempOffset = -42; // TODO: What is this? 
+		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+		mdScene.FinalSetup();
 		return mdScene;
 	}
 
