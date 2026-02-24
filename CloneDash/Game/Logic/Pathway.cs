@@ -86,8 +86,8 @@ namespace CloneDash.Game
 			var conductor = lvl.Conductor;
 			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);
-			var size = Raymath.Remap(realInfluence, 0, 1, 36, 42) * 2;
-			var curtimeOffset = (float)conductor.Time * -240;
+			var size = Raymath.Remap(realInfluence, 0, 1, 0.85f, 1f);
+			var curtimeOffset = (float)NMath.Modulo(conductor.Time, 1);
 
 			var alphaM = Math.Max(0, Math.Min(conductor.Time + 1, 1));
 			if (alphaM <= 0) return;
@@ -97,16 +97,7 @@ namespace CloneDash.Game
 
 			var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
 
-			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, PATHWAY_TOP_COLOR, PATHWAY_BOTTOM_COLOR).Adjust(0, 1.2f, -0.2f), alpha);
-			var ringSize = 1.4f;
-			Graphics2D.DrawRing(Position, ((32 / 2) - 4) * ringSize, ((32 / 2)) * ringSize);
-
-			Graphics2D.SetDrawColor(ValueDependantOnPathway(Side, PATHWAY_TOP_COLOR, PATHWAY_BOTTOM_COLOR), alpha);
-
-			var ringPartSize = 360f / divisors;
-			for (float i = 0; i < 360f; i += ringPartSize) {
-				Graphics2D.DrawRing(Position, size, size / 1.15f, curtimeOffset + i, curtimeOffset + i + (ringPartSize - ring_offset));
-			}
+			lvl.GetCurrentScene().RenderPathway(lvl, Side, alpha, size, curtimeOffset);
 		}
 	}
 }

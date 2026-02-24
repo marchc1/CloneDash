@@ -656,6 +656,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public Panel PauseWindow { get; private set; }
 	private bool lastNoteHit = false;
 
+
+	static float TEMP_PLAYER_OFFSET => -145;
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
 
@@ -665,7 +667,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		var top = GetPathwayPosition(PathwaySide.Top);
 		var bot = GetPathwayPosition(PathwaySide.Bottom);
 
-		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + 225; // TODO: re-evaluate
+		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + TEMP_PLAYER_OFFSET; // TODO: re-evaluate
 	}
 
 	private SecondOrderSystem? sos_yoff;
@@ -806,7 +808,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (sos_yoff == null)
 				sos_yoff = new(15, 1, 1, yoff.Value);
 
-			yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
+			yoff = yoff.Value + TEMP_PLAYER_OFFSET;
 		}
 		else
 			sos_yoff = null;
@@ -821,13 +823,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		Player.Position = new Vector2F(
 			(leftPlayer - 185) - (conductorInTime * frameState.WindowWidth / 2f),
-			sos_yoff?.Update(playerY) ?? playerY
+			-(sos_yoff?.Update(playerY) ?? playerY)
 		);
 		Player.Scale = new(PlayerScale);
 
 		HologramPlayer.Position = new Vector2F(
 			leftPlayer - 185,
-			GetPlayerY(HologramCharacterYRatio)
+			-GetPlayerY(HologramCharacterYRatio)
 		);
 
 		HologramPlayer.Scale = new(PlayerScale);
@@ -1213,7 +1215,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float PlayerScale => 1;
 	public float PlayScale { get; set; } = 1.2f;
 	public float GlobalScale => 1f;
-	public float BackgroundScale => 1f;
 
 	public override void PreRenderBackground(FrameState frameState) {
 		Boss.Scale = new(GlobalScale);
@@ -1223,14 +1224,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public override void PreRender(FrameState frameState) {
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		Rlgl.PushMatrix();
-		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
-
 		Scene.RenderBackground(this);
 		if (InFever)
 			FeverFX?.Render(this);
-
-		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
 
@@ -1245,6 +1241,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
 		//cam.Target = cam.Offset;
 	}
+
 	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
 		foreach (Entity ent in VisibleEntities) {
 			if (ent is not DashEnemy entCD) continue;

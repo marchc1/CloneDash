@@ -12,9 +12,11 @@ namespace CloneDash.Scenes;
 public struct PathwayInformation {
 	public Color Color;
 	public Vector2F Position;
+	public object? UserData;
 
-	public PathwayInformation(float x, float y){
+	public PathwayInformation(float x, float y, object? userdata){
 		Position = new(x, y);
+		UserData = userdata;
 	}
 }
 
@@ -32,6 +34,7 @@ public interface ISceneDescriptor
 
 	public void Think(DashGameLevel game);
 	public void RenderBackground(DashGameLevel game);
+	public void RenderPathway(DashGameLevel game, PathwaySide side, float alpha, float size, float rotation);
 
 	public ModelData? GetEnemyModel(DashEnemy enemy);
 

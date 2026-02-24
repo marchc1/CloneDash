@@ -2,17 +2,18 @@
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
-using System.Text;
-using Texture = Nucleus.ManagedMemory.Texture;
-using Color = Nucleus.Common.Types.Color;
-using Nucleus;
-using System.Diagnostics;
 using Raylib_cs;
+using System.Diagnostics;
+using System.Text;
+using Color = Nucleus.Common.Types.Color;
+using Texture = Nucleus.ManagedMemory.Texture;
 using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
 
@@ -105,6 +106,51 @@ public class SceneTransform : SceneComponent
 		LocalRotationZ = unityTransform.m_LocalRotation.Z;
 		LocalRotationW = unityTransform.m_LocalRotation.W;
 	}
+
+	public void ComputeGlobalTransform(out Vector3 position, out Quaternion rotation) {
+		position = new(LocalX, LocalY, LocalZ);
+		rotation = new(LocalRotationX, LocalRotationY, LocalRotationZ, LocalRotationW);
+
+		var parent = Parent;
+		while (parent != null) {
+			position = new Vector3(
+				position.X * parent.LocalScaleX,
+				position.Y * parent.LocalScaleY,
+				position.Z * parent.LocalScaleZ
+			);
+
+			position = RotateVector(new(parent.LocalRotationX, parent.LocalRotationY, parent.LocalRotationZ, parent.LocalRotationW), position);
+			position += new Vector3(parent.LocalX, parent.LocalY, parent.LocalZ);
+			rotation = MultiplyQuaternion(new(parent.LocalRotationX, parent.LocalRotationY, parent.LocalRotationZ, parent.LocalRotationW), rotation);
+			parent = parent.Parent;
+		}
+	}
+
+	private static Vector3 RotateVector(Quaternion q, Vector3 v) {
+		float ux = q.X, uy = q.Y, uz = q.Z, s = q.W;
+
+		float dotUV = ux * v.X + uy * v.Y + uz * v.Z;
+		float dotUU = ux * ux + uy * uy + uz * uz;
+
+		float cx = uy * v.Z - uz * v.Y;
+		float cy = uz * v.X - ux * v.Z;
+		float cz = ux * v.Y - uy * v.X;
+
+		return new Vector3(
+			2f * dotUV * ux + (s * s - dotUU) * v.X + 2f * s * cx,
+			2f * dotUV * uy + (s * s - dotUU) * v.Y + 2f * s * cy,
+			2f * dotUV * uz + (s * s - dotUU) * v.Z + 2f * s * cz
+		);
+	}
+
+	private static Quaternion MultiplyQuaternion(Quaternion a, Quaternion b) {
+		return new Quaternion(
+			a.W * b.X + a.X * b.W + a.Y * b.Z - a.Z * b.Y,
+			a.W * b.Y - a.X * b.Z + a.Y * b.W + a.Z * b.X,
+			a.W * b.Z + a.X * b.Y - a.Y * b.X + a.Z * b.W,
+			a.W * b.W - a.X * b.X - a.Y * b.Y - a.Z * b.Z
+		);
+	}
 }
 
 public abstract class SceneRenderer : SceneComponent
@@ -177,7 +223,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 		float w = unitW * MathF.Abs(sx);
 		float h = unitH * MathF.Abs(sy);
-		
+
 		float offX = -pivotX * w;
 		float offY = -(1f - pivotY) * h;
 
@@ -333,20 +379,12 @@ public class MuseDashScene : ISceneDescriptor
 
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
-		transform.m_Children[0].TryGet(out var child1);
-		transform.m_Children[1].TryGet(out var child2);
 
 		var scene = new MuseDashScene();
 
-		child1!.ComputeGlobalTransform(out var v1, out _);
-		child2!.ComputeGlobalTransform(out var v2, out _);
-		int tempOffset = -42;
-		scene.pathwayInfo[(int)PathwaySide.Top] = new(
-			v1.X * MUSEDASH_MULTIPLIER_POSITIONS,
-			(v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
-		scene.pathwayInfo[(int)PathwaySide.Bottom] = new(
-			v2.X * MUSEDASH_MULTIPLIER_POSITIONS,
-			(v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+		var pathwaysObject = scene.ImportGameObject(scenePoint, null);
+		foreach (var child in pathwaysObject.Transform.Children)
+			scene.EvaluatePathway(child!.Object);
 
 		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
 		scene.root = scene.ImportGameObject(rootTransform.GetGameObject()!, null);
@@ -365,6 +403,26 @@ public class MuseDashScene : ISceneDescriptor
 		scene.pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
 
 		return scene;
+	}
+
+	private void EvaluatePathway(SceneObject? obj) {
+		ArgumentNullException.ThrowIfNull(obj);
+		var gameTransform = obj.Transform!;
+
+		PathwaySide side;
+		if (obj.Name == "HitPointRoad")
+			side = PathwaySide.Bottom;
+		else
+			side = PathwaySide.Top;
+
+		gameTransform.ComputeGlobalTransform(out var hitpointPosition, out _);
+
+		int tempOffset = -42;
+		pathwayInfo[(int)side] = new(
+			hitpointPosition.X * MUSEDASH_MULTIPLIER_POSITIONS,
+			(hitpointPosition.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset,
+			obj
+		);
 	}
 
 	SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
@@ -434,6 +492,21 @@ public class MuseDashScene : ISceneDescriptor
 		foreach (var renderer in sortedRenderers)
 			renderer.Render(this);
 		Rlgl.PopMatrix();
+	}
+
+	public void RenderPathway(DashGameLevel game, PathwaySide side, float alpha, float size, float rotation) {
+		// This is misleading! :(
+		// This just sets rotations/alphas at the moment...	
+		var obj = ((SceneObject)pathwayInfo[(int)side].UserData!);
+		var transform = obj.Transform;
+
+		transform.LocalRotationX = 0;
+		transform.LocalRotationY = 0;
+		transform.LocalRotationZ = NMath.Remap(rotation, 0, 1, -1, 1);
+		transform.LocalRotationW = 1;
+
+		transform.LocalScaleX = size;
+		transform.LocalScaleY = size;
 	}
 
 	public void Think(DashGameLevel game) { }
