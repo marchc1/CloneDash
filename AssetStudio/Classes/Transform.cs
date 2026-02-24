@@ -29,6 +29,51 @@ namespace AssetStudio
 			return null;
 		}
 
+		public void ComputeGlobalTransform(out Vector3 position, out Quaternion rotation) {
+			position = m_LocalPosition;
+			rotation = m_LocalRotation;
+
+			var parent = GetFather();
+			while (parent != null) {
+				position = new Vector3(
+					position.X * parent.m_LocalScale.X,
+					position.Y * parent.m_LocalScale.Y,
+					position.Z * parent.m_LocalScale.Z
+				);
+
+				position = RotateVector(parent.m_LocalRotation, position);
+				position += parent.m_LocalPosition;
+				rotation = MultiplyQuaternion(parent.m_LocalRotation, rotation);
+				parent = parent.GetFather();
+			}
+		}
+
+		private static Vector3 RotateVector(Quaternion q, Vector3 v) {
+			float ux = q.X, uy = q.Y, uz = q.Z, s = q.W;
+
+			float dotUV = ux * v.X + uy * v.Y + uz * v.Z;
+			float dotUU = ux * ux + uy * uy + uz * uz;
+
+			float cx = uy * v.Z - uz * v.Y;
+			float cy = uz * v.X - ux * v.Z;
+			float cz = ux * v.Y - uy * v.X;
+
+			return new Vector3(
+				2f * dotUV * ux + (s * s - dotUU) * v.X + 2f * s * cx,
+				2f * dotUV * uy + (s * s - dotUU) * v.Y + 2f * s * cy,
+				2f * dotUV * uz + (s * s - dotUU) * v.Z + 2f * s * cz
+			);
+		}
+
+		private static Quaternion MultiplyQuaternion(Quaternion a, Quaternion b) {
+			return new Quaternion(
+				a.W * b.X + a.X * b.W + a.Y * b.Z - a.Z * b.Y,
+				a.W * b.Y - a.X * b.Z + a.Y * b.W + a.Z * b.X,
+				a.W * b.Z + a.X * b.Y - a.Y * b.X + a.Z * b.W,
+				a.W * b.W - a.X * b.X - a.Y * b.Y - a.Z * b.Z
+			);
+		}
+
 		public IEnumerable<Transform> GetChildren() {
 			foreach (var child in m_Children) {
 				if (child.TryGet(out var t))

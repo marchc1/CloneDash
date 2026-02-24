@@ -13,16 +13,46 @@ using System.Collections.Generic;
 using System.Text;
 using Texture = Nucleus.ManagedMemory.Texture;
 using Color = Nucleus.Common.Types.Color;
+using Nucleus;
 
 namespace CloneDash.Scenes;
 
-public class MuseDashScene : ISceneDescriptor
+public class MuseDashScenePiece
 {
-	const float MUSEDASH_MULTIPLIER_POSITIONS = 200; // seems to be the right base
+	public string Name = "";
+	public const float MUSEDASH_MULTIPLIER_POSITIONS = 200; // seems to be the right base
+
+	internal MuseDashScene Scene = null!;
+	MuseDashScenePiece? Parent;
+	readonly List<MuseDashScenePiece> Children = [];
+
+	public MuseDashScene GetScene() => Scene;
+	public IReadOnlyList<MuseDashScenePiece> GetChildren() => Children;
+	public MuseDashScenePiece? GetParent() => Parent;
+	public void AddChild(MuseDashScenePiece child) => child.SetParent(this);
+	public void SetParent(MuseDashScenePiece? parent) {
+		Parent?.Children.Remove(this);
+		Parent = parent;
+		Parent?.Children.Add(this);
+	}
+}
+
+
+public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
+{
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
+	readonly List<MuseDashScenePiece> AllPieces = [];
+	readonly Dictionary<long, MuseDashScenePiece> UnityPathIDToScenePiece = [];
 
-	public MuseDashScene() {
-
+	public T GetOrCreateScenePiece<T>(long pathID) where T : MuseDashScenePiece, new() {
+		if (UnityPathIDToScenePiece.TryGetValue(pathID, out var piece))
+			return (T)piece;
+		piece = new T {
+			Scene = this
+		};
+		AllPieces.Add(piece);
+		UnityPathIDToScenePiece[pathID] = piece;
+		return (T)piece;
 	}
 
 	/// <summary>
@@ -53,21 +83,30 @@ public class MuseDashScene : ISceneDescriptor
 		if (sceneSubControl == null)
 			return null;
 
+		// HITPOINTS
+		// This gets the hitpoints and their positions out of the scene data
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
 		transform.m_Children[0].TryGet(out var child1);
 		transform.m_Children[1].TryGet(out var child2);
 
 		var mdScene = new MuseDashScene();
-		var v1 = transform.m_LocalPosition + child1!.m_LocalPosition;
-		var v2 = transform.m_LocalPosition + child2!.m_LocalPosition;
+		mdScene.Name = strSceneIdx;
+		child1!.ComputeGlobalTransform(out var v1, out _);
+		child2!.ComputeGlobalTransform(out var v2, out _);
 		int tempOffset = -42; // TODO: What is this? 
 		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 
-		foreach(var animatorData in sceneSubControl.GetList<Animator>("m_Animators")){
+		// OBJECTS
+		// This gets all of the background elements of the scene
+		foreach (var animatorData in sceneSubControl.GetList<Animator>("m_Animators")) {
 			if (animatorData == null) continue;
-			var test = animatorData;
+
+			var gameObject = animatorData.GetGameObject();
+			if (gameObject == null) continue;
+
+			var test = gameObject.Components.ToArray();
 		}
 
 		mdScene.FinalSetup();

@@ -61,8 +61,11 @@ namespace AssetStudio
 		public IEnumerable<Component> Components {
 			get {
 				foreach (var compPtr in m_Components) {
-					if (compPtr.TryGet(out var result))
-						yield return result;
+					if (compPtr.TryGet<Object>(out var result))
+						if (result is Component c)
+							yield return c;
+						else
+							throw new Exception($"A Unity type needs a deserializer: {result.serializedType}");
 				}
 			}
 		}

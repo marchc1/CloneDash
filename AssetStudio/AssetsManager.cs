@@ -459,6 +459,9 @@ namespace AssetStudio
                             case ClassIDType.Sprite:
                                 obj = new Sprite(objectReader);
                                 break;
+                            case ClassIDType.SpriteRenderer:
+                                obj = new SpriteRenderer(objectReader);
+                                break;
                             case ClassIDType.SpriteAtlas:
                                 obj = new SpriteAtlas(objectReader);
                                 break;
