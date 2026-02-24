@@ -18,315 +18,441 @@ using Transform = AssetStudio.Transform;
 
 namespace CloneDash.Scenes;
 
-public abstract class MuseDashScenePieceRenderer
+public abstract class SceneComponent
 {
-	public readonly Renderer UnityRenderer;
-	public MuseDashScenePieceRenderer(Renderer unityRenderer) {
-		UnityRenderer = unityRenderer;
-	}
-	public abstract void Build(MuseDashScene scene);
-	public abstract void Render(MuseDashScenePiece piece);
+	public SceneObject Object { get; internal set; } = null!;
+	public SceneTransform Transform => Object.Transform;
+	public virtual void Awake() { }
 }
 
-public class MuseDashScenePieceSpriteRenderer : MuseDashScenePieceRenderer
+public class SceneTransform : SceneComponent
 {
-	public readonly SpriteRenderer SpriteRenderer;
-	public MuseDashScenePieceSpriteRenderer(SpriteRenderer unityRenderer) : base(unityRenderer) {
-		SpriteRenderer = unityRenderer;
+	public float LocalX, LocalY, LocalZ;
+	public float LocalScaleX = 1, LocalScaleY = 1, LocalScaleZ = 1;
+	public float LocalRotationX, LocalRotationY, LocalRotationZ, LocalRotationW = 1;
+
+	public SceneTransform? Parent { get; private set; }
+	readonly List<SceneTransform> children = [];
+	public IReadOnlyList<SceneTransform> Children => children;
+
+	public void SetParent(SceneTransform? parent) {
+		Parent?.children.Remove(this);
+		Parent = parent;
+		Parent?.children.Add(this);
 	}
 
-	ITexture? tex;
+	public void GetWorldPosition(out float wx, out float wy, out float wz) {
+		wx = LocalX; wy = LocalY; wz = LocalZ;
+		var p = Parent;
+		while (p != null) {
+			wx *= p.LocalScaleX;
+			wy *= p.LocalScaleY;
+			wz *= p.LocalScaleZ;
+			RotateVector(p.LocalRotationX, p.LocalRotationY, p.LocalRotationZ, p.LocalRotationW,
+				wx, wy, wz, out wx, out wy, out wz);
+			wx += p.LocalX;
+			wy += p.LocalY;
+			wz += p.LocalZ;
+			p = p.Parent;
+		}
+	}
 
+	public void GetWorldScale(out float sx, out float sy) {
+		sx = LocalScaleX; sy = LocalScaleY;
+		var p = Parent;
+		while (p != null) {
+			sx *= p.LocalScaleX;
+			sy *= p.LocalScaleY;
+			p = p.Parent;
+		}
+	}
+
+	public float GetWorldRotationZ() {
+		float totalRad = LocalRotationZRadians();
+		var p = Parent;
+		while (p != null) {
+			totalRad += p.LocalRotationZRadians();
+			p = p.Parent;
+		}
+		return totalRad * (180f / MathF.PI);
+	}
+
+	float LocalRotationZRadians() =>
+		MathF.Atan2(2f * (LocalRotationW * LocalRotationZ + LocalRotationX * LocalRotationY),
+					1f - 2f * (LocalRotationY * LocalRotationY + LocalRotationZ * LocalRotationZ));
+
+	static void RotateVector(float qx, float qy, float qz, float qw,
+		float vx, float vy, float vz, out float ox, out float oy, out float oz) {
+		float dot = qx * vx + qy * vy + qz * vz;
+		float qsq = qx * qx + qy * qy + qz * qz;
+		float cx = qy * vz - qz * vy;
+		float cy = qz * vx - qx * vz;
+		float cz = qx * vy - qy * vx;
+		ox = 2f * dot * qx + (qw * qw - qsq) * vx + 2f * qw * cx;
+		oy = 2f * dot * qy + (qw * qw - qsq) * vy + 2f * qw * cy;
+		oz = 2f * dot * qz + (qw * qw - qsq) * vz + 2f * qw * cz;
+	}
+
+	public void ReadFrom(Transform unityTransform) {
+		LocalX = unityTransform.m_LocalPosition.X;
+		LocalY = unityTransform.m_LocalPosition.Y;
+		LocalZ = unityTransform.m_LocalPosition.Z;
+		LocalScaleX = unityTransform.m_LocalScale.X;
+		LocalScaleY = unityTransform.m_LocalScale.Y;
+		LocalScaleZ = unityTransform.m_LocalScale.Z;
+		LocalRotationX = unityTransform.m_LocalRotation.X;
+		LocalRotationY = unityTransform.m_LocalRotation.Y;
+		LocalRotationZ = unityTransform.m_LocalRotation.Z;
+		LocalRotationW = unityTransform.m_LocalRotation.W;
+	}
+}
+
+public abstract class SceneRenderer : SceneComponent
+{
+	public int SortingLayerID;
+	public int SortingOrder;
+	public abstract void Render(MuseDashScene scene);
+}
+
+public class SceneSpriteRenderer : SceneRenderer
+{
+	public SpriteRenderer UnitySpriteRenderer { get; }
+
+	ITexture? texture;
+
+	float texRectX, texRectY, texRectW, texRectH;
+	int atlasW, atlasH;
 	float unitW, unitH;
+	float pivotX, pivotY;
 
-	public override void Build(MuseDashScene scene) {
-		var sprite = SpriteRenderer.GetSprite()!;
+	bool flipX, flipY;
+	byte colR = 255, colG = 255, colB = 255, colA = 255;
+
+	public SceneSpriteRenderer(SpriteRenderer sr) {
+		UnitySpriteRenderer = sr;
+	}
+
+	public override void Awake() {
+		var sprite = UnitySpriteRenderer.GetSprite();
 		if (sprite == null) return;
-		tex = scene.LoadTexture(sprite.m_RD.GetTexture());
+
+		var tex2d = sprite.m_RD.GetTexture();
+		if (tex2d == null) return;
+
+		texture = ((MuseDashScene)Object.Scene).LoadTexture(tex2d);
+		atlasW = (int)texture.Width;
+		atlasH = (int)texture.Height;
+
+		texRectX = sprite.m_RD.textureRect.x;
+		texRectY = sprite.m_RD.textureRect.y;
+		texRectW = sprite.m_RD.textureRect.width;
+		texRectH = sprite.m_RD.textureRect.height;
 
 		float ppu = sprite.m_PixelsToUnits;
 		if (ppu <= 0) ppu = 100f;
-		unitW = tex.Width / ppu;
-		unitH = tex.Height / ppu;
+		unitW = sprite.m_Rect.width / ppu;
+		unitH = sprite.m_Rect.height / ppu;
+
+		pivotX = sprite.m_Pivot.X;
+		pivotY = sprite.m_Pivot.Y;
+
+		flipX = UnitySpriteRenderer.m_FlipX;
+		flipY = UnitySpriteRenderer.m_FlipY;
+
+		var c = UnitySpriteRenderer.m_Color;
+		colR = (byte)(c.R * 255);
+		colG = (byte)(c.G * 255);
+		colB = (byte)(c.B * 255);
+		colA = (byte)(c.A * 255);
+
+		SortingOrder = UnitySpriteRenderer.m_SortingOrder;
+		SortingLayerID = (int)UnitySpriteRenderer.m_SortingLayerID;
 	}
 
-	public override void Render(MuseDashScenePiece piece) {
-		if (tex == null) return;
+	public override void Render(MuseDashScene scene) {
+		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
 
-		Vector2F pos = piece.GetPos();
+		Transform.GetWorldPosition(out float wx, out float wy, out _);
+		Transform.GetWorldScale(out float sx, out float sy);
 
-		float hw = unitW * 0.5f;
-		float hh = unitH * 0.5f;
-
-		Rlgl.SetTexture(tex.HardwareID);
-		Rlgl.Begin(DrawMode.QUADS);
-		Rlgl.Color4f(1, 1, 1, 1);
-
-		Rlgl.TexCoord2f(0, 0);
-		Rlgl.Vertex3f(pos.X - hw, pos.Y - hh, 0);
+		float w = unitW * MathF.Abs(sx);
+		float h = unitH * MathF.Abs(sy);
 		
-		Rlgl.TexCoord2f(0, 1);
-		Rlgl.Vertex3f(pos.X - hw, pos.Y + hh, 0);
+		float offX = -pivotX * w;
+		float offY = -(1f - pivotY) * h;
 
-		Rlgl.TexCoord2f(1, 1);
-		Rlgl.Vertex3f(pos.X + hw, pos.Y + hh, 0);
+		float flippedY = atlasH - texRectY - texRectH;
 
-		Rlgl.TexCoord2f(1, 0);
-		Rlgl.Vertex3f(pos.X + hw, pos.Y - hh, 0);
+		float u0 = texRectX / atlasW;
+		float v0 = flippedY / atlasH;
+		float u1 = (texRectX + texRectW) / atlasW;
+		float v1 = (flippedY + texRectH) / atlasH;
 
-		Rlgl.End();
-		Rlgl.SetTexture(0);
+		bool effFlipX = flipX ^ (sx < 0);
+		bool effFlipY = flipY ^ (sy < 0);
+		if (effFlipX) (u0, u1) = (u1, u0);
+		if (effFlipY) (v0, v1) = (v1, v0);
+
+		float screenX = wx + offX;
+		float screenY = -wy + offY;
+
+		float rotDeg = Transform.GetWorldRotationZ();
+		uint texId = texture.HardwareID;
+
+		if (MathF.Abs(rotDeg) > 0.01f) {
+			float cx = wx;
+			float cy = -wy;
+			float rad = -rotDeg * (MathF.PI / 180f);
+			float cos = MathF.Cos(rad);
+			float sin = MathF.Sin(rad);
+
+			float x0 = offX, y0 = offY;
+			float x1 = offX, y1 = offY + h;
+			float x2 = offX + w, y2 = offY + h;
+			float x3 = offX + w, y3 = offY;
+
+			Rlgl.SetTexture(texId);
+			Rlgl.Begin(DrawMode.QUADS);
+			Rlgl.Color4ub(colR, colG, colB, colA);
+
+			Rlgl.TexCoord2f(u0, v0);
+			Rlgl.Vertex2f(cx + x0 * cos - y0 * sin, cy + x0 * sin + y0 * cos);
+			Rlgl.TexCoord2f(u0, v1);
+			Rlgl.Vertex2f(cx + x1 * cos - y1 * sin, cy + x1 * sin + y1 * cos);
+			Rlgl.TexCoord2f(u1, v1);
+			Rlgl.Vertex2f(cx + x2 * cos - y2 * sin, cy + x2 * sin + y2 * cos);
+			Rlgl.TexCoord2f(u1, v0);
+			Rlgl.Vertex2f(cx + x3 * cos - y3 * sin, cy + x3 * sin + y3 * cos);
+
+			Rlgl.End();
+			Rlgl.SetTexture(0);
+		}
+		else {
+			Rlgl.SetTexture(texId);
+			Rlgl.Begin(DrawMode.QUADS);
+			Rlgl.Color4ub(colR, colG, colB, colA);
+
+			Rlgl.TexCoord2f(u0, v0);
+			Rlgl.Vertex2f(screenX, screenY);
+			Rlgl.TexCoord2f(u0, v1);
+			Rlgl.Vertex2f(screenX, screenY + h);
+			Rlgl.TexCoord2f(u1, v1);
+			Rlgl.Vertex2f(screenX + w, screenY + h);
+			Rlgl.TexCoord2f(u1, v0);
+			Rlgl.Vertex2f(screenX + w, screenY);
+
+			Rlgl.End();
+			Rlgl.SetTexture(0);
+		}
 	}
 }
 
-public class MuseDashScenePiece
+public class SceneAnimator : SceneComponent
 {
-	public Transform Transform = null!;
-	public readonly List<MuseDashScenePieceRenderer> Renderers = [];
+	public Animator? UnityAnimator { get; set; }
+}
 
-	public void AddRenderer(MuseDashScenePieceRenderer renderer) {
-		Renderers.Add(renderer);
+public class SceneObject
+{
+	public string Name = "";
+	public bool Active = true;
+	public SceneTransform Transform { get; } = new();
+	public MuseDashScene Scene { get; internal set; } = null!;
+
+	readonly List<SceneComponent> components = [];
+	public IReadOnlyList<SceneComponent> Components => components;
+
+	public SceneObject() {
+		Transform.Object = this;
+		components.Add(Transform);
 	}
 
-	public bool IsRenderable() => Renderers.Count > 0;
+	public T AddComponent<T>(T component) where T : SceneComponent {
+		component.Object = this;
+		components.Add(component);
+		return component;
+	}
 
-	public string Dump(StringBuilder? sb = null, int recursiveIdx = 0) {
+	public T? GetComponent<T>() where T : SceneComponent {
+		foreach (var c in components)
+			if (c is T t) return t;
+		return null;
+	}
+
+	public IEnumerable<T> GetComponents<T>() where T : SceneComponent {
+		foreach (var c in components)
+			if (c is T t) yield return t;
+	}
+
+	public void Awake() {
+		foreach (var c in components) c.Awake();
+	}
+
+	public string Dump(StringBuilder? sb = null, int depth = 0) {
 		sb ??= new();
-		sb.AppendLine(new string(' ', recursiveIdx * 2) + Name);
-		foreach (var child in Children)
-			child.Dump(sb, recursiveIdx + 1);
+		string indent = new(' ', depth * 2);
+		string compInfo = components.Count > 1
+			? $" [{string.Join(", ", components.Skip(1).Select(c => c.GetType().Name))}]"
+			: "";
+		sb.AppendLine($"{indent}{Name} ({Transform.LocalX:F2}, {Transform.LocalY:F2}){compInfo}");
+		foreach (var child in Transform.Children)
+			child.Object.Dump(sb, depth + 1);
 		return sb.ToString();
 	}
-	public string Name = "";
-	public const float MUSEDASH_MULTIPLIER_POSITIONS = 200; // seems to be the right base
-
-	internal MuseDashScene Scene = null!;
-	MuseDashScenePiece? Parent;
-	readonly List<MuseDashScenePiece> Children = [];
-
-	public MuseDashScene GetScene() => Scene;
-	public IReadOnlyList<MuseDashScenePiece> GetChildren() => Children;
-	public MuseDashScenePiece? GetParent() => Parent;
-	public void AddChild(MuseDashScenePiece child) => child.SetParent(this);
-	public void SetParent(MuseDashScenePiece? parent) {
-		if (Parent == parent) return;
-
-		Parent?.Children.Remove(this);
-		Parent = parent;
-		Parent?.Children.Add(this);
-	}
-
-	public void BuildRenderables() {
-		foreach (var renderer in Renderers)
-			renderer.Build(Scene);
-	}
-
-	public Vector2F GetPos() {
-		Transform.ComputeGlobalTransform(out var pos, out _);
-		return new(pos.X, pos.Y);
-	}
 }
-
-
-public class MuseDashScene : MuseDashScenePiece, ISceneDescriptor
+public class MuseDashScene : ISceneDescriptor
 {
+	public const float MUSEDASH_MULTIPLIER_POSITIONS = 200;
+
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
-	readonly List<MuseDashScenePiece> AllPieces = [];
-	readonly List<List<MuseDashScenePiece>> RenderOrder = [];
-	readonly Dictionary<long, MuseDashScenePiece> UnityPathIDToScenePiece = [];
+	readonly List<SceneObject> allObjects = [];
+	readonly List<SceneRenderer> sortedRenderers = [];
+	SceneObject? root;
+	readonly Dictionary<long, ITexture> textureCache = [];
+	readonly Dictionary<long, SceneObject> pathIdToObject = [];
 
-	public T GetOrCreateScenePiece<T>(GameObject? obj) where T : MuseDashScenePiece, new() {
-		ArgumentNullException.ThrowIfNull(obj);
-		if (UnityPathIDToScenePiece.TryGetValue(obj.m_PathID, out var piece))
-			return (T)piece;
-		piece = new T {
-			Scene = this,
-			Name = obj.m_Name ?? ""
-		};
-		AllPieces.Add(piece);
-		UnityPathIDToScenePiece[obj.m_PathID] = piece;
-		return (T)piece;
-	}
-
-	/// <summary>
-	/// Performs some final setup that can't be done until all data is retrieved
-	/// </summary>
-	public void FinalSetup() {
-		pathwayInfo[(int)PathwaySide.Both] = new() {
-			Position = (pathwayInfo[(int)PathwaySide.Top].Position + pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
-			Color = Pathway.PATHWAY_DUAL_COLOR
-		};
-		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
-		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
-
-		foreach (var item in AllPieces)
-			item.BuildRenderables();
-
-		var layer = new List<MuseDashScenePiece>();
-		RenderOrder.Add(layer);
-		foreach (var item in AllPieces) {
-			if (item.IsRenderable())
-				layer.Add(item);
-		}
+	internal ITexture LoadTexture(Texture2D? texture2D) {
+		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex))
+			return tex;
+		textureCache[texture2D.m_PathID] = tex = MuseDashCompatibility.ConvertTexture(EngineCore.Level, texture2D!);
+		return tex;
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
 		int sceneIDX = name.IndexOf('_');
-		if (sceneIDX == -1)
-			return null;
-
+		if (sceneIDX == -1) return null;
 		sceneIDX = int.TryParse(name[(sceneIDX + 1)..], out int i) ? i : -1;
-		if (sceneIDX == -1)
-			return null;
+		if (sceneIDX == -1) return null;
 
 		string strSceneIdx = sceneIDX.ToString().PadLeft(2, '0');
 		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>($"scene_{strSceneIdx}")!;
 
-		var sceneSubControl = new MonoBehaviourReader(sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl") ?? throw new NullReferenceException("No scene control?"));
-		if (sceneSubControl == null)
-			return null;
+		var sceneSubControl = new MonoBehaviourReader(
+			sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl")
+			?? throw new NullReferenceException("No scene control?"));
 
-		// HITPOINTS
-		// This gets the hitpoints and their positions out of the scene data
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
 		transform.m_Children[0].TryGet(out var child1);
 		transform.m_Children[1].TryGet(out var child2);
 
-		var mdScene = new MuseDashScene();
-		mdScene.Name = strSceneIdx;
+		var scene = new MuseDashScene();
+
 		child1!.ComputeGlobalTransform(out var v1, out _);
 		child2!.ComputeGlobalTransform(out var v2, out _);
-		int tempOffset = -42; // TODO: What is this? 
-		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
-		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+		int tempOffset = -42;
+		scene.pathwayInfo[(int)PathwaySide.Top] = new(
+			v1.X * MUSEDASH_MULTIPLIER_POSITIONS,
+			(v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+		scene.pathwayInfo[(int)PathwaySide.Bottom] = new(
+			v2.X * MUSEDASH_MULTIPLIER_POSITIONS,
+			(v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 
-		mdScene.BuildScene(sceneGameObject.GetFirstComponent<Transform>()?.GetGameObject());
+		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
+		scene.root = scene.ImportGameObject(rootTransform.GetGameObject()!, null);
 
-		mdScene.FinalSetup();
-		return mdScene;
+		foreach (var obj in scene.allObjects)
+			obj.Awake();
+
+		scene.BuildRenderOrder();
+
+		scene.pathwayInfo[(int)PathwaySide.Both] = new() {
+			Position = (scene.pathwayInfo[(int)PathwaySide.Top].Position +
+						scene.pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
+			Color = Pathway.PATHWAY_DUAL_COLOR
+		};
+		scene.pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
+		scene.pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
+
+		return scene;
 	}
 
-	private void BuildScene(GameObject? gameObject) {
-		Scene = this;
-		BuildObject(gameObject, this);
-	}
+	SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
+		if (pathIdToObject.TryGetValue(unityGO.m_PathID, out var existing))
+			return existing;
 
-	private static void BuildObject(GameObject? gameObject, MuseDashScenePiece piece) {
-		if (gameObject == null) return;
+		var obj = new SceneObject {
+			Name = unityGO.m_Name ?? "",
+			Active = true,
+			Scene = this
+		};
+		allObjects.Add(obj);
+		pathIdToObject[unityGO.m_PathID] = obj;
 
-		var transform = gameObject.GetFirstComponent<Transform>()!;
-		piece.Transform = transform;
+		var unityTransform = unityGO.GetFirstComponent<Transform>();
+		if (unityTransform != null)
+			obj.Transform.ReadFrom(unityTransform);
 
-		var mayBeRenderable = gameObject.Components.Any(x => x is not Animator && x is not AssetStudio.Transform);
-		if (mayBeRenderable) {
-			foreach (var comp in gameObject.Components)
-				if (comp is Renderer r)
-					switch (r) {
-						case SpriteRenderer spriteRenderer:
-							piece.AddRenderer(new MuseDashScenePieceSpriteRenderer(spriteRenderer));
-							break;
-					}
+		if (parent != null)
+			obj.Transform.SetParent(parent);
+
+		foreach (var comp in unityGO.Components) {
+			switch (comp) {
+				case SpriteRenderer sr:
+					obj.AddComponent(new SceneSpriteRenderer(sr));
+					break;
+				case Animator animator:
+					obj.AddComponent(new SceneAnimator { UnityAnimator = animator });
+					break;
+			}
 		}
 
-		foreach (var child in transform.GetChildren()) {
-			var childGameObject = child.GetGameObject()!;
-			var childObj = piece.Scene.GetOrCreateScenePiece<MuseDashScenePiece>(childGameObject);
-			childObj.SetParent(piece);
-			BuildObject(childGameObject, childObj);
+		if (unityTransform != null) {
+			foreach (var childTransform in unityTransform.GetChildren()) {
+				var childGO = childTransform.GetGameObject();
+				if (childGO != null)
+					ImportGameObject(childGO, obj.Transform);
+			}
 		}
+
+		return obj;
 	}
 
-	public string? GetBossAnimation(BossAnimationType type, out double time) {
-		time = 0;
-		return null;
+	void BuildRenderOrder() {
+		sortedRenderers.Clear();
+		foreach (var obj in allObjects) {
+			if (!obj.Active) continue;
+			foreach (var renderer in obj.GetComponents<SceneRenderer>())
+				sortedRenderers.Add(renderer);
+		}
+		sortedRenderers.Sort((a, b) => {
+			int cmp = a.SortingLayerID.CompareTo(b.SortingLayerID);
+			if (cmp != 0) return cmp;
+			cmp = a.SortingOrder.CompareTo(b.SortingOrder);
+			if (cmp != 0) return cmp;
+			a.Transform.GetWorldPosition(out _, out _, out float az);
+			b.Transform.GetWorldPosition(out _, out _, out float bz);
+			return bz.CompareTo(az);
+		});
 	}
 
-	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
-		time = 0;
-		return null;
-	}
-
-	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) {
-		return null;
-	}
-
-	public ModelData? GetEnemyModel(DashEnemy enemy) {
-		return null;
-
-	}
-
-	public ModelData? GetHP(out string? mountAnimation) {
-		mountAnimation = null;
-		return null;
-	}
-
-	public BoneInstance? GetHPMount(DashEnemy enemy) {
-		return null;
-	}
-
-	public string GetMasherHitAnimation() {
-		return "";
-	}
-
-	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
-
-	public Nucleus.Common.Types.Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
-	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
-
-	public MusicTrack? GetPressIdleSound() {
-		return null;
-	}
-
-	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end, out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond) {
-		start = null!;
-		end = null!;
-		body = null!;
-		up = null!;
-		down = null!;
-		rotationDegsPerSecond = 0;
-		// todo: refactor this part of the API.
-	}
-
-	public void Initialize(DashGameLevel game) {
-
-	}
-
-	public void PlaySound(SceneSound sound, int hits) {
-
-	}
-
-	public void Refresh(DashGameLevel game) {
-
-	}
+	public void Initialize(DashGameLevel game) { }
 
 	public void RenderBackground(DashGameLevel game) {
 		Rlgl.PushMatrix();
-		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS);
-		Rlgl.PushMatrix();
-		foreach (var renderOrder in RenderOrder)
-			foreach (var renderable in renderOrder)
-				foreach (var renderer in renderable.Renderers)
-					renderer.Render(renderable);
-		Rlgl.PopMatrix();
+		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, 1);
+		foreach (var renderer in sortedRenderers)
+			renderer.Render(this);
 		Rlgl.PopMatrix();
 	}
 
-	public void Think(DashGameLevel game) {
-
+	public void Think(DashGameLevel game) { }
+	public void Refresh(DashGameLevel game) { }
+	public void PlaySound(SceneSound sound, int hits) { }
+	public string? GetBossAnimation(BossAnimationType type, out double time) { time = 0; return null; }
+	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) { time = 0; return null; }
+	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) => null;
+	public ModelData? GetEnemyModel(DashEnemy enemy) => null;
+	public ModelData? GetHP(out string? mountAnimation) { mountAnimation = null; return null; }
+	public BoneInstance? GetHPMount(DashEnemy enemy) => null;
+	public string GetMasherHitAnimation() => "";
+	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
+	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
+	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
+	public MusicTrack? GetPressIdleSound() => null;
+	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end,
+		out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond) {
+		start = null!; end = null!; body = null!; up = null!; down = null!; rotationDegsPerSecond = 0;
 	}
-
-	internal void MountToFilesystem() {
-
-	}
-
-	readonly Dictionary<long, ITexture> textureCache = [];
-
-	internal ITexture LoadTexture(Texture2D? texture2D) {
-		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex))
-			return tex;
-
-		textureCache[texture2D.m_PathID] = tex = MuseDashCompatibility.ConvertTexture(EngineCore.Level, texture2D!);
-		return tex;
-	}
+	internal void MountToFilesystem() { }
 }
