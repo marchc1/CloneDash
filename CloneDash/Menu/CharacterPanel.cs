@@ -22,7 +22,7 @@ public class CharacterPanel : Panel
 {
 	private ICharacterDescriptor? Character;
 	private ModelInstance? Model;
-	private AnimationHandler? Anims;
+	private readonly AnimationHandler Anims = new();
 	private MusicTrack? Music;
 	private ICharacterExpression? TouchResponse;
 	private int Click = 0;
@@ -109,7 +109,6 @@ public class CharacterPanel : Panel
 	public void PlayRandomExpression() {
 		if (Character == null) return;
 		if (Model == null) return;
-		if (Anims == null) return;
 		if (Level.Curtime < NextExpressionTime) return;
 
 		TouchResponse = Character.GetMainShowExpression();
@@ -192,7 +191,7 @@ public class CharacterPanel : Panel
 		Character = charDescriptor;
 
 		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
-		Anims = new(Model.Data);
+		Anims.SetModel(Model);
 
 		var standby = charDescriptor.GetMainShowStandby();
 		if (Model.Data.FindAnimation(standby) == null) standby = "standby";

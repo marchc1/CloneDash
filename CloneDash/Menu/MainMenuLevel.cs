@@ -47,7 +47,8 @@ public class MainMenuLevel : Level
 		if (charData == null) return;
 
 		var model = charData.GetPlayModel(level).Instantiate();
-		var anims = new AnimationHandler(model);
+		var anims = new AnimationHandler();
+		anims.SetModel(model);
 
 		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
 		float time = 0;
