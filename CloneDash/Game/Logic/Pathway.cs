@@ -22,14 +22,6 @@ namespace CloneDash.Game
 		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeld, Level.As<DashGameLevel>().InputState.BottomHeld);
 		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeldCount, Level.As<DashGameLevel>().InputState.BottomHeldCount);
 
-
-		public static float GetPathwayY(PathwaySide side) => side switch {
-			PathwaySide.Both => GetPathwayMiddle(),
-			PathwaySide.Top => GetPathwayTop(),
-			PathwaySide.Bottom => GetPathwayBottom(),
-			_ => GetPathwayBottom()
-		};
-
 		/// <summary>
 		/// The half of the screen the pathway resides on.
 		/// </summary>
@@ -82,9 +74,8 @@ namespace CloneDash.Game
 		public Color Color => GetColor(Side);
 
 		public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
-		public Vector2F Position { get; private set; }
 		public override void Think(FrameState frameState) {
-			Position = new Vector2F(GetPathwayLeft(), GetPathwayY(Side));
+			Position = Level.As<DashGameLevel>().GetCurrentScene().GetPathwayPosition(Side);
 		}
 		public override void PostRender(FrameState frameState) {
 

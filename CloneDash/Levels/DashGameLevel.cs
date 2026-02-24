@@ -301,8 +301,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		InHit = false;
 	}
 
-	public float XPos { get; private set; }
-
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
 
 	public DashModelEntity? MashingEntity;
@@ -660,7 +658,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float GetPlayerY(double jumpRatio) {
 		var height = EngineCore.GetWindowHeight();
 
-		return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) + 225;
+		var top = GetCurrentScene().GetPathwayPosition(PathwaySide.Top);
+		var bot = GetCurrentScene().GetPathwayPosition(PathwaySide.Bottom);
+
+		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + 225; // TODO: re-evaluate
 	}
 
 	private SecondOrderSystem? sos_yoff;
@@ -668,7 +669,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	InputState inputState = new();
 	public override void PreThink(ref FrameState frameState) {
 		Ticks++;
-		XPos = Game.Pathway.GetPathwayLeft();
 
 		if (Music != null && lastNoteHit && Music.Paused && gameParameters.Sheet != null) {
 			Stats.UploadScore(Score);
@@ -792,11 +792,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		bool holdingTop = Sustains.IsSustaining(PathwaySide.Top), holdingBottom = Sustains.IsSustaining(PathwaySide.Bottom);
 		bool holding = holdingTop || holdingBottom;
 		if ((holdingTop && holdingBottom) || InMashState)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
+			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Both).Y;
 		else if (holdingTop)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
+			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Top).Y;
 		else if (holdingBottom)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
+			yoff = GetCurrentScene().GetPathwayPosition(PathwaySide.Bottom).Y;
 
 		if (yoff.HasValue) {
 			if (sos_yoff == null)
@@ -812,14 +812,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		float conductorInTime = Conductor.PreStartTime <= 0 ? 1 : (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
 
+		// This sucks... todo, figure out how to get this proper
+		var leftPlayer = GetCurrentScene().GetPathwayPosition(PathwaySide.Both).X;
+
 		Player.Position = new Vector2F(
-			(Game.Pathway.GetPathwayLeft() - 185) - (conductorInTime * frameState.WindowWidth / 2f),
+			(leftPlayer - 185) - (conductorInTime * frameState.WindowWidth / 2f),
 			sos_yoff?.Update(playerY) ?? playerY
 		);
 		Player.Scale = new(PlayerScale);
 
 		HologramPlayer.Position = new Vector2F(
-			Game.Pathway.GetPathwayLeft() - 185,
+			leftPlayer - 185,
 			GetPlayerY(HologramCharacterYRatio)
 		);
 
@@ -1243,13 +1246,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (ent is not DashEnemy entCD) continue;
 			if (!enemyPredicate(entCD)) continue;
 
-			float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
-
 			Graphics2D.SetDrawColor(255, 255, 255);
-			var p = new Vector2F((float)entCD.XPos, yPosition);
-			; // Calculate the final beat position on the track
-			  //entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
-			  //ent.Position = p;
 			ent.Render(frameState);
 			Rlgl.DrawRenderBatchActive();
 		}
@@ -1887,6 +1884,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	// NOTE: While this returns a continuous value for now, scene changes WILL change the field this returns in the future!!!
 	// So ISceneDescriptor must only be used to describe a scene, not to store state!
+
+	// Something to consider though. Scene changes mean entities need different models. Do we patch all entities model reference
+	// fields, or do we remove that responsibility from the entities and have a subsystem manage rendering/model usage?
+	// I am inclined to believe the latter is a healthier response, but we'll have to get to that later.
 	public ISceneDescriptor GetCurrentScene() {
 		return Scene;
 	}

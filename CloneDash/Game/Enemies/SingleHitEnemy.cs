@@ -51,7 +51,7 @@ namespace CloneDash.Game.Entities
 			if (Model == null) return;
 
 			if (Dead) {
-				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				Position = GetCurrentScene().GetPathwayPosition(Pathway);
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;

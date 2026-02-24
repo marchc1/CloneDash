@@ -9,7 +9,7 @@ namespace CloneDash.Game
 
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
-				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				Position = GetCurrentScene().GetPathwayPosition(Pathway);
 				OutAnimation?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}

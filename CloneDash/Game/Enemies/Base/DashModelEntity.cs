@@ -306,7 +306,7 @@ namespace CloneDash.Game
 			var current = GetConductor().Time - timeOffset;
 			var tickHit = this.GetVisualHitTime();
 			var tickShow = this.GetVisualShowTime();
-			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, GetXPosTimeSpeedBase());
+			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetCurrentScene().GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
 			return thisPos;
 		}
 

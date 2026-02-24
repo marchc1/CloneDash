@@ -26,7 +26,7 @@ namespace Nucleus.Entities
 			}
 		}
 
-		public AnimationHandler? Animations {
+		public AnimationHandler Animations {
 			get => __anim;
 		}
 

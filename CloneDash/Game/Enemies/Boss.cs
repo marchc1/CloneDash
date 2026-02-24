@@ -157,7 +157,7 @@ public class Boss : DashEnemy
 		base.Build();
 		Model = GetGameLevel().Scene.GetEnemyModel(this)?.Instantiate();
 		if (Model != null) {
-			Animations = new Nucleus.Models.Runtime.AnimationHandler(Model);
+			Animations.SetModel(Model);
 			Model.SetToSetupPose();
 		}
 	}
