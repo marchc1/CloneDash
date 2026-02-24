@@ -3,8 +3,13 @@
 using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
+using Nucleus.Types;
 
 namespace CloneDash.Scenes;
+
+public struct PathwayInformation {
+	public Vector2F Position;
+}
 
 /// <summary>
 /// An interface to various scene operations and information. This is abstracted away into an interface to allow some form of scene descriptor versions 
@@ -41,6 +46,8 @@ public interface ISceneDescriptor
 			: fired.Pathway == PathwaySide.Top ? GetBossAnimation(BossAnimationType.AttackAir2, out time) : GetBossAnimation(BossAnimationType.AttackGround2, out time);
 	public string GetBossAnimation(DashEnemy fired) => GetBossAnimation(fired, out _);
 	public string GetEnemyApproachAnimation(DashEnemy enemy, out double time);
+
+	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway);
 
 	public string GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	public BoneInstance? GetHPMount(DashEnemy enemy);
