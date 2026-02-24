@@ -1400,14 +1400,20 @@ public class AnimationChannel
 public class AnimationHandler
 {
 	public AnimationChannel[] Channels = new AnimationChannel[5];
-	ModelData model;
-	public AnimationHandler(ModelInstance model) : this(model.Data) { }
-	public AnimationHandler(ModelData model) {
-		this.model = model;
+	ModelData? model;
+	public AnimationHandler() {
 		for (int i = 0; i < Channels.Length; i++) {
 			Channels[i] = new();
 		}
 	}
+
+	public void SetModel(ModelData? data) {
+		if (model == data)
+			return;
+		model = data;
+	}
+	public void SetModel(ModelInstance? instance) => SetModel(instance?.Data);
+
 	public bool IsPlayingAnimation() {
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry != null) return true;
@@ -1456,7 +1462,7 @@ public class AnimationHandler
 
 		var channelObj = Channels[channel];
 
-		var anim = model.FindAnimation(animation);
+		var anim = model?.FindAnimation(animation);
 		if (anim == null) return;
 
 		channelObj.QueuedEntries.Enqueue(new() {
@@ -1473,7 +1479,7 @@ public class AnimationHandler
 		var channelObj = Channels[channel];
 		StopAnimation(channel);
 
-		var anim = model.FindAnimation(animation);
+		var anim = model?.FindAnimation(animation);
 		if (anim == null) return;
 
 		channelObj.QueuedEntries.Clear();

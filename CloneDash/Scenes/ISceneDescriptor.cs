@@ -2,6 +2,7 @@
 
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Types;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
@@ -9,6 +10,7 @@ using Nucleus.Types;
 namespace CloneDash.Scenes;
 
 public struct PathwayInformation {
+	public Color Color;
 	public Vector2F Position;
 
 	public PathwayInformation(float x, float y){
@@ -57,4 +59,8 @@ public interface ISceneDescriptor
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	public BoneInstance? GetHPMount(DashEnemy enemy);
 	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end, out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond);
+
+
+	Color GetPathwayColor(PathwaySide side);
+	Vector2F GetPathwayPosition(PathwaySide side);
 }

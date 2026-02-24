@@ -17,26 +17,6 @@ namespace CloneDash.Game
 		public static readonly Color PATHWAY_BOTTOM_COLOR = new Color(248, 178, 255, 120);
 		public static readonly Color PATHWAY_DUAL_COLOR = new Color(220, 160, 140, 255);
 
-		/// <summary>
-		/// Top pathway will be placed at Y coordinate (winH * PATHWAY_TOP_PERCENTAGE)
-		/// </summary>
-		public static float PATHWAY_TOP_PERCENTAGE => -.255f;
-		/// <summary>
-		/// Bottom pathway will be placed at Y coordinate(winH * PATHWAY_BOTTOM_PERCENTAGE)
-		/// </summary>
-		public static float PATHWAY_BOTTOM_PERCENTAGE => .21f;
-		/// <summary>
-		/// Both pathways will be placed at X coordinate (winH * PATHWAY_LEFT_PERCENTAGE)
-		/// </summary>
-		public static float PATHWAY_LEFT_PERCENTAGE => -1f;
-
-		public static float GetPathwayLeft() => 772 * PATHWAY_LEFT_PERCENTAGE;
-		public static float GetPathwayTop() => 900 * PATHWAY_TOP_PERCENTAGE;
-		public static float GetPathwayBottom() => 900 * PATHWAY_BOTTOM_PERCENTAGE;
-		public static float GetPathwayMiddle() {
-			var height = 900;
-			return ((height * PATHWAY_TOP_PERCENTAGE) + (height * PATHWAY_BOTTOM_PERCENTAGE)) / 2;
-		}
 
 		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopClicked > 0, Level.As<DashGameLevel>().InputState.BottomClicked > 0);
 		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeld, Level.As<DashGameLevel>().InputState.BottomHeld);

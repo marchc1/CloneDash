@@ -15,20 +15,21 @@ namespace Nucleus.Entities
 			shaderlocs_float[name] = value;
 		}
 		protected ModelInstance? __model;
-		protected AnimationHandler? __anim;
+		protected readonly AnimationHandler __anim = new();
 		public ModelInstance? Model {
 			get {
 				return __model;
 			}
 			set {
 				__model = value;
+				__anim.SetModel(value);
 			}
 		}
 
 		public AnimationHandler? Animations {
 			get => __anim;
-			set => __anim = value;
 		}
+
 		public bool PlayingAnimation => __anim?.IsPlayingAnimation() ?? false;
 		public bool AnimationQueued => __anim?.IsAnimationQueued() ?? false;
 
@@ -38,14 +39,14 @@ namespace Nucleus.Entities
 			ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
 			entity.__model = data.Instantiate();
-			entity.__anim = new(entity.__model.Data);
+			entity.__anim.SetModel(entity.__model);
 			return entity;
 		}
 		public static ModelEntity Create(string pathID, string model) {
 			ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
 			entity.__model = EngineCore.Level.Models.CreateInstanceFromFile(pathID, model);
-			entity.__anim = new(entity.__model.Data);
+			entity.__anim.SetModel(entity.__model);
 			return entity;
 		}
 
@@ -54,7 +55,7 @@ namespace Nucleus.Entities
 
 			var data = Level.Models.LoadModelFromFile(modelPath, model);
 			__model = data.Instantiate();
-			__anim = new(data);
+			__anim.SetModel(__model);
 		}
 
 		public IShader? Shader { get; set; }

@@ -6,20 +6,34 @@ using Nucleus.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
+using Nucleus.Types;
 using OdinSerializer;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Texture = Nucleus.ManagedMemory.Texture;
+using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Scenes;
 
 public class MuseDashScene : ISceneDescriptor
 {
-	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[3];
+	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 
 	public MuseDashScene() {
 
+	}
+
+	/// <summary>
+	/// Performs some final setup that can't be done until all data is retrieved
+	/// </summary>
+	public void FinalSetup() {
+		pathwayInfo[(int)PathwaySide.Both] = new() {
+			Position = (pathwayInfo[(int)PathwaySide.Top].Position + pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
+			Color = Pathway.PATHWAY_DUAL_COLOR
+		};
+		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
+		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
@@ -85,6 +99,15 @@ public class MuseDashScene : ISceneDescriptor
 	}
 
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
+
+	public Nucleus.Common.Types.Color GetPathwayColor(PathwaySide side) {
+		throw new NotImplementedException();
+	}
+
+
+	public Vector2F GetPathwayPosition(PathwaySide side) {
+		throw new NotImplementedException();
+	}
 
 	public MusicTrack? GetPressIdleSound() {
 		return null;

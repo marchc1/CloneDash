@@ -1,6 +1,7 @@
 ﻿using CloneDash.Data;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
+using CloneDash.Scenes;
 using CloneDash.Settings;
 
 using Nucleus;
@@ -14,6 +15,13 @@ namespace CloneDash.Game
 
 	public class DashModelEntity : ModelEntity
 	{
+		public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
+		public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
+		public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
+		public ISceneDescriptor GetCurrentScene() => Level.As<DashGameLevel>().GetCurrentScene();
+
+
+
 		/// <summary>
 		/// Does the death of this entity add to the characters combo score?
 		/// </summary>
@@ -173,7 +181,7 @@ namespace CloneDash.Game
 		/// Damages the player as a punishment (which also resets their combo)
 		/// </summary>
 		public void DamagePlayer() {
-			var level = Level.As<DashGameLevel>();
+			var level = GetGameLevel();
 
 			if (DidDamagePlayer) // Is the player already hurt
 				return;
@@ -193,7 +201,8 @@ namespace CloneDash.Game
 		/// Resets the players combo as a punishment
 		/// </summary>
 		public void PunishPlayer() {
-			var level = Level.As<DashGameLevel>();
+			var level = GetGameLevel();
+
 			if (DidPunishPlayer) // Was the player punished
 				return;
 
@@ -208,11 +217,11 @@ namespace CloneDash.Game
 		}
 
 		protected virtual void OnPunishment() {
-			Level.As<DashGameLevel>().ResetCombo();
+			GetGameLevel().ResetCombo();
 		}
 
 		public void RewardPlayer(bool heal = false) {
-			var level = Level.As<DashGameLevel>();
+			var level = GetGameLevel();
 			if (DidRewardPlayer) // Did the entity reward the player already
 				return;
 
@@ -239,7 +248,7 @@ namespace CloneDash.Game
 		}
 
 		protected virtual void OnReward() {
-			var game = Level.As<DashGameLevel>();
+			var game = GetGameLevel();
 			game.AddScore(CDUtils.DetermineScoreMultiplied(game, ScoreGiven, game.LastPollResult));
 		}
 
@@ -261,7 +270,7 @@ namespace CloneDash.Game
 		/// Kills the entity, which removes a lot of functionality from the entity. Will also mark down FinalBlow time and the Dead field.
 		/// </summary>
 		public void Kill() {
-			var level = Level.As<DashGameLevel>();
+			var level = GetGameLevel();
 			Dead = true;
 
 			if (DeathAddsToCombo)
@@ -269,7 +278,6 @@ namespace CloneDash.Game
 
 			level.AddFever((int)this.FeverGiven);
 
-			FinalBlow = DateTime.Now;
 			RewardPlayer();
 		}
 
@@ -278,14 +286,14 @@ namespace CloneDash.Game
 		/// <br/>
 		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
-		public double DistanceToHit => HitTime - Level.As<DashGameLevel>().Conductor.Time;
+		public double DistanceToHit => HitTime - GetConductor().Time;
 
 		/// <summary>
 		/// The distance, in seconds, to when the entity needs to be released.
 		/// <br/>
 		/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 		/// </summary>
-		public double DistanceToEnd => (HitTime + Length) - Level.As<DashGameLevel>().Conductor.Time;
+		public double DistanceToEnd => (HitTime + Length) - GetConductor().Time;
 
 		/// <summary>
 		/// Where is the entity in game-space?
@@ -293,9 +301,9 @@ namespace CloneDash.Game
 		public double XPos { get; protected set; }
 
 		public double XPosFromTimeOffset(float timeOffset = 0) {
-			var level = Level.As<DashGameLevel>();
+			var level = GetGameLevel();
 
-			var current = level.Conductor.Time - timeOffset;
+			var current = GetConductor().Time - timeOffset;
 			var tickHit = this.GetVisualHitTime();
 			var tickShow = this.GetVisualShowTime();
 			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.XPos, GetXPosTimeSpeedBase());
@@ -314,7 +322,7 @@ namespace CloneDash.Game
 		public bool Shown { get; protected set; } = false;
 
 		public bool CheckVisTest(FrameState frameState) {
-			var level = Level.As<DashGameLevel>();
+			var level = Level;
 
 			XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
 			float w = frameState.WindowWidth, h = frameState.WindowHeight;
@@ -366,38 +374,33 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Per-entity event hook for when an entity is hit.
 		/// </summary>
-		public event EntityPathwayEvent OnHitEvent;
-		public event EntityNoArgumentEvent OnMissEvent;
+		public event EntityPathwayEvent? OnHitEvent;
+		public event EntityNoArgumentEvent? OnMissEvent;
 		/// <summary>
 		/// Per-entity event hook for when an entity is passed.
 		/// </summary>
-		public event EntityNoArgumentEvent OnPassEvent;
+		public event EntityNoArgumentEvent? OnPassEvent;
 		/// <summary>
 		/// Per-entity event hook for when an entity is released.
 		/// </summary>
-		public event EntityNoArgumentEvent OnReleaseEvent;
+		public event EntityNoArgumentEvent? OnReleaseEvent;
 
 		/// <summary>
 		/// Global event hook for when an entity is hit.
 		/// </summary>
-		public static event EntityNoArgumentEvent GlobalOnHitEvent;
+		public static event EntityNoArgumentEvent? GlobalOnHitEvent;
 		/// <summary>
 		/// Global event hook for when the player misses an entity.
 		/// </summary>
-		public static event EntityNoArgumentEvent GlobalOnMissEvent;
+		public static event EntityNoArgumentEvent? GlobalOnMissEvent;
 		/// <summary>
 		/// Global event hook for when an entity is passed.
 		/// </summary>
-		public static event EntityNoArgumentEvent GlobalOnPassEvent;
+		public static event EntityNoArgumentEvent? GlobalOnPassEvent;
 		/// <summary>
 		/// Global event hook for when an entity is released.
 		/// </summary>
-		public static event EntityNoArgumentEvent GlobalOnReleaseEvent;
-
-		public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
-		public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
-		public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
-
+		public static event EntityNoArgumentEvent? GlobalOnReleaseEvent;
 
 		public int Hits { get; set; } = 0;
 		public bool WasHitPerfect { get; set; } = false;
@@ -442,12 +445,6 @@ namespace CloneDash.Game
 			GlobalOnReleaseEvent?.Invoke(this);
 		}
 
-		public DateTime Created { get; private set; } = DateTime.Now;
-		public double Lifetime => (DateTime.Now - Created).TotalSeconds;
-
-		public DateTime FinalBlow { get; private set; } = DateTime.MinValue;
-		public float SinceDeath => Dead ? (float)(DateTime.Now - FinalBlow).TotalSeconds : 0;
-
 		public virtual void Build() {
 
 		}
@@ -475,7 +472,6 @@ namespace CloneDash.Game
 			DidPass = false;
 			Shown = false;
 
-			FinalBlow = default;
 			ShouldDraw = true;
 			ForceDraw = false;
 			XPos = 0;

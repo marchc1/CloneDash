@@ -1885,6 +1885,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return true;
 	}
 
+	// NOTE: While this returns a continuous value for now, scene changes WILL change the field this returns in the future!!!
+	// So ISceneDescriptor must only be used to describe a scene, not to store state!
+	public ISceneDescriptor GetCurrentScene() {
+		return Scene;
+	}
+
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
 	/// </summary>
