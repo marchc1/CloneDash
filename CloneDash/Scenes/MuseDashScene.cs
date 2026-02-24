@@ -100,14 +100,8 @@ public class MuseDashScene : ISceneDescriptor
 
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
 
-	public Nucleus.Common.Types.Color GetPathwayColor(PathwaySide side) {
-		throw new NotImplementedException();
-	}
-
-
-	public Vector2F GetPathwayPosition(PathwaySide side) {
-		throw new NotImplementedException();
-	}
+	public Nucleus.Common.Types.Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
+	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
 
 	public MusicTrack? GetPressIdleSound() {
 		return null;
