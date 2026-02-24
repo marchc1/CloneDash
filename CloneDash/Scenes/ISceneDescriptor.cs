@@ -54,7 +54,7 @@ public interface ISceneDescriptor
 
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway);
 
-	public string GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
+	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	public BoneInstance? GetHPMount(DashEnemy enemy);
 	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end, out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond);
 }

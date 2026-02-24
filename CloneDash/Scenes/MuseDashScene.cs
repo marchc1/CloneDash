@@ -46,13 +46,14 @@ public class MuseDashScene : ISceneDescriptor
 		var mdScene = new MuseDashScene();
 		var v1 = transform.m_LocalPosition + child1!.m_LocalPosition;
 		var v2 = transform.m_LocalPosition + child2!.m_LocalPosition;
-		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X, v1.Y);
 		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v2.X, v2.Y);
+		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v1.X, v1.Y);
 
 		return mdScene;
 	}
 
 	public string? GetBossAnimation(BossAnimationType type, out double time) {
+		time = 0;
 		return null;
 	}
 
