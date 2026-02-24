@@ -1,7 +1,10 @@
-﻿namespace AssetStudio
+﻿#nullable enable
+
+namespace AssetStudio
 {
 	public sealed class SpriteRenderer : Renderer
 	{
+		public Sprite? GetSprite() => m_Sprite.TryGet(out var ret) ? ret : null;
 		public PPtr<Sprite> m_Sprite;
 		public Color m_Color;
 		public bool m_FlipX;
