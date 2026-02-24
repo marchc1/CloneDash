@@ -20,6 +20,13 @@ namespace AssetStudio
 		private SerializedFile assetsFile;
 		private int index = -2; //-2 - Prepare, -1 - Missing
 
+		// Might be a misunderstanding - march
+		public PPtr(int fileID, long pathID, SerializedFile assets) {
+			assetsFile = assets;
+			m_FileID = fileID;
+			m_PathID = pathID;
+		}
+
 		public PPtr(ObjectReader reader) {
 			m_FileID = reader.ReadInt32();
 			m_PathID = reader.m_Version < SerializedFileFormatVersion.Unknown_14 ? reader.ReadInt32() : reader.ReadInt64();

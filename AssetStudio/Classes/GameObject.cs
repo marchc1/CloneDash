@@ -58,6 +58,15 @@ namespace AssetStudio
 			return null;
 		}
 
+		public IEnumerable<Component> Components {
+			get {
+				foreach (var compPtr in m_Components) {
+					if (compPtr.TryGet(out var result))
+						yield return result;
+				}
+			}
+		}
+
 		public MonoBehaviour? GetMonoBehaviorByScriptName(string? name = null) {
 			foreach (var compPtr in m_Components) {
 				if (!compPtr.TryGet(out var comp)) continue;

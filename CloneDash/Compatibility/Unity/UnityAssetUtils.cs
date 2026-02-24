@@ -33,9 +33,7 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		object? o = Dict[key];
 		if (o == null) return null;
 
-		if (o is PPtr<T> ptr)
-			return ptr.TryGet(out var ret) ? ret : null;
-		return null;
+		return (T?)GetUnderlyingTypeByNecessaryMeans(o);
 	}
 
 	public MonoBehaviourReader? GetMB(object key) {
@@ -45,13 +43,46 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		return pMb.TryGet(out var mb) ? new(mb) : null;
 	}
 
+	object? GetUnderlyingTypeByNecessaryMeans(object? value) {
+		if (value == null)
+			return null;
+
+		IPPtr ptr;
+		switch (value) {
+			case OrderedDictionary potentialPtr: {
+					if (potentialPtr.Count != 2)
+						return null;
+
+					object[] keys = new object[2];
+					object[] values = new object[2];
+					potentialPtr.Keys.CopyTo(keys, 0);
+					if (keys[0] is not string k1 || keys[1] is not string k2)
+						return null;
+
+					potentialPtr.Values.CopyTo(values, 0);
+					if (k1 == "m_FileID" && k2 == "m_PathID") {
+						ptr = new PPtr<AssetStudio.Object>((int)values[0], (long)values[1], MonoBehaviour.assetsFile);
+						goto gotAPtr;
+					}
+					if (k1 == "m_PathID" && k2 == "m_FileID") {
+						ptr = new PPtr<AssetStudio.Object>((int)values[1], (long)values[0], MonoBehaviour.assetsFile);
+						goto gotAPtr;
+					}
+
+					return null;
+				}
+			case IPPtr vptr:
+				ptr = vptr;
+			gotAPtr:
+				return ptr.TryGet(out AssetStudio.Object? o) ? o : null;
+			default:
+				return value;
+		}
+	}
+
 	public IEnumerator<KeyValuePair<object, object?>> GetEnumerator() {
 		foreach (var kvp in Dict.Keys) {
-			var value = Dict[kvp];
-			if (value is IPPtr ptr)
-				yield return new(kvp, ptr.TryGet(out AssetStudio.Object? o) ? o : null);
-			else
-				yield return new(kvp, value);
+			yield return new(kvp, GetUnderlyingTypeByNecessaryMeans(Dict[kvp]));
 		}
 	}
 

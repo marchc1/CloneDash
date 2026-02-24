@@ -5,6 +5,7 @@ using CloneDash.Game;
 using Nucleus.Audio;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
+using OdinSerializer;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,7 +35,12 @@ public class MuseDashScene : ISceneDescriptor
 		if (sceneSubControl == null)
 			return null;
 
-		MuseDashScene mdScene = new();
+		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
+		var transform = scenePoint!.GetFirstComponent<Transform>()!;
+		transform.m_Children[0].TryGet(out var child1!);
+		transform.m_Children[1].TryGet(out var child2!);
+
+		var mdScene = new MuseDashScene();
 		return mdScene;
 	}
 
