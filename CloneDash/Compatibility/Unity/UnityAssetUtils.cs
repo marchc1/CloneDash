@@ -36,6 +36,21 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		return (T?)GetUnderlyingTypeByNecessaryMeans(o);
 	}
 
+	public List<T?> GetList<T>(object key) where T : AssetStudio.Object {
+		object? o = Dict[key];
+		if (o == null) return [];
+
+		if (o is not List<object> baseList) return [(T?)GetUnderlyingTypeByNecessaryMeans(o)!];
+
+		List<T?> ret = [];
+		ret.EnsureCapacity(baseList.Count);
+
+		foreach(var kvp in baseList)
+			ret.Add((T?)GetUnderlyingTypeByNecessaryMeans(kvp));
+		
+		return ret;
+	}
+
 	public MonoBehaviourReader? GetMB(object key) {
 		object? o = Dict[key];
 		if (o == null) return null;

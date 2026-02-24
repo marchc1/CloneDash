@@ -64,6 +64,12 @@ public class MuseDashScene : ISceneDescriptor
 		int tempOffset = -42; // TODO: What is this? 
 		mdScene.pathwayInfo[(int)PathwaySide.Top] = new(v1.X * MUSEDASH_MULTIPLIER_POSITIONS, (v1.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
 		mdScene.pathwayInfo[(int)PathwaySide.Bottom] = new(v2.X * MUSEDASH_MULTIPLIER_POSITIONS, (v2.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset);
+
+		foreach(var animatorData in sceneSubControl.GetList<Animator>("m_Animators")){
+			if (animatorData == null) continue;
+			var test = animatorData;
+		}
+
 		mdScene.FinalSetup();
 		return mdScene;
 	}
