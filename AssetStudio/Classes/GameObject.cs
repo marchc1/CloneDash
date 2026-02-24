@@ -65,7 +65,7 @@ namespace AssetStudio
 						if (result is Component c)
 							yield return c;
 						else
-							throw new Exception($"A Unity type needs a deserializer: {result.serializedType}");
+							throw new Exception($"A Unity type needs a deserializer: {result.type}");
 				}
 			}
 		}
