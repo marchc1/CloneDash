@@ -9,6 +9,7 @@ namespace AssetStudio
 	{
 		public PPtr<Component>[] m_Components;
 		public string m_Name;
+		public bool m_IsActive;
 
 		public Transform m_Transform;
 		public MeshRenderer m_MeshRenderer;
@@ -30,6 +31,8 @@ namespace AssetStudio
 
 			var m_Layer = reader.ReadInt32();
 			m_Name = reader.ReadAlignedString();
+			var m_Tag = reader.ReadUInt16();
+			m_IsActive = reader.ReadBoolean();
 		}
 
 #nullable enable

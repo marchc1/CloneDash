@@ -9,6 +9,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Text;
 using Color = Nucleus.Common.Types.Color;
 using Texture = Nucleus.ManagedMemory.Texture;
@@ -305,10 +306,16 @@ public class SceneSpriteRenderer : SceneRenderer
 	float pivotX, pivotY;
 	bool flipX, flipY;
 	System.Numerics.Vector4 color;
+	private SpriteMaskInteraction MaskInteraction;
 
 	public SceneSpriteRenderer(SpriteRenderer sr) { UnitySpriteRenderer = sr; }
 
 	public override void Awake() {
+		if (UnitySpriteRenderer.m_MaskInteraction != SpriteMaskInteraction.None) {
+			// TODO: masks
+			return;
+		}
+
 		var sprite = UnitySpriteRenderer.GetSprite();
 		if (sprite == null) return;
 		var tex2d = sprite.m_RD.GetTexture();
@@ -329,6 +336,8 @@ public class SceneSpriteRenderer : SceneRenderer
 		color = new(c.R, c.G, c.B, c.A);
 		SortingOrder = UnitySpriteRenderer.m_SortingOrder;
 		SortingLayerID = (int)UnitySpriteRenderer.m_SortingLayerID;
+
+		MaskInteraction = UnitySpriteRenderer.m_MaskInteraction;
 	}
 
 	public void SetSprite(Sprite sprite, MuseDashScene scene) {
@@ -346,6 +355,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 	public override void Render(MuseDashScene scene) {
 		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
+		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
 
 		Transform.GetWorldPosition(out float wx, out float wy, out _);
 		Transform.GetWorldScale(out float sx, out float sy);
@@ -635,7 +645,7 @@ public class MuseDashScene : ISceneDescriptor
 		}
 
 		if (pathwayChildren.Count >= 2) {
-			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y)); 
+			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y));
 			scene.AssignPathway(PathwaySide.Top, pathwayChildren[0].obj, pathwayChildren[0].pos);
 			scene.AssignPathway(PathwaySide.Bottom, pathwayChildren[1].obj, pathwayChildren[1].pos);
 		}
@@ -671,7 +681,7 @@ public class MuseDashScene : ISceneDescriptor
 	SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
 		if (pathIdToObject.TryGetValue(unityGO.m_PathID, out var existing)) return existing;
 
-		var obj = new SceneObject { Name = unityGO.m_Name ?? "", Active = true, Scene = this };
+		var obj = new SceneObject { Name = unityGO.m_Name ?? "", Active = unityGO.m_IsActive, Scene = this };
 		allObjects.Add(obj);
 		pathIdToObject[unityGO.m_PathID] = obj;
 
@@ -697,7 +707,7 @@ public class MuseDashScene : ISceneDescriptor
 	void BuildRenderOrder() {
 		sortedRenderers.Clear();
 		foreach (var obj in allObjects) {
-			if (!obj.Active) continue;
+			if (!IsActiveInHierarchy(obj)) continue;
 			foreach (var renderer in obj.GetComponents<SceneRenderer>()) sortedRenderers.Add(renderer);
 		}
 		sortedRenderers.Sort((a, b) => {
@@ -709,6 +719,15 @@ public class MuseDashScene : ISceneDescriptor
 			b.Transform.GetWorldPosition(out _, out _, out float bz);
 			return bz.CompareTo(az);
 		});
+	}
+
+	internal static bool IsActiveInHierarchy(SceneObject obj) {
+		var current = obj;
+		while (current != null) {
+			if (!current.Active) return false;
+			current = current.Transform.Parent?.Object;
+		}
+		return true;
 	}
 
 	public void Initialize(DashGameLevel game) { }

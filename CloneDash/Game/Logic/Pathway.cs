@@ -90,7 +90,6 @@ namespace CloneDash.Game
 			var curtimeOffset = (float)NMath.Modulo(conductor.Time, 1);
 
 			var alphaM = Math.Max(0, Math.Min(conductor.Time + 1, 1));
-			if (alphaM <= 0) return;
 
 			float divisors = 3;
 			float ring_offset = 360 / divisors / 2;

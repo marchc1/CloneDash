@@ -2,6 +2,12 @@
 
 namespace AssetStudio
 {
+	public enum SpriteMaskInteraction
+	{
+		None,
+		VisibleInsideMask,
+		VisibleOutsideMask
+	}
 	public sealed class SpriteRenderer : Renderer
 	{
 		public Sprite? GetSprite() => m_Sprite.TryGet(out var ret) ? ret : null;
@@ -14,19 +20,21 @@ namespace AssetStudio
 		public float m_AdaptiveModeThreshold;
 		public int m_SpriteTileMode;
 		public bool m_WasSpriteAssigned;
-		public int m_MaskInteraction;
+		public SpriteMaskInteraction m_MaskInteraction;
 		public int m_SpriteSortPoint;
 		public SpriteRenderer(ObjectReader reader) : base(reader) {
 			m_Sprite = new(reader);
 			m_Color = reader.ReadColor4();
 			m_FlipX = reader.ReadBoolean();
 			m_FlipY = reader.ReadBoolean();
+			reader.AlignStream();
 			m_DrawMode = reader.ReadInt32();
 			m_Size = reader.ReadVector2();
 			m_AdaptiveModeThreshold = reader.ReadSingle();
 			m_SpriteTileMode = reader.ReadInt32();
 			m_WasSpriteAssigned = reader.ReadBoolean();
-			m_MaskInteraction = reader.ReadInt32();
+			reader.AlignStream();
+			m_MaskInteraction = (SpriteMaskInteraction)reader.ReadInt32();
 			m_SpriteSortPoint = reader.ReadInt32();
 		}
 	}
