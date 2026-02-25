@@ -8,8 +8,10 @@ using Nucleus.Common.Graphics;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
+using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Color = Nucleus.Common.Types.Color;
 using Texture = Nucleus.ManagedMemory.Texture;
@@ -17,6 +19,44 @@ using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
 
 namespace CloneDash.Scenes;
+
+public record class MuseDashSceneInfo
+{
+	readonly static Dictionary<ulong, MuseDashSceneInfo> scenes = [];
+
+	public readonly string MapName;
+	public readonly int MapIdx;
+
+	public static IEnumerable<MuseDashSceneInfo> GetScenes() => scenes.Values;
+
+	public MuseDashSceneInfo(int idx, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format = "scene_{0:00}") {
+		MapIdx = idx;
+		MapName = string.Format(format, idx);
+
+		scenes[MapName.Hash()] = this;
+	}
+
+	public static MuseDashSceneInfo? GetSceneInfo(ReadOnlySpan<char> name){
+		ulong hash = name.Hash();
+		if (scenes.TryGetValue(hash, out var ret))
+			return ret;
+		return null;
+	}
+
+	public static readonly MuseDashSceneInfo SpaceStation = new(1);
+	public static readonly MuseDashSceneInfo RetroCity = new(2);
+	public static readonly MuseDashSceneInfo HauntedMansion = new(3);
+	public static readonly MuseDashSceneInfo RainyNight = new(4);
+	public static readonly MuseDashSceneInfo Candyland = new(5);
+	public static readonly MuseDashSceneInfo Oriental = new(6);
+	public static readonly MuseDashSceneInfo GrooveCoaster = new(7);
+	public static readonly MuseDashSceneInfo Gensokyo = new(8);
+	public static readonly MuseDashSceneInfo GameGraveyard = new(9);
+	public static readonly MuseDashSceneInfo Museland = new(10, "scene_{0:00}_miku");
+	public static readonly MuseDashSceneInfo Mirrorland = new(10, "scene_{0:00}_rin_len");
+	public static readonly MuseDashSceneInfo Warriorland = new(11);
+	public static readonly MuseDashSceneInfo JadeTemple = new(12);
+}
 
 static class UnityCRC32
 {
@@ -621,13 +661,11 @@ public class MuseDashScene : ISceneDescriptor
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
-		int sceneIDX = name.IndexOf('_');
-		if (sceneIDX == -1) return null;
-		sceneIDX = int.TryParse(name[(sceneIDX + 1)..], out int i) ? i : -1;
-		if (sceneIDX == -1) return null;
+		var sceneInfo = MuseDashSceneInfo.GetSceneInfo(name);
+		if (sceneInfo == null)
+			return null;
 
-		string strSceneIdx = sceneIDX.ToString().PadLeft(2, '0');
-		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>($"scene_{strSceneIdx}")!;
+		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
 			sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl")
 			?? throw new NullReferenceException("No scene control?"));
@@ -755,7 +793,12 @@ public class MuseDashScene : ISceneDescriptor
 	}
 
 	public void Refresh(DashGameLevel game) { }
-	public void PlaySound(SceneSound sound, int hits) { }
+	public void PlaySound(SceneSound sound, int hits) {
+		switch (sound) {
+			case SceneSound.Begin:
+				break;
+		}
+	}
 	public string? GetBossAnimation(BossAnimationType type, out double time) { time = 0; return null; }
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) { time = 0; return null; }
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) => null;
