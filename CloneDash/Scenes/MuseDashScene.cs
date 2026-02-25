@@ -1018,6 +1018,39 @@ public class MuseDashScene : ISceneDescriptor
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_road";
 
 		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
+		AirGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!);
+		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!); 
+		MasherModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!); 
+		AirDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleAirID}_SkeletonData")!);
+		RoadDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!);
+		AirBoss1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1AirID}_SkeletonData")!);
+		RoadBoss1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1RoadID}_SkeletonData")!);
+		AirBoss2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2AirID}_SkeletonData")!);
+		RoadBoss2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!);
+		AirBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3AirID}_SkeletonData")!);
+		RoadBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!);
+		AirBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!); 
+		RoadBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!);
+		AirSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallAirID}_SkeletonData")!);
+		RoadSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallRoadID}_SkeletonData")!);
+		AirMedium1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1AirID}_SkeletonData")!);
+		RoadMedium1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1RoadID}_SkeletonData")!);
+		AirMedium2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2AirID}_SkeletonData")!);
+		RoadMedium2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2RoadID}_SkeletonData")!);
+		AirLarge1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1AirID}_SkeletonData")!);
+		RoadLarge1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1RoadID}_SkeletonData")!);
+		AirLarge2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2AirID}_SkeletonData")!);
+		RoadLarge2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2RoadID}_SkeletonData")!);
+		AirHammerModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirID}_SkeletonData")!);
+		RoadHammerModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadID}_SkeletonData")!);
+		AirHammerBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirBID}_SkeletonData")!);
+		RoadHammerBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadBID}_SkeletonData")!);
+		AirRaiderModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirID}_SkeletonData")!);
+		RoadRaiderModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadID}_SkeletonData")!);
+		AirRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!);
+		RoadRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!);
+		AirGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!);
+		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!); 
 	}
 
 	public void RenderBackground(DashGameLevel game) {
