@@ -84,7 +84,6 @@ namespace CloneDash.Game.Entities
 					ApproachAnimation = Model?.Data.FindAnimation(animationName);
 					GreatHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));
 					PerfectHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
-					Scale = new(level.GlobalScale);
 					SetMountBoneIfApplicable(scene?.GetHPMount(this));
 					break;
 			}

@@ -146,7 +146,7 @@ public class Boss : DashEnemy
 
 		__anim?.Apply(Model);
 		Model.Position = Position;
-		Model.Scale = Scale;
+		Model.Scale = new(1);
 
 		Rlgl.DrawRenderBatchActive();
 		Model.Render();

@@ -43,8 +43,6 @@ namespace CloneDash.Game.Entities
 			SetShowTimeViaLength(showtime);
 
 			ApproachAnimation = Model?.Data.FindAnimation(animationName);
-
-			Scale = new(level.GlobalScale);
 		}
 	}
 }

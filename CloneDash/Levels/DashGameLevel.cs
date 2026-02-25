@@ -1214,7 +1214,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float GlobalScale => 1 / 200f;
 
 	public override void PreRenderBackground(FrameState frameState) {
-		Boss.Scale = new(GlobalScale);
 		Boss.Position = new(0, 450);
 	}
 
@@ -1229,10 +1228,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 		var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
-		cam.Zoom = 120 + (zoomValue / 5f);
+		cam.Zoom = 120 + (zoomValue * 45);
 		cam.Rotation = 0.0f;
 		cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-		cam.Target = new(frameState.WindowWidth / 1 * zoomValue, 0);
+		cam.Target = new(zoomValue * -5, 0);
 		cam.Offset += cam.Target;
 
 		//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
@@ -1267,11 +1266,15 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
 
 		// Boss
+		Rlgl.PushMatrix();
+		Rlgl.Scalef(GlobalScale, GlobalScale, 1);
 		Boss.Render();
 
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
+
+		Rlgl.PopMatrix();
 
 		AddDebugString("Visible Entities", VisibleEntities.Count);
 		AddDebugString("Player Animation", Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");

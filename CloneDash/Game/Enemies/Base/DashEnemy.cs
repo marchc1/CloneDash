@@ -50,7 +50,6 @@ public class DashEnemy : DashModelEntity
 		ApproachAnimation = Model?.Data.FindAnimation(animationName);
 		SetupHitAnimations(scene);
 
-		Scale = new(level.GlobalScale);
 	}
 
 	protected DashEnemy(EntityType type) {
@@ -118,7 +117,6 @@ public class DashEnemy : DashModelEntity
 		MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
 		MountedHeart.Position = new(MountBone.WorldTransform.X, (900 - MountBone.WorldTransform.Y) - 450);
-		MountedHeart.Scale = Scale;
 		MountedHeart.Render();
 	}
 
@@ -130,7 +128,6 @@ public class DashEnemy : DashModelEntity
 		DetermineAnimationPlayback();
 
 		Model.Position = Position;
-		Model.Scale = Scale;
 
 		Model.Render();
 
