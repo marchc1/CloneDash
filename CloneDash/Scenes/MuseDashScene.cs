@@ -974,6 +974,10 @@ public class MuseDashScene : ISceneDescriptor
 	ModelData? AirRaiderModel, RoadRaiderModel, AirRaiderBModel, RoadRaiderBModel;
 	ModelData? AirGhostModel, RoadGhostModel;
 
+	string?[] bossAnimations = new string?[(int)BossAnimationType.Max];
+
+	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
+	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
 
 	public void Initialize(DashGameLevel game) {
 		BeginSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
@@ -982,8 +986,21 @@ public class MuseDashScene : ISceneDescriptor
 		FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
 
 		var assets = MuseDashCompatibility.StreamingAssets;
-		string bossID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS}";
+
 		string sustainID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_SUSTAIN}";
+		AirStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
+		AirEndSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
+		AirBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_body"));
+		AirUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_note_up"));
+		AirDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_note_down"));
+
+		RoadStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_top"));
+		RoadEndSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_top"));
+		RoadBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_body"));
+		RoadUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_up"));
+		RoadDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_down"));
+
+		string bossID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS}";
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_air";
 		string gearRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}";
 		string masherID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MASHERS}";
@@ -1017,11 +1034,11 @@ public class MuseDashScene : ISceneDescriptor
 		string raiderRoadBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_road_b";
 		string ghostAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_air";
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_road";
-		
+
 		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
 		AirGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!);
-		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!); 
-		MasherModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!); 
+		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!);
+		MasherModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!);
 		AirDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleAirID}_SkeletonData")!);
 		RoadDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!);
 		AirBoss1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1AirID}_SkeletonData")!);
@@ -1030,7 +1047,7 @@ public class MuseDashScene : ISceneDescriptor
 		RoadBoss2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!);
 		AirBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3AirID}_SkeletonData")!);
 		RoadBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!);
-		AirBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!); 
+		AirBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!);
 		RoadBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!);
 		AirSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallAirID}_SkeletonData")!);
 		RoadSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallRoadID}_SkeletonData")!);
@@ -1051,7 +1068,7 @@ public class MuseDashScene : ISceneDescriptor
 		AirRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!);
 		RoadRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!);
 		AirGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!);
-		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!); 
+		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!);
 	}
 
 	public void RenderBackground(DashGameLevel game) {
@@ -1126,9 +1143,26 @@ public class MuseDashScene : ISceneDescriptor
 	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
 	public MusicTrack? GetPressIdleSound() => null;
-	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end,
-		out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond) {
-		start = null!; end = null!; body = null!; up = null!; down = null!; rotationDegsPerSecond = 0;
+	public void GetSustainResources(PathwaySide pathway, out ITexture ?start, out ITexture ?end, out ITexture ?body, out ITexture ?up, out ITexture? down, out float rotationDegsPerSecond) {
+		rotationDegsPerSecond = 120;
+		switch (pathway){
+			case PathwaySide.Top:
+				start = AirStartSustainTexture;
+				end = AirEndSustainTexture;
+				body = AirBodySustainTexture;
+				up = AirUpSustainTexture;
+				down = AirDownSustainTexture;
+				break;
+			case PathwaySide.Bottom:
+				start = RoadStartSustainTexture;
+				end = RoadEndSustainTexture;
+				body = RoadBodySustainTexture;
+				up = RoadUpSustainTexture;
+				down = RoadDownSustainTexture;
+				break;
+			default:
+				throw new Exception();
+		}
 	}
 	internal void MountToFilesystem() { }
 }

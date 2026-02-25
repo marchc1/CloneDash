@@ -9,12 +9,13 @@ using Nucleus.Types;
 
 namespace CloneDash.Scenes;
 
-public struct PathwayInformation {
+public struct PathwayInformation
+{
 	public Color Color;
 	public Vector2F Position;
 	public object? UserData;
 
-	public PathwayInformation(float x, float y, object? userdata){
+	public PathwayInformation(float x, float y, object? userdata) {
 		Position = new(x, y);
 		UserData = userdata;
 	}
@@ -61,7 +62,7 @@ public interface ISceneDescriptor
 
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	public BoneInstance? GetHPMount(DashEnemy enemy);
-	public void GetSustainResources(PathwaySide pathway, out ITexture start, out ITexture end, out ITexture body, out ITexture up, out ITexture down, out float rotationDegsPerSecond);
+	public void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
 
 
 	Color GetPathwayColor(PathwaySide side);

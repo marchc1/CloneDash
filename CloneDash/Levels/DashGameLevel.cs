@@ -1262,12 +1262,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		TopPathway.Render();
 		BottomPathway.Render();
 
+		Rlgl.PushMatrix();
+		Rlgl.Scalef(1, 1, GlobalScale);
+
 		// Hold notes
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
 
 		// Boss
-		Rlgl.PushMatrix();
-		Rlgl.Scalef(GlobalScale, GlobalScale, 1);
 		Boss.Render();
 
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
