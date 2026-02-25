@@ -554,9 +554,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Interlude.Spin();
 
 				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModel(this)));
-				Player.Scale = new(1.25f);
-
-				HologramPlayer.Scale = Player.Scale;
 				HologramPlayer.Shader = hologramShader;
 
 				Player.Model.SetToSetupPose();
@@ -657,7 +654,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	private bool lastNoteHit = false;
 
 
-	static float TEMP_PLAYER_OFFSET => -145;
+	static float TEMP_PLAYER_OFFSET => 0;
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
 
@@ -667,7 +664,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		var top = GetPathwayPosition(PathwaySide.Top);
 		var bot = GetPathwayPosition(PathwaySide.Bottom);
 
-		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + TEMP_PLAYER_OFFSET; // TODO: re-evaluate
+		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
 	}
 
 	private SecondOrderSystem? sos_yoff;
@@ -822,13 +819,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		var leftPlayer = GetPathwayPosition(PathwaySide.Both).X;
 
 		Player.Position = new Vector2F(
-			(leftPlayer - 185) - (conductorInTime * frameState.WindowWidth / 2f),
+			(leftPlayer - 1) - (conductorInTime * 1),
 			-(sos_yoff?.Update(playerY) ?? playerY)
 		);
 		Player.Scale = new(PlayerScale);
 
 		HologramPlayer.Position = new Vector2F(
-			leftPlayer - 185,
+			(leftPlayer -1),
 			-GetPlayerY(HologramCharacterYRatio)
 		);
 
@@ -1212,9 +1209,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 
-	public float PlayerScale => 1;
-	public float PlayScale { get; set; } = 1.2f;
-	public float GlobalScale => 1f;
+	public float PlayerScale => 1 / 200f;
+	public float PlayScale => 1 / 200f;
+	public float GlobalScale => 1 / 200f;
 
 	public override void PreRenderBackground(FrameState frameState) {
 		Boss.Scale = new(GlobalScale);
@@ -1232,7 +1229,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 		var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
-		cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
+		cam.Zoom = 120 + (zoomValue / 5f);
 		cam.Rotation = 0.0f;
 		cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
 		cam.Target = new(frameState.WindowWidth / 1 * zoomValue, 0);

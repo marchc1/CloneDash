@@ -166,7 +166,7 @@ class DecodedClip
 
 		if (float.IsPositiveInfinity(k0.outSlope) || float.IsPositiveInfinity(k1.inSlope)) {
 			float u = (t - k0.time) / dt;
-			return k0.value + (k1.value - k0.value) * u; 
+			return k0.value + (k1.value - k0.value) * u;
 		}
 
 		float uu = (t - k0.time) / dt;
@@ -595,7 +595,7 @@ public class SceneObject
 
 public class MuseDashScene : ISceneDescriptor
 {
-	public const float MUSEDASH_MULTIPLIER_POSITIONS = 200;
+	public const float MUSEDASH_MULTIPLIER_POSITIONS = 1;
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 	readonly List<SceneObject> allObjects = [];
 	readonly List<SceneRenderer> sortedRenderers = [];
@@ -627,8 +627,21 @@ public class MuseDashScene : ISceneDescriptor
 
 		var scene = new MuseDashScene();
 		var pathwaysObject = scene.ImportGameObject(scenePoint, null);
-		foreach (var child in pathwaysObject.Transform.Children)
-			scene.EvaluatePathway(child!.Object);
+
+		var pathwayChildren = new List<(SceneObject obj, Vector3 pos)>();
+		foreach (var child in pathwaysObject.Transform.Children) {
+			child.Object.Transform.ComputeGlobalTransform(out var pos, out _);
+			pathwayChildren.Add((child.Object, pos));
+		}
+
+		if (pathwayChildren.Count >= 2) {
+			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y)); 
+			scene.AssignPathway(PathwaySide.Top, pathwayChildren[0].obj, pathwayChildren[0].pos);
+			scene.AssignPathway(PathwaySide.Bottom, pathwayChildren[1].obj, pathwayChildren[1].pos);
+		}
+		else if (pathwayChildren.Count == 1) {
+			scene.AssignPathway(PathwaySide.Bottom, pathwayChildren[0].obj, pathwayChildren[0].pos);
+		}
 
 		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
 		scene.root = scene.ImportGameObject(rootTransform.GetGameObject()!, null);
@@ -651,13 +664,8 @@ public class MuseDashScene : ISceneDescriptor
 		return scene;
 	}
 
-	private void EvaluatePathway(SceneObject? obj) {
-		ArgumentNullException.ThrowIfNull(obj);
-		PathwaySide side = obj.Name == "HitPointRoad" ? PathwaySide.Bottom : PathwaySide.Top;
-		obj.Transform.ComputeGlobalTransform(out var pos, out _);
-		int tempOffset = -42;
-		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS,
-			(pos.Y * MUSEDASH_MULTIPLIER_POSITIONS) + tempOffset, obj);
+	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {
+		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS, pos.Y * MUSEDASH_MULTIPLIER_POSITIONS, obj);
 	}
 
 	SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
