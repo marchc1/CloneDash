@@ -3,6 +3,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Entities;
+using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
@@ -1016,7 +1017,7 @@ public class MuseDashScene : ISceneDescriptor
 		string raiderRoadBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_road_b";
 		string ghostAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_air";
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_road";
-
+		
 		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
 		AirGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!);
 		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!); 
@@ -1088,11 +1089,34 @@ public class MuseDashScene : ISceneDescriptor
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) { time = 0; return null; }
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) => null;
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
-		switch (enemy) {
-			case Boss:
-				return BossModel;
-			default:
-				return null;
+		switch (enemy.Type) {
+			case EntityType.Boss: return BossModel;
+			case EntityType.Single:
+				return enemy.Variant switch {
+					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBoss1Model : RoadBoss1Model,
+					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBoss2Model : RoadBoss2Model,
+					EntityVariant.Boss3 => enemy.Pathway == PathwaySide.Top ? AirBoss3Model : RoadBoss3Model,
+					EntityVariant.Small => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
+					EntityVariant.Medium1 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium1Model,
+					EntityVariant.Medium2 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium2Model,
+					EntityVariant.Large1 => enemy.Pathway == PathwaySide.Top ? AirLarge1Model : RoadLarge1Model,
+					EntityVariant.Large2 => enemy.Pathway == PathwaySide.Top ? AirLarge2Model : RoadLarge2Model,
+					_ => throw new NotImplementedException()
+				};
+			case EntityType.Gear:
+				return enemy.Variant switch {
+					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
+					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
+					_ => enemy.Pathway == PathwaySide.Top ? AirGearModel : RoadGearModel,
+				};
+			case EntityType.Double: return enemy.Pathway == PathwaySide.Top ? AirDoubleModel : RoadDoubleModel;
+			case EntityType.Ghost: return enemy.Pathway == PathwaySide.Top ? AirGhostModel : RoadGhostModel;
+			case EntityType.Hammer: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirHammerBModel : RoadHammerBModel) : (enemy.Pathway == PathwaySide.Top ? AirHammerModel : RoadHammerModel);
+			case EntityType.Masher: return MasherModel;
+			case EntityType.Raider: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirRaiderBModel : RoadRaiderBModel) : (enemy.Pathway == PathwaySide.Top ? AirRaiderModel : RoadRaiderModel);
+			case EntityType.Score: return null;
+			case EntityType.Heart: return null;
+			default: throw new NotImplementedException();
 		}
 	}
 	public ModelData? GetHP(out string? mountAnimation) { mountAnimation = null; return null; }
