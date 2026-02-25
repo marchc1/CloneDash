@@ -2,6 +2,7 @@
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using CloneDash.Game.Entities;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
@@ -10,52 +11,120 @@ using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.Util;
 using Raylib_cs;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
+using Sound = Nucleus.Audio.Sound;
 using Texture = Nucleus.ManagedMemory.Texture;
 using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
 
 namespace CloneDash.Scenes;
 
+public struct MuseDashSceneSounds
+{
+	public string? Begin;
+	public string? Fever;
+	public string? Unpause;
+	public string? FullCombo;
+	public string? Mash;
+	public int? MashStart;
+	public int? MashEnd;
+	public string? Hp;
+	public string? Score;
+	public string? Jump;
+	public string? Loud1;
+	public string? Loud2;
+	public string? Medium1;
+	public string? Medium2;
+	public string? Quiet;
+	public string? Ghost;
+	public string? PressIdle;
+	public string? PressTop;
+
+	public static readonly MuseDashSceneSounds Default = new() {
+
+	};
+
+	public static MuseDashSceneSounds operator +(MuseDashSceneSounds a, MuseDashSceneSounds b) {
+		if (b.Begin != null) a.Begin = b.Begin;
+		if (b.Fever != null) a.Fever = b.Fever;
+		if (b.Unpause != null) a.Unpause = b.Unpause;
+		if (b.FullCombo != null) a.FullCombo = b.FullCombo;
+		if (b.Mash != null) a.Mash = b.Mash;
+		if (b.MashStart != null) a.MashStart = b.MashStart;
+		if (b.MashEnd != null) a.MashEnd = b.MashEnd;
+		if (b.Hp != null) a.Hp = b.Hp;
+		if (b.Score != null) a.Score = b.Score;
+		if (b.Jump != null) a.Jump = b.Jump;
+		if (b.Loud1 != null) a.Loud1 = b.Loud1;
+		if (b.Loud2 != null) a.Loud2 = b.Loud2;
+		if (b.Medium1 != null) a.Medium1 = b.Medium1;
+		if (b.Medium2 != null) a.Medium2 = b.Medium2;
+		if (b.Quiet != null) a.Quiet = b.Quiet;
+		if (b.Ghost != null) a.Ghost = b.Ghost;
+		if (b.PressIdle != null) a.PressIdle = b.PressIdle;
+		if (b.PressTop != null) a.PressTop = b.PressTop;
+		return a;
+	}
+}
+
+/// <summary>
+/// Some hardcoded Muse Dash scene information.
+/// I think this info is hardcoded in basegame anyway
+/// </summary>
 public record class MuseDashSceneInfo
 {
 	readonly static Dictionary<ulong, MuseDashSceneInfo> scenes = [];
 
 	public readonly string MapName;
+	public readonly string OfficialName;
 	public readonly int MapIdx;
 
+	public MuseDashSceneSounds Sounds;
+
+	public MuseDashSceneInfo WithSounds(MuseDashSceneSounds sounds) {
+		Sounds += sounds;
+		return this;
+	}
 	public static IEnumerable<MuseDashSceneInfo> GetScenes() => scenes.Values;
 
-	public MuseDashSceneInfo(int idx, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format = "scene_{0:00}") {
+	public MuseDashSceneInfo(int idx, string officialName, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format = "scene_{0:00}") {
 		MapIdx = idx;
 		MapName = string.Format(format, idx);
+		OfficialName = officialName;
 
 		scenes[MapName.Hash()] = this;
 	}
 
-	public static MuseDashSceneInfo? GetSceneInfo(ReadOnlySpan<char> name){
+	public static MuseDashSceneInfo? GetSceneInfo(ReadOnlySpan<char> name) {
 		ulong hash = name.Hash();
 		if (scenes.TryGetValue(hash, out var ret))
 			return ret;
 		return null;
 	}
 
-	public static readonly MuseDashSceneInfo SpaceStation = new(1);
-	public static readonly MuseDashSceneInfo RetroCity = new(2);
-	public static readonly MuseDashSceneInfo HauntedMansion = new(3);
-	public static readonly MuseDashSceneInfo RainyNight = new(4);
-	public static readonly MuseDashSceneInfo Candyland = new(5);
-	public static readonly MuseDashSceneInfo Oriental = new(6);
-	public static readonly MuseDashSceneInfo GrooveCoaster = new(7);
-	public static readonly MuseDashSceneInfo Gensokyo = new(8);
-	public static readonly MuseDashSceneInfo GameGraveyard = new(9);
-	public static readonly MuseDashSceneInfo Museland = new(10, "scene_{0:00}_miku");
-	public static readonly MuseDashSceneInfo Mirrorland = new(10, "scene_{0:00}_rin_len");
-	public static readonly MuseDashSceneInfo Warriorland = new(11);
-	public static readonly MuseDashSceneInfo JadeTemple = new(12);
+	// TODO: Verify these names properly
+	// Wiki is probably a horrible source for ~50% of these
+	public static readonly MuseDashSceneInfo SpaceStation = new MuseDashSceneInfo(1, "Space Station");
+	public static readonly MuseDashSceneInfo RetroCity = new MuseDashSceneInfo(2, "Retro City");
+	public static readonly MuseDashSceneInfo HauntedMansion = new MuseDashSceneInfo(3, "Haunted Mansion");
+	public static readonly MuseDashSceneInfo RainyNight = new MuseDashSceneInfo(4, "Rainy Night");
+	public static readonly MuseDashSceneInfo Candyland = new MuseDashSceneInfo(5, "Candyland");
+	public static readonly MuseDashSceneInfo Oriental = new MuseDashSceneInfo(6, "Oriental");
+	public static readonly MuseDashSceneInfo GrooveCoaster = new MuseDashSceneInfo(7, "Groove Coaster")
+												.WithSounds(new MuseDashSceneSounds {
+													Begin = "sfx_readygo_gc"
+												});
+	public static readonly MuseDashSceneInfo Gensokyo = new MuseDashSceneInfo(8, "Gensokyo");
+	public static readonly MuseDashSceneInfo GameGraveyard = new MuseDashSceneInfo(9, "Game Graveyard");
+	public static readonly MuseDashSceneInfo Museland = new MuseDashSceneInfo(10, "Museland", "scene_{0:00}_miku");
+	public static readonly MuseDashSceneInfo Mirrorland = new MuseDashSceneInfo(10, "Mirrorland", "scene_{0:00}_rin_len");
+	public static readonly MuseDashSceneInfo Warriorland = new MuseDashSceneInfo(11, "Warriorland");
+	public static readonly MuseDashSceneInfo JadeTemple = new MuseDashSceneInfo(12, "Jade Temple");
 }
 
 static class UnityCRC32
@@ -651,6 +720,7 @@ public class MuseDashScene : ISceneDescriptor
 	readonly List<SceneRenderer> sortedRenderers = [];
 	readonly List<SceneAnimator> animators = [];
 	SceneObject? root;
+	public readonly MuseDashSceneInfo SceneInfo;
 	readonly Dictionary<long, ITexture> textureCache = [];
 	readonly Dictionary<long, SceneObject> pathIdToObject = [];
 
@@ -658,6 +728,10 @@ public class MuseDashScene : ISceneDescriptor
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
 		textureCache[texture2D.m_PathID] = tex = MuseDashCompatibility.ConvertTexture(EngineCore.Level, texture2D!);
 		return tex;
+	}
+
+	public MuseDashScene(MuseDashSceneInfo info) {
+		SceneInfo = info;
 	}
 
 	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
@@ -673,7 +747,7 @@ public class MuseDashScene : ISceneDescriptor
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
 
-		var scene = new MuseDashScene();
+		var scene = new MuseDashScene(sceneInfo);
 		var pathwaysObject = scene.ImportGameObject(scenePoint, null);
 
 		var pathwayChildren = new List<(SceneObject obj, Vector3 pos)>();
@@ -768,7 +842,17 @@ public class MuseDashScene : ISceneDescriptor
 		return true;
 	}
 
-	public void Initialize(DashGameLevel game) { }
+	Sound? BeginSound;
+	Sound? FeverSound;
+	Sound? UnpauseSound;
+	Sound? FullComboSound;
+
+	public void Initialize(DashGameLevel game) {
+		BeginSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? "sfx_readygo");
+		FeverSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? "char_common_fever");
+		UnpauseSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? "sfx_pause321");
+		FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? "sfx_full_combo");
+	}
 
 	public void RenderBackground(DashGameLevel game) {
 		Rlgl.PushMatrix();
@@ -795,8 +879,10 @@ public class MuseDashScene : ISceneDescriptor
 	public void Refresh(DashGameLevel game) { }
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
-			case SceneSound.Begin:
-				break;
+			case SceneSound.Begin: BeginSound?.Play(); break;
+			case SceneSound.Fever: FeverSound?.Play(); break;
+			case SceneSound.Unpause: UnpauseSound?.Play(); break;
+			case SceneSound.FullCombo: FullComboSound?.Play(); break;
 		}
 	}
 	public string? GetBossAnimation(BossAnimationType type, out double time) { time = 0; return null; }
