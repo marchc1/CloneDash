@@ -1536,17 +1536,36 @@ public static class MuseDashModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
-		ModelData md_data = new ModelData();
+	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData) {
+		MonoBehaviourReader reader = new(skeletonData);
+		TextAsset skeletonJSON = reader.Get<TextAsset>("skeletonJSON")!;
+		MonoBehaviourReader atlasAssets = new(reader.GetList<MonoBehaviour>("atlasAssets")!.First());
+		TextAsset atlasFile = atlasAssets.Get<TextAsset>("atlasFile")!;
+		List<Material> materials = atlasAssets.GetList<Material>("materials")!;
 
+		long[] texturePaths = new long[materials.Count];
+		for (int i = 0; i < materials.Count; i++) {
+			var mat = materials[i];
+			texturePaths[i] = mat.m_SavedProperties.m_TexEnvs.First().Value.m_Texture.m_PathID;
+		}
+		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray());
+	}
+
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
 		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
 		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
+
+		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn);
+	}
+
+	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset atlas, long[] texturePaths, Material[] materialsIn) {
+		ModelData md_data = new ModelData();
+
 		Texture2D[] textures = new Texture2D[texturePaths.Length];
 		for (int i = 0, c = texturePaths.Length; i < c; i++) {
 			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i])!;
 		}
 
-		bool straightAlpha;
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
