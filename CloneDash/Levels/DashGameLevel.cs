@@ -805,7 +805,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (sos_yoff == null)
 				sos_yoff = new(15, 1, 1, yoff.Value);
 
-			yoff = yoff.Value + TEMP_PLAYER_OFFSET;
+			yoff = yoff.Value + -1f;
 		}
 		else
 			sos_yoff = null;
