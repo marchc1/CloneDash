@@ -29,12 +29,20 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		Dict = mb.ToType();
 	}
 
+	public T? GetAny<T>(object key) {
+		object? o = Dict[key];
+		if (o == null) return default;
+
+		return (T?)o;
+	}
+
 	public T? Get<T>(object key) where T : AssetStudio.Object {
 		object? o = Dict[key];
 		if (o == null) return null;
 
 		return (T?)GetUnderlyingTypeByNecessaryMeans(o);
 	}
+
 
 	public List<T?> GetList<T>(object key) where T : AssetStudio.Object {
 		object? o = Dict[key];

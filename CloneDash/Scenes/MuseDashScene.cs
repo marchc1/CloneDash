@@ -8,12 +8,14 @@ using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.Util;
 using Raylib_cs;
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -78,213 +80,57 @@ public struct MuseDashSceneSounds
 	}
 }
 
-public struct MD_BossAnimations {
-	public string? In;
-	public string? Out;
-	public string? Standby0;
-	public string? Standby1;
-	public string? Standby2;
-	public string? From0To1;
-	public string? From0To2;
-	public string? From1To0;
-	public string? From1To2;
-	public string? From2To0;
-	public string? From2To1;
-	public string? AttackAir1;
-	public string? AttackAir2;
-	public string? AttackGround1;
-	public string? AttackGround2;
-	public string? CloseAttackSlow;
-	public string? CloseAttackFast;
-	public string? MultiAttack;
-	public string? MultiAttackEnd;
-	public string? MultiAttackHurt;
-	public string? MultiAttackHurtEnd;
-	public string? Hurt;
+public class MD_Animations3Speed {
+	public readonly MD_SpineActionController[][] Speeds = [
+		[null!, null!, null!],
+		[null!, null!, null!],
+		[null!, null!, null!]
+	];
 
-	public string? Get(BossAnimationType type) => type switch {
-		BossAnimationType.In => In,
-		BossAnimationType.Out => Out,
-		BossAnimationType.Standby0 => Standby0,
-		BossAnimationType.Standby1 => Standby1,
-		BossAnimationType.Standby2 => Standby2,
-		BossAnimationType.From0To1 => From0To1,
-		BossAnimationType.From0To2 => From0To2,
-		BossAnimationType.From1To0 => From1To0,
-		BossAnimationType.From1To2 => From1To2,
-		BossAnimationType.From2To0 => From2To0,
-		BossAnimationType.From2To1 => From2To1,
-		BossAnimationType.AttackAir1 => AttackAir1,
-		BossAnimationType.AttackAir2 => AttackAir2,
-		BossAnimationType.AttackGround1 => AttackGround1,
-		BossAnimationType.AttackGround2 => AttackGround2,
-		BossAnimationType.CloseAttackSlow => CloseAttackSlow,
-		BossAnimationType.CloseAttackFast => CloseAttackFast,
-		BossAnimationType.MultiAttack => MultiAttack,
-		BossAnimationType.MultiAttackEnd => MultiAttackEnd,
-		BossAnimationType.MultiAttackHurt => MultiAttackHurt,
-		BossAnimationType.MultiAttackHurtEnd => MultiAttackHurtEnd,
-		BossAnimationType.Hurt => Hurt,
-		_ => null
-	};
+	public MD_SpineActionController GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+		Debug.Assert(speed >= 1);
+		Debug.Assert(speed <= 3);
+		return Speeds[speed - 1][(int)dir];
+	}
+
+	public ref MD_SpineActionController GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+		Debug.Assert(speed >= 1);
+		Debug.Assert(speed <= 3);
+		return ref Speeds[speed - 1][(int)dir];
+	}
 }
 
-public struct MD_GearAnimations
+public class MD_SpineActionController
 {
-	public string? InSpeed1;
-	public string? InSpeed2;
-	public string? InSpeed3;
-	public string? Destroy;
+	public readonly MD_ActionData?[] ActionData;
 
-	public string? GetInAnim(int speed) {
-		switch (speed) {
-			case 1: return InSpeed1;
-			case 2: return InSpeed2;
-			case 3: return InSpeed3;
-			default: return null;
+	public MD_ActionData? Get(ReadOnlySpan<char> name) {
+		for (int i = 0, c = ActionData.Length; i < c; i++) {
+			var data = ActionData[i];
+			if (data == null) continue;
+			if (data.Name.Equals(name, StringComparison.InvariantCulture))
+				return data;
 		}
+		return null;
+	}
+
+	public MD_SpineActionController(MonoBehaviourReader reader){
+		var test = reader.Get<AssetStudio.Object>("actionData");
+		ActionData = null!; // todo
 	}
 }
 
-public struct MD_MasherAnimations
-{
-	public string? InNorSpeed1;
-	public string? InNorSpeed2;
-	public string? InNorSpeed3;
-	public string? InDownSpeed1;
-	public string? InDownSpeed2;
-	public string? InDownSpeed3;
-	public string? MissSpeed1;
-	public string? MissSpeed2;
-	public string? MissSpeed3;
-	public string? CompleteGreat;
-	public string? CompletePerfect;
-
-	public string? GetInNorAnim(int speed) {
-		switch (speed) {
-			case 1: return InNorSpeed1;
-			case 2: return InNorSpeed2;
-			case 3: return InNorSpeed3;
-			default: return null;
-		}
-	}
-	public string? GetInDownAnim(int speed) {
-		switch (speed) {
-			case 1: return InDownSpeed1;
-			case 2: return InDownSpeed2;
-			case 3: return InDownSpeed3;
-			default: return null;
-		}
-	}
-
-	public string? GetMissAnim(int speed) {
-		switch (speed) {
-			case 1: return MissSpeed1;
-			case 2: return MissSpeed2;
-			case 3: return MissSpeed3;
-			default: return null;
-		}
-	}
-}
-
-public struct MD_DoubleAnimations
-{
-	public string? Charge;
-	public string? InSpeed1;
-	public string? InSpeed2;
-	public string? InSpeed3;
-	public string? CompleteGreat;
-	public string? CompletePerfect;
-
-	public string? GetInAnim(int speed) {
-		switch (speed) {
-			case 1: return InSpeed1;
-			case 2: return InSpeed2;
-			case 3: return InSpeed3;
-			default: return null;
-		}
-	}
-}
-
-public struct MD_BossGearAnimations
-{
-	public string? InSpeed1_1;
-	public string? InSpeed1_2;
-	public string? InSpeed1_3;
-	public string? InSpeed2_1;
-	public string? InSpeed2_2;
-	public string? InSpeed2_3;
-	public string? Destroy;
-
-	public string? GetInAnim(int type, int speed) {
-		switch (type) {
-			case 1:
-				switch (speed) {
-					case 1: return InSpeed1_1;
-					case 2: return InSpeed1_2;
-					case 3: return InSpeed1_3;
-					default: return null;
-				}
-			case 2:
-				switch (speed) {
-					case 1: return InSpeed2_1;
-					case 2: return InSpeed2_2;
-					case 3: return InSpeed2_3;
-					default: return null;
-				}
-			default:
-				return null;
-		}
-	}
-}
-
-// small, medium1, medium2
-// large1, large2, hammers, raiders, ghost
-public struct MD_StdEnemyAnimations
-{
-	public string? InNorSpeed1;
-	public string? InNorSpeed2;
-	public string? InNorSpeed3;
-
-	// these aren't used by everything
-	public string? InDownSpeed1;
-	public string? InDownSpeed2;
-	public string? InDownSpeed3;
-	public string? InUpSpeed1;
-	public string? InUpSpeed2;
-	public string? InUpSpeed3;
-
-	public string? CompleteGreat;
-	public string? CompletePerfect;
-
-	public string? GetInAnim(int speed, EntityEnterDirection dir) {
-		switch(dir){
-			case EntityEnterDirection.RightSide:
-				switch (speed) {
-					case 1: return InNorSpeed1;
-					case 2: return InNorSpeed2;
-					case 3: return InNorSpeed3;
-					default: return null;
-				}
-			case EntityEnterDirection.TopDown:
-				switch (speed) {
-					case 1: return InDownSpeed1 ?? InNorSpeed1;
-					case 2: return InDownSpeed2 ?? InNorSpeed2;
-					case 3: return InDownSpeed3 ?? InNorSpeed3;
-					default: return null;
-				}
-			case EntityEnterDirection.BottomUp:
-				switch (speed) {
-					case 1: return InUpSpeed1 ?? InNorSpeed1;
-					case 2: return InUpSpeed2 ?? InNorSpeed2;
-					case 3: return InUpSpeed3 ?? InNorSpeed3;
-					default: return null;
-				}
-			default: return null;
-		}
-	}
-}
-
+public class MD_ActionData {
+	public bool Collapsed;
+	public bool IsEndLoop;
+	public bool IsRandomSequence;
+	public bool IsSelfProtect;
+	public string Name = "";
+	public int ProtectLevel;
+	public int SpineActionKeyIndex;
+	public string[] ActionIdx = [];
+	public int[] ActionEventIdx = [];
+} 
 
 public static class MuseDashSceneEnemyInfo
 {
@@ -1183,24 +1029,24 @@ public class MuseDashScene : ISceneDescriptor
 	ModelData? AirRaiderModel, RoadRaiderModel, AirRaiderBModel, RoadRaiderBModel;
 	ModelData? AirGhostModel, RoadGhostModel;
 
-	MD_BossAnimations BossAnims;
-	MD_GearAnimations AirGearAnims, RoadGearAnims;
-	MD_MasherAnimations MasherAnims;
-	MD_DoubleAnimations AirDoubleAnims, RoadDoubleAnims;
-	MD_StdEnemyAnimations AirBoss1Anims, RoadBoss1Anims;
-	MD_StdEnemyAnimations AirBoss2Anims, RoadBoss2Anims;
-	MD_StdEnemyAnimations AirBoss3Anims, RoadBoss3Anims;
-	MD_BossGearAnimations AirBossGearAnims, RoadBossGearAnims;
-	MD_StdEnemyAnimations AirSmallAnims, RoadSmallAnims;
-	MD_StdEnemyAnimations AirMedium1Anims, RoadMedium1Anims;
-	MD_StdEnemyAnimations AirMedium2Anims, RoadMedium2Anims;
-	MD_StdEnemyAnimations AirLarge1Anims, RoadLarge1Anims;
-	MD_StdEnemyAnimations AirLarge2Anims, RoadLarge2Anims;
-	MD_StdEnemyAnimations AirHammerA_Anims, RoadHammerA_Anims;
-	MD_StdEnemyAnimations AirHammerB_Anims, RoadHammerB_Anims;
-	MD_StdEnemyAnimations AirRaiderA_Anims, RoadRaiderA_Anims;
-	MD_StdEnemyAnimations AirRaiderB_Anims, RoadRaiderB_Anims;
-	MD_StdEnemyAnimations AirGhostAnims, RoadGhostAnims;
+	MD_SpineActionController BossAnims = null!;
+	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
+	MD_Animations3Speed MasherAnims = new();
+	MD_Animations3Speed AirDoubleAnims = new(), RoadDoubleAnims = new();
+	MD_Animations3Speed AirBoss1Anims = new(), RoadBoss1Anims = new();
+	MD_Animations3Speed AirBoss2Anims = new(), RoadBoss2Anims = new();
+	MD_Animations3Speed AirBoss3Anims = new(), RoadBoss3Anims = new();
+	MD_Animations3Speed AirBossGearAnims = new(), RoadBossGearAnims = new();
+	MD_Animations3Speed AirSmallAnims = new(), RoadSmallAnims = new();
+	MD_Animations3Speed AirMedium1Anims = new(), RoadMedium1Anims = new();
+	MD_Animations3Speed AirMedium2Anims = new(), RoadMedium2Anims = new();
+	MD_Animations3Speed AirLarge1Anims = new(), RoadLarge1Anims = new();
+	MD_Animations3Speed AirLarge2Anims = new(), RoadLarge2Anims = new();
+	MD_Animations3Speed AirHammerA_Anims = new(), RoadHammerA_Anims = new();
+	MD_Animations3Speed AirHammerB_Anims = new(), RoadHammerB_Anims = new();
+	MD_Animations3Speed AirRaiderA_Anims = new(), RoadRaiderA_Anims = new();
+	MD_Animations3Speed AirRaiderB_Anims = new(), RoadRaiderB_Anims = new();
+	MD_Animations3Speed AirGhostAnims = new(), RoadGhostAnims = new();
 
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
@@ -1305,12 +1151,58 @@ public class MuseDashScene : ISceneDescriptor
 		var roadGearNor1 = getSpineController(MuseDashSceneEnemyInfo.GetGear(this.SceneInfo, PathwaySide.Bottom, 1));
 		var roadGearNor2 = getSpineController(MuseDashSceneEnemyInfo.GetGear(this.SceneInfo, PathwaySide.Bottom, 2));
 		var roadGearNor3 = getSpineController(MuseDashSceneEnemyInfo.GetGear(this.SceneInfo, PathwaySide.Bottom, 3));
-		AirGearAnims
+
+		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDashSceneEnemyInfo.GetGear(req.scene, req.path, req.speed));
 	}
 
+	public struct RequestInfo {
+		public MuseDashSceneInfo scene;
+		public PathwaySide path;
+		public EntityEnterDirection dir;
+		public int speed;
+	}
+
+
 	MonoBehaviourReader getSpineController(string name) => new(MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetFirstComponent<MonoBehaviour>()!);
-	string getSingleAnimation(MonoBehaviourReader reader, string name){
-		
+
+	public delegate string ResolverFn(in RequestInfo info);
+
+	void ProcessThreeSpeedAnimations(MD_Animations3Speed table, in RequestInfo req, MonoBehaviourReader reader) {
+
+	}
+
+	void PopulateThreeSpeedAnimations(MD_Animations3Speed table, ResolverFn resolver) {
+		RequestInfo req = new() {
+			scene = SceneInfo
+		};
+		for (int i = 0; i < 3; i++) {
+			req.speed = i + 1;
+			string name = resolver(in req);
+			var spine = getSpineController(name);
+			ProcessThreeSpeedAnimations(table, in req, spine);
+		}
+	}
+
+	void PopulateThreeSpeedPathwayAnimations(MD_Animations3Speed top, MD_Animations3Speed bottom, ResolverFn resolver) {
+		RequestInfo req = new() {
+			scene = SceneInfo
+		};
+
+		req.path = PathwaySide.Top;
+		for (int i = 0; i < 3; i++) {
+			req.speed = i + 1;
+			string name = resolver(in req);
+			var spine = getSpineController(name);
+			ProcessThreeSpeedAnimations(top, in req, spine);
+		}
+
+		req.path = PathwaySide.Bottom;
+		for (int i = 0; i < 3; i++) {
+			req.speed = i + 1;
+			string name = resolver(in req);
+			var spine = getSpineController(name);
+			ProcessThreeSpeedAnimations(bottom, in req, spine);
+		}
 	}
 
 	public void RenderBackground(DashGameLevel game) {
