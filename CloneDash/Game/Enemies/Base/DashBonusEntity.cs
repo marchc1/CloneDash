@@ -14,7 +14,8 @@ namespace CloneDash.Game
 				return;
 			}
 
-			Position = new((float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), 2.25f);
+			GetGameLevel().SetEnemyPosition(this);
+			Position = new(Position.X + (float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), Position.Y);
 			ApproachAnimation?.Apply(Model, Math.Max(0, AnimationTime));
 		}
 

@@ -26,7 +26,7 @@
 				return;
 			}
 
-			Position = new(0, 2.25f);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 

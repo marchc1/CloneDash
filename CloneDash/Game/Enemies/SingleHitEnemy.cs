@@ -45,8 +45,6 @@ namespace CloneDash.Game.Entities
 			base.Think(frameState);
 		}
 
-		private float xoffset;
-
 		public override void DetermineAnimationPlayback() {
 			if (Model == null) return;
 
@@ -57,7 +55,7 @@ namespace CloneDash.Game.Entities
 				return;
 			}
 
-			Position = new(xoffset, 2.25f);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 

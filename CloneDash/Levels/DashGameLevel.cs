@@ -1889,6 +1889,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return Scene;
 	}
 
+	internal void SetEnemyPosition(DashModelEntity ent) {
+		ent.Position = new(0, 2.25f);
+	}
+
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
 	/// </summary>

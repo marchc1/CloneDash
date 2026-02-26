@@ -30,7 +30,7 @@
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			Position = new(0, 2.25f);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 

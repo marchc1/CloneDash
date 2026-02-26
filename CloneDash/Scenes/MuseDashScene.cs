@@ -1407,15 +1407,37 @@ public class MuseDashScene : ISceneDescriptor
 				else
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderA_Anims, RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				break;
-			// default: throw new NotImplementedException($"{enemy.Type} isn't implemented yet");
+				// default: throw new NotImplementedException($"{enemy.Type} isn't implemented yet");
 		}
 
 		if (anim == null)
 			return null;
 
-		var a = anim.Get("in")?.ActionIdx?.FirstOrDefault();
-		time = enemy.Model?.Data.FindAnimation(a)?.Duration ?? 0;
+		string? a = anim.Get("in")?.ActionIdx?.FirstOrDefault();
+		// This is a REALLY dumb way of doing it. There *has* to be a better way.
+		// I don't think these frame times are standardized. I also don't know where they're stored.
+		// if you run into this code and know, let me know =)
+		if (TryFindFirstTwoDigitNumber(a, out int value, out _))
+			// Muse Dash uses 30fps as a reference
+			time = value / 30d;
+
 		return a;
+	}
+	public static bool TryFindFirstTwoDigitNumber(ReadOnlySpan<char> span, out int value, out int index) {
+		for (int i = 0; i < span.Length - 1; i++) {
+			char c1 = span[i];
+			char c2 = span[i + 1];
+
+			if ((uint)(c1 - '0') <= 9 && (uint)(c2 - '0') <= 9) {
+				value = (c1 - '0') * 10 + (c2 - '0');
+				index = i;
+				return true;
+			}
+		}
+
+		value = 0;
+		index = -1;
+		return false;
 	}
 
 	private MD_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {

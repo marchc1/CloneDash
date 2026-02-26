@@ -23,7 +23,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void DetermineAnimationPlayback() {
-			Position = new(0, 2.25f);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 
