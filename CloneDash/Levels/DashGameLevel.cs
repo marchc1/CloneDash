@@ -1893,6 +1893,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		ent.Position = new(0, 2.25f);
 	}
 
+	internal void SetEnemyKilledPosition(DashModelEntity ent) {
+		var pos = GetPathwayPosition(ent.Pathway);
+		ent.Position = new(pos.X, -pos.Y);
+	}
+
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
 	/// </summary>

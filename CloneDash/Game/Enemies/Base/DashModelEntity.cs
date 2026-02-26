@@ -329,7 +329,7 @@ namespace CloneDash.Game
 			var level = Level;
 
 			XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
-			float w = frameState.WindowWidth, h = frameState.WindowHeight;
+			float w = frameState.WindowWidth / 200, h = frameState.WindowHeight; // 200;
 
 			var ret = VisTest(w, h, (float)XPos);
 			if (Shown == false && ret == true) {

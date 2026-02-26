@@ -49,7 +49,7 @@ namespace CloneDash.Game.Entities
 			if (Model == null) return;
 
 			if (Dead) {
-				Position = GetGameLevel().GetPathwayPosition(Pathway);
+				GetGameLevel().SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;

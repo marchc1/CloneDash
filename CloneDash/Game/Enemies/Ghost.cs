@@ -20,7 +20,7 @@
 
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
-				Position = GetGameLevel().GetPathwayPosition(Pathway);
+				GetGameLevel().SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
