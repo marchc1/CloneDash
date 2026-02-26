@@ -1407,6 +1407,7 @@ public class AnimationHandler
 		}
 	}
 
+	public ModelData? GetModelData() => model;
 	public void SetModel(ModelData? data) {
 		if (model == data)
 			return;

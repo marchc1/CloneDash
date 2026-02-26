@@ -30,7 +30,7 @@
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			Position = new(0, 450);
+			Position = new(0, 2.25f);
 			base.DetermineAnimationPlayback();
 		}
 

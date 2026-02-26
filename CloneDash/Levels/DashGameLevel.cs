@@ -1214,7 +1214,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float GlobalScale => 1 / 200f;
 
 	public override void PreRenderBackground(FrameState frameState) {
-		Boss.Position = new(0, 450);
+		Boss.Position = new(0, 2.25f);
 	}
 
 	public override void PreRender(FrameState frameState) {

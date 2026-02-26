@@ -49,13 +49,14 @@ public interface ISceneDescriptor
 	/// <param name="type"></param>
 	/// <param name="time"></param>
 	/// <returns></returns>
-	public string? GetBossAnimation(BossAnimationType type, out double time);
-	public string? GetBossAnimation(BossAnimationType type) => GetBossAnimation(type, out _);
-	public string? GetBossAnimation(DashEnemy fired, out double time) =>
+	public double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim);
+	public double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim);
+	public double PlayBossAnimation(BossAnimationType type, AnimationHandler anim) => PlayBossAnimation(0, type, anim);
+	public double PlayBossAnimation(int channel, DashEnemy fired, AnimationHandler anim) =>
 		fired.Variant == EntityVariant.Boss1
-			? fired.Pathway == PathwaySide.Top ? GetBossAnimation(BossAnimationType.AttackAir1, out time) : GetBossAnimation(BossAnimationType.AttackGround1, out time)
-			: fired.Pathway == PathwaySide.Top ? GetBossAnimation(BossAnimationType.AttackAir2, out time) : GetBossAnimation(BossAnimationType.AttackGround2, out time);
-	public string? GetBossAnimation(DashEnemy fired) => GetBossAnimation(fired, out _);
+			? fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir1, anim) : PlayBossAnimation(BossAnimationType.AttackGround1, anim)
+			: fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir2, anim) : PlayBossAnimation(BossAnimationType.AttackGround2, anim);
+
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time);
 
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway);

@@ -1308,7 +1308,52 @@ public class MuseDashScene : ISceneDescriptor
 			case SceneSound.FullCombo: FullComboSound?.Play(); break;
 		}
 	}
-	public string? GetBossAnimation(BossAnimationType type, out double time) { time = 0; return null; }
+
+	public double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim) {
+		MD_ActionData? actions = GetBossAnimation(type);
+		if (actions == null)
+			return 0;
+
+		return anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault())?.Duration ?? 0;
+	}
+
+	public double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim) {
+		MD_ActionData? actions = GetBossAnimation(type);
+		if (actions == null)
+			return 0;
+		anim.ClearAnimation(channel);
+		for (int i = 0; i < actions.ActionIdx.Length; i++)
+			if (i == 0)
+				anim.SetAnimation(channel, actions.ActionIdx[i], i == (actions.ActionIdx.Length - 1));
+			else
+				anim.AddAnimation(channel, actions.ActionIdx[i], i == (actions.ActionIdx.Length - 1));
+
+		return anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault())?.Duration ?? 0;
+	}
+
+	public MD_ActionData? GetBossAnimation(BossAnimationType type) {
+		MD_ActionData? actions = null;
+		switch (type) {
+			case BossAnimationType.Standby0: actions = BossAnims.Get("standby"); break;
+			case BossAnimationType.In: actions = BossAnims.Get("in"); break;
+			case BossAnimationType.Out: actions = BossAnims.Get("out"); break;
+			case BossAnimationType.CloseAttackSlow: actions = BossAnims.Get("boss_close_atk_1"); break;
+			case BossAnimationType.CloseAttackFast: actions = BossAnims.Get("boss_close_atk_2"); break;
+			case BossAnimationType.Hurt: actions = BossAnims.Get("boss_hurt"); break;
+			case BossAnimationType.From0To1: actions = BossAnims.Get("boss_far_atk_1_start"); break;
+			case BossAnimationType.AttackAir1: actions = BossAnims.Get("boss_far_atk_1_L"); break;
+			case BossAnimationType.AttackGround1: actions = BossAnims.Get("boss_far_atk_1_R"); break;
+			case BossAnimationType.From1To0: actions = BossAnims.Get("boss_far_atk_1_end"); break;
+			case BossAnimationType.From0To2: actions = BossAnims.Get("boss_far_atk_2_start"); break;
+			case BossAnimationType.AttackAir2: actions = BossAnims.Get("boss_far_atk_2"); break;
+			case BossAnimationType.AttackGround2: actions = BossAnims.Get("boss_far_atk_2"); break;
+			case BossAnimationType.From2To0: actions = BossAnims.Get("boss_far_atk_2_end"); break;
+			case BossAnimationType.From1To2: actions = BossAnims.Get("atk_1_to_2"); break;
+			case BossAnimationType.From2To1: actions = BossAnims.Get("atk_2_to_1"); break;
+		}
+		return actions;
+	}
+
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) { time = 0; return null; }
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) => null;
 	public ModelData? GetEnemyModel(DashEnemy enemy) {

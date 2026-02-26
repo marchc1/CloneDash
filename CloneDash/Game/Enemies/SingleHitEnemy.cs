@@ -57,7 +57,7 @@ namespace CloneDash.Game.Entities
 				return;
 			}
 
-			Position = new(xoffset, 450);
+			Position = new(xoffset, 2.25f);
 			base.DetermineAnimationPlayback();
 		}
 

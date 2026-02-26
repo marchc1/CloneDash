@@ -12,7 +12,7 @@ public class BossSingleHit(DashGameLevel game) : DashEvent(game)
 		base.OnBuild();
 
 		var boss = Game.Boss;
-		var animation = Game.Scene.GetBossAnimation(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, out var speed);
+		var speed = Game.Scene.GetBossAnimationTime(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, boss.Animations);
 
 		Game.LoadEntity(new() {
 			Type = EntityType.Single,
