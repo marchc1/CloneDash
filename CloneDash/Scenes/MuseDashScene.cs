@@ -1371,8 +1371,8 @@ public class MuseDashScene : ISceneDescriptor
 						EntityVariant.Medium1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium1Anims, RoadMedium1Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
 						EntityVariant.Medium2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium2Anims, RoadMedium2Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
 
-						EntityVariant.Large1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss1Anims, RoadBoss1Anims).GetSpeed(enemy.Speed),
-						EntityVariant.Large2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss2Anims, RoadBoss2Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Large1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirLarge1Anims, RoadLarge1Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Large2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirLarge2Anims, RoadLarge2Anims).GetSpeed(enemy.Speed),
 
 						_ => null
 					};
@@ -1413,7 +1413,9 @@ public class MuseDashScene : ISceneDescriptor
 		if (anim == null)
 			return null;
 
-		return anim.ActionData.FirstOrDefault()?.ActionIdx?.FirstOrDefault();
+		var a = anim.Get("in")?.ActionIdx?.FirstOrDefault();
+		time = enemy.Model?.Data.FindAnimation(a)?.Duration ?? 0;
+		return a;
 	}
 
 	private MD_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {
@@ -1434,7 +1436,7 @@ public class MuseDashScene : ISceneDescriptor
 
 
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
-		string request = type == HitAnimationType.Great ? "out_g" : "out_p";
+		string request = type == HitAnimationType.Great ? "note_out_g" : "note_out_p";
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
 			case EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
