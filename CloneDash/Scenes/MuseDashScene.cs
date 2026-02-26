@@ -173,8 +173,8 @@ public static class MuseDashSceneEnemyInfo
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static string DIRECTION(EntityEnterDirection dir) => dir switch {
 		EntityEnterDirection.RightSide => "nor",
-		EntityEnterDirection.TopDown => "up",
-		EntityEnterDirection.BottomUp => "down",
+		EntityEnterDirection.TopDown => "down",
+		EntityEnterDirection.BottomUp => "up",
 		_ => throw new ArgumentOutOfRangeException()
 	};
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static int SPEED(int speed) => Math.Clamp(speed, 1, 3);
@@ -208,16 +208,16 @@ public static class MuseDashSceneEnemyInfo
 		=> $"{scene.MapIdx:00}{CODE_BOSS3}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
 	public static string GetBossGear(MuseDashSceneInfo scene, PathwaySide side, int speed, bool second)
-			=> $"{scene.MapIdx:00}{CODE_BOSSGEARS}{speed + (second ? 3 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(second ? 2 : 1)}_nor_{SPEED(speed)}";
+			=> $"{scene.MapIdx:00}{CODE_BOSSGEARS}{speed + (second ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(second ? 2 : 1)}_nor_{SPEED(speed)}";
 
 	public static string GetSmall(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_SMALL}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 6, EntityEnterDirection.BottomUp => 12, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+		=> $"{scene.MapIdx:00}{CODE_SMALL}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
 	public static string GetMedium1(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_MEDIUM1}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 6, EntityEnterDirection.BottomUp => 12, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+		=> $"{scene.MapIdx:00}{CODE_MEDIUM1}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
 	public static string GetMedium2(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_MEDIUM2}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 6, EntityEnterDirection.BottomUp => 12, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+		=> $"{scene.MapIdx:00}{CODE_MEDIUM2}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
 	public static string GetLarge1(MuseDashSceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_LARGE1}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
@@ -226,10 +226,10 @@ public static class MuseDashSceneEnemyInfo
 		=> $"{scene.MapIdx:00}{CODE_LARGE2}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
 	public static string GetHammer(MuseDashSceneInfo scene, PathwaySide side, int speed, bool reversed)
-		=> $"{scene.MapIdx:00}{CODE_HAMMER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "air" : "road")}_{SPEED(speed)}";
+		=> $"{scene.MapIdx:00}{CODE_HAMMER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "up" : "down")}_{SPEED(speed)}";
 
 	public static string GetRaider(MuseDashSceneInfo scene, PathwaySide side, int speed, bool reversed)
-		=> $"{scene.MapIdx:00}{CODE_RAIDER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "air" : "road")}_{SPEED(speed)}";
+		=> $"{scene.MapIdx:00}{CODE_RAIDER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "down" : "up")}_{SPEED(speed)}";
 
 	public static string GetGhost(MuseDashSceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
