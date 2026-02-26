@@ -43,7 +43,6 @@ public class DashEnemy : DashModelEntity
 		var scene = level.Scene;
 
 		Model = scene.GetEnemyModel(this)?.Instantiate();
-		Model?.Scale = new(level.GlobalScale);
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 		SetShowTimeViaLength(showtime);
@@ -129,6 +128,7 @@ public class DashEnemy : DashModelEntity
 		DetermineAnimationPlayback();
 
 		Model.Position = Position;
+		Model.Scale = Scale;
 
 		Model.Render();
 

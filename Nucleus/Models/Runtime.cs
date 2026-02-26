@@ -245,7 +245,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Graphics2D.ResetDrawingOffset();
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(Position.X, Position.Y, 0);
-		Rlgl.Scalef(Scale.X, Scale.Y, 0);
+		Rlgl.Scalef(Scale.X, Scale.Y, 1);
 
 		foreach (var bone in Bones) {
 			bone.UpdateWorldTransform();

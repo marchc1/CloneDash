@@ -86,8 +86,8 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * game.GlobalScale;
-			var h = tex.Height * game.GlobalScale;
+			var w = tex.Width * DashGameLevel.GlobalScale;
+			var h = tex.Height * DashGameLevel.GlobalScale;
 
 			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
@@ -100,8 +100,8 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * game.GlobalScale;
-			var h = tex.Height * game.GlobalScale;
+			var w = tex.Width * DashGameLevel.GlobalScale;
+			var h = tex.Height * DashGameLevel.GlobalScale;
 
 			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
@@ -117,15 +117,15 @@ namespace CloneDash.Game.Entities
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
 			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
-			var height = tex.Height * game.GlobalScale;
+			var height = tex.Height * DashGameLevel.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
 
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
-			var maxLength = (xEnd - xStart) / (tex.Width * game.GlobalScale * 2);
-			var length = maxLength - ((xEnd - xMid) / (tex.Width * game.GlobalScale * 2));
+			var maxLength = (xEnd - xStart) / (tex.Width * DashGameLevel.GlobalScale * 2);
+			var length = maxLength - ((xEnd - xMid) / (tex.Width * DashGameLevel.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
 			Rlgl.SetTexture(tex.HardwareID);
@@ -151,8 +151,8 @@ namespace CloneDash.Game.Entities
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
 			var time = game.Conductor.Time * 5;
-			var sv = (float)(Math.Sin(time) * 10) * game.GlobalScale;
-			var cv = (float)(Math.Cos(time) * 10) * game.GlobalScale;
+			var sv = (float)(Math.Sin(time) * 10) * DashGameLevel.GlobalScale;
+			var cv = (float)(Math.Cos(time) * 10) * DashGameLevel.GlobalScale;
 
 			drawScrollQuad(game, up, ref frameState, cv / 2, sv);
 			drawScrollQuad(game, down, ref frameState, sv / 2, cv);

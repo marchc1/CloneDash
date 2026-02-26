@@ -1211,7 +1211,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public float PlayerScale => 1 / 200f;
 	public float PlayScale => 1 / 200f;
-	public float GlobalScale => 1 / 200f;
+	public static float GlobalScale => 1 / 200f;
 
 	public override void PreRenderBackground(FrameState frameState) {
 		Boss.Position = new(0, 2.25f);
@@ -1262,9 +1262,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		TopPathway.Render();
 		BottomPathway.Render();
 
-		Rlgl.PushMatrix();
-		Rlgl.Scalef(1, 1, GlobalScale);
-
 		// Hold notes
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
 
@@ -1274,8 +1271,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
-
-		Rlgl.PopMatrix();
 
 		AddDebugString("Visible Entities", VisibleEntities.Count);
 		AddDebugString("Player Animation", Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");

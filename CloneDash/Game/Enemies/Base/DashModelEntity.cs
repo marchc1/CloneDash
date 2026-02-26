@@ -15,6 +15,10 @@ namespace CloneDash.Game
 
 	public class DashModelEntity : ModelEntity
 	{
+		public DashModelEntity() {
+			Scale = new(DashGameLevel.GlobalScale);
+		}
+
 		public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
 		public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
 		public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
