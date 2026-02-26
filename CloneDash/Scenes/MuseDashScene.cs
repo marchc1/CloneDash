@@ -93,7 +93,7 @@ public class MD_Animations3Speed
 	public MD_SpineActionController GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
 		Debug.Assert(speed >= 1);
 		Debug.Assert(speed <= 3);
-		return Speeds[speed - 1][(int)dir];
+		return Speeds[speed - 1][(int)dir] ?? Speeds[speed - 1][0]; // Default to rightside
 	}
 
 	public ref MD_SpineActionController GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
