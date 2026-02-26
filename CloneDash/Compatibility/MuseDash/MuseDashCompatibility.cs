@@ -1066,8 +1066,8 @@ public static class MuseDashModelConverter
 	}
 
 
-	private static void fillKeyframe(FCurve<float> curve, float time, float value, byte ct, float c1, float c2, float c3, float c4) {
-		curve.AddKeyframe(new(time, value) { Interpolation = interp(ct), RightHandle = interpKFH(ct, c1, c2), LeftHandle = interpKFH(ct, c3, c4) });
+	private static void fillKeyframe(FCurve<float> curve, float time, float value, byte ct, float c1, float c2, byte prevCt, float c3, float c4) {
+		curve.AddKeyframe(new(time, value) { Interpolation = interp(ct), RightHandle = interpKFH(ct, c1, c2), LeftHandle = interpKFH(prevCt, c3, c4) });
 	}
 
 	private static void fixCurve(FCurve<float> curve) {
@@ -1104,18 +1104,19 @@ public static class MuseDashModelConverter
 							tl.SlotIndex = slotIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var color = skeleton.MD_ReadColor();
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 
-								fillKeyframe(tl.Curve(0), time, color.R / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(1), time, color.G / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(2), time, color.B / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(3), time, color.A / 255f, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, color.R / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(1), time, color.G / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(2), time, color.B / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(3), time, color.A / 255f, curveType, c1, c2, prevCt, lc3, lc4);
 
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
@@ -1153,13 +1154,14 @@ public static class MuseDashModelConverter
 							tl.BoneIndex = boneIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var value = skeleton.MD_ReadFloat();
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
-								fillKeyframe(tl.Curve(0), time, value, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, value, curveType, c1, c2, prevCt, lc3, lc4);
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
@@ -1181,7 +1183,7 @@ public static class MuseDashModelConverter
 							tl.BoneIndex = boneIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var x = skeleton.MD_ReadFloat();
@@ -1189,8 +1191,9 @@ public static class MuseDashModelConverter
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 
-								fillKeyframe(tl.Curve(0), time, x, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(1), time, y, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, x, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(1), time, y, curveType, c1, c2, prevCt, lc3, lc4);
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
