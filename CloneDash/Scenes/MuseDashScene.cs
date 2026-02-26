@@ -1354,8 +1354,113 @@ public class MuseDashScene : ISceneDescriptor
 		return actions;
 	}
 
-	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) { time = 0; return null; }
-	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType) => null;
+	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
+		time = 0;
+
+		MD_SpineActionController? anim = null;
+
+		switch (enemy.Type) {
+			case EntityType.Single: {
+					anim = enemy.Variant switch {
+						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss1Anims, RoadBoss1Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss2Anims, RoadBoss2Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss3 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss3Anims, RoadBoss3Anims).GetSpeed(enemy.Speed),
+
+						EntityVariant.Small => Pathway.ValueDependantOnPathway(enemy.Pathway, AirSmallAnims, RoadSmallAnims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+
+						EntityVariant.Medium1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium1Anims, RoadMedium1Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+						EntityVariant.Medium2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium2Anims, RoadMedium2Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+
+						EntityVariant.Large1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss1Anims, RoadBoss1Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Large2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss2Anims, RoadBoss2Anims).GetSpeed(enemy.Speed),
+
+						_ => null
+					};
+					break;
+				}
+			case EntityType.Gear: {
+					anim = enemy.Variant switch {
+						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearA_Anims, RoadBossGearA_Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearB_Anims, RoadBossGearB_Anims).GetSpeed(enemy.Speed),
+						_ => Pathway.ValueDependantOnPathway(enemy.Pathway, AirGearAnims, RoadGearAnims).GetSpeed(enemy.Speed)
+					};
+					break;
+				}
+			case EntityType.Masher: {
+					anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection);
+					break;
+				}
+			case EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			// todo
+			// case EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			// case EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			case EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed); break;
+			case EntityType.Hammer:
+				if (enemy.Flipped)
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+				else
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+				break;
+			case EntityType.Raider:
+				if (enemy.Flipped)
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+				else
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderA_Anims, RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+				break;
+			// default: throw new NotImplementedException($"{enemy.Type} isn't implemented yet");
+		}
+
+		if (anim == null)
+			return null;
+
+		return anim.ActionData.FirstOrDefault()?.ActionIdx?.FirstOrDefault();
+	}
+
+	private MD_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {
+		EntityVariant.Boss1 => pathway == PathwaySide.Top ? AirBoss1Anims : RoadBoss1Anims,
+		EntityVariant.Boss2 => pathway == PathwaySide.Top ? AirBoss2Anims : RoadBoss2Anims,
+		EntityVariant.Boss3 => pathway == PathwaySide.Top ? AirBoss3Anims : RoadBoss3Anims,
+
+		EntityVariant.Small => pathway == PathwaySide.Top ? AirSmallAnims : RoadSmallAnims,
+
+		EntityVariant.Medium1 => pathway == PathwaySide.Top ? AirMedium1Anims : RoadMedium1Anims,
+		EntityVariant.Medium2 => pathway == PathwaySide.Top ? AirMedium2Anims : RoadMedium2Anims,
+
+		EntityVariant.Large1 => pathway == PathwaySide.Top ? AirLarge1Anims : RoadLarge1Anims,
+		EntityVariant.Large2 => pathway == PathwaySide.Top ? AirLarge2Anims : RoadLarge2Anims,
+
+		_ => throw new Exception()
+	};
+
+
+	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
+		string request = type == HitAnimationType.Great ? "out_g" : "out_p";
+		MD_ActionData? anim = null;
+		switch (enemy.Type) {
+			case EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case EntityType.Masher: anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case EntityType.Hammer:
+				if (enemy.Flipped)
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+				else
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+				break;
+			case EntityType.Raider:
+				if (enemy.Flipped)
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+				else
+					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderA_Anims, RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+				break;
+		}
+
+		if (anim == null)
+			return null;
+
+		return anim.ActionIdx.FirstOrDefault();
+	}
+
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
 		switch (enemy.Type) {
 			case EntityType.Boss: return BossModel;
