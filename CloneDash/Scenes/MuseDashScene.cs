@@ -3,6 +3,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Entities;
+using CloneDash.Settings;
 using DiscordRPC;
 using NAudio.CoreAudioApi;
 using Nucleus;
@@ -1072,6 +1073,11 @@ public class MuseDashScene : ISceneDescriptor
 		FeverSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
 		UnpauseSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
 		FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
+
+		BeginSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		FeverSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		UnpauseSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		FullComboSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 
 		var assets = MuseDashCompatibility.StreamingAssets;
 
