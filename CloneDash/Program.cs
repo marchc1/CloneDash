@@ -176,7 +176,13 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-	}
+
+		// Test stuff
+		Logs.Info("Update was successful!!!");
+		Logs.Info("Update was successful!!!");
+		Logs.Info("Update was successful!!!");
+		Logs.Info("Update was successful!!!");
+    }
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
 		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
