@@ -57,23 +57,6 @@ jobs:
       - name: Build (Release)
         run: dotnet build ./CloneDash.sln --configuration Release --no-restore
       
-      - name: Publish Windows single-file exe (framework-dependent)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          dotnet publish "./CloneDash" `
-            -c Release `
-            -f net10.0 `
-            -r win-x64 `
-            -p:SelfContained=false `
-            -p:PublishSingleFile=true `
-            -p:UseAppHost=true `
-            -p:RestoreNoWarn=NU1605 `
-            -o "./publish/win-x64-single"
-          $exe = Get-ChildItem -Path "./publish/win-x64-single" -Filter *.exe | Select-Object -First 1
-          if (-not $exe) { throw "No exe produced in ./publish/win-x64-single" }
-          Copy-Item $exe.FullName "./CloneDash-Game-Windows-Portable.exe" -Force
-      
       - name: Zip for Release (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -234,14 +217,6 @@ jobs:
           path: ./CloneDash-Game-Windows.zip
           if-no-files-found: error
       
-      - name: Upload artifact - Windows Portable exe
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v6
-        with:
-          name: CloneDash-Game-Windows-Portable
-          path: ./CloneDash-Game-Windows-Portable.exe
-          if-no-files-found: error
-      
       - name: Upload artifact - Linux zip
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v6
@@ -289,7 +264,6 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
-            dist/CloneDash-Game-Windows-Portable/CloneDash-Game-Windows-Portable.exe
             dist/CloneDash-Game-Linux/CloneDash-Game-Linux.zip
             dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
             dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
