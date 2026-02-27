@@ -17,6 +17,7 @@ using Nucleus.NewEngine;
 using Nucleus.UI;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using Velopack;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
@@ -39,6 +40,9 @@ namespace CloneDash;
 internal class Program
 {
 	static void Main() {
+		// Installer stuff, ignored if using zip.
+		VelopackApp.Build().Run();
+
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
 			return;
 
@@ -140,6 +144,10 @@ public class GameDLL : IGameDLL
 
 		// Update checker
 		new Task(async () => {
+			var installerUpdate = await UpdateChecker.CheckAndApplyUpdates();
+			if (installerUpdate) return; // Program is installed and no update needed
+
+			// Program is not installed (portable), run local update check
 			var release = await UpdateChecker.CheckForNewReleaseAsync();
 
 			if (release != null) {

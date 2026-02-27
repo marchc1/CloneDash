@@ -1,12 +1,15 @@
 ﻿using Nucleus;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Velopack;
+using Velopack.Sources;
 
 namespace CloneDash.Systems;
 
 public static class UpdateChecker
 {
-    public const string RepoOwner = "marchc1";
+    // TODO: Change to marchc1 before PR
+    public const string RepoOwner = "ALLMarvelous";
     public const string RepoName = "CloneDash";
 
     public class GitHubRelease
@@ -19,6 +22,36 @@ public static class UpdateChecker
 
         [JsonPropertyName("html_url")]
         public string? Url { get; set; }
+    }
+
+    /// <summary>
+    /// Returns true if the update is being handled by Velopack
+    /// Otherwise returns false
+    /// </summary>
+    public static async Task<bool> CheckAndApplyUpdates()
+    {
+        // Check GitHub for a new release
+        var manager = new UpdateManager(new GithubSource($"https://github.com/{RepoOwner}/{RepoName}", null, false));
+
+        if (!manager.IsInstalled)
+        {
+            // If it's running locally then do the other popup-based one
+            Logs.Info("Running portable, skipping auto-update.");
+            return false;
+        }
+
+        var newVersion = await manager.CheckForUpdatesAsync();
+        if (newVersion == null)
+        {
+            Logs.Info("No newer release found.");
+            return true;
+        }
+
+        Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
+        await manager.DownloadUpdatesAsync(newVersion);
+
+        manager.ApplyUpdatesAndRestart(newVersion);
+        return true;
     }
 
     /// <summary>
