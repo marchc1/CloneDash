@@ -1437,11 +1437,9 @@ public static class MuseDashModelConverter
 							region.Rotation = rotation;
 
 							var mdRegion = mdatlas.Regions.First(x => x.Value.Name == region.Path).Value;
-							mdRegion.GetBounds(out _, out _, out int bw, out int bh);
-							int cropW = (mdRegion.Degrees % 180 == 90) ? bh : bw;
-							int cropH = (mdRegion.Degrees % 180 == 90) ? bw : bh;
-							var wM = width / cropW;
-							var hM = height / cropH;
+							var wM = width / mdRegion.OriginalWidth;
+							var hM = height / mdRegion.OriginalHeight;
+							region.Scale = new(scaleX * wM, scaleY * hM);
 							region.Scale = new(scaleX * wM, scaleY * hM);
 							attachment = region;
 						}

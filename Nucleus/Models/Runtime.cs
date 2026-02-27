@@ -229,8 +229,6 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public Skin Skin { get; set; }
 	public Vector2F Position { get; set; }
 	public Vector2F Scale { get; set; } = new(1, 1);
-	public bool FlipX { get; set; }
-	public bool FlipY { get; set; }
 	public IRuntimeTextureAtlas TextureAtlas => Data.TextureAtlas;
 
 	private Transformation worldTransform;
@@ -584,8 +582,10 @@ public class RegionAttachment : Attachment
 		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
 		float rotation = region.GetRotation();
 
-		region.GetOffsets(out int ox, out int oy, out int ow, out int oh);
-		float width = (float)oh, height = (float)ow;
+		int deg = (int)rotation;
+		float cropW = (deg % 180 == 90) ? rh : rw;
+		float cropH = (deg % 180 == 90) ? rw : rh;
+		float width = cropH, height = cropW;
 		float widthDiv2 = width / 2, heightDiv2 = height / 2;
 
 		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2, widthDiv2);
@@ -872,8 +872,7 @@ public static class AtlasUV
 		int offsetX, int offsetY, int origW, int origH,
 		int texW, int texH, float u, float v, out float outU, out float outV) {
 
-		if (rotation != 90 && rotation != 270)
-			v = 1 - v;
+		v = 1 - v;
 
 		int deg = (int)rotation;
 		int cropW = (deg % 180 == 90) ? rh : rw;
@@ -889,7 +888,7 @@ public static class AtlasUV
 
 		switch (deg) {
 			case 90:
-				outU = x0 + (1 - cv) * fw;
+				outU = x0 + cv * fw;
 				outV = y0 + (1 - cu) * fh;
 				break;
 			case 180:
@@ -897,7 +896,7 @@ public static class AtlasUV
 				outV = y0 + (1 - cv) * fh;
 				break;
 			case 270:
-				outU = x0 + cv * fw;
+				outU = x0 + (1 - cv) * fw;
 				outV = y0 + cu * fh;
 				break;
 			default:
