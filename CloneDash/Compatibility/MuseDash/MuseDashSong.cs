@@ -138,7 +138,7 @@ public class MuseDashSong : ChartSong
 
 			var tex = Raylib.LoadTextureFromImage(img);
 			Raylib.GenTextureMipmaps(ref tex);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+			Raylib.SetTextureFilter(tex, TextureFilter.Trilinear);
 			Raylib.UnloadImage(img);
 			CoverTexture = new() {
 				Texture = new(EngineCore.Level.Textures, tex, true),

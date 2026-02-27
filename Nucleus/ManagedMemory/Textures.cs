@@ -178,7 +178,7 @@ namespace Nucleus.ManagedMemory
 
 			Texture tex = new(this, Filesystem.ReadTexture(new(pathID), new(path) /* << TODO */), true);
 			tex.GenerateMipmaps();
-			tex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
+			tex.SetFilter(TextureFilter.Bilinear);
 			LoadedTexturesFromFile.Add(managedPath, tex);
 			LoadedFilesFromTexture.Add(tex, managedPath);
 
@@ -195,7 +195,7 @@ namespace Nucleus.ManagedMemory
 			if (LoadedTexturesFromFile.TryGetValue(filepathSymbol, out Texture? texFromFile)) return texFromFile;
 
 			Texture tex = new(this, Raylib.LoadTexture(new string(filepath) /* << TODO */), true);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 
 			LoadedTexturesFromFile.Add(filepathSymbol, tex);
 			LoadedFilesFromTexture.Add(tex, filepathSymbol);

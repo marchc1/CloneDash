@@ -5,6 +5,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -102,7 +104,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	public List<Animation> Animations { get; set; } = [];
 	public List<LinkedMesh> LinkedMeshes { get; set; } = [];
 
-	[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; set; }
+	[JsonIgnore] public IRuntimeTextureAtlas TextureAtlas { get; set; }
 
 	// Internal lookup tables (holding off for now)
 	// [JsonIgnore] readonly UtlSymbolTableMT Symbols = new();
@@ -229,7 +231,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public Vector2F Scale { get; set; } = new(1, 1);
 	public bool FlipX { get; set; }
 	public bool FlipY { get; set; }
-	public TextureAtlasSystem TextureAtlas => Data.TextureAtlas;
+	public IRuntimeTextureAtlas TextureAtlas => Data.TextureAtlas;
 
 	private Transformation worldTransform;
 	public Transformation WorldTransform {
@@ -556,14 +558,14 @@ public class RegionAttachment : Attachment
 	public Color Color = Color.White;
 
 	public string Path;
-	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public IModelAtlasRegion? Region;
 	[JsonIgnore] public bool InitializedRegion;
 
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		bool OK = data.TextureAtlas.TryGetTextureRegion(Path, out Region);
-		Debug.Assert(OK, "TextureAtlas couldn't find the texture region!");
+		Region = data.TextureAtlas.GetRegion(Path);
+		Debug.Assert(Region != null, "TextureAtlas couldn't find the texture region!");
 	}
 
 	public override void Render(SlotInstance slot) {
@@ -572,14 +574,18 @@ public class RegionAttachment : Attachment
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 
 		var region = Region;
-		if (!region.IsValid()) {
+		if (region == null) {
 			Setup(slot.Bone.Model.Data);
-			if (!Region.IsValid()) return;
+			if (Region == null) return;
 			region = Region;
 		}
 
-		var tex = slot.Bone.Model.TextureAtlas.Texture;
-		float width = region.H, height = region.W;
+		ITexture tex = region.GetTexture();
+		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+		float rotation = region.GetRotation();
+
+		region.GetOffsets(out int ox, out int oy, out int ow, out int oh);
+		float width = (float)oh, height = (float)ow;
 		float widthDiv2 = width / 2, heightDiv2 = height / 2;
 
 		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2, widthDiv2);
@@ -603,26 +609,15 @@ public class RegionAttachment : Attachment
 
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
-		float uStart, uEnd, vStart, vEnd;
-		uStart = (float)region.X / tex.Width;
-		uEnd = uStart + ((float)region.W / tex.Width);
+		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.Width, tex.Height, out var uvTL, out var uvTR, out var uvBR, out var uvBL);
 
-		vStart = (float)region.Y / tex.Height;
-		vEnd = vStart + ((float)region.H / tex.Height);
+		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
+		Rlgl.TexCoord2f(uvTR.X, uvTR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+		Rlgl.TexCoord2f(uvTL.X, uvTL.Y); Rlgl.Vertex2f(TL.X, TL.Y);
 
-		var clipping = slot.Model.Clipping;
-
-		Vector2F t1v1 = BL, t1v2 = TR, t1v3 = TL;
-		Vector2F uv1v1 = new(uStart, vEnd), uv1v2 = new(uEnd, vStart), uv1v3 = new(uStart, vStart);
-		Rlgl.TexCoord2f(uv1v1.X, uv1v1.Y); Rlgl.Vertex2f(t1v1.X, t1v1.Y);
-		Rlgl.TexCoord2f(uv1v2.X, uv1v2.Y); Rlgl.Vertex2f(t1v2.X, t1v2.Y);
-		Rlgl.TexCoord2f(uv1v3.X, uv1v3.Y); Rlgl.Vertex2f(t1v3.X, t1v3.Y);
-
-		Vector2F t2v1 = BR, t2v2 = TR, t2v3 = BL;
-		Vector2F uv2v1 = new(uEnd, vEnd), uv2v2 = new(uEnd, vStart), uv2v3 = new(uStart, vEnd);
-		Rlgl.TexCoord2f(uv2v1.X, uv2v1.Y); Rlgl.Vertex2f(t2v1.X, t2v1.Y);
-		Rlgl.TexCoord2f(uv2v2.X, uv2v2.Y); Rlgl.Vertex2f(t2v2.X, t2v2.Y);
-		Rlgl.TexCoord2f(uv2v3.X, uv2v3.Y); Rlgl.Vertex2f(t2v3.X, t2v3.Y);
+		Rlgl.TexCoord2f(uvBR.X, uvBR.Y); Rlgl.Vertex2f(BR.X, BR.Y);
+		Rlgl.TexCoord2f(uvTR.X, uvTR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
 
@@ -674,7 +669,7 @@ public class VertexAttachment : Attachment
 	public float Rotation;
 	public Vector2F Scale;
 
-	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public IModelAtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
 	protected Vector2F CalculateVertexWorldPosition(SlotInstance slot, int vertexI) {
@@ -747,7 +742,7 @@ public class MeshAttachment : VertexAttachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
+		Region = data.TextureAtlas.GetRegion(Path)!;
 	}
 
 	public AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
@@ -768,19 +763,17 @@ public class MeshAttachment : VertexAttachment
 		slot.StartBlendModeFor(this);
 
 		var region = Region;
-
-		//Debug.Assert(region.IsValid());
-		if (!region.IsValid()) {
+		if (region == null) {
 			Setup(slot.Bone.Model.Data);
-			if (!Region.IsValid()) return;
+			if (Region == null) return;
 			region = Region;
 		}
 
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
-
-		float width = region.H, height = region.W;
-		float widthDiv2 = width / 2, heightDiv2 = height / 2;
-		ManagedMemory.Texture tex = slot.Bone.Model.TextureAtlas.Texture;
+		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+		region.GetOffsets(out int offsetX, out int offsetY, out int origW, out int origH);
+		float rotation = region.GetRotation();
+		ITexture tex = region.GetTexture();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.SetTexture(tex.HardwareID);
@@ -792,25 +785,14 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.DisableBackfaceCulling();
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 		if (triangles.Length > 0) {
-			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)region.X / (float)tex.Width;
-			uEnd = uStart + ((float)region.W / (float)tex.Width);
-
-			vStart = ((float)region.Y / (float)tex.Height);
-			vEnd = vStart + ((float)region.H / (float)tex.Height);
-
-			bool block = false;
 			foreach (var tri in triangles) {
 				var av1 = vertices[tri.V1];
 				var av2 = vertices[tri.V2];
 				var av3 = vertices[tri.V3];
 
-				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
-				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
-				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
-
-				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
-				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
 
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
@@ -830,17 +812,6 @@ public class MeshAttachment : VertexAttachment
 			Rlgl.SetTexture(0);
 
 			foreach (var tri in triangles) {
-				var av1 = vertices[tri.V1];
-				var av2 = vertices[tri.V2];
-				var av3 = vertices[tri.V3];
-
-				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
-				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
-				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
-
-				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
-				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
-
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
 				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
@@ -863,8 +834,77 @@ public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 	public int GetVerticesCount() => Vertices.Length;
 	public override void Render(SlotInstance slot) {
 		base.Render(slot);
-		// Start the model clipper
 		slot.Model.Clipping.Start(this, slot, EndSlot);
+	}
+}
+
+public static class AtlasUV
+{
+	public static void ComputeRegionUVs(int rx, int ry, int rw, int rh, float rotation, int texW, int texH, out Vector2F uvTL, out Vector2F uvTR, out Vector2F uvBR, out Vector2F uvBL) {
+		float x0 = (float)rx / texW;
+		float y0 = (float)ry / texH;
+		float x1 = (float)(rx + rw) / texW;
+		float y1 = (float)(ry + rh) / texH;
+
+		Vector2F a = new(x0, y0);
+		Vector2F b = new(x1, y0);
+		Vector2F c = new(x1, y1);
+		Vector2F d = new(x0, y1);
+
+		int deg = (int)rotation;
+		switch (deg) {
+			case 90:
+				uvTL = d; uvTR = a; uvBR = b; uvBL = c;
+				break;
+			case 180:
+				uvTL = c; uvTR = d; uvBR = a; uvBL = b;
+				break;
+			case 270:
+				uvTL = b; uvTR = c; uvBR = d; uvBL = a;
+				break;
+			default:
+				uvTL = a; uvTR = b; uvBR = c; uvBL = d;
+				break;
+		}
+	}
+
+	public static void RemapMeshUV(int rx, int ry, int rw, int rh, float rotation,
+		int offsetX, int offsetY, int origW, int origH,
+		int texW, int texH, float u, float v, out float outU, out float outV) {
+
+		if (rotation != 90 && rotation != 270)
+			v = 1 - v;
+
+		int deg = (int)rotation;
+		int cropW = (deg % 180 == 90) ? rh : rw;
+		int cropH = (deg % 180 == 90) ? rw : rh;
+
+		float cu = (u * origW - offsetX) / cropW;
+		float cv = (v * origH - offsetY) / cropH;
+
+		float x0 = (float)rx / texW;
+		float y0 = (float)ry / texH;
+		float fw = (float)rw / texW;
+		float fh = (float)rh / texH;
+
+		switch (deg) {
+			case 90:
+				outU = x0 + (1 - cv) * fw;
+				outV = y0 + (1 - cu) * fh;
+				break;
+			case 180:
+				outU = x0 + (1 - cu) * fw;
+				outV = y0 + (1 - cv) * fh;
+				break;
+			case 270:
+				outU = x0 + cv * fw;
+				outV = y0 + cu * fh;
+				break;
+			default:
+				outU = x0 + cu * fw;
+				outV = y0 + cv * fh;
+				break;
+		}
 	}
 }
 
@@ -1856,12 +1896,10 @@ public class ModelBinary : IModelFormat
 				if (imagedata == null)
 					throw new NullReferenceException("Got texture atlas, expected image data as well");
 
-				data.TextureAtlas = new();
-				data.TextureAtlas.Load(texatlas, imagedata);
+				throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
+				// data.SetupAttachments();
 
-				data.SetupAttachments();
-
-				return data;
+				// return data;
 			}
 		}
 	}
@@ -2063,7 +2101,8 @@ public class ModelBinary : IModelFormat
 			writer.WriteList(modelData.Animations, writeAnimation);
 		}
 
-		modelData.TextureAtlas.SaveTo(absoluteFilePath);
+		//modelData.TextureAtlas.SaveTo(absoluteFilePath);
+		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
 	}
 }
 
@@ -2133,17 +2172,17 @@ public class ModelRefJSON : IModelFormat
 		if (imagedata == null)
 			throw new NullReferenceException("Got texture atlas, expected image data as well");
 
-		data.TextureAtlas = new();
-		data.TextureAtlas.Load(texatlas, imagedata);
+		throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
 
-		data.SetupAttachments();
+		// data.SetupAttachments();
 
-		return data;
+		// return data;
 	}
 
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
-		data.TextureAtlas.SaveTo(filepath);
+		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
+		//data.TextureAtlas.TrySaveTo(filepath);
 	}
 }

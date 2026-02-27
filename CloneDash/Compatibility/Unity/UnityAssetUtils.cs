@@ -136,7 +136,7 @@ public static class UnityAssetUtils
 	/// </summary>
 	/// <param name="tex2D"></param>
 	/// <returns></returns>
-	public static Raylib_cs.Image ToRaylib(this Texture2D tex2D) {
+	public static Raylib_cs.Image ToRaylib(this AssetStudio.Texture2D tex2D) {
 		if (tex2D == null)
 			return default;
 		var imgData = tex2D.image_data.GetData();

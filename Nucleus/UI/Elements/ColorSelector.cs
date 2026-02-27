@@ -141,11 +141,11 @@ namespace Nucleus.UI.Elements
 			Raylib.GenTextureMipmaps(ref ColorSatValTex);
 			Raylib.GenTextureMipmaps(ref ColorSatValInnerTex);
 
-			Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
-			Raylib.SetTextureFilter(HueWheelTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
-			Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
-			Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
-			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.TEXTURE_FILTER_ANISOTROPIC_16X);
+			Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(HueWheelTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
 
 			this.Origin = Anchor.BottomCenter;
 			this.UI.OnElementClicked += delegate (Element el, FrameState fs, ButtonCode mb) {

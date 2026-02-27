@@ -14,6 +14,8 @@ using Fmod5Sharp.FmodTypes;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.Models;
@@ -31,17 +33,19 @@ using System.Text;
 using System.Threading;
 
 using Color = Nucleus.Common.Types.Color;
+using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 using Material = AssetStudio.Material;
 using Sound = Nucleus.Audio.Sound;
 using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash
 {
-	public class MDAtlasPage : IDisposable
+	public class MDAtlasPage : IModelAtlasPage, IDisposable
 	{
 		public string Name;
 		public bool StraightAlpha;
 		public Raylib.ImageRef Texture;
+		public ITexture? GpuTexture;
 		public List<MDAtlasRegion> Regions = [];
 		public ParametersReader Parameters = new ParametersReader([]);
 
@@ -56,8 +60,28 @@ namespace CloneDash.Compatibility.MuseDash
 			if (texWidth != Texture.Width || texHeight != Texture.Height)
 				Texture.Resize(texWidth, texHeight);
 		}
+
+		public int GetRegionCount() => Regions.Count;
+		public IModelAtlasRegion? GetRegion(int index) => (index >= 0 && index < Regions.Count) ? Regions[index] : null;
+		public IModelAtlasRegion? GetRegionByName(ReadOnlySpan<char> name, int index = -1) {
+			for (int i = 0, c = Regions.Count; i < c; i++)
+				if (Regions[i].Name.AsSpan().SequenceEqual(name))
+					return Regions[i];
+			return null;
+		}
+		public ITexture GetTexture() => GpuTexture!;
+		ReadOnlySpan<char> IModelAtlasPage.GetName() => Name;
+		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
+		public void GetSize(out int w, out int h) { w = GpuTexture?.Width ?? 0; h = GpuTexture?.Height ?? 0; }
+		public ImageFormat GetFormat() => GpuTexture?.Format ?? ImageFormat.None;
+		public void GetFilter(out TextureFilter min, out TextureFilter max) { min = TextureFilter.Bilinear; max = TextureFilter.Bilinear; }
+		public bool SetFilter(TextureFilter min, TextureFilter max) => false;
+		public TextureWrap GetWrap() => default;
+		public bool SetWrap(TextureWrap wrapmode) => false;
+		public bool GetPreMultipliedAlpha() => StraightAlpha;
+		public bool SetPreMultipliedAlpha(bool pma) { StraightAlpha = pma; return true; }
 	}
-	public class MDAtlasRegion
+	public class MDAtlasRegion : IModelAtlasRegion
 	{
 		public string Name;
 		public MDAtlasPage Page;
@@ -83,12 +107,59 @@ namespace CloneDash.Compatibility.MuseDash
 		public int OriginalHeight => Parameters.Read<int>("orig", 1);
 		public int OffsetX => Parameters.Read<int>("offset", 0);
 		public int OffsetY => Parameters.Read<int>("offset", 1);
+
+		public ITexture GetTexture() => Page.GetTexture();
+		public IModelAtlasPage GetPage() => Page;
+		ReadOnlySpan<char> IModelAtlasRegion.GetName() => Name;
+		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
+		public int GetIndex() => -1;
+		public bool SetIndex(int index) => true;
+		public AtlasNameIndex GetNameIndex() => new(Name, -1);
+		public bool SetNameIndex(AtlasNameIndex nameIndex) { Name = nameIndex.Name; return true; }
+
+		public void GetBounds(out int x, out int y, out int w, out int h) {
+			int deg = Degrees;
+			x = X;
+			y = Y;
+			w = (deg % 180 == 90) ? Height : Width;
+			h = (deg % 180 == 90) ? Width : Height;
+		}
+
+		public void GetOffsets(out int x, out int y, out int w, out int h) {
+			x = OffsetX;
+			y = (OriginalHeight - Height) - OffsetY;
+			w = OriginalWidth;
+			h = OriginalHeight;
+		}
+
+		public float GetRotation() => Degrees;
+
+		public bool SetBounds(int x, int y, int w, int h) => false;
+		public bool SetOffsets(int x, int y, int w, int h) => false;
+		public bool SetRotation(float rot) => false;
 	}
-	public class MDAtlas(Dictionary<string, MDAtlasPage> pages, Dictionary<string, MDAtlasRegion> regions) : IDisposable
+	public class MDAtlas(Dictionary<string, MDAtlasPage> pages, Dictionary<string, MDAtlasRegion> regions) : IRuntimeTextureAtlas
 	{
 		public Dictionary<string, MDAtlasPage> Pages => pages;
 		public Dictionary<string, MDAtlasRegion> Regions => regions;
 		private bool disposed;
+
+		public ITextureAtlasEdit? Edit() => null;
+
+		public IModelAtlasPage? GetPage(ReadOnlySpan<char> name) {
+			foreach (var kvp in Pages)
+				if (kvp.Key.AsSpan().SequenceEqual(name))
+					return kvp.Value;
+			return null;
+		}
+
+		public IModelAtlasRegion? GetRegion(ReadOnlySpan<char> name, int index = -1) {
+			foreach (var kvp in Regions)
+				if (kvp.Key.AsSpan().SequenceEqual(name))
+					return kvp.Value;
+			return null;
+		}
+
 		public void Dispose() {
 			if (disposed) return;
 
@@ -551,7 +622,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
 			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
 			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
-			ntex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
+			ntex.SetFilter(TextureFilter.Bilinear);
 			return ntex;
 		}
 
@@ -632,43 +703,21 @@ namespace CloneDash.Compatibility.MuseDash
 
 			MDAtlas atlas = atlasBuilder.Atlas();
 
-			modelData.TextureAtlas = new();
-			foreach (var page in atlas.Pages)
-				page.Value.CheckSizing();
+			foreach (var pageKVP in atlas.Pages) {
+				var page = pageKVP.Value;
+				page.CheckSizing();
 
-			modelData.TextureAtlas.ClearTextures();
+				if (page.StraightAlpha) {
+					Image img = page.Texture;
+					Raylib.ImageAlphaPremultiply(ref img);
+				}
 
-			foreach (var regionKVP in atlas.Regions) {
-				var region = regionKVP.Value;
-				var img = region.Page.Texture;
-
-				var degrees = region.Degrees;
-				var x = region.X;
-				var y = region.Y;
-				var offsetX = region.OffsetX;
-				var offsetY = region.OffsetY;
-				var width = region.Width;
-				var height = region.Height;
-				var originalWidth = region.OriginalWidth;
-				var originalHeight = region.OriginalHeight;
-
-				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
-				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
-				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
-
-				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
-				if (degrees != 0)
-					Raylib.ImageRotate(ref newImg, degrees);
-				Raylib.ImageResizeCanvas(ref newImg, originalWidth, originalHeight, offsetX, (originalHeight - height) - offsetY, Color.Blank);
-
-				if (region.Page.StraightAlpha) Raylib.ImageAlphaPremultiply(ref newImg);
-
-				modelData.TextureAtlas.AddTexture(regionKVP.Key, newImg);
+				var tex = Raylib.LoadTextureFromImage(page.Texture);
+				Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
+				page.GpuTexture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true);
 			}
 
-			HashSet<string> usedRegions = [];
-			modelData.TextureAtlas.Validate();
-
+			modelData.TextureAtlas = atlas;
 			modelData.SetupAttachments();
 			return atlas;
 		}
@@ -1388,8 +1437,11 @@ public static class MuseDashModelConverter
 							region.Rotation = rotation;
 
 							var mdRegion = mdatlas.Regions.First(x => x.Value.Name == region.Path).Value;
-							var wM = width / mdRegion.OriginalWidth;
-							var hM = height / mdRegion.OriginalHeight;
+							mdRegion.GetBounds(out _, out _, out int bw, out int bh);
+							int cropW = (mdRegion.Degrees % 180 == 90) ? bh : bw;
+							int cropH = (mdRegion.Degrees % 180 == 90) ? bw : bh;
+							var wM = width / cropW;
+							var hM = height / cropH;
 							region.Scale = new(scaleX * wM, scaleY * hM);
 							attachment = region;
 						}

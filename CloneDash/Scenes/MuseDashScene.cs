@@ -901,7 +901,7 @@ public class MuseDashScene : ISceneDescriptor
 		return mdl;
 	}
 
-	internal ITexture LoadTexture(Texture2D? texture2D) {
+	internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
 		textureCache[texture2D.m_PathID] = tex = MuseDashCompatibility.ConvertTexture(EngineCore.Level, texture2D!);
 		return tex;

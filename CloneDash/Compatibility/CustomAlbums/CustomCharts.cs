@@ -133,7 +133,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 					MainThread.RunASAP(() => {
 						var tex = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+						Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 						callback(new() {
 							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
 						});

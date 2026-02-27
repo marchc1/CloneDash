@@ -111,7 +111,7 @@ public struct MDMCChart
 		else {
 			using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
 				var tex2d = Raylib.LoadTextureFromImage(img);
-				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+				Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
 				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 				return tex;
 			}
@@ -132,7 +132,7 @@ public struct MDMCChart
 				Raylib.ImageRef img = new(".png", response.Content.ReadAsStream());
 				MainThread.RunASAP(() => {
 					var tex2d = Raylib.LoadTextureFromImage(img);
-					Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+					Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
 					Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 					callback?.Invoke(tex);
 					img.Dispose();

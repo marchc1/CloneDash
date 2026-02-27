@@ -79,6 +79,7 @@ public static class ImageFormatExts
 
 public enum ImageFormat
 {
+	None,
 	// Uncompressed Raylib formats
 	Grayscale = 1,
 	GrayAlpha,

@@ -47,7 +47,7 @@ public class MuseDashInterlude
 
 		var img = tex2d.ToRaylib();
 		var tex = Raylib.LoadTextureFromImage(img);
-		Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+		Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 		Raylib.UnloadImage(img);
 		return tex;
 	}
@@ -115,7 +115,7 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 
 	public override bool Pick(int index, out Texture2D tex) {
 		tex = Raylib.LoadTexture(files[index]);
-		Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+		Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 		return true;
 	}
 }
