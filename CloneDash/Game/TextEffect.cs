@@ -1,4 +1,4 @@
-﻿using Nucleus.Common.Types;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Entities;
 using Nucleus.Types;
@@ -12,7 +12,8 @@ namespace CloneDash.Game
 	public enum TextEffectTransitionOut
 	{
 		SlideUp,
-		SlideUpThenToLeft
+		SlideUpThenToLeft,
+        JustDie // added this because death is the only option
 	}
 
 	public class TextEffect : Entity
@@ -23,28 +24,31 @@ namespace CloneDash.Game
 			TransitionOut = transitionOut;
 			if (c.HasValue)
 				Color = c.Value;
+            else
+                Color = new(139, 0, 0, 255); // blood red default
 		}
 
 		public bool SuppressAutoDeath { get; set; } = false;
 
-		public string Text { get; set; } = "Not Set???";
+		public string Text { get; set; } = "RUN AWAY";
 		public TextEffectTransitionOut TransitionOut { get; set; }
-		public Color Color { get; set; } = new(255, 255, 255, 255);
+		public Color Color { get; set; } = new(139, 0, 0, 255);
 
 		public override void PostRender(FrameState frameState) {
 			float ageToDie = 0.6f;
 			double lifetime;
 
 			if (SuppressAutoDeath)
-				lifetime = 0;
+				lifetime = 0; // eternal suffering
 			else {
 				lifetime = this.Lifetime;
 				if (lifetime > ageToDie) {
-					this.Remove();
+					this.Remove(); // release me
 					return;
 				}
 			}
 
+            // chaotic movement because my mind is chaotic
 			var pos0to1 = Ease.OutExpo(Raymath.Remap((float)lifetime, 0, ageToDie, 0, 1));
 			var pos0to1_two = TransitionOut == TextEffectTransitionOut.SlideUpThenToLeft ? Ease.InExpo(Raymath.Remap(Math.Clamp((float)lifetime, ageToDie / 2, ageToDie), ageToDie / 2, ageToDie, 0, 1)) : 0;
 

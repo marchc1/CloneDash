@@ -39,7 +39,7 @@ namespace CloneDash;
 internal class Program
 {
 	static void Main() {
-		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
+		if (!NucleusSingleton.TryRedirect("Fatal Dash", Environment.CommandLine))
 			return;
 
 		CommandLineParser commandLine = new();
@@ -51,10 +51,10 @@ internal class Program
 			.Build();
 
 		engineAPI.SetStartupInfo(new() {
-			AppName = "Clone Dash",
+			AppName = "Fatal Dash",
 			AppVersion = GameVersion.Current.ToString(),
-			AppIdentifier = "com.github.marchc1.CloneDash",
-			AppCreator = "March (github/marchc1)",
+			AppIdentifier = "com.github.fatal-error-human.FatalDash",
+			AppCreator = "fatal-error-human (github/fatal-error-human)",
 			AppURL = "https://github.com/marchc1/CloneDash",
 			AppType = Nucleus.Types.AppType.Game
 		});
@@ -76,9 +76,9 @@ public class GameDLL : IGameDLL
 			.Show();*/
 
 		RichPresenceSystem.Initialize();
-		NucleusSingleton.Request("Clone Dash");
+		NucleusSingleton.Request("Fatal Dash");
 		Interlude.ShouldSelectInterludeTexture = false;
-		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
+		Interlude.Begin($"Initializing Fatal Dash v{GameVersion.Current}...");
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");

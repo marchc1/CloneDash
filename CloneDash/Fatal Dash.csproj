@@ -5,7 +5,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<AssemblyName>Clone Dash</AssemblyName>
+		<AssemblyName>Fatal Dash</AssemblyName>
 		<RootNamespace>CloneDash</RootNamespace>
 	</PropertyGroup>
 
