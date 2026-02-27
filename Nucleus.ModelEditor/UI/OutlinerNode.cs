@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -100,7 +101,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public ManagedMemory.Texture? ImageTexture {
+		public ITexture? ImageTexture {
 			get => Image.Image;
 			set => Image.Image = value;
 		}

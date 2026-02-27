@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.Util
 {
-	public static unsafe partial class Util
+	public static unsafe partial class EngineUtil
 	{
 		public static T* CopyManagedArrayToUnmanagedPointer<T>(ICollection<T> source) where T : unmanaged {
 			T* unmanaged = Raylib.New<T>(source.Count);
