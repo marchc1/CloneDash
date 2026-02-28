@@ -677,6 +677,9 @@ public class VertexAttachment : Attachment
 	[JsonIgnore] public bool InitializedRegion;
 
 	protected Vector2F CalculateVertexWorldPosition(SlotInstance slot, int vertexI) {
+		if (Vertices == null)
+			return default;
+
 		var vertex = Vertices![vertexI];
 		var bone = slot.Bone;
 		var transform = slot.Bone.WorldTransform;
