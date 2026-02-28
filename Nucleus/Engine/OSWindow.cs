@@ -166,7 +166,6 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
 		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = ImageFormat.R8G8B8A8 };
 		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
-
 		renderBatch = Raylib.New<RenderBatch>(1);
 		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
 

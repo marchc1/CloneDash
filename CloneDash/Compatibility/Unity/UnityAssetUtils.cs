@@ -53,9 +53,9 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		List<T?> ret = [];
 		ret.EnsureCapacity(baseList.Count);
 
-		foreach(var kvp in baseList)
+		foreach (var kvp in baseList)
 			ret.Add((T?)GetUnderlyingTypeByNecessaryMeans(kvp));
-		
+
 		return ret;
 	}
 
@@ -153,17 +153,23 @@ public static class UnityAssetUtils
 			case TextureFormat.BC5:
 			case TextureFormat.BC6H:
 			case TextureFormat.BC7:
-				BcDecoder decoder = new BcDecoder();
-				var rgba32 = decoder.DecodeRaw(imgData, width, height, tex2D.m_TextureFormat switch {
-					TextureFormat.BC4 => BCnEncoder.Shared.CompressionFormat.Bc4,
-					TextureFormat.BC5 => BCnEncoder.Shared.CompressionFormat.Bc5,
-					TextureFormat.BC6H => BCnEncoder.Shared.CompressionFormat.Bc6U,
-					TextureFormat.BC7 => BCnEncoder.Shared.CompressionFormat.Bc7,
-					_ => throw new InvalidOperationException()
-				});
+				if (gfxHardwareConfig.SupportsBPTC) {
+					pixelFormat = ImageFormat.BPTC_UNORM_RGBA;
+					break;
+				}
+				else {
+					BcDecoder decoder = new BcDecoder();
+					var rgba32 = decoder.DecodeRaw(imgData, width, height, tex2D.m_TextureFormat switch {
+						TextureFormat.BC4 => BCnEncoder.Shared.CompressionFormat.Bc4,
+						TextureFormat.BC5 => BCnEncoder.Shared.CompressionFormat.Bc5,
+						TextureFormat.BC6H => BCnEncoder.Shared.CompressionFormat.Bc6U,
+						TextureFormat.BC7 => BCnEncoder.Shared.CompressionFormat.Bc7,
+						_ => throw new InvalidOperationException()
+					});
 
-				img = rgba32.AsSpan().Cast<ColorRgba32, byte>().ToImage(width, height, ImageFormat.R8G8B8A8, tex2D.m_MipCount);
-				return img;
+					img = rgba32.AsSpan().Cast<ColorRgba32, byte>().ToImage(width, height, ImageFormat.R8G8B8A8, tex2D.m_MipCount);
+					return img;
+				}
 			default: throw new NotImplementedException($"Cannot load the Unity texture format '{tex2D.m_TextureFormat}' into Raylib. Must provide a direct enum conversion or pixel format conversion in UnityAssetUtils.ToRaylib(this Texture2D).");
 		}
 		img = imgData.ToImage(width, height, pixelFormat, tex2D.m_MipCount);

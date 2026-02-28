@@ -620,7 +620,7 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
+			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: false);
 			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
 			ntex.SetFilter(TextureFilter.Bilinear);
 			return ntex;
@@ -670,7 +670,7 @@ namespace CloneDash.Compatibility.MuseDash
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
 						var index = images.IndexOf(x => x.m_Name == imageName);
-						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: true);
+						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: false);
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
 						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
