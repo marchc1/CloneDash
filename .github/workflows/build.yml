@@ -233,12 +233,15 @@ jobs:
           path: ./CloneDash-Game-Windows.zip
           if-no-files-found: error
 
-      - name: Upload artifact - Windows Velopack Installer
+      - name: Upload artifact - Windows Velopack Files
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v6
         with:
           name: CloneDash-Game-Windows-Velopack
-          path: ./VelopackRelease/*Setup*.exe
+          path: |
+            ./VelopackRelease/*Setup*.exe
+            ./VelopackRelease/*.nupkg
+            ./VelopackRelease/releases.win.json
           if-no-files-found: error
 
       - name: Upload artifact - Linux zip
@@ -288,9 +291,9 @@ jobs:
           name: Clone Dash v${{ steps.meta.outputs.tag }}
           fail_on_unmatched_files: true
           files: |
-            dist/CloneDash-Game-Windows-Velopack/CloneDash-win-Setup.exe
+            dist/CloneDash-Game-Windows-Velopack/*Setup*.exe
             dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
             dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
             dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
-            dist/CloneDash-Game-Windows-Velopack/CloneDash-*.nupkg
+            dist/CloneDash-Game-Windows-Velopack/*.nupkg
             dist/CloneDash-Game-Windows-Velopack/releases.win.json
