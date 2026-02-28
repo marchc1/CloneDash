@@ -1305,13 +1305,23 @@ public static class MuseDashModelConverter
 			skeleton.MD_ReadVarInt(true);
 			for (int i = 0, c = skeleton.MD_ReadVarInt(true); i < c; i++) {
 				int type = skeleton.MD_ReadByte(), frames = skeleton.MD_ReadVarInt(true);
-				for (int frame = 0; frame < frames; frame++) {
-					skeleton.MD_ReadFloat();
-					skeleton.MD_ReadFloat();
-					if (type == PATH_MIX)
-						skeleton.MD_ReadFloat();
-					if (frame < frames - 1)
-						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+				switch (type) {
+					case PATH_POSITION:
+					case PATH_SPACING:
+						for (int frameIndex = 0; frameIndex < frames; frameIndex++) {
+							skeleton.MD_ReadFloat();
+							skeleton.MD_ReadFloat();
+							if (frameIndex < frames - 1) MD_ReadCurve(skeleton, frameIndex, frames, out _, out _, out _, out _, out _);
+						}
+						break;
+					case PATH_MIX:
+						for (int frameIndex = 0; frameIndex < frames; frameIndex++) {
+							skeleton.MD_ReadFloat();
+							skeleton.MD_ReadFloat();
+							skeleton.MD_ReadFloat();
+							if (frameIndex < frames - 1) MD_ReadCurve(skeleton, frameIndex, frames, out _, out _, out _, out _, out _);
+						}
+						break;
 				}
 			}
 		}
