@@ -69,8 +69,7 @@ namespace Nucleus.UI
 
     public static class Popups
     {
-        public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true)
-        {
+        public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
             PopupWindow popup = UI.Add<PopupWindow>();
             popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
             popup.Title = title;
@@ -83,8 +82,7 @@ namespace Nucleus.UI
             return popup;
         }
 
-        private static (PopupWindow popup, FlexPanel buttonContainer) SetupDialogCore(UserInterface UI, string title, string text)
-        {
+        private static (PopupWindow popup, FlexPanel buttonContainer) SetupDialogCore(UserInterface UI, string title, string text) {
             PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
             FlexPanel containButtons = popup.Add<FlexPanel>();
@@ -110,8 +108,7 @@ namespace Nucleus.UI
             return (popup, containButtons);
         }
 
-        public static void DialogOK(this UserInterface UI, string title, string text, Action? onOK = null, bool okHighlighted = true)
-        {
+        public static void DialogOK(this UserInterface UI, string title, string text, Action? onOK = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button ok = containButtons.Add<Button>();
@@ -123,8 +120,7 @@ namespace Nucleus.UI
             if (okHighlighted) ok.TriggeredWhenEnterPressed = true;
         }
 
-        public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true)
-        {
+        public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button close = containButtons.Add<Button>();

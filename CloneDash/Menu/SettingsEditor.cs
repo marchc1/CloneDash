@@ -202,8 +202,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		return category.Panel;
 	}
 
-	public void SelectCategory(SettingsCategory category)
-	{
+	public void SelectCategory(SettingsCategory category) {
 		if (activeCategory != null)
 			activeCategory.Panel.Visible = activeCategory.Panel.Enabled = activeCategory.Pulsing = false;
 
@@ -231,11 +230,10 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		panel.PercentageNumber(AudioSettings.snd_voicevolume, "Voice Volume");
 		panel.PercentageNumber(AudioSettings.snd_hitvolume, "Hit-sound Volume");
 	}
-	private void BuildDisplayPanel(SettingsPanel panel) {
-
-	}
+	private void BuildDisplayPanel(SettingsPanel panel) { }
 
 	public void OpenOffsetWizard() {
+		// TODO: Make offset wizard level-agnostic
 		if (Level is MainMenuLevel level)
 			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
 		else {
@@ -466,14 +464,14 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
-    public void SetRichPresence()
-    {
+    public void SetRichPresence() {
         RichPresenceSystem.SetPresence(new()
         {
             Details = "Main Menu",
             State = "In Settings"
         });
     }
+
     public string GetName() => "Offset Wizard";
     public void OnHidden() { }
     public void OnShown() { }
@@ -486,8 +484,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
     Label lastHitLabel;
     float? lastHitOffsetMs = null;
 
-    protected override void Initialize()
-    {
+    protected override void Initialize() {
         base.Initialize();
 
         currentOffsetLabel = Add<Label>();
@@ -535,20 +532,16 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		DemandKeyboardFocus();
     }
 
-    protected override void OnThink(FrameState frameState)
-    {
+    protected override void OnThink(FrameState frameState) {
         base.OnThink(frameState);
         track.Update();
 
         currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
 
         if (lastHitOffsetMs != null)
-        {
             lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
-        }
 
-        if (isDragging && currentWidth > 0)
-        {
+        if (isDragging && currentWidth > 0) {
             float mouseX = frameState.Mouse.MousePos.X;
 
             mouseX = Math.Clamp(mouseX, 0, currentWidth);
@@ -566,14 +559,12 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
     MusicTrack track;
 
-    public float CalculateJudgementOffset(float localToPlayhead)
-    {
+    public float CalculateJudgementOffset(float localToPlayhead) {
         var mld2 = track.Length / 2f;
         return (localToPlayhead > mld2 ? (track.Length - localToPlayhead) * -1 : localToPlayhead) / mld2;
     }
 
-    public override void Paint(float width, float height)
-    {
+    public override void Paint(float width, float height) {
         currentWidth = width;
 
         BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
@@ -613,13 +604,9 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
         var triangleSize = height / 26f;
 
         if (isDragging)
-        {
             Graphics2D.SetDrawColor(255, 255, 255, 220);
-        }
         else
-        {
             Graphics2D.SetDrawColor(200, 220, 255, 150);
-        }
 
         var startY = h - h / 2;
         var endY = h - h / 2 + h;
