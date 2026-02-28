@@ -234,6 +234,12 @@ public static class MuseDashSceneEnemyInfo
 
 	public static string GetGhost(MuseDashSceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+
+	internal static string GetHeart(PathwaySide path, int speed) 
+		=> $"0002{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
+	
+	internal static string GetScore(PathwaySide path, int speed) 
+		=> $"0003{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
 }
 
 /// <summary>
@@ -1032,6 +1038,8 @@ public class MuseDashScene : ISceneDescriptor
 	ModelData? BossModel;
 	ModelData? AirGearModel, RoadGearModel;
 	ModelData? MasherModel;
+	ModelData? AirHeartModel, RoadHeartModel;
+	ModelData? AirScoreModel, RoadScoreModel;
 	ModelData? AirDoubleModel, RoadDoubleModel;
 
 	ModelData? AirBoss1Model, RoadBoss1Model;
@@ -1053,6 +1061,8 @@ public class MuseDashScene : ISceneDescriptor
 
 	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
 	MD_Animations3Speed MasherAnims = new();
+	MD_Animations3Speed AirHeartAnims = new(), RoadHeartAnims = new();
+	MD_Animations3Speed AirScoreAnims = new(), RoadScoreAnims = new();
 	MD_Animations3Speed AirDoubleAnims = new(), RoadDoubleAnims = new();
 	MD_Animations3Speed AirBoss1Anims = new(), RoadBoss1Anims = new();
 	MD_Animations3Speed AirBoss2Anims = new(), RoadBoss2Anims = new();
@@ -1136,6 +1146,10 @@ public class MuseDashScene : ISceneDescriptor
 
 		// Populate models
 		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
+		AirHeartModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!);
+		RoadHeartModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!);
+		AirScoreModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!);
+		RoadScoreModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!);
 		AirGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!);
 		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!);
 		MasherModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!);
@@ -1173,7 +1187,8 @@ public class MuseDashScene : ISceneDescriptor
 		// Populate animations
 
 		BossAnims = new(getSpineController(MuseDashSceneEnemyInfo.GetBoss(SceneInfo)));
-		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDashSceneEnemyInfo.GetGear(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDashSceneEnemyInfo.GetHeart(req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDashSceneEnemyInfo.GetScore(req.path, req.speed));
 		PopulateThreeSpeedAnimations(MasherAnims, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown], static (in req) => MuseDashSceneEnemyInfo.GetMasher(req.scene, req.dir, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDashSceneEnemyInfo.GetDouble(req.scene, req.path, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDashSceneEnemyInfo.GetBoss1(req.scene, req.path, req.speed));
@@ -1205,6 +1220,7 @@ public class MuseDashScene : ISceneDescriptor
 
 
 	MonoBehaviourReader getSpineController(string name) => new(MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetFirstComponent<MonoBehaviour>()!);
+	MonoBehaviourReader getSpineControllerPrefab(string prefab, string name) => new(MuseDashCompatibility.StreamingAssets.LoadAsset<GameObject>(prefab + "/" + name)!.GetRequiredResult().GetFirstComponent<MonoBehaviour>()!);
 
 	public delegate string ResolverFn(in RequestInfo info);
 
@@ -1402,9 +1418,8 @@ public class MuseDashScene : ISceneDescriptor
 					break;
 				}
 			case EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
-			// todo
-			// case EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
-			// case EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			case EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHeartAnims, RoadHeartAnims).GetSpeed(enemy.Speed); break;
+			case EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirScoreAnims, RoadScoreAnims).GetSpeed(enemy.Speed); break;
 			case EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed); break;
 			case EntityType.Hammer:
 				if (enemy.Flipped)
@@ -1522,8 +1537,8 @@ public class MuseDashScene : ISceneDescriptor
 			case EntityType.Hammer: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirHammerBModel : RoadHammerBModel) : (enemy.Pathway == PathwaySide.Top ? AirHammerModel : RoadHammerModel);
 			case EntityType.Masher: return MasherModel;
 			case EntityType.Raider: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirRaiderBModel : RoadRaiderBModel) : (enemy.Pathway == PathwaySide.Top ? AirRaiderModel : RoadRaiderModel);
-			case EntityType.Score: return null;
-			case EntityType.Heart: return null;
+			case EntityType.Heart: return enemy.Pathway == PathwaySide.Top ? AirHeartModel : RoadHeartModel;
+			case EntityType.Score: return enemy.Pathway == PathwaySide.Top ? AirScoreModel : RoadScoreModel;
 			default: throw new NotImplementedException();
 		}
 	}
