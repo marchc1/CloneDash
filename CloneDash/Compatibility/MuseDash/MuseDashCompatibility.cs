@@ -946,6 +946,7 @@ public static class MuseDashModelConverter
 
 			bool nonessential = skeleton.MD_ReadBoolean();
 			bool hadAudio = false;
+			List<bool> eventDataHasAudio = [];
 			if (nonessential) {
 				skeleton.MD_ReadFloat();
 
@@ -1087,6 +1088,7 @@ public static class MuseDashModelConverter
 				var @float = skeleton.MD_ReadFloat();
 				var @string = skeleton.MD_ReadNullableString();
 				var @audioPath = skeleton.MD_ReadNullableString();
+				eventDataHasAudio.Add(@audioPath != null);
 				if (@audioPath != null) {
 					skeleton.MD_ReadFloat();
 					skeleton.MD_ReadFloat();
@@ -1094,7 +1096,7 @@ public static class MuseDashModelConverter
 			}
 
 			for (int i = 0, animations = skeleton.MD_ReadVarInt(true); i < animations; i++) {
-				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential, hadAudio);
+				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential, hadAudio, eventDataHasAudio);
 			}
 
 			return nucleusModelData;
@@ -1138,7 +1140,7 @@ public static class MuseDashModelConverter
 
 	}
 
-	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio) {
+	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio, List<bool> eventDataHasAudio) {
 		Nucleus.Models.Runtime.Animation animation = new Nucleus.Models.Runtime.Animation();
 		animation.Name = skeleton.MD_ReadNullableString() ?? "";
 		nucleusModelData.Animations.Add(animation);
@@ -1305,23 +1307,13 @@ public static class MuseDashModelConverter
 			skeleton.MD_ReadVarInt(true);
 			for (int i = 0, c = skeleton.MD_ReadVarInt(true); i < c; i++) {
 				int type = skeleton.MD_ReadByte(), frames = skeleton.MD_ReadVarInt(true);
-				switch (type) {
-					case PATH_POSITION:
-					case PATH_SPACING:
-						for (int frameIndex = 0; frameIndex < frames; frameIndex++) {
-							skeleton.MD_ReadFloat();
-							skeleton.MD_ReadFloat();
-							if (frameIndex < frames - 1) MD_ReadCurve(skeleton, frameIndex, frames, out _, out _, out _, out _, out _);
-						}
-						break;
-					case PATH_MIX:
-						for (int frameIndex = 0; frameIndex < frames; frameIndex++) {
-							skeleton.MD_ReadFloat();
-							skeleton.MD_ReadFloat();
-							skeleton.MD_ReadFloat();
-							if (frameIndex < frames - 1) MD_ReadCurve(skeleton, frameIndex, frames, out _, out _, out _, out _, out _);
-						}
-						break;
+				for (int frame = 0; frame < frames; frame++) {
+					skeleton.MD_ReadFloat();
+					skeleton.MD_ReadFloat();
+					if (type == PATH_MIX)
+						skeleton.MD_ReadFloat();
+					if (frame < frames - 1)
+						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
 				}
 			}
 		}
@@ -1361,12 +1353,12 @@ public static class MuseDashModelConverter
 
 		for (int eventIndex = 0, events = skeleton.MD_ReadVarInt(true); eventIndex < events; eventIndex++) {
 			skeleton.MD_ReadFloat();
-			int count = skeleton.MD_ReadVarInt(true);
+			int eventDataIndex = skeleton.MD_ReadVarInt(true);
 			skeleton.MD_ReadVarInt(false);
 			skeleton.MD_ReadFloat();
 
 			if (skeleton.MD_ReadBoolean()) skeleton.MD_ReadString();
-			if (hadAudio) {
+			if (eventDataHasAudio.Count > eventDataIndex && eventDataHasAudio[eventDataIndex]) {
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
 			}
