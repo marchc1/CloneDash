@@ -1296,6 +1296,7 @@ public static class MuseDashModelConverter
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
+				skeleton.MD_ReadFloat();
 				if (frame < frames - 1)
 					MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
 			}
