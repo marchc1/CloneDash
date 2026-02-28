@@ -116,7 +116,8 @@ public class DashEnemy : DashModelEntity
 
 		MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
-		MountedHeart.Position = new(MountBone.WorldTransform.X, (900 - MountBone.WorldTransform.Y) - 450);
+		MountedHeart.Position = new(MountBone.WorldTransform.X * DashGameLevel.GlobalScale, (4.5f - (MountBone.WorldTransform.Y * DashGameLevel.GlobalScale)) - 2.25f);
+		MountedHeart.Scale = new(DashGameLevel.GlobalScale);
 		MountedHeart.Render();
 	}
 

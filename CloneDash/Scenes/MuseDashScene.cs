@@ -1192,7 +1192,7 @@ public class MuseDashScene : ISceneDescriptor
 		RoadRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!);
 		AirGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!);
 		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!);
-		HpMountModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"hp_on_note")!);
+		HpMountModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"0002_hp_SkeletonData")!);
 
 		// Populate animations
 
