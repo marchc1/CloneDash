@@ -599,8 +599,11 @@ public class RegionAttachment : Attachment
 		BR.Y *= -1;
 
 		Rlgl.DisableBackfaceCulling();
-
 		Rlgl.Begin(DrawMode.TRIANGLES);
+		if (region.GetPage().GetPreMultipliedAlpha())
+			Rlgl.SetBlendFactorsSeparate(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
+		else
+			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
@@ -781,6 +784,10 @@ public class MeshAttachment : VertexAttachment
 		ITexture tex = region.GetTexture();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
+		if (region.GetPage().GetPreMultipliedAlpha())
+			Rlgl.SetBlendFactorsSeparate(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
+		else
+			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;

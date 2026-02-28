@@ -708,11 +708,6 @@ namespace CloneDash.Compatibility.MuseDash
 				var page = pageKVP.Value;
 				page.CheckSizing();
 
-				if (page.StraightAlpha) {
-					Image img = page.Texture;
-					Raylib.ImageAlphaPremultiply(ref img);
-				}
-
 				var tex = Raylib.LoadTextureFromImage(page.Texture);
 				Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 				page.GpuTexture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true);
