@@ -53,8 +53,11 @@ namespace AssetStudio
 				if (comp is not T castComp) continue;
 				switch (comp) {
 					case MonoBehaviour mb:
-						return name.Equals(mb.m_Name, StringComparison.InvariantCulture) ? castComp
+						var test = name.Equals(mb.m_Name, StringComparison.InvariantCulture) ? castComp
 								: mb.m_Script.TryGet(out var script) ? name.Equals(script.m_Name, StringComparison.InvariantCulture) ? castComp : null : null;
+						if (test != null)
+							return test;
+						break;
 				}
 			}
 
