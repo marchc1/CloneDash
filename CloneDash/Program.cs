@@ -145,7 +145,7 @@ public class GameDLL : IGameDLL
 		// Update checker
 		new Task(async () => {
 			var installerUpdate = await UpdateChecker.CheckAndApplyUpdates();
-			if (installerUpdate) return; // Program is installed and no update needed
+			if (installerUpdate) return; // Update is being handled by Velopack
 
 			// Program is not installed (portable), run local update check
 			var release = await UpdateChecker.CheckForNewReleaseAsync();
@@ -176,12 +176,6 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-
-		// Test stuff
-		Logs.Info("Update was successful!!!");
-		Logs.Info("Update was successful!!!");
-		Logs.Info("Update was successful!!!");
-		Logs.Info("Update was successful!!!");
     }
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {

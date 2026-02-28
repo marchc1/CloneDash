@@ -78,11 +78,9 @@ jobs:
           Remove-Item -Recurse -Force $packDir -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $packDir | Out-Null
 
-          # Copying the same compiled outputs we use for the zip
           Copy-Item -Recurse -Force "./CloneDash/bin/Release/net10.0/*" $packDir
           Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $packDir
 
-          # Generate version like 2026.227.123
           $vpkVersion = "$(Get-Date -Format 'yyyy.Mdd').${{ github.run_number }}"
 
           vpk pack -u CloneDash -v $vpkVersion -p $packDir -e "Clone Dash.exe" -o ./VelopackRelease --packTitle "Clone Dash"
@@ -276,21 +274,21 @@ jobs:
         with:
           path: ./dist
 
-      - name: Compute short SHA tag
+      - name: Compute version string
         id: meta
         shell: bash
         run: |
-          SHORT="${GITHUB_SHA::7}"
-          echo "tag=$SHORT" >> "$GITHUB_OUTPUT"
+          VERSION="$(date +'%Y.%-m%d').${{ github.run_number }}"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
+          name: Clone Dash v${{ steps.meta.outputs.tag }}
           fail_on_unmatched_files: true
           files: |
-            dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
             dist/CloneDash-Game-Windows-Velopack/*Setup*.exe
-            dist/CloneDash-Game-Linux/CloneDash-Game-Linux.zip
+            dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
             dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
             dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
