@@ -89,7 +89,10 @@ namespace CloneDash.Game.Entities
 			var w = tex.Width * DashGameLevel.GlobalScale;
 			var h = tex.Height * DashGameLevel.GlobalScale;
 
-			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			else
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 		private void drawEndQuad(DashGameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
@@ -103,7 +106,10 @@ namespace CloneDash.Game.Entities
 			var w = tex.Width * DashGameLevel.GlobalScale;
 			var h = tex.Height * DashGameLevel.GlobalScale;
 
-			Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			else
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
@@ -129,7 +135,16 @@ namespace CloneDash.Game.Entities
 
 			xMid = xMid + xOffset;
 			Rlgl.SetTexture(tex.GetTextureHandle());
-			{
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + -height);
+				Rlgl.TexCoord2f(length, 0); Rlgl.Vertex2f(xMid, ypos + height);
+				Rlgl.TexCoord2f(maxLength, 0); Rlgl.Vertex2f(xEnd, ypos + height);
+
+				Rlgl.TexCoord2f(maxLength, 0); Rlgl.Vertex2f(xEnd, ypos + height);
+				Rlgl.TexCoord2f(maxLength, 1); Rlgl.Vertex2f(xEnd, ypos + -height);
+				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + -height);
+			}
+			else {
 				Rlgl.TexCoord2f(length, 0); Rlgl.Vertex2f(xMid, ypos + -height);
 				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + height);
 				Rlgl.TexCoord2f(maxLength, 1); Rlgl.Vertex2f(xEnd, ypos + height);

@@ -11,7 +11,7 @@ public enum PublicTextureFlags
 	/// Signals that the texture requires flipping the V texture coordinate. This is required for some textures from DirectX textures.
 	/// Some methods may not respect this method, its new, so fix if anything isnt respecting this
 	/// </summary>
-	RequiresFlippedV
+	RequiresFlippedV = 0x01
 }
 
 public interface ITexture : IManagedMemoryUnit

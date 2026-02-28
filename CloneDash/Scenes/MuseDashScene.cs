@@ -645,6 +645,11 @@ public class SceneSpriteRenderer : SceneRenderer
 		float u0 = texRectX / atlasW, v0 = flippedY / atlasH;
 		float u1 = (texRectX + texRectW) / atlasW, v1 = (flippedY + texRectH) / atlasH;
 
+		if (texture.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+			v0 = 1 - v0;
+			v1 = 1 - v1;
+		}
+
 		if (flipX ^ (sx < 0)) (u0, u1) = (u1, u0);
 		if (flipY ^ (sy < 0)) (v0, v1) = (v1, v0);
 

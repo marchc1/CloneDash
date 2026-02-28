@@ -610,7 +610,12 @@ public class RegionAttachment : Attachment
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.Width, tex.Height, out var uvTL, out var uvTR, out var uvBR, out var uvBL);
-
+		if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+			uvTL.Y = 1f - uvTL.Y;
+			uvTR.Y = 1f - uvTR.Y;
+			uvBR.Y = 1f - uvBR.Y;
+			uvBL.Y = 1f - uvBL.Y;
+		}
 		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 		Rlgl.TexCoord2f(uvTR.X, uvTR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
 		Rlgl.TexCoord2f(uvTL.X, uvTL.Y); Rlgl.Vertex2f(TL.X, TL.Y);
@@ -793,6 +798,12 @@ public class MeshAttachment : VertexAttachment
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
+				
+				if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+					v1 = 1f - v1;
+					v2 = 1f - v2;
+					v3 = 1f - v3;
+				}
 
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
