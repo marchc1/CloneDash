@@ -290,11 +290,13 @@ namespace Nucleus.UI.Elements
 			var offset = Graphics2D.Offset;
 			Graphics2D.ResetDrawingOffset();
 
-			Graphics2D.SetHSV(Hue, 1, 1);
+			var rgb = new Vector3(Hue, Saturation, Value).ToRGB();
+
+			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(ColorPickerTex);
 			var centerPos = new Vector2F(-width / 2, -height / 2);
 			Graphics2D.DrawImage(centerPos, new(width, height), new(0, 0), 0);
-			Graphics2D.SetHSV(0, 1, 1);
+			Graphics2D.SetDrawColor(255, 255, 255);
 
 			//var targetPos = new Vector2F();
 			//targetPos.X = (float)NMath.Remap(Value, 0, 1, -1, 1) * GetTriangleSatSide();
@@ -303,11 +305,10 @@ namespace Nucleus.UI.Elements
 			Graphics2D.SetTexture(ColorSatValTex);
 			Graphics2D.SetDrawColor(satvalwheelColor, satvalwheelColor, satvalwheelColor);
 			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
-			Graphics2D.SetHSV(Hue, Saturation, Value);
-			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(ColorSatValInnerTex);
 			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
-			Graphics2D.SetHSV(0, 1, 1);
+			Graphics2D.SetDrawColor(255, 255, 255);
 
 			Graphics2D.OffsetDrawing(offset);
 			Rlgl.PopMatrix();
