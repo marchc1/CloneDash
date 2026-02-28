@@ -995,7 +995,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 					EntityVariant.Boss3 => enemy.Pathway == PathwaySide.Top ? AirBoss3Model : RoadBoss3Model,
 					EntityVariant.Small => enemy.Pathway == PathwaySide.Top ? AirSmallModel : RoadSmallModel,
 					EntityVariant.Medium1 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium1Model,
-					EntityVariant.Medium2 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium2Model,
+					EntityVariant.Medium2 => enemy.Pathway == PathwaySide.Top ? AirMedium2Model : RoadMedium2Model,
 					EntityVariant.Large1 => enemy.Pathway == PathwaySide.Top ? AirLarge1Model : RoadLarge1Model,
 					EntityVariant.Large2 => enemy.Pathway == PathwaySide.Top ? AirLarge2Model : RoadLarge2Model,
 					_ => throw new NotImplementedException()
