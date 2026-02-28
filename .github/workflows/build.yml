@@ -288,7 +288,9 @@ jobs:
           name: Clone Dash v${{ steps.meta.outputs.tag }}
           fail_on_unmatched_files: true
           files: |
-            dist/CloneDash-Game-Windows-Velopack/*Setup*.exe
+            dist/CloneDash-Game-Windows-Velopack/CloneDash-win-Setup.exe
             dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
             dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
             dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
+            dist/CloneDash-Game-Windows-Velopack/CloneDash-*-full.nupkg
+            dist/CloneDash-Game-Windows-Velopack/releases.win.json
