@@ -108,12 +108,12 @@ namespace CloneDash.Game.Entities
 			}
 
 			if (StartedHitting) {
-				Position = new(0, 0);
+				Position = GetGameLevel().GetPathwayPosition(PathwaySide.Both);
 				currentAnim?.Apply(Model, (GetConductor().Time - lastHitTime));
 				return;
 			}
-
 			GetGameLevel().SetEnemyPosition(this);
+
 
 			base.DetermineAnimationPlayback();
 		}
