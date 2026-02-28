@@ -1096,10 +1096,13 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 }
 public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatPropertyTimeline
 {
-	public const float ROT_WRAP = 16384f;
-	public const float ROT_WRAP_MIDWAY = 16384.498046875f; // ^141 +255
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float PERFORM_ROT_WRAP(float r) => (ROT_WRAP - (int)(ROT_WRAP_MIDWAY - r / 360)) * 360;
+	public static float PERFORM_ROT_WRAP(float r) {
+		r %= 360f;
+		if (r > 180f) r -= 360f;
+		else if (r <= -180f) r += 360f;
+		return r;
+	}
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
 		float r;
@@ -1112,7 +1115,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 					return;
 				case MixBlendMode.First:
 					r = GetSetup(bone) - Get(bone);
-					Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+					Set(bone, Get(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 					return;
 				default: return;
 			}
@@ -1125,7 +1128,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				case MixBlendMode.First:
 				case MixBlendMode.Replace:
 					r += GetSetup(bone) - Get(bone);
-					r -= PERFORM_ROT_WRAP(r);
+					r = PERFORM_ROT_WRAP(r);
 					goto case MixBlendMode.Add;
 				case MixBlendMode.Add:
 					Set(bone, Get(bone) + (r * (float)mix));
@@ -1140,19 +1143,19 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 		float percentage = (float)curve.GetPercentage(frame, time);
 
 		float delta = (curve.Count == 1 ? curve[frame] : curve[frame + 1]).Value - p;
-		delta -= PERFORM_ROT_WRAP(delta);
+		delta = PERFORM_ROT_WRAP(delta);
 		r = p + delta * percentage;
 
 		switch (blend) {
 			case MixBlendMode.Setup:
-				Set(bone, GetSetup(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				Set(bone, GetSetup(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 				break;
 			case MixBlendMode.First:
 			case MixBlendMode.Replace:
 				r += GetSetup(bone) - Get(bone);
 				goto case MixBlendMode.Add;
 			case MixBlendMode.Add:
-				Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				Set(bone, Get(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 				break;
 		}
 	}
