@@ -395,32 +395,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS, pos.Y * MUSEDASH_MULTIPLIER_POSITIONS, obj);
 	}
 
-	void BuildRenderOrder() {
-		sortedRenderers.Clear();
-		foreach (var obj in allObjects) {
-			if (!IsActiveInHierarchy(obj)) continue;
-			foreach (var renderer in obj.GetComponents<SceneRenderer>()) sortedRenderers.Add(renderer);
-		}
-		sortedRenderers.Sort((a, b) => {
-			int cmp = a.SortingLayerID.CompareTo(b.SortingLayerID);
-			if (cmp != 0) return cmp;
-			cmp = a.SortingOrder.CompareTo(b.SortingOrder);
-			if (cmp != 0) return cmp;
-			a.Transform.GetWorldPosition(out _, out _, out float az);
-			b.Transform.GetWorldPosition(out _, out _, out float bz);
-			return bz.CompareTo(az);
-		});
-	}
-
-	internal static bool IsActiveInHierarchy(SceneObject obj) {
-		var current = obj;
-		while (current != null) {
-			if (!current.Active) return false;
-			current = current.Transform.Parent?.Object;
-		}
-		return true;
-	}
-
+	
 	ModelData? BossModel;
 	ModelData? AirGearModel, RoadGearModel;
 	ModelData? MasherModel;

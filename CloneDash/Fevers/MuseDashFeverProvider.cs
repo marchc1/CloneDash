@@ -3,7 +3,7 @@ using Nucleus.Files;
 
 namespace CloneDash.Fevers;
 
-public class FeverModProvider : IFeverProvider
+public class MuseDashFeverProvider : IFeverProvider
 {
 	int IFeverProvider.Priority => 10000000;
 
@@ -13,14 +13,9 @@ public class FeverModProvider : IFeverProvider
 	}
 
 	IFeverDescriptor? IFeverProvider.FindByName(ReadOnlySpan<char> name) {
-		CloneDashFever? descriptor = CloneDashFever.ParseFever(Path.Combine(new(name), "fever.cdd"));
-		if (descriptor == null) {
-			Logs.Warn($"WARNING: The fever '{name}' could not be found!");
+		MuseDashFever? descriptor = MuseDashFever.GetFever(name);
+		if (descriptor == null) 
 			return null;
-		}
-
-		descriptor.Filename = new(name);
-		descriptor.MountToFilesystem();
 
 		return descriptor;
 	}

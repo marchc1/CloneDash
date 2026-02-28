@@ -287,7 +287,7 @@ public abstract class SceneRenderer : SceneComponent
 {
 	public int SortingLayerID;
 	public int SortingOrder;
-	public abstract void Render(MuseDashScene scene);
+	public abstract void Render(BaseMuseDashUnitySimScene scene);
 }
 
 public class SceneSpriteRenderer : SceneRenderer
@@ -347,7 +347,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		pivotX = sprite.m_Pivot.X; pivotY = sprite.m_Pivot.Y;
 	}
 
-	public override void Render(MuseDashScene scene) {
+	public override void Render(BaseMuseDashUnitySimScene scene) {
 		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
 		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
 
@@ -652,4 +652,31 @@ public abstract class BaseMuseDashUnitySimScene
 			}
 		return obj;
 	}
+
+	protected void BuildRenderOrder() {
+		sortedRenderers.Clear();
+		foreach (var obj in allObjects) {
+			if (!IsActiveInHierarchy(obj)) continue;
+			foreach (var renderer in obj.GetComponents<SceneRenderer>()) sortedRenderers.Add(renderer);
+		}
+		sortedRenderers.Sort((a, b) => {
+			int cmp = a.SortingLayerID.CompareTo(b.SortingLayerID);
+			if (cmp != 0) return cmp;
+			cmp = a.SortingOrder.CompareTo(b.SortingOrder);
+			if (cmp != 0) return cmp;
+			a.Transform.GetWorldPosition(out _, out _, out float az);
+			b.Transform.GetWorldPosition(out _, out _, out float bz);
+			return bz.CompareTo(az);
+		});
+	}
+
+	internal static bool IsActiveInHierarchy(SceneObject obj) {
+		var current = obj;
+		while (current != null) {
+			if (!current.Active) return false;
+			current = current.Transform.Parent?.Object;
+		}
+		return true;
+	}
+
 }
