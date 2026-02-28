@@ -1,4 +1,6 @@
 ﻿using Nucleus;
+using Nucleus.Types;
+using Nucleus.UI;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Velopack;
@@ -48,7 +50,38 @@ public static class UpdateChecker
         }
 
         Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
-        await manager.DownloadUpdatesAsync(newVersion);
+
+        NumSlider? slider = null;
+        MainThread.RunASAP(() =>
+        {
+            var ui = EngineCore.Level?.UI;
+            if (ui == null)
+            {
+                Logs.Warn("Update available but UI is not ready to show popup.");
+                return;
+            }
+
+            var dialog = ui.DialogBase("Updating");
+
+            var lbl = dialog.Add<Label>();
+            lbl.Text = $"Updating Clone Dash to v{newVersion.TargetFullRelease.Version}...";
+            lbl.AutoSize = true;
+            lbl.Anchor = Anchor.TopCenter;
+            lbl.Origin = Anchor.TopCenter;
+
+            slider = dialog.Add<NumSlider>();
+            slider.MinimumValue = 0;
+            slider.MaximumValue = 100;
+            slider.InputDisabled = true;
+        });
+        await manager.DownloadUpdatesAsync(newVersion, (progress) =>
+        {
+            MainThread.RunASAP(() =>
+            {
+                if (slider == null) return;
+                slider.Value = progress;
+            });
+        });
 
         manager.ApplyUpdatesAndRestart(newVersion);
         return true;
