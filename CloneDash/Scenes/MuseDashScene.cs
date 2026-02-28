@@ -1120,7 +1120,11 @@ public class MuseDashScene : ISceneDescriptor
 
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS}";
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_air";
-		string gearRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}";
+		string gearRoadID = SceneInfo.MapIdx switch {
+			// :(
+			3 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
+			_ => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}"
+		};
 		string masherID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MASHERS}";
 		string doubleAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_DOUBLES}_air";
 		string doubleRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_DOUBLES}_road";
