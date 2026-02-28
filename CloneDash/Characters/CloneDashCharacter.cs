@@ -166,6 +166,9 @@ public class CloneDashCharacter : CloneDashDescriptor, ICharacterDescriptor
 		return exp;
 	}
 
+	// TODO: properly implement
+	public ICharacterExpression? GetMainShowApplyExpression() => null;
+
 	double ICharacterDescriptor.GetDefaultHP() => DefaultHP;
 	string? ICharacterDescriptor.GetLogicControllerData() => LogicController == null ? null : filesystem.ReadAllText("character", LogicController);
 

@@ -24,6 +24,14 @@ public class MuseDashCharacterExpression : ICharacterExpression
 	private CharacterExpression Expression;
 	private string Talk;
 	private string AudioName;
+
+	public MuseDashCharacterExpression(CharacterExpression expression, string talk, string audioName)
+	{
+		Expression = expression;
+		Talk = talk;
+		AudioName = audioName;
+	}
+
 	string ICharacterExpression.GetEndAnimationName() {
 		return $"{Expression.AnimName}_end";
 	}
@@ -42,16 +50,13 @@ public class MuseDashCharacterExpression : ICharacterExpression
 	}
 
 	public static MuseDashCharacterExpression From(CharacterConfigData data) {
-		MuseDashCharacterExpression expression = new MuseDashCharacterExpression();
 		int i = Random.Shared.Next(0, data.Expressions.Count);
-		expression.Expression = data.Expressions[i];
-
-		var audioNames = expression.Expression.AudioNames;
+		
+		var expr = data.Expressions[i];
+		var audioNames = expr.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
 
-		expression.Talk = data.Localization["english"].Expressions[i][audioI];
-		expression.AudioName = audioNames[audioI];
-		return expression;
+		return new MuseDashCharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
 public class MuseDashCharacterRetriever : ICharacterProvider
@@ -119,6 +124,24 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 	public ICharacterExpression? GetMainShowExpression() {
 		MuseDashCharacterExpression expression = MuseDashCharacterExpression.From(configData);
 		return expression;
+	}
+
+	public ICharacterExpression? GetMainShowApplyExpression()
+	{
+		// probably need a better way to figure out the folder name
+		var assets = MuseDashCompatibility.StreamingAssets;
+		var mainShow = assets.FindAssetByName<GameObject>(configData.MainShow);
+		var apply = mainShow?.GetMonoBehaviorByScriptName("CharacterApply")?.ToType();
+		if (apply is null) return null;
+
+		var animation = (string)apply["characterAnimation"]!;
+		var voiceline = (string)apply["characterSound"]!;
+
+		return new MuseDashCharacterExpression(
+			configData.Expressions.FirstOrDefault(x => animation.StartsWith(x.AnimName)) ?? configData.Expressions.First(),
+			"",
+			voiceline
+		);
 	}
 
 	public string? GetMainShowInitialExpression() => null;
