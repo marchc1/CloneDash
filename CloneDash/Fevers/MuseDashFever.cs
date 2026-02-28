@@ -12,7 +12,7 @@ namespace CloneDash.Fevers;
 public class MuseDashFever : BaseMuseDashUnitySimScene, IFeverDescriptor
 {
 	public static MuseDashFever? GetFever(ReadOnlySpan<char> name) {
-		if (name != "battle_fever")
+		if (!name.Equals("battle_fever", StringComparison.InvariantCulture))
 			return null;
 		// ^^ todo
 		return new();
@@ -39,6 +39,7 @@ public class MuseDashFever : BaseMuseDashUnitySimScene, IFeverDescriptor
 			if (particle != null)
 				this.particles.Add(ImportGameObject(particle, root.Transform));
 
+		foreach (var obj in allObjects) obj.Awake();
 		BuildRenderOrder();
 	}
 
@@ -48,11 +49,16 @@ public class MuseDashFever : BaseMuseDashUnitySimScene, IFeverDescriptor
 		Rlgl.PopMatrix();
 	}
 
+	SceneAnimator bgAnimator = null!;
+
 	public void Start(DashGameLevel game) {
-		throw new NotImplementedException();
+		bgAnimator = background.GetComponent<SceneAnimator>()!;
+		EnableParticles();
 	}
 
-	public void Think(DashGameLevel game) {
-		throw new NotImplementedException();
+	private void EnableParticles() {
+
 	}
+
+	public void Think(DashGameLevel game) => RunThinkFuncs(globals.CurTimeDelta);
 }

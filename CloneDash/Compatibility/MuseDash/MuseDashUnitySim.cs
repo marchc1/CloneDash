@@ -315,7 +315,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 
-		texture = ((MuseDashScene)Object.Scene).LoadTexture(tex2d);
+		texture = ((BaseMuseDashUnitySimScene)Object.Scene).LoadTexture(tex2d);
 		atlasW = (int)texture.Width; atlasH = (int)texture.Height;
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
 		texRectW = sprite.m_RD.textureRect.width; texRectH = sprite.m_RD.textureRect.height;
@@ -430,7 +430,7 @@ public class SceneAnimator : SceneComponent
 		var controller = UnityAnimator.GetController();
 		if (controller == null) return;
 
-		var scene = (MuseDashScene)Object.Scene;
+		var scene = (BaseMuseDashUnitySimScene)Object.Scene;
 		List<AnimationClip> animClips = [];
 
 		switch (controller) {
@@ -612,6 +612,10 @@ public abstract class BaseMuseDashUnitySimScene
 	protected readonly Dictionary<long, ModelData> loadedModels = [];
 	protected readonly Dictionary<long, SceneObject> pathIdToObject = [];
 
+
+	protected void RunThinkFuncs(double dt) {
+		foreach (var anim in animators) anim.Evaluate((float)dt);
+	}
 
 	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
 		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;

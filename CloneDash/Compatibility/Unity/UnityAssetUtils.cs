@@ -33,7 +33,16 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		object? o = Dict[key];
 		if (o == null) return default;
 
-		return (T?)o;
+		if (typeof(T) == typeof(Vector3)) {
+			var d = o as OrderedDictionary;
+			Vector3 ret = new();
+			ret.X = (float)d["x"]!;
+			ret.Y = (float)d["y"]!;
+			ret.Z = (float)d["z"]!;
+			return (T?)(object?)(ret);
+		}
+		else
+			return (T?)o;
 	}
 
 	public T? Get<T>(object key) where T : AssetStudio.Object {

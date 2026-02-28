@@ -748,10 +748,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		obj.Color.W = alpha / 255f;
 	}
 
-	public void Think(DashGameLevel game) {
-		float dt = (float)globals.CurTimeDelta;
-		foreach (var anim in animators) anim.Evaluate(dt);
-	}
+	public void Think(DashGameLevel game) => RunThinkFuncs(globals.CurTimeDelta);
 
 	public void Refresh(DashGameLevel game) { }
 	public void PlaySound(SceneSound sound, int hits) {
