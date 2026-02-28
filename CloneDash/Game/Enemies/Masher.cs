@@ -108,6 +108,7 @@ namespace CloneDash.Game.Entities
 			}
 
 			if (StartedHitting) {
+				Position = new(0, 0);
 				currentAnim?.Apply(Model, (GetConductor().Time - lastHitTime));
 				return;
 			}

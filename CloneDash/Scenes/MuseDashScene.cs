@@ -1564,7 +1564,10 @@ public class MuseDashScene : ISceneDescriptor
 		return HpMountModel;
 	}
 	public BoneInstance? GetHPMount(DashEnemy enemy) => enemy.Model?.FindBone("hp");
-	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) => MasherAnims.GetSpeed(speed, dir).Get("note_multihit_hurt")?.ActionIdx?.FirstOrDefault() ?? ""; // todo
+	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) {
+		var s = MasherAnims.GetSpeed(speed, dir).Get("note_multihit_hurt")?.ActionIdx;
+		return s?[Random.Shared.Next(0, s.Length)] ?? "";
+	}
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
 	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
