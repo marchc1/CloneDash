@@ -1464,6 +1464,7 @@ public class AnimationHandler
 		if (model == data)
 			return;
 		model = data;
+		ClearAllAnimation();
 	}
 	public void SetModel(ModelInstance? instance) => SetModel(instance?.Data);
 
