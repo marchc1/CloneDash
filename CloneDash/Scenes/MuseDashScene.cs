@@ -57,7 +57,9 @@ public struct MuseDashSceneSounds
 		Begin = "sfx_readygo",
 		Fever = "char_common_fever",
 		Unpause = "sfx_pause321",
-		FullCombo = "sfx_full_combo"
+		FullCombo = "sfx_full_combo",
+		PressIdle = "sfx_press",
+		PressTop = "sfx_press_top"
 	};
 
 	public static MuseDashSceneSounds operator +(MuseDashSceneSounds a, MuseDashSceneSounds b) {
@@ -235,10 +237,10 @@ public static class MuseDashSceneEnemyInfo
 	public static string GetGhost(MuseDashSceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	internal static string GetHeart(PathwaySide path, int speed) 
+	internal static string GetHeart(PathwaySide path, int speed)
 		=> $"0002{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
-	
-	internal static string GetScore(PathwaySide path, int speed) 
+
+	internal static string GetScore(PathwaySide path, int speed)
 		=> $"0003{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
 }
 
@@ -1057,6 +1059,9 @@ public class MuseDashScene : ISceneDescriptor
 	ModelData? AirRaiderModel, RoadRaiderModel, AirRaiderBModel, RoadRaiderBModel;
 	ModelData? AirGhostModel, RoadGhostModel;
 
+	ModelData? HpMountModel;
+	MusicTrack? PressIdle;
+
 	MD_SpineActionController BossAnims = null!;
 
 	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
@@ -1093,6 +1098,10 @@ public class MuseDashScene : ISceneDescriptor
 		FeverSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 		UnpauseSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 		FullComboSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+
+		PressIdle = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+
+		PressIdle.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 
 		var assets = MuseDashCompatibility.StreamingAssets;
 
@@ -1183,6 +1192,7 @@ public class MuseDashScene : ISceneDescriptor
 		RoadRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!);
 		AirGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!);
 		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!);
+		HpMountModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"hp_on_note")!);
 
 		// Populate animations
 
@@ -1546,13 +1556,19 @@ public class MuseDashScene : ISceneDescriptor
 			default: throw new NotImplementedException();
 		}
 	}
-	public ModelData? GetHP(out string? mountAnimation) { mountAnimation = null; return null; }
-	public BoneInstance? GetHPMount(DashEnemy enemy) => null;
-	public string GetMasherHitAnimation() => "";
+	public ModelData? GetHP(out string? mountAnimation) {
+		if (HpMountModel == null)
+			mountAnimation = null;
+		else
+			mountAnimation = "in_mount"; // TODO - probably not consistent
+		return HpMountModel;
+	}
+	public BoneInstance? GetHPMount(DashEnemy enemy) => enemy.Model?.FindBone("hp");
+	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) => MasherAnims.GetSpeed(speed, dir).Get("note_multihit_hurt")?.ActionIdx?.FirstOrDefault() ?? ""; // todo
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
 	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
-	public MusicTrack? GetPressIdleSound() => null;
+	public MusicTrack? GetPressIdleSound() => PressIdle;
 	public void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
 		rotationDegsPerSecond = 120;
 		switch (pathway) {

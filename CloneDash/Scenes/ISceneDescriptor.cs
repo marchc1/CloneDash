@@ -41,7 +41,7 @@ public interface ISceneDescriptor
 
 	public ModelData? GetHP(out string? mountAnimation);
 
-	public string? GetMasherHitAnimation();
+	public string? GetMasherHitAnimation(int speed, EntityEnterDirection dir);
 
 	/// <summary>
 	/// Please return seconds in time!!!!

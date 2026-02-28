@@ -69,7 +69,7 @@ namespace CloneDash.Game.Entities
 
 			lastHitTime = level.Conductor.Time;
 			if (Model != null) {
-				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation());
+				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation(Speed, EnterDirection));
 			}
 
 			CheckIfComplete();
