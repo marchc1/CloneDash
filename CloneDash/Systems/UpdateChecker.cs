@@ -1,6 +1,4 @@
 ﻿using Nucleus;
-using Nucleus.Types;
-using Nucleus.UI;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Velopack;
@@ -10,8 +8,7 @@ namespace CloneDash.Systems;
 
 public static class UpdateChecker
 {
-    // TODO: Change to marchc1 before PR
-    public const string RepoOwner = "ALLMarvelous";
+    public const string RepoOwner = "marchc1";
     public const string RepoName = "CloneDash";
 
     public class GitHubRelease
@@ -32,12 +29,10 @@ public static class UpdateChecker
     /// </summary>
     public static async Task<bool> CheckAndApplyUpdates()
     {
-        // Check GitHub for a new release
         var manager = new UpdateManager(new GithubSource($"https://github.com/{RepoOwner}/{RepoName}", null, false));
 
         if (!manager.IsInstalled)
         {
-            // If it's running locally then do the other popup-based one
             Logs.Info("Running portable, skipping auto-update.");
             return false;
         }
@@ -51,44 +46,9 @@ public static class UpdateChecker
 
         Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
 
-        NumSlider? slider = null;
-
-        MainThread.RunASAP(() =>
-        {
-            var ui = EngineCore.Level?.UI;
-            if (ui == null)
-            {
-                Logs.Warn("Update available but UI is not ready to show popup.");
-                return;
-            }
-
-            var dialog = ui.DialogBase("Updating");
-            dialog.AutomateLayout = false;
-
-            var lbl = dialog.Add<Label>();
-            lbl.Text = $"Updating Clone Dash to v{newVersion.TargetFullRelease.Version}...";
-            lbl.AutoSize = true;
-            lbl.Anchor = lbl.Origin = Anchor.TopCenter;
-
-            slider = dialog.Add<NumSlider>();
-            slider.MinimumValue = 0;
-            slider.MaximumValue = 100;
-            slider.InputDisabled = true;
-            slider.Dock = Dock.Bottom;
-            slider.Anchor = slider.Origin = Anchor.BottomCenter;
-            slider.Size = new Vector2F(256, 0);
-        });
-
-        await manager.DownloadUpdatesAsync(newVersion, (progress) =>
-        {
-            MainThread.RunASAP(() =>
-            {
-                if (slider == null) return;
-                slider.Value = progress;
-            });
-        });
-
+        await manager.DownloadUpdatesAsync(newVersion);
         manager.ApplyUpdatesAndRestart(newVersion);
+
         return true;
     }
 

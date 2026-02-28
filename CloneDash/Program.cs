@@ -16,7 +16,6 @@ using Nucleus.Files;
 using Nucleus.NewEngine;
 using Nucleus.UI;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using Velopack;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
@@ -159,7 +158,7 @@ public class GameDLL : IGameDLL
 							return;
 						}
 
-						string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
 						ui.DialogOKCancel("Update available", message, () => {
 							try {
 								var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
@@ -176,11 +175,6 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-
-		// Testing stuff
-		Logs.Info("Update was successful!");
-		Logs.Info("Update was successful!");
-		Logs.Info("Update was successful!");
     }
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
