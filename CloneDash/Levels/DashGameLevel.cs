@@ -920,9 +920,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
 							Scene.PlaySound(entity.Type switch {
-								EntityType.Heart => SceneSound.HP,
-								EntityType.Score => SceneSound.Score,
-								_ => SceneSound.Score
+								EntityType.Heart => SceneSound.GotHeart,
+								EntityType.Score => SceneSound.GotScore,
+								_ => SceneSound.GotScore
 							}, 1);
 						}
 					}
@@ -1356,25 +1356,25 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 						Scene.PlaySound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
-								EntityVariant.Small => SceneSound.Quiet,
-								EntityVariant.Medium1 => SceneSound.Medium1,
-								EntityVariant.Medium2 => SceneSound.Medium1,
-								EntityVariant.Large1 => SceneSound.Loud1,
-								EntityVariant.Large2 => SceneSound.Loud1,
-								EntityVariant.Boss1 => SceneSound.Medium1,
-								EntityVariant.Boss2 => SceneSound.Medium1,
-								EntityVariant.Boss3 => SceneSound.Medium1,
-								EntityVariant.BossHitFast => SceneSound.Loud2,
-								EntityVariant.BossHitSlow => SceneSound.Loud2,
-								_ => SceneSound.Medium1
+								EntityVariant.Small => SceneSound.HitSmall,
+								EntityVariant.Medium1 => SceneSound.HitMedium1,
+								EntityVariant.Medium2 => SceneSound.HitMedium2,
+								EntityVariant.Large1 => SceneSound.HitLarge1,
+								EntityVariant.Large2 => SceneSound.HitLarge2,
+								EntityVariant.Boss1 => SceneSound.HitBoss1,
+								EntityVariant.Boss2 => SceneSound.HitBoss2,
+								EntityVariant.Boss3 => SceneSound.HitBoss3,
+								EntityVariant.BossHitFast => SceneSound.HitBossFast,
+								EntityVariant.BossHitSlow => SceneSound.HitBossSlow,
+								_ => SceneSound.HitMedium1
 							},
-							EntityType.Hammer => SceneSound.Loud2,
-							EntityType.SustainBeam => SceneSound.PressTop,
-							EntityType.Raider => SceneSound.Quiet,
-							EntityType.Ghost => SceneSound.Medium2,
-							EntityType.Score => SceneSound.Score,
-							EntityType.Heart => SceneSound.HP,
-							_ => SceneSound.Medium1
+							EntityType.Hammer => SceneSound.HitHammer,
+							EntityType.Double => SceneSound.HitGemini,
+							EntityType.SustainBeam => SceneSound.StartedHold,
+							EntityType.Raider => SceneSound.HitRaider,
+							EntityType.Ghost => SceneSound.HitGhost,
+							// I think HP/score get handled on their own
+							_ => SceneSound.HitMedium1
 						}, 1);
 					}
 				}

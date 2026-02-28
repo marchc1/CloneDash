@@ -14,6 +14,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.Util;
+using OggVorbisEncoder;
 using Raylib_cs;
 using System;
 using System.Collections;
@@ -38,49 +39,72 @@ public struct MuseDashSceneSounds
 	public string? Fever;
 	public string? Unpause;
 	public string? FullCombo;
-	public string? Mash;
-	public int? MashStart;
-	public int? MashEnd;
-	public string? Hp;
-	public string? Score;
-	public string? Jump;
-	public string? Loud1;
-	public string? Loud2;
-	public string? Medium1;
-	public string? Medium2;
-	public string? Quiet;
+	public string? Block;
+	public string? Crystal;
+	public string? FailBgm;
+	public string? Forte2;
+	public string? Forte3;
 	public string? Ghost;
+	public string? Hp;
+	public string? Jump;
+	public string? Mezzo1;
+	public string? Mezzo3;
+	public string? Piano2;
 	public string? PressIdle;
 	public string? PressTop;
+	public string? Score;
+	public string? VictoryBgm;
+	public Nucleus.Util.InlineArray16<string?> HitSounds;
 
-	public static readonly MuseDashSceneSounds Default = new() {
+
+	public static readonly MuseDashSceneSounds Default = new MuseDashSceneSounds() {
 		Begin = "sfx_readygo",
 		Fever = "char_common_fever",
 		Unpause = "sfx_pause321",
 		FullCombo = "sfx_full_combo",
 		PressIdle = "sfx_press",
-		PressTop = "sfx_press_top"
-	};
+		PressTop = "sfx_press_top",
+		Block = "sfx_block",
+		Crystal = "sfx_crystal",
+		FailBgm = "sfx_fail_bgm",
+		Forte2 = "sfx_forte_2",
+		Forte3 = "sfx_forte_3",
+		Ghost = "sfx_mezzo_3",
+		Hp = "sfx_hp",
+		Jump = "sfx_jump",
+		Mezzo1 = "sfx_mezzo_1",
+		Mezzo3 = "sfx_mezzo_3",
+		Piano2 = "sfx_piano_2",
+		Score = "sfx_score",
+		VictoryBgm = "sfx_victory_bgm",
+	}.AutoGenHitSounds();
 
+	public MuseDashSceneSounds AutoGenHitSounds(){
+		for (int i = 0; i < ((Span<string?>)HitSounds).Length; i++) {
+			HitSounds[i] = $"hitsound_{i:000}";
+		}
+		return this;
+	}
 	public static MuseDashSceneSounds operator +(MuseDashSceneSounds a, MuseDashSceneSounds b) {
 		if (b.Begin != null) a.Begin = b.Begin;
 		if (b.Fever != null) a.Fever = b.Fever;
 		if (b.Unpause != null) a.Unpause = b.Unpause;
 		if (b.FullCombo != null) a.FullCombo = b.FullCombo;
-		if (b.Mash != null) a.Mash = b.Mash;
-		if (b.MashStart != null) a.MashStart = b.MashStart;
-		if (b.MashEnd != null) a.MashEnd = b.MashEnd;
-		if (b.Hp != null) a.Hp = b.Hp;
-		if (b.Score != null) a.Score = b.Score;
-		if (b.Jump != null) a.Jump = b.Jump;
-		if (b.Loud1 != null) a.Loud1 = b.Loud1;
-		if (b.Loud2 != null) a.Loud2 = b.Loud2;
-		if (b.Medium1 != null) a.Medium1 = b.Medium1;
-		if (b.Medium2 != null) a.Medium2 = b.Medium2;
-		if (b.Quiet != null) a.Quiet = b.Quiet;
+		if (b.Block != null) a.Block = b.Block;
+		if (b.Crystal != null) a.Crystal = b.Crystal;
+		if (b.FailBgm != null) a.FailBgm = b.FailBgm;
+		if (b.Forte2 != null) a.Forte2 = b.Forte2;
+		if (b.Forte3 != null) a.Forte3 = b.Forte3;
 		if (b.Ghost != null) a.Ghost = b.Ghost;
+		if (b.Hp != null) a.Hp = b.Hp;
+		if (b.Jump != null) a.Jump = b.Jump;
+		if (b.Mezzo1 != null) a.Mezzo1 = b.Mezzo1;
+		if (b.Mezzo3 != null) a.Mezzo3 = b.Mezzo3;
+		if (b.Piano2 != null) a.Piano2 = b.Piano2;
 		if (b.PressIdle != null) a.PressIdle = b.PressIdle;
 		if (b.PressTop != null) a.PressTop = b.PressTop;
+		if (b.Score != null) a.Score = b.Score;
+		if (b.VictoryBgm != null) a.VictoryBgm = b.VictoryBgm;
 		return a;
 	}
 }
@@ -293,7 +317,8 @@ public record class MuseDashSceneInfo
 	public static readonly MuseDashSceneInfo Oriental = new MuseDashSceneInfo(6, "Oriental");
 	public static readonly MuseDashSceneInfo GrooveCoaster = new MuseDashSceneInfo(7, "Groove Coaster")
 												.WithSounds(new MuseDashSceneSounds {
-													Begin = "sfx_readygo_gc"
+													Begin = "sfx_readygo_gc",
+													Ghost = "sfx_ghost_gc"
 												});
 	public static readonly MuseDashSceneInfo Gensokyo = new MuseDashSceneInfo(8, "Gensokyo");
 	public static readonly MuseDashSceneInfo GameGraveyard = new MuseDashSceneInfo(9, "Game Graveyard");
@@ -1032,11 +1057,6 @@ public class MuseDashScene : ISceneDescriptor
 		return true;
 	}
 
-	Sound? BeginSound;
-	Sound? FeverSound;
-	Sound? UnpauseSound;
-	Sound? FullComboSound;
-
 	ModelData? BossModel;
 	ModelData? AirGearModel, RoadGearModel;
 	ModelData? MasherModel;
@@ -1060,7 +1080,27 @@ public class MuseDashScene : ISceneDescriptor
 	ModelData? AirGhostModel, RoadGhostModel;
 
 	ModelData? HpMountModel;
-	MusicTrack? PressIdle;
+
+	Sound? BeginSound;
+	Sound? FeverSound;
+	Sound? UnpauseSound;
+	Sound? FullComboSound;
+	Sound? BlockSound;
+	Sound? CrystalSound;
+	MusicTrack? FailBgmSound;
+	Sound? Forte2Sound;
+	Sound? Forte3Sound;
+	Sound? GhostSound;
+	Sound? HpSound;
+	Sound? JumpSound;
+	Sound? Mezzo1Sound;
+	Sound? Mezzo3Sound;
+	Sound? Piano2Sound;
+	MusicTrack? PressIdleSound;
+	Sound? PressTopSound;
+	Sound? ScoreSound;
+	Sound?[]? HitSounds;
+	MusicTrack? VictoryBgmSound;
 
 	MD_SpineActionController BossAnims = null!;
 
@@ -1093,15 +1133,49 @@ public class MuseDashScene : ISceneDescriptor
 		FeverSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
 		UnpauseSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
 		FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
+		BlockSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Block ?? throw new NullReferenceException());
+		CrystalSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
+		FailBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
+		Forte2Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
+		Forte3Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
+		GhostSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
+		HpSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
+		JumpSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
+		Mezzo1Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
+		Mezzo3Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
+		Piano2Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
+		PressIdleSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+		PressTopSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
+		ScoreSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
+		VictoryBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm  ?? throw new NullReferenceException());
+
+		HitSounds = new Sound?[16];
+		for (int i = 0; i < 16; i++) {
+			HitSounds[i] = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
+			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		}
 
 		BeginSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 		FeverSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 		UnpauseSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 		FullComboSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 
-		PressIdle = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+		BlockSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		CrystalSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Forte2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Forte3Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		GhostSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		HpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		JumpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Mezzo1Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Mezzo3Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Piano2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		PressIdleSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		PressTopSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		ScoreSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 
-		PressIdle.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		FailBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		VictoryBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 
 		var assets = MuseDashCompatibility.StreamingAssets;
 
@@ -1348,6 +1422,25 @@ public class MuseDashScene : ISceneDescriptor
 			case SceneSound.Fever: FeverSound?.Play(); break;
 			case SceneSound.Unpause: UnpauseSound?.Play(); break;
 			case SceneSound.FullCombo: FullComboSound?.Play(); break;
+
+			case SceneSound.HitSmall: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitMedium1: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitMedium2: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitLarge1: Piano2Sound?.Play(); break; 
+			case SceneSound.HitLarge2: Forte2Sound?.Play(); break; 
+			case SceneSound.HitRaider: Piano2Sound?.Play(); break; 
+			case SceneSound.HitHammer: Forte3Sound?.Play(); break; 
+			case SceneSound.HitGemini: Mezzo1Sound?.Play(); break; 
+			case SceneSound.StartedHold: PressTopSound?.Play(); break; 
+			case SceneSound.HitMasher: HitSounds?[Math.Min(hits, HitSounds.Length - 1)]?.Play(); break; 
+			case SceneSound.HitBoss1: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitBoss2: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitBoss3: Mezzo1Sound?.Play(); break; 
+			case SceneSound.HitGhost: GhostSound?.Play(); break; 
+			case SceneSound.GotHeart: HpSound?.Play(); break; 
+			case SceneSound.GotScore: ScoreSound?.Play(); break; 
+			case SceneSound.HitBossFast: Forte2Sound?.Play(); break; 
+			case SceneSound.HitBossSlow: Forte2Sound?.Play(); break;
 		}
 	}
 
@@ -1575,7 +1668,7 @@ public class MuseDashScene : ISceneDescriptor
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
 	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
-	public MusicTrack? GetPressIdleSound() => PressIdle;
+	public MusicTrack? GetPressIdleSound() => PressIdleSound;
 	public void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
 		rotationDegsPerSecond = 120;
 		switch (pathway) {
