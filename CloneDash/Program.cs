@@ -143,6 +143,8 @@ public class GameDLL : IGameDLL
 
 		// Update checker
 		new Task(async () => {
+			if (CommandLine().HasParm("-noupdate")) return;
+
 			var installerUpdate = await UpdateChecker.CheckAndApplyUpdates();
 			if (installerUpdate) return; // Update is being handled by Velopack
 
