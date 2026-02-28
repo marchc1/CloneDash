@@ -1498,6 +1498,9 @@ public class MuseDashScene : ISceneDescriptor
 				else
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;
+			case EntityType.Heart:
+			case EntityType.Score:
+				return "out"; // todo
 			case EntityType.Raider:
 				if (enemy.Flipped)
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
