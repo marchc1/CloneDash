@@ -113,9 +113,15 @@ public class MainMenuLevel : Level
 		base.OnUnload();
 		MDMCWebAPI.CancelPendingRequests();
 	}
-	public Element PopActiveElement() {
-		if (ActiveElements.Count <= 1) return ActiveElements.Peek();
-		var element = ActiveElements.Pop();
+	public void PopActiveElement() {
+		if (ActiveElements.Count <= 1) return;
+
+		var element = ActiveElements.Peek();
+		if (element is IMainMenuPanel mmp)
+			if (!mmp.OnTryClose())
+				return;
+
+		ActiveElements.Pop();
 		element.Remove();
 
 		var next = ActiveElements.Peek();
@@ -124,12 +130,12 @@ public class MainMenuLevel : Level
 
 		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
 
-		if (next is IMainMenuPanel mmp) {
-			mmp.OnShown();
-			mmp.SetRichPresence();
+		if (next is IMainMenuPanel nextmmp) {
+			nextmmp.OnShown();
+			nextmmp.SetRichPresence();
 		}
 
-		return next;
+
 	}
 
 	Panel header;
