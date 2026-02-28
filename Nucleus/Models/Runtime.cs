@@ -257,7 +257,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				Clipping.NextSlot(slot);
 				continue;
 			}
-
+			Rlgl.DrawRenderBatchActive();
 			attachment.Render(slot);
 			Clipping.NextSlot(slot);
 			slot.EndBlendMode();
@@ -624,7 +624,7 @@ public class RegionAttachment : Attachment
 		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
-
+		
 		if (Model4System.m4s_wireframe.GetBool()) {
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.Begin(DrawMode.LINES);
