@@ -1520,7 +1520,7 @@ public class MuseDashScene : ISceneDescriptor
 					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBoss1Model : RoadBoss1Model,
 					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBoss2Model : RoadBoss2Model,
 					EntityVariant.Boss3 => enemy.Pathway == PathwaySide.Top ? AirBoss3Model : RoadBoss3Model,
-					EntityVariant.Small => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
+					EntityVariant.Small => enemy.Pathway == PathwaySide.Top ? AirSmallModel : RoadSmallModel,
 					EntityVariant.Medium1 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium1Model,
 					EntityVariant.Medium2 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium2Model,
 					EntityVariant.Large1 => enemy.Pathway == PathwaySide.Top ? AirLarge1Model : RoadLarge1Model,
