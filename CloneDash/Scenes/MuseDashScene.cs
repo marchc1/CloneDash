@@ -650,7 +650,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 		float screenX = wx + offX, screenY = -wy + offY;
 		float rotDeg = Transform.GetWorldRotationZ();
-		uint texId = texture.HardwareID;
+		uint texId = texture.GetTextureHandle();
 		var fcolor = this.color * this.Object.GetColor();
 
 		if (MathF.Abs(rotDeg) > 0.01f) {

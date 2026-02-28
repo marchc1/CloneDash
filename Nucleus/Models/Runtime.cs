@@ -601,7 +601,7 @@ public class RegionAttachment : Attachment
 		Rlgl.DisableBackfaceCulling();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.HardwareID);
+		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
@@ -776,7 +776,7 @@ public class MeshAttachment : VertexAttachment
 		ITexture tex = region.GetTexture();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.HardwareID);
+		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;

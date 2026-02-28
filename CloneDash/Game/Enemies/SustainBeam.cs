@@ -128,7 +128,7 @@ namespace CloneDash.Game.Entities
 			var length = maxLength - ((xEnd - xMid) / (tex.Width * DashGameLevel.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
-			Rlgl.SetTexture(tex.HardwareID);
+			Rlgl.SetTexture(tex.GetTextureHandle());
 			{
 				Rlgl.TexCoord2f(length, 0); Rlgl.Vertex2f(xMid, ypos + -height);
 				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + height);
