@@ -52,6 +52,7 @@ public static class UpdateChecker
         Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
 
         NumSlider? slider = null;
+
         MainThread.RunASAP(() =>
         {
             var ui = EngineCore.Level?.UI;
@@ -62,18 +63,22 @@ public static class UpdateChecker
             }
 
             var dialog = ui.DialogBase("Updating");
+            dialog.AutomateLayout = false;
 
             var lbl = dialog.Add<Label>();
             lbl.Text = $"Updating Clone Dash to v{newVersion.TargetFullRelease.Version}...";
             lbl.AutoSize = true;
-            lbl.Anchor = Anchor.TopCenter;
-            lbl.Origin = Anchor.TopCenter;
+            lbl.Anchor = lbl.Origin = Anchor.TopCenter;
 
             slider = dialog.Add<NumSlider>();
             slider.MinimumValue = 0;
             slider.MaximumValue = 100;
             slider.InputDisabled = true;
+            slider.Dock = Dock.Bottom;
+            slider.Anchor = slider.Origin = Anchor.BottomCenter;
+            slider.Size = new Vector2F(256, 0);
         });
+
         await manager.DownloadUpdatesAsync(newVersion, (progress) =>
         {
             MainThread.RunASAP(() =>
