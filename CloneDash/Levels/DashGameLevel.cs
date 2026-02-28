@@ -488,7 +488,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		PlayerAnim_EnqueueRun(Player);
 	}
 
-	ShaderInstance hologramShader;
+	IShader hologramShader;
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();

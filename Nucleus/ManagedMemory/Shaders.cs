@@ -1,26 +1,32 @@
 ﻿using Nucleus.Audio;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
 
 using Raylib_cs;
+using System.Numerics;
 
 namespace Nucleus.ManagedMemory;
 
-public interface IShader : IManagedMemoryUnit {
-	public int HardwareID { get; }
-	public void Activate();
-	public void Deactivate();
-
-	public void SetUniform<T>(string name, T value) where T : unmanaged;
+public interface IShader : IManagedMemoryUnit
+{
+	int HardwareID { get; }
+	int GetUniformLocation(ReadOnlySpan<char> location);
+	void SetUniform<T>(int location, T value, ShaderUniformDataType type) where T : unmanaged;
+	void SetUniform<T>(string location, T value, ShaderUniformDataType type) where T : unmanaged;
+	void SetUniform<T>(int location, T value, bool iVal = false) where T : unmanaged;
+	void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged;
+	void SetUniform(int location, in Matrix4x4 matrix);
+	void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix);
+	void Activate();
+	void Deactivate();
 }
 public class ShaderInstance : IShader
 {
-	public void SetUniform<T>(string name, T value) where T : unmanaged => underlying.SetShaderValue(name, value);
-
 	public ShaderManagement? parent;
-	private Raylib_cs.Shader underlying;
+	internal Raylib_cs.Shader underlying;
 	public bool selfDisposing;
 	private bool disposedValue;
 
@@ -30,16 +36,60 @@ public class ShaderInstance : IShader
 		this.selfDisposing = selfDispose;
 	}
 
+	private Dictionary<UtlSymId_t, int> shaderLocs { get; } = [];
+	private int getShaderLocation(ReadOnlySpan<char> loc) {
+		var key = loc.Hash(false);
+		if (shaderLocs.TryGetValue(key, out int realLoc))
+			return realLoc;
+
+		shaderLocs[key] = realLoc = Raylib.GetShaderLocation(underlying, loc);
+		return realLoc;
+	}
+
+	public int GetUniformLocation(ReadOnlySpan<char> location) => getShaderLocation(location);
+
+	public void SetUniform<T>(int location, T value, ShaderUniformDataType type) where T : unmanaged => Raylib.SetShaderValue(underlying, location, value, type);
+	public void SetUniform<T>(string location, T value, ShaderUniformDataType type) where T : unmanaged => Raylib.SetShaderValue(underlying, GetUniformLocation(location), value, type);
+
+	public void SetUniform<T>(int location, T value, bool iVal = false) where T : unmanaged {
+		ShaderUniformDataType uniformType;
+		switch (value) {
+			case float:
+				uniformType = ShaderUniformDataType.SHADER_UNIFORM_FLOAT;
+				break;
+			case Vector2:
+			case Vector2F:
+				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC2 : ShaderUniformDataType.SHADER_UNIFORM_VEC2;
+				break;
+			case Vector3:
+				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC3 : ShaderUniformDataType.SHADER_UNIFORM_VEC3;
+				break;
+			case Vector4:
+				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC4 : ShaderUniformDataType.SHADER_UNIFORM_VEC4;
+				break;
+			case int:
+				uniformType = ShaderUniformDataType.SHADER_UNIFORM_INT;
+				break;
+			default:
+				throw new Exception("Uniform type for T is not explicitly defined by the ShaderExtensions class");
+		}
+
+		Raylib.SetShaderValue(underlying, location, value, uniformType);
+	}
+	public void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged => SetUniform(GetUniformLocation(location), value);
+	public void SetUniform(int location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, location, matrix);
+	public void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, GetUniformLocation(location), matrix);
+
 	public int HardwareID => (int)underlying.Id;
 
 	public ulong UsedBits => 0; // not applicable
 
 	public void Activate() {
-		Raylib_cs.Raylib.BeginShaderMode(underlying);
+		parent?.Activate(this);
 	}
 
 	public void Deactivate() {
-		Raylib_cs.Raylib.EndShaderMode();
+		parent?.Deactivate(this);
 	}
 
 	public bool IsValid() => Raylib_cs.Raylib.IsShaderReady(underlying);
@@ -114,7 +164,7 @@ public class ShaderManagement
 		}
 	}
 
-	public ShaderInstance LoadFragmentShaderFromFile(string pathID, string path) {
+	public IShader LoadFragmentShaderFromFile(string pathID, string path) {
 		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
 		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
@@ -131,7 +181,7 @@ public class ShaderManagement
 		return shader;
 	}
 
-	public ShaderInstance LoadVerterxShaderFromFile(string pathID, string path) {
+	public IShader LoadVertexShaderFromFile(string pathID, string path) {
 		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
 		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
@@ -148,7 +198,7 @@ public class ShaderManagement
 		return shader;
 	}
 
-	public ShaderInstance LoadShaderFromFile(string pathID, string path) {
+	public IShader LoadShaderFromFile(string pathID, string path) {
 		Span<char> finalPath = stackalloc char[IManagedMemoryUnit.MergePathSize(pathID, path)];
 		IManagedMemoryUnit.MergePath(pathID, path, finalPath);
 		UtlSymbol searchName = new(finalPath);
@@ -163,5 +213,13 @@ public class ShaderManagement
 		LoadedFilesFromShader.Add(shader, searchName);
 		shaders.Add(shader);
 		return shader;
+	}
+
+	internal void Activate(ShaderInstance shaderInstance) {
+		Raylib_cs.Raylib.BeginShaderMode(shaderInstance.underlying);
+	}
+
+	internal void Deactivate(ShaderInstance shaderInstance) {
+		Raylib_cs.Raylib.EndShaderMode();
 	}
 }

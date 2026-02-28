@@ -50,9 +50,9 @@ public class MainMenuLevel : Level
 		var anims = new AnimationHandler();
 		anims.SetModel(model);
 
-		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+		var shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 		float time = 0;
-		var shaderTimeLoc = shader.GetShaderLocation("time");
+		var shaderTimeLoc = shader.GetUniformLocation("time");
 		model.SetToSetupPose();
 		anims.SetAnimation(0, "air_hit_great_2", false);
 
@@ -65,27 +65,27 @@ public class MainMenuLevel : Level
 			anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
 			anims.Apply(model);
 			time += (float)EngineCore.Level.RendertimeDelta;
-			shader.SetShaderValue("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
-			if (Raylib.IsShaderReady(shader)) {
-				Raylib.BeginShaderMode(shader);
+			shader.SetUniform("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
+			if (shader.IsValid()) {
+				shader.Activate();
 				model.Render(false);
-				Raylib.EndShaderMode();
+				shader.Deactivate();
 			}
 
 			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
-			Raylib.UnloadShader(shader);
-			shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+			shader.Dispose();
+			shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 			time = 0;
-			shaderTimeLoc = shader.GetShaderLocation("time");
+			shaderTimeLoc = shader.GetUniformLocation("time");
 			model.SetToSetupPose();
 			anims.SetAnimation(0, "air_hit_great_2", false);
 		};
 
 		window.Removed += (s) => {
-			Raylib.UnloadShader(shader);
+			shader.Dispose();
 		};
 	});
 
