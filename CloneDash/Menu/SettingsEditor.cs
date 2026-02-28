@@ -133,6 +133,9 @@ public class SettingsPanel : ScrollPanel
 
 public class SettingsEditor : Panel, IMainMenuPanel
 {
+	NumSlider judgementSlider;
+	NumSlider visualSlider;
+
 	public void SetRichPresence() {
 		RichPresenceSystem.SetPresence(new() {
 			Details = "Main Menu",
@@ -140,8 +143,39 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		});
 	}
 	public string GetName() => "";
-	public void OnHidden() { }
-	public void OnShown() { }
+    public void OnHidden() { }
+
+	public bool needsClosed = false;
+	public bool OnTryClose() {
+		if (needsClosed) return true;
+
+		double offset = InputSettings.offset_judgement.GetDouble();
+		double hitVolume = AudioSettings.snd_hitvolume.GetDouble();
+
+		if (Math.Abs(offset) > 20 && hitVolume > 0) {
+			
+			UI.DialogOKCancel(
+				"Desync Warning",
+				"Your offset is high and hit sounds are on.\nThis can cause major audio desync.\n\nProceed anyway?",
+				onOK: () => {
+                    needsClosed = true;
+					
+					if (Level is MainMenuLevel level) {
+						level.PopActiveElement();
+					}
+				}
+			);
+
+			return false;
+		}
+
+		return true;
+	}
+
+    public void OnShown() {
+		judgementSlider?.Value = InputSettings.offset_judgement.GetDouble();
+        visualSlider?.Value = InputSettings.offset_visual.GetDouble();
+	}
 
 	ScrollPanel settingCategoryPicker;
 	List<SettingsCategory> categories = [];
@@ -168,7 +202,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		return category.Panel;
 	}
 
-	public void SelectCategory(SettingsCategory category) {
+	public void SelectCategory(SettingsCategory category)
+	{
 		if (activeCategory != null)
 			activeCategory.Panel.Visible = activeCategory.Panel.Enabled = activeCategory.Pulsing = false;
 
@@ -188,7 +223,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
 		BuildInputPanel(Category("Input", "oxygen/input-keyboard.png"));
-	}
+    }
 
 	private void BuildAudioPanel(SettingsPanel panel) {
 		panel.PercentageNumber(SoundManagement.snd_volume, "Sound Volume");
@@ -204,27 +239,66 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		if (Level is MainMenuLevel level)
 			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
 		else {
-			// todo: tell user this isn't supported on non-MainMenuLevel
-			// or even better; make this level-agnostic
+			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
 		}
 	}
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
 		btn.Dock = Dock.Fill;
-		btn.Text = "Judgement Offset Wizard";
+		btn.Text = "Offset Wizard";
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard();
 
 		return btn;
 	}
-	private void BuildInputPanel(SettingsPanel panel) {
+
+    bool offsetsLinked = true;
+
+    private void BuildInputPanel(SettingsPanel panel) {
 		var offsets = panel.Blank("Wizards", "Input offset wizards.");
 		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
-		var judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
-		var visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
+        var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
+        var linkBtn = linkBack.Add<Button>();
+        linkBtn.Dock = Dock.Fill;
+        linkBtn.Text = "Bound";
 
-		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
+        judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
+		visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
+
+		var isUpdating = false;
+
+        judgementSlider.OnValueChanged += (_, _, newValue) => {
+            if (offsetsLinked && !isUpdating)
+            {
+                isUpdating = true;
+                visualSlider.Value = newValue;
+                isUpdating = false;
+            }
+        };
+
+        visualSlider.OnValueChanged += (_, _, newValue) => {
+            if (offsetsLinked && !isUpdating)
+            {
+                isUpdating = true;
+                judgementSlider.Value = newValue;
+                isUpdating = false;
+            }
+        };
+
+        linkBtn.MouseReleaseEvent += (_, _, _) => {
+            offsetsLinked = !offsetsLinked;
+            linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
+
+            if (offsetsLinked)
+            {
+                isUpdating = true;
+                visualSlider.Value = judgementSlider.Value;
+                isUpdating = false;
+            }
+        };
+
+        panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
 		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
 		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
@@ -392,60 +466,166 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
-	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
-			Details = "Main Menu",
-			State = "In Settings"
-		});
-	}
-	public string GetName() => "Offset Wizard";
-	public void OnHidden() { }
-	public void OnShown() { }
+    public void SetRichPresence()
+    {
+        RichPresenceSystem.SetPresence(new()
+        {
+            Details = "Main Menu",
+            State = "In Settings"
+        });
+    }
+    public string GetName() => "Offset Wizard";
+    public void OnHidden() { }
+    public void OnShown() { }
 
-	protected override void Initialize() {
-		base.Initialize();
+    bool isDragging = false;
+    float currentWidth = 0;
+    List<(float X, DateTime Time)> hitMarkers = new();
 
-		track = Level.Sounds.LoadMusicFromFile("offset_cowbell.wav", true);
-		BorderSize = 0;
-	}
+    Label currentOffsetLabel;
+    Label lastHitLabel;
+    float? lastHitOffsetMs = null;
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		track.Update();
-	}
+    protected override void Initialize()
+    {
+        base.Initialize();
 
-	MusicTrack track;
+        currentOffsetLabel = Add<Label>();
+        currentOffsetLabel.Anchor = Anchor.TopCenter;
+        currentOffsetLabel.Origin = Anchor.TopCenter;
+        currentOffsetLabel.TextAlignment = Anchor.TopCenter;
+        currentOffsetLabel.Position = new(0, 24);
+        currentOffsetLabel.TextSize = 36;
+        currentOffsetLabel.AutoSize = true;
 
-	public float CalculateJudgementOffset(float localToPlayhead) {
-		var mld2 = track.Length / 2f;
-		return (localToPlayhead > mld2 ? (track.Length - localToPlayhead) * -1 : localToPlayhead) / mld2;
-	}
+        lastHitLabel = Add<Label>();
+        lastHitLabel.Anchor = Anchor.TopCenter;
+        lastHitLabel.Origin = Anchor.TopCenter;
+        lastHitLabel.TextAlignment = Anchor.TopCenter;
+        lastHitLabel.Position = new(0, 64);
+        lastHitLabel.TextSize = 28;
+        lastHitLabel.AutoSize = true;
+		lastHitLabel.Text = "Press any key to the beat";
 
-	public override void Paint(float width, float height) {
-		BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
-		base.Paint(width, height);
+        track = Level.Sounds.LoadMusicFromFile("offset_cowbell.wav", true);
+        BorderSize = 0;
 
-		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
-		var h = height / 2;
-		Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
+        MouseClickEvent += (_, _, btn) => {
+            if (btn == ButtonCode.Mouse1) isDragging = true;
+            DemandKeyboardFocus();
+        };
 
-		var offset = InputSettings.JudgementOffset;
-		var midpoint = width / 2f;
+        MouseReleaseEvent += (_, _, btn) => {
+            if (btn == ButtonCode.Mouse1) isDragging = false;
+            DemandKeyboardFocus();
+        };
 
-		Graphics2D.SetDrawColor(255, 255, 255);
-		var musicPlayhead = midpoint + CalculateJudgementOffset((float)offset) * (width / 2);
-		var offsetPlayhead = midpoint + CalculateJudgementOffset(track.Playhead) * (width / 2);
-		var padding = h * 0.25f;
-		var ls = height / 2 - h / 2 + padding;
-		Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - padding * 2), height / 100f);
+        OnKeyPressed += (_, in _, key) => {
+            if (currentWidth > 0)
+            {
+                float midpoint = currentWidth / 2f;
+                float normX = CalculateJudgementOffset(track.Playhead);
+                float currentX = midpoint + normX * (currentWidth / 2f);
+                hitMarkers.Add((currentX, DateTime.Now));
 
-		var triangleSize = height / 26f;
-		Graphics2D.SetDrawColor(200, 220, 255, 150);
-		var startY = h - h / 2;
-		var endY = h - h / 2 + h;
-		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
-		Graphics2D.SetDrawColor(BackgroundColor);
-		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
-		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
-	}
+                lastHitOffsetMs = normX * (track.Length / 2f) * 1000f;
+            }
+        };
+		
+		DemandKeyboardFocus();
+    }
+
+    protected override void OnThink(FrameState frameState)
+    {
+        base.OnThink(frameState);
+        track.Update();
+
+        currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
+
+        if (lastHitOffsetMs != null)
+        {
+            lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
+        }
+
+        if (isDragging && currentWidth > 0)
+        {
+            float mouseX = frameState.Mouse.MousePos.X;
+
+            mouseX = Math.Clamp(mouseX, 0, currentWidth);
+
+            float midpoint = currentWidth / 2f;
+            float mld2 = track.Length / 2f;
+
+            float normalizedX = (mouseX - midpoint) / midpoint;
+            float newOffset = normalizedX * mld2 * 1000f;
+
+            InputSettings.offset_judgement.SetValue((double)newOffset);
+			InputSettings.offset_visual.SetValue((double)newOffset);
+        }
+    }
+
+    MusicTrack track;
+
+    public float CalculateJudgementOffset(float localToPlayhead)
+    {
+        var mld2 = track.Length / 2f;
+        return (localToPlayhead > mld2 ? (track.Length - localToPlayhead) * -1 : localToPlayhead) / mld2;
+    }
+
+    public override void Paint(float width, float height)
+    {
+        currentWidth = width;
+
+        BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
+        base.Paint(width, height);
+
+        Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
+        var h = height / 2;
+        Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
+
+        var offset = InputSettings.JudgementOffset;
+        var midpoint = width / 2f;
+
+        Graphics2D.SetDrawColor(255, 255, 255);
+        var musicPlayhead = midpoint + CalculateJudgementOffset((float)offset) * (width / 2);
+        var offsetPlayhead = midpoint + CalculateJudgementOffset(track.Playhead) * (width / 2);
+        var padding = h * 0.25f;
+        var ls = height / 2 - h / 2 + padding;
+        Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - padding * 2), height / 100f);
+
+        var now = DateTime.Now;
+        for (int i = hitMarkers.Count - 1; i >= 0; i--)
+        {
+            var (X, Time) = hitMarkers[i];
+            var age = (now - Time).TotalSeconds;
+
+            if (age >= 1.0)
+            {
+                hitMarkers.RemoveAt(i);
+                continue;
+            }
+
+            byte alpha = (byte)(255 * (1.0 - age));
+            Graphics2D.SetDrawColor(255, 255, 0, alpha);
+            Graphics2D.DrawLine(X, ls, X, ls + (h - padding * 2), height / 100f);
+        }
+
+        var triangleSize = height / 26f;
+
+        if (isDragging)
+        {
+            Graphics2D.SetDrawColor(255, 255, 255, 220);
+        }
+        else
+        {
+            Graphics2D.SetDrawColor(200, 220, 255, 150);
+        }
+
+        var startY = h - h / 2;
+        var endY = h - h / 2 + h;
+        Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
+        Graphics2D.SetDrawColor(BackgroundColor);
+        Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
+        Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
+    }
 }
