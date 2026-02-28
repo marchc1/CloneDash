@@ -346,7 +346,7 @@ namespace CloneDash.Game
 		}
 
 		public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
+			return xPosition >= -gamewidth * 1f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
 		}
 
 		/// <summary>
