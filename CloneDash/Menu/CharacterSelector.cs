@@ -189,7 +189,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUniqueID());
-		Character.PlayRandomExpression();
+		Character.PlayApplyExpression();
 	}
 
 	protected override void PerformLayout(float width, float height) {

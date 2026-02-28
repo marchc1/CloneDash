@@ -24,8 +24,8 @@ public class CharacterPanel : Panel
 	private ModelInstance? Model;
 	private readonly AnimationHandler Anims = new();
 	private MusicTrack? Music;
-	private ICharacterExpression? TouchResponse;
 	private int Click = 0;
+	private ICharacterExpression? ApplyExpression;
 	private double StartExpressionTime;
 	private double NextExpressionTime;
 	private string? ExpressionText;
@@ -106,12 +106,25 @@ public class CharacterPanel : Panel
 	public override void MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
 	}
-	public void PlayRandomExpression() {
+	public void PlayApplyExpression()
+	{
+		if (Character == null) return;
+
+		ApplyExpression ??= Character.GetMainShowApplyExpression();
+		PlayExpression(ApplyExpression);
+	}
+
+	public void PlayRandomExpression()
+	{
+		if (Character == null) return;
+		PlayExpression(Character.GetMainShowExpression());
+	}
+
+	public void PlayExpression(ICharacterExpression? expression) {
 		if (Character == null) return;
 		if (Model == null) return;
 		if (Level.Curtime < NextExpressionTime) return;
 
-		TouchResponse = Character.GetMainShowExpression();
 		Click++;
 
 		var mainResponse = Character.GetMainShowInitialExpression();
@@ -124,7 +137,7 @@ public class CharacterPanel : Panel
 
 		string? text = null;
 		double duration = 0;
-		TouchResponse?.Run(Level, Model, Anims, out text, out duration);
+		expression?.Run(Level, Model, Anims, out text, out duration);
 		StartExpressionTime = Level.Curtime;
 		NextExpressionTime = Level.Curtime + duration + 0.1;
 		ExpressionLabel.TextPadding = new(16);
@@ -148,7 +161,7 @@ public class CharacterPanel : Panel
 
 		EngineCore.Window.EndMode2D();
 
-		if (NMath.InRange(Level.Curtime, StartExpressionTime, NextExpressionTime) && ExpressionText != null) {
+		if (NMath.InRange(Level.Curtime, StartExpressionTime, NextExpressionTime) && !string.IsNullOrEmpty(ExpressionText)) {
 			float alphaMult1 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.1, 0, 1, true);
 			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.4, 0, 1, true);
 			float alphaMult2 = (float)NMath.Remap(Level.Curtime, NextExpressionTime - 0.2, NextExpressionTime, 0, 1, true);
@@ -176,6 +189,7 @@ public class CharacterPanel : Panel
 		Music?.Restart();
 		Model?.SetToSetupPose();
 		Anims?.ClearAllAnimation();
+		ApplyExpression = null;
 
 		if (Model == null) return;
 		if (Anims == null) return;
@@ -192,6 +206,7 @@ public class CharacterPanel : Panel
 
 		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
 		Anims.SetModel(Model);
+		ApplyExpression = null;
 
 		var standby = charDescriptor.GetMainShowStandby();
 		if (Model.Data.FindAnimation(standby) == null) standby = "standby";

@@ -33,6 +33,7 @@ public interface ICharacterDescriptor
 	public string GetVictoryStandby();
 
 	public ICharacterExpression? GetMainShowExpression();
+	public ICharacterExpression? GetMainShowApplyExpression();
 	public string? GetMainShowInitialExpression();
 	public string GetPlayAnimation(CharacterAnimationType animationType);
 
