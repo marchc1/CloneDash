@@ -1309,7 +1309,6 @@ public class MuseDashScene : ISceneDescriptor
 
 
 	MonoBehaviourReader getSpineController(string name) => new(MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
-	MonoBehaviourReader getSpineControllerPrefab(string prefab, string name) => new(MuseDashCompatibility.StreamingAssets.LoadAsset<GameObject>(prefab + "/" + name)!.GetRequiredResult().GetFirstComponent<MonoBehaviour>()!);
 
 	public delegate string ResolverFn(in RequestInfo info);
 
