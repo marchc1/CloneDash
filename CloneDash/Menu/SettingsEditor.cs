@@ -243,7 +243,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
 		btn.Dock = Dock.Fill;
-		btn.Text = "Offset Wizard";
+		btn.Text = "Open Offset Wizard";
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard();
 
@@ -253,7 +253,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
     bool offsetsLinked = true;
 
     private void BuildInputPanel(SettingsPanel panel) {
-		var offsets = panel.Blank("Wizards", "Input offset wizards.");
+		var offsets = panel.Blank("Offset Wizard", "Input offset wizard.");
 		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
         var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
@@ -465,8 +465,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
     public void SetRichPresence() {
-        RichPresenceSystem.SetPresence(new()
-        {
+        RichPresenceSystem.SetPresence(new() {
             Details = "Main Menu",
             State = "In Settings"
         });
