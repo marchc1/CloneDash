@@ -69,6 +69,10 @@ public static class ImageFormatExts
 
 				case ImageFormat.ASTC_8x8_RGBA:
 					return 2;
+
+				case ImageFormat.BPTC_UNORM_RGBA:
+					return 8;
+
 				default:
 					throw new ArgumentOutOfRangeException(nameof(format), format, null);
 			}
