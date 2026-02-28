@@ -580,6 +580,7 @@ public class RegionAttachment : Attachment
 		ITexture tex = region.GetTexture();
 		slot.StartBlendModeFor(this, region.GetPage().GetPreMultipliedAlpha());
 		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+		region.GetOffsets(out int offsetX, out int offsetY, out int origW, out int origH);
 		float rotation = region.GetRotation();
 
 		int deg = (int)rotation;
@@ -588,10 +589,13 @@ public class RegionAttachment : Attachment
 		float width = cropH, height = cropW;
 		float widthDiv2 = width / 2, heightDiv2 = height / 2;
 
-		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2, widthDiv2);
-		Vector2F TR = worldTransform.LocalToWorld(heightDiv2, widthDiv2);
-		Vector2F BR = worldTransform.LocalToWorld(heightDiv2, -widthDiv2);
-		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
+		float localOffX = (offsetX + cropW * 0.5f) - origW * 0.5f;
+		float localOffY = origH * 0.5f - offsetY - cropH * 0.5f;
+
+		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, widthDiv2 + localOffY);
+		Vector2F TR = worldTransform.LocalToWorld(heightDiv2 + localOffX, widthDiv2 + localOffY);
+		Vector2F BR = worldTransform.LocalToWorld(heightDiv2 + localOffX, -widthDiv2 + localOffY);
+		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, -widthDiv2 + localOffY);
 
 		TL.Y *= -1;
 		TR.Y *= -1;
@@ -624,7 +628,7 @@ public class RegionAttachment : Attachment
 		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
-		
+
 		if (Model4System.m4s_wireframe.GetBool()) {
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.Begin(DrawMode.LINES);
@@ -800,7 +804,7 @@ public class MeshAttachment : VertexAttachment
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
 				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
-				
+
 				if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
 					v1 = 1f - v1;
 					v2 = 1f - v2;
