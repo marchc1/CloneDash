@@ -436,9 +436,9 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 
 	public void SetAttachment(string? value) => Attachment = value == null ? null : Model.GetAttachment(Index, value);
 
-	public void StartBlendModeFor(Attachment attachment) {
+	public void StartBlendModeFor(Attachment attachment, bool premultipliedAlpha) {
 		Raylib.BeginBlendMode(BlendMode switch {
-			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY,
+			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : premultipliedAlpha ? Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY : Raylib_cs.BlendMode.BLEND_ALPHA,
 			BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
 			BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
 			BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
@@ -567,7 +567,6 @@ public class RegionAttachment : Attachment
 	}
 
 	public override void Render(SlotInstance slot) {
-		slot.StartBlendModeFor(this);
 		var bone = slot.Bone;
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 
@@ -579,6 +578,7 @@ public class RegionAttachment : Attachment
 		}
 
 		ITexture tex = region.GetTexture();
+		slot.StartBlendModeFor(this, region.GetPage().GetPreMultipliedAlpha());
 		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
 		float rotation = region.GetRotation();
 
@@ -600,10 +600,6 @@ public class RegionAttachment : Attachment
 
 		Rlgl.DisableBackfaceCulling();
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		if (region.GetPage().GetPreMultipliedAlpha())
-			Rlgl.SetBlendFactorsSeparate(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
-		else
-			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
@@ -768,7 +764,6 @@ public class MeshAttachment : VertexAttachment
 		if (triangles == null)
 			return;
 
-		slot.StartBlendModeFor(this);
 
 		var region = Region;
 		if (region == null) {
@@ -776,6 +771,7 @@ public class MeshAttachment : VertexAttachment
 			if (Region == null) return;
 			region = Region;
 		}
+		slot.StartBlendModeFor(this, region.GetPage().GetPreMultipliedAlpha());
 
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
@@ -784,10 +780,6 @@ public class MeshAttachment : VertexAttachment
 		ITexture tex = region.GetTexture();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		if (region.GetPage().GetPreMultipliedAlpha())
-			Rlgl.SetBlendFactorsSeparate(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
-		else
-			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;

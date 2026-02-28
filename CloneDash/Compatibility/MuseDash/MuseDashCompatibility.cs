@@ -57,8 +57,13 @@ namespace CloneDash.Compatibility.MuseDash
 			var texWidth = Parameters.Read<int>("size", 0);
 			var texHeight = Parameters.Read<int>("size", 1);
 
-			if (texWidth != Texture.Width || texHeight != Texture.Height)
-				Texture.Resize(texWidth, texHeight);
+			if (texWidth != Texture.Width || texHeight != Texture.Height) {
+				float scaleX = (float)Texture.Width / texWidth;
+				float scaleY = (float)Texture.Height / texHeight;
+
+				foreach (var region in Regions)
+					region.ApplyScale(scaleX, scaleY);
+			}
 		}
 
 		public int GetRegionCount() => Regions.Count;
@@ -78,7 +83,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public bool SetFilter(TextureFilter min, TextureFilter max) => false;
 		public TextureWrap GetWrap() => default;
 		public bool SetWrap(TextureWrap wrapmode) => false;
-		public bool GetPreMultipliedAlpha() => StraightAlpha;
+		public bool GetPreMultipliedAlpha() => !StraightAlpha;
 		public bool SetPreMultipliedAlpha(bool pma) { StraightAlpha = pma; return true; }
 	}
 	public class MDAtlasRegion : IModelAtlasRegion
@@ -86,6 +91,8 @@ namespace CloneDash.Compatibility.MuseDash
 		public string Name;
 		public MDAtlasPage Page;
 		public ParametersReader Parameters = new ParametersReader([]);
+
+		private int? _x, _y, _width, _height, _origW, _origH, _offsetX, _offsetY;
 
 		public int Degrees {
 			get {
@@ -99,14 +106,25 @@ namespace CloneDash.Compatibility.MuseDash
 				return degrees;
 			}
 		}
-		public int X => Parameters.Read<int>("xy", 0);
-		public int Y => Parameters.Read<int>("xy", 1);
-		public int Width => Parameters.Read<int>("size", 0);
-		public int Height => Parameters.Read<int>("size", 1);
-		public int OriginalWidth => Parameters.Read<int>("orig", 0);
-		public int OriginalHeight => Parameters.Read<int>("orig", 1);
-		public int OffsetX => Parameters.Read<int>("offset", 0);
-		public int OffsetY => Parameters.Read<int>("offset", 1);
+		public int X => _x ?? Parameters.Read<int>("xy", 0);
+		public int Y => _y ?? Parameters.Read<int>("xy", 1);
+		public int Width => _width ?? Parameters.Read<int>("size", 0);
+		public int Height => _height ?? Parameters.Read<int>("size", 1);
+		public int OriginalWidth => _origW ?? Parameters.Read<int>("orig", 0);
+		public int OriginalHeight => _origH ?? Parameters.Read<int>("orig", 1);
+		public int OffsetX => _offsetX ?? Parameters.Read<int>("offset", 0);
+		public int OffsetY => _offsetY ?? Parameters.Read<int>("offset", 1);
+
+		internal void ApplyScale(float scaleX, float scaleY) {
+			_x = (int)MathF.Round(Parameters.Read<int>("xy", 0) * scaleX);
+			_y = (int)MathF.Round(Parameters.Read<int>("xy", 1) * scaleY);
+			_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleX);
+			_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleY);
+			_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleX);
+			_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleY);
+			_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleX);
+			_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleY);
+		}
 
 		public ITexture GetTexture() => Page.GetTexture();
 		public IModelAtlasPage GetPage() => Page;
