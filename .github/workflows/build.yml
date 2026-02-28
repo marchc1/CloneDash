@@ -292,5 +292,5 @@ jobs:
             dist/CloneDash-Game-Windows/CloneDash-Game-Windows.zip
             dist/CloneDash-Game-Linux-AppImage/CloneDash-Game-Linux.AppImage
             dist/CloneDash-Game-macOS/CloneDash-Game-macOS.zip
-            dist/CloneDash-Game-Windows-Velopack/CloneDash-*-full.nupkg
+            dist/CloneDash-Game-Windows-Velopack/CloneDash-*.nupkg
             dist/CloneDash-Game-Windows-Velopack/releases.win.json
