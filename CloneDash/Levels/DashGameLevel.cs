@@ -582,6 +582,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			}
 
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
+				Boss.Build();
 				if (gameParameters.Sheet != null) {
 					if (!__deferringAsync) {
 						foreach (var ent in gameParameters.Sheet.Entities)
@@ -593,7 +594,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
 					}
 				}
-				Boss.Build();
 			}
 			Interlude.Spin(submessage: "Loading audio...");
 

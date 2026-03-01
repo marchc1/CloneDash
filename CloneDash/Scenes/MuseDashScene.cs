@@ -784,7 +784,15 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		if (actions == null)
 			return 0;
 
-		return anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault())?.Duration ?? 0;
+
+		var animObj = anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault());
+		// This is a REALLY dumb way of doing it. There *has* to be a better way.
+		// I don't think these frame times are standardized. I also don't know where they're stored.
+		// if you run into this code and know, let me know =)
+		if (TryFindFirstTwoDigitNumber(animObj?.Name, out int value, out _))
+			// Muse Dash uses 30fps as a reference
+			return value / 30d;
+		return 0;
 	}
 
 	public double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim) {
