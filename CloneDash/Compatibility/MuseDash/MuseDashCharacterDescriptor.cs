@@ -198,6 +198,8 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
 		if (skeletonMecanim == null)
 			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonAnimation");
+		if (skeletonMecanim == null)
+			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonGraphic");
 		if (skeletonMecanim == null) {
 			// OK time to go through the depths of hell for a victory model
 			var rectTransform = mainshowObject.GetFirstComponent<RectTransform>()!;
