@@ -307,7 +307,7 @@ namespace CloneDash.Game
 		public double XPosFromTimeOffset(float timeOffset = 0) {
 			var level = GetGameLevel();
 
-			var current = GetConductor().Time - timeOffset;
+			var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 			var tickHit = this.GetVisualHitTime();
 			var tickShow = this.GetVisualShowTime();
 			var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
