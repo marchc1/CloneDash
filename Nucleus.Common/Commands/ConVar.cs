@@ -47,7 +47,7 @@ namespace Nucleus.Commands
 			this.value.Double = doubleValue;
 			this.value.Int = Convert.ToInt32(doubleValue);
 
-			if ((Flags & FCvar.NeverAsString) != 0) {
+			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
 				this.value.Double.TryFormat(tempVal, out int charsWritten);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
@@ -70,7 +70,7 @@ namespace Nucleus.Commands
 			this.value.Double = doubleValue;
 			this.value.Int = intValue;
 
-			if ((Flags & FCvar.NeverAsString) != 0) {
+			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
 				this.value.Int.TryFormat(tempVal, out int charsWritten);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
