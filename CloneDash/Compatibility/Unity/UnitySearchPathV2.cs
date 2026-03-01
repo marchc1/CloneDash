@@ -192,6 +192,9 @@ public class AddressablesCatalog
 		if (internalId == null)
 			return null;
 
+		
+		internalId = internalId.Replace('\\', Path.DirectorySeparatorChar);
+
 		// Handle the {UnityEngine.AddressableAssets.Addressables.RuntimePath}/Platform/bundle.bundle format
 		int prefixEnd = internalId.IndexOf('}');
 		if (prefixEnd >= 0) {
