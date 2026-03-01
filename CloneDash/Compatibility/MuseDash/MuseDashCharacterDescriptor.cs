@@ -5,7 +5,7 @@ using CloneDash.Game;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
-
+using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
@@ -297,17 +297,19 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	}
 
-	public string GetPlayAnimation(CharacterAnimationType animationType) {
+	public string? GetPlayAnimation(CharacterAnimationType animationType) {
 		convertAnimations();
+		if (!anims.TryGetValue(animationType, out var animtable))
+			return null!;
 		switch (animationType) {
 			case CharacterAnimationType.AirHurt:
 			case CharacterAnimationType.AirPressHurt:
 			case CharacterAnimationType.JumpHurt:
 			case CharacterAnimationType.RoadHurt:
 			case CharacterAnimationType.In:
-				return anims[animationType].First();
+				return animtable.First();
 			default:
-				return anims[animationType].Random();
+				return animtable.Random();
 		}
 	}
 

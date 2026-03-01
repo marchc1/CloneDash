@@ -107,7 +107,6 @@ public class CharacterSelectorScroller : Panel
 			}
 		}
 	}
-
 }
 
 public class CharacterSelector : Panel, IMainMenuPanel
@@ -128,6 +127,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Label characterAuthorLabel = null!;
 	Label characterPerkLabel = null!;
 	Button characterSelectButton = null!;
+	CheckboxButton characterShowExt = null!;
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character = null!;
 	protected override void Initialize() {
@@ -160,6 +160,13 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton.ForegroundColor = new(48, 220, 70);
 		characterSelectButton.MouseReleaseEvent += CharacterSelectButton_MouseReleaseEvent;
 
+		characterShowExt = selectedInfo.Add<CheckboxButton>();
+		characterShowExt.Dock = Dock.Right;
+		characterShowExt.Size = new(0.1f);
+		characterShowExt.DynamicallySized = true;
+		characterShowExt.DockMargin = RectangleF.TLRB(24, 4, 4, 24);
+		characterShowExt.OnCheckedChanged += CharacterShowExt_OnCheckedChanged;
+
 		characterPerkLabel = selectedInfo.Add<Label>();
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
@@ -185,6 +192,10 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetCharacter(currentCharacter);
 	}
 
+	private void CharacterShowExt_OnCheckedChanged(CheckboxButton self) {
+		Character.SetExtendedModels(self.Checked);
+	}
+
 	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
@@ -206,6 +217,9 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterCostumeLabel.Position = new(32, 72 * ratio);
 		characterHPLabel.Position = new(32, 104 * ratio);
 		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
+
+		characterSelectButton.TextSize = 80 * ratio;
+		characterShowExt.TextSize = 20 * ratio;
 	}
 
 	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
@@ -225,5 +239,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterPerkLabel.Text = ch?.GetPerk() ?? "<NULL>";
 
 		characterSelectButton.Text = "SELECT";
+		characterShowExt.Text = "Show Other Models?";
 	}
 }
