@@ -118,12 +118,29 @@ namespace CloneDash.Compatibility.MuseDash
 		internal void ApplyScale(float scaleX, float scaleY) {
 			_x = (int)MathF.Round(Parameters.Read<int>("xy", 0) * scaleX);
 			_y = (int)MathF.Round(Parameters.Read<int>("xy", 1) * scaleY);
-			_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleX);
-			_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleY);
-			_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleX);
-			_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleY);
-			_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleX);
-			_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleY);
+
+			bool rotated = (Degrees % 180 == 90);
+			if (rotated) {
+				_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleY);
+				_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleX);
+			}
+			else {
+				_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleX);
+				_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleY);
+			}
+
+			if (rotated) {
+				_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleY);
+				_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleX);
+				_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleY);
+				_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleX);
+			}
+			else {
+				_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleX);
+				_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleY);
+				_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleX);
+				_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleY);
+			}
 		}
 
 		public ITexture GetTexture() => Page.GetTexture();
