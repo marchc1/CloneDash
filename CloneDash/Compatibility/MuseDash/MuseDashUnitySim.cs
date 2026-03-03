@@ -433,7 +433,6 @@ public class SceneSpriteRenderer : SceneRenderer
 	}
 
 	public override void Render(BaseMuseDashUnitySimScene scene) {
-		// Rlgl.DisableWireMode();
 		if (texture == null) return;
 		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
 		// TODO: mesh rendering. Very slow, probably incorrect right now...
@@ -441,7 +440,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		// if (useMesh && mIdx != null)
 		// 	RenderMesh();
 		// else if (texRectW > 0 && texRectH > 0)
-			RenderQuad();
+		RenderQuad();
 	}
 
 	void RenderMesh() {
@@ -450,7 +449,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		float rotDeg = Transform.GetWorldRotationZ();
 		uint texId = texture!.GetTextureHandle();
 		var fcolor = this.color * this.Object.GetColor();
-		bool doFlipX = flipX ^ (sx < 0), doFlipY = flipY ^ (sy < 0);
+		bool doFlipX = flipX, doFlipY = flipY;
 
 		float uMin = float.MaxValue, uMax = float.MinValue;
 		float vMin = float.MaxValue, vMax = float.MinValue;
@@ -470,7 +469,6 @@ public class SceneSpriteRenderer : SceneRenderer
 		for (int i = 0; i + 2 < mIdx.Length; i += 3) {
 			for (int t = 0; t < 4; t++) {
 				int vi = mIdx[i + (t < 3 ? t : 2)];
-													
 				float lx = mPosX[vi] * sx, ly = mPosY[vi] * sy;
 				float svx, svy;
 				if (hasRot) { float rx = lx, ry = -ly; svx = wx + rx * cos - ry * sin; svy = -wy + rx * sin + ry * cos; }
@@ -506,8 +504,8 @@ public class SceneSpriteRenderer : SceneRenderer
 			v1 = 1 - v1;
 		}
 
-		if (flipX ^ (sx < 0)) (u0, u1) = (u1, u0);
-		if (flipY ^ (sy < 0)) (v0, v1) = (v1, v0);
+		if (flipX) (u0, u1) = (u1, u0);
+		if (flipY) (v0, v1) = (v1, v0);
 
 		float screenX = wx + offX, screenY = -wy + offY;
 		float rotDeg = Transform.GetWorldRotationZ();
