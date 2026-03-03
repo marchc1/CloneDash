@@ -302,11 +302,14 @@ public class SceneSpriteRenderer : SceneRenderer
 	System.Numerics.Vector4 color;
 	private SpriteMaskInteraction MaskInteraction;
 
+	bool useMesh;
+	float[] mPosX = null!, mPosY = null!, mU = null!, mV = null!;
+	ushort[] mIdx = null!;
+
 	public SceneSpriteRenderer(SpriteRenderer sr) { UnitySpriteRenderer = sr; }
 
 	public override void Awake() {
 		if (UnitySpriteRenderer.m_MaskInteraction != SpriteMaskInteraction.None) {
-			// TODO: masks
 			return;
 		}
 
@@ -330,9 +333,89 @@ public class SceneSpriteRenderer : SceneRenderer
 		color = new(c.R, c.G, c.B, c.A);
 		SortingOrder = UnitySpriteRenderer.m_SortingOrder;
 		SortingLayerID = (int)UnitySpriteRenderer.m_SortingLayerID;
-
 		MaskInteraction = UnitySpriteRenderer.m_MaskInteraction;
+
+		useMesh = TryLoadMesh(sprite);
 	}
+
+	bool TryLoadMesh(Sprite sprite) {
+		var rd = sprite.m_RD;
+		var vd = rd.m_VertexData;
+		if (vd == null || vd.m_VertexCount == 0) return false;
+		if (vd.m_DataSize == null || vd.m_DataSize.Length == 0) return false;
+		if (vd.m_Channels == null || vd.m_Channels.Length < 1) return false;
+		if (vd.m_Streams == null || vd.m_Streams.Length == 0) return false;
+
+		int vc = (int)vd.m_VertexCount;
+		byte[] data = vd.m_DataSize;
+		var posCh = vd.m_Channels[0];
+		if (posCh.dimension < 2 || posCh.stream >= vd.m_Streams.Length) return false;
+
+		var ps = vd.m_Streams[posCh.stream];
+		int pStride = (int)ps.stride, pBase = (int)ps.offset;
+		if (pStride <= 0) return false;
+		int pfs = FmtSize(posCh.format);
+
+		float uvSx = rd.uvTransform.X, uvOx = rd.uvTransform.Y;
+		float uvSy = rd.uvTransform.Z, uvOy = rd.uvTransform.W;
+
+		mPosX = new float[vc]; mPosY = new float[vc];
+		mU = new float[vc]; mV = new float[vc];
+		for (int i = 0; i < vc; i++) {
+			int off = pBase + i * pStride + posCh.offset;
+			if (off + posCh.dimension * pfs > data.Length) return false;
+			float px = RdF(data, off, posCh.format);
+			float py = RdF(data, off + pfs, posCh.format);
+			mPosX[i] = px; mPosY[i] = py;
+			mU[i] = atlasW > 0 ? (uvSx * px + uvOx) / atlasW : 0;
+			mV[i] = atlasH > 0 ? 1f - (uvSy * py + uvOy) / atlasH : 0;
+		}
+
+		if (rd.m_IndexBuffer != null && rd.m_IndexBuffer.Length >= 2) {
+			int fi = 0, ic = rd.m_IndexBuffer.Length / 2;
+			if (rd.m_SubMeshes != null && rd.m_SubMeshes.Length > 0) {
+				fi = (int)(rd.m_SubMeshes[0].firstByte / 2);
+				ic = (int)rd.m_SubMeshes[0].indexCount;
+			}
+			int ta = rd.m_IndexBuffer.Length / 2;
+			if (fi + ic > ta) ic = ta - fi;
+			if (ic <= 0) return false;
+			mIdx = new ushort[ic];
+			for (int i = 0; i < ic; i++) {
+				mIdx[i] = BitConverter.ToUInt16(rd.m_IndexBuffer, (fi + i) * 2);
+				if (mIdx[i] >= vc) return false;
+			}
+		}
+		else if (vc == 4) { mIdx = [0, 1, 2, 2, 3, 0]; }
+		else return false;
+
+		return true;
+	}
+
+	static int FmtSize(int f) => f switch {
+		0 => 4,
+		1 => 2,
+		2 => 1,
+		3 => 1,
+		4 => 2,
+		5 => 2,
+		6 => 1,
+		7 => 1,
+		8 => 2,
+		9 => 2,
+		10 => 4,
+		11 => 4,
+		_ => 4
+	};
+	static float RdF(byte[] d, int o, int f) => f switch {
+		0 => BitConverter.ToSingle(d, o),
+		1 => (float)BitConverter.ToHalf(d, o),
+		2 => d[o] / 255f,
+		3 => Math.Max((sbyte)d[o] / 127f, -1f),
+		4 => BitConverter.ToUInt16(d, o) / 65535f,
+		5 => Math.Max(BitConverter.ToInt16(d, o) / 32767f, -1f),
+		_ => BitConverter.ToSingle(d, o)
+	};
 
 	public void SetSprite(Sprite sprite, MuseDashScene scene) {
 		var tex2d = sprite.m_RD.GetTexture();
@@ -345,16 +428,73 @@ public class SceneSpriteRenderer : SceneRenderer
 		if (ppu <= 0) ppu = 100f;
 		unitW = sprite.m_Rect.width / ppu; unitH = sprite.m_Rect.height / ppu;
 		pivotX = sprite.m_Pivot.X; pivotY = sprite.m_Pivot.Y;
+		mPosX = null!; mPosY = null!; mU = null!; mV = null!; mIdx = null!;
+		useMesh = TryLoadMesh(sprite);
 	}
 
 	public override void Render(BaseMuseDashUnitySimScene scene) {
+		// Rlgl.DisableWireMode();
+		if (texture == null) return;
+		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
+		// TODO: mesh rendering. Very slow, probably incorrect right now...
+		// the quads represent the main geometry and the main problems we're experiencing with geometry anyway
+		// if (useMesh && mIdx != null)
+		// 	RenderMesh();
+		// else if (texRectW > 0 && texRectH > 0)
+			RenderQuad();
+	}
+
+	void RenderMesh() {
+		Transform.GetWorldPosition(out float wx, out float wy, out _);
+		Transform.GetWorldScale(out float sx, out float sy);
+		float rotDeg = Transform.GetWorldRotationZ();
+		uint texId = texture!.GetTextureHandle();
+		var fcolor = this.color * this.Object.GetColor();
+		bool doFlipX = flipX ^ (sx < 0), doFlipY = flipY ^ (sy < 0);
+
+		float uMin = float.MaxValue, uMax = float.MinValue;
+		float vMin = float.MaxValue, vMax = float.MinValue;
+		for (int j = 0; j < mU.Length; j++) {
+			if (mU[j] < uMin) uMin = mU[j]; if (mU[j] > uMax) uMax = mU[j];
+			if (mV[j] < vMin) vMin = mV[j]; if (mV[j] > vMax) vMax = mV[j];
+		}
+
+		bool hasRot = MathF.Abs(rotDeg) > 0.01f;
+		float cos = 1f, sin = 0f;
+		if (hasRot) { float rad = -rotDeg * (MathF.PI / 180f); cos = MathF.Cos(rad); sin = MathF.Sin(rad); }
+		bool flipV = texture!.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+
+		Rlgl.SetTexture(texId);
+		Rlgl.Begin(DrawMode.QUADS);
+		Rlgl.Color4f(fcolor.X, fcolor.Y, fcolor.Z, fcolor.W);
+		for (int i = 0; i + 2 < mIdx.Length; i += 3) {
+			for (int t = 0; t < 4; t++) {
+				int vi = mIdx[i + (t < 3 ? t : 2)];
+													
+				float lx = mPosX[vi] * sx, ly = mPosY[vi] * sy;
+				float svx, svy;
+				if (hasRot) { float rx = lx, ry = -ly; svx = wx + rx * cos - ry * sin; svy = -wy + rx * sin + ry * cos; }
+				else { svx = wx + lx; svy = -wy - ly; }
+				float u = mU[vi], v = mV[vi];
+				if (doFlipX) u = uMin + uMax - u;
+				if (doFlipY) v = vMin + vMax - v;
+				if (flipV) v = 1f - v;
+				Rlgl.TexCoord2f(u, v);
+				Rlgl.Vertex2f(svx, svy);
+			}
+		}
+		Rlgl.End();
+		Rlgl.SetTexture(0);
+	}
+
+	void RenderQuad() {
 		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
 		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
 
 		Transform.GetWorldPosition(out float wx, out float wy, out _);
 		Transform.GetWorldScale(out float sx, out float sy);
 
-		float w = unitW * MathF.Abs(sx), h = unitH * MathF.Abs(sy);
+		float w = unitW * sx, h = unitH * sy;
 		float offX = -pivotX * w, offY = -(1f - pivotY) * h;
 
 		float flippedY = atlasH - texRectY - texRectH;
