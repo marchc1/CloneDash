@@ -917,7 +917,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				case EntityInteractivity.SamePath:
 					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
 						PathwaySide pathCurrentCharacter = Pathway;
-						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
+						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
 							Scene.PlaySound(entity.Type switch {
 								EntityType.Heart => SceneSound.GotHeart,
