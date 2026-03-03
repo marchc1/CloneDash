@@ -296,7 +296,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
 		// Hack... but no better way right now
-		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f) {
+		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.KeyboardFocused) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
 			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA)) {
 				MoveLeft();
