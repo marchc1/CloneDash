@@ -833,7 +833,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
 			HologramPlayer.Visible = true;
-			HologramPlayer.SetShaderUniform("time", (float)(Conductor.Time - lastHologramHitTime) * 2);
+			HologramPlayer.SetShaderUniform("time", NMath.Ease.InQuint((float)(Conductor.Time - lastHologramHitTime) * 3));
 		}
 		else {
 			HologramPlayer.Visible = false;
