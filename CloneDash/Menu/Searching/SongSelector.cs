@@ -124,7 +124,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public delegate void UserWantsMore();
 	public event UserWantsMore? UserWantsMoreSongs;
-	public bool CanAcceptMoreSongs { get; set; } = true;
+	public bool CanAcceptMoreSongs { get; set; } = false;
 	public bool NoMoreSongsLeft { get; set; } = false;
 	public bool InfiniteList { get; set; } = true;
 
@@ -184,9 +184,12 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public int GetSongIndex(int localIndex) => GetSongsList().Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, GetSongsList().Count);
-	public ChartSong GetDiscSong(int localIndex) {
+	public ChartSong? GetDiscSong(int localIndex) {
 		var songIndex = GetSongIndex(localIndex);
-		return GetSongsList()[songIndex];
+		var list = GetSongsList();
+		if (list.Count == 0)
+			return null;
+		return list[songIndex];
 	}
 	public ChartSong GetDiscSong(Button discButton) {
 		int localIndex = discButton.GetTagSafely<int>("localDiscIndex");
@@ -250,10 +253,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		// Should play track?
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
 			var chart = GetDiscSong(0);
-			activeTrack = chart.GetDemoTrack();
+			activeTrack = chart?.GetDemoTrack();
 
 			if (activeTrack == null) {
-				doNotTryToGetTrackAgain = !chart.IsLoadingDemoAsync;
+				doNotTryToGetTrackAgain = chart == null || !chart.IsLoadingDemoAsync;
 				return;
 			}
 
@@ -329,7 +332,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			if (GetSongsList().Count > 0) {
 				var song = GetDiscSong(disc);
-				ChartCover? cover = song.GetCoverWhenAvailable(this);
+				ChartCover? cover = song?.GetCoverWhenAvailable(this);
 
 				disc.Text = "";
 				if (cover != null) {
@@ -365,6 +368,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	private void DisableDiscs(bool disabled) {
 		for (int i = 0; i < Discs.Length; i++) {
 			Discs[i].InputDisabled = disabled;
+			Discs[i].Visible = !disabled;
 		}
 		discsDisabled = disabled;
 	}
@@ -389,7 +393,8 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		if (GetSongsList().Count() <= 0 && CompiledFilter != null && !CanAcceptMoreSongs) {
+		var songs = GetSongsList();
+		if (songs.Count <= 0 && CompiledFilter != null && !CanAcceptMoreSongs) {
 			Loading.Text = "No songs available.";
 			Loading.Visible = true;
 			DisableDiscs(true);
@@ -446,10 +451,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor.TextSize = 24;
 
 		var mainSong = GetDiscSong(0);
-		var info = mainSong.GetInfo();
+		var info = mainSong?.GetInfo();
 		if (info != null) {
-			CurrentTrackName.Text = mainSong.Name;
-			CurrentTrackAuthor.Text = mainSong.Author;
+			CurrentTrackName.Text = mainSong?.Name ?? "";
+			CurrentTrackAuthor.Text = mainSong?.Author ?? "";
 		}
 
 		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
