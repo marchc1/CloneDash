@@ -258,7 +258,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 			anims = new(new(actionController), black_girl_battle);
 		}
 
-		if (anims == null) {
+		if (ghostanims == null) {
 			var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShowGhost());
 			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
 			ghostanims = new(new(actionController), black_girl_battle);

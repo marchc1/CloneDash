@@ -445,6 +445,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					Character.PlayCharacterAnimation(type, HologramPlayerController);
 					lastHologramAnimationTime = Conductor.Time;
 				}
+				else
+					Character.PlayCharacterAnimation(type, PlayerController);
 				break;
 		}
 	}
@@ -1605,12 +1607,21 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 
+			if (Sustains.IsSustaining())
+				__whenHjump = Conductor.Time;
+			else
+				__whenjump = Conductor.Time;
+
 			return true;
 		}
 		else if (CanJump) {
 			PlayCharacterAnimation(CharacterAnimationType.Jump);
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
-			__whenHjump = Conductor.Time;
+
+			if (Sustains.IsSustaining())
+				__whenHjump = Conductor.Time;
+			else
+				__whenjump = Conductor.Time;
 
 			return true;
 		}

@@ -20,15 +20,30 @@ public class MD_ActionData
 	public int[] ActionEventIdx = [];
 }
 
-public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation) {
+public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation)
+{
 	public readonly MD_SpineActionControllerData Data = data;
 	public readonly AnimationHandler Animation = animation;
 
-	public void PlaySkeletonAction(ReadOnlySpan<char> name, bool isOverride){
+	public void PlaySkeletonAction(ReadOnlySpan<char> name, bool isOverride) {
 		var action = Data.Get(name);
 		if (action == null)
 			return;
 
+		if (action.IsRandomSequence) {
+			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], false);
+			Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
+		}
+		else {
+			Animation.ClearAllAnimation();
+			for (int i = 0; i < action.ActionIdx.Length; i++) {
+				if (i == 0)
+					Animation.SetAnimation(0, action.ActionIdx[i], false);
+				else
+					Animation.AddAnimation(0, action.ActionIdx[i], false);
+			}
+			Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
+		}
 	}
 }
 
