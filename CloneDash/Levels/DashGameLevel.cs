@@ -1601,7 +1601,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (isDHE)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
 			else if (result.HitEntity is not SustainBeam)
-				if (!InAir && PathwayTransitionAnimation)
+				if (!InAir && !Sustains.IsSustaining() && PathwayTransitionAnimation)
 					PlayCharacterAnimation(CharacterAnimationType.UpHit);
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
