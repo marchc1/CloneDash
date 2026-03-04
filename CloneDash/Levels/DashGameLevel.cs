@@ -625,6 +625,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
 
 	public float GetPlayerY(double jumpRatio) {
+		// this hack REALLY sucks, todo fix this
+		if (PlayerController.Animation.Channels[0].CurrentEntry?.Animation?.Name?.Contains("double") ?? false)
+			jumpRatio = 0;
+
 		var height = EngineCore.GetWindowHeight();
 
 		var top = GetPathwayPosition(PathwaySide.Top);
@@ -1558,10 +1562,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		bool nowInsustain = Sustains.ActiveSustains() > 0;
 
 		// todo
-		if (isSustainingNow)
-			PlayCharacterAnimation(CharacterAnimationType.Press);
-		else
-			PlayCharacterAnimation(CharacterAnimationType.Run);
+		if (isSustainingNow) {
+			if (InAir || Sustains.IsSustaining(PathwaySide.Top) && pathway == PathwaySide.Bottom)
+				PlayCharacterAnimation(CharacterAnimationType.DownPress);
+			else if (!InAir || Sustains.IsSustaining(PathwaySide.Bottom))
+				PlayCharacterAnimation(CharacterAnimationType.UpPress);
+			else
+				PlayCharacterAnimation(CharacterAnimationType.Press);
+		}
+		else {
+			if (pathway == PathwaySide.Top)
+				PlayCharacterAnimation(CharacterAnimationType.UpPressEnd);
+			else
+				PlayCharacterAnimation(CharacterAnimationType.Run);
+		}
 
 		if (pressIdle != null) {
 			if (pressIdle.Playing && !nowInsustain) {
