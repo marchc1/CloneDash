@@ -50,7 +50,7 @@ public class MD_SpineActionControllerData
 			data.ProtectLevel = (((int?)dict["protectLevel"]) ?? 0);
 			data.SpineActionKeyIndex = (((int?)dict["spineActionKeyIndex"]) ?? 0);
 			data.ActionIdx = ((List<object>)dict["actionIdx"]!).Cast<string>().ToArray();
-			data.ActionEventIdx = ((List<object>)dict["actionIdx"]!).Cast<int>().ToArray();
+			data.ActionEventIdx = ((List<object>)dict["actionEventIdx"]!).Cast<int>().ToArray();
 		}
 	}
 }

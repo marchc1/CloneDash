@@ -97,13 +97,7 @@ public class CharacterPanel : Panel
 
 		if (extendedModels && Character != null) {
 			if (!PlayAnims.IsPlayingAnimation()) {
-				string? attempt = null;
-				for (int i = 0; i < 32 && attempt == null; i++)
-					attempt = Character.GetPlayAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.UpPressHit) + 1));
-
-				if (attempt != null)
-					PlayAnims.SetAnimation(0, attempt);
-				PlayAnims.AddAnimation(0, Character.GetPlayAnimation(CharacterAnimationType.Run));
+				Character.PlayCharacterAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.JumpHitGreat) + 1), PlayAnims);
 			}
 		}
 	}

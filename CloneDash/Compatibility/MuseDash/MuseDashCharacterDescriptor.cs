@@ -16,6 +16,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -230,86 +231,77 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public string GetMainShowStandby() => "BgmStandby";
 
-	private Dictionary<CharacterAnimationType, List<string>> anims;
+	private MD_SpineActionControllerData? anims;
+	private MD_SpineActionControllerData? ghostanims;
+	[MemberNotNull(nameof(anims), nameof(ghostanims))]
 	private void convertAnimations() {
-		if (anims != null) return;
+		if (anims != null && ghostanims != null) return;
 
 		var assets = MuseDashCompatibility.StreamingAssets;
 
-		var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShow());
-		var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
-		var actions = (List<object>)actionController.ToType()["actionData"]!;
-		anims = [];
-		foreach (var actionObj in actions) {
-			var action = (OrderedDictionary)actionObj;
-
-			bool isRandomSequence = (byte)action["isRandomSequence"]! > 0;
-
-			CharacterAnimationType type = (string)action["name"]! switch {
-				"char_run" => CharacterAnimationType.Run,
-				"in" => CharacterAnimationType.In,
-				"char_hurt" => CharacterAnimationType.RoadHurt,
-				"char_jump_hurt" => CharacterAnimationType.JumpHurt,
-				"char_die" => CharacterAnimationType.Die,
-				"char_press" => CharacterAnimationType.Press,
-				"char_atk_miss" => CharacterAnimationType.RoadMiss,
-				"char_atk_g" => CharacterAnimationType.RoadGreat,
-				"char_atk_p" => CharacterAnimationType.RoadPerfect,
-				"char_jump" => CharacterAnimationType.Jump,
-				"char_jumphit" => CharacterAnimationType.AirPerfect,
-
-				// todo: research this better
-				"char_downhit" => CharacterAnimationType.NotApplicable,
-				"char_downpress" => CharacterAnimationType.DownPressHit,
-				"char_uphit" => CharacterAnimationType.NotApplicable,
-				"char_uppress" => CharacterAnimationType.UpPressHit,
-				"char_uppress_end" => CharacterAnimationType.AirPressEnd,
-				"char_big_press" => CharacterAnimationType.Press,
-
-				// ???
-				"char_up_press_s2b" => CharacterAnimationType.NotApplicable,
-				"char_up_press_b2s" => CharacterAnimationType.NotApplicable,
-				"char_down_press_s2b" => CharacterAnimationType.NotApplicable,
-				"char_down_press_b2s" => CharacterAnimationType.NotApplicable,
-
-				"char_bighit" => CharacterAnimationType.Double,
-				"char_up_press_s" => CharacterAnimationType.NotApplicable,
-				"char_down_press_s" => CharacterAnimationType.NotApplicable,
-				"char_uppress_hurt" => CharacterAnimationType.AirPressHurt,
-				"char_jumphit_great" => CharacterAnimationType.AirGreat,
-
-				_ => CharacterAnimationType.NotApplicable
-			};
-			if (type == CharacterAnimationType.NotApplicable) continue;
-
-			if (!anims.TryGetValue(type, out var individualAnims)) {
-				individualAnims = [];
-				anims[type] = individualAnims;
-			}
-
-			var actionIdx = (List<object>)action["actionIdx"]!;
-			foreach (var actionId in actionIdx) {
-				individualAnims.Add((string)actionId!);
-			}
-			//individualAnims.Add()
+		if (anims == null) {
+			var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShow());
+			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
+			anims = new(new(actionController));
 		}
+
+		if (anims == null) {
+			var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShowGhost());
+			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
+			ghostanims = new(new(actionController));
+		}
+	}
+
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler) {
+		convertAnimations();
+		playCharacterAnimation(animationType, handler, anims);
+	}
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler) {
+		convertAnimations();
+		playCharacterAnimation(animationType, handler, ghostanims);
+	}
+
+	private void playCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler, MD_SpineActionControllerData data) {
+		string? name = convertAnimationTypeToName(animationType);
+		var animData = data.Get(name);
+		if (animData == null)
+			return;
 
 	}
 
-	public string? GetPlayAnimation(CharacterAnimationType animationType) {
-		convertAnimations();
-		if (!anims.TryGetValue(animationType, out var animtable))
-			return null!;
-		switch (animationType) {
-			case CharacterAnimationType.AirHurt:
-			case CharacterAnimationType.AirPressHurt:
-			case CharacterAnimationType.JumpHurt:
-			case CharacterAnimationType.RoadHurt:
-			case CharacterAnimationType.In:
-				return animtable.First();
-			default:
-				return animtable.Random();
-		}
+
+	private string? convertAnimationTypeToName(CharacterAnimationType animationType) {
+		var name = animationType switch {
+			CharacterAnimationType.Run => "char_run",
+			CharacterAnimationType.In => "in",
+			CharacterAnimationType.Hurt => "char_hurt",
+			CharacterAnimationType.JumpHurt => "char_jump_hurt",
+			CharacterAnimationType.Die => "char_die",
+			CharacterAnimationType.Press => "char_press",
+			CharacterAnimationType.AttackMiss => "char_atk_miss",
+			CharacterAnimationType.AttackGreat => "char_atk_g",
+			CharacterAnimationType.AttackPerfect => "char_atk_p",
+			CharacterAnimationType.Jump => "char_jump",
+			CharacterAnimationType.JumpHit => "char_jumphit",
+			CharacterAnimationType.DownHit => "char_downhit",
+			CharacterAnimationType.DownPress => "char_downpress",
+			CharacterAnimationType.UpHit => "char_uphit",
+			CharacterAnimationType.UpPressStart => "char_uppress_start",
+			CharacterAnimationType.UpPress => "char_uppress",
+			CharacterAnimationType.UpPressEnd => "char_uppress_end",
+			CharacterAnimationType.BigPress => "char_big_press",
+			CharacterAnimationType.UpPressS2B => "char_up_press_s2b",
+			CharacterAnimationType.DownPressS2B => "char_down_press_s2b",
+			CharacterAnimationType.UpPressB2S => "char_up_press_b2s",
+			CharacterAnimationType.DownPressB2S => "char_down_press_b2s",
+			CharacterAnimationType.BigHit => "char_bighit",
+			CharacterAnimationType.UpPressSmall => "char_up_press_s",
+			CharacterAnimationType.DownPressSmall => "char_down_press_s",
+			CharacterAnimationType.UpPressHurt => "char_uppress_hurt",
+			CharacterAnimationType.JumpHitGreat => "char_jumphit_great",
+			_ => null
+		};
+		return name;
 	}
 
 	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, configData.GetBattleShow());

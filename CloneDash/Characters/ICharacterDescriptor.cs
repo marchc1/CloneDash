@@ -36,7 +36,8 @@ public interface ICharacterDescriptor
 	public ICharacterExpression? GetMainShowExpression();
 	public ICharacterExpression? GetMainShowApplyExpression();
 	public string? GetMainShowInitialExpression();
-	public string? GetPlayAnimation(CharacterAnimationType animationType);
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, AnimationHandler animations);
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, AnimationHandler animations);
 
 	public double GetDefaultHP();
 	public string? GetLogicControllerData();
