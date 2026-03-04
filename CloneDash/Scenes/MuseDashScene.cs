@@ -19,7 +19,6 @@ using Raylib_cs;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -111,66 +110,23 @@ public struct MuseDashSceneSounds
 
 public class MD_Animations3Speed
 {
-	public readonly MD_SpineActionController[][] Speeds = [
+	public readonly MD_SpineActionControllerData[][] Speeds = [
 		[null!, null!, null!],
 		[null!, null!, null!],
 		[null!, null!, null!]
 	];
 
-	public MD_SpineActionController GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+	public MD_SpineActionControllerData GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
 		Debug.Assert(speed >= 1);
 		Debug.Assert(speed <= 3);
 		return Speeds[speed - 1][(int)dir] ?? Speeds[speed - 1][0]; // Default to rightside
 	}
 
-	public ref MD_SpineActionController GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+	public ref MD_SpineActionControllerData GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
 		Debug.Assert(speed >= 1);
 		Debug.Assert(speed <= 3);
 		return ref Speeds[speed - 1][(int)dir];
 	}
-}
-
-public class MD_SpineActionController
-{
-	public readonly MD_ActionData?[] ActionData;
-
-	public MD_ActionData? Get(ReadOnlySpan<char> name) {
-		for (int i = 0, c = ActionData.Length; i < c; i++) {
-			var data = ActionData[i];
-			if (data == null) continue;
-			if (data.Name.Equals(name, StringComparison.InvariantCulture))
-				return data;
-		}
-		return null;
-	}
-
-	public MD_SpineActionController(MonoBehaviourReader reader) {
-		var animationData = reader.GetAny<List<object>>("actionData")!;
-		ActionData = new MD_ActionData?[animationData.Count];
-
-		for (int i = 0; i < animationData.Count; i++) {
-			if (animationData[i] is not OrderedDictionary dict) continue;
-			MD_ActionData data;
-			data = ActionData[i] = new MD_ActionData();
-
-			data.Name = ((string?)dict["name"]) ?? throw new Exception();
-			data.IsEndLoop = (((byte?)dict["isEndLoop"]) ?? 0) != 0;
-			data.ActionIdx = ((List<object>)dict["actionIdx"]!).Cast<string>().ToArray();
-		}
-	}
-}
-
-public class MD_ActionData
-{
-	public bool Collapsed;
-	public bool IsEndLoop;
-	public bool IsRandomSequence;
-	public bool IsSelfProtect;
-	public string Name = "";
-	public int ProtectLevel;
-	public int SpineActionKeyIndex;
-	public string[] ActionIdx = [];
-	public int[] ActionEventIdx = [];
 }
 
 public static class MuseDashSceneEnemyInfo
@@ -441,7 +397,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	Sound?[]? HitSounds;
 	MusicTrack? VictoryBgmSound;
 
-	MD_SpineActionController BossAnims = null!;
+	MD_SpineActionControllerData BossAnims = null!;
 
 	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
 	MD_Animations3Speed MasherAnims = new();
@@ -652,7 +608,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public delegate string ResolverFn(in RequestInfo info);
 
 	void ProcessThreeSpeedAnimations(MD_Animations3Speed table, in RequestInfo req, MonoBehaviourReader reader) {
-		ref MD_SpineActionController speedToEdit = ref table.GetSpeedForEdit(req.speed, req.dir);
+		ref MD_SpineActionControllerData speedToEdit = ref table.GetSpeedForEdit(req.speed, req.dir);
 		speedToEdit = new(reader);
 	}
 
@@ -835,7 +791,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
 		time = 0;
 
-		MD_SpineActionController? anim = null;
+		MD_SpineActionControllerData? anim = null;
 
 		switch (enemy.Type) {
 			case EntityType.Single: {
