@@ -31,17 +31,20 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 			return;
 
 		if (action.IsRandomSequence) {
-			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], false);
-			Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
+			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop);
+			if (!action.IsEndLoop)
+				Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
 		}
 		else {
 			Animation.ClearAllAnimation();
 			for (int i = 0; i < action.ActionIdx.Length; i++) {
+				bool loop = i == action.ActionIdx.Length - 1 && action.IsEndLoop;
 				if (i == 0)
-					Animation.SetAnimation(0, action.ActionIdx[i], false);
+					Animation.SetAnimation(0, action.ActionIdx[i], loop);
 				else
-					Animation.AddAnimation(0, action.ActionIdx[i], false);
+					Animation.AddAnimation(0, action.ActionIdx[i], loop);
 			}
+			if(!action.IsEndLoop)
 			Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
 		}
 	}

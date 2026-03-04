@@ -1600,10 +1600,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			if (isDHE)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
-			else if (!InAir && PathwayTransitionAnimation)
-				PlayCharacterAnimation(CharacterAnimationType.UpHit);
-			else
-				PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
+			else if (result.HitEntity is not SustainBeam)
+				if (!InAir && PathwayTransitionAnimation)
+					PlayCharacterAnimation(CharacterAnimationType.UpHit);
+				else
+					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
 
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 
@@ -1639,10 +1640,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (result.Hit) {
 			if (result.HitEntity is DoubleHitEnemy)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
-			else if (InAir && PathwayTransitionAnimation)
-				PlayCharacterAnimation(CharacterAnimationType.DownHit);
-			else
-				PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat);
+			else if (result.HitEntity is not SustainBeam)
+				if (InAir && PathwayTransitionAnimation)
+					PlayCharacterAnimation(CharacterAnimationType.DownHit);
+				else
+					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat);
 		}
 		else {
 			if (InAir)
@@ -1651,6 +1653,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				PlayCharacterAnimation(CharacterAnimationType.AttackMiss);
 		}
 
+		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
 		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
 	}
