@@ -97,7 +97,7 @@ public class CharacterPanel : Panel
 
 		if (extendedModels && Character != null) {
 			if (!PlayAnims.IsPlayingAnimation()) {
-				Character.PlayCharacterAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.JumpHitGreat) + 1), PlayAnims);
+				// todo: fix Character.PlayCharacterAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.JumpHitGreat) + 1), PlayAnims);
 			}
 		}
 	}

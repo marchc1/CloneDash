@@ -26,8 +26,7 @@ public class MuseDashCharacterExpression : ICharacterExpression
 	private string Talk;
 	private string AudioName;
 
-	public MuseDashCharacterExpression(CharacterExpression expression, string talk, string audioName)
-	{
+	public MuseDashCharacterExpression(CharacterExpression expression, string talk, string audioName) {
 		Expression = expression;
 		Talk = talk;
 		AudioName = audioName;
@@ -52,7 +51,7 @@ public class MuseDashCharacterExpression : ICharacterExpression
 
 	public static MuseDashCharacterExpression From(CharacterConfigData data) {
 		int i = Random.Shared.Next(0, data.Expressions.Count);
-		
+
 		var expr = data.Expressions[i];
 		var audioNames = expr.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
@@ -127,8 +126,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		return expression;
 	}
 
-	public ICharacterExpression? GetMainShowApplyExpression()
-	{
+	public ICharacterExpression? GetMainShowApplyExpression() {
 		// probably need a better way to figure out the folder name
 		var assets = MuseDashCompatibility.StreamingAssets;
 		var mainShow = assets.FindAssetByName<GameObject>(configData.MainShow);
@@ -231,10 +229,25 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public string GetMainShowStandby() => "BgmStandby";
 
+	private static MD_SpineActionControllerData? black_girl_battle;
 	private MD_SpineActionControllerData? anims;
 	private MD_SpineActionControllerData? ghostanims;
+
+
+	[MemberNotNull(nameof(black_girl_battle))]
+	private static void convertBaseAnimationData() {
+		if (black_girl_battle != null)
+			return;
+
+		var data = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>("black_girl_battle")?.GetMonoBehaviorByScriptName("SpineActionController")!;
+		ArgumentNullException.ThrowIfNull(data);
+
+		black_girl_battle = new(new(data));
+	}
+
 	[MemberNotNull(nameof(anims), nameof(ghostanims))]
 	private void convertAnimations() {
+		convertBaseAnimationData();
 		if (anims != null && ghostanims != null) return;
 
 		var assets = MuseDashCompatibility.StreamingAssets;
@@ -242,31 +255,39 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		if (anims == null) {
 			var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShow());
 			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
-			anims = new(new(actionController));
+			anims = new(new(actionController), black_girl_battle);
 		}
 
 		if (anims == null) {
 			var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShowGhost());
 			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
-			ghostanims = new(new(actionController));
+			ghostanims = new(new(actionController), black_girl_battle);
 		}
 	}
 
-	public void PlayCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler) {
+	public MD_SpineActionControllerData GetPlayAnimationData() {
 		convertAnimations();
-		playCharacterAnimation(animationType, handler, anims);
-	}
-	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler) {
-		convertAnimations();
-		playCharacterAnimation(animationType, handler, ghostanims);
+		return anims;
 	}
 
-	private void playCharacterAnimation(CharacterAnimationType animationType, AnimationHandler handler, MD_SpineActionControllerData data) {
+	public MD_SpineActionControllerData GetPlayGhostAnimationData() {
+		convertAnimations();
+		return ghostanims;
+	}
+
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
+		convertAnimations();
+		playCharacterAnimation(animationType, handler);
+	}
+
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
+		convertAnimations();
+		playCharacterAnimation(animationType, handler);
+	}
+
+	private void playCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
 		string? name = convertAnimationTypeToName(animationType);
-		var animData = data.Get(name);
-		if (animData == null)
-			return;
-
+		handler.PlaySkeletonAction(name, false);
 	}
 
 

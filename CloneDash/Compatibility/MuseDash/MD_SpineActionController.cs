@@ -2,6 +2,7 @@
 using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.ManagedMemory;
+using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 
 namespace CloneDash.Compatibility.MuseDash;
@@ -19,6 +20,18 @@ public class MD_ActionData
 	public int[] ActionEventIdx = [];
 }
 
+public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation) {
+	public readonly MD_SpineActionControllerData Data = data;
+	public readonly AnimationHandler Animation = animation;
+
+	public void PlaySkeletonAction(ReadOnlySpan<char> name, bool isOverride){
+		var action = Data.Get(name);
+		if (action == null)
+			return;
+
+	}
+}
+
 public class MD_SpineActionControllerData
 {
 	public readonly MD_ActionData?[] ActionData;
@@ -30,10 +43,17 @@ public class MD_SpineActionControllerData
 			if (data.Name.Equals(name, StringComparison.InvariantCulture))
 				return data;
 		}
+
+		if (parent != null)
+			return parent.Get(name);
+
 		return null;
 	}
 
-	public MD_SpineActionControllerData(MonoBehaviourReader reader) {
+	MD_SpineActionControllerData? parent;
+
+	public MD_SpineActionControllerData(MonoBehaviourReader reader, MD_SpineActionControllerData? parent = null) {
+		this.parent = parent;
 		var animationData = reader.GetAny<List<object>>("actionData")!;
 		ActionData = new MD_ActionData?[animationData.Count];
 

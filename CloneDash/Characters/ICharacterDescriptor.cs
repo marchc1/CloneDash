@@ -1,4 +1,5 @@
-﻿using CloneDash.Game;
+﻿using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 
 using Nucleus.Audio;
 using Nucleus.Common.Graphics;
@@ -36,9 +37,11 @@ public interface ICharacterDescriptor
 	public ICharacterExpression? GetMainShowExpression();
 	public ICharacterExpression? GetMainShowApplyExpression();
 	public string? GetMainShowInitialExpression();
-	public void PlayCharacterAnimation(CharacterAnimationType animationType, AnimationHandler animations);
-	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, AnimationHandler animations);
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController animations);
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController animations);
 
 	public double GetDefaultHP();
 	public string? GetLogicControllerData();
+	MD_SpineActionControllerData GetPlayAnimationData();
+	MD_SpineActionControllerData GetPlayGhostAnimationData();
 }

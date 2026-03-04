@@ -26,16 +26,10 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 
 using Raylib_cs;
-using SpirV;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using System.Runtime.ExceptionServices;
-using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
-
-using Sound = Nucleus.Audio.Sound;
 
 namespace CloneDash.Game;
 
@@ -362,6 +356,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public MusicTrack? Music { get; private set; }
 	public ModelEntity Player { get; set; }
 	public ModelEntity HologramPlayer { get; set; }
+	public MD_SpineActionController PlayerController { get; set; }
+	public MD_SpineActionController HologramPlayerController { get; set; }
 	public Boss Boss { get; set; }
 	public Pathway TopPathway { get; set; }
 	public Pathway BottomPathway { get; set; }
@@ -442,11 +438,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			case CharacterAnimationType.UpPressSmall:
 			case CharacterAnimationType.DownPressSmall:
 			case CharacterAnimationType.UpPressHurt:
-				Character.PlayCharacterAnimation(type, HologramPlayer.Animations);
+				Character.PlayCharacterAnimation(type, PlayerController);
 				break;
 			default:
 				if (Sustains.IsSustaining()) {
-					Character.PlayCharacterAnimation(type, Player.Animations);
+					Character.PlayCharacterAnimation(type, HologramPlayerController);
 					lastHologramAnimationTime = Conductor.Time;
 				}
 				break;
@@ -522,6 +518,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				HologramPlayer.Shader = hologramShader;
 
 				Player.SetToSetupPose();
+				PlayerController = new(Character.GetPlayAnimationData(), Player.Animations);
+				HologramPlayerController = new(Character.GetPlayGhostAnimationData(), HologramPlayer.Animations);
+
 				PlayCharacterAnimation(CharacterAnimationType.In);
 			}
 
