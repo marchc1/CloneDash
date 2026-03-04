@@ -23,6 +23,7 @@ public interface ICharacterDescriptor
 	public string GetPerk();
 
 	public ModelData GetPlayModel(Level level);
+	public ModelData GetPlayGhostModel(Level level);
 	public ModelData GetMainShowModel(Level level);
 	public ModelData GetVictoryModel(Level level);
 	public ModelData GetFailModel(Level level);

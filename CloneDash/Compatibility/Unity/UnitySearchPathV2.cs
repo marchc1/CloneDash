@@ -765,7 +765,7 @@ public class UnitySearchPathV2 : SearchPath
 		}
 	}
 
-	public T? FindAssetByName<T>(string name) where T : AssetStudio.Object {
+	public T? FindAssetByName<T>(ReadOnlySpan<char> name) where T : AssetStudio.Object {
 		lock (sync) {
 			ulong nameHash = name.Hash();
 

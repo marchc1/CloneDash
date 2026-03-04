@@ -191,7 +191,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
 	}
 
-	public static ModelData PullModelDataFromGameObject(Level level, string name) {
+	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name) {
 		var assets = MuseDashCompatibility.StreamingAssets;
 
 		var mainshowObject = assets.FindAssetByName<GameObject>(name);
@@ -207,7 +207,6 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 			rectTransform.m_GameObject.TryGet(out mainshowObject);
 			skeletonMecanim = mainshowObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
 		}
-
 
 		return PullModelDataFromSkeletonMecanim(level, skeletonMecanim!);
 	}
@@ -237,7 +236,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 		var assets = MuseDashCompatibility.StreamingAssets;
 
-		var mainshowObject = assets.FindAssetByName<GameObject>(configData.BattleShow);
+		var mainshowObject = assets.FindAssetByName<GameObject>(configData.GetBattleShow());
 		var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
 		var actions = (List<object>)actionController.ToType()["actionData"]!;
 		anims = [];
@@ -313,7 +312,8 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		}
 	}
 
-	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, configData.BattleShow);
+	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, configData.GetBattleShow());
+	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, configData.GetBattleShowGhost());
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, configData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
 }

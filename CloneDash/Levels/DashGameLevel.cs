@@ -553,10 +553,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
 				Interlude.Spin();
 
-				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModel(this)));
+				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayGhostModel(this)));
 				HologramPlayer.Shader = hologramShader;
 
-				Player.Model.SetToSetupPose();
+				Player.SetToSetupPose();
 				Player.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.In), true);
 			}
 

@@ -16,6 +16,7 @@ namespace Nucleus.Entities
 		}
 		protected ModelInstance? __model;
 		protected readonly AnimationHandler __anim = new();
+
 		public ModelInstance? Model {
 			get {
 				return __model;
@@ -83,5 +84,7 @@ namespace Nucleus.Entities
 			if (isvalid)
 				shader?.Deactivate();
 		}
+
+		public void SetToSetupPose() => Model?.SetToSetupPose();
 	}
 }
