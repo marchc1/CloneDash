@@ -107,6 +107,7 @@ public delegate void AudioCallbackFn(in AudioPlaybackHandle handle, Span<float> 
 public interface IAudioSystem
 {
 	void Initialize();
+	void Shutdown();
 	void Update();
 
 	/// <summary>

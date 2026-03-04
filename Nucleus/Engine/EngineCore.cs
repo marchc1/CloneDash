@@ -311,8 +311,7 @@ public static class EngineCore
 			}
 		}
 
-
-		Raylib.InitAudioDevice();
+		audiosystem.Initialize();
 		// Initialize SDL. This has to be done on the main thread.
 		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
