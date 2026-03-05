@@ -20,32 +20,34 @@ public class MD_ActionData
 	public int[] ActionEventIdx = [];
 }
 
+public ref struct SacPlaySetting {
+	public ReadOnlySpan<char> ActionName;
+	public Action? CustomCompleteEvent;
+}
+
 public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation)
 {
 	public readonly MD_SpineActionControllerData Data = data;
 	public readonly AnimationHandler Animation = animation;
 
-	public void PlaySkeletonAction(ReadOnlySpan<char> name, bool isOverride) {
-		var action = Data.Get(name);
+	public void PlaySkeletonAction(SacPlaySetting settings, bool isOverride) {
+		var action = Data.Get(settings.ActionName);
 		if (action == null)
 			return;
 
 		if (action.IsRandomSequence) {
-			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop);
-			if (!action.IsEndLoop)
-				Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
+			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop, onPlaybackEnd: settings.CustomCompleteEvent);
 		}
 		else {
 			Animation.ClearAllAnimation();
-			for (int i = 0; i < action.ActionIdx.Length; i++) {
-				bool loop = i == action.ActionIdx.Length - 1 && action.IsEndLoop;
+			for (int i = 0; i < action.ActionIdx.Length - 1; i++) {
+				bool end = i == action.ActionIdx.Length - 1;
+				bool loop = end && action.IsEndLoop;
 				if (i == 0)
-					Animation.SetAnimation(0, action.ActionIdx[i], loop);
+					Animation.SetAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? settings.CustomCompleteEvent : null);
 				else
-					Animation.AddAnimation(0, action.ActionIdx[i], loop);
+					Animation.AddAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? settings.CustomCompleteEvent : null);
 			}
-			if(!action.IsEndLoop)
-			Animation.AddAnimation(0, Data.Get("char_run")!.ActionIdx[0], true);
 		}
 	}
 }

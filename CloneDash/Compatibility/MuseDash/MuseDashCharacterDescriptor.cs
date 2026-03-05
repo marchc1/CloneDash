@@ -274,7 +274,10 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	private void playCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
 		string? name = convertAnimationTypeToName(animationType);
-		handler.PlaySkeletonAction(name, false);
+		handler.PlaySkeletonAction(new() {
+			ActionName = name,
+			CustomCompleteEvent = () => playCharacterAnimation(CharacterAnimationType.Run, handler)
+		}, false);
 	}
 
 

@@ -1420,6 +1420,8 @@ public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 public class AnimationChannelEntry
 {
 	public Animation Animation;
+	public Action? OnPlaybackStart;
+	public Action? OnPlaybackEnd;
 	public bool Looping;
 	public double LoopDuration = -1;
 
@@ -1446,8 +1448,10 @@ public class AnimationChannel
 
 	public void EnqueueNext() {
 		// Enqueue the next animation
+		CurrentEntry?.OnPlaybackEnd?.Invoke();
 		if (QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 			CurrentEntry = newAnim;
+			newAnim.OnPlaybackStart?.Invoke();
 			ResetTime();
 		}
 		else {
@@ -1517,7 +1521,7 @@ public class AnimationHandler
 		}
 	}
 
-	public void AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+	public void AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action? onPlaybackStart = null, Action? onPlaybackEnd = null) {
 		if (animation == null)
 			return;
 
@@ -1529,11 +1533,13 @@ public class AnimationHandler
 		channelObj.QueuedEntries.Enqueue(new() {
 			Animation = anim,
 			Looping = loops,
-			LoopDuration = loopDuration
+			LoopDuration = loopDuration,
+			OnPlaybackStart = onPlaybackStart,
+			OnPlaybackEnd = onPlaybackEnd
 		});
 	}
 
-	public void SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+	public void SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action? onPlaybackStart = null, Action? onPlaybackEnd = null) {
 		if (animation == null)
 			return;
 
@@ -1547,7 +1553,9 @@ public class AnimationHandler
 		channelObj.QueuedEntries.Enqueue(new() {
 			Animation = anim,
 			Looping = loops,
-			LoopDuration = loopDuration
+			LoopDuration = loopDuration,
+			OnPlaybackStart = onPlaybackStart,
+			OnPlaybackEnd = onPlaybackEnd
 		});
 	}
 
@@ -1557,6 +1565,7 @@ public class AnimationHandler
 			Channels[channel].Time = 0;
 		}
 	}
+
 	public void StopAnimation(int channel) {
 		Channels[channel].CurrentEntry = null;
 		Channels[channel].Time = 0;
