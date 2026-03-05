@@ -560,12 +560,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			//foreach (var tempoChange in Sheet)
 			if (gameParameters.Sheet != null) {
-				foreach (var bpmChange in gameParameters.Sheet.TempoChanges) {
-					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Measure, bpmChange.BPM);
-				}
+				foreach (var bpmChange in gameParameters.Sheet.TempoChanges)
+					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Beat, bpmChange.BPM);
+
+				foreach (var timeSigChange in gameParameters.Sheet.TimeSignatureChanges)
+					Conductor.AddTimeSignatureChange(timeSigChange.Beat, timeSigChange.Percentage);
 			}
 			else
 				Conductor.AddTempoChange(0, 0, 120);
+
+			if (gameParameters.Sheet != null && gameParameters.Sheet.TimeSignatureChanges.Count == 0)
+				Conductor.AddTimeSignatureChange(0, 1);
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (gameParameters.Sheet != null) {

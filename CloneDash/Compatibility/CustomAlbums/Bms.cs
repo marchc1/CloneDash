@@ -1,5 +1,5 @@
 ﻿using CloneDash.Compatibility.MuseDash;
-
+using CustomAlbums.Utilities;
 using System.Text.Json.Nodes;
 
 namespace CloneDash.Compatibility.CustomAlbums
@@ -362,12 +362,12 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 				if (channel.HasFlag(ChannelType.Scene))
 					sceneEvents.Add(new SceneEvent {
-						time = decimal.Parse(note["time"].GetValue<string>()),
+						time = CustomAlbumsFormat.ParseAsDecimal(note["time"].GetValue<string>()),
 						uid = $"SceneEvent/{bmsKey}"
 					});
 				else if (channel.HasFlag(ChannelType.SpBpmDirect) || channel.HasFlag(ChannelType.SpBpmLookup))
 					sceneEvents.Add(new SceneEvent {
-						time = decimal.Parse(note["time"].GetValue<string>()),
+						time = CustomAlbumsFormat.ParseAsDecimal(note["time"].GetValue<string>()),
 						uid = "SceneEvent/OnBPMChanged",
 						value = note["value"]?.GetValue<string>() ?? string.Empty
 					});
@@ -380,7 +380,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			if (NoteData is null || NoteData.Count == 0) InitNoteData();
 			var processed = new JsonArray();
 
-			var speedAir = int.Parse(Info["PLAYER"]?.GetValue<string>() ?? "1");
+			var speedAir = CustomAlbumsFormat.ParseAsInt(Info["PLAYER"]?.GetValue<string>() ?? "1");
 			var speedGround = speedAir;
 
 			var objectId = 1;

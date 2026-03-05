@@ -303,8 +303,10 @@ namespace CloneDash.Compatibility.CustomAlbums
 					lastTime += deltaBeats * 60.0 * 4 / lastBPM;
 					lastBeat = change.Time;
 					lastBPM = change.BPM;
-					newChanges[i] = new TempoChange(lastTime, change.Measure, lastBPM);
+					newChanges[i] = new TempoChange(lastTime, change.Beat, lastBPM);
 				}
+
+				TimeSignatureChange[] newSignatureChanges = new TimeSignatureChange[bms.NotesPercent.Count];
 
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
