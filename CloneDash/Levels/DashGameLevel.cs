@@ -432,12 +432,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			case CharacterAnimationType.UpPress:
 			case CharacterAnimationType.UpPressEnd:
 			case CharacterAnimationType.BigPress:
-			case CharacterAnimationType.UpPressS2B:
-			case CharacterAnimationType.DownPressS2B:
-			case CharacterAnimationType.UpPressB2S:
-			case CharacterAnimationType.DownPressB2S:
-			case CharacterAnimationType.UpPressSmall:
-			case CharacterAnimationType.DownPressSmall:
+			case CharacterAnimationType.PressGroundToBig:
+			case CharacterAnimationType.PressAirToBig:
+			case CharacterAnimationType.PressBigToGround:
+			case CharacterAnimationType.PressBigToAir:
+			case CharacterAnimationType.PressHitToGround:
+			case CharacterAnimationType.PressHitToAir:
 			case CharacterAnimationType.UpPressHurt:
 				Character.PlayCharacterAnimation(type, PlayerController);
 				break;

@@ -770,22 +770,22 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public MD_ActionData? GetBossAnimation(BossAnimationType type) {
 		MD_ActionData? actions = null;
 		switch (type) {
-			case BossAnimationType.Standby0: actions = BossAnims.Get("standby"); break;
-			case BossAnimationType.In: actions = BossAnims.Get("in"); break;
-			case BossAnimationType.Out: actions = BossAnims.Get("out"); break;
-			case BossAnimationType.CloseAttackSlow: actions = BossAnims.Get("boss_close_atk_1"); break;
-			case BossAnimationType.CloseAttackFast: actions = BossAnims.Get("boss_close_atk_2"); break;
-			case BossAnimationType.Hurt: actions = BossAnims.Get("boss_hurt"); break;
-			case BossAnimationType.From0To1: actions = BossAnims.Get("boss_far_atk_1_start"); break;
-			case BossAnimationType.AttackAir1: actions = BossAnims.Get("boss_far_atk_1_L"); break;
-			case BossAnimationType.AttackGround1: actions = BossAnims.Get("boss_far_atk_1_R"); break;
-			case BossAnimationType.From1To0: actions = BossAnims.Get("boss_far_atk_1_end"); break;
-			case BossAnimationType.From0To2: actions = BossAnims.Get("boss_far_atk_2_start"); break;
-			case BossAnimationType.AttackAir2: actions = BossAnims.Get("boss_far_atk_2"); break;
-			case BossAnimationType.AttackGround2: actions = BossAnims.Get("boss_far_atk_2"); break;
-			case BossAnimationType.From2To0: actions = BossAnims.Get("boss_far_atk_2_end"); break;
-			case BossAnimationType.From1To2: actions = BossAnims.Get("atk_1_to_2"); break;
-			case BossAnimationType.From2To1: actions = BossAnims.Get("atk_2_to_1"); break;
+			case BossAnimationType.Standby0: actions = BossAnims.Get(ActionKeys.STAND); break;
+			case BossAnimationType.In: actions = BossAnims.Get(ActionKeys.COMEIN); break;
+			case BossAnimationType.Out: actions = BossAnims.Get(ActionKeys.COMEOUT); break;
+			case BossAnimationType.CloseAttackSlow: actions = BossAnims.Get(ActionKeys.NEAR_ATTACK_1); break;
+			case BossAnimationType.CloseAttackFast: actions = BossAnims.Get(ActionKeys.NEAR_ATTACK_2); break;
+			case BossAnimationType.Hurt: actions = BossAnims.Get(ActionKeys.BOSS_HURT); break;
+			case BossAnimationType.From0To1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_START); break;
+			case BossAnimationType.AttackAir1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_LEFT); break;
+			case BossAnimationType.AttackGround1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_RIGHT); break;
+			case BossAnimationType.From1To0: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_END); break;
+			case BossAnimationType.From0To2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2_START); break;
+			case BossAnimationType.AttackAir2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2); break;
+			case BossAnimationType.AttackGround2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2); break;
+			case BossAnimationType.From2To0: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2_END); break;
+			case BossAnimationType.From1To2: actions = BossAnims.Get(ActionKeys.BOSS_ATK_1_TO_2); break;
+			case BossAnimationType.From2To1: actions = BossAnims.Get(ActionKeys.BOSS_ATK_2_TO_1); break;
 		}
 		return actions;
 	}
@@ -893,7 +893,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 
 
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
-		string request = type == HitAnimationType.Great ? "note_out_g" : "note_out_p";
+		string request = type == HitAnimationType.Great ? ActionKeys.COMEOUT2 : ActionKeys.COMEOUT3;
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
 			case EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
@@ -963,7 +963,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	}
 	public BoneInstance? GetHPMount(DashEnemy enemy) => enemy.Model?.FindBone("hp");
 	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) {
-		var s = MasherAnims.GetSpeed(speed, dir).Get("note_multihit_hurt")?.ActionIdx;
+		var s = MasherAnims.GetSpeed(speed, dir).Get(ActionKeys.MUL_HURT)?.ActionIdx;
 		return s?[Random.Shared.Next(0, s.Length)] ?? "";
 	}
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];

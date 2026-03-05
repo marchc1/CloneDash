@@ -30,17 +30,14 @@ public enum CharacterAnimationType
 
 	BigPress,
 
-	// What are these?
-	UpPressS2B,
-	DownPressS2B,
-
-	UpPressB2S,
-	DownPressB2S,
+	PressGroundToBig,
+	PressAirToBig,
+	PressBigToGround,
+	PressBigToAir,
+	PressHitToGround,
+	PressHitToAir,
 
 	BigHit,
-
-	UpPressSmall,
-	DownPressSmall,
 
 	UpPressHurt,
 

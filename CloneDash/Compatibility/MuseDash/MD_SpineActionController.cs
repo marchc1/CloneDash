@@ -40,7 +40,7 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 		}
 		else {
 			Animation.ClearAllAnimation();
-			for (int i = 0; i < action.ActionIdx.Length - 1; i++) {
+			for (int i = 0; i < action.ActionIdx.Length; i++) {
 				bool end = i == action.ActionIdx.Length - 1;
 				bool loop = end && action.IsEndLoop;
 				if (i == 0)
