@@ -9,6 +9,7 @@ using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -40,7 +41,7 @@ public class MuseDashCharacterExpression : ICharacterExpression
 		return $"{Expression.AnimName}_standby";
 	}
 
-	void ICharacterExpression.GetSpeech(Level level, out string text, out Sound voice) {
+	void ICharacterExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
 		text = Talk;
 		voice = MuseDashCompatibility.LoadSoundFromName(level, AudioName);
 	}
@@ -212,21 +213,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, configData.MainShow);
 
-	public MusicTrack? GetMainShowMusic(Level level) {
-		var audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(configData.BGM);
-		if (audioclip == null) return null;
-
-		var audiodata = audioclip.m_AudioData.GetData();
-
-		if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
-			FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
-			bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-			return EngineCore.Level.Sounds.LoadMusicFromMemory(at!);
-		}
-
-		throw new NotImplementedException();
-	}
-
+	public IAudioClip? GetMainShowMusic(Level level) => MuseDashCompatibility.LoadMusicFromName(level, configData.BGM);
 	public string GetMainShowStandby() => "BgmStandby";
 
 	private static MD_SpineActionControllerData? black_girl_battle;

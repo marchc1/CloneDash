@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nucleus.Commands;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Numerics;
@@ -9,6 +10,8 @@ namespace Nucleus.Common.Audio;
 
 public struct AudioPlaybackHandle : IValidatable
 {
+	public static readonly AudioPlaybackHandle Null = default;
+
 	public IAudioSystem Audio;
 	public ulong Channel;
 	public ulong Generation;
@@ -29,18 +32,33 @@ public enum AudioClipSource : byte
 
 public interface IAudioClip : IValidatable
 {
+	/// <summary>
+	/// The unique identifier of the audio clip.
+	/// </summary>
 	ReadOnlySpan<char> GetName();
+	/// <summary>
+	/// The source of the audio data.
+	/// </summary>
 	AudioClipSource GetSource();
+	/// <summary>
+	/// Binds an audio clips volume to a convar. This convar will be a multiplier on the volume of playbacks.
+	/// </summary>
+	void BindVolumeToConVar(ConVar cv);
+	/// <summary>
+	/// How long the audio lasts for, in seconds.
+	/// </summary>
+	/// <returns></returns>
+	double GetDuration();
 }
-
-public struct AudioLoadSettings
-{
-	public bool Stream;
-}
-
 
 public struct AudioPlaybackSettings
 {
+	public static readonly AudioPlaybackSettings Unaltered = new() {
+		Volume = 1f,
+		Panning = 0.5f,
+		Pitch = 1f
+	};
+
 	/// <summary> The pitch of the audio. Note that this may be synced to <see cref="TimeStretch"/>, depending on what changed this value. </summary>
 	public float Pitch;
 	/// <summary> The time stretch of the audio. Note that this may be synced to <see cref="Pitch"/>, depending on what changed this value. </summary>
@@ -56,6 +74,11 @@ public struct AudioPlaybackSettings
 	public Vector3 Location;
 	/// <summary> If true, the audio system will not destroy the playback object when manually/automatically stopped. </summary>
 	public bool DoNotAutoDestroy;
+	/// <summary> If true, and this sound is streamed; this playback handle will require manual calls to <see cref="IAudioSystem.UpdatePlayback(in AudioPlaybackHandle)"/></summary>
+	public bool ManuallyUpdate;
+
+	/// <summary> If true, the audio playback will be loaded as a music stream, rather than a sound impulse. </summary>
+	public bool Stream;
 
 	/// <summary>
 	/// Returns if the struct has been uninitialized (all zero)
@@ -129,11 +152,18 @@ public interface IAudioSystem
 	public bool SupportsFeature(AudioFeatures feature) => (GetSupportedFeatures() & feature) == feature;
 
 	/// <summary>
+	/// Attempts to load an audio clip from a file on the mounted filesystem, relative to the "audio" path ID.
+	/// <br/><br/><b>NOTE:</b> If the audio clip at this path is already loaded, then this function will return an existing instance.
+	/// <br/><b>NOTE:</b> If the identifier hash-conflicts with another audio clip that is not of the same <see cref="AudioClipSource"/>, this method will return null.
+	/// </summary>
+	[Pure] IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name);
+
+	/// <summary>
 	/// Attempts to load an audio clip from a file on the mounted filesystem. 
 	/// <br/><br/><b>NOTE:</b> If the audio clip at this path is already loaded, then this function will return an existing instance.
 	/// <br/><b>NOTE:</b> If the identifier hash-conflicts with another audio clip that is not of the same <see cref="AudioClipSource"/>, this method will return null.
 	/// </summary>
-	[Pure] IAudioClip? CreateFileAudioClip(in AudioLoadSettings settings, ReadOnlySpan<char> name, ReadOnlySpan<char> pathId = default);
+	[Pure] IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name, ReadOnlySpan<char> pathId);
 
 	/// <summary>
 	/// Attempts to load an audio clip from a stream. The data on the stream is copied into an internal clip buffer, so the stream can be released after use.
@@ -141,14 +171,14 @@ public interface IAudioSystem
 	/// <br/> <b>NOTE:</b> This may return the same loaded object in memory, if the identifier hash-conflicts with another audio clip. 
 	/// <br/> <b>NOTE:</b> If the identifier hash-conflicts with another audio clip that is not of the same <see cref="AudioClipSource"/>, this method will return null.
 	/// </summary>
-	[Pure] IAudioClip? CreateStreamAudioClip(in AudioLoadSettings settings, Stream stream, ReadOnlySpan<char> identifier = default);
+	[Pure] IAudioClip? CreateStreamAudioClip(Stream stream, ReadOnlySpan<char> identifier = default);
 
 	/// <summary>
 	/// Creates a dynamic audio clip. 
 	/// <br/><br/> <b>NOTE:</b> The identifier can be default, in which case no duplicate checks are performed.
 	/// <br/> <b>NOTE:</b> If the identifier hash-conflicts with another audio clip that is not of the same <see cref="AudioClipSource"/>, this method will return null.
 	/// </summary>
-	[Pure] IAudioClip? CreateDynamicAudioClip(in AudioLoadSettings settings, AudioCallbackFn fn, ReadOnlySpan<char> identifier = default);
+	[Pure] IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, ReadOnlySpan<char> identifier = default);
 
 	/// <summary>
 	/// Destroys an audio clip. When this function returns, <see cref="IAudioClip.IsValid"/> will begin to return false.
@@ -188,6 +218,30 @@ public interface IAudioSystem
 	/// Stops a playback handle
 	/// </summary>
 	bool StopSound(in AudioPlaybackHandle handle);
+
+	/// <summary>
+	/// Update playback. Only needs to be called if <see cref="AudioPlaybackSettings.ManuallyUpdate"/> is true.
+	/// </summary>
+	/// <param name="handle"></param>
+	void UpdatePlayback(in AudioPlaybackHandle handle);
+
+	/// <summary>
+	/// Stops and destroys a playback.
+	/// </summary>
+	/// <param name="handle"></param>
+	void DestroyPlayback(in AudioPlaybackHandle handle);
+
+	/// <summary>
+	/// Stop all sound playbacks this clip currently has active.
+	/// </summary>
+	/// <returns>How many sound playbacks were stopped and destroyed</returns>
+	long StopSounds(IAudioClip? clip);
+
+	/// <summary>
+	/// Returns the amount of playbacks this clip has active
+	/// </summary>
+	/// <returns>How many sound playbacks are active for this clip</returns>
+	long GetPlaybackCount(IAudioClip? clip);
 
 	/// <summary>
 	/// Stop all sounds
@@ -278,7 +332,52 @@ public interface IAudioSystem
 	/// </summary>
 	bool AttachProcessor(in AudioPlaybackHandle handle, AudioCallbackFn fn, object? userdata = null);
 
+	/// <summary>
 	/// Detaches an audio processor (with optional userdata) from a playback handle. Returns false if the handle is invalid, if this is not supported by this audio system/playback handle, or
 	/// if the processor function was not attached in the first place.
+	/// </summary>
 	bool DetachProcessor(in AudioPlaybackHandle handle, AudioCallbackFn fn);
+
+	/// <summary>
+	/// How many audio clips exist in the audio system
+	/// </summary>
+	long GetAudioClipCount();
+	/// <summary>
+	/// How many audio channels are playing something right now
+	/// </summary>
+	long GetActiveChannelCount();
+	/// <summary>
+	/// How much memory the audio system is using in total right now
+	/// </summary>
+	ulong GetMemoryAllocated();
+	bool IsPlaybackActive(in AudioPlaybackHandle music);
+	bool IsPlaybackComplete(in AudioPlaybackHandle music);
+	bool IsPlaybackPaused(in AudioPlaybackHandle music);
+	double GetPlaybackDuration(in AudioPlaybackHandle music);
+	float GetMasterVolume();
+	void SetMasterVolume(float volume);
+}
+
+public static class AudioSystemExts
+{
+	extension(IAudioSystem audio)
+	{
+		public AudioPlaybackHandle PlaySound(IAudioClip? clip, in AudioPlaybackSettings settings) {
+			var handle = audio.CreatePlayback(clip, in settings);
+			audio.PlaySound(handle);
+			return handle;
+		}
+
+		public AudioPlaybackHandle PlaySound(ReadOnlySpan<char> path, ReadOnlySpan<char> pathId, in AudioPlaybackSettings settings) {
+			var handle = audio.CreatePlayback(audio.CreateFileAudioClip(path, pathId), in settings);
+			audio.PlaySound(handle);
+			return handle;
+		}
+
+		public AudioPlaybackHandle PlaySound(ReadOnlySpan<char> path, in AudioPlaybackSettings settings) {
+			var handle = audio.CreatePlayback(audio.CreateFileAudioClip(path, "audio"), in settings);
+			audio.PlaySound(handle);
+			return handle;
+		}
+	}
 }

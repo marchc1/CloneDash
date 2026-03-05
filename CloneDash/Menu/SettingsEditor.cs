@@ -4,6 +4,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -113,7 +114,7 @@ public class SettingsPanel : ScrollPanel
 
 		if (cv.GetMin(out double min)) slider.MinimumValue = min;
 		if (cv.GetMax(out double max)) slider.MaximumValue = max;
-		
+
 		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
 		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
@@ -143,7 +144,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		});
 	}
 	public string GetName() => "";
-    public void OnHidden() { }
+	public void OnHidden() { }
 
 	public bool needsClosed = false;
 	public bool OnTryClose() {
@@ -153,13 +154,13 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		double hitVolume = AudioSettings.snd_hitvolume.GetDouble();
 
 		if (Math.Abs(offset) > 20 && hitVolume > 0) {
-			
+
 			UI.DialogOKCancel(
 				"Desync Warning",
 				"Your offset is high and hit sounds are on.\nThis can cause major audio desync.\n\nProceed anyway?",
 				onOK: () => {
-                    needsClosed = true;
-					
+					needsClosed = true;
+
 					if (Level is MainMenuLevel level) {
 						level.PopActiveElement();
 					}
@@ -172,9 +173,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		return true;
 	}
 
-    public void OnShown() {
+	public void OnShown() {
 		judgementSlider?.Value = InputSettings.offset_judgement.GetDouble();
-        visualSlider?.Value = InputSettings.offset_visual.GetDouble();
+		visualSlider?.Value = InputSettings.offset_visual.GetDouble();
 	}
 
 	ScrollPanel settingCategoryPicker;
@@ -222,10 +223,10 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
 		BuildInputPanel(Category("Input", "oxygen/input-keyboard.png"));
-    }
+	}
 
 	private void BuildAudioPanel(SettingsPanel panel) {
-		panel.PercentageNumber(SoundManagement.snd_volume, "Sound Volume");
+		panel.PercentageNumber(EngineCore.snd_volume, "Sound Volume");
 		panel.PercentageNumber(AudioSettings.snd_musicvolume, "Music Volume");
 		panel.PercentageNumber(AudioSettings.snd_voicevolume, "Voice Volume");
 		panel.PercentageNumber(AudioSettings.snd_hitvolume, "Hit-sound Volume");
@@ -250,53 +251,50 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		return btn;
 	}
 
-    bool offsetsLinked = true;
+	bool offsetsLinked = true;
 
-    private void BuildInputPanel(SettingsPanel panel) {
+	private void BuildInputPanel(SettingsPanel panel) {
 		var offsets = panel.Blank("Offset Wizard", "Input offset wizard.");
 		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
 
-        var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
-        var linkBtn = linkBack.Add<Button>();
-        linkBtn.Dock = Dock.Fill;
-        linkBtn.Text = "Bound";
+		var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
+		var linkBtn = linkBack.Add<Button>();
+		linkBtn.Dock = Dock.Fill;
+		linkBtn.Text = "Bound";
 
-        judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
+		judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
 		visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
 
 		var isUpdating = false;
 
-        judgementSlider.OnValueChanged += (_, _, newValue) => {
-            if (offsetsLinked && !isUpdating)
-            {
-                isUpdating = true;
-                visualSlider.Value = newValue;
-                isUpdating = false;
-            }
-        };
+		judgementSlider.OnValueChanged += (_, _, newValue) => {
+			if (offsetsLinked && !isUpdating) {
+				isUpdating = true;
+				visualSlider.Value = newValue;
+				isUpdating = false;
+			}
+		};
 
-        visualSlider.OnValueChanged += (_, _, newValue) => {
-            if (offsetsLinked && !isUpdating)
-            {
-                isUpdating = true;
-                judgementSlider.Value = newValue;
-                isUpdating = false;
-            }
-        };
+		visualSlider.OnValueChanged += (_, _, newValue) => {
+			if (offsetsLinked && !isUpdating) {
+				isUpdating = true;
+				judgementSlider.Value = newValue;
+				isUpdating = false;
+			}
+		};
 
-        linkBtn.MouseReleaseEvent += (_, _, _) => {
-            offsetsLinked = !offsetsLinked;
-            linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
+		linkBtn.MouseReleaseEvent += (_, _, _) => {
+			offsetsLinked = !offsetsLinked;
+			linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
 
-            if (offsetsLinked)
-            {
-                isUpdating = true;
-                visualSlider.Value = judgementSlider.Value;
-                isUpdating = false;
-            }
-        };
+			if (offsetsLinked) {
+				isUpdating = true;
+				visualSlider.Value = judgementSlider.Value;
+				isUpdating = false;
+			}
+		};
 
-        panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
+		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
 		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
 		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
@@ -464,154 +462,154 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
-    public void SetRichPresence() {
-        RichPresenceSystem.SetPresence(new() {
-            Details = "Main Menu",
-            State = "In Settings"
-        });
-    }
+	public void SetRichPresence() {
+		RichPresenceSystem.SetPresence(new() {
+			Details = "Main Menu",
+			State = "In Settings"
+		});
+	}
 
-    public string GetName() => "Offset Wizard";
-    public void OnHidden() { }
-    public void OnShown() { }
+	public string GetName() => "Offset Wizard";
+	public void OnHidden() { }
+	public void OnShown() { }
 
-    bool isDragging = false;
-    float currentWidth = 0;
-    List<(float X, DateTime Time)> hitMarkers = new();
+	bool isDragging = false;
+	float currentWidth = 0;
+	List<(float X, DateTime Time)> hitMarkers = new();
 
-    Label currentOffsetLabel;
-    Label lastHitLabel;
-    float? lastHitOffsetMs = null;
+	Label currentOffsetLabel;
+	Label lastHitLabel;
+	float? lastHitOffsetMs = null;
 
-    protected override void Initialize() {
-        base.Initialize();
+	protected override void Initialize() {
+		base.Initialize();
 
-        currentOffsetLabel = Add<Label>();
-        currentOffsetLabel.Anchor = Anchor.TopCenter;
-        currentOffsetLabel.Origin = Anchor.TopCenter;
-        currentOffsetLabel.TextAlignment = Anchor.TopCenter;
-        currentOffsetLabel.Position = new(0, 24);
-        currentOffsetLabel.TextSize = 36;
-        currentOffsetLabel.AutoSize = true;
+		currentOffsetLabel = Add<Label>();
+		currentOffsetLabel.Anchor = Anchor.TopCenter;
+		currentOffsetLabel.Origin = Anchor.TopCenter;
+		currentOffsetLabel.TextAlignment = Anchor.TopCenter;
+		currentOffsetLabel.Position = new(0, 24);
+		currentOffsetLabel.TextSize = 36;
+		currentOffsetLabel.AutoSize = true;
 
-        lastHitLabel = Add<Label>();
-        lastHitLabel.Anchor = Anchor.TopCenter;
-        lastHitLabel.Origin = Anchor.TopCenter;
-        lastHitLabel.TextAlignment = Anchor.TopCenter;
-        lastHitLabel.Position = new(0, 64);
-        lastHitLabel.TextSize = 28;
-        lastHitLabel.AutoSize = true;
+		lastHitLabel = Add<Label>();
+		lastHitLabel.Anchor = Anchor.TopCenter;
+		lastHitLabel.Origin = Anchor.TopCenter;
+		lastHitLabel.TextAlignment = Anchor.TopCenter;
+		lastHitLabel.Position = new(0, 64);
+		lastHitLabel.TextSize = 28;
+		lastHitLabel.AutoSize = true;
 		lastHitLabel.Text = "Press any key to the beat";
 
-        track = Level.Sounds.LoadMusicFromFile("offset_cowbell.wav", true);
-        BorderSize = 0;
+		var clip = audiosystem.CreateFileAudioClip("offset_cowbell.wav");
+		track = audiosystem.CreatePlayback(clip);
+		BorderSize = 0;
 
-        MouseClickEvent += (_, _, btn) => {
-            if (btn == ButtonCode.Mouse1) isDragging = true;
-            DemandKeyboardFocus();
-        };
+		MouseClickEvent += (_, _, btn) => {
+			if (btn == ButtonCode.Mouse1) isDragging = true;
+			DemandKeyboardFocus();
+		};
 
-        MouseReleaseEvent += (_, _, btn) => {
-            if (btn == ButtonCode.Mouse1) isDragging = false;
-            DemandKeyboardFocus();
-        };
+		MouseReleaseEvent += (_, _, btn) => {
+			if (btn == ButtonCode.Mouse1) isDragging = false;
+			DemandKeyboardFocus();
+		};
 
-        OnKeyPressed += (_, in _, key) => {
-            if (currentWidth > 0)
-            {
-                float midpoint = currentWidth / 2f;
-                float normX = CalculateJudgementOffset(track.Playhead);
-                float currentX = midpoint + normX * (currentWidth / 2f);
-                hitMarkers.Add((currentX, DateTime.Now));
+		OnKeyPressed += (_, in _, key) => {
+			if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
+				var len = audiosystem.GetPlaybackDuration(track);
+				float midpoint = currentWidth / 2f;
+				float normX = CalculateJudgementOffset((float)playhead);
+				float currentX = midpoint + normX * (currentWidth / 2f);
+				hitMarkers.Add((currentX, DateTime.Now));
 
-                lastHitOffsetMs = normX * (track.Length / 2f) * 1000f;
-            }
-        };
-		
+				lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
+			}
+		};
+
 		DemandKeyboardFocus();
-    }
+	}
 
-    protected override void OnThink(FrameState frameState) {
-        base.OnThink(frameState);
-        track.Update();
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		audiosystem.UpdatePlayback(track);
+		currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
 
-        currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
+		if (lastHitOffsetMs != null)
+			lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
 
-        if (lastHitOffsetMs != null)
-            lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
+		if (isDragging && currentWidth > 0) {
+			float mouseX = frameState.Mouse.MousePos.X;
 
-        if (isDragging && currentWidth > 0) {
-            float mouseX = frameState.Mouse.MousePos.X;
+			mouseX = Math.Clamp(mouseX, 0, currentWidth);
 
-            mouseX = Math.Clamp(mouseX, 0, currentWidth);
+			float midpoint = currentWidth / 2f;
+			float mld2 = (float)audiosystem.GetPlaybackDuration(track) / 2f;
 
-            float midpoint = currentWidth / 2f;
-            float mld2 = track.Length / 2f;
+			float normalizedX = (mouseX - midpoint) / midpoint;
+			float newOffset = normalizedX * mld2 * 1000f;
 
-            float normalizedX = (mouseX - midpoint) / midpoint;
-            float newOffset = normalizedX * mld2 * 1000f;
-
-            InputSettings.offset_judgement.SetValue((double)newOffset);
+			InputSettings.offset_judgement.SetValue((double)newOffset);
 			InputSettings.offset_visual.SetValue((double)newOffset);
-        }
-    }
+		}
+	}
 
-    MusicTrack track;
+	AudioPlaybackHandle track;
 
-    public float CalculateJudgementOffset(float localToPlayhead) {
-        var mld2 = track.Length / 2f;
-        return (localToPlayhead > mld2 ? (track.Length - localToPlayhead) * -1 : localToPlayhead) / mld2;
-    }
+	public float CalculateJudgementOffset(float localToPlayhead) {
+		var len = audiosystem.GetPlaybackDuration(track);
+		var mld2 = len / 2f;
+		return (float)((localToPlayhead > mld2 ? (len - localToPlayhead) * -1 : localToPlayhead) / mld2);
+	}
 
-    public override void Paint(float width, float height) {
-        currentWidth = width;
+	public override void Paint(float width, float height) {
+		currentWidth = width;
 
-        BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
-        base.Paint(width, height);
+		BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
+		base.Paint(width, height);
 
-        Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
-        var h = height / 2;
-        Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
+		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
+		var h = height / 2;
+		Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
 
-        var offset = InputSettings.JudgementOffset;
-        var midpoint = width / 2f;
+		var offset = InputSettings.JudgementOffset;
+		var midpoint = width / 2f;
 
-        Graphics2D.SetDrawColor(255, 255, 255);
-        var musicPlayhead = midpoint + CalculateJudgementOffset((float)offset) * (width / 2);
-        var offsetPlayhead = midpoint + CalculateJudgementOffset(track.Playhead) * (width / 2);
-        var padding = h * 0.25f;
-        var ls = height / 2 - h / 2 + padding;
-        Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - padding * 2), height / 100f);
+		Graphics2D.SetDrawColor(255, 255, 255);
+		audiosystem.GetSoundPlayhead(track, out double playhead);
+		var musicPlayhead = midpoint + CalculateJudgementOffset((float)offset) * (width / 2);
+		var offsetPlayhead = midpoint + CalculateJudgementOffset((float)playhead) * (width / 2);
+		var padding = h * 0.25f;
+		var ls = height / 2 - h / 2 + padding;
+		Graphics2D.DrawLine(offsetPlayhead, ls, offsetPlayhead, ls + (h - padding * 2), height / 100f);
 
-        var now = DateTime.Now;
-        for (int i = hitMarkers.Count - 1; i >= 0; i--)
-        {
-            var (X, Time) = hitMarkers[i];
-            var age = (now - Time).TotalSeconds;
+		var now = DateTime.Now;
+		for (int i = hitMarkers.Count - 1; i >= 0; i--) {
+			var (X, Time) = hitMarkers[i];
+			var age = (now - Time).TotalSeconds;
 
-            if (age >= 1.0)
-            {
-                hitMarkers.RemoveAt(i);
-                continue;
-            }
+			if (age >= 1.0) {
+				hitMarkers.RemoveAt(i);
+				continue;
+			}
 
-            byte alpha = (byte)(255 * (1.0 - age));
-            Graphics2D.SetDrawColor(255, 255, 0, alpha);
-            Graphics2D.DrawLine(X, ls, X, ls + (h - padding * 2), height / 100f);
-        }
+			byte alpha = (byte)(255 * (1.0 - age));
+			Graphics2D.SetDrawColor(255, 255, 0, alpha);
+			Graphics2D.DrawLine(X, ls, X, ls + (h - padding * 2), height / 100f);
+		}
 
-        var triangleSize = height / 26f;
+		var triangleSize = height / 26f;
 
-        if (isDragging)
-            Graphics2D.SetDrawColor(255, 255, 255, 220);
-        else
-            Graphics2D.SetDrawColor(200, 220, 255, 150);
+		if (isDragging)
+			Graphics2D.SetDrawColor(255, 255, 255, 220);
+		else
+			Graphics2D.SetDrawColor(200, 220, 255, 150);
 
-        var startY = h - h / 2;
-        var endY = h - h / 2 + h;
-        Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
-        Graphics2D.SetDrawColor(BackgroundColor);
-        Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
-        Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
-    }
+		var startY = h - h / 2;
+		var endY = h - h / 2 + h;
+		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
+		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
+		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
+	}
 }

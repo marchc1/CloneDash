@@ -1,6 +1,7 @@
 ﻿using CloneDash.Settings;
 
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 
@@ -12,7 +13,7 @@ public interface ICharacterExpression
 	public string GetStartAnimationName();
 	public string GetIdleAnimationName();
 	public string GetEndAnimationName();
-	public void GetSpeech(Level level, out string text, out Sound voice);
+	public void GetSpeech(Level level, out string text, out IAudioClip? voice);
 
 	public bool Run(Level level, ModelInstance model, AnimationHandler anims, out string text, out double duration) {
 		Nucleus.Models.Runtime.Animation? startAnimation = model.Data.FindAnimation(GetStartAnimationName());
@@ -20,7 +21,7 @@ public interface ICharacterExpression
 		Nucleus.Models.Runtime.Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
 
 		GetSpeech(level, out text, out var voice);
-		duration = voice.Duration;
+		duration = voice?.GetDuration() ?? 0;
 
 		if (startAnimation == null || idleAnimation == null || endAnimation == null) {
 			duration = 0;
@@ -30,8 +31,8 @@ public interface ICharacterExpression
 		anims.SetAnimation(1, GetStartAnimationName());
 		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
 		anims.AddAnimation(1, GetEndAnimationName());
-		voice.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		voice.Play();
+		voice?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
 
 		return false;
 	}

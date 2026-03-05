@@ -3,6 +3,7 @@ using CloneDash.Game;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Input;
@@ -25,7 +26,7 @@ public class CharacterPanel : Panel
 	private ICharacterDescriptor? Character;
 	private ModelInstance? Model;
 	private readonly AnimationHandler Anims = new();
-	private MusicTrack? Music;
+	private AudioPlaybackHandle Music;
 	private int Click = 0;
 	private ICharacterExpression? ApplyExpression;
 	private double StartExpressionTime;
@@ -48,10 +49,10 @@ public class CharacterPanel : Panel
 			if (field == value) return;
 			field = value;
 			if (value)
-				Music?.Playing = false;
+				audiosystem.StopSound(Music);
 			else {
-				Music?.Playing = true;
-				Music?.Restart();
+				audiosystem.RestartSound(Music);
+				audiosystem.PlaySound(Music);
 			}
 		}
 	} = true;
@@ -93,7 +94,7 @@ public class CharacterPanel : Panel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		Music?.Update();
+		audiosystem.UpdatePlayback(Music);
 
 		if (extendedModels && Character != null) {
 			if (!PlayAnims.IsPlayingAnimation()) {
@@ -117,6 +118,7 @@ public class CharacterPanel : Panel
 	public override void OnRemoval() {
 		base.OnRemoval();
 		LinkToConVar = false; // Force removal from list
+		audiosystem.DestroyPlayback(Music);
 	}
 
 	public override void MouseClick(FrameState state, ButtonCode button) {
@@ -235,7 +237,7 @@ public class CharacterPanel : Panel
 	}
 
 	public void Reset() {
-		Music?.Restart();
+		audiosystem.RestartSound(Music);
 		Model?.SetToSetupPose();
 		Anims?.ClearAllAnimation();
 		ApplyExpression = null;
@@ -262,11 +264,14 @@ public class CharacterPanel : Panel
 		if (Model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
 		Anims.SetAnimation(0, standby, true);
 
-		Music = charDescriptor.GetMainShowMusic(Level);
-		if (Music != null) {
-			Music.Playing = true;
-			Music.Loops = true;
-			Music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		var clip = charDescriptor.GetMainShowMusic(Level);
+		if (IValidatable.IsValid(clip)) {
+			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+			Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
+				Looping = true,
+				ManuallyUpdate = true
+			});
+			audiosystem.PlaySound(Music);
 		}
 
 		if (extendedModels)

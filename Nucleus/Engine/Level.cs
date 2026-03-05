@@ -180,7 +180,6 @@ namespace Nucleus.Engine
 	{
 		// Managed memory
 		public TextureManagement Textures { get; } = new();
-		public SoundManagement Sounds { get; } = new();
 		public TimerManagement Timers { get; }
 		public ModelManagement Models { get; } = new();
 		public ShaderManagement Shaders { get; } = new();
@@ -710,8 +709,8 @@ namespace Nucleus.Engine
 					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
 					{
-						debugrecords.Write("[SND] Count", Sounds.Count);
-						debugrecords.Write("[SND] Memory [CPU]", (Sounds.UsedBits >> 3).NiceBytes());
+						debugrecords.Write("[SND] Count", audiosystem.GetAudioClipCount());
+						debugrecords.Write("[SND] Memory [CPU]", (audiosystem.GetMemoryAllocated()).NiceBytes());
 						debugrecords.Write();
 						debugrecords.Write("[TEX] Count", Textures.Count);
 						debugrecords.Write("[TEX] Memory [CPU]", (Textures.UsedBits_CPU >> 3).NiceBytes());

@@ -105,6 +105,8 @@ public static class EngineCore
 		public TimeSpan LastTimeToRender;
 	}
 
+	public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => audiosystem.SetMasterVolume(cv.GetFloat()));
+
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
 	static readonly OSWindowCtx StartCache = new();
 	static readonly OSWindowCtx DUMMY = new();
@@ -1168,12 +1170,5 @@ public static class EngineCore
 	public static void SetWindowPosition(Vector2F pos) => Window.Position = pos;
 	public static void SetWindowTitle(string title) => Window.Title = title;
 
-	public static void StopSound() {
-		var lvl = Level;
-
-		if (lvl == null) return;
-		if (lvl.Sounds == null) return;
-
-		lvl.Sounds.Dispose();
-	}
+	public static void StopSound() => audiosystem.StopAllSounds();
 }

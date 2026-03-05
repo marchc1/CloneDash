@@ -2,6 +2,7 @@
 using CloneDash.Game;
 
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
@@ -29,7 +30,7 @@ public interface ICharacterDescriptor
 	public ModelData GetVictoryModel(Level level);
 	public ModelData GetFailModel(Level level);
 
-	public MusicTrack? GetMainShowMusic(Level level);
+	public IAudioClip? GetMainShowMusic(Level level);
 
 	public string GetMainShowStandby();
 	public string GetVictoryStandby();

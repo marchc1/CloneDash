@@ -9,11 +9,12 @@ public class RaylibAudioSystem : IAudioSystem
 		throw new NotImplementedException();
 	}
 
-	public IAudioClip? CreateDynamicAudioClip(in AudioLoadSettings settings, AudioCallbackFn fn, ReadOnlySpan<char> identifier = default) {
+	public IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, ReadOnlySpan<char> identifier = default) {
 		throw new NotImplementedException();
 	}
 
-	public IAudioClip? CreateFileAudioClip(in AudioLoadSettings settings, ReadOnlySpan<char> name, ReadOnlySpan<char> pathId = default) {
+	public IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name) => CreateFileAudioClip(name, "audio");
+	public IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name, ReadOnlySpan<char> pathId) {
 		throw new NotImplementedException();
 	}
 
@@ -21,7 +22,7 @@ public class RaylibAudioSystem : IAudioSystem
 		throw new NotImplementedException();
 	}
 
-	public IAudioClip? CreateStreamAudioClip(in AudioLoadSettings settings, Stream stream, ReadOnlySpan<char> identifier = default) {
+	public IAudioClip? CreateStreamAudioClip(Stream stream, ReadOnlySpan<char> identifier = default) {
 		throw new NotImplementedException();
 	}
 
@@ -37,11 +38,39 @@ public class RaylibAudioSystem : IAudioSystem
 		throw new NotImplementedException();
 	}
 
+	public void DestroyPlayback(in AudioPlaybackHandle handle) {
+		throw new NotImplementedException();
+	}
+
 	public bool DetachProcessor(in AudioPlaybackHandle handle, AudioCallbackFn fn) {
 		throw new NotImplementedException();
 	}
 
+	public long GetActiveChannelCount() {
+		throw new NotImplementedException();
+	}
+
 	public IAudioClip? GetAudioClip(in AudioPlaybackHandle handle) {
+		throw new NotImplementedException();
+	}
+
+	public long GetAudioClipCount() {
+		throw new NotImplementedException();
+	}
+
+	public float GetMasterVolume() {
+		throw new NotImplementedException();
+	}
+
+	public ulong GetMemoryAllocated() {
+		throw new NotImplementedException();
+	}
+
+	public long GetPlaybackCount(IAudioClip? clip) {
+		throw new NotImplementedException();
+	}
+
+	public double GetPlaybackDuration(in AudioPlaybackHandle music) {
 		throw new NotImplementedException();
 	}
 
@@ -81,7 +110,19 @@ public class RaylibAudioSystem : IAudioSystem
 		Raylib.InitAudioDevice();
 	}
 
+	public bool IsPlaybackActive(in AudioPlaybackHandle music) {
+		throw new NotImplementedException();
+	}
+
+	public bool IsPlaybackComplete(in AudioPlaybackHandle music) {
+		throw new NotImplementedException();
+	}
+
 	public bool IsPlaybackHandleValid(in AudioPlaybackHandle handle) {
+		throw new NotImplementedException();
+	}
+
+	public bool IsPlaybackPaused(in AudioPlaybackHandle music) {
 		throw new NotImplementedException();
 	}
 
@@ -99,6 +140,10 @@ public class RaylibAudioSystem : IAudioSystem
 
 	public bool ResumeSound(in AudioPlaybackHandle handle) {
 		throw new NotImplementedException();
+	}
+
+	public void SetMasterVolume(float volume) {
+		Raylib.SetMasterVolume(volume);
 	}
 
 	public bool SetSoundPanning(in AudioPlaybackHandle handle, float panning) {
@@ -137,7 +182,15 @@ public class RaylibAudioSystem : IAudioSystem
 		throw new NotImplementedException();
 	}
 
+	public long StopSounds(IAudioClip? clip) {
+		throw new NotImplementedException();
+	}
+
 	public void Update() {
+		throw new NotImplementedException();
+	}
+
+	public void UpdatePlayback(in AudioPlaybackHandle handle) {
 		throw new NotImplementedException();
 	}
 }

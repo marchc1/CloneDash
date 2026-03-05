@@ -5,6 +5,7 @@ using CloneDash.Settings;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -220,13 +221,13 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public Button GetActiveDisc() => Discs[Discs.Length / 2];
 
-	MusicTrack? activeTrack;
+	AudioPlaybackHandle activeTrack;
 	bool doNotTryToGetTrackAgain;
-	public MusicTrack? ActiveTrack => activeTrack;
+	public AudioPlaybackHandle ActiveTrack => activeTrack;
 	public void ResetDiskTrack() {
 		if (IValidatable.IsValid(activeTrack)) {
-			activeTrack.Playing = false;
-			activeTrack = null;
+			audiosystem.DestroyPlayback(activeTrack);
+			activeTrack = AudioPlaybackHandle.Null;
 		}
 		doNotTryToGetTrackAgain = false;
 	}
@@ -246,23 +247,27 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public void FigureOutDisk() {
 		if (GetSongsList().Count <= 0) return;
-		activeTrack?.Update();
+		audiosystem.UpdatePlayback(activeTrack);
 		if (IValidatable.IsValid(activeTrack)) return;
 		if (doNotTryToGetTrackAgain) return;
 
 		// Should play track?
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
 			var chart = GetDiscSong(0);
-			activeTrack = chart?.GetDemoTrack();
+			audiosystem.DestroyPlayback(activeTrack);
+			var clip = chart?.GetDemoTrack();
 
-			if (activeTrack == null) {
+			if (!IValidatable.IsValid(clip)) {
 				doNotTryToGetTrackAgain = chart == null || !chart.IsLoadingDemoAsync;
 				return;
 			}
 
-			activeTrack.Restart();
-			activeTrack.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-			activeTrack.Playing = true;
+			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+			activeTrack = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
+				Looping = true,
+				ManuallyUpdate = true
+			});
+			audiosystem.PlaySound(activeTrack);
 		}
 	}
 

@@ -1,6 +1,7 @@
 ﻿using CloneDash.Game;
 
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.ManagedMemory;
@@ -31,7 +32,7 @@ public interface ISceneDescriptor
 	public void Refresh(DashGameLevel game);
 
 	public void PlaySound(SceneSound sound, int hits);
-	public MusicTrack? GetPressIdleSound();
+	public IAudioClip? GetPressIdleSound();
 
 	public void Think(DashGameLevel game);
 	public void RenderBackground(DashGameLevel game);

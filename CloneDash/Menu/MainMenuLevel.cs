@@ -8,6 +8,7 @@ using CloneDash.Menu.Searching;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -217,7 +218,7 @@ public class MainMenuLevel : Level
 
 	internal void LoadChartSelector(SongSelector selector, ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
-		MusicTrack? track = selector.ActiveTrack;
+		AudioPlaybackHandle track = selector.ActiveTrack;
 		var info = song.GetInfo();
 
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
@@ -325,7 +326,7 @@ public class MainMenuLevel : Level
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
 
-		bool setupTrack = track != null;
+		bool setupTrack = track.IsValid();
 		author.Thinking += (s) => {
 			var oldSize = s.TextSize;
 			var w = levelSelector.RenderBounds.W;
@@ -338,9 +339,9 @@ public class MainMenuLevel : Level
 
 			if (!setupTrack) {
 				track = selector.ActiveTrack;
-				if (track != null) {
+				if (track.IsValid()) {
 					setupTrack = true;
-					track.Processing += (self, frames) => {
+					audiosystem.AttachProcessor(track, (in self, frames, userdata) => {
 						currentAvgVolume = 0;
 						for (int i = 0; i < frames.Length; i++) {
 							float val = frames[i];
@@ -350,12 +351,12 @@ public class MainMenuLevel : Level
 						}
 						currentAvgVolume /= frames.Length;
 						currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-					};
+					});
 				}
 			}
 		};
-		if (track != null)
-			track.Processing += (self, frames) => {
+		if (track.IsValid())
+			audiosystem.AttachProcessor(track, (in self, frames, userdata) => {
 				currentAvgVolume = 0;
 				for (int i = 0; i < frames.Length; i++) {
 					float val = frames[i];
@@ -365,7 +366,7 @@ public class MainMenuLevel : Level
 				}
 				currentAvgVolume /= frames.Length;
 				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-			};
+			});
 
 		var difficulties = levelSelector.Add<FlexPanel>();
 		difficulties.Direction = Directional180.Vertical;

@@ -14,6 +14,7 @@ using Fmod5Sharp.FmodTypes;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Models;
 using Nucleus.Engine;
@@ -35,7 +36,6 @@ using System.Threading;
 using Color = Nucleus.Common.Types.Color;
 using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 using Material = AssetStudio.Material;
-using Sound = Nucleus.Audio.Sound;
 using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash
@@ -677,11 +677,13 @@ namespace CloneDash.Compatibility.MuseDash
 
 			throw new NotImplementedException();
 		}
-		public static Sound GetSound(Level level, AudioClip clip) {
-			return level.Sounds.LoadSoundFromMemory(GetSoundBytes(level, clip, out _));
+		public static IAudioClip? GetSound(Level level, AudioClip clip) {
+			using MemoryStream ms = new(GetSoundBytes(level, clip, out _));
+			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
-		public static MusicTrack GetMusic(Level level, AudioClip clip) {
-			return level.Sounds.LoadMusicFromMemory(GetSoundBytes(level, clip, out _));
+		public static IAudioClip? GetMusic(Level level, AudioClip clip) {
+			using MemoryStream ms = new(GetSoundBytes(level, clip, out _));
+			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
 
 		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images, Material[] materials) {
@@ -754,7 +756,9 @@ namespace CloneDash.Compatibility.MuseDash
 			return atlas;
 		}
 
-		public static Nucleus.Audio.Sound LoadSoundFromName(Level level, string audioName) {
+		public static IAudioClip? LoadSoundFromName(Level level, string audioName) {
+			if (audioName == null) return null;
+
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
@@ -763,13 +767,18 @@ namespace CloneDash.Compatibility.MuseDash
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
 				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
 				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-				return level.Sounds.LoadSoundFromMemory(at!);
+				if (at == null)
+					return null;
+				using var into = new MemoryStream(at);
+
+				return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{audioName}");
 			}
 
 			throw new NotImplementedException();
 		}
 
-		public static Nucleus.Audio.MusicTrack LoadMusicFromName(Level level, string audioName) {
+		public static IAudioClip? LoadMusicFromName(Level level, string? audioName) {
+			if (audioName == null) return null;
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
@@ -778,7 +787,11 @@ namespace CloneDash.Compatibility.MuseDash
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
 				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
 				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-				return level.Sounds.LoadMusicFromMemory(at!);
+				if (at == null)
+					return null;
+				using var into = new MemoryStream(at);
+
+				return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{audioName}");
 			}
 
 			throw new NotImplementedException();

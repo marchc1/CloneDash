@@ -67,25 +67,6 @@ public static class Filesystem
 		}
 	}
 
-	public static unsafe Sound ReadSound(string pathID, string path) {
-		var buffer = ScratchUpload(pathID, path);
-		fixed (byte* data = buffer) {
-			var wav = Raylib.LoadWaveFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
-			Audio.SoundManagement.DoWaveFormat(ref wav);
-			var snd = Raylib.LoadSoundFromWave(wav);
-			Raylib.UnloadWave(wav);
-			return snd;
-		}
-	}
-
-	public static unsafe Music ReadMusic(string pathID, string path) {
-		var buffer = ScratchUpload(pathID, path);
-		fixed (byte* data = buffer) {
-			var music = Raylib.LoadMusicStreamFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
-			return music;
-		}
-	}
-
 	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
 		var buffer = ScratchUpload(pathID, path);
 		fixed (int* codepointsPtr = codepoints)

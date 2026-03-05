@@ -14,6 +14,7 @@ using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -149,15 +150,15 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
-		time = Math.Clamp(time, 0, Music?.Length ?? 0);
+		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
 		IsSeeking = true;
 
 		ExitMashState();
 
 		if (time < 0.06f)
-			Music?.Restart();
+			audiosystem.RestartSound(Music);
 		else
-			Music?.Playhead = (float)time;
+			audiosystem.SetSoundPlayhead(Music, time);
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
@@ -353,7 +354,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Timing system.
 	/// </summary>
 	public Conductor Conductor { get; private set; }
-	public MusicTrack? Music { get; private set; }
+	public AudioPlaybackHandle Music;
 	public ModelEntity Player { get; set; }
 	public ModelEntity HologramPlayer { get; set; }
 	public MD_SpineActionController PlayerController { get; set; }
@@ -381,8 +382,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (Conductor.Time < 0)
 			return false;
 
-		if (Music != null)
-			Music.Paused = true;
+		audiosystem.PauseSound(in Music);
 		Paused = true;
 		UnpauseTime = 0;
 
@@ -396,20 +396,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		});
 	}
 	private void fullUnpause() {
-		if (Music != null)
-			Music.Paused = false;
+		audiosystem.ResumeSound(in Music);
 		Paused = false;
 		UnpauseTime = 0;
 	}
 
 	public void ForcePause() {
-		if (Music != null)
-			Music.Paused = true;
+		audiosystem.PauseSound(in Music);
 		Paused = true;
 	}
 	public void ForceUnpause() {
-		if (Music != null)
-			Music.Paused = false;
+		audiosystem.ResumeSound(in Music);
 		Paused = false;
 	}
 
@@ -483,8 +480,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
 				FeverFX?.Initialize(this);
-
-				pressIdle = Scene.GetPressIdleSound();
 			}
 
 			Interlude.Spin();
@@ -574,14 +569,19 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (gameParameters.Sheet != null) {
-					Music = gameParameters.Sheet.Song.GetAudioTrack();
-					Music.Loops = false;
-					Music.Playing = true;
+					Music = audiosystem.CreatePlayback(gameParameters.Sheet.Song.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
+						Looping = false,
+						ManuallyUpdate = true,
+						DoNotAutoDestroy = true,
+						Stream = true
+					});
+
+					audiosystem.PlaySound(Music);
 					if (gameParameters.Measure != 0)
 						SeekTo(Conductor.MeasureToSeconds(gameParameters.Measure));
 				}
 				else
-					Music = null;
+					Music = AudioPlaybackHandle.Null;
 			}
 			Interlude.Spin(submessage: "Ready!");
 
@@ -643,7 +643,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public override void PreThink(ref FrameState frameState) {
 		Ticks++;
 
-		if (Music != null && lastNoteHit && Music.Paused && gameParameters.Sheet != null) {
+		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Sheet != null) {
 			Stats.UploadScore(Score);
 			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Sheet, Stats);
 			return;
@@ -658,6 +658,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState, InputAction.PauseGame);
 		}
+
 		else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);
@@ -669,7 +670,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			UpdateMashTextEffect();
 
 		if (inputState.PauseButton) {
-			if (Music != null && Music.Paused) {
+			if (Music.IsValid() && audiosystem.IsPlaybackPaused(Music)) {
 				startUnpause();
 				if (IValidatable.IsValid(PauseWindow))
 					PauseWindow.Remove();
@@ -926,7 +927,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			FeverFX?.Think(this);
 
 		if (!Paused && IValidatable.IsValid(pressIdle))
-			pressIdle.Update();
+			audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public int EnemySortIndexCounter;
@@ -1577,17 +1578,18 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				PlayCharacterAnimation(CharacterAnimationType.Run);
 		}
 
-		if (pressIdle != null) {
-			if (pressIdle.Playing && !nowInsustain) {
-				pressIdle.Playing = false;
-				pressIdle.Restart();
+		if (nowInsustain != wasSustainingBefore) {
+			var clip = Scene.GetPressIdleSound();
+			if (IValidatable.IsValid(clip)) {
+				if (audiosystem.IsPlaybackActive(pressIdle) && !nowInsustain)
+					audiosystem.DestroyPlayback(pressIdle);
+				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain)
+					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true });
 			}
-			else if (!pressIdle.Playing && nowInsustain)
-				pressIdle.Playing = true;
 		}
 	}
 
-	MusicTrack? pressIdle;
+	AudioPlaybackHandle pressIdle;
 
 	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;

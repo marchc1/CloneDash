@@ -2,7 +2,7 @@
 
 using Nucleus;
 using Nucleus.Audio;
-
+using Nucleus.Common.Audio;
 using Raylib_cs;
 
 using System.Collections.Concurrent;
@@ -37,13 +37,14 @@ namespace CloneDash.Data
 		};
 
 
-		protected MusicTrack? AudioTrack { get; set; }
-		protected MusicTrack? DemoTrack { get; set; }
+		protected IAudioClip? AudioTrack { get; set; }
+		protected IAudioClip? DemoTrack { get; set; }
 		protected ChartCover? CoverTexture { get; set; }
 		protected Dictionary<int, ChartSheet> Sheets { get; set; } = [];
 
 		protected void Clear() {
-			AudioTrack?.Dispose(); AudioTrack = null;
+			audiosystem.DestroyAudioClip(AudioTrack);
+			AudioTrack = null;
 			// Not clearing the demo since i dont want a sudden jump
 			// DemoTrack?.Dispose(); DemoTrack = null;
 			Info = null;
@@ -67,14 +68,14 @@ namespace CloneDash.Data
 			}
 		}
 
-		protected abstract MusicTrack ProduceAudioTrack();
-		protected abstract MusicTrack? ProduceDemoTrack();
+		protected abstract IAudioClip ProduceAudioTrack();
+		protected abstract IAudioClip? ProduceDemoTrack();
 		protected abstract void ProduceCover(ChartCoverAvailableToMainThreadFn callback);
 		protected abstract ChartInfo? ProduceInfo();
 		protected abstract ChartSheet ProduceSheet(int id);
 
 		// Public facing methods for getting data
-		public MusicTrack GetAudioTrack() {
+		public IAudioClip GetAudioTrack() {
 			if (AudioTrack != null && IValidatable.IsValid(AudioTrack))
 				return AudioTrack;
 
@@ -91,7 +92,7 @@ namespace CloneDash.Data
 			return Info;
 		}
 
-		public MusicTrack? GetDemoTrack() {
+		public IAudioClip? GetDemoTrack() {
 			if (DeferringDemoToAsyncHandler) {
 				lock (AsyncLock) {
 					return DemoTrack;
@@ -152,8 +153,8 @@ namespace CloneDash.Data
 				if (__gotCover && CoverTexture != null)
 					Raylib.UnloadTexture(CoverTexture.Texture);
 
-				if (AudioTrack != null) AudioTrack.Dispose();
-				if (DemoTrack != null) DemoTrack.Dispose();
+				if (AudioTrack != null) audiosystem.DestroyAudioClip(AudioTrack);
+				if (DemoTrack != null) audiosystem.DestroyAudioClip(DemoTrack);
 			});
 		}
 	}

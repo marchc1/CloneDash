@@ -8,6 +8,7 @@ using DiscordRPC;
 using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
@@ -25,7 +26,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
-using Sound = Nucleus.Audio.Sound;
 using Texture = Nucleus.ManagedMemory.Texture;
 using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
@@ -78,7 +78,7 @@ public struct MuseDashSceneSounds
 		VictoryBgm = "sfx_victory_bgm",
 	}.AutoGenHitSounds();
 
-	public MuseDashSceneSounds AutoGenHitSounds(){
+	public MuseDashSceneSounds AutoGenHitSounds() {
 		for (int i = 0; i < ((Span<string?>)HitSounds).Length; i++) {
 			HitSounds[i] = $"hitsound_{i:000}";
 		}
@@ -351,7 +351,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS, pos.Y * MUSEDASH_MULTIPLIER_POSITIONS, obj);
 	}
 
-	
+
 	ModelData? BossModel;
 	ModelData? AirGearModel, RoadGearModel;
 	ModelData? MasherModel;
@@ -376,26 +376,26 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 
 	ModelData? HpMountModel;
 
-	Sound? BeginSound;
-	Sound? FeverSound;
-	Sound? UnpauseSound;
-	Sound? FullComboSound;
-	Sound? BlockSound;
-	Sound? CrystalSound;
-	MusicTrack? FailBgmSound;
-	Sound? Forte2Sound;
-	Sound? Forte3Sound;
-	Sound? GhostSound;
-	Sound? HpSound;
-	Sound? JumpSound;
-	Sound? Mezzo1Sound;
-	Sound? Mezzo3Sound;
-	Sound? Piano2Sound;
-	MusicTrack? PressIdleSound;
-	Sound? PressTopSound;
-	Sound? ScoreSound;
-	Sound?[]? HitSounds;
-	MusicTrack? VictoryBgmSound;
+	IAudioClip? BeginSound;
+	IAudioClip? FeverSound;
+	IAudioClip? UnpauseSound;
+	IAudioClip? FullComboSound;
+	IAudioClip? BlockSound;
+	IAudioClip? CrystalSound;
+	IAudioClip? FailBgmSound;
+	IAudioClip? Forte2Sound;
+	IAudioClip? Forte3Sound;
+	IAudioClip? GhostSound;
+	IAudioClip? HpSound;
+	IAudioClip? JumpSound;
+	IAudioClip? Mezzo1Sound;
+	IAudioClip? Mezzo3Sound;
+	IAudioClip? Piano2Sound;
+	IAudioClip? PressIdleSound;
+	IAudioClip? PressTopSound;
+	IAudioClip? ScoreSound;
+	IAudioClip?[]? HitSounds;
+	IAudioClip? VictoryBgmSound;
 
 	MD_SpineActionControllerData BossAnims = null!;
 
@@ -442,9 +442,9 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		PressIdleSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
 		PressTopSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
 		ScoreSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
-		VictoryBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm  ?? throw new NullReferenceException());
+		VictoryBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
 
-		HitSounds = new Sound?[16];
+		HitSounds = new IAudioClip?[16];
 		for (int i = 0; i < 16; i++) {
 			HitSounds[i] = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
 			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
@@ -709,29 +709,29 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public void Refresh(DashGameLevel game) { }
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
-			case SceneSound.Begin: BeginSound?.Play(); break;
-			case SceneSound.Fever: FeverSound?.Play(); break;
-			case SceneSound.Unpause: UnpauseSound?.Play(); break;
-			case SceneSound.FullCombo: FullComboSound?.Play(); break;
+			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.Fever: audiosystem.PlaySound(FeverSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.Unpause: audiosystem.PlaySound(UnpauseSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.FullCombo: audiosystem.PlaySound(FullComboSound, in AudioPlaybackSettings.Unaltered); break;
 
-			case SceneSound.HitSmall: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitMedium1: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitMedium2: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitLarge1: Piano2Sound?.Play(); break; 
-			case SceneSound.HitLarge2: Forte2Sound?.Play(); break; 
-			case SceneSound.HitRaider: Piano2Sound?.Play(); break; 
-			case SceneSound.HitHammer: Forte3Sound?.Play(); break; 
-			case SceneSound.HitGemini: Mezzo1Sound?.Play(); break; 
-			case SceneSound.StartedHold: PressTopSound?.Play(); break; 
-			case SceneSound.HitMasher: HitSounds?[Math.Min(hits, HitSounds.Length - 1)]?.Play(); break; 
-			case SceneSound.HitBoss1: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitBoss2: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitBoss3: Mezzo1Sound?.Play(); break; 
-			case SceneSound.HitGhost: GhostSound?.Play(); break; 
-			case SceneSound.GotHeart: HpSound?.Play(); break; 
-			case SceneSound.GotScore: ScoreSound?.Play(); break; 
-			case SceneSound.HitBossFast: Forte2Sound?.Play(); break; 
-			case SceneSound.HitBossSlow: Forte2Sound?.Play(); break;
+			case SceneSound.HitSmall: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitMedium1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitMedium2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitLarge1: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitLarge2: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitRaider: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitHammer: audiosystem.PlaySound(Forte3Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitGemini: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.StartedHold: audiosystem.PlaySound(PressTopSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitMasher: audiosystem.PlaySound(HitSounds![Math.Min(hits, HitSounds!.Length - 1)], in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitBoss1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitBoss2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitBoss3: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitGhost: audiosystem.PlaySound(GhostSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.GotHeart: audiosystem.PlaySound(HpSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.GotScore: audiosystem.PlaySound(ScoreSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitBossFast: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitBossSlow: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
 		}
 	}
 
@@ -967,7 +967,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
 	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
-	public MusicTrack? GetPressIdleSound() => PressIdleSound;
+	public IAudioClip? GetPressIdleSound() => PressIdleSound;
 	public void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
 		rotationDegsPerSecond = 120;
 		switch (pathway) {
