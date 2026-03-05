@@ -235,13 +235,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 							AutoPlayer.MarkSustainAsActive(sustain);
 							// Force time to the smaller value: either the end of the sustain, or the seeking time.
 							// This fixes issues when placing an autoplayer in the middle of a sustain.
-							Conductor.ForceTimeTo(Math.Min(sustain.GetJudgementHitTime() + sustain.Length + 0.01, time));
+							var endOfSustainIsh = sustain.GetJudgementHitTime() + sustain.Length + 0.01;
+							Conductor.ForceTimeTo(Math.Min(endOfSustainIsh, time));
 
 							// hack, but will force sustain to cancel if its ready
 							InputState s = default;
 							AutoPlayer.SustainHoldThink(ref s);
 
 							AutoPlayer.MarkEntityAsPassed(mEnt);
+							if (time > endOfSustainIsh)
+								AutoPlayer.MarkSustainAsInactive(sustain);
 							break;
 						default:
 							switch (mEnt.Interactivity) {
@@ -646,7 +649,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
 	}
 
-	public void PlaySceneSound(SceneSound sound, int hits = 0){
+	public void PlaySceneSound(SceneSound sound, int hits = 0) {
 		if (IsSeeking)
 			return;
 		Scene.PlaySound(sound, hits);

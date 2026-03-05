@@ -6,6 +6,7 @@ using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
 using Nucleus.Types;
+using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
@@ -28,6 +29,18 @@ namespace CloneDash.Game.Logic
 			if (ent.Type == EntityType.SustainBeam)
 				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 		}
+
+		/// <summary>
+		/// Mark an entity as inactive, and also completes the sustain beam early. Only used externally during seeking, for the sake of not confusing the autoplayer
+		/// </summary>
+		/// <param name="ent"></param>
+		public void MarkSustainAsInactive(DashModelEntity ent) {
+			if (ent.Type == EntityType.SustainBeam) {
+				Debug.Assert(CurrentSustains[ent.Pathway].TryPop(out var beam) && beam == (SustainBeam)ent);
+				beam?.Complete();
+			}
+		}
+
 		public void SustainHoldThink(ref InputState input) {
 			foreach (var kvp in CurrentSustains) {
 				// Is there a sustain in progress on this pathway?
