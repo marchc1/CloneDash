@@ -646,6 +646,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
 	}
 
+	public void PlaySceneSound(SceneSound sound, int hits = 0){
+		if (IsSeeking)
+			return;
+		Scene.PlaySound(sound, hits);
+	}
+
+
 	private SecondOrderSystem? sos_yoff;
 
 	InputState inputState = new();
@@ -843,7 +850,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
-				Scene.PlaySound(SceneSound.FullCombo, 0);
+				PlaySceneSound(SceneSound.FullCombo, 0);
 			}
 		}
 
@@ -898,7 +905,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						PathwaySide pathCurrentCharacter = Pathway;
 						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
-							Scene.PlaySound(entity.Type switch {
+							PlaySceneSound(entity.Type switch {
 								EntityType.Heart => SceneSound.GotHeart,
 								EntityType.Score => SceneSound.GotScore,
 								_ => SceneSound.GotScore
@@ -1327,7 +1334,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						Color c = pollResult.HitEntity.HitColor;
 						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
 
-						Scene.PlaySound(pollResult.HitEntity.Type switch {
+						PlaySceneSound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
 								EntityVariant.Small => SceneSound.HitSmall,
 								EntityVariant.Medium1 => SceneSound.HitMedium1,
@@ -1525,7 +1532,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		WhenDidFeverStart = Conductor.Time;
 		if (!IsSeeking) {
 			FeverFX?.Start(this);
-			Scene.PlaySound(SceneSound.Fever, 0);
+			PlaySceneSound(SceneSound.Fever, 0);
 		}
 	}
 	/// <summary>

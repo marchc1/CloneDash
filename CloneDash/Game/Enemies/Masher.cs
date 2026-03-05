@@ -51,7 +51,7 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 
 			if (!level.IsSeeking)
-				level.Scene.PlaySound(Scenes.SceneSound.HitMasher, Hits);
+				level.PlaySceneSound(Scenes.SceneSound.HitMasher, Hits);
 
 			if (MaxHits == 1) {
 				Hits = 1;
