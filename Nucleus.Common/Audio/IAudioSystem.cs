@@ -44,11 +44,6 @@ public interface IAudioClip : IValidatable
 	/// Binds an audio clips volume to a convar. This convar will be a multiplier on the volume of playbacks.
 	/// </summary>
 	void BindVolumeToConVar(ConVar cv);
-	/// <summary>
-	/// How long the audio lasts for, in seconds.
-	/// </summary>
-	/// <returns></returns>
-	double GetDuration();
 }
 
 public struct AudioPlaybackSettings

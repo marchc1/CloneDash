@@ -21,18 +21,19 @@ public interface ICharacterExpression
 		Nucleus.Models.Runtime.Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
 
 		GetSpeech(level, out text, out var voice);
-		duration = voice?.GetDuration() ?? 0;
 
 		if (startAnimation == null || idleAnimation == null || endAnimation == null) {
 			duration = 0;
 			return false;
 		}
 
+		voice?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		var handle = audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
+		duration = audiosystem.GetPlaybackDuration(handle);
+
 		anims.SetAnimation(1, GetStartAnimationName());
 		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
 		anims.AddAnimation(1, GetEndAnimationName());
-		voice?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
 
 		return false;
 	}
