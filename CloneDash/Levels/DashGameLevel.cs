@@ -1583,8 +1583,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (IValidatable.IsValid(clip)) {
 				if (audiosystem.IsPlaybackActive(pressIdle) && !nowInsustain)
 					audiosystem.DestroyPlayback(pressIdle);
-				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain)
-					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true });
+				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain) {
+					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true, Looping = true, ManuallyUpdate = true });
+					audiosystem.PlaySound(pressIdle);
+				}
 			}
 		}
 	}

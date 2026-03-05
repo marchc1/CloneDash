@@ -341,7 +341,7 @@ public class MainMenuLevel : Level
 				track = selector.ActiveTrack;
 				if (track.IsValid()) {
 					setupTrack = true;
-					audiosystem.AttachProcessor(track, (in self, frames, userdata) => {
+					audiosystem.AttachProcessor(track, (frames, userdata) => {
 						currentAvgVolume = 0;
 						for (int i = 0; i < frames.Length; i++) {
 							float val = frames[i];
@@ -356,7 +356,7 @@ public class MainMenuLevel : Level
 			}
 		};
 		if (track.IsValid())
-			audiosystem.AttachProcessor(track, (in self, frames, userdata) => {
+			audiosystem.AttachProcessor(track, (frames, userdata) => {
 				currentAvgVolume = 0;
 				for (int i = 0; i < frames.Length; i++) {
 					float val = frames[i];

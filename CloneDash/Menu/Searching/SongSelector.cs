@@ -265,7 +265,8 @@ public class SongSelector : Panel, IMainMenuPanel
 			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			activeTrack = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
 				Looping = true,
-				ManuallyUpdate = true
+				ManuallyUpdate = true,
+				Stream = true
 			});
 			audiosystem.PlaySound(activeTrack);
 		}

@@ -1,11 +1,14 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Raylib_cs;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Nucleus.Audio;
 
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public unsafe delegate void AudioCallback(void* buffer, uint frames);
 public static unsafe class RaylibAudioHelpers
 {
 	public const int MUSIC_HEADER_RIFF = ('R' << 24) + ('I' << 16) + ('F' << 8) + 'F';
@@ -30,7 +33,7 @@ public static unsafe class RaylibAudioHelpers
 
 	public static byte* AllocCopyStream(Stream stream) {
 		byte* data = Raylib.New<byte>((int)stream.Length);
-		using UnmanagedMemoryStream str = new(data, stream.Length);
+		using UnmanagedMemoryStream str = new(data, 0, stream.Length, FileAccess.ReadWrite);
 		stream.CopyTo(str);
 		return data;
 	}
@@ -103,28 +106,28 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 		sound = snd;
 	}
 
-	public float GetVolumeMultiplier(out bool changed) {
-		changed = false;
-		if (volumeDirty == false)
-			return volumeMultiplier;
+	public bool IsVolumeDirty => volumeDirty;
 
-		volumeMultiplier = 1;
-		changed = true;
+	public float GetVolumeMultiplier() {
+		if (volumeDirty) RecalculateVolumeMultiplier();
+		return volumeMultiplier;
+	}
+
+	public void RecalculateVolumeMultiplier() {
 		volumeDirty = false;
+		volumeMultiplier = 1f;
 
 		if (boundConVars.Count == 0)
-			return volumeMultiplier;
+			return;
 
 		foreach (var cv in boundConVars)
 			volumeMultiplier *= (float)cv.GetDouble();
-
-		return volumeMultiplier;
 	}
 
 	public void BindVolumeToConVar(ConVar cv) {
 		if (boundConVars.Add(cv)) {
 			cv.OnChange += Cv_OnChange;
-			volumeDirty = true;
+			RecalculateVolumeMultiplier();
 		}
 	}
 
@@ -167,6 +170,12 @@ public unsafe class DynamicAudioClip : BaseAudioClip
 	public new bool IsValid() => Callback != null;
 }
 
+public struct PlaybackProcessor(AudioCallbackFn fn, object? userdata)
+{
+	public readonly AudioCallbackFn Fn = fn;
+	public readonly object? UserData = userdata;
+}
+
 internal unsafe class PlaybackChannel
 {
 	public ulong Generation;
@@ -180,7 +189,7 @@ internal unsafe class PlaybackChannel
 	public Music MusicStream;
 	public Sound SoundAlias;
 
-	public List<(AudioCallbackFn fn, object? userdata)>? Processors;
+	public readonly List<PlaybackProcessor> Processors = [];
 
 	public void Reset() {
 		Clip = null;
@@ -191,7 +200,27 @@ internal unsafe class PlaybackChannel
 		IsStream = false;
 		MusicStream = default;
 		SoundAlias = default;
-		Processors = null;
+		Processors.Clear();
+	}
+
+	// I want to rename this, but it captures my anger at the time so perfectly
+	private unsafe AudioCallback? FUCKFUCKFUCKFUCK;
+	[MemberNotNull(nameof(FUCKFUCKFUCKFUCK))]
+	private unsafe void InitializeAudioProcessor() {
+		FUCKFUCKFUCKFUCK = new((buffer, frames) => {
+			foreach (var proc in Processors)
+				proc.Fn(new(buffer, (int)frames), proc.UserData);
+		});
+	}
+
+	public void SetupSoundProcessors() {
+		InitializeAudioProcessor();
+		Raylib.AttachAudioStreamProcessor(SoundAlias.Stream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(FUCKFUCKFUCKFUCK));
+	}
+
+	public void SetupMusicProcessors() {
+		InitializeAudioProcessor();
+		Raylib.AttachAudioStreamProcessor(MusicStream.Stream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(FUCKFUCKFUCKFUCK));
 	}
 }
 
@@ -253,7 +282,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	void ApplySettings(PlaybackChannel ch) {
 		float clipVol = 1f;
 		if (ch.Clip != null) {
-			clipVol = ch.Clip.GetVolumeMultiplier(out _);
+			clipVol = ch.Clip.GetVolumeMultiplier();
 		}
 
 		float finalVolume = ch.Settings.Volume * clipVol;
@@ -273,8 +302,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	public bool AttachProcessor(in AudioPlaybackHandle handle, AudioCallbackFn fn, object? userdata = null) {
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
-		ch.Processors ??= [];
-		ch.Processors.Add((fn, userdata));
+		ch.Processors.Add(new(fn, userdata));
 		return true;
 	}
 
@@ -282,7 +310,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = GetChannel(in handle);
 		if (ch == null || ch.Processors == null) return false;
 		for (int i = 0; i < ch.Processors.Count; i++) {
-			if (ch.Processors[i].fn == fn) {
+			if (ch.Processors[i].Fn == fn) {
 				ch.Processors.RemoveAt(i);
 				return true;
 			}
@@ -362,10 +390,12 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 			ch.IsStream = true;
 			ch.MusicStream = RaylibAudioHelpers.AllocMusicStream(baseClip.Data, baseClip.Length);
 			ch.MusicStream.Looping = settings.Looping;
+			ch.SetupMusicProcessors();
 		}
 		else {
 			ch.IsStream = false;
 			ch.SoundAlias = Raylib.LoadSoundAlias(baseClip.Sound);
+			ch.SetupSoundProcessors();
 		}
 
 		ApplySettings(ch);
@@ -724,15 +754,21 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	}
 
 	public void Update() {
+		HashSet<BaseAudioClip>? dirtyClips = null;
+		foreach (var clip in allClips) {
+			if (clip.IsVolumeDirty) {
+				clip.RecalculateVolumeMultiplier();
+				dirtyClips ??= [];
+				dirtyClips.Add(clip);
+			}
+		}
+
 		for (int i = 0; i < MAX_CHANNELS; i++) {
 			var ch = channels[i];
 			if (ch == null || !ch.Active) continue;
 
-			if (ch.Clip != null) {
-				float vol = ch.Clip.GetVolumeMultiplier(out bool changed);
-				if (changed)
-					ApplySettings(ch);
-			}
+			if (dirtyClips != null && ch.Clip != null && dirtyClips.Contains(ch.Clip))
+				ApplySettings(ch);
 
 			if (ch.IsStream) {
 				if (!ch.Settings.ManuallyUpdate)

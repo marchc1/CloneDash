@@ -120,7 +120,7 @@ public enum AudioFeatures : ushort
 	AudioProcessors = 1 << 7
 }
 
-public delegate void AudioCallbackFn(in AudioPlaybackHandle handle, Span<float> buffer, object? userdata = null);
+public delegate void AudioCallbackFn(Span<float> buffer, object? userdata = null);
 
 public interface IAudioSystem
 {

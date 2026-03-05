@@ -588,6 +588,8 @@ public static class EngineCore
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
 		Cbuf.Execute();
 
+		audiosystem.Update();
+
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
 			windowsThisFrame.Add(window.Key);

@@ -48,7 +48,7 @@ public class CharacterPanel : Panel
 		set {
 			if (field == value) return;
 			field = value;
-			if (value)
+			if (!value)
 				audiosystem.StopSound(Music);
 			else {
 				audiosystem.RestartSound(Music);
@@ -269,7 +269,8 @@ public class CharacterPanel : Panel
 			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 			Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
 				Looping = true,
-				ManuallyUpdate = true
+				ManuallyUpdate = true,
+				Stream = true
 			});
 			audiosystem.PlaySound(Music);
 		}
