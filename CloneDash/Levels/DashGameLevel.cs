@@ -320,6 +320,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		}
 		InMashState = true;
 		MashingEntity = ent;
+		LastMasherHit = Conductor.Time;
 	}
 	public void UpdateMashTextEffect() {
 		if (!IValidatable.IsValid(mashTextEffect)) return;
@@ -449,6 +450,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 	IShader hologramShader = null!;
+	private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
+	private double LastMasherHit;
+	private bool CanHitMasher => Conductor.Time - LastMasherHit > TIME_BETWEEN_MASH_HITS;
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
@@ -1307,8 +1311,10 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (InMashState) {
 				//if (Debug)
 				//Console.WriteLine($"mashing entity = {MashingEntity}");
-
-				MashingEntity.Hit(pathway, 0);
+				if (CanHitMasher) {
+					MashingEntity.Hit(pathway, 0);
+					LastMasherHit = Conductor.Time;
+				}
 			}
 			else {
 				pollResult = Poll(in pollParams);

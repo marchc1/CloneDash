@@ -63,15 +63,15 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Last time the autoplayer hit a masher. Used to limit masher hits.
 		/// </summary>
-		private DateTime LastMasherHit { get; set; }
+		private double LastMasherHit { get; set; }
 		/// <summary>
 		/// How many times the auto-player will hit a masher per second.
 		/// </summary>
-		private const double MAX_MASHHITS_PER_SECOND = (1d / 26d);
+		private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND);
 		/// <summary>
 		/// Ran-per-tick function to check if the delta-time since the last masher hit is greater than MAX_MASHHITS_PER_SECOND
 		/// </summary>
-		private bool CanHitMasher => (DateTime.Now - LastMasherHit).TotalSeconds > MAX_MASHHITS_PER_SECOND;
+		private bool CanHitMasher => (Level.As<DashGameLevel>().Conductor.Time - LastMasherHit) > TIME_BETWEEN_MASH_HITS;
 		/// <summary>
 		/// Internal function to check the hashmap for passed-by entities.
 		/// </summary>
@@ -92,7 +92,7 @@ namespace CloneDash.Game.Logic
 			// Mash state functionality
 			if (level.InMashState && CanHitMasher) {
 				input.TopClicked = 1; // Attack the masher
-				LastMasherHit = DateTime.Now; // Set the masher
+				LastMasherHit = Level.As<DashGameLevel>().Conductor.Time; // Set the masher
 				return;
 			}
 

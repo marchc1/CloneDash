@@ -6,10 +6,12 @@ namespace CloneDash.Game.Entities
 {
 	public class Masher : DashEnemy
 	{
-		public const int MASHER_MAX_HITS_PER_SECOND = 25;
+		public const int MASHER_HITS_PER_SECOND_OF_LENGTH = 25;
+		public const int MASHER_PLAYER_MAX_HITS_PER_SECOND = 26;
+		public const int MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND = 10;
 
 		public bool StartedHitting { get; private set; } = false;
-		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_MAX_HITS_PER_SECOND), 1, int.MaxValue);
+		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_HITS_PER_SECOND_OF_LENGTH), 1, int.MaxValue);
 		private double lastHitTime = 0;
 
 		public Masher() : base(EntityType.Masher) {
