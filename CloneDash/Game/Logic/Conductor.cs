@@ -9,23 +9,31 @@ using Nucleus.UI;
 
 namespace CloneDash.Game
 {
-	/// <summary>
-	/// Currently unused, and may be a bad idea to try implementing?
-	/// </summary>
 	public struct TempoChange
 	{
 		public double Time;
-		public double Measure;
+		public int Beat;
 		public double BPM;
 
-		public TempoChange(double time, double measure, double bpm) {
+		public TempoChange(double time, int beat, double bpm) {
 			this.Time = time;
-			this.Measure = measure;
+			this.Beat = beat;
 			this.BPM = bpm;
 		}
 
 		public override string ToString() {
-			return $"Tempo Change [time: {Time}, measure {Measure}, bpm: {BPM}]";
+			return $"Tempo Change [time: {Time}, beat {Beat}, bpm: {BPM}]";
+		}
+	}
+
+	public struct TimeSignatureChange
+	{
+		public int Beat;
+		public float Percentage;
+
+		public TimeSignatureChange(int beat, float percent) {
+			Beat = beat;
+			Percentage = percent;
 		}
 	}
 
@@ -35,8 +43,10 @@ namespace CloneDash.Game
 			currentInaccurateTime = (float)-PreStartTime;
 		}
 		public List<TempoChange> TempoChanges { get; private set; } = [];
+		public List<TimeSignatureChange> TimeSignatureChanges { get; private set; } = [];
 
-		public void AddTempoChange(double time, double measure, double bpm) => TempoChanges.Add(new(time, measure, bpm));
+		public void AddTempoChange(double time, int beat, double bpm) => TempoChanges.Add(new(time, beat, bpm));
+		public void AddTimeSignatureChange(int beat, float percentage) => TimeSignatureChanges.Add(new(beat, percentage));
 
 		// Used for seeking the playhead.
 		double? forcedTime;
@@ -64,7 +74,7 @@ namespace CloneDash.Game
 		/// Invalidates the current time. The time is determined by inaccurate music playhead + frametime delta updates until a new time
 		/// update comes in from the music track. This method forces the current inaccurate time to music playhead immediately.
 		/// </summary>
-		public void InvalidateTime(){
+		public void InvalidateTime() {
 			var game = Level.As<DashGameLevel>();
 			if (game.Music == null) return;
 			currentInaccurateTime = game.Music.Playhead;
@@ -161,6 +171,79 @@ namespace CloneDash.Game
 			dragSeconds = uiSeconds;
 		}
 
+		public float GetTimeSignatureAtMeasure(int measure) {
+			for (int i = TimeSignatureChanges.Count - 1; i >= 0; i--) {
+				if (TimeSignatureChanges[i].Beat <= measure)
+					return TimeSignatureChanges[i].Percentage;
+			}
+
+			return 1.0f; // default 4/4
+		}
+
+		public float GetTimeSignatureAtTime(double time) {
+			int measure = (int)SecondsToMeasure(time);
+			return GetTimeSignatureAtMeasure(measure);
+		}
+
+		/// <summary>
+		/// Converts a time in seconds to a fractional beat position.
+		/// </summary>
+		public double SecondsToBeat(double time) {
+			if (TempoChanges.Count == 0) return 0;
+			if (time <= 0) return 0;
+
+			for (int i = 0; i < TempoChanges.Count; i++) {
+				var change = TempoChanges[i];
+				bool isLast = i == TempoChanges.Count - 1;
+				var nextChange = isLast ? change : TempoChanges[i + 1];
+
+				if (isLast || nextChange.Time > time) {
+					double elapsed = time - change.Time;
+					double secondsPerBeat = 240.0 / change.BPM;
+					return change.Beat + (elapsed / secondsPerBeat);
+				}
+			}
+
+			return 0;
+		}
+
+		/// <summary>
+		/// Converts a time in seconds to a fractional measure position.
+		/// </summary>
+		private double SecondsToMeasure(double time) {
+			double beat = SecondsToBeat(time);
+			return BeatToMeasure(beat);
+		}
+
+		/// <summary>
+		/// Converts a beat position to a fractional measure position,
+		/// accounting for time signature changes.
+		/// </summary>
+		private double BeatToMeasure(double beat) {
+			if (TimeSignatureChanges.Count == 0)
+				return beat;
+
+			double measure = 0;
+			double currentBeat = 0;
+
+			for (int i = 0; i < TimeSignatureChanges.Count; i++) {
+				double beatsPerMeasure = TimeSignatureChanges[i].Percentage;
+				double nextChangeBeat = (i + 1 < TimeSignatureChanges.Count)
+					? TimeSignatureChanges[i + 1].Beat
+					: double.MaxValue;
+
+				if (beat < nextChangeBeat) {
+					measure += (beat - currentBeat) / beatsPerMeasure;
+					return measure;
+				}
+
+				measure += (nextChangeBeat - currentBeat) / beatsPerMeasure;
+				currentBeat = nextChangeBeat;
+			}
+
+			return measure;
+		}
+
 		public TempoChange GetTempoChangeAtTime(double time) {
 			if (TempoChanges.Count == 0)
 				throw new Exception("No tempo changes found in DashGame (likely a DashSheet import error)");
@@ -176,11 +259,7 @@ namespace CloneDash.Game
 
 			return TempoChanges.Last();
 		}
-		/// <summary>
-		/// Gets the current BPM from the song position
-		/// </summary>
-		/// <param name="time"></param>
-		/// <returns></returns>
+
 		public double GetTempoAtTime(double time) => GetTempoChangeAtTime(time).BPM;
 
 		public bool firstTick = true;
@@ -250,33 +329,69 @@ namespace CloneDash.Game
 			return ((float)NMath.Modulo(Time, div2sec)) / div2sec;
 		}
 
-		public double BeatToSeconds(double measure) {
-			for (int i = 0; i < TempoChanges.Count; i++) {
-				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
-				var change = TempoChanges[i];
+		/// <summary>
+		/// Converts a beat position to a time in seconds,
+		/// walking through tempo changes to accumulate elapsed time.
+		/// </summary>
+		public double BeatToSeconds(double beat) {
+			if (TempoChanges.Count == 0) return 0;
+			if (beat <= 0) return 0;
 
-				if (i == TempoChanges.Count - 1 || change.Measure > measure) {
-					return lastChange.Time + ((measure - lastChange.Measure) * (60.0 / change.BPM));
+			for (int i = 0; i < TempoChanges.Count; i++) {
+				var change = TempoChanges[i];
+				bool isLast = i == TempoChanges.Count - 1;
+				var nextChange = isLast ? change : TempoChanges[i + 1];
+
+				if (isLast || nextChange.Beat > beat) {
+					double beatsElapsed = beat - change.Beat;
+					double secondsPerBeat = 240.0 / change.BPM;
+					return change.Time + (beatsElapsed * secondsPerBeat);
 				}
 			}
 
 			return 0;
 		}
 
+		/// <summary>
+		/// Converts a measure position to a time in seconds,
+		/// by first resolving the measure to a beat, then converting to seconds.
+		/// </summary>
 		public double MeasureToSeconds(double measure) {
-			double beatsPerMeasure = 4; // TODO: will we ever receive something not in 4/4... I don't know what MDBMSC supports here. Probably not though I'd figure, if
-			// measure is the only parameter that is ever sent to ubmplay
+			double beat = MeasureToBeat(measure);
+			return BeatToSeconds(beat);
+		}
 
-			for (int i = 0; i < TempoChanges.Count; i++) {
-				var lastChange = TempoChanges[i - (i == 0 ? 0 : 1)];
-				var change = TempoChanges[i];
+		/// <summary>
+		/// Converts a fractional measure position to a beat position,
+		/// accounting for time signature changes.
+		/// </summary>
+		private double MeasureToBeat(double measure) {
+			if (TimeSignatureChanges.Count == 0)
+				return measure;
 
-				if (i == TempoChanges.Count - 1 || change.Measure > measure) {
-					return lastChange.Time + ((measure - lastChange.Measure) * beatsPerMeasure * (60.0 / change.BPM));
+			double currentMeasure = 0;
+			double currentBeat = 0;
+
+			for (int i = 0; i < TimeSignatureChanges.Count; i++) {
+				double beatsPerMeasure = TimeSignatureChanges[i].Percentage;
+				double nextChangeBeat = (i + 1 < TimeSignatureChanges.Count)
+					? TimeSignatureChanges[i + 1].Beat
+					: double.MaxValue;
+
+				double measuresInThisRegion = (nextChangeBeat - currentBeat) / beatsPerMeasure;
+
+				if (measure < currentMeasure + measuresInThisRegion) {
+					double measuresElapsed = measure - currentMeasure;
+					return currentBeat + (measuresElapsed * beatsPerMeasure);
 				}
+
+				currentMeasure += measuresInThisRegion;
+				currentBeat = nextChangeBeat;
 			}
 
-			return 0;
+			// Fallback: use last time signature
+			double lastPercentage = TimeSignatureChanges.Last().Percentage;
+			return currentBeat + ((measure - currentMeasure) * lastPercentage);
 		}
 	}
 }

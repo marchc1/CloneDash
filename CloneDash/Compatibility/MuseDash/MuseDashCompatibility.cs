@@ -222,7 +222,7 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null) {
+		public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
 			ChartSheet sheet = new(song);
