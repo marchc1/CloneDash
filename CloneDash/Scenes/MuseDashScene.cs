@@ -492,6 +492,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		string gearRoadID = SceneInfo.MapIdx switch {
 			// :(
 			3 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
+			8 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
 			_ => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}"
 		};
 		string masherID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MASHERS}";
