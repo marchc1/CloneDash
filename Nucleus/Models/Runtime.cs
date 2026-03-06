@@ -1523,9 +1523,9 @@ public class AnimationHandler
 
 			if (channel.Time >= anim.Animation.Duration) {
 				if (anim.Looping) {
-					anim?.OnPlaybackEnd?.Invoke(anim);
-					channel.Time = channel.Time % anim.Animation.Duration;
-					anim?.OnPlaybackStart?.Invoke(anim);
+					anim.OnPlaybackEnd?.Invoke(anim);
+					channel.Time %= anim.Animation.Duration;
+					anim.OnPlaybackStart?.Invoke(anim);
 				}
 				else
 					channel.EnqueueNext();
