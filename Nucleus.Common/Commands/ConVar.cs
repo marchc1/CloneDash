@@ -264,9 +264,9 @@ namespace Nucleus.Commands
 
 				ReadOnlySpan<char> value = var.GetString();
 				if (stricmp(value, var.GetDefault()) != 0) {
-					ctx.Print(" ( def. ");
+					ctx.Print(" ( def. \"");
 					ctx.Print(var.GetDefault());
-					ctx.Print(" )");
+					ctx.Print("\" )");
 				}
 
 				if (hasMin) {
