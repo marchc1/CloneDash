@@ -269,6 +269,8 @@ namespace CloneDash.Game
 			var game = Level.As<DashGameLevel>();
 			Level.AddDebugString("Conductor Time", Time);
 
+			var speed = game.GetSpeed();
+
 			if (firstTick) {
 				currentInaccurateTime = (float)-PreStartTime;
 			}
@@ -277,7 +279,7 @@ namespace CloneDash.Game
 				if (ft > 0.5)
 					return;
 
-				currentInaccurateTime += ft;
+				currentInaccurateTime += ft * speed;
 			}
 			else if (game.Music.IsValid()) {
 				audiosystem.UpdatePlayback(game.Music);
@@ -290,11 +292,11 @@ namespace CloneDash.Game
 				}
 				else {
 					if (!paused)
-						currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
+						currentInaccurateTime += EngineCore.Level.CurtimeDelta * speed;
 				}
 			}
 			else {
-				currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
+				currentInaccurateTime += EngineCore.Level.CurtimeDelta * speed;
 			}
 
 			if (game.Music.IsValid()) {

@@ -70,6 +70,24 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		else level.SeekTo(d);
 	});
 
+	public static readonly ConVar musicspeed = new(nameof(musicspeed), "1", FCvar.None, "Sets the music speed for the game.", 0.1, 4, (cv, _, _) => {
+		if (EngineCore.Level is DashGameLevel game)
+			game.InitSpeedFromCvar();
+	});
+
+	double speed = 1;
+	public double GetSpeed(){
+		return speed;
+	}
+
+	public void SetSpeed(double speed){
+		this.speed = speed;
+		audiosystem.SetSoundPitchControl(Music, (float)speed);
+	}
+
+	public void InitSpeedFromCvar(){
+		SetSpeed(musicspeed.GetDouble());
+	}
 
 	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
 		var md_level = args.ArgS(1);
@@ -616,6 +634,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					});
 
 					audiosystem.PlaySound(Music);
+					InitSpeedFromCvar();
 					if (gameParameters.Measure != 0)
 						SeekTo(Conductor.MeasureToSeconds(gameParameters.Measure));
 				}
