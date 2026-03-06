@@ -16,10 +16,12 @@ public static class SceneMod
 		foreach (var scene in scenes)
 			Logs.Print($"    {scene}");
 	}, "Prints all available scenes");
+	static ISceneProvider[]? providers;
+
 
 	public static IEnumerable<string> GetAvailableScenes() {
-		ISceneProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
-		foreach (var retriever in retrievers)
+		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
+		foreach (var retriever in providers)
 			foreach (var characterName in retriever.GetAvailable())
 				yield return characterName;
 	}
@@ -30,8 +32,8 @@ public static class SceneMod
 		if (name.IsEmpty || name.IsWhiteSpace())
 			return null;
 
-		ISceneProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
-		foreach (var retriever in retrievers) {
+		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<ISceneProvider>();
+		foreach (var retriever in providers) {
 			ISceneDescriptor? descriptor = retriever.FindByName(name);
 			if (descriptor == null) continue;
 
