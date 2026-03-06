@@ -135,6 +135,9 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 				entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
 				return;
 			}
+
+			if (entry != null && del != null)
+				entry.OnPlaybackEnd += _ => del();
 		}
 		else {
 			int lastIdx = action.ActionIdx.Length - 1;
@@ -144,6 +147,9 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 				AnimationChannelEntry? entry = isOverride ? Animation.SetAnimation(0, animName, loop) : Animation.AddAnimation(0, animName, loop);
 				if (entry != null && MD_DoNothing.TryGetValue(action.ActionEventIdx[i], out MD_DoNothing? nothing))
 					entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
+
+				if (i >= lastIdx && entry != null && del != null)
+					entry.OnPlaybackEnd += _ => del();
 			}
 		}
 	}
