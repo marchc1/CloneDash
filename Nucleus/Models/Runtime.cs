@@ -1416,12 +1416,22 @@ public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(bone.Shear.X, value);
 }
 
+public delegate void AnimPlaybackBeginFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackStartFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackEndFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackCompleteFn(AnimationChannelEntry entry);
 
 public class AnimationChannelEntry
 {
-	public Animation Animation;
-	public Action<AnimationChannelEntry>? OnPlaybackStart;
-	public Action<AnimationChannelEntry>? OnPlaybackEnd;
+	public required Animation Animation;
+	/// <summary> Called when the animation playback has first begun (loop exclusive) </summary>
+	public AnimPlaybackBeginFn? OnPlaybackBegin;
+	/// <summary> Called when the animation playback has started (loop inclusive)</summary>
+	public AnimPlaybackStartFn? OnPlaybackStart;
+	/// <summary> Called when the animation playback has completed (loop inclusive). Note that loopback will trigger Start again. </summary>
+	public AnimPlaybackEndFn? OnPlaybackEnd;
+	/// <summary> Called when the animation playback has fully completed (loop exclusive) </summary>
+	public AnimPlaybackCompleteFn? OnPlaybackComplete;
 	public bool Looping;
 	public double LoopDuration = -1;
 
@@ -1449,8 +1459,10 @@ public class AnimationChannel
 	public void EnqueueNext() {
 		// Enqueue the next animation
 		CurrentEntry?.OnPlaybackEnd?.Invoke(CurrentEntry);
+		CurrentEntry?.OnPlaybackComplete?.Invoke(CurrentEntry);
 		if (QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 			CurrentEntry = newAnim;
+			newAnim.OnPlaybackBegin?.Invoke(newAnim);
 			newAnim.OnPlaybackStart?.Invoke(newAnim);
 			ResetTime();
 		}
@@ -1510,8 +1522,11 @@ public class AnimationHandler
 			}
 
 			if (channel.Time >= anim.Animation.Duration) {
-				if (anim.Looping)
+				if (anim.Looping) {
+					anim?.OnPlaybackEnd?.Invoke(anim);
 					channel.Time = channel.Time % anim.Animation.Duration;
+					anim?.OnPlaybackStart?.Invoke(anim);
+				}
 				else
 					channel.EnqueueNext();
 			}
@@ -1521,7 +1536,7 @@ public class AnimationHandler
 		}
 	}
 
-	public AnimationChannelEntry? AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action<AnimationChannelEntry>? onPlaybackStart = null, Action<AnimationChannelEntry>? onPlaybackEnd = null) {
+	public AnimationChannelEntry? AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
 		if (animation == null)
 			return null;
 
@@ -1533,15 +1548,13 @@ public class AnimationHandler
 		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
-			LoopDuration = loopDuration,
-			OnPlaybackStart = onPlaybackStart,
-			OnPlaybackEnd = onPlaybackEnd
+			LoopDuration = loopDuration
 		};
 		channelObj.QueuedEntries.Enqueue(entry);
 		return entry;
 	}
 
-	public AnimationChannelEntry? SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action<AnimationChannelEntry>? onPlaybackStart = null, Action<AnimationChannelEntry>? onPlaybackEnd = null) {
+	public AnimationChannelEntry? SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
 		if (animation == null)
 			return null;
 
@@ -1555,9 +1568,7 @@ public class AnimationHandler
 		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
-			LoopDuration = loopDuration,
-			OnPlaybackStart = onPlaybackStart,
-			OnPlaybackEnd = onPlaybackEnd
+			LoopDuration = loopDuration
 		};
 		channelObj.QueuedEntries.Enqueue(entry);
 		return entry;
