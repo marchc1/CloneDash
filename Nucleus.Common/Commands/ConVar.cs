@@ -71,7 +71,7 @@ namespace Nucleus.Commands
 
 			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
-				this.value.Double.TryFormat(tempVal, out int charsWritten);
+				this.value.Double.TryFormat(tempVal, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
 			}
 			else
@@ -94,7 +94,7 @@ namespace Nucleus.Commands
 
 			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
-				this.value.Int.TryFormat(tempVal, out int charsWritten);
+				this.value.Int.TryFormat(tempVal, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
 			}
 			else
@@ -112,10 +112,10 @@ namespace Nucleus.Commands
 
 			val = value;
 			if (value.IsEmpty) newD = 0.0;
-			else double.TryParse(value, out newD);
+			else double.TryParse(value, provider: CultureInfo.InvariantCulture, out newD);
 
 			if (ClampValue(ref newD)) {
-				newD.TryFormat(temp, out int charsWritten);
+				newD.TryFormat(temp, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				val = temp[..charsWritten];
 			}
 
@@ -230,12 +230,12 @@ namespace Nucleus.Commands
 			}
 
 			public void Print(int incoming) {
-				incoming.TryFormat(dest[printStrLength..], out int charsWritten);
+				incoming.TryFormat(dest[printStrLength..], out int charsWritten, provider: CultureInfo.InvariantCulture);
 				printStrLength += charsWritten;
 			}
 
 			public void Print(double incoming) {
-				incoming.TryFormat(dest[printStrLength..], out int charsWritten);
+				incoming.TryFormat(dest[printStrLength..], out int charsWritten, provider: CultureInfo.InvariantCulture);
 				printStrLength += charsWritten;
 			}
 
@@ -340,8 +340,8 @@ namespace Nucleus.Commands
 
 			OnAutocomplete = autocomplete;
 
-			double.TryParse(value.GetString(), out value.Double);
-			int.TryParse(value.GetString(), out value.Int);
+			double.TryParse(value.GetString(), provider: CultureInfo.InvariantCulture, out value.Double);
+			int.TryParse(value.GetString(), provider: CultureInfo.InvariantCulture, out value.Int);
 		}
 	}
 }
