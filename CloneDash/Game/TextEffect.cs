@@ -45,7 +45,7 @@ namespace CloneDash.Game
 				}
 			}
 
-			var finalPos = Position * DashGameLevel.GlobalScale;
+			var finalPos = Position / DashGameLevel.GlobalScale;
 			var pos0to1 = Ease.OutExpo(Raymath.Remap((float)lifetime, 0, ageToDie, 0, 1));
 			var pos0to1_two = TransitionOut == TextEffectTransitionOut.SlideUpThenToLeft ? Ease.InExpo(Raymath.Remap(Math.Clamp((float)lifetime, ageToDie / 2, ageToDie), ageToDie / 2, ageToDie, 0, 1)) : 0;
 
@@ -55,7 +55,7 @@ namespace CloneDash.Game
 			// TODO: Move this to a render context! post render isn't good for this
 			Rlgl.PushMatrix();
 			Rlgl.Translatef(frameState.WindowWidth / 2f, frameState.WindowHeight / 2f, 0);
-			Rlgl.Translatef((finalPos.X / 2) - (pos0to1_two * (frameState.WindowWidth * 0.15f * DashGameLevel.GlobalScale)), (finalPos.Y / 2) - pos, 0);
+			Rlgl.Translatef((finalPos.X / 1.68f) - (pos0to1_two * (frameState.WindowWidth * 0.06f / DashGameLevel.GlobalScale)), (-finalPos.Y / 2) - pos, 0);
 			Rlgl.Scalef(size, size, size);
 			Graphics2D.SetDrawColor(Color, (int)(Color.A * Raymath.Remap((float)lifetime, 0, ageToDie, 1, 0)));
 			Graphics2D.DrawText(new(0), Text, Graphics2D.UI_FONT_NAME, 42, TextAlignment.Center, TextAlignment.Center);
