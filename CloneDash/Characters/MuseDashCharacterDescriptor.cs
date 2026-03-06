@@ -1,6 +1,5 @@
 ﻿using AssetStudio;
-
-using CloneDash.Characters;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 
 using Fmod5Sharp;
@@ -19,7 +18,7 @@ using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 
-namespace CloneDash.Compatibility.MuseDash;
+namespace CloneDash.Characters;
 
 public class MuseDashCharacterExpression : ICharacterExpression
 {
