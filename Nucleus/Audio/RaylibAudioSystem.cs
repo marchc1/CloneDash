@@ -512,7 +512,8 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null) return 0;
 		if (ch.IsStream)
 			return Raylib.GetMusicTimeLength(ch.MusicStream);
-		return 0;
+		else
+			return (double)((double)ch.SoundAlias.FrameCount / ch.SoundAlias.Stream.SampleRate);
 	}
 
 	public ulong GetPlaybackGeneration() => generation;
