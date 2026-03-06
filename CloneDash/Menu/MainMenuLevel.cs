@@ -142,6 +142,17 @@ public class MainMenuLevel : Level
 
 	Panel header;
 	public override void Initialize(params object[] args) {
+		var charPanel = UI.Add<Panel>();
+		charPanel.BorderSize = 0;
+		charPanel.DynamicallySized = true;
+		charPanel.Size = new(1f, 1f);
+
+		Character = charPanel.Add<CharacterPanel>();
+		Character.DynamicallySized = true;
+		Character.Origin = Anchor.TopCenter;
+		Character.Size = new(1f);
+		Character.LinkToConVar = true;
+
 		header = UI.Add<Panel>();
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
@@ -160,17 +171,6 @@ public class MainMenuLevel : Level
 		test2.TextSize = 30;
 		test2.AutoSize = true;
 		test2.DockMargin = RectangleF.TLRB(4);
-		
-		var charPanel = UI.Add<Panel>();
-		charPanel.BorderSize = 0;
-		charPanel.DynamicallySized = true;
-		charPanel.Size = new(1f, 1f);
-		
-		Character = charPanel.Add<CharacterPanel>();
-		Character.DynamicallySized = true;
-		Character.Origin = Anchor.TopCenter;
-		Character.Size = new(1f);
-		Character.LinkToConVar = true;
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new MainMenuLevel()));
 

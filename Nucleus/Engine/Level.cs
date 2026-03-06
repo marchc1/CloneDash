@@ -176,6 +176,7 @@ namespace Nucleus.Engine
 	/// <br></br>
 	/// Remember: levels store LOGIC, and, when needed, game-level-specific data. But any data such as entities, UI panels, textures etc. should remain within the engine core
 	/// </summary>
+	[MarkForStaticConstruction]
 	public abstract class Level : IValidatable
 	{
 		// Managed memory

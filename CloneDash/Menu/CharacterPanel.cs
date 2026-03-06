@@ -57,13 +57,7 @@ public class CharacterPanel : Panel
 		}
 	} = true;
 
-	public bool ExpressiveOnClicks {
-		get => field;
-		set {
-			if (field == value) return;
-			field = value;
-		}
-	} = true;
+	public bool ExpressiveOnClicks { get; set; } = true;
 
 	public bool LinkToConVar {
 		get => field;
