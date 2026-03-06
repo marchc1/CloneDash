@@ -1,9 +1,12 @@
 ﻿using CloneDash.Compatibility.Unity;
+using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Graphics;
+using Nucleus.Entities;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -24,33 +27,131 @@ public ref struct SacPlaySetting
 {
 	public ReadOnlySpan<char> ActionName;
 	public Action? CustomCompleteEvent;
+
+	public SacPlaySetting(ReadOnlySpan<char> name, Action? customCompleteEvent = null) {
+		ActionName = name;
+		CustomCompleteEvent = customCompleteEvent;
+	}
+}
+
+public readonly ref struct DoNothingCtx(AnimationChannelEntry entry, MD_SpineActionController controller)
+{
+	public readonly AnimationChannelEntry Entry = entry;
+	public readonly MD_SpineActionController Controller = controller;
+}
+
+public class MD_DoNothing
+{
+	public virtual void Do(DoNothingCtx ctx) { }
+
+	public static readonly MD_DoNothing?[] Lookup = [
+		/* 00 */ new MD_DoNothing(),
+		/* 01 */ null, // DestroySelf
+		/* 02 */ null, // UnBindFromNode
+		/* 03 */ null, // NormalNodeOnAttacked
+		/* 04 */ new MD_AttackToNormalRun(),
+		/* 05 */ null, // UnActiveObject
+		/* 06 */ null, // OnNormalAttack
+		/* 07 */ null, // FrontRenderObject
+		/* 08 */ new MD_UnLockActionProtect(),
+		/* 09 */ null, // OnGainEnergyBottle
+		/* 10 */ new MD_OnJumpEnd(),
+	];
+
+	public static bool TryGetValue(int idx, out MD_DoNothing? nothing){
+		if(idx < 0 || idx >= Lookup.Length) {
+			nothing = null;
+			return false;
+		}
+
+		nothing = Lookup[idx];
+		return true;
+	}
+}
+
+public class MD_AttackToNormalRun : MD_DoNothing
+{
+	public override void Do(DoNothingCtx ctx) {
+		if (EngineCore.Level is not DashGameLevel dashLvl)
+			return;
+
+		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
+	}
+}
+
+public class MD_OnJumpEnd : MD_DoNothing
+{
+	public override void Do(DoNothingCtx ctx) {
+		if (EngineCore.Level is not DashGameLevel dashLvl)
+			return;
+
+		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
+	}
+}
+
+public class MD_UnLockActionProtect : MD_DoNothing
+{
+	public override void Do(DoNothingCtx ctx) {
+		ctx.Controller.CurrentProtectionLevel = 0;
+		ctx.Controller.CurrentActionName = null;
+	}
 }
 
 public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation)
 {
 	public readonly MD_SpineActionControllerData Data = data;
 	public readonly AnimationHandler Animation = animation;
+	readonly char[] currentActionName = new char[256];
+	public int CurrentProtectionLevel;
+	public ReadOnlySpan<char> CurrentActionName {
+		get => currentActionName.SliceNullTerminatedString();
+		set {
+			value.CopyTo(currentActionName);
+			currentActionName[value.Length] = '\0';
+		}
+	}
 
 	public void PlaySkeletonAction(SacPlaySetting settings, bool isOverride) {
 		var action = Data.Get(settings.ActionName);
+
 		if (action == null)
 			return;
 
+		if (CheckActionProtect(action))
+			return;
+
+		Animation.ClearAllAnimation();
+		CurrentActionName = action.Name;
+		CurrentProtectionLevel = action.ProtectLevel;
+
 		var del = settings.CustomCompleteEvent;
 		if (action.IsRandomSequence) {
-			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop, onPlaybackEnd: _ => del?.Invoke());
-		}
-		else {
-			Animation.ClearAllAnimation();
-			for (int i = 0; i < action.ActionIdx.Length; i++) {
-				bool end = i == action.ActionIdx.Length - 1;
-				bool loop = end && action.IsEndLoop;
-				if (i == 0)
-					Animation.SetAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? _ => del?.Invoke() : null);
-				else
-					Animation.AddAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? _ => del?.Invoke() : null);
+			var randIdx = Random.Shared.Next(0, action.ActionIdx.Length);
+			var randAnim = action.ActionIdx[randIdx];
+			var randEv = action.ActionEventIdx[randIdx];
+
+			var entry = isOverride ? Animation.SetAnimation(0, randAnim, action.IsEndLoop) : Animation.AddAnimation(0, randAnim, action.IsEndLoop);
+			if (entry != null && MD_DoNothing.TryGetValue(randEv, out MD_DoNothing? nothing)) {
+				entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
+				return;
 			}
 		}
+		else {
+			int lastIdx = action.ActionIdx.Length - 1;
+			for (int i = 0; i < action.ActionIdx.Length; i++) {
+				string animName = action.ActionIdx[i];
+				bool loop = action.IsEndLoop && i >= lastIdx;
+				AnimationChannelEntry? entry = isOverride ? Animation.SetAnimation(0, animName, loop) : Animation.AddAnimation(0, animName, loop);
+				if (entry != null && MD_DoNothing.TryGetValue(action.ActionEventIdx[i], out MD_DoNothing? nothing))
+					entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
+			}
+		}
+	}
+
+	private bool CheckActionProtect(MD_ActionData action) {
+		return Animation == null
+			|| (action.IsSelfProtect && CurrentActionName.Equals(action.Name, StringComparison.InvariantCulture))
+			|| CurrentProtectionLevel > action.ProtectLevel;
 	}
 }
 
