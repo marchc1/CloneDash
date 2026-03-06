@@ -651,7 +651,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if (CommandLine().ParmValue("-pretime", 5d) > 0)
+			if (!CommandLine().CheckParm("-mdbmsc", out var p))
 				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 
