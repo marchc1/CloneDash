@@ -31,7 +31,6 @@ public class ListPool<T>
 		if (list is not PoolableList<T> pooledList)
 			throw new InvalidCastException("Got a non-poolable list!");
 		pool.Free(pooledList);
-		pooledList.Clear();
 	}
 }
 
@@ -39,36 +38,38 @@ public class ObjectPool<T> where T : IPoolableObject, new()
 {
 	public static readonly ObjectPool<T> Shared = new();
 
-
-	readonly ConcurrentDictionary<T, bool> valueStates = [];
+	readonly ConcurrentBag<T> _free = new();
+	readonly ConcurrentDictionary<T, byte> _allocated = new(ReferenceEqualityComparer.Instance);
 
 	public T Alloc() {
-		foreach (var kvp in valueStates) {
-			if (kvp.Value == false) { // We found something free
-				valueStates[kvp.Key] = true;
-				kvp.Key.Init();
-				return kvp.Key;
-			}
+		T instance;
+		if (_free.TryTake(out instance)) {
+			instance.Init();
+			return instance;
 		}
 
-		// Make an new instance of the class
-		var instance = new T();
-		valueStates[instance] = true;
+		instance = new T();
+		_allocated[instance] = 0;
 		instance.Init();
 		return instance;
 	}
 
-	public bool IsMemoryPoolAllocated(T value) => valueStates.TryGetValue(value, out _);
+	public bool IsMemoryPoolAllocated(T value) => value != null && _allocated.ContainsKey(value);
+
 	public void Free(T value) {
 		if (value == null)
 			return;
-		if (!valueStates.TryGetValue(value, out bool state))
-			Debug.Assert(false, $"Passed an instance of {typeof(T).Name} to {nameof(Free)}(T value) that was not allocated by {nameof(Alloc)}()");
-		else if (state == false)
-			Debug.Assert(false, $"Attempted to free {typeof(T).Name} instance twice in ClassPool<T>, please verify");
-		else {
-			value.Reset();
-			valueStates[value] = false;
-		}
+
+		Debug.Assert(_allocated.ContainsKey(value), $"Passed an instance of {typeof(T).Name} to {nameof(Free)}(T value) that was not allocated by {nameof(Alloc)}()");
+
+		value.Reset();
+		_free.Add(value);
+	}
+
+	sealed class ReferenceEqualityComparer : IEqualityComparer<T>
+	{
+		public static readonly ReferenceEqualityComparer Instance = new();
+		public bool Equals(T x, T y) => ReferenceEquals(x, y);
+		public int GetHashCode(T obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
 	}
 }
