@@ -114,10 +114,14 @@ public class SettingsPanel : ScrollPanel
 
 		if (cv.GetMin(out double min)) slider.MinimumValue = min;
 		if (cv.GetMax(out double max)) slider.MaximumValue = max;
-
 		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
-		slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
+		if (cv.IsFlagSet(FCvar.AlwaysDefault)) {
+			slider.InputDisabled = true;
+			slider.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
+		}
+		else 
+			slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
 		return slider;
 	}
 	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
