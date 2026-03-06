@@ -78,10 +78,10 @@ public class CvarUtilities
 
 			bool save = var.IsFlagSet(FCvar.Saved);
 			bool alwaysDefault = var.IsFlagSet(FCvar.AlwaysDefault);
-			if (save && !alwaysDefault) {
+			if (save) {
 				ConVar convar = (ConVar)var;
-				if(allVars || strcmp(convar.GetString(), convar.GetDefault()) != 0)
-					writer.WriteLine($"{var.GetName()} \"{convar.GetString()}\"");
+				if(allVars || strcmp(convar.GetSaveString(), convar.GetDefault()) != 0)
+					writer.WriteLine($"{var.GetName()} \"{convar.GetSaveString()}\"");
 			}
 		}
 	}

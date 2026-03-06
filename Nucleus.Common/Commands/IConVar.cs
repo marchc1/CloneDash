@@ -11,6 +11,7 @@ public interface IConVar : IConCommandBase
 	double GetDouble();
 	int GetInt();
 	ReadOnlySpan<char> GetString();
+	ReadOnlySpan<char> GetSaveString();
 	bool GetBool();
 	void SetValue(ReadOnlySpan<char> str);
 	void SetValue(int i);

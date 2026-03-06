@@ -152,6 +152,7 @@ namespace Nucleus.Commands
 		public double GetDouble() => value.Double;
 		public int GetInt() => value.Int;
 		public ReadOnlySpan<char> GetString() => value.GetString();
+		public ReadOnlySpan<char> GetSaveString() => IsLocked() ? lastNonDefaultValue.GetString() : value.GetString();
 		public bool GetBool() => value.Int >= 1;
 		public void SetValue(ReadOnlySpan<char> str) {
 			ConVar var = Parent!;
