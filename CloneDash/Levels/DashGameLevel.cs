@@ -487,6 +487,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			case CharacterAnimationType.PressHitToGround:
 			case CharacterAnimationType.PressHitToAir:
 			case CharacterAnimationType.UpPressHurt:
+			case CharacterAnimationType.Run:
 				Character.PlayCharacterAnimation(type, PlayerController);
 				break;
 			default:
