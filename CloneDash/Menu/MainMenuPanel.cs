@@ -115,6 +115,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		BorderSize = 0;
 		DrawPanelBackground = false;
 
+		OnHoverTest += Element.Passthru;
+
 		Add(out back);
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
