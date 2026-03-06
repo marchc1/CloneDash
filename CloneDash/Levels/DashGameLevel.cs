@@ -76,16 +76,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	});
 
 	double speed = 1;
-	public double GetSpeed(){
+	public double GetSpeed() {
 		return speed;
 	}
 
-	public void SetSpeed(double speed){
+	public void SetSpeed(double speed) {
 		this.speed = speed;
 		audiosystem.SetSoundPitchControl(Music, (float)speed);
 	}
 
-	public void InitSpeedFromCvar(){
+	public void InitSpeedFromCvar() {
 		SetSpeed(musicspeed.GetDouble());
 	}
 
@@ -733,7 +733,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		if (InMashState) {
 			UpdateMashTextEffect();
-			if(CheckMashHit())
+			if (CheckMashHit())
 				MashingEntity.Hit(PathwaySide.Bottom, 0);
 		}
 
@@ -1701,7 +1701,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			return true;
 		}
 		else if (CanJump) {
-			PlayCharacterAnimation(CharacterAnimationType.Jump);
+			if (!Sustains.IsSustaining())
+				PlayCharacterAnimation(CharacterAnimationType.Jump);
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 
 			if (Sustains.IsSustaining())
@@ -1731,7 +1732,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat);
 		}
-		else {
+		else if (!Sustains.IsSustaining()) {
 			if (InAir)
 				PlayCharacterAnimation(CharacterAnimationType.DownHit);
 			else
