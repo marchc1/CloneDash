@@ -12,6 +12,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.UI;
 using System.Diagnostics;
+using Nucleus.Common.Types;
 
 namespace CloneDash.Menu;
 
@@ -59,17 +60,18 @@ public class CharacterSelectorScroller : Panel
 		InvalidateLayout();
 	}
 
-	protected override void Initialize() {
-		foreach (var character in CharacterMod.GetAvailableCharacters()) {
-			var characterInfo = CharacterMod.GetCharacterData(character);
-			Debug.Assert(characterInfo != null);
+	protected override void Initialize()
+	{
+		foreach (var characterIdx in CharacterMod.GetAvailableCharacters()) {
+			var character = CharacterMod.GetCharacterData(characterIdx);
+			Debug.Assert(character != null);
 
 			var lbl = Add<CharacterButton>();
-			lbl.Setup(characterInfo.GetCosplayName(), characterInfo.GetCharacterName(), characterInfo.GetThumbnailTexture());
+			lbl.Setup(character.GetCosplayName(), character.GetCharacterName(), character.GetThumbnailTexture());
 			lbl.BorderSize = 0;
 
-			lbl.MouseClickEvent += (_, _, _) => PerformPick(characterInfo);
-			chars.Add((lbl, characterInfo));
+			lbl.MouseClickEvent += (_, _, _) => PerformPick(character);
+			chars.Add((lbl, character));
 		}
 	}
 
@@ -129,9 +131,13 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Button characterSelectButton = null!;
 	CheckboxButton characterShowExt = null!;
 	CharacterSelectorScroller backPanel = null!;
-	CharacterPanel Character = null!;
+	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
 	protected override void Initialize() {
 		base.Initialize();
+
+		BackgroundColor = new Color(0, 0, 0, 0);
+		OnHoverTest += Passthru;
+		
 		selectedInfo = Add<Panel>();
 		selectedInfo.Dock = Dock.Bottom;
 		selectedInfo.DynamicallySized = true;
@@ -183,9 +189,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.Size = new(0, 0.1f);
 		backPanel.BorderSize = 0;
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
-
-		Add(out Character);
-		Character.Dock = Dock.Fill;
 
 		var currentCharacter = CharacterMod.GetCharacterData();
 		BackPanel_CharacterSelected(currentCharacter);
@@ -240,5 +243,11 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		characterSelectButton.Text = "SELECT";
 		characterShowExt.Text = "Show Other Models?";
+	}
+
+	public bool OnTryClose()
+	{
+		Character.SetCharacter(CharacterMod.GetCharacterData());
+		return true;
 	}
 }

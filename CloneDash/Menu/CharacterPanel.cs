@@ -82,8 +82,8 @@ public class CharacterPanel : Panel
 		}
 	} = false;
 
-	public bool SetCharacter(ICharacterDescriptor? character) {
-		if (character == Character)
+	public bool SetCharacter(ICharacterDescriptor? character, bool force = false) {
+		if (character?.GetUniqueID() == Character?.GetUniqueID() && !force)
 			return character != null;
 
 		if (character != null)
@@ -219,7 +219,7 @@ public class CharacterPanel : Panel
 			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
 			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
 			Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-			Vector2F textPos = new Vector2F(width / 2, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
+			Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			textSize += new Vector2F(16);
 
 			ExpressionLabel.Position = textPos;
@@ -237,7 +237,7 @@ public class CharacterPanel : Panel
 	}
 
 	public void Reset() {
-		audiosystem.RestartSound(Music);
+		/*audiosystem.RestartSound(Music);
 		Model?.SetToSetupPose();
 		Anims?.ClearAllAnimation();
 		ApplyExpression = null;
@@ -248,7 +248,9 @@ public class CharacterPanel : Panel
 
 		var standby = Character.GetMainShowStandby();
 		if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-		Anims.AddAnimation(0, standby, true);
+		Anims.AddAnimation(0, standby, true);*/
+
+		SetCharacter(Character, true);
 	}
 
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {

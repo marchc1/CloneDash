@@ -91,6 +91,7 @@ public class MainMenuLevel : Level
 	});
 
 	public Stack<Element> ActiveElements = [];
+	public CharacterPanel Character = null!;
 
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
@@ -159,6 +160,17 @@ public class MainMenuLevel : Level
 		test2.TextSize = 30;
 		test2.AutoSize = true;
 		test2.DockMargin = RectangleF.TLRB(4);
+		
+		var charPanel = UI.Add<Panel>();
+		charPanel.BorderSize = 0;
+		charPanel.DynamicallySized = true;
+		charPanel.Size = new(1f, 1f);
+		
+		Character = charPanel.Add<CharacterPanel>();
+		Character.DynamicallySized = true;
+		Character.Origin = Anchor.TopCenter;
+		Character.Size = new(1f);
+		Character.LinkToConVar = true;
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new MainMenuLevel()));
 
@@ -426,6 +438,36 @@ public class MainMenuLevel : Level
 
 	public override void Think(FrameState frameState) {
 		base.Think(frameState);
+
+		var active = ActiveElements.Peek();
+		var wasHidden = !Character.Visible;
+
+		if (active is not (CharacterSelector or MainMenuPanel))
+		{
+			Character.Visible = false;
+			Character.PlaysMusic = false;
+			return;
+		}
+
+		if (wasHidden)
+		{
+			Character.Visible = true;
+			Character.PlaysMusic = true;
+			Character.Reset();
+		}
+
+		var center = ActiveElements.Peek() is CharacterSelector;
+		var target = FrameState.WindowWidth * (center ? 0.5f : 1 / 3f);
+
+		float x;
+
+		if (Math.Abs(target - Character.Position.X) < 0.1)
+			x = target;
+		else
+			x = (float)double.Lerp(target, Character.Position.X, Math.Exp(-10f * CurtimeDelta));
+
+		Character.Position = new(x, 0);
+		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
