@@ -700,9 +700,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
 	}
 
+
+	// This helps with doubles/sustains played in the same frame...
+	// probably a better way to handle it, but this works
+	readonly bool[] PlayedSceneSoundThisFrame = new bool[(int)SceneSound.Count];
+	private void ResetSceneSoundsPlayedThisFrame(){
+		for (int i = 0; i < PlayedSceneSoundThisFrame.Length; i++) 
+			PlayedSceneSoundThisFrame[i] = false;
+	}
 	public void PlaySceneSound(SceneSound sound, int hits = 0) {
 		if (IsSeeking)
 			return;
+		if (PlayedSceneSoundThisFrame[(int)sound])
+			return;
+		PlayedSceneSoundThisFrame[(int)sound] = true;
 		Scene.PlaySound(sound, hits);
 	}
 
@@ -712,6 +723,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	InputState inputState = new();
 	public override void PreThink(ref FrameState frameState) {
 		Ticks++;
+		ResetSceneSoundsPlayedThisFrame();
 
 		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Sheet != null) {
 			Stats.UploadScore(Score);

@@ -25,4 +25,6 @@ public enum SceneSound
 	GotScore,
 	HitBossFast,
 	HitBossSlow,
+
+	Count
 }
