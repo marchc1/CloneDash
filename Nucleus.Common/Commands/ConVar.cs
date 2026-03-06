@@ -47,7 +47,7 @@ namespace Nucleus.Commands
 				lastNonDefaultValue = value;
 				lastNonDefaultValue.Chars = lastNonDefaultValue.Chars?.ToArray(); // Copy off the char array
 
-				SetValue(DefaultValue);
+				Parent!.InternalSetValue(DefaultValue);
 			}
 			else if (changedToNotDefault) {
 				value = lastNonDefaultValue;
