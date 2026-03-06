@@ -187,6 +187,11 @@ namespace Nucleus.Engine
 		internal bool __isValid = false;
 		public bool IsValid() => __isValid;
 
+		/// <summary>
+		/// When true, this will block some <see cref="ConVar"/>'s from being modified by the user.
+		/// </summary>
+		public virtual bool IsInGame => false;
+
 		public Level() {
 			Timers = new(this);
 		}

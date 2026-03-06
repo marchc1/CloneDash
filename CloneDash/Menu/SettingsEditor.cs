@@ -118,7 +118,7 @@ public class SettingsPanel : ScrollPanel
 		slider.Value = cv.GetDouble();
 		if (cv.IsFlagSet(FCvar.AlwaysDefault)) {
 			slider.InputDisabled = true;
-			slider.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
+			slider.Parent.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
 		}
 		else 
 			slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);

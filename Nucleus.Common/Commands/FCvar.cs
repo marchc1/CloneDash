@@ -10,6 +10,8 @@
 		Saved = 1 << 7,
 		/// <summary> The convar may contain invalid printable characters, and therefore must never be printed as a string </summary>
 		NeverAsString = 1 << 12,
+		/// <summary> The convar can only be changed when the current Level's IsInGame property returns false.</summary>
+		NotInGame = 1 << 22,
 		/// <summary> The convar will only be active when running in a developers environment. </summary>
 		DevelopmentOnly = 1 << 60,
 		/// <summary> This flag is applied at runtime to force a convar to always report its default value. 

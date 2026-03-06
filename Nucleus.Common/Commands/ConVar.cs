@@ -18,7 +18,7 @@ namespace Nucleus.Commands
 		private double? minimum = null;
 		private double? maximum = null;
 		private CVValue value = new();
-		private CVValue lastNonDefaultValue = new();
+		private CVValue lastNonDefaultValue = new(); // hack for AlwaysDefault to allow the flag to revert
 
 		public ConVar? Parent;
 
@@ -136,7 +136,7 @@ namespace Nucleus.Commands
 			if (len == -1)
 				len = val.Length;
 
-			if (len > value.Chars?.Length) 
+			if (len > value.Chars?.Length)
 				value.Chars = new char[len];
 
 			val[..len].CopyTo(value.Chars);
@@ -155,19 +155,23 @@ namespace Nucleus.Commands
 		public bool GetBool() => value.Int >= 1;
 		public void SetValue(ReadOnlySpan<char> str) {
 			ConVar var = Parent!;
-			var.InternalSetValue(str);
+			if (!var.IsLocked())
+				var.InternalSetValue(str);
 		}
 		public void SetValue(int i) {
 			ConVar var = Parent!;
-			var.InternalSetIntValue(i);
+			if (!var.IsLocked())
+				var.InternalSetIntValue(i);
 		}
 		public void SetValue(double d) {
 			ConVar var = Parent!;
-			var.InternalSetDoubleValue(d);
+			if (!var.IsLocked())
+				var.InternalSetDoubleValue(d);
 		}
 		public void SetValue(bool b) {
 			ConVar var = Parent!;
-			var.InternalSetIntValue(b ? 1 : 0);
+			if (!var.IsLocked())
+				var.InternalSetIntValue(b ? 1 : 0);
 		}
 
 		public ReadOnlySpan<char> GetDefault() => DefaultValue;
