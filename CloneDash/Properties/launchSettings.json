@@ -2,7 +2,7 @@
   "profiles": {
     "CloneDash": {
       "commandName": "Project",
-      "commandLineArgs": "+developer 1",
+      "commandLineArgs": "+developer 1 -pretime 0",
       "nativeDebugging": false
     }
   }

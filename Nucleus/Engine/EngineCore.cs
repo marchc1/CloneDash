@@ -1117,17 +1117,19 @@ public static class EngineCore
 				Graphics2D.SetDrawColor(255, 255, 255);
 
 				// don't feel like making it static right now
-				var lines = new string[messages.Length + 3];
+				var lines = new string[messages.Length + 5];
 				if (problematic) {
 					lines[0] = "An interrupt has occured due to an issue, and the application has temporarily halted.";
 				}
 				else {
 					lines[0] = "A debugging interrupt has occured and the application has temporarily halted.";
 				}
-				for (int i = 0; i < messages.Length; i++) lines[i + 1] = messages[i] ?? "<NULL STRING>";
+				lines[1] = "";
+				for (int i = 0; i < messages.Length; i++) lines[i + 2] = messages[i] ?? "<NULL STRING>";
 
-				lines[lines.Length - 2] = "";
-				lines[lines.Length - 1] = "Press any key to continue.";
+				lines[^3] = "";
+				lines[^2] = "";
+				lines[^1] = "Press any key to continue.";
 
 				var box = new System.Numerics.Vector2(0, PANIC_SIZE * lines.Length);
 				foreach (var languageLine in lines) {
