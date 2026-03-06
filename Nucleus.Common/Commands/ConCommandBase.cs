@@ -40,8 +40,20 @@ public abstract class ConCommandBase : IConCommandBase
 	}
 
 	public virtual bool IsFlagSet(FCvar flag) => (flag & Flags) == flag;
-	public virtual void AddFlags(FCvar flags) => Flags = Flags | flags;
-	public virtual void RemoveFlags(FCvar flags) => Flags = Flags & ~flags;
+
+	protected virtual void CheckFlagChange(FCvar prev, FCvar now) {}
+
+	public virtual void AddFlags(FCvar flags){
+		FCvar prev = Flags;
+		Flags = Flags | flags;
+		CheckFlagChange(prev, Flags);
+	}
+
+	public virtual void RemoveFlags(FCvar flags){
+		FCvar prev = Flags;
+		Flags = Flags & ~flags;
+		CheckFlagChange(prev, Flags);
+	}
 
 
 

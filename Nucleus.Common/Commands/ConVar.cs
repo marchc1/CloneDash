@@ -18,6 +18,7 @@ namespace Nucleus.Commands
 		private double? minimum = null;
 		private double? maximum = null;
 		private CVValue value = new();
+		private CVValue lastNonDefaultValue = new();
 
 		public ConVar? Parent;
 
@@ -34,6 +35,27 @@ namespace Nucleus.Commands
 
 			return false;
 		}
+
+		protected override void CheckFlagChange(FCvar prev, FCvar now) {
+			var wasDefault = (prev & FCvar.AlwaysDefault) == FCvar.AlwaysDefault;
+			var isDefault = (now & FCvar.AlwaysDefault) == FCvar.AlwaysDefault;
+
+			bool changedToDefault = !wasDefault && isDefault;
+			bool changedToNotDefault = wasDefault && !isDefault;
+
+			if (changedToDefault) {
+				lastNonDefaultValue = value;
+				lastNonDefaultValue.Chars = lastNonDefaultValue.Chars?.ToArray(); // Copy off the char array
+
+				SetValue(DefaultValue);
+			}
+			else if (changedToNotDefault) {
+				value = lastNonDefaultValue;
+				value.Chars = value.Chars?.ToArray(); // Copy off the char array
+			}
+		}
+
+		public bool IsLocked() => (Flags & FCvar.AlwaysDefault) != 0;
 
 		private void InternalSetDoubleValue(double doubleValue) {
 			if (doubleValue == this.value.Double)

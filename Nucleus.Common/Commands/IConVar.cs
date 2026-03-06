@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nucleus.Commands;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -15,4 +16,10 @@ public interface IConVar : IConCommandBase
 	void SetValue(int i);
 	void SetValue(double d);
 	void SetValue(bool b);
+
+	bool IsFlagSet(FCvar flag);
+	void AddFlags(FCvar flag);
+	void RemoveFlags(FCvar flag);
+
+	bool IsLocked();
 }
