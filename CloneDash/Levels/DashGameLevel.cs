@@ -203,6 +203,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		__whenHjump = -2000000000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
+		lastIFrameGivenTime = -10000d;
 
 		if (time > 0) {
 			foreach (var ev in Events) {
