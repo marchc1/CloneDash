@@ -28,6 +28,19 @@ public class CvarUtilities
 			return true;
 		}
 
+		if (var.IsFlagSet(FCvar.AlwaysDefault)){
+			Logs.Warn($"Can't change {var.GetName()} while locked to its default value");
+			return true;
+		}
+
+		if (var.IsFlagSet(FCvar.NotInGame)) {
+			var level = EngineCore.Level;
+			if (level != null && level.IsInGame) {
+				Logs.Warn($"Can't change {var.GetName()} mid-game!");
+				return true;
+			}
+		}
+
 		Span<char> arg = stackalloc char[1024];
 
 		ReadOnlySpan<char> argS = args.ArgS();

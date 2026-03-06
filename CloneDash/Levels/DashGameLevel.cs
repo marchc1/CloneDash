@@ -141,6 +141,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public static ConVar profilegameload = new(nameof(profilegameload), "0", FCvar.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 
+	public override bool IsInGame => true;
+
 	public static DashGameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {

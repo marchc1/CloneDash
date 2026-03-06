@@ -295,8 +295,9 @@ namespace Nucleus.Commands
 		public static void PrintFlags(ConCommandBase var) {
 			printCtx ctx = new(stackalloc char[384]);
 
-			if (var.IsFlagSet(FCvar.Saved))
-				ctx.Print(" saved");
+			if (var.IsFlagSet(FCvar.Saved)) ctx.Print(" saved");
+			if (var.IsFlagSet(FCvar.NotInGame)) ctx.Print(" notingame");
+			if (var.IsFlagSet(FCvar.AlwaysDefault)) ctx.Print(" alwaysdefault");
 
 			if (ctx.IsEmpty)
 				return;
