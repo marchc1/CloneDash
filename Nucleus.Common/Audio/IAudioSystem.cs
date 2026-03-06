@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -13,8 +14,10 @@ public struct AudioPlaybackHandle : IValidatable
 	public static readonly AudioPlaybackHandle Null = default;
 
 	public IAudioSystem Audio;
-	public ulong Channel;
-	public ulong Generation;
+	public GenerationalHandle Handle;
+
+	public readonly ulong Channel => Handle.Handle;
+	public readonly ulong Generation => Handle.Generation;
 
 	public readonly bool IsValid() {
 		if (Audio == null) return false;
@@ -129,7 +132,7 @@ public interface IAudioSystem
 	void Update();
 
 	/// <summary>
-	/// The current audio playback generation. Each time a sound is destroyed, this variable is incremented, starting at 1.
+	/// The current audio playback generation. Each time a sound is created, this variable is incremented, starting at 1.
 	/// A handle contains its channel and its generation. To validate a playback handle is valid, the system will check if the
 	/// channel is active, and if the channels generation matches the generation of the handle. If this is not the case, the
 	/// playback handle is not valid. tl;dr a counter of how many audio playbacks have been destroyed for the lifetime of the

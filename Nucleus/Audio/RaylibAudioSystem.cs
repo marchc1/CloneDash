@@ -1,6 +1,8 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Audio;
+using Nucleus.Common.Util;
 using Raylib_cs;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -228,9 +230,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 {
 	const int MAX_CHANNELS = 256;
 
-	ulong generation = 0;
-	ulong NextGeneration() => Interlocked.Increment(ref generation);
-
+	readonly GenerationalAllocator allocator = new();
 	readonly PlaybackChannel[] channels = new PlaybackChannel[MAX_CHANNELS];
 	readonly Dictionary<string, BaseAudioClip> clipsByName = new();
 	readonly HashSet<BaseAudioClip> allClips = [];
@@ -276,7 +276,6 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		}
 
 		ch.Reset();
-		NextGeneration();
 	}
 
 	void ApplySettings(PlaybackChannel ch) {
@@ -376,8 +375,8 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (idx < 0) return AudioPlaybackHandle.Null;
 
 		var ch = channels[idx];
-		var gen = NextGeneration();
-		ch.Generation = gen;
+		var gen = allocator.Alloc((ulong)(idx + 1));
+		ch.Generation = gen.Generation;
 		ch.Clip = baseClip;
 		ch.Active = true;
 		ch.Paused = false;
@@ -402,8 +401,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 		return new AudioPlaybackHandle {
 			Audio = this,
-			Channel = (ulong)(idx + 1),
-			Generation = gen
+			Handle = gen
 		};
 	}
 
@@ -516,7 +514,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 			return (double)((double)ch.SoundAlias.FrameCount / ch.SoundAlias.Stream.SampleRate);
 	}
 
-	public ulong GetPlaybackGeneration() => generation;
+	public ulong GetPlaybackGeneration() => allocator.GetGeneration();
 
 	public ref readonly AudioPlaybackSettings GetPlaybackSettings(in AudioPlaybackHandle handle) {
 		var ch = GetChannel(in handle);
