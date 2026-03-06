@@ -491,6 +491,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			case CharacterAnimationType.PressHitToAir:
 			case CharacterAnimationType.UpPressHurt:
 			case CharacterAnimationType.Run:
+			case CharacterAnimationType.Jump:
 				Character.PlayCharacterAnimation(type, PlayerController);
 				break;
 			default:
@@ -1635,14 +1636,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		// todo
 		if (isSustainingNow) {
-			if (InAir || Sustains.IsSustaining(PathwaySide.Top) && pathway == PathwaySide.Bottom)
-				PlayCharacterAnimation(CharacterAnimationType.DownPress);
-			else if (!InAir || Sustains.IsSustaining(PathwaySide.Bottom))
-				PlayCharacterAnimation(CharacterAnimationType.UpPress);
-			else
-				PlayCharacterAnimation(CharacterAnimationType.Press);
+			// TODO: Evaluate this...
+			// if (InAir || Sustains.IsSustaining(PathwaySide.Top) && pathway == PathwaySide.Bottom)
+			// 	PlayCharacterAnimation(CharacterAnimationType.DownPress);
+			// else if (!InAir || Sustains.IsSustaining(PathwaySide.Bottom))
+			// 	PlayCharacterAnimation(CharacterAnimationType.UpPress);
+			// else
+
+			PlayCharacterAnimation(CharacterAnimationType.Press);
 		}
-		else {
+		else if(!nowInsustain) {
 			if (pathway == PathwaySide.Top)
 				PlayCharacterAnimation(CharacterAnimationType.UpPressEnd);
 			else
