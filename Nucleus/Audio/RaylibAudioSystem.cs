@@ -84,12 +84,18 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 
 	public byte* Data => data;
 	public nuint Length => length;
-	public Sound Sound => sound;
+	public Sound Sound {
+		get {
+			if (!Raylib.IsSoundReady(sound)) 
+				sound = RaylibAudioHelpers.AllocSound(data, length);
+			
+			return sound;
+		}
+	}
 
 	public BaseAudioClip(ReadOnlySpan<char> identifier, AudioClipSource source, Stream stream) {
 		length = (nuint)stream.Length;
 		data = RaylibAudioHelpers.AllocCopyStream(stream);
-		sound = RaylibAudioHelpers.AllocSound(data, length);
 		clipSource = source;
 		clipIdentifier = new(identifier.SliceNullTerminatedString());
 	}
@@ -102,10 +108,6 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public void SetData(byte* ptr, nuint len) {
 		data = ptr;
 		length = len;
-	}
-
-	public void SetSound(Sound snd) {
-		sound = snd;
 	}
 
 	public bool IsVolumeDirty => volumeDirty;
@@ -138,7 +140,7 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public ReadOnlySpan<char> GetName() => clipIdentifier;
 	public AudioClipSource GetSource() => clipSource;
 
-	public bool IsValid() => !destroyed && Raylib.IsSoundReady(sound);
+	public bool IsValid() => !destroyed && data != null && length != 0;
 
 	public void Destroy() {
 		if (destroyed) return;
