@@ -20,7 +20,8 @@ public class MD_ActionData
 	public int[] ActionEventIdx = [];
 }
 
-public ref struct SacPlaySetting {
+public ref struct SacPlaySetting
+{
 	public ReadOnlySpan<char> ActionName;
 	public Action? CustomCompleteEvent;
 }
@@ -35,8 +36,9 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 		if (action == null)
 			return;
 
+		var del = settings.CustomCompleteEvent;
 		if (action.IsRandomSequence) {
-			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop, onPlaybackEnd: settings.CustomCompleteEvent);
+			Animation.SetAnimation(0, action.ActionIdx[Random.Shared.Next(0, action.ActionIdx.Length)], action.IsEndLoop, onPlaybackEnd: _ => del?.Invoke());
 		}
 		else {
 			Animation.ClearAllAnimation();
@@ -44,9 +46,9 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 				bool end = i == action.ActionIdx.Length - 1;
 				bool loop = end && action.IsEndLoop;
 				if (i == 0)
-					Animation.SetAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? settings.CustomCompleteEvent : null);
+					Animation.SetAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? _ => del?.Invoke() : null);
 				else
-					Animation.AddAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? settings.CustomCompleteEvent : null);
+					Animation.AddAnimation(0, action.ActionIdx[i], loop, onPlaybackEnd: end ? _ => del?.Invoke() : null);
 			}
 		}
 	}

@@ -1420,8 +1420,8 @@ public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 public class AnimationChannelEntry
 {
 	public Animation Animation;
-	public Action? OnPlaybackStart;
-	public Action? OnPlaybackEnd;
+	public Action<AnimationChannelEntry>? OnPlaybackStart;
+	public Action<AnimationChannelEntry>? OnPlaybackEnd;
 	public bool Looping;
 	public double LoopDuration = -1;
 
@@ -1448,10 +1448,10 @@ public class AnimationChannel
 
 	public void EnqueueNext() {
 		// Enqueue the next animation
-		CurrentEntry?.OnPlaybackEnd?.Invoke();
+		CurrentEntry?.OnPlaybackEnd?.Invoke(CurrentEntry);
 		if (QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 			CurrentEntry = newAnim;
-			newAnim.OnPlaybackStart?.Invoke();
+			newAnim.OnPlaybackStart?.Invoke(newAnim);
 			ResetTime();
 		}
 		else {
@@ -1521,42 +1521,46 @@ public class AnimationHandler
 		}
 	}
 
-	public void AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action? onPlaybackStart = null, Action? onPlaybackEnd = null) {
+	public AnimationChannelEntry? AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action<AnimationChannelEntry>? onPlaybackStart = null, Action<AnimationChannelEntry>? onPlaybackEnd = null) {
 		if (animation == null)
-			return;
+			return null;
 
 		var channelObj = Channels[channel];
 
 		var anim = model?.FindAnimation(animation);
-		if (anim == null) return;
+		if (anim == null) return null;
 
-		channelObj.QueuedEntries.Enqueue(new() {
+		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
 			LoopDuration = loopDuration,
 			OnPlaybackStart = onPlaybackStart,
 			OnPlaybackEnd = onPlaybackEnd
-		});
+		};
+		channelObj.QueuedEntries.Enqueue(entry);
+		return entry;
 	}
 
-	public void SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action? onPlaybackStart = null, Action? onPlaybackEnd = null) {
+	public AnimationChannelEntry? SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1, Action<AnimationChannelEntry>? onPlaybackStart = null, Action<AnimationChannelEntry>? onPlaybackEnd = null) {
 		if (animation == null)
-			return;
+			return null;
 
 		var channelObj = Channels[channel];
 		StopAnimation(channel);
 
 		var anim = model?.FindAnimation(animation);
-		if (anim == null) return;
+		if (anim == null) return null;
 
 		channelObj.QueuedEntries.Clear();
-		channelObj.QueuedEntries.Enqueue(new() {
+		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
 			LoopDuration = loopDuration,
 			OnPlaybackStart = onPlaybackStart,
 			OnPlaybackEnd = onPlaybackEnd
-		});
+		};
+		channelObj.QueuedEntries.Enqueue(entry);
+		return entry;
 	}
 
 	public void StopAllAnimation() {
