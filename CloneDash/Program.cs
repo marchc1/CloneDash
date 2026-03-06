@@ -5,9 +5,11 @@
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Game;
+using CloneDash.Settings;
 using CloneDash.Systems;
 
 using Nucleus;
+using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
@@ -130,6 +132,14 @@ public class GameDLL : IGameDLL
 		}
 
 		DoCmdLineOps(CommandLine(), true);
+		if(CommandLine().CheckParm("-mdbmsc", out _)){
+			// Mark a few convars as unchangable for this programs lifetime
+			AudioSettings.snd_musicvolume.AddFlags(FCvar.AlwaysDefault);
+			AudioSettings.snd_hitvolume.AddFlags(FCvar.AlwaysDefault);
+			AudioSettings.snd_voicevolume.AddFlags(FCvar.AlwaysDefault);
+			InputSettings.offset_judgement.AddFlags(FCvar.AlwaysDefault);
+			InputSettings.offset_visual.AddFlags(FCvar.AlwaysDefault);
+		}
 
 		Interlude.Spin();
 		Interlude.End();
