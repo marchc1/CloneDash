@@ -18,6 +18,7 @@ namespace CloneDash.Data
 
 		public ChartInfo? Info { get; set; }
 
+		public string Id { get; set; } = "";
 		public string Name { get; set; } = "";
 		public string Author { get; set; } = "";
 
