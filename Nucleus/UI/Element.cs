@@ -53,6 +53,7 @@ namespace Nucleus.UI
 
 		private Vector2F _position = new(0, 0);
 		public float BorderSize { get; set; } = 2;
+		public float Roundness { get; set; } = 0;
 		public Vector2F Position {
 			get { return _position; }
 			set {
@@ -1504,17 +1505,31 @@ namespace Nucleus.UI
 
 		public bool ShouldDrawImage { get; set; } = true;
 
-		public static void PaintBackground(Element e, float width, float height, Color back, Color fore, float borderSize) {
+		public static void PaintBackground(Element e, float width, float height, Color back, Color fore, float borderSize, float roundness) {
 			Graphics2D.SetDrawColor(back);
-			Graphics2D.DrawRectangle(0, 0, width, height);
-			if (e.ShouldDrawImage)
-				e.ImageDrawing();
-			Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
+
+			if (roundness <= 0) {
+				Graphics2D.DrawRectangle(0, 0, width, height);
+				if (e.ShouldDrawImage)
+					e.ImageDrawing();
+				Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
+				Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
+			}
+			else {
+				// Prevent roundness from exceeding bounds of the element
+				roundness = Math.Clamp(roundness, 0, width / 2);
+				roundness = Math.Clamp(roundness, 0, height / 2);
+				int segments = (int)Math.Clamp(roundness * 1.5f, 0, 12);
+				Graphics2D.DrawRectangleRounded(0, 0, width, height, roundness, segments);
+				if (e.ShouldDrawImage)
+					e.ImageDrawing();
+				Graphics2D.SetDrawColor(e.KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
+				Graphics2D.DrawRectangleRoundedOutline(0, 0, width, height, roundness, borderSize, segments);
+			}
 		}
 
 		public static void PaintBackground(Element e, float width, float height)
-			=> PaintBackground(e, width, height, e.BackgroundColor, e.ForegroundColor, e.BorderSize);
+			=> PaintBackground(e, width, height, e.BackgroundColor, e.ForegroundColor, e.BorderSize, e.Roundness);
 
 		public Vector2F GetMousePos() {
 			return EngineCore.MousePos - this.GetGlobalPosition();
