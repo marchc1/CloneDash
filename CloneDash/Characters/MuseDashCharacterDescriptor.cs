@@ -141,13 +141,9 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		if (exp == -1)
 			return null;
 
-		var audioI = configData.Expressions[exp].AudioNames.FindIndex(x => x == voiceline);
-		if (audioI == -1)
-			return null;
-
 		return new MuseDashCharacterExpression(
 			configData.Expressions[exp],
-			configData.Localization["english"].Expressions[exp][audioI], // probably not right
+			configData.Localization["english"].Expressions[exp][0], // probably not right
 			voiceline
 		);
 	}
