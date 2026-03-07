@@ -275,7 +275,10 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		string? name = convertAnimationTypeToName(animationType);
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
-			CustomCompleteEvent = () => playCharacterAnimation(CharacterAnimationType.Run, handler)
+			CustomCompleteEvent = (a) => {
+				if (a.IsEndLoop)
+					playCharacterAnimation(CharacterAnimationType.Run, handler);
+			}
 		}, false);
 	}
 

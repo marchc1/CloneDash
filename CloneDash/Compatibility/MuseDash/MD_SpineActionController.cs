@@ -26,9 +26,9 @@ public class MD_ActionData
 public ref struct SacPlaySetting
 {
 	public ReadOnlySpan<char> ActionName;
-	public Action? CustomCompleteEvent;
+	public Action<MD_ActionData>? CustomCompleteEvent;
 
-	public SacPlaySetting(ReadOnlySpan<char> name, Action? customCompleteEvent = null) {
+	public SacPlaySetting(ReadOnlySpan<char> name, Action<MD_ActionData>? customCompleteEvent = null) {
 		ActionName = name;
 		CustomCompleteEvent = customCompleteEvent;
 	}
@@ -137,7 +137,7 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 			}
 
 			if (entry != null && del != null)
-				entry.OnPlaybackEnd += _ => del();
+				entry.OnPlaybackEnd += _ => del(action);
 		}
 		else {
 			int lastIdx = action.ActionIdx.Length - 1;
@@ -149,7 +149,7 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 					entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
 
 				if (i >= lastIdx && entry != null && del != null)
-					entry.OnPlaybackEnd += _ => del();
+					entry.OnPlaybackEnd += _ => del(action);
 			}
 		}
 	}
