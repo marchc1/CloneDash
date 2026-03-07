@@ -22,7 +22,7 @@ namespace CloneDash.Levels
 		StatisticsData stats;
 		ICharacterDescriptor character;
 		ModelInstance model;
-		AnimationHandler anims;
+		readonly AnimationHandler anims = new();
 		public override void Initialize(params object[] args) {
 #nullable disable
 			sheet = args[0] as ChartSheet;
@@ -37,7 +37,7 @@ namespace CloneDash.Levels
 			this.character = character;
 
 			model = character.GetVictoryModel(this).Instantiate();
-			anims = new(model.Data);
+			anims.SetModel(model);
 			anims.SetAnimation(0, character.GetVictoryStandby(), true);
 
 			stats.Compute();

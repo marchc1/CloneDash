@@ -105,6 +105,8 @@ public static class EngineCore
 		public TimeSpan LastTimeToRender;
 	}
 
+	public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => audiosystem.SetMasterVolume(cv.GetFloat()));
+
 	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
 	static readonly OSWindowCtx StartCache = new();
 	static readonly OSWindowCtx DUMMY = new();
@@ -311,8 +313,7 @@ public static class EngineCore
 			}
 		}
 
-
-		Raylib.InitAudioDevice();
+		audiosystem.Initialize();
 		// Initialize SDL. This has to be done on the main thread.
 		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
@@ -586,6 +587,8 @@ public static class EngineCore
 		Graphics2D.FontManager.CleanUpFontsMarkedForDeath();
 		MainThread.Run(ThreadExecutionTime.BeforeFrame);
 		Cbuf.Execute();
+
+		audiosystem.Update();
 
 		windowsThisFrame.Clear();
 		foreach (var window in WindowContexts)
@@ -1114,17 +1117,19 @@ public static class EngineCore
 				Graphics2D.SetDrawColor(255, 255, 255);
 
 				// don't feel like making it static right now
-				var lines = new string[messages.Length + 3];
+				var lines = new string[messages.Length + 5];
 				if (problematic) {
 					lines[0] = "An interrupt has occured due to an issue, and the application has temporarily halted.";
 				}
 				else {
 					lines[0] = "A debugging interrupt has occured and the application has temporarily halted.";
 				}
-				for (int i = 0; i < messages.Length; i++) lines[i + 1] = messages[i] ?? "<NULL STRING>";
+				lines[1] = "";
+				for (int i = 0; i < messages.Length; i++) lines[i + 2] = messages[i] ?? "<NULL STRING>";
 
-				lines[lines.Length - 2] = "";
-				lines[lines.Length - 1] = "Press any key to continue.";
+				lines[^3] = "";
+				lines[^2] = "";
+				lines[^1] = "Press any key to continue.";
 
 				var box = new System.Numerics.Vector2(0, PANIC_SIZE * lines.Length);
 				foreach (var languageLine in lines) {
@@ -1169,12 +1174,5 @@ public static class EngineCore
 	public static void SetWindowPosition(Vector2F pos) => Window.Position = pos;
 	public static void SetWindowTitle(string title) => Window.Title = title;
 
-	public static void StopSound() {
-		var lvl = Level;
-
-		if (lvl == null) return;
-		if (lvl.Sounds == null) return;
-
-		lvl.Sounds.Dispose();
-	}
+	public static void StopSound() => audiosystem.StopAllSounds();
 }

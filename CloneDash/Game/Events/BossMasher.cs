@@ -12,7 +12,7 @@ public class BossMasher(DashGameLevel game, int type) : DashEvent(game)
 		base.OnBuild();
 
 		var boss = Game.Boss;
-		var animation = Game.Scene.GetBossAnimation(BossAnimationType.MultiAttack, out var time);
+		var time = Game.Scene.GetBossAnimationTime(BossAnimationType.MultiAttack, boss.Animations);
 
 		Game.LoadEntity(new() {
 			Type = EntityType.Masher,

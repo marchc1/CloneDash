@@ -42,7 +42,6 @@ public class SceneEditorLevel() : DashGameLevel(default)
 		bgrEdit.DockMargin = RectangleF.TLRB(4);
 
 		bgrEditRecompile.MouseReleaseEvent += (_, _, _) => {
-			Lua.DoString(bgrEdit.GetText());
 			Scene.Refresh(this);
 		};
 
@@ -56,8 +55,6 @@ public class SceneEditorLevel() : DashGameLevel(default)
 
 		var options = menubar.AddButton("Scene");
 		// TODO: need engine interface. options.AddButton("Refresh Scene", null, () => ConCommand.Execute(sceneedit));
-		options.AddButton("PlayScale = .6", null, () => PlayScale = .6f);
-		options.AddButton("PlayScale = 1.2", null, () => PlayScale = 1.2f);
 
 		menubar.AddButton("Back to Menu", action: () => EngineCore.LoadLevel(new MainMenuLevel()));
 

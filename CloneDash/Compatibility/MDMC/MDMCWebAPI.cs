@@ -2,6 +2,7 @@
 
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;
@@ -111,7 +112,7 @@ public struct MDMCChart
 		else {
 			using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
 				var tex2d = Raylib.LoadTextureFromImage(img);
-				Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+				Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
 				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 				return tex;
 			}
@@ -132,7 +133,7 @@ public struct MDMCChart
 				Raylib.ImageRef img = new(".png", response.Content.ReadAsStream());
 				MainThread.RunASAP(() => {
 					var tex2d = Raylib.LoadTextureFromImage(img);
-					Raylib.SetTextureFilter(tex2d, TextureFilter.TEXTURE_FILTER_BILINEAR);
+					Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
 					Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
 					callback?.Invoke(tex);
 					img.Dispose();
@@ -142,7 +143,7 @@ public struct MDMCChart
 		});
 	}
 
-	public MusicTrack? GetMusicTrack(bool demo) {
+	public IAudioClip? GetMusicTrack(bool demo) {
 		string oggURL = demo ? DemoOGGURL : OGGURL;
 		string mp3URL = demo ? DemoMP3URL : MP3URL;
 		var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(oggURL));
@@ -158,12 +159,12 @@ public struct MDMCChart
 		if (!response.IsSuccessStatusCode)
 			return null;
 		else {
-			MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream());
+			IAudioClip? track = audiosystem.CreateStreamAudioClip(response.Content.ReadAsStream());
 			return track;
 		}
 	}
 
-	public void GetMusicTrackAsync(Action<MusicTrack?> callback, bool demo) {
+	public void GetMusicTrackAsync(Action<IAudioClip?> callback, bool demo) {
 		string oggURL = demo ? DemoOGGURL : OGGURL;
 		string mp3URL = demo ? DemoMP3URL : MP3URL;
 		Task.Run(async () => {
@@ -175,7 +176,7 @@ public struct MDMCChart
 				if (!response.IsSuccessStatusCode)
 					callback?.Invoke(null);
 				else {
-					MusicTrack track = EngineCore.Level.Sounds.LoadMusicFromMemory(response.Content.ReadAsStream());
+					IAudioClip? track = audiosystem.CreateStreamAudioClip(response.Content.ReadAsStream());
 
 					callback?.Invoke(track);
 				}

@@ -4,30 +4,43 @@ public enum CharacterAnimationType
 {
 	NotApplicable,
 
-	In,
 	Run,
-	Die,
-	Standby,
+	In,
 
-	AirGreat,
-	AirPerfect,
-	AirHurt,
-
-	RoadGreat,
-	RoadPerfect,
-	RoadHurt,
-	RoadMiss,
-
-	Double,
-
-	AirToGround,
-
-	Jump,
+	Hurt,
 	JumpHurt,
+	Die,
 
 	Press,
-	AirPressEnd,
-	AirPressHurt,
-	DownPressHit,
-	UpPressHit
+
+	AttackMiss,
+	AttackGreat,
+	AttackPerfect,
+
+	Jump,
+	JumpHit,
+
+	DownHit,
+	DownPress,
+
+	UpHit,
+	UpPressStart,
+	UpPress,
+	UpPressEnd,
+
+	BigPress,
+
+	PressGroundToBig,
+	PressAirToBig,
+	PressBigToGround,
+	PressBigToAir,
+	PressHitToGround,
+	PressHitToAir,
+
+	BigHit,
+
+	UpPressHurt,
+
+	JumpHitGreat
 }
+

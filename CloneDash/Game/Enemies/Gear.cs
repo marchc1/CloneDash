@@ -23,7 +23,7 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void DetermineAnimationPlayback() {
-			Position = new(0, 450);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 
@@ -37,14 +37,12 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
-			Model = scene.GetEnemyModel(this).Instantiate();
+			Model = scene.GetEnemyModel(this)?.Instantiate();
 
 			var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 			SetShowTimeViaLength(showtime);
 
-			ApproachAnimation = Model.Data.FindAnimation(animationName);
-
-			Scale = new(level.GlobalScale);
+			ApproachAnimation = Model?.Data.FindAnimation(animationName);
 		}
 	}
 }

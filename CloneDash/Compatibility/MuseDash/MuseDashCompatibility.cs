@@ -7,7 +7,6 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Data;
 using CloneDash.Game;
-using CloneDash.Scripting;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
@@ -15,6 +14,9 @@ using Fmod5Sharp.FmodTypes;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.Models;
@@ -32,17 +34,18 @@ using System.Text;
 using System.Threading;
 
 using Color = Nucleus.Common.Types.Color;
+using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 using Material = AssetStudio.Material;
-using Sound = Nucleus.Audio.Sound;
 using Texture2D = AssetStudio.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash
 {
-	public class MDAtlasPage : IDisposable
+	public class MDAtlasPage : IModelAtlasPage, IDisposable
 	{
 		public string Name;
 		public bool StraightAlpha;
 		public Raylib.ImageRef Texture;
+		public ITexture? GpuTexture;
 		public List<MDAtlasRegion> Regions = [];
 		public ParametersReader Parameters = new ParametersReader([]);
 
@@ -54,15 +57,42 @@ namespace CloneDash.Compatibility.MuseDash
 			var texWidth = Parameters.Read<int>("size", 0);
 			var texHeight = Parameters.Read<int>("size", 1);
 
-			if (texWidth != Texture.Width || texHeight != Texture.Height)
-				Texture.Resize(texWidth, texHeight);
+			if (texWidth != Texture.Width || texHeight != Texture.Height) {
+				float scaleX = (float)Texture.Width / texWidth;
+				float scaleY = (float)Texture.Height / texHeight;
+
+				foreach (var region in Regions)
+					region.ApplyScale(scaleX, scaleY);
+			}
 		}
+
+		public int GetRegionCount() => Regions.Count;
+		public IModelAtlasRegion? GetRegion(int index) => (index >= 0 && index < Regions.Count) ? Regions[index] : null;
+		public IModelAtlasRegion? GetRegionByName(ReadOnlySpan<char> name, int index = -1) {
+			for (int i = 0, c = Regions.Count; i < c; i++)
+				if (Regions[i].Name.AsSpan().SequenceEqual(name))
+					return Regions[i];
+			return null;
+		}
+		public ITexture GetTexture() => GpuTexture!;
+		ReadOnlySpan<char> IModelAtlasPage.GetName() => Name;
+		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
+		public void GetSize(out int w, out int h) { w = GpuTexture?.Width ?? 0; h = GpuTexture?.Height ?? 0; }
+		public ImageFormat GetFormat() => GpuTexture?.Format ?? ImageFormat.None;
+		public void GetFilter(out TextureFilter min, out TextureFilter max) { min = TextureFilter.Bilinear; max = TextureFilter.Bilinear; }
+		public bool SetFilter(TextureFilter min, TextureFilter max) => false;
+		public TextureWrap GetWrap() => default;
+		public bool SetWrap(TextureWrap wrapmode) => false;
+		public bool GetPreMultipliedAlpha() => !StraightAlpha;
+		public bool SetPreMultipliedAlpha(bool pma) { StraightAlpha = pma; return true; }
 	}
-	public class MDAtlasRegion
+	public class MDAtlasRegion : IModelAtlasRegion
 	{
 		public string Name;
 		public MDAtlasPage Page;
 		public ParametersReader Parameters = new ParametersReader([]);
+
+		private int? _x, _y, _width, _height, _origW, _origH, _offsetX, _offsetY;
 
 		public int Degrees {
 			get {
@@ -76,20 +106,95 @@ namespace CloneDash.Compatibility.MuseDash
 				return degrees;
 			}
 		}
-		public int X => Parameters.Read<int>("xy", 0);
-		public int Y => Parameters.Read<int>("xy", 1);
-		public int Width => Parameters.Read<int>("size", 0);
-		public int Height => Parameters.Read<int>("size", 1);
-		public int OriginalWidth => Parameters.Read<int>("orig", 0);
-		public int OriginalHeight => Parameters.Read<int>("orig", 1);
-		public int OffsetX => Parameters.Read<int>("offset", 0);
-		public int OffsetY => Parameters.Read<int>("offset", 1);
+		public int X => _x ?? Parameters.Read<int>("xy", 0);
+		public int Y => _y ?? Parameters.Read<int>("xy", 1);
+		public int Width => _width ?? Parameters.Read<int>("size", 0);
+		public int Height => _height ?? Parameters.Read<int>("size", 1);
+		public int OriginalWidth => _origW ?? Parameters.Read<int>("orig", 0);
+		public int OriginalHeight => _origH ?? Parameters.Read<int>("orig", 1);
+		public int OffsetX => _offsetX ?? Parameters.Read<int>("offset", 0);
+		public int OffsetY => _offsetY ?? Parameters.Read<int>("offset", 1);
+
+		internal void ApplyScale(float scaleX, float scaleY) {
+			_x = (int)MathF.Round(Parameters.Read<int>("xy", 0) * scaleX);
+			_y = (int)MathF.Round(Parameters.Read<int>("xy", 1) * scaleY);
+
+			bool rotated = (Degrees % 180 == 90);
+			if (rotated) {
+				_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleY);
+				_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleX);
+			}
+			else {
+				_width = (int)MathF.Round(Parameters.Read<int>("size", 0) * scaleX);
+				_height = (int)MathF.Round(Parameters.Read<int>("size", 1) * scaleY);
+			}
+
+			if (rotated) {
+				_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleY);
+				_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleX);
+				_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleY);
+				_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleX);
+			}
+			else {
+				_origW = (int)MathF.Round(Parameters.Read<int>("orig", 0) * scaleX);
+				_origH = (int)MathF.Round(Parameters.Read<int>("orig", 1) * scaleY);
+				_offsetX = (int)MathF.Round(Parameters.Read<int>("offset", 0) * scaleX);
+				_offsetY = (int)MathF.Round(Parameters.Read<int>("offset", 1) * scaleY);
+			}
+		}
+
+		public ITexture GetTexture() => Page.GetTexture();
+		public IModelAtlasPage GetPage() => Page;
+		ReadOnlySpan<char> IModelAtlasRegion.GetName() => Name;
+		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
+		public int GetIndex() => -1;
+		public bool SetIndex(int index) => true;
+		public AtlasNameIndex GetNameIndex() => new(Name, -1);
+		public bool SetNameIndex(AtlasNameIndex nameIndex) { Name = nameIndex.Name; return true; }
+
+		public void GetBounds(out int x, out int y, out int w, out int h) {
+			int deg = Degrees;
+			x = X;
+			y = Y;
+			w = (deg % 180 == 90) ? Height : Width;
+			h = (deg % 180 == 90) ? Width : Height;
+		}
+
+		public void GetOffsets(out int x, out int y, out int w, out int h) {
+			x = OffsetX;
+			y = (OriginalHeight - Height) - OffsetY;
+			w = OriginalWidth;
+			h = OriginalHeight;
+		}
+
+		public float GetRotation() => Degrees;
+
+		public bool SetBounds(int x, int y, int w, int h) => false;
+		public bool SetOffsets(int x, int y, int w, int h) => false;
+		public bool SetRotation(float rot) => false;
 	}
-	public class MDAtlas(Dictionary<string, MDAtlasPage> pages, Dictionary<string, MDAtlasRegion> regions) : IDisposable
+	public class MDAtlas(Dictionary<string, MDAtlasPage> pages, Dictionary<string, MDAtlasRegion> regions) : IRuntimeTextureAtlas
 	{
 		public Dictionary<string, MDAtlasPage> Pages => pages;
 		public Dictionary<string, MDAtlasRegion> Regions => regions;
 		private bool disposed;
+
+		public ITextureAtlasEdit? Edit() => null;
+
+		public IModelAtlasPage? GetPage(ReadOnlySpan<char> name) {
+			foreach (var kvp in Pages)
+				if (kvp.Key.AsSpan().SequenceEqual(name))
+					return kvp.Value;
+			return null;
+		}
+
+		public IModelAtlasRegion? GetRegion(ReadOnlySpan<char> name, int index = -1) {
+			foreach (var kvp in Regions)
+				if (kvp.Key.AsSpan().SequenceEqual(name))
+					return kvp.Value;
+			return null;
+		}
+
 		public void Dispose() {
 			if (disposed) return;
 
@@ -550,9 +655,10 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: true);
+			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: false);
 			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
-			ntex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
+			ntex.SetFilter(TextureFilter.Bilinear);
+			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			return ntex;
 		}
 
@@ -571,11 +677,13 @@ namespace CloneDash.Compatibility.MuseDash
 
 			throw new NotImplementedException();
 		}
-		public static Sound GetSound(Level level, AudioClip clip) {
-			return level.Sounds.LoadSoundFromMemory(GetSoundBytes(level, clip, out _));
+		public static IAudioClip? GetSound(Level level, AudioClip clip) {
+			using MemoryStream ms = new(GetSoundBytes(level, clip, out _));
+			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
-		public static MusicTrack GetMusic(Level level, AudioClip clip) {
-			return level.Sounds.LoadMusicFromMemory(GetSoundBytes(level, clip, out _));
+		public static IAudioClip? GetMusic(Level level, AudioClip clip) {
+			using MemoryStream ms = new(GetSoundBytes(level, clip, out _));
+			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
 
 		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images, Material[] materials) {
@@ -600,7 +708,7 @@ namespace CloneDash.Compatibility.MuseDash
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
 						var index = images.IndexOf(x => x.m_Name == imageName);
-						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: true);
+						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: false);
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
 						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
@@ -633,48 +741,24 @@ namespace CloneDash.Compatibility.MuseDash
 
 			MDAtlas atlas = atlasBuilder.Atlas();
 
-			modelData.TextureAtlas = new();
-			foreach (var page in atlas.Pages)
-				page.Value.CheckSizing();
+			foreach (var pageKVP in atlas.Pages) {
+				var page = pageKVP.Value;
+				page.CheckSizing();
 
-			modelData.TextureAtlas.ClearTextures();
-
-			foreach (var regionKVP in atlas.Regions) {
-				var region = regionKVP.Value;
-				var img = region.Page.Texture;
-
-				var degrees = region.Degrees;
-				var x = region.X;
-				var y = region.Y;
-				var offsetX = region.OffsetX;
-				var offsetY = region.OffsetY;
-				var width = region.Width;
-				var height = region.Height;
-				var originalWidth = region.OriginalWidth;
-				var originalHeight = region.OriginalHeight;
-
-				int screenspaceWidth = ((degrees % 180) == 90) ? height : width;
-				int screenspaceHeight = ((degrees % 180) == 90) ? width : height;
-				Image newImg = Raylib.GenImageColor(screenspaceWidth, screenspaceHeight, Color.Blank);
-
-				Raylib.ImageDraw(ref newImg, img, new(x, y, screenspaceWidth, screenspaceHeight), new(0, 0, newImg.Width, newImg.Height), Color.White);
-				if (degrees != 0)
-					Raylib.ImageRotate(ref newImg, degrees);
-				Raylib.ImageResizeCanvas(ref newImg, originalWidth, originalHeight, offsetX, (originalHeight - height) - offsetY, Color.Blank);
-
-				if (region.Page.StraightAlpha) Raylib.ImageAlphaPremultiply(ref newImg);
-
-				modelData.TextureAtlas.AddTexture(regionKVP.Key, newImg);
+				var tex = Raylib.LoadTextureFromImage(page.Texture);
+				Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
+				page.GpuTexture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true);
+				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
 
-			HashSet<string> usedRegions = [];
-			modelData.TextureAtlas.Validate();
-
+			modelData.TextureAtlas = atlas;
 			modelData.SetupAttachments();
 			return atlas;
 		}
 
-		public static Nucleus.Audio.Sound LoadSoundFromName(Level level, string audioName) {
+		public static IAudioClip? LoadSoundFromName(Level level, string audioName) {
+			if (audioName == null) return null;
+
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
@@ -683,13 +767,18 @@ namespace CloneDash.Compatibility.MuseDash
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
 				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
 				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-				return level.Sounds.LoadSoundFromMemory(at!);
+				if (at == null)
+					return null;
+				using var into = new MemoryStream(at);
+
+				return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{audioName}");
 			}
 
 			throw new NotImplementedException();
 		}
 
-		public static Nucleus.Audio.MusicTrack LoadMusicFromName(Level level, string audioName) {
+		public static IAudioClip? LoadMusicFromName(Level level, string? audioName) {
+			if (audioName == null) return null;
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
@@ -698,7 +787,11 @@ namespace CloneDash.Compatibility.MuseDash
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
 				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
 				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out var fileExtension);
-				return level.Sounds.LoadMusicFromMemory(at!);
+				if (at == null)
+					return null;
+				using var into = new MemoryStream(at);
+
+				return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{audioName}");
 			}
 
 			throw new NotImplementedException();
@@ -883,6 +976,7 @@ public static class MuseDashModelConverter
 
 			bool nonessential = skeleton.MD_ReadBoolean();
 			bool hadAudio = false;
+			List<bool> eventDataHasAudio = [];
 			if (nonessential) {
 				skeleton.MD_ReadFloat();
 
@@ -1024,6 +1118,7 @@ public static class MuseDashModelConverter
 				var @float = skeleton.MD_ReadFloat();
 				var @string = skeleton.MD_ReadNullableString();
 				var @audioPath = skeleton.MD_ReadNullableString();
+				eventDataHasAudio.Add(@audioPath != null);
 				if (@audioPath != null) {
 					skeleton.MD_ReadFloat();
 					skeleton.MD_ReadFloat();
@@ -1031,7 +1126,7 @@ public static class MuseDashModelConverter
 			}
 
 			for (int i = 0, animations = skeleton.MD_ReadVarInt(true); i < animations; i++) {
-				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential, hadAudio);
+				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential, hadAudio, eventDataHasAudio);
 			}
 
 			return nucleusModelData;
@@ -1067,15 +1162,15 @@ public static class MuseDashModelConverter
 	}
 
 
-	private static void fillKeyframe(FCurve<float> curve, float time, float value, byte ct, float c1, float c2, float c3, float c4) {
-		curve.AddKeyframe(new(time, value) { Interpolation = interp(ct), RightHandle = interpKFH(ct, c1, c2), LeftHandle = interpKFH(ct, c3, c4) });
+	private static void fillKeyframe(FCurve<float> curve, float time, float value, byte ct, float c1, float c2, byte prevCt, float c3, float c4) {
+		curve.AddKeyframe(new(time, value) { Interpolation = interp(ct), RightHandle = interpKFH(ct, c1, c2), LeftHandle = interpKFH(prevCt, c3, c4) });
 	}
 
 	private static void fixCurve(FCurve<float> curve) {
 
 	}
 
-	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio) {
+	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio, List<bool> eventDataHasAudio) {
 		Nucleus.Models.Runtime.Animation animation = new Nucleus.Models.Runtime.Animation();
 		animation.Name = skeleton.MD_ReadNullableString() ?? "";
 		nucleusModelData.Animations.Add(animation);
@@ -1105,18 +1200,19 @@ public static class MuseDashModelConverter
 							tl.SlotIndex = slotIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var color = skeleton.MD_ReadColor();
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 
-								fillKeyframe(tl.Curve(0), time, color.R / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(1), time, color.G / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(2), time, color.B / 255f, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(3), time, color.A / 255f, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, color.R / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(1), time, color.G / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(2), time, color.B / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(3), time, color.A / 255f, curveType, c1, c2, prevCt, lc3, lc4);
 
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
@@ -1154,13 +1250,14 @@ public static class MuseDashModelConverter
 							tl.BoneIndex = boneIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var value = skeleton.MD_ReadFloat();
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
-								fillKeyframe(tl.Curve(0), time, value, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, value, curveType, c1, c2, prevCt, lc3, lc4);
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
@@ -1182,7 +1279,7 @@ public static class MuseDashModelConverter
 							tl.BoneIndex = boneIndex;
 							tl.NewCurves();
 
-							float lc3 = 0, lc4 = 0;
+							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
 								var x = skeleton.MD_ReadFloat();
@@ -1190,8 +1287,9 @@ public static class MuseDashModelConverter
 
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
 
-								fillKeyframe(tl.Curve(0), time, x, curveType, c1, c2, lc3, lc4);
-								fillKeyframe(tl.Curve(1), time, y, curveType, c1, c2, lc3, lc4);
+								fillKeyframe(tl.Curve(0), time, x, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(tl.Curve(1), time, y, curveType, c1, c2, prevCt, lc3, lc4);
+								prevCt = curveType;
 								lc3 = c3;
 								lc4 = c4;
 							}
@@ -1224,6 +1322,7 @@ public static class MuseDashModelConverter
 		for (int trI = 0, transforms = skeleton.MD_ReadVarInt(true); trI < transforms; trI++) {
 			skeleton.MD_ReadVarInt(true);
 			for (int frame = 0, frames = skeleton.MD_ReadVarInt(true); frame < frames; frame++) {
+				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
@@ -1285,12 +1384,12 @@ public static class MuseDashModelConverter
 
 		for (int eventIndex = 0, events = skeleton.MD_ReadVarInt(true); eventIndex < events; eventIndex++) {
 			skeleton.MD_ReadFloat();
-			int count = skeleton.MD_ReadVarInt(true);
+			int eventDataIndex = skeleton.MD_ReadVarInt(true);
 			skeleton.MD_ReadVarInt(false);
 			skeleton.MD_ReadFloat();
 
 			if (skeleton.MD_ReadBoolean()) skeleton.MD_ReadString();
-			if (hadAudio) {
+			if (eventDataHasAudio.Count > eventDataIndex && eventDataHasAudio[eventDataIndex]) {
 				skeleton.MD_ReadFloat();
 				skeleton.MD_ReadFloat();
 			}
@@ -1388,6 +1487,7 @@ public static class MuseDashModelConverter
 							var mdRegion = mdatlas.Regions.First(x => x.Value.Name == region.Path).Value;
 							var wM = width / mdRegion.OriginalWidth;
 							var hM = height / mdRegion.OriginalHeight;
+							region.Scale = new(scaleX * wM, scaleY * hM);
 							region.Scale = new(scaleX * wM, scaleY * hM);
 							attachment = region;
 						}
@@ -1537,17 +1637,36 @@ public static class MuseDashModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
-		ModelData md_data = new ModelData();
+	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData) {
+		MonoBehaviourReader reader = new(skeletonData);
+		TextAsset skeletonJSON = reader.Get<TextAsset>("skeletonJSON")!;
+		MonoBehaviourReader atlasAssets = new(reader.GetList<MonoBehaviour>("atlasAssets")!.First());
+		TextAsset atlasFile = atlasAssets.Get<TextAsset>("atlasFile")!;
+		List<Material> materials = atlasAssets.GetList<Material>("materials")!;
 
+		long[] texturePaths = new long[materials.Count];
+		for (int i = 0; i < materials.Count; i++) {
+			var mat = materials[i];
+			texturePaths[i] = mat.m_SavedProperties.m_TexEnvs.First().Value.m_Texture.m_PathID;
+		}
+		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray());
+	}
+
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
 		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
 		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
+
+		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn);
+	}
+
+	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset atlas, long[] texturePaths, Material[] materialsIn) {
+		ModelData md_data = new ModelData();
+
 		Texture2D[] textures = new Texture2D[texturePaths.Length];
 		for (int i = 0, c = texturePaths.Length; i < c; i++) {
 			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i])!;
 		}
 
-		bool straightAlpha;
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,

@@ -14,6 +14,8 @@ public static class CharacterMod
 	public delegate void CharacterUpdatedDelegate(ICharacterDescriptor? charDescriptor);
 	public static event CharacterUpdatedDelegate? CharacterUpdated;
 
+	static ICharacterProvider[]? providers;
+
 	public static ICharacterDescriptor? GetActiveCharacterDescriptor() {
 		if (activeDescriptor == null)
 			activeDescriptor = GetCharacterData();
@@ -59,20 +61,20 @@ public static class CharacterMod
 	}
 
 	public static IEnumerable<string> GetAvailableCharacters() {
-		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
-		foreach (var retriever in retrievers)
+		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
+		foreach (var retriever in providers)
 			foreach (var characterName in retriever.GetAvailable())
 				yield return characterName;
 	}
 
 	public static ICharacterDescriptor? GetCharacterData(string? name = null) {
-		ICharacterProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
+		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<ICharacterProvider>();
 		name ??= character == null ? default : new(character.GetString());
 
 		if (string.IsNullOrWhiteSpace(name))
 			return null;
 
-		foreach (var retriever in retrievers) {
+		foreach (var retriever in providers) {
 			ICharacterDescriptor? descriptor = retriever.FindByName(name);
 			if (descriptor == null) continue;
 

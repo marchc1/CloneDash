@@ -18,6 +18,7 @@ namespace Nucleus.Commands
 		private double? minimum = null;
 		private double? maximum = null;
 		private CVValue value = new();
+		private CVValue lastNonDefaultValue = new(); // hack for AlwaysDefault to allow the flag to revert
 
 		public ConVar? Parent;
 
@@ -35,6 +36,27 @@ namespace Nucleus.Commands
 			return false;
 		}
 
+		protected override void CheckFlagChange(FCvar prev, FCvar now) {
+			var wasDefault = (prev & FCvar.AlwaysDefault) == FCvar.AlwaysDefault;
+			var isDefault = (now & FCvar.AlwaysDefault) == FCvar.AlwaysDefault;
+
+			bool changedToDefault = !wasDefault && isDefault;
+			bool changedToNotDefault = wasDefault && !isDefault;
+
+			if (changedToDefault) {
+				lastNonDefaultValue = value;
+				lastNonDefaultValue.Chars = lastNonDefaultValue.Chars?.ToArray(); // Copy off the char array
+
+				Parent!.InternalSetValue(DefaultValue);
+			}
+			else if (changedToNotDefault) {
+				value = lastNonDefaultValue;
+				value.Chars = value.Chars?.ToArray(); // Copy off the char array
+			}
+		}
+
+		public bool IsLocked() => (Flags & FCvar.AlwaysDefault) != 0;
+
 		private void InternalSetDoubleValue(double doubleValue) {
 			if (doubleValue == this.value.Double)
 				return;
@@ -49,7 +71,7 @@ namespace Nucleus.Commands
 
 			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
-				this.value.Double.TryFormat(tempVal, out int charsWritten);
+				this.value.Double.TryFormat(tempVal, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
 			}
 			else
@@ -72,7 +94,7 @@ namespace Nucleus.Commands
 
 			if ((Flags & FCvar.NeverAsString) == 0) {
 				Span<char> tempVal = stackalloc char[32];
-				this.value.Int.TryFormat(tempVal, out int charsWritten);
+				this.value.Int.TryFormat(tempVal, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				ChangeStringValue(tempVal[..charsWritten], oldValue);
 			}
 			else
@@ -90,10 +112,10 @@ namespace Nucleus.Commands
 
 			val = value;
 			if (value.IsEmpty) newD = 0.0;
-			else double.TryParse(value, out newD);
+			else double.TryParse(value, provider: CultureInfo.InvariantCulture, out newD);
 
 			if (ClampValue(ref newD)) {
-				newD.TryFormat(temp, out int charsWritten);
+				newD.TryFormat(temp, out int charsWritten, provider: CultureInfo.InvariantCulture);
 				val = temp[..charsWritten];
 			}
 
@@ -114,7 +136,7 @@ namespace Nucleus.Commands
 			if (len == -1)
 				len = val.Length;
 
-			if (len > value.Chars?.Length) 
+			if (len > value.Chars?.Length)
 				value.Chars = new char[len];
 
 			val[..len].CopyTo(value.Chars);
@@ -130,22 +152,27 @@ namespace Nucleus.Commands
 		public double GetDouble() => value.Double;
 		public int GetInt() => value.Int;
 		public ReadOnlySpan<char> GetString() => value.GetString();
+		public ReadOnlySpan<char> GetSaveString() => IsLocked() ? lastNonDefaultValue.GetString() : value.GetString();
 		public bool GetBool() => value.Int >= 1;
 		public void SetValue(ReadOnlySpan<char> str) {
 			ConVar var = Parent!;
-			var.InternalSetValue(str);
+			if (!var.IsLocked())
+				var.InternalSetValue(str);
 		}
 		public void SetValue(int i) {
 			ConVar var = Parent!;
-			var.InternalSetIntValue(i);
+			if (!var.IsLocked())
+				var.InternalSetIntValue(i);
 		}
 		public void SetValue(double d) {
 			ConVar var = Parent!;
-			var.InternalSetDoubleValue(d);
+			if (!var.IsLocked())
+				var.InternalSetDoubleValue(d);
 		}
 		public void SetValue(bool b) {
 			ConVar var = Parent!;
-			var.InternalSetIntValue(b ? 1 : 0);
+			if (!var.IsLocked())
+				var.InternalSetIntValue(b ? 1 : 0);
 		}
 
 		public ReadOnlySpan<char> GetDefault() => DefaultValue;
@@ -203,12 +230,12 @@ namespace Nucleus.Commands
 			}
 
 			public void Print(int incoming) {
-				incoming.TryFormat(dest[printStrLength..], out int charsWritten);
+				incoming.TryFormat(dest[printStrLength..], out int charsWritten, provider: CultureInfo.InvariantCulture);
 				printStrLength += charsWritten;
 			}
 
 			public void Print(double incoming) {
-				incoming.TryFormat(dest[printStrLength..], out int charsWritten);
+				incoming.TryFormat(dest[printStrLength..], out int charsWritten, provider: CultureInfo.InvariantCulture);
 				printStrLength += charsWritten;
 			}
 
@@ -234,13 +261,16 @@ namespace Nucleus.Commands
 				ctx.Print('"');
 
 				ctx.Print(" = ");
-				ctx.Print(var.GetString());
+				var value = var.GetString();
+				if (value.IsEmpty)
+					ctx.Print("\"\"");
+				else
+					ctx.Print(value);
 
-				ReadOnlySpan<char> value = var.GetString();
 				if (stricmp(value, var.GetDefault()) != 0) {
-					ctx.Print(" ( def. ");
+					ctx.Print(" ( def. \"");
 					ctx.Print(var.GetDefault());
-					ctx.Print(" )");
+					ctx.Print("\" )");
 				}
 
 				if (hasMin) {
@@ -269,8 +299,9 @@ namespace Nucleus.Commands
 		public static void PrintFlags(ConCommandBase var) {
 			printCtx ctx = new(stackalloc char[384]);
 
-			if (var.IsFlagSet(FCvar.Saved))
-				ctx.Print(" saved");
+			if (var.IsFlagSet(FCvar.Saved)) ctx.Print(" saved");
+			if (var.IsFlagSet(FCvar.NotInGame)) ctx.Print(" notingame");
+			if (var.IsFlagSet(FCvar.AlwaysDefault)) ctx.Print(" alwaysdefault");
 
 			if (ctx.IsEmpty)
 				return;
@@ -312,8 +343,8 @@ namespace Nucleus.Commands
 
 			OnAutocomplete = autocomplete;
 
-			double.TryParse(value.GetString(), out value.Double);
-			int.TryParse(value.GetString(), out value.Int);
+			double.TryParse(value.GetString(), provider: CultureInfo.InvariantCulture, out value.Double);
+			int.TryParse(value.GetString(), provider: CultureInfo.InvariantCulture, out value.Int);
 		}
 	}
 }

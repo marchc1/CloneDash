@@ -70,13 +70,13 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Get shader uniform location</summary>
-	public static int GetShaderLocation(Shader shader, string uniformName) {
+	public static int GetShaderLocation(Shader shader, ReadOnlySpan<char> uniformName) {
 		using var str1 = uniformName.ToUtf8Buffer();
 		return GetShaderLocation(shader, str1.AsPointer());
 	}
 
 	/// <summary>Get shader attribute location</summary>
-	public static int GetShaderLocationAttrib(Shader shader, string attribName) {
+	public static int GetShaderLocationAttrib(Shader shader, ReadOnlySpan<char> attribName) {
 		using var str1 = attribName.ToUtf8Buffer();
 		return GetShaderLocationAttrib(shader, str1.AsPointer());
 	}

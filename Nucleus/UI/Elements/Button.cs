@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Audio;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -35,7 +36,7 @@ namespace Nucleus.UI
 
 		public override void MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
-			Level.Sounds.PlaySound(Level.Sounds.LoadSoundFromFile("click.wav"));
+			audiosystem.PlaySound("click.wav", AudioPlaybackSettings.Unaltered);
 		}
 
 		public bool TriggeredWhenEnterPressed {

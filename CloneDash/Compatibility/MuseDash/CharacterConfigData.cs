@@ -76,6 +76,23 @@ public class CharacterConfigData
 	[JsonProperty("expressions")] public List<CharacterExpression> Expressions { get; set; }
 	[JsonProperty("listIndex")] public int ListIndex { get; set; }
 	[JsonProperty("skins")] public List<CharacterSkinData> Skins { get; set; }
+
+	public ReadOnlySpan<char> GetBattleShow() {
+		ReadOnlySpan<char> text = BattleShow;
+		if (text.IndexOf(',') == -1)
+			return text;
+		var splits = text.Split(',');
+		return text[splits.Current].Trim();
+	}
+
+	public ReadOnlySpan<char> GetBattleShowGhost() {
+		ReadOnlySpan<char> text = BattleShow;
+		if (text.IndexOf(',') == -1)
+			return text;
+		var splits = text.Split(',');
+		splits.MoveNext();
+		return text[splits.Current].Trim();
+	}
 }
 
 public class CharacterExpression

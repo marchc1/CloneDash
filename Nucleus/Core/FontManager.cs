@@ -157,7 +157,7 @@ namespace Nucleus.Core
 
 					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepointsHash.ToArray(), RegisteredCodepointsHash.Count);
 					Raylib.GenTextureMipmaps(ref newFont.Texture);
-					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.TEXTURE_FILTER_TRILINEAR); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
 					state = FontTable[key] = new FontState();
 					state.OwnFont(newFont);
 					state.Key = key;

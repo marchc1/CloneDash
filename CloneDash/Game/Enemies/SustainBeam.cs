@@ -2,6 +2,7 @@
 using CloneDash.Settings;
 
 using Nucleus;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
@@ -25,8 +26,6 @@ namespace CloneDash.Game.Entities
 		public bool HeldState { get; private set; } = false;
 		public bool StopAcceptingInput { get; private set; } = false;
 
-		public Pathway PathwayCheck;
-
 		private double lastCheckTime;
 
 		public override void OnReset() {
@@ -43,7 +42,6 @@ namespace CloneDash.Game.Entities
 				return;
 
 			var lvl = Level.As<DashGameLevel>();
-			PathwayCheck = lvl.GetPathway(attackedPath);
 			HeldState = true;
 			WasHit = true;
 			ForceDraw = true;
@@ -80,42 +78,73 @@ namespace CloneDash.Game.Entities
 		public float RotationDegsPerSecond = 200;
 		private void drawStartQuad(DashGameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
+
 			var tex = start;
+			if (tex == null) return;
+
 			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
-			var ypos = game.GetPathway(Pathway).Position.Y;
+			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
+
+			var w = tex.Width * DashGameLevel.GlobalScale;
+			var h = tex.Height * DashGameLevel.GlobalScale;
+
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			else
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 		private void drawEndQuad(DashGameLevel game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 			var tex = end;
+			if (tex == null) return;
+
 			var xpos = (float)XPosFromTimeOffset(x);
-			var ypos = game.GetPathway(Pathway).Position.Y;
+			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
-			Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, tex.Width * 2, tex.Height * 2), new(tex.Width, tex.Height), rot, Color.White with { A = beamAlpha });
+
+			var w = tex.Width * DashGameLevel.GlobalScale;
+			var h = tex.Height * DashGameLevel.GlobalScale;
+
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+			else
+				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
 		private byte beamAlpha;
-		public void drawScrollQuad(DashGameLevel game, Texture tex, ref FrameState fs, float xOffset, float yOffset) {
+		public void drawScrollQuad(DashGameLevel game, ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
+			if (tex == null)
+				return;
+
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
-			var ypos = game.GetPathway(Pathway).Position.Y + yOffset;
-			var height = tex.Height;
+			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
+			var height = tex.Height * DashGameLevel.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
 
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
-			var maxLength = (xEnd - xStart) / (tex.Width * 2);
-			var length = maxLength - ((xEnd - xMid) / (tex.Width * 2));
+			var maxLength = (xEnd - xStart) / (tex.Width * DashGameLevel.GlobalScale * 2);
+			var length = maxLength - ((xEnd - xMid) / (tex.Width * DashGameLevel.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
-			Rlgl.SetTexture(tex.HardwareID);
-			{
+			Rlgl.SetTexture(tex.GetTextureHandle());
+			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + -height);
+				Rlgl.TexCoord2f(length, 0); Rlgl.Vertex2f(xMid, ypos + height);
+				Rlgl.TexCoord2f(maxLength, 0); Rlgl.Vertex2f(xEnd, ypos + height);
+
+				Rlgl.TexCoord2f(maxLength, 0); Rlgl.Vertex2f(xEnd, ypos + height);
+				Rlgl.TexCoord2f(maxLength, 1); Rlgl.Vertex2f(xEnd, ypos + -height);
+				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + -height);
+			}
+			else {
 				Rlgl.TexCoord2f(length, 0); Rlgl.Vertex2f(xMid, ypos + -height);
 				Rlgl.TexCoord2f(length, 1); Rlgl.Vertex2f(xMid, ypos + height);
 				Rlgl.TexCoord2f(maxLength, 1); Rlgl.Vertex2f(xEnd, ypos + height);
@@ -137,8 +166,8 @@ namespace CloneDash.Game.Entities
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
 			var time = game.Conductor.Time * 5;
-			var sv = (float)(Math.Sin(time) * 10);
-			var cv = (float)(Math.Cos(time) * 10);
+			var sv = (float)(Math.Sin(time) * 10) * DashGameLevel.GlobalScale;
+			var cv = (float)(Math.Cos(time) * 10) * DashGameLevel.GlobalScale;
 
 			drawScrollQuad(game, up, ref frameState, cv / 2, sv);
 			drawScrollQuad(game, down, ref frameState, sv / 2, cv);
@@ -147,11 +176,11 @@ namespace CloneDash.Game.Entities
 			drawEndQuad(game, ref frameState, (float)Length);
 		}
 
-		private Texture start;
-		private Texture end;
-		private Texture body;
-		private Texture up;
-		private Texture down;
+		private ITexture? start;
+		private ITexture? end;
+		private ITexture? body;
+		private ITexture? up;
+		private ITexture? down;
 
 		public override void Build() {
 			base.Build();
@@ -173,8 +202,7 @@ namespace CloneDash.Game.Entities
 			lvl.AddCombo();
 			lvl.AddFever(FeverGiven);
 			lvl.Sustains.CompleteSustainBeam(this);
-			if (!lvl.IsSeeking)
-				lvl.Scene.PlaySound(SceneSound.PressTop, 1);
+			lvl.PlaySceneSound(SceneSound.StartedHold, 1);
 		}
 		internal void Fail() {
 			var lvl = GetGameLevel();

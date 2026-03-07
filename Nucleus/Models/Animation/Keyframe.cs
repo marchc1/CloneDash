@@ -138,6 +138,24 @@ public class Keyframe<T> : IKeyframe
 					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
 				);
 
+				return (T)(object)factor;
+			default: return leftmostOfTime.Value;
+		}
+	}
+
+	private static T BezierInterpolatorLerped(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+		switch (leftmostOfTime) {
+			case Keyframe<float> kfL:
+				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
+
+				var factor = CubicBezierYForX(
+					KeyframeToVector2F(kfL),
+					KeyframeToVector2F(in kfL.RightHandle),
+					KeyframeToVector2F(in kfR.LeftHandle),
+					KeyframeToVector2F(kfR),
+					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
+				);
+
 				factor = NMath.Lerp(factor, kfL.Value, kfR.Value);
 
 				return (T)(object)factor;
@@ -208,6 +226,8 @@ public class Keyframe<T> : IKeyframe
 		var interpolation = leftmostOfTime.Interpolation;
 		DUMMY_LEFT.SetTime(leftmostOfTime.Time); DUMMY_LEFT.SetValue(0f);
 		DUMMY_RIGHT.SetTime(rightmostOfTime.Time); DUMMY_RIGHT.SetValue(1f);
+		DUMMY_LEFT.RightHandle = (leftmostOfTime is Keyframe<float> kfL) ? kfL.RightHandle : null;
+		DUMMY_RIGHT.LeftHandle = (rightmostOfTime is Keyframe<float> kfR) ? kfR.LeftHandle : null;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant: return 0;
 			case KeyframeInterpolation.Linear: return Keyframe<float>.LinearInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
@@ -235,11 +255,11 @@ public class Keyframe<T> : IKeyframe
 		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant:
-				return rightmostOfTime.Value;
+				return leftmostOfTime.Value;
 			case KeyframeInterpolation.Linear:
 				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
 			case KeyframeInterpolation.Bezier:
-				return BezierInterpolator(time, leftmostOfTime, rightmostOfTime);
+				return BezierInterpolatorLerped(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Quadratic: return QuadraticInterpolator(time, leftmostOfTime, rightmostOfTime);
 			//case KeyframeInterpolation.Cubic: return CubicInterpolator(time, leftmostOfTime, rightmostOfTime);

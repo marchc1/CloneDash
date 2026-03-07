@@ -31,9 +31,9 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 			var scene = level.Scene;
 
-			Model = scene.GetEnemyModel(this).Instantiate();
-			ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
-			OutAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+			Model = scene.GetEnemyModel(this)?.Instantiate();
+			ApproachAnimation = Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
+			OutAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 		}
 	}
 }

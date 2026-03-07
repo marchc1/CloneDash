@@ -36,13 +36,20 @@ namespace Nucleus.ManagedMemory
 
 		public RectangleF Bounds => RectangleF.XYWH(0, 0, Width, Height);
 
-		public uint HardwareID => underlying.Id;
+		public uint GetTextureHandle() => underlying.Id;
 		public string? DebugName { get; set; }
 		public int Width => underlying.Width;
 		public int Height => underlying.Height;
 		public uint UWidth => (uint)underlying.Width;
 		public uint UHeight => (uint)underlying.Height;
 		public ImageFormat Format => underlying.Format;
+
+		PublicTextureFlags publicFlags;
+
+		public void AddPublicFlags(PublicTextureFlags flags) => publicFlags |= flags;
+		public void RemovePublicFlags(PublicTextureFlags flags) => publicFlags &= ~flags;
+		public bool HasPublicFlags(PublicTextureFlags flags) => (publicFlags & flags) != 0;
+		public PublicTextureFlags GetPublicFlags() => publicFlags;
 
 		private Image? UnderlyingImage => underlyingImage;
 		private Texture2D Underlying => underlying;
@@ -178,7 +185,7 @@ namespace Nucleus.ManagedMemory
 
 			Texture tex = new(this, Filesystem.ReadTexture(new(pathID), new(path) /* << TODO */), true);
 			tex.GenerateMipmaps();
-			tex.SetFilter(TextureFilter.TEXTURE_FILTER_BILINEAR);
+			tex.SetFilter(TextureFilter.Bilinear);
 			LoadedTexturesFromFile.Add(managedPath, tex);
 			LoadedFilesFromTexture.Add(tex, managedPath);
 
@@ -195,7 +202,7 @@ namespace Nucleus.ManagedMemory
 			if (LoadedTexturesFromFile.TryGetValue(filepathSymbol, out Texture? texFromFile)) return texFromFile;
 
 			Texture tex = new(this, Raylib.LoadTexture(new string(filepath) /* << TODO */), true);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 
 			LoadedTexturesFromFile.Add(filepathSymbol, tex);
 			LoadedFilesFromTexture.Add(tex, filepathSymbol);

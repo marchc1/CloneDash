@@ -61,7 +61,7 @@ namespace CloneDash.Game
 		/// <summary>
 		/// Offsets the conductor time
 		/// </summary>
-		public double PreStartTime { get; set; } = CommandLine().ParmValue("-pretime", 5d);
+		public double PreStartTime { get; set; } = CommandLine().CheckParm("-mdbmsc", out _) ? 0 : 5;
 
 		public double BPM => GetTempoAtTime(Time);
 
@@ -76,8 +76,8 @@ namespace CloneDash.Game
 		/// </summary>
 		public void InvalidateTime() {
 			var game = Level.As<DashGameLevel>();
-			if (game.Music == null) return;
-			currentInaccurateTime = game.Music.Playhead;
+			if (!game.Music.IsValid()) return;
+			audiosystem.GetSoundPlayhead(game.Music, out currentInaccurateTime);
 		}
 
 		private class CD_Conductor_UIBar : Element
@@ -138,7 +138,7 @@ namespace CloneDash.Game
 		private bool wasPaused = false;
 		private double? dragSeconds;
 
-		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, Level.As<DashGameLevel>()?.Music?.Length ?? throw new Exception());
+		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, audiosystem.GetPlaybackDuration(Level.As<DashGameLevel>().Music));
 
 		private void UIBar_DragUpdate() {
 			var game = Level.As<DashGameLevel>();
@@ -269,6 +269,8 @@ namespace CloneDash.Game
 			var game = Level.As<DashGameLevel>();
 			Level.AddDebugString("Conductor Time", Time);
 
+			var speed = game.GetSpeed();
+
 			if (firstTick) {
 				currentInaccurateTime = (float)-PreStartTime;
 			}
@@ -277,30 +279,30 @@ namespace CloneDash.Game
 				if (ft > 0.5)
 					return;
 
-				currentInaccurateTime += ft;
+				currentInaccurateTime += ft * speed;
 			}
-			else if (game.Music != null) {
-				game.Music.Update();
-
-				var now = game.Music.Playhead;
-				var paused = game.Music.Paused;
+			else if (game.Music.IsValid()) {
+				audiosystem.UpdatePlayback(game.Music);
+				audiosystem.GetSoundPlayhead(game.Music, out double now);
+				bool paused = audiosystem.IsPlaybackPaused(game.Music);
 
 				if (lastTimeFromFunctionCall != now && !paused) {
-					lastTimeFromFunctionCall = now;
+					lastTimeFromFunctionCall = (float)now;
 					currentInaccurateTime = now;
 				}
 				else {
 					if (!paused)
-						currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
+						currentInaccurateTime += EngineCore.Level.CurtimeDelta * speed;
 				}
 			}
 			else {
-				currentInaccurateTime += EngineCore.Level.CurtimeDeltaF;
+				currentInaccurateTime += EngineCore.Level.CurtimeDelta * speed;
 			}
 
-			if (game.Music != null) {
-				UIBar.Playhead = game.Music.Playhead;
-				UIBar.Duration = game.Music.Length;
+			if (game.Music.IsValid()) {
+				audiosystem.GetSoundPlayhead(game.Music, out double now);
+				UIBar.Playhead = (float)now;
+				UIBar.Duration = (float)audiosystem.GetPlaybackDuration(game.Music);
 			}
 			firstTick = false;
 			TimeDelta = Time - lastTime;

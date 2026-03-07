@@ -30,4 +30,5 @@ public enum BossAnimationType
 	MultiAttackHurtEnd,
 
 	Hurt,
+	Max
 }

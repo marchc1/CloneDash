@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Audio;
+using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI.Elements;
 
@@ -103,7 +104,7 @@ namespace Nucleus.UI
             popup.Size = new Vector2F(100, 200) + finalsize;
             popup.Center();
 
-            EngineCore.Level.Sounds.PlaySound(EngineCore.Level.Sounds.LoadSoundFromFile("popup.wav"), 0.6f, 1, 0.5f);
+            audiosystem.PlaySound("popup.wav", AudioPlaybackSettings.Unaltered);
 
             return (popup, containButtons);
         }

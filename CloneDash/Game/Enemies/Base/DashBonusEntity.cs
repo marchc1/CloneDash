@@ -9,12 +9,13 @@ namespace CloneDash.Game
 
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
-				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				GetGameLevel().SetEnemyKilledPosition(this);
 				OutAnimation?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			Position = new((float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), 450);
+			GetGameLevel().SetEnemyPosition(this);
+			Position = new(Position.X + (float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), Position.Y);
 			ApproachAnimation?.Apply(Model, Math.Max(0, AnimationTime));
 		}
 
