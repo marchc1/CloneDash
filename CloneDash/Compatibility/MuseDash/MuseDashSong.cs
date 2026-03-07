@@ -48,7 +48,9 @@ public class MuseDashSongInfoJSON
 public class MuseDashSong : ChartSong
 {
 	private MuseDashSongInfoJSON __jsonInfo;
-	public MuseDashSong(MuseDashSongInfoJSON info) {
+	public MuseDashSong(MuseDashSongInfoJSON info)
+	{
+		Id = info.UID;
 		__jsonInfo = info;
 		// Debug.Assert(info.Difficulty5 == "");
 	}

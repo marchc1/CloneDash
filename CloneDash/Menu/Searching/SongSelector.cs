@@ -16,7 +16,6 @@ using Nucleus.UI;
 using Raylib_cs;
 
 using System.Collections.Concurrent;
-
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 
@@ -64,11 +63,16 @@ public class SongSelector : Panel, IMainMenuPanel
 		ApplyPredicate(SearchFilter.BuildPredicate(ActiveDialog));
 	}
 
-	public void AddSongs(IEnumerable<ChartSong> songs) {
-		Songs.AddRange(songs);
+	public void AddSongs(IEnumerable<ChartSong> songs)
+	{
+		var list = songs.ToList();
+		Songs.AddRange(list);
 
 		ApplyPredicate(CompiledFilter);
 		InvalidateLayout();
+		
+		// can't put this in a better place because Initialize() doesn't have a song list loaded...
+		SelectDisc(list.FirstOrDefault(x => x.Id == new string(MiscSettings.LastSelected.GetString())) ?? list.First());
 	}
 
 	public void ClearSongs() {
@@ -163,6 +167,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		DiscIndex--;
 		DiscAnimationOffset.ResetTo(-1);
 		ResetDiskTrack();
+		UpdateSaved();
 	}
 
 	public void MoveRight() {
@@ -172,16 +177,33 @@ public class SongSelector : Panel, IMainMenuPanel
 		DiscIndex++;
 		DiscAnimationOffset.ResetTo(1);
 		ResetDiskTrack();
+		UpdateSaved();
 	}
 
-	public void SelectDisc(ChartSong song) => SelectDisc(GetSongsList().IndexOf(song));
-	public void SelectDisc(int index) {
+	private void UpdateSaved()
+	{
+		var index = DiscIndex;
+		var list = GetSongsList();
+		if (list.Count == 0) return;
+		
+		while (index < 0) index += list.Count;
+		while (index >= list.Count) index -= list.Count;
+		
+		var song = list[index];
+		MiscSettings.LastSelected.SetValue(song.Id);
+	}
+
+	public void SelectDisc(ChartSong song)
+	{
+		var index = GetSongsList().IndexOf(song);
+		
 		if (!InfiniteList && (index < 0 || index >= GetSongsList().Count))
 			return;
 
 		DiscIndex = index;
 		DiscAnimationOffset.ResetTo(0);
 		ResetDiskTrack();
+		UpdateSaved();
 	}
 
 	public int GetSongIndex(int localIndex) => GetSongsList().Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, GetSongsList().Count);
