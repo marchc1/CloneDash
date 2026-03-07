@@ -182,10 +182,14 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	private void UpdateSaved()
 	{
+		var index = DiscIndex;
 		var list = GetSongsList();
-		if (DiscIndex >= list.Count) return;
+		if (list.Count == 0) return;
 		
-		var song = list[DiscIndex];
+		while (index < 0) index += list.Count;
+		while (index >= list.Count) index -= list.Count;
+		
+		var song = list[index];
 		MiscSettings.LastSelected.SetValue(song.Id);
 	}
 
