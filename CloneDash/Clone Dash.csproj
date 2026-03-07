@@ -7,7 +7,7 @@
 		<Nullable>enable</Nullable>
 		<AssemblyName>Clone Dash</AssemblyName>
 		<RootNamespace>CloneDash</RootNamespace>
-		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<ApplicationIcon>cdicon.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -97,10 +97,6 @@
 
 		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
-   
-  <PropertyGroup>
-		<ApplicationIcon>cdicon.ico</ApplicationIcon>
-	</PropertyGroup>
 	
 	<Target Name="CopyPublishAssets" AfterTargets="Publish">
 		<ItemGroup>
