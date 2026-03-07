@@ -282,7 +282,8 @@ public record class MuseDashSceneInfo
 	public static readonly MuseDashSceneInfo Mirrorland = new MuseDashSceneInfo(10, "Mirrorland", "scene_{0:00}_rin_len");
 	public static readonly MuseDashSceneInfo Warriorland = new MuseDashSceneInfo(11, "Warriorland")
 												.MarkUnusable();
-	public static readonly MuseDashSceneInfo JadeTemple = new MuseDashSceneInfo(12, "Jade Temple");
+	public static readonly MuseDashSceneInfo JadeTemple = new MuseDashSceneInfo(12, "Jade Temple")
+												.MarkUnusable();
 }
 
 public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
@@ -299,6 +300,9 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		var sceneInfo = MuseDashSceneInfo.GetSceneInfo(name);
 		if (sceneInfo == null)
 			return null;
+
+		if (sceneInfo.Unusable)
+			return GetScene("scene_01"); // Fall back to Space Station...
 
 		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
