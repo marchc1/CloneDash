@@ -1506,6 +1506,8 @@ namespace Nucleus.UI
 		public bool ShouldDrawImage { get; set; } = true;
 
 		public static void PaintBackground(Element e, float width, float height, Color back, Color fore, float borderSize, float roundness) {
+			if (width <= 0) return;
+			if (height <= 0) return;
 			Graphics2D.SetDrawColor(back);
 
 			if (roundness <= 0) {

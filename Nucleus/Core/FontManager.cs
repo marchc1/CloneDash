@@ -132,7 +132,7 @@ namespace Nucleus.Core
 			get {
 				// determine if fonts need to be cleaned due to new codepoints
 				// is there a better way to do this?
-
+				fontSize = Math.Clamp(fontSize, 7, 256);
 				bool wasFirst = !FullFontRefreshRequired;
 				if (!text.IsEmpty) {
 					for (int i = 0; i < text.Length;) {
