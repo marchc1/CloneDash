@@ -301,8 +301,10 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		if (sceneInfo == null)
 			return null;
 
-		if (sceneInfo.Unusable)
+		if (sceneInfo.Unusable){
+			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
 			return GetScene("scene_01"); // Fall back to Space Station...
+		}
 
 		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
