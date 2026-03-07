@@ -15,10 +15,13 @@ public interface ICharacterExpression
 	public string GetEndAnimationName();
 	public void GetSpeech(Level level, out string text, out IAudioClip? voice);
 
-	public bool Run(Level level, ModelInstance model, AnimationHandler anims, out string text, out double duration) {
-		Nucleus.Models.Runtime.Animation? startAnimation = model.Data.FindAnimation(GetStartAnimationName());
-		Nucleus.Models.Runtime.Animation? idleAnimation = model.Data.FindAnimation(GetIdleAnimationName());
-		Nucleus.Models.Runtime.Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
+	public bool Run(Level level, ModelInstance model, AnimationHandler anims, out string text, out double duration, out AudioPlaybackHandle? handle)
+	{
+		handle = null;
+		
+		Animation? startAnimation = model.Data.FindAnimation(GetStartAnimationName());
+		Animation? idleAnimation = model.Data.FindAnimation(GetIdleAnimationName());
+		Animation? endAnimation = model.Data.FindAnimation(GetEndAnimationName());
 
 		GetSpeech(level, out text, out var voice);
 
@@ -28,8 +31,8 @@ public interface ICharacterExpression
 		}
 
 		voice?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		var handle = audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
-		duration = audiosystem.GetPlaybackDuration(handle);
+		handle = audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
+		duration = audiosystem.GetPlaybackDuration(handle.Value);
 
 		anims.SetAnimation(1, GetStartAnimationName());
 		anims.AddAnimation(1, GetIdleAnimationName(), loops: true, loopDuration: Math.Max(duration - startAnimation.Duration - endAnimation.Duration, 0.1));
