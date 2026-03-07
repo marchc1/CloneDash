@@ -1,18 +1,25 @@
 ﻿using CloneDash.Game;
 
-namespace CloneDash.Data
+namespace CloneDash.Data;
+
+public struct ChartSceneChange {
+	public string SceneUID;
+	public double Time;
+	public string? Value;
+}
+
+public class ChartSheet
 {
-	public class ChartSheet
-	{
-		public ChartSong Song { get; private set; }
-		public ChartSheet(ChartSong song) => Song = song;
+	public ChartSong Song { get; private set; }
+	public ChartSheet(ChartSong song) => Song = song;
 
-		public double StartOffset { get; set; }
-		public string Rating { get; set; }
+	public double StartOffset { get; set; }
+	public string? Rating { get; set; }
 
-		public readonly List<ChartEntity> Entities = [];
-		public readonly List<ChartEvent> Events = [];
-		public readonly List<TempoChange> TempoChanges = [];
-		public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
-	}
+	public readonly List<ChartEntity> Entities = [];
+	public readonly List<ChartEvent> Events = [];
+	public readonly List<TempoChange> TempoChanges = [];
+	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
+	public string? InitialScene;
+	public readonly List<ChartSceneChange> SceneChanges = [];
 }

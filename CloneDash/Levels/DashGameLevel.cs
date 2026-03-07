@@ -541,7 +541,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				var sceneData = SceneMod.GetSceneData();
 				if (sceneData == null) {
 					// TODO: Scene changes. Requires a HUGE restructuring
-					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.Song.GetInfo()?.Scene);
+					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.InitialScene);
 					if (sceneData == null)
 						throw new ArgumentNullException(nameof(sceneData));
 				}

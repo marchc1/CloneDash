@@ -333,6 +333,13 @@ namespace CloneDash.Compatibility.MuseDash
 			ChartSheet sheet = new(song);
 			sheet.Rating = song.Difficulty(MDinfo.difficulty);
 
+			sheet.InitialScene = MDinfo.scene;
+			sheet.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){
+				SceneUID = x.uid,
+				Time = Convert.ToDouble(x.time),
+				Value = x.value
+			}));
+
 			sheet.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)
 				sheet.TempoChanges.AddRange(tempoChanges);
