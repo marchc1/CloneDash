@@ -819,6 +819,20 @@ namespace CloneDash.Compatibility.MuseDash
 					yield return song;
 			}
 		}
+
+		internal static IEnumerable<MuseDashSong> FindSongsStartingWith(ReadOnlySpan<char> md_level) {
+			char[] buffer = tempSearchBuffers.Value!;
+			md_level.CopyTo(buffer);
+			int length = md_level.Length;
+			return _FindSongsStartingWith(buffer, length);
+		}
+		// If we don't do this we get instance of type cannot be preserved across await or yield boundary issues
+		static IEnumerable<MuseDashSong> _FindSongsStartingWith(char[] buffer, int length) {
+			foreach (var song in Songs) {
+				if (song.BaseName.StartsWith(buffer.AsSpan()[..length], StringComparison.OrdinalIgnoreCase))
+					yield return song;
+			}
+		}
 	}
 
 	public enum MuseDashDifficulty

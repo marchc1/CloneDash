@@ -90,7 +90,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
-		var md_level = args.ArgS(1);
+		var md_level = args.Arg(1);
 		if (md_level == null) {
 			Logs.Warn("Provide a name.");
 			return;
@@ -114,7 +114,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		DashGameLevel.LoadLevel(song, map, args.Arg(3, 0) == 1);
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		// REDO ME
+		if (curArgPos == 1) {
+			var songs = MuseDashCompatibility.FindSongsStartingWith(args.Arg(1));
+			returns = [.. songs.Select(s => s.BaseName)];
+			returnHelp = [.. songs.Select(s => $" '{s.Name}'")];
+		}
+		else if (curArgPos == 2) {
+			var values = Enum.GetValues<MuseDashDifficulty>();
+			returns = [.. values.Select(d => ((int)d).ToString())];
+			returnHelp = [.. values.Select(d => d.ToString())];
+		}
+		else if (curArgPos == 3) {
+			returns = ["0", "1"];
+			returnHelp = ["Autoplay Off", "Autoplay On"];
+		}
 	}
 
 	public static ConCommand mdlevel = new(nameof(mdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");

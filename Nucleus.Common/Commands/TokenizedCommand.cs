@@ -16,6 +16,7 @@ public struct TokenizedCommand
 
 	char[]? argSBuffer;
 	Range[] ppArgs;
+	bool[] ppQuoted;
 
 	/// <summary>
 	/// How many arguments are in the tokenized command? Note that this also contains the command itself. So a command
@@ -66,7 +67,7 @@ public struct TokenizedCommand
 	/// </summary>
 	/// <param name="index">A zero-indexed argument, zero will return the command name, and one is the start of the command arguments.</param>
 	public readonly double Arg(int index, double def = default) {
-		if (int.TryParse(Arg(index), null, out int r))
+		if (double.TryParse(Arg(index), null, out double r))
 			return r;
 		return def;
 	}
@@ -94,6 +95,12 @@ public struct TokenizedCommand
 		return argSBuffer.AsSpan()[start..end];
 	}
 
+	public readonly bool IsArgQuoted(int index) {
+		if (ppQuoted == null || index < 0 || index >= argCount)
+			return false;
+		return ppQuoted[index];
+	}
+
 	public readonly Span<char> GetCommandStringForWrite() => argSBuffer;
 	public readonly ReadOnlySpan<char> GetCommandString() => argSBuffer;
 
@@ -103,17 +110,19 @@ public struct TokenizedCommand
 
 	[MemberNotNull(nameof(argSBuffer))]
 	[MemberNotNull(nameof(ppArgs))]
+	[MemberNotNull(nameof(ppQuoted))]
 	public void Reset() {
 		argCount = 0;
 		strlen = 0;
 		argSBuffer ??= new char[COMMAND_MAX_LENGTH];
 		ppArgs ??= new Range[COMMAND_MAX_ARGC];
-		for (int i = 0; i < COMMAND_MAX_LENGTH; i++) {
+		ppQuoted ??= new bool[COMMAND_MAX_ARGC];
+		for (int i = 0; i < COMMAND_MAX_LENGTH; i++)
 			argSBuffer[i] = '\0';
-		}
-		for (int i = 0; i < ppArgs.Length; i++) {
+		for (int i = 0; i < ppArgs.Length; i++)
 			ppArgs[i] = new Range(0, 0);
-		}
+		for (int i = 0; i < ppQuoted.Length; i++)
+			ppQuoted[i] = false;
 	}
 
 	public readonly ReadOnlySpan<char> this[int index] {
@@ -126,28 +135,58 @@ public struct TokenizedCommand
 		command.CopyTo(argSBuffer.AsSpan()[..command.Length]);
 		strlen = command.Length;
 
-		int start = 0;
+		int pos = 0;
 		int argIdx = 0;
-		ReadOnlySpan<char> substr = command;
 
-		while (!substr.IsEmpty && argIdx < COMMAND_MAX_ARGC) {
-			int endIndex = substr.IndexOf(' ');
-			if (endIndex == -1)
-				endIndex = substr.Length;
+		while (pos < command.Length && argIdx < COMMAND_MAX_ARGC) {
+			while (pos < command.Length && command[pos] == ' ')
+				pos++;
 
-			ppArgs[argIdx++] = new(start, start + endIndex);
-			start += endIndex;
-
-			if (start >= command.Length)
+			if (pos >= command.Length)
 				break;
 
-			start++;
-			substr = command[start..];
+			if (command[pos] == '"') {
+				pos++;
+				int start = pos;
+				while (pos < command.Length && command[pos] != '"')
+					pos++;
+				ppArgs[argIdx] = new(start, pos);
+				ppQuoted[argIdx] = true;
+				argIdx++;
+				if (pos < command.Length)
+					pos++;
+			}
+			else {
+				int start = pos;
+				while (pos < command.Length && command[pos] != ' ')
+					pos++;
+				ppArgs[argIdx] = new(start, pos);
+				ppQuoted[argIdx] = false;
+				argIdx++;
+			}
 		}
 
 		argCount = argIdx;
-
 		return true;
+	}
+
+	public readonly bool HasUnclosedQuote() {
+		if (argSBuffer == null || strlen == 0)
+			return false;
+		int quoteCount = 0;
+		for (int i = 0; i < strlen; i++)
+			if (argSBuffer[i] == '"')
+				quoteCount++;
+		return (quoteCount % 2) != 0;
+	}
+
+	public readonly int GetArgStartPosition(int index) {
+		if (argSBuffer == null || index < 0 || index >= argCount)
+			return strlen;
+		int pos = ppArgs[index].Start.Value;
+		if (ppQuoted[index] && pos > 0)
+			pos--;
+		return pos;
 	}
 
 	public readonly ReadOnlySpan<char> FindArg(ReadOnlySpan<char> name) {
