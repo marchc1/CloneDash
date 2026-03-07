@@ -261,9 +261,12 @@ namespace Nucleus.Commands
 				ctx.Print('"');
 
 				ctx.Print(" = ");
-				ctx.Print(var.GetString());
+				var value = var.GetString();
+				if (value.IsEmpty)
+					ctx.Print("\"\"");
+				else
+					ctx.Print(value);
 
-				ReadOnlySpan<char> value = var.GetString();
 				if (stricmp(value, var.GetDefault()) != 0) {
 					ctx.Print(" ( def. \"");
 					ctx.Print(var.GetDefault());
