@@ -32,7 +32,7 @@ public class CharacterPanel : Panel
 	private double StartExpressionTime;
 	private double NextExpressionTime;
 	private string? ExpressionText;
-
+	private AudioPlaybackHandle? ExpressionVoiceHandle;
 
 	private ModelInstance? PlayModel;
 	private ModelInstance? VictoryModel;
@@ -147,7 +147,7 @@ public class CharacterPanel : Panel
 
 		string? text = null;
 		double duration = 0;
-		expression?.Run(Level, Model, Anims, out text, out duration);
+		expression?.Run(Level, Model, Anims, out text, out duration, out ExpressionVoiceHandle);
 		StartExpressionTime = Level.Curtime;
 		NextExpressionTime = Level.Curtime + duration + 0.1;
 		ExpressionLabel.TextPadding = new(16);
@@ -230,24 +230,30 @@ public class CharacterPanel : Panel
 			ExpressionLabel.Visible = false;
 	}
 
-	public void Reset() {
-		/*audiosystem.RestartSound(Music);
-		Model?.SetToSetupPose();
-		Anims?.ClearAllAnimation();
-		ApplyExpression = null;
+	public void Reset() => SetCharacter(Character, true);
 
-		if (Model == null) return;
-		if (Anims == null) return;
-		if (Character == null) return;
+	private void ResetExpression()
+	{
+		ExpressionText = null;
+		ExpressionVoiceHandle?.Audio.DestroyPlayback(ExpressionVoiceHandle.Value);
+		StartExpressionTime = 0;
+		NextExpressionTime = 0;
 
-		var standby = Character.GetMainShowStandby();
-		if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-		Anims.AddAnimation(0, standby, true);*/
-
-		SetCharacter(Character, true);
+		if (Character is null || Model is null)
+			return;
+		
+		var standby = GetStandby(Character, Model);
+		Anims.SetAnimation(0, standby, true);
 	}
 
-	
+	private string GetStandby(ICharacterDescriptor desc, ModelInstance model)
+	{
+		var standby = desc.GetMainShowStandby();
+		if (model.Data.FindAnimation(standby) == null) standby = "standby";
+		if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
+		return standby;
+	}
+
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
 		if (Character != null && Character.GetUniqueID() == charDescriptor.GetUniqueID()) return;
@@ -256,11 +262,8 @@ public class CharacterPanel : Panel
 		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
 		Anims.SetModel(Model);
 		ApplyExpression = null;
-
-		var standby = charDescriptor.GetMainShowStandby();
-		if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-		if (Model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
-		Anims.SetAnimation(0, standby, true);
+		
+		ResetExpression();
 
 		var clip = charDescriptor.GetMainShowMusic(Level);
 		if (IValidatable.IsValid(clip)) {
