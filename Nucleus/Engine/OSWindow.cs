@@ -201,6 +201,7 @@ public unsafe class OSWindow : IValidatable
 		window.ScreenSize.X = width;
 		window.ScreenSize.Y = height;
 		window.ScreenScale = Raymath.MatrixIdentity();
+		window.MinSize = new(128, 128);
 
 		window.Resizable = true;
 
