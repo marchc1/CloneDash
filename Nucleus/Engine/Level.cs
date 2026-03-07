@@ -192,6 +192,13 @@ namespace Nucleus.Engine
 		/// When true, this will block some <see cref="ConVar"/>'s from being modified by the user.
 		/// </summary>
 		public virtual bool IsInGame => false;
+		public virtual ConsoleOverlaySettings GetConsoleOverlaySettings() => new() {
+			Position = new(6, 6),
+			Anchor = Anchor.TopLeft,
+			DoNotRender = false,
+			TextSize = 13,
+			Parent = UI
+		};
 
 		public Level() {
 			Timers = new(this);
@@ -772,7 +779,7 @@ namespace Nucleus.Engine
 					DrawDebugRecordList(debugrecords, in state, sizePer, ref ty);
 					DrawDebugRecordList(userdefined_debugrecords, in state, sizePer, ref ty);
 
-					ConsoleSystem.Draw();
+					ConsoleSystem.Draw(GetConsoleOverlaySettings());
 				}
 
 				IsRendering = false;

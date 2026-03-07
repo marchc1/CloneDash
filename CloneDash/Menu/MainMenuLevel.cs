@@ -175,7 +175,6 @@ public class MainMenuLevel : Level
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new MainMenuLevel()));
 
 		PushActiveElement(UI.Add<MainMenuPanel>());
-		ConsoleSystem.AddScreenBlocker(UI);
 	}
 
 	public override void PreThink(ref FrameState frameState) {
@@ -191,14 +190,12 @@ public class MainMenuLevel : Level
 	}
 
 
-	public override void PostRender(FrameState frameState) {
-		base.PostRender(frameState);
 
-		if (!EngineCore.ShouldShowDeveloperOverlays())
-			return;
-
-		ConsoleSystem.TextSize = 11;
-		ConsoleSystem.RenderToScreen(4 + 6, (int)(header.RenderBounds.H + 4));
+	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
+		return base.GetConsoleOverlaySettings() with {
+			TextSize = 11,
+			Position = new(4 + 6, (int)(header.RenderBounds.H + 4))
+		};
 	}
 
 	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {

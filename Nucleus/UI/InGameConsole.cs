@@ -194,11 +194,16 @@ namespace Nucleus
 		bool isArgumentAutocomplete = false;
 		string argumentPrefix = "";
 
+
+		protected override void ModifyLayout(ref RectangleF renderBounds) {
+			renderBounds.X = 8;
+			renderBounds.Y = Level.GetConsoleOverlaySettings().Position.Y;
+			renderBounds.W = Parent.Size.W - 16;
+			renderBounds.H = 384;
+		}
 		protected override void Initialize() {
 			base.Initialize();
 
-			this.Dock = Dock.Top;
-			this.Size = new(0, 384);
 			this.DockMargin = RectangleF.TLRB(8);
 			this.BorderSize = 0;
 
