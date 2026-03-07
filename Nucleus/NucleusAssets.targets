@@ -1,30 +1,35 @@
 ﻿<Project>
 	<PropertyGroup>
-		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+		<IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
+		<IsOSX>$([MSBuild]::IsOSPlatform('OSX'))</IsOSX>
+		<IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
 	</PropertyGroup>
-	
+
 	<Target Name="NucleusPreBuild" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
 			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsWindows)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsLinux)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
+			<OSXNativeLibs Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\*.dylib" />
 		</ItemGroup>
-		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
-		<ItemGroup Condition="'$(IsWindows)' == 'true'">
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
-		</ItemGroup>
-		<ItemGroup Condition="'$(IsOSX)' == 'true'">
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
-			<OSXNativeLibs Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\*.dylib" />
-		</ItemGroup>
-		<ItemGroup Condition="'$(IsLinux)' == 'true'">
-			<PlatformAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
-		</ItemGroup>
+		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="@(PlatformAssets_Nucleus)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
-		<Copy Condition="'$(IsOSX)' == 'true'" 
-			  SourceFiles="@(OSXNativeLibs)" 
-			  DestinationFolder="$(OutDir)runtimes\osx-arm64\native\" 
-			  SkipUnchangedFiles="true" />
+		<Copy Condition="'$(IsOSX)' == 'true'" SourceFiles="@(OSXNativeLibs)" DestinationFolder="$(OutDir)runtimes\osx-arm64\native\" SkipUnchangedFiles="true" />
+	</Target>
+
+	<Target Name="NucleusCopyPublishAssets" AfterTargets="Publish">
+		<ItemGroup>
+			<UniversalAssets_Nucleus Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsWindows)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
+			<PlatformAssets_Nucleus Condition="'$(IsLinux)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
+			<OSXNativeLibs Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\*.dylib" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(UniversalAssets_Nucleus)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(PlatformAssets_Nucleus)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy Condition="'$(IsOSX)' == 'true'" SourceFiles="@(OSXNativeLibs)" DestinationFolder="$(PublishDir)runtimes\osx-arm64\native\" SkipUnchangedFiles="true" />
 	</Target>
 </Project>

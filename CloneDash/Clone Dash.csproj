@@ -7,20 +7,29 @@
 		<Nullable>enable</Nullable>
 		<AssemblyName>Clone Dash</AssemblyName>
 		<RootNamespace>CloneDash</RootNamespace>
+		<ApplicationIcon>cdicon.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
+		<IsOSX>$([MSBuild]::IsOSPlatform('OSX'))</IsOSX>
+		<IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
 	</PropertyGroup>
 
-	<Import Project="..\StandardComponents.targets" />
-	<ItemGroup>
-		<Compile Include="..\StandardComponents.cs" Link="Usings/Globals/StandardComponents.cs" />
-	</ItemGroup>
+	<PropertyGroup Condition="'$(IsWindows)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_WINDOWS</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(IsOSX)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_OSX</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(IsLinux)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_LINUX</DefineConstants>
+	</PropertyGroup>
 
-	<ItemGroup>
-		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
-	</ItemGroup>
 
 	<ItemGroup>
 	  <Content Include="cdicon.ico" />
@@ -33,6 +42,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+		<PackageReference Include="Velopack" Version="0.0.1298" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -43,17 +53,23 @@
 		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
 	</ItemGroup>
 
+
+	<Import Project="..\StandardComponents.targets" />
+	<Import Project="..\Nucleus\NucleusAssets.targets" />
+
+	<ItemGroup>
+		<Compile Include="..\StandardComponents.cs" Link="Usings\Globals\StandardComponents.cs" />
+		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<Folder Include="UI\" />
 	</ItemGroup>
 
-	<!-- ================================================================= -->
-	<!-- Thing for writing BuildInfo for the update checker -->
-	<!-- ================================================================= -->
+
 	<Target Name="GenerateBuildDate" BeforeTargets="CoreCompile">
 		<PropertyGroup>
 			<BuildDateUtc>$([System.DateTime]::UtcNow.ToString("O"))</BuildDateUtc>
-
 			<GeneratedCode>
 				namespace CloneDash%3B
 
@@ -63,54 +79,35 @@
 				}
 			</GeneratedCode>
 		</PropertyGroup>
-
 		<WriteLinesToFile File="$(IntermediateOutputPath)BuildInfo.generated.cs" Lines="$(GeneratedCode)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 		<ItemGroup>
 			<Compile Include="$(IntermediateOutputPath)BuildInfo.generated.cs" />
 		</ItemGroup>
 	</Target>
 
-	<!-- ================================================================= -->
-	<!-- Asset copying from BuildAssets -->
-	<!-- ================================================================= -->
-	<PropertyGroup>
-		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
-		<ApplicationIcon>cdicon.ico</ApplicationIcon>
-	</PropertyGroup>
-
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+	<Target Name="CopyBuildAssets" AfterTargets="Build">
 		<ItemGroup>
-			<UniversalAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\universal\**\*" />
+			<UniversalAssets Include="$(MSBuildThisFileDirectory)BuildAssets\universal\**\*" />
+			<PlatformAssets Condition="'$(IsWindows)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\winnt\**\*" />
+			<PlatformAssets Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\intel_osx\**\*" />
+			<PlatformAssets Condition="'$(IsLinux)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\linux\**\*" />
 		</ItemGroup>
+
 		<Copy SourceFiles="@(UniversalAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 
-		<ItemGroup Condition="'$(IsWindows)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\winnt\**\*" />
-		</ItemGroup>
-		<ItemGroup Condition="'$(IsOSX)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\intel_osx\**\*" />
-		</ItemGroup>
-		<ItemGroup Condition="'$(IsLinux)' == 'true'">
-			<PlatformAssets Include="$(MSBuildThisFileDirectory)\BuildAssets\linux\**\*" />
-		</ItemGroup>
 		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(OutDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
-	<Import Project="..\Nucleus\NucleusAssets.targets" />
-	<!-- ================================================================= -->
-	<!-- ================================================================= -->
-	<!-- ================================================================= -->
+	
+	<Target Name="CopyPublishAssets" AfterTargets="Publish">
+		<ItemGroup>
+			<UniversalAssets Include="$(MSBuildThisFileDirectory)BuildAssets\universal\**\*" />
+			<PlatformAssets Condition="'$(IsWindows)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\winnt\**\*" />
+			<PlatformAssets Condition="'$(IsOSX)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\intel_osx\**\*" />
+			<PlatformAssets Condition="'$(IsLinux)' == 'true'" Include="$(MSBuildThisFileDirectory)BuildAssets\linux\**\*" />
+		</ItemGroup>
 
-	<PropertyGroup Condition="'$(IsWindows)'=='true'">
-		<DefineConstants>$(DefineConstants);COMPILED_WINDOWS</DefineConstants>
-	</PropertyGroup>
+		<Copy SourceFiles="@(UniversalAssets)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(PlatformAssets)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+	</Target>
 
-	<PropertyGroup Condition="'$(IsOSX)'=='true'">
-		<DefineConstants>$(DefineConstants);COMPILED_OSX</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(IsLinux)'=='true'">
-		<DefineConstants>$(DefineConstants);COMPILED_LINUX</DefineConstants>
-	</PropertyGroup>
 </Project>

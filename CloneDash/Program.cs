@@ -18,7 +18,7 @@ using Nucleus.Files;
 using Nucleus.NewEngine;
 using Nucleus.UI;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
+using Velopack;
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
@@ -41,6 +41,9 @@ namespace CloneDash;
 internal class Program
 {
 	static void Main() {
+		// Installer stuff, ignored if using zip.
+		VelopackApp.Build().Run();
+
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
 			return;
 
@@ -154,6 +157,12 @@ public class GameDLL : IGameDLL
 
 		// Update checker
 		new Task(async () => {
+			if (CommandLine().HasParm("-noupdate")) return;
+
+			var installerUpdate = await UpdateChecker.CheckAndApplyUpdates();
+			if (installerUpdate) return; // Update is being handled by Velopack
+
+			// Program is not installed (portable), run local update check
 			var release = await UpdateChecker.CheckForNewReleaseAsync();
 
 			if (release != null) {
@@ -165,7 +174,7 @@ public class GameDLL : IGameDLL
 							return;
 						}
 
-						string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
 						ui.DialogOKCancel("Update available", message, () => {
 							try {
 								var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
@@ -182,7 +191,7 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-	}
+    }
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
 		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
