@@ -65,7 +65,7 @@ jobs:
           Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $tempDir | Out-Null
           Copy-Item -Recurse -Force "./CloneDash/bin/Release/net10.0/*" $tempDir
-          Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $tempDir
+          # Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $tempDir
           Compress-Archive -Path "$tempDir\*" -DestinationPath "./CloneDash-Game-Windows.zip" -Force
           Remove-Item -Recurse -Force $tempDir
 
@@ -79,7 +79,7 @@ jobs:
           New-Item -ItemType Directory -Path $packDir | Out-Null
 
           Copy-Item -Recurse -Force "./CloneDash/bin/Release/net10.0/*" $packDir
-          Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $packDir
+          # Copy-Item -Recurse -Force "./Nucleus.ModelEditor/bin/Release/net10.0/*" $packDir
 
           $vpkVersion = "$(Get-Date -Format 'yyyy.Mdd').${{ github.run_number }}"
 
@@ -100,9 +100,9 @@ jobs:
           # Copy exactly what the ZIP uses so assets match
           cp -a "./CloneDash/bin/Release/net10.0/." "$APPDIR/usr/bin/"
           # Include any shared/editor assets if they are used at runtime
-          if [ -d "./Nucleus.ModelEditor/bin/Release/net10.0" ]; then
-            cp -a "./Nucleus.ModelEditor/bin/Release/net10.0/." "$APPDIR/usr/bin/" || true
-          fi
+          # if [ -d "./Nucleus.ModelEditor/bin/Release/net10.0" ]; then
+          #   cp -a "./Nucleus.ModelEditor/bin/Release/net10.0/." "$APPDIR/usr/bin/" || true
+          # fi
 
           # Ensure main executable(s) are executable when present
           [ -f "$APPDIR/usr/bin/CloneDash" ] && chmod +x "$APPDIR/usr/bin/CloneDash" || true
@@ -209,7 +209,7 @@ jobs:
           rm -rf tempzip
           mkdir -p tempzip
           cp -r "./CloneDash/bin/Release/net10.0/"* tempzip/
-          cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
+          # cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
           zip -r "./CloneDash-Game-Linux.zip" tempzip
           rm -rf tempzip
 
@@ -221,7 +221,7 @@ jobs:
           rm -rf tempzip
           mkdir -p tempzip
           cp -r "./CloneDash/bin/Release/net10.0/"* tempzip/
-          cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
+          # cp -r "./Nucleus.ModelEditor/bin/Release/net10.0/"* tempzip/
           zip -r "./CloneDash-Game-macOS.zip" tempzip
           rm -rf tempzip
 
