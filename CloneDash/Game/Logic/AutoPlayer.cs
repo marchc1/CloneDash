@@ -36,7 +36,8 @@ namespace CloneDash.Game.Logic
 		/// <param name="ent"></param>
 		public void MarkSustainAsInactive(DashModelEntity ent) {
 			if (ent.Type == EntityType.SustainBeam) {
-				Debug.Assert(CurrentSustains[ent.Pathway].TryPop(out var beam) && beam == (SustainBeam)ent);
+				bool popped = CurrentSustains[ent.Pathway].TryPop(out var beam);
+				Debug.Assert(popped && beam == (SustainBeam)ent);
 				beam?.Complete();
 			}
 		}
