@@ -526,7 +526,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Character = charData;
 
 				var sceneData = SceneMod.GetSceneData();
-				if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
+				if (sceneData == null) {
+					// TODO: Scene changes. Requires a HUGE restructuring
+					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.Song.GetInfo()?.Scene);
+					if (sceneData == null)
+						throw new ArgumentNullException(nameof(sceneData));
+				}
 				Scene = sceneData;
 
 				var feverFX = FeverMod.GetFeverData();
@@ -559,7 +564,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				foreach (object input in inputs)
 					InputReceivers.Add((ICloneDashInputSystem)input);
 			}
-
 
 			Interlude.Spin(submessage: "Initializing your character...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
@@ -704,8 +708,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	// This helps with doubles/sustains played in the same frame...
 	// probably a better way to handle it, but this works
 	readonly bool[] PlayedSceneSoundThisFrame = new bool[(int)SceneSound.Count];
-	private void ResetSceneSoundsPlayedThisFrame(){
-		for (int i = 0; i < PlayedSceneSoundThisFrame.Length; i++) 
+	private void ResetSceneSoundsPlayedThisFrame() {
+		for (int i = 0; i < PlayedSceneSoundThisFrame.Length; i++)
 			PlayedSceneSoundThisFrame[i] = false;
 	}
 	public void PlaySceneSound(SceneSound sound, int hits = 0) {
@@ -1657,7 +1661,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			PlayCharacterAnimation(CharacterAnimationType.Press);
 		}
-		else if(!nowInsustain) {
+		else if (!nowInsustain) {
 			if (pathway == PathwaySide.Top)
 				PlayCharacterAnimation(CharacterAnimationType.UpPressEnd);
 			else

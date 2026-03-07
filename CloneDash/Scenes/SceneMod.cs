@@ -26,8 +26,9 @@ public static class SceneMod
 				yield return characterName;
 	}
 
-	public static ISceneDescriptor? GetSceneData(ChartSong? song = null) {
-		ReadOnlySpan<char> name = scene.GetString();
+	public static ISceneDescriptor? GetSceneData(ReadOnlySpan<char> name = default) {
+		if (name.IsEmpty || name.IsWhiteSpace())
+			name = scene.GetString();
 
 		if (name.IsEmpty || name.IsWhiteSpace())
 			return null;
