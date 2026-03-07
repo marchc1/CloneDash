@@ -5,6 +5,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -102,7 +104,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	public List<Animation> Animations { get; set; } = [];
 	public List<LinkedMesh> LinkedMeshes { get; set; } = [];
 
-	[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; set; }
+	[JsonIgnore] public IRuntimeTextureAtlas TextureAtlas { get; set; }
 
 	// Internal lookup tables (holding off for now)
 	// [JsonIgnore] readonly UtlSymbolTableMT Symbols = new();
@@ -227,9 +229,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public Skin Skin { get; set; }
 	public Vector2F Position { get; set; }
 	public Vector2F Scale { get; set; } = new(1, 1);
-	public bool FlipX { get; set; }
-	public bool FlipY { get; set; }
-	public TextureAtlasSystem TextureAtlas => Data.TextureAtlas;
+	public IRuntimeTextureAtlas TextureAtlas => Data.TextureAtlas;
 
 	private Transformation worldTransform;
 	public Transformation WorldTransform {
@@ -245,7 +245,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Graphics2D.ResetDrawingOffset();
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(Position.X, Position.Y, 0);
-		Rlgl.Scalef(Scale.X, Scale.Y, 0);
+		Rlgl.Scalef(Scale.X, Scale.Y, 1);
 
 		foreach (var bone in Bones) {
 			bone.UpdateWorldTransform();
@@ -257,7 +257,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				Clipping.NextSlot(slot);
 				continue;
 			}
-
+			Rlgl.DrawRenderBatchActive();
 			attachment.Render(slot);
 			Clipping.NextSlot(slot);
 			slot.EndBlendMode();
@@ -436,9 +436,9 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 
 	public void SetAttachment(string? value) => Attachment = value == null ? null : Model.GetAttachment(Index, value);
 
-	public void StartBlendModeFor(Attachment attachment) {
+	public void StartBlendModeFor(Attachment attachment, bool premultipliedAlpha) {
 		Raylib.BeginBlendMode(BlendMode switch {
-			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY,
+			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : premultipliedAlpha ? Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY : Raylib_cs.BlendMode.BLEND_ALPHA,
 			BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
 			BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
 			BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
@@ -526,7 +526,10 @@ public class Animation : IModel4Nameable
 	public string Name { get; set; }
 	public List<Timeline> Timelines { get; set; } = [];
 
-	public void Apply(ModelInstance model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+	public void Apply(ModelInstance? model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+		if (model == null)
+			return;
+
 		foreach (var tl in Timelines) {
 			// todo: lasttime
 			tl.Apply(model, 0, time, mix, mixBlend);
@@ -553,36 +556,46 @@ public class RegionAttachment : Attachment
 	public Color Color = Color.White;
 
 	public string Path;
-	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public IModelAtlasRegion? Region;
 	[JsonIgnore] public bool InitializedRegion;
 
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		bool OK = data.TextureAtlas.TryGetTextureRegion(Path, out Region);
-		Debug.Assert(OK, "TextureAtlas couldn't find the texture region!");
+		Region = data.TextureAtlas.GetRegion(Path);
+		Debug.Assert(Region != null, "TextureAtlas couldn't find the texture region!");
 	}
 
 	public override void Render(SlotInstance slot) {
-		slot.StartBlendModeFor(this);
 		var bone = slot.Bone;
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
 
 		var region = Region;
-		if (!region.IsValid()) {
+		if (region == null) {
 			Setup(slot.Bone.Model.Data);
-			if (!Region.IsValid()) return;
+			if (Region == null) return;
 			region = Region;
 		}
 
-		var tex = slot.Bone.Model.TextureAtlas.Texture;
-		float width = region.H, height = region.W;
+		ITexture tex = region.GetTexture();
+		slot.StartBlendModeFor(this, region.GetPage().GetPreMultipliedAlpha());
+		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+		region.GetOffsets(out int offsetX, out int offsetY, out int origW, out int origH);
+		float rotation = region.GetRotation();
+
+		int deg = (int)rotation;
+		float cropW = (deg % 180 == 90) ? rh : rw;
+		float cropH = (deg % 180 == 90) ? rw : rh;
+		float width = cropH, height = cropW;
 		float widthDiv2 = width / 2, heightDiv2 = height / 2;
 
-		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2, widthDiv2);
-		Vector2F TR = worldTransform.LocalToWorld(heightDiv2, widthDiv2);
-		Vector2F BR = worldTransform.LocalToWorld(heightDiv2, -widthDiv2);
-		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
+		float localOffX = (offsetX + cropW * 0.5f) - origW * 0.5f;
+		float localOffY = origH * 0.5f - offsetY - cropH * 0.5f;
+
+		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, widthDiv2 + localOffY);
+		Vector2F TR = worldTransform.LocalToWorld(heightDiv2 + localOffX, widthDiv2 + localOffY);
+		Vector2F BR = worldTransform.LocalToWorld(heightDiv2 + localOffX, -widthDiv2 + localOffY);
+		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, -widthDiv2 + localOffY);
 
 		TL.Y *= -1;
 		TR.Y *= -1;
@@ -590,9 +603,8 @@ public class RegionAttachment : Attachment
 		BR.Y *= -1;
 
 		Rlgl.DisableBackfaceCulling();
-
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.HardwareID);
+		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
@@ -600,26 +612,20 @@ public class RegionAttachment : Attachment
 
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
-		float uStart, uEnd, vStart, vEnd;
-		uStart = (float)region.X / tex.Width;
-		uEnd = uStart + ((float)region.W / tex.Width);
+		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.Width, tex.Height, out var uvTL, out var uvTR, out var uvBR, out var uvBL);
+		if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+			uvTL.Y = 1f - uvTL.Y;
+			uvTR.Y = 1f - uvTR.Y;
+			uvBR.Y = 1f - uvBR.Y;
+			uvBL.Y = 1f - uvBL.Y;
+		}
+		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
+		Rlgl.TexCoord2f(uvTR.X, uvTR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+		Rlgl.TexCoord2f(uvTL.X, uvTL.Y); Rlgl.Vertex2f(TL.X, TL.Y);
 
-		vStart = (float)region.Y / tex.Height;
-		vEnd = vStart + ((float)region.H / tex.Height);
-
-		var clipping = slot.Model.Clipping;
-
-		Vector2F t1v1 = BL, t1v2 = TR, t1v3 = TL;
-		Vector2F uv1v1 = new(uStart, vEnd), uv1v2 = new(uEnd, vStart), uv1v3 = new(uStart, vStart);
-		Rlgl.TexCoord2f(uv1v1.X, uv1v1.Y); Rlgl.Vertex2f(t1v1.X, t1v1.Y);
-		Rlgl.TexCoord2f(uv1v2.X, uv1v2.Y); Rlgl.Vertex2f(t1v2.X, t1v2.Y);
-		Rlgl.TexCoord2f(uv1v3.X, uv1v3.Y); Rlgl.Vertex2f(t1v3.X, t1v3.Y);
-
-		Vector2F t2v1 = BR, t2v2 = TR, t2v3 = BL;
-		Vector2F uv2v1 = new(uEnd, vEnd), uv2v2 = new(uEnd, vStart), uv2v3 = new(uStart, vEnd);
-		Rlgl.TexCoord2f(uv2v1.X, uv2v1.Y); Rlgl.Vertex2f(t2v1.X, t2v1.Y);
-		Rlgl.TexCoord2f(uv2v2.X, uv2v2.Y); Rlgl.Vertex2f(t2v2.X, t2v2.Y);
-		Rlgl.TexCoord2f(uv2v3.X, uv2v3.Y); Rlgl.Vertex2f(t2v3.X, t2v3.Y);
+		Rlgl.TexCoord2f(uvBR.X, uvBR.Y); Rlgl.Vertex2f(BR.X, BR.Y);
+		Rlgl.TexCoord2f(uvTR.X, uvTR.Y); Rlgl.Vertex2f(TR.X, TR.Y);
+		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
 
@@ -671,10 +677,13 @@ public class VertexAttachment : Attachment
 	public float Rotation;
 	public Vector2F Scale;
 
-	[JsonIgnore] public AtlasRegion Region;
+	[JsonIgnore] public IModelAtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
 	protected Vector2F CalculateVertexWorldPosition(SlotInstance slot, int vertexI) {
+		if (Vertices == null)
+			return default;
+
 		var vertex = Vertices![vertexI];
 		var bone = slot.Bone;
 		var transform = slot.Bone.WorldTransform;
@@ -744,7 +753,7 @@ public class MeshAttachment : VertexAttachment
 	public override byte Alpha => Color.A;
 
 	public override void Setup(ModelData data) {
-		data.TextureAtlas.TryGetTextureRegion(Path, out Region);
+		Region = data.TextureAtlas.GetRegion(Path)!;
 	}
 
 	public AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
@@ -762,25 +771,23 @@ public class MeshAttachment : VertexAttachment
 		if (triangles == null)
 			return;
 
-		slot.StartBlendModeFor(this);
 
 		var region = Region;
-
-		//Debug.Assert(region.IsValid());
-		if (!region.IsValid()) {
+		if (region == null) {
 			Setup(slot.Bone.Model.Data);
-			if (!Region.IsValid()) return;
+			if (Region == null) return;
 			region = Region;
 		}
+		slot.StartBlendModeFor(this, region.GetPage().GetPreMultipliedAlpha());
 
 		var worldTransform = Transformation.CalculateWorldTransformation(Position, Rotation, Scale, Vector2F.Zero, TransformMode.Normal, slot.Bone.WorldTransform);
-
-		float width = region.H, height = region.W;
-		float widthDiv2 = width / 2, heightDiv2 = height / 2;
-		ManagedMemory.Texture tex = slot.Bone.Model.TextureAtlas.Texture;
+		region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+		region.GetOffsets(out int offsetX, out int offsetY, out int origW, out int origH);
+		float rotation = region.GetRotation();
+		ITexture tex = region.GetTexture();
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.HardwareID);
+		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color;
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
@@ -789,25 +796,20 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.DisableBackfaceCulling();
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 		if (triangles.Length > 0) {
-			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)region.X / (float)tex.Width;
-			uEnd = uStart + ((float)region.W / (float)tex.Width);
-
-			vStart = ((float)region.Y / (float)tex.Height);
-			vEnd = vStart + ((float)region.H / (float)tex.Height);
-
-			bool block = false;
 			foreach (var tri in triangles) {
 				var av1 = vertices[tri.V1];
 				var av2 = vertices[tri.V2];
 				var av3 = vertices[tri.V3];
 
-				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
-				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
-				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
+				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
 
-				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
-				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
+				if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
+					v1 = 1f - v1;
+					v2 = 1f - v2;
+					v3 = 1f - v3;
+				}
 
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
@@ -827,17 +829,6 @@ public class MeshAttachment : VertexAttachment
 			Rlgl.SetTexture(0);
 
 			foreach (var tri in triangles) {
-				var av1 = vertices[tri.V1];
-				var av2 = vertices[tri.V2];
-				var av3 = vertices[tri.V3];
-
-				float u1 = (float)NMath.Remap(av1.U, 0, 1, region.X, region.X + region.W), v1 = (float)NMath.Remap(av1.V, 1, 0, region.Y, region.Y + region.H);
-				float u2 = (float)NMath.Remap(av2.U, 0, 1, region.X, region.X + region.W), v2 = (float)NMath.Remap(av2.V, 1, 0, region.Y, region.Y + region.H);
-				float u3 = (float)NMath.Remap(av3.U, 0, 1, region.X, region.X + region.W), v3 = (float)NMath.Remap(av3.V, 1, 0, region.Y, region.Y + region.H);
-
-				u1 /= tex.Width; u2 /= tex.Width; u3 /= tex.Width;
-				v1 /= tex.Height; v2 /= tex.Height; v3 /= tex.Height;
-
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
 				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
@@ -860,8 +851,76 @@ public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 	public int GetVerticesCount() => Vertices.Length;
 	public override void Render(SlotInstance slot) {
 		base.Render(slot);
-		// Start the model clipper
 		slot.Model.Clipping.Start(this, slot, EndSlot);
+	}
+}
+
+public static class AtlasUV
+{
+	public static void ComputeRegionUVs(int rx, int ry, int rw, int rh, float rotation, int texW, int texH, out Vector2F uvTL, out Vector2F uvTR, out Vector2F uvBR, out Vector2F uvBL) {
+		float x0 = (float)rx / texW;
+		float y0 = (float)ry / texH;
+		float x1 = (float)(rx + rw) / texW;
+		float y1 = (float)(ry + rh) / texH;
+
+		Vector2F a = new(x0, y0);
+		Vector2F b = new(x1, y0);
+		Vector2F c = new(x1, y1);
+		Vector2F d = new(x0, y1);
+
+		int deg = (int)rotation;
+		switch (deg) {
+			case 90:
+				uvTL = d; uvTR = a; uvBR = b; uvBL = c;
+				break;
+			case 180:
+				uvTL = c; uvTR = d; uvBR = a; uvBL = b;
+				break;
+			case 270:
+				uvTL = b; uvTR = c; uvBR = d; uvBL = a;
+				break;
+			default:
+				uvTL = a; uvTR = b; uvBR = c; uvBL = d;
+				break;
+		}
+	}
+
+	public static void RemapMeshUV(int rx, int ry, int rw, int rh, float rotation,
+		int offsetX, int offsetY, int origW, int origH,
+		int texW, int texH, float u, float v, out float outU, out float outV) {
+
+		v = 1 - v;
+
+		int deg = (int)rotation;
+		int cropW = (deg % 180 == 90) ? rh : rw;
+		int cropH = (deg % 180 == 90) ? rw : rh;
+
+		float cu = (u * origW - offsetX) / cropW;
+		float cv = (v * origH - offsetY) / cropH;
+
+		float x0 = (float)rx / texW;
+		float y0 = (float)ry / texH;
+		float fw = (float)rw / texW;
+		float fh = (float)rh / texH;
+
+		switch (deg) {
+			case 90:
+				outU = x0 + cv * fw;
+				outV = y0 + (1 - cu) * fh;
+				break;
+			case 180:
+				outU = x0 + (1 - cu) * fw;
+				outV = y0 + (1 - cv) * fh;
+				break;
+			case 270:
+				outU = x0 + (1 - cv) * fw;
+				outV = y0 + cu * fh;
+				break;
+			default:
+				outU = x0 + cu * fw;
+				outV = y0 + cv * fh;
+				break;
+		}
 	}
 }
 
@@ -1037,10 +1096,13 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 }
 public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatPropertyTimeline
 {
-	public const float ROT_WRAP = 16384f;
-	public const float ROT_WRAP_MIDWAY = 16384.498046875f; // ^141 +255
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float PERFORM_ROT_WRAP(float r) => (ROT_WRAP - (int)(ROT_WRAP_MIDWAY - r / 360)) * 360;
+	public static float PERFORM_ROT_WRAP(float r) {
+		r %= 360f;
+		if (r > 180f) r -= 360f;
+		else if (r <= -180f) r += 360f;
+		return r;
+	}
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
 		float r;
@@ -1053,7 +1115,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 					return;
 				case MixBlendMode.First:
 					r = GetSetup(bone) - Get(bone);
-					Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+					Set(bone, Get(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 					return;
 				default: return;
 			}
@@ -1066,7 +1128,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				case MixBlendMode.First:
 				case MixBlendMode.Replace:
 					r += GetSetup(bone) - Get(bone);
-					r -= PERFORM_ROT_WRAP(r);
+					r = PERFORM_ROT_WRAP(r);
 					goto case MixBlendMode.Add;
 				case MixBlendMode.Add:
 					Set(bone, Get(bone) + (r * (float)mix));
@@ -1081,19 +1143,19 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 		float percentage = (float)curve.GetPercentage(frame, time);
 
 		float delta = (curve.Count == 1 ? curve[frame] : curve[frame + 1]).Value - p;
-		delta -= PERFORM_ROT_WRAP(delta);
+		delta = PERFORM_ROT_WRAP(delta);
 		r = p + delta * percentage;
 
 		switch (blend) {
 			case MixBlendMode.Setup:
-				Set(bone, GetSetup(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				Set(bone, GetSetup(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 				break;
 			case MixBlendMode.First:
 			case MixBlendMode.Replace:
 				r += GetSetup(bone) - Get(bone);
 				goto case MixBlendMode.Add;
 			case MixBlendMode.Add:
-				Set(bone, Get(bone) + (r - PERFORM_ROT_WRAP(r)) * (float)mix);
+				Set(bone, Get(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 				break;
 		}
 	}
@@ -1354,10 +1416,22 @@ public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(bone.Shear.X, value);
 }
 
+public delegate void AnimPlaybackBeginFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackStartFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackEndFn(AnimationChannelEntry entry);
+public delegate void AnimPlaybackCompleteFn(AnimationChannelEntry entry);
 
 public class AnimationChannelEntry
 {
-	public Animation Animation;
+	public required Animation Animation;
+	/// <summary> Called when the animation playback has first begun (loop exclusive) </summary>
+	public AnimPlaybackBeginFn? OnPlaybackBegin;
+	/// <summary> Called when the animation playback has started (loop inclusive)</summary>
+	public AnimPlaybackStartFn? OnPlaybackStart;
+	/// <summary> Called when the animation playback has completed (loop inclusive). Note that loopback will trigger Start again. </summary>
+	public AnimPlaybackEndFn? OnPlaybackEnd;
+	/// <summary> Called when the animation playback has fully completed (loop exclusive) </summary>
+	public AnimPlaybackCompleteFn? OnPlaybackComplete;
 	public bool Looping;
 	public double LoopDuration = -1;
 
@@ -1384,8 +1458,12 @@ public class AnimationChannel
 
 	public void EnqueueNext() {
 		// Enqueue the next animation
+		CurrentEntry?.OnPlaybackEnd?.Invoke(CurrentEntry);
+		CurrentEntry?.OnPlaybackComplete?.Invoke(CurrentEntry);
 		if (QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
 			CurrentEntry = newAnim;
+			newAnim.OnPlaybackBegin?.Invoke(newAnim);
+			newAnim.OnPlaybackStart?.Invoke(newAnim);
 			ResetTime();
 		}
 		else {
@@ -1397,14 +1475,22 @@ public class AnimationChannel
 public class AnimationHandler
 {
 	public AnimationChannel[] Channels = new AnimationChannel[5];
-	ModelData model;
-	public AnimationHandler(ModelInstance model) : this(model.Data) { }
-	public AnimationHandler(ModelData model) {
-		this.model = model;
+	ModelData? model;
+	public AnimationHandler() {
 		for (int i = 0; i < Channels.Length; i++) {
 			Channels[i] = new();
 		}
 	}
+
+	public ModelData? GetModelData() => model;
+	public void SetModel(ModelData? data) {
+		if (model == data)
+			return;
+		model = data;
+		ClearAllAnimation();
+	}
+	public void SetModel(ModelInstance? instance) => SetModel(instance?.Data);
+
 	public bool IsPlayingAnimation() {
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry != null) return true;
@@ -1436,8 +1522,11 @@ public class AnimationHandler
 			}
 
 			if (channel.Time >= anim.Animation.Duration) {
-				if (anim.Looping)
-					channel.Time = channel.Time % anim.Animation.Duration;
+				if (anim.Looping) {
+					anim.OnPlaybackEnd?.Invoke(anim);
+					channel.Time %= anim.Animation.Duration;
+					anim.OnPlaybackStart?.Invoke(anim);
+				}
 				else
 					channel.EnqueueNext();
 			}
@@ -1447,32 +1536,42 @@ public class AnimationHandler
 		}
 	}
 
-	public void AddAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
+	public AnimationChannelEntry? AddAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+		if (animation == null)
+			return null;
+
 		var channelObj = Channels[channel];
 
-		var anim = model.FindAnimation(animation);
-		if (anim == null) return;
+		var anim = model?.FindAnimation(animation);
+		if (anim == null) return null;
 
-		channelObj.QueuedEntries.Enqueue(new() {
+		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
 			LoopDuration = loopDuration
-		});
+		};
+		channelObj.QueuedEntries.Enqueue(entry);
+		return entry;
 	}
 
-	public void SetAnimation(int channel, string animation, bool loops = false, double loopDuration = -1) {
+	public AnimationChannelEntry? SetAnimation(int channel, string? animation, bool loops = false, double loopDuration = -1) {
+		if (animation == null)
+			return null;
+
 		var channelObj = Channels[channel];
 		StopAnimation(channel);
 
-		var anim = model.FindAnimation(animation);
-		if (anim == null) return;
+		var anim = model?.FindAnimation(animation);
+		if (anim == null) return null;
 
 		channelObj.QueuedEntries.Clear();
-		channelObj.QueuedEntries.Enqueue(new() {
+		AnimationChannelEntry entry = new() {
 			Animation = anim,
 			Looping = loops,
 			LoopDuration = loopDuration
-		});
+		};
+		channelObj.QueuedEntries.Enqueue(entry);
+		return entry;
 	}
 
 	public void StopAllAnimation() {
@@ -1481,6 +1580,7 @@ public class AnimationHandler
 			Channels[channel].Time = 0;
 		}
 	}
+
 	public void StopAnimation(int channel) {
 		Channels[channel].CurrentEntry = null;
 		Channels[channel].Time = 0;
@@ -1840,12 +1940,10 @@ public class ModelBinary : IModelFormat
 				if (imagedata == null)
 					throw new NullReferenceException("Got texture atlas, expected image data as well");
 
-				data.TextureAtlas = new();
-				data.TextureAtlas.Load(texatlas, imagedata);
+				throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
+				// data.SetupAttachments();
 
-				data.SetupAttachments();
-
-				return data;
+				// return data;
 			}
 		}
 	}
@@ -2047,7 +2145,8 @@ public class ModelBinary : IModelFormat
 			writer.WriteList(modelData.Animations, writeAnimation);
 		}
 
-		modelData.TextureAtlas.SaveTo(absoluteFilePath);
+		//modelData.TextureAtlas.SaveTo(absoluteFilePath);
+		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
 	}
 }
 
@@ -2117,17 +2216,17 @@ public class ModelRefJSON : IModelFormat
 		if (imagedata == null)
 			throw new NullReferenceException("Got texture atlas, expected image data as well");
 
-		data.TextureAtlas = new();
-		data.TextureAtlas.Load(texatlas, imagedata);
+		throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
 
-		data.SetupAttachments();
+		// data.SetupAttachments();
 
-		return data;
+		// return data;
 	}
 
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
-		data.TextureAtlas.SaveTo(filepath);
+		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
+		//data.TextureAtlas.TrySaveTo(filepath);
 	}
 }

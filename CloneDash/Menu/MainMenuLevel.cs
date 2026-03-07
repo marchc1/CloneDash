@@ -8,6 +8,7 @@ using CloneDash.Menu.Searching;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -47,11 +48,12 @@ public class MainMenuLevel : Level
 		if (charData == null) return;
 
 		var model = charData.GetPlayModel(level).Instantiate();
-		var anims = new AnimationHandler(model);
+		var anims = new AnimationHandler();
+		anims.SetModel(model);
 
-		var shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+		var shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 		float time = 0;
-		var shaderTimeLoc = shader.GetShaderLocation("time");
+		var shaderTimeLoc = shader.GetUniformLocation("time");
 		model.SetToSetupPose();
 		anims.SetAnimation(0, "air_hit_great_2", false);
 
@@ -64,31 +66,32 @@ public class MainMenuLevel : Level
 			anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
 			anims.Apply(model);
 			time += (float)EngineCore.Level.RendertimeDelta;
-			shader.SetShaderValue("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
-			if (Raylib.IsShaderReady(shader)) {
-				Raylib.BeginShaderMode(shader);
+			shader.SetUniform("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
+			if (shader.IsValid()) {
+				shader.Activate();
 				model.Render(false);
-				Raylib.EndShaderMode();
+				shader.Deactivate();
 			}
 
 			EngineCore.Window.EndMode2D();
 		};
 
 		refresh.MouseReleaseEvent += (_, _, _) => {
-			Raylib.UnloadShader(shader);
-			shader = Filesystem.ReadFragmentShader("shaders", "hologram.fs");
+			shader.Dispose();
+			shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 			time = 0;
-			shaderTimeLoc = shader.GetShaderLocation("time");
+			shaderTimeLoc = shader.GetUniformLocation("time");
 			model.SetToSetupPose();
 			anims.SetAnimation(0, "air_hit_great_2", false);
 		};
 
 		window.Removed += (s) => {
-			Raylib.UnloadShader(shader);
+			shader.Dispose();
 		};
 	});
 
 	public Stack<Element> ActiveElements = [];
+	public CharacterPanel Character = null!;
 
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
@@ -112,9 +115,15 @@ public class MainMenuLevel : Level
 		base.OnUnload();
 		MDMCWebAPI.CancelPendingRequests();
 	}
-	public Element PopActiveElement() {
-		if (ActiveElements.Count <= 1) return ActiveElements.Peek();
-		var element = ActiveElements.Pop();
+	public void PopActiveElement() {
+		if (ActiveElements.Count <= 1) return;
+
+		var element = ActiveElements.Peek();
+		if (element is IMainMenuPanel mmp)
+			if (!mmp.OnTryClose())
+				return;
+
+		ActiveElements.Pop();
 		element.Remove();
 
 		var next = ActiveElements.Peek();
@@ -123,16 +132,27 @@ public class MainMenuLevel : Level
 
 		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
 
-		if (next is IMainMenuPanel mmp) {
-			mmp.OnShown();
-			mmp.SetRichPresence();
+		if (next is IMainMenuPanel nextmmp) {
+			nextmmp.OnShown();
+			nextmmp.SetRichPresence();
 		}
 
-		return next;
+
 	}
 
 	Panel header;
 	public override void Initialize(params object[] args) {
+		var charPanel = UI.Add<Panel>();
+		charPanel.BorderSize = 0;
+		charPanel.DynamicallySized = true;
+		charPanel.Size = new(1f, 1f);
+
+		Character = charPanel.Add<CharacterPanel>();
+		Character.DynamicallySized = true;
+		Character.Origin = Anchor.TopCenter;
+		Character.Size = new(1f);
+		Character.LinkToConVar = true;
+
 		header = UI.Add<Panel>();
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
@@ -210,7 +230,7 @@ public class MainMenuLevel : Level
 
 	internal void LoadChartSelector(SongSelector selector, ChartSong song) {
 		// Load all slow-to-get info now before the Window loads
-		MusicTrack? track = selector.ActiveTrack;
+		AudioPlaybackHandle track = selector.ActiveTrack;
 		var info = song.GetInfo();
 
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
@@ -318,7 +338,7 @@ public class MainMenuLevel : Level
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
 
-		bool setupTrack = track != null;
+		bool setupTrack = track.IsValid();
 		author.Thinking += (s) => {
 			var oldSize = s.TextSize;
 			var w = levelSelector.RenderBounds.W;
@@ -331,9 +351,9 @@ public class MainMenuLevel : Level
 
 			if (!setupTrack) {
 				track = selector.ActiveTrack;
-				if (track != null) {
+				if (track.IsValid()) {
 					setupTrack = true;
-					track.Processing += (self, frames) => {
+					audiosystem.AttachProcessor(track, (frames, userdata) => {
 						currentAvgVolume = 0;
 						for (int i = 0; i < frames.Length; i++) {
 							float val = frames[i];
@@ -343,12 +363,12 @@ public class MainMenuLevel : Level
 						}
 						currentAvgVolume /= frames.Length;
 						currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-					};
+					});
 				}
 			}
 		};
-		if (track != null)
-			track.Processing += (self, frames) => {
+		if (track.IsValid())
+			audiosystem.AttachProcessor(track, (frames, userdata) => {
 				currentAvgVolume = 0;
 				for (int i = 0; i < frames.Length; i++) {
 					float val = frames[i];
@@ -358,7 +378,7 @@ public class MainMenuLevel : Level
 				}
 				currentAvgVolume /= frames.Length;
 				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-			};
+			});
 
 		var difficulties = levelSelector.Add<FlexPanel>();
 		difficulties.Direction = Directional180.Vertical;
@@ -418,6 +438,36 @@ public class MainMenuLevel : Level
 
 	public override void Think(FrameState frameState) {
 		base.Think(frameState);
+
+		var active = ActiveElements.Peek();
+		var wasHidden = !Character.Visible;
+
+		if (active is not (CharacterSelector or MainMenuPanel))
+		{
+			Character.Visible = false;
+			Character.PlaysMusic = false;
+			return;
+		}
+
+		if (wasHidden)
+		{
+			Character.Visible = true;
+			Character.PlaysMusic = true;
+			Character.Reset();
+		}
+
+		var center = ActiveElements.Peek() is CharacterSelector;
+		var target = FrameState.WindowWidth * (center ? 0.5f : 1 / 3f);
+
+		float x;
+
+		if (Math.Abs(target - Character.Position.X) < 0.1)
+			x = target;
+		else
+			x = (float)double.Lerp(target, Character.Position.X, Math.Exp(-10f * CurtimeDelta));
+
+		Character.Position = new(x, 0);
+		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {

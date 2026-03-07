@@ -1,4 +1,5 @@
-﻿using Nucleus;
+﻿using CloneDash.Modding.Descriptors;
+using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Files;
 using Nucleus.Util;
@@ -11,18 +12,22 @@ namespace CloneDash.Fevers
 		private static IFeverDescriptor? activeDescriptor;
 		public delegate void UpdatedDelegate(IFeverDescriptor? descriptor);
 		public static event UpdatedDelegate? FeverUpdated;
-		public static ConVar fever = new(nameof(fever), "default", FCvar.Saved, "Your fever effect.", null, null, (cv, o, n) => {
+		public static ConVar fever = new(nameof(fever), "battle_fever", FCvar.Saved, "Your fever effect.", null, null, (cv, o, n) => {
 			activeDescriptor = null;
 			activeDescriptor = GetFeverData();
 			FeverUpdated?.Invoke(activeDescriptor);
 		});
 
+		static IFeverProvider[]? providers;
+
 		static FeverMod() {
 		}
 
-		public static string[] GetAvailableFevers() {
-			var dirs = filesystem.FindDirectories("fevers", "");
-			return dirs.ToArray();
+		public static IEnumerable<string> GetAvailableFevers() {
+			providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();
+			foreach (var retriever in providers)
+				foreach (var feverName in retriever.GetAvailable())
+					yield return feverName;
 		}
 
 		public static IFeverDescriptor? GetFeverData() {
@@ -30,8 +35,8 @@ namespace CloneDash.Fevers
 			if (name.IsEmpty || name.IsWhiteSpace())
 				return null;
 
-			IFeverProvider[] retrievers = ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();
-			foreach (var retriever in retrievers) {
+			providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<IFeverProvider>();
+			foreach (var retriever in providers) {
 				IFeverDescriptor? descriptor = retriever.FindByName(name);
 				if (descriptor == null) continue;
 

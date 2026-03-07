@@ -108,45 +108,11 @@ namespace Nucleus.Core
 			return alpha;
 		}
 
-		public static Shader shader_hsvtransform = Filesystem.ReadFragmentShader("shaders", "change_color.fshader");
-		public static float Hue { get; set; } = 0;
-		public static float Saturation { get; set; } = 1;
-		public static float Value { get; set; } = 1;
-		public static System.Numerics.Vector3 HSV {
-			get {
-				return new(Hue, Saturation, Value);
-			}
-			set {
-				Hue = value.X;
-				Saturation = value.Y;
-				Value = value.Z;
-
-			}
-		}
-
 		/// <summary>
 		/// This should be done before starting EngineCore or loading a level.
 		/// </summary>
 		/// <param name="codepointsStr"></param>
 		public static void RegisterCodepoints(ReadOnlySpan<char> codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
-
-		private static void beginShading() {
-			if (HSV.Equals(new(0, 1, 1)))
-				return;
-
-			int swirlCenterLoc = Raylib.GetShaderLocation(shader_hsvtransform, "inputHSV");
-			Raylib.SetShaderValue(shader_hsvtransform, swirlCenterLoc, HSV, ShaderUniformDataType.SHADER_UNIFORM_VEC3);
-			Raylib.BeginShaderMode(shader_hsvtransform);
-		}
-		private static void endShading() {
-			Raylib.EndShaderMode();
-		}
-
-		public static void SetHSV(float h, float s, float v) {
-			HSV = new(h, s, v);
-			int swirlCenterLoc = Raylib.GetShaderLocation(shader_hsvtransform, "inputHSV");
-		}
-		public static void SetHSV(Vector3 hsv) => SetHSV(hsv.X, hsv.Y, hsv.Z);
 
 		public static Vector2F Offset => __offset;
 
@@ -491,19 +457,10 @@ namespace Nucleus.Core
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
 
-		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, Vector3? hsvTransform = null) {
-			if (hsvTransform.HasValue)
-				SetHSV(hsvTransform.Value);
-			beginShading();
-
+		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) {
 			Raylib.DrawTexturePro(__texture, new Rectangle(
 				(flipX ? 1 : 0) * __texture.Width, (flipY ? 1 : 0) * __texture.Height,
 				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero), rotation, __drawColor);
-
-			if (hsvTransform.HasValue)
-				SetHSV(0, 1, 1);
-
-			endShading();
 		}
 		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY);
 		public static void DrawRing(Vector2F center, float innerRadius, float outerRadius, float startAngle = 0, float endAngle = 360, int segments = 32) {

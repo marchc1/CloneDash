@@ -28,7 +28,7 @@
 			base.OnReset();
 		}
 		public override void DetermineAnimationPlayback() {
-			Position = new(0, 450);
+			GetGameLevel().SetEnemyPosition(this);
 			if (Dead) {
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));

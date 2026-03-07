@@ -9,12 +9,12 @@ using CloneDash.Game.Statistics;
 using CloneDash.Levels;
 using CloneDash.Menu;
 using CloneDash.Scenes;
-using CloneDash.Scripting;
 using CloneDash.Settings;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -32,16 +32,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using Color = Nucleus.Common.Types.Color;
 
-using Sound = Nucleus.Audio.Sound;
-
 namespace CloneDash.Game;
 
-public struct DashGameParams {
+public struct DashGameParams
+{
 	public ChartSheet? Sheet;
 	public bool Autoplay;
 	public int Measure;
 
-	public DashGameParams(ChartSheet sheet){
+	public DashGameParams(ChartSheet sheet) {
 		Sheet = sheet;
 	}
 
@@ -59,8 +58,6 @@ public struct DashGameParams {
 [Nucleus.MarkForStaticConstruction]
 public partial class DashGameLevel(DashGameParams gameParameters) : Level
 {
-	public LuaEnv Lua;
-
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<DashGameLevel>();
 		if (level == null) {
@@ -73,6 +70,24 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		else level.SeekTo(d);
 	});
 
+	public static readonly ConVar musicspeed = new(nameof(musicspeed), "1", FCvar.None, "Sets the music speed for the game.", 0.1, 4, (cv, _, _) => {
+		if (EngineCore.Level is DashGameLevel game)
+			game.InitSpeedFromCvar();
+	});
+
+	double speed = 1;
+	public double GetSpeed() {
+		return speed;
+	}
+
+	public void SetSpeed(double speed) {
+		this.speed = speed;
+		audiosystem.SetSoundPitchControl(Music, (float)speed);
+	}
+
+	public void InitSpeedFromCvar() {
+		SetSpeed(musicspeed.GetDouble());
+	}
 
 	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
 		var md_level = args.ArgS(1);
@@ -126,6 +141,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public static ConVar profilegameload = new(nameof(profilegameload), "0", FCvar.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
 
+	public override bool IsInGame => true;
+
 	public static DashGameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {
@@ -153,15 +170,15 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
-		time = Math.Clamp(time, 0, Music?.Length ?? 0);
+		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
 		IsSeeking = true;
 
 		ExitMashState();
 
 		if (time < 0.06f)
-			Music?.Restart();
+			audiosystem.RestartSound(Music);
 		else
-			Music?.Playhead = (float)time;
+			audiosystem.SetSoundPlayhead(Music, time);
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
@@ -182,13 +199,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		lastNoteHit = false;
 		Score = 0;
 		Fever = 0;
-		resetPlayerAnimState();
 		Sustains.Reset();
 		AutoPlayer.Reset();
 		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
+		lastIFrameGivenTime = -10000d;
 
 		if (time > 0) {
 			foreach (var ev in Events) {
@@ -239,13 +256,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 							AutoPlayer.MarkSustainAsActive(sustain);
 							// Force time to the smaller value: either the end of the sustain, or the seeking time.
 							// This fixes issues when placing an autoplayer in the middle of a sustain.
-							Conductor.ForceTimeTo(Math.Min(sustain.GetJudgementHitTime() + sustain.Length + 0.01, time));
+							var endOfSustainIsh = sustain.GetJudgementHitTime() + sustain.Length + 0.01;
+							Conductor.ForceTimeTo(Math.Min(endOfSustainIsh, time));
 
 							// hack, but will force sustain to cancel if its ready
 							InputState s = default;
 							AutoPlayer.SustainHoldThink(ref s);
 
 							AutoPlayer.MarkEntityAsPassed(mEnt);
+							if (time > endOfSustainIsh)
+								AutoPlayer.MarkSustainAsInactive(sustain);
 							break;
 						default:
 							switch (mEnt.Interactivity) {
@@ -273,10 +293,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (InFever) FeverFX?.Start(this);
 
 			// ALSO A HACK - but it solves some animation issues when mid-sustain.
-			if (Sustains.IsSustaining(PathwaySide.Top))
-				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
-			else if (Sustains.IsSustaining(PathwaySide.Bottom))
-				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press));
+			if (Sustains.IsSustaining())
+				PlayCharacterAnimation(CharacterAnimationType.Press);
 		}
 
 		IsSeeking = false;
@@ -304,13 +322,38 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		InHit = false;
 	}
 
-	public float XPos { get; private set; }
-
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
-
 	public DashModelEntity? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	private TextEffect? mashTextEffect;
+	private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
+	private double LastMasherAttemptedHit;
+	private double LastMasherRealHit;
+
+
+	private void SubmitMashHit() {
+		if (!InMashState)
+			return;
+		LastMasherAttemptedHit = Conductor.Time;
+	}
+
+	private bool CheckMashHit() {
+		if (!InMashState) return false;
+		if (double.IsNaN(LastMasherRealHit)) return false;
+
+		if ((Conductor.Time - LastMasherRealHit) < TIME_BETWEEN_MASH_HITS)
+			return false;
+
+		if (!double.IsNaN(LastMasherAttemptedHit) && (Conductor.Time - LastMasherAttemptedHit) < TIME_BETWEEN_MASH_HITS) {
+			LastMasherRealHit = LastMasherAttemptedHit;
+			LastMasherAttemptedHit = double.NaN;
+			return true;
+		}
+
+		return false;
+	}
+
+
 
 	/// <summary>
 	/// Enters the mash state, which causes all attacks to be redirected into this entity.
@@ -328,6 +371,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		}
 		InMashState = true;
 		MashingEntity = ent;
+		LastMasherRealHit = Conductor.Time;
+		LastMasherAttemptedHit = Conductor.Time;
 	}
 	public void UpdateMashTextEffect() {
 		if (!IValidatable.IsValid(mashTextEffect)) return;
@@ -345,6 +390,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		InMashState = false;
 		MashingEntity = null;
+		LastMasherRealHit = double.NaN;
+		LastMasherAttemptedHit = double.NaN;
 	}
 
 	/// <summary>
@@ -362,9 +409,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Timing system.
 	/// </summary>
 	public Conductor Conductor { get; private set; }
-	public MusicTrack? Music { get; private set; }
+	public AudioPlaybackHandle Music;
 	public ModelEntity Player { get; set; }
 	public ModelEntity HologramPlayer { get; set; }
+	public MD_SpineActionController PlayerController { get; set; }
+	public MD_SpineActionController HologramPlayerController { get; set; }
 	public Boss Boss { get; set; }
 	public Pathway TopPathway { get; set; }
 	public Pathway BottomPathway { get; set; }
@@ -388,8 +437,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (Conductor.Time < 0)
 			return false;
 
-		if (Music != null)
-			Music.Paused = true;
+		audiosystem.PauseSound(in Music);
 		Paused = true;
 		UnpauseTime = 0;
 
@@ -403,20 +451,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		});
 	}
 	private void fullUnpause() {
-		if (Music != null)
-			Music.Paused = false;
+		audiosystem.ResumeSound(in Music);
 		Paused = false;
 		UnpauseTime = 0;
 	}
 
 	public void ForcePause() {
-		if (Music != null)
-			Music.Paused = true;
+		audiosystem.PauseSound(in Music);
 		Paused = true;
 	}
 	public void ForceUnpause() {
-		if (Music != null)
-			Music.Paused = false;
+		audiosystem.ResumeSound(in Music);
 		Paused = false;
 	}
 
@@ -430,69 +475,37 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public IFeverDescriptor? FeverFX;
 	public ISceneDescriptor Scene;
 
-	public string AnimationCDD(CharacterAnimationType type) {
-		return Character.GetPlayAnimation(type);
-	}
-
-	public void PlayerAnim_DoDamage() {
-		playeranim_hurt = true;
-
-	}
-	// TODO; more in depth
-	public void PlayerAnim_ForceHurt() {
-		Player.Model.SetToSetupPose();
-		if (InAir)
-			if (Sustains.IsSustaining(PathwaySide.Top))
-				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPressHurt));
-			else
-				Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.JumpHurt));
-		else
-			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadHurt));
-	}
-	public void PlayerAnim_EnqueueRun(ModelEntity model) {
-		model.Model.SetToSetupPose();
-		model.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.Run), true);
-	}
-
-	public void PlayerAnim_ForceJump(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Jump), false);
-		PlayerAnim_EnqueueRun(model);
-	}
-	public void PlayerAnim_ForceMiss(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadMiss), false);
-		PlayerAnim_EnqueueRun(model);
-	}
-	public void PlayerAnim_ForceAttackAir(ModelEntity model, bool perfect) {
-		if (perfect)
-			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPerfect), false);
-		else
-			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirGreat), false);
-	}
-	public void PlayerAnim_ForceAttackGround(ModelEntity model, bool perfect) {
-		if (perfect)
-			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadPerfect), false);
-		else
-			model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.RoadGreat), false);
-	}
-
-	public void PlayerAnim_ForceAttackDouble(ModelEntity model) {
-		model.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Double), false);
-	}
-
-	public void PlayerAnim_EnterSustain() {
-		Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.Press), true);
-	}
-	public void PlayerAnim_ExitSustain() {
-		Player.Animations.ClearAnimation(0);
-		if (InAir) {
-			Player.Animations.SetAnimation(0, AnimationCDD(CharacterAnimationType.AirPressEnd), false);
+	public void PlayCharacterAnimation(CharacterAnimationType type) {
+		switch (type) {
+			case CharacterAnimationType.Press:
+			case CharacterAnimationType.DownPress:
+			case CharacterAnimationType.UpPressStart:
+			case CharacterAnimationType.UpPress:
+			case CharacterAnimationType.UpPressEnd:
+			case CharacterAnimationType.BigPress:
+			case CharacterAnimationType.PressGroundToBig:
+			case CharacterAnimationType.PressAirToBig:
+			case CharacterAnimationType.PressBigToGround:
+			case CharacterAnimationType.PressBigToAir:
+			case CharacterAnimationType.PressHitToGround:
+			case CharacterAnimationType.PressHitToAir:
+			case CharacterAnimationType.UpPressHurt:
+			case CharacterAnimationType.Run:
+			case CharacterAnimationType.Jump:
+				Character.PlayCharacterAnimation(type, PlayerController);
+				break;
+			default:
+				if (Sustains.IsSustaining()) {
+					Character.PlayCharacterAnimation(type, HologramPlayerController);
+					lastHologramAnimationTime = Conductor.Time;
+				}
+				else
+					Character.PlayCharacterAnimation(type, PlayerController);
+				break;
 		}
-		// We'll also kill the hologram player here
-		HologramPlayer.Animations.StopAnimation(0);
-		PlayerAnim_EnqueueRun(Player);
 	}
 
-	ShaderInstance hologramShader;
+	IShader hologramShader = null!;
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
@@ -513,25 +526,22 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Character = charData;
 
 				var sceneData = SceneMod.GetSceneData();
-				if (sceneData == null) throw new ArgumentNullException(nameof(sceneData));
+				if (sceneData == null) {
+					// TODO: Scene changes. Requires a HUGE restructuring
+					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.Song.GetInfo()?.Scene);
+					if (sceneData == null)
+						throw new ArgumentNullException(nameof(sceneData));
+				}
 				Scene = sceneData;
 
 				var feverFX = FeverMod.GetFeverData();
 				FeverFX = feverFX;
 			}
 
-			Interlude.Spin(submessage: "Initializing Lua...");
-			using (StaticSequentialProfiler.StartStackFrame("Initialize Lua")) {
-				Lua = new(this);
-				Lua.State.Environment["game"] = new LuaGame(this);
-			}
-
 			Interlude.Spin(submessage: "Initializing the scene...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
 				FeverFX?.Initialize(this);
-
-				pressIdle = Scene.GetPressIdleSound();
 			}
 
 			Interlude.Spin();
@@ -555,7 +565,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					InputReceivers.Add((ICloneDashInputSystem)input);
 			}
 
-
 			Interlude.Spin(submessage: "Initializing your character...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
@@ -563,14 +572,14 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
 				Interlude.Spin();
 
-				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayModel(this)));
-				Player.Scale = new(1.25f);
-
-				HologramPlayer.Scale = Player.Scale;
+				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayGhostModel(this)));
 				HologramPlayer.Shader = hologramShader;
 
-				Player.Model.SetToSetupPose();
-				Player.Animations.AddAnimation(0, AnimationCDD(CharacterAnimationType.In), true);
+				Player.SetToSetupPose();
+				PlayerController = new(Character.GetPlayAnimationData(), Player.Animations);
+				HologramPlayerController = new(Character.GetPlayGhostAnimationData(), HologramPlayer.Animations);
+
+				PlayCharacterAnimation(CharacterAnimationType.In);
 			}
 
 
@@ -594,9 +603,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Interlude.Spin();
 			}
 
-			Lua.State.Environment["conductor"] = new LuaConductor(Conductor);
-
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
+				Boss.Build();
 				if (gameParameters.Sheet != null) {
 					if (!__deferringAsync) {
 						foreach (var ent in gameParameters.Sheet.Entities)
@@ -608,29 +616,39 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
 					}
 				}
-				Boss.Build();
 			}
 			Interlude.Spin(submessage: "Loading audio...");
 
 			//foreach (var tempoChange in Sheet)
 			if (gameParameters.Sheet != null) {
-				foreach (var bpmChange in gameParameters.Sheet.TempoChanges) {
-					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Measure, bpmChange.BPM);
-				}
+				foreach (var bpmChange in gameParameters.Sheet.TempoChanges)
+					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Beat, bpmChange.BPM);
+
+				foreach (var timeSigChange in gameParameters.Sheet.TimeSignatureChanges)
+					Conductor.AddTimeSignatureChange(timeSigChange.Beat, timeSigChange.Percentage);
 			}
 			else
 				Conductor.AddTempoChange(0, 0, 120);
 
+			if (gameParameters.Sheet != null && gameParameters.Sheet.TimeSignatureChanges.Count == 0)
+				Conductor.AddTimeSignatureChange(0, 1);
+
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (gameParameters.Sheet != null) {
-					Music = gameParameters.Sheet.Song.GetAudioTrack();
-					Music.Loops = false;
-					Music.Playing = true;
-					if (gameParameters.Measure != 0) 
+					Music = audiosystem.CreatePlayback(gameParameters.Sheet.Song.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
+						Looping = false,
+						ManuallyUpdate = true,
+						DoNotAutoDestroy = true,
+						Stream = true
+					});
+
+					audiosystem.PlaySound(Music);
+					InitSpeedFromCvar();
+					if (gameParameters.Measure != 0)
 						SeekTo(Conductor.MeasureToSeconds(gameParameters.Measure));
 				}
 				else
-					Music = null;
+					Music = AudioPlaybackHandle.Null;
 			}
 			Interlude.Spin(submessage: "Ready!");
 
@@ -640,7 +658,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if (CommandLine().ParmValue("-pretime", 5d) > 0)
+			if (!CommandLine().CheckParm("-mdbmsc", out var p))
 				Scene.PlaySound(SceneSound.Begin, 0);
 		}
 
@@ -668,20 +686,50 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public Panel PauseWindow { get; private set; }
 	private bool lastNoteHit = false;
 
+
+	static float TEMP_PLAYER_OFFSET => 0;
+	// Its own function in case we have player-specific overrides (not sure if this exists yet)
+	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
+
 	public float GetPlayerY(double jumpRatio) {
+		// this hack REALLY sucks, todo fix this
+		if (PlayerController.Animation.Channels[0].CurrentEntry?.Animation?.Name?.Contains("double") ?? false)
+			jumpRatio = 0;
+
 		var height = EngineCore.GetWindowHeight();
 
-		return (float)(NMath.Remap(jumpRatio, 0, 1, Game.Pathway.GetPathwayBottom(), Game.Pathway.GetPathwayTop())) + 225;
+		var top = GetPathwayPosition(PathwaySide.Top);
+		var bot = GetPathwayPosition(PathwaySide.Bottom);
+
+		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
 	}
+
+
+	// This helps with doubles/sustains played in the same frame...
+	// probably a better way to handle it, but this works
+	readonly bool[] PlayedSceneSoundThisFrame = new bool[(int)SceneSound.Count];
+	private void ResetSceneSoundsPlayedThisFrame() {
+		for (int i = 0; i < PlayedSceneSoundThisFrame.Length; i++)
+			PlayedSceneSoundThisFrame[i] = false;
+	}
+	public void PlaySceneSound(SceneSound sound, int hits = 0) {
+		if (IsSeeking)
+			return;
+		if (PlayedSceneSoundThisFrame[(int)sound])
+			return;
+		PlayedSceneSoundThisFrame[(int)sound] = true;
+		Scene.PlaySound(sound, hits);
+	}
+
 
 	private SecondOrderSystem? sos_yoff;
 
 	InputState inputState = new();
 	public override void PreThink(ref FrameState frameState) {
 		Ticks++;
-		XPos = Game.Pathway.GetPathwayLeft();
+		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music != null && lastNoteHit && Music.Paused && gameParameters.Sheet != null) {
+		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Sheet != null) {
 			Stats.UploadScore(Score);
 			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Sheet, Stats);
 			return;
@@ -696,6 +744,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState, InputAction.PauseGame);
 		}
+
 		else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
 			foreach (ICloneDashInputSystem playerInput in InputReceivers)
 				playerInput.Poll(ref frameState, ref inputState);
@@ -703,11 +752,14 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		InputState = inputState;
 
-		if (InMashState)
+		if (InMashState) {
 			UpdateMashTextEffect();
+			if (CheckMashHit())
+				MashingEntity.Hit(PathwaySide.Bottom, 0);
+		}
 
 		if (inputState.PauseButton) {
-			if (Music != null && Music.Paused) {
+			if (Music.IsValid() && audiosystem.IsPlaybackPaused(Music)) {
 				startUnpause();
 				if (IValidatable.IsValid(PauseWindow))
 					PauseWindow.Remove();
@@ -803,17 +855,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		bool holdingTop = Sustains.IsSustaining(PathwaySide.Top), holdingBottom = Sustains.IsSustaining(PathwaySide.Bottom);
 		bool holding = holdingTop || holdingBottom;
 		if ((holdingTop && holdingBottom) || InMashState)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Both);
+			yoff = GetPathwayPosition(PathwaySide.Both).Y;
 		else if (holdingTop)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Top);
+			yoff = GetPathwayPosition(PathwaySide.Top).Y;
 		else if (holdingBottom)
-			yoff = Game.Pathway.GetPathwayY(PathwaySide.Bottom);
+			yoff = GetPathwayPosition(PathwaySide.Bottom).Y;
 
 		if (yoff.HasValue) {
 			if (sos_yoff == null)
 				sos_yoff = new(15, 1, 1, yoff.Value);
 
-			yoff = yoff.Value - (frameState.WindowHeight * -0.15f);
+			yoff = yoff.Value + -1f;
 		}
 		else
 			sos_yoff = null;
@@ -823,22 +875,25 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		float conductorInTime = Conductor.PreStartTime <= 0 ? 1 : (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
 
+		// This sucks... todo, figure out how to get this proper
+		var leftPlayer = GetPathwayPosition(PathwaySide.Both).X;
+
 		Player.Position = new Vector2F(
-			(Game.Pathway.GetPathwayLeft() - 185) - (conductorInTime * frameState.WindowWidth / 2f),
-			sos_yoff?.Update(playerY) ?? playerY
+			(leftPlayer - 1) - (conductorInTime * 1),
+			-(sos_yoff?.Update(playerY) ?? playerY)
 		);
 		Player.Scale = new(PlayerScale);
 
 		HologramPlayer.Position = new Vector2F(
-			Game.Pathway.GetPathwayLeft() - 185,
-			GetPlayerY(HologramCharacterYRatio)
+			(leftPlayer - 1),
+			-GetPlayerY(HologramCharacterYRatio)
 		);
 
 		HologramPlayer.Scale = new(PlayerScale);
 
 		if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
 			HologramPlayer.Visible = true;
-			HologramPlayer.SetShaderUniform("time", (float)(Conductor.Time - lastHologramHitTime) * 2);
+			HologramPlayer.SetShaderUniform("time", NMath.Ease.InQuint((float)(Conductor.Time - lastHologramAnimationTime) * 3));
 		}
 		else {
 			HologramPlayer.Visible = false;
@@ -868,7 +923,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
-				Scene.PlaySound(SceneSound.FullCombo, 0);
+				PlaySceneSound(SceneSound.FullCombo, 0);
 			}
 		}
 
@@ -892,7 +947,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		// Resets the player animation state controller.
 		// Does not reset any actively playing animations, just the internal state machines
 		// used to determine when animations are triggered and on what.
-		resetPlayerAnimState();
 
 		// Start input processing.
 		// Bottom is executed first, so if two pathway attacks happen on the same frame, it can exit the jump state
@@ -922,12 +976,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				case EntityInteractivity.SamePath:
 					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
 						PathwaySide pathCurrentCharacter = Pathway;
-						if (pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway && entity.Hits == 0) {
+						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
-							Scene.PlaySound(entity.Type switch {
-								EntityType.Heart => SceneSound.HP,
-								EntityType.Score => SceneSound.Score,
-								_ => SceneSound.Score
+							PlaySceneSound(entity.Type switch {
+								EntityType.Heart => SceneSound.GotHeart,
+								EntityType.Score => SceneSound.GotScore,
+								_ => SceneSound.GotScore
 							}, 1);
 						}
 					}
@@ -962,7 +1016,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			FeverFX?.Think(this);
 
 		if (!Paused && IValidatable.IsValid(pressIdle))
-			pressIdle.Update();
+			audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public int EnemySortIndexCounter;
@@ -987,14 +1041,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, b.Font, b.TextSize, Anchor.Center);
 	}
 
-	public override void Think(FrameState frameState) {
-
-	}
-	public override void PostThink(FrameState frameState) {
-		// Perform player animation. Things in HitLogic will trigger certain flags, which will result in 
-		// specific animations being played
-		determinePlayerAnimationState();
-	}
 	/// <summary>
 	/// Gets the games <see cref="Pathway"/> from a <see cref="PathwaySide"/><br></br>
 	/// Note: If strict is off (default), it will return the bottom pathway if PathwaySide.Middle is passed, otherwise it will throw an exception.
@@ -1214,53 +1260,41 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 
-	public float PlayerScale => 1;
-	public float PlayScale { get; set; } = 1.2f;
-	public float GlobalScale => 1f;
-	public float BackgroundScale => 1f;
+	public float PlayerScale => 1 / 200f;
+	public float PlayScale => 1 / 200f;
+	public static float GlobalScale => 1 / 200f;
 
 	public override void PreRenderBackground(FrameState frameState) {
-		Boss.Scale = new(GlobalScale);
-		Boss.Position = new(0, 450);
+		Boss.Position = new(0, 2.25f);
 	}
 
 	public override void PreRender(FrameState frameState) {
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		Rlgl.PushMatrix();
-		Rlgl.Scalef(BackgroundScale, BackgroundScale, 1);
-
 		Scene.RenderBackground(this);
 		if (InFever)
 			FeverFX?.Render(this);
-
-		Rlgl.PopMatrix();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
 
 	public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
 		var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
-		cam.Zoom = ((frameState.WindowHeight / 900 / 2) * PlayScale) + (zoomValue / 5f);
+		cam.Zoom = ((frameState.WindowHeight / 900) * 120) + (zoomValue * 45);
 		cam.Rotation = 0.0f;
 		cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-		cam.Target = new(frameState.WindowWidth / 1 * zoomValue, 0);
+		cam.Target = new(zoomValue * -5, 0);
 		cam.Offset += cam.Target;
 
 		//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
 		//cam.Target = cam.Offset;
 	}
+
 	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
 		foreach (Entity ent in VisibleEntities) {
 			if (ent is not DashEnemy entCD) continue;
 			if (!enemyPredicate(entCD)) continue;
 
-			float yPosition = Game.Pathway.GetPathwayY(entCD.Pathway);
-
 			Graphics2D.SetDrawColor(255, 255, 255);
-			var p = new Vector2F((float)entCD.XPos, yPosition);
-			; // Calculate the final beat position on the track
-			  //entCD.ChangePosition(ref p); // Allow the entity to modify the position before it goes to the renderer
-			  //ent.Position = p;
 			ent.Render(frameState);
 			Rlgl.DrawRenderBatchActive();
 		}
@@ -1357,8 +1391,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			if (InMashState) {
 				//if (Debug)
 				//Console.WriteLine($"mashing entity = {MashingEntity}");
-
-				MashingEntity.Hit(pathway, 0);
+				SubmitMashHit();
 			}
 			else {
 				pollResult = Poll(in pollParams);
@@ -1371,27 +1404,27 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						Color c = pollResult.HitEntity.HitColor;
 						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
 
-						Scene.PlaySound(pollResult.HitEntity.Type switch {
+						PlaySceneSound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
-								EntityVariant.Small => SceneSound.Quiet,
-								EntityVariant.Medium1 => SceneSound.Medium1,
-								EntityVariant.Medium2 => SceneSound.Medium1,
-								EntityVariant.Large1 => SceneSound.Loud1,
-								EntityVariant.Large2 => SceneSound.Loud1,
-								EntityVariant.Boss1 => SceneSound.Medium1,
-								EntityVariant.Boss2 => SceneSound.Medium1,
-								EntityVariant.Boss3 => SceneSound.Medium1,
-								EntityVariant.BossHitFast => SceneSound.Loud2,
-								EntityVariant.BossHitSlow => SceneSound.Loud2,
-								_ => SceneSound.Medium1
+								EntityVariant.Small => SceneSound.HitSmall,
+								EntityVariant.Medium1 => SceneSound.HitMedium1,
+								EntityVariant.Medium2 => SceneSound.HitMedium2,
+								EntityVariant.Large1 => SceneSound.HitLarge1,
+								EntityVariant.Large2 => SceneSound.HitLarge2,
+								EntityVariant.Boss1 => SceneSound.HitBoss1,
+								EntityVariant.Boss2 => SceneSound.HitBoss2,
+								EntityVariant.Boss3 => SceneSound.HitBoss3,
+								EntityVariant.BossHitFast => SceneSound.HitBossFast,
+								EntityVariant.BossHitSlow => SceneSound.HitBossSlow,
+								_ => SceneSound.HitMedium1
 							},
-							EntityType.Hammer => SceneSound.Loud2,
-							EntityType.SustainBeam => SceneSound.PressTop,
-							EntityType.Raider => SceneSound.Quiet,
-							EntityType.Ghost => SceneSound.Medium2,
-							EntityType.Score => SceneSound.Score,
-							EntityType.Heart => SceneSound.HP,
-							_ => SceneSound.Medium1
+							EntityType.Hammer => SceneSound.HitHammer,
+							EntityType.Double => SceneSound.HitGemini,
+							EntityType.SustainBeam => SceneSound.StartedHold,
+							EntityType.Raider => SceneSound.HitRaider,
+							EntityType.Ghost => SceneSound.HitGhost,
+							// I think HP/score get handled on their own
+							_ => SceneSound.HitMedium1
 						}, 1);
 					}
 				}
@@ -1539,8 +1572,13 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (!InIFrame) {
 			Health -= damage;
 			SetIFrameTime();
-			PlayerAnim_DoDamage();
+
+			if (InAir)
+				PlayCharacterAnimation(CharacterAnimationType.JumpHurt);
+			else
+				PlayCharacterAnimation(CharacterAnimationType.Hurt);
 		}
+
 		ResetCombo();
 	}
 	public double LastFeverIncreaseTime { get; private set; } = -2000;
@@ -1564,7 +1602,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		WhenDidFeverStart = Conductor.Time;
 		if (!IsSeeking) {
 			FeverFX?.Start(this);
-			Scene.PlaySound(SceneSound.Fever, 0);
+			PlaySceneSound(SceneSound.Fever, 0);
 		}
 	}
 	/// <summary>
@@ -1612,28 +1650,38 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
 		bool nowInsustain = Sustains.ActiveSustains() > 0;
 
-		playeranim_startsustain = !playeranim_insustain && nowInsustain;
-		playeranim_endsustain = playeranim_insustain && !nowInsustain;
-		if (pathway == PathwaySide.Top)
-			playeranim_startsustain_top = !wasSustainingBefore && isSustainingNow;
-		else
-			playeranim_startsustain_bottom = !wasSustainingBefore && isSustainingNow;
+		// todo
+		if (isSustainingNow) {
+			// TODO: Evaluate this...
+			// if (InAir || Sustains.IsSustaining(PathwaySide.Top) && pathway == PathwaySide.Bottom)
+			// 	PlayCharacterAnimation(CharacterAnimationType.DownPress);
+			// else if (!InAir || Sustains.IsSustaining(PathwaySide.Bottom))
+			// 	PlayCharacterAnimation(CharacterAnimationType.UpPress);
+			// else
 
-		playeranim_startsustain = playeranim_startsustain || (playeranim_startsustain_top && playeranim_startsustain_bottom);
+			PlayCharacterAnimation(CharacterAnimationType.Press);
+		}
+		else if (!nowInsustain) {
+			if (pathway == PathwaySide.Top)
+				PlayCharacterAnimation(CharacterAnimationType.UpPressEnd);
+			else
+				PlayCharacterAnimation(CharacterAnimationType.Run);
+		}
 
-		playeranim_insustain = nowInsustain;
-
-		if (pressIdle != null) {
-			if (pressIdle.Playing && !nowInsustain) {
-				pressIdle.Playing = false;
-				pressIdle.Restart();
+		if (nowInsustain != wasSustainingBefore) {
+			var clip = Scene.GetPressIdleSound();
+			if (IValidatable.IsValid(clip)) {
+				if (audiosystem.IsPlaybackActive(pressIdle) && !nowInsustain)
+					audiosystem.DestroyPlayback(pressIdle);
+				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain) {
+					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true, Looping = true, ManuallyUpdate = true });
+					audiosystem.PlaySound(pressIdle);
+				}
 			}
-			else if (!pressIdle.Playing && nowInsustain)
-				pressIdle.Playing = true;
 		}
 	}
 
-	MusicTrack? pressIdle;
+	AudioPlaybackHandle pressIdle;
 
 	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
@@ -1642,206 +1690,48 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
 	public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
 
+	private double lastHologramAnimationTime = -20000;
 
-	private bool playeranim_hurt = false;
-	private bool playeranim_miss = false;
-	private bool playeranim_jump = false;
-	private bool playeranim_attackair = false;
-	private bool playeranim_attackground = false;
-	private bool playeranim_attackdouble = false;
+	// todo: confirm this is the right behavior
+	static bool PathwayTransitionAnimation => true;
 
-	private bool playeranim_perfect = false;
-
-	private bool playeranim_startsustain = false;
-	private bool playeranim_startsustain_top = false;
-	private bool playeranim_startsustain_bottom = false;
-	private bool playeranim_insustain = false;
-	private bool playeranim_endsustain = false;
-
-	private void resetPlayerAnimState() {
-		playeranim_miss = false;
-		playeranim_hurt = false;
-		playeranim_jump = false;
-
-		playeranim_attackair = false;
-		playeranim_attackground = false;
-		playeranim_attackdouble = false;
-
-		playeranim_perfect = false;
-
-		playeranim_startsustain = false;
-		playeranim_startsustain_top = false;
-		playeranim_startsustain_bottom = false;
-		playeranim_endsustain = false;
-		playeranim_insustain = Sustains.IsSustaining();
-	}
-	private double lastHologramHitTime = -20000;
-	private void logTests(string testStr) {
-		//Logs.Debug($"PlayerAnimationState: {testStr}");
-	}
-	private void DrawPlayerState() {
-		string[] lines = [
-			$"__whenjump:                     {__whenjump}",
-				$"__whenHjump:                    {__whenHjump}",
-				$"playeranim_miss:                {playeranim_miss}",
-				$"playeranim_jump:                {playeranim_jump}",
-				$"playeranim_attackair:           {playeranim_attackair}",
-				$"playeranim_attackground:        {playeranim_attackground}",
-				$"playeranim_attackdouble:        {playeranim_attackdouble}",
-				$"playeranim_perfect:             {playeranim_perfect}",
-				$"playeranim_startsustain:        {playeranim_startsustain}",
-				$"playeranim_startsustain_top:    {playeranim_startsustain_top}",
-				$"playeranim_startsustain_bottom: {playeranim_startsustain_bottom}",
-				$"playeranim_insustain:           {playeranim_insustain}",
-				$"playeranim_endsustain:          {playeranim_endsustain}"
-		];
-
-		int y = 0;
-		Graphics2D.SetDrawColor(255, 255, 255);
-		foreach (var line in lines) {
-			Graphics2D.DrawText(8, 8 + y, line, "Consolas", 14);
-			y += 14;
-		}
-	}
-	private void determinePlayerAnimationState() {
-		ModelEntity playerTarget;
-		bool suppress_hologram = false;
-		// Call end sustain animation. But only if we're ending a sustain and not starting a new one immediately
-		if (playeranim_endsustain && !playeranim_startsustain) {
-			PlayerAnim_ExitSustain();
-			logTests("Exiting sustain.");
-		}
-		else if (playeranim_endsustain && playeranim_startsustain) {
-			// Suppress any hologram animations.
-			logTests("Suppressing further hologram animations.");
-			suppress_hologram = true;
-		}
-
-		if (playeranim_hurt) {
-			PlayerAnim_ForceHurt();
-			PlayerAnim_EnqueueRun(Player);
-
-			resetPlayerAnimState();
-			return;
-		}
-
-		if (playeranim_attackdouble) {
-			PlayerAnim_ForceAttackDouble(Player);
-			PlayerAnim_EnqueueRun(Player);
-
-			resetPlayerAnimState();
-			logTests("Double attack");
-			__whenjump = -2000000000;
-			__whenHjump = -2000000000;
-			return;
-		}
-
-		if (playeranim_startsustain) {
-			PlayerAnim_EnterSustain();
-
-			logTests("Sustain started");
-
-			if (playeranim_startsustain_bottom && playeranim_startsustain_top) {
-				resetPlayerAnimState();
-				logTests("Not allowing further animation; both sustains pressed at once!");
-				return;
-			}
-
-			if (!suppress_hologram && playeranim_attackair && playeranim_startsustain_bottom && !playeranim_startsustain_top) {
-				// Hologram player attacks the air, while the player starts the bottom sustain.
-				PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
-				//EngineCore.Interrupt(() => DrawPlayerState(), false);
-			}
-
-			if (!suppress_hologram && playeranim_attackground && playeranim_startsustain_top && !playeranim_startsustain_bottom) {
-				// Hologram player attacks the ground, while the player starts the top sustain.
-				PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
-			}
-
-			resetPlayerAnimState();
-			return;
-		}
-
-		if (!suppress_hologram && playeranim_insustain) { // We use the same things for playeranim_attack etc, but redirect it to the hologram player
-			playerTarget = HologramPlayer;
-
-			if (playeranim_startsustain_top || playeranim_startsustain_bottom) {
-				resetPlayerAnimState();
-				return;
-			}
-
-			if (playeranim_attackair || playeranim_attackground) {
-				lastHologramHitTime = Conductor.Time;
-				Logs.Info("Setting last hologram hit time");
-			}
-
-			if (playeranim_attackair) {
-				PlayerAnim_ForceAttackAir(HologramPlayer, playeranim_perfect);
-				__whenHjump = Conductor.Time;
-				//EngineCore.Interrupt(() => DrawPlayerState(), false);
-			}
-			else if (playeranim_attackground) {
-				PlayerAnim_ForceAttackGround(HologramPlayer, playeranim_perfect);
-				//EngineCore.Interrupt(() => DrawPlayerState(), false);
-				__whenHjump = -2000000000000d;
-			}
-		}
-		else {
-			playerTarget = Player;
-			if (playeranim_attackair) {
-				PlayerAnim_ForceAttackAir(Player, playeranim_perfect);
-				__whenjump = Conductor.Time;
-				PlayerAnim_EnqueueRun(Player);
-			}
-			else if (playeranim_attackground) {
-				PlayerAnim_ForceAttackGround(Player, playeranim_perfect);
-				__whenjump = -2000000000000d;
-				PlayerAnim_EnqueueRun(Player);
-			}
-			else if (playeranim_jump) {
-				PlayerAnim_ForceJump(Player);
-				__whenjump = Conductor.Time;
-			}
-			else if (playeranim_miss) {
-				__whenjump = -2000000000000d;
-				PlayerAnim_ForceMiss(Player);
-			}
-		}
-
-		/*FrameDebuggingStrings.Add($"PlayerAnimState:");
-
-		FrameDebuggingStrings.Add($"    playeranim_miss                 : {playeranim_miss}");
-		FrameDebuggingStrings.Add($"    playeranim_jump                 : {playeranim_jump}");
-		FrameDebuggingStrings.Add($"    playeranim_attackair            : {playeranim_attackair}");
-		FrameDebuggingStrings.Add($"    playeranim_attackground         : {playeranim_attackground}");
-		FrameDebuggingStrings.Add($"    playeranim_attackdouble         : {playeranim_attackdouble}");
-		FrameDebuggingStrings.Add($"    playeranim_perfect              : {playeranim_perfect}");
-		FrameDebuggingStrings.Add($"    playeranim_startsustain         : {playeranim_startsustain}");
-		FrameDebuggingStrings.Add($"    playeranim_startsustain_top     : {playeranim_startsustain_top}");
-		FrameDebuggingStrings.Add($"    playeranim_startsustain_bottom  : {playeranim_startsustain_bottom}");
-		FrameDebuggingStrings.Add($"    playeranim_insustain            : {playeranim_insustain}");
-		FrameDebuggingStrings.Add($"    playeranim_endsustain           : {playeranim_endsustain}");*/
-
-		resetPlayerAnimState();
-	}
-
-	public bool AttackAir(PollResult result) {
+	public bool AttackAir(in PollResult result) {
 		if (InMashState) {
-			playeranim_attackair = true;
-			playeranim_perfect = true;
+			PlayCharacterAnimation(CharacterAnimationType.JumpHit);
 
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 			return true;
 		}
 
-		if (CanJump || result.Hit) {
+		if (result.Hit) {
 			var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
-			playeranim_attackdouble = isDHE;
-			playeranim_attackair = result.Hit && !isDHE;
-			playeranim_jump = CanJump;
-			playeranim_perfect |= result.IsPerfect;
+
+			if (isDHE)
+				PlayCharacterAnimation(CharacterAnimationType.BigHit);
+			else if (result.HitEntity is not SustainBeam)
+				if (!InAir && !Sustains.IsSustaining() && PathwayTransitionAnimation)
+					PlayCharacterAnimation(CharacterAnimationType.UpHit);
+				else
+					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
 
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
+
+			if (Sustains.IsSustaining())
+				__whenHjump = Conductor.Time;
+			else
+				__whenjump = Conductor.Time;
+
+			return true;
+		}
+		else if (CanJump) {
+			if (!Sustains.IsSustaining())
+				PlayCharacterAnimation(CharacterAnimationType.Jump);
+			OnAirAttack?.Invoke(this, PathwaySide.Top);
+
+			if (Sustains.IsSustaining())
+				__whenHjump = Conductor.Time;
+			else
+				__whenjump = Conductor.Time;
 
 			return true;
 		}
@@ -1851,28 +1741,29 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public void AttackGround(PollResult result) {
 		if (InMashState) {
-			playeranim_attackdouble = true;
-			playeranim_perfect = true;
+			PlayCharacterAnimation(CharacterAnimationType.AttackPerfect);
 			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
 			return;
 		}
 
 		if (result.Hit) {
-			if (result.HitEntity is DoubleHitEnemy) {
-				playeranim_attackdouble = true;
-				playeranim_miss = false;
-			}
-			else {
-				playeranim_attackground = true;
-				playeranim_miss = false;
-			}
+			if (result.HitEntity is DoubleHitEnemy)
+				PlayCharacterAnimation(CharacterAnimationType.BigHit);
+			else if (result.HitEntity is not SustainBeam)
+				if (InAir && PathwayTransitionAnimation)
+					PlayCharacterAnimation(CharacterAnimationType.DownHit);
+				else
+					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat);
 		}
-		else {
-			playeranim_attackground = false;
-			playeranim_miss = true;
+		else if (!Sustains.IsSustaining()) {
+			if (InAir)
+				PlayCharacterAnimation(CharacterAnimationType.DownHit);
+			else
+				PlayCharacterAnimation(CharacterAnimationType.AttackMiss);
 		}
 
-		playeranim_perfect |= result.IsPerfect;
+		__whenjump = -2000000000000d;
+		__whenHjump = -2000000000000d;
 		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
 	}
 	/// <summary>
@@ -1894,6 +1785,25 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			return false;
 
 		return true;
+	}
+
+	// NOTE: While this returns a continuous value for now, scene changes WILL change the field this returns in the future!!!
+	// So ISceneDescriptor must only be used to describe a scene, not to store state!
+
+	// Something to consider though. Scene changes mean entities need different models. Do we patch all entities model reference
+	// fields, or do we remove that responsibility from the entities and have a subsystem manage rendering/model usage?
+	// I am inclined to believe the latter is a healthier response, but we'll have to get to that later.
+	public ISceneDescriptor GetCurrentScene() {
+		return Scene;
+	}
+
+	internal void SetEnemyPosition(DashModelEntity ent) {
+		ent.Position = new(0, 2.25f);
+	}
+
+	internal void SetEnemyKilledPosition(DashModelEntity ent) {
+		var pos = GetPathwayPosition(ent.Pathway);
+		ent.Position = new(pos.X, -pos.Y);
 	}
 
 	/// <summary>

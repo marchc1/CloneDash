@@ -25,12 +25,12 @@
 
 		public override void DetermineAnimationPlayback() {
 			if (Dead) {
-				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				GetGameLevel().SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			Position = new(0, 450);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 

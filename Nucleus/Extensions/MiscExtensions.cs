@@ -20,8 +20,7 @@ namespace Nucleus.Extensions
 		public static unsafe Image ToImage(this byte[] data, int width, int height, ImageFormat format, int mipmaps) => ToImage(data.AsSpan(), width, height, format, mipmaps);
 		public static unsafe Image ToImage(this ReadOnlySpan<byte> data, int width, int height, ImageFormat format, int mipmaps) {
 			var ptr = Raylib.New<byte>(data.Length);
-			for (int i = 0; i < data.Length; i++) 
-				ptr[i] = data[i];
+			data.CopyTo(new(ptr, data.Length));
 			
 			var img = new Image() {
 				Data = ptr,

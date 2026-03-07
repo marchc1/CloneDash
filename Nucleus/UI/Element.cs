@@ -1462,6 +1462,9 @@ namespace Nucleus.UI
 			if (!CanInput())
 				thisC = thisC.Adjust(0, 0, -.5f);
 
+			if (Image.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
+				sourceRect.Height *= -1;
+
 			if (ImageRotation != 0 || ImageFlipX || ImageFlipY) {
 				destRect.X += destRect.Width / 2;
 				destRect.Y += destRect.Height / 2;

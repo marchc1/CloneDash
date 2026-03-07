@@ -6,10 +6,12 @@ namespace CloneDash.Game.Entities
 {
 	public class Masher : DashEnemy
 	{
-		public const int MASHER_MAX_HITS_PER_SECOND = 25;
+		public const int MASHER_HITS_PER_SECOND_OF_LENGTH = 25;
+		public const int MASHER_PLAYER_MAX_HITS_PER_SECOND = 26;
+		public const int MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND = 10;
 
 		public bool StartedHitting { get; private set; } = false;
-		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_MAX_HITS_PER_SECOND), 1, int.MaxValue);
+		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_HITS_PER_SECOND_OF_LENGTH), 1, int.MaxValue);
 		private double lastHitTime = 0;
 
 		public Masher() : base(EntityType.Masher) {
@@ -49,7 +51,7 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 
 			if (!level.IsSeeking)
-				level.Scene.PlaySound(Scenes.SceneSound.Mash, Hits);
+				level.PlaySceneSound(Scenes.SceneSound.HitMasher, Hits);
 
 			if (MaxHits == 1) {
 				Hits = 1;
@@ -69,7 +71,7 @@ namespace CloneDash.Game.Entities
 
 			lastHitTime = level.Conductor.Time;
 			if (Model != null) {
-				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation());
+				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation(Speed, EnterDirection));
 			}
 
 			CheckIfComplete();
@@ -99,7 +101,7 @@ namespace CloneDash.Game.Entities
 		public override void DetermineAnimationPlayback() {
 			if (Model == null) return;
 
-			Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(PathwaySide.Both));
+			GetGameLevel().SetEnemyKilledPosition(this);
 
 			if (Dead) {
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
@@ -108,11 +110,12 @@ namespace CloneDash.Game.Entities
 			}
 
 			if (StartedHitting) {
+				Position = GetGameLevel().GetPathwayPosition(PathwaySide.Both);
 				currentAnim?.Apply(Model, (GetConductor().Time - lastHitTime));
 				return;
 			}
+			GetGameLevel().SetEnemyPosition(this);
 
-			Position = new(0, 450);
 
 			base.DetermineAnimationPlayback();
 		}
@@ -124,8 +127,9 @@ namespace CloneDash.Game.Entities
 			var scene = level.Scene;
 
 			if (!Variant.IsBoss()) {
-				Model = scene.GetEnemyModel(this).Instantiate();
-				ApproachAnimation = Model.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out var showtime));
+				Model = scene.GetEnemyModel(this)?.Instantiate();
+				double showtime = 1;
+				ApproachAnimation = Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out showtime));
 				SetupHitAnimations(scene);
 				SetShowTimeViaLength(showtime);
 			}

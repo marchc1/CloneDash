@@ -7,4 +7,5 @@ public interface IMainMenuPanel
 	public void OnShown();
 	public void SetRichPresence();
 	public bool InterceptEscape() => true;
+	public bool OnTryClose() => true;
 }

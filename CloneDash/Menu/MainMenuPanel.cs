@@ -36,10 +36,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public string GetName() => "Main Menu";
 	public void OnHidden() { }
 	public void OnShown() {
-		Char.Reset();
+		// Char.Reset();
 	}
-
-	CharacterPanel Char = null!;
 
 	Stack<List<MainMenuButton>> btns = [];
 
@@ -117,11 +115,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		BorderSize = 0;
 		DrawPanelBackground = false;
 
-		Add(out Char);
-		Char.Dock = Dock.Left;
-		Char.DynamicallySized = true;
-		Char.Size = new(0.6f, 1f);
-		Char.LinkToConVar = true;
+		OnHoverTest += Element.Passthru;
 
 		Add(out back);
 		back.Origin = Anchor.Center;
@@ -166,7 +160,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
+		// Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
 	}
 	private void Back_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		DestroyNavigationMenu();

@@ -29,8 +29,10 @@ namespace Nucleus.ModelEditor
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 		public ViewportSelectMode SelectMode { get; set; } = ViewportSelectMode.All;
+		Checkerboard Checkerboard = null!;
 		protected override void Initialize() {
 			base.Initialize();
+			Checkerboard = new(Level);
 
 			Add(out MainTransformsPanel);
 			MainTransformsPanel.ForceHeight = false;
@@ -796,6 +798,8 @@ namespace Nucleus.ModelEditor
 			if (!caughtHovered && HoveredObject is EditorAttachment hAttachment)
 				hAttachment.RenderOverlay();
 		}
+
+
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
 				Projection = CameraProjection.Orthographic,

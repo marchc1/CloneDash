@@ -227,7 +227,7 @@ jobs:
 
       - name: Upload artifact - Windows zip
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: CloneDash-Game-Windows
           path: ./CloneDash-Game-Windows.zip
@@ -235,7 +235,7 @@ jobs:
 
       - name: Upload artifact - Windows Velopack Files
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: CloneDash-Game-Windows-Velopack
           path: |
@@ -246,7 +246,7 @@ jobs:
 
       - name: Upload artifact - Linux zip
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: CloneDash-Game-Linux
           path: ./CloneDash-Game-Linux.zip
@@ -254,7 +254,7 @@ jobs:
 
       - name: Upload artifact - Linux AppImage
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: CloneDash-Game-Linux-AppImage
           path: ./CloneDash-Game-Linux.AppImage
@@ -262,7 +262,7 @@ jobs:
 
       - name: Upload artifact - macOS zip
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: CloneDash-Game-macOS
           path: ./CloneDash-Game-macOS.zip
@@ -273,7 +273,7 @@ jobs:
     needs: build
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: ./dist
 

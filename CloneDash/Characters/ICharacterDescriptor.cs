@@ -1,6 +1,8 @@
-﻿using CloneDash.Game;
+﻿using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
@@ -23,19 +25,24 @@ public interface ICharacterDescriptor
 	public string GetPerk();
 
 	public ModelData GetPlayModel(Level level);
+	public ModelData GetPlayGhostModel(Level level);
 	public ModelData GetMainShowModel(Level level);
 	public ModelData GetVictoryModel(Level level);
 	public ModelData GetFailModel(Level level);
 
-	public MusicTrack? GetMainShowMusic(Level level);
+	public IAudioClip? GetMainShowMusic(Level level);
 
 	public string GetMainShowStandby();
 	public string GetVictoryStandby();
 
 	public ICharacterExpression? GetMainShowExpression();
+	public ICharacterExpression? GetMainShowApplyExpression();
 	public string? GetMainShowInitialExpression();
-	public string GetPlayAnimation(CharacterAnimationType animationType);
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController animations);
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController animations);
 
 	public double GetDefaultHP();
 	public string? GetLogicControllerData();
+	MD_SpineActionControllerData GetPlayAnimationData();
+	MD_SpineActionControllerData GetPlayGhostAnimationData();
 }

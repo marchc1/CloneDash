@@ -9,9 +9,10 @@ namespace CloneDash.Data
 
 		public double StartOffset { get; set; }
 		public string Rating { get; set; }
-		public List<ChartEntity> Entities { get; } = [];
-		public List<ChartEvent> Events { get; } = [];
-		public List<TempoChange> TempoChanges { get; } = [];
 
+		public readonly List<ChartEntity> Entities = [];
+		public readonly List<ChartEvent> Events = [];
+		public readonly List<TempoChange> TempoChanges = [];
+		public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
 	}
 }

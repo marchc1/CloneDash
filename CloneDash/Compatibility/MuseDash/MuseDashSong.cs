@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 using Nucleus;
 using Nucleus.Audio;
-
+using Nucleus.Common.Audio;
 using OdinSerializer;
 
 using Raylib_cs;
@@ -63,9 +63,6 @@ public class MuseDashSong : ChartSong
 
 	public MuseDashAlbum Album { get; set; }
 
-
-	public StageDemo? DemoObject { get; internal set; }
-
 	[JsonIgnore]
 	public string BaseName => GetInfo()!.Music.Substring(0, GetInfo()!.Music.Length - 6);
 	public override string ToString() => $"{Name} by {Author}";
@@ -93,11 +90,11 @@ public class MuseDashSong : ChartSong
 		}
 	}
 
-	public MusicTrack? MusicTrackOverride { get; set; }
+	public IAudioClip? MusicTrackOverride { get; set; }
 
 	public Dictionary<int, ChartSheet> DashSheetOverrides { get; set; } = [];
 
-	protected override MusicTrack ProduceAudioTrack() {
+	protected override IAudioClip? ProduceAudioTrack() {
 		if (IValidatable.IsValid(AudioTrack))
 			return AudioTrack;
 
@@ -105,7 +102,7 @@ public class MuseDashSong : ChartSong
 		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
-	protected override MusicTrack? ProduceDemoTrack() {
+	protected override IAudioClip? ProduceDemoTrack() {
 		if (IValidatable.IsValid(DemoTrack))
 			return DemoTrack;
 
@@ -138,7 +135,7 @@ public class MuseDashSong : ChartSong
 
 			var tex = Raylib.LoadTextureFromImage(img);
 			Raylib.GenTextureMipmaps(ref tex);
-			Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_TRILINEAR);
+			Raylib.SetTextureFilter(tex, TextureFilter.Trilinear);
 			Raylib.UnloadImage(img);
 			CoverTexture = new() {
 				Texture = new(EngineCore.Level.Textures, tex, true),

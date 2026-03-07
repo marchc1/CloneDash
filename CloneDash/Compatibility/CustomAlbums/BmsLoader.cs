@@ -1,6 +1,6 @@
 ﻿using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
-
+using CustomAlbums.Utilities;
 using Nucleus;
 
 using System.Security.Cryptography;
@@ -36,11 +36,11 @@ namespace CloneDash.Compatibility.CustomAlbums
 					if (!key.Contains("BPM")) continue;
 
 					var bpmKey = string.IsNullOrEmpty(key[3..]) ? "00" : key[3..];
-					bpmDict.Add(bpmKey, float.Parse(value));
+					bpmDict.Add(bpmKey, CustomAlbumsFormat.ParseAsFloat(value));
 
 					if (bpmKey != "00") continue;
 
-					var freq = 60f / float.Parse(value) * 4f;
+					var freq = 60f / CustomAlbumsFormat.ParseAsFloat(value) * 4f;
 					var obj = new JsonObject
 					{
 						{ "tick", 0f },
@@ -54,7 +54,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 					var key = split[0];
 					var value = split[1];
 
-					var beat = int.Parse(key[..3]);
+					var beat = CustomAlbumsFormat.ParseAsInt(key[..3]);
 					var typeCode = key.Substring(3, 2);
 
 					if (!Bms.Channels.TryGetValue(typeCode, out var type)) continue;
@@ -63,7 +63,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 						var obj = new JsonObject
 						{
 							{ "beat", beat },
-							{ "percent", float.Parse(value) }
+							{ "percent", CustomAlbumsFormat.ParseAsFloat(value) }
 						};
 						notePercents.Add(beat, obj);
 					}
@@ -95,7 +95,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 									return tickR.CompareTo(tickL);
 								});
-								bpmChanges.Add(new(tick, tick + 1, freqDivide));
+								bpmChanges.Add(new(tick, beat, freqDivide));
 							}
 							else {
 								// Parse other note data

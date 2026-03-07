@@ -93,6 +93,10 @@ namespace AssetStudio
         public SpriteSettings settingsRaw;
         public Vector4 uvTransform;
         public float downscaleMultiplier;
+#nullable enable
+
+        public Texture2D? GetTexture() => texture.TryGet(out var ret) ? ret : null;
+        public Texture2D? GetAlphaTexture() => alphaTexture.TryGet(out var ret) ? ret : null;
 
         public SpriteRenderData(ObjectReader reader)
         {
@@ -206,7 +210,10 @@ namespace AssetStudio
         public SpriteRenderData m_RD;
         public Vector2[][] m_PhysicsShape;
 
-        public Sprite(ObjectReader reader) : base(reader)
+		public SpriteAtlas? GetSpriteAtlas() => m_SpriteAtlas.TryGet(out var ret) ? ret : null;
+
+        #nullable disable
+		public Sprite(ObjectReader reader) : base(reader)
         {
             m_Rect = new Rectf(reader);
             m_Offset = reader.ReadVector2();

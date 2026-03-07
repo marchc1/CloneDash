@@ -192,6 +192,9 @@ public class AddressablesCatalog
 		if (internalId == null)
 			return null;
 
+		
+		internalId = internalId.Replace('\\', Path.DirectorySeparatorChar);
+
 		// Handle the {UnityEngine.AddressableAssets.Addressables.RuntimePath}/Platform/bundle.bundle format
 		int prefixEnd = internalId.IndexOf('}');
 		if (prefixEnd >= 0) {
@@ -762,7 +765,7 @@ public class UnitySearchPathV2 : SearchPath
 		}
 	}
 
-	public T? FindAssetByName<T>(string name) where T : AssetStudio.Object {
+	public T? FindAssetByName<T>(ReadOnlySpan<char> name) where T : AssetStudio.Object {
 		lock (sync) {
 			ulong nameHash = name.Hash();
 

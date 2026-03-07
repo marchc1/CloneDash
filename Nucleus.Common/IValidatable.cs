@@ -6,6 +6,7 @@ namespace Nucleus
 	{
 		public bool IsValid();
 
-		public static bool IsValid([NotNullWhen(true)] IValidatable? item) => item != null && item.IsValid();
+		public static bool IsValid<T>([NotNullWhen(true)] T? item) where T : IValidatable, allows ref struct 
+			=> item != null && item.IsValid();
 	}
 }

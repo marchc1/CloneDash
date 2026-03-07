@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -11,7 +12,13 @@ namespace AssetStudio
         public string m_Namespace;
         public string m_AssemblyName;
 
-        public MonoScript(ObjectReader reader) : base(reader)
+        public SerializedProperty ToSerializedProperty() {
+            var data = GetRawData();
+            using BinaryReader reader = new(new MemoryStream(data));
+            return new SerializedProperty(reader);
+        }
+
+		public MonoScript(ObjectReader reader) : base(reader)
         {
             if (version[0] > 3 || (version[0] == 3 && version[1] >= 4)) //3.4 and up
             {

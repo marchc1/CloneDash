@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 
@@ -111,7 +112,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				});
 			}
 
-			protected override MusicTrack ProduceAudioTrack() {
+			protected override IAudioClip? ProduceAudioTrack() {
 				if (Archive != null) {
 					var musicBytes = GetByteArray(Archive, "music.ogg");
 					if (musicBytes.Length == 0) // Try to find mp3 instead
@@ -119,7 +120,8 @@ namespace CloneDash.Compatibility.CustomAlbums
 					if (musicBytes.Length == 0)
 						throw new FileNotFoundException("Custom Charts: Music could not be found! (searched for music.ogg, music.mp3)");
 
-					return EngineCore.Level.Sounds.LoadMusicFromMemory(musicBytes);
+					using MemoryStream ms = new MemoryStream(musicBytes);
+					return audiosystem.CreateStreamAudioClip(ms);
 				}
 				else {
 					return WebChart.GetMusicTrack(false); // this wont even run
@@ -133,7 +135,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 					MainThread.RunASAP(() => {
 						var tex = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex, TextureFilter.TEXTURE_FILTER_BILINEAR);
+						Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 						callback(new() {
 							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
 						});
@@ -151,7 +153,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
-			protected override MusicTrack? ProduceDemoTrack() {
+			protected override IAudioClip? ProduceDemoTrack() {
 				if (Archive != null) {
 					var demoBytes = GetByteArray(Archive, "demo.ogg");
 					if (demoBytes.Length == 0)
@@ -160,7 +162,8 @@ namespace CloneDash.Compatibility.CustomAlbums
 					if (demoBytes.Length == 0)
 						return null;
 
-					return EngineCore.Level.Sounds.LoadMusicFromMemory(demoBytes);
+					using MemoryStream ms = new MemoryStream(demoBytes);
+					return audiosystem.CreateStreamAudioClip(ms);
 				}
 				else {
 					DeferringDemoToAsyncHandler = true;
@@ -300,8 +303,10 @@ namespace CloneDash.Compatibility.CustomAlbums
 					lastTime += deltaBeats * 60.0 * 4 / lastBPM;
 					lastBeat = change.Time;
 					lastBPM = change.BPM;
-					newChanges[i] = new TempoChange(lastTime, change.Measure, lastBPM);
+					newChanges[i] = new TempoChange(lastTime, change.Beat, lastBPM);
 				}
+
+				TimeSignatureChange[] newSignatureChanges = new TimeSignatureChange[bms.NotesPercent.Count];
 
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 

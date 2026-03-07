@@ -176,17 +176,22 @@ namespace Nucleus.Engine
 	/// <br></br>
 	/// Remember: levels store LOGIC, and, when needed, game-level-specific data. But any data such as entities, UI panels, textures etc. should remain within the engine core
 	/// </summary>
+	[MarkForStaticConstruction]
 	public abstract class Level : IValidatable
 	{
 		// Managed memory
 		public TextureManagement Textures { get; } = new();
-		public SoundManagement Sounds { get; } = new();
 		public TimerManagement Timers { get; }
 		public ModelManagement Models { get; } = new();
 		public ShaderManagement Shaders { get; } = new();
 
 		internal bool __isValid = false;
 		public bool IsValid() => __isValid;
+
+		/// <summary>
+		/// When true, this will block some <see cref="ConVar"/>'s from being modified by the user.
+		/// </summary>
+		public virtual bool IsInGame => false;
 
 		public Level() {
 			Timers = new(this);
@@ -710,8 +715,8 @@ namespace Nucleus.Engine
 					debugrecords.Write("Engine");
 					debugrecords.EnterScope();
 					{
-						debugrecords.Write("[SND] Count", Sounds.Count);
-						debugrecords.Write("[SND] Memory [CPU]", (Sounds.UsedBits >> 3).NiceBytes());
+						debugrecords.Write("[SND] Count", audiosystem.GetAudioClipCount());
+						debugrecords.Write("[SND] Memory [CPU]", (audiosystem.GetMemoryAllocated()).NiceBytes());
 						debugrecords.Write();
 						debugrecords.Write("[TEX] Count", Textures.Count);
 						debugrecords.Write("[TEX] Memory [CPU]", (Textures.UsedBits_CPU >> 3).NiceBytes());

@@ -413,6 +413,7 @@
 		public static GLEnum COMPRESSED_RGB = 0x84ED;
 		public static GLEnum COMPRESSED_RGBA = 0x84EE;
 		public static GLEnum COMPRESSED_RGBA_ARB = 0x84EE;
+		public static GLEnum COMPRESSED_RGBA_BPTC_UNORM = 0x8E8C;
 		public static GLEnum COMPRESSED_RGBA_FXT1_3DFX = 0x86B1;
 		public static GLEnum COMPRESSED_RGBA_S3TC_DXT1_EXT = 0x83F1;
 		public static GLEnum COMPRESSED_RGBA_S3TC_DXT3_EXT = 0x83F2;

@@ -1,4 +1,6 @@
 ﻿global using static Nucleus.StandardComponents;
+using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
@@ -14,6 +16,7 @@ public static class StandardComponents {
 		public EngineBuilder WithStandardComponents(){
 			return api
 					.WithComponent<IFileSystem, FileSystem>()
+					.WithComponent<IAudioSystem, RaylibAudioSystem>()
 					;
 		}
 	}

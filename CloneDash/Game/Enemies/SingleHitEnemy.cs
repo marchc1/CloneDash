@@ -45,19 +45,17 @@ namespace CloneDash.Game.Entities
 			base.Think(frameState);
 		}
 
-		private float xoffset;
-
 		public override void DetermineAnimationPlayback() {
 			if (Model == null) return;
 
 			if (Dead) {
-				Position = new(Game.Pathway.GetPathwayLeft(), Game.Pathway.GetPathwayY(Pathway));
+				GetGameLevel().SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
 				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			Position = new(xoffset, 450);
+			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback();
 		}
 
@@ -72,19 +70,19 @@ namespace CloneDash.Game.Entities
 				case EntityVariant.BossHitSlow:
 					break;
 				default:
-					var model = scene.GetEnemyModel(this).Instantiate();
+					var model = scene.GetEnemyModel(this)?.Instantiate();
 
 					if (model != null)
 						Model = model;
 
-					string animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
+					double showtime = 1;
+					string? animationName = scene?.GetEnemyApproachAnimation(this, out showtime);
 					SetShowTimeViaLength(showtime);
 
-					ApproachAnimation = Model.Data.FindAnimation(animationName);
-					GreatHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-					PerfectHitAnimation = Model.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
-					Scale = new(level.GlobalScale);
-					SetMountBoneIfApplicable(scene.GetHPMount(this));
+					ApproachAnimation = Model?.Data.FindAnimation(animationName);
+					GreatHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));
+					PerfectHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+					SetMountBoneIfApplicable(scene?.GetHPMount(this));
 					break;
 			}
 		}

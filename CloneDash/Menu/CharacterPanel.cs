@@ -1,13 +1,16 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Game;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
+using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,13 +25,21 @@ public class CharacterPanel : Panel
 {
 	private ICharacterDescriptor? Character;
 	private ModelInstance? Model;
-	private AnimationHandler? Anims;
-	private MusicTrack? Music;
-	private ICharacterExpression? TouchResponse;
+	private readonly AnimationHandler Anims = new();
+	private AudioPlaybackHandle Music;
 	private int Click = 0;
+	private ICharacterExpression? ApplyExpression;
 	private double StartExpressionTime;
 	private double NextExpressionTime;
 	private string? ExpressionText;
+
+
+	private ModelInstance? PlayModel;
+	private ModelInstance? VictoryModel;
+	private ModelInstance? FailModel;
+	private readonly AnimationHandler PlayAnims = new();
+	private readonly AnimationHandler VictoryAnims = new();
+	private readonly AnimationHandler FailAnims = new();
 
 	public Vector2F CharacterOffset { get; set; }
 
@@ -37,22 +48,16 @@ public class CharacterPanel : Panel
 		set {
 			if (field == value) return;
 			field = value;
-			if (value)
-				Music?.Playing = false;
+			if (!value)
+				audiosystem.StopSound(Music);
 			else {
-				Music?.Playing = true;
-				Music?.Restart();
+				audiosystem.RestartSound(Music);
+				audiosystem.PlaySound(Music);
 			}
 		}
 	} = true;
 
-	public bool ExpressiveOnClicks {
-		get => field;
-		set {
-			if (field == value) return;
-			field = value;
-		}
-	} = true;
+	public bool ExpressiveOnClicks { get; set; } = true;
 
 	public bool LinkToConVar {
 		get => field;
@@ -71,8 +76,8 @@ public class CharacterPanel : Panel
 		}
 	} = false;
 
-	public bool SetCharacter(ICharacterDescriptor? character) {
-		if (character == Character)
+	public bool SetCharacter(ICharacterDescriptor? character, bool force = false) {
+		if (character?.GetUniqueID() == Character?.GetUniqueID() && !force)
 			return character != null;
 
 		if (character != null)
@@ -83,7 +88,13 @@ public class CharacterPanel : Panel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		Music?.Update();
+		audiosystem.UpdatePlayback(Music);
+
+		if (extendedModels && Character != null) {
+			if (!PlayAnims.IsPlayingAnimation()) {
+				// todo: fix Character.PlayCharacterAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.JumpHitGreat) + 1), PlayAnims);
+			}
+		}
 	}
 
 	Label ExpressionLabel = null!;
@@ -101,18 +112,29 @@ public class CharacterPanel : Panel
 	public override void OnRemoval() {
 		base.OnRemoval();
 		LinkToConVar = false; // Force removal from list
+		audiosystem.DestroyPlayback(Music);
 	}
 
 	public override void MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
 	}
+	public void PlayApplyExpression() {
+		if (Character == null) return;
+
+		ApplyExpression ??= Character.GetMainShowApplyExpression();
+		PlayExpression(ApplyExpression);
+	}
+
 	public void PlayRandomExpression() {
 		if (Character == null) return;
+		PlayExpression(Character.GetMainShowExpression());
+	}
+
+	public void PlayExpression(ICharacterExpression? expression) {
+		if (Character == null) return;
 		if (Model == null) return;
-		if (Anims == null) return;
 		if (Level.Curtime < NextExpressionTime) return;
 
-		TouchResponse = Character.GetMainShowExpression();
 		Click++;
 
 		var mainResponse = Character.GetMainShowInitialExpression();
@@ -125,7 +147,7 @@ public class CharacterPanel : Panel
 
 		string? text = null;
 		double duration = 0;
-		TouchResponse?.Run(Level, Model, Anims, out text, out duration);
+		expression?.Run(Level, Model, Anims, out text, out duration);
 		StartExpressionTime = Level.Curtime;
 		NextExpressionTime = Level.Curtime + duration + 0.1;
 		ExpressionLabel.TextPadding = new(16);
@@ -135,7 +157,10 @@ public class CharacterPanel : Panel
 	public override void Paint(float width, float height) {
 		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
-			Offset = ((GetGlobalPosition()) + new Vector2F(width / 2, (height / 1) - 64)).ToNumerics()
+			Offset = ((GetGlobalPosition()) + new Vector2F(
+				NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 2, width / 3.5f), 
+				(height / 1) - 64)
+			).ToNumerics()
 		});
 
 		if (Model != null) {
@@ -149,14 +174,46 @@ public class CharacterPanel : Panel
 
 		EngineCore.Window.EndMode2D();
 
-		if (NMath.InRange(Level.Curtime, StartExpressionTime, NextExpressionTime) && ExpressionText != null) {
+		if (extendedModels) {
+			EngineCore.Window.BeginMode2D(new() {
+				Zoom = height / 900 / 1.4f,
+				Offset = ((GetGlobalPosition()) + new Vector2F(
+					NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 1.5f, (width / 2.2f) + (width / 24)),
+					(height / 1) - 64)
+				).ToNumerics()
+			});
+
+			if (PlayModel != null) {
+				PlayModel.Position = CharacterOffset;
+				PlayAnims?.AddDeltaTime(Level.RendertimeDelta); PlayAnims?.Apply(PlayModel);
+				PlayModel.Render();
+			}
+			EngineCore.Window.EndMode2D();
+
+
+			EngineCore.Window.BeginMode2D(new() {
+				Zoom = height / 900 / 5.4f,
+				Offset = ((GetGlobalPosition()) + new Vector2F(
+					NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 1.5f, (width / 1.45f) + (width / 24)),
+					(height / 1) - 64)
+				).ToNumerics()
+			});
+			if (VictoryModel != null) {
+				VictoryModel.Position = CharacterOffset;
+				VictoryAnims?.AddDeltaTime(Level.RendertimeDelta); VictoryAnims?.Apply(VictoryModel);
+				VictoryModel.Render();
+			}
+			EngineCore.Window.EndMode2D();
+		}
+
+		if (NMath.InRange(Level.Curtime, StartExpressionTime, NextExpressionTime) && !string.IsNullOrEmpty(ExpressionText)) {
 			float alphaMult1 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.1, 0, 1, true);
 			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.4, 0, 1, true);
 			float alphaMult2 = (float)NMath.Remap(Level.Curtime, NextExpressionTime - 0.2, NextExpressionTime, 0, 1, true);
 			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
 			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
 			Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-			Vector2F textPos = new Vector2F(width / 2, height * 0.9f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
+			Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 			textSize += new Vector2F(16);
 
 			ExpressionLabel.Position = textPos;
@@ -174,9 +231,10 @@ public class CharacterPanel : Panel
 	}
 
 	public void Reset() {
-		Music?.Restart();
+		/*audiosystem.RestartSound(Music);
 		Model?.SetToSetupPose();
 		Anims?.ClearAllAnimation();
+		ApplyExpression = null;
 
 		if (Model == null) return;
 		if (Anims == null) return;
@@ -184,7 +242,9 @@ public class CharacterPanel : Panel
 
 		var standby = Character.GetMainShowStandby();
 		if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-		Anims.AddAnimation(0, standby, true);
+		Anims.AddAnimation(0, standby, true);*/
+
+		SetCharacter(Character, true);
 	}
 
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
@@ -192,18 +252,45 @@ public class CharacterPanel : Panel
 		Character = charDescriptor;
 
 		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
-		Anims = new(Model.Data);
+		Anims.SetModel(Model);
+		ApplyExpression = null;
 
 		var standby = charDescriptor.GetMainShowStandby();
 		if (Model.Data.FindAnimation(standby) == null) standby = "standby";
 		if (Model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
 		Anims.SetAnimation(0, standby, true);
 
-		Music = charDescriptor.GetMainShowMusic(Level);
-		if (Music != null) {
-			Music.Playing = true;
-			Music.Loops = true;
-			Music.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		var clip = charDescriptor.GetMainShowMusic(Level);
+		if (IValidatable.IsValid(clip)) {
+			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+			Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
+				Looping = true,
+				ManuallyUpdate = true,
+				Stream = true
+			});
+			audiosystem.PlaySound(Music);
 		}
+
+		if (extendedModels)
+			LoadExtendedModels();
+	}
+
+	void LoadExtendedModels() {
+		if (Character == null) return;
+
+		PlayModel = Character.GetPlayModel(Level).Instantiate();
+		PlayAnims.SetModel(PlayModel);
+
+		VictoryModel = Character.GetVictoryModel(Level).Instantiate();
+		VictoryAnims.SetModel(VictoryModel);
+		VictoryAnims.SetAnimation(0, Character.GetVictoryStandby(), true);
+	}
+
+	bool extendedModels = false;
+	readonly SecondOrderSystem sos_extendedMoveover = new(1.8f, 0.8f, 1f, 0);
+	internal void SetExtendedModels(bool @checked) {
+		extendedModels = @checked;
+		if (@checked)
+			LoadExtendedModels();
 	}
 }
