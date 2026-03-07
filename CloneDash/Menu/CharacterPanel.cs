@@ -268,7 +268,8 @@ public class CharacterPanel : Panel
 			Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
 				Looping = true,
 				ManuallyUpdate = true,
-				Stream = true
+				Stream = true,
+				DoNotAutoDestroy = true
 			});
 			audiosystem.PlaySound(Music);
 		}
