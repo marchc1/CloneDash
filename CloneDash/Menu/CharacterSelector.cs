@@ -160,7 +160,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		characterSelectButton = selectedInfo.Add<Button>();
 		characterSelectButton.Dock = Dock.Right;
-		characterSelectButton.Size = new(0.1f);
+		characterSelectButton.Size = new(0.15f);
 		characterSelectButton.DynamicallySized = true;
 		characterSelectButton.BackgroundColor = new(10, 30, 10);
 		characterSelectButton.ForegroundColor = new(48, 220, 70);
@@ -248,6 +248,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	public bool OnTryClose()
 	{
 		Character.SetCharacter(CharacterMod.GetCharacterData());
+		Character.SetExtendedModels(false);
 		return true;
 	}
 }

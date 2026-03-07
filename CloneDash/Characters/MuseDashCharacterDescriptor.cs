@@ -17,6 +17,7 @@ using Nucleus.Models.Runtime;
 
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CloneDash.Characters;
 
@@ -136,9 +137,17 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		var animation = (string)apply["characterAnimation"]!;
 		var voiceline = (string)apply["characterSound"]!;
 
+		var exp = configData.Expressions.FindIndex(x => animation.StartsWith(x.AnimName));
+		if (exp == -1)
+			return null;
+
+		var audioI = configData.Expressions[exp].AudioNames.FindIndex(x => x == voiceline);
+		if (audioI == -1)
+			return null;
+
 		return new MuseDashCharacterExpression(
-			configData.Expressions.FirstOrDefault(x => animation.StartsWith(x.AnimName)) ?? configData.Expressions.First(),
-			"",
+			configData.Expressions[exp],
+			configData.Localization["english"].Expressions[exp][audioI], // probably not right
 			voiceline
 		);
 	}

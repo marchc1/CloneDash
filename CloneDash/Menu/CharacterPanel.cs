@@ -247,8 +247,10 @@ public class CharacterPanel : Panel
 		SetCharacter(Character, true);
 	}
 
+	
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
+		if (Character != null && Character.GetUniqueID() == charDescriptor.GetUniqueID()) return;
 		Character = charDescriptor;
 
 		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
