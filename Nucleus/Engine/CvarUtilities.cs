@@ -48,18 +48,21 @@ public class CvarUtilities
 		if (len == -1)
 			len = argS.Length;
 
-		bool quoted = argS[0] == '"';
-		if (!quoted)
-			args.ArgS().CopyTo(arg);
-		else{
-			len--;
-			args.ArgS()[1..].CopyTo(arg);
+		if (len > 0) {
+			bool quoted = argS[0] == '"';
+			if (!quoted)
+				args.ArgS().CopyTo(arg);
+			else {
+				len--;
+				args.ArgS()[1..].CopyTo(arg);
+			}
+			arg = arg.Trim();
+			if (arg[len - 1] == '"')
+				arg[len - 1] = '\0';
 		}
-		arg = arg.Trim();
-		if (arg[len - 1] == '"')
-			arg[len - 1] = '\0';
 		arg = arg.Trim('\0');
 		arg = arg.Trim();
+
 		SetDirect(var, arg);
 		return true;
 	}
