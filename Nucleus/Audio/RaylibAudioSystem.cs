@@ -623,7 +623,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		ch.Paused = false;
 		ch.Complete = false;
 		if (ch.IsStream) {
-			Raylib.StopMusicStream(ch.MusicStream);
+			Raylib.SeekMusicStream(ch.MusicStream, 0);
 			Raylib.PlayMusicStream(ch.MusicStream);
 		}
 		else {
