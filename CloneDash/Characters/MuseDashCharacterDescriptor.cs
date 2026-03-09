@@ -143,7 +143,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 		return new MuseDashCharacterExpression(
 			configData.Expressions[exp],
-			configData.Localization["english"].Expressions[exp][0], // probably not right
+			string.Empty,
 			voiceline
 		);
 	}
