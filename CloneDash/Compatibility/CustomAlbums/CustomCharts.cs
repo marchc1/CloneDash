@@ -64,7 +64,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			public MDMCChart WebChart;
 			public bool UsesWebChart = false;
 
-			public CustomChartsSong(MDMCChart webChart) {
+			public CustomChartsSong(in MDMCChart webChart) {
 				WebChart = webChart;
 				UsesWebChart = true;
 

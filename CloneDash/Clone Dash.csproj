@@ -62,10 +62,6 @@
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="UI\" />
-	</ItemGroup>
-
 
 	<Target Name="GenerateBuildDate" BeforeTargets="CoreCompile">
 		<PropertyGroup>

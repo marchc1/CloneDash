@@ -1,8 +1,11 @@
-﻿using CloneDash.Compatibility.CustomAlbums;
+﻿using CloneDash.Characters;
+using CloneDash.Charts;
+using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
+using FftSharp;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
@@ -19,12 +22,25 @@ using System.Collections.Concurrent;
 
 using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
-
-
 namespace CloneDash.Menu.Searching;
+
+public struct ChartSongSourceMoveInit
+{
+	public bool OperationExecuted;
+	public bool ImmediatelyAvailable;
+}
+
+public struct ChartSongSourceMoveFinish {
+	public bool OperationExecuted;
+	public int Movement;
+}
+
+public delegate void ChartSongSourceMoveFinishFn(in ChartSongSourceMoveFinish finishResult);
 
 public class SongSelector : Panel, IMainMenuPanel
 {
+
+
 	public void SetRichPresence() {
 		RichPresenceSystem.SetPresence(new() {
 			Details = "Main Menu",
@@ -34,50 +50,49 @@ public class SongSelector : Panel, IMainMenuPanel
 	public string GetName() => "Song Selector";
 	public void OnHidden() { }
 	public void OnShown() { }
-	public List<ChartSong> Songs { get; set; } = [];
-	public List<ChartSong>? SongsPostFilter { get; set; }
 
-	public Predicate<ChartSong>? CompiledFilter { get; private set; }
+	SongSearchBar SearchBar = null!;
+	SongLabel FilterResults = null!;
+	SongSearchDialog? ActiveDialog;
+	IChartSongFilter? SearchFilter;
 
-	public List<ChartSong> GetSongsList() => SongsPostFilter ?? Songs;
-
-	public SongSearchBar SearchBar;
-	public SongLabel FilterResults;
-	public SearchFilter? SearchFilter;
-	public SongSearchDialog? ActiveDialog;
+	IChartSongSourceState? Source;
+	public void SetSource(IChartSongSourceState source) {
+		Source = source;
+		ClearSongs();
+	}
 
 	public void TriggerUserInitializeSearch() {
-		if (SearchFilter == null) return;
+		if (Source == null) return;
+		SearchFilter = Source.NewFilter();
+
 		UI.Add(out ActiveDialog);
 		ActiveDialog.MakeModal();
 		ActiveDialog.Selector = this;
 		ActiveDialog.Bar = SearchBar;
 		ActiveDialog.OnUserSubmit += () => TriggerUserSubmittedSearch();
 
-		SearchFilter.Populate(ActiveDialog);
+		SearchFilter.PopulateFields(ActiveDialog);
 	}
 
 	public void TriggerUserSubmittedSearch() {
-		if (SearchFilter == null) return;
+		if (Source == null) return;
 		if (!IValidatable.IsValid(ActiveDialog)) return;
 
-		ApplyPredicate(SearchFilter.BuildPredicate(ActiveDialog));
-	}
+		if (SearchFilter == null) {
+			ClearFilter();
+			return;
+		}
+		
+		Source = ActiveDialog.Apply(Source, SearchFilter);
 
-	public void AddSongs(IEnumerable<ChartSong> songs) {
-		Songs.AddRange(songs);
-
-		ApplyPredicate(CompiledFilter);
-		InvalidateLayout();
+		ClearSongs();
 	}
 
 	public void ClearSongs() {
-		Songs.Clear();
-		DiscIndex = 0;
 		InvalidateLayout();
-
-		CanAcceptMoreSongs = true;
-		NoMoreSongsLeft = false;
+		ResetDiskTrack();
+		UpdateFilterText();
 	}
 
 	protected override void OnThink(FrameState frameState) {
@@ -85,136 +100,82 @@ public class SongSelector : Panel, IMainMenuPanel
 		ThinkDiscs();
 	}
 
-	public void ApplyPredicate(Predicate<ChartSong>? filter) {
-		if (filter == null) {
-			ClearFilter();
-			return;
-		}
+	public bool IsFiltered => Source?.GetParentSource() != null;
+	public int SongCountFiltered => Source?.GetSongCount() ?? 0;
+	public int SongCountTotal => Source?.GetRootSource()?.GetSongCount() ?? 0;
 
-		ConcurrentBag<ChartSong> multicoreSearchBag = [];
+	public string GetFilterText() {
+		if (Source == null)
+			return "Source == null?";
 
-		Parallel.ForEach(Songs, (song) => {
-			if (filter(song))
-				multicoreSearchBag.Add(song);
-		});
+		string text;
+		if (!IsFiltered)
+			text = $"{SongCountTotal} songs available";
+		else
+			text = $"{SongCountFiltered}/{SongCountTotal} songs filtered";
 
-		SongsPostFilter = multicoreSearchBag.ToList();
-		SongsPostFilter.Sort((x, y) => x.Name.CompareTo(y.Name));
-		CompiledFilter = filter;
-
-		SelectionUpdated(false);
-		InvalidateLayout();
-		DiscIndex = 0;
-		ResetDiskTrack();
-		UpdateFilterText();
+		return text;
 	}
-
-	public int CurrentFilteredCount => SongsPostFilter.Count;
-	public int SongsAvailable => Songs.Count;
-
-	public string GetFilterText() => CompiledFilter == null ? $"{totalCountOverride ?? SongsAvailable} songs available" : $"{CurrentFilteredCount}/{totalCountOverride ?? SongsAvailable} songs available";
 
 	public void UpdateFilterText() => FilterResults.Text = GetFilterText();
 
 	public void ClearFilter() {
-		SongsPostFilter?.Clear();
-		SongsPostFilter = null;
-		SelectionUpdated(true);
+		Source = Source?.GetRootSource();
 		UpdateFilterText();
 	}
 
 	public delegate void UserWantsMore();
 	public event UserWantsMore? UserWantsMoreSongs;
-	public bool CanAcceptMoreSongs { get; set; } = false;
-	public bool NoMoreSongsLeft { get; set; } = false;
-	public bool InfiniteList { get; set; } = true;
 
 	public double DiscRotateAnimation { get; set; } = 0;
 
 	public SecondOrderSystem DiscRotateSOS = new(2f, 0.94f, 1.1f, 0);
 	public SecondOrderSystem FlyAwaySOS = new(1.5f, 0.94f, 1.1f, 0);
 
-	protected virtual void SelectionUpdated(bool cleared) {
-
-	}
-
 	protected void GetMoreSongs() {
-		if (!CanAcceptMoreSongs) return;
-		if (NoMoreSongsLeft) return;
-
 		Loading.Visible = true;
 		Loading.MoveToFront();
-		CanAcceptMoreSongs = false;
 		UserWantsMoreSongs?.Invoke();
 	}
 
-	public SongLabel CurrentTrackName;
-	public SongLabel CurrentTrackAuthor;
-
-	public int DiscIndex = 0;
-	public Button[] Discs;
-
-	public SecondOrderSystem DiscAnimationOffset = new SecondOrderSystem(4.5f, 1, 1, 0);
+	public SongLabel CurrentTrackName = null!;
+	public SongLabel CurrentTrackAuthor = null!;
+	public Button[] Discs = null!;
+	public readonly SecondOrderSystem DiscAnimationOffset = new(4.5f, 1, 1, 0);
 
 	public void MoveLeft() {
-		if (!InfiniteList && DiscIndex <= 0)
+		if (Source == null)
 			return;
 
-		DiscIndex--;
-		DiscAnimationOffset.ResetTo(-1);
-		ResetDiskTrack();
+		Source.MoveLeft(CommitMove);
 	}
 
 	public void MoveRight() {
-		if (!InfiniteList && DiscIndex >= GetSongsList().Count - 1)
+		if (Source == null)
 			return;
 
-		DiscIndex++;
-		DiscAnimationOffset.ResetTo(1);
-		ResetDiskTrack();
+		Source.MoveRight(CommitMove);
 	}
 
-	public void SelectDisc(ChartSong song) => SelectDisc(GetSongsList().IndexOf(song));
-	public void SelectDisc(int index) {
-		if (!InfiniteList && (index < 0 || index >= GetSongsList().Count))
+	private void CommitMove(in ChartSongSourceMoveFinish finished) {
+		if (!finished.OperationExecuted)
 			return;
-
-		DiscIndex = index;
-		DiscAnimationOffset.ResetTo(0);
+		if (finished.Movement == 0)
+			return;
+		DiscAnimationOffset.ResetTo(finished.Movement);
 		ResetDiskTrack();
+		InvalidateLayout();
+		UpdateFilterText();
 	}
 
-	public int GetSongIndex(int localIndex) => GetSongsList().Count == 0 ? localIndex : NMath.Modulo(DiscIndex + localIndex, GetSongsList().Count);
-	public ChartSong? GetDiscSong(int localIndex) {
-		var songIndex = GetSongIndex(localIndex);
-		var list = GetSongsList();
-		if (list.Count == 0)
-			return null;
-		return list[songIndex];
-	}
-	public ChartSong GetDiscSong(Button discButton) {
-		int localIndex = discButton.GetTagSafely<int>("localDiscIndex");
-		var songIndex = GetSongIndex(localIndex);
+	public static int GetButtonLocalIndex(Button discButton) => discButton.GetTagSafely<int>("localDiscIndex");
 
-		return GetSongsList()[songIndex];
-	}
+	public ChartSong? GetDiscSong(Button discButton) => Source?.At(GetButtonLocalIndex(discButton));
+	public ChartSong? GetDiscSong(int idx) => Source?.At(idx);
 
-	public void NavigateToDisc(Button discButton) {
-		var index = discButton.GetTagSafely<int>("localDiscIndex");
-		DiscIndex += index;
-		DiscAnimationOffset.ResetTo(DiscAnimationOffset.Out + index);
-		if (index != 0)
-			ResetDiskTrack();
-	}
+	public int DiscIndexToSelectIndex(int idx) => idx - (VisibleDiscs / 2);
+	public int SelectIndexToDiscIndex(int idx) => idx + (VisibleDiscs / 2);
 
-	public bool IsDiscOverflowed(int localIndex) {
-		var songIndex = DiscIndex + localIndex;
-		return songIndex >= GetSongsList().Count || songIndex < 0;
-	}
-
-	public bool WillDiscOverflow() {
-		return IsDiscOverflowed(DiscIndex);
-	}
 
 	public float DiscVibrate = 0;
 	public float FlyAway = 0;
@@ -224,6 +185,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	AudioPlaybackHandle activeTrack;
 	bool doNotTryToGetTrackAgain;
 	public AudioPlaybackHandle ActiveTrack => activeTrack;
+
 	public void ResetDiskTrack() {
 		if (IValidatable.IsValid(activeTrack)) {
 			audiosystem.DestroyPlayback(activeTrack);
@@ -245,11 +207,25 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
+	bool wasBusy;
 	public void FigureOutDisk() {
-		if (GetSongsList().Count <= 0) return;
-		audiosystem.UpdatePlayback(activeTrack);
-		if (IValidatable.IsValid(activeTrack)) return;
-		if (doNotTryToGetTrackAgain) return;
+		if (IValidatable.IsValid(activeTrack))
+			audiosystem.UpdatePlayback(activeTrack);
+
+		if (Source == null || Source.IsBusy()) {
+			wasBusy = true;
+			return;
+		}
+		if (Source.GetSongCount() <= 0) return;
+
+		if(!Source.IsBusy() && wasBusy){
+			wasBusy = false;
+			InvalidateLayout();
+			UpdateFilterText();
+		}
+
+		if (doNotTryToGetTrackAgain)
+			return;
 
 		// Should play track?
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
@@ -269,6 +245,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				Stream = true
 			});
 			audiosystem.PlaySound(activeTrack);
+			doNotTryToGetTrackAgain = true;
 		}
 	}
 
@@ -292,7 +269,26 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
-	public Label Loading;
+	public void NavigateToDisc(Button disc){
+		var idx = -1;
+		for (int i = 0; i < Discs.Length; i++) {
+			if (Discs[i] == disc) {
+				idx = i;
+				break;
+			}
+		}
+
+		if (idx == -1)
+			throw new Exception("How");
+
+		if (Source == null)
+			return;
+
+		var song = Source.At(DiscIndexToSelectIndex(idx));
+		Source.Select(song, CommitMove);
+	}
+
+	public Label Loading = null!;
 	// Constantly running logic
 	public void ThinkDiscs() {
 		FigureOutDisk();
@@ -320,7 +316,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
-			var index = DiscIndex + disc.GetTagSafely<int>("localDiscIndex");
+			var index = disc.GetTagSafely<int>("localDiscIndex");
 
 			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
 				disc.ImageRotation = DiscRotateSOS.Update((float)(
@@ -334,23 +330,23 @@ public class SongSelector : Panel, IMainMenuPanel
 				disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
 			}
 
-			if (!InfiniteList && index > GetSongsList().Count) continue;
 
-			if (GetSongsList().Count > 0) {
-				var song = GetDiscSong(disc);
-				ChartCover? cover = song?.GetCoverWhenAvailable(this);
+			var song = GetDiscSong(disc);
+			if (song == null)
+				continue;
+			ChartCover? cover = song?.GetCoverWhenAvailable(this);
 
-				disc.Text = "";
-				if (cover != null) {
-					disc.ImageOrientation = ImageOrientation.Stretch;
-					disc.ImagePadding = new(16);
-					disc.Image = cover.Texture;
-					disc.ImageFlipX = false;
-					disc.ImageFlipY = cover.Flipped;
-				}
+			disc.Text = "";
+			if (cover != null) {
+				disc.ImageOrientation = ImageOrientation.Stretch;
+				disc.ImagePadding = new(16);
+				disc.Image = cover.Texture;
+				disc.ImageFlipX = false;
+				disc.ImageFlipY = cover.Flipped;
 			}
 		}
 	}
+
 	public void CalculateDiscPos(float width, float height, int index, out float x, out float y, out float rot) {
 		var offsetYParent = ChildRenderOffset.Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
@@ -370,68 +366,43 @@ public class SongSelector : Panel, IMainMenuPanel
 		return width / Discs.Length + mainDiscMult * 64;
 	}
 
-	private bool discsDisabled;
 	private void DisableDiscs(bool disabled) {
 		for (int i = 0; i < Discs.Length; i++) {
 			Discs[i].InputDisabled = disabled;
 			Discs[i].Visible = !disabled;
 		}
-		discsDisabled = disabled;
-	}
-
-	// This is so dumb I hate it but w/e
-	// This entire file needs to be revised at this point
-	public bool InCustomCharts;
-
-	protected override bool OnFileDropped(string filepath, Vector2F pos) {
-		if (InCustomCharts) {
-			ChartSong? song = GetSongsList().FirstOrDefault(x => x is CustomChartsSong ccs && ccs.Filepath == filepath);
-			if (song == null) {
-				song = new CustomChartsSong(filepath);
-				GetSongsList().Add(song);
-			}
-			SelectDisc(song);
-
-			Level.As<MainMenuLevel>().LoadChartSelector(this, song);
-		}
-
-		return InCustomCharts;
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		var songs = GetSongsList();
-		if (songs.Count <= 0 && CompiledFilter != null && !CanAcceptMoreSongs) {
+		if (Source == null || Source.GetSongCount() <= 0) {
 			Loading.Text = "No songs available.";
 			Loading.Visible = true;
 			DisableDiscs(true);
 			return;
 		}
 
-		Loading.Text = "LOADING";
-		Loading.Visible = true;
-
-		if (!NoMoreSongsLeft && !InfiniteList && WillDiscOverflow() && !(!InfiniteList && countOverride.HasValue && countOverride.Value == Songs.Count)) {
-			GetMoreSongs();
+		if (Source.IsBusy()) {
+			Loading.Text = "LOADING";
+			Loading.Visible = true;
 			DisableDiscs(true);
 			return;
 		}
 
-		Loading.Visible = false;
-		DisableDiscs(false);
+		if (Loading.Visible) {
+			Loading.Visible = false;
+			DisableDiscs(false);
+		}
+
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.Visible = true;
 			var discWidth = GetDiscSize(width, disc);
 
-			var willOverflow = !InfiniteList && IsDiscOverflowed(i - Discs.Length / 2);
-			if (willOverflow) {
-				disc.Visible = false;
+			var song = GetDiscSong(DiscIndexToSelectIndex(i));
+				disc.Visible = song != null;
+			if (song == null)
 				continue;
-			}
-			else {
-				disc.Visible = true;
-			}
-
+			
 			disc.Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
@@ -587,26 +558,4 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackName.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
 		CurrentTrackAuthor.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
 	}
-
-	private int? countOverride = null;
-	private int? totalCountOverride = null;
-
-	internal void AcceptMoreSongs() {
-		CanAcceptMoreSongs = true;
-		Loading.Visible = false;
-	}
-
-	public void SetCount(int count) {
-		countOverride = count;
-	}
-	public void SetTotal(int count) {
-		totalCountOverride = count;
-	}
-
-	internal void MarkNoMoreSongsLeft() {
-		NoMoreSongsLeft = true;
-		Loading.Visible = false;
-		CanAcceptMoreSongs = false;
-	}
-
 }

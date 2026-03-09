@@ -27,6 +27,7 @@ namespace CloneDash.Data
 		public string Difficulty4 => GetInfo()?.Difficulty4 ?? "";
 		public string Difficulty5 => GetInfo()?.Difficulty5 ?? "";
 
+		public bool TryDifficultyInteger(int i, out int d) => int.TryParse(Difficulty(i), out d);
 		public string Difficulty(int i) => i switch {
 			1 => Difficulty1,
 			2 => Difficulty2,

@@ -387,6 +387,20 @@ public static class MDMCWebAPI
 		return string.Join("&", list);
 	}
 
+	public const int MAX_CHARTS_PER_PAGE = 15;
+
+	/// <summary>
+	/// Chart starts at 0, page starts at 1.
+	/// </summary>
+	/// <param name="chart"></param>
+	/// <returns></returns>
+	public static int ChartIdxToPageIdx(int chart) {
+		return (chart / MAX_CHARTS_PER_PAGE) + 1;
+	}
+	public static int PageIdxToChartIdxStart(int page) {
+		return (page - 1) * MAX_CHARTS_PER_PAGE;
+	}
+
 	public static string BuildFetchRequestURL(string endpoint, Dictionary<string, object> parameters) =>
 		$"{WEBAPI_ENDPOINT}/{endpoint}?{buildParameters(parameters)}";
 

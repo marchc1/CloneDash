@@ -1,4 +1,5 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Charts;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Game;
@@ -127,23 +128,33 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.MouseReleaseEvent += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
+			var source = ChartMod.GetChartSongProviderByName("Muse Dash");
+			if(source == null){
+				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+				return;
+			}
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.AddSongs(MuseDashCompatibility.Songs);
-			selector.SearchFilter = new MuseDashSearchFilter();
+			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
+			var source = ChartMod.GetChartSongProviderByName("Custom Albums");
+			if (source == null) {
+				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+				return;
+			}
+
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.InCustomCharts = true;
-			selector.AddSongs(RefreshLocalSongs());
+			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
+			var source = ChartMod.GetChartSongProviderByName("MDMC");
+			if (source == null) {
+				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+				return;
+			}
+
 			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.InfiniteList = false;
-			selector.SearchFilter = new MDMCSearchFilter();
-			selector.UserWantsMoreSongs += () => {
-				// Load more songs
-				(selector.SearchFilter as MDMCSearchFilter).PopulateMDMCCharts(selector);
-			};
+			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
 			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());

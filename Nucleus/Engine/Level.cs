@@ -750,7 +750,7 @@ namespace Nucleus.Engine
 					{
 						debugrecords.Write("UI Elements", UI.Elements.Count);
 						debugrecords.Write("UI Rebuilds", 0);
-						debugrecords.Write("UI State:", $"hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}");
+						debugrecords.Write("UI State:", $"hovered {UI.Hovered?.ToString() ?? "<null>"}, depressed {UI.Depressed?.ToString() ?? "<null>"}, focused {UI.Focused?.ToString() ?? "<null>"}, kb-focused {UI.KeyboardFocusedElement?.ToString() ?? "<null>"}");
 					}
 					debugrecords.ExitScope();
 					debugrecords.Write("Engine - State");
