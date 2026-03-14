@@ -83,7 +83,7 @@ jobs:
 
           $vpkVersion = "$(Get-Date -Format 'yyyy.Mdd').${{ github.run_number }}"
 
-          vpk pack -u CloneDash -v $vpkVersion -p $packDir -e "Clone Dash.exe" -o ./VelopackRelease --packTitle "Clone Dash"
+          vpk pack -u CloneDash -v $vpkVersion -p $packDir -e "Clone Dash.exe" -o ./VelopackRelease --packTitle "Clone Dash" -f net10.0-x64-desktop
 
       # Build AppImage directly from the same bin output as the working ZIP,
       # but run the app from a writable per-user directory at runtime so files like mdlut.dat
