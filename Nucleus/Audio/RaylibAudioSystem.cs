@@ -191,6 +191,7 @@ internal unsafe class PlaybackChannel
 
 	public bool IsStream;
 	public Music MusicStream;
+	public byte* StreamDataCopy;
 	public Sound SoundAlias;
 
 	public readonly List<PlaybackProcessor> Processors = [];
@@ -268,6 +269,11 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 			if (Raylib.IsMusicReady(ch.MusicStream)) {
 				Raylib.StopMusicStream(ch.MusicStream);
 				Raylib.UnloadMusicStream(ch.MusicStream);
+			}
+
+			if (ch.StreamDataCopy != null) {
+				Raylib.MemFree(ch.StreamDataCopy);
+				ch.StreamDataCopy = null;
 			}
 		}
 		else {
@@ -389,7 +395,16 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 		if (settings.Stream) {
 			ch.IsStream = true;
-			ch.MusicStream = RaylibAudioHelpers.AllocMusicStream(baseClip.Data, baseClip.Length);
+
+			byte* copy = Raylib.New<byte>((int)baseClip.Length);
+			Buffer.MemoryCopy(baseClip.Data, copy, baseClip.Length, baseClip.Length);
+			ch.StreamDataCopy = copy;
+
+			ch.MusicStream = Raylib.LoadMusicStreamFromMemory(
+				RaylibAudioHelpers.DetermineFileType(new(copy, (int)baseClip.Length)),
+				copy, 
+				(int)baseClip.Length
+			);
 			ch.MusicStream.Looping = settings.Looping;
 			ch.SetupMusicProcessors();
 		}
