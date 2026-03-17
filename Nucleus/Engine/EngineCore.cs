@@ -1,6 +1,7 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Input;
+using Nucleus.Common.OS;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -279,7 +280,7 @@ public static class EngineCore
 			Window.Fullscreen = self.GetBool();
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags flags = 0, Action? gameThreadInit = null) {
 		// TEMPORARY
 		TemporaryInitializeDependencies();
 		windowName ??= startupInfo.AppName;
@@ -305,21 +306,13 @@ public static class EngineCore
 		Logs.Info($"    > Display server:     {Platform.DisplayServer}");
 		Logs.Info($"    > OpenGL version:     {Rlgl.GetVersion()}");
 
-		ConfigFlags add = (ConfigFlags)0;
-
-		if (flags != null) {
-			foreach (var flag in flags) {
-				add |= flag;
-			}
-		}
-
 		audiosystem.Initialize();
 		// Initialize SDL. This has to be done on the main thread.
 		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
-			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
+			flags |= ConfigFlags.WindowUndecorated;
 		if (fullscreen.GetBool()) {
-			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
+			flags |= ConfigFlags.FullScreenMode;
 			// Fix monitor sizing for fullscreens first frame
 			// todo: is there a better way to do this? This interferes with a few things I think
 			OSMonitor curMonitor = CommandLine().ParmValue("monitor", OS.GetPrimaryMonitor().DisplayID);
@@ -327,7 +320,7 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
 		GetWindowCtx(MainWindow).Level = null;
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
