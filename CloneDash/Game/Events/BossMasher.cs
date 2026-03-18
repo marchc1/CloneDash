@@ -1,4 +1,5 @@
 ﻿using CloneDash.Scenes;
+using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
@@ -13,7 +14,7 @@ public class BossMasher(DashGameLevel game, int type) : DashEvent(game)
 
 		var boss = Game.Boss;
 		var time = Game.Scene.GetBossAnimationTime(BossAnimationType.MultiAttack, boss.Animations);
-
+		Debug.Assert(time != 0);
 		Game.LoadEntity(new() {
 			Type = EntityType.Masher,
 			Pathway = PathwaySide.Both,
