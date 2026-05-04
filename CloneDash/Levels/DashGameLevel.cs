@@ -195,7 +195,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
-			if (entity is not DashModelEntity entCD)
+			if (entity is not DashEnemy entCD)
 				continue;
 
 			entCD.Reset();
@@ -246,7 +246,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			}
 
 			foreach (var entity in Entities) {
-				if (entity is DashModelEntity mEnt && mEnt.GetJudgementHitTime() < time) {
+				if (entity is DashEnemy mEnt && mEnt.GetJudgementHitTime() < time) {
 					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
 
 					// Evaluate if fever must end
@@ -336,7 +336,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
-	public DashModelEntity? MashingEntity;
+	public DashEnemy? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	private TextEffect? mashTextEffect;
 	private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
@@ -372,7 +372,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Enters the mash state, which causes all attacks to be redirected into this entity.
 	/// </summary>
 	/// <param name="ent"></param>
-	public void EnterMashState(DashModelEntity ent) {
+	public void EnterMashState(DashEnemy ent) {
 		if (IValidatable.IsValid(mashTextEffect))
 			mashTextEffect.Remove();
 
@@ -930,7 +930,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			}
 		}
 
-		var lastEntity = (DashModelEntity)Entities.Last(x => x is DashEnemy);
+		var lastEntity = (DashEnemy)Entities.Last(x => x is DashEnemy);
 
 		if (lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
@@ -949,7 +949,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		// Removes entities marked for removal safely
 		foreach (var entity in Entities)
-			if (entity is DashModelEntity && ((DashModelEntity)entity).MarkedForRemoval)
+			if (entity is DashEnemy && ((DashEnemy)entity).MarkedForRemoval)
 				Remove(entity);
 
 		//UnlockEntityBuffer(); LockEntityBuffer();
@@ -1080,7 +1080,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		throw new ArgumentException("pathway");
 	}
 
-	public Pathway GetPathway(DashModelEntity ent) => GetPathway(ent.Pathway);
+	public Pathway GetPathway(DashEnemy ent) => GetPathway(ent.Pathway);
 
 	/// <summary>
 	/// Creates an entity from a C# type and adds it to <see cref="GameplayManager.Entities"/>.
@@ -1089,7 +1089,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// <returns></returns>
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8604 // Possible null reference argument.
-	public T CreateEntity<T>() where T : DashModelEntity => (T)Add((T)Activator.CreateInstance(typeof(T)));
+	public T CreateEntity<T>() where T : DashEnemy => (T)Add((T)Activator.CreateInstance(typeof(T)));
 #pragma warning restore CS8604 // Possible null reference argument.
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
@@ -1366,17 +1366,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	private PathwaySide LastAttackPathway;
 
 	public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashModelEntity mentFrom) return;
+		if (entityFrom is not DashEnemy mentFrom) return;
 
 		foreach (var entity in Entities) {
-			if (entity is not DashModelEntity ment) continue;
+			if (entity is not DashEnemy ment) continue;
 			ment.OnSignalReceived(mentFrom, signalType, data);
 		}
 	}
 	public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashModelEntity mentFrom) return;
+		if (entityFrom is not DashEnemy mentFrom) return;
 
-		if (entityTo is not DashModelEntity ment) return;
+		if (entityTo is not DashEnemy ment) return;
 		ment.OnSignalReceived(mentFrom, signalType, data);
 	}
 
@@ -1581,7 +1581,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// </summary>
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
-	public void Damage(DashModelEntity? entity, float damage) {
+	public void Damage(DashEnemy? entity, float damage) {
 		if (!InIFrame) {
 			Health -= damage;
 			SetIFrameTime();
@@ -1810,11 +1810,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return Scene;
 	}
 
-	internal void SetEnemyPosition(DashModelEntity ent) {
+	internal void SetEnemyPosition(DashEnemy ent) {
 		ent.Position = new(0, 2.25f);
 	}
 
-	internal void SetEnemyKilledPosition(DashModelEntity ent) {
+	internal void SetEnemyKilledPosition(DashEnemy ent) {
 		var pos = GetPathwayPosition(ent.Pathway);
 		ent.Position = new(pos.X, -pos.Y);
 	}

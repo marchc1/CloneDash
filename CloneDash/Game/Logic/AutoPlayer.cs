@@ -24,8 +24,8 @@ namespace CloneDash.Game.Logic
 		/// Mark an entity as passed. Only used externally during seeking, for the sake of not confusing the autoplayer
 		/// </summary>
 		/// <param name="ent"></param>
-		public void MarkEntityAsPassed(DashModelEntity ent) => Passed.Add(ent);
-		public void MarkSustainAsActive(DashModelEntity ent) {
+		public void MarkEntityAsPassed(DashEnemy ent) => Passed.Add(ent);
+		public void MarkSustainAsActive(DashEnemy ent) {
 			if (ent.Type == EntityType.SustainBeam)
 				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 		}
@@ -34,7 +34,7 @@ namespace CloneDash.Game.Logic
 		/// Mark an entity as inactive, and also completes the sustain beam early. Only used externally during seeking, for the sake of not confusing the autoplayer
 		/// </summary>
 		/// <param name="ent"></param>
-		public void MarkSustainAsInactive(DashModelEntity ent) {
+		public void MarkSustainAsInactive(DashEnemy ent) {
 			if (ent.Type == EntityType.SustainBeam) {
 				bool popped = CurrentSustains[ent.Pathway].TryPop(out var beam);
 				Debug.Assert(popped && beam == (SustainBeam)ent);
@@ -72,7 +72,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Entities the autoplayer has passed already.
 		/// </summary>
-		private readonly HashSet<DashModelEntity> Passed = [];
+		private readonly HashSet<DashEnemy> Passed = [];
 
 		/// <summary>
 		/// Last time the autoplayer hit a masher. Used to limit masher hits.
@@ -91,7 +91,7 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="entity"></param>
 		/// <returns></returns>
-		private bool PassedEntity(DashModelEntity entity) => Passed.Contains(entity);
+		private bool PassedEntity(DashEnemy entity) => Passed.Contains(entity);
 
 		/// <summary>
 		/// This method automatically scans the visible entities for the next entity to hit at an almost-perfect time, and then hits the entity by simulating input presses

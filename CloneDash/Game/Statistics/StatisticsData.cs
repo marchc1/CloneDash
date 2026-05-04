@@ -156,20 +156,6 @@ public class StatisticsData
 
 	public void Pass(DashEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
 
-
-	public void Miss(DashModelEntity ent) {
-		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
-		Miss(enemy);
-	}
-	public void Pass(DashModelEntity ent) {
-		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
-		Pass(enemy);
-	}
-	public void Hit(DashModelEntity ent, double hitTime) {
-		if (ent is not DashEnemy enemy) throw new Exception(); // ugh
-		Hit(enemy, hitTime);
-	}
-
 	public StatisticsData(ChartSheet? sheet) {
 		Sheet = sheet;
 		Reset();
