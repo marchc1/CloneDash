@@ -64,7 +64,7 @@ public class Boss : DashEnemy
 
 	}
 
-	public override void OnSignalReceived(DashModelEntity from, EntitySignalType signalType, object? data = null) {
+	public override void OnSignalReceived(DashEnemy from, EntitySignalType signalType, object? data = null) {
 		// If not visible, ignore the signal
 		// Just so things don't get clogged up and a fire animation plays
 		// when nothing is being fired.
