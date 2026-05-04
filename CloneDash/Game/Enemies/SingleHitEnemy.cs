@@ -5,7 +5,7 @@ using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-	public class SingleHitEnemy : DashEnemy
+	public class SingleHitEnemy : BaseDashEnemy
 	{
 		public SingleHitEnemy() : base(EntityType.Single) {
 			Interactivity = EntityInteractivity.Hit;

@@ -269,7 +269,7 @@ namespace CloneDash.Game
 			var game = Level.As<DashGameLevel>();
 			Level.AddDebugString("Conductor Time", Time);
 
-			var speed = game.GetSpeed();
+			var speed = game.GetMusicSpeed();
 
 			if (firstTick) {
 				currentInaccurateTime = (float)-PreStartTime;

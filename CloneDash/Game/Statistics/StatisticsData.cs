@@ -7,10 +7,10 @@ public class StatisticsData
 	public StatisticsImpressiveness Title;
 	public StatisticsGrade Grade;
 	public ChartSheet? Sheet;
-	public List<DashEnemy> OrderedEnemies = [];
-	public Dictionary<DashEnemy, EnemyStatistics> EnemyInfo = [];
+	public List<BaseDashEnemy> OrderedEnemies = [];
+	public Dictionary<BaseDashEnemy, EnemyStatistics> EnemyInfo = [];
 
-	public int Score { get; private set; } = 0;
+	public double Score { get; private set; } = 0;
 	public double Accuracy { get; private set; } = 0;
 	public int Combo { get; private set; }
 	public int MaxCombo { get; private set; }
@@ -23,14 +23,14 @@ public class StatisticsData
 	public int Lates { get; private set; } = 0;
 
 
-	public void RegisterEnemy(DashEnemy enemy) {
+	public void RegisterEnemy(BaseDashEnemy enemy) {
 		if (EnemyInfo.ContainsKey(enemy)) return;
 
 		OrderedEnemies.Add(enemy);
 		EnemyInfo[enemy] = new(enemy);
 	}
 
-	public void UploadScore(int score) => Score = score;
+	public void UploadScore(double score) => Score = score;
 
 	private void DowngradeTitle(ref StatisticsImpressiveness title, StatisticsImpressiveness to) {
 		switch (title) {
@@ -135,10 +135,10 @@ public class StatisticsData
 		}
 	}
 
-	public EnemyStatistics GetStatisticsForEnemy(DashEnemy enemy)
+	public EnemyStatistics GetStatisticsForEnemy(BaseDashEnemy enemy)
 		=> EnemyInfo.TryGetValue(enemy, out var stats) ? stats : throw new Exception("Unregistered CD_BaseEnemy.");
 
-	public EnemyStatisticsAccuracy Hit(DashEnemy enemy, double hitTime) {
+	public EnemyStatisticsAccuracy Hit(BaseDashEnemy enemy, double hitTime) {
 		var stats = GetStatisticsForEnemy(enemy);
 		var accuracy = stats.Hit(hitTime);
 
@@ -149,12 +149,12 @@ public class StatisticsData
 		return accuracy;
 	}
 
-	public void Miss(DashEnemy enemy) {
+	public void Miss(BaseDashEnemy enemy) {
 		DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
 		GetStatisticsForEnemy(enemy).Miss();
 	}
 
-	public void Pass(DashEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
+	public void Pass(BaseDashEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
 
 	public StatisticsData(ChartSheet? sheet) {
 		Sheet = sheet;

@@ -4,7 +4,7 @@ using Nucleus.Types;
 
 namespace CloneDash.Game.Entities
 {
-	public class Masher : DashEnemy
+	public class Masher : BaseDashEnemy
 	{
 		public const int MASHER_HITS_PER_SECOND_OF_LENGTH = 25;
 		public const int MASHER_PLAYER_MAX_HITS_PER_SECOND = 26;
@@ -23,7 +23,7 @@ namespace CloneDash.Game.Entities
 		private void CheckIfComplete() {
 			var level = Level.As<DashGameLevel>();
 
-			if ((Hits >= MaxHits || level.Conductor.Time > (GetJudgementHitTime() + Length)) && !Dead) {
+			if ((Hits >= MaxHits || level.Conductor.Time > (CalcJudgementHitTime() + Length)) && !Dead) {
 				Complete();
 			}
 		}

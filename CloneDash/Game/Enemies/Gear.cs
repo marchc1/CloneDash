@@ -1,7 +1,7 @@
 ﻿using Nucleus.Types;
 namespace CloneDash.Game.Entities
 {
-	public class Gear : DashEnemy
+	public class Gear : BaseDashEnemy
 	{
 		public Gear() : base(EntityType.Gear) {
 			Interactivity = EntityInteractivity.Avoid;

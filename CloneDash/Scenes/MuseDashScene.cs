@@ -713,8 +713,6 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	}
 
 	public void Think(DashGameLevel game) => RunThinkFuncs(globals.CurTimeDelta);
-
-	public void Refresh(DashGameLevel game) { }
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
 			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
@@ -818,7 +816,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		return actions;
 	}
 
-	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
+	public string? GetEnemyApproachAnimation(BaseDashEnemy enemy, out double time) {
 		time = 0;
 
 		MD_SpineActionControllerData? anim = null;
@@ -920,7 +918,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	};
 
 
-	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
+	public string? GetEnemyHitAnimation(BaseDashEnemy enemy, HitAnimationType type) {
 		string request = type == HitAnimationType.Great ? ActionKeys.COMEOUT2 : ActionKeys.COMEOUT3;
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
@@ -951,7 +949,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		return anim.ActionIdx.FirstOrDefault();
 	}
 
-	public ModelData? GetEnemyModel(DashEnemy enemy) {
+	public ModelData? GetEnemyModel(BaseDashEnemy enemy) {
 		switch (enemy.Type) {
 			case EntityType.Boss: return BossModel;
 			case EntityType.Single:
@@ -989,7 +987,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 			mountAnimation = "in_mount"; // TODO - probably not consistent
 		return HpMountModel;
 	}
-	public BoneInstance? GetHPMount(DashEnemy enemy) => enemy.Model?.FindBone("hp");
+	public BoneInstance? GetHPMount(BaseDashEnemy enemy) => enemy.Model?.FindBone("hp");
 	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) {
 		var s = MasherAnims.GetSpeed(speed, dir).Get(ActionKeys.MUL_HURT)?.ActionIdx;
 		return s?[Random.Shared.Next(0, s.Length)] ?? "";

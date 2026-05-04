@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Entities
 {
-	public class Hammer : DashEnemy
+	public class Hammer : BaseDashEnemy
 	{
 		public Hammer() : base(EntityType.Hammer) {
 			Interactivity = EntityInteractivity.Hit;

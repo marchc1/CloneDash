@@ -33,11 +33,7 @@
 		/// How much score this entity can give to the player.
 		/// </summary>
 		public int Score;
-		/// <summary>
-		/// How fast (from a range of 1 -> 3) does the entity go. This eventually gets plugged into the speeds parameters
-		/// of whatever pathway animation is played
-		/// </summary>
-		public int Speed;
+		public double CLONEDASHSPEED_Speed;
 		/// <summary>
 		/// How much health this entity can give to the player.
 		/// </summary>

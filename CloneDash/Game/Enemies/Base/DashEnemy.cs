@@ -11,190 +11,216 @@ using Nucleus.Entities;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace CloneDash.Game;
 
-public class DashEnemy : ModelEntity
+public struct DashEnemyInfo()
 {
-	public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
-	public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
-	public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
-	public ISceneDescriptor GetCurrentScene() => Level.As<DashGameLevel>().GetCurrentScene();
-
-
-
 	/// <summary>
 	/// Does the death of this entity add to the characters combo score?
 	/// </summary>
-	public bool DeathAddsToCombo { get; protected set; } = true;
+	public bool DeathAddsToCombo = true;
 
 	/// <summary>
 	/// Does the failure to kill/pass this entity damage the player?
 	/// </summary>
-	public bool DoesDamagePlayer { get; protected set; } = true;
-
-	/// <summary>
-	/// Has the player been damaged already?<br></br>
-	/// Used internally to avoid applying damage over and over again
-	/// </summary>
-	public bool DidDamagePlayer { get; private set; } = false;
+	public bool DoesDamagePlayer = true;
 
 	/// <summary>
 	/// Does failure to kill the entity cause a combo loss?
 	/// </summary>
-	public bool DoesPunishPlayer { get; protected set; } = true;
-	/// <summary>
-	/// Has the entity punished the player yet?
-	/// </summary>
-	public bool DidPunishPlayer { get; private set; } = false;
-
-	/// <summary>
-	/// <summary>
-	/// Has the player been rewarded yet?
-	/// </summary>
-	public bool DidRewardPlayer { get; private set; }
+	public bool DoesPunishPlayer = true;
 
 	/// <summary>
 	/// Does the killing of this entity reward the player, either with healing or score?
 	/// </summary>
-	public bool DoesRewardPlayer { get; protected set; } = true;
+	public bool DoesRewardPlayer = true;
 
 	/// <summary>
 	/// How much health does the entity give (if any)
 	/// </summary>
-	public float HealthGiven { get; set; }
+	public double HealthGiven;
 
 	/// <summary>
 	/// How much score does the entity give to the player?
 	/// </summary>
-	public int ScoreGiven { get; set; } = 0;
-
-	/// <summary>
-	/// Type of the entity
-	/// </summary>
-	public EntityType Type { get; set; } = EntityType.Unknown;
+	public int ScoreGiven = 0;
 
 	/// <summary>
 	/// Entity variant (usually not applicable). Mostly for determining models.
 	/// </summary>
-	public EntityVariant Variant { get; set; } = EntityVariant.NotApplicable;
+	public EntityVariant Variant = EntityVariant.NotApplicable;
 
 	/// <summary>
 	/// Not applicable for all entities. Determines if the entity uses a flipped model during <see cref="Build()"/>.
 	/// <br/> If not implemented, will do nothing.
 	/// <br/> (only used in <see cref="Hammer"/> and <see cref="Raider"/>)
 	/// </summary>
-	public bool Flipped { get; set; }
+	public bool Flipped;
 
 	/// <summary>
 	/// If set; means that a heart is attached to this entity and will give health when successfully hit
 	/// </summary>
-	public bool Blood { get; set; }
+	public bool Blood;
 
 	/// <summary>
 	/// How much damage does the player take if failing to kill/pass this entity.
 	/// </summary>
-	public float DamageTaken { get; set; }
+	public double DamageTaken;
 
 	/// <summary>
 	/// How much fever does the player get when killing/passing this entity.
 	/// </summary>
-	public float FeverGiven { get; set; }
+	public double FeverGiven;
 
 	/// <summary>
 	/// The low-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 	/// </summary>
-	public float PreGreatRange { get; set; } = 0.08f;
+	public double PreGreatRange = 0.08;
 	/// <summary>
 	/// The high-end range of when a hit/pass is considered "great". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 	/// </summary>
-	public float PostGreatRange { get; set; } = 0.08f;
+	public double PostGreatRange = 0.08;
 
 	/// <summary>
 	/// The low-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 	/// </summary>
-	public float PrePerfectRange { get; set; } = 0.05f;
+	public double PrePerfectRange = 0.05;
 	/// <summary>
 	/// The high-end range of when a hit/pass is considered "perfect". <br></br><br></br> <i>Note that this is considered to be a positive value.</i>
 	/// </summary>
-	public float PostPerfectRange { get; set; } = 0.05f;
+	public double PostPerfectRange = 0.05;
 
-	/// <summary>
-	/// Should the entity draw?<br></br> This overrides ForceDraw. Naming is weird, needs to be adjusted.
-	/// </summary>
-	public bool ShouldDraw { get; protected set; } = true;
-	/// <summary>
-	/// Forces the entity to draw to the screen even if it would fail a visibility test.<br></br>Note that ShouldDraw will override this value.
-	/// </summary>
-	public bool ForceDraw { get; protected set; } = false;
-
-	/// <summary>
-	/// The interactivity method of this entity. Different methods of the entity will be called based on this value.
-	/// </summary>
-	public EntityInteractivity Interactivity { get; set; } = EntityInteractivity.Noninteractive;
-	/// <summary>
-	/// Is the entity interactive?
-	/// </summary>
-	public bool Interactive => Interactivity != EntityInteractivity.Noninteractive;
 	/// <summary>
 	/// Which direction does the entity come in from. Note that this only applies to some entities.
 	/// </summary>
-	public EntityEnterDirection EnterDirection { get; set; }
+	public EntityEnterDirection EnterDirection;
 	/// <summary>
 	/// What pathway is this entity on
 	/// </summary>
-	public PathwaySide Pathway { get; set; }
+	public PathwaySide Pathway;
 
-	/// When does this entity first appear on the screen, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
+	/// When does this entity first appear on the screen, in seconds.
 	/// </summary>
-	public double ShowTime { get; set; }
+	public double ShowTime;
 
 	/// <summary>
-	/// When does this entity need to be hit, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
+	/// When does this entity need to be hit, in seconds.
 	/// </summary>
-	public double HitTime { get; set; }
-
-	public void SetShowTimeViaLength(double length) => ShowTime = HitTime - length;
-
-	public double GetVisualShowTime() => ShowTime + InputSettings.VisualOffset;
-	public double GetVisualHitTime() => HitTime + InputSettings.VisualOffset;
-	public double GetJudgementShowTime() => ShowTime + InputSettings.JudgementOffset;
-	public double GetJudgementHitTime() => HitTime + InputSettings.JudgementOffset;
-	public double GetVisualTimeUntilHit() => DistanceToHit + InputSettings.VisualOffset;
-	public double GetVisualTimeUntilEnd() => DistanceToEnd + InputSettings.VisualOffset;
-	public double GetJudgementTimeUntilHit() => DistanceToHit + InputSettings.JudgementOffset;
-	public double GetJudgementTimeUntilEnd() => DistanceToEnd + InputSettings.JudgementOffset;
-
+	public double HitTime;
 
 	/// <summary>
 	/// How long does this entity need to be hit/sustained, in seconds
 	/// </summary>
-	public double Length { get; set; }
-	public int Speed { get; set; }
+	public double Length;
 
-	public virtual void OnSignalReceived(DashEnemy from, EntitySignalType signalType, object? data = null) {
+	// todo: isn't this basically HitTime - ShowTime? Should we just get rid of this?
+	// The issue is that its mostly used for MD animations. Can we cope with that?
+	public double Speed;
+}
+
+/// <summary>
+/// The logical implementation of Clone Dash enemies. The rendering is deferred to scene runtimes.
+/// </summary>
+public abstract class BaseDashEnemy : IDashEnemy, IValidatable
+{
+	public bool HasBeenRemoved = false;
+	public bool IsValid() => !HasBeenRemoved; // todo
+
+	IDashGame game = null!;
+	protected DashEnemyInfo info;
+	protected bool DidPunishPlayer = false;
+	protected bool DidDamagePlayer = false;
+	protected bool DidRewardPlayer;
+
+	public ref readonly DashEnemyInfo GetInfo() => ref info;
+	public PathwaySide GetPathway() => info.Pathway;
+
+	public double GetLength() => info.Length;
+
+	/// <summary>
+	/// The interactivity method of this entity. Different methods of the entity will be called based on this value.
+	/// </summary>
+	public EntityInteractivity Interactivity = EntityInteractivity.NonInteractive;
+
+	/// <summary>
+	/// Type of the entity
+	/// </summary>
+	public EntityType Type = EntityType.Unknown;
+
+	public IDashGame GetGame() => game;
+
+	public virtual void Initialize(IDashGame game, in DashEnemyInfo info) {
+		this.game = game;
+
+		// Type does not change from the struct, so we copy everything except that.
+		// (kinda weird, may refactor)
+		this.info = info;
+
+		SortIndex = game.NewEnemySortIndexCounter();
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public StatisticsData GetStats() => game.GetStatisticsData();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public Conductor GetConductor() => game.GetConductor();
+
+	/// <summary>
+	/// Is the entity interactive?
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsInteractive() => Interactivity != EntityInteractivity.NonInteractive;
+
+	public void SetShowTimeViaLength(double length) => info.ShowTime = info.HitTime - length;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcVisualShowTime() => info.ShowTime + InputSettings.VisualOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcVisualHitTime() => info.HitTime + InputSettings.VisualOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcJudgementShowTime() => info.ShowTime + InputSettings.JudgementOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcJudgementHitTime() => info.HitTime + InputSettings.JudgementOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcVisualTimeUntilHit() => CalcDistanceToHit() + InputSettings.VisualOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcVisualTimeUntilEnd() => CalcDistanceToEnd() + InputSettings.VisualOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcJudgementTimeUntilHit() => CalcDistanceToHit() + InputSettings.JudgementOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcJudgementTimeUntilEnd() => CalcDistanceToEnd() + InputSettings.JudgementOffset;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double GetSpeed() => info.Speed;
+
+
+	public virtual void OnSignalReceived<T>(IDashEnemy from, EntitySignalType signalType, T? data = default) {
 
 	}
-	public void SendSignal(DashEnemy to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
-	public void BroadcastSignal(EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
+
+	/// <summary>
+	/// Has the entity punished the player yet?
+	/// </summary>
+	public bool HasPunishedPlayer() => DidPunishPlayer;
+	/// <summary>
+	/// Has the player been damaged already?<br></br>
+	/// Used internally to avoid applying damage over and over again
+	/// </summary>
+	public bool HasDamagedPlayer() => DidDamagePlayer;
+	/// <summary>
+	/// Has the player been rewarded yet?
+	/// </summary>
+	public bool HasRewardedPlayer() => DidRewardPlayer;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SendSignal<T>(IDashEnemy to, EntitySignalType signalType, T? data) => GetGame().SendEntitySignal(this, to, signalType, data);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void BroadcastSignal<T>(EntitySignalType signalType, T? data) => GetGame().BroadcastEntitySignal(this, signalType, data);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SendSignal(IDashEnemy to, EntitySignalType signalType) => SendSignal<object>(to, signalType, null);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void BroadcastSignal(EntitySignalType signalType) => BroadcastSignal<object>(signalType, null);
+
 
 	/// <summary>
 	/// Damages the player as a punishment (which also resets their combo)
 	/// </summary>
 	public void DamagePlayer() {
-		var level = GetGameLevel();
-
 		if (DidDamagePlayer) // Is the player already hurt
 			return;
 
-		if (!DoesDamagePlayer) // Does the entity damage the player
+		if (!info.DoesDamagePlayer) // Does the entity damage the player
 			return;
 
-		if (level.InMashState) // Is the player mashing an entity right now and can't even hit the entity anyway
+		if (game.IsMashing()) // Is the player mashing an entity right now and can't even hit the entity anyway
 			return;
 
 		PunishPlayer(); // Reset combo
-		level.Damage(this, DamageTaken);
+		game.GivePlayerDamage(this, info.DamageTaken);
 		DidDamagePlayer = true;
 	}
 
@@ -202,15 +228,13 @@ public class DashEnemy : ModelEntity
 	/// Resets the players combo as a punishment
 	/// </summary>
 	public void PunishPlayer() {
-		var level = GetGameLevel();
-
 		if (DidPunishPlayer) // Was the player punished
 			return;
 
-		if (!DoesPunishPlayer) // Does the entity punish the player
+		if (!info.DoesPunishPlayer) // Does the entity punish the player
 			return;
 
-		if (level.InMashState) // Is the player in a mash state
+		if (game.IsMashing()) // Is the player in a mash state
 			return;
 
 		OnPunishment();
@@ -218,29 +242,26 @@ public class DashEnemy : ModelEntity
 	}
 
 	protected virtual void OnPunishment() {
-		GetGameLevel().ResetCombo();
+		game.ResetCombo();
 	}
 
+	public virtual bool IsForcingDraw() => false;
+
 	public void RewardPlayer(bool heal = false) {
-		var level = GetGameLevel();
 		if (DidRewardPlayer) // Did the entity reward the player already
 			return;
 
-		if (!DoesRewardPlayer) // Does the entity reward the player
+		if (!info.DoesRewardPlayer) // Does the entity reward the player
 			return;
 
-		if (level.InMashState) // Is the player mashing an entity
+		if (game.IsMashing()) // Is the player mashing an entity
 			return;
 
-		if (heal) {
-			level.Heal(HealthGiven);
-			level.SpawnTextEffect($"+{HealthGiven} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
-		}
+		if (heal)
+			game.GivePlayerHealth(this, info.HealthGiven);
 
-		if (Blood) {
-			level.Heal(ChartEntity.DEFAULT_HP);
-			level.SpawnTextEffect($"+{ChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
-		}
+		if (info.Blood)
+			game.GivePlayerHealth(this, ChartEntity.DEFAULT_HP);
 
 		OnReward();
 		DidRewardPlayer = true;
@@ -249,35 +270,36 @@ public class DashEnemy : ModelEntity
 	}
 
 	protected virtual void OnReward() {
-		var game = GetGameLevel();
-		game.AddScore(CDUtils.DetermineScoreMultiplied(game, ScoreGiven, game.LastPollResult));
+		game.GivePlayerScorePoints(this, info.ScoreGiven);
 	}
+
+	bool Dead  = false;
+	bool MarkedForRemoval = false;
+	bool Warns = false;
 
 	/// <summary>
 	/// Is the entity dead?
 	/// </summary>
-	public bool Dead { get; private set; } = false;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsDead() => Dead;
 	/// <summary>
 	/// Is the entity marked for removal from the entities list?
 	/// </summary>
-	public bool MarkedForRemoval { get; set; } = false;
-
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsMarkedForRemoval() => MarkedForRemoval;
 	/// <summary>
 	/// Does the entity warn the player when it is visible?
 	/// </summary>
-	public bool Warns { get; set; } = false;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsWarning() => Warns;
 
 	/// <summary>
 	/// Kills the entity, which removes a lot of functionality from the entity. Will also mark down FinalBlow time and the Dead field.
 	/// </summary>
 	public void Kill() {
-		var level = GetGameLevel();
 		Dead = true;
 
-		if (DeathAddsToCombo)
-			level.AddCombo();
+		if (info.DeathAddsToCombo)
+			game.GivePlayerCombo(this);
 
-		level.AddFever((int)this.FeverGiven);
+		game.GivePlayerFeverPoints(this, info.FeverGiven);
 
 		RewardPlayer();
 	}
@@ -287,71 +309,21 @@ public class DashEnemy : ModelEntity
 	/// <br/>
 	/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 	/// </summary>
-	public double DistanceToHit => HitTime - GetConductor().Time;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcDistanceToHit() => info.HitTime - GetConductor().Time;
 
 	/// <summary>
 	/// The distance, in seconds, to when the entity needs to be released.
 	/// <br/>
 	/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 	/// </summary>
-	public double DistanceToEnd => (HitTime + Length) - GetConductor().Time;
-
-	/// <summary>
-	/// Where is the entity in game-space?
-	/// </summary>
-	public double XPos { get; protected set; }
-
-	public double XPosFromTimeOffset(float timeOffset = 0) {
-		var level = GetGameLevel();
-
-		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
-		var tickHit = this.GetVisualHitTime();
-		var tickShow = this.GetVisualShowTime();
-		var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
-		return thisPos;
-	}
-
-	private double GetXPosTimeSpeedBase() {
-		switch (Speed) {
-			case 1: return 1130 / 200d;
-			case 2: return 1430 / 200d;
-			case 3: return 1780 / 200d;
-			default: goto case 1;
-		}
-	}
-
-	public bool Shown { get; protected set; } = false;
-
-	public bool CheckVisTest(FrameState frameState) {
-		var level = Level;
-
-		XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
-		float w = frameState.WindowWidth / 200, h = frameState.WindowHeight; // 200;
-
-		var ret = VisTest(w, h, (float)XPos);
-		if (Shown == false && ret == true) {
-			Shown = true;
-			OnFirstVisible();
-		}
-
-		return ret;
-	}
-
-	protected virtual void OnFirstVisible() {
-		if (Variant.IsBoss())
-			SendSignal(GetGameLevel().Boss, EntitySignalType.FirstAppearance);
-	}
-
-	public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-		return xPosition >= -gamewidth * 1f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
-	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcDistanceToEnd() => (info.HitTime + info.Length) - GetConductor().Time;
 
 	/// <summary>
 	/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 	/// </summary>
 	protected virtual void OnHit(PathwaySide side, double distanceToHit) {
-		if (Variant.IsBoss())
-			SendSignal(GetGameLevel().Boss, EntitySignalType.Hit);
+		if (info.Variant.IsBoss())
+			SendSignal(game.GetBossEnemy(), EntitySignalType.Hit);
 	}
 	protected virtual void OnMiss() {
 
@@ -369,8 +341,8 @@ public class DashEnemy : ModelEntity
 
 	}
 
-	public delegate void EntityPathwayEvent(DashEnemy entity, PathwaySide side);
-	public delegate void EntityNoArgumentEvent(DashEnemy entity);
+	public delegate void EntityPathwayEvent(BaseDashEnemy entity, PathwaySide side);
+	public delegate void EntityNoArgumentEvent(BaseDashEnemy entity);
 
 	/// <summary>
 	/// Per-entity event hook for when an entity is hit.
@@ -430,9 +402,6 @@ public class DashEnemy : ModelEntity
 		if (DidPass)
 			return;
 
-		var level = Level.As<DashGameLevel>();
-
-		level.SpawnTextEffect("PASS", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
 		OnPass();
 		OnPassEvent?.Invoke(this);
 		GlobalOnPassEvent?.Invoke(this);
@@ -448,9 +417,11 @@ public class DashEnemy : ModelEntity
 
 	public bool RelatedToBoss { get; set; }
 
+	public bool Shown;
+
 	private Color? __hitColor;
 	public Color HitColor {
-		get { return __hitColor.HasValue ? __hitColor.Value : Level.As<DashGameLevel>().GetPathway(Pathway).Color; }
+		get { return __hitColor.HasValue ? __hitColor.Value : game.GetCurrentScene().GetPathwayColor(info.Pathway); }
 		set { __hitColor = value; }
 	}
 
@@ -468,131 +439,22 @@ public class DashEnemy : ModelEntity
 		DidPass = false;
 		Shown = false;
 
-		ShouldDraw = true;
-		ForceDraw = false;
-		XPos = 0;
 		Dead = false;
 		OnReset();
 	}
 
-	public ModelInstance? MountedHeart;
-	public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
-	public BoneInstance? MountBone;
-
 	public int SortIndex;
 
-	public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
-		{ EntityType.Single, typeof(SingleHitEnemy) },
-		{ EntityType.Double, typeof(DoubleHitEnemy) },
-		{ EntityType.Score, typeof(Score) },
-		{ EntityType.Hammer, typeof(Hammer) },
-		{ EntityType.Masher, typeof(Masher) },
-		{ EntityType.Gear, typeof(Gear) },
-		{ EntityType.Ghost, typeof(Ghost) },
-		{ EntityType.Raider, typeof(Raider) },
-		{ EntityType.Heart, typeof(Health) },
-		{ EntityType.SustainBeam, typeof(SustainBeam) },
-	};
-
+	/// <summary>
+	/// Allows extra reset logic to occur
+	/// </summary>
 	public virtual void OnReset() {
-		Model?.SetToSetupPose();
-		MountedHeart?.SetToSetupPose();
-	}
-
-	protected void SetupHitAnimations(ISceneDescriptor scene) {
-		GreatHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-		PerfectHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
-	}
-	protected void BasicSetup() {
-		var level = GetGameLevel();
-		var scene = level.Scene;
-
-		Model = scene.GetEnemyModel(this)?.Instantiate();
-
-		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
-		SetShowTimeViaLength(showtime);
-
-		ApproachAnimation = Model?.Data.FindAnimation(animationName);
-		SetupHitAnimations(scene);
 
 	}
 
-	protected DashEnemy(EntityType type) {
+	protected BaseDashEnemy(EntityType type) {
 		Type = type;
-		Scale = new(DashGameLevel.GlobalScale);
 	}
 
-	public string? DebuggingInfo { get; internal set; }
-
-	public static bool TryCreateFromType(DashGameLevel game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
-		if (!TypeConvert.TryGetValue(type, out var ctype)) {
-			entity = null;
-			return false;
-		}
-		entity = CreateFromType(game, ctype);
-		return true;
-	}
-	public static DashEnemy CreateFromType(DashGameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
-	public static DashEnemy CreateFromType(DashGameLevel game, Type type) {
-		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type)!)!;
-		enemy.SortIndex = game.EnemySortIndexCounter++;
-		return enemy;
-	}
-
-	public virtual void Build() {
-		var lvl = GetGameLevel();
-		var scene = lvl.Scene;
-
-		if (Blood) {
-			string? mountAnimation = null;
-			MountedHeart = scene?.GetHP(out mountAnimation)?.Instantiate();
-			MountedHeartAnimation = MountedHeart?.Data.FindAnimation(mountAnimation);
-		}
-	}
-
-	public void SetMountBoneIfApplicable(BoneInstance? bone) {
-		if (bone == null) return;
-		if (Model == null) throw new NullReferenceException("Need model first!");
-		MountBone = bone;
-	}
-
-
-	public Nucleus.Models.Runtime.Animation? ApproachAnimation;
-	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
-	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
-
-	public double AnimationTime => (GetVisualShowTime() - GetConductor().Time) * -1;
-	private double tth => HitTime - ShowTime; // debugging, places enemy at exact frame position
-
-	public virtual void DetermineAnimationPlayback() {
-		ApproachAnimation?.Apply(Model, AnimationTime);
-	}
-
-	public void RenderHeartMount() {
-		if (MountedHeart == null) return;
-		if (MountedHeartAnimation == null) return;
-		if (MountBone == null) return;
-		if (Dead) return;
-
-		MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
-		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
-		MountedHeart.Position = new(MountBone.WorldTransform.X * DashGameLevel.GlobalScale, (4.5f - (MountBone.WorldTransform.Y * DashGameLevel.GlobalScale)) - 2.25f);
-		MountedHeart.Scale = new(DashGameLevel.GlobalScale);
-		MountedHeart.Render();
-	}
-
-	public override void Render() {
-		if (!Visible) return;
-		if (Model == null) return;
-		if (AnimationTime == 0) return;
-
-		DetermineAnimationPlayback();
-
-		Model.Position = Position;
-		Model.Scale = Scale;
-
-		Model.Render();
-
-		RenderHeartMount();
-	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public double CalcAnimationTime() => (CalcVisualShowTime() - GetConductor().Time) * -1;
 }

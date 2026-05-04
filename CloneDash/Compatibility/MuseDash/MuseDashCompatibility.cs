@@ -312,6 +312,35 @@ namespace CloneDash.Compatibility.MuseDash
 			return sb.ToString();
 		}
 
+		public const int MD_SPEED_1 = 1;
+		public const int MD_SPEED_2 = 2;
+		public const int MD_SPEED_3 = 3;
+
+		public const int CD_SPEED_1 = 1130;
+		public const int CD_SPEED_2 = 1430;
+		public const int CD_SPEED_3 = 1780;
+
+		public const double MD_SCALE = 200d;
+
+		public static double MDSpeedToCDSpeed(int speed) {
+			switch (speed) {
+				case MD_SPEED_1: return CD_SPEED_1 / MD_SCALE;
+				case MD_SPEED_2: return CD_SPEED_2 / MD_SCALE;
+				case MD_SPEED_3: return CD_SPEED_3 / MD_SCALE;
+				default: goto case 1;
+			}
+		}
+
+		public static int CDSpeedToMDSpeed(double speed) {
+			switch (speed) {
+				case CD_SPEED_1 / MD_SCALE: return MD_SPEED_1;
+				case CD_SPEED_2 / MD_SCALE: return MD_SPEED_2;
+				case CD_SPEED_3 / MD_SCALE: return MD_SPEED_3;
+				default: goto case CD_SPEED_1 / MD_SCALE;
+			}
+		}
+
+
 		/// <summary>
 		/// Dumps the <see cref="IBMSCode"/> enumeration to console
 		/// </summary>
@@ -383,7 +412,7 @@ namespace CloneDash.Compatibility.MuseDash
 						press.Damage = s.noteData.damage;
 						press.Length = (double)s.configData.length;
 						press.Score = s.noteData.score;
-						press.Speed = s.noteData.speed;
+						press.CLONEDASHSPEED_Speed = MDSpeedToCDSpeed(s.noteData.speed);
 
 						press.RelatedToBoss = false;
 						press.DebuggingInfo = $"ib.code: {ib.code}";
@@ -508,7 +537,7 @@ namespace CloneDash.Compatibility.MuseDash
 							ent.Damage = s.noteData.damage;
 							ent.Length = (double)s.configData.length;
 							ent.Score = s.noteData.score;
-							ent.Speed = s.noteData.speed;
+							ent.CLONEDASHSPEED_Speed = MDSpeedToCDSpeed(s.noteData.speed);
 							ent.Health = health;
 
 							ent.Blood = blood;

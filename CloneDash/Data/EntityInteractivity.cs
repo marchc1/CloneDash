@@ -8,7 +8,7 @@
 		/// <summary>
 		/// No interactivity. Used for entities that are not meant to be played with, such as effects
 		/// </summary>
-		Noninteractive,
+		NonInteractive,
 
 		/// <summary>
 		/// Single-hit trigger. Used for basic enemy types<br></br>

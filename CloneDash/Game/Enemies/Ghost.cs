@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Entities
 {
-	public class Ghost : DashEnemy
+	public class Ghost : BaseDashEnemy
 	{
 		public Ghost() : base(EntityType.Ghost) {
 			Interactivity = EntityInteractivity.Hit;

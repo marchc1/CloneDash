@@ -12,7 +12,6 @@ using CloneDash.Scenes;
 using CloneDash.Settings;
 using CloneDash.Systems;
 using Nucleus;
-using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Commands;
@@ -20,12 +19,11 @@ using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Entities;
-using Nucleus.Input;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-
+using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -34,29 +32,8 @@ using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Game;
 
-public struct DashGameParams
-{
-	public ChartSheet? Sheet;
-	public bool Autoplay;
-	public int Measure;
-
-	public DashGameParams(ChartSheet sheet) {
-		Sheet = sheet;
-	}
-
-	public DashGameParams WithAutoplay(bool autoplay) {
-		Autoplay = autoplay;
-		return this;
-	}
-
-	public DashGameParams WithMeasure(int measure) {
-		Measure = measure;
-		return this;
-	}
-}
-
 [Nucleus.MarkForStaticConstruction]
-public partial class DashGameLevel(DashGameParams gameParameters) : Level
+public partial class DashGameLevel(DashGameParams gameParameters) : Level, IDashGame
 {
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<DashGameLevel>();
@@ -75,18 +52,28 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			game.InitSpeedFromCvar();
 	});
 
-	double speed = 1;
-	public double GetSpeed() {
-		return speed;
+	public T CreateEnemy<T>(in DashEnemyInfo info) where T : IDashEnemy, new() {
+		T enemy = new T();
+		enemy.Initialize(this, in info);
+		Enemies.Add((BaseDashEnemy)(IDashEnemy)enemy); // kinda sucks
+		return enemy;
 	}
 
-	public void SetSpeed(double speed) {
+	public void DestroyEnemy(BaseDashEnemy enemy){
+		Enemies.Remove(enemy);
+		enemy.HasBeenRemoved = true;
+	}
+
+
+	double speed = 1;
+	public double GetMusicSpeed() => speed;
+	public void SetMusicSpeed(double speed) {
 		this.speed = speed;
 		audiosystem.SetSoundPitchControl(Music, (float)speed);
 	}
 
 	public void InitSpeedFromCvar() {
-		SetSpeed(musicspeed.GetDouble());
+		SetMusicSpeed(musicspeed.GetDouble());
 	}
 
 	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
@@ -194,12 +181,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			audiosystem.SetSoundPlayhead(Music, time);
 
 		Stats.Reset();
-		foreach (var entity in Entities) {
-			if (entity is not DashEnemy entCD)
-				continue;
-
-			entCD.Reset();
-		}
+		foreach (var entity in Enemies)
+			entity.Reset();
 
 		Boss.Reset();
 		ResetPathwaySpeeds();
@@ -245,9 +228,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				}
 			}
 
-			foreach (var entity in Entities) {
-				if (entity is DashEnemy mEnt && mEnt.GetJudgementHitTime() < time) {
-					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
+			foreach (var mEnt in Enemies) {
+				if (mEnt.CalcJudgementHitTime() < time) {
+					Conductor.ForceTimeTo(mEnt.CalcJudgementHitTime()); // Hack...
 
 					// Evaluate if fever must end
 					if (ShouldExitFever && InFever)
@@ -257,19 +240,19 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						case Masher masher: // Mashers need a bit more trickery
 							EnterMashState(masher);
 							for (int i = 0; i < masher.MaxHits; i++)
-								masher.Hit(mEnt.Pathway, 0);
+								masher.Hit(mEnt.GetPathway(), 0);
 							ExitMashState();
 							masher.RewardPlayer();
 							AutoPlayer.MarkEntityAsPassed(mEnt);
 							break;
 						case SustainBeam sustain:
-							sustain.Hit(sustain.Pathway, 0);
+							sustain.Hit(sustain.GetPathway(), 0);
 							sustain.RewardPlayer();
 
 							AutoPlayer.MarkSustainAsActive(sustain);
 							// Force time to the smaller value: either the end of the sustain, or the seeking time.
 							// This fixes issues when placing an autoplayer in the middle of a sustain.
-							var endOfSustainIsh = sustain.GetJudgementHitTime() + sustain.Length + 0.01;
+							var endOfSustainIsh = sustain.CalcJudgementHitTime() + sustain.GetLength() + 0.01;
 							Conductor.ForceTimeTo(Math.Min(endOfSustainIsh, time));
 
 							// hack, but will force sustain to cancel if its ready
@@ -283,11 +266,11 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						default:
 							switch (mEnt.Interactivity) {
 								case EntityInteractivity.Hit:
-									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.Hit(mEnt.GetPathway(), 0);
 									mEnt.RewardPlayer();
 									break;
 								case EntityInteractivity.SamePath:
-									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.Hit(mEnt.GetPathway(), 0);
 									mEnt.RewardPlayer();
 									break;
 								case EntityInteractivity.Avoid:
@@ -336,9 +319,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	}
 
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
-	public DashEnemy? MashingEntity;
+	public BaseDashEnemy? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
-	private TextEffect? mashTextEffect;
 	private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
 	private double LastMasherAttemptedHit;
 	private double LastMasherRealHit;
@@ -372,35 +354,22 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Enters the mash state, which causes all attacks to be redirected into this entity.
 	/// </summary>
 	/// <param name="ent"></param>
-	public void EnterMashState(DashEnemy ent) {
-		if (IValidatable.IsValid(mashTextEffect))
-			mashTextEffect.Remove();
-
-		if (!IsSeeking) {
-			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
-			if (IValidatable.IsValid(mashTextEffect))
-				mashTextEffect.SuppressAutoDeath = true;
+	public void EnterMashState(BaseDashEnemy ent) {
+		if (!IsSeeking)
 			UpdateMashTextEffect();
-		}
+
 		InMashState = true;
 		MashingEntity = ent;
 		LastMasherRealHit = Conductor.Time;
 		LastMasherAttemptedHit = Conductor.Time;
 	}
 	public void UpdateMashTextEffect() {
-		if (!IValidatable.IsValid(mashTextEffect)) return;
 		if (!IValidatable.IsValid(MashingEntity)) return;
-
-		mashTextEffect.Position = GetPathway(PathwaySide.Top).Position;
-		mashTextEffect.Text = $"HITS: {MashingEntity.Hits}";
 	}
 	/// <summary>
 	/// Exits the mash state.
 	/// </summary>
 	public void ExitMashState() {
-		if (IValidatable.IsValid(mashTextEffect))
-			mashTextEffect.Remove();
-
 		InMashState = false;
 		MashingEntity = null;
 		LastMasherRealHit = double.NaN;
@@ -417,19 +386,19 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public InputState InputState { get; private set; }
 	public List<ICloneDashInputSystem> InputReceivers { get; } = [];
 
-	public AutoPlayer AutoPlayer { get; private set; }
+	public AutoPlayer AutoPlayer { get; private set; } = null!;
 	/// <summary>
 	/// Timing system.
 	/// </summary>
-	public Conductor Conductor { get; private set; }
+	public Conductor Conductor { get; private set; } = null!;
 	public AudioPlaybackHandle Music;
-	public ModelEntity Player { get; set; }
-	public ModelEntity HologramPlayer { get; set; }
-	public MD_SpineActionController PlayerController { get; set; }
-	public MD_SpineActionController HologramPlayerController { get; set; }
-	public Boss Boss { get; set; }
-	public Pathway TopPathway { get; set; }
-	public Pathway BottomPathway { get; set; }
+	public ModelEntity Player { get; set; } = null!;
+	public ModelEntity HologramPlayer { get; set; } = null!;
+	public MD_SpineActionController PlayerController { get; set; } = null!;
+	public MD_SpineActionController HologramPlayerController { get; set; } = null!;
+	public Boss Boss { get; set; } = null!;
+	public Pathway TopPathway { get; set; } = null!;
+	public Pathway BottomPathway { get; set; } = null!;
 
 	/// <summary>
 	/// Is the game currently paused
@@ -457,7 +426,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return true;
 	}
 	private void startUnpause() {
-		Scene.PlaySound(SceneSound.Unpause, 0);
+		CurrentSceneRuntime?.PlaySound(SceneSound.Unpause, 0);
 		UnpauseTime = Realtime;
 		Timers.Simple(3, () => {
 			fullUnpause();
@@ -486,7 +455,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public StatisticsData Stats;
 	public ICharacterDescriptor Character;
 	public IFeverDescriptor? FeverFX;
-	public ISceneDescriptor Scene;
+	public ISceneRuntime? CurrentSceneRuntime;
+	public readonly Dictionary<UtlSymbol, ISceneRuntime> AllSceneRuntimes = [];
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
 		switch (type) {
@@ -539,21 +509,38 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				Character = charData;
 
 				var sceneData = SceneMod.GetSceneData();
+				ReadOnlySpan<char> currentSceneID = SceneMod.scene.GetString();
 				if (sceneData == null) {
 					// TODO: Scene changes. Requires a HUGE restructuring
-					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.InitialScene);
-					if (sceneData == null)
+					var sheet = gameParameters.Sheet;
+					if (sheet == null)
 						throw new ArgumentNullException(nameof(sceneData));
+
+					sceneData = SceneMod.GetSceneData(sheet.InitialScene) ?? throw new ArgumentNullException(nameof(sceneData));
+					currentSceneID = sheet.InitialScene;
 				}
-				Scene = sceneData;
+
+				CurrentSceneRuntime = sceneData.CreateRuntime();
+				AllSceneRuntimes.Add(currentSceneID, CurrentSceneRuntime);
+				if (gameParameters.Sheet != null)
+					foreach (var sceneChange in gameParameters.Sheet.SceneChanges) {
+						string uid = sceneChange.SceneUID;
+						if (AllSceneRuntimes.ContainsKey(uid)) continue;
+						var sceneChangeData = SceneMod.GetSceneData(uid);
+						if (sceneChangeData == null) continue;
+
+						var runtime = sceneChangeData.CreateRuntime();
+						AllSceneRuntimes[uid] = runtime;
+					}
 
 				var feverFX = FeverMod.GetFeverData();
 				FeverFX = feverFX;
 			}
 
-			Interlude.Spin(submessage: "Initializing the scene...");
-			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
-				Scene.Initialize(this);
+			Interlude.Spin(submessage: "Initializing scenes...");
+			using (StaticSequentialProfiler.StartStackFrame("Initialize Scenes/Fever")) {
+				foreach (var kvp in AllSceneRuntimes)
+					kvp.Value.Initialize(this);
 				FeverFX?.Initialize(this);
 			}
 
@@ -595,12 +582,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				PlayCharacterAnimation(CharacterAnimationType.In);
 			}
 
+			Boss = CreateEnemy<Boss>(new() {
 
-			Interlude.Spin(submessage: "Loading boss...");
-			using (StaticSequentialProfiler.StartStackFrame("Initialize Boss")) {
-				Boss = Add(new Boss());
-				Boss.RendersItself = false;
-			}
+			});
 
 			Interlude.Spin(submessage: "Loading internal entities...");
 
@@ -626,7 +610,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						foreach (var ev in gameParameters.Sheet.Events)
 							LoadEvent(ev);
 
-						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
+						Entities.Sort((x, y) => (x is IDashEnemy xE && y is IDashEnemy yE) ? xE.GetInfo().HitTime.CompareTo(yE.GetInfo().HitTime) : 0);
 					}
 				}
 			}
@@ -672,7 +656,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Scorebar.Size = new(0, 128);
 
 			if (!CommandLine().CheckParm("-mdbmsc", out var p))
-				Scene.PlaySound(SceneSound.Begin, 0);
+				CurrentSceneRuntime?.PlaySound(SceneSound.Begin, 0);
 		}
 
 		if (StaticSequentialProfiler.Profiling) {
@@ -696,7 +680,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
 	}
 	public bool Debug { get; set; } = true;
-	public Panel PauseWindow { get; private set; }
+	public Panel? PauseWindow { get; private set; }
 	private bool lastNoteHit = false;
 
 
@@ -731,7 +715,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (PlayedSceneSoundThisFrame[(int)sound])
 			return;
 		PlayedSceneSoundThisFrame[(int)sound] = true;
-		Scene.PlaySound(sound, hits);
+		CurrentSceneRuntime?.PlaySound(sound, hits);
 	}
 
 
@@ -796,7 +780,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 					play.ImageOrientation = ImageOrientation.Fit;
 					play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						PauseWindow.Remove();
+						PauseWindow?.Remove();
 						startUnpause();
 					};
 					play.PaintOverride += Button_PaintOverride;
@@ -912,27 +896,25 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			HologramPlayer.Visible = false;
 		}
 
-		VisibleEntities.Clear();
+		VisibleEnemies.Clear();
 
-		foreach (var entity in Entities) {
+		var currentScene = CurrentSceneRuntime;
+		foreach (var entity in Enemies) {
 			if (entity is Boss) continue;
-			if (entity is not DashEnemy)
+			if (entity is not BaseDashEnemy entCD)
 				continue;
 
-			var entCD = entity as DashEnemy;
-			// Visibility testing
-			// ShouldDraw overrides ForceDraw here, which is intentional, although the naming convention is confusing and should be adjusted (maybe the names swapped?)
-			if ((entCD.CheckVisTest(frameState) || entCD.ForceDraw) && entCD.ShouldDraw) {
-				VisibleEntities.Add(entCD);
+			if (entCD.IsForcingDraw() || (currentScene != null && currentScene.VisTest(entCD))) {
+				VisibleEnemies.Add(entCD);
 
-				if (entCD.Warns && !entCD.Dead && !InMashState)
+				if (entCD.IsWarning() && !entCD.IsDead() && !InMashState)
 					IsWarning = true;
 			}
 		}
 
-		var lastEntity = (DashEnemy)Entities.Last(x => x is DashEnemy);
+		var lastEntity = (BaseDashEnemy)Enemies.Last();
 
-		if (lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
+		if (lastEntity.CalcJudgementHitTime() + lastEntity.GetInfo().Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
@@ -941,16 +923,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		}
 
 		// Sort the visible entities by their hit time
-		VisibleEntities.Sort(VisibleEntitySorter);
+		VisibleEnemies.Sort(VisibleEntitySorter);
 
 		IterateEvents();
 
 		//LockEntityBuffer();
 
 		// Removes entities marked for removal safely
-		foreach (var entity in Entities)
-			if (entity is DashEnemy && ((DashEnemy)entity).MarkedForRemoval)
-				Remove(entity);
+		foreach (var entity in Enemies)
+			if (entity.IsMarkedForRemoval())
+				DestroyEnemy(entity);
 
 		//UnlockEntityBuffer(); LockEntityBuffer();
 
@@ -969,16 +951,17 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
 		// It is ran after input processing.
-		foreach (var entity in VisibleEntities) {
-			var timeToHit = entity.GetJudgementTimeUntilHit();
+		foreach (var entity in VisibleEnemies) {
+			var timeToHit = entity.CalcJudgementTimeUntilHit();
+			ref readonly DashEnemyInfo entInfo = ref entity.GetInfo();
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
-					if (!entity.Dead) {
+					if (!entity.IsDead()) {
 						PathwaySide currentPathway = Pathway;
 
 						// Is it too late for the player to hit this entity anyway?
-						if (timeToHit < -entity.PreGreatRange
+						if (timeToHit < -entInfo.PreGreatRange
 							&& !(entity is SustainBeam se && se.HeldState == true)
 							&& !(entity is Masher me && me.Hits > 0)
 						) {
@@ -987,9 +970,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					}
 					break;
 				case EntityInteractivity.SamePath:
-					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
+					if (NMath.InRange(timeToHit, -entInfo.PreGreatRange, 0)) {
 						PathwaySide pathCurrentCharacter = Pathway;
-						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
+						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.GetPathway()) && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
 							PlaySceneSound(entity.Type switch {
 								EntityType.Heart => SceneSound.GotHeart,
@@ -1001,18 +984,18 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					break;
 				case EntityInteractivity.Avoid:
 					// If the player is sustaining on the pathway this entity is on, then ignore
-					if (Sustains.IsSustaining(entity.Pathway))
+					if (Sustains.IsSustaining(entity.GetPathway()))
 						break;
 
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
 
-					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
+					if (Pathway == entity.GetPathway() && timeToHit < -entInfo.PrePerfectRange && !entity.HasRewardedPlayer()) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						entity.DamagePlayer();
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
-					if (Pathway != entity.Pathway && timeToHit < 0 && !entity.DidDamagePlayer) {
+					if (Pathway != entity.GetPathway() && timeToHit < 0 && !entity.HasDamagedPlayer()) {
 						entity.Pass();
 					}
 
@@ -1024,17 +1007,15 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 
-		Scene.Think(this);
+		CurrentSceneRuntime?.Think();
+
 		if (InFever)
 			FeverFX?.Think(this);
-
-		if (!Paused && IValidatable.IsValid(pressIdle))
-			audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public int EnemySortIndexCounter;
 
-	private static int VisibleEntitySorter(DashEnemy x, DashEnemy y) {
+	private static int VisibleEntitySorter(BaseDashEnemy x, BaseDashEnemy y) {
 		return x.SortIndex.CompareTo(y.SortIndex);
 	}
 
@@ -1080,28 +1061,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		throw new ArgumentException("pathway");
 	}
 
-	public Pathway GetPathway(DashEnemy ent) => GetPathway(ent.Pathway);
-
-	/// <summary>
-	/// Creates an entity from a C# type and adds it to <see cref="GameplayManager.Entities"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <returns></returns>
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable CS8604 // Possible null reference argument.
-	public T CreateEntity<T>() where T : DashEnemy => (T)Add((T)Activator.CreateInstance(typeof(T)));
-#pragma warning restore CS8604 // Possible null reference argument.
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-
-	/// <summary>
-	/// Creates an event from an EventType enumeration, and adds it to <see cref="GameplayManager.Events"/>.
-	/// </summary>
-	/// <param name="t"></param>
-	/// <returns></returns>
-	/*public CD_BaseEvent AddEvent(EventType t) {
-            CD_BaseEvent e = CD_BaseEvent.CreateFromType(this.Game, t);
-            return e;
-        }*/
+	public Pathway GetPathway(BaseDashEnemy ent) => GetPathway(ent.GetPathway());
 
 	public PollResult LastPollResult = PollResult.Empty;
 
@@ -1111,23 +1071,25 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// <param name="pathway"></param>
 	/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
 	public PollResult Poll(in PollParams parms) {
-		foreach (DashEnemy entity in VisibleEntities) {
+		foreach (BaseDashEnemy entity in VisibleEnemies) {
 			// If the entity has no interactivity, ignore it in the poll
-			if (!entity.Interactive)
+			if (!entity.IsInteractive())
 				continue;
 
 			// If the entity says its dead, ignore it
-			if (entity.Dead)
+			if (entity.IsDead())
 				continue;
+
+			ref readonly DashEnemyInfo info = ref entity.GetInfo();
 
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
-					bool isValidHit = entity.Interactivity != EntityInteractivity.Sustain ? !entity.Dead : !(entity as SustainBeam)!.HeldState;
-					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, parms.Pathway)) {
-						double distance = entity.GetJudgementTimeUntilHit();
-						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
-						double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
+					bool isValidHit = entity.Interactivity != EntityInteractivity.Sustain ? !entity.IsDead() : !(entity as SustainBeam)!.HeldState;
+					if (isValidHit && Game.Pathway.ComparePathwayType(entity.GetPathway(), parms.Pathway)) {
+						double distance = entity.CalcJudgementTimeUntilHit();
+						double pregreat = -info.PreGreatRange, postgreat = info.PostGreatRange;
+						double preperfect = -info.PrePerfectRange, postperfect = info.PostPerfectRange;
 						if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured
 							var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
 							LastPollResult = PollResult.Create(entity, distance, greatness);
@@ -1140,20 +1102,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		LastPollResult = PollResult.Empty;
 		return LastPollResult;
-	}
-
-	/// <summary>
-	/// Spawns a <see cref="TextEffect"/> into the game and adds it to the game.
-	/// </summary>
-	/// <param name="text">The text</param>
-	/// <param name="position">Where it spawns (it will rise upwards after being spawned)</param>
-	/// <param name="color">The color of the text</param>
-	public TextEffect? SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
-		if (IsSeeking) return null;
-		if (color == null)
-			color = new Color(255, 255, 255, 255);
-
-		return Add(new TextEffect(text, position, transitionOut, color.Value));
 	}
 
 	public List<DashEvent> Events = [];
@@ -1241,35 +1189,45 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public void LoadEntity(ChartEntity ChartEntity) {
 		Interlude.Spin(submessage: "Loading entities...");
 
-		if (!DashEnemy.TryCreateFromType(this, ChartEntity.Type, out DashEnemy? ent)) {
+		BaseDashEnemy? ent = null;
+		DashEnemyInfo info = new() {
+			Pathway = ChartEntity.Pathway,
+			EnterDirection = ChartEntity.EnterDirection,
+			Variant = ChartEntity.Variant,
+
+			HitTime = ChartEntity.HitTime,
+			ShowTime = ChartEntity.ShowTime,
+			Length = ChartEntity.Length,
+			Speed = ChartEntity.CLONEDASHSPEED_Speed,
+			Flipped = ChartEntity.Flipped,
+			Blood = ChartEntity.Blood,
+
+			FeverGiven = ChartEntity.Fever,
+			DamageTaken = ChartEntity.Damage,
+			ScoreGiven = ChartEntity.Score,
+			HealthGiven = ChartEntity.Health,
+		};
+
+		switch (ChartEntity.Type) {
+			case EntityType.Single: ent = CreateEnemy<SingleHitEnemy>(info); break;
+			case EntityType.Double: ent = CreateEnemy<DoubleHitEnemy>(info); break;
+			case EntityType.Score: ent = CreateEnemy<Score>(info); break;
+			case EntityType.Hammer: ent = CreateEnemy<Hammer>(info); break;
+			case EntityType.Masher: ent = CreateEnemy<Masher>(info); break;
+			case EntityType.Gear: ent = CreateEnemy<Gear>(info); break;
+			case EntityType.Ghost: ent = CreateEnemy<Ghost>(info); break;
+			case EntityType.Raider: ent = CreateEnemy<Raider>(info); break;
+			case EntityType.Heart: ent = CreateEnemy<Health>(info); break;
+			case EntityType.SustainBeam: ent = CreateEnemy<SustainBeam>(info); break;
+		}
+
+		if (ent == null) {
 			Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
 			return;
 		}
 
-		ent.Pathway = ChartEntity.Pathway;
-		ent.EnterDirection = ChartEntity.EnterDirection;
-		ent.Variant = ChartEntity.Variant;
-
-		ent.HitTime = ChartEntity.HitTime;
-		ent.ShowTime = ChartEntity.ShowTime;
-		ent.Length = ChartEntity.Length;
-		ent.Speed = ChartEntity.Speed;
-		ent.Flipped = ChartEntity.Flipped;
-		ent.Blood = ChartEntity.Blood;
-
-		ent.FeverGiven = ChartEntity.Fever;
-		ent.DamageTaken = ChartEntity.Damage;
-		ent.ScoreGiven = ChartEntity.Score;
-		ent.HealthGiven = ChartEntity.Health;
-
 		ent.RelatedToBoss = ChartEntity.RelatedToBoss;
-
-		ent.RendersItself = false;
-		ent.DebuggingInfo = ChartEntity.DebuggingInfo;
-
 		Stats.RegisterEnemy(ent);
-
-		ent.Build();
 	}
 
 
@@ -1277,14 +1235,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public float PlayScale => 1 / 200f;
 	public static float GlobalScale => 1 / 200f;
 
-	public override void PreRenderBackground(FrameState frameState) {
-		Boss.Position = new(0, 2.25f);
-	}
+	public int NewEnemySortIndexCounter() => EnemySortIndexCounter++;
 
 	public override void PreRender(FrameState frameState) {
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		Scene.RenderBackground(this);
+		CurrentSceneRuntime?.RenderBackground();
 		if (InFever)
 			FeverFX?.Render(this);
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -1302,16 +1258,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		//cam.Target = cam.Offset;
 	}
 
-	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
-		foreach (Entity ent in VisibleEntities) {
-			if (ent is not DashEnemy entCD) continue;
+	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<BaseDashEnemy> enemyPredicate) {
+		var scene = CurrentSceneRuntime;
+		if (scene == null)
+			return;
+
+		foreach (BaseDashEnemy entCD in VisibleEnemies) {
 			if (!enemyPredicate(entCD)) continue;
 
 			Graphics2D.SetDrawColor(255, 255, 255);
-			ent.Render(frameState);
+			scene.RenderEnemy(entCD);
 			Rlgl.DrawRenderBatchActive();
 		}
 	}
+
 	public override void Render(FrameState frameState) {
 		Rlgl.DrawRenderBatchActive();
 
@@ -1327,16 +1287,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		BottomPathway.Render();
 
 		// Hold notes
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == EntityType.SustainBeam);
 
 		// Boss
-		Boss.Render();
+		CurrentSceneRuntime?.RenderEnemy(Boss);
 
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.GetPathway() == PathwaySide.Top);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.GetPathway() == PathwaySide.Bottom);
 
-		AddDebugString("Visible Entities", VisibleEntities.Count);
+		AddDebugString("Visible Entities", VisibleEnemies.Count);
 		AddDebugString("Player Animation", Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
 		AddDebugString("Hologram-Player Animation", HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
 		AddDebugString("Player Y", CharacterYRatio);
@@ -1345,41 +1305,27 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		Rlgl.DrawRenderBatchActive();
 	}
 
-	public override void Render2D(FrameState frameState) {
-		base.Render2D(frameState);
-
-		foreach (Entity ent in VisibleEntities) {
-			if (ent is not DashEnemy)
-				continue;
-
-			var entCD = (DashEnemy)ent;
-			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
-		}
-	}
-
+	/// <summary>
+	/// A list of all entities
+	/// </summary>
+	readonly List<BaseDashEnemy> Enemies = [];
 	/// <summary>
 	/// Currently visible entities this tick
 	/// </summary>
-	public List<DashEnemy> VisibleEntities { get; private set; } = [];
+	readonly List<BaseDashEnemy> VisibleEnemies = [];
 
 	private double LastAttackTime;
 	private PathwaySide LastAttackPathway;
 
-	public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashEnemy mentFrom) return;
-
-		foreach (var entity in Entities) {
-			if (entity is not DashEnemy ment) continue;
-			ment.OnSignalReceived(mentFrom, signalType, data);
+	public void BroadcastEntitySignal<T>(IDashEnemy entityFrom, EntitySignalType signalType, T? data = default) {
+		foreach (var entity in Enemies) {
+			entity.OnSignalReceived(entityFrom, signalType, data);
 		}
 	}
-	public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashEnemy mentFrom) return;
 
-		if (entityTo is not DashEnemy ment) return;
-		ment.OnSignalReceived(mentFrom, signalType, data);
+	public void SendEntitySignal<T>(IDashEnemy entityFrom, IDashEnemy entityTo, EntitySignalType signalType, T? data = default) {
+		entityTo.OnSignalReceived(entityFrom, signalType, data);
 	}
-
 
 	private void HitLogic(PathwaySide pathway) {
 		int amountOfTimesHit = pathway == PathwaySide.Top ? InputState.TopClicked : InputState.BottomClicked;
@@ -1415,10 +1361,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 					if (SuppressHitMessages == false && !IsSeeking) {
 						Color c = pollResult.HitEntity.HitColor;
-						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
-
 						PlaySceneSound(pollResult.HitEntity.Type switch {
-							EntityType.Single => pollResult.HitEntity.Variant switch {
+							EntityType.Single => pollResult.HitEntity.GetInfo().Variant switch {
 								EntityVariant.Small => SceneSound.HitSmall,
 								EntityVariant.Medium1 => SceneSound.HitMedium1,
 								EntityVariant.Medium2 => SceneSound.HitMedium2,
@@ -1537,7 +1481,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// <summary>
 	/// Current score of the player.
 	/// </summary>
-	public int Score { get; private set; } = 0;
+	public double Score { get; private set; } = 0;
 	/// <summary>
 	/// Which entity is being held on the top pathway
 	/// </summary>
@@ -1581,7 +1525,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// </summary>
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
-	public void Damage(DashEnemy? entity, float damage) {
+	public void Damage(BaseDashEnemy? entity, float damage) {
 		if (!InIFrame) {
 			Health -= damage;
 			SetIFrameTime();
@@ -1631,20 +1575,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// </summary>
 	public void AddCombo() {
 		Combo++;
-		__lastCombo = Conductor.Time;
+		__lastComboTime = Conductor.Time;
 	}
 
 	/// <summary>
 	/// Resets the players combo.
 	/// </summary>
 	public void ResetCombo() => Combo = 0;
-	/// <summary>
-	/// Adds to the players score.
-	/// </summary>
-	/// <param name="score"></param>
-	public void AddScore(int score) {
-		float s = (float)score;
-		Score += (int)s;
+	public PlayerScorePointResult GivePlayerScorePoints(IDashEnemy? responsible, double score) {
+		double scoreGranted = CDUtils.DetermineScoreMultiplied(this, score, in LastPollResult);
+		Score += scoreGranted;
+		return new() {
+			Success = true,
+			ScoreGranted = scoreGranted
+		};
 	}
 	/// <summary>
 	/// Removes from the players score.
@@ -1681,20 +1625,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				PlayCharacterAnimation(CharacterAnimationType.Run);
 		}
 
-		if (nowInsustain != wasSustainingBefore) {
-			var clip = Scene.GetPressIdleSound();
-			if (IValidatable.IsValid(clip)) {
-				if (audiosystem.IsPlaybackActive(pressIdle) && !nowInsustain)
-					audiosystem.DestroyPlayback(pressIdle);
-				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain) {
-					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true, Looping = true, ManuallyUpdate = true });
-					audiosystem.PlaySound(pressIdle);
-				}
-			}
-		}
+		CurrentSceneRuntime?.EvaluatePressIdleSoundState(nowInsustain, wasSustainingBefore);
 	}
 
-	AudioPlaybackHandle pressIdle;
 
 	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
@@ -1800,34 +1733,71 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		return true;
 	}
 
-	// NOTE: While this returns a continuous value for now, scene changes WILL change the field this returns in the future!!!
-	// So ISceneDescriptor must only be used to describe a scene, not to store state!
-
-	// Something to consider though. Scene changes mean entities need different models. Do we patch all entities model reference
-	// fields, or do we remove that responsibility from the entities and have a subsystem manage rendering/model usage?
-	// I am inclined to believe the latter is a healthier response, but we'll have to get to that later.
-	public ISceneDescriptor GetCurrentScene() {
-		return Scene;
+	public IReadOnlyList<IDashEnemy> GetVisibleEnemies() {
+		throw new NotImplementedException();
 	}
 
-	internal void SetEnemyPosition(DashEnemy ent) {
-		ent.Position = new(0, 2.25f);
+	public IReadOnlyList<IDashEnemy> GetAllEnemies() {
+		throw new NotImplementedException();
 	}
 
-	internal void SetEnemyKilledPosition(DashEnemy ent) {
-		var pos = GetPathwayPosition(ent.Pathway);
-		ent.Position = new(pos.X, -pos.Y);
+	public IDashBoss GetBossEnemy() {
+		throw new NotImplementedException();
+	}
+
+	public ISceneRuntime GetCurrentScene() {
+		throw new NotImplementedException();
+	}
+
+	public IReadOnlyList<ISceneRuntime> GetAllScenes() {
+		throw new NotImplementedException();
+	}
+
+	public StatisticsData GetStatisticsData() {
+		throw new NotImplementedException();
+	}
+
+	public Conductor GetConductor() {
+		throw new NotImplementedException();
+	}
+
+	public bool IsMashing() {
+		throw new NotImplementedException();
+	}
+
+	public PlayerDamageResult GivePlayerDamage(IDashEnemy? responsible, double damage) {
+		throw new NotImplementedException();
+	}
+
+	public PlayerFeverPointResult GivePlayerFeverPoints(IDashEnemy? responsible, double fever) {
+		throw new NotImplementedException();
+	}
+
+	public PlayerHealResult GivePlayerHealth(IDashEnemy? responsible, double healthGiven) {
+		throw new NotImplementedException();
+	}
+
+	public void GivePlayerCombo(IDashEnemy? responsible) {
+		throw new NotImplementedException();
+	}
+
+	public int GetCurrentCombo() {
+		throw new NotImplementedException();
+	}
+
+	public bool IsInFever() {
+		throw new NotImplementedException();
 	}
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
 	/// </summary>
 	public int Combo { get; private set; } = 0;
-	private double __lastCombo = -2000; // Last time a combo occured in game-time
+	private double __lastComboTime = -2000; // Last time a combo occured in game-time
 
-	public double LastCombo => __lastCombo;
+	public double LastCombo => __lastComboTime;
 
-	internal CD_Player_UIBar UIBar;
+	internal CD_Player_UIBar UIBar = null!;
 	internal class CD_Player_UIBar : Element
 	{
 		public CD_Player_UIBar() {
@@ -1879,7 +1849,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		}
 	}
 
-	internal CD_Player_Scorebar Scorebar;
+	internal CD_Player_Scorebar Scorebar = null!;
 	internal class CD_Player_Scorebar : Element
 	{
 		public CD_Player_Scorebar() {

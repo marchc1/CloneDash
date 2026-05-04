@@ -3,7 +3,7 @@ using Nucleus;
 
 namespace CloneDash.Game
 {
-	public class DashBonusEntity(EntityType type) : DashEnemy(type)
+	public class DashBonusEntity(EntityType type) : BaseDashEnemy(type)
 	{
 		public Nucleus.Models.Runtime.Animation? OutAnimation;
 
@@ -20,7 +20,7 @@ namespace CloneDash.Game
 		}
 
 		public override bool VisTest(float gamewidth, float gameheight, float xPosition) {
-			return NMath.InRange(GetVisualTimeUntilHit(), -1, 3);
+			return NMath.InRange(CalcVisualTimeUntilHit(), -1, 3);
 		}
 
 		public override void Render() {

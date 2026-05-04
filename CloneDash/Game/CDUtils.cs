@@ -5,13 +5,13 @@ namespace CloneDash;
 
 public static class CDUtils
 {
-	public static int DetermineScoreMultiplied(float baseScore, bool inFever, int combo, double accuracy) {
-		if (combo <= 9) baseScore *= 1.0f;
-		else if (combo <= 19) baseScore *= 1.1f;
-		else if (combo <= 29) baseScore *= 1.2f;
-		else if (combo <= 39) baseScore *= 1.3f;
-		else if (combo <= 49) baseScore *= 1.4f;
-		else baseScore *= 1.5f;
+	public static double DetermineScoreMultiplied(double baseScore, bool inFever, int combo, double accuracy) {
+		if (combo <= 9) baseScore *= 1.0;
+		else if (combo <= 19) baseScore *= 1.1;
+		else if (combo <= 29) baseScore *= 1.2;
+		else if (combo <= 39) baseScore *= 1.3;
+		else if (combo <= 49) baseScore *= 1.4;
+		else baseScore *= 1.5;
 
 		accuracy = Math.Abs(accuracy);
 
@@ -19,10 +19,10 @@ public static class CDUtils
 			baseScore *= 1.5f;
 
 		if (accuracy >= 25)
-			baseScore *= (inFever ? 0.66666666666f : .5f);
+			baseScore *= (inFever ? 0.66666666666 : .5);
 
-		return (int)MathF.Round(baseScore);
+		return Math.Round(baseScore);
 	}
 
-	public static int DetermineScoreMultiplied(this DashGameLevel game, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, game.InFever, game.Combo, pollResult.DistanceToHit);
+	public static double DetermineScoreMultiplied(this IDashGame game, double baseScore, in PollResult pollResult) => DetermineScoreMultiplied(baseScore, game.IsInFever(), game.GetCurrentCombo(), pollResult.DistanceToHit);
 }

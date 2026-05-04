@@ -24,8 +24,8 @@ namespace CloneDash.Game.Logic
 		/// Mark an entity as passed. Only used externally during seeking, for the sake of not confusing the autoplayer
 		/// </summary>
 		/// <param name="ent"></param>
-		public void MarkEntityAsPassed(DashEnemy ent) => Passed.Add(ent);
-		public void MarkSustainAsActive(DashEnemy ent) {
+		public void MarkEntityAsPassed(BaseDashEnemy ent) => Passed.Add(ent);
+		public void MarkSustainAsActive(BaseDashEnemy ent) {
 			if (ent.Type == EntityType.SustainBeam)
 				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 		}
@@ -34,7 +34,7 @@ namespace CloneDash.Game.Logic
 		/// Mark an entity as inactive, and also completes the sustain beam early. Only used externally during seeking, for the sake of not confusing the autoplayer
 		/// </summary>
 		/// <param name="ent"></param>
-		public void MarkSustainAsInactive(DashEnemy ent) {
+		public void MarkSustainAsInactive(BaseDashEnemy ent) {
 			if (ent.Type == EntityType.SustainBeam) {
 				bool popped = CurrentSustains[ent.Pathway].TryPop(out var beam);
 				Debug.Assert(popped && beam == (SustainBeam)ent);
@@ -72,7 +72,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Entities the autoplayer has passed already.
 		/// </summary>
-		private readonly HashSet<DashEnemy> Passed = [];
+		private readonly HashSet<BaseDashEnemy> Passed = [];
 
 		/// <summary>
 		/// Last time the autoplayer hit a masher. Used to limit masher hits.
@@ -91,7 +91,7 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="entity"></param>
 		/// <returns></returns>
-		private bool PassedEntity(DashEnemy entity) => Passed.Contains(entity);
+		private bool PassedEntity(BaseDashEnemy entity) => Passed.Contains(entity);
 
 		/// <summary>
 		/// This method automatically scans the visible entities for the next entity to hit at an almost-perfect time, and then hits the entity by simulating input presses
@@ -111,11 +111,11 @@ namespace CloneDash.Game.Logic
 			}
 
 			// Sort the visible entities by closest to furthest
-			var ents = level.VisibleEntities;
-			ents.Sort((x, y) => x.GetJudgementTimeUntilHit().CompareTo(y.GetJudgementTimeUntilHit()));
+			var ents = level.VisibleEnemies;
+			ents.Sort((x, y) => x.CalcJudgementTimeUntilHit().CompareTo(y.CalcJudgementTimeUntilHit()));
 
 			// Find the closest interactive entity that hasnt been passed
-			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
+			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.NonInteractive && !PassedEntity(x) && !x.Dead);
 			bool avoidedTop = false, avoidedBottom = false;
 			if (entIndex != -1) {
 				while (entIndex < ents.Count) {
@@ -125,7 +125,7 @@ namespace CloneDash.Game.Logic
 					// Is an entity visible?
 					if (ent != default) {
 						var pathway = level.GetPathway(ent);
-						var timeToHit = ent.GetJudgementTimeUntilHit();
+						var timeToHit = ent.CalcJudgementTimeUntilHit();
 						switch (ent.Interactivity) {
 							// Same pathway system, either hit or just run into
 							case EntityInteractivity.SamePath:
