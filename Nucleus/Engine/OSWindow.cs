@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
+using Nucleus.Common.OS;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Types;
@@ -175,9 +176,9 @@ public unsafe class OSWindow : IValidatable
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
-		if (confFlags.HasFlag(ConfigFlags.FLAG_WINDOW_UNDECORATED))
+		if (confFlags.HasFlag(ConfigFlags.WindowUndecorated))
 			flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
-		if (confFlags.HasFlag(ConfigFlags.FLAG_FULLSCREEN_MODE))
+		if (confFlags.HasFlag(ConfigFlags.FullScreenMode))
 			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 
 		window.handle = SDL3.SDL_CreateWindow(title, width, height, flags);

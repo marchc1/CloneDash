@@ -301,7 +301,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		if (sceneInfo == null)
 			return null;
 
-		if (sceneInfo.Unusable){
+		if (sceneInfo.Unusable) {
 			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
 			return GetScene("scene_01"); // Fall back to Space Station...
 		}
@@ -745,11 +745,19 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 
 	public double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim) {
 		MD_ActionData? actions = GetBossAnimation(type);
-		if (actions == null)
+
+		string? animation = actions?.ActionIdx?.FirstOrDefault() ?? type switch {
+			BossAnimationType.MultiAttack => ActionKeys.BOSS_MULTI_ATK,
+			BossAnimationType.MultiAttackEnd => ActionKeys.BOSS_MULTI_ATK_END,
+			BossAnimationType.MultiAttackHurt => ActionKeys.BOSS_MULTI_HURT,
+			BossAnimationType.MultiAttackHurtEnd => ActionKeys.BOSS_MULTI_ATK_END,
+			_ => null
+		};
+
+		if (animation == null)
 			return 0;
 
-
-		var animObj = anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault());
+		var animObj = anim.GetModelData()?.FindAnimation(animation);
 		// This is a REALLY dumb way of doing it. There *has* to be a better way.
 		// I don't think these frame times are standardized. I also don't know where they're stored.
 		// if you run into this code and know, let me know =)
@@ -761,8 +769,22 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 
 	public double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim) {
 		MD_ActionData? actions = GetBossAnimation(type);
-		if (actions == null)
-			return 0;
+		if (actions == null) {
+			// This is a hack... figure out why this happens
+			string? animation = type switch {
+				BossAnimationType.MultiAttack => ActionKeys.BOSS_MULTI_ATK,
+				BossAnimationType.MultiAttackEnd => ActionKeys.BOSS_MULTI_ATK_END,
+				BossAnimationType.MultiAttackHurt => ActionKeys.BOSS_MULTI_HURT,
+				BossAnimationType.MultiAttackHurtEnd => ActionKeys.BOSS_MULTI_ATK_END,
+				_ => null
+			};
+
+			if (animation == null)
+				return 0;
+
+			anim.SetAnimation(channel, animation);
+			return anim.GetModelData()?.FindAnimation(animation)?.Duration ?? 0;
+		}
 		anim.ClearAnimation(channel);
 		for (int i = 0; i < actions.ActionIdx.Length; i++)
 			if (i == 0)

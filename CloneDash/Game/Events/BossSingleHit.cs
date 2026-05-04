@@ -1,4 +1,5 @@
 ﻿using CloneDash.Scenes;
+using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
@@ -13,6 +14,7 @@ public class BossSingleHit(DashGameLevel game) : DashEvent(game)
 
 		var boss = Game.Boss;
 		var speed = Game.Scene.GetBossAnimationTime(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, boss.Animations);
+		Debug.Assert(speed != 0);
 
 		Game.LoadEntity(new() {
 			Type = EntityType.Single,

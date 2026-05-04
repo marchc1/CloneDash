@@ -404,6 +404,7 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.BossIn => EventType.BossIn,
 						IBMSCode.BossOut => EventType.BossOut,
 
+						IBMSCode.BossNear1 => EventType.BossSingleHit,
 						IBMSCode.BossNear2 => EventType.BossSingleHit,
 						IBMSCode.BossMul1 => EventType.BossMasher,
 						IBMSCode.BossMul2 => EventType.BossMasherEnd,

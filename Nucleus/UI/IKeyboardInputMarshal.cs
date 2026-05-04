@@ -10,13 +10,13 @@ namespace Nucleus.UI
 {
 	public interface IKeyboardInputMarshal
 	{
-		public KeyboardState State(ref KeyboardState original);
+		public void State(ref KeyboardState original);
 	}
 	public class DefaultKeyboardInputMarshal : IKeyboardInputMarshal
 	{
 		public static DefaultKeyboardInputMarshal Instance { get; } = new();
-		public KeyboardState State(ref KeyboardState original) {
-			return original;
+		public void State(ref KeyboardState original) {
+
 		}
 	}
 	public class HoldingKeyboardInputMarshal : IKeyboardInputMarshal
@@ -25,7 +25,7 @@ namespace Nucleus.UI
 		private DateTime PressTime = DateTime.Now;
 		private DateTime MultiTime = DateTime.Now;
 
-		public KeyboardState State(ref KeyboardState original) {
+		public void State(ref KeyboardState original) {
 			DateTime now = DateTime.Now;
 
 			bool invalidated = false;
@@ -60,8 +60,6 @@ namespace Nucleus.UI
 					}
 				}
 			}
-
-			return original;
 		}
 	}
 }

@@ -947,24 +947,12 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Draw text (using default font)</summary>
-	public static void DrawText(string text, int posX, int posY, int fontSize, Color color) {
+	public static void DrawText(ReadOnlySpan<char> text, int posX, int posY, int fontSize, Color color) {
 		using var str1 = text.ToUtf8Buffer();
 		DrawText(str1.AsPointer(), posX, posY, fontSize, color);
 	}
 
 	/// <summary>Draw text using font and additional parameters</summary>
-	public static void DrawTextEx(
-		Font font,
-		string text,
-		Vector2 position,
-		float fontSize,
-		float spacing,
-		Color tint
-	) {
-		using var str1 = text.ToUtf8Buffer();
-		DrawTextEx(font, str1.AsPointer(), position, fontSize, spacing, tint);
-	}
-
 	public static void DrawTextEx(
 		Font font,
 		ReadOnlySpan<char> text,
@@ -980,7 +968,7 @@ public static unsafe partial class Raylib
 	/// <summary>Draw text using Font and pro parameters (rotation)</summary>
 	public static void DrawTextPro(
 		Font font,
-		string text,
+		ReadOnlySpan<char> text,
 		Vector2 position,
 		Vector2 origin,
 		float rotation,
@@ -993,15 +981,9 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Measure string width for default font</summary>
-	public static int MeasureText(string text, int fontSize) {
+	public static int MeasureText(ReadOnlySpan<char> text, int fontSize) {
 		using var str1 = text.ToUtf8Buffer();
 		return MeasureText(str1.AsPointer(), fontSize);
-	}
-
-	/// <summary>Measure string size for Font</summary>
-	public static Vector2 MeasureTextEx(Font font, string text, float fontSize, float spacing) {
-		using var str1 = text.ToUtf8Buffer();
-		return MeasureTextEx(font, str1.AsPointer(), fontSize, spacing);
 	}
 
 	public static Vector2 MeasureTextEx(Font font, ReadOnlySpan<char> text, float fontSize, float spacing) {
@@ -1010,7 +992,7 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Get all codepoints in a string, codepoints count returned by parameters</summary>
-	public static int[] LoadCodepoints(string text, ref int count) {
+	public static int[] LoadCodepoints(ReadOnlySpan<char> text, ref int count) {
 		using var str1 = text.ToUtf8Buffer();
 		fixed (int* c = &count) {
 			var pointsPtr = LoadCodepoints(str1.AsPointer(), c);
@@ -1021,13 +1003,13 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Get total number of codepoints in a UTF8 encoded string</summary>
-	public static int GetCodepointCount(string text) {
+	public static int GetCodepointCount(ReadOnlySpan<char> text) {
 		using var str1 = text.ToUtf8Buffer();
 		return GetCodepointCount(str1.AsPointer());
 	}
 
 	/// <summary>Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure</summary>
-	public static int GetCodepoint(string text, ref int codepointSize) {
+	public static int GetCodepoint(ReadOnlySpan<char> text, ref int codepointSize) {
 		using var str1 = text.ToUtf8Buffer();
 		fixed (int* p = &codepointSize) {
 			return GetCodepoint(str1.AsPointer(), p);
