@@ -2,6 +2,7 @@
 .idea/
 */bin
 */obj
+obj/*
 ModelViewer/*
 Nucleus.Testbed/*
 NucleusRenderPipelineRefactorTest/*

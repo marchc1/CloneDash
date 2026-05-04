@@ -5,6 +5,7 @@ using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
+using System;
 
 namespace Nucleus.UI
 {
@@ -185,7 +186,7 @@ namespace Nucleus.UI
 			linesInvalid = false;
 			lines.Clear();
 
-			string text = DisplayText;
+			string text = DisplayText ?? "";
 			if (text.Length == 0) {
 				float lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
 				lines.Add(new TextLine { Start = 0, Length = 0, Width = 0, Height = lineH, Y = 0 });
@@ -496,6 +497,27 @@ namespace Nucleus.UI
 			FireTextChanged(old);
 		}
 
+		public override void TextInput(in KeyboardState keyboardState, string text) {
+			var oldText = Text;
+
+			PushUndo();
+			if (Caret.HasSelection)
+				Text = Caret.DeleteSelection(Text);
+
+			if (MaxLength > 0 && Text.Length >= MaxLength) {
+				FireTextChanged(oldText);
+				return;
+			}
+
+			// todo: MaxLength handling here...
+			Text = Text.Insert(Caret.Position, text);
+			Caret.MovePosition(Text, text.Length);
+			Caret.ClearSelection();
+			FireTextChanged(oldText);
+			EnsureCaretVisible();
+			return;
+		}
+
 		public override void KeyPressed(in KeyboardState state, ButtonCode key) {
 			var action = key.GetAction();
 			if (action.Type == CharacterType.NoAction)
@@ -647,20 +669,7 @@ namespace Nucleus.UI
 			if (ReadOnly) return;
 
 			if (action.Type == CharacterType.VisibleCharacter) {
-				PushUndo();
-				if (Caret.HasSelection)
-					Text = Caret.DeleteSelection(Text);
-
-				if (MaxLength > 0 && Text.Length >= MaxLength) {
-					FireTextChanged(oldText);
-					return;
-				}
-
-				Text = Text.Insert(Caret.Position, action.Extra ?? "");
-				Caret.MovePosition(Text, 1);
-				Caret.ClearSelection();
-				FireTextChanged(oldText);
-				EnsureCaretVisible();
+				// Handled by text input now
 				return;
 			}
 
@@ -776,7 +785,7 @@ namespace Nucleus.UI
 			Graphics2D.SetDrawColor(fore);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
-			string text = DisplayText;
+			string text = DisplayText ?? "";
 			bool showPlaceholder = text.Length == 0;
 
 			var colorStore = TextColor;

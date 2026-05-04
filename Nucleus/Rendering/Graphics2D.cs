@@ -139,8 +139,8 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
-		public static Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
-			return FontManager["", fontName, (int)fontSize].GetFont();
+		public static ref readonly Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
+			return ref FontManager[string.Empty, fontName, (int)fontSize].GetFont();
 		}
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, (int)fontSize, 0);

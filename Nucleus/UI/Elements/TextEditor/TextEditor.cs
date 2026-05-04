@@ -795,9 +795,12 @@ namespace Nucleus.UI
 					SetCaret(endColC, row);
 				}
 				else {
-					if (col > 3 && rowContent.Substring(col - 4, 4) == "    ") {
-						Rows[row] = rowContent.Substring(0, col - 4) + rowContent.Substring(col);
-						SetCaret(col - 4, row);
+					if (col > 0 && rowContent[col - 1] == ' ') {
+						var charsToDelete = (col % 4);
+						if (charsToDelete == 0)
+							charsToDelete = 4;
+						Rows[row] = rowContent.Substring(0, col - charsToDelete) + rowContent.Substring(col);
+						SetCaret(col - charsToDelete, row);
 					}
 					else {
 						Rows[row] = rowContent.Substring(0, col - 1) + rowContent.Substring(col);
@@ -924,7 +927,8 @@ namespace Nucleus.UI
 					return;
 				}
 				if (!HasSelection()) {
-					AddText("    ");
+					var cCount = (4 - (Caret.Column % 4));
+					AddText(new string(' ', cCount));
 				}
 				else {
 					var tl = GetCaretTopLeft();
@@ -1174,20 +1178,25 @@ namespace Nucleus.UI
 
 		public static int? GetSkipGroupLeft(string row, int column, SkipMode mode) {
 			int len = row.Length, ty = -1;
-			if (column >= len)
-				column = len - 1;
+			// Skip past any whitespace.
+			while (row.Length > 0 && column > 0 && char.IsWhiteSpace(row[column - 1]))
+				column--;
+
 			// If we're on a end character, continue forwards until we arent
-			if (column > 0 && skippable(row[column], row, column, len)) {
+
+			if (column > 0 && skippable(row[column - 1], row, column, len)) {
 				column--;
 				for (; column >= 0; column--) {
 					if (!skippable(row[column], row, column, len))
 						break;
 				}
+				return column + 1;
 			}
 
-			for (int i = column; i >= 0; i--) {
+			for (int i = column - 1; i >= 0; i--) {
 				var c = row[i];
-				if (skippable(c, row, i, len)) return i + 1;
+				if (skippable(c, row, i, len))
+					return i + 1;
 			}
 
 			return 0;
