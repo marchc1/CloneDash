@@ -19,7 +19,7 @@ public enum StencilFunction
 public enum StencilOperation
 {
 	Keep = OpenGL.KEEP,
-	Zero = OpenGL.KEEP,
+	Zero = OpenGL.ZERO,
 	Replace = OpenGL.REPLACE,
 	Increment = OpenGL.INCR,
 	IncrementWrapped = OpenGL.INCR_WRAP,
