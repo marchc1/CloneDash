@@ -2,26 +2,19 @@
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 
-using Fmod5Sharp;
-using Fmod5Sharp.FmodTypes;
-using NAudio.CoreAudioApi;
 using Nucleus;
-using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
-using Nucleus.Extensions;
-using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CloneDash.Characters;
 
-public class MuseDashCharacterExpression : ICharacterExpression
+public class MuseDashCharacterExpression : ICharacterMainMenuExpression
 {
 	private CharacterExpression Expression;
 	private string Talk;
@@ -33,20 +26,20 @@ public class MuseDashCharacterExpression : ICharacterExpression
 		AudioName = audioName;
 	}
 
-	string ICharacterExpression.GetEndAnimationName() {
+	string ICharacterMainMenuExpression.GetEndAnimationName() {
 		return $"{Expression.AnimName}_end";
 	}
 
-	string ICharacterExpression.GetIdleAnimationName() {
+	string ICharacterMainMenuExpression.GetIdleAnimationName() {
 		return $"{Expression.AnimName}_standby";
 	}
 
-	void ICharacterExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
+	void ICharacterMainMenuExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
 		text = Talk;
 		voice = MuseDashCompatibility.LoadSoundFromName(level, AudioName);
 	}
 
-	string ICharacterExpression.GetStartAnimationName() {
+	string ICharacterMainMenuExpression.GetStartAnimationName() {
 		return $"{Expression.AnimName}_start";
 	}
 
@@ -60,6 +53,7 @@ public class MuseDashCharacterExpression : ICharacterExpression
 		return new MuseDashCharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
+
 public class MuseDashCharacterRetriever : ICharacterProvider
 {
 	int ICharacterProvider.Priority => 0;
@@ -122,12 +116,12 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public string? GetLogicControllerData() => null;
 
-	public ICharacterExpression? GetMainShowExpression() {
+	public ICharacterMainMenuExpression? GetMainShowExpression() {
 		MuseDashCharacterExpression expression = MuseDashCharacterExpression.From(configData);
 		return expression;
 	}
 
-	public ICharacterExpression? GetMainShowApplyExpression() {
+	public ICharacterMainMenuExpression? GetMainShowApplyExpression() {
 		// probably need a better way to figure out the folder name
 		var assets = MuseDashCompatibility.StreamingAssets;
 		var mainShow = assets.FindAssetByName<GameObject>(configData.MainShow);
@@ -147,8 +141,6 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 			voiceline
 		);
 	}
-
-	public string? GetMainShowInitialExpression() => null;
 
 	// I hate this!
 	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {

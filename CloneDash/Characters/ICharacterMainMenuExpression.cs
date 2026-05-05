@@ -8,7 +8,7 @@ using Nucleus.Models.Runtime;
 
 namespace CloneDash.Characters;
 
-public interface ICharacterExpression
+public interface ICharacterMainMenuExpression
 {
 	public string GetStartAnimationName();
 	public string GetIdleAnimationName();

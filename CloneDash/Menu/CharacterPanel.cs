@@ -28,7 +28,7 @@ public class CharacterPanel : Panel
 	private readonly AnimationHandler Anims = new();
 	private AudioPlaybackHandle Music;
 	private int Click = 0;
-	private ICharacterExpression? ApplyExpression;
+	private ICharacterMainMenuExpression? ApplyExpression;
 	private double StartExpressionTime;
 	private double NextExpressionTime;
 	private string? ExpressionText;
@@ -130,7 +130,7 @@ public class CharacterPanel : Panel
 		PlayExpression(Character.GetMainShowExpression());
 	}
 
-	public void PlayExpression(ICharacterExpression? expression) {
+	public void PlayExpression(ICharacterMainMenuExpression? expression) {
 		if (Character == null) return;
 		if (Model == null) return;
 		if (Level.Curtime < NextExpressionTime) return;
