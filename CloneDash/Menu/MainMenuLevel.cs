@@ -47,15 +47,15 @@ public class MainMenuLevel : Level
 		var charData = CharacterMod.GetCharacterData();
 		if (charData == null) return;
 
-		var model = charData.GetPlayModel(level).Instantiate();
-		var anims = new AnimationHandler();
-		anims.SetModel(model);
+		// TODO FIXME decluttering-2 var model = charData.GetPlayModel(level).Instantiate();
+		// TODO FIXME decluttering-2 var anims = new AnimationHandler();
+		// TODO FIXME decluttering-2 anims.SetModel(model);
 
 		var shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 		float time = 0;
 		var shaderTimeLoc = shader.GetUniformLocation("time");
-		model.SetToSetupPose();
-		anims.SetAnimation(0, "air_hit_great_2", false);
+		// TODO FIXME decluttering-2 model.SetToSetupPose();
+		// TODO FIXME decluttering-2 anims.SetAnimation(0, "air_hit_great_2", false);
 
 		renderPanel.PaintOverride += (s, w, h) => {
 			EngineCore.Window.BeginMode2D(new() {
@@ -63,13 +63,13 @@ public class MainMenuLevel : Level
 				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
 			});
 
-			anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
-			anims.Apply(model);
+			// TODO FIXME decluttering-2 anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
+			// TODO FIXME decluttering-2 anims.Apply(model);
 			time += (float)EngineCore.Level.RendertimeDelta;
 			shader.SetUniform("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
 			if (shader.IsValid()) {
 				shader.Activate();
-				model.Render(false);
+				// TODO FIXME decluttering-2 model.Render(false);
 				shader.Deactivate();
 			}
 
@@ -81,8 +81,8 @@ public class MainMenuLevel : Level
 			shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 			time = 0;
 			shaderTimeLoc = shader.GetUniformLocation("time");
-			model.SetToSetupPose();
-			anims.SetAnimation(0, "air_hit_great_2", false);
+			// TODO FIXME decluttering-2 model.SetToSetupPose();
+			// TODO FIXME decluttering-2 anims.SetAnimation(0, "air_hit_great_2", false);
 		};
 
 		window.Removed += (s) => {

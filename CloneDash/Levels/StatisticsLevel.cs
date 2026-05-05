@@ -36,9 +36,9 @@ namespace CloneDash.Levels
 			if (character == null) return;
 			this.character = character;
 
-			model = character.GetVictoryModel(this).Instantiate();
-			anims.SetModel(model);
-			anims.SetAnimation(0, character.GetVictoryStandby(), true);
+			// TODO FIXME decluttering-2 model = character.GetVictoryModel(this).Instantiate();
+			// TODO FIXME decluttering-2 anims.SetModel(model);
+			// TODO FIXME decluttering-2 anims.SetAnimation(0, character.GetVictoryStandby(), true);
 
 			stats.Compute();
 

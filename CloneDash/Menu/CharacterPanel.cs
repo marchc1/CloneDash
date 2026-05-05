@@ -77,7 +77,7 @@ public class CharacterPanel : Panel
 	} = false;
 
 	public bool SetCharacter(ICharacterDescriptor? character, bool force = false) {
-		if (character?.GetUniqueID() == Character?.GetUniqueID() && !force)
+		if (character != null && Character != null && character.GetUUID() == Character.GetUUID() && !force)
 			return character != null;
 
 		if (character != null)
@@ -121,13 +121,13 @@ public class CharacterPanel : Panel
 	public void PlayApplyExpression() {
 		if (Character == null) return;
 
-		ApplyExpression ??= Character.GetMainShowApplyExpression();
-		PlayExpression(ApplyExpression);
+		// TODO FIXME decluttering-2 ApplyExpression ??= Character.GetMainShowApplyExpression();
+		// TODO FIXME decluttering-2 PlayExpression(ApplyExpression);
 	}
 
 	public void PlayRandomExpression() {
 		if (Character == null) return;
-		PlayExpression(Character.GetMainShowExpression());
+		// TODO FIXME decluttering-2 PlayExpression(Character.GetMainShowExpression());
 	}
 
 	public void PlayExpression(ICharacterMainMenuExpression? expression) {
@@ -137,13 +137,13 @@ public class CharacterPanel : Panel
 
 		Click++;
 
-		var mainResponse = Character.GetMainShowInitialExpression();
-		if (mainResponse != null) {
-			Anims.SetAnimation(0, mainResponse);
-			var standby = Character.GetMainShowStandby();
-			if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-			Anims.AddAnimation(0, standby, true);
-		}
+		// TODO FIXME decluttering-2 var mainResponse = Character.GetMainShowInitialExpression();
+		// TODO FIXME decluttering-2 if (mainResponse != null) {
+		// TODO FIXME decluttering-2 Anims.SetAnimation(0, mainResponse);
+		// TODO FIXME decluttering-2 var standby = Character.GetMainShowStandby();
+		// TODO FIXME decluttering-2 if (Model.Data.FindAnimation(standby) == null) standby = "standby";
+		// TODO FIXME decluttering-2Anims.AddAnimation(0, standby, true);
+		// TODO FIXME decluttering-2 }
 
 		string? text = null;
 		double duration = 0;
@@ -248,34 +248,35 @@ public class CharacterPanel : Panel
 
 	private string GetStandby(ICharacterDescriptor desc, ModelInstance model)
 	{
-		var standby = desc.GetMainShowStandby();
-		if (model.Data.FindAnimation(standby) == null) standby = "standby";
-		if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
-		return standby;
+		// TODO FIXME decluttering-2 var standby = desc.GetMainShowStandby();
+		// TODO FIXME decluttering-2 if (model.Data.FindAnimation(standby) == null) standby = "standby";
+		// TODO FIXME decluttering-2 if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
+		// TODO FIXME decluttering-2 return standby;
+		return "";
 	}
 
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
-		if (Character != null && Character.GetUniqueID() == charDescriptor.GetUniqueID()) return;
+		if (Character != null && charDescriptor != null && Character.GetUUID() == charDescriptor.GetUUID()) return;
 		Character = charDescriptor;
 
-		Model = charDescriptor.GetMainShowModel(Level).Instantiate();
+		// TODO FIXME decluttering-2 Model = charDescriptor.GetMainShowModel(Level).Instantiate();
 		Anims.SetModel(Model);
 		ApplyExpression = null;
 		
 		ResetExpression();
 
-		var clip = charDescriptor.GetMainShowMusic(Level);
-		if (IValidatable.IsValid(clip)) {
-			clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-			Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
-				Looping = true,
-				ManuallyUpdate = true,
-				Stream = true,
-				DoNotAutoDestroy = true
-			});
-			audiosystem.PlaySound(Music);
-		}
+		// TODO FIXME decluttering-2  var clip = charDescriptor.GetMainShowMusic(Level);
+		// TODO FIXME decluttering-2  if (IValidatable.IsValid(clip)) {
+		// TODO FIXME decluttering-2  	clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		// TODO FIXME decluttering-2  	Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
+		// TODO FIXME decluttering-2  		Looping = true,
+		// TODO FIXME decluttering-2  		ManuallyUpdate = true,
+		// TODO FIXME decluttering-2  		Stream = true,
+		// TODO FIXME decluttering-2  		DoNotAutoDestroy = true
+		// TODO FIXME decluttering-2  	});
+		// TODO FIXME decluttering-2  	audiosystem.PlaySound(Music);
+		// TODO FIXME decluttering-2  }
 
 		if (extendedModels)
 			LoadExtendedModels();
@@ -284,12 +285,12 @@ public class CharacterPanel : Panel
 	void LoadExtendedModels() {
 		if (Character == null) return;
 
-		PlayModel = Character.GetPlayModel(Level).Instantiate();
-		PlayAnims.SetModel(PlayModel);
+		// TODO FIXME decluttering-2 PlayModel = Character.GetPlayModel(Level).Instantiate();
+		// TODO FIXME decluttering-2 PlayAnims.SetModel(PlayModel);
 
-		VictoryModel = Character.GetVictoryModel(Level).Instantiate();
-		VictoryAnims.SetModel(VictoryModel);
-		VictoryAnims.SetAnimation(0, Character.GetVictoryStandby(), true);
+		// TODO FIXME decluttering-2 VictoryModel = Character.GetVictoryModel(Level).Instantiate();
+		// TODO FIXME decluttering-2 VictoryAnims.SetModel(VictoryModel);
+		// TODO FIXME decluttering-2 VictoryAnims.SetAnimation(0, Character.GetVictoryStandby(), true);
 	}
 
 	bool extendedModels = false;

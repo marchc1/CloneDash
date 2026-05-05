@@ -13,6 +13,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using System.Diagnostics;
 using Nucleus.Common.Types;
+using CloneDash.Common;
 
 namespace CloneDash.Menu;
 
@@ -22,9 +23,9 @@ public class CharacterButton : Button
 	public string? CharacterName;
 	public ITexture? Texture;
 
-	public void Setup(string? cosplay, string? character, ITexture? texture) {
-		CosplayName = cosplay;
-		CharacterName = character;
+	public void Setup(ReadOnlySpan<char> cosplay, ReadOnlySpan<char> character, ITexture? texture) {
+		CosplayName = cosplay.Length == 0 ? null : new(cosplay);
+		CharacterName = character.Length == 0 ? null : new(character);
 		Image = texture;
 		ImageOrientation = ImageOrientation.Zoom;
 		BackgroundColor = new(0, 0, 0, 0);
@@ -46,7 +47,7 @@ public class CharacterSelectorScroller : Panel
 	ICharacterDescriptor? lastSelected;
 
 	public void SetCharacter(ICharacterDescriptor? chr) {
-		lastSelectedIdx = chars.FindIndex(x => x.character.GetUniqueID() == chr?.GetUniqueID());
+		lastSelectedIdx = chars.FindIndex(x => chr != null && x.character.GetUUID() == chr.GetUUID());
 		if (lastSelectedIdx == -1)
 			Logs.Warn("Unexpectedly couldnt find the character???");
 
@@ -62,12 +63,13 @@ public class CharacterSelectorScroller : Panel
 
 	protected override void Initialize()
 	{
+		var language = HumanLanguage.GetCurrentLanguage();
 		foreach (var characterIdx in CharacterMod.GetAvailableCharacters()) {
 			var character = CharacterMod.GetCharacterData(characterIdx);
 			Debug.Assert(character != null);
 
 			var lbl = Add<CharacterButton>();
-			lbl.Setup(character.GetCosplayName(), character.GetCharacterName(), character.GetThumbnailTexture());
+			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
 			lbl.BorderSize = 0;
 
 			lbl.MouseClickEvent += (_, _, _) => PerformPick(character);
@@ -202,7 +204,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
-		cv.SetValue(LastCharacterSelected.GetUniqueID());
+		cv.SetValue(LastCharacterSelected.GetUUID());
 		Character.PlayApplyExpression();
 	}
 
@@ -235,12 +237,20 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		LastCharacterSelected = ch;
 		Character.SetCharacter(ch);
 
-		characterNameLabel.Text = ch?.GetCharacterName() ?? "<NULL>";
-		characterCostumeLabel.Text = ch?.GetCosplayName() ?? "<NULL>";
-		characterHPLabel.Text = $"HP: {ch?.GetDefaultHP() ?? 0}";
-		characterAuthorLabel.Text = $"Author: {ch?.GetAuthor() ?? "<NULL>"}";
-		characterPerkLabel.Text = ch?.GetPerk() ?? "<NULL>";
+		var lang = HumanLanguage.GetCurrentLanguage();
 
+		if (ch == null) {
+			characterNameLabel.Text = "<NULL>";
+			characterCostumeLabel.Text = "<NULL>";
+			characterAuthorLabel.Text = "<NULL>";
+			characterPerkLabel.Text = "<NULL>";
+		}
+		else {
+			characterNameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
+			characterCostumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
+			characterAuthorLabel.Text = $"Author: {ch.GetAuthor(lang, out _)}";
+			characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
+		}
 		characterSelectButton.Text = "SELECT";
 		characterShowExt.Text = "Show Other Models?";
 	}
