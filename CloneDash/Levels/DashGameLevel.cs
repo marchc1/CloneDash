@@ -207,7 +207,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		ResetPathwaySpeeds();
 
 		Combo = 0;
-		Health = (float)Character.GetDefaultHP();
+		Health = 250; // TODO FIXME decluttering-2 (float)Character.GetDefaultHP();
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
 		LastFeverIncreaseTime = -2000;
@@ -507,15 +507,16 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			case CharacterAnimationType.UpPressHurt:
 			case CharacterAnimationType.Run:
 			case CharacterAnimationType.Jump:
-				Character.PlayCharacterAnimation(type, PlayerController);
+				// TODO FIXME decluttering-2 Character.PlayCharacterAnimation(type, PlayerController);
 				break;
 			default:
 				if (Sustains.IsSustaining()) {
-					Character.PlayCharacterAnimation(type, HologramPlayerController);
+					// TODO FIXME decluttering-2Character.PlayCharacterAnimation(type, HologramPlayerController);
 					lastHologramAnimationTime = Conductor.Time;
 				}
-				else
-					Character.PlayCharacterAnimation(type, PlayerController);
+				else {
+					// TODO FIXME decluttering-2Character.PlayCharacterAnimation(type, PlayerController);
+				}
 				break;
 		}
 	}
@@ -561,7 +562,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			Interlude.Spin();
 
-			MaxHealth = (float)Character.GetDefaultHP();
+			MaxHealth = 250; // TODO FIXME decluttering-2(float)Character.GetDefaultHP();
 
 			Render3D = false;
 			Health = MaxHealth;
@@ -584,15 +585,15 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
 				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
-				Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
+				// TODO FIXME decluttering-2 Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
 				Interlude.Spin();
 
-				HologramPlayer = Add(ModelEntity.Create(Character.GetPlayGhostModel(this)));
-				HologramPlayer.Shader = hologramShader;
+				// TODO FIXME decluttering-2 HologramPlayer = Add(ModelEntity.Create(Character.GetPlayGhostModel(this)));
+				// TODO FIXME decluttering-2 HologramPlayer.Shader = hologramShader;
 
-				Player.SetToSetupPose();
-				PlayerController = new(Character.GetPlayAnimationData(), Player.Animations);
-				HologramPlayerController = new(Character.GetPlayGhostAnimationData(), HologramPlayer.Animations);
+				// TODO FIXME decluttering-2Player.SetToSetupPose();
+				// TODO FIXME decluttering-2 PlayerController = new(Character.GetPlayAnimationData(), Player.Animations);
+				// TODO FIXME decluttering-2 HologramPlayerController = new(Character.GetPlayGhostAnimationData(), HologramPlayer.Animations);
 
 				PlayCharacterAnimation(CharacterAnimationType.In);
 			}

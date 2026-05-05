@@ -28,9 +28,7 @@
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>
 
-
 	<ItemGroup>
-		<Folder Include="Characters\" />
 		<Folder Include="Gamemodes\MuseDash\V1\Standard\" />
 		<Folder Include="Gamemodes\MuseDash\V1\Touhou\" />
 	</ItemGroup>

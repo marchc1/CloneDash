@@ -1,4 +1,6 @@
-﻿using Nucleus.Common;
+﻿using Nucleus;
+using Nucleus.Commands;
+using Nucleus.Common;
 using System.Globalization;
 
 namespace CloneDash.Common;
@@ -8,9 +10,16 @@ public delegate ReadOnlySpan<char> LanguageStringFn(in HumanLanguage desiredLang
 /// <summary>
 /// Generic human language enum with bit-packed character codes
 /// </summary>
+[MarkForStaticConstruction]
 public record struct HumanLanguage
 {
+	public static readonly ConVar language = new("language", "en", FCvar.Saved, "Game language");
+	public static HumanLanguage GetCurrentLanguage() {
+		return new(language.GetString());
+	}
+
 	public CultureInfo Culture;
+
 
 	public HumanLanguage(ReadOnlySpan<char> code){
 		Culture = CultureInfo.GetCultureInfo(new(code.SliceNullTerminatedString()), false);

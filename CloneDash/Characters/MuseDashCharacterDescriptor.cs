@@ -1,4 +1,6 @@
 ﻿using AssetStudio;
+using CloneDash.Common;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 
@@ -14,13 +16,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Characters;
 
-public class MuseDashCharacterExpression : ICharacterMainMenuExpression
+public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 {
 	private CharacterExpression Expression;
 	private string Talk;
 	private string AudioName;
 
-	public MuseDashCharacterExpression(CharacterExpression expression, string talk, string audioName) {
+	public MuseDash1CharacterExpression(CharacterExpression expression, string talk, string audioName) {
 		Expression = expression;
 		Talk = talk;
 		AudioName = audioName;
@@ -43,14 +45,14 @@ public class MuseDashCharacterExpression : ICharacterMainMenuExpression
 		return $"{Expression.AnimName}_start";
 	}
 
-	public static MuseDashCharacterExpression From(CharacterConfigData data) {
+	public static MuseDash1CharacterExpression From(CharacterConfigData data) {
 		int i = Random.Shared.Next(0, data.Expressions.Count);
 
 		var expr = data.Expressions[i];
 		var audioNames = expr.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
 
-		return new MuseDashCharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
+		return new MuseDash1CharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
 
@@ -83,7 +85,7 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 [Nucleus.MarkForStaticConstruction]
 public class MuseDashCharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
-	public string GetUniqueID() => name;
+	public ReadOnlySpan<char> GetUUID() => $"character/musedash1/{name}";
 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
 		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
@@ -101,23 +103,53 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		Logs.Warn("No more characters available.");
 	});
 
-	public string GetName() => $"{configData.Localization["english"].CosName} {configData.Localization["english"].CharacterName}";
-	public string GetCosplayName() => configData.Localization["english"].CosName;
-	public string GetCharacterName() => configData.Localization["english"].CharacterName;
-	public ITexture? GetThumbnailTexture() => MuseDashCompatibility.ConvertTexture(EngineCore.Level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(configData.Skins.First().HeadName)!);
-	public string? GetDescription() => configData.Localization["english"].Description;
-	public string GetAuthor() => configData.Localization["english"].CV;
-	public string GetPerk() => $"{configData.Localization["english"].Skill}";
-	public double GetDefaultHP() => int.TryParse(configData.DefaultHP, out var hp) ? hp : 250;
+	static ReadOnlySpan<char> LocalizationLookup(
+		CharacterConfigData configData,
+		in HumanLanguage desiredLanguage,
+		out HumanLanguage returnedLanguage,
+		Func<CharacterLocalizationData, string> fetchLocalization,
+		Func<CharacterConfigData, string> fetchFallback) {
 
-	public ModelData GetFailModel(Level level) {
-		throw new NotImplementedException();
+		string? key = desiredLanguage.Culture.TwoLetterISOLanguageName switch {
+			"en" => "english",
+			_ => null
+		};
+
+		if (key != null && configData.Localization.TryGetValue(key, out var localization)) {
+			returnedLanguage = desiredLanguage;
+			return fetchLocalization(localization);
+		}
+
+		if (key != "english" && configData.Localization.TryGetValue("english", out localization)) {
+			returnedLanguage = HumanLanguage.English;
+			return fetchLocalization(localization);
+		}
+
+		returnedLanguage = HumanLanguage.Any;
+		return fetchFallback(configData);
 	}
 
-	public string? GetLogicControllerData() => null;
+	// cosplay name and character name clash over returnedLanguage, this should be fixed...
+	public ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> $"{GetCosplayName(desiredLanguage, out returnedLanguage)} {GetCharacterName(desiredLanguage, out returnedLanguage)}";
+
+	public ReadOnlySpan<char> GetCosplayName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> LocalizationLookup(configData, desiredLanguage, out returnedLanguage, x => x.CosName, x => x.CosName);
+
+	public ReadOnlySpan<char> GetCharacterName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> LocalizationLookup(configData, desiredLanguage, out returnedLanguage, x => x.CharacterName, x => x.CharacterName);
+
+	public ITexture? GetThumbnailTexture() => MuseDashCompatibility.ConvertTexture(EngineCore.Level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(configData.Skins.First().HeadName)!);
+	
+	public ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> LocalizationLookup(configData, desiredLanguage, out returnedLanguage, x => x.Description, x => x.Description);
+	public ReadOnlySpan<char> GetAuthor(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> LocalizationLookup(configData, desiredLanguage, out returnedLanguage, x => x.CV, x => x.Cv);
+	public ReadOnlySpan<char> GetPerk(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
+		=> LocalizationLookup(configData, desiredLanguage, out returnedLanguage, x => x.Skill, x => x.Skill);
 
 	public ICharacterMainMenuExpression? GetMainShowExpression() {
-		MuseDashCharacterExpression expression = MuseDashCharacterExpression.From(configData);
+		MuseDash1CharacterExpression expression = MuseDash1CharacterExpression.From(configData);
 		return expression;
 	}
 
@@ -135,7 +167,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		if (exp == -1)
 			return null;
 
-		return new MuseDashCharacterExpression(
+		return new MuseDash1CharacterExpression(
 			configData.Expressions[exp],
 			string.Empty,
 			voiceline
@@ -304,7 +336,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 			CharacterAnimationType.PressAirToBig => ActionKeys.PRESS_AIR_TO_BIG,
 			CharacterAnimationType.PressBigToGround => ActionKeys.PRESS_BIG_TO_GROUND,
 			CharacterAnimationType.PressBigToAir => ActionKeys.PRESS_BIG_TO_AIR,
-			CharacterAnimationType.PressHitToGround=> ActionKeys.PRESS_HIT_TO_GROUND,
+			CharacterAnimationType.PressHitToGround => ActionKeys.PRESS_HIT_TO_GROUND,
 			CharacterAnimationType.PressHitToAir => ActionKeys.PRESS_HIT_TO_AIR,
 			CharacterAnimationType.BigHit => ActionKeys.ATTACK_DOUBLE,
 			CharacterAnimationType.UpPressHurt => ActionKeys.AIR_PRESS_HURT,
@@ -318,4 +350,28 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, configData.GetBattleShowGhost());
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, configData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
+
+	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
+		return false;
+	}
+
+	public object? GetGamemodeParameters(IGamemodeDescriptor gamemodeDescriptor) {
+		throw new NotImplementedException();
+	}
+
+	public ICharacterMainMenuInstance CreateMainMenu() {
+		throw new NotImplementedException();
+	}
+
+	public ICharacterVictoryInstance CreateVictory() {
+		throw new NotImplementedException();
+	}
+
+	public ICharacterFailureInstance CreateFailure() {
+		throw new NotImplementedException();
+	}
+
+	public ICharacterInGameInstance? CreateInGame(IGamemodeDescriptor gamemodeDescriptor) {
+		throw new NotImplementedException();
+	}
 }

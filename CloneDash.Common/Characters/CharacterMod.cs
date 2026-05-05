@@ -1,5 +1,4 @@
-﻿using CloneDash.Compatibility.MuseDash;
-
+﻿using CloneDash.Common;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Commands;
@@ -45,10 +44,12 @@ public static class CharacterMod
 			return;
 		}
 
+		var language = HumanLanguage.GetCurrentLanguage();
+
 		Logs.Print($"Character Info:");
-		Logs.Print($"    Name:      {info.GetName()}");
-		Logs.Print($"    Author:    {info.GetAuthor()}");
-		Logs.Print($"    Perk:      {info.GetPerk()}");
+		Logs.Print($"    Name:      {info.GetName(language, out _)}");
+		Logs.Print($"    Author:    {info.GetAuthor(language, out _)}");
+		Logs.Print($"    Perk:      {info.GetPerk(language, out _)}");
 	}
 	[ConCommand(Help: "Prints all available characters")]
 	public static void characters(ConCommand cmd, in TokenizedCommand args) {
