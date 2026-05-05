@@ -1,5 +1,5 @@
-﻿using CloneDash.Compatibility.MuseDash;
-using CloneDash.Game;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Compatibility.MuseDash;
 
 using Nucleus.Audio;
 using Nucleus.Common.Audio;

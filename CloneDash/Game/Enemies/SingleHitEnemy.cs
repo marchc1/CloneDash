@@ -1,4 +1,5 @@
-﻿using CloneDash.Scenes;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 
 using Nucleus.Engine;
 using Nucleus.Types;

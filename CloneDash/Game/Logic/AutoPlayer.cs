@@ -1,4 +1,6 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 
 using Nucleus;

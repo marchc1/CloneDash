@@ -1,7 +1,8 @@
 ﻿// TODO: this file is WAY too bloated!!!
 
 using AssetStudio;
-
+using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;

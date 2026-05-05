@@ -1,4 +1,6 @@
-﻿using Nucleus;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Types;
 
@@ -51,7 +53,7 @@ namespace CloneDash.Game.Entities
 			var level = Level.As<DashGameLevel>();
 
 			if (!level.IsSeeking)
-				level.PlaySceneSound(Scenes.SceneSound.HitMasher, Hits);
+				level.PlaySceneSound(SceneSound.HitMasher, Hits);
 
 			if (MaxHits == 1) {
 				Hits = 1;

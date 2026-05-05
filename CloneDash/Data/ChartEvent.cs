@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Data
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+
+namespace CloneDash.Data
 {
 	public class ChartEvent
 	{

@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Game;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+
+namespace CloneDash.Game;
 
 public static class CloneDashExts
 {

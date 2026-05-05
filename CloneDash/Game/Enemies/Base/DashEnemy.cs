@@ -1,4 +1,6 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Data;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
 using CloneDash.Scenes;

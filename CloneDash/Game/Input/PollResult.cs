@@ -1,4 +1,5 @@
-﻿using Nucleus;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using Nucleus;
 
 namespace CloneDash.Game.Input;
 

@@ -1,4 +1,6 @@
-﻿using CloneDash.Game;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Game;
 
 using Nucleus.Audio;
 using Nucleus.Common.Audio;

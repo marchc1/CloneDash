@@ -1,4 +1,7 @@
-﻿namespace CloneDash.Game.Entities
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+
+namespace CloneDash.Game.Entities
 {
 	public class DoubleHitEnemy : DashEnemy
 	{

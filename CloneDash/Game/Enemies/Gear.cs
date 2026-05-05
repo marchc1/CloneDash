@@ -1,4 +1,5 @@
-﻿using Nucleus.Types;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+using Nucleus.Types;
 namespace CloneDash.Game.Entities
 {
 	public class Gear : DashEnemy

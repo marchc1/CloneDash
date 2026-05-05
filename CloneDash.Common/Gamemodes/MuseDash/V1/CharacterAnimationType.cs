@@ -1,4 +1,4 @@
-﻿namespace CloneDash.Game;
+﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1;
 
 public enum CharacterAnimationType
 {

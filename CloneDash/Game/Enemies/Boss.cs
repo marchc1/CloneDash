@@ -1,4 +1,4 @@
-﻿using CloneDash.Scenes;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
 
 using Nucleus;
 using Nucleus.Engine;

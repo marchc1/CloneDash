@@ -1,27 +1,26 @@
-﻿namespace CloneDash
+﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1;
+
+/// <summary>
+/// Only applicable to <see cref="EntityType.Single"/>.
+/// </summary>
+public enum EntityVariant
 {
-	/// <summary>
-	/// Only applicable to <see cref="EntityType.Single"/>.
-	/// </summary>
-	public enum EntityVariant
-	{
-		NotApplicable,
+	NotApplicable,
 
-		Boss1,
-		Boss2,
-		Boss3,
+	Boss1,
+	Boss2,
+	Boss3,
 
-		BossHitFast,
-		BossHitSlow,
-		BossMasher,
-		BossMasherEnd,
+	BossHitFast,
+	BossHitSlow,
+	BossMasher,
+	BossMasherEnd,
 
-		Small,
+	Small,
 
-		Medium1,
-		Medium2,
+	Medium1,
+	Medium2,
 
-		Large1,
-		Large2
-	}
+	Large1,
+	Large2
 }

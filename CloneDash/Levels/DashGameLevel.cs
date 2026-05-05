@@ -1,4 +1,6 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
 using CloneDash.Fevers;

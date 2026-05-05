@@ -1,36 +1,35 @@
-﻿namespace CloneDash
+﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1;
+
+public enum EventType
 {
-	public enum EventType
-	{
-		NotApplicable,
+	NotApplicable,
 
-		BossIn,
-		BossOut,
+	BossIn,
+	BossOut,
 
-		BossSingleHit,
+	BossSingleHit,
 
-		BossMasher,
-		BossMasherEnd,
+	BossMasher,
+	BossMasherEnd,
 
-		BossFar1Start,
-		BossFar1End,
-		BossFar1To2,
-		BossFar2Start,
-		BossFar2End,
-		BossFar2To1,
+	BossFar1Start,
+	BossFar1End,
+	BossFar1To2,
+	BossFar2Start,
+	BossFar2End,
+	BossFar2To1,
 
-		AirSpeed1,
-		AirSpeed2,
-		AirSpeed3,
+	AirSpeed1,
+	AirSpeed2,
+	AirSpeed3,
 
-		GroundSpeed1,
-		GroundSpeed2,
-		GroundSpeed3,
+	GroundSpeed1,
+	GroundSpeed2,
+	GroundSpeed3,
 
-		DoubleSpeed1,
-		DoubleSpeed2,
-		DoubleSpeed3,
+	DoubleSpeed1,
+	DoubleSpeed2,
+	DoubleSpeed3,
 
-		BossHide
-	}
+	BossHide
 }

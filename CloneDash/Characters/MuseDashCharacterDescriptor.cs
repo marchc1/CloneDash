@@ -1,6 +1,6 @@
 ﻿using AssetStudio;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Game;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;

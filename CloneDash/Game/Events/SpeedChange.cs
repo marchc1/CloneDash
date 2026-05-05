@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Game.Events;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+
+namespace CloneDash.Game.Events;
 
 public class SpeedChange(DashGameLevel game, PathwaySide side, int speed) : DashEvent(game){
 	public PathwaySide Side => side;

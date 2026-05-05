@@ -1,4 +1,6 @@
-﻿using CloneDash.Game.Events;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Game.Events;
 
 namespace CloneDash.Game;
 

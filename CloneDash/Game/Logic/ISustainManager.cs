@@ -1,4 +1,5 @@
-﻿using CloneDash.Game.Entities;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Game.Entities;
 
 namespace CloneDash.Game.Logic;
 
