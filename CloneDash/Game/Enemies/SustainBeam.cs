@@ -183,13 +183,9 @@ namespace CloneDash.Game.Entities
 		private ITexture? up;
 		private ITexture? down;
 
-		public override void Build() {
-			base.Build();
-
-			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
-
-			scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
+			visuals.Scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
 		}
 
 		internal void Complete() {

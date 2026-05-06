@@ -5,7 +5,7 @@ using Nucleus.Files;
 
 namespace CloneDash.Characters;
 
-public class MuseDashSceneProvider : ISceneProvider
+public class MuseDash1SceneProvider : ISceneProvider
 {
 	int ISceneProvider.Priority => 10000000;
 
@@ -15,10 +15,9 @@ public class MuseDashSceneProvider : ISceneProvider
 	}
 
 	ISceneDescriptor? ISceneProvider.FindByName(ReadOnlySpan<char> name) {
-		MuseDashScene? descriptor = MuseDashScene.GetScene(name);
+		MuseDash1SceneDescriptor? descriptor = MuseDash1SceneDescriptor.GetScene(name);
 		if (descriptor == null) return null;
 
-		descriptor.MountToFilesystem();
 		return descriptor;
 	}
 }

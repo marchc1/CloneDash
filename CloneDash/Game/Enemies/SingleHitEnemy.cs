@@ -3,6 +3,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1;
 
 using Nucleus.Engine;
 using Nucleus.Types;
+using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
@@ -34,7 +35,8 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void Render() {
-			if (Model != null)
+			var visuals = GetActiveVisuals();
+			if (visuals.Model != null)
 				base.Render();
 		}
 
@@ -46,25 +48,25 @@ namespace CloneDash.Game.Entities
 			base.Think(frameState);
 		}
 
-		public override void DetermineAnimationPlayback() {
-			if (Model == null) return;
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
+			if (visuals.Model == null) return;
 
 			if (Dead) {
 				GetGameLevel().SetEnemyKilledPosition(this);
-				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
-				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
+				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
 			GetGameLevel().SetEnemyPosition(this);
-			base.DetermineAnimationPlayback();
+			base.DetermineAnimationPlayback(visuals);
 		}
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
 
-		public override void Build() {
-			base.Build();
 
 			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
+			var scene = visuals.Scene;
 
 			switch (Variant) {
 				case EntityVariant.BossHitFast:
@@ -74,16 +76,16 @@ namespace CloneDash.Game.Entities
 					var model = scene.GetEnemyModel(this)?.Instantiate();
 
 					if (model != null)
-						Model = model;
+						visuals.Model = model;
 
 					double showtime = 1;
 					string? animationName = scene?.GetEnemyApproachAnimation(this, out showtime);
 					SetShowTimeViaLength(showtime);
 
-					ApproachAnimation = Model?.Data.FindAnimation(animationName);
-					GreatHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));
-					PerfectHitAnimation = Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
-					SetMountBoneIfApplicable(scene?.GetHPMount(this));
+					visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
+					visuals.GreatHitAnimation = visuals.Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));
+					visuals.PerfectHitAnimation = visuals.Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+					SetMountBoneIfApplicable(visuals, scene?.GetHPMount(visuals));
 					break;
 			}
 		}

@@ -26,15 +26,12 @@ namespace CloneDash.Game.Entities
 			base.OnReward();
 			lvl.SpawnTextEffect($"+{ScoreGiven}", lvl.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(190, 190, 235, 255));
 		}
-
-		public override void Build() {
-			base.Build();
-			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
-
-			Model = scene.GetEnemyModel(this)?.Instantiate();
-			ApproachAnimation = Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
-			OutAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
+			
+			visuals.Model = visuals.Scene.GetEnemyModel(this)?.Instantiate();
+			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(visuals.Scene.GetEnemyApproachAnimation(this, out _));
+			visuals.OutAnimation = visuals.Model?.Data.FindAnimation(visuals.Scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 		}
 	}
 }

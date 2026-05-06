@@ -22,13 +22,13 @@ namespace CloneDash.Game.Entities
 			RewardPlayer(true);
 		}
 
-		public override void Build() {
-			base.Build();
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
 			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
-			Model = scene.GetEnemyModel(this)?.Instantiate();
-			ApproachAnimation = Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
-			OutAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+			var scene = visuals.Scene;
+			visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
+			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));
+			visuals.OutAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 		}
 	}
 }

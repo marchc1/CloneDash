@@ -30,18 +30,18 @@ namespace CloneDash.Game.Entities
 		public override void OnReset() {
 			base.OnReset();
 		}
-		public override void DetermineAnimationPlayback() {
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			GetGameLevel().SetEnemyPosition(this);
 			if (Dead) {
-				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
-				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
+				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			base.DetermineAnimationPlayback();
+			base.DetermineAnimationPlayback(visuals);
 		}
-		public override void Build() {
-			base.Build();
-			BasicSetup();
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
+			BasicSetup(visuals);
 		}
 	}
 }

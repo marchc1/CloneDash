@@ -13,8 +13,9 @@ namespace CloneDash.Characters;
 /// <summary>
 /// An interface for character operations and information.
 /// </summary>
-public interface ICharacterDescriptor : IHumanNamedObject, IUniquelyIdentifiableObject
+public interface ICharacterDescriptor : IUniquelyIdentifiableObject
 {
+	ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
 	/// <summary>
 	/// Gets the human-friendly character name
 	/// </summary>

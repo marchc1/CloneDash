@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
 using Nucleus.Types;
+using Raylib_cs;
 namespace CloneDash.Game.Entities
 {
 	public class Gear : DashEnemy
@@ -23,27 +24,24 @@ namespace CloneDash.Game.Entities
 			GetStats().Miss(this);
 		}
 
-		public override void DetermineAnimationPlayback() {
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			GetGameLevel().SetEnemyPosition(this);
-			base.DetermineAnimationPlayback();
+			base.DetermineAnimationPlayback(visuals);
 		}
 
 		public override void PostThink(FrameState frameState) {
 			base.Think(frameState);
 		}
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
 
-		public override void Build() {
-			base.Build();
-
-			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
-
-			Model = scene.GetEnemyModel(this)?.Instantiate();
+			var scene = visuals.Scene;
+			visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 			var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 			SetShowTimeViaLength(showtime);
 
-			ApproachAnimation = Model?.Data.FindAnimation(animationName);
+			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
 		}
 	}
 }

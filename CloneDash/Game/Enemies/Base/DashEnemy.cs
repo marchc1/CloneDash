@@ -32,6 +32,8 @@ public class DashEnemyVisuals
 	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
 	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
 
+	public Nucleus.Models.Runtime.Animation? OutAnimation;
+
 	public DashEnemyVisuals(){
 		Animations = new AnimationHandler();
 	}

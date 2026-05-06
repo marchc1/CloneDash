@@ -28,29 +28,24 @@ namespace CloneDash.Game.Entities
 			}
 		}
 
-		public override void DetermineAnimationPlayback() {
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
 				GetGameLevel().SetEnemyKilledPosition(this);
-				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
-				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
+				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 			GetGameLevel().SetEnemyPosition(this);
-			base.DetermineAnimationPlayback();
+			base.DetermineAnimationPlayback(visuals);
 		}
 
 		public override void Initialize() {
 			base.Initialize();
 		}
-
-		public override void Build() {
-			base.Build();
-
-			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
-
-			BasicSetup();
-			SetMountBoneIfApplicable(scene.GetHPMount(this)!);
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
+			BasicSetup(visuals);
+			SetMountBoneIfApplicable(visuals, visuals.Scene.GetHPMount(visuals)!);
 		}
 	}
 }

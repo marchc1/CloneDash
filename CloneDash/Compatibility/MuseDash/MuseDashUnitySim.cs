@@ -417,7 +417,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		_ => BitConverter.ToSingle(d, o)
 	};
 
-	public void SetSprite(Sprite sprite, MuseDashScene scene) {
+	public void SetSprite(Sprite sprite, BaseMuseDash1UnitySimScene scene) {
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 		texture = scene.LoadTexture(tex2d);
@@ -434,7 +434,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 	public override void Render(BaseMuseDash1UnitySimScene scene) {
 		if (texture == null) return;
-		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
+		if (!BaseMuseDash1UnitySimScene.IsActiveInHierarchy(Object)) return;
 		// TODO: mesh rendering. Very slow, probably incorrect right now...
 		// the quads represent the main geometry and the main problems we're experiencing with geometry anyway
 		// if (useMesh && mIdx != null)
@@ -487,7 +487,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 	void RenderQuad() {
 		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
-		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
+		if (!BaseMuseDash1UnitySimScene.IsActiveInHierarchy(Object)) return;
 
 		Transform.GetWorldPosition(out float wx, out float wy, out _);
 		Transform.GetWorldScale(out float sx, out float sy);

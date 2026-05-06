@@ -6,18 +6,16 @@ namespace CloneDash.Game
 {
 	public class DashBonusEntity(EntityType type) : DashEnemy(type)
 	{
-		public Nucleus.Models.Runtime.Animation? OutAnimation;
-
-		public override void DetermineAnimationPlayback() {
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
 				GetGameLevel().SetEnemyKilledPosition(this);
-				OutAnimation?.Apply(Model, (GetConductor().Time - LastHitTime));
+				visuals.OutAnimation?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
 			GetGameLevel().SetEnemyPosition(this);
 			Position = new(Position.X + (float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), Position.Y);
-			ApproachAnimation?.Apply(Model, Math.Max(0, AnimationTime));
+			visuals.ApproachAnimation?.Apply(visuals.Model, Math.Max(0, AnimationTime));
 		}
 
 		public override bool VisTest(float gamewidth, float gameheight, float xPosition) {

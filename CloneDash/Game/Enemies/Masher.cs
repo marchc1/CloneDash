@@ -3,6 +3,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1;
 using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Types;
+using Raylib_cs;
 
 namespace CloneDash.Game.Entities
 {
@@ -72,9 +73,9 @@ namespace CloneDash.Game.Entities
 			}
 
 			lastHitTime = level.Conductor.Time;
-			if (Model != null) {
-				currentAnim = Model.Data.FindAnimation(level.Scene.GetMasherHitAnimation(Speed, EnterDirection));
-			}
+			var currentVisuals = GetActiveVisuals();
+			if (currentVisuals.Model != null) 
+				currentAnim = currentVisuals.Model.Data.FindAnimation(currentVisuals.Scene.GetMasherHitAnimation(Speed, EnterDirection));
 
 			CheckIfComplete();
 		}
@@ -100,39 +101,37 @@ namespace CloneDash.Game.Entities
 		}
 
 		Nucleus.Models.Runtime.Animation? currentAnim;
-		public override void DetermineAnimationPlayback() {
-			if (Model == null) return;
+		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
+			if (visuals.Model == null) return;
 
 			GetGameLevel().SetEnemyKilledPosition(this);
 
 			if (Dead) {
-				var anim = WasHitPerfect ? PerfectHitAnimation : GreatHitAnimation;
-				anim?.Apply(Model, (GetConductor().Time - LastHitTime));
+				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
+				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
 			if (StartedHitting) {
 				Position = GetGameLevel().GetPathwayPosition(PathwaySide.Both);
-				currentAnim?.Apply(Model, (GetConductor().Time - lastHitTime));
+				currentAnim?.Apply(visuals.Model, (GetConductor().Time - lastHitTime));
 				return;
 			}
 			GetGameLevel().SetEnemyPosition(this);
 
 
-			base.DetermineAnimationPlayback();
+			base.DetermineAnimationPlayback(visuals);
 		}
-
-		public override void Build() {
-			base.Build();
-
+		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
+			base.OnBuildVisuals(visuals);
 			var level = Level.As<MuseDash1Game>();
-			var scene = level.Scene;
+			var scene = visuals.Scene;
 
 			if (!Variant.IsBoss()) {
-				Model = scene.GetEnemyModel(this)?.Instantiate();
+				visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 				double showtime = 1;
-				ApproachAnimation = Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out showtime));
-				SetupHitAnimations(scene);
+				visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out showtime));
+				SetupHitAnimations(visuals);
 				SetShowTimeViaLength(showtime);
 			}
 		}
