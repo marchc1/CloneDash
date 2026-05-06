@@ -1,20 +1,12 @@
 ﻿using CloneDash.Characters;
-using CloneDash.Game;
-using CloneDash.Settings;
 using Nucleus;
-using Nucleus.Audio;
-using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Core;
-using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static System.Net.Mime.MediaTypeNames;
+using System.Linq.Expressions;
 
 namespace CloneDash.Menu;
 
@@ -23,61 +15,13 @@ namespace CloneDash.Menu;
 /// </summary>
 public class CharacterPanel : Panel
 {
-	private ICharacterDescriptor? Character;
-	private ModelInstance? Model;
-	private readonly AnimationHandler Anims = new();
-	private AudioPlaybackHandle Music;
+	private ICharacterMainMenuInstance? CharacterInstance;
 	private int Click = 0;
-	private ICharacterMainMenuExpression? ApplyExpression;
-	private double StartExpressionTime;
-	private double NextExpressionTime;
 	private string? ExpressionText;
-	private AudioPlaybackHandle? ExpressionVoiceHandle;
-
-	private ModelInstance? PlayModel;
-	private ModelInstance? VictoryModel;
-	private ModelInstance? FailModel;
-	private readonly AnimationHandler PlayAnims = new();
-	private readonly AnimationHandler VictoryAnims = new();
-	private readonly AnimationHandler FailAnims = new();
-
 	public Vector2F CharacterOffset { get; set; }
 
-	public bool PlaysMusic {
-		get => field;
-		set {
-			if (field == value) return;
-			field = value;
-			if (!value)
-				audiosystem.StopSound(Music);
-			else {
-				audiosystem.RestartSound(Music);
-				audiosystem.PlaySound(Music);
-			}
-		}
-	} = true;
-
-	public bool ExpressiveOnClicks { get; set; } = true;
-
-	public bool LinkToConVar {
-		get => field;
-		set {
-			if (field == value) return;
-			field = value;
-
-			if (LinkToConVar) {
-				if (SetCharacter(CharacterMod.GetCharacterData()))
-					CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
-				else
-					CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
-			}
-			else
-				CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
-		}
-	} = false;
-
 	public bool SetCharacter(ICharacterDescriptor? character, bool force = false) {
-		if (character != null && Character != null && character.GetUUID() == Character.GetUUID() && !force)
+		if (character != null && CharacterInstance != null && character.GetUUID() == CharacterInstance.GetCharacter().GetUUID() && !force)
 			return character != null;
 
 		if (character != null)
@@ -88,13 +32,6 @@ public class CharacterPanel : Panel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
-		audiosystem.UpdatePlayback(Music);
-
-		if (extendedModels && Character != null) {
-			if (!PlayAnims.IsPlayingAnimation()) {
-				// todo: fix Character.PlayCharacterAnimation((CharacterAnimationType)Random.Shared.Next(0, (int)(CharacterAnimationType.JumpHitGreat) + 1), PlayAnims);
-			}
-		}
 	}
 
 	Label ExpressionLabel = null!;
@@ -107,49 +44,42 @@ public class CharacterPanel : Panel
 		ExpressionLabel.Visible = false;
 		ExpressionLabel.Origin = Anchor.Center;
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
+
+		if (SetCharacter(CharacterMod.GetCharacterData()))
+			CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
+		else
+			CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 	}
 
 	public override void OnRemoval() {
 		base.OnRemoval();
-		LinkToConVar = false; // Force removal from list
-		audiosystem.DestroyPlayback(Music);
+		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+		CharacterInstance?.Dispose();
 	}
 
 	public override void MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
 	}
-	public void PlayApplyExpression() {
-		if (Character == null) return;
 
-		// TODO FIXME decluttering-2 ApplyExpression ??= Character.GetMainShowApplyExpression();
-		// TODO FIXME decluttering-2 PlayExpression(ApplyExpression);
+	public void PlayApplyExpression() {
+		if (CharacterInstance == null) return;
+		var exp = CharacterInstance.StartApplyExpression();
+		PlayExpression(exp);
 	}
 
 	public void PlayRandomExpression() {
-		if (Character == null) return;
-		// TODO FIXME decluttering-2 PlayExpression(Character.GetMainShowExpression());
+		if (CharacterInstance == null) return;
+		PlayExpression(CharacterInstance.StartExpression());
 	}
 
 	public void PlayExpression(ICharacterMainMenuExpression? expression) {
-		if (Character == null) return;
-		if (Model == null) return;
-		if (Level.Curtime < NextExpressionTime) return;
+		if (CharacterInstance == null) return;
+		if (expression == null) return;
 
 		Click++;
 
-		// TODO FIXME decluttering-2 var mainResponse = Character.GetMainShowInitialExpression();
-		// TODO FIXME decluttering-2 if (mainResponse != null) {
-		// TODO FIXME decluttering-2 Anims.SetAnimation(0, mainResponse);
-		// TODO FIXME decluttering-2 var standby = Character.GetMainShowStandby();
-		// TODO FIXME decluttering-2 if (Model.Data.FindAnimation(standby) == null) standby = "standby";
-		// TODO FIXME decluttering-2Anims.AddAnimation(0, standby, true);
-		// TODO FIXME decluttering-2 }
-
 		string? text = null;
-		double duration = 0;
-		expression?.Run(Level, Model, Anims, out text, out duration, out ExpressionVoiceHandle);
-		StartExpressionTime = Level.Curtime;
-		NextExpressionTime = Level.Curtime + duration + 0.1;
+		expression?.GetSpeech(EngineCore.Level, out text, out _);
 		ExpressionLabel.TextPadding = new(16);
 		ExpressionText = text;
 	}
@@ -158,146 +88,61 @@ public class CharacterPanel : Panel
 		EngineCore.Window.BeginMode2D(new() {
 			Zoom = height / 900 / 2.4f,
 			Offset = ((GetGlobalPosition()) + new Vector2F(
-				NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 2, width / 3.5f), 
+				width / 2,
 				(height / 1) - 64)
 			).ToNumerics()
 		});
 
-		if (Model != null) {
-			Model.Position = CharacterOffset;
-
-			Anims?.AddDeltaTime(Level.RendertimeDelta);
-			Anims?.Apply(Model);
-
-			Model.Render();
-		}
+		CharacterInstance?.Render(CharacterOffset);
 
 		EngineCore.Window.EndMode2D();
 
-		if (extendedModels) {
-			EngineCore.Window.BeginMode2D(new() {
-				Zoom = height / 900 / 1.4f,
-				Offset = ((GetGlobalPosition()) + new Vector2F(
-					NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 1.5f, (width / 2.2f) + (width / 24)),
-					(height / 1) - 64)
-				).ToNumerics()
-			});
+		if (CharacterInstance != null) {
+			CharacterInstance.GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
+			if (NMath.InRange(Level.Curtime, startTime, endTime) && !string.IsNullOrEmpty(ExpressionText)) {
+				float alphaMult1 = (float)NMath.Remap(Level.Curtime, startTime, endTime + 0.1, 0, 1, true);
+				float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startTime, endTime + 0.4, 0, 1, true);
+				float alphaMult2 = (float)NMath.Remap(Level.Curtime, startTime - 0.2, endTime, 0, 1, true);
+				float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
+				float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
+				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
+				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
+				textSize += new Vector2F(16);
 
-			if (PlayModel != null) {
-				PlayModel.Position = CharacterOffset;
-				PlayAnims?.AddDeltaTime(Level.RendertimeDelta); PlayAnims?.Apply(PlayModel);
-				PlayModel.Render();
+				ExpressionLabel.Position = textPos;
+				ExpressionLabel.Size = textSize;
+				ExpressionLabel.Visible = true;
+				ExpressionLabel.DrawBackground = true;
+				ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
+				ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
+				ExpressionLabel.AutoSize = true;
+				ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
+				ExpressionLabel.Text = ExpressionText;
 			}
-			EngineCore.Window.EndMode2D();
-
-
-			EngineCore.Window.BeginMode2D(new() {
-				Zoom = height / 900 / 5.4f,
-				Offset = ((GetGlobalPosition()) + new Vector2F(
-					NMath.Remap(sos_extendedMoveover.Update(extendedModels ? 1 : 0), 0, 1, width / 1.5f, (width / 1.45f) + (width / 24)),
-					(height / 1) - 64)
-				).ToNumerics()
-			});
-			if (VictoryModel != null) {
-				VictoryModel.Position = CharacterOffset;
-				VictoryAnims?.AddDeltaTime(Level.RendertimeDelta); VictoryAnims?.Apply(VictoryModel);
-				VictoryModel.Render();
-			}
-			EngineCore.Window.EndMode2D();
+			else
+				ExpressionLabel.Visible = false;
 		}
-
-		if (NMath.InRange(Level.Curtime, StartExpressionTime, NextExpressionTime) && !string.IsNullOrEmpty(ExpressionText)) {
-			float alphaMult1 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.1, 0, 1, true);
-			float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, StartExpressionTime, StartExpressionTime + 0.4, 0, 1, true);
-			float alphaMult2 = (float)NMath.Remap(Level.Curtime, NextExpressionTime - 0.2, NextExpressionTime, 0, 1, true);
-			float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
-			float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
-			Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-			Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
-			textSize += new Vector2F(16);
-
-			ExpressionLabel.Position = textPos;
-			ExpressionLabel.Size = textSize;
-			ExpressionLabel.Visible = true;
-			ExpressionLabel.DrawBackground = true;
-			ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
-			ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
-			ExpressionLabel.AutoSize = true;
-			ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
-			ExpressionLabel.Text = ExpressionText;
-		}
-		else
-			ExpressionLabel.Visible = false;
 	}
 
-	public void Reset() => SetCharacter(Character, true);
+	public void Reset() => SetCharacter(CharacterInstance?.GetCharacter(), true);
 
-	private void ResetExpression()
-	{
+	private void ResetExpression() {
 		ExpressionText = null;
-		ExpressionVoiceHandle?.Audio.DestroyPlayback(ExpressionVoiceHandle.Value);
-		StartExpressionTime = 0;
-		NextExpressionTime = 0;
-
-		if (Character is null || Model is null)
-			return;
 		
-		var standby = GetStandby(Character, Model);
-		Anims.SetAnimation(0, standby, true);
-	}
+		if (CharacterInstance == null)
+			return;
 
-	private string GetStandby(ICharacterDescriptor desc, ModelInstance model)
-	{
-		// TODO FIXME decluttering-2 var standby = desc.GetMainShowStandby();
-		// TODO FIXME decluttering-2 if (model.Data.FindAnimation(standby) == null) standby = "standby";
-		// TODO FIXME decluttering-2 if (model.Data.FindAnimation(standby) == null) standby = "Bgmstandby"; // EXCLUSIVELY for miku for whatever reason
-		// TODO FIXME decluttering-2 return standby;
-		return "";
+		CharacterInstance.Standby();
 	}
 
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
-		if (Character != null && charDescriptor != null && Character.GetUUID() == charDescriptor.GetUUID()) return;
-		Character = charDescriptor;
+		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().GetUUID() == charDescriptor.GetUUID()) return;
+		CharacterInstance = charDescriptor?.CreateMainMenu();
+		if (CharacterInstance == null)
+			return;
 
-		// TODO FIXME decluttering-2 Model = charDescriptor.GetMainShowModel(Level).Instantiate();
-		Anims.SetModel(Model);
-		ApplyExpression = null;
-		
 		ResetExpression();
-
-		// TODO FIXME decluttering-2  var clip = charDescriptor.GetMainShowMusic(Level);
-		// TODO FIXME decluttering-2  if (IValidatable.IsValid(clip)) {
-		// TODO FIXME decluttering-2  	clip.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-		// TODO FIXME decluttering-2  	Music = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with {
-		// TODO FIXME decluttering-2  		Looping = true,
-		// TODO FIXME decluttering-2  		ManuallyUpdate = true,
-		// TODO FIXME decluttering-2  		Stream = true,
-		// TODO FIXME decluttering-2  		DoNotAutoDestroy = true
-		// TODO FIXME decluttering-2  	});
-		// TODO FIXME decluttering-2  	audiosystem.PlaySound(Music);
-		// TODO FIXME decluttering-2  }
-
-		if (extendedModels)
-			LoadExtendedModels();
-	}
-
-	void LoadExtendedModels() {
-		if (Character == null) return;
-
-		// TODO FIXME decluttering-2 PlayModel = Character.GetPlayModel(Level).Instantiate();
-		// TODO FIXME decluttering-2 PlayAnims.SetModel(PlayModel);
-
-		// TODO FIXME decluttering-2 VictoryModel = Character.GetVictoryModel(Level).Instantiate();
-		// TODO FIXME decluttering-2 VictoryAnims.SetModel(VictoryModel);
-		// TODO FIXME decluttering-2 VictoryAnims.SetAnimation(0, Character.GetVictoryStandby(), true);
-	}
-
-	bool extendedModels = false;
-	readonly SecondOrderSystem sos_extendedMoveover = new(1.8f, 0.8f, 1f, 0);
-	internal void SetExtendedModels(bool @checked) {
-		extendedModels = @checked;
-		if (@checked)
-			LoadExtendedModels();
+		CharacterInstance.PlayAudio();
 	}
 }

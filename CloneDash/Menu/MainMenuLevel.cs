@@ -151,7 +151,6 @@ public class MainMenuLevel : Level
 		Character.DynamicallySized = true;
 		Character.Origin = Anchor.TopCenter;
 		Character.Size = new(1f);
-		Character.LinkToConVar = true;
 
 		header = UI.Add<Panel>();
 		header.Position = new Vector2F(0);
@@ -442,14 +441,12 @@ public class MainMenuLevel : Level
 		if (active is not (CharacterSelector or MainMenuPanel))
 		{
 			Character.Visible = false;
-			Character.PlaysMusic = false;
 			return;
 		}
 
 		if (wasHidden)
 		{
 			Character.Visible = true;
-			Character.PlaysMusic = true;
 			Character.Reset();
 		}
 

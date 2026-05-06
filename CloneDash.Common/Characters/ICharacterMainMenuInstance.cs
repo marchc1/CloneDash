@@ -1,6 +1,8 @@
-﻿namespace CloneDash.Characters;
+﻿using Nucleus.Types;
 
-public interface ICharacterMainMenuInstance
+namespace CloneDash.Characters;
+
+public interface ICharacterMainMenuInstance : IDisposable
 {
 	/// <summary>
 	/// The base character that created this instance
@@ -18,7 +20,7 @@ public interface ICharacterMainMenuInstance
 	/// <summary>
 	/// Renders the model.
 	/// </summary>
-	void Render();
+	void Render(Vector2F offset = default);
 
 	/// <summary>
 	/// Instantiates a random expression. If one is already playing, this will return null.
@@ -28,5 +30,7 @@ public interface ICharacterMainMenuInstance
 	/// <summary>
 	/// Instantiates the expression played when applied. If one is already playing, it is destroyed, and this plays immediately.
 	/// </summary>
-	ICharacterMainMenuExpression StartApplyExpression();
+	ICharacterMainMenuExpression? StartApplyExpression();
+	void Standby();
+	void GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
 }
