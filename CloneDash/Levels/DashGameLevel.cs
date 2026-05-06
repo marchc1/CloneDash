@@ -3,7 +3,6 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Data;
-using CloneDash.Fevers;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
@@ -305,7 +304,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			}
 
 			// HACK - but it solves fever FX not playing
-			if (InFever) FeverFX?.Start(this);
+			// if (InFever) FeverFX?.Start(this);
 
 			// ALSO A HACK - but it solves some animation issues when mid-sustain.
 			if (Sustains.IsSustaining())
@@ -487,7 +486,6 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public StatisticsData Stats;
 	public ICharacterDescriptor Character;
-	public IFeverDescriptor? FeverFX;
 	public ISceneDescriptor Scene;
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
@@ -550,14 +548,14 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				}
 				Scene = sceneData;
 
-				var feverFX = FeverMod.GetFeverData();
-				FeverFX = feverFX;
+				// var feverFX = FeverMod.GetFeverData();
+				// FeverFX = feverFX;
 			}
 
 			Interlude.Spin(submessage: "Initializing the scene...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				Scene.Initialize(this);
-				FeverFX?.Initialize(this);
+				// FeverFX?.Initialize(this);
 			}
 
 			Interlude.Spin();
@@ -1029,7 +1027,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		Scene.Think(this);
 		if (InFever)
-			FeverFX?.Think(this);
+			// FeverFX?.Think(this);
 
 		if (!Paused && IValidatable.IsValid(pressIdle))
 			audiosystem.UpdatePlayback(pressIdle);
@@ -1288,8 +1286,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
 		Scene.RenderBackground(this);
-		if (InFever)
-			FeverFX?.Render(this);
+		// if (InFever)
+			// FeverFX?.Render(this);
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
 
@@ -1617,7 +1615,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
 		if (!IsSeeking) {
-			FeverFX?.Start(this);
+			// FeverFX?.Start(this);
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
 	}
