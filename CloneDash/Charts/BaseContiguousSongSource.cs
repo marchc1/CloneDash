@@ -1,4 +1,4 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Songs;
 using CloneDash.Menu.Searching;
 using Nucleus;
 
@@ -7,19 +7,19 @@ namespace CloneDash.Charts;
 /// <summary>
 /// A base implementation where all songs are available at once
 /// </summary>
-public class BaseContiguousChartSongSource : BaseChartSongSource, IChartSongSourceState
+public class BaseContiguousSongSource : BaseSongSource, ISongSourceState
 {
-	readonly IReadOnlyList<ChartSong> Songs;
+	readonly IReadOnlyList<ISong> Songs;
 
 	BaseContiguousChartSongFilter? Filter;
-	public BaseContiguousChartSongSource(IReadOnlyList<ChartSong> songs, BaseContiguousChartSongFilter? filter = null, IChartSongSourceState? parent = null) {
+	public BaseContiguousSongSource(IReadOnlyList<ISong> songs, BaseContiguousChartSongFilter? filter = null, ISongSourceState? parent = null) {
 		Filter = filter;
 		Songs = filter == null ? [.. songs] : filter.Apply(songs);
 		Parent = parent;
 		Root = parent?.GetRootSource() ?? this;
 	}
 
-	public ChartSong? At(int i) {
+	public ISong? At(int i) {
 		if (Songs.Count <= 0)
 			return null;
 
@@ -81,12 +81,12 @@ public class BaseContiguousChartSongSource : BaseChartSongSource, IChartSongSour
 			ImmediatelyAvailable = true
 		};
 	}
-	public IChartSongSourceState ProduceNewSource(IChartSongFilter filter) {
+	public ISongSourceState ProduceNewSource(IChartSongFilter filter) {
 		if (filter is not BaseContiguousChartSongFilter contigFilter)
 			throw new InvalidCastException("Invalid contigFilter");
-		return new BaseContiguousChartSongSource(Songs, contigFilter, this.GetRootSource());
+		return new BaseContiguousSongSource(Songs, contigFilter, this.GetRootSource());
 	}
-	public ChartSongSourceMoveInit Select(ChartSong? selectSong, ChartSongSourceMoveFinishFn? callback = null) {
+	public ChartSongSourceMoveInit Select(ISong? selectSong, ChartSongSourceMoveFinishFn? callback = null) {
 		if (IsBusy()) {
 			return new ChartSongSourceMoveInit {
 				OperationExecuted = false,

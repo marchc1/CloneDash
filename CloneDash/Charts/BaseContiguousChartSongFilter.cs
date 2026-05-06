@@ -1,4 +1,7 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Songs;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
 
 namespace CloneDash.Charts;
@@ -11,17 +14,18 @@ public class BaseContiguousChartSongFilter(BaseContiguousChartSongFilter? parent
 	public int MinDifficulty = 1;
 	public int MaxDifficulty = 13;
 
-	public virtual bool NameTest(ChartSong song) {
+	public virtual bool NameTest(ISong song) {
 		if (Query != null) {
-			if (song.Name.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
-			if (song.Author.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
+			var metadata = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			if (metadata.Name.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
+			if (metadata.Author.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
 
 			return false;
 		}
 
 		return true;
 	}
-	public virtual bool Test(ChartSong song) {
+	public virtual bool Test(ISong song) {
 		if (!NameTest(song))
 			return false;
 
@@ -32,23 +36,26 @@ public class BaseContiguousChartSongFilter(BaseContiguousChartSongFilter? parent
 		if (MinDifficulty > MaxDifficulty)
 			(MinDifficulty, MaxDifficulty) = (MaxDifficulty, MinDifficulty);
 
-		if (UseMin || UseMax)
-			for (int i = 0; i < 5; i++) {
-				if (song.TryDifficultyInteger(i + 1, out int d)) {
-					bool inRange = true;
+		if (UseMin || UseMax) {
+			if (song is not IHasLowToHighDifficulties idiff)
+				return false;
 
-					if (d >= MinDifficulty && d <= MaxDifficulty)
-						return true;
-				}
+			Span<int> difficulties = stackalloc int[idiff.GetDifficultyCount()];
+			idiff.GetDifficulties(difficulties);
+			for (int i = 0; i < difficulties.Length; i++) {
+				int d = difficulties[i];
+				if (d >= MinDifficulty && d <= MaxDifficulty)
+					return true;
 			}
+		}
 		else
 			return true;
 
 		return false;
 	}
 
-	public IReadOnlyList<ChartSong> Apply(IReadOnlyList<ChartSong> songs) {
-		List<ChartSong> newSongs = new List<ChartSong>(songs.Count);
+	public IReadOnlyList<ISong> Apply(IReadOnlyList<ISong> songs) {
+		List<ISong> newSongs = new List<ISong>(songs.Count);
 		for (int i = 0; i < songs.Count; i++) {
 			var song = songs[i];
 			if (Test(song))

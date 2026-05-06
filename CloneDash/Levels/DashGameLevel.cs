@@ -2,6 +2,7 @@
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
@@ -112,7 +113,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			return;
 		}
 
-		DashGameLevel.LoadLevel(song, map, args.Arg(3, 0) == 1);
+		DashGameLevel.LoadLevel(song.GetSheet(map), args.Arg(3, 0) == 1);
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		if (curArgPos == 1) {
@@ -157,7 +158,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public override bool IsInGame => true;
 
-	public static DashGameLevel? LoadLevel(MD1_Song song, int mapID, bool autoplay) {
+	public static DashGameLevel? LoadLevel(ISongChart chart, bool autoplay) {
+		var song = (MD1_Song)chart.GetSong(); // TODO: fix this
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {
 			Logs.Debug("Starting the sequential profiler.");
@@ -166,9 +168,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 		DashGameLevel? workingLevel = null;
 		try {
-			var sheet = song.GetSheet(mapID);
-			workingLevel = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(autoplay));
-
+			workingLevel = new DashGameLevel(new DashGameParams((MD1_SongChart)chart).WithAutoplay(autoplay));
 		}
 		catch (Exception ex) {
 			Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");

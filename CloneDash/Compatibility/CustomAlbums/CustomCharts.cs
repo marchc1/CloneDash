@@ -1,6 +1,7 @@
-﻿using CloneDash.Compatibility.MDMC;
+﻿using CloneDash.Common.Data;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game;
 
 using Newtonsoft.Json;
@@ -57,14 +58,14 @@ namespace CloneDash.Compatibility.CustomAlbums
 			}
 		}
 
-		public class CustomChartsSong : ChartSong
+		public class MD1_CustomChartsSong : MD1_Song
 		{
 			public string? Filepath { get; private set; }
 			public SearchPath? Archive { get; private set; }
 			public MDMCChart WebChart;
 			public bool UsesWebChart = false;
 
-			public CustomChartsSong(in MDMCChart webChart) {
+			public MD1_CustomChartsSong(in MDMCChart webChart) : base(null!) {
 				WebChart = webChart;
 				UsesWebChart = true;
 
@@ -72,7 +73,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				Author = webChart.Artist;
 			}
 
-			public CustomChartsSong(string filepath) {
+			public MD1_CustomChartsSong(string filepath) : base(null!) {
 				Filepath = filepath;
 				string? ext = Path.GetExtension(filepath);
 				switch (ext) {
@@ -90,7 +91,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
-			public CustomChartsSong(string pathID, string path) {
+			public MD1_CustomChartsSong(string pathID, string path) : base(null!) {
 				string? ext = Path.GetExtension(path);
 				switch (ext) {
 					case ".mdm":
@@ -105,7 +106,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
-			~CustomChartsSong() {
+			~MD1_CustomChartsSong() {
 				MainThread.RunASAP(() => {
 					if (CoverTexture != null && Raylib.IsTextureReady(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
 
@@ -177,7 +178,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			}
 
 			bool corruptInfo = false;
-			protected override ChartInfo? ProduceInfo() {
+			protected override MD1_SongInfo? ProduceInfo() {
 				if (corruptInfo) return null;
 				if (Archive != null) {
 					CustomChartInfoJSON? info = null;
@@ -193,7 +194,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 					Name = info.name;
 					Author = info.author;
-					ChartInfo ret = new() {
+					MD1_SongInfo ret = new() {
 						BPM = info.bpm,
 						LevelDesigners = [info.levelDesigner1, info.levelDesigner2, info.levelDesigner3, info.levelDesigner4],
 						Scene = info.scene,
@@ -231,7 +232,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				return Path.Combine(download.ResolveToAbsolute("charts"), $"{localPath}.mdm");
 			}
 
-			public void DownloadOrPullFromCache(Action<CustomChartsSong> complete) {
+			public void DownloadOrPullFromCache(Action<MD1_CustomChartsSong> complete) {
 				if (Archive == null) {
 					if (__downloading) {
 						Logs.Error("Already downloading, please wait.");
@@ -272,7 +273,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				}
 			}
 
-			public ChartSheet LoadFromDiskBMS(string diskpath) {
+			public MD1_SongChart LoadFromDiskBMS(string diskpath) {
 				Archive = new DiskSearchPath(Path.GetDirectoryName(diskpath)!);
 				var map = Archive.Open(Path.GetFileName(diskpath), FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
@@ -282,7 +283,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				return loadFromStream(map);
 			}
 
-			private ChartSheet loadFromStream(Stream map, int difficulty = 0) {
+			private MD1_SongChart loadFromStream(Stream map, int difficulty = 0) {
 				var bms = BmsLoader.Load(map, "", out var bpmChanges);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
@@ -314,7 +315,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo, newChanges);
 			}
 
-			protected override ChartSheet ProduceSheet(int id) {
+			protected override MD1_SongChart ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
 				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");

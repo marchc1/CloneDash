@@ -1,4 +1,5 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Songs;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
 
 namespace CloneDash.Charts;
@@ -6,5 +7,5 @@ namespace CloneDash.Charts;
 public interface IChartSongFilter
 {
 	void PopulateFields(SongSearchDialog activeDialog);
-	bool Test(ChartSong song);
+	bool Test(ISong song);
 }

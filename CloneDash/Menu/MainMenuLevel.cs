@@ -1,7 +1,8 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Menu;
 using CloneDash.Menu.Searching;
 
@@ -224,10 +225,10 @@ public class MainMenuLevel : Level
 
 	public Panel? SelectedSong { get; private set; }
 
-	internal void LoadChartSelector(SongSelector selector, ChartSong song) {
+	internal void LoadChartSelector(SongSelector selector, ISong song) {
 		// Load all slow-to-get info now before the Window loads
 		AudioPlaybackHandle track = selector.ActiveTrack;
-		var info = song.GetInfo();
+		var info = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
 
@@ -311,7 +312,7 @@ public class MainMenuLevel : Level
 
 		SongLabel title = levelSelector.Add<SongLabel>();
 		title.TextSize = 48;
-		title.Text = song.Name;
+		title.Text = info.Name;
 		title.AutoSize = true;
 		title.Anchor = Anchor.Center;
 		title.Origin = Anchor.Center;
@@ -329,7 +330,7 @@ public class MainMenuLevel : Level
 
 		SongLabel author = levelSelector.Add<SongLabel>();
 		author.TextSize = 22;
-		author.Text = $"by {song.Author}";
+		author.Text = $"by {info.Author}";
 		author.AutoSize = true;
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
@@ -387,16 +388,17 @@ public class MainMenuLevel : Level
 			s.Size = new(256, height);
 		};
 
-		var d1 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Easy, song.Difficulty1);
-		var d2 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Hard, song.Difficulty2);
-		var d3 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Master, song.Difficulty3);
-		var d4 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Supreme, song.Difficulty4);
-		var d5 = CreateDifficulty(difficulties, song, MuseDashDifficulty.Touhou, song.Difficulty5);
+		List<Button> btns = [];
+		foreach (var chart in song.GetCharts()) {
+			var chartInfo = chart.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			var b = CreateDifficulty(difficulties, chart, in chartInfo);
+			if (b != null)
+				btns.Add(b);
+		}
 
-		height = (d1 == null ? 0 : 80) + (d2 == null ? 0 : 80) + (d3 == null ? 0 : 80) + (d4 == null ? 0 : 80) + (d5 == null ? 0 : 80);
+		height = btns.Count * 80;
 		float offsetButtonSlide = 2f;
-		var btns = new Button[] { d1, d2, d3, d4, d5 };
-		for (int i = 0; i < btns.Length; i++) {
+		for (int i = 0; i < btns.Count; i++) {
 			var btn = btns[i];
 			if (btn == null) continue;
 			var thisOffset = offsetButtonSlide;
@@ -418,18 +420,20 @@ public class MainMenuLevel : Level
 		}
 	}
 
-	private static Button? CreateDifficulty(FlexPanel levelSelector, ChartSong song, MuseDashDifficulty difficulty, string difficultyLevel)
-		=> CreateDifficulty(levelSelector, (mapID, state) => {
-			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(song, mapID, state.Keyboard.AltDown);
-		}, difficulty, song.GetInfo()?.Designer((int)difficulty - 1) ?? "", difficultyLevel);
+	private static Button? CreateDifficulty(
+		FlexPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
+	)
+		=> CreateDifficulty(levelSelector, (state) => {
+			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(chart, state.Keyboard.AltDown);
+		}, metadata);
 
 
 	private DashGameLevel? workingLevel;
 
-	public void LoadChartSheetLevel(ChartSong song, int mapID, bool autoplay) {
+	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
 		if (workingLevel != null) return;
 
-		workingLevel = DashGameLevel.LoadLevel(song, mapID, autoplay);
+		workingLevel = DashGameLevel.LoadLevel(chart, autoplay);
 	}
 
 	public override void Think(FrameState frameState) {
@@ -466,32 +470,17 @@ public class MainMenuLevel : Level
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
-	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<int, FrameState> onClick, MuseDashDifficulty difficulty, string designer, string difficultyLevel) {
-		if (difficultyLevel == "") return null;
-		if (difficultyLevel == "0") return null;
-
+	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<FrameState> onClick, SongChartMetadata metadata) {
 		Button play = levelSelector.Add<Button>();
 		play.Size = new(64);
 		play.Dock = Dock.Bottom;
 
-		var difficultyName = difficulty switch {
-			MuseDashDifficulty.Easy => "Easy",
-			MuseDashDifficulty.Hard => "Hard",
-			MuseDashDifficulty.Master => "Master",
-			MuseDashDifficulty.Supreme => "Supreme",
-			MuseDashDifficulty.Touhou => "Touhou",
-			_ => throw new Exception($"Unsupported difficulty level '{difficulty}'")
-		};
-		Color buttonColor = difficulty switch {
-			MuseDashDifficulty.Easy => new Color(88, 199, 76, 60),
-			MuseDashDifficulty.Hard => new Color(109, 196, 199, 60),
-			MuseDashDifficulty.Master => new Color(188, 95, 184, 60),
-			MuseDashDifficulty.Supreme => new Color(199, 35, 35, 60),
-			MuseDashDifficulty.Touhou => new Color(109, 103, 194, 60),
-			_ => play.BackgroundColor
-		};
-		int mapID = (int)difficulty;
+		var difficultyName = metadata.DifficultyName;
+		var buttonColor = metadata.Color;
+		var designer = metadata.ChartAuthors;
 
+		if (metadata.Difficulty == "") return null;
+		if (metadata.Difficulty == "0") return null;
 
 		SongLabel mapper = play.Add<SongLabel>();
 		mapper.AutoSize = true;
@@ -520,7 +509,7 @@ public class MainMenuLevel : Level
 
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(btn.RenderBounds.Size, btn.TextPadding);
 			Graphics2D.SetDrawColor(btn.TextColor);
-			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{difficultyLevel}", btn.Font, btn.TextSize, Anchor.CenterRight);
+			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", btn.Font, btn.TextSize, Anchor.CenterRight);
 		};
 
 		play.Thinking += delegate (Element self) {
@@ -533,7 +522,7 @@ public class MainMenuLevel : Level
 		};
 
 		play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
-			onClick(mapID, state);
+			onClick(state);
 		};
 
 		return play;

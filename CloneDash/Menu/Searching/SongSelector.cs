@@ -1,7 +1,8 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Charts;
+using CloneDash.Common;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.CustomAlbums;
-using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -56,8 +57,8 @@ public class SongSelector : Panel, IMainMenuPanel
 	SongSearchDialog? ActiveDialog;
 	IChartSongFilter? SearchFilter;
 
-	IChartSongSourceState? Source;
-	public void SetSource(IChartSongSourceState source) {
+	ISongSourceState? Source;
+	public void SetSource(ISongSourceState source) {
 		Source = source;
 		ClearSongs();
 	}
@@ -170,8 +171,8 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public static int GetButtonLocalIndex(Button discButton) => discButton.GetTagSafely<int>("localDiscIndex");
 
-	public ChartSong? GetDiscSong(Button discButton) => Source?.At(GetButtonLocalIndex(discButton));
-	public ChartSong? GetDiscSong(int idx) => Source?.At(idx);
+	public ISong? GetDiscSong(Button discButton) => Source?.At(GetButtonLocalIndex(discButton));
+	public ISong? GetDiscSong(int idx) => Source?.At(idx);
 
 	public int DiscIndexToSelectIndex(int idx) => idx - (VisibleDiscs / 2);
 	public int SelectIndexToDiscIndex(int idx) => idx + (VisibleDiscs / 2);
@@ -231,10 +232,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
 			var chart = GetDiscSong(0);
 			audiosystem.DestroyPlayback(activeTrack);
-			var clip = chart?.GetDemoTrack();
+			var clip = chart?.GetDemoAudio();
 
 			if (!IValidatable.IsValid(clip)) {
-				doNotTryToGetTrackAgain = chart == null || !chart.IsLoadingDemoAsync;
+				doNotTryToGetTrackAgain = chart == null || !chart.IsAsynchronouslyLoading();
 				return;
 			}
 
@@ -334,10 +335,10 @@ public class SongSelector : Panel, IMainMenuPanel
 			var song = GetDiscSong(disc);
 			if (song == null)
 				continue;
-			ChartCover? cover = song?.GetCoverWhenAvailable(this);
+			var cover = song.GetCoverTexture();
 
 			disc.Text = "";
-			if (cover != null) {
+			if (cover.Texture != null) {
 				disc.ImageOrientation = ImageOrientation.Stretch;
 				disc.ImagePadding = new(16);
 				disc.Image = cover.Texture;
@@ -428,10 +429,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor.TextSize = 24;
 
 		var mainSong = GetDiscSong(0);
-		var info = mainSong?.GetInfo();
+		var info = mainSong?.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 		if (info != null) {
-			CurrentTrackName.Text = mainSong?.Name ?? "";
-			CurrentTrackAuthor.Text = mainSong?.Author ?? "";
+			CurrentTrackName.Text = info.Value.Name ?? "";
+			CurrentTrackAuthor.Text = info.Value.Author ?? "";
 		}
 
 		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
@@ -481,7 +482,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.MouseReleaseEvent += (s, _, _) => {
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(0);
-				if (song is CustomChartsSong customChartsSong) {
+				if (song is MD1_CustomChartsSong customChartsSong) {
 					customChartsSong.DownloadOrPullFromCache((c) => {
 						if (EngineCore.Level is not MainMenuLevel mml) {
 							Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");

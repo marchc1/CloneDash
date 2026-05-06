@@ -148,7 +148,7 @@ public class SongSearchDialog : Window
 		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Selected });
 	}
 
-	public IChartSongSourceState Apply<T, F>(T state, F filter) where T : IChartSongSourceState where F : IChartSongFilter {
+	public ISongSourceState Apply<T, F>(T state, F filter) where T : ISongSourceState where F : IChartSongFilter {
 		var newFilter = (F)state.NewFilter();
 		var type = newFilter.GetType();
 

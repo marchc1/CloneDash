@@ -1,7 +1,7 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Charts;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Levels;
 using CloneDash.Menu.Searching;
@@ -93,12 +93,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 
 	Button back;
-	public List<ChartSong> RefreshLocalSongs() {
-		List<ChartSong> ret = [];
+	public List<ISong> RefreshLocalSongs() {
+		List<ISong> ret = [];
 
 		foreach (var file in filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
 			try {
-				ret.Add(new CustomChartsSong("charts", file));
+				ret.Add(new MD1_CustomChartsSong("charts", file));
 			}
 			catch (Exception ex) {
 				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");

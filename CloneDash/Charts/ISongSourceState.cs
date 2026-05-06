@@ -1,4 +1,4 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Songs;
 using CloneDash.Menu.Searching;
 using Nucleus;
 
@@ -7,26 +7,26 @@ namespace CloneDash.Charts;
 /// <summary>
 /// Realtime source retriever. This interface has a state.
 /// </summary>
-public interface IChartSongSourceState
+public interface ISongSourceState
 {
 	/// <summary>
 	/// The root song source object, likely self-referential. Can be used to revert back to a previous state.
 	/// </summary>
-	IChartSongSourceState GetRootSource();
+	ISongSourceState GetRootSource();
 	/// <summary>
 	/// The previous song source object. If this is null, there is no path back to another source.
 	/// </summary>
-	IChartSongSourceState? GetParentSource();
+	ISongSourceState? GetParentSource();
 
 	/// <summary>
 	/// Produce a new song source from a search filter. The parent source will be this object.
 	/// </summary>
-	IChartSongSourceState ProduceNewSource(IChartSongFilter filter);
+	ISongSourceState ProduceNewSource(IChartSongFilter filter);
 
 	/// <summary>
-	/// The <see cref="ChartSong"/> at the index, relative to the internal counter, which is manipulated by <see cref="MoveLeft"/>/<see cref="MoveRight"/>.
+	/// The <see cref="ISong"/> at the index, relative to the internal counter, which is manipulated by <see cref="MoveLeft"/>/<see cref="MoveRight"/>.
 	/// </summary>
-	ChartSong? At(int i);
+	ISong? At(int i);
 
 	/// <summary>
 	/// Is the source busy retrieving new songs.
@@ -52,7 +52,7 @@ public interface IChartSongSourceState
 	/// Selects a particular song.
 	/// </summary>
 	/// <returns>If the song is available in this source or not</returns>
-	ChartSongSourceMoveInit Select(ChartSong? song, ChartSongSourceMoveFinishFn? callback = null);
+	ChartSongSourceMoveInit Select(ISong? song, ChartSongSourceMoveFinishFn? callback = null);
 
 	/// <summary>
 	/// Returns if the source should wrap around or not 

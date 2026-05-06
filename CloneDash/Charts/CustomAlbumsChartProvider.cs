@@ -1,19 +1,19 @@
-﻿using CloneDash.Compatibility.CustomAlbums;
+﻿using CloneDash.Common.Songs;
+using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using Nucleus.Files;
 using System.Xml.Linq;
 
 namespace CloneDash.Charts;
 
-public class CustomAlbumsChartSource : BaseContiguousChartSongSource
+public class CustomAlbumsChartSource : BaseContiguousSongSource
 {
 	public CustomAlbumsChartSource() : base(GetCustomSongs()) {
 
 	}
 
-	static List<ChartSong>? songs;
-	private static IReadOnlyList<ChartSong> GetCustomSongs() {
+	static List<ISong>? songs;
+	private static IReadOnlyList<ISong> GetCustomSongs() {
 		if (songs != null)
 			return songs;
 
@@ -21,10 +21,10 @@ public class CustomAlbumsChartSource : BaseContiguousChartSongSource
 		if (!Directory.Exists(directory))
 			return [];
 
-		songs = new List<ChartSong>();
+		songs = new List<ISong>();
 		foreach (var song in Directory.GetFiles(directory)) {
 			try{
-				var custom = new CustomAlbumsCompatibility.CustomChartsSong(song);
+				var custom = new CustomAlbumsCompatibility.MD1_CustomChartsSong(song);
 				songs.Add(custom);
 			}
 			catch {
@@ -38,7 +38,7 @@ public class CustomAlbumsChartSource : BaseContiguousChartSongSource
 
 public class CustomAlbumsChartProvider : IChartSongProvider
 {
-	public ChartSong? FindByName(ReadOnlySpan<char> name) {
+	public ISong? FindByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
 		foreach (var song in MuseDashCompatibility.Songs) {
 			if (name.Equals(song.BaseName, StringComparison.InvariantCultureIgnoreCase))
@@ -53,5 +53,5 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 	}
 
 	public ReadOnlySpan<char> GetName() => "Custom Albums";
-	public IChartSongSourceState NewState() => new CustomAlbumsChartSource();
+	public ISongSourceState NewState() => new CustomAlbumsChartSource();
 }

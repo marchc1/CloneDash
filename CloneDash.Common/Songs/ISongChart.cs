@@ -14,7 +14,7 @@ public struct SongChartMetadata
 	/// <summary>
 	/// The human-friendly difficulty ID of the chart. For example, Muse Dash has difficulties for "easy", "hard", "master", "hidden", etc.
 	/// </summary>
-	public string DifficultyID;
+	public string DifficultyName;
 	/// <summary>
 	/// The human-friendly difficulty of the chart. This is likely a number. But don't assume that it is one, it can be anything.
 	/// </summary>

@@ -1,6 +1,6 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
-using CloneDash.Data;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
 using CloneDash.Scenes;
@@ -240,8 +240,8 @@ public class DashEnemy : ModelEntity
 		}
 
 		if (Blood) {
-			level.Heal(ChartEntity.DEFAULT_HP);
-			level.SpawnTextEffect($"+{ChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
+			level.Heal(MD1_SongChartEntity.DEFAULT_HP);
+			level.SpawnTextEffect($"+{MD1_SongChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
 		}
 
 		OnReward();

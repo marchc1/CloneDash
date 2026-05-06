@@ -334,6 +334,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 			MD1_SongChart sheet = new(song);
 			sheet.Rating = song.GetDifficultyString(MDinfo.difficulty);
+			sheet.Difficulty = (MuseDashDifficulty)MDinfo.difficulty;
 
 			sheet.InitialScene = MDinfo.scene;
 			sheet.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){

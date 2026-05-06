@@ -1,5 +1,6 @@
 ﻿using CloneDash.Characters;
-using CloneDash.Data;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
 
@@ -18,18 +19,18 @@ namespace CloneDash.Levels
 {
 	public class StatisticsLevel : Level
 	{
-		ChartSheet sheet;
+		MD1_SongChart chart;
 		StatisticsData stats;
 		ICharacterDescriptor character;
 		ModelInstance model;
 		readonly AnimationHandler anims = new();
 		public override void Initialize(params object[] args) {
 #nullable disable
-			sheet = args[0] as ChartSheet;
+			chart = args[0] as MD1_SongChart;
 			stats = args[1] as StatisticsData;
 #nullable enable
 
-			if (sheet == null) throw new NullReferenceException(nameof(sheet));
+			if (chart == null) throw new NullReferenceException(nameof(chart));
 			if (stats == null) throw new NullReferenceException(nameof(stats));
 
 			ICharacterDescriptor? character = CharacterMod.GetCharacterData();
@@ -47,7 +48,7 @@ namespace CloneDash.Levels
 			tempPanel.PaintOverride += TempPanel_PaintOverride;
 
 			Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => {
-				EngineCore.LoadLevel(new StatisticsLevel(), sheet, stats);
+				EngineCore.LoadLevel(new StatisticsLevel(), chart, stats);
 			});
 
 			var bottom = UI.Add<Panel>();
@@ -75,7 +76,7 @@ namespace CloneDash.Levels
 			stats.Compute();
 			var y = 0;
 			string[] lines = [
-				$"      Rating: {sheet.Rating}",
+				$"      Rating: {chart.Rating}",
 				$"      Grade: {stats.Grade}",
 				$"      Accuracy: {stats.Accuracy}",
 				$"      Score: {stats.Score}",
@@ -94,9 +95,9 @@ namespace CloneDash.Levels
 			];
 			Graphics2D.SetDrawColor(255, 255, 255);
 			var fs = 24;
-			Match boldRegexMatch = Util.BoldRegex.Match(sheet.Song.Name);
+			Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.Name);
 			Graphics2D.DrawText(16, 16 + y,
-								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : sheet.Song.Name,
+								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.Name,
 								boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
 								fs);
 			y += fs + 4;

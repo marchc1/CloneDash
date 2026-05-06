@@ -1,5 +1,5 @@
-﻿using CloneDash.Compatibility.MDMC;
-using CloneDash.Data;
+﻿using CloneDash.Common.Songs;
+using CloneDash.Compatibility.MDMC;
 using CloneDash.Menu.Searching;
 using Newtonsoft.Json;
 using Nucleus;
@@ -10,11 +10,11 @@ namespace CloneDash.Charts;
 
 public class MDMCChartProvider : IChartSongProvider
 {
-	public ChartSong? FindByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
+	public ISong? FindByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
 	public IEnumerable<string> GetAvailable() { yield break; } // Cannot poll for this
 
 	public ReadOnlySpan<char> GetName() => "MDMC";
-	public IChartSongSourceState NewState() => new MDMCChartSongSourceState();
+	public ISongSourceState NewState() => new MDMCChartSongSourceState();
 }
 
 public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartSongFilter(baseFilter)
@@ -32,7 +32,7 @@ public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartS
 	}
 }
 
-public class MDMCChartSongSourceState : BaseChartSongSource, IChartSongSourceState
+public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 {
 	public MDMCChartSongSourceState(MDMCChartFilter? filter = null) {
 		Root = this;
@@ -41,22 +41,22 @@ public class MDMCChartSongSourceState : BaseChartSongSource, IChartSongSourceSta
 		FetchAsync(1, null);
 	}
 
-	readonly Dictionary<string, CustomChartsSong> SongCache = [];
-	readonly List<CustomChartsSong> Songs = [];
+	readonly Dictionary<string, MD1_CustomChartsSong> SongCache = [];
+	readonly List<MD1_CustomChartsSong> Songs = [];
 	int totalSongs;
 	bool isBusy;
 	int pointer = 0;
 	readonly MDMCChartFilter? filter;
-	private CustomChartsSong AddChartSelector(in MDMCChart chart, bool addToList) {
+	private MD1_CustomChartsSong AddChartSelector(in MDMCChart chart, bool addToList) {
 		if (SongCache.TryGetValue(chart.ID, out var song))
 			return song;
-		SongCache[chart.ID] = song = new CustomChartsSong(chart);
+		SongCache[chart.ID] = song = new MD1_CustomChartsSong(chart);
 		if (addToList)
 			Songs.Add(song);
 		return song;
 	}
 
-	public ChartSong? At(int i) {
+	public ISong? At(int i) {
 		var absPtr = pointer + i;
 		if (absPtr < 0) return null;
 		if (absPtr >= Songs.Count) return null;
@@ -192,14 +192,14 @@ public class MDMCChartSongSourceState : BaseChartSongSource, IChartSongSourceSta
 		return new MDMCChartFilter(filter);
 	}
 
-	public IChartSongSourceState ProduceNewSource(IChartSongFilter filter) {
+	public ISongSourceState ProduceNewSource(IChartSongFilter filter) {
 		if (filter is not MDMCChartFilter mdmcFilter)
 			throw new InvalidCastException();
 
 		return new MDMCChartSongSourceState(mdmcFilter);
 	}
 
-	public ChartSongSourceMoveInit Select(ChartSong? selectSong, ChartSongSourceMoveFinishFn? callback = null) {
+	public ChartSongSourceMoveInit Select(ISong? selectSong, ChartSongSourceMoveFinishFn? callback = null) {
 		if (IsBusy()) {
 			return new ChartSongSourceMoveInit {
 				OperationExecuted = false,

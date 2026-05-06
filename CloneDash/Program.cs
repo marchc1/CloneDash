@@ -2,8 +2,8 @@
     A *LOT* of this is subject to change. This is a prototype, and just a testbed of basic game functionality.
 */
 
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -229,18 +229,18 @@ public class GameDLL : IGameDLL
 			Logs.Info($"cam_level specified: {cam_level}");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
 
-			CustomChartsSong song = new CustomChartsSong(cam_level);
-			ChartSheet sheet;
+			MD1_CustomChartsSong song = new MD1_CustomChartsSong(cam_level);
+			MD1_SongChart chart;
 			switch (Path.GetExtension(cam_level)) {
 				case ".bms":
-					sheet = song.LoadFromDiskBMS(cam_level);
+					chart = song.LoadFromDiskBMS(cam_level);
 					break;
 				default:
-					sheet = song.GetSheet(difficulty);
+					chart = song.GetSheet(difficulty);
 					break;
 			}
 
-			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
+			var lvl = new DashGameLevel(new DashGameParams(chart).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
 			if (!first) Interlude.Begin("Interprocess load started!");
 			EngineCore.LoadLevel(lvl);
 			if (!first) Interlude.End();

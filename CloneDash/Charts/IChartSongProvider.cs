@@ -1,4 +1,4 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Songs;
 
 namespace CloneDash.Charts;
 
@@ -7,9 +7,9 @@ namespace CloneDash.Charts;
 /// </summary>
 public interface IChartSongProvider {
 	ReadOnlySpan<char> GetName();
-	IChartSongSourceState NewState();
+	ISongSourceState NewState();
 
-	public ChartSong? FindByName(ReadOnlySpan<char> name);
+	public ISong? FindByName(ReadOnlySpan<char> name);
 	public IEnumerable<string> GetAvailable();
 }
 

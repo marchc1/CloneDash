@@ -1,6 +1,6 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Commands;
@@ -20,13 +20,13 @@ public static class ChartMod
 				yield return characterName;
 	}
 
-	public static ChartSong? GetChartSongByName(ReadOnlySpan<char> name = default) {
+	public static ISong? GetSongByName(ReadOnlySpan<char> name = default) {
 		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<IChartSongProvider>();
 		if (name.IsEmpty || name.IsWhiteSpace())
 			return null;
 
 		foreach (var retriever in providers) {
-			ChartSong? song = retriever.FindByName(name);
+			ISong? song = retriever.FindByName(name);
 			if (song == null) continue;
 
 			return song;
