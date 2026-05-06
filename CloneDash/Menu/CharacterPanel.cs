@@ -32,6 +32,7 @@ public class CharacterPanel : Panel
 
 	protected override void OnThink(FrameState frameState) {
 		base.OnThink(frameState);
+		CharacterInstance?.Update();
 	}
 
 	Label ExpressionLabel = null!;
@@ -100,9 +101,9 @@ public class CharacterPanel : Panel
 		if (CharacterInstance != null) {
 			CharacterInstance.GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
 			if (NMath.InRange(Level.Curtime, startTime, endTime) && !string.IsNullOrEmpty(ExpressionText)) {
-				float alphaMult1 = (float)NMath.Remap(Level.Curtime, startTime, endTime + 0.1, 0, 1, true);
-				float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startTime, endTime + 0.4, 0, 1, true);
-				float alphaMult2 = (float)NMath.Remap(Level.Curtime, startTime - 0.2, endTime, 0, 1, true);
+				float alphaMult1 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
+				float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
+				float alphaMult2 = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
 				float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
 				float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
 				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
@@ -123,6 +124,9 @@ public class CharacterPanel : Panel
 				ExpressionLabel.Visible = false;
 		}
 	}
+
+	public void PlayAudio() => CharacterInstance?.PlayAudio();
+	public void StopAudio() => CharacterInstance?.StopAudio();
 
 	public void Reset() => SetCharacter(CharacterInstance?.GetCharacter(), true);
 

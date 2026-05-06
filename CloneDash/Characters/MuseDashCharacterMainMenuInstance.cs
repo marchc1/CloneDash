@@ -52,7 +52,9 @@ public class MuseDashCharacterMainMenuInstance : ICharacterMainMenuInstance
 			audiosystem.PlaySound(Music);
 		}
 	}
-
+	public void Update(){
+		audiosystem.UpdatePlayback(Music);
+	}
 	public void Render(Vector2F offset = default) {
 		if (Model != null) {
 			Model.Position = offset;

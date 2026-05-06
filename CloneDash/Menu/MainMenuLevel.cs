@@ -441,6 +441,7 @@ public class MainMenuLevel : Level
 		if (active is not (CharacterSelector or MainMenuPanel))
 		{
 			Character.Visible = false;
+			Character.StopAudio();
 			return;
 		}
 
@@ -448,6 +449,7 @@ public class MainMenuLevel : Level
 		{
 			Character.Visible = true;
 			Character.Reset();
+			Character.PlayAudio();
 		}
 
 		var center = ActiveElements.Peek() is CharacterSelector;

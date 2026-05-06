@@ -33,4 +33,5 @@ public interface ICharacterMainMenuInstance : IDisposable
 	ICharacterMainMenuExpression? StartApplyExpression();
 	void Standby();
 	void GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
+	void Update();
 }

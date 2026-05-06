@@ -60,7 +60,7 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 {
 	int ICharacterProvider.Priority => 0;
 
-	public string GetName(CharacterConfigData cfd) => $"md_{cfd.BGM.Replace("_bgm", "")}";
+	public string GetName(CharacterConfigData cfd) => $"character/musedash1/{cfd.BGM.Replace("_bgm", "")}";
 
 	IEnumerable<string> ICharacterProvider.GetAvailable() {
 		foreach (var character in MuseDashCompatibility.Characters) {
