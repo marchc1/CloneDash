@@ -35,72 +35,6 @@ public abstract class InterludeTextureProvider
 	public abstract bool Pick(int index, out Texture2D tex);
 }
 
-public class MuseDashInterlude
-{
-	public string? path;
-	public Texture2D? LoadTexture() {
-		if (path == null) throw new NullReferenceException("Wtf?");
-		AssetStudio.Texture2D tex2d = UnityAssetUtils.InternalLoadAsset<AssetStudio.Texture2D>(MuseDashCompatibility.StreamingFiles, Path.GetFileNameWithoutExtension(path));
-
-		if (tex2d.m_TextureFormat == TextureFormat.RGBA32)
-			return null;
-
-		var img = tex2d.ToRaylib();
-		var tex = Raylib.LoadTextureFromImage(img);
-		Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-		Raylib.UnloadImage(img);
-		return tex;
-	}
-}
-
-/// <summary>
-/// Provides interlude textures from Muse Dash.
-/// </summary>
-public class MuseDashInterludeProvider : InterludeTextureProvider
-{
-	static MuseDashInterlude[]? interludes;
-	public override bool ShouldFlipTexture => true;
-	private static bool ready = false;
-	private static int setup() {
-		if (ready && interludes != null) return interludes.Length;
-
-		if (MuseDashCompatibility.WhereIsMuseDashInstalled == null) {
-			return 0;
-		}
-
-		var interludesRaw = UnityAssetUtils.GetAllFiles(MuseDashCompatibility.StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
-		interludes = new MuseDashInterlude[interludesRaw.Length];
-		for (int i = 0; i < interludesRaw.Length; i++) {
-			interludes[i] = new() {
-				path = interludesRaw[i]
-			};
-		}
-		ready = true;
-
-		return interludes.Length;
-	}
-
-	public override int Count => setup();
-
-	// Texture 2D used here because itll be loaded when Interlude is initialized.
-	// And it will be destroyed immediately after
-	public override bool Pick(int index, out Texture2D tex) {
-		setup();
-		if (!ready) {
-			tex = default;
-			return false;
-		}
-		var ttex = interludes?[index]?.LoadTexture();
-
-		if (ttex.HasValue) {
-			tex = ttex.Value;
-			return true;
-		}
-
-		tex = default;
-		return false;
-	}
-}
 /// <summary>
 /// Provides interlude textures from Clone Dash.
 /// </summary>
@@ -126,7 +60,6 @@ public class CloneDashInterludeProvider : InterludeTextureProvider
 [Nucleus.MarkForStaticConstruction]
 public static class Interlude
 {
-	public static ConVar usemdinterludes = new(nameof(usemdinterludes), "1", FCvar.Saved, "If Muse Dash is installed, adds the interludes from the base game.", 0, 1);
 	private static Stopwatch limiter = new();
 	private static double lastFrame = -100;
 	private static bool inInterlude;
@@ -157,7 +90,7 @@ public static class Interlude
 		var providers = ReflectionTools.InstantiateAllInheritorsOfAbstractType<InterludeTextureProvider>().ToList();
 		while (providers.Count > 0) {
 			var provider = providers.Random();
-			if (provider.Empty || (provider is MuseDashInterludeProvider && !usemdinterludes.GetBool())) {
+			if (provider.Empty) {
 				providers.Remove(provider);
 				continue;
 			}
