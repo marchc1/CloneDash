@@ -220,7 +220,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ResetPathwaySpeeds();
 
 		Combo = 0;
-		Health = 250; // TODO FIXME decluttering-2 (float)Character.GetDefaultHP();
+		Health = (float)Character.GetDefaultHP();
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
 		LastFeverIncreaseTime = -2000;
@@ -438,10 +438,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public Conductor Conductor { get; private set; }
 	public AudioPlaybackHandle Music;
-	public ModelEntity Player { get; set; }
-	public ModelEntity HologramPlayer { get; set; }
-	public MD1_SpineActionController PlayerController { get; set; }
-	public MD1_SpineActionController HologramPlayerController { get; set; }
+	public IMuseDash1CharacterInstance Character { get; set; }
+	// public ModelEntity Player { get; set; }
+	// public ModelEntity HologramPlayer { get; set; }
+	// public MD1_SpineActionController PlayerController { get; set; }
+	// public MD1_SpineActionController HologramPlayerController { get; set; }
 	public Boss Boss { get; set; }
 	public Pathway TopPathway { get; set; }
 	public Pathway BottomPathway { get; set; }
@@ -499,7 +500,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private bool __deferringAsync = false;
 
 	public StatisticsData Stats;
-	public ICharacterDescriptor Character;
 	public ISceneDescriptor Scene;
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
@@ -519,21 +519,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			case CharacterAnimationType.UpPressHurt:
 			case CharacterAnimationType.Run:
 			case CharacterAnimationType.Jump:
-				// TODO FIXME decluttering-2 Character.PlayCharacterAnimation(type, PlayerController);
+				Character.GetPrimary().PlayAnimation(type);
 				break;
 			default:
 				if (Sustains.IsSustaining()) {
-					// TODO FIXME decluttering-2Character.PlayCharacterAnimation(type, HologramPlayerController);
-					lastHologramAnimationTime = Conductor.Time;
+					Character.GetSecondary().PlayAnimation(type);
 				}
 				else {
-					// TODO FIXME decluttering-2Character.PlayCharacterAnimation(type, PlayerController);
+					Character.GetPrimary().PlayAnimation(type);
 				}
 				break;
 		}
 	}
 
-	IShader hologramShader = null!;
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
@@ -559,7 +557,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
-				Character = charData;
+				Character = charData.CreateInGame<IMuseDash1CharacterInstance>(this);
+				if (Character == null)
+					throw new Exception("The character isn't supported for Muse Dash 1");
 
 				var sceneData = SceneMod.GetSceneData();
 				if (sceneData == null) {
@@ -582,11 +582,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Interlude.Spin();
 
-			MaxHealth = 250; // TODO FIXME decluttering-2(float)Character.GetDefaultHP();
-
+			MaxHealth = (float)Character.GetDefaultHP();
 			Render3D = false;
 			Health = MaxHealth;
-
 
 			Interlude.Spin(submessage: "Initializing input...");
 			using (StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
@@ -603,17 +601,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Interlude.Spin(submessage: "Initializing your character...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
-				hologramShader = Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 				Interlude.Spin();
-				// TODO FIXME decluttering-2 Player = Add(ModelEntity.Create(Character.GetPlayModel(this)));
+				Character.Initialize();
 				Interlude.Spin();
-
-				// TODO FIXME decluttering-2 HologramPlayer = Add(ModelEntity.Create(Character.GetPlayGhostModel(this)));
-				// TODO FIXME decluttering-2 HologramPlayer.Shader = hologramShader;
-
-				// TODO FIXME decluttering-2Player.SetToSetupPose();
-				// TODO FIXME decluttering-2 PlayerController = new(Character.GetPlayAnimationData(), Player.Animations);
-				// TODO FIXME decluttering-2 HologramPlayerController = new(Character.GetPlayGhostAnimationData(), HologramPlayer.Animations);
 
 				PlayCharacterAnimation(CharacterAnimationType.In);
 			}
@@ -628,7 +618,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Interlude.Spin(submessage: "Loading internal entities...");
 
 			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
-				HologramPlayer.Visible = false;
 				AutoPlayer = Add<AutoPlayer>();
 				AutoPlayer.Enabled = gameParameters.Autoplay;
 				TopPathway = Add<Pathway>(PathwaySide.Top);
@@ -728,8 +717,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
 
 	public float GetPlayerY(double jumpRatio) {
-		// this hack REALLY sucks, todo fix this
-		if (PlayerController.Animation.Channels[0].CurrentEntry?.Animation?.Name?.Contains("double") ?? false)
+		if (Character.IsInAir())
 			jumpRatio = 0;
 
 		var height = EngineCore.GetWindowHeight();
@@ -914,26 +902,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		// This sucks... todo, figure out how to get this proper
 		var leftPlayer = GetPathwayPosition(PathwaySide.Both).X;
 
-		Player.Position = new Vector2F(
+		Character.GetPrimary().SetPos(new Vector2F(
 			(leftPlayer - 1) - (conductorInTime * 1),
 			-(sos_yoff?.Update(playerY) ?? playerY)
-		);
-		Player.Scale = new(PlayerScale);
+		));
+		Character.GetPrimary().SetScale(new(PlayerScale));
 
-		HologramPlayer.Position = new Vector2F(
+		Character.GetSecondary().SetPos(new Vector2F(
 			(leftPlayer - 1),
 			-GetPlayerY(HologramCharacterYRatio)
-		);
+		));
+		Character.GetSecondary().SetScale(new(PlayerScale));
 
-		HologramPlayer.Scale = new(PlayerScale);
-
-		if (HologramPlayer.PlayingAnimation || HologramPlayer.AnimationQueued) {
-			HologramPlayer.Visible = true;
-			HologramPlayer.SetShaderUniform("time", NMath.Ease.InQuint((float)(Conductor.Time - lastHologramAnimationTime) * 3));
-		}
-		else {
-			HologramPlayer.Visible = false;
-		}
+		Character.Think();
 
 		VisibleEntities.Clear();
 
@@ -1360,8 +1341,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
 
 		AddDebugString("Visible Entities", VisibleEntities.Count);
-		AddDebugString("Player Animation", Player.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
-		AddDebugString("Hologram-Player Animation", HologramPlayer.Animations.Channels[0].CurrentEntry?.Animation?.Name ?? "<null>");
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
@@ -1726,7 +1705,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
 	public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
 
-	private double lastHologramAnimationTime = -20000;
 
 	// todo: confirm this is the right behavior
 	static bool PathwayTransitionAnimation => true;

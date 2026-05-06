@@ -368,8 +368,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance{
 		switch(game.GetGamemode().GetUUID()){
 			case "gamemode/musedash1/standard":
-				
-				break;
+				return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
 		}
 
 		return default; // not supported
