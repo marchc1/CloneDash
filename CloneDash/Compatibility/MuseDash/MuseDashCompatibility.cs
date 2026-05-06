@@ -329,23 +329,21 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static MD1_SongChart ConvertStageInfoToDashSheet(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
+		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
-			MD1_SongChart sheet = new(song);
-			sheet.Rating = song.GetDifficultyString(MDinfo.difficulty);
-			sheet.Difficulty = (MuseDashDifficulty)MDinfo.difficulty;
-
-			sheet.InitialScene = MDinfo.scene;
-			sheet.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){
+			MD1_GamemodeData gamemodeData = new();
+			
+			gamemodeData.InitialScene = MDinfo.scene;
+			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){
 				SceneUID = x.uid,
 				Time = Convert.ToDouble(x.time),
 				Value = x.value
 			}));
 
-			sheet.TempoChanges.Add(new(0, 0, MDinfo.bpm));
+			gamemodeData.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)
-				sheet.TempoChanges.AddRange(tempoChanges);
+				gamemodeData.TempoChanges.AddRange(tempoChanges);
 
 			bool first = true;
 			Dictionary<int, List<MusicData>> LongPresses = new();
@@ -353,13 +351,13 @@ namespace CloneDash.Compatibility.MuseDash
 			foreach (var s in MDinfo.musicDatas) {
 				Interlude.Spin(submessage: "Reading Muse Dash chart...");
 				if (s.noteData == null && first) {
-					sheet.StartOffset = (float)s.tick;
+					gamemodeData.StartOffset = (float)s.tick;
 				}
 
 				if (s.noteData != null) {
 					var ib = MuseDashCompatibility.ConvertIBMSCode(s.noteData.ibms_id);
 					var tick_hit = (float)s.configData.time;
-					var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - sheet.StartOffset)) / (double)s.dt);
+					var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
 					PathwaySide pathwayType = PathwaySide.Both;
 
@@ -390,7 +388,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 						press.RelatedToBoss = false;
 						press.DebuggingInfo = $"ib.code: {ib.code}";
-						sheet.Entities.Add(press);
+						gamemodeData.Entities.Add(press);
 
 						continue;
 					}
@@ -448,7 +446,7 @@ namespace CloneDash.Compatibility.MuseDash
 							ChartEvent.Score = s.noteData.score;
 
 						ChartEvent.BossAction = s.noteData.boss_action;
-						sheet.Events.Add(ChartEvent);
+						gamemodeData.Events.Add(ChartEvent);
 					}
 					else {
 						EntityType entityType = ib.code switch {
@@ -519,7 +517,7 @@ namespace CloneDash.Compatibility.MuseDash
 							ent.RelatedToBoss = isBoss;
 							ent.DebuggingInfo = $"ib.code: {ib.code}";
 
-							sheet.Entities.Add(ent);
+							gamemodeData.Entities.Add(ent);
 						}
 						else if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
 							Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
@@ -536,11 +534,11 @@ namespace CloneDash.Compatibility.MuseDash
 				first = false;
 			}
 
-			sheet.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+			gamemodeData.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
 			Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
 			Logs.Info($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
-			return sheet;
+			return gamemodeData;
 		}
 
 		public static List<MuseDashAlbum> Albums { get; private set; } = [];

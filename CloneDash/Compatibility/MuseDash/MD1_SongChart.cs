@@ -12,6 +12,15 @@ public struct ChartSceneChange
 	public string? Value;
 }
 
+public class MD1_GamemodeData{
+	public readonly List<MD1_SongChartEntity> Entities = [];
+	public readonly List<MD1_SongChartEvent> Events = [];
+	public readonly List<TempoChange> TempoChanges = [];
+	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
+	public readonly List<ChartSceneChange> SceneChanges = [];
+	public string? InitialScene;
+	public double StartOffset;
+}
 
 /// <summary>
 /// Previous was referred to as a "song chart sheet"
@@ -20,29 +29,27 @@ public class MD1_SongChart : ISongChart
 {
 	public readonly MD1_Song Song;
 	public string? Rating;
-	public double StartOffset;
-	public readonly List<MD1_SongChartEntity> Entities = [];
-	public readonly List<MD1_SongChartEvent> Events = [];
-	public readonly List<TempoChange> TempoChanges = [];
-	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
-	public string? InitialScene;
-	public readonly List<ChartSceneChange> SceneChanges = [];
 	public MuseDashDifficulty Difficulty;
+	public MD1_GamemodeData GamemodeData = null!;
 
-	public MD1_SongChart(MD1_Song song) => Song = song;
-
+	public MD1_SongChart(MD1_Song song, int difficultyID) {
+		Song = song;
+		Rating = song.GetDifficultyString(difficultyID);
+		Difficulty = (MuseDashDifficulty)difficultyID;
+	}
 	public ISong GetSong() => Song;
 	public IGamemodeDescriptor GetGamemode() {
 		throw new NotImplementedException();
 	}
+	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty)) 
+									?? throw new Exception("uninitialized gamemode data");
 
-	public object GetGamemodeData() => this;
 	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
 		return new SongChartMetadata() {
 			GamemodeName = "Muse Dash 1",
 			ChartAuthors = string.Join(", ", Song.GetInfo()?.LevelDesigners ?? []),
 			ReturnedLanguage = desiredLanguage, // todo: language
-			Difficulty = $"{(int)Difficulty}",
+			Difficulty = $"{Rating}",
 			DifficultyName = Difficulty switch {
 				MuseDashDifficulty.Easy => "Easy",
 				MuseDashDifficulty.Hard => "Hard",

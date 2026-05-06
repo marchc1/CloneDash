@@ -38,12 +38,12 @@ namespace CloneDash.Game;
 
 public struct DashGameParams
 {
-	public MD1_SongChart? Sheet;
+	public MD1_SongChart? Chart;
 	public bool Autoplay;
 	public int Measure;
 
 	public DashGameParams(MD1_SongChart sheet) {
-		Sheet = sheet;
+		Chart = sheet;
 	}
 
 	public DashGameParams WithAutoplay(bool autoplay) {
@@ -524,15 +524,23 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
 
-		Stats = new(gameParameters.Sheet);
+		Stats = new(gameParameters.Chart);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Playing {gameParameters.Sheet?.Song?.Name ?? "<null>"}"
+				State = $"Playing {gameParameters.Chart?.Song?.Name ?? "<null>"}"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 			Interlude.Spin(submessage: "Retrieving descriptors...");
+
+			var chart = gameParameters.Chart;
+			var data = chart?.GetGamemodeData();
+
+			if (data == null)
+				throw new Exception("No gamemode data provided");
+			if (data is not MD1_GamemodeData gamemodeData)
+				throw new Exception("Gamemode data was not MD1");
 
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
@@ -542,7 +550,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 				var sceneData = SceneMod.GetSceneData();
 				if (sceneData == null) {
 					// TODO: Scene changes. Requires a HUGE restructuring
-					sceneData = SceneMod.GetSceneData(gameParameters.Sheet?.InitialScene);
+					sceneData = SceneMod.GetSceneData(gamemodeData.InitialScene);
 					if (sceneData == null)
 						throw new ArgumentNullException(nameof(sceneData));
 				}
@@ -619,12 +627,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
 				Boss.Build();
-				if (gameParameters.Sheet != null) {
+				if (chart != null) {
 					if (!__deferringAsync) {
-						foreach (var ent in gameParameters.Sheet.Entities)
+						foreach (var ent in gamemodeData.Entities)
 							LoadEntity(ent);
 
-						foreach (var ev in gameParameters.Sheet.Events)
+						foreach (var ev in gamemodeData.Events)
 							LoadEvent(ev);
 
 						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
@@ -634,22 +642,22 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Interlude.Spin(submessage: "Loading audio...");
 
 			//foreach (var tempoChange in Sheet)
-			if (gameParameters.Sheet != null) {
-				foreach (var bpmChange in gameParameters.Sheet.TempoChanges)
+			if (gameParameters.Chart != null) {
+				foreach (var bpmChange in gamemodeData.TempoChanges)
 					Conductor.AddTempoChange(bpmChange.Time, bpmChange.Beat, bpmChange.BPM);
 
-				foreach (var timeSigChange in gameParameters.Sheet.TimeSignatureChanges)
+				foreach (var timeSigChange in gamemodeData.TimeSignatureChanges)
 					Conductor.AddTimeSignatureChange(timeSigChange.Beat, timeSigChange.Percentage);
 			}
 			else
 				Conductor.AddTempoChange(0, 0, 120);
 
-			if (gameParameters.Sheet != null && gameParameters.Sheet.TimeSignatureChanges.Count == 0)
+			if (gameParameters.Chart != null && gamemodeData.TimeSignatureChanges.Count == 0)
 				Conductor.AddTimeSignatureChange(0, 1);
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
-				if (gameParameters.Sheet != null) {
-					Music = audiosystem.CreatePlayback(gameParameters.Sheet.Song.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
+				if (gameParameters.Chart != null) {
+					Music = audiosystem.CreatePlayback(gameParameters.Chart.Song.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
 						Looping = false,
 						ManuallyUpdate = true,
 						DoNotAutoDestroy = true,
@@ -743,9 +751,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		Ticks++;
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Sheet != null) {
+		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null) {
 			Stats.UploadScore(Score);
-			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Sheet, Stats);
+			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Chart, Stats);
 			return;
 		}
 
@@ -809,7 +817,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
 					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						Interlude.Begin($"Reloading '{gameParameters.Sheet?.Song?.Name ?? "<NULL>"}'...");
+						Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
 
 						if (profilegameload.GetBool())
 							StaticSequentialProfiler.Start();
@@ -1029,8 +1037,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		if (InFever)
 			// FeverFX?.Think(this);
 
-		if (!Paused && IValidatable.IsValid(pressIdle))
-			audiosystem.UpdatePlayback(pressIdle);
+			if (!Paused && IValidatable.IsValid(pressIdle))
+				audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public int EnemySortIndexCounter;
@@ -1287,7 +1295,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		//Stopwatch test = Stopwatch.StartNew();
 		Scene.RenderBackground(this);
 		// if (InFever)
-			// FeverFX?.Render(this);
+		// FeverFX?.Render(this);
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
 

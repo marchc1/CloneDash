@@ -471,16 +471,16 @@ public class MainMenuLevel : Level
 	}
 
 	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<FrameState> onClick, SongChartMetadata metadata) {
-		Button play = levelSelector.Add<Button>();
-		play.Size = new(64);
-		play.Dock = Dock.Bottom;
-
 		var difficultyName = metadata.DifficultyName;
 		var buttonColor = metadata.Color;
 		var designer = metadata.ChartAuthors;
 
 		if (metadata.Difficulty == "") return null;
 		if (metadata.Difficulty == "0") return null;
+
+		Button play = levelSelector.Add<Button>();
+		play.Size = new(64);
+		play.Dock = Dock.Bottom;
 
 		SongLabel mapper = play.Add<SongLabel>();
 		mapper.AutoSize = true;

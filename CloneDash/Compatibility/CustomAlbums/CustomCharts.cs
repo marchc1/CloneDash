@@ -1,18 +1,18 @@
 ﻿using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
-
 using Newtonsoft.Json;
-
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
-
 using Raylib_cs;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.ColorSpaces;
 
 namespace CloneDash.Compatibility.CustomAlbums
 {
@@ -283,16 +283,36 @@ namespace CloneDash.Compatibility.CustomAlbums
 				return loadFromStream(map);
 			}
 
-			private MD1_SongChart loadFromStream(Stream map, int difficulty = 0) {
+			private MD1_CustomAlbumsChart loadFromStream(Stream map, int difficulty = 0) {
 				var bms = BmsLoader.Load(map, "", out var bpmChanges);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
-
 				var stageInfo = BmsLoader.TransmuteData(bms);
 				stageInfo.mapName = Name;
 				stageInfo.difficulty = difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
 				stageInfo.bpm = bms.Bpm;
+
+				return new(this, difficulty, bpmChanges, bms, stageInfo);
+			}
+
+			protected override MD1_SongChart ProduceSheet(int id) {
+				// DownloadOrPullFromCache();
+				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
+				Interlude.Spin(submessage: "Reading Custom Albums chart...");
+				if (map == null)
+					throw new Exception("Bad map difficulty.");
+
+				return loadFromStream(map, id);
+			}
+
+			public override MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID) {
+				if (chart is not MD1_CustomAlbumsChart caChart)
+					return null;
+
+				var bms = caChart.bms;
+				var bpmChanges = caChart.tempoChanges;
+				var stageInfo = caChart.stageInfo;
 
 				double lastTime = 0;
 				double lastBeat = 0;
@@ -312,18 +332,21 @@ namespace CloneDash.Compatibility.CustomAlbums
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
-				return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stageInfo, newChanges);
-			}
-
-			protected override MD1_SongChart ProduceSheet(int id) {
-				// DownloadOrPullFromCache();
-				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
-				Interlude.Spin(submessage: "Reading Custom Albums chart...");
-				if (map == null)
-					throw new Exception("Bad map difficulty.");
-
-				return loadFromStream(map, id);
+				return MuseDashCompatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, newChanges);
 			}
 		}
+	}
+}
+
+public class MD1_CustomAlbumsChart : MD1_SongChart
+{
+	internal readonly List<TempoChange>? tempoChanges;
+	internal readonly Bms bms;
+	internal readonly StageInfo stageInfo;
+
+	public MD1_CustomAlbumsChart(MD1_Song song, int difficultyID, List<TempoChange> tempoChanges, Bms bms, StageInfo stageInfo) : base(song, difficultyID) {
+		this.tempoChanges = tempoChanges;
+		this.bms = bms;
+		this.stageInfo = stageInfo;
 	}
 }
