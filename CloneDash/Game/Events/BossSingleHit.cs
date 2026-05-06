@@ -14,7 +14,9 @@ public class BossSingleHit(MuseDash1Game game) : DashEvent(game)
 		base.OnBuild();
 
 		var boss = Game.Boss;
-		var speed = Game.Scene.GetBossAnimationTime(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, boss.Animations);
+		var scene = Game.GetSceneAtTime(Time);
+		var anims = boss.Visuals[scene.GetSceneArrayIndex()].Animations;
+		var speed = scene.GetBossAnimationTime(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, anims);
 		Debug.Assert(speed != 0);
 
 		Game.LoadEntity(new() {

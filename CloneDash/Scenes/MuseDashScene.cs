@@ -1,6 +1,11 @@
 ﻿using AssetStudio;
+using CloneDash.Characters;
+using CloneDash.Common;
+using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Scenes;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
@@ -288,7 +293,8 @@ public record class MuseDash1SceneInfo
 	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
 												.MarkUnusable();
 }
-public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor {
+public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
+{
 	public readonly MuseDash1SceneInfo SceneInfo;
 
 	public MuseDash1SceneDescriptor(MuseDash1SceneInfo info) {
@@ -308,6 +314,35 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor {
 		return new(sceneInfo);
 	}
 
+	public T? CreateInGame<T>(IGame game) where T : ISceneInstance {
+		var uuid = game.GetGamemode().GetUUID();
+
+		switch (uuid) {
+			case "gamemode/musedash1/standard":
+				return (T)(object)(new MuseDash1SceneRuntime(this, (MuseDash1Game)game));
+		}
+
+		return default;
+	}
+
+	public SceneMetadata FetchMetadata(in HumanLanguage desiredLanguage) {
+		return new() {
+			Name = SceneInfo.OfficialName,
+			Artists = "PeroPeroGames",
+			Language = HumanLanguage.English,
+		};
+	}
+
+	public ReadOnlySpan<char> GetUUID() => ISceneDescriptor.ConstructUUID("musedash1", SceneInfo.MapName);
+
+	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
+		var uuid = gamemodeDescriptor.GetUUID();
+		switch (uuid) {
+			case "gamemode/musedash1/standard":
+				return true;
+		}
+		return false;
+	}
 }
 
 
@@ -445,7 +480,9 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
 
-	public void Initialize(MuseDash1Game game) {
+	public void Initialize() {
+		var game = this.Game;
+
 		BeginSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
 		FeverSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
 		UnpauseSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
@@ -472,27 +509,27 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 		}
 
-		BeginSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		FeverSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		UnpauseSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
-		FullComboSound.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		BeginSound?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		FeverSound?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		UnpauseSound?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		FullComboSound?.BindVolumeToConVar(AudioSettings.snd_voicevolume);
 
-		BlockSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		CrystalSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		Forte2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		Forte3Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		GhostSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		HpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		JumpSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		Mezzo1Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		Mezzo3Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		Piano2Sound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		PressIdleSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		PressTopSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		ScoreSound.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		BlockSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		CrystalSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Forte2Sound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Forte3Sound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		GhostSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		HpSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		JumpSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Mezzo1Sound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Mezzo3Sound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		Piano2Sound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		PressIdleSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		PressTopSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
+		ScoreSound?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 
-		FailBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
-		VictoryBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		FailBgmSound?.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		VictoryBgmSound?.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
@@ -709,14 +746,14 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		}
 	}
 
-	public void RenderBackground(MuseDash1Game game) {
+	public void RenderBackground() {
 		Rlgl.PushMatrix();
 		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, 1);
 		foreach (var renderer in sortedRenderers) renderer.Render(this);
 		Rlgl.PopMatrix();
 	}
 
-	public void RenderPathway(MuseDash1Game game, PathwaySide side, float alpha, float size, float rotation) {
+	public void RenderPathway(PathwaySide side, float alpha, float size, float rotation) {
 		var obj = ((SceneObject)pathwayInfo[(int)side].UserData!);
 		var transform = obj.Transform;
 		transform.LocalRotationX = 0; transform.LocalRotationY = 0;
@@ -726,9 +763,9 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		obj.Color.W = alpha / 255f;
 	}
 
-	public void Think(MuseDash1Game game) => RunThinkFuncs(globals.CurTimeDelta);
+	public void Think() => RunThinkFuncs(globals.CurTimeDelta);
 
-	public void Refresh(MuseDash1Game game) { }
+	public void Refresh() { }
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
 			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
@@ -1003,7 +1040,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			mountAnimation = "in_mount"; // TODO - probably not consistent
 		return HpMountModel;
 	}
-	public BoneInstance? GetHPMount(DashEnemy enemy) => enemy.Model?.FindBone("hp");
+	public BoneInstance? GetHPMount(DashEnemyVisuals enemy) => enemy.Model?.FindBone("hp");
 	public string GetMasherHitAnimation(int speed, EntityEnterDirection dir) {
 		var s = MasherAnims.GetSpeed(speed, dir).Get(ActionKeys.MUL_HURT)?.ActionIdx;
 		return s?[Random.Shared.Next(0, s.Length)] ?? "";
@@ -1033,4 +1070,36 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 				throw new Exception();
 		}
 	}
+
+	AudioPlaybackHandle pressIdle;
+
+	public void OnPressStateChange(bool wasSustaining, bool startSustaining) {
+		if (startSustaining != wasSustaining) {
+			var clip = GetPressIdleSound();
+			if (IValidatable.IsValid(clip)) {
+				if (audiosystem.IsPlaybackActive(pressIdle) && !startSustaining)
+					audiosystem.DestroyPlayback(pressIdle);
+				else if (!audiosystem.IsPlaybackActive(pressIdle) && startSustaining) {
+					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true, Looping = true, ManuallyUpdate = true });
+					audiosystem.PlaySound(pressIdle);
+				}
+			}
+		}
+	}
+
+	public void Activate(IMuseDash1SceneInstance? transitioningTo) {
+
+	}
+
+	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) {
+
+	}
+
+	public int GetSceneArrayIndex() => arrayIndex;
+	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;
+
+
+	int arrayIndex;
+	public IGame GetGame() => Game;
+	public ISceneDescriptor GetScene() => Descriptor;
 }

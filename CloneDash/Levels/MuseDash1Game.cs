@@ -9,6 +9,7 @@ using CloneDash.Common.Scenes;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game.Entities;
+using CloneDash.Game.Events;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
@@ -526,7 +527,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				break;
 		}
 	}
-
+	readonly List<SceneChange> sceneChanges = [];
 	readonly List<IMuseDash1SceneInstance> scenes = [];
 	IMuseDash1SceneInstance? activeScene;
 	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
@@ -537,8 +538,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
 	public void SetScene(IMuseDash1SceneInstance? scene) {
 		activeScene?.Deactivate(scene);
-		scene?.Activate(activeScene);
+		var oldScene = activeScene;
 		activeScene = scene;
+		scene?.Activate(oldScene);
+		BroadcastEntitySignal(null, EntitySignalType.SceneChange, (oldScene, scene));
+	}
+
+	public void SetScene(int sceneIdx) {
+		SetScene(scenes[sceneIdx]);
 	}
 
 	public void SetScene(ReadOnlySpan<char> scene) {
@@ -549,8 +556,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void AddScene(IMuseDash1SceneInstance instance) {
 		scenes.Add(instance);
 		sceneLUT[instance.GetScene().GetUUID().Hash()] = instance;
+		instance.SetSceneArrayIndex(scenes.Count - 1);
 	}
 
+	public int GetNumScenes() => scenes.Count;
+	public int GetActiveSceneIdx() => activeScene?.GetSceneArrayIndex() ?? -1;
 	public IMuseDash1SceneInstance? AddOrGetScene(ISceneDescriptor? descriptor) {
 		if (descriptor == null) return null;
 		if (sceneLUT.TryGetValue(descriptor.GetUUID().SliceNullTerminatedString().Hash(), out var instance))
@@ -560,7 +570,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (!descriptor.SupportsGamemode(GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!))
 			return null;
 
-		return (IMuseDash1SceneInstance)(object)descriptor.CreateInGame<IMuseDash1SceneInstance>(this)!;
+		instance = (IMuseDash1SceneInstance)(object)descriptor.CreateInGame<IMuseDash1SceneInstance>(this)!;
+		AddScene(instance);
+		return instance;
 	}
 
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
@@ -596,11 +608,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					throw new Exception("The character isn't supported for Muse Dash 1");
 
 				var sceneData = SceneMod.GetSceneData();
+				IMuseDash1SceneInstance? sceneToActivate = null;
 				if (sceneData != null) {
 					// Ignore scene changes. Only use this scene.
 					var scene = AddOrGetScene(sceneData);
 					if (scene != null)
-						activeScene = scene;
+						sceneToActivate = scene;
 					canSceneChange = false;
 				}
 				else {
@@ -610,7 +623,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 					var scene = AddOrGetScene(sceneData);
 					if (scene != null)
-						activeScene = scene;
+						sceneToActivate = scene;
 
 					// Process scene changes
 					canSceneChange = true;
@@ -618,6 +631,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						Debugger.Break(); // need to figure out the fields here
 					}
 				}
+
+				sceneChanges.Add(new(this, 0));
+				SetScene(sceneToActivate);
 
 				// var feverFX = FeverMod.GetFeverData();
 				// FeverFX = feverFX;
@@ -679,7 +695,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 
 			using (StaticSequentialProfiler.StartStackFrame("Load Enemies")) {
-				Boss.Build();
+				Boss.PreBuildVisuals(this);
+				foreach (var scene in GetAllScenes())
+					Boss.BuildForScene(scene);
+
 				if (chart != null) {
 					if (!__deferringAsync) {
 						foreach (var ent in gamemodeData.Entities)
@@ -688,7 +707,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						foreach (var ev in gamemodeData.Events)
 							LoadEvent(ev);
 
+						BuildQueues();
+						Boss.PreBuildVisuals(this);
+						foreach (var scene in GetAllScenes())
+							Boss.BuildForScene(scene);
+						BuildQueues();
+
 						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
+						Events.Sort((x, y) => (x is DashEvent xE && y is DashEvent yE) ? xE.Time.CompareTo(yE.Time) : 0);
 					}
 				}
 			}
@@ -764,7 +790,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	static float TEMP_PLAYER_OFFSET => 0;
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
-	public Vector2F GetPathwayPosition(PathwaySide side) => HasActiveScene(out var scene) ? ((IMuseDash1SceneDescriptor)scene.GetScene()).GetPathwayPosition(side) : default;
+	public Vector2F GetPathwayPosition(PathwaySide side) => HasActiveScene(out var scene) ? scene.GetPathwayPosition(side) : default;
 
 	public float GetPlayerY(double jumpRatio) {
 		if (Character.IsInAir())
@@ -1079,11 +1105,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 
-		if(HasActiveScene(out var scene)){
+		if (HasActiveScene(out var scene)) {
 			scene.Think();
 		}
 		// if (InFever)
-			// FeverFX?.Think(this);
+		// FeverFX?.Think(this);
 	}
 
 	public int EnemySortIndexCounter;
@@ -1264,9 +1290,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ev.Damage = ChartEvent.Damage;
 		ev.BossAction = ChartEvent.BossAction;
 
-		ev.Build();
-
 		Events.Add(ev);
+		readyToBuildEvents.Add(ev);
 	}
 
 	public int CurrentAirSpeed;
@@ -1322,10 +1347,37 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 
 		Stats.RegisterEnemy(ent);
-
-		ent.Build();
+		readyToBuildEntities.Add(ent);
 	}
 
+	List<DashEnemy> readyToBuildEntities = [];
+	List<DashEvent> readyToBuildEvents = [];
+
+	void BuildQueues() {
+		// This prepares the arrays...
+		foreach (var ent in readyToBuildEntities) {
+			if (ent is DashEnemy dashEnemy)
+				dashEnemy.PreBuildVisuals(this);
+		}
+
+		// ...and then this builds the visuals in those arrays
+		foreach (var scene in GetAllScenes()) {
+			foreach (var ent in readyToBuildEntities) {
+				if (ent is DashEnemy dashEnemy)
+					dashEnemy.BuildForScene(scene);
+			}
+		}
+
+		readyToBuildEntities.Clear();
+		foreach (var ev in readyToBuildEvents)
+			ev.Build();
+
+		readyToBuildEvents.Clear();
+
+		// If new entities exist, build those then (events might create entities)
+		if (readyToBuildEntities.Count != 0)
+			BuildQueues();
+	}
 
 	public float PlayerScale => 1 / 200f;
 	public float PlayScale => 1 / 200f;
@@ -1418,16 +1470,26 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private double LastAttackTime;
 	private PathwaySide LastAttackPathway;
 
-	public void BroadcastEntitySignal(Entity entityFrom, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashEnemy mentFrom) return;
+	public void BroadcastEntitySignal(Entity? entityFrom, EntitySignalType signalType, object? data = null) {
+		DashEnemy? mentFrom = null;
+		if (entityFrom != null){
+			if (entityFrom is not DashEnemy mentFromC)
+				return;
+			mentFrom = mentFromC;
+		}
 
 		foreach (var entity in Entities) {
 			if (entity is not DashEnemy ment) continue;
 			ment.OnSignalReceived(mentFrom, signalType, data);
 		}
 	}
-	public void SendEntitySignal(Entity entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
-		if (entityFrom is not DashEnemy mentFrom) return;
+	public void SendEntitySignal(Entity? entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
+		DashEnemy? mentFrom = null;
+		if (entityFrom != null) {
+			if (entityFrom is not DashEnemy mentFromC)
+				return;
+			mentFrom = mentFromC;
+		}
 
 		if (entityTo is not DashEnemy ment) return;
 		ment.OnSignalReceived(mentFrom, signalType, data);
@@ -1855,6 +1917,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	ISongChart? IGame.GetSongChart() => gameParameters.Chart;
 	object? IGame.GetGamemodeData() => gameParameters.Chart?.GetGamemodeData();
 	IConductor IGame.GetConductor() => Conductor;
+
+	public IMuseDash1SceneInstance GetSceneAtTime(double time) {
+		for (int i = sceneChanges.Count - 1; i >= 0; i--) {
+			var sceneChange = sceneChanges[i];
+			if (time >= sceneChange.Time)
+				return scenes[sceneChange.ArrayIdx];
+		}
+		return scenes[0];
+	}
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

@@ -4,5 +4,6 @@ public enum EntitySignalType
 {
 	FirstAppearance,
 	Hit,
-	MashOver
+	MashOver,
+	SceneChange
 }

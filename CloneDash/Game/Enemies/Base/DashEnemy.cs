@@ -4,6 +4,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
+using CloneDash.Scenes;
 using CloneDash.Settings;
 
 using Nucleus;
@@ -16,8 +17,35 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Game;
 
-public class DashEnemy : ModelEntity
+public class DashEnemyVisuals
 {
+	public required DashEnemy Enemy;
+	public required IMuseDash1SceneInstance Scene;
+
+	public ModelInstance? Model;
+	public readonly AnimationHandler Animations;
+	public ModelInstance? MountedHeart;
+	public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
+	public BoneInstance? MountBone;
+
+	public Nucleus.Models.Runtime.Animation? ApproachAnimation;
+	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
+	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
+
+	public DashEnemyVisuals(){
+		Animations = new AnimationHandler();
+	}
+
+	public void Reset(){
+		Model?.SetToSetupPose();
+		Animations.ClearAllAnimation();
+	}
+}
+
+public class DashEnemy : Entity
+{
+	public DashEnemyVisuals[] Visuals = null!;
+
 	public MuseDash1Game GetGameLevel() => Level.As<MuseDash1Game>();
 	public StatisticsData GetStats() => Level.As<MuseDash1Game>().Stats;
 	public Conductor GetConductor() => Level.As<MuseDash1Game>().Conductor;
@@ -171,10 +199,11 @@ public class DashEnemy : ModelEntity
 	public double Length { get; set; }
 	public int Speed { get; set; }
 
-	public virtual void OnSignalReceived(DashEnemy from, EntitySignalType signalType, object? data = null) {
+	public virtual void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {
 
 	}
-	public void SendSignal(DashEnemy to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
+
+	public void SendSignal(DashEnemy? to, EntitySignalType signalType, object? data = null) => GetGameLevel().SendEntitySignal(this, to, signalType, data);
 	public void BroadcastSignal(EntitySignalType signalType, object? data = null) => GetGameLevel().BroadcastEntitySignal(this, signalType, data);
 
 	/// <summary>
@@ -473,11 +502,6 @@ public class DashEnemy : ModelEntity
 		Dead = false;
 		OnReset();
 	}
-
-	public ModelInstance? MountedHeart;
-	public Nucleus.Models.Runtime.Animation? MountedHeartAnimation;
-	public BoneInstance? MountBone;
-
 	public int SortIndex;
 
 	public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
@@ -494,26 +518,28 @@ public class DashEnemy : ModelEntity
 	};
 
 	public virtual void OnReset() {
-		Model?.SetToSetupPose();
-		MountedHeart?.SetToSetupPose();
+		foreach (var visual in Visuals) {
+			visual.Reset();
+		}
 	}
 
-	protected void SetupHitAnimations(ISceneDescriptor scene) {
-		GreatHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
-		PerfectHitAnimation = Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+	protected void SetupHitAnimations(DashEnemyVisuals visuals) {
+		var scene = visuals.Scene;
+		visuals.GreatHitAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Great));
+		visuals.PerfectHitAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 	}
-	protected void BasicSetup() {
+
+	protected void BasicSetup(DashEnemyVisuals visuals) {
 		var level = GetGameLevel();
-		var scene = level.Scene;
+		var scene = visuals.Scene;
 
-		Model = scene.GetEnemyModel(this)?.Instantiate();
+		visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
 		SetShowTimeViaLength(showtime);
 
-		ApproachAnimation = Model?.Data.FindAnimation(animationName);
-		SetupHitAnimations(scene);
-
+		visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
+		SetupHitAnimations(visuals);
 	}
 
 	protected DashEnemy(EntityType type) {
@@ -538,60 +564,80 @@ public class DashEnemy : ModelEntity
 		return enemy;
 	}
 
-	public virtual void Build() {
+	public void PreBuildVisuals(MuseDash1Game game){
+		Visuals = new DashEnemyVisuals[game.GetNumScenes()];
+	}
+
+	public void BuildForScene(IMuseDash1SceneInstance instance){
+		DashEnemyVisuals visuals = Visuals[instance.GetSceneArrayIndex()] = new() {
+			Enemy = this,
+			Scene = instance
+		};
+		OnBuildVisuals(visuals);
+	}
+
+	public virtual void OnBuildVisuals(DashEnemyVisuals visuals) {
 		var lvl = GetGameLevel();
-		var scene = lvl.Scene;
+		var scene = visuals.Scene;
 
 		if (Blood) {
 			string? mountAnimation = null;
-			MountedHeart = scene?.GetHP(out mountAnimation)?.Instantiate();
-			MountedHeartAnimation = MountedHeart?.Data.FindAnimation(mountAnimation);
+			visuals.MountedHeart = scene?.GetHP(out mountAnimation)?.Instantiate();
+			visuals.MountedHeartAnimation = visuals.MountedHeart?.Data.FindAnimation(mountAnimation);
 		}
 	}
 
-	public void SetMountBoneIfApplicable(BoneInstance? bone) {
+	public void SetMountBoneIfApplicable(DashEnemyVisuals visuals, BoneInstance? bone) {
 		if (bone == null) return;
-		if (Model == null) throw new NullReferenceException("Need model first!");
-		MountBone = bone;
+		if (visuals.Model == null) throw new NullReferenceException("Need model first!");
+		visuals.MountBone = bone;
 	}
 
-
-	public Nucleus.Models.Runtime.Animation? ApproachAnimation;
-	public Nucleus.Models.Runtime.Animation? GreatHitAnimation;
-	public Nucleus.Models.Runtime.Animation? PerfectHitAnimation;
 
 	public double AnimationTime => (GetVisualShowTime() - GetConductor().Time) * -1;
 	private double tth => HitTime - ShowTime; // debugging, places enemy at exact frame position
 
-	public virtual void DetermineAnimationPlayback() {
-		ApproachAnimation?.Apply(Model, AnimationTime);
+	public virtual void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
+		visuals.ApproachAnimation?.Apply(visuals.Model, AnimationTime);
 	}
 
-	public void RenderHeartMount() {
-		if (MountedHeart == null) return;
-		if (MountedHeartAnimation == null) return;
-		if (MountBone == null) return;
+	public void RenderHeartMount(DashEnemyVisuals visuals) {
+		if (visuals.MountedHeart == null) return;
+		if (visuals.MountedHeartAnimation == null) return;
+		if (visuals.MountBone == null) return;
 		if (Dead) return;
 
-		MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
+		visuals.MountedHeartAnimation.Apply(visuals.MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
-		MountedHeart.Position = new(MountBone.WorldTransform.X * MuseDash1Game.GlobalScale, (4.5f - (MountBone.WorldTransform.Y * MuseDash1Game.GlobalScale)) - 2.25f);
-		MountedHeart.Scale = new(MuseDash1Game.GlobalScale);
-		MountedHeart.Render();
+		visuals.MountedHeart.Position = new(
+			visuals.MountBone.WorldTransform.X * MuseDash1Game.GlobalScale, 
+			(4.5f - (visuals.MountBone.WorldTransform.Y * MuseDash1Game.GlobalScale)) - 2.25f
+		);
+		visuals.MountedHeart.Scale = new(MuseDash1Game.GlobalScale);
+		visuals.MountedHeart.Render();
 	}
 
-	public override void Render() {
+	public bool Visible;
+
+	public DashEnemyVisuals GetActiveVisuals() {
+		var game = Level.As<MuseDash1Game>();
+		var visuals = Visuals[game.GetActiveSceneIdx()];
+		return visuals;
+	}
+	public virtual void Render() {
 		if (!Visible) return;
-		if (Model == null) return;
+
+		var visuals = GetActiveVisuals();
+
+		if (visuals.Model == null) return;
 		if (AnimationTime == 0) return;
 
-		DetermineAnimationPlayback();
+		DetermineAnimationPlayback(visuals);
 
-		Model.Position = Position;
-		Model.Scale = Scale;
+		visuals.Model.Position = Position;
+		visuals.Model.Scale = Scale;
+		visuals.Model.Render();
 
-		Model.Render();
-
-		RenderHeartMount();
+		RenderHeartMount(visuals);
 	}
 }
