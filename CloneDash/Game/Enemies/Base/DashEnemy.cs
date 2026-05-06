@@ -619,12 +619,16 @@ public class DashEnemy : Entity
 		visuals.MountedHeart.Render();
 	}
 
-	public bool Visible;
+	public bool Visible = true;
 
 	public DashEnemyVisuals GetActiveVisuals() {
 		var game = Level.As<MuseDash1Game>();
 		var visuals = Visuals[game.GetActiveSceneIdx()];
 		return visuals;
+	}
+	public override void Render(FrameState frameState) {
+		base.Render(frameState);
+		Render();
 	}
 	public virtual void Render() {
 		if (!Visible) return;
