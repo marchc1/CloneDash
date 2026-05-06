@@ -628,7 +628,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					// Process scene changes
 					canSceneChange = true;
 					foreach (var sceneChange in gamemodeData.SceneChanges) {
-						Debugger.Break(); // need to figure out the fields here
+						ISceneDescriptor? sceneDescToChangeTo = SceneMod.GetSceneData(sceneChange.SceneUID);
+
+						var sceneChangeInstance = AddOrGetScene(sceneDescToChangeTo);
+						if(sceneChangeInstance != null){
+							var ev = new SceneChange(this, sceneChangeInstance.GetSceneArrayIndex());
+							Events.Add(ev);
+							readyToBuildEvents.Add(ev);
+							ev.Time = sceneChange.Time;
+							sceneChanges.Add(ev);
+						}
 					}
 				}
 
@@ -1472,7 +1481,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void BroadcastEntitySignal(Entity? entityFrom, EntitySignalType signalType, object? data = null) {
 		DashEnemy? mentFrom = null;
-		if (entityFrom != null){
+		if (entityFrom != null) {
 			if (entityFrom is not DashEnemy mentFromC)
 				return;
 			mentFrom = mentFromC;

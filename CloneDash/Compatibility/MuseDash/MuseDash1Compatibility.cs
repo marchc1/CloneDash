@@ -333,10 +333,10 @@ namespace CloneDash.Compatibility.MuseDash
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
 			MD1_GamemodeData gamemodeData = new();
-			
-			gamemodeData.InitialScene = MDinfo.scene;
-			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){
-				SceneUID = x.uid,
+
+			gamemodeData.InitialScene = "scene/musedash1/" + MDinfo.scene;
+			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange() {
+				SceneUID = "scene/musedash1/scene_" + x.uid.Split("SceneEvent/")[1],
 				Time = Convert.ToDouble(x.time),
 				Value = x.value
 			}));
@@ -356,8 +356,8 @@ namespace CloneDash.Compatibility.MuseDash
 
 				if (s.noteData != null) {
 					var ib = MuseDash1Compatibility.ConvertIBMSCode(s.noteData.ibms_id);
-					var tick_hit = (float)s.configData.time;
-					var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
+					var tick_hit = (double)s.configData.time;
+					var tick_show = tick_hit - ((tick_hit - ((double)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
 					PathwaySide pathwayType = PathwaySide.Both;
 
@@ -429,24 +429,56 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.DoubleSpeed2 => EventType.DoubleSpeed2,
 						IBMSCode.DoubleSpeed3 => EventType.DoubleSpeed3,
 
+						IBMSCode.ToggleScene1 => EventType.SceneChange,
+						IBMSCode.ToggleScene2 => EventType.SceneChange,
+						IBMSCode.ToggleScene3 => EventType.SceneChange,
+						IBMSCode.ToggleScene4 => EventType.SceneChange,
+						IBMSCode.ToggleScene5 => EventType.SceneChange,
+						IBMSCode.ToggleScene6 => EventType.SceneChange,
+						IBMSCode.ToggleScene7 => EventType.SceneChange,
+						IBMSCode.ToggleScene8 => EventType.SceneChange,
+						IBMSCode.ToggleScene9 => EventType.SceneChange,
+						IBMSCode.ToggleScene10 => EventType.SceneChange,
+
 						_ => EventType.NotApplicable
 					};
 
 					if (eventType != EventType.NotApplicable) {
-						MD1_SongChartEvent ChartEvent = new();
-						ChartEvent.Type = eventType;
-						ChartEvent.Time = tick_hit;
-						ChartEvent.Length = (double)s.configData.length;
+						if (eventType == EventType.SceneChange) {
+							gamemodeData.SceneChanges.Add(new ChartSceneChange() {
+								SceneUID = "scene/musedash1/scene_" + $"{ib.code switch {
+									IBMSCode.ToggleScene1 => 1,
+									IBMSCode.ToggleScene2 => 2,
+									IBMSCode.ToggleScene3 => 3,
+									IBMSCode.ToggleScene4 => 4,
+									IBMSCode.ToggleScene5 => 5,
+									IBMSCode.ToggleScene6 => 6,
+									IBMSCode.ToggleScene7 => 7,
+									IBMSCode.ToggleScene8 => 8,
+									IBMSCode.ToggleScene9 => 9,
+									IBMSCode.ToggleScene10 => 10,
+									_ => 1
+								}}".PadLeft(2, '0'),
+								Time = tick_hit,
+								Value = null
+							});
+						}
+						else {
+							MD1_SongChartEvent ChartEvent = new();
+							ChartEvent.Type = eventType;
+							ChartEvent.Time = tick_hit;
+							ChartEvent.Length = (double)s.configData.length;
 
-						if (s.noteData.damage > 0)
-							ChartEvent.Damage = s.noteData.damage;
-						if (s.noteData.fever > 0)
-							ChartEvent.Fever = s.noteData.fever;
-						if (s.noteData.score > 0)
-							ChartEvent.Score = s.noteData.score;
+							if (s.noteData.damage > 0)
+								ChartEvent.Damage = s.noteData.damage;
+							if (s.noteData.fever > 0)
+								ChartEvent.Fever = s.noteData.fever;
+							if (s.noteData.score > 0)
+								ChartEvent.Score = s.noteData.score;
 
-						ChartEvent.BossAction = s.noteData.boss_action;
-						gamemodeData.Events.Add(ChartEvent);
+							ChartEvent.BossAction = s.noteData.boss_action;
+							gamemodeData.Events.Add(ChartEvent);
+						}
 					}
 					else {
 						EntityType entityType = ib.code switch {

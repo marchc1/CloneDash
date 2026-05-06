@@ -15,7 +15,11 @@ public class MuseDash1SceneProvider : ISceneProvider
 	}
 
 	ISceneDescriptor? ISceneProvider.FindByName(ReadOnlySpan<char> name) {
-		MuseDash1SceneDescriptor? descriptor = MuseDash1SceneDescriptor.GetScene(name);
+		if (!name.StartsWith("scene/musedash1/"))
+			return null;
+		Span<Range> pieces = stackalloc Range[10];
+		var parts = name.Split(pieces, '/');
+		MuseDash1SceneDescriptor? descriptor = MuseDash1SceneDescriptor.GetScene(name[pieces[2]]);
 		if (descriptor == null) return null;
 
 		return descriptor;

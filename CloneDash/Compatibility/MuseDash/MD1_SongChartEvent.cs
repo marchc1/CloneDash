@@ -4,7 +4,7 @@ namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 
 public class MD1_SongChartEvent
 {
-	public float Time;
+	public double Time;
 	public double Length;
 	public EventType Type;
 	public string? BossAction;
