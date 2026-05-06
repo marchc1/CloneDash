@@ -47,7 +47,7 @@ public class CharacterSelectorScroller : Panel
 	ICharacterDescriptor? lastSelected;
 
 	public void SetCharacter(ICharacterDescriptor? chr) {
-		lastSelectedIdx = chars.FindIndex(x => chr != null && x.character.GetUUID() == chr.GetUUID());
+		lastSelectedIdx = chars.FindIndex(x => chr != null && x.character.UUIDEquals(chr));
 		if (lastSelectedIdx == -1)
 			Logs.Warn("Unexpectedly couldnt find the character???");
 

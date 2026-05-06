@@ -1,4 +1,5 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -21,7 +22,7 @@ public class CharacterPanel : Panel
 	public Vector2F CharacterOffset { get; set; }
 
 	public bool SetCharacter(ICharacterDescriptor? character, bool force = false) {
-		if (character != null && CharacterInstance != null && character.GetUUID() == CharacterInstance.GetCharacter().GetUUID() && !force)
+		if (character != null && CharacterInstance != null && character.UUIDEquals(CharacterInstance.GetCharacter()) && !force)
 			return character != null;
 
 		if (character != null)
@@ -141,7 +142,7 @@ public class CharacterPanel : Panel
 
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
-		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().GetUUID() == charDescriptor.GetUUID()) return;
+		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().UUIDEquals(charDescriptor)) return;
 		CharacterInstance = charDescriptor?.CreateMainMenu();
 		if (CharacterInstance == null)
 			return;
