@@ -321,7 +321,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 		public void InitNoteData() {
 			NoteData = new Dictionary<string, NoteConfigData>();
 
-			foreach (var config in MuseDashCompatibility.NoteDataManager) {
+			foreach (var config in MuseDash1Compatibility.NoteDataManager) {
 				// Ignore april fools variants (these are handled elsewhere)
 				if (config.IsAprilFools()) continue;
 				// Ignore phase 2 boss gears

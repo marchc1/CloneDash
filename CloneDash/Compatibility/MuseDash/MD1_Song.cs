@@ -235,14 +235,14 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	}
 	public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
 		return
-			MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
-			?? MuseDashCompatibility.StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase.Replace("_music", ""))))
+			MuseDash1Compatibility.StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
+			?? MuseDash1Compatibility.StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase.Replace("_music", ""))))
 			?? (throwExp ? throw new Exception($"Tried to find {givenBase}, could not find a match even with fixes applied") : null);
 	}
 	public string GetAssetsFilepath() => GetFixedFilename(BaseName, "music_{name}_assets_all.bundle", true) ?? throw new Exception();
 	public string? GetDemoFilepath() => GetFixedFilename(BaseName, "song_{name}_assets_all", false);
 
-	public MuseDashAlbum Album { get; set; }
+	public MuseDash1Album Album { get; set; }
 
 	[JsonIgnore]
 	public string BaseName => GetInfo()!.Music.Substring(0, GetInfo()!.Music.Length - 6);
@@ -278,17 +278,17 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		if (IValidatable.IsValid(AudioTrack))
 			return AudioTrack;
 
-		AudioClip audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Music)!;
-		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip)!;
+		AudioClip audioclip = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Music)!;
+		return MuseDash1Compatibility.GetMusic(EngineCore.Level, audioclip)!;
 	}
 
 	protected virtual IAudioClip? ProduceDemoTrack() {
 		if (IValidatable.IsValid(DemoTrack))
 			return DemoTrack;
 
-		AudioClip? audioclip = MuseDashCompatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Demo);
+		AudioClip? audioclip = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AudioClip>(__jsonInfo.Demo);
 		if (audioclip == null) return null;
-		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
+		return MuseDash1Compatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
 	protected virtual void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
@@ -299,7 +299,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 		// var start = new Stopwatch();
 		// start.Start();
-		Texture2D? tex2D = MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(__jsonInfo.Cover);
+		Texture2D? tex2D = MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(__jsonInfo.Cover);
 		if (tex2D == null) {
 			callback(null);
 			return;
@@ -344,16 +344,16 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	/// </summary>
 	public virtual MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID){
 		//MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
-		MonoBehaviour? map = MuseDashCompatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{__jsonInfo.NoteJSON}{mapID}.asset").GetResult();
+		MonoBehaviour? map = MuseDash1Compatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{__jsonInfo.NoteJSON}{mapID}.asset").GetResult();
 		if (map == null)
 			return null;
 
 		var obj = map.ToType();
 		var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-		var rr = MuseDashCompatibility.InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
+		var rr = MuseDash1Compatibility.InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-		if (rr != MDCompatLayerInitResult.OK)
+		if (rr != MD1CompatLayerInitResult.OK)
 			throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
 
 		StageInfo? stage = JsonConvert.DeserializeObject<StageInfo>(rawData);
@@ -364,8 +364,8 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		}
 
 		stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-		MuseDashCompatibility.FillInTheBlankNotes(this, stage); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-		return MuseDashCompatibility.ConvertStageInfoToMD1GamemodeData(this, stage);
+		MuseDash1Compatibility.FillInTheBlankNotes(this, stage); Interlude.Spin(submessage: "Reading Muse Dash chart...");
+		return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stage);
 	}
 
 	protected virtual MD1_SongInfo? ProduceInfo() {

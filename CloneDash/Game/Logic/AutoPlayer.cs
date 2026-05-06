@@ -87,7 +87,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Ran-per-tick function to check if the delta-time since the last masher hit is greater than MAX_MASHHITS_PER_SECOND
 		/// </summary>
-		private bool CanHitMasher => (Level.As<DashGameLevel>().Conductor.Time - LastMasherHit) > TIME_BETWEEN_MASH_HITS;
+		private bool CanHitMasher => (Level.As<MuseDash1Game>().Conductor.Time - LastMasherHit) > TIME_BETWEEN_MASH_HITS;
 		/// <summary>
 		/// Internal function to check the hashmap for passed-by entities.
 		/// </summary>
@@ -103,12 +103,12 @@ namespace CloneDash.Game.Logic
 			if (!Enabled)
 				return;
 
-			var level = Level.As<DashGameLevel>();
+			var level = Level.As<MuseDash1Game>();
 
 			// Mash state functionality
 			if (level.InMashState && CanHitMasher) {
 				input.TopClicked = 1; // Attack the masher
-				LastMasherHit = Level.As<DashGameLevel>().Conductor.Time; // Set the masher
+				LastMasherHit = Level.As<MuseDash1Game>().Conductor.Time; // Set the masher
 				return;
 			}
 

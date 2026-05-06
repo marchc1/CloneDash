@@ -24,7 +24,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<DashGameLevel>().Pathway == this.Pathway) {
+			if (Level.As<MuseDash1Game>().Pathway == this.Pathway) {
 				DamagePlayer();
 			}
 		}
@@ -63,7 +63,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<DashGameLevel>();
+			var level = Level.As<MuseDash1Game>();
 			var scene = level.Scene;
 
 			switch (Variant) {

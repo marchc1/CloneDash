@@ -9,8 +9,8 @@ namespace CloneDash.Common.Game;
 public interface IGame
 {
 	IGamemodeDescriptor GetGamemode();
-	ISong GetSong();
-	ISongChart GetSongChart();
-	object GetGamemodeData();
+	ISong? GetSong();
+	ISongChart? GetSongChart();
+	object? GetGamemodeData();
 	IConductor GetConductor();
 }

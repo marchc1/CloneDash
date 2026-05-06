@@ -209,7 +209,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				newNote.isLongPressEnd = false;
 				newNote.isLongPressing = false;
 
-				if (MuseDashCompatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData)) {
+				if (MuseDash1Compatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData)) {
 					newNote.noteData = newNoteData;
 					// todo; static scrollspeed
 					// this works to cope with that for now...
@@ -475,7 +475,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 
 				var phase = usedState == BossState.Phase1 ? 1 : 2;
 
-				var noteData = MuseDashCompatibility.NoteDataManager;
+				var noteData = MuseDash1Compatibility.NoteDataManager;
 				if (phaseGearConfig.ibms_id != data.noteData.ibms_id
 					|| phaseGearConfig.pathway != data.noteData.pathway
 					|| phaseGearConfig.scene != data.noteData.scene

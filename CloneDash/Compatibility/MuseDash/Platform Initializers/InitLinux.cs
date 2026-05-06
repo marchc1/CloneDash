@@ -2,11 +2,11 @@ using CloneDash.Compatibility.Valve;
 
 namespace CloneDash.Compatibility.MuseDash
 {
-	public static partial class MuseDashCompatibility
+	public static partial class MuseDash1Compatibility
 	{
-		private static MDCompatLayerInitResult INIT_LINUX() {
+		private static MD1CompatLayerInitResult INIT_LINUX() {
 			if (!OperatingSystem.IsLinux())
-				return MDCompatLayerInitResult.OperatingSystemNotCompatible;
+				return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
 
 			// Where is Steam installed?
 			string home = Environment.GetEnvironmentVariable("HOME")!;
@@ -15,7 +15,7 @@ namespace CloneDash.Compatibility.MuseDash
 			
 			string? steamInstallPath = Directory.Exists(steamClassicInstallPath) ? steamClassicInstallPath : Directory.Exists(steamFlatpakInstallPath) ? steamFlatpakInstallPath : null;
 			if(steamInstallPath == null)
-				return MDCompatLayerInitResult.SteamNotInstalled;
+				return MD1CompatLayerInitResult.SteamNotInstalled;
 
 			// Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
 			ValveDataFile games = ValveDataFile.FromFile(Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf"));
@@ -33,7 +33,7 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 
 			if (!musedash_installed)
-				return MDCompatLayerInitResult.MuseDashNotInstalled;
+				return MD1CompatLayerInitResult.MuseDashNotInstalled;
 			WhereIsMuseDashInstalled = musedash_installdir;
 			WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "MuseDash_Data");
 
@@ -45,13 +45,13 @@ namespace CloneDash.Compatibility.MuseDash
 
 			string musedash_streamingassets = Path.Combine(musedash_installdir, "MuseDash_Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
 			if (!Directory.Exists(musedash_streamingassets))
-				return MDCompatLayerInitResult.StreamingAssetsNotFound;
+				return MD1CompatLayerInitResult.StreamingAssetsNotFound;
 
 			BuildTarget = musedash_streamingassets;
 			StreamingFiles = Directory.GetFiles(musedash_streamingassets);
 			// The note data file would be loaded here from the assetbundle, then the notedata extracted
 
-			return MDCompatLayerInitResult.OK;
+			return MD1CompatLayerInitResult.OK;
 		}
 	}
 }

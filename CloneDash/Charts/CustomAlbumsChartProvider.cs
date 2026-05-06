@@ -17,7 +17,7 @@ public class CustomAlbumsChartSource : BaseContiguousSongSource
 		if (songs != null)
 			return songs;
 
-		var directory = Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled!, "Custom_Albums");
+		var directory = Path.Combine(MuseDash1Compatibility.WhereIsMuseDashInstalled!, "Custom_Albums");
 		if (!Directory.Exists(directory))
 			return [];
 
@@ -40,7 +40,7 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 {
 	public ISong? FindByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
-		foreach (var song in MuseDashCompatibility.Songs) {
+		foreach (var song in MuseDash1Compatibility.Songs) {
 			if (name.Equals(song.BaseName, StringComparison.InvariantCultureIgnoreCase))
 				return song;
 		}
@@ -48,7 +48,7 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 	}
 
 	public IEnumerable<string> GetAvailable() {
-		foreach (var song in MuseDashCompatibility.Songs)
+		foreach (var song in MuseDash1Compatibility.Songs)
 			yield return song.BaseName;
 	}
 

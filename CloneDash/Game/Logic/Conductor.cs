@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Data;
+using CloneDash.Common.Game;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -10,7 +11,7 @@ using Nucleus.UI;
 
 namespace CloneDash.Game
 {
-	public class Conductor : LogicalEntity
+	public class Conductor : LogicalEntity, IConductor
 	{
 		public Conductor() {
 			currentInaccurateTime = (float)-PreStartTime;
@@ -48,7 +49,7 @@ namespace CloneDash.Game
 		/// update comes in from the music track. This method forces the current inaccurate time to music playhead immediately.
 		/// </summary>
 		public void InvalidateTime() {
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			if (!game.Music.IsValid()) return;
 			audiosystem.GetSoundPlayhead(game.Music, out currentInaccurateTime);
 		}
@@ -111,17 +112,17 @@ namespace CloneDash.Game
 		private bool wasPaused = false;
 		private double? dragSeconds;
 
-		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, audiosystem.GetPlaybackDuration(Level.As<DashGameLevel>().Music));
+		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, audiosystem.GetPlaybackDuration(Level.As<MuseDash1Game>().Music));
 
 		private void UIBar_DragUpdate() {
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			// if (!game.AutoPlayer.Enabled) return;
 
 			dragSeconds = uiSeconds;
 		}
 
 		private void UIBar_DragEnd() {
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			// if (!game.AutoPlayer.Enabled) return;
 
 			if (dragSeconds != null)
@@ -134,7 +135,7 @@ namespace CloneDash.Game
 		}
 
 		private void UIBar_DragStart() {
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			// if (!game.AutoPlayer.Enabled) return;
 
 			wasPaused = game.Paused;
@@ -239,7 +240,7 @@ namespace CloneDash.Game
 		private double lastTime;
 		public override void Think(FrameState frameState) {
 			lastTime = Time;
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			Level.AddDebugString("Conductor Time", Time);
 
 			var speed = game.GetSpeed();
@@ -368,5 +369,7 @@ namespace CloneDash.Game
 			double lastPercentage = TimeSignatureChanges.Last().Percentage;
 			return currentBeat + ((measure - currentMeasure) * lastPercentage);
 		}
+
+		public double GetTime() => Time;
 	}
 }

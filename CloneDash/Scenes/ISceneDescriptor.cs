@@ -30,15 +30,15 @@ public struct PathwayInformation
 /// </summary>
 public interface ISceneDescriptor
 {
-	public void Initialize(DashGameLevel game);
-	public void Refresh(DashGameLevel game);
+	public void Initialize(MuseDash1Game game);
+	public void Refresh(MuseDash1Game game);
 
 	public void PlaySound(SceneSound sound, int hits);
 	public IAudioClip? GetPressIdleSound();
 
-	public void Think(DashGameLevel game);
-	public void RenderBackground(DashGameLevel game);
-	public void RenderPathway(DashGameLevel game, PathwaySide side, float alpha, float size, float rotation);
+	public void Think(MuseDash1Game game);
+	public void RenderBackground(MuseDash1Game game);
+	public void RenderPathway(MuseDash1Game game, PathwaySide side, float alpha, float size, float rotation);
 
 	public ModelData? GetEnemyModel(DashEnemy enemy);
 

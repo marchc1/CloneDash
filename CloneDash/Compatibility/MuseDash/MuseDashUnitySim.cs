@@ -287,7 +287,7 @@ public abstract class SceneRenderer : SceneComponent
 {
 	public int SortingLayerID;
 	public int SortingOrder;
-	public abstract void Render(BaseMuseDashUnitySimScene scene);
+	public abstract void Render(BaseMuseDash1UnitySimScene scene);
 }
 
 public class SceneSpriteRenderer : SceneRenderer
@@ -318,7 +318,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 
-		texture = ((BaseMuseDashUnitySimScene)Object.Scene).LoadTexture(tex2d);
+		texture = ((BaseMuseDash1UnitySimScene)Object.Scene).LoadTexture(tex2d);
 		atlasW = (int)texture.Width; atlasH = (int)texture.Height;
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
 		texRectW = sprite.m_RD.textureRect.width; texRectH = sprite.m_RD.textureRect.height;
@@ -432,7 +432,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		useMesh = TryLoadMesh(sprite);
 	}
 
-	public override void Render(BaseMuseDashUnitySimScene scene) {
+	public override void Render(BaseMuseDash1UnitySimScene scene) {
 		if (texture == null) return;
 		if (!MuseDashScene.IsActiveInHierarchy(Object)) return;
 		// TODO: mesh rendering. Very slow, probably incorrect right now...
@@ -568,7 +568,7 @@ public class SceneAnimator : SceneComponent
 		var controller = UnityAnimator.GetController();
 		if (controller == null) return;
 
-		var scene = (BaseMuseDashUnitySimScene)Object.Scene;
+		var scene = (BaseMuseDash1UnitySimScene)Object.Scene;
 		List<AnimationClip> animClips = [];
 
 		switch (controller) {
@@ -705,7 +705,7 @@ public class SceneObject
 	public string Name = "";
 	public bool Active = true;
 	public SceneTransform Transform { get; } = new();
-	public BaseMuseDashUnitySimScene Scene { get; internal set; } = null!;
+	public BaseMuseDash1UnitySimScene Scene { get; internal set; } = null!;
 	readonly List<SceneComponent> components = [];
 	public IReadOnlyList<SceneComponent> Components => components;
 	public System.Numerics.Vector4 Color = new(1, 1, 1, 1);
@@ -740,7 +740,7 @@ public class SceneObject
 	}
 }
 
-public abstract class BaseMuseDashUnitySimScene
+public abstract class BaseMuseDash1UnitySimScene
 {
 	protected readonly List<SceneObject> allObjects = [];
 	protected readonly List<SceneRenderer> sortedRenderers = [];
@@ -758,13 +758,13 @@ public abstract class BaseMuseDashUnitySimScene
 	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
 		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;
 
-		loadedModels[skeletonAnimation.m_PathID] = mdl = MuseDashModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation!);
+		loadedModels[skeletonAnimation.m_PathID] = mdl = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation!);
 		return mdl;
 	}
 
 	internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
-		textureCache[texture2D.m_PathID] = tex = MuseDashCompatibility.ConvertTexture(EngineCore.Level, texture2D!);
+		textureCache[texture2D.m_PathID] = tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, texture2D!);
 		return tex;
 	}
 

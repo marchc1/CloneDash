@@ -19,9 +19,9 @@ namespace CloneDash.Game
 		public static readonly Color PATHWAY_DUAL_COLOR = new Color(220, 160, 140, 255);
 
 
-		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopClicked > 0, Level.As<DashGameLevel>().InputState.BottomClicked > 0);
-		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeld, Level.As<DashGameLevel>().InputState.BottomHeld);
-		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<DashGameLevel>().InputState.TopHeldCount, Level.As<DashGameLevel>().InputState.BottomHeldCount);
+		public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopClicked > 0, Level.As<MuseDash1Game>().InputState.BottomClicked > 0);
+		public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopHeld, Level.As<MuseDash1Game>().InputState.BottomHeld);
+		public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopHeldCount, Level.As<MuseDash1Game>().InputState.BottomHeldCount);
 
 		/// <summary>
 		/// The half of the screen the pathway resides on.
@@ -76,14 +76,14 @@ namespace CloneDash.Game
 
 		public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
 		public override void Think(FrameState frameState) {
-			Position = Level.As<DashGameLevel>().GetPathwayPosition(Side);
+			Position = Level.As<MuseDash1Game>().GetPathwayPosition(Side);
 		}
 		public override void PostRender(FrameState frameState) {
 
 		}
 
 		public void Render() {
-			var lvl = Level.As<DashGameLevel>();
+			var lvl = Level.As<MuseDash1Game>();
 			var conductor = lvl.Conductor;
 			var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 			var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);

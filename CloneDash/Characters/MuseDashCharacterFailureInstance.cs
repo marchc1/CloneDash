@@ -1,8 +1,8 @@
 ﻿namespace CloneDash.Characters;
 
-public class MuseDashCharacterFailureInstance(MuseDashCharacterDescriptor descriptor) : ICharacterFailureInstance
+public class MuseDashCharacterFailureInstance(MuseDash1CharacterDescriptor descriptor) : ICharacterFailureInstance
 {
-	public readonly MuseDashCharacterDescriptor Descriptor = descriptor;
+	public readonly MuseDash1CharacterDescriptor Descriptor = descriptor;
 	public ICharacterDescriptor GetCharacter() => Descriptor;
 
 

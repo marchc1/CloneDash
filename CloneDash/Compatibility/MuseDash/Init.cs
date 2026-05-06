@@ -8,11 +8,11 @@ using Nucleus.Files;
 namespace CloneDash.Compatibility.MuseDash
 {
 	public record MuseDashAsset(string nicename, string filename);
-	public static partial class MuseDashCompatibility
+	public static partial class MuseDash1Compatibility
 	{
 		public static bool Initialized { get; private set; } = false;
 
-		public static MDCompatLayerInitResult LightInitialize() {
+		public static MD1CompatLayerInitResult LightInitialize() {
 #if COMPILED_WINDOWS
 			return INIT_WINDOWS();
 #elif COMPILED_OSX
@@ -26,18 +26,18 @@ namespace CloneDash.Compatibility.MuseDash
 
 		public static char[] CodepointsInUse = null!;
 
-		public static MDCompatLayerInitResult InitializeCompatibilityLayer() {
+		public static MD1CompatLayerInitResult InitializeCompatibilityLayer() {
 			if (Initialized)
-				return MDCompatLayerInitResult.OK;
+				return MD1CompatLayerInitResult.OK;
 
 			StaticSequentialProfiler.Start();
 
-			MDCompatLayerInitResult result;
+			MD1CompatLayerInitResult result;
 			using (StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
 				result = LightInitialize();
 			}
 
-			if (result != MDCompatLayerInitResult.OK) {
+			if (result != MD1CompatLayerInitResult.OK) {
 				StaticSequentialProfiler.End(out _, out _);
 				return result;
 			}
@@ -80,7 +80,7 @@ namespace CloneDash.Compatibility.MuseDash
 			Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
 
 			using (StaticSequentialProfiler.StartStackFrame("Graphics2D.RegisterCodepoints"))
-				Graphics2D.RegisterCodepoints(MuseDashCompatibility.CodepointsInUse);
+				Graphics2D.RegisterCodepoints(MuseDash1Compatibility.CodepointsInUse);
 			Interlude.Spin(submessage: "Muse Dash Compat: Fonts ready!");
 
 			Initialized = true;

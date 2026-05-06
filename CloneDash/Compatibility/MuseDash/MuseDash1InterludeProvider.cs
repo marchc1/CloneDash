@@ -6,20 +6,20 @@ namespace CloneDash.Compatibility.MuseDash;
 /// <summary>
 /// Provides interlude textures from Muse Dash.
 /// </summary>
-public class MuseDashInterludeProvider : InterludeTextureProvider
+public class MuseDash1InterludeProvider : InterludeTextureProvider
 {
-	static MuseDashInterlude[]? interludes;
+	static MuseDash1Interlude[]? interludes;
 	public override bool ShouldFlipTexture => true;
 	private static bool ready = false;
 	private static int setup() {
 		if (ready && interludes != null) return interludes.Length;
 
-		if (MuseDashCompatibility.WhereIsMuseDashInstalled == null) {
+		if (MuseDash1Compatibility.WhereIsMuseDashInstalled == null) {
 			return 0;
 		}
 
-		var interludesRaw = UnityAssetUtils.GetAllFiles(MuseDashCompatibility.StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
-		interludes = new MuseDashInterlude[interludesRaw.Length];
+		var interludesRaw = UnityAssetUtils.GetAllFiles(MuseDash1Compatibility.StreamingFiles, "loadinginterlude_assets_interlude_", regex: true);
+		interludes = new MuseDash1Interlude[interludesRaw.Length];
 		for (int i = 0; i < interludesRaw.Length; i++) {
 			interludes[i] = new() {
 				path = interludesRaw[i]

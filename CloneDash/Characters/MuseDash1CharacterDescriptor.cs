@@ -1,9 +1,10 @@
 ﻿using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
-
+using CloneDash.Game;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
@@ -38,7 +39,7 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 
 	void ICharacterMainMenuExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
 		text = Talk;
-		voice = MuseDashCompatibility.LoadSoundFromName(level, AudioName);
+		voice = MuseDash1Compatibility.LoadSoundFromName(level, AudioName);
 	}
 
 	string ICharacterMainMenuExpression.GetStartAnimationName() {
@@ -56,26 +57,26 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 }
 
-public class MuseDashCharacterRetriever : ICharacterProvider
+public class MuseDash1CharacterRetriever : ICharacterProvider
 {
 	int ICharacterProvider.Priority => 0;
 
 	public string GetName(CharacterConfigData cfd) => $"character/musedash1/{cfd.BGM.Replace("_bgm", "")}";
 
 	IEnumerable<string> ICharacterProvider.GetAvailable() {
-		foreach (var character in MuseDashCompatibility.Characters) {
+		foreach (var character in MuseDash1Compatibility.Characters) {
 			yield return GetName(character);
 		}
 	}
 
 	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
-		if (MuseDashCompatibility.Characters == null)
+		if (MuseDash1Compatibility.Characters == null)
 			return null;
 
-		foreach (var character in MuseDashCompatibility.Characters) {
+		foreach (var character in MuseDash1Compatibility.Characters) {
 			if (name != GetName(character)) continue;
 
-			return new MuseDashCharacterDescriptor(character, name);
+			return new MuseDash1CharacterDescriptor(character, name);
 		}
 
 		return null;
@@ -83,7 +84,7 @@ public class MuseDashCharacterRetriever : ICharacterProvider
 }
 
 [Nucleus.MarkForStaticConstruction]
-public class MuseDashCharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
+public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
 	public ReadOnlySpan<char> GetUUID() => $"character/musedash1/{name}";
@@ -91,7 +92,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
 		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
 		var clonedash_character_value = chvar.GetString();
-		ICharacterProvider retriever = new MuseDashCharacterRetriever();
+		ICharacterProvider retriever = new MuseDash1CharacterRetriever();
 		bool next = false;
 		foreach (var character in retriever.GetAvailable()) {
 			if (character == clonedash_character_value) next = true;
@@ -140,7 +141,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 	public ReadOnlySpan<char> GetCharacterName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
 		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CharacterName, x => x.CharacterName);
 
-	public ITexture? GetThumbnailTexture() => MuseDashCompatibility.ConvertTexture(EngineCore.Level, MuseDashCompatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
+	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
 	
 	public ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
 		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Description, x => x.Description);
@@ -156,7 +157,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public ICharacterMainMenuExpression? GetMainShowApplyExpression() {
 		// probably need a better way to figure out the folder name
-		var assets = MuseDashCompatibility.StreamingAssets;
+		var assets = MuseDash1Compatibility.StreamingAssets;
 		var mainShow = assets.FindAssetByName<GameObject>(ConfigData.MainShow);
 		var apply = mainShow?.GetMonoBehaviorByScriptName("CharacterApply")?.ToType();
 		if (apply is null) return null;
@@ -177,7 +178,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	// I hate this!
 	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
-		var assets = MuseDashCompatibility.StreamingAssets;
+		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		// This pulls out skeletonDataAsset m_PathID
 		// todo: refactor this abomination
@@ -217,11 +218,11 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 			i++;
 		}
 
-		return MuseDashModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
+		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
 	}
 
 	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name) {
-		var assets = MuseDashCompatibility.StreamingAssets;
+		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		var mainshowObject = assets.FindAssetByName<GameObject>(name);
 		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
@@ -242,12 +243,12 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
 
-	public IAudioClip? GetMainShowMusic(Level level) => MuseDashCompatibility.LoadMusicFromName(level, ConfigData.BGM);
+	public IAudioClip? GetMainShowMusic(Level level) => MuseDash1Compatibility.LoadMusicFromName(level, ConfigData.BGM);
 	public string GetMainShowStandby() => "BgmStandby";
 
-	private static MD_SpineActionControllerData? black_girl_battle;
-	private MD_SpineActionControllerData? anims;
-	private MD_SpineActionControllerData? ghostanims;
+	private static MD1_SpineActionControllerData? black_girl_battle;
+	private MD1_SpineActionControllerData? anims;
+	private MD1_SpineActionControllerData? ghostanims;
 
 
 	[MemberNotNull(nameof(black_girl_battle))]
@@ -255,7 +256,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		if (black_girl_battle != null)
 			return;
 
-		var data = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>("black_girl_battle")?.GetMonoBehaviorByScriptName("SpineActionController")!;
+		var data = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("black_girl_battle")?.GetMonoBehaviorByScriptName("SpineActionController")!;
 		ArgumentNullException.ThrowIfNull(data);
 
 		black_girl_battle = new(new(data));
@@ -266,7 +267,7 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		convertBaseAnimationData();
 		if (anims != null && ghostanims != null) return;
 
-		var assets = MuseDashCompatibility.StreamingAssets;
+		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		if (anims == null) {
 			var mainshowObject = assets.FindAssetByName<GameObject>(ConfigData.GetBattleShow());
@@ -281,27 +282,27 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 		}
 	}
 
-	public MD_SpineActionControllerData GetPlayAnimationData() {
+	public MD1_SpineActionControllerData GetPlayAnimationData() {
 		convertAnimations();
 		return anims;
 	}
 
-	public MD_SpineActionControllerData GetPlayGhostAnimationData() {
+	public MD1_SpineActionControllerData GetPlayGhostAnimationData() {
 		convertAnimations();
 		return ghostanims;
 	}
 
-	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
+	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
 		convertAnimations();
 		playCharacterAnimation(animationType, handler);
 	}
 
-	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
+	public void PlayGhostCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
 		convertAnimations();
 		playCharacterAnimation(animationType, handler);
 	}
 
-	private void playCharacterAnimation(CharacterAnimationType animationType, MD_SpineActionController handler) {
+	private void playCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
 		string? name = convertAnimationTypeToName(animationType);
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
@@ -364,7 +365,13 @@ public class MuseDashCharacterDescriptor(CharacterConfigData configData, string 
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);
 	public ICharacterFailureInstance CreateFailure() => new MuseDashCharacterFailureInstance(this);
 
-	public ICharacterInGameInstance? CreateInGame(IGamemodeDescriptor gamemodeDescriptor) {
-		throw new NotImplementedException();
+	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance{
+		switch(game.GetGamemode().GetUUID()){
+			case "gamemode/musedash1/standard":
+				
+				break;
+		}
+
+		return default; // not supported
 	}
 }

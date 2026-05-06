@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Compatibility.MuseDash
 {
-	public enum MDCompatLayerInitResult
+	public enum MD1CompatLayerInitResult
 	{
 		OK,
 		SteamNotInstalled,

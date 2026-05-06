@@ -112,19 +112,19 @@ public struct MuseDashSceneSounds
 
 public class MD_Animations3Speed
 {
-	public readonly MD_SpineActionControllerData[][] Speeds = [
+	public readonly MD1_SpineActionControllerData[][] Speeds = [
 		[null!, null!, null!],
 		[null!, null!, null!],
 		[null!, null!, null!]
 	];
 
-	public MD_SpineActionControllerData GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+	public MD1_SpineActionControllerData GetSpeed(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
 		Debug.Assert(speed >= 1);
 		Debug.Assert(speed <= 3);
 		return Speeds[speed - 1][(int)dir] ?? Speeds[speed - 1][0]; // Default to rightside
 	}
 
-	public ref MD_SpineActionControllerData GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
+	public ref MD1_SpineActionControllerData GetSpeedForEdit(int speed, EntityEnterDirection dir = EntityEnterDirection.RightSide) {
 		Debug.Assert(speed >= 1);
 		Debug.Assert(speed <= 3);
 		return ref Speeds[speed - 1][(int)dir];
@@ -288,7 +288,7 @@ public record class MuseDashSceneInfo
 												.MarkUnusable();
 }
 
-public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
+public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 {
 	public const float MUSEDASH_MULTIPLIER_POSITIONS = 1;
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
@@ -308,7 +308,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 			return GetScene("scene_01"); // Fall back to Space Station...
 		}
 
-		var sceneGameObject = MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
+		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
 			sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl")
 			?? throw new NullReferenceException("No scene control?"));
@@ -405,7 +405,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	IAudioClip?[]? HitSounds;
 	IAudioClip? VictoryBgmSound;
 
-	MD_SpineActionControllerData BossAnims = null!;
+	MD1_SpineActionControllerData BossAnims = null!;
 
 	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
 	MD_Animations3Speed MasherAnims = new();
@@ -431,30 +431,30 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
 
-	public void Initialize(DashGameLevel game) {
-		BeginSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
-		FeverSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
-		UnpauseSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
-		FullComboSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
-		BlockSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Block ?? throw new NullReferenceException());
-		CrystalSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
-		FailBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
-		Forte2Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
-		Forte3Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
-		GhostSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
-		HpSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
-		JumpSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
-		Mezzo1Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
-		Mezzo3Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
-		Piano2Sound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
-		PressIdleSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
-		PressTopSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
-		ScoreSound = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
-		VictoryBgmSound = MuseDashCompatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
+	public void Initialize(MuseDash1Game game) {
+		BeginSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
+		FeverSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
+		UnpauseSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
+		FullComboSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
+		BlockSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Block ?? throw new NullReferenceException());
+		CrystalSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
+		FailBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
+		Forte2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
+		Forte3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
+		GhostSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
+		HpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
+		JumpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
+		Mezzo1Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
+		Mezzo3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
+		Piano2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
+		PressIdleSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+		PressTopSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
+		ScoreSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
+		VictoryBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
 
 		HitSounds = new IAudioClip?[16];
 		for (int i = 0; i < 16; i++) {
-			HitSounds[i] = MuseDashCompatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
+			HitSounds[i] = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
 			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 		}
 
@@ -480,7 +480,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		FailBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 		VictoryBgmSound.BindVolumeToConVar(AudioSettings.snd_musicvolume);
 
-		var assets = MuseDashCompatibility.StreamingAssets;
+		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		string sustainID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_SUSTAIN}";
 		AirStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
@@ -613,12 +613,12 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 
 
 
-	MonoBehaviourReader getSpineController(string name) => new(MuseDashCompatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
+	MonoBehaviourReader getSpineController(string name) => new(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
 
 	public delegate string ResolverFn(in RequestInfo info);
 
 	void ProcessThreeSpeedAnimations(MD_Animations3Speed table, in RequestInfo req, MonoBehaviourReader reader) {
-		ref MD_SpineActionControllerData speedToEdit = ref table.GetSpeedForEdit(req.speed, req.dir);
+		ref MD1_SpineActionControllerData speedToEdit = ref table.GetSpeedForEdit(req.speed, req.dir);
 		speedToEdit = new(reader);
 	}
 
@@ -697,14 +697,14 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		}
 	}
 
-	public void RenderBackground(DashGameLevel game) {
+	public void RenderBackground(MuseDash1Game game) {
 		Rlgl.PushMatrix();
 		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, 1);
 		foreach (var renderer in sortedRenderers) renderer.Render(this);
 		Rlgl.PopMatrix();
 	}
 
-	public void RenderPathway(DashGameLevel game, PathwaySide side, float alpha, float size, float rotation) {
+	public void RenderPathway(MuseDash1Game game, PathwaySide side, float alpha, float size, float rotation) {
 		var obj = ((SceneObject)pathwayInfo[(int)side].UserData!);
 		var transform = obj.Transform;
 		transform.LocalRotationX = 0; transform.LocalRotationY = 0;
@@ -714,9 +714,9 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 		obj.Color.W = alpha / 255f;
 	}
 
-	public void Think(DashGameLevel game) => RunThinkFuncs(globals.CurTimeDelta);
+	public void Think(MuseDash1Game game) => RunThinkFuncs(globals.CurTimeDelta);
 
-	public void Refresh(DashGameLevel game) { }
+	public void Refresh(MuseDash1Game game) { }
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
 			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
@@ -823,7 +823,7 @@ public class MuseDashScene : BaseMuseDashUnitySimScene, ISceneDescriptor
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
 		time = 0;
 
-		MD_SpineActionControllerData? anim = null;
+		MD1_SpineActionControllerData? anim = null;
 
 		switch (enemy.Type) {
 			case EntityType.Single: {

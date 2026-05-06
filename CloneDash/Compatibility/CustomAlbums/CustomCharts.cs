@@ -332,7 +332,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
-				return MuseDashCompatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, newChanges);
+				return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, newChanges);
 			}
 		}
 	}

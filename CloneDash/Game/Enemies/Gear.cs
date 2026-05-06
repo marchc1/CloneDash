@@ -35,7 +35,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<DashGameLevel>();
+			var level = Level.As<MuseDash1Game>();
 			var scene = level.Scene;
 
 			Model = scene.GetEnemyModel(this)?.Instantiate();

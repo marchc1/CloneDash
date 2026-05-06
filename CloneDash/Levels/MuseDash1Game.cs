@@ -1,4 +1,7 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common;
+using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
@@ -58,10 +61,21 @@ public struct DashGameParams
 }
 
 [Nucleus.MarkForStaticConstruction]
-public partial class DashGameLevel(DashGameParams gameParameters) : Level
+public partial class MuseDash1Gamemode : IGamemodeDescriptor
+{
+	public ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage) {
+		returnedLanguage = HumanLanguage.English; // todo
+		return "Muse Dash 1";
+	}
+
+	public ReadOnlySpan<char> GetUUID() => UUID;
+	public static readonly string UUID = "gamemode/musedash1/standard";
+}
+
+public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
-		var level = EngineCore.Level.AsNullable<DashGameLevel>();
+		var level = EngineCore.Level.AsNullable<MuseDash1Game>();
 		if (level == null) {
 			Logs.Warn("Not in game context!");
 			return;
@@ -73,7 +87,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	});
 
 	public static readonly ConVar musicspeed = new(nameof(musicspeed), "1", FCvar.None, "Sets the music speed for the game.", 0.1, 4, (cv, _, _) => {
-		if (EngineCore.Level is DashGameLevel game)
+		if (EngineCore.Level is MuseDash1Game game)
 			game.InitSpeedFromCvar();
 	});
 
@@ -104,20 +118,20 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			return;
 		}
 
-		MD1_Song? song = MuseDashCompatibility.FindSong(md_level);
+		MD1_Song? song = MuseDash1Compatibility.FindSong(md_level);
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
-			foreach (var s in MuseDashCompatibility.FindSimilarSongs(md_level))
+			foreach (var s in MuseDash1Compatibility.FindSimilarSongs(md_level))
 				Logs.Print($"    {s.Name} ({s.BaseName})");
 			return;
 		}
 
-		DashGameLevel.LoadLevel(song.GetSheet(map), args.Arg(3, 0) == 1);
+		MuseDash1Game.LoadLevel(song.GetSheet(map), args.Arg(3, 0) == 1);
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		if (curArgPos == 1) {
-			var songs = MuseDashCompatibility.FindSongsStartingWith(args.Arg(1));
+			var songs = MuseDash1Compatibility.FindSongsStartingWith(args.Arg(1));
 			returns = [.. songs.Select(s => s.BaseName)];
 			returnHelp = [.. songs.Select(s => $" '{s.Name}'")];
 		}
@@ -158,7 +172,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public override bool IsInGame => true;
 
-	public static DashGameLevel? LoadLevel(ISongChart chart, bool autoplay) {
+	public static MuseDash1Game? LoadLevel(ISongChart chart, bool autoplay) {
 		var song = (MD1_Song)chart.GetSong(); // TODO: fix this
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {
@@ -166,9 +180,9 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			StaticSequentialProfiler.Start();
 		}
 
-		DashGameLevel? workingLevel = null;
+		MuseDash1Game? workingLevel = null;
 		try {
-			workingLevel = new DashGameLevel(new DashGameParams((MD1_SongChart)chart).WithAutoplay(autoplay));
+			workingLevel = new MuseDash1Game(new DashGameParams((MD1_SongChart)chart).WithAutoplay(autoplay));
 		}
 		catch (Exception ex) {
 			Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");
@@ -426,8 +440,8 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	public AudioPlaybackHandle Music;
 	public ModelEntity Player { get; set; }
 	public ModelEntity HologramPlayer { get; set; }
-	public MD_SpineActionController PlayerController { get; set; }
-	public MD_SpineActionController HologramPlayerController { get; set; }
+	public MD1_SpineActionController PlayerController { get; set; }
+	public MD1_SpineActionController HologramPlayerController { get; set; }
 	public Boss Boss { get; set; }
 	public Pathway TopPathway { get; set; }
 	public Pathway BottomPathway { get; set; }
@@ -822,7 +836,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 						if (profilegameload.GetBool())
 							StaticSequentialProfiler.Start();
 
-						EngineCore.LoadLevel(new DashGameLevel(gameParameters));
+						EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
 					};
 					restart.PaintOverride += Button_PaintOverride;
 
@@ -1705,7 +1719,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	AudioPlaybackHandle pressIdle;
 
-	public delegate void AttackEvent(DashGameLevel game, PathwaySide side);
+	public delegate void AttackEvent(MuseDash1Game game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
 	public event AttackEvent? OnGroundAttack;
 
@@ -1828,6 +1842,12 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 		ent.Position = new(pos.X, -pos.Y);
 	}
 
+	public virtual IGamemodeDescriptor GetGamemode() => GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
+	ISong? IGame.GetSong() => gameParameters.Chart?.GetSong();
+	ISongChart? IGame.GetSongChart() => gameParameters.Chart;
+	object? IGame.GetGamemodeData() => gameParameters.Chart?.GetGamemodeData();
+	IConductor IGame.GetConductor() => Conductor;
+
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
 	/// </summary>
@@ -1847,7 +1867,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Dock = Dock.Bottom;
 		}
 		public override void Paint(float width, float height) {
-			var lvl = Level.As<DashGameLevel>();
+			var lvl = Level.As<MuseDash1Game>();
 
 			var startAtX = width / 4f;
 			var totalW = width / 2f;
@@ -1902,7 +1922,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			Graphics2D.SetDrawColor(255, 255, 255, 255);
 			//if (Level.AutoPlayer.Enabled)
 			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
-			var lvl = Level.As<DashGameLevel>();
+			var lvl = Level.As<MuseDash1Game>();
 			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", Graphics2D.UI_FONT_NAME, (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
 			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
 

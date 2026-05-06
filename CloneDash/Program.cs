@@ -87,14 +87,14 @@ public class GameDLL : IGameDLL
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
-			MDCompatLayerInitResult res;
-			if ((res = MuseDashCompatibility.InitializeCompatibilityLayer()) != MDCompatLayerInitResult.OK) {
+			MD1CompatLayerInitResult res;
+			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != MD1CompatLayerInitResult.OK) {
 				throw new Exception($"Muse Dash compatibility layer failed to initialize: {res switch {
-					MDCompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
-					MDCompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
-					MDCompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
-					MDCompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
-					MDCompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
+					MD1CompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
+					MD1CompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
+					MD1CompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
+					MD1CompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
+					MD1CompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
 					_ => res.ToString()
 				}}");
 			}
@@ -104,15 +104,15 @@ public class GameDLL : IGameDLL
 
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
-		if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
-			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
+		if (MuseDash1Compatibility.WhereIsMuseDashInstalled != null)
+			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDash1Compatibility.WhereIsMuseDashInstalled);
 
 		var game = filesystem.GetSearchPathID("game").First();
 		var appcache = filesystem.GetSearchPathID("appcache").First();
 		var appdata = filesystem.GetSearchPathID("appdata").First();
 		{
 			// Custom assets should always be top priority for the filesystem
-			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
+			if (MuseDash1Compatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDash1Compatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
 				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
 
 			// Prioritize custom assets in order of new appdata/ -> game/
@@ -215,10 +215,10 @@ public class GameDLL : IGameDLL
 		if (cmd.HasParm("-md_level")) {
 			string md_level = cmd.ParmValue("-md_level", "");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
-			MD1_Song song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
+			MD1_Song song = MuseDash1Compatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
-			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0));
+			var lvl = new MuseDash1Game(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0));
 			if (!first) Interlude.Begin("Interprocess load started!");
 			EngineCore.LoadLevel(lvl);
 			if (!first) Interlude.End();
@@ -240,7 +240,7 @@ public class GameDLL : IGameDLL
 					break;
 			}
 
-			var lvl = new DashGameLevel(new DashGameParams(chart).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
+			var lvl = new MuseDash1Game(new DashGameParams(chart).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
 			if (!first) Interlude.Begin("Interprocess load started!");
 			EngineCore.LoadLevel(lvl);
 			if (!first) Interlude.End();

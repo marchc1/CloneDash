@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
-public class BossMasher(DashGameLevel game, int type) : DashEvent(game)
+public class BossMasher(MuseDash1Game game, int type) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.Masher();

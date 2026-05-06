@@ -428,12 +428,12 @@ public class MainMenuLevel : Level
 		}, metadata);
 
 
-	private DashGameLevel? workingLevel;
+	private MuseDash1Game? workingLevel;
 
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
 		if (workingLevel != null) return;
 
-		workingLevel = DashGameLevel.LoadLevel(chart, autoplay);
+		workingLevel = MuseDash1Game.LoadLevel(chart, autoplay);
 	}
 
 	public override void Think(FrameState frameState) {

@@ -1,8 +1,8 @@
 ﻿namespace CloneDash.Characters;
 
-public class MuseDashCharacterVictoryInstance(MuseDashCharacterDescriptor descriptor) : ICharacterVictoryInstance
+public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descriptor) : ICharacterVictoryInstance
 {
-	public readonly MuseDashCharacterDescriptor Descriptor = descriptor;
+	public readonly MuseDash1CharacterDescriptor Descriptor = descriptor;
 	public ICharacterDescriptor GetCharacter() => Descriptor;
 
 

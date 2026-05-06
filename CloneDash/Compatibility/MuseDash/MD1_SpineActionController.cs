@@ -34,10 +34,10 @@ public ref struct SacPlaySetting
 	}
 }
 
-public readonly ref struct DoNothingCtx(AnimationChannelEntry entry, MD_SpineActionController controller)
+public readonly ref struct DoNothingCtx(AnimationChannelEntry entry, MD1_SpineActionController controller)
 {
 	public readonly AnimationChannelEntry Entry = entry;
-	public readonly MD_SpineActionController Controller = controller;
+	public readonly MD1_SpineActionController Controller = controller;
 }
 
 public class MD_DoNothing
@@ -72,7 +72,7 @@ public class MD_DoNothing
 public class MD_AttackToNormalRun : MD_DoNothing
 {
 	public override void Do(DoNothingCtx ctx) {
-		if (EngineCore.Level is not DashGameLevel dashLvl)
+		if (EngineCore.Level is not MuseDash1Game dashLvl)
 			return;
 
 		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
@@ -82,7 +82,7 @@ public class MD_AttackToNormalRun : MD_DoNothing
 public class MD_OnJumpEnd : MD_DoNothing
 {
 	public override void Do(DoNothingCtx ctx) {
-		if (EngineCore.Level is not DashGameLevel dashLvl)
+		if (EngineCore.Level is not MuseDash1Game dashLvl)
 			return;
 
 		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
@@ -97,9 +97,9 @@ public class MD_UnLockActionProtect : MD_DoNothing
 	}
 }
 
-public class MD_SpineActionController(MD_SpineActionControllerData data, AnimationHandler animation)
+public class MD1_SpineActionController(MD1_SpineActionControllerData data, AnimationHandler animation)
 {
-	public readonly MD_SpineActionControllerData Data = data;
+	public readonly MD1_SpineActionControllerData Data = data;
 	public readonly AnimationHandler Animation = animation;
 	readonly char[] currentActionName = new char[256];
 	public int CurrentProtectionLevel;
@@ -161,7 +161,7 @@ public class MD_SpineActionController(MD_SpineActionControllerData data, Animati
 	}
 }
 
-public class MD_SpineActionControllerData
+public class MD1_SpineActionControllerData
 {
 	public readonly MD_ActionData?[] ActionData;
 
@@ -179,9 +179,9 @@ public class MD_SpineActionControllerData
 		return null;
 	}
 
-	MD_SpineActionControllerData? parent;
+	MD1_SpineActionControllerData? parent;
 
-	public MD_SpineActionControllerData(MonoBehaviourReader reader, MD_SpineActionControllerData? parent = null) {
+	public MD1_SpineActionControllerData(MonoBehaviourReader reader, MD1_SpineActionControllerData? parent = null) {
 		this.parent = parent;
 		var animationData = reader.GetAny<List<object>>("actionData")!;
 		ActionData = new MD_ActionData?[animationData.Count];

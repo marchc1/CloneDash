@@ -42,7 +42,7 @@ namespace CloneDash.Game.Entities
 			if (StopAcceptingInput == true)
 				return;
 
-			var lvl = Level.As<DashGameLevel>();
+			var lvl = Level.As<MuseDash1Game>();
 			HeldState = true;
 			WasHit = true;
 			ForceDraw = true;
@@ -54,7 +54,7 @@ namespace CloneDash.Game.Entities
 
 		protected override void OnMiss() {
 			if (HeldState == false) {
-				Level.As<DashGameLevel>().Sustains.FailSustainBeam(this);
+				Level.As<MuseDash1Game>().Sustains.FailSustainBeam(this);
 				PunishPlayer();
 			}
 		}
@@ -77,7 +77,7 @@ namespace CloneDash.Game.Entities
 
 		public float StartPosition { get; private set; }
 		public float RotationDegsPerSecond = 200;
-		private void drawStartQuad(DashGameLevel game, ref FrameState fs, float x) {
+		private void drawStartQuad(MuseDash1Game game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 
 			var tex = start;
@@ -87,15 +87,15 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * DashGameLevel.GlobalScale;
-			var h = tex.Height * DashGameLevel.GlobalScale;
+			var w = tex.Width * MuseDash1Game.GlobalScale;
+			var h = tex.Height * MuseDash1Game.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
 				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 			else
 				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
-		private void drawEndQuad(DashGameLevel game, ref FrameState fs, float x) {
+		private void drawEndQuad(MuseDash1Game game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 			var tex = end;
 			if (tex == null) return;
@@ -104,8 +104,8 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * DashGameLevel.GlobalScale;
-			var h = tex.Height * DashGameLevel.GlobalScale;
+			var w = tex.Width * MuseDash1Game.GlobalScale;
+			var h = tex.Height * MuseDash1Game.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
 				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
@@ -115,7 +115,7 @@ namespace CloneDash.Game.Entities
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
 		private byte beamAlpha;
-		public void drawScrollQuad(DashGameLevel game, ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
+		public void drawScrollQuad(MuseDash1Game game, ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
 			if (tex == null)
 				return;
 
@@ -124,15 +124,15 @@ namespace CloneDash.Game.Entities
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
 			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
-			var height = tex.Height * DashGameLevel.GlobalScale;
+			var height = tex.Height * MuseDash1Game.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
 
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
-			var maxLength = (xEnd - xStart) / (tex.Width * DashGameLevel.GlobalScale * 2);
-			var length = maxLength - ((xEnd - xMid) / (tex.Width * DashGameLevel.GlobalScale * 2));
+			var maxLength = (xEnd - xStart) / (tex.Width * MuseDash1Game.GlobalScale * 2);
+			var length = maxLength - ((xEnd - xMid) / (tex.Width * MuseDash1Game.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
 			Rlgl.SetTexture(tex.GetTextureHandle());
@@ -161,14 +161,14 @@ namespace CloneDash.Game.Entities
 		public override void Render(FrameState frameState) {
 			if (!ShouldDraw) return;
 
-			var game = Level.As<DashGameLevel>();
+			var game = Level.As<MuseDash1Game>();
 			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
 
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
 			var time = game.Conductor.Time * 5;
-			var sv = (float)(Math.Sin(time) * 10) * DashGameLevel.GlobalScale;
-			var cv = (float)(Math.Cos(time) * 10) * DashGameLevel.GlobalScale;
+			var sv = (float)(Math.Sin(time) * 10) * MuseDash1Game.GlobalScale;
+			var cv = (float)(Math.Cos(time) * 10) * MuseDash1Game.GlobalScale;
 
 			drawScrollQuad(game, up, ref frameState, cv / 2, sv);
 			drawScrollQuad(game, down, ref frameState, sv / 2, cv);
@@ -186,7 +186,7 @@ namespace CloneDash.Game.Entities
 		public override void Build() {
 			base.Build();
 
-			var level = Level.As<DashGameLevel>();
+			var level = Level.As<MuseDash1Game>();
 			var scene = level.Scene;
 
 			scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);

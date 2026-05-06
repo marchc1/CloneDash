@@ -13,7 +13,7 @@ namespace CloneDash.Characters;
 
 public class MuseDashCharacterMainMenuInstance : ICharacterMainMenuInstance
 {
-	public readonly MuseDashCharacterDescriptor Descriptor;
+	public readonly MuseDash1CharacterDescriptor Descriptor;
 	private ICharacterMainMenuInstance? CharacterInstance;
 	private ModelInstance? Model;
 	private readonly AnimationHandler Anims = new();
@@ -23,7 +23,7 @@ public class MuseDashCharacterMainMenuInstance : ICharacterMainMenuInstance
 	private double NextExpressionTime;
 	private AudioPlaybackHandle? ExpressionVoiceHandle;
 
-	public MuseDashCharacterMainMenuInstance(MuseDashCharacterDescriptor descriptor) {
+	public MuseDashCharacterMainMenuInstance(MuseDash1CharacterDescriptor descriptor) {
 		Descriptor = descriptor;
 		Model = descriptor.GetMainShowModel(EngineCore.Level).Instantiate();
 		Anims.SetModel(Model);

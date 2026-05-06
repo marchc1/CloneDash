@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
-public class BossSingleHit(DashGameLevel game) : DashEvent(game)
+public class BossSingleHit(MuseDash1Game game) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.SingleHit();

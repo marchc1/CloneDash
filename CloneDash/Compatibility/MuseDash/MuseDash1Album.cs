@@ -2,7 +2,7 @@
 
 namespace CloneDash.Compatibility.MuseDash;
 
-public class MuseDashAlbum
+public class MuseDash1Album
 {
 	[JsonPropertyName("uid")] public string UID { get; set; } = "";
 	[JsonPropertyName("title")] public string Title { get; set; } = "";

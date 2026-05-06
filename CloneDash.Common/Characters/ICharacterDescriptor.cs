@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 
@@ -53,5 +54,5 @@ public interface ICharacterDescriptor : IHumanNamedObject, IUniquelyIdentifiable
 	/// <summary>
 	/// If the gamemode is not supported, this will return null!
 	/// </summary>
-	ICharacterInGameInstance? CreateInGame(IGamemodeDescriptor gamemodeDescriptor);
+	T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance;
 }

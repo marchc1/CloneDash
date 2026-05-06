@@ -12,8 +12,8 @@ public enum EventTriggerType
 }
 public class DashEvent
 {
-	public DashGameLevel Game;
-	public DashEvent(DashGameLevel game) {
+	public MuseDash1Game Game;
+	public DashEvent(MuseDash1Game game) {
 		Game = game;
 	}
 
@@ -43,7 +43,7 @@ public class DashEvent
 	}
 
 	public virtual void OnBuild() { }
-	public static DashEvent CreateFromType(DashGameLevel game, EventType type) {
+	public static DashEvent CreateFromType(MuseDash1Game game, EventType type) {
 		switch (type) {
 			case EventType.BossIn: return new BossInEvent(game);
 			case EventType.BossOut: return new BossOutEvent(game);

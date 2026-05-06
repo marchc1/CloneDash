@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Game.Events;
 
-public class BossInEvent(DashGameLevel game) : DashEvent(game)
+public class BossInEvent(MuseDash1Game game) : DashEvent(game)
 {
 	public override void Activate() {
 		Game.Boss.In();

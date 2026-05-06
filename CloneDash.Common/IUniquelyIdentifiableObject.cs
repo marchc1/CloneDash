@@ -16,4 +16,11 @@ public static class IUniquelyIdentifiableObjectExts
 
 		return obj1.GetUUID().Equals(obj2.GetUUID(), StringComparison.Ordinal);
 	}
+
+	public static bool UUIDEquals(this IUniquelyIdentifiableObject? obj1, ReadOnlySpan<char> match) {
+		if (obj1 == null) return match.IsEmpty;
+		if (match.IsEmpty) return false; // obj1 being not null, but obj2 being null, means no match
+
+		return obj1.GetUUID().Equals(match, StringComparison.Ordinal);
+	}
 }

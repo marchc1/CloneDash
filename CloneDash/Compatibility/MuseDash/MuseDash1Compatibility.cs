@@ -225,7 +225,7 @@ namespace CloneDash.Compatibility.MuseDash
 	/// Muse Dash style level converter
 	/// </summary>
 	[MarkForStaticConstruction]
-	public static partial class MuseDashCompatibility
+	public static partial class MuseDash1Compatibility
 	{
 		public const uint MUSEDASH_APPID = 774171;
 		public static string? WhereIsMuseDashInstalled { get; set; } = null;
@@ -355,7 +355,7 @@ namespace CloneDash.Compatibility.MuseDash
 				}
 
 				if (s.noteData != null) {
-					var ib = MuseDashCompatibility.ConvertIBMSCode(s.noteData.ibms_id);
+					var ib = MuseDash1Compatibility.ConvertIBMSCode(s.noteData.ibms_id);
 					var tick_hit = (float)s.configData.time;
 					var tick_show = tick_hit - ((tick_hit - ((float)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
@@ -541,7 +541,7 @@ namespace CloneDash.Compatibility.MuseDash
 			return gamemodeData;
 		}
 
-		public static List<MuseDashAlbum> Albums { get; private set; } = [];
+		public static List<MuseDash1Album> Albums { get; private set; } = [];
 		public static List<MD1_Song> Songs { get; private set; }
 
 		private struct __musedashSong
@@ -554,7 +554,7 @@ namespace CloneDash.Compatibility.MuseDash
 			Stopwatch s = new Stopwatch();
 			s.Start();
 
-			Albums = Filesystem.ReadJSON<List<MuseDashAlbum>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
+			Albums = Filesystem.ReadJSON<List<MuseDash1Album>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
 			Albums.RemoveAll(x => x.JsonName == "");
 
 			ConcurrentBag<MD1_Song> workSongs = [];
@@ -856,7 +856,7 @@ namespace CloneDash.Compatibility.MuseDash
 	}
 }
 
-public static class MuseDashModelConverter
+public static class MuseDash1ModelConverter
 {
 
 	public const byte ATTACHMENT_REGION = 0;
@@ -1676,8 +1676,8 @@ public static class MuseDashModelConverter
 	}
 
 	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
-		var skeleton = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
-		var atlas = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
+		var skeleton = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
+		var atlas = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
 
 		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn);
 	}
@@ -1687,13 +1687,13 @@ public static class MuseDashModelConverter
 
 		Texture2D[] textures = new Texture2D[texturePaths.Length];
 		for (int i = 0, c = texturePaths.Length; i < c; i++) {
-			textures[i] = MuseDashCompatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i])!;
+			textures[i] = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<Texture2D>(texturePaths[i])!;
 		}
 
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
-			MuseDashCompatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
+			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
 		);
 
 		return md_data;

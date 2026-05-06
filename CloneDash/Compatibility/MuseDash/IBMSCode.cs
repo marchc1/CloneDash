@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Compatibility.MuseDash
 {
-	public static partial class MuseDashCompatibility
+	public static partial class MuseDash1Compatibility
 	{
 		/// <summary>
 		/// Muse Dash's IBMS codes, which defines behavior of certain entities

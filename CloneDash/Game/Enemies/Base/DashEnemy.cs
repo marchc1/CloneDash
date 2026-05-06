@@ -18,10 +18,10 @@ namespace CloneDash.Game;
 
 public class DashEnemy : ModelEntity
 {
-	public DashGameLevel GetGameLevel() => Level.As<DashGameLevel>();
-	public StatisticsData GetStats() => Level.As<DashGameLevel>().Stats;
-	public Conductor GetConductor() => Level.As<DashGameLevel>().Conductor;
-	public ISceneDescriptor GetCurrentScene() => Level.As<DashGameLevel>().GetCurrentScene();
+	public MuseDash1Game GetGameLevel() => Level.As<MuseDash1Game>();
+	public StatisticsData GetStats() => Level.As<MuseDash1Game>().Stats;
+	public Conductor GetConductor() => Level.As<MuseDash1Game>().Conductor;
+	public ISceneDescriptor GetCurrentScene() => Level.As<MuseDash1Game>().GetCurrentScene();
 
 
 
@@ -432,7 +432,7 @@ public class DashEnemy : ModelEntity
 		if (DidPass)
 			return;
 
-		var level = Level.As<DashGameLevel>();
+		var level = Level.As<MuseDash1Game>();
 
 		level.SpawnTextEffect("PASS", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
 		OnPass();
@@ -452,7 +452,7 @@ public class DashEnemy : ModelEntity
 
 	private Color? __hitColor;
 	public Color HitColor {
-		get { return __hitColor.HasValue ? __hitColor.Value : Level.As<DashGameLevel>().GetPathway(Pathway).Color; }
+		get { return __hitColor.HasValue ? __hitColor.Value : Level.As<MuseDash1Game>().GetPathway(Pathway).Color; }
 		set { __hitColor = value; }
 	}
 
@@ -521,12 +521,12 @@ public class DashEnemy : ModelEntity
 
 	protected DashEnemy(EntityType type) {
 		Type = type;
-		Scale = new(DashGameLevel.GlobalScale);
+		Scale = new(MuseDash1Game.GlobalScale);
 	}
 
 	public string? DebuggingInfo { get; internal set; }
 
-	public static bool TryCreateFromType(DashGameLevel game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
+	public static bool TryCreateFromType(MuseDash1Game game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
 		if (!TypeConvert.TryGetValue(type, out var ctype)) {
 			entity = null;
 			return false;
@@ -534,8 +534,8 @@ public class DashEnemy : ModelEntity
 		entity = CreateFromType(game, ctype);
 		return true;
 	}
-	public static DashEnemy CreateFromType(DashGameLevel game, EntityType type) => CreateFromType(game, TypeConvert[type]);
-	public static DashEnemy CreateFromType(DashGameLevel game, Type type) {
+	public static DashEnemy CreateFromType(MuseDash1Game game, EntityType type) => CreateFromType(game, TypeConvert[type]);
+	public static DashEnemy CreateFromType(MuseDash1Game game, Type type) {
 		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type)!)!;
 		enemy.SortIndex = game.EnemySortIndexCounter++;
 		return enemy;
@@ -578,8 +578,8 @@ public class DashEnemy : ModelEntity
 
 		MountedHeartAnimation.Apply(MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
-		MountedHeart.Position = new(MountBone.WorldTransform.X * DashGameLevel.GlobalScale, (4.5f - (MountBone.WorldTransform.Y * DashGameLevel.GlobalScale)) - 2.25f);
-		MountedHeart.Scale = new(DashGameLevel.GlobalScale);
+		MountedHeart.Position = new(MountBone.WorldTransform.X * MuseDash1Game.GlobalScale, (4.5f - (MountBone.WorldTransform.Y * MuseDash1Game.GlobalScale)) - 2.25f);
+		MountedHeart.Scale = new(MuseDash1Game.GlobalScale);
 		MountedHeart.Render();
 	}
 
