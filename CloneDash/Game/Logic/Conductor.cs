@@ -1,4 +1,5 @@
-﻿using Nucleus;
+﻿using CloneDash.Common.Data;
+using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -9,34 +10,6 @@ using Nucleus.UI;
 
 namespace CloneDash.Game
 {
-	public struct TempoChange
-	{
-		public double Time;
-		public int Beat;
-		public double BPM;
-
-		public TempoChange(double time, int beat, double bpm) {
-			this.Time = time;
-			this.Beat = beat;
-			this.BPM = bpm;
-		}
-
-		public override string ToString() {
-			return $"Tempo Change [time: {Time}, beat {Beat}, bpm: {BPM}]";
-		}
-	}
-
-	public struct TimeSignatureChange
-	{
-		public int Beat;
-		public float Percentage;
-
-		public TimeSignatureChange(int beat, float percent) {
-			Beat = beat;
-			Percentage = percent;
-		}
-	}
-
 	public class Conductor : LogicalEntity
 	{
 		public Conductor() {

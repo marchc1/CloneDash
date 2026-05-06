@@ -1,12 +1,13 @@
 ﻿// TODO: this file is WAY too bloated!!!
 
 using AssetStudio;
+using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
-using CloneDash.Data;
 using CloneDash.Game;
 
 using Fmod5Sharp;
@@ -246,7 +247,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public static string[] StreamingFiles { get; private set; }
 		public static UnitySearchPathV2 StreamingAssets { get; private set; }
 
-		public static void FillInTheBlankNotes(MuseDashSong song, StageInfo stage) {
+		public static void FillInTheBlankNotes(MD1_Song song, StageInfo stage) {
 			foreach (var md in stage.musicDatas) {
 				if (md.noteData == null && md.configData.note_uid != null) {
 					md.noteData = UIDToNote[md.configData.note_uid];
@@ -328,11 +329,11 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static ChartSheet ConvertStageInfoToDashSheet(ChartSong song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
+		public static MD1_SongChart ConvertStageInfoToDashSheet(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
 			Stopwatch measureFunctionTime = Stopwatch.StartNew();
 
-			ChartSheet sheet = new(song);
-			sheet.Rating = song.Difficulty(MDinfo.difficulty);
+			MD1_SongChart sheet = new(song);
+			sheet.Rating = song.GetDifficultyString(MDinfo.difficulty);
 
 			sheet.InitialScene = MDinfo.scene;
 			sheet.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange(){
@@ -373,7 +374,7 @@ namespace CloneDash.Compatibility.MuseDash
 					var blood = s.configData.blood;
 
 					if (s.isLongPressStart) {
-						ChartEntity press = new ChartEntity();
+						MD1_SongChartEntity press = new MD1_SongChartEntity();
 						press.Type = EntityType.SustainBeam;
 						press.Pathway = pathwayType;
 						press.EnterDirection = EntityEnterDirection.RightSide;
@@ -433,7 +434,7 @@ namespace CloneDash.Compatibility.MuseDash
 					};
 
 					if (eventType != EventType.NotApplicable) {
-						ChartEvent ChartEvent = new();
+						MD1_SongChartEvent ChartEvent = new();
 						ChartEvent.Type = eventType;
 						ChartEvent.Time = tick_hit;
 						ChartEvent.Length = (double)s.configData.length;
@@ -467,7 +468,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 							_ => EntityType.Unknown
 						};
-						var health = ib.code == IBMSCode.Hp ? ChartEntity.DEFAULT_HP : 0;
+						var health = ib.code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
 
 						if (entityType != EntityType.Unknown) {
 
@@ -496,7 +497,7 @@ namespace CloneDash.Compatibility.MuseDash
 								_ => EntityEnterDirection.RightSide
 							};
 
-							ChartEntity ent = new ChartEntity();
+							MD1_SongChartEntity ent = new MD1_SongChartEntity();
 							ent.Type = entityType;
 							ent.Variant = variant;
 							ent.Pathway = pathwayType;
@@ -542,7 +543,7 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		public static List<MuseDashAlbum> Albums { get; private set; } = [];
-		public static List<MuseDashSong> Songs { get; private set; }
+		public static List<MD1_Song> Songs { get; private set; }
 
 		private struct __musedashSong
 		{
@@ -557,7 +558,7 @@ namespace CloneDash.Compatibility.MuseDash
 			Albums = Filesystem.ReadJSON<List<MuseDashAlbum>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
 			Albums.RemoveAll(x => x.JsonName == "");
 
-			ConcurrentBag<MuseDashSong> workSongs = [];
+			ConcurrentBag<MD1_Song> workSongs = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
 				Parallel.ForEach(Albums, (album) => {
 					// var songs_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
@@ -570,11 +571,11 @@ namespace CloneDash.Compatibility.MuseDash
 					// 	for (int i = 0; i < songs.Count; i++) Logs.Print($"    song   #{i}: {songs[i].Name}");
 					// 	for (int i = 0; i < songsEN.Length; i++) Logs.Print($"    songEN #{i}: {songsEN[i].name}");
 					// }
-					var songsFinal = new MuseDashSong[songs.Count];
+					var songsFinal = new MD1_Song[songs.Count];
 
 					for (int i = 0; i < songs.Count; i++) {
 						PatchSong(songs, i);
-						var song = new MuseDashSong(songs[i]) {
+						var song = new MD1_Song(songs[i]) {
 							Name = songsEN[i].name,
 							Author = songsEN[i].author,
 							Album = album
@@ -806,7 +807,7 @@ namespace CloneDash.Compatibility.MuseDash
 			throw new NotImplementedException();
 		}
 
-		internal static MuseDashSong? FindSong(ReadOnlySpan<char> md_level) {
+		internal static MD1_Song? FindSong(ReadOnlySpan<char> md_level) {
 			foreach (var song in Songs) {
 				if (song.BaseName.Equals(md_level, StringComparison.InvariantCulture))
 					return song;
@@ -815,28 +816,28 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		static ThreadLocal<char[]> tempSearchBuffers = new ThreadLocal<char[]>(() => new char[512]);
-		internal static IEnumerable<MuseDashSong> FindSimilarSongs(ReadOnlySpan<char> md_level) {
+		internal static IEnumerable<MD1_Song> FindSimilarSongs(ReadOnlySpan<char> md_level) {
 			char[] buffer = tempSearchBuffers.Value!;
 			md_level.CopyTo(buffer);
 			int length = md_level.Length;
 			return _FindSimilarSongs(buffer, length);
 		}
 		// If we don't do this we get instance of type cannot be preserved across await or yield boundary issues
-		static IEnumerable<MuseDashSong> _FindSimilarSongs(char[] buffer, int length) {
+		static IEnumerable<MD1_Song> _FindSimilarSongs(char[] buffer, int length) {
 			foreach (var song in Songs) {
 				if (song.BaseName.Contains(buffer.AsSpan()[..length], StringComparison.OrdinalIgnoreCase))
 					yield return song;
 			}
 		}
 
-		internal static IEnumerable<MuseDashSong> FindSongsStartingWith(ReadOnlySpan<char> md_level) {
+		internal static IEnumerable<MD1_Song> FindSongsStartingWith(ReadOnlySpan<char> md_level) {
 			char[] buffer = tempSearchBuffers.Value!;
 			md_level.CopyTo(buffer);
 			int length = md_level.Length;
 			return _FindSongsStartingWith(buffer, length);
 		}
 		// If we don't do this we get instance of type cannot be preserved across await or yield boundary issues
-		static IEnumerable<MuseDashSong> _FindSongsStartingWith(char[] buffer, int length) {
+		static IEnumerable<MD1_Song> _FindSongsStartingWith(char[] buffer, int length) {
 			foreach (var song in Songs) {
 				if (song.BaseName.StartsWith(buffer.AsSpan()[..length], StringComparison.OrdinalIgnoreCase))
 					yield return song;

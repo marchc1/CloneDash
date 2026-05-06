@@ -5,11 +5,21 @@ namespace CloneDash.Common.Songs;
 
 public delegate void OnAsynchronousLoadingCompleteFn(ISong self);
 
+public struct SongMetadata{
+
+}
+
+public struct SongCoverInfo{
+	public ITexture? Texture;
+	public bool Flipped;
+}
+
 /// <summary>
 /// A song.
 /// </summary>
 public interface ISong : IUniquelyIdentifiableObject
 {
+	SongMetadata FetchMetadata(HumanLanguage desiredLanguage);
 
 	/// <summary>
 	/// Returns a read-only chart list
@@ -34,5 +44,5 @@ public interface ISong : IUniquelyIdentifiableObject
 	/// <summary>
 	/// Gets the cover texture for the demo audio, if it was available. If asynchronously loading, this will be null and <see cref="IsAsynchronouslyLoading"/> will return true.
 	/// </summary>
-	ITexture? GetCoverTexture();
+	SongCoverInfo GetCoverTexture();
 }

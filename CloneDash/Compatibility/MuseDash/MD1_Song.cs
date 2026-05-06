@@ -1,26 +1,22 @@
 ﻿using AssetStudio;
-
+using CloneDash.Common;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
-using CloneDash.Data;
-
+using CloneDash.Settings;
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
-
 using Newtonsoft.Json;
-
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using OdinSerializer;
-
 using Raylib_cs;
-
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-
 using static CloneDash.Compatibility.Unity.UnityAssetUtils;
-
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
 using Texture2D = AssetStudio.Texture2D;
 
@@ -45,10 +41,166 @@ public class MuseDashSongInfoJSON
 	[JsonPropertyName("difficulty4")] public string Difficulty4 { get; set; } = "";
 	[JsonPropertyName("difficulty5")] public string Difficulty5 { get; set; } = "";
 }
-public class MuseDashSong : ChartSong
+
+public delegate void ChartCoverAvailableToMainThreadFn(MD1_SongCover? cover);
+
+public class MD1_Song : ISong
 {
+	private bool __gotDemoTrack = false;
+	private bool __gotCover = false;
+
+	public MD1_SongInfo? Info;
+
+	public string Name = "";
+	public string Author = "";
+
+	protected IAudioClip? AudioTrack;
+	protected IAudioClip? DemoTrack;
+	protected MD1_SongCover? CoverTexture;
+	protected readonly List<MD1_SongChart> Sheets = [];
+	protected readonly List<int> Difficulties = [];
+
+	protected readonly object AsyncLock = new object();
+	protected bool DeferringDemoToAsyncHandler;
+
+	readonly ConcurrentDictionary<object, ChartCoverAvailableToMainThreadFn> chartCoverCallbacks = [];
+
+	public string GetDifficultyString1() => GetInfo()?.Difficulty1 ?? "";
+	public string GetDifficultyString2() => GetInfo()?.Difficulty2 ?? "";
+	public string GetDifficultyString3() => GetInfo()?.Difficulty3 ?? "";
+	public string GetDifficultyString4() => GetInfo()?.Difficulty4 ?? "";
+	public string GetDifficultyString5() => GetInfo()?.Difficulty5 ?? "";
+
+	public bool TryGetDifficultyInteger(int i, out int d) => int.TryParse(GetDifficultyString(i), out d);
+	public string GetDifficultyString(int i) => i switch {
+		1 => GetDifficultyString1(),
+		2 => GetDifficultyString2(),
+		3 => GetDifficultyString3(),
+		4 => GetDifficultyString4(),
+		5 => GetDifficultyString5(),
+		_ => ""
+	};
+
+	protected void Clear() {
+		audiosystem.DestroyAudioClip(AudioTrack);
+		AudioTrack = null;
+		// Not clearing the demo since i dont want a sudden jump
+		// DemoTrack?.Dispose(); DemoTrack = null;
+		Info = null;
+		__gotCover = false;
+		CoverTexture = null;
+		chartCoverCallbacks.Clear();
+		Sheets.Clear();
+	}
+
+	public bool IsLoadingDemoAsync {
+		get {
+			lock (AsyncLock) {
+				return DeferringDemoToAsyncHandler && DemoTrack == null;
+			}
+		}
+	}
+
+	// Public facing methods for getting data
+	public IAudioClip GetAudioTrack() {
+		if (AudioTrack != null && IValidatable.IsValid(AudioTrack))
+			return AudioTrack;
+
+		AudioTrack = ProduceAudioTrack();
+		AudioTrack.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		return AudioTrack;
+	}
+
+	public MD1_SongInfo? GetInfo() {
+		if (Info != null)
+			return Info;
+
+		Info = ProduceInfo();
+		return Info;
+	}
+
+	public IAudioClip? GetDemoTrack() {
+		if (DeferringDemoToAsyncHandler) {
+			lock (AsyncLock) {
+				return DemoTrack;
+			}
+		}
+		if (__gotDemoTrack == false && DemoTrack != null && IValidatable.IsValid(AudioTrack))
+			return DemoTrack;
+
+		DemoTrack = ProduceDemoTrack();
+		DemoTrack?.BindVolumeToConVar(AudioSettings.snd_musicvolume);
+		__gotDemoTrack = true;
+		return DemoTrack;
+	}
+
+	public MD1_SongCover? GetCoverWhenAvailable(object consumer) {
+		MD1_SongCover? cover = null;
+		GetCoverWhenAvailable(consumer, (c) => cover = c);
+		return cover;
+	}
+	public void GetCoverWhenAvailable(object consumer, ChartCoverAvailableToMainThreadFn fn) {
+		if (CoverTexture != null) {
+			fn(CoverTexture);
+			return;
+		}
+
+		if (chartCoverCallbacks.ContainsKey(consumer))
+			return;
+
+		int count = chartCoverCallbacks.Count;
+		chartCoverCallbacks[consumer] = fn;
+		if (count == 0)
+			Task.Run(StartRetrievingCover);
+	}
+
+	private void StartRetrievingCover() {
+		ProduceCover((cover) => {
+			CoverTexture = cover;
+			foreach (var callback in chartCoverCallbacks)
+				callback.Value(cover);
+			chartCoverCallbacks.Clear();
+		});
+	}
+
+	public virtual bool ShouldReproduceSheet(int difficulty) => false;
+
+	public MD1_SongChart GetSheet(int difficulty) {
+		for (int i = 0; i < Difficulties.Count; i++) {
+			if (Difficulties[i] == difficulty)
+				return Sheets[i];
+		}
+
+		var sheet = ProduceSheet(difficulty);
+		Sheets.Add(sheet);
+		Difficulties.Add(difficulty);
+		return sheet;
+	}
+
+	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) => throw new NotImplementedException();
+	public IReadOnlyList<ISongChart> GetCharts() => Sheets;
+	public bool IsAsynchronouslyLoading() => DeferringDemoToAsyncHandler;
+	public void WaitForAsynchronousLoad(OnAsynchronousLoadingCompleteFn callback) => throw new NotImplementedException();
+	public IAudioClip? GetDemoAudio() => DemoTrack;
+	public SongCoverInfo GetCoverTexture() => CoverTexture == null ? default : new() {
+		Texture = CoverTexture.Texture,
+		Flipped = CoverTexture.Flipped
+	};
+
+	public ReadOnlySpan<char> GetUUID() => $"song/musedash1/{Info?.Music}";
+
+	~MD1_Song() {
+		MainThread.RunASAP(() => {
+			if (__gotCover && CoverTexture != null)
+				Raylib.UnloadTexture(CoverTexture.Texture);
+
+			if (AudioTrack != null) audiosystem.DestroyAudioClip(AudioTrack);
+			if (DemoTrack != null) audiosystem.DestroyAudioClip(DemoTrack);
+		});
+	}
+
 	private MuseDashSongInfoJSON __jsonInfo;
-	public MuseDashSong(MuseDashSongInfoJSON info) {
+	public MD1_Song(MuseDashSongInfoJSON info) {
 		__jsonInfo = info;
 		// Debug.Assert(info.Difficulty5 == "");
 	}
@@ -91,10 +243,9 @@ public class MuseDashSong : ChartSong
 	}
 
 	public IAudioClip? MusicTrackOverride { get; set; }
+	public Dictionary<int, MD1_SongChart> DashSheetOverrides { get; set; } = [];
 
-	public Dictionary<int, ChartSheet> DashSheetOverrides { get; set; } = [];
-
-	protected override IAudioClip? ProduceAudioTrack() {
+	protected virtual IAudioClip? ProduceAudioTrack() {
 		if (IValidatable.IsValid(AudioTrack))
 			return AudioTrack;
 
@@ -102,7 +253,7 @@ public class MuseDashSong : ChartSong
 		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
-	protected override IAudioClip? ProduceDemoTrack() {
+	protected virtual IAudioClip? ProduceDemoTrack() {
 		if (IValidatable.IsValid(DemoTrack))
 			return DemoTrack;
 
@@ -111,7 +262,7 @@ public class MuseDashSong : ChartSong
 		return MuseDashCompatibility.GetMusic(EngineCore.Level, audioclip);
 	}
 
-	protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
+	protected virtual void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
 		if (IValidatable.IsValid(CoverTexture)) {
 			callback(CoverTexture);
 			return;
@@ -148,8 +299,8 @@ public class MuseDashSong : ChartSong
 		});
 	}
 
-	protected override ChartSheet ProduceSheet(int mapID) {
-		if (DashSheetOverrides.TryGetValue(mapID, out ChartSheet? sheet))
+	protected virtual MD1_SongChart ProduceSheet(int mapID) {
+		if (DashSheetOverrides.TryGetValue(mapID, out MD1_SongChart? sheet))
 			return sheet;
 
 		LoadAssetFile(); Interlude.Spin();
@@ -173,10 +324,10 @@ public class MuseDashSong : ChartSong
 		return MuseDashCompatibility.ConvertStageInfoToDashSheet(this, stage);
 	}
 
-	protected override ChartInfo? ProduceInfo() {
+	protected virtual MD1_SongInfo? ProduceInfo() {
 		List<string> SearchTags = [];
 		SearchTags.AddRange(__jsonInfo.Name.Split(' '));
-		ChartInfo info = new ChartInfo() {
+		MD1_SongInfo info = new MD1_SongInfo() {
 			BPM = __jsonInfo.BPM,
 			Music = __jsonInfo.Music,
 			LevelDesigners = [__jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner, __jsonInfo.LevelDesigner],

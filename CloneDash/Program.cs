@@ -215,7 +215,7 @@ public class GameDLL : IGameDLL
 		if (cmd.HasParm("-md_level")) {
 			string md_level = cmd.ParmValue("-md_level", "");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
-			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
+			MD1_Song song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
 			var sheet = song.GetSheet(difficulty);
 
 			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0));

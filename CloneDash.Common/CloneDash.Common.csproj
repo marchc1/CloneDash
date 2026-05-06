@@ -29,6 +29,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Gamemodes\MuseDash\V1\Data\" />
 		<Folder Include="Gamemodes\MuseDash\V1\Standard\" />
 		<Folder Include="Gamemodes\MuseDash\V1\Touhou\" />
 	</ItemGroup>

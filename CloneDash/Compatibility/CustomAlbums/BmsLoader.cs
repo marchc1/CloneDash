@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.MuseDash;
+﻿using CloneDash.Common.Data;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CustomAlbums.Utilities;
 using Nucleus;

@@ -1,4 +1,4 @@
-﻿using CloneDash.Data;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 
 namespace CloneDash.Game.Statistics;
 
@@ -6,7 +6,7 @@ public class StatisticsData
 {
 	public StatisticsImpressiveness Title;
 	public StatisticsGrade Grade;
-	public ChartSheet? Sheet;
+	public MD1_SongChart? Chart;
 	public List<DashEnemy> OrderedEnemies = [];
 	public Dictionary<DashEnemy, EnemyStatistics> EnemyInfo = [];
 
@@ -156,8 +156,8 @@ public class StatisticsData
 
 	public void Pass(DashEnemy enemy) => GetStatisticsForEnemy(enemy).Pass();
 
-	public StatisticsData(ChartSheet? sheet) {
-		Sheet = sheet;
+	public StatisticsData(MD1_SongChart? chart) {
+		Chart = chart;
 		Reset();
 	}
 

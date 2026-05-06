@@ -1,8 +1,8 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
@@ -37,11 +37,11 @@ namespace CloneDash.Game;
 
 public struct DashGameParams
 {
-	public ChartSheet? Sheet;
+	public MD1_SongChart? Sheet;
 	public bool Autoplay;
 	public int Measure;
 
-	public DashGameParams(ChartSheet sheet) {
+	public DashGameParams(MD1_SongChart sheet) {
 		Sheet = sheet;
 	}
 
@@ -103,7 +103,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 			return;
 		}
 
-		MuseDashSong? song = MuseDashCompatibility.FindSong(md_level);
+		MD1_Song? song = MuseDashCompatibility.FindSong(md_level);
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
@@ -157,7 +157,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 
 	public override bool IsInGame => true;
 
-	public static DashGameLevel? LoadLevel(ChartSong song, int mapID, bool autoplay) {
+	public static DashGameLevel? LoadLevel(MD1_Song song, int mapID, bool autoplay) {
 		Interlude.Begin($"Loading '{song.Name}'...");
 		if (profilegameload.GetBool()) {
 			Logs.Debug("Starting the sequential profiler.");
@@ -1199,7 +1199,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 	/// </summary>
 	/// <param name="ChartEvent"></param>
-	public void LoadEvent(ChartEvent ChartEvent) {
+	public void LoadEvent(MD1_SongChartEvent ChartEvent) {
 		Interlude.Spin(submessage: "Loading events...");
 		var ev = DashEvent.CreateFromType(this, ChartEvent.Type);
 
@@ -1239,7 +1239,7 @@ public partial class DashGameLevel(DashGameParams gameParameters) : Level
 	/// Loads an entity from a <see cref="ChartEntity"/> representation, builds a <see cref="MapEntity"/> out of it, and adds it to <see cref="GameplayManager.Entities"/>.
 	/// </summary>
 	/// <param name="ChartEntity"></param>
-	public void LoadEntity(ChartEntity ChartEntity) {
+	public void LoadEntity(MD1_SongChartEntity ChartEntity) {
 		Interlude.Spin(submessage: "Loading entities...");
 
 		if (!DashEnemy.TryCreateFromType(this, ChartEntity.Type, out DashEnemy? ent)) {
