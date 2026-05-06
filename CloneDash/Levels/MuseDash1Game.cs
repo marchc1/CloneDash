@@ -5,6 +5,7 @@ using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Scenes;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game.Entities;
@@ -30,7 +31,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-
+using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -63,11 +64,6 @@ public struct DashGameParams
 [Nucleus.MarkForStaticConstruction]
 public partial class MuseDash1Gamemode : IGamemodeDescriptor
 {
-	public ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage) {
-		returnedLanguage = HumanLanguage.English; // todo
-		return "Muse Dash 1";
-	}
-
 	public ReadOnlySpan<char> GetUUID() => UUID;
 	public static readonly string UUID = "gamemode/musedash1/standard";
 }
@@ -473,7 +469,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return true;
 	}
 	private void startUnpause() {
-		Scene.PlaySound(SceneSound.Unpause, 0);
+		activeScene.PlaySound(SceneSound.Unpause, 0);
 		UnpauseTime = Realtime;
 		Timers.Simple(3, () => {
 			fullUnpause();
@@ -500,7 +496,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private bool __deferringAsync = false;
 
 	public StatisticsData Stats;
-	public ISceneDescriptor Scene;
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
 		switch (type) {
@@ -532,6 +527,45 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
+	readonly List<IMuseDash1SceneInstance> scenes = [];
+	IMuseDash1SceneInstance? activeScene;
+	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
+	bool canSceneChange = false;
+	public IMuseDash1SceneInstance? GetActiveScene() => activeScene;
+	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = activeScene) != null;
+
+	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
+	public void SetScene(IMuseDash1SceneInstance? scene) {
+		activeScene?.Deactivate(scene);
+		scene?.Activate(activeScene);
+		activeScene = scene;
+	}
+
+	public void SetScene(ReadOnlySpan<char> scene) {
+		if (sceneLUT.TryGetValue(scene.SliceNullTerminatedString().Hash(), out var instance))
+			SetScene(instance);
+	}
+
+	public void AddScene(IMuseDash1SceneInstance instance) {
+		scenes.Add(instance);
+		sceneLUT[instance.GetScene().GetUUID().Hash()] = instance;
+	}
+
+	public IMuseDash1SceneInstance? AddOrGetScene(ISceneDescriptor? descriptor) {
+		if (descriptor == null) return null;
+		if (sceneLUT.TryGetValue(descriptor.GetUUID().SliceNullTerminatedString().Hash(), out var instance))
+			return instance;
+
+		// Does the scene support the gamemode?
+		if (!descriptor.SupportsGamemode(GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!))
+			return null;
+
+		return (IMuseDash1SceneInstance)(object)descriptor.CreateInGame<IMuseDash1SceneInstance>(this)!;
+	}
+
+	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
+		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
+	}
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
@@ -562,13 +596,28 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					throw new Exception("The character isn't supported for Muse Dash 1");
 
 				var sceneData = SceneMod.GetSceneData();
-				if (sceneData == null) {
-					// TODO: Scene changes. Requires a HUGE restructuring
+				if (sceneData != null) {
+					// Ignore scene changes. Only use this scene.
+					var scene = AddOrGetScene(sceneData);
+					if (scene != null)
+						activeScene = scene;
+					canSceneChange = false;
+				}
+				else {
 					sceneData = SceneMod.GetSceneData(gamemodeData.InitialScene);
 					if (sceneData == null)
 						throw new ArgumentNullException(nameof(sceneData));
+
+					var scene = AddOrGetScene(sceneData);
+					if (scene != null)
+						activeScene = scene;
+
+					// Process scene changes
+					canSceneChange = true;
+					foreach (var sceneChange in gamemodeData.SceneChanges) {
+						Debugger.Break(); // need to figure out the fields here
+					}
 				}
-				Scene = sceneData;
 
 				// var feverFX = FeverMod.GetFeverData();
 				// FeverFX = feverFX;
@@ -576,7 +625,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Interlude.Spin(submessage: "Initializing the scene...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
-				Scene.Initialize(this);
+				foreach (var scene in GetAllScenes())
+					scene.Initialize();
 				// FeverFX?.Initialize(this);
 			}
 
@@ -683,8 +733,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Scorebar = this.UI.Add<CD_Player_Scorebar>();
 			Scorebar.Size = new(0, 128);
 
-			if (!CommandLine().CheckParm("-mdbmsc", out var p))
-				Scene.PlaySound(SceneSound.Begin, 0);
+			if (!CommandLine().CheckParm("-mdbmsc", out var p) && HasActiveScene(out var sceneInstance))
+				sceneInstance.PlaySound(SceneSound.Begin, 0);
 		}
 
 		if (StaticSequentialProfiler.Profiling) {
@@ -714,7 +764,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	static float TEMP_PLAYER_OFFSET => 0;
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
-	public Vector2F GetPathwayPosition(PathwaySide side) => GetCurrentScene().GetPathwayPosition(side);
+	public Vector2F GetPathwayPosition(PathwaySide side) => HasActiveScene(out var scene) ? ((IMuseDash1SceneDescriptor)scene.GetScene()).GetPathwayPosition(side) : default;
 
 	public float GetPlayerY(double jumpRatio) {
 		if (Character.IsInAir())
@@ -742,7 +792,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (PlayedSceneSoundThisFrame[(int)sound])
 			return;
 		PlayedSceneSoundThisFrame[(int)sound] = true;
-		Scene.PlaySound(sound, hits);
+		if (HasActiveScene(out var scene))
+			scene.PlaySound(sound, hits);
 	}
 
 
@@ -1028,12 +1079,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 
-		Scene.Think(this);
-		if (InFever)
+		if(HasActiveScene(out var scene)){
+			scene.Think();
+		}
+		// if (InFever)
 			// FeverFX?.Think(this);
-
-			if (!Paused && IValidatable.IsValid(pressIdle))
-				audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public int EnemySortIndexCounter;
@@ -1288,7 +1338,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void PreRender(FrameState frameState) {
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		Scene.RenderBackground(this);
+		if (HasActiveScene(out var scene))
+			scene.RenderBackground();
 		// if (InFever)
 		// FeverFX?.Render(this);
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -1683,20 +1734,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				PlayCharacterAnimation(CharacterAnimationType.Run);
 		}
 
-		if (nowInsustain != wasSustainingBefore) {
-			var clip = Scene.GetPressIdleSound();
-			if (IValidatable.IsValid(clip)) {
-				if (audiosystem.IsPlaybackActive(pressIdle) && !nowInsustain)
-					audiosystem.DestroyPlayback(pressIdle);
-				else if (!audiosystem.IsPlaybackActive(pressIdle) && nowInsustain) {
-					pressIdle = audiosystem.CreatePlayback(clip, AudioPlaybackSettings.Unaltered with { Stream = true, Looping = true, ManuallyUpdate = true });
-					audiosystem.PlaySound(pressIdle);
-				}
-			}
-		}
+		if (HasActiveScene(out var scene))
+			scene.OnPressStateChange(nowInsustain, wasSustainingBefore);
 	}
-
-	AudioPlaybackHandle pressIdle;
 
 	public delegate void AttackEvent(MuseDash1Game game, PathwaySide side);
 	public event AttackEvent? OnAirAttack;
@@ -1799,16 +1839,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return false;
 
 		return true;
-	}
-
-	// NOTE: While this returns a continuous value for now, scene changes WILL change the field this returns in the future!!!
-	// So ISceneDescriptor must only be used to describe a scene, not to store state!
-
-	// Something to consider though. Scene changes mean entities need different models. Do we patch all entities model reference
-	// fields, or do we remove that responsibility from the entities and have a subsystem manage rendering/model usage?
-	// I am inclined to believe the latter is a healthier response, but we'll have to get to that later.
-	public ISceneDescriptor GetCurrentScene() {
-		return Scene;
 	}
 
 	internal void SetEnemyPosition(DashEnemy ent) {

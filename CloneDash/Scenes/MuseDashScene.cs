@@ -7,6 +7,7 @@ using CloneDash.Game;
 using CloneDash.Game.Entities;
 using CloneDash.Settings;
 using DiscordRPC;
+using DiscordRPC.Registry;
 using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Audio;
@@ -34,7 +35,7 @@ using Transform = AssetStudio.Transform;
 
 namespace CloneDash.Scenes;
 
-public struct MuseDashSceneSounds
+public struct MuseDash1SceneSounds
 {
 	public string? Begin;
 	public string? Fever;
@@ -58,7 +59,7 @@ public struct MuseDashSceneSounds
 	public Nucleus.Util.InlineArray16<string?> HitSounds;
 
 
-	public static readonly MuseDashSceneSounds Default = new MuseDashSceneSounds() {
+	public static readonly MuseDash1SceneSounds Default = new MuseDash1SceneSounds() {
 		Begin = "sfx_readygo",
 		Fever = "char_common_fever",
 		Unpause = "sfx_pause321",
@@ -80,13 +81,13 @@ public struct MuseDashSceneSounds
 		VictoryBgm = "sfx_victory_bgm",
 	}.AutoGenHitSounds();
 
-	public MuseDashSceneSounds AutoGenHitSounds() {
+	public MuseDash1SceneSounds AutoGenHitSounds() {
 		for (int i = 0; i < ((Span<string?>)HitSounds).Length; i++) {
 			HitSounds[i] = $"hitsound_{i:000}";
 		}
 		return this;
 	}
-	public static MuseDashSceneSounds operator +(MuseDashSceneSounds a, MuseDashSceneSounds b) {
+	public static MuseDash1SceneSounds operator +(MuseDash1SceneSounds a, MuseDash1SceneSounds b) {
 		if (b.Begin != null) a.Begin = b.Begin;
 		if (b.Fever != null) a.Fever = b.Fever;
 		if (b.Unpause != null) a.Unpause = b.Unpause;
@@ -110,7 +111,7 @@ public struct MuseDashSceneSounds
 	}
 }
 
-public class MD_Animations3Speed
+public class MD1_Animations3Speed
 {
 	public readonly MD1_SpineActionControllerData[][] Speeds = [
 		[null!, null!, null!],
@@ -131,7 +132,7 @@ public class MD_Animations3Speed
 	}
 }
 
-public static class MuseDashSceneEnemyInfo
+public static class MuseDash1SceneEnemyInfo
 {
 	public const string CODE_BOSS = "01";
 	public const string CODE_SUSTAIN = "02";
@@ -164,59 +165,59 @@ public static class MuseDashSceneEnemyInfo
 	};
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static int SPEED(int speed) => Math.Clamp(speed, 1, 3);
 
-	public static string GetBoss(MuseDashSceneInfo scene)
+	public static string GetBoss(MuseDash1SceneInfo scene)
 		=> $"{scene.MapIdx:00}{CODE_BOSS}_boss";
 
-	public static string GetSustainTop(MuseDashSceneInfo scene, PathwaySide side)
+	public static string GetSustainTop(MuseDash1SceneInfo scene, PathwaySide side)
 		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_top";
-	public static string GetSustainBody(MuseDashSceneInfo scene, PathwaySide side)
+	public static string GetSustainBody(MuseDash1SceneInfo scene, PathwaySide side)
 		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_body";
-	public static string GetSustainNoteUp(MuseDashSceneInfo scene, PathwaySide side)
+	public static string GetSustainNoteUp(MuseDash1SceneInfo scene, PathwaySide side)
 		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_note_up";
-	public static string GetSustainNoteDown(MuseDashSceneInfo scene, PathwaySide side)
+	public static string GetSustainNoteDown(MuseDash1SceneInfo scene, PathwaySide side)
 		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_note_down";
 
-	public static string GetGear(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetGear(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_GEARS}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	public static string GetMasher(MuseDashSceneInfo scene, EntityEnterDirection direction, int speed)
+	public static string GetMasher(MuseDash1SceneInfo scene, EntityEnterDirection direction, int speed)
 		=> $"{scene.MapIdx:00}{CODE_MASHERS}{speed + (direction == EntityEnterDirection.TopDown ? 3 : 0):00}_{DIRECTION(direction)}_{SPEED(speed)}";
 
-	public static string GetDouble(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetDouble(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_DOUBLES}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	public static string GetBoss1(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetBoss1(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 			=> $"{scene.MapIdx:00}{CODE_BOSS1}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
-	public static string GetBoss2(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetBoss2(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_BOSS2}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
-	public static string GetBoss3(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetBoss3(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_BOSS3}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	public static string GetBossGear(MuseDashSceneInfo scene, PathwaySide side, int speed, bool second)
+	public static string GetBossGear(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool second)
 			=> $"{scene.MapIdx:00}{CODE_BOSSGEARS}{speed + (second ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(second ? 2 : 1)}_nor_{SPEED(speed)}";
 
-	public static string GetSmall(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
+	public static string GetSmall(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
 		=> $"{scene.MapIdx:00}{CODE_SMALL}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetMedium1(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
+	public static string GetMedium1(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
 		=> $"{scene.MapIdx:00}{CODE_MEDIUM1}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetMedium2(MuseDashSceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
+	public static string GetMedium2(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
 		=> $"{scene.MapIdx:00}{CODE_MEDIUM2}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetLarge1(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetLarge1(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_LARGE1}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	public static string GetLarge2(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetLarge2(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_LARGE2}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
-	public static string GetHammer(MuseDashSceneInfo scene, PathwaySide side, int speed, bool reversed)
+	public static string GetHammer(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool reversed)
 		=> $"{scene.MapIdx:00}{CODE_HAMMER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "up" : "down")}_{SPEED(speed)}";
 
-	public static string GetRaider(MuseDashSceneInfo scene, PathwaySide side, int speed, bool reversed)
+	public static string GetRaider(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool reversed)
 		=> $"{scene.MapIdx:00}{CODE_RAIDER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "down" : "up")}_{SPEED(speed)}";
 
-	public static string GetGhost(MuseDashSceneInfo scene, PathwaySide side, int speed)
+	public static string GetGhost(MuseDash1SceneInfo scene, PathwaySide side, int speed)
 		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
 
 	internal static string GetHeart(PathwaySide path, int speed)
@@ -230,27 +231,27 @@ public static class MuseDashSceneEnemyInfo
 /// Some hardcoded Muse Dash scene information.
 /// I think this info is hardcoded in basegame anyway
 /// </summary>
-public record class MuseDashSceneInfo
+public record class MuseDash1SceneInfo
 {
-	readonly static Dictionary<ulong, MuseDashSceneInfo> scenes = [];
+	readonly static Dictionary<ulong, MuseDash1SceneInfo> scenes = [];
 
 	public readonly string MapName;
 	public readonly string OfficialName;
 	public readonly int MapIdx;
 
-	public MuseDashSceneSounds Sounds = MuseDashSceneSounds.Default;
+	public MuseDash1SceneSounds Sounds = MuseDash1SceneSounds.Default;
 	public bool Unusable;
-	public MuseDashSceneInfo MarkUnusable() {
+	public MuseDash1SceneInfo MarkUnusable() {
 		Unusable = true;
 		return this;
 	}
-	public MuseDashSceneInfo WithSounds(MuseDashSceneSounds sounds) {
+	public MuseDash1SceneInfo WithSounds(MuseDash1SceneSounds sounds) {
 		Sounds += sounds;
 		return this;
 	}
-	public static IEnumerable<MuseDashSceneInfo> GetScenes() => scenes.Values;
+	public static IEnumerable<MuseDash1SceneInfo> GetScenes() => scenes.Values;
 
-	public MuseDashSceneInfo(int idx, string officialName, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format = "scene_{0:00}") {
+	public MuseDash1SceneInfo(int idx, string officialName, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format = "scene_{0:00}") {
 		MapIdx = idx;
 		MapName = string.Format(format, idx);
 		OfficialName = officialName;
@@ -258,7 +259,7 @@ public record class MuseDashSceneInfo
 		scenes[MapName.Hash()] = this;
 	}
 
-	public static MuseDashSceneInfo? GetSceneInfo(ReadOnlySpan<char> name) {
+	public static MuseDash1SceneInfo? GetSceneInfo(ReadOnlySpan<char> name) {
 		ulong hash = name.Hash();
 		if (scenes.TryGetValue(hash, out var ret))
 			return ret;
@@ -267,39 +268,35 @@ public record class MuseDashSceneInfo
 
 	// TODO: Verify these names properly
 	// Wiki is probably a horrible source for ~50% of these
-	public static readonly MuseDashSceneInfo SpaceStation = new MuseDashSceneInfo(1, "Space Station");
-	public static readonly MuseDashSceneInfo RetroCity = new MuseDashSceneInfo(2, "Retro City");
-	public static readonly MuseDashSceneInfo Castle = new MuseDashSceneInfo(3, "Castle");
-	public static readonly MuseDashSceneInfo RainyNight = new MuseDashSceneInfo(4, "Rainy Night");
-	public static readonly MuseDashSceneInfo Candyland = new MuseDashSceneInfo(5, "Candyland");
-	public static readonly MuseDashSceneInfo Oriental = new MuseDashSceneInfo(6, "Oriental");
-	public static readonly MuseDashSceneInfo GrooveCoaster = new MuseDashSceneInfo(7, "Groove Coaster")
-												.WithSounds(new MuseDashSceneSounds {
+	public static readonly MuseDash1SceneInfo SpaceStation = new MuseDash1SceneInfo(1, "Space Station");
+	public static readonly MuseDash1SceneInfo RetroCity = new MuseDash1SceneInfo(2, "Retro City");
+	public static readonly MuseDash1SceneInfo Castle = new MuseDash1SceneInfo(3, "Castle");
+	public static readonly MuseDash1SceneInfo RainyNight = new MuseDash1SceneInfo(4, "Rainy Night");
+	public static readonly MuseDash1SceneInfo Candyland = new MuseDash1SceneInfo(5, "Candyland");
+	public static readonly MuseDash1SceneInfo Oriental = new MuseDash1SceneInfo(6, "Oriental");
+	public static readonly MuseDash1SceneInfo GrooveCoaster = new MuseDash1SceneInfo(7, "Groove Coaster")
+												.WithSounds(new MuseDash1SceneSounds {
 													Begin = "sfx_readygo_gc",
 													Ghost = "sfx_ghost_gc"
 												});
-	public static readonly MuseDashSceneInfo Gensokyo = new MuseDashSceneInfo(8, "Gensokyo");
-	public static readonly MuseDashSceneInfo GameGraveyard = new MuseDashSceneInfo(9, "Game Graveyard");
-	public static readonly MuseDashSceneInfo Museland = new MuseDashSceneInfo(10, "Museland", "scene_{0:00}_miku");
-	public static readonly MuseDashSceneInfo Mirrorland = new MuseDashSceneInfo(10, "Mirrorland", "scene_{0:00}_rin_len");
-	public static readonly MuseDashSceneInfo Warriorland = new MuseDashSceneInfo(11, "Warriorland")
+	public static readonly MuseDash1SceneInfo Gensokyo = new MuseDash1SceneInfo(8, "Gensokyo");
+	public static readonly MuseDash1SceneInfo GameGraveyard = new MuseDash1SceneInfo(9, "Game Graveyard");
+	public static readonly MuseDash1SceneInfo Museland = new MuseDash1SceneInfo(10, "Museland", "scene_{0:00}_miku");
+	public static readonly MuseDash1SceneInfo Mirrorland = new MuseDash1SceneInfo(10, "Mirrorland", "scene_{0:00}_rin_len");
+	public static readonly MuseDash1SceneInfo Warriorland = new MuseDash1SceneInfo(11, "Warriorland")
 												.MarkUnusable();
-	public static readonly MuseDashSceneInfo JadeTemple = new MuseDashSceneInfo(12, "Jade Temple")
+	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
 												.MarkUnusable();
 }
+public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor {
+	public readonly MuseDash1SceneInfo SceneInfo;
 
-public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
-{
-	public const float MUSEDASH_MULTIPLIER_POSITIONS = 1;
-	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
-	public readonly MuseDashSceneInfo SceneInfo;
-
-	public MuseDashScene(MuseDashSceneInfo info) {
+	public MuseDash1SceneDescriptor(MuseDash1SceneInfo info) {
 		SceneInfo = info;
 	}
 
-	public static MuseDashScene? GetScene(ReadOnlySpan<char> name) {
-		var sceneInfo = MuseDashSceneInfo.GetSceneInfo(name);
+	public static MuseDash1SceneDescriptor? GetScene(ReadOnlySpan<char> name) {
+		var sceneInfo = MuseDash1SceneInfo.GetSceneInfo(name);
 		if (sceneInfo == null)
 			return null;
 
@@ -308,7 +305,26 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 			return GetScene("scene_01"); // Fall back to Space Station...
 		}
 
-		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(sceneInfo.MapName)!;
+		return new(sceneInfo);
+	}
+
+}
+
+
+public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance
+{
+	public const float MUSEDASH_MULTIPLIER_POSITIONS = 1;
+	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
+	public readonly MuseDash1SceneDescriptor Descriptor;
+	public readonly MuseDash1Game Game;
+	public MuseDash1SceneInfo SceneInfo => Descriptor.SceneInfo;
+
+
+	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, MuseDash1Game game) {
+		Descriptor = descriptor;
+		Game = game;
+
+		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(SceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
 			sceneGameObject.GetComponentByName<MonoBehaviour>("SceneSubControl")
 			?? throw new NullReferenceException("No scene control?"));
@@ -316,8 +332,7 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
 
-		var scene = new MuseDashScene(sceneInfo);
-		var pathwaysObject = scene.ImportGameObject(scenePoint, null);
+		var pathwaysObject = ImportGameObject(scenePoint, null);
 
 		var pathwayChildren = new List<(SceneObject obj, Vector3 pos)>();
 		foreach (var child in pathwaysObject.Transform.Children) {
@@ -327,32 +342,31 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 
 		if (pathwayChildren.Count >= 2) {
 			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y));
-			scene.AssignPathway(PathwaySide.Top, pathwayChildren[0].obj, pathwayChildren[0].pos);
-			scene.AssignPathway(PathwaySide.Bottom, pathwayChildren[1].obj, pathwayChildren[1].pos);
+			AssignPathway(PathwaySide.Top, pathwayChildren[0].obj, pathwayChildren[0].pos);
+			AssignPathway(PathwaySide.Bottom, pathwayChildren[1].obj, pathwayChildren[1].pos);
 		}
 		else if (pathwayChildren.Count == 1) {
-			scene.AssignPathway(PathwaySide.Bottom, pathwayChildren[0].obj, pathwayChildren[0].pos);
+			AssignPathway(PathwaySide.Bottom, pathwayChildren[0].obj, pathwayChildren[0].pos);
 		}
 
 		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
-		scene.root = scene.ImportGameObject(rootTransform.GetGameObject()!, null);
+		root = ImportGameObject(rootTransform.GetGameObject()!, null);
 
-		foreach (var obj in scene.allObjects) obj.Awake();
+		foreach (var obj in allObjects) obj.Awake();
 
-		foreach (var obj in scene.allObjects)
+		foreach (var obj in allObjects)
 			foreach (var anim in obj.GetComponents<SceneAnimator>())
-				scene.animators.Add(anim);
+				animators.Add(anim);
 
-		scene.BuildRenderOrder();
+		BuildRenderOrder();
 
-		scene.pathwayInfo[(int)PathwaySide.Both] = new() {
-			Position = (scene.pathwayInfo[(int)PathwaySide.Top].Position +
-						scene.pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
+		pathwayInfo[(int)PathwaySide.Both] = new() {
+			Position = (pathwayInfo[(int)PathwaySide.Top].Position +
+						pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
 			Color = Pathway.PATHWAY_DUAL_COLOR
 		};
-		scene.pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
-		scene.pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
-		return scene;
+		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
+		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
 	}
 
 	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {
@@ -407,26 +421,26 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 
 	MD1_SpineActionControllerData BossAnims = null!;
 
-	MD_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
-	MD_Animations3Speed MasherAnims = new();
-	MD_Animations3Speed AirHeartAnims = new(), RoadHeartAnims = new();
-	MD_Animations3Speed AirScoreAnims = new(), RoadScoreAnims = new();
-	MD_Animations3Speed AirDoubleAnims = new(), RoadDoubleAnims = new();
-	MD_Animations3Speed AirBoss1Anims = new(), RoadBoss1Anims = new();
-	MD_Animations3Speed AirBoss2Anims = new(), RoadBoss2Anims = new();
-	MD_Animations3Speed AirBoss3Anims = new(), RoadBoss3Anims = new();
-	MD_Animations3Speed AirBossGearA_Anims = new(), RoadBossGearA_Anims = new();
-	MD_Animations3Speed AirBossGearB_Anims = new(), RoadBossGearB_Anims = new();
-	MD_Animations3Speed AirSmallAnims = new(), RoadSmallAnims = new();
-	MD_Animations3Speed AirMedium1Anims = new(), RoadMedium1Anims = new();
-	MD_Animations3Speed AirMedium2Anims = new(), RoadMedium2Anims = new();
-	MD_Animations3Speed AirLarge1Anims = new(), RoadLarge1Anims = new();
-	MD_Animations3Speed AirLarge2Anims = new(), RoadLarge2Anims = new();
-	MD_Animations3Speed AirHammerA_Anims = new(), RoadHammerA_Anims = new();
-	MD_Animations3Speed AirHammerB_Anims = new(), RoadHammerB_Anims = new();
-	MD_Animations3Speed AirRaiderA_Anims = new(), RoadRaiderA_Anims = new();
-	MD_Animations3Speed AirRaiderB_Anims = new(), RoadRaiderB_Anims = new();
-	MD_Animations3Speed AirGhostAnims = new(), RoadGhostAnims = new();
+	MD1_Animations3Speed AirGearAnims = new(), RoadGearAnims = new();
+	MD1_Animations3Speed MasherAnims = new();
+	MD1_Animations3Speed AirHeartAnims = new(), RoadHeartAnims = new();
+	MD1_Animations3Speed AirScoreAnims = new(), RoadScoreAnims = new();
+	MD1_Animations3Speed AirDoubleAnims = new(), RoadDoubleAnims = new();
+	MD1_Animations3Speed AirBoss1Anims = new(), RoadBoss1Anims = new();
+	MD1_Animations3Speed AirBoss2Anims = new(), RoadBoss2Anims = new();
+	MD1_Animations3Speed AirBoss3Anims = new(), RoadBoss3Anims = new();
+	MD1_Animations3Speed AirBossGearA_Anims = new(), RoadBossGearA_Anims = new();
+	MD1_Animations3Speed AirBossGearB_Anims = new(), RoadBossGearB_Anims = new();
+	MD1_Animations3Speed AirSmallAnims = new(), RoadSmallAnims = new();
+	MD1_Animations3Speed AirMedium1Anims = new(), RoadMedium1Anims = new();
+	MD1_Animations3Speed AirMedium2Anims = new(), RoadMedium2Anims = new();
+	MD1_Animations3Speed AirLarge1Anims = new(), RoadLarge1Anims = new();
+	MD1_Animations3Speed AirLarge2Anims = new(), RoadLarge2Anims = new();
+	MD1_Animations3Speed AirHammerA_Anims = new(), RoadHammerA_Anims = new();
+	MD1_Animations3Speed AirHammerB_Anims = new(), RoadHammerB_Anims = new();
+	MD1_Animations3Speed AirRaiderA_Anims = new(), RoadRaiderA_Anims = new();
+	MD1_Animations3Speed AirRaiderB_Anims = new(), RoadRaiderB_Anims = new();
+	MD1_Animations3Speed AirGhostAnims = new(), RoadGhostAnims = new();
 
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
@@ -482,7 +496,7 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
-		string sustainID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_SUSTAIN}";
+		string sustainID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_SUSTAIN}";
 		AirStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
 		AirEndSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
 		AirBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_body"));
@@ -495,46 +509,46 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 		RoadUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_up"));
 		RoadDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_down"));
 
-		string bossID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS}";
-		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_air";
+		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
+		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
 		string gearRoadID = SceneInfo.MapIdx switch {
 			// :(
-			3 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
-			8 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
-			10 => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}_road",
-			_ => $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GEARS}"
+			3 => $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_road",
+			8 => $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_road",
+			10 => $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_road",
+			_ => $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}"
 		};
-		string masherID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MASHERS}";
-		string doubleAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_DOUBLES}_air";
-		string doubleRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_DOUBLES}_road";
-		string boss1AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS1}_air";
-		string boss1RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS1}_road";
-		string boss2AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS2}_air";
-		string boss2RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS2}_road";
-		string boss3AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS3}_air";
-		string boss3RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSS3}_road";
-		string bossGearAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSSGEARS}_air";
-		string bossGearRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_BOSSGEARS}_road";
-		string smallAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_SMALL}_air";
-		string smallRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_SMALL}_road";
-		string medium1AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MEDIUM1}_air";
-		string medium1RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MEDIUM1}_road";
-		string medium2AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MEDIUM2}_air";
-		string medium2RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_MEDIUM2}_road";
-		string large1AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_LARGE1}_air";
-		string large1RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_LARGE1}_road";
-		string large2AirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_LARGE2}_air";
-		string large2RoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_LARGE2}_road";
-		string hammerAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_HAMMER}_air";
-		string hammerRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_HAMMER}_road";
-		string hammerAirBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_HAMMER}_air_b";
-		string hammerRoadBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_HAMMER}_road_b";
-		string raiderAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_air";
-		string raiderRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_road";
-		string raiderAirBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_air_b";
-		string raiderRoadBID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_RAIDER}_road_b";
-		string ghostAirID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_air";
-		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDashSceneEnemyInfo.CODE_GHOST}_road";
+		string masherID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_MASHERS}";
+		string doubleAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_DOUBLES}_air";
+		string doubleRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_DOUBLES}_road";
+		string boss1AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS1}_air";
+		string boss1RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS1}_road";
+		string boss2AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS2}_air";
+		string boss2RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS2}_road";
+		string boss3AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS3}_air";
+		string boss3RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS3}_road";
+		string bossGearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSSGEARS}_air";
+		string bossGearRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSSGEARS}_road";
+		string smallAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_SMALL}_air";
+		string smallRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_SMALL}_road";
+		string medium1AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_MEDIUM1}_air";
+		string medium1RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_MEDIUM1}_road";
+		string medium2AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_MEDIUM2}_air";
+		string medium2RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_MEDIUM2}_road";
+		string large1AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_LARGE1}_air";
+		string large1RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_LARGE1}_road";
+		string large2AirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_LARGE2}_air";
+		string large2RoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_LARGE2}_road";
+		string hammerAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_HAMMER}_air";
+		string hammerRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_HAMMER}_road";
+		string hammerAirBID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_HAMMER}_air_b";
+		string hammerRoadBID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_HAMMER}_road_b";
+		string raiderAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_RAIDER}_air";
+		string raiderRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_RAIDER}_road";
+		string raiderAirBID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_RAIDER}_air_b";
+		string raiderRoadBID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_RAIDER}_road_b";
+		string ghostAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GHOST}_air";
+		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GHOST}_road";
 
 		// Populate models
 		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
@@ -579,50 +593,48 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 
 		// Populate animations
 
-		BossAnims = new(getSpineController(MuseDashSceneEnemyInfo.GetBoss(SceneInfo)));
-		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDashSceneEnemyInfo.GetHeart(req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDashSceneEnemyInfo.GetScore(req.path, req.speed));
-		PopulateThreeSpeedAnimations(MasherAnims, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown], static (in req) => MuseDashSceneEnemyInfo.GetMasher(req.scene, req.dir, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDashSceneEnemyInfo.GetGear(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDashSceneEnemyInfo.GetDouble(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDashSceneEnemyInfo.GetBoss1(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss2Anims, RoadBoss2Anims, static (in req) => MuseDashSceneEnemyInfo.GetBoss2(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDashSceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDashSceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBossGearA_Anims, RoadBossGearA_Anims, static (in req) => MuseDashSceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirBossGearB_Anims, RoadBossGearB_Anims, static (in req) => MuseDashSceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedAllDirsAnimations(AirSmallAnims, RoadSmallAnims, static (in req) => MuseDashSceneEnemyInfo.GetSmall(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedAllDirsAnimations(AirMedium1Anims, RoadMedium1Anims, static (in req) => MuseDashSceneEnemyInfo.GetMedium1(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedAllDirsAnimations(AirMedium2Anims, RoadMedium2Anims, static (in req) => MuseDashSceneEnemyInfo.GetMedium2(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirLarge1Anims, RoadLarge1Anims, static (in req) => MuseDashSceneEnemyInfo.GetLarge1(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirLarge2Anims, RoadLarge2Anims, static (in req) => MuseDashSceneEnemyInfo.GetLarge2(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirHammerA_Anims, RoadHammerA_Anims, static (in req) => MuseDashSceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirHammerB_Anims, RoadHammerB_Anims, static (in req) => MuseDashSceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedPathwayAnimations(AirRaiderA_Anims, RoadRaiderA_Anims, static (in req) => MuseDashSceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirRaiderB_Anims, RoadRaiderB_Anims, static (in req) => MuseDashSceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedPathwayAnimations(AirGhostAnims, RoadGhostAnims, static (in req) => MuseDashSceneEnemyInfo.GetGhost(req.scene, req.path, req.speed));
+		BossAnims = new(getSpineController(MuseDash1SceneEnemyInfo.GetBoss(SceneInfo)));
+		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDash1SceneEnemyInfo.GetHeart(req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDash1SceneEnemyInfo.GetScore(req.path, req.speed));
+		PopulateThreeSpeedAnimations(MasherAnims, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown], static (in req) => MuseDash1SceneEnemyInfo.GetMasher(req.scene, req.dir, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGear(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDash1SceneEnemyInfo.GetDouble(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss1(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss2Anims, RoadBoss2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss2(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBossGearA_Anims, RoadBossGearA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirBossGearB_Anims, RoadBossGearB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, true));
+		PopulateThreeSpeedAllDirsAnimations(AirSmallAnims, RoadSmallAnims, static (in req) => MuseDash1SceneEnemyInfo.GetSmall(req.scene, req.path, req.dir, req.speed));
+		PopulateThreeSpeedAllDirsAnimations(AirMedium1Anims, RoadMedium1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium1(req.scene, req.path, req.dir, req.speed));
+		PopulateThreeSpeedAllDirsAnimations(AirMedium2Anims, RoadMedium2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium2(req.scene, req.path, req.dir, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirLarge1Anims, RoadLarge1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge1(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirLarge2Anims, RoadLarge2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge2(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirHammerA_Anims, RoadHammerA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirHammerB_Anims, RoadHammerB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, true));
+		PopulateThreeSpeedPathwayAnimations(AirRaiderA_Anims, RoadRaiderA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirRaiderB_Anims, RoadRaiderB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, true));
+		PopulateThreeSpeedPathwayAnimations(AirGhostAnims, RoadGhostAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGhost(req.scene, req.path, req.speed));
 	}
 
 	public struct RequestInfo
 	{
-		public MuseDashSceneInfo scene;
+		public MuseDash1SceneInfo scene;
 		public PathwaySide path;
 		public EntityEnterDirection dir;
 		public int speed;
 	}
 
-
-
 	MonoBehaviourReader getSpineController(string name) => new(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
 
 	public delegate string ResolverFn(in RequestInfo info);
 
-	void ProcessThreeSpeedAnimations(MD_Animations3Speed table, in RequestInfo req, MonoBehaviourReader reader) {
+	void ProcessThreeSpeedAnimations(MD1_Animations3Speed table, in RequestInfo req, MonoBehaviourReader reader) {
 		ref MD1_SpineActionControllerData speedToEdit = ref table.GetSpeedForEdit(req.speed, req.dir);
 		speedToEdit = new(reader);
 	}
 
-	void PopulateThreeSpeedAnimations(MD_Animations3Speed table, ResolverFn resolver) {
+	void PopulateThreeSpeedAnimations(MD1_Animations3Speed table, ResolverFn resolver) {
 		RequestInfo req = new() {
 			scene = SceneInfo
 		};
@@ -633,9 +645,9 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 			ProcessThreeSpeedAnimations(table, in req, spine);
 		}
 	}
-	void PopulateThreeSpeedAllDirsAnimations(MD_Animations3Speed table, ResolverFn resolver) => PopulateThreeSpeedAnimations(table, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown, EntityEnterDirection.BottomUp], resolver);
-	void PopulateThreeSpeedAllDirsAnimations(MD_Animations3Speed top, MD_Animations3Speed bottom, ResolverFn resolver) => PopulateThreeSpeedAnimations(top, bottom, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown, EntityEnterDirection.BottomUp], resolver);
-	void PopulateThreeSpeedAnimations(MD_Animations3Speed table, ReadOnlySpan<EntityEnterDirection> dirs, ResolverFn resolver) {
+	void PopulateThreeSpeedAllDirsAnimations(MD1_Animations3Speed table, ResolverFn resolver) => PopulateThreeSpeedAnimations(table, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown, EntityEnterDirection.BottomUp], resolver);
+	void PopulateThreeSpeedAllDirsAnimations(MD1_Animations3Speed top, MD1_Animations3Speed bottom, ResolverFn resolver) => PopulateThreeSpeedAnimations(top, bottom, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown, EntityEnterDirection.BottomUp], resolver);
+	void PopulateThreeSpeedAnimations(MD1_Animations3Speed table, ReadOnlySpan<EntityEnterDirection> dirs, ResolverFn resolver) {
 		foreach (var dir in dirs) {
 			RequestInfo req = new() {
 				scene = SceneInfo,
@@ -651,7 +663,7 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 		}
 	}
 
-	void PopulateThreeSpeedAnimations(MD_Animations3Speed top, MD_Animations3Speed bottom, ReadOnlySpan<EntityEnterDirection> dirs, ResolverFn resolver) {
+	void PopulateThreeSpeedAnimations(MD1_Animations3Speed top, MD1_Animations3Speed bottom, ReadOnlySpan<EntityEnterDirection> dirs, ResolverFn resolver) {
 		foreach (var dir in dirs) {
 			RequestInfo req = new() {
 				scene = SceneInfo,
@@ -675,7 +687,7 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 			}
 		}
 	}
-	void PopulateThreeSpeedPathwayAnimations(MD_Animations3Speed top, MD_Animations3Speed bottom, ResolverFn resolver) {
+	void PopulateThreeSpeedPathwayAnimations(MD1_Animations3Speed top, MD1_Animations3Speed bottom, ResolverFn resolver) {
 		RequestInfo req = new() {
 			scene = SceneInfo
 		};
@@ -905,7 +917,7 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 		return false;
 	}
 
-	private MD_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {
+	private MD1_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {
 		EntityVariant.Boss1 => pathway == PathwaySide.Top ? AirBoss1Anims : RoadBoss1Anims,
 		EntityVariant.Boss2 => pathway == PathwaySide.Top ? AirBoss2Anims : RoadBoss2Anims,
 		EntityVariant.Boss3 => pathway == PathwaySide.Top ? AirBoss3Anims : RoadBoss3Anims,
@@ -1021,5 +1033,4 @@ public class MuseDashScene : BaseMuseDash1UnitySimScene, ISceneDescriptor
 				throw new Exception();
 		}
 	}
-	internal void MountToFilesystem() { }
 }

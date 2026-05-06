@@ -1,4 +1,4 @@
-﻿using CloneDash.Modding.Descriptors;
+﻿using CloneDash.Common.Scenes;
 using CloneDash.Scenes;
 
 using Nucleus.Files;
@@ -10,7 +10,7 @@ public class MuseDashSceneProvider : ISceneProvider
 	int ISceneProvider.Priority => 10000000;
 
 	IEnumerable<string> ISceneProvider.GetAvailable() {
-		foreach (var scene in MuseDashSceneInfo.GetScenes())
+		foreach (var scene in MuseDash1SceneInfo.GetScenes())
 			yield return scene.MapName;
 	}
 

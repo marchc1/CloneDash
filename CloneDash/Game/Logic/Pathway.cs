@@ -96,8 +96,8 @@ namespace CloneDash.Game
 			float ring_offset = 360 / divisors / 2;
 
 			var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
-
-			lvl.GetCurrentScene().RenderPathway(lvl, Side, alpha, size, curtimeOffset);
+			if (lvl.HasActiveScene(out var scene))
+				scene.RenderPathway(Side, alpha, size, curtimeOffset);
 		}
 	}
 }

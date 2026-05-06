@@ -1,6 +1,4 @@
-﻿using CloneDash.Scenes;
-
-namespace CloneDash.Modding.Descriptors;
+﻿namespace CloneDash.Common.Scenes;
 
 /// <summary>
 /// Provides a way to get <see cref="ISceneDescriptor"/>'s by name and a total list of available <see cref="ISceneDescriptor"/> names.

@@ -1,10 +1,8 @@
-﻿using CloneDash.Modding.Descriptors;
-
-using Nucleus;
+﻿using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Util;
 
-namespace CloneDash.Scenes;
+namespace CloneDash.Common.Scenes;
 
 [MarkForStaticConstruction]
 public static class SceneMod

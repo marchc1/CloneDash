@@ -1,9 +1,9 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Scenes;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Statistics;
-using CloneDash.Scenes;
 using CloneDash.Settings;
 
 using Nucleus;
@@ -21,9 +21,6 @@ public class DashEnemy : ModelEntity
 	public MuseDash1Game GetGameLevel() => Level.As<MuseDash1Game>();
 	public StatisticsData GetStats() => Level.As<MuseDash1Game>().Stats;
 	public Conductor GetConductor() => Level.As<MuseDash1Game>().Conductor;
-	public ISceneDescriptor GetCurrentScene() => Level.As<MuseDash1Game>().GetCurrentScene();
-
-
 
 	/// <summary>
 	/// Does the death of this entity add to the characters combo score?
