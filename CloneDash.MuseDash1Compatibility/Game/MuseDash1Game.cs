@@ -566,7 +566,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Playing {gameParameters.Chart?.Song?.Name ?? "<null>"}"
+				State = $"Muse Dash 1 - '{gameParameters.Chart?.Song?.Name ?? "<null>"}'"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
