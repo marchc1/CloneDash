@@ -885,12 +885,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 					restart.ImageOrientation = ImageOrientation.Fit;
 					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
+						// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
+						// 
+						// if (profilegameload.GetBool())
+						// 	StaticSequentialProfiler.Start();
+						// 
+						// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
 
-						if (profilegameload.GetBool())
-							StaticSequentialProfiler.Start();
-
-						EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
+						// Maybe seeking is stable enough now to justify this though?
+						SeekTo(0);
+						PauseWindow.Remove();
+						fullUnpause();
 					};
 					restart.PaintOverride += Button_PaintOverride;
 
