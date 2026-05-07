@@ -183,10 +183,10 @@ public class MD1_SpineActionControllerData
 
 	public MD1_SpineActionControllerData(MonoBehaviourReader reader, MD1_SpineActionControllerData? parent = null) {
 		this.parent = parent;
-		var animationData = reader.GetAny<List<object>>("actionData")!;
-		ActionData = new MD_ActionData?[animationData.Count];
+		var animationData = reader.GetAny<object[]>("actionData")!;
+		ActionData = new MD_ActionData?[animationData.Length];
 
-		for (int i = 0; i < animationData.Count; i++) {
+		for (int i = 0; i < animationData.Length; i++) {
 			if (animationData[i] is not OrderedDictionary dict) continue;
 			MD_ActionData data;
 			data = ActionData[i] = new MD_ActionData();
@@ -198,8 +198,8 @@ public class MD1_SpineActionControllerData
 			data.Name = ((string?)dict["name"]) ?? throw new Exception();
 			data.ProtectLevel = (((int?)dict["protectLevel"]) ?? 0);
 			data.SpineActionKeyIndex = (((int?)dict["spineActionKeyIndex"]) ?? 0);
-			data.ActionIdx = ((List<object>)dict["actionIdx"]!).Cast<string>().ToArray();
-			data.ActionEventIdx = ((List<object>)dict["actionEventIdx"]!).Cast<int>().ToArray();
+			data.ActionIdx = ((object[])dict["actionIdx"]!).Cast<string>().ToArray();
+			data.ActionEventIdx = ((object[])dict["actionEventIdx"]!).Cast<int>().ToArray();
 		}
 	}
 }

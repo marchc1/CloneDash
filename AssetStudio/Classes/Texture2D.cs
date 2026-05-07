@@ -1,79 +1,109 @@
 ﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
-    public class StreamingInfo
-    {
-        public long offset; //ulong
-        public uint size;
-        public string path;
-
-        public StreamingInfo(ObjectReader reader)
-        {
-            var version = reader.version;
-
-            if (version[0] >= 2020) //2020.1 and up
-            {
-                offset = reader.ReadInt64();
-            }
-            else
-            {
-                offset = reader.ReadUInt32();
-            }
-            size = reader.ReadUInt32();
-            path = reader.ReadAlignedString();
-        }
-    }
-
-    public class GLTextureSettings
-    {
-        public int m_FilterMode;
-        public int m_Aniso;
-        public float m_MipBias;
-        public int m_WrapMode;
-
-        public GLTextureSettings(ObjectReader reader)
-        {
-            var version = reader.version;
-
-            m_FilterMode = reader.ReadInt32();
-            m_Aniso = reader.ReadInt32();
-            m_MipBias = reader.ReadSingle();
-            if (version[0] >= 2017)//2017.x and up
-            {
-                m_WrapMode = reader.ReadInt32(); //m_WrapU
-                int m_WrapV = reader.ReadInt32();
-                int m_WrapW = reader.ReadInt32();
-            }
-            else
-            {
-                m_WrapMode = reader.ReadInt32();
-            }
-        }
-    }
-
     public sealed class Texture2D : Texture
     {
         public int m_Width;
         public int m_Height;
+        public uint m_CompleteImageSize;
         public TextureFormat m_TextureFormat;
         public bool m_MipMap;
         public int m_MipCount;
         public GLTextureSettings m_TextureSettings;
+        public int m_ImageCount;
+        public byte[] m_PlatformBlob;
+        [JsonPropertyName("image data")]
         public ResourceReader image_data;
         public StreamingInfo m_StreamData;
+        public StreamingInfo m_DataStreamData; //Tuanjie
+
+        public Texture2D() { }
+
+        public Texture2D(Texture2DArray m_Texture2DArray, int layer) // Texture2DArrayImage
+        {
+            reader = m_Texture2DArray.reader;
+            assetsFile = m_Texture2DArray.assetsFile;
+            version = m_Texture2DArray.version;
+            platform = m_Texture2DArray.platform;
+
+            m_Name = $"{m_Texture2DArray.m_Name}_{layer + 1}";
+            type = ClassIDType.Texture2DArrayImage;
+            m_PathID = m_Texture2DArray.m_PathID;
+
+            m_Width = m_Texture2DArray.m_Width;
+            m_Height = m_Texture2DArray.m_Height;
+            m_TextureFormat = m_Texture2DArray.m_Format.ToTextureFormat();
+            m_MipCount = m_Texture2DArray.m_MipCount;
+            m_TextureSettings = m_Texture2DArray.m_TextureSettings;
+            m_StreamData = m_Texture2DArray.m_StreamData;
+            m_PlatformBlob = Array.Empty<byte>();
+            m_MipMap = m_MipCount > 1;
+            m_ImageCount = 1;
+
+            //var imgActualDataSize = GetImageDataSize(m_TextureFormat);
+            //var mipmapSize = (int)(m_Texture2DArray.m_DataSize / m_Texture2DArray.m_Depth - imgActualDataSize);
+            m_CompleteImageSize = (uint)(m_Texture2DArray.m_DataSize / m_Texture2DArray.m_Depth);
+            var offset = layer * m_CompleteImageSize + m_Texture2DArray.image_data.Offset;
+            
+            image_data = !string.IsNullOrEmpty(m_StreamData?.path) 
+                ? new ResourceReader(m_StreamData.path, assetsFile, offset, m_CompleteImageSize) 
+                : new ResourceReader(reader, offset, m_CompleteImageSize);
+
+            byteSize = (uint)(m_Width * m_Height) * 4;
+        }
+
+        public Texture2D(ObjectReader reader, byte[] type, JsonSerializerOptions jsonOptions) : base(reader)
+        {
+            var parsedTex2d = JsonSerializer.Deserialize<Texture2D>(type, jsonOptions);
+            m_Width = parsedTex2d.m_Width;
+            m_Height = parsedTex2d.m_Height;
+            m_CompleteImageSize = parsedTex2d.m_CompleteImageSize;
+            m_TextureFormat = parsedTex2d.m_TextureFormat;
+            m_MipMap = parsedTex2d.m_MipMap;
+            m_MipCount = parsedTex2d.m_MipCount;
+            m_ImageCount = parsedTex2d.m_ImageCount;
+            m_TextureSettings = parsedTex2d.m_TextureSettings;
+            m_StreamData = parsedTex2d.m_StreamData;
+            m_PlatformBlob = parsedTex2d.m_PlatformBlob ?? Array.Empty<byte>();
+
+            image_data = !string.IsNullOrEmpty(m_StreamData?.path)
+                ? new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size)
+                : new ResourceReader(reader, parsedTex2d.image_data.Offset, parsedTex2d.image_data.Size);
+        }
 
         public Texture2D(ObjectReader reader) : base(reader)
         {
             m_Width = reader.ReadInt32();
             m_Height = reader.ReadInt32();
-            var m_CompleteImageSize = reader.ReadInt32();
-            if (version[0] >= 2020) //2020.1 and up
+            m_CompleteImageSize = reader.ReadUInt32();
+            if (version >= 2020) //2020.1 and up
             {
                 var m_MipsStripped = reader.ReadInt32();
             }
+            if (version.IsTuanjie && (version > (2022, 3, 2) || version.Build >= 8)) //2022.3.2t8(1.1.0) and up
+            {
+                var m_WebStreaming = reader.ReadBoolean();
+                reader.AlignStream();
+                var m_PriorityLevel = reader.ReadInt32();
+                var m_UploadedMode = reader.ReadInt32();
+                m_DataStreamData = new StreamingInfo //sample is needed
+                {
+                    offset = 0,
+                    size = reader.ReadUInt32(),
+                    path = reader.ReadAlignedString()
+                };
+            }
             m_TextureFormat = (TextureFormat)reader.ReadInt32();
-            if (version[0] < 5 || (version[0] == 5 && version[1] < 2)) //5.2 down
+            if (version.IsTuanjie && version >= (2022, 3, 62)) //2022.3.62t1(1.7.0) and up
+            {
+                var m_TextureManagerMultiFormatSettingSize = reader.ReadInt32();
+                reader.Position += m_TextureManagerMultiFormatSettingSize; //skip byte[] m_TextureManagerMultiFormatSetting
+                reader.AlignStream();
+            }
+            if (version < (5, 2)) //5.2 down
             {
                 m_MipMap = reader.ReadBoolean();
             }
@@ -81,140 +111,132 @@ namespace AssetStudio
             {
                 m_MipCount = reader.ReadInt32();
             }
-            if (version[0] > 2 || (version[0] == 2 && version[1] >= 6)) //2.6.0 and up
+            if (version >= (2, 6)) //2.6.0 and up
             {
                 var m_IsReadable = reader.ReadBoolean();
             }
-            if (version[0] >= 2020) //2020.1 and up
+            if (version >= 2020) //2020.1 and up
             {
                 var m_IsPreProcessed = reader.ReadBoolean();
             }
-            if (version[0] > 2019 || (version[0] == 2019 && version[1] >= 3)) //2019.3 and up
+            if (version >= (2019, 3)) //2019.3 and up
             {
-                var m_IgnoreMasterTextureLimit = reader.ReadBoolean();
-            }
-            if (version[0] >= 3) //3.0.0 - 5.4
-            {
-                if (version[0] < 5 || (version[0] == 5 && version[1] <= 4))
+                if (version >= (2022, 2)) //2022.2 and up
                 {
-                    var m_ReadAllowed = reader.ReadBoolean();
+                    var m_IgnoreMipmapLimit = reader.ReadBoolean();
+                    reader.AlignStream();
+                }
+                else
+                {
+                    var m_IgnoreMasterTextureLimit = reader.ReadBoolean();
                 }
             }
-            if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
+            if (version.IsInRange(3, (5, 5))) //3.0.0 - 5.4
+            {
+                var m_ReadAllowed = reader.ReadBoolean();
+            }
+            if (version >= (2022, 2)) //2022.2 and up
+            {
+                var m_MipmapLimitGroupName = reader.ReadAlignedString();
+            }
+            if (version >= (2018, 2)) //2018.2 and up
             {
                 var m_StreamingMipmaps = reader.ReadBoolean();
             }
             reader.AlignStream();
-            if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
+            if (version >= (2018, 2)) //2018.2 and up
             {
                 var m_StreamingMipmapsPriority = reader.ReadInt32();
             }
-            var m_ImageCount = reader.ReadInt32();
+            m_ImageCount = reader.ReadInt32();
             var m_TextureDimension = reader.ReadInt32();
             m_TextureSettings = new GLTextureSettings(reader);
-            if (version[0] >= 3) //3.0 and up
+            if (version >= 3) //3.0 and up
             {
                 var m_LightmapFormat = reader.ReadInt32();
             }
-            if (version[0] > 3 || (version[0] == 3 && version[1] >= 5)) //3.5.0 and up
+            if (version >= (3, 5)) //3.5.0 and up
             {
                 var m_ColorSpace = reader.ReadInt32();
             }
-            if (version[0] > 2020 || (version[0] == 2020 && version[1] >= 2)) //2020.2 and up
+            if (version >= (2020, 2)) //2020.2 and up
             {
-                var m_PlatformBlob = reader.ReadUInt8Array();
+                m_PlatformBlob = reader.ReadUInt8Array();
                 reader.AlignStream();
             }
+            else
+            {
+                m_PlatformBlob = Array.Empty<byte>();
+            }
             var image_data_size = reader.ReadInt32();
-            if (image_data_size == 0 && ((version[0] == 5 && version[1] >= 3) || version[0] > 5))//5.3.0 and up
+            if (image_data_size == 0 && version >= (5, 3))//5.3.0 and up
             {
                 m_StreamData = new StreamingInfo(reader);
             }
 
-            ResourceReader resourceReader;
-            if (!string.IsNullOrEmpty(m_StreamData?.path))
-            {
-                resourceReader = new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size);
-            }
-            else
-            {
-                resourceReader = new ResourceReader(reader, reader.BaseStream.Position, image_data_size);
-            }
-            image_data = resourceReader;
+            image_data = !string.IsNullOrEmpty(m_StreamData?.path)
+                ? new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size)
+                : new ResourceReader(reader, reader.BaseStream.Position, image_data_size);
         }
-    }
 
-    public enum TextureFormat
-    {
-        Alpha8 = 1,
-        ARGB4444,
-        RGB24,
-        RGBA32,
-        ARGB32,
-        ARGBFloat,
-        RGB565,
-        BGR24,
-        R16,
-        DXT1,
-        DXT3,
-        DXT5,
-        RGBA4444,
-        BGRA32,
-        RHalf,
-        RGHalf,
-        RGBAHalf,
-        RFloat,
-        RGFloat,
-        RGBAFloat,
-        YUY2,
-        RGB9e5Float,
-        RGBFloat,
-        BC6H,
-        BC7,
-        BC4,
-        BC5,
-        DXT1Crunched,
-        DXT5Crunched,
-        PVRTC_RGB2,
-        PVRTC_RGBA2,
-        PVRTC_RGB4,
-        PVRTC_RGBA4,
-        ETC_RGB4,
-        ATC_RGB4,
-        ATC_RGBA8,
-        EAC_R = 41,
-        EAC_R_SIGNED,
-        EAC_RG,
-        EAC_RG_SIGNED,
-        ETC2_RGB,
-        ETC2_RGBA1,
-        ETC2_RGBA8,
-        ASTC_RGB_4x4,
-        ASTC_RGB_5x5,
-        ASTC_RGB_6x6,
-        ASTC_RGB_8x8,
-        ASTC_RGB_10x10,
-        ASTC_RGB_12x12,
-        ASTC_RGBA_4x4,
-        ASTC_RGBA_5x5,
-        ASTC_RGBA_6x6,
-        ASTC_RGBA_8x8,
-        ASTC_RGBA_10x10,
-        ASTC_RGBA_12x12,
-        ETC_RGB4_3DS,
-        ETC_RGBA8_3DS,
-        RG16,
-        R8,
-        ETC_RGB4Crunched,
-        ETC2_RGBA8Crunched,
-        ASTC_HDR_4x4,
-        ASTC_HDR_5x5,
-        ASTC_HDR_6x6,
-        ASTC_HDR_8x8,
-        ASTC_HDR_10x10,
-        ASTC_HDR_12x12,
-        RG32,
-        RGB48,
-        RGBA64
+        // https://docs.unity3d.com/2023.3/Documentation/Manual/class-TextureImporterOverride.html
+        private int GetImageDataSize(TextureFormat textureFormat)
+        {
+            var imgDataSize = m_Width * m_Height;
+            switch (textureFormat)
+            {
+                case TextureFormat.ASTC_RGBA_5x5:
+                    // https://registry.khronos.org/webgl/extensions/WEBGL_compressed_texture_astc/
+                    imgDataSize = (int)(MathF.Floor((m_Width + 4) / 5f) * MathF.Floor((m_Height + 4) / 5f) * 16);
+                    break;
+                case TextureFormat.ASTC_RGBA_6x6:
+                    imgDataSize = (int)(MathF.Floor((m_Width + 5) / 6f) * MathF.Floor((m_Height + 5) / 6f) * 16);
+                    break;
+                case TextureFormat.ASTC_RGBA_8x8:
+                    imgDataSize = (int)(MathF.Floor((m_Width + 7) / 8f) * MathF.Floor((m_Height + 7) / 8f) * 16);
+                    break;
+                case TextureFormat.ASTC_RGBA_10x10:
+                    imgDataSize = (int)(MathF.Floor((m_Width + 9) / 10f) * MathF.Floor((m_Height + 9) / 10f) * 16);
+                    break;
+                case TextureFormat.ASTC_RGBA_12x12:
+                    imgDataSize = (int)(MathF.Floor((m_Width + 11) / 12f) * MathF.Floor((m_Height + 11) / 12f) * 16);
+                    break;
+                case TextureFormat.DXT1:
+                case TextureFormat.EAC_R:
+                case TextureFormat.EAC_R_SIGNED:
+                case TextureFormat.ATC_RGB4:
+                case TextureFormat.ETC_RGB4:
+                case TextureFormat.ETC2_RGB:
+                case TextureFormat.ETC2_RGBA1:
+                case TextureFormat.PVRTC_RGBA4:
+                    imgDataSize /= 2;
+                    break;
+                case TextureFormat.PVRTC_RGBA2:
+                    imgDataSize /= 4;
+                    break;
+                case TextureFormat.R16:
+                case TextureFormat.RGB565:
+                    imgDataSize *= 2;
+                    break;
+                case TextureFormat.RGB24:
+                    imgDataSize *= 3;
+                    break;
+                case TextureFormat.RG32:
+                case TextureFormat.RGBA32:
+                case TextureFormat.ARGB32:
+                case TextureFormat.BGRA32:
+                case TextureFormat.RGB9e5Float:
+                    imgDataSize *= 4;
+                    break;
+                case TextureFormat.RGB48:
+                    imgDataSize *= 6;
+                    break;
+                case TextureFormat.RGBAHalf:
+                case TextureFormat.RGBA64:
+                    imgDataSize *= 8;
+                    break;
+            }
+            return imgDataSize;
+        }
     }
 }

@@ -1,7 +1,8 @@
-﻿using SixLabors.ImageSharp;
+﻿using System;
+using System.IO;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using System.IO;
 
 namespace AssetStudio
 {
@@ -10,23 +11,34 @@ namespace AssetStudio
         public static Image<Bgra32> ConvertToImage(this Texture2D m_Texture2D, bool flip)
         {
             var converter = new Texture2DConverter(m_Texture2D);
-            var buff = BigArrayPool<byte>.Shared.Rent(m_Texture2D.m_Width * m_Texture2D.m_Height * 4);
+            var buff = BigArrayPool<byte>.Shared.Rent(converter.OutputDataSize);
+            var spanBuff = buff.AsSpan(0, converter.OutputDataSize);
             try
             {
-                if (converter.DecodeTexture2D(buff))
+                if (!converter.DecodeTexture2D(buff)) 
+                    return null;
+
+                Image<Bgra32> image;
+                if (converter.UsesSwitchSwizzle)
                 {
-                    var image = Image.LoadPixelData<Bgra32>(buff, m_Texture2D.m_Width, m_Texture2D.m_Height);
-                    if (flip)
-                    {
-                        image.Mutate(x => x.Flip(FlipMode.Vertical));
-                    }
-                    return image;
+                    var uncroppedSize = converter.GetUncroppedSize();
+                    image = Image.LoadPixelData<Bgra32>(spanBuff, uncroppedSize.Width, uncroppedSize.Height);
+                    image.Mutate(x => x.Crop(m_Texture2D.m_Width, m_Texture2D.m_Height));
                 }
-                return null;
+                else
+                {
+                    image = Image.LoadPixelData<Bgra32>(spanBuff, m_Texture2D.m_Width, m_Texture2D.m_Height);
+                }
+
+                if (flip)
+                {
+                    image.Mutate(x => x.Flip(FlipMode.Vertical));
+                }
+                return image;
             }
             finally
             {
-                BigArrayPool<byte>.Shared.Return(buff);
+                BigArrayPool<byte>.Shared.Return(buff, clearArray: true);
             }
         }
 

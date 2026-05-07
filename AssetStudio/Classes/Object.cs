@@ -1,19 +1,48 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
     public class Object
     {
+        [JsonIgnore]
         public SerializedFile assetsFile;
+        [JsonIgnore]
         public ObjectReader reader;
         public long m_PathID;
-        public int[] version;
-        protected BuildType buildType;
+        [JsonIgnore]
+        public UnityVersion version;
+        [JsonIgnore]
         public BuildTarget platform;
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ClassIDType type;
+        [JsonIgnore]
         public SerializedType serializedType;
+        public int classID;
         public uint byteSize;
+        [JsonIgnore]
+        public string Name;
+        private static readonly JsonSerializerOptions jsonOptions;
+
+        static Object()
+        {
+            jsonOptions = new JsonSerializerOptions
+            {
+                Converters = { new JsonConverterHelper.FloatConverter() },
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                PropertyNameCaseInsensitive = true,
+                IncludeFields = true,
+                WriteIndented = true,
+            };
+        }
+
+        public Object() { }
 
         public Object(ObjectReader reader)
         {
@@ -23,9 +52,9 @@ namespace AssetStudio
             type = reader.type;
             m_PathID = reader.m_PathID;
             version = reader.version;
-            buildType = reader.buildType;
             platform = reader.platform;
             serializedType = reader.serializedType;
+            classID = reader.classID;
             byteSize = reader.byteSize;
 
             if (platform == BuildTarget.NoTarget)
@@ -34,39 +63,67 @@ namespace AssetStudio
             }
         }
 
-        public string Dump()
+        public string DumpObject()
         {
-            if (serializedType?.m_Type != null)
+            string str = null;
+            try
             {
-                return TypeTreeHelper.ReadTypeString(serializedType.m_Type, reader);
+                if (this is Mesh m_Mesh)
+                {
+                    m_Mesh.ProcessData();
+                }
+
+                str = JsonSerializer.Deserialize<JsonObject>(JsonSerializer.SerializeToUtf8Bytes(this, GetType(), jsonOptions))
+                    .ToJsonString(jsonOptions).Replace("  ", "    ");
             }
-            return null;
+            catch
+            {
+                //ignore
+            }
+
+            return str;
         }
 
-        public string Dump(TypeTree m_Type)
+        public string Dump(TypeTree m_Type = null)
         {
-            if (m_Type != null)
-            {
-                return TypeTreeHelper.ReadTypeString(m_Type, reader);
-            }
-            return null;
+            m_Type = m_Type ?? serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            return TypeTreeHelper.ReadTypeString(m_Type, reader);
         }
 
-        public OrderedDictionary ToType()
+        public OrderedDictionary ToType(TypeTree m_Type = null)
         {
-            if (serializedType?.m_Type != null)
-            {
-                return TypeTreeHelper.ReadType(serializedType.m_Type, reader);
-            }
-            return null;
+            m_Type = m_Type ?? serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            return TypeTreeHelper.ReadType(m_Type, reader);
         }
 
-        public OrderedDictionary ToType(TypeTree m_Type)
+        public JsonDocument ToJsonDoc(TypeTree m_Type = null)
         {
-            if (m_Type != null)
+            var typeDict = ToType(m_Type);
+            try
             {
-                return TypeTreeHelper.ReadType(m_Type, reader);
+                if (typeDict != null)
+                {
+                    return JsonSerializer.SerializeToDocument(typeDict, jsonOptions);
+                }
+
+                if (this is Mesh m_Mesh)
+                {
+                    m_Mesh.ProcessData();
+                }
+
+                return JsonSerializer.SerializeToDocument(this, GetType(), jsonOptions);
             }
+            catch
+            {
+                //ignore
+            }
+
             return null;
         }
 
@@ -76,104 +133,126 @@ namespace AssetStudio
             return reader.ReadBytes((int)byteSize);
         }
 
-		internal static Object Read(ObjectReader objectReader) {
+		internal static Object Read(ObjectReader objectReader, bool loadViaTypeTree = false, ObjectInfo objectInfo = null) {
+			Object obj = null;
 			switch (objectReader.type) {
 				case ClassIDType.Animation:
-					return new Animation(objectReader);
-					
+					obj = new Animation(objectReader);
+					break;
 				case ClassIDType.AnimationClip:
-					return new AnimationClip(objectReader);
-					
+					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
+						? new AnimationClip(objectReader, TypeTreeHelper.ReadTypeByteArray(objectReader.serializedType.m_Type, objectReader), jsonOptions, objectInfo)
+						: new AnimationClip(objectReader);
+					break;
 				case ClassIDType.Animator:
-					return new Animator(objectReader);
-					
+					obj = new Animator(objectReader);
+					break;
 				case ClassIDType.AnimatorController:
-					return new AnimatorController(objectReader);
-					
+					obj = new AnimatorController(objectReader);
+					break;
 				case ClassIDType.AnimatorOverrideController:
-					return new AnimatorOverrideController(objectReader);
-					
+					obj = new AnimatorOverrideController(objectReader);
+					break;
 				case ClassIDType.AssetBundle:
-					return new AssetBundle(objectReader);
-					
+					obj = new AssetBundle(objectReader);
+					break;
 				case ClassIDType.AudioClip:
-					return new AudioClip(objectReader);
-					
+					obj = new AudioClip(objectReader);
+					break;
 				case ClassIDType.Avatar:
-					return new Avatar(objectReader);
-					
+					obj = new Avatar(objectReader);
+					break;
+				case ClassIDType.BuildSettings:
+					obj = new BuildSettings(objectReader);
+					break;
 				case ClassIDType.Font:
-					return new Font(objectReader);
-					
+					obj = new Font(objectReader);
+					break;
 				case ClassIDType.GameObject:
-					return new GameObject(objectReader);
-					
+					obj = new GameObject(objectReader);
+					break;
 				case ClassIDType.Material:
-					return new Material(objectReader);
-					
+					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
+						? new Material(objectReader, TypeTreeHelper.ReadTypeByteArray(objectReader.serializedType.m_Type, objectReader), jsonOptions)
+						: new Material(objectReader);
+					break;
 				case ClassIDType.Mesh:
-					return new Mesh(objectReader);
-					
+					obj = new Mesh(objectReader);
+					break;
 				case ClassIDType.MeshFilter:
-					return new MeshFilter(objectReader);
-					
+					obj = new MeshFilter(objectReader);
+					break;
 				case ClassIDType.MeshRenderer:
-					return new MeshRenderer(objectReader);
-					
+					obj = new MeshRenderer(objectReader);
+					break;
 				case ClassIDType.MonoBehaviour:
-					return new MonoBehaviour(objectReader);
-					
+					obj = new MonoBehaviour(objectReader);
+					break;
 				case ClassIDType.MonoScript:
-					return new MonoScript(objectReader);
-					
+					obj = new MonoScript(objectReader);
+					break;
 				case ClassIDType.MovieTexture:
-					return new MovieTexture(objectReader);
-					
+					obj = new MovieTexture(objectReader);
+					break;
 				case ClassIDType.ParticleSystem:
-					return new ParticleSystem(objectReader);
-
+					obj = new ParticleSystem(objectReader);
+					break;
 				case ClassIDType.ParticleSystemRenderer:
-					return new ParticleSystemRenderer(objectReader);
-
+					obj = new ParticleSystemRenderer(objectReader);
+					break;
 				case ClassIDType.PlayerSettings:
-					return new PlayerSettings(objectReader);
-					
+					obj = new PlayerSettings(objectReader);
+					break;
+				case ClassIDType.PreloadData:
+					obj = new PreloadData(objectReader);
+					break;
 				case ClassIDType.RectTransform:
-					return new RectTransform(objectReader);
-					
+					obj = new RectTransform(objectReader);
+					break;
 				case ClassIDType.Shader:
-					return new Shader(objectReader);
-					
+					if (objectReader.version < 2021)
+						obj = new Shader(objectReader);
+					break;
 				case ClassIDType.SkinnedMeshRenderer:
-					return new SkinnedMeshRenderer(objectReader);
-
+					obj = new SkinnedMeshRenderer(objectReader);
+					break;
 				case ClassIDType.Sprite:
-					return new Sprite(objectReader);
-
+					obj = new Sprite(objectReader);
+					break;
 				case ClassIDType.SpriteRenderer:
-					return new SpriteRenderer(objectReader);
-
+					obj = new SpriteRenderer(objectReader);
+					break;
 				case ClassIDType.SpriteAtlas:
-					return new SpriteAtlas(objectReader);
-					
+					obj = new SpriteAtlas(objectReader);
+					break;
 				case ClassIDType.TextAsset:
-					return new TextAsset(objectReader);
-					
+					obj = new TextAsset(objectReader);
+					break;
 				case ClassIDType.Texture2D:
-					return new Texture2D(objectReader);
-					
+					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
+						? new Texture2D(objectReader, TypeTreeHelper.ReadTypeByteArray(objectReader.serializedType.m_Type, objectReader), jsonOptions)
+						: new Texture2D(objectReader);
+					break;
+				case ClassIDType.Texture2DArray:
+					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
+						? new Texture2DArray(objectReader, TypeTreeHelper.ReadTypeByteArray(objectReader.serializedType.m_Type, objectReader), jsonOptions)
+						: new Texture2DArray(objectReader);
+					break;
 				case ClassIDType.Transform:
-					return new Transform(objectReader);
-					
+					obj = new Transform(objectReader);
+					break;
 				case ClassIDType.VideoClip:
-					return new VideoClip(objectReader);
-					
+					obj = new VideoClip(objectReader);
+					break;
 				case ClassIDType.ResourceManager:
-					return new ResourceManager(objectReader);
-					
+					obj = new ResourceManager(objectReader);
+					break;
 				default:
-					return new Object(objectReader);
+					obj = new Object(objectReader);
+					break;
 			}
+
+			return obj;
 		}
 	}
 }

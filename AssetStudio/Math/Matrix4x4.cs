@@ -26,9 +26,9 @@ namespace AssetStudio
         public float M23;
         public float M33;
 
-        public Matrix4x4(float[] values)
+        public Matrix4x4(Span<float> values)
         {
-            if (values == null)
+            if (values.IsEmpty)
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only sixteen input values for Matrix.");

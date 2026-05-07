@@ -1,6 +1,7 @@
 ﻿using CloneDash.Common.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 using Nucleus.Common.Types;
 
 namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
@@ -39,7 +40,7 @@ public class MD1_SongChart : ISongChart
 	}
 	public ISong GetSong() => Song;
 	public IGamemodeDescriptor GetGamemode() {
-		throw new NotImplementedException();
+		return GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
 	}
 	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty)) 
 									?? throw new Exception("uninitialized gamemode data");

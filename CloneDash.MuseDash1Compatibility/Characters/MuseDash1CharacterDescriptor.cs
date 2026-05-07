@@ -189,7 +189,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		OrderedDictionary mainShowAsset = mainShowAssetMB.ToType();
 		// pull out the JSON
 		var jsonPathID = (long)((OrderedDictionary)mainShowAsset["skeletonJSON"]!)["m_PathID"]!;
-		var atlasAssets = (List<object>)mainShowAsset["atlasAssets"]!;
+		var atlasAssets = (object[])mainShowAsset["atlasAssets"]!;
 
 
 		var atlasBase = (OrderedDictionary)atlasAssets[0];
@@ -200,10 +200,10 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		OrderedDictionary atlasInfo = atlasMB.ToType();
 
 		var atlasPathID = (long)((OrderedDictionary)atlasInfo["atlasFile"]!)["m_PathID"]!;
-		var materials = (List<object>)atlasInfo["materials"]!;
+		var materials = (object[])atlasInfo["materials"]!;
 
-		long[] textureIDs = new long[materials.Count];
-		Material[] materialsIn = new Material[materials.Count];
+		long[] textureIDs = new long[materials.Length];
+		Material[] materialsIn = new Material[materials.Length];
 		int i = 0;
 		foreach (var materialBaseObj in materials) {
 			var materialBase = (OrderedDictionary)materialBaseObj;

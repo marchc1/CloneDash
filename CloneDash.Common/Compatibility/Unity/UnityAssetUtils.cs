@@ -57,10 +57,20 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		object? o = Dict[key];
 		if (o == null) return [];
 
-		if (o is not List<object> baseList) return [(T?)GetUnderlyingTypeByNecessaryMeans(o)!];
+		object[]? baseList;
+		switch (o){
+			case List<object> oList:
+				baseList = oList.ToArray();
+				break;
+			case object[] oArr:
+				baseList = oArr;
+				break;
+			default:
+				return [(T?)GetUnderlyingTypeByNecessaryMeans(o)!];
+		}
 
 		List<T?> ret = [];
-		ret.EnsureCapacity(baseList.Count);
+		ret.EnsureCapacity(baseList.Length);
 
 		foreach (var kvp in baseList)
 			ret.Add((T?)GetUnderlyingTypeByNecessaryMeans(kvp));
@@ -204,7 +214,7 @@ public static class UnityAssetUtils
 			throw new FileNotFoundException($"No file matched the regular expression/query for \"{query}\"");
 		manager.LoadFiles(filepath);
 
-		AssetType item = (AssetType)(object)manager.assetsFileList[0].Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
+		AssetType item = (AssetType)(object)manager.AssetsFileList[0].Objects.FirstOrDefault(x => x.type == GetClassIDFromType(typeof(AssetType)));
 		if (item == null)
 			throw new NotImplementedException($"Could not convert! Is there a type conversion definition for {typeof(AssetType).Name}?");
 

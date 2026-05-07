@@ -510,12 +510,12 @@ public class UnitySearchAsset : UnitySearchBase
 			BundlesLoadedSoFar++;
 
 			// Skip if already loaded
-			if (assets.assetsFileList.Any(x => Path.GetFileName((ReadOnlySpan<char>)x.originalPath).Equals(bundleFile, StringComparison.InvariantCulture)))
+			if (assets.AssetsFileList.Any(x => Path.GetFileName((ReadOnlySpan<char>)x.originalPath).Equals(bundleFile, StringComparison.InvariantCulture)))
 				yield break;
 
-			HashSet<SerializedFile> previousState = assets.assetsFileList.ToHashSet();
+			HashSet<SerializedFile> previousState = assets.AssetsFileList.ToHashSet();
 			assets.LoadFile(Path.Combine(baseFolder, platform, bundleFile));
-			HashSet<SerializedFile> currentState = assets.assetsFileList.ToHashSet();
+			HashSet<SerializedFile> currentState = assets.AssetsFileList.ToHashSet();
 
 			foreach (var bundle in currentState.Except(previousState)) {
 				bundle.ReadAssets();
@@ -531,7 +531,7 @@ public class UnitySearchAsset : UnitySearchBase
 		int limit = Math.Min(BundlesLoadedSoFar, bundleFiles.Count);
 		for (int i = 0; i < limit; i++) {
 			string bundleFile = bundleFiles[i];
-			var match = assets.assetsFileList.FirstOrDefault(x =>
+			var match = assets.AssetsFileList.FirstOrDefault(x =>
 				Path.GetFileName((ReadOnlySpan<char>)x.originalPath).Equals(bundleFile, StringComparison.InvariantCulture));
 			if (match != null)
 				yield return match;

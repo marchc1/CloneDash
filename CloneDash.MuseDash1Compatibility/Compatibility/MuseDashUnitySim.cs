@@ -55,7 +55,7 @@ class DecodedClip
 			return result;
 		}
 
-		var muscleClip = clip.m_MuscleClip.m_Clip;
+		var muscleClip = clip.m_MuscleClip.m_Clip.data;
 
 		int totalCurves = 0;
 		foreach (var b in bindings.genericBindings) {
@@ -343,13 +343,13 @@ public class SceneSpriteRenderer : SceneRenderer
 		var vd = rd.m_VertexData;
 		if (vd == null || vd.m_VertexCount == 0) return false;
 		if (vd.m_DataSize == null || vd.m_DataSize.Length == 0) return false;
-		if (vd.m_Channels == null || vd.m_Channels.Length < 1) return false;
-		if (vd.m_Streams == null || vd.m_Streams.Length == 0) return false;
+		if (vd.m_Channels == null || vd.m_Channels.Count < 1) return false;
+		if (vd.m_Streams == null || vd.m_Streams.Count == 0) return false;
 
 		int vc = (int)vd.m_VertexCount;
 		byte[] data = vd.m_DataSize;
 		var posCh = vd.m_Channels[0];
-		if (posCh.dimension < 2 || posCh.stream >= vd.m_Streams.Length) return false;
+		if (posCh.dimension < 2 || posCh.stream >= vd.m_Streams.Count) return false;
 
 		var ps = vd.m_Streams[posCh.stream];
 		int pStride = (int)ps.stride, pBase = (int)ps.offset;
@@ -373,7 +373,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 		if (rd.m_IndexBuffer != null && rd.m_IndexBuffer.Length >= 2) {
 			int fi = 0, ic = rd.m_IndexBuffer.Length / 2;
-			if (rd.m_SubMeshes != null && rd.m_SubMeshes.Length > 0) {
+			if (rd.m_SubMeshes != null && rd.m_SubMeshes.Count > 0) {
 				fi = (int)(rd.m_SubMeshes[0].firstByte / 2);
 				ic = (int)rd.m_SubMeshes[0].indexCount;
 			}

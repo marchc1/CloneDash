@@ -4,9 +4,9 @@ namespace AssetStudio
 {
     public class SerializedTypeHelper
     {
-        private readonly int[] version;
+        private readonly UnityVersion version;
 
-        public SerializedTypeHelper(int[] version)
+        public SerializedTypeHelper(UnityVersion version)
         {
             this.version = version;
         }
@@ -24,7 +24,7 @@ namespace AssetStudio
         {
             nodes.Add(new TypeTreeNode($"PPtr<{type}>", name, indent, false));
             nodes.Add(new TypeTreeNode("int", "m_FileID", indent + 1, false));
-            if (version[0] >= 5) //5.0 and up
+            if (version >= 5) //5.0 and up
             {
                 nodes.Add(new TypeTreeNode("SInt64", "m_PathID", indent + 1, false));
             }
@@ -58,7 +58,7 @@ namespace AssetStudio
             nodes.Add(new TypeTreeNode("float", "value", indent + 4, false));
             nodes.Add(new TypeTreeNode("float", "inSlope", indent + 4, false));
             nodes.Add(new TypeTreeNode("float", "outSlope", indent + 4, false));
-            if (version[0] >= 2018) //2018 and up
+            if (version >= 2018) //2018 and up
             {
                 nodes.Add(new TypeTreeNode("int", "weightedMode", indent + 4, false));
                 nodes.Add(new TypeTreeNode("float", "inWeight", indent + 4, false));
@@ -66,7 +66,7 @@ namespace AssetStudio
             }
             nodes.Add(new TypeTreeNode("int", "m_PreInfinity", indent + 1, false));
             nodes.Add(new TypeTreeNode("int", "m_PostInfinity", indent + 1, false));
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 3)) //5.3 and up
+            if (version >= (5, 3)) //5.3 and up
             {
                 nodes.Add(new TypeTreeNode("int", "m_RotationOrder", indent + 1, false));
             }
@@ -75,7 +75,7 @@ namespace AssetStudio
         public void AddGradient(List<TypeTreeNode> nodes, string name, int indent)
         {
             nodes.Add(new TypeTreeNode("Gradient", name, indent, false));
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 6)) //5.6 and up
+            if (version >= (5, 6)) //5.6 and up
             {
                 AddColorRGBA(nodes, "key0", indent + 1);
                 AddColorRGBA(nodes, "key1", indent + 1);
@@ -113,7 +113,7 @@ namespace AssetStudio
             nodes.Add(new TypeTreeNode("UInt16", "atime5", indent + 1, false));
             nodes.Add(new TypeTreeNode("UInt16", "atime6", indent + 1, false));
             nodes.Add(new TypeTreeNode("UInt16", "atime7", indent + 1, false));
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 5)) //5.5 and up
+            if (version >= (5, 5)) //5.5 and up
             {
                 nodes.Add(new TypeTreeNode("int", "m_Mode", indent + 1, false));
             }
@@ -134,7 +134,7 @@ namespace AssetStudio
             AddGUIStyleState(nodes, "m_OnActive", indent + 1);
             AddGUIStyleState(nodes, "m_OnFocused", indent + 1);
             AddRectOffset(nodes, "m_Border", indent + 1);
-            if (version[0] >= 4) //4 and up
+            if (version >= 4) //4 and up
             {
                 AddRectOffset(nodes, "m_Margin", indent + 1);
                 AddRectOffset(nodes, "m_Padding", indent + 1);
@@ -146,7 +146,7 @@ namespace AssetStudio
             }
             AddRectOffset(nodes, "m_Overflow", indent + 1);
             AddPPtr(nodes, "Font", "m_Font", indent + 1);
-            if (version[0] >= 4) //4 and up
+            if (version >= 4) //4 and up
             {
                 nodes.Add(new TypeTreeNode("int", "m_FontSize", indent + 1, false));
                 nodes.Add(new TypeTreeNode("int", "m_FontStyle", indent + 1, false));
@@ -171,7 +171,7 @@ namespace AssetStudio
                 AddVector2f(nodes, "m_ClipOffset", indent + 1);
                 nodes.Add(new TypeTreeNode("float", "m_FixedWidth", indent + 1, false));
                 nodes.Add(new TypeTreeNode("float", "m_FixedHeight", indent + 1, false));
-                if (version[0] >= 3) //3 and up
+                if (version >= 3) //3 and up
                 {
                     nodes.Add(new TypeTreeNode("int", "m_FontSize", indent + 1, false));
                     nodes.Add(new TypeTreeNode("int", "m_FontStyle", indent + 1, false));
@@ -277,5 +277,100 @@ namespace AssetStudio
             nodes.Add(new TypeTreeNode("PropertyName", name, indent, false));
             AddString(nodes, "id", indent + 1);
         }
+
+        #region CubismLive2D
+        public void AddMonoCubismModel(List<TypeTreeNode> nodes, int indent)
+        {
+            AddPPtr(nodes, "CubismMoc", "_moc", indent);
+        }
+
+        public void AddMonoCubismMoc(List<TypeTreeNode> nodes, int indent)
+        {
+            nodes.Add(new TypeTreeNode("vector", "_bytes", indent, align: true));
+            AddArray(nodes, indent + 2);
+            nodes.Add(new TypeTreeNode("UInt8", "data", indent + 2, false));
+        }
+
+        public void AddMonoCubismPosePart(List<TypeTreeNode> nodes, int indent)
+        {
+            nodes.Add(new TypeTreeNode("int", "GroupIndex", indent, false));
+            nodes.Add(new TypeTreeNode("int", "PartIndex", indent, false));
+            nodes.Add(new TypeTreeNode("vector", "Link", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddString(nodes, "data", indent + 2);
+        }
+
+        public void AddMonoCubismDisplayInfo(List<TypeTreeNode> nodes, int indent)
+        {
+            AddString(nodes, "Name", indent);
+            AddString(nodes, "DisplayName", indent);
+        }
+
+        public void AddMonoCubismFadeController(List<TypeTreeNode> nodes, int indent)
+        {
+            AddPPtr(nodes, "CubismFadeMotionList", "CubismFadeMotionList", indent);
+        }
+
+        public void AddMonoCubismFadeList(List<TypeTreeNode> nodes, int indent)
+        {
+            nodes.Add(new TypeTreeNode("vector", "MotionInstanceIds", indent, align: false));
+            AddArray(nodes, indent + 2);
+            nodes.Add(new TypeTreeNode("int", "data", indent + 2, align: false));
+            nodes.Add(new TypeTreeNode("vector", "CubismFadeMotionObjects", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddPPtr(nodes, "CubismFadeMotionData", "data", indent + 2);
+        }
+        
+        public void AddMonoCubismFadeData(List<TypeTreeNode> nodes, int indent)
+        {
+            AddString(nodes, "MotionName", indent);
+            nodes.Add(new TypeTreeNode("float", "FadeInTime", indent, false));
+            nodes.Add(new TypeTreeNode("float", "FadeOutTime", indent, false));
+            nodes.Add(new TypeTreeNode("vector", "ParameterIds", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddString(nodes, "data", indent + 2);
+            nodes.Add(new TypeTreeNode("vector", "ParameterCurves", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddAnimationCurve(nodes, "data", indent + 2);
+            nodes.Add(new TypeTreeNode("vector", "ParameterFadeInTimes", indent, align: false));
+            AddArray(nodes, indent + 2);
+            nodes.Add(new TypeTreeNode("float", "data", indent + 2, align: false));
+            nodes.Add(new TypeTreeNode("vector", "ParameterFadeOutTimes", indent, align: false));
+            AddArray(nodes, indent + 2);
+            nodes.Add(new TypeTreeNode("float", "data", indent + 2, align: false));
+            nodes.Add(new TypeTreeNode("float", "MotionLength", indent , align: false));
+        }
+
+        public void AddMonoCubismExpressionController(List<TypeTreeNode> nodes, int indent)
+        {
+            AddPPtr(nodes, "CubismExpressionList", "ExpressionsList", indent);
+            nodes.Add(new TypeTreeNode("int", "CurrentExpressionIndex", indent, false));
+        }
+
+        public void AddMonoCubismExpressionList(List<TypeTreeNode> nodes, int indent)
+        {
+            nodes.Add(new TypeTreeNode("vector", "CubismExpressionObjects", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddPPtr(nodes, "CubismExpressionData", "data", indent + 2);
+        }
+
+        private void AddMonoCubismExpressionParameter(List<TypeTreeNode> nodes, string name, int indent)
+        {
+            nodes.Add(new TypeTreeNode("SerializableExpressionParameter", name, indent, false));
+            AddString(nodes, "Id", indent + 1);
+            nodes.Add(new TypeTreeNode("float", "Value", indent + 1, false));
+            nodes.Add(new TypeTreeNode("int", "Blend", indent + 1, false));
+        }
+
+        public void AddMonoCubismExpressionData(List<TypeTreeNode> nodes, int indent)
+        {
+            AddString(nodes, "Type", indent);
+            nodes.Add(new TypeTreeNode("float", "FadeInTime", indent, false));
+            nodes.Add(new TypeTreeNode("float", "FadeOutTime", indent, false));
+            nodes.Add(new TypeTreeNode("SerializableExpressionParameter", "Parameters", indent, align: false));
+            AddArray(nodes, indent + 2);
+            AddMonoCubismExpressionParameter(nodes, "data", indent + 2);
+        }
+        #endregion
     }
 }
