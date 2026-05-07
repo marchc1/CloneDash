@@ -5,6 +5,22 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
+		<IsOSX>$([MSBuild]::IsOSPlatform('OSX'))</IsOSX>
+		<IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(IsWindows)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_WINDOWS</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(IsOSX)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_OSX</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(IsLinux)' == 'true'">
+		<DefineConstants>$(DefineConstants);COMPILED_LINUX</DefineConstants>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
 		<PackageReference Include="BCnEncoder.Net" Version="2.3.0" />
