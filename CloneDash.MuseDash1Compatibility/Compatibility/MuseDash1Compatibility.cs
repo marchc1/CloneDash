@@ -888,6 +888,7 @@ namespace CloneDash.Compatibility.MuseDash
 	}
 }
 
+[MarkForStaticConstruction]
 public static class MuseDash1ModelConverter
 {
 
@@ -1728,6 +1729,28 @@ public static class MuseDash1ModelConverter
 			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
 		);
 
+		var defaultSkin = md_data.DefaultSkin;
+		switch ((MD1_HexieMode)md_hexiemode.GetInt()) {
+			case MD1_HexieMode.Original:
+				var origin = md_data.FindSkin("origin");
+				if (origin != null)
+					defaultSkin.AddSkin(origin);
+				break;
+			case MD1_HexieMode.Hexie:
+				var hexie = md_data.FindSkin("hexie");
+				if (hexie != null)
+					defaultSkin.AddSkin(hexie);
+				break;
+		}
+
 		return md_data;
 	}
+
+	public static readonly ConVar md_hexiemode = new(nameof(md_hexiemode), "0", FCvar.Saved, "Enables/disables suggestive/revealing content.", 0, 1);
+}
+
+public enum MD1_HexieMode
+{
+	Original,
+	Hexie
 }
