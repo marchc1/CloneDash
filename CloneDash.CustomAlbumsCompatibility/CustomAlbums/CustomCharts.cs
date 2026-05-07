@@ -296,12 +296,12 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				return new(this, difficulty, bpmChanges, bms, stageInfo);
 			}
 
-			protected override MD1_SongChart ProduceSheet(int id) {
+			protected override MD1_SongChart? ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
 				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (map == null)
-					throw new Exception("Bad map difficulty.");
+					return null;
 
 				return loadFromStream(map, id);
 			}
