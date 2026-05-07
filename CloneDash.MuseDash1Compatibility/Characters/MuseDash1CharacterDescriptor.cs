@@ -87,7 +87,7 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
-	public ReadOnlySpan<char> GetUUID() => $"character/musedash1/{name}";
+	public ReadOnlySpan<char> GetUUID() => name;
 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
 		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
