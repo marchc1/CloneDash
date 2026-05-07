@@ -25,6 +25,7 @@ using Nucleus.Types;
 using Nucleus.Util;
 using OggVorbisEncoder;
 using Raylib_cs;
+using SevenZip.CommandLineParser;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -763,7 +764,12 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		obj.Color.W = alpha / 255f;
 	}
 
-	public void Think() => RunThinkFuncs(globals.CurTimeDelta);
+	public void Think() {
+		RunThinkFuncs(globals.CurTimeDelta);
+
+		if (!Game.Paused && IValidatable.IsValid(pressIdle))
+			audiosystem.UpdatePlayback(pressIdle);
+	}
 
 	public void Refresh() { }
 	public void PlaySound(SceneSound sound, int hits) {
@@ -1073,7 +1079,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	AudioPlaybackHandle pressIdle;
 
-	public void OnPressStateChange(bool wasSustaining, bool startSustaining) {
+	public void OnPressStateChange(bool startSustaining, bool wasSustaining) {
 		if (startSustaining != wasSustaining) {
 			var clip = GetPressIdleSound();
 			if (IValidatable.IsValid(clip)) {
