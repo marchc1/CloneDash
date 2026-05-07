@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.Valve;
+﻿using CloneDash.Common.Compatibility.Valve;
+using CloneDash.Compatibility.Valve;
 
 using Microsoft.Win32;
 
@@ -10,31 +11,10 @@ namespace CloneDash.Compatibility.MuseDash
 			if (!OperatingSystem.IsWindows())
 				return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
 
-			// Where is Steam installed?
-			string? steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) as string;
-			if (steamInstallPath == null) { // Sometimes the install path will be here instead
-				steamInstallPath = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432NODE\\Valve\\Steam", "InstallPath", null) as string;
-				if (steamInstallPath == null)
-					return MD1CompatLayerInitResult.SteamNotInstalled;
-			}
+			if (SteamGames.WhereIsSteamInstalled() == null) return MD1CompatLayerInitResult.SteamNotInstalled;
+			var musedash_installdir = SteamGames.WhereIsGameInstalled(MUSEDASH_APPID);
+			if (musedash_installdir == null) return MD1CompatLayerInitResult.MuseDashNotInstalled;
 
-			// Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
-			ValveDataFile games = ValveDataFile.FromFile(steamInstallPath + "\\steamapps\\libraryfolders.vdf");
-			string musedash_appid = "" + MUSEDASH_APPID;
-			string musedash_installdir = "";
-			bool musedash_installed = false;
-
-			foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
-				var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
-				if (apps.Contains(musedash_appid)) {
-					ValveDataFile appManifest = ValveDataFile.FromFile(vdfItemPair.Value.GetString("path") + $"\\steamapps\\appmanifest_{musedash_appid}.acf");
-					musedash_installed = true;
-					musedash_installdir = vdfItemPair.Value.GetString("path") + "\\steamapps\\common\\" + appManifest["AppState"].GetString("installdir");
-				}
-			}
-
-			if (!musedash_installed)
-				return MD1CompatLayerInitResult.MuseDashNotInstalled;
 			WhereIsMuseDashInstalled = musedash_installdir;
 			WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "MuseDash_Data");
 

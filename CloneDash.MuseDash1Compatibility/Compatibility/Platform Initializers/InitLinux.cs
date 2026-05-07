@@ -1,3 +1,4 @@
+using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Compatibility.Valve;
 
 namespace CloneDash.Compatibility.MuseDash
@@ -8,32 +9,11 @@ namespace CloneDash.Compatibility.MuseDash
 			if (!OperatingSystem.IsLinux())
 				return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
 
-			// Where is Steam installed?
-			string home = Environment.GetEnvironmentVariable("HOME")!;
-			string steamClassicInstallPath = Path.Combine(home, ".local", "share", "Steam");
-			string steamFlatpakInstallPath = Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
-			
-			string? steamInstallPath = Directory.Exists(steamClassicInstallPath) ? steamClassicInstallPath : Directory.Exists(steamFlatpakInstallPath) ? steamFlatpakInstallPath : null;
-			if(steamInstallPath == null)
-				return MD1CompatLayerInitResult.SteamNotInstalled;
-
 			// Figure out from Steam where Muse Dash is installed, if it is installed, otherwise break out
-			ValveDataFile games = ValveDataFile.FromFile(Path.Combine(steamInstallPath, "steamapps", "libraryfolders.vdf"));
-			string musedash_appid = "" + MUSEDASH_APPID;
-			string musedash_installdir = "";
-			bool musedash_installed = false;
+			if (SteamGames.WhereIsSteamInstalled() == null) return MD1CompatLayerInitResult.SteamNotInstalled;
+			var musedash_installdir = SteamGames.WhereIsGameInstalled(MUSEDASH_APPID);
+			if (musedash_installdir == null) return MD1CompatLayerInitResult.MuseDashNotInstalled;
 
-			foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
-				var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
-				if (apps.Contains(musedash_appid)) {
-					ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
-					musedash_installed = true;
-					musedash_installdir = Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "common", appManifest["AppState"].GetString("installdir"));
-				}
-			}
-
-			if (!musedash_installed)
-				return MD1CompatLayerInitResult.MuseDashNotInstalled;
 			WhereIsMuseDashInstalled = musedash_installdir;
 			WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "MuseDash_Data");
 
