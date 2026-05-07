@@ -185,6 +185,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		else
 			audiosystem.SetSoundPlayhead(Music, time);
 
+		SetScene(FirstScene);
+
 		Stats.Reset();
 		foreach (var entity in Entities) {
 			if (entity is not DashEnemy entCD)
