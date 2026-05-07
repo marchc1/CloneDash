@@ -370,7 +370,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void LayoutDiscs(float width, float height) {
-		if (Source == null || Source.GetSongCount() <= 0) {
+		if (Source == null || (Source.GetSongCount() <= 0 && !Source.IsBusy())) {
 			Loading.Text = "No songs available.";
 			Loading.Visible = true;
 			DisableDiscs(true);
