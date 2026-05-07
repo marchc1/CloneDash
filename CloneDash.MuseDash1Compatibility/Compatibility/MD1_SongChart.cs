@@ -46,9 +46,13 @@ public class MD1_SongChart : ISongChart
 									?? throw new Exception("uninitialized gamemode data");
 
 	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
+		var designers = Song.GetInfo()?.LevelDesigners;
+		var difficultyIndex = ((int)Difficulty) - 1;
+		bool overflow = difficultyIndex >= designers.Length;
+
 		return new SongChartMetadata() {
 			GamemodeName = "Muse Dash 1",
-			ChartAuthors = string.Join(", ", Song.GetInfo()?.LevelDesigners ?? []),
+			ChartAuthors = overflow ? "N/A" : designers?[((int)Difficulty) - 1] ?? "N/A",
 			ReturnedLanguage = desiredLanguage, // todo: language
 			Difficulty = $"{Rating}",
 			DifficultyName = Difficulty switch {
