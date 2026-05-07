@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Characters;
+﻿using CloneDash.Common.Game;
+
+namespace CloneDash.Characters;
 
 public interface ICharacterVictoryInstance
 {
@@ -10,8 +12,10 @@ public interface ICharacterVictoryInstance
 	/// Plays the audio track this character says.
 	/// </summary>
 	void PlayAudio();
+	void Initialize(IGame game);
 	/// <summary>
 	/// Renders the model.
 	/// </summary>
 	void Render();
+	void Think();
 }

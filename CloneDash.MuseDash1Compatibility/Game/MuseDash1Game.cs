@@ -36,6 +36,7 @@ using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
+using System.Text.RegularExpressions;
 using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Game;
@@ -70,6 +71,7 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 
 public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
+	public ISongChart? GetChart() => gameParameters.Chart;
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<MuseDash1Game>();
 		if (level == null) {
@@ -816,9 +818,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Ticks++;
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null) {
+		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && !IValidatable.IsValid(CurrentStatisticsPanel)) {
 			Stats.UploadScore(Score);
-			throw new Exception("Re-implement this");
+			OpenStatistics();
+			audiosystem.PauseSound(Music);
 			return;
 		}
 
@@ -1096,6 +1099,121 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 		// if (InFever)
 		// FeverFX?.Think(this);
+	}
+
+	class StatisticsPanel(MuseDash1Game game) : Panel() {
+		ICharacterVictoryInstance victory = null!;
+		ISongChart? chart;
+		StatisticsData stats = null!;
+		double start = 0;
+		double Time() => game.Curtime - start;
+
+		protected override void Initialize() {
+			chart = game.GetChart();
+			if (chart == null) return;
+			start = game.Curtime;
+			stats = game.Stats;
+
+			ICharacterDescriptor? character = game.Character.GetCharacter();
+			if (character == null) return;
+
+			victory = character.CreateVictory();
+			victory.Initialize(game);
+			victory.PlayAudio();
+			stats.Compute();
+
+			var bottom = Add<Panel>();
+			bottom.DrawPanelBackground = false;
+
+			bottom.DynamicallySized = true;
+			bottom.Size = new(0.07f);
+			bottom.Dock = Dock.Bottom;
+
+			var restart = bottom.Add<Button>();
+			restart.DynamicallySized = true;
+			restart.Size = new(.2f);
+			restart.Text = "Restart";
+			restart.Dock = Dock.Left;
+			restart.MouseReleaseEvent += (_, _, _) => {
+				// TODO: Probably should just hard restart it...
+				// Maybe seeking is stable enough now to justify this though?
+				game.SeekTo(0);
+				this.Remove();
+			};
+
+			var back = bottom.Add<Button>();
+			back.DynamicallySized = true;
+			back.Size = new(.2f);
+			back.Text = "Main Menu";
+			back.Dock = Dock.Right;
+			back.MouseReleaseEvent += (_, _, _) => LevelTransitions.LoadMainMenu();
+
+			BorderSize = 0;
+		}
+		void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y){
+			Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
+			y += fs + 4;
+		}
+		public override void Paint(float width, float height) {
+			BackgroundColor = new(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true))));
+			base.Paint(width, height);
+
+			Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
+			EngineCore.Window.BeginMode2D(new() {
+				Zoom = height / 900 / 2.4f,
+				Offset = (new Vector2F(0, height / 1) + position).ToNumerics()
+			});
+			victory.Render();
+			EngineCore.Window.EndMode2D();
+
+			var chart = (MD1_SongChart?)this.chart;
+			if (chart == null) return;
+			if (stats == null) return;
+
+			Graphics2D.SetDrawColor(255, 255, 255);
+			stats.Compute();
+			var fs = 24;
+			var y = 0;
+
+			Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.Name);
+			Graphics2D.DrawText(16, 16 + y,
+								boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.Name,
+								boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
+								fs);
+			y += fs + 4;
+
+			RenderOneLine($"      Rating: {chart.Rating}", fs, ref y);
+			RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
+			RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
+			RenderOneLine($"      Score: {stats.Score}", fs, ref y);
+			RenderOneLine($"      Max Combo: {stats.MaxCombo}", fs, ref y);
+			RenderOneLine("", fs, ref y);
+			RenderOneLine($"      Perfects: {stats.Perfects}", fs, ref y);
+			RenderOneLine($"      Greats: {stats.Greats}", fs, ref y);
+			RenderOneLine($"      Passes: {stats.Passes}", fs, ref y);
+			RenderOneLine($"      Misses: {stats.Misses}", fs, ref y);
+			RenderOneLine("", fs, ref y);
+			RenderOneLine($"      Earlys: {stats.Earlys}", fs, ref y);
+			RenderOneLine($"      Exacts: {stats.Exacts}", fs, ref y);
+			RenderOneLine($"      Lates: {stats.Lates}", fs, ref y);
+			RenderOneLine("", fs, ref y);
+			RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
+		}
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+			if (victory != null) {
+				victory.Think();
+			}
+		}
+	}
+
+	StatisticsPanel? CurrentStatisticsPanel;
+	private void OpenStatistics() {
+		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
+
+		CurrentStatisticsPanel = UI.Add(new StatisticsPanel(this));
+		CurrentStatisticsPanel.Size = new(1, 1);
+		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
 	public int EnemySortIndexCounter;
