@@ -1,9 +1,6 @@
-﻿using CloneDash.Common.Game;
-using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Scenes;
-using CloneDash.Game;
-using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Models.Runtime;

@@ -12,4 +12,8 @@
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Game\" />
+	</ItemGroup>
 </Project>

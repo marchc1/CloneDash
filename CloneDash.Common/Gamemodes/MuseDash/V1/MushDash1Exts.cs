@@ -2,7 +2,7 @@
 
 namespace CloneDash.Game;
 
-public static class CloneDashExts
+public static class MushDash1Exts
 {
 	public static bool IsBoss(this EntityVariant variant) => variant switch {
 		EntityVariant.Boss1 or EntityVariant.Boss2 or EntityVariant.Boss3
