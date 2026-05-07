@@ -28,6 +28,7 @@ using Nucleus.Engine;
 using Nucleus.Entities;
 using Nucleus.Input;
 using Nucleus.ManagedMemory;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -1519,13 +1520,28 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
+		DeadEntityVisibility deadVis = GameSettings.DeadEntityVisibility;
 		foreach (Entity ent in VisibleEntities) {
 			if (ent is not DashEnemy entCD) continue;
 			if (!enemyPredicate(entCD)) continue;
 
+			if(entCD.Dead){
+				switch(deadVis){
+					case DeadEntityVisibility.UseGamemodeDefaults:
+					case DeadEntityVisibility.FullyVisible:
+						Model4System.PushRenderBlend(new(255, 255, 255));
+						break;
+					case DeadEntityVisibility.Dimmed:
+						Model4System.PushRenderBlend(new(70, 70, 70));
+						break;
+					case DeadEntityVisibility.Invisible:
+						continue;
+				}
+			}
 			Graphics2D.SetDrawColor(255, 255, 255);
 			ent.Render(frameState);
 			Rlgl.DrawRenderBatchActive();
+			Model4System.PopRenderBlend();
 		}
 	}
 	public override void Render(FrameState frameState) {

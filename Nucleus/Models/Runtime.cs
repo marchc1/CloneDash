@@ -64,6 +64,19 @@ public static class Model4System
 
 		return -1;
 	}
+
+	internal static Color RenderBlend = new(255, 255, 255, 255);
+	public static ref readonly Color GetRenderBlend() => ref RenderBlend;
+	static readonly Stack<Color> RenderBlendQueue = new();
+	public static void PushRenderBlend(in Color c) {
+		RenderBlendQueue.Push(RenderBlend);
+		RenderBlend = RenderBlend * c;
+	}
+	public static void PopRenderBlend() {
+		RenderBlend = RenderBlendQueue.Count > 0
+			? RenderBlendQueue.Pop()
+			: Color.White;
+	}
 }
 
 
@@ -606,7 +619,7 @@ public class RegionAttachment : Attachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
-		var color = slot.Color;
+		var color = slot.Color * Model4System.GetRenderBlend();
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
@@ -789,7 +802,7 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
-		var color = slot.Color;
+		var color = slot.Color * Model4System.GetRenderBlend();
 		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
