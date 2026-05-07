@@ -493,7 +493,10 @@ public class SceneSpriteRenderer : SceneRenderer
 		Transform.GetWorldScale(out float sx, out float sy);
 
 		float w = unitW * sx, h = unitH * sy;
-		float offX = -pivotX * w, offY = -(1f - pivotY) * h;
+		float effPivotX = flipX ? (1f - pivotX) : pivotX;
+		float effPivotY = flipY ? pivotY : (1f - pivotY);
+		float offX = -effPivotX * w, offY = -effPivotY * h;
+
 
 		float flippedY = atlasH - texRectY - texRectH;
 		float u0 = texRectX / atlasW, v0 = flippedY / atlasH;
