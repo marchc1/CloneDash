@@ -52,6 +52,7 @@ public static class Model4System
 	public static ConVar m4s_stencilmode = new(nameof(m4s_stencilmode), "1", FCvar.Saved, "Controls stencil rendering.", 0, ((int)M4S_StencilMode.Count) - 1);
 	public const double REFERENCE_FPS = 30;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		T? item = null;
@@ -61,11 +62,11 @@ public static class Model4System
 
 		return null;
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
-		T? item = null;
 		for (int i = 0, c = items.Length; i < c; i++)
-			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+			if (items[i].Name.Equals(name, StringComparison.InvariantCulture))
 				return i;
 
 		return -1;
@@ -189,7 +190,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(SlotDatas, name);
 
 	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(SlotDatas, name);
 
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
