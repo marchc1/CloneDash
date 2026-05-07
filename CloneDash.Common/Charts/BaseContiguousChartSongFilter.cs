@@ -1,7 +1,5 @@
 ﻿using CloneDash.Common;
-using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
-using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
 
 namespace CloneDash.Charts;

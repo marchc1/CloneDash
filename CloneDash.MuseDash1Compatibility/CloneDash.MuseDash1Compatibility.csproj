@@ -7,13 +7,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\CloneDash.Common\CloneDash.Common.csproj" />
+		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Game\" />
 	</ItemGroup>
 </Project>

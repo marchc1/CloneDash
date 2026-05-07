@@ -38,7 +38,7 @@ namespace CloneDash.Game.Entities
 
 		private void Complete() {
 			var level = Level.As<MuseDash1Game>();
-			level.SpawnTextEffect($"PERFECT {Hits}/{MaxHits}", level.GetPathway(PathwaySide.Top).Position, TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
+			level.SpawnTextEffect($"PERFECT {Hits}/{MaxHits}", level.GetPathway(PathwaySide.Top).Position, TextEffectTransitionOut.SlideUp, PathwayExts.PATHWAY_DUAL_COLOR);
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();

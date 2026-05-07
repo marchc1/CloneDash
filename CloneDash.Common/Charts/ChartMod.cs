@@ -1,6 +1,5 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common.Songs;
-using CloneDash.Compatibility.MuseDash;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Commands;

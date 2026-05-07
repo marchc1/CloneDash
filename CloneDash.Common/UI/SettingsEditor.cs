@@ -166,7 +166,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 				onOK: () => {
 					needsClosed = true;
 
-					if (Level is MainMenuLevel level) {
+					if (Level is IMainMenuLevel level) {
 						level.PopActiveElement();
 					}
 				}
@@ -240,7 +240,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic
-		if (Level is MainMenuLevel level)
+		if (Level is IMainMenuLevel level)
 			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
 		else {
 			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
@@ -447,13 +447,13 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 		switch (action) {
 			case InputAction.AirAttack:
-				BackgroundColor = Pathway.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5);
-				ForegroundColor = Pathway.GetColor(PathwaySide.Top);
+				BackgroundColor = PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5);
+				ForegroundColor = PathwayExts.GetColor(PathwaySide.Top);
 				InvalidateKeys();
 				break;
 			case InputAction.GroundAttack:
-				BackgroundColor = Pathway.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5);
-				ForegroundColor = Pathway.GetColor(PathwaySide.Bottom);
+				BackgroundColor = PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5);
+				ForegroundColor = PathwayExts.GetColor(PathwaySide.Bottom);
 				InvalidateKeys();
 				break;
 			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");

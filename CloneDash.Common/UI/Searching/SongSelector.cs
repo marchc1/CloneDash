@@ -2,7 +2,6 @@
 using CloneDash.Charts;
 using CloneDash.Common;
 using CloneDash.Common.Songs;
-using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -17,11 +16,7 @@ using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 
-using Raylib_cs;
 
-using System.Collections.Concurrent;
-
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Menu.Searching;
 
@@ -482,18 +477,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.MouseReleaseEvent += (s, _, _) => {
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(0);
-				if (song is MD1_CustomChartsSong customChartsSong) {
-					customChartsSong.DownloadOrPullFromCache((c) => {
-						if (EngineCore.Level is not MainMenuLevel mml) {
-							Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
-							return;
-						}
-
-						mml.LoadChartSelector(this, c);
-					});
-				}
-				else
-					EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(this, song);
+				LevelTransitions.LoadSongSelector(this, song);
 			};
 			disc.BorderSize = 0;
 			var midpoint = Discs.Length / 2;
@@ -544,7 +528,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public bool InterceptEscape() {
-		Panel? selectedSong = Level.As<MainMenuLevel>().SelectedSong;
+		Panel? selectedSong = ((IMainMenuLevel)Level).GetSelectedSongPanel();
 		if (IValidatable.IsValid(selectedSong)) {
 			selectedSong.Remove();
 			return false;

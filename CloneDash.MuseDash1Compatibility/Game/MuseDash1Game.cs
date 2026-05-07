@@ -13,7 +13,6 @@ using CloneDash.Game.Events;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
-using CloneDash.Levels;
 using CloneDash.Menu;
 using CloneDash.Scenes;
 using CloneDash.Settings;
@@ -50,22 +49,22 @@ public struct DashGameParams
 	public DashGameParams(MD1_SongChart sheet) {
 		Chart = sheet;
 	}
-
-	public DashGameParams WithAutoplay(bool autoplay) {
-		Autoplay = autoplay;
-		return this;
-	}
-
-	public DashGameParams WithMeasure(int measure) {
-		Measure = measure;
-		return this;
-	}
 }
 
 [Nucleus.MarkForStaticConstruction]
 public partial class MuseDash1Gamemode : IGamemodeDescriptor
 {
 	public ReadOnlySpan<char> GetUUID() => UUID;
+
+	public IGame Load(ISongChart chart, in GameLoadGenericParameters parms) {
+		var game = new MuseDash1Game(new((MD1_SongChart)chart) {
+			Autoplay = parms.Autoplay,
+			Measure = parms.StartMeasure ?? 0
+		});
+		EngineCore.LoadLevel(game);
+		return game;
+	}
+
 	public static readonly string UUID = "gamemode/musedash1/standard";
 }
 
@@ -124,7 +123,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return;
 		}
 
-		MuseDash1Game.LoadLevel(song.GetSheet(map), args.Arg(3, 0) == 1);
+		LevelTransitions.LoadSongChart($"Loading '{song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", song.GetSheet(map), new() {
+			Autoplay = args.Arg(3, 0) == 1
+		});
 	}
 	private static void clonedash_openmdlevel_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
 		if (curArgPos == 1) {
@@ -169,30 +170,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override bool IsInGame => true;
 
-	public static MuseDash1Game? LoadLevel(ISongChart chart, bool autoplay) {
-		var song = (MD1_Song)chart.GetSong(); // TODO: fix this
-		Interlude.Begin($"Loading '{song.Name}'...");
-		if (profilegameload.GetBool()) {
-			Logs.Debug("Starting the sequential profiler.");
-			StaticSequentialProfiler.Start();
-		}
-
-		MuseDash1Game? workingLevel = null;
-		try {
-			workingLevel = new MuseDash1Game(new DashGameParams((MD1_SongChart)chart).WithAutoplay(autoplay));
-		}
-		catch (Exception ex) {
-			Logs.Warn($"CD_GameLevel.LoadLevel (preload): {ex.Message}. LoadLevel cancelled");
-			if (Debugger.IsAttached)
-				ExceptionDispatchInfo.Throw(ex);
-		}
-
-		if (workingLevel == null)
-			return null;
-
-		EngineCore.LoadLevel(workingLevel, autoplay);
-		return workingLevel;
-	}
 	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
 		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
@@ -389,7 +366,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			mashTextEffect.Remove();
 
 		if (!IsSeeking) {
-			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, Game.Pathway.PATHWAY_DUAL_COLOR);
+			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, PathwayExts.PATHWAY_DUAL_COLOR);
 			if (IValidatable.IsValid(mashTextEffect))
 				mashTextEffect.SuppressAutoDeath = true;
 			UpdateMashTextEffect();
@@ -841,7 +818,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null) {
 			Stats.UploadScore(Score);
-			EngineCore.LoadLevel(new StatisticsLevel(), gameParameters.Chart, Stats);
+			throw new Exception("Re-implement this");
 			return;
 		}
 
@@ -952,7 +929,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 					back2menu.ImageOrientation = ImageOrientation.Fit;
 					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						EngineCore.LoadLevel(new MainMenuLevel());
+						LevelTransitions.LoadMainMenu();
 					};
 					back2menu.PaintOverride += Button_PaintOverride;
 				}

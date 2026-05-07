@@ -1,5 +1,4 @@
 ﻿using CloneDash.Common.Songs;
-using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
 
 namespace CloneDash.Charts;

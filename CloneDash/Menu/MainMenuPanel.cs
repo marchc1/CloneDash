@@ -3,7 +3,6 @@ using CloneDash.Charts;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
-using CloneDash.Levels;
 using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;

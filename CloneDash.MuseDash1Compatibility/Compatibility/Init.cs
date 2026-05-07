@@ -20,7 +20,7 @@ namespace CloneDash.Compatibility.MuseDash
 #elif COMPILED_LINUX
             return INIT_LINUX();
 #else
-			return MDCompatLayerInitResult.OperatingSystemNotCompatible;
+			return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
 #endif
 		}
 

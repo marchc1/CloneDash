@@ -2,9 +2,12 @@
     A *LOT* of this is subject to change. This is a prototype, and just a testbed of basic game functionality.
 */
 
+using CloneDash.Common;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
+using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;
 
@@ -44,6 +47,10 @@ internal class Program
 		// Installer stuff, ignored if using zip.
 		VelopackApp.Build().Run();
 
+		LevelTransitions.OnLoadMainMenu += () => EngineCore.LoadLevel(new MainMenuLevel());
+		LevelTransitions.OnLoadSongChart += (chart, parms) => chart.GetGamemode().Load(chart, parms);
+		LevelTransitions.OnLoadSongSelector += LevelTransitions_OnLoadSongSelector;
+
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
 			return;
 
@@ -66,6 +73,23 @@ internal class Program
 
 		using ServiceLocatorScope locatorScope = new(engineAPI);
 		engineAPI.Run();
+	}
+
+	// This entire function is gross.
+	// TODO: fix this awfulness
+	private static void LevelTransitions_OnLoadSongSelector(SongSelector selector, Common.Songs.ISong song) {
+		if (song is MD1_CustomChartsSong customChartsSong) {
+			customChartsSong.DownloadOrPullFromCache((c) => {
+				if (EngineCore.Level is not MainMenuLevel mml) {
+					Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
+					return;
+				}
+
+				mml.LoadChartSelector(selector, c);
+			});
+		}
+		else
+			EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(selector, song);
 	}
 }
 
@@ -174,7 +198,7 @@ public class GameDLL : IGameDLL
 							return;
 						}
 
-                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+						string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
 						ui.DialogOKCancel("Update available", message, () => {
 							try {
 								var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
@@ -191,7 +215,7 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-    }
+	}
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
 		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
@@ -216,12 +240,12 @@ public class GameDLL : IGameDLL
 			string md_level = cmd.ParmValue("-md_level", "");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
 			MD1_Song song = MuseDash1Compatibility.Songs.First(x => x.BaseName == md_level);
-			var sheet = song.GetSheet(difficulty);
+			var chart = song.GetSheet(difficulty);
 
-			var lvl = new MuseDash1Game(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0));
-			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl);
-			if (!first) Interlude.End();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
+					Autoplay = cmd.FindParm("-autoplay") != 0
+				});
 		}
 
 		else if (cmd.HasParm("-cam_level")) {
@@ -230,7 +254,7 @@ public class GameDLL : IGameDLL
 			int difficulty = cmd.ParmValue("-difficulty", 0);
 
 			MD1_CustomChartsSong song = new MD1_CustomChartsSong(cam_level);
-			MD1_SongChart chart;
+			MD1_SongChart? chart;
 			switch (Path.GetExtension(cam_level)) {
 				case ".bms":
 					chart = song.LoadFromDiskBMS(cam_level);
@@ -239,15 +263,15 @@ public class GameDLL : IGameDLL
 					chart = song.GetSheet(difficulty);
 					break;
 			}
-
-			var lvl = new MuseDash1Game(new DashGameParams(chart).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
-			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl);
-			if (!first) Interlude.End();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
+					Autoplay = cmd.FindParm("-autoplay") != 0,
+					StartMeasure = cmd.ParmValue("-startmeasure", 0)
+				});
 		}
 
 		else if (first) {
-			EngineCore.LoadLevel(new MainMenuLevel());
+			LevelTransitions.LoadMainMenu();
 		}
 	}
 }

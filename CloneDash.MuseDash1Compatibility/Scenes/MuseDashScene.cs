@@ -398,10 +398,10 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		pathwayInfo[(int)PathwaySide.Both] = new() {
 			Position = (pathwayInfo[(int)PathwaySide.Top].Position +
 						pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
-			Color = Pathway.PATHWAY_DUAL_COLOR
+			Color = PathwayExts.PATHWAY_DUAL_COLOR
 		};
-		pathwayInfo[(int)PathwaySide.Top].Color = Pathway.PATHWAY_TOP_COLOR;
-		pathwayInfo[(int)PathwaySide.Bottom].Color = Pathway.PATHWAY_BOTTOM_COLOR;
+		pathwayInfo[(int)PathwaySide.Top].Color = PathwayExts.PATHWAY_TOP_COLOR;
+		pathwayInfo[(int)PathwaySide.Bottom].Color = PathwayExts.PATHWAY_BOTTOM_COLOR;
 	}
 
 	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {

@@ -1,4 +1,14 @@
-﻿namespace CloneDash.Game;
+﻿using Nucleus.UI;
+
+namespace CloneDash.Game;
+
+public interface IMainMenuLevel
+{
+	T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel;
+
+	void PopActiveElement();
+	Panel? GetSelectedSongPanel();
+}
 
 public interface IMainMenuPanel
 {

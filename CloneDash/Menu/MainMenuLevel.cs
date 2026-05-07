@@ -28,7 +28,7 @@ namespace CloneDash.Game;
 
 
 [Nucleus.MarkForStaticConstruction]
-public class MainMenuLevel : Level
+public class MainMenuLevel : Level, IMainMenuLevel
 {
 	public static ConCommand hologramtest = new(nameof(hologramtest), (_, in _) => {
 		var level = EngineCore.Level;
@@ -172,7 +172,7 @@ public class MainMenuLevel : Level
 		test2.AutoSize = true;
 		test2.DockMargin = RectangleF.TLRB(4);
 
-		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], () => EngineCore.LoadLevel(new MainMenuLevel()));
+		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
 		PushActiveElement(UI.Add<MainMenuPanel>());
 	}
@@ -428,12 +428,10 @@ public class MainMenuLevel : Level
 		}, metadata);
 
 
-	private MuseDash1Game? workingLevel;
-
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
-		if (workingLevel != null) return;
-
-		workingLevel = MuseDash1Game.LoadLevel(chart, autoplay);
+		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", chart, new(){
+			Autoplay = autoplay
+		});
 	}
 
 	public override void Think(FrameState frameState) {
@@ -531,4 +529,6 @@ public class MainMenuLevel : Level
 	public override void PreRenderBackground(FrameState frameState) {
 		base.PreRenderBackground(frameState);
 	}
+
+	public Panel? GetSelectedSongPanel() => SelectedSong;
 }
