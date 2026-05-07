@@ -33,8 +33,21 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 	}
 
 	public void End() {
-		if (Active)
+		bool renderMask = false;
+		switch ((M4S_StencilMode)Model4System.m4s_stencilmode.GetInt()) {
+			case M4S_StencilMode.On:
+			default:
+				break;
+			case M4S_StencilMode.Off:
+				return;
+			case M4S_StencilMode.RenderMask:
+				renderMask = true;
+				break;
+		}
+
+		if (Active && !renderMask)
 			Stencils.End();
+
 		Active = false;
 		endAt = null;
 		workingAttachment = null;
@@ -44,7 +57,6 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		}
 		triangles.Clear();
 		shape.Points.Clear();
-
 	}
 
 	private SlotType? endAt;
@@ -55,6 +67,18 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 
 	public void Start(ClipAttachmentType attachment, SlotType slot, string? endAt = null) {
 		if (workingAttachment != null) return;
+
+		bool renderMask = false;
+		switch((M4S_StencilMode)Model4System.m4s_stencilmode.GetInt()){
+			case M4S_StencilMode.On:
+			default:
+				break;
+			case M4S_StencilMode.Off:
+				return;
+			case M4S_StencilMode.RenderMask:
+				renderMask = true;
+				break;
+		}
 
 		Active = true;
 		workingAttachment = attachment;
@@ -74,9 +98,10 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		shape.Triangulate(triangles);
 
 		// Draw stencil mask
-		Stencils.Begin();
-
-		Stencils.BeginMask();
+		if (!renderMask) {
+			Stencils.Begin();
+			Stencils.BeginMask();
+		}
 
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.Color4ub(255, 255, 255, 255);
@@ -96,6 +121,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		}
 
 		Rlgl.End();
+		if(!renderMask)
 		Stencils.EndMask();
 	}
 

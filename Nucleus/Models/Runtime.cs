@@ -29,6 +29,12 @@ using System.Xml.Linq;
 
 namespace Nucleus.Models.Runtime;
 
+public enum M4S_StencilMode : byte {
+	Off = 0,
+	On = 1,
+	RenderMask = 2,
+	Count
+}
 /// <summary>
 /// Runtime for the 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
 /// </summary>
@@ -43,8 +49,8 @@ public static class Model4System
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
 	public static ConVar m4s_wireframe = new(nameof(m4s_wireframe), "0", FCvar.Saved, "Model4 instance wireframe overlay.", 0, 1);
+	public static ConVar m4s_stencilmode = new(nameof(m4s_stencilmode), "1", FCvar.Saved, "Controls stencil rendering.", 0, ((int)M4S_StencilMode.Count) - 1);
 	public const double REFERENCE_FPS = 30;
-
 
 	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
@@ -288,7 +294,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Rlgl.PopMatrix();
 		Graphics2D.OffsetDrawing(offset);
 
-		if (Model4System.m4s_wireframe.GetBool()) {
+		if (Model4System.m4s_wireframe.GetInt() >= 2) {
 			foreach (var bone in Bones) {
 				Raylib.DrawCircleV(bone.WorldTransform.LocalToWorld(0, 0).ToNumerics() * new System.Numerics.Vector2(1, -1), 4, Color.Red);
 			}
