@@ -1,10 +1,11 @@
-﻿using CloneDash.Common.Songs;
+﻿using CloneDash.Charts;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using Nucleus.Files;
 using System.Xml.Linq;
 
-namespace CloneDash.Charts;
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 
 public class CustomAlbumsChartSource : BaseContiguousSongSource
 {

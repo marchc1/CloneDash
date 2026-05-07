@@ -22,7 +22,7 @@ using Nucleus.NewEngine;
 using Nucleus.UI;
 using System.Diagnostics;
 using Velopack;
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
 

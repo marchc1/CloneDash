@@ -1,12 +1,10 @@
 ﻿using AssetStudio;
-
 using CloneDash.Compatibility.MuseDash;
-
 using Nucleus;
 
 using System.Collections.ObjectModel;
 
-namespace CloneDash.Compatibility.CustomAlbums
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
 	internal static class MusicDataManager
 	{

@@ -4,7 +4,7 @@ using CloneDash.Menu.Searching;
 using Newtonsoft.Json;
 using Nucleus;
 using System.Reflection;
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Charts;
 

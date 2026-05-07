@@ -1,8 +1,8 @@
 ﻿using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
-using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.Game;
 using Newtonsoft.Json;
 using Nucleus;
@@ -14,7 +14,7 @@ using Raylib_cs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
 
-namespace CloneDash.Compatibility.CustomAlbums
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
 	public static partial class CustomAlbumsCompatibility
 	{

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CustomAlbums.Utilities;
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 
 public static class CustomAlbumsFormat {
     public static int ParseAsInt(string value)

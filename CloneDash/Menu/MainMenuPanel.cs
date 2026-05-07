@@ -19,7 +19,7 @@ using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 
 

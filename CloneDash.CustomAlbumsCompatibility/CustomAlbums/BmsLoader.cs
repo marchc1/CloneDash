@@ -1,13 +1,13 @@
 ﻿using CloneDash.Common.Data;
+using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
-using CustomAlbums.Utilities;
 using Nucleus;
 
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
-namespace CloneDash.Compatibility.CustomAlbums
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
 	public static class BmsLoader
 	{

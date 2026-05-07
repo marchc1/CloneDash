@@ -49,6 +49,7 @@
 		<ProjectReference Include="..\AssetStudioUtility\AssetStudioUtility.csproj" />
 		<ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
 		<ProjectReference Include="..\CloneDash.Common\CloneDash.Common.csproj" />
+		<ProjectReference Include="..\CloneDash.CustomAlbumsCompatibility\CloneDash.CustomAlbumsCompatibility.csproj" />
 		<ProjectReference Include="..\CloneDash.MuseDash1Compatibility\CloneDash.MuseDash1Compatibility.csproj" />
 		<ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />

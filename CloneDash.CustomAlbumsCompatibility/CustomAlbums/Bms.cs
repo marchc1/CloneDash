@@ -1,8 +1,8 @@
-﻿using CloneDash.Compatibility.MuseDash;
-using CustomAlbums.Utilities;
+﻿using CloneDash.Compatibility.CustomAlbums;
+using CloneDash.Compatibility.MuseDash;
 using System.Text.Json.Nodes;
 
-namespace CloneDash.Compatibility.CustomAlbums
+namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
 	public class Bms
 	{
