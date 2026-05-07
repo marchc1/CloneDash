@@ -408,31 +408,43 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {
 		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS, pos.Y * MUSEDASH_MULTIPLIER_POSITIONS, obj);
 	}
+	delegate T? ProducerFn<T>();
+	class NullLazyLoad<T>(ProducerFn<T> producer) where T : class
+	{
+		bool triedToLoad = false;
+		T? value { get; set; }
+		public T? TryLoad(){
+			if (triedToLoad)
+				return value;
 
+			triedToLoad = true;
+			value = producer();
+			return value;
+		}
+		public static implicit operator NullLazyLoad<T>(ProducerFn<T> v) => new(v);
+		public static implicit operator T?(NullLazyLoad<T> v) => v.TryLoad();
+	}
 
-	ModelData? BossModel;
-	ModelData? AirGearModel, RoadGearModel;
-	ModelData? MasherModel;
-	ModelData? AirHeartModel, RoadHeartModel;
-	ModelData? AirScoreModel, RoadScoreModel;
-	ModelData? AirDoubleModel, RoadDoubleModel;
+	NullLazyLoad<ModelData> BossModel;
+	NullLazyLoad<ModelData> AirGearModel, RoadGearModel;
+	NullLazyLoad<ModelData> MasherModel;
+	NullLazyLoad<ModelData> AirHeartModel, RoadHeartModel;
+	NullLazyLoad<ModelData> AirScoreModel, RoadScoreModel;
+	NullLazyLoad<ModelData> AirDoubleModel, RoadDoubleModel;
+	NullLazyLoad<ModelData> AirBoss1Model, RoadBoss1Model;
+	NullLazyLoad<ModelData> AirBoss2Model, RoadBoss2Model;
+	NullLazyLoad<ModelData> AirBoss3Model, RoadBoss3Model;
+	NullLazyLoad<ModelData> AirBossGearModel, RoadBossGearModel;
+	NullLazyLoad<ModelData> AirSmallModel, RoadSmallModel;
+	NullLazyLoad<ModelData> AirMedium1Model, RoadMedium1Model;
+	NullLazyLoad<ModelData> AirMedium2Model, RoadMedium2Model;
+	NullLazyLoad<ModelData> AirLarge1Model, RoadLarge1Model;
+	NullLazyLoad<ModelData> AirLarge2Model, RoadLarge2Model;
+	NullLazyLoad<ModelData> AirHammerModel, RoadHammerModel, AirHammerBModel, RoadHammerBModel;
+	NullLazyLoad<ModelData> AirRaiderModel, RoadRaiderModel, AirRaiderBModel, RoadRaiderBModel;
+	NullLazyLoad<ModelData> AirGhostModel, RoadGhostModel;
 
-	ModelData? AirBoss1Model, RoadBoss1Model;
-	ModelData? AirBoss2Model, RoadBoss2Model;
-	ModelData? AirBoss3Model, RoadBoss3Model;
-
-	ModelData? AirBossGearModel, RoadBossGearModel;
-
-	ModelData? AirSmallModel, RoadSmallModel;
-	ModelData? AirMedium1Model, RoadMedium1Model;
-	ModelData? AirMedium2Model, RoadMedium2Model;
-	ModelData? AirLarge1Model, RoadLarge1Model;
-	ModelData? AirLarge2Model, RoadLarge2Model;
-	ModelData? AirHammerModel, RoadHammerModel, AirHammerBModel, RoadHammerBModel;
-	ModelData? AirRaiderModel, RoadRaiderModel, AirRaiderBModel, RoadRaiderBModel;
-	ModelData? AirGhostModel, RoadGhostModel;
-
-	ModelData? HpMountModel;
+	NullLazyLoad<ModelData> HpMountModel;
 
 	IAudioClip? BeginSound;
 	IAudioClip? FeverSound;
@@ -589,45 +601,45 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GHOST}_road";
 
 		// Populate models
-		BossModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!);
-		AirHeartModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!);
-		RoadHeartModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!);
-		AirScoreModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!);
-		RoadScoreModel = LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!);
-		AirGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!);
-		RoadGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!);
-		MasherModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!);
-		AirDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleAirID}_SkeletonData")!);
-		RoadDoubleModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!);
-		AirBoss1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1AirID}_SkeletonData")!);
-		RoadBoss1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1RoadID}_SkeletonData")!);
-		AirBoss2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2AirID}_SkeletonData")!);
-		RoadBoss2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!);
-		AirBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3AirID}_SkeletonData")!);
-		RoadBoss3Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!);
-		AirBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!);
-		RoadBossGearModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!);
-		AirSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallAirID}_SkeletonData")!);
-		RoadSmallModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallRoadID}_SkeletonData")!);
-		AirMedium1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1AirID}_SkeletonData")!);
-		RoadMedium1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1RoadID}_SkeletonData")!);
-		AirMedium2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2AirID}_SkeletonData")!);
-		RoadMedium2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2RoadID}_SkeletonData")!);
-		AirLarge1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1AirID}_SkeletonData")!);
-		RoadLarge1Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1RoadID}_SkeletonData")!);
-		AirLarge2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2AirID}_SkeletonData")!);
-		RoadLarge2Model = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2RoadID}_SkeletonData")!);
-		AirHammerModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirID}_SkeletonData")!);
-		RoadHammerModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadID}_SkeletonData")!);
-		AirHammerBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirBID}_SkeletonData")!);
-		RoadHammerBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadBID}_SkeletonData")!);
-		AirRaiderModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirID}_SkeletonData")!);
-		RoadRaiderModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadID}_SkeletonData")!);
-		AirRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!);
-		RoadRaiderBModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!);
-		AirGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!);
-		RoadGhostModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!);
-		HpMountModel = LoadModel(assets.FindAssetByName<MonoBehaviour>($"0002_hp_SkeletonData")!);
+		BossModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!));
+		AirHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
+		RoadHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
+		AirScoreModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!));
+		RoadScoreModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!));
+		AirGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!));
+		RoadGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!));
+		MasherModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!));
+		AirDoubleModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleAirID}_SkeletonData")!));
+		RoadDoubleModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!));
+		AirBoss1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1AirID}_SkeletonData")!));
+		RoadBoss1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1RoadID}_SkeletonData")!));
+		AirBoss2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2AirID}_SkeletonData")!));
+		RoadBoss2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!));
+		AirBoss3Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3AirID}_SkeletonData")!));
+		RoadBoss3Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!));
+		AirBossGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!));
+		RoadBossGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!));
+		AirSmallModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallAirID}_SkeletonData")!));
+		RoadSmallModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallRoadID}_SkeletonData")!));
+		AirMedium1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1AirID}_SkeletonData")!));
+		RoadMedium1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1RoadID}_SkeletonData")!));
+		AirMedium2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2AirID}_SkeletonData")!));
+		RoadMedium2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2RoadID}_SkeletonData")!));
+		AirLarge1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1AirID}_SkeletonData")!));
+		RoadLarge1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1RoadID}_SkeletonData")!));
+		AirLarge2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2AirID}_SkeletonData")!));
+		RoadLarge2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2RoadID}_SkeletonData")!));
+		AirHammerModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirID}_SkeletonData")!));
+		RoadHammerModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadID}_SkeletonData")!));
+		AirHammerBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirBID}_SkeletonData")!));
+		RoadHammerBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadBID}_SkeletonData")!));
+		AirRaiderModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirID}_SkeletonData")!));
+		RoadRaiderModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadID}_SkeletonData")!));
+		AirRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!));
+		RoadRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!));
+		AirGhostModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!));
+		RoadGhostModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!));
+		HpMountModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"0002_hp_SkeletonData")!));
 
 		// Populate animations
 
