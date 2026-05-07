@@ -1538,7 +1538,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						continue;
 				}
 			}
-			Graphics2D.SetDrawColor(255, 255, 255);
 			ent.Render(frameState);
 			Rlgl.DrawRenderBatchActive();
 			Model4System.PopRenderBlend();

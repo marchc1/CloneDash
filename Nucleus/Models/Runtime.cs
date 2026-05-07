@@ -620,7 +620,7 @@ public class RegionAttachment : Attachment
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color * Model4System.GetRenderBlend();
-		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
@@ -803,7 +803,7 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.SetTexture(tex.GetTextureHandle());
 
 		var color = slot.Color * Model4System.GetRenderBlend();
-		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
 		Rlgl.DisableBackfaceCulling();
