@@ -68,7 +68,7 @@ return null;
 		foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
 			var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
 			if (apps.Contains(game_appid)) {
-				ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
+				ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{game_appid}.acf"));
 				game_installed = true;
 				game_installdir = Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "common", appManifest["AppState"].GetString("installdir"));
 			}
@@ -79,7 +79,7 @@ return null;
 		foreach (KeyValuePair<string, ValveDataFile.VDFItem> vdfItemPair in games["libraryfolders"]) {
 			var apps = (vdfItemPair.Value["apps"] as ValveDataFile.VDFDict)!;
 			if (apps.Contains(game_appid)) {
-				ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{musedash_appid}.acf"));
+				ValveDataFile appManifest = ValveDataFile.FromFile(Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", $"appmanifest_{game_appid}.acf"));
 				game_installed = true;
 				game_installdir = Path.Combine(vdfItemPair.Value.GetString("path"), "steamapps", "common", appManifest["AppState"].GetString("installdir"));
 			}
