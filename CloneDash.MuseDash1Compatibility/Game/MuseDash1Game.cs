@@ -554,7 +554,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddScene(instance);
 		return instance;
 	}
-
+	IMuseDash1SceneInstance? FirstScene;
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
@@ -623,6 +623,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 				sceneChanges.Add(new(this, 0));
 				SetScene(sceneToActivate);
+				FirstScene = sceneToActivate;
 
 				// var feverFX = FeverMod.GetFeverData();
 				// FeverFX = feverFX;
@@ -1220,6 +1221,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		CurrentStatisticsPanel = UI.Add(new StatisticsPanel(this));
 		CurrentStatisticsPanel.Size = new(1, 1);
 		CurrentStatisticsPanel.DynamicallySized = true;
+
+		FirstScene?.PlaySound(SceneSound.Victory, 0);
 	}
 
 	public int EnemySortIndexCounter;

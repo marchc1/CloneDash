@@ -48,7 +48,7 @@ public class MD1_SongChart : ISongChart
 	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
 		var designers = Song.GetInfo()?.LevelDesigners;
 		var difficultyIndex = ((int)Difficulty) - 1;
-		bool overflow = difficultyIndex >= designers.Length;
+		bool overflow = difficultyIndex >= designers?.Length;
 
 		return new SongChartMetadata() {
 			GamemodeName = "Muse Dash 1",

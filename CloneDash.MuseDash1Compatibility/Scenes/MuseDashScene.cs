@@ -809,6 +809,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			case SceneSound.GotScore: audiosystem.PlaySound(ScoreSound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.HitBossFast: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.HitBossSlow: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.Victory: audiosystem.PlaySound(VictoryBgmSound, in AudioPlaybackSettings.Unaltered); break;
 		}
 	}
 
