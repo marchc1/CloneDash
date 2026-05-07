@@ -1170,7 +1170,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
 			EngineCore.Window.BeginMode2D(new() {
 				Zoom = height / 900 / 2.4f,
-				Offset = (new Vector2F(0, height / 1) + position).ToNumerics()
+				Offset = (new Vector2F(width / 2, height / 1)).ToNumerics()
 			});
 			victory.Render();
 			EngineCore.Window.EndMode2D();
