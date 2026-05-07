@@ -53,7 +53,7 @@ public static class Model4System
 	public const double REFERENCE_FPS = 30;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+	public static T? SearchReturnItem<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		T? item = null;
 		for (int i = 0, c = items.Length; i < c; i++)
@@ -63,7 +63,7 @@ public static class Model4System
 		return null;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+	public static int SearchReturnIndex<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		for (int i = 0, c = items.Length; i < c; i++)
 			if (items[i].Name.Equals(name, StringComparison.InvariantCulture))
@@ -184,13 +184,13 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	// }
 
 
-	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
-	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(BoneDatas, name);
-	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
-	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(SlotDatas, name);
+	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Animations, name);
+	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(BoneDatas, name);
+	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Skins, name);
+	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(SlotDatas, name);
 
-	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(SlotDatas, name);
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(BoneDatas, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(SlotDatas, name);
 
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
@@ -307,14 +307,10 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		SetSlotsToSetupPose();
 	}
 
-	public void SetAttachment(SlotInstance slot, string name) {
-
-	}
-
-	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(Bones, name);
-	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
-	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Bones, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Slots, name);
+	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Bones, name);
+	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Bones, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Slots, name);
 
 
 	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
