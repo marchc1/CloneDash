@@ -270,7 +270,8 @@ public class DashEnemy : Entity
 		if (Blood) {
 			level.Heal(MD1_SongChartEntity.DEFAULT_HP);
 			level.SpawnTextEffect($"+{MD1_SongChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
-		}
+			level.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
+			}
 
 		OnReward();
 		DidRewardPlayer = true;

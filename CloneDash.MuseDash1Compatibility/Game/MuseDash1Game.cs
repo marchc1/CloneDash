@@ -563,7 +563,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
-
+	DashEnemy? lastEntity;
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
 		ResetScreenspaceEffects();
@@ -713,8 +713,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							Boss.BuildForScene(scene);
 						BuildQueues();
 
-						Entities.Sort((x, y) => (x is DashEnemy xE && y is DashEnemy yE) ? xE.GetJudgementHitTime().CompareTo(yE.GetJudgementHitTime()) : 0);
-						Events.Sort((x, y) => (x is DashEvent xE && y is DashEvent yE) ? xE.Time.CompareTo(yE.Time) : 0);
+						Enemies.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+						Events.Sort((x, y) => x.Time.CompareTo(y.Time));
+						lastEntity = Enemies.Last();
 					}
 				}
 			}
@@ -1001,25 +1002,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		VisibleEntities.Clear();
 
-		foreach (var entity in Entities) {
+		foreach (var entity in Enemies) {
 			if (entity is Boss) continue;
-			if (entity is not DashEnemy)
-				continue;
 
-			var entCD = entity as DashEnemy;
 			// Visibility testing
 			// ShouldDraw overrides ForceDraw here, which is intentional, although the naming convention is confusing and should be adjusted (maybe the names swapped?)
-			if ((entCD.CheckVisTest(frameState) || entCD.ForceDraw) && entCD.ShouldDraw) {
-				VisibleEntities.Add(entCD);
+			if ((entity.CheckVisTest(frameState) || entity.ForceDraw) && entity.ShouldDraw) {
+				VisibleEntities.Add(entity);
 
-				if (entCD.Warns && !entCD.Dead && !InMashState)
+				if (entity.Warns && !entity.Dead && !InMashState)
 					IsWarning = true;
 			}
 		}
 
-		var lastEntity = (DashEnemy)Entities.Last(x => x is DashEnemy);
 
-		if (lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
+		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
@@ -1035,8 +1032,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//LockEntityBuffer();
 
 		// Removes entities marked for removal safely
-		foreach (var entity in Entities)
-			if (entity is DashEnemy && ((DashEnemy)entity).MarkedForRemoval)
+		foreach (var entity in Enemies)
+			if (entity.MarkedForRemoval)
 				Remove(entity);
 
 		//UnlockEntityBuffer(); LockEntityBuffer();
@@ -1360,6 +1357,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return Add(new TextEffect(text, position, transitionOut, color.Value));
 	}
 
+	public List<DashEnemy> Enemies = [];
 	public List<DashEvent> Events = [];
 	public HashSet<DashEvent> ActiveEvents = [];
 	public HashSet<DashEvent> HandledEvents = [];
@@ -1476,6 +1474,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Stats.RegisterEnemy(ent);
 		readyToBuildEntities.Add(ent);
+		Enemies.Add(ent);
 	}
 
 	List<DashEnemy> readyToBuildEntities = [];
