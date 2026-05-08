@@ -1,4 +1,5 @@
-﻿using CloneDash.Characters;
+﻿using AssetStudio;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
@@ -13,8 +14,8 @@ using CloneDash.Game.Events;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
-using CloneDash.Menu;
 using CloneDash.MD1_Compat.Game.Events;
+using CloneDash.Menu;
 using CloneDash.Scenes;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -572,6 +573,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Details = "In Game",
 				State = $"Muse Dash 1 - '{gameParameters.Chart?.Song?.Name ?? "<null>"}'"
 			});
+		}
+		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.PrepareShaders")) {
+			Interlude.Spin(submessage: "Preparing shaders...");
+			PrepareShaders();
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.Initialize")) {
 			Interlude.Spin(submessage: "Retrieving descriptors...");
@@ -1506,6 +1511,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	ComplexRenderTexture? renderTexture;
+	ComplexRenderTexture? renderTexture2;
 
 	public override void PreRender(FrameState frameState) {
 		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
@@ -1513,10 +1519,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		// This is only the case if null or bounds changed
 		if (renderTexture == null || (renderTexture.Width != width || renderTexture.Height != height)) {
 			renderTexture?.Dispose();
+			renderTexture2?.Dispose();
 			// TODO: If complex render textures are too slow for this (and they might be), then
 			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
 			// when i have that working
 			renderTexture = Textures.CreateComplexRenderTexture((int)width, (int)height);
+			renderTexture2 = Textures.CreateComplexRenderTexture((int)width, (int)height);
 		}
 
 		renderTexture?.BeginDrawing();
@@ -1611,7 +1619,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
 		}
 		renderTexture?.EndDrawing();
-		renderTexture?.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+		ScreenspaceDraw(frameState);
 	}
 
 	/// <summary>
@@ -2081,21 +2089,89 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	struct ScreenspaceEffectState
 	{
-		public ScreenspaceEffectParams LastParameters;
-		public ScreenspaceEffectParams CurrentParameters;
+		public double LastValue;
+		public double CurrentValue;
 		public double Length;
+		public double Time;
 	}
+	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
 	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
+	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
+	readonly ExecuteShaderFn?[] ScreenspaceEffectShaderFns = new ExecuteShaderFn?[(int)ScreenspaceEffectType.Count];
 	public void ResetScreenspaceEffects() {
 		Array.Clear(ScreenspaceEffectStates);
 	}
-	public void SetScreenspaceEffectStart(ScreenspaceEffectType type, in ScreenspaceEffectParams effectParams, double length) {
+	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length) {
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
-		state.LastParameters = state.CurrentParameters;
-		state.CurrentParameters = effectParams;
+
+		state.LastValue = GetCurrentInterpolatedValue(ref state);
+		state.CurrentValue = effectParams;
 		state.Length = length;
+		state.Time = Conductor.Time;
+	}
+	private double GetCurrentInterpolatedValue(ref ScreenspaceEffectState state) {
+		if (state.Length <= 0) return state.CurrentValue;
+
+		double t = Math.Clamp((Conductor.Time - state.Time) / state.Length, 0.0, 1.0);
+		return double.Lerp(state.LastValue, state.CurrentValue, t);
 	}
 
+	public void ScreenspaceDraw(FrameState frameState) {
+		if (renderTexture == null || renderTexture2 == null)
+			return;
+
+		ComplexRenderTexture read = renderTexture;
+		ComplexRenderTexture write = renderTexture2;
+		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
+
+		read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+	}
+	public void DoOneEffect(ScreenspaceEffectType effect, ref ComplexRenderTexture read, ref ComplexRenderTexture write) {
+		var shaderFn = ScreenspaceEffectShaderFns[(int)effect];
+		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)effect];
+		var shader = ScreenspaceEffectShaders[(int)effect];
+		if (shader == null) return;
+
+		if (shaderFn == null || shaderFn(shader, ref state) == false)
+			return;
+
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.EnableFramebuffer(write.Framebuffer);
+		Rlgl.ClearScreenBuffers();
+
+		shader.Activate();
+		Raylib.DrawTextureRec(
+			read.Texture,
+			new Rectangle(0, 0, read.Width, -read.Height),
+			System.Numerics.Vector2.Zero,
+			Color.White
+		);
+		shader.Deactivate();
+
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.EnableFramebuffer(0);
+		Rlgl.Viewport(0, 0, (int)EngineCore.Window.Size.W, (int)EngineCore.Window.Size.H);
+
+		(read, write) = (write, read);
+	}
+
+	private void PrepareShader(ScreenspaceEffectType type, string shaderName, ExecuteShaderFn shaderFn) {
+		ScreenspaceEffectShaders[(int)type] = Shaders.LoadFragmentShaderFromFile("shaders", $"{shaderName}.fs");
+		ScreenspaceEffectShaderFns[(int)type] = shaderFn;
+	}
+
+	private void PrepareShaders(){
+		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
+	}
+
+	private bool PrepareChromaticAberration(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uStrength", (float)value * 20);
+
+		return true;
+	}
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

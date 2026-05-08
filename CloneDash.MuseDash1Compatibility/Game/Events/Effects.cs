@@ -21,47 +21,40 @@ public enum ScreenspaceEffectType
 	Count
 }
 
-public enum ScreenScrollDirection
+
+public enum ScreenScrollDirection 
 {
-	NoScroll,
-	Up,
-	Down,
+	NoScroll = 0,
+	Up = 1,
+	Down = -1,
 }
 
-public enum FlashbangParam
+public enum FlashbangParam 
 {
-	Start,
-	High,
-	End
+	Start = 0,
+	High = 1,
+	End = 0
 }
 
-
-public struct ScreenspaceEffectParams {
-	public bool Active;
-	public ScreenScrollDirection ScreenScrollDirection;
-	public FlashbangParam FlashbangParam;
-}
-
-public class ScreenspaceEffectEvent(MuseDash1Game game, ScreenspaceEffectType type, bool active = false, ScreenScrollDirection dir = 0, FlashbangParam flashparam = 0) : DashEvent(game)
+public class ScreenspaceEffectEvent(MuseDash1Game game, ScreenspaceEffectType type, double targetValue) : DashEvent(game)
 {
 	public ScreenspaceEffectType Type = type;
-	public ScreenspaceEffectParams Params = new() {
-		Active = active,
-		ScreenScrollDirection = dir,
-		FlashbangParam = flashparam
-	};
+	public double TargetValue = targetValue;
+	public virtual double? GetLengthOfEffect() => null;
 	public override void Activate() {
-		Game.SetScreenspaceEffectStart(Type, in Params, Length);
+		Game.TriggerScreenspaceEffectStart(Type, TargetValue, GetLengthOfEffect() ?? Length);
 	}
 }
 
-public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direction) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ScreenScroll, dir: direction);
-public class ScanlinesEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Scanlines, active: active);
-public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ChromaticAberration, active: active);
-public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Vignette, active: active);
-public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.TVStatic, active: active);
-public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, flashparam: parameter);
-public class NoteFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.NoteFreeze, active: freeze);
-public class BgFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.BgFreeze, active: freeze);
-public class MosaicEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Mosaic, active: active);
-public class SepiaEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Sepia, active: active);
+public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direction) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ScreenScroll, (double)direction);
+public class ScanlinesEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Scanlines, active ? 1 : 0);
+public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ChromaticAberration, active ? 1 : 0){
+	public override double? GetLengthOfEffect() => 1;
+}
+public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Vignette, active ? 1 : 0);
+public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.TVStatic, active ? 1 : 0);
+public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, (double)parameter);
+public class NoteFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.NoteFreeze, freeze ? 1 : 0);
+public class BgFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.BgFreeze, freeze ? 1 : 0);
+public class MosaicEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Mosaic, active ? 1 : 0);
+public class SepiaEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Sepia, active ? 1 : 0);
