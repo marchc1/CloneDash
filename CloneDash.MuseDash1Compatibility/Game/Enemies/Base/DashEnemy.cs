@@ -34,11 +34,11 @@ public class DashEnemyVisuals
 
 	public Nucleus.Models.Runtime.Animation? OutAnimation;
 
-	public DashEnemyVisuals(){
+	public DashEnemyVisuals() {
 		Animations = new AnimationHandler();
 	}
 
-	public void Reset(){
+	public void Reset() {
 		Model?.SetToSetupPose();
 		Animations.ClearAllAnimation();
 	}
@@ -264,14 +264,14 @@ public class DashEnemy : Entity
 
 		if (heal) {
 			level.Heal(HealthGiven);
-			level.SpawnTextEffect($"+{HealthGiven} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
+			level.GetSceneUI()?.CreateHealthText(HealthGiven);
 		}
 
 		if (Blood) {
 			level.Heal(MD1_SongChartEntity.DEFAULT_HP);
-			level.SpawnTextEffect($"+{MD1_SongChartEntity.DEFAULT_HP} HP", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 190, 190, 255));
+			level.GetSceneUI()?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP);
 			level.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
-			}
+		}
 
 		OnReward();
 		DidRewardPlayer = true;
@@ -463,7 +463,7 @@ public class DashEnemy : Entity
 
 		var level = Level.As<MuseDash1Game>();
 
-		level.SpawnTextEffect("PASS", level.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(235, 235, 235, 255));
+		level.GetSceneUI()?.CreatePassText(0, Pathway);
 		OnPass();
 		OnPassEvent?.Invoke(this);
 		GlobalOnPassEvent?.Invoke(this);
@@ -567,11 +567,11 @@ public class DashEnemy : Entity
 		return enemy;
 	}
 
-	public void PreBuildVisuals(MuseDash1Game game){
+	public void PreBuildVisuals(MuseDash1Game game) {
 		Visuals = new DashEnemyVisuals[game.GetNumScenes()];
 	}
 
-	public void BuildForScene(IMuseDash1SceneInstance instance){
+	public void BuildForScene(IMuseDash1SceneInstance instance) {
 		DashEnemyVisuals visuals = Visuals[instance.GetSceneArrayIndex()] = new() {
 			Enemy = this,
 			Scene = instance
@@ -613,7 +613,7 @@ public class DashEnemy : Entity
 		visuals.MountedHeartAnimation.Apply(visuals.MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
 		visuals.MountedHeart.Position = new(
-			visuals.MountBone.WorldTransform.X * MuseDash1Game.GlobalScale, 
+			visuals.MountBone.WorldTransform.X * MuseDash1Game.GlobalScale,
 			(4.5f - (visuals.MountBone.WorldTransform.Y * MuseDash1Game.GlobalScale)) - 2.25f
 		);
 		visuals.MountedHeart.Scale = new(MuseDash1Game.GlobalScale);

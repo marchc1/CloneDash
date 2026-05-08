@@ -191,7 +191,7 @@ namespace CloneDash.Game.Logic
 		public override void Render2D(FrameState frameState) {
 			if (Enabled) {
 				Graphics2D.SetDrawColor(255, 255, 255, 255);
-				Graphics2D.DrawText((frameState.WindowWidth / 2), frameState.WindowHeight * 0.07f, STRING_AUTO, Graphics2D.UI_FONT_NAME, 30, Anchor.Center);
+				Graphics2D.DrawText((frameState.WindowWidth / 2), 24, STRING_AUTO, Graphics2D.UI_FONT_NAME, 30, Anchor.Center);
 			}
 		}
 

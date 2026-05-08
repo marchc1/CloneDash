@@ -184,6 +184,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ExitMashState();
 		ResetScreenspaceEffects();
 
+		SceneUI?.UpdateAllPerfect(true);
+		SceneUI?.UpdateFullCombo(true);
+
 		if (time < 0.06f)
 			audiosystem.RestartSound(Music);
 		else
@@ -336,7 +339,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
 	public DashEnemy? MashingEntity;
 	private SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
-	private TextEffect? mashTextEffect;
 	private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
 	private double LastMasherAttemptedHit;
 	private double LastMasherRealHit;
@@ -371,13 +373,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	/// <param name="ent"></param>
 	public void EnterMashState(DashEnemy ent) {
-		if (IValidatable.IsValid(mashTextEffect))
-			mashTextEffect.Remove();
-
 		if (!IsSeeking) {
-			mashTextEffect = SpawnTextEffect("HITS: 1", new(0), TextEffectTransitionOut.SlideUp, PathwayExts.PATHWAY_DUAL_COLOR);
-			if (IValidatable.IsValid(mashTextEffect))
-				mashTextEffect.SuppressAutoDeath = true;
+			SceneUI?.StartMultiHitText();
 			UpdateMashTextEffect();
 		}
 		InMashState = true;
@@ -386,19 +383,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastMasherAttemptedHit = Conductor.Time;
 	}
 	public void UpdateMashTextEffect() {
-		if (!IValidatable.IsValid(mashTextEffect)) return;
 		if (!IValidatable.IsValid(MashingEntity)) return;
-
-		mashTextEffect.Position = GetPathway(PathwaySide.Top).Position;
-		mashTextEffect.Text = $"HITS: {MashingEntity.Hits}";
+		SceneUI?.UpdateMultiHitText(MashingEntity.Hits);
 	}
 	/// <summary>
 	/// Exits the mash state.
 	/// </summary>
 	public void ExitMashState() {
-		if (IValidatable.IsValid(mashTextEffect))
-			mashTextEffect.Remove();
-
+		SceneUI?.EndMultiHitText();
 		InMashState = false;
 		MashingEntity = null;
 		LastMasherRealHit = double.NaN;
@@ -755,6 +747,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				else
 					Music = AudioPlaybackHandle.Null;
 			}
+
+			SceneUI?.Initialize();
+
+			SceneUI?.UpdateAllPerfect(true);
+			SceneUI?.UpdateFullCombo(true);
+
 			Interlude.Spin(submessage: "Ready!");
 
 			if (!CommandLine().CheckParm("-mdbmsc", out var p) && HasActiveScene(out var sceneInstance))
@@ -1210,8 +1208,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
 						double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
 						if (NMath.InRange(distance, pregreat, postgreat)) { // hit occured
-							var greatness = (NMath.InRange(distance, preperfect, postperfect) ? "PERFECT" : "GREAT") + " " + Math.Round(distance * 1000, 1) + "ms";
-							LastPollResult = PollResult.Create(entity, distance, greatness);
+							LastPollResult = PollResult.Create(entity, distance);
 							return LastPollResult;
 						}
 					}
@@ -1221,20 +1218,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		LastPollResult = PollResult.Empty;
 		return LastPollResult;
-	}
-
-	/// <summary>
-	/// Spawns a <see cref="TextEffect"/> into the game and adds it to the game.
-	/// </summary>
-	/// <param name="text">The text</param>
-	/// <param name="position">Where it spawns (it will rise upwards after being spawned)</param>
-	/// <param name="color">The color of the text</param>
-	public TextEffect? SpawnTextEffect(string text, Vector2F position, TextEffectTransitionOut transitionOut = TextEffectTransitionOut.SlideUp, Color? color = null) {
-		if (IsSeeking) return null;
-		if (color == null)
-			color = new Color(255, 255, 255, 255);
-
-		return Add(new TextEffect(text, position, transitionOut, color.Value));
 	}
 
 	public List<DashEnemy> Enemies = [];
@@ -1502,6 +1485,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			var entCD = (DashEnemy)ent;
 			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
 		}
+
+		SceneUI?.Render();
 		renderTexture?.EndDrawing();
 		ScreenspaceDraw(frameState);
 	}
@@ -1574,7 +1559,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 					if (SuppressHitMessages == false && !IsSeeking) {
 						Color c = pollResult.HitEntity.HitColor;
-						SpawnTextEffect(pollResult.Greatness, GetPathway(pathway).Position, TextEffectTransitionOut.SlideUp, c);
+
+						bool showearlylate = GameSettings.gp_earlylate.GetBool();
+						EarlyLate earlylate = EarlyLate.Perfect;
+						if(showearlylate){
+							// TODO: tolerances for early/late..
+						}
+
+						if (pollResult.IsPerfect)
+							SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
+						else
+							SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
 
 						PlaySceneSound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {
@@ -2060,6 +2055,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		return true;
 	}
+
+	public IMuseDash1SceneUI? GetSceneUI() => SceneUI;
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

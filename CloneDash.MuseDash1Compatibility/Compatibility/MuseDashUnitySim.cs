@@ -776,8 +776,7 @@ public abstract class BaseMuseDash1UnitySimScene
 		return tex;
 	}
 
-	protected
-	SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
+	protected SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
 		if (pathIdToObject.TryGetValue(unityGO.m_PathID, out var existing)) return existing;
 
 		var obj = new SceneObject { Name = unityGO.m_Name ?? "", Active = unityGO.m_IsActive, Scene = this };
@@ -809,7 +808,7 @@ public abstract class BaseMuseDash1UnitySimScene
 			if (!IsActiveInHierarchy(obj)) continue;
 			foreach (var renderer in obj.GetComponents<SceneRenderer>()) sortedRenderers.Add(renderer);
 		}
-		sortedRenderers.Sort((a, b) => {
+		sortedRenderers.Sort(static (a, b) => {
 			int cmp = a.SortingLayerID.CompareTo(b.SortingLayerID);
 			if (cmp != 0) return cmp;
 			cmp = a.SortingOrder.CompareTo(b.SortingOrder);

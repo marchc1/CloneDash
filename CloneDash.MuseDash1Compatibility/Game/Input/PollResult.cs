@@ -21,19 +21,19 @@ public struct PollResult
 	/// </summary>
 	public DashEnemy HitEntity;
 	public double DistanceToHit;
-	public string Greatness;
 
 	public static readonly PollResult Empty = new PollResult() { Hit = false };
 
-	public static PollResult Create(DashEnemy hitEntity, double distanceToHit, string greatness) {
+	public static PollResult Create(DashEnemy hitEntity, double distanceToHit) {
 		PollResult result = new PollResult();
 		result.Hit = true;
 		result.HitEntity = hitEntity;
 		result.DistanceToHit = distanceToHit;
-		result.Greatness = greatness;
 
 		return result;
 	}
+
+	public double Precision => Math.Round(DistanceToHit * 1000, 1);
 
 	public bool IsPerfect {
 		get {

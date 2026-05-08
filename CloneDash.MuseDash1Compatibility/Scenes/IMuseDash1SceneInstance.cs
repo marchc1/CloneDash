@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Scenes;
 using CloneDash.Game;
@@ -14,7 +15,10 @@ public interface IMuseDash1SceneDescriptor : ISceneDescriptor {
 
 }
 
+public delegate double GetGameTimeFn();
 public interface IMuseDash1SceneUI {
+	void Initialize();
+	void SetTimingFn(GetGameTimeFn fn);
 	void OnVictory(StatisticsData stats);
 	bool ShowingVictoryScreen();
 	void Render();
@@ -25,6 +29,17 @@ public interface IMuseDash1SceneUI {
 	void UpdateAllPerfect(bool allPerfect);
 	void UpdateFullCombo(bool fullCombo);
 	void UpdateCombo(int currentCombo);
+
+	void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
+	void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
+	void CreatePassText(double precision, PathwaySide pathway);
+	void StartMultiHitText();
+	void UpdateMultiHitText(int hits);
+	void EndMultiHitText();
+	void CreateScoreText(int scoreGiven);
+	void CreateHealthText(float healthGiven);
+	void StartWarning();
+	void EndWarning();
 }
 
 public interface IMuseDash1SceneInstance : ISceneInstance {

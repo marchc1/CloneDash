@@ -24,7 +24,7 @@ namespace CloneDash.Game.Entities
 			var lvl = GetGameLevel();
 
 			base.OnReward();
-			lvl.SpawnTextEffect($"+{ScoreGiven}", lvl.GetPathway(this).Position, TextEffectTransitionOut.SlideUpThenToLeft, new Color(190, 190, 235, 255));
+			lvl.GetSceneUI()?.CreateScoreText(ScoreGiven);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);

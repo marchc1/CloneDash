@@ -257,6 +257,12 @@ public record class MuseDash1SceneInfo
 		Unusable = true;
 		return this;
 	}
+
+	public MuseDash1SceneInfo WithUI(Func<BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance, IMuseDash1SceneUI> uiFactory) {
+		UIFactory = uiFactory;
+		return this;
+	}
+
 	public MuseDash1SceneInfo WithSounds(MuseDash1SceneSounds sounds) {
 		Sounds += sounds;
 		return this;
@@ -299,6 +305,8 @@ public record class MuseDash1SceneInfo
 												.MarkUnusable();
 	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
 												.MarkUnusable();
+
+	public Func<BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance, IMuseDash1SceneUI> UIFactory = (sim, scene) => new MuseDash1SceneUI(sim, scene);
 }
 public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 {
@@ -352,52 +360,149 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 	}
 }
 
-public class MuseDash1SceneUI : IMuseDash1SceneUI
+public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1SceneInstance scene) : BaseMuseDash1UnitySimScene, IMuseDash1SceneUI
 {
+	GetGameTimeFn timingFunc = () => 0;
+	StatisticsPanel? CurrentStatisticsPanel;
+	readonly BaseMuseDash1UnitySimScene unitySim = unitySim;
+
+	GameObject ImgDoubleGoldGreat = null!;
+	GameObject ImgDoubleGoldPerfect = null!;
+	GameObject ImgDoubleGreat = null!;
+	GameObject ImgDoublePerfect = null!;
+	GameObject ImgEarly = null!;
+	GameObject ImgGoldGreat = null!;
+	GameObject ImgGoldGreatBg = null!;
+	GameObject ImgGoldPerfect = null!;
+	GameObject ImgGoldPerfectBg = null!;
+	GameObject ImgLate = null!;
+	GameObject ImgScoreGoldGreat = null!;
+	GameObject ImgScoreGoldGreatAir = null!;
+	GameObject ImgScoreGoldPerfect = null!;
+	GameObject ImgScoreGoldPerfectAir = null!;
+	GameObject ImgScoreGreat = null!;
+	GameObject ImgScoreGreatAir = null!;
+	GameObject ImgScorePass = null!;
+	GameObject ImgScorePerfect = null!;
+	GameObject ImgScoreAir = null!;
+	GameObject MultiHitCombo = null!;
+	GameObject MultiHitTip = null!;
+
+	public virtual void Initialize() {
+		ImgDoubleGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGoldGreat")!;
+		ImgDoubleGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGoldPerfect")!;
+		ImgDoubleGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGreat")!;
+		ImgDoublePerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoublePerfect")!;
+		ImgEarly = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgEarly")!;
+		ImgGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldGreat")!;
+		ImgGoldGreatBg = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldGreatBg")!;
+		ImgGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldPerfect")!;
+		ImgGoldPerfectBg = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldPerfectBg")!;
+		ImgLate = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgLate")!;
+		ImgScoreGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldGreat")!;
+		ImgScoreGoldGreatAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldGreatAir")!;
+		ImgScoreGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldPerfect")!;
+		ImgScoreGoldPerfectAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldPerfectAir")!;
+		ImgScoreGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGreat")!;
+		ImgScoreGreatAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGreatAir")!;
+		ImgScorePass = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScorePass")!;
+		ImgScorePerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScorePerfect")!;
+		ImgScoreAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreAir")!;
+	}
+
+	public double GetTime() => timingFunc();
+
+	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
+
+	}
+
+	public void CreateHealthText(float healthGiven) {
+
+	}
+
+	public void CreatePassText(double precision, PathwaySide pathway) {
+
+	}
+
+	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
+
+	}
+
+	public void CreateScoreText(int scoreGiven) {
+
+	}
+
+	public void EndMultiHitText() {
+
+	}
+
+	public void EndWarning() {
+		
+	}
 	public void OnVictory(StatisticsData stats) {
-		throw new NotImplementedException();
+		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
+
+		CurrentStatisticsPanel = EngineCore.Level.UI.Add(new StatisticsPanel(scene.GetGame(), stats));
+		CurrentStatisticsPanel.Size = new(1, 1);
+		CurrentStatisticsPanel.DynamicallySized = true;
+
+		scene.PlaySound(SceneSound.Victory, 0);
 	}
 
 	public void Render() {
-		throw new NotImplementedException();
+		BuildRenderOrder();
+		Rlgl.PushMatrix();
+		foreach (var renderer in sortedRenderers) renderer.Render(this);
+		Rlgl.PopMatrix();
+	}
+	public void SetTimingFn(GetGameTimeFn fn) => timingFunc = fn;
+
+	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
+
+
+	public void StartMultiHitText() {
+		
 	}
 
-	public bool ShowingVictoryScreen() {
-		throw new NotImplementedException();
+	public void StartWarning() {
+		
 	}
 
 	public void UpdateAllPerfect(bool allPerfect) {
-		throw new NotImplementedException();
+		
 	}
 
 	public void UpdateCombo(int currentCombo) {
-		throw new NotImplementedException();
+		
 	}
 
 	public void UpdateFeverProgress(double fever, double maxFever) {
-		throw new NotImplementedException();
+		
 	}
 
 	public void UpdateFullCombo(bool fullCombo) {
-		throw new NotImplementedException();
+		
 	}
 
 	public void UpdateHP(double hp, double maxHP) {
-		throw new NotImplementedException();
+		
 	}
 
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
-		throw new NotImplementedException();
+		
+	}
+
+	public void UpdateMultiHitText(int hits) {
+		
 	}
 
 	public void UpdateScore(double score) {
-		throw new NotImplementedException();
+		
 	}
 }
 
 public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance
 {
-	public const float MUSEDASH_MULTIPLIER_POSITIONS = 1;
 	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
 	public readonly MuseDash1SceneDescriptor Descriptor;
 	public readonly MuseDash1Game Game;
@@ -454,7 +559,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	}
 
 	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {
-		pathwayInfo[(int)side] = new(pos.X * MUSEDASH_MULTIPLIER_POSITIONS, pos.Y * MUSEDASH_MULTIPLIER_POSITIONS, obj);
+		pathwayInfo[(int)side] = new(pos.X, pos.Y, obj);
 	}
 	delegate T? ProducerFn<T>();
 	class NullLazyLoad<T>(ProducerFn<T> producer) where T : class
@@ -812,7 +917,6 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	public void RenderBackground() {
 		Rlgl.PushMatrix();
-		Rlgl.Scalef(MUSEDASH_MULTIPLIER_POSITIONS, MUSEDASH_MULTIPLIER_POSITIONS, 1);
 		foreach (var renderer in sortedRenderers) renderer.Render(this);
 		Rlgl.PopMatrix();
 	}
@@ -1169,19 +1273,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	}
 
-	StatisticsPanel? CurrentStatisticsPanel;
-	public void OnVictory(StatisticsData stats) {
-		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
-
-		CurrentStatisticsPanel = EngineCore.Level.UI.Add(new StatisticsPanel(GetGame(), stats));
-		CurrentStatisticsPanel.Size = new(1, 1);
-		CurrentStatisticsPanel.DynamicallySized = true;
-
-		PlaySound(SceneSound.Victory, 0);
-	}
-	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
-
-	public IMuseDash1SceneUI CreateUI() => new MuseDash1SceneUI();
+	public IMuseDash1SceneUI CreateUI() => SceneInfo.UIFactory(this, this);
 }
 
 class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
