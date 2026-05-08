@@ -1,6 +1,7 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Game.Events;
+using CloneDash.MD1_Compat.Game.Events;
 
 namespace CloneDash.Game;
 
@@ -69,6 +70,29 @@ public class DashEvent
 			case EventType.DoubleSpeed1: return new SpeedChange(game, PathwaySide.Both, 1);
 			case EventType.DoubleSpeed2: return new SpeedChange(game, PathwaySide.Both, 2);
 			case EventType.DoubleSpeed3: return new SpeedChange(game, PathwaySide.Both, 3);
+
+			case EventType.ScreenScrollUp: return new ScreenScrollEffect(game, ScreenScrollDirection.Up);
+			case EventType.ScreenScrollDown: return new ScreenScrollEffect(game, ScreenScrollDirection.Down);
+			case EventType.ScreenScrollEnd: return new ScreenScrollEffect(game, ScreenScrollDirection.NoScroll);
+			case EventType.ScanlinesOn: return new ScanlinesEffect(game, true);
+			case EventType.ScanlinesOff: return new ScanlinesEffect(game, false);
+			case EventType.ChromaticAberrationOn: return new ChromaticAberrationEffect(game, true);
+			case EventType.ChromaticAberrationOff: return new ChromaticAberrationEffect(game, false);
+			case EventType.VignetteOn: return new VignetteEffect(game, true);
+			case EventType.VignetteOff: return new VignetteEffect(game, false);
+			case EventType.TVStaticOn: return new TVStaticEffect(game, true);
+			case EventType.TVStaticOff: return new TVStaticEffect(game, false);
+			case EventType.FlashbangStart: return new FlashbangEffect(game, FlashbangParam.Start);
+			case EventType.FlashbangHigh: return new FlashbangEffect(game, FlashbangParam.High);
+			case EventType.FlashbangEnd: return new FlashbangEffect(game, FlashbangParam.End);
+			case EventType.NoteFreeze: return new NoteFreezeEvent(game, true);
+			case EventType.NoteUnfreeze: return new NoteFreezeEvent(game, false);
+			case EventType.BgFreeze: return new BgFreezeEvent(game, true);
+			case EventType.BgUnfreeze: return new BgFreezeEvent(game, false);
+			case EventType.MosaicStart: return new MosaicEffect(game, true);
+			case EventType.MosaicEnd: return new MosaicEffect(game, false);
+			case EventType.SepiaStart: return new SepiaEffect(game, true);
+			case EventType.SepiaEnd: return new SepiaEffect(game, false);
 
 			default: throw new Exception();
 		}

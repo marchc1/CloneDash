@@ -14,6 +14,7 @@ using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
 using CloneDash.Menu;
+using CloneDash.MD1_Compat.Game.Events;
 using CloneDash.Scenes;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -179,6 +180,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		IsSeeking = true;
 
 		ExitMashState();
+		ResetScreenspaceEffects();
 
 		if (time < 0.06f)
 			audiosystem.RestartSound(Music);
@@ -613,7 +615,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						ISceneDescriptor? sceneDescToChangeTo = SceneMod.GetSceneData(sceneChange.SceneUID);
 
 						var sceneChangeInstance = AddOrGetScene(sceneDescToChangeTo);
-						if(sceneChangeInstance != null){
+						if (sceneChangeInstance != null) {
 							var ev = new SceneChange(this, sceneChangeInstance.GetSceneArrayIndex());
 							Events.Add(ev);
 							readyToBuildEvents.Add(ev);
@@ -1110,7 +1112,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		// FeverFX?.Think(this);
 	}
 
-	class StatisticsPanel(MuseDash1Game game) : Panel() {
+	class StatisticsPanel(MuseDash1Game game) : Panel()
+	{
 		ICharacterVictoryInstance victory = null!;
 		ISongChart? chart;
 		StatisticsData stats = null!;
@@ -1159,7 +1162,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			BorderSize = 0;
 		}
-		void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y){
+		void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
 			Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
 			y += fs + 4;
 		}
@@ -1502,11 +1505,27 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Boss.Position = new(0, 2.25f);
 	}
 
+	ComplexRenderTexture? renderTexture;
+
 	public override void PreRender(FrameState frameState) {
+		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
+		// Evaluate if complex render texture needs to be remade
+		// This is only the case if null or bounds changed
+		if (renderTexture == null || (renderTexture.Width != width || renderTexture.Height != height)) {
+			renderTexture?.Dispose();
+			// TODO: If complex render textures are too slow for this (and they might be), then
+			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
+			// when i have that working
+			renderTexture = Textures.CreateComplexRenderTexture((int)width, (int)height);
+		}
+
+		renderTexture?.BeginDrawing();
+		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
 		if (HasActiveScene(out var scene))
 			scene.RenderBackground();
+
 		// if (InFever)
 		// FeverFX?.Render(this);
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -1530,8 +1549,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			if (ent is not DashEnemy entCD) continue;
 			if (!enemyPredicate(entCD)) continue;
 
-			if(entCD.Dead){
-				switch(deadVis){
+			if (entCD.Dead) {
+				switch (deadVis) {
 					case DeadEntityVisibility.UseGamemodeDefaults:
 					case DeadEntityVisibility.FullyVisible:
 						Model4System.PushRenderBlend(new(255, 255, 255));
@@ -1578,7 +1597,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Rlgl.DrawRenderBatchActive();
 	}
-
+	public override void PostRender(FrameState frameState) {
+		base.PostRender(frameState);
+	}
 	public override void Render2D(FrameState frameState) {
 		base.Render2D(frameState);
 
@@ -1589,6 +1610,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			var entCD = (DashEnemy)ent;
 			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
 		}
+		renderTexture?.EndDrawing();
+		renderTexture?.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
 	}
 
 	/// <summary>
@@ -2055,6 +2078,24 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 		return scenes[0];
 	}
+
+	struct ScreenspaceEffectState
+	{
+		public ScreenspaceEffectParams LastParameters;
+		public ScreenspaceEffectParams CurrentParameters;
+		public double Length;
+	}
+	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
+	public void ResetScreenspaceEffects() {
+		Array.Clear(ScreenspaceEffectStates);
+	}
+	public void SetScreenspaceEffectStart(ScreenspaceEffectType type, in ScreenspaceEffectParams effectParams, double length) {
+		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
+		state.LastParameters = state.CurrentParameters;
+		state.CurrentParameters = effectParams;
+		state.Length = length;
+	}
+
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

@@ -440,6 +440,29 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.ToggleScene9 => EventType.SceneChange,
 						IBMSCode.ToggleScene10 => EventType.SceneChange,
 
+						IBMSCode.CanvasUpScroll => EventType.ScreenScrollUp,
+						IBMSCode.CanvasDownScroll => EventType.ScreenScrollDown,
+						IBMSCode.CanvasScrollOver => EventType.ScreenScrollEnd,
+						IBMSCode.RandomWave => EventType.ScanlinesOn,
+						IBMSCode.RandomWaveOver => EventType.ScanlinesOff,
+						IBMSCode.RgbSplit => EventType.ChromaticAberrationOn,
+						IBMSCode.RgbSplitOver => EventType.ChromaticAberrationOff,
+						IBMSCode.ShadowEdgeIn => EventType.VignetteOn,
+						IBMSCode.ShadowEdgeOut => EventType.VignetteOff,
+						IBMSCode.OldTv => EventType.TVStaticOn,
+						IBMSCode.OldTvOver => EventType.TVStaticOff,
+						IBMSCode.FlashStart => EventType.FlashbangStart,
+						IBMSCode.FlashHigh => EventType.FlashbangHigh,
+						IBMSCode.FlashEnd => EventType.FlashbangEnd,
+						IBMSCode.NoteFreeze => EventType.NoteFreeze,
+						IBMSCode.NoteUnfreeze => EventType.NoteUnfreeze,
+						IBMSCode.BgFreeze => EventType.BgFreeze,
+						IBMSCode.BgUnfreeze => EventType.BgUnfreeze,
+						IBMSCode.PixelStart => EventType.MosaicStart,
+						IBMSCode.PixelEnd => EventType.MosaicEnd,
+						IBMSCode.GrayScaleStart => EventType.SepiaStart,
+						IBMSCode.GrayScaleEnd => EventType.SepiaEnd,
+
 						_ => EventType.NotApplicable
 					};
 

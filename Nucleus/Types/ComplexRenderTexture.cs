@@ -154,6 +154,7 @@ public class ComplexRenderTexture : IDisposable
 		Id = TextureID
 	};
 
+
 	~ComplexRenderTexture() {
 		Dispose();
 	}
