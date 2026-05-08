@@ -1106,6 +1106,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (HasActiveScene(out var scene)) {
 			scene.Think(GetBgScrollSpeedMultiplier());
 		}
+		SceneUI?.Think(globals.CurTimeDelta);
 		// if (InFever)
 		// FeverFX?.Think(this);
 	}
@@ -1470,6 +1471,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
+		SceneUI?.RenderWorldspace();
+
 		Rlgl.DrawRenderBatchActive();
 	}
 	public override void PostRender(FrameState frameState) {
@@ -1486,7 +1489,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
 		}
 
-		SceneUI?.Render();
 		renderTexture?.EndDrawing();
 		ScreenspaceDraw(frameState);
 	}
@@ -1562,7 +1564,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						bool showearlylate = GameSettings.gp_earlylate.GetBool();
 						EarlyLate earlylate = EarlyLate.Perfect;
-						if(showearlylate){
+						if (showearlylate) {
 							// TODO: tolerances for early/late..
 						}
 

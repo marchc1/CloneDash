@@ -80,6 +80,7 @@ class DecodedClip
 		if (muscleClip.m_StreamedClip?.data != null && muscleClip.m_StreamedClip.data.Length > 0) {
 			var frames = muscleClip.m_StreamedClip.ReadData();
 			foreach (var frame in frames) {
+				if (frame.time < -1e30f) continue; // skip sentinel frame
 				foreach (var key in frame.keyList) {
 					if (key.index >= 0 && key.index < totalCurves)
 						curveLists[key.index].Add((frame.time, key.value, key.inSlope, key.outSlope));
@@ -151,7 +152,7 @@ class DecodedClip
 		if (t >= keys[^1].time) return keys[^1].value;
 
 		int i = 0;
-		for (; i < keys.Count - 2; i++)
+		for (; i < keys.Count - 1; i++)
 			if (t < keys[i + 1].time) break;
 
 		var k0 = keys[i];
@@ -307,6 +308,7 @@ public class SceneSpriteRenderer : SceneRenderer
 	ushort[] mIdx = null!;
 
 	public SceneSpriteRenderer(SpriteRenderer sr) { UnitySpriteRenderer = sr; }
+	public bool HasTexture => texture != null;
 
 	public override void Awake() {
 		if (UnitySpriteRenderer.m_MaskInteraction != SpriteMaskInteraction.None) {
@@ -556,19 +558,60 @@ class RuntimeClip
 		int ScX, int ScY, int ScZ
 	);
 
+	public record struct ColorCurve(
+		SceneObject Target,
+		int ColorR, int ColorG, int ColorB, int ColorA
+	);
+
+	public record struct ActiveCurve(
+		SceneObject Target,
+		int IsActive
+	);
+
 	public DecodedClip Decoded;
 	public List<TargetCurve> TransformTargets = [];
+	public List<ColorCurve> ColorTargets = [];
+	public List<ActiveCurve> ActiveTargets = [];
 	public float Duration;
 	public bool Loop;
 }
 
 public class SceneAnimator : SceneComponent
 {
+	static readonly uint HashColorR = UnityCRC32.Hash("m_Color.r");
+	static readonly uint HashColorG = UnityCRC32.Hash("m_Color.g");
+	static readonly uint HashColorB = UnityCRC32.Hash("m_Color.b");
+	static readonly uint HashColorA = UnityCRC32.Hash("m_Color.a");
+	static readonly uint HashIsActive = UnityCRC32.Hash("m_IsActive");
+
 	public Animator? UnityAnimator { get; set; }
 
 	readonly List<RuntimeClip> runtimeClips = [];
 	float time;
 	public int ResolvedClipCount => runtimeClips.Count;
+
+	public void DumpClipInfo() {
+		Logs.Info($"Object '{Object.Name}' clips={runtimeClips.Count}");
+		foreach (var clip in runtimeClips) {
+			Logs.Info($"  Clip: duration={clip.Duration:F3} loop={clip.Loop} start={clip.Decoded.StartTime:F3} stop={clip.Decoded.StopTime:F3}");
+			Logs.Info($"  TransformTargets={clip.TransformTargets.Count} ColorTargets={clip.ColorTargets.Count} ActiveTargets={clip.ActiveTargets.Count}");
+
+			for (int i = 0; i < clip.Decoded.Curves.Length; i++) {
+				ref var curve = ref clip.Decoded.Curves[i];
+				Logs.Info($"  Curve[{i}] typeID={curve.Binding.typeID} attr=0x{curve.Binding.attribute:X8} path=0x{curve.Binding.path:X8} keys={curve.Keys.Count}");
+				if (curve.Keys.Count > 0 && curve.Keys.Count <= 10) {
+					foreach (var key in curve.Keys)
+						Logs.Info($"    t={key.time:F4} v={key.value:F4} inSlope={key.inSlope:F4} outSlope={key.outSlope:F4}");
+				}
+				else if (curve.Keys.Count > 10) {
+					var first = curve.Keys[0];
+					var last = curve.Keys[^1];
+					Logs.Info($"    first : t={first.time:F4} v={first.value:F4}");
+					Logs.Info($"    last  : t={last.time:F4} v={last.value:F4}");
+				}
+			}
+		}
+	}
 
 	public override void Awake() {
 		if (UnityAnimator == null) return;
@@ -606,45 +649,64 @@ public class SceneAnimator : SceneComponent
 			var runtime = new RuntimeClip {
 				Decoded = decoded,
 				Duration = decoded.StopTime - decoded.StartTime,
-				Loop = decoded.LoopTime || clip.m_WrapMode == 2 || clip.m_WrapMode == 0
+				Loop = decoded.LoopTime || clip.m_WrapMode == 2
 			};
 
 			var grouped = new Dictionary<uint, (int posX, int posY, int posZ, int rotX, int rotY, int rotZ, int rotW, int scX, int scY, int scZ)>();
+			var colorGrouped = new Dictionary<uint, (int r, int g, int b, int a)>();
+			var activeGrouped = new Dictionary<uint, int>();
 
 			for (int i = 0; i < decoded.Curves.Length; i++) {
 				ref var curve = ref decoded.Curves[i];
-				if (curve.Binding.typeID != ClassIDType.Transform) continue;
 				if (curve.Keys.Count == 0) continue;
 
 				uint pathHash = curve.Binding.path;
-				if (!grouped.TryGetValue(pathHash, out var g))
-					g = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
-
 				uint attr = curve.Binding.attribute;
-				int componentIdx = GetComponentIndex(decoded.Curves, i, curve.Binding);
 
-				switch (attr) {
-					case 1: // position
-						if (componentIdx == 0) g.posX = i;
-						else if (componentIdx == 1) g.posY = i;
-						else if (componentIdx == 2) g.posZ = i;
-						break;
-					case 2: // rotation
-						if (componentIdx == 0) g.rotX = i;
-						else if (componentIdx == 1) g.rotY = i;
-						else if (componentIdx == 2) g.rotZ = i;
-						else if (componentIdx == 3) g.rotW = i;
-						break;
-					case 3: // scale
-						if (componentIdx == 0) g.scX = i;
-						else if (componentIdx == 1) g.scY = i;
-						else if (componentIdx == 2) g.scZ = i;
-						break;
-					case 4: // euler (treat as rotation via euler angles — simplified) TODO
-						break;
+				if (curve.Binding.typeID == ClassIDType.Transform) {
+					if (!grouped.TryGetValue(pathHash, out var g))
+						g = (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+
+					int componentIdx = GetComponentIndex(decoded.Curves, i, curve.Binding);
+
+					switch (attr) {
+						case 1: // position
+							if (componentIdx == 0) g.posX = i;
+							else if (componentIdx == 1) g.posY = i;
+							else if (componentIdx == 2) g.posZ = i;
+							break;
+						case 2: // rotation
+							if (componentIdx == 0) g.rotX = i;
+							else if (componentIdx == 1) g.rotY = i;
+							else if (componentIdx == 2) g.rotZ = i;
+							else if (componentIdx == 3) g.rotW = i;
+							break;
+						case 3: // scale
+							if (componentIdx == 0) g.scX = i;
+							else if (componentIdx == 1) g.scY = i;
+							else if (componentIdx == 2) g.scZ = i;
+							break;
+						case 4: // euler (treat as rotation via euler angles — simplified) TODO
+							break;
+					}
+
+					grouped[pathHash] = g;
 				}
+				else if (curve.Binding.typeID == ClassIDType.SpriteRenderer) {
+					if (!colorGrouped.TryGetValue(pathHash, out var c))
+						c = (-1, -1, -1, -1);
 
-				grouped[pathHash] = g;
+					if (attr == HashColorR) c.r = i;
+					else if (attr == HashColorG) c.g = i;
+					else if (attr == HashColorB) c.b = i;
+					else if (attr == HashColorA) c.a = i;
+
+					colorGrouped[pathHash] = c;
+				}
+				else if (curve.Binding.typeID == ClassIDType.GameObject) {
+					if (attr == HashIsActive)
+						activeGrouped[pathHash] = i;
+				}
 			}
 
 			foreach (var (pathHash, g) in grouped) {
@@ -653,7 +715,17 @@ public class SceneAnimator : SceneComponent
 					g.rotX, g.rotY, g.rotZ, g.rotW, g.scX, g.scY, g.scZ));
 			}
 
-			if (runtime.TransformTargets.Count > 0)
+			foreach (var (pathHash, c) in colorGrouped) {
+				if (!hashToTransform.TryGetValue(pathHash, out var target)) continue;
+				runtime.ColorTargets.Add(new(target.Object, c.r, c.g, c.b, c.a));
+			}
+
+			foreach (var (pathHash, idx) in activeGrouped) {
+				if (!hashToTransform.TryGetValue(pathHash, out var target)) continue;
+				runtime.ActiveTargets.Add(new(target.Object, idx));
+			}
+
+			if (runtime.TransformTargets.Count > 0 || runtime.ColorTargets.Count > 0 || runtime.ActiveTargets.Count > 0)
 				runtimeClips.Add(runtime);
 		}
 
@@ -704,6 +776,19 @@ public class SceneAnimator : SceneComponent
 				if (target.ScX >= 0) tr.LocalScaleX = DecodedClip.Eval(clip.Decoded.Curves[target.ScX].Keys, t);
 				if (target.ScY >= 0) tr.LocalScaleY = DecodedClip.Eval(clip.Decoded.Curves[target.ScY].Keys, t);
 				if (target.ScZ >= 0) tr.LocalScaleZ = DecodedClip.Eval(clip.Decoded.Curves[target.ScZ].Keys, t);
+			}
+
+			foreach (var target in clip.ColorTargets) {
+				var obj = target.Target;
+				if (target.ColorR >= 0) obj.Color.X = DecodedClip.Eval(clip.Decoded.Curves[target.ColorR].Keys, t);
+				if (target.ColorG >= 0) obj.Color.Y = DecodedClip.Eval(clip.Decoded.Curves[target.ColorG].Keys, t);
+				if (target.ColorB >= 0) obj.Color.Z = DecodedClip.Eval(clip.Decoded.Curves[target.ColorB].Keys, t);
+				if (target.ColorA >= 0) obj.Color.W = DecodedClip.Eval(clip.Decoded.Curves[target.ColorA].Keys, t);
+			}
+
+			foreach (var target in clip.ActiveTargets) {
+				var obj = target.Target;
+				if (target.IsActive >= 0) obj.Active = DecodedClip.Eval(clip.Decoded.Curves[target.IsActive].Keys, t) > 0.5f;
 			}
 		}
 	}
@@ -764,9 +849,9 @@ public class SceneObject
 		var clone = CloneHierarchy(original);
 
 		if (parent != null) {
-			if (instantiateInWorldSpace) 
+			if (instantiateInWorldSpace)
 				clone.Transform.SetParent(parent);
-			else 
+			else
 				clone.Transform.SetParent(parent);
 		}
 
@@ -830,6 +915,7 @@ public class SceneObject
 
 	private static void PropagateScene(SceneObject obj, BaseMuseDash1UnitySimScene scene) {
 		obj.Scene = scene;
+		scene.RegisterObject(obj);
 		obj.Awake();
 		foreach (var child in obj.Transform.Children)
 			PropagateScene(child.Object, scene);
@@ -840,6 +926,11 @@ public class SceneObject
 		var p = this;
 		while (p != null) { c *= p.Color; p = p.Transform.Parent?.Object; }
 		return c;
+	}
+
+	public static void Destroy(SceneObject obj) {
+		if (obj.Scene is BaseMuseDash1UnitySimScene scene)
+			scene.DestroyObject(obj);
 	}
 }
 
@@ -856,6 +947,24 @@ public abstract class BaseMuseDash1UnitySimScene
 
 	protected void RunThinkFuncs(double dt) {
 		foreach (var anim in animators) anim.Evaluate((float)dt);
+	}
+
+	internal void RegisterObject(SceneObject obj) {
+		allObjects.Add(obj);
+		foreach (var anim in obj.GetComponents<SceneAnimator>())
+			animators.Add(anim);
+	}
+
+	internal void DestroyObject(SceneObject obj) {
+		// Recursively destroy children first
+		for (int i = obj.Transform.Children.Count - 1; i >= 0; i--)
+			DestroyObject(obj.Transform.Children[i].Object);
+
+		allObjects.Remove(obj);
+		foreach (var anim in obj.GetComponents<SceneAnimator>())
+			animators.Remove(anim);
+		obj.Transform.SetParent(null);
+		obj.Active = false;
 	}
 
 	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {

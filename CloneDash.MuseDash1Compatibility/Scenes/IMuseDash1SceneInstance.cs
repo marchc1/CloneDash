@@ -11,17 +11,18 @@ using Nucleus.Types;
 
 namespace CloneDash.Scenes;
 
-public interface IMuseDash1SceneDescriptor : ISceneDescriptor {
+public interface IMuseDash1SceneDescriptor : ISceneDescriptor
+{
 
 }
 
-public delegate double GetGameTimeFn();
-public interface IMuseDash1SceneUI {
+public interface IMuseDash1SceneUI
+{
 	void Initialize();
-	void SetTimingFn(GetGameTimeFn fn);
+	void Think(double dt);
 	void OnVictory(StatisticsData stats);
 	bool ShowingVictoryScreen();
-	void Render();
+	void RenderWorldspace();
 	void UpdateHP(double hp, double maxHP);
 	void UpdateFeverProgress(double fever, double maxFever);
 	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
@@ -42,7 +43,8 @@ public interface IMuseDash1SceneUI {
 	void EndWarning();
 }
 
-public interface IMuseDash1SceneInstance : ISceneInstance {
+public interface IMuseDash1SceneInstance : ISceneInstance
+{
 	void Initialize();
 	void Refresh();
 

@@ -362,9 +362,10 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 
 public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1SceneInstance scene) : BaseMuseDash1UnitySimScene, IMuseDash1SceneUI
 {
-	GetGameTimeFn timingFunc = () => 0;
 	StatisticsPanel? CurrentStatisticsPanel;
 	readonly BaseMuseDash1UnitySimScene unitySim = unitySim;
+	readonly List<(SceneObject obj, double expiry)> timedObjects = [];
+	double elapsed;
 
 	SceneObject ImgDoubleGoldGreat = null!;
 	SceneObject ImgDoubleGoldPerfect = null!;
@@ -409,22 +410,29 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 		ImgScorePass = FindSceneObject("ImgScorePass")!;
 		ImgScorePerfect = FindSceneObject("ImgScorePerfect")!;
 		ImgScorePerfectAir = FindSceneObject("ImgScorePerfectAir")!;
+
+		foreach (var obj in allObjects) obj.Awake();
+
+		// Remove templates from allObjects so they dont render, but keep the references for cloning via Instantiate
+		allObjects.Clear();
 	}
 
-	public double GetTime() => timingFunc();
+	const double HitTextLifetime = 0.5;
+
+	SceneObject SpawnTimedClone(SceneObject template) {
+		var clone = SceneObject.Instantiate(template);
+		timedObjects.Add((clone, elapsed + HitTextLifetime));
+		return clone;
+	}
 
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		switch (pathway) {
-			case PathwaySide.Top:
-				SceneObject.Instantiate(inFever ? ImgScoreGoldGreatAir : ImgScoreGreatAir);
-				break;
-			case PathwaySide.Bottom:
-				SceneObject.Instantiate(inFever ? ImgScoreGoldGreat : ImgScoreGreat);
-				break;
-			case PathwaySide.Both:
-				SceneObject.Instantiate(inFever ? ImgDoubleGoldGreat : ImgDoubleGreat);
-				break;
-		}
+		SceneObject? template = pathway switch {
+			PathwaySide.Top => inFever ? ImgScoreGoldGreatAir : ImgScoreGreatAir,
+			PathwaySide.Bottom => inFever ? ImgScoreGoldGreat : ImgScoreGreat,
+			PathwaySide.Both => inFever ? ImgDoubleGoldGreat : ImgDoubleGreat,
+			_ => null
+		};
+		if (template != null) SpawnTimedClone(template);
 	}
 
 	public void CreateHealthText(float healthGiven) {
@@ -432,21 +440,18 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	}
 
 	public void CreatePassText(double precision, PathwaySide pathway) {
-
+		SceneObject? template = ImgScorePass;
+		if (template != null) SpawnTimedClone(template);
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		switch (pathway) {
-			case PathwaySide.Top:
-				SceneObject.Instantiate(inFever ? ImgScoreGoldPerfectAir : ImgScorePerfectAir);
-				break;
-			case PathwaySide.Bottom:
-				SceneObject.Instantiate(inFever ? ImgScoreGoldPerfect : ImgScorePerfect);
-				break;
-			case PathwaySide.Both:
-				SceneObject.Instantiate(inFever ? ImgDoubleGoldPerfect : ImgDoublePerfect);
-				break;
-		}
+		SceneObject? template = pathway switch {
+			PathwaySide.Top => inFever ? ImgScoreGoldPerfectAir : ImgScorePerfectAir,
+			PathwaySide.Bottom => inFever ? ImgScoreGoldPerfect : ImgScorePerfect,
+			PathwaySide.Both => inFever ? ImgDoubleGoldPerfect : ImgDoublePerfect,
+			_ => null
+		};
+		if (template != null) SpawnTimedClone(template);
 	}
 
 	public void CreateScoreText(int scoreGiven) {
@@ -460,6 +465,7 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	public void EndWarning() {
 
 	}
+
 	public void OnVictory(StatisticsData stats) {
 		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
 
@@ -470,13 +476,24 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 		scene.PlaySound(SceneSound.Victory, 0);
 	}
 
-	public void Render() {
+	public void RenderWorldspace() {
 		BuildRenderOrder();
 		Rlgl.PushMatrix();
 		foreach (var renderer in sortedRenderers) renderer.Render(this);
 		Rlgl.PopMatrix();
 	}
-	public void SetTimingFn(GetGameTimeFn fn) => timingFunc = fn;
+
+	public void Think(double dt) {
+		elapsed += dt;
+		RunThinkFuncs(dt);
+
+		for (int i = timedObjects.Count - 1; i >= 0; i--) {
+			if (elapsed >= timedObjects[i].expiry) {
+				SceneObject.Destroy(timedObjects[i].obj);
+				timedObjects.RemoveAt(i);
+			}
+		}
+	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
 
