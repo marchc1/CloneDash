@@ -56,4 +56,21 @@ public enum EventType
 	MosaicEnd,
 	SepiaStart,
 	SepiaEnd,
+	FocusLinesBlack,
+	FocusLinesWhite,
+	FocusLinesOff,
+	FilmGrainOn,
+	FilmGrainOff,
+
+	AutoPlayOn,
+	AutoPlayOff,
+
+	FlashbangColorWhite,
+	FlashbangColorBlack,
+	FlashbangColorRed,
+	FlashbangColorGreen,
+	FlashbangColorBlue,
+	FlashbangColorCyan,
+	FlashbangColorMagenta,
+	FlashbangColorYellow
 }

@@ -462,6 +462,13 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.PixelEnd => EventType.MosaicEnd,
 						IBMSCode.GrayScaleStart => EventType.SepiaStart,
 						IBMSCode.GrayScaleEnd => EventType.SepiaEnd,
+						IBMSCode.FocusLinesBlack => EventType.FocusLinesBlack,
+						IBMSCode.FocusLinesWhite => EventType.FocusLinesWhite,
+						IBMSCode.FocusLinesOff => EventType.FocusLinesOff,
+						IBMSCode.FilmGrainOn => EventType.FilmGrainOn,
+						IBMSCode.FilmGrainOff => EventType.FilmGrainOff,
+						IBMSCode.AutoPlayOn => EventType.AutoPlayOn,
+						IBMSCode.AutoPlayOff => EventType.AutoPlayOff,
 
 						_ => EventType.NotApplicable
 					};

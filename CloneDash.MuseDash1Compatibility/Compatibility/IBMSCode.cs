@@ -103,8 +103,10 @@
 			FlashStart,
 			FlashHigh,
 			FlashEnd,
+			// Note freeze
 			NoteFreeze,
 			NoteUnfreeze,
+			// Background freeze
 			BgFreeze,
 			BgUnfreeze,
 			// "Mosaic"
@@ -113,27 +115,44 @@
 			// "Sepia"
 			GrayScaleStart,
 			GrayScaleEnd,
-			OpenAuto = 106,
-			CloseAuto,
-			TouhouLightNormal,
-			TouhouLightUp,
-			TouhouLightDown,
-			TouhouLightCross,
-			TouhouStarNormal,
-			TouhouStarUp,
-			TouhouStarDown,
-			TouhouStarCross,
-			TouhouBigNormal,
-			TouhouBigUp,
-			TouhouBigDown,
-			TouhouBigCross,
-			TouhouScalyNormal,
-			TouhouScalyCross,
-			TouhouKnifeNormal,
-			TouhouKnifeCross,
-			TouhouDivideDanmaku1,
-			TouhouDivideDanmaku2,
-			TouhouDivideDanmaku3
+			// Focus lines
+			FocusLinesBlack,
+			FocusLinesWhite,
+			FocusLinesOff,
+			// Film grain
+			FilmGrainOn,
+			FilmGrainOff,
+			// Auto play
+			AutoPlayOn,
+			AutoPlayOff,
+
+			// Touhou mode (todo)
+			Touhou_MediumBullet,
+			Touhou_MediumBulletUp,
+			Touhou_MediumBulletDown,
+			Touhou_MediumBulletLaneshift,
+			Touhou_SmallBullet,
+			Touhou_SmallBulletUp,
+			Touhou_SmallBulletDown,
+			Touhou_SmallBulletLaneshift,
+			Touhou_LargeBullet,
+			Touhou_LargeBulletUp,
+			Touhou_LargeBulletDown,
+			Touhou_LargeBulletLaneshift,
+			Touhou_BossBullet1,
+			Touhou_BossBullet1Laneshift,
+			Touhou_BossBullet2,
+			Touhou_BossBullet2Laneshift,
+
+			// Flashbang colors
+			FlashbangColorWhite = 454,
+			FlashbangColorBlack,
+			FlashbangColorRed,
+			FlashbangColorGreen,
+			FlashbangColorBlue,
+			FlashbangColorCyan,
+			FlashbangColorMagenta,
+			FlashbangColorYellow,
 		}
 	}
 }
