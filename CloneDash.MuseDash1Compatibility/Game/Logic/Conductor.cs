@@ -101,7 +101,7 @@ namespace CloneDash.Game
 
 		public override void Initialize() {
 			UIBar = Level.UI.Add<CD_Conductor_UIBar>();
-			UIBar.Dock = Dock.Bottom;
+			UIBar.Dock = Dock.Top;
 			UIBar.Size = new(0, 8);
 
 			UIBar.DragStart += UIBar_DragStart;

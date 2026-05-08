@@ -352,6 +352,48 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 	}
 }
 
+public class MuseDash1SceneUI : IMuseDash1SceneUI
+{
+	public void OnVictory(StatisticsData stats) {
+		throw new NotImplementedException();
+	}
+
+	public void Render() {
+		throw new NotImplementedException();
+	}
+
+	public bool ShowingVictoryScreen() {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateAllPerfect(bool allPerfect) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateCombo(int currentCombo) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateFeverProgress(double fever, double maxFever) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateFullCombo(bool fullCombo) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateHP(double hp, double maxHP) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
+		throw new NotImplementedException();
+	}
+
+	public void UpdateScore(double score) {
+		throw new NotImplementedException();
+	}
+}
 
 public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance
 {
@@ -1138,6 +1180,8 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		PlaySound(SceneSound.Victory, 0);
 	}
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
+
+	public IMuseDash1SceneUI CreateUI() => new MuseDash1SceneUI();
 }
 
 class StatisticsPanel(IGame game, StatisticsData stats) : Panel()

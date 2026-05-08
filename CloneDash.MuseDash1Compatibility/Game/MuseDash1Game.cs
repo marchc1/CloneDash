@@ -565,6 +565,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
 	DashEnemy? lastEntity;
+	IMuseDash1SceneUI? SceneUI;
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
 		ResetScreenspaceEffects();
@@ -635,6 +636,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				sceneChanges.Add(new(this, 0));
 				SetScene(sceneToActivate);
 				FirstScene = sceneToActivate;
+				SceneUI = FirstScene?.CreateUI();
 
 				// var feverFX = FeverMod.GetFeverData();
 				// FeverFX = feverFX;
@@ -755,12 +757,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 			Interlude.Spin(submessage: "Ready!");
 
-			UIBar = this.UI.Add<CD_Player_UIBar>();
-			UIBar.Size = new(0, 64);
-
-			Scorebar = this.UI.Add<CD_Player_Scorebar>();
-			Scorebar.Size = new(0, 128);
-
 			if (!CommandLine().CheckParm("-mdbmsc", out var p) && HasActiveScene(out var sceneInstance))
 				sceneInstance.PlaySound(SceneSound.Begin, 0);
 		}
@@ -832,9 +828,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Ticks++;
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && FirstScene != null && !FirstScene.ShowingVictoryScreen()) {
+		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
 			Stats.UploadScore(Score);
-			FirstScene?.OnVictory(Stats);
+			SceneUI?.OnVictory(Stats);
 			audiosystem.PauseSound(Music);
 			return;
 		}
@@ -2072,79 +2068,4 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private double __lastCombo = -2000; // Last time a combo occured in game-time
 
 	public double LastCombo => __lastCombo;
-
-	internal CD_Player_UIBar UIBar;
-	internal class CD_Player_UIBar : Element
-	{
-		public CD_Player_UIBar() {
-
-		}
-		protected override void Initialize() {
-			base.Initialize();
-			Dock = Dock.Bottom;
-		}
-		public override void Paint(float width, float height) {
-			var lvl = Level.As<MuseDash1Game>();
-
-			var startAtX = width / 4f;
-			var totalW = width / 2f;
-			var endAtX = startAtX + totalW;
-
-			Graphics2D.ScissorRect(RectangleF.XYWH(startAtX, 0, endAtX, height));
-
-			Graphics2D.SetDrawColor(255, 60, 42);
-			Graphics2D.DrawRectangle(width / 4f, 0, (width / 2f) * (lvl.Health / lvl.MaxHealth), 24);
-			Graphics2D.SetDrawColor(255 / 2, 60 / 2, 42 / 2);
-			Graphics2D.DrawRectangleOutline(width / 4f, 0, (width / 2f), 24, 2);
-			Graphics2D.SetDrawColor(255, 220, 200);
-			Graphics2D.DrawText(width / 2f, 12, $"HP: {lvl.Health}/{lvl.MaxHealth}", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
-			float feverRatio;
-			if (lvl.InFever)
-				feverRatio = (float)lvl.FeverTimeLeft / lvl.FeverTime;
-			else
-				feverRatio = (float)lvl.Fever / lvl.MaxFever;
-
-			var lastTimeHit = lvl.LastFeverIncreaseTime;
-
-			Graphics2D.SetDrawColor(72, 160, 255);
-			Graphics2D.DrawRectangle(width / 4f, 32, (width / 2f) * feverRatio, 24);
-
-			// when hit gradient
-			var gradSize = 48;
-			var gradColor = new Color(162, 220, 255, (int)(float)NMath.Remap(lvl.Conductor.Time, lastTimeHit, lastTimeHit + .2f, 255, 0, clampOutput: true));
-			Graphics2D.DrawGradient(new(startAtX + ((width / 2f) * feverRatio) - gradSize, 33), new(gradSize, 24 - 2), gradColor, new(gradColor.R, gradColor.G, gradColor.B, (byte)0), Dock.Left);
-
-
-
-			Graphics2D.SetDrawColor(72 / 2, 160 / 2, 255 / 2);
-			Graphics2D.DrawRectangleOutline(startAtX, 32, (width / 2f), 24, 2);
-			Graphics2D.SetDrawColor(200, 220, 255);
-			Graphics2D.DrawText(width / 2f, 32 + 12, lvl.InFever ? $"FEVER! {Math.Round(lvl.FeverTimeLeft, 2):0.00}s remaining" : $"FEVER: {Math.Round((lvl.Fever / lvl.MaxFever) * 100)}%", Graphics2D.UI_FONT_NAME, 22, Anchor.Center);
-
-			Graphics2D.ScissorRect();
-		}
-	}
-
-	internal CD_Player_Scorebar Scorebar;
-	internal class CD_Player_Scorebar : Element
-	{
-		public CD_Player_Scorebar() {
-
-		}
-		protected override void Initialize() {
-			base.Initialize();
-			Dock = Dock.Top;
-		}
-		public override void Paint(float width, float height) {
-			Graphics2D.SetDrawColor(255, 255, 255, 255);
-			//if (Level.AutoPlayer.Enabled)
-			//Graphics2D.DrawText(width / 2f, 32 + 48, $"AUTO", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
-			var lvl = Level.As<MuseDash1Game>();
-			Graphics2D.DrawText(width * 0.4f, 32 + 24, $"{lvl.Combo}", Graphics2D.UI_FONT_NAME, (int)NMath.Remap(lvl.Conductor.Time - lvl.LastCombo, 0.2f, 0, 32, 40, clampOutput: true), Anchor.Center);
-			Graphics2D.DrawText(width * 0.4f, 32 + 56, "COMBO", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
-
-			Graphics2D.DrawText(width * 0.6f, 32 + 24, $"{lvl.Score}", Graphics2D.UI_FONT_NAME, 32, Anchor.Center);
-			Graphics2D.DrawText(width * 0.6f, 32 + 56, "SCORE", Graphics2D.UI_FONT_NAME, 24, Anchor.Center);
-		}
-	}
 }

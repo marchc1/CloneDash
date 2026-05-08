@@ -14,10 +14,24 @@ public interface IMuseDash1SceneDescriptor : ISceneDescriptor {
 
 }
 
+public interface IMuseDash1SceneUI {
+	void OnVictory(StatisticsData stats);
+	bool ShowingVictoryScreen();
+	void Render();
+	void UpdateHP(double hp, double maxHP);
+	void UpdateFeverProgress(double fever, double maxFever);
+	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
+	void UpdateScore(double score);
+	void UpdateAllPerfect(bool allPerfect);
+	void UpdateFullCombo(bool fullCombo);
+	void UpdateCombo(int currentCombo);
+}
+
 public interface IMuseDash1SceneInstance : ISceneInstance {
 	void Initialize();
 	void Refresh();
 
+	IMuseDash1SceneUI CreateUI();
 
 	void PlaySound(SceneSound sound, int hits);
 	void OnPressStateChange(bool wasSustaining, bool startSustaining);
@@ -29,8 +43,6 @@ public interface IMuseDash1SceneInstance : ISceneInstance {
 
 	void Activate(IMuseDash1SceneInstance? transitioningTo);
 	void Deactivate(IMuseDash1SceneInstance? transitioningFrom);
-
-	void OnVictory(StatisticsData stats);
 
 	/// <summary>
 	/// Used in DashEnemy visuals mostly
@@ -58,5 +70,4 @@ public interface IMuseDash1SceneInstance : ISceneInstance {
 	void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
 	Color GetPathwayColor(PathwaySide side);
 	Vector2F GetPathwayPosition(PathwaySide side);
-	bool ShowingVictoryScreen();
 }
