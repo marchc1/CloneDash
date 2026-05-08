@@ -179,9 +179,7 @@ public class Boss : DashEnemy
 		visuals.Model.Position = Position;
 		visuals.Model.Scale = Scale;
 
-		Rlgl.DrawRenderBatchActive();
 		visuals.Model.Render();
-		Rlgl.DrawRenderBatchActive();
 	}
 
 	public override void OnBuildVisuals(DashEnemyVisuals visuals) {

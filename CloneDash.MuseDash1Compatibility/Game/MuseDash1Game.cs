@@ -1383,7 +1383,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					HandledEvents.Add(ev);
 					ActiveEvents.Remove(ev);
 					ev.Deactivate();
-					Logs.Debug($"Deactivating {ev.GetType().Name}");
+					if (ev.Length != 0)
+						Logs.Debug($"Deactivating {ev.GetType().Name}");
 				}
 			}
 			else if (!HandledEvents.Contains(ev)) {
@@ -1391,7 +1392,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				if (shouldActivateEvent(ev)) {
 					ActiveEvents.Add(ev);
 					ev.Activate();
-					Logs.Debug($"Activating {ev.GetType().Name}");
+					if (ev.Length == 0)
+						Logs.Debug($"Triggering {ev.GetType().Name}");
+					else
+						Logs.Debug($"Activating {ev.GetType().Name}");
 				}
 			}
 			// The event has both been activated and deactivated, so its ignored
@@ -2095,6 +2099,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public double Length;
 		public double Time;
 	}
+
 	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
 	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
 	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
@@ -2164,7 +2169,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ScreenspaceEffectShaderFns[(int)type] = shaderFn;
 	}
 
-	private void PrepareShaders(){
+	private void PrepareShaders() {
 		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
 	}
 

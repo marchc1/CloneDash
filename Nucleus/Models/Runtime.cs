@@ -23,13 +23,16 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Nucleus.Models.Runtime;
 
-public enum M4S_StencilMode : byte {
+public enum M4S_StencilMode : byte
+{
 	Off = 0,
 	On = 1,
 	RenderMask = 2,
@@ -83,6 +86,30 @@ public static class Model4System
 		RenderBlend = RenderBlendQueue.Count > 0
 			? RenderBlendQueue.Pop()
 			: Color.White;
+	}
+
+	static uint activeTexture;
+	internal static void CheckTextureUpdate(ITexture tex) {
+		var textureIdx = tex.GetTextureHandle();
+		if (textureIdx != activeTexture) {
+			Rlgl.DrawRenderBatchActive();
+			activeTexture = textureIdx;
+		}
+	}
+
+	internal static void SetTexture(ITexture tex) {
+		Rlgl.SetTexture(tex.GetTextureHandle());
+	}
+
+	internal static void PrepareWireframeRendering() {
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.Begin(DrawMode.LINES);
+		Rlgl.SetTexture(0);
+	}
+	internal static void EndWireframeRendering() {
+		Rlgl.End();
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.SetTexture(activeTexture);
 	}
 }
 
@@ -263,6 +290,9 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public void Render(bool useDefaultShader = true) {
 		var offset = Graphics2D.Offset;
 		Graphics2D.ResetDrawingOffset();
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.DisableBackfaceCulling();
+
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(Position.X, Position.Y, 0);
 		Rlgl.Scalef(Scale.X, Scale.Y, 1);
@@ -277,7 +307,6 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				Clipping.NextSlot(slot);
 				continue;
 			}
-			Rlgl.DrawRenderBatchActive();
 			attachment.Render(slot);
 			Clipping.NextSlot(slot);
 			slot.EndBlendMode();
@@ -300,6 +329,8 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				Raylib.DrawCircleV(bone.WorldTransform.LocalToWorld(0, 0).ToNumerics() * new System.Numerics.Vector2(1, -1), 4, Color.Red);
 			}
 		}
+
+		Rlgl.DrawRenderBatchActive();
 	}
 
 	public void SetToSetupPose() {
@@ -618,9 +649,9 @@ public class RegionAttachment : Attachment
 		BL.Y *= -1;
 		BR.Y *= -1;
 
-		Rlgl.DisableBackfaceCulling();
+		Model4System.CheckTextureUpdate(tex);
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.GetTextureHandle());
+		Model4System.SetTexture(tex);
 
 		var color = slot.Color * Model4System.GetRenderBlend();
 		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
@@ -646,9 +677,7 @@ public class RegionAttachment : Attachment
 		Rlgl.End();
 
 		if (Model4System.m4s_wireframe.GetBool()) {
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.Begin(DrawMode.LINES);
-			Rlgl.SetTexture(0);
+			Model4System.PrepareWireframeRendering();
 
 			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(TR.X, TR.Y);
 			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(TL.X, TL.Y);
@@ -657,8 +686,7 @@ public class RegionAttachment : Attachment
 			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(BR.X, BR.Y);
 
-			Rlgl.End();
-			Rlgl.DrawRenderBatchActive();
+			Model4System.EndWireframeRendering();
 		}
 	}
 }
@@ -802,15 +830,17 @@ public class MeshAttachment : VertexAttachment
 		float rotation = region.GetRotation();
 		ITexture tex = region.GetTexture();
 
+		Model4System.CheckTextureUpdate(tex);
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.GetTextureHandle());
+		Model4System.SetTexture(tex);
 
 		var color = slot.Color * Model4System.GetRenderBlend();
 		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
-		Rlgl.DisableBackfaceCulling();
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
+		bool wireframe = Model4System.m4s_wireframe.GetBool();
+
 		if (triangles.Length > 0) {
 			foreach (var tri in triangles) {
 				var av1 = vertices[tri.V1];
@@ -834,16 +864,14 @@ public class MeshAttachment : VertexAttachment
 				Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
 				Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
 				Rlgl.TexCoord2f(u3, v3); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
+
 			}
 		}
 
 		Rlgl.End();
 
-		if (Model4System.m4s_wireframe.GetBool()) {
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.Begin(DrawMode.LINES);
-			Rlgl.SetTexture(0);
-
+		if (wireframe) {
+			Model4System.PrepareWireframeRendering();
 			foreach (var tri in triangles) {
 				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
 				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
@@ -853,9 +881,7 @@ public class MeshAttachment : VertexAttachment
 				Rlgl.Vertex3f(p2.X, -p2.Y, 0); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
 				Rlgl.Vertex3f(p3.X, -p3.Y, 0); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
 			}
-
-			Rlgl.End();
-			Rlgl.DrawRenderBatchActive();
+			Model4System.EndWireframeRendering();
 		}
 	}
 }
