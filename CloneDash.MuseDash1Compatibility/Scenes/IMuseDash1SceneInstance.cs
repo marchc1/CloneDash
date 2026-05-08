@@ -2,6 +2,7 @@
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Scenes;
 using CloneDash.Game;
+using CloneDash.Game.Statistics;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Models.Runtime;
@@ -17,15 +18,19 @@ public interface IMuseDash1SceneInstance : ISceneInstance {
 	void Initialize();
 	void Refresh();
 
+
 	void PlaySound(SceneSound sound, int hits);
 	void OnPressStateChange(bool wasSustaining, bool startSustaining);
 
 	void Think(double scrollSpeed);
 	void RenderBackground();
 	void RenderPathway(PathwaySide side, float alpha, float size, float rotation);
+	void RenderOverlay();
 
 	void Activate(IMuseDash1SceneInstance? transitioningTo);
 	void Deactivate(IMuseDash1SceneInstance? transitioningFrom);
+
+	void OnVictory(StatisticsData stats);
 
 	/// <summary>
 	/// Used in DashEnemy visuals mostly
@@ -53,4 +58,5 @@ public interface IMuseDash1SceneInstance : ISceneInstance {
 	void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
 	Color GetPathwayColor(PathwaySide side);
 	Vector2F GetPathwayPosition(PathwaySide side);
+	bool ShowingVictoryScreen();
 }

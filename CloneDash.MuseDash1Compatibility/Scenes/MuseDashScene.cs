@@ -5,11 +5,14 @@ using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Entities;
+using CloneDash.Game.Statistics;
 using CloneDash.Settings;
 using DiscordRPC;
 using DiscordRPC.Registry;
@@ -18,10 +21,12 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
+using Nucleus.UI;
 using Nucleus.Util;
 using OggVorbisEncoder;
 using Raylib_cs;
@@ -33,6 +38,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
 using Texture = Nucleus.ManagedMemory.Texture;
@@ -413,7 +419,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	{
 		bool triedToLoad = false;
 		T? value { get; set; }
-		public T? TryLoad(){
+		public T? TryLoad() {
 			if (triedToLoad)
 				return value;
 
@@ -492,6 +498,9 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
+
+	AudioPlaybackHandle pressIdle;
+	int arrayIndex;
 
 	public void Initialize() {
 		var game = this.Game;
@@ -1090,8 +1099,6 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		}
 	}
 
-	AudioPlaybackHandle pressIdle;
-
 	public void OnPressStateChange(bool startSustaining, bool wasSustaining) {
 		if (startSustaining != wasSustaining) {
 			var clip = GetPressIdleSound();
@@ -1106,19 +1113,134 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		}
 	}
 
-	public void Activate(IMuseDash1SceneInstance? transitioningTo) {
-
-	}
-
-	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) {
-
-	}
-
+	public void Activate(IMuseDash1SceneInstance? transitioningTo) { }
+	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) { }
 	public int GetSceneArrayIndex() => arrayIndex;
 	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;
-
-
-	int arrayIndex;
 	public IGame GetGame() => Game;
 	public ISceneDescriptor GetScene() => Descriptor;
+
+	public void RenderOverlay() {
+		Conductor conductor = Game.Conductor;
+		var time = conductor.Time;
+
+
+	}
+
+	StatisticsPanel? CurrentStatisticsPanel;
+	public void OnVictory(StatisticsData stats) {
+		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
+
+		CurrentStatisticsPanel = EngineCore.Level.UI.Add(new StatisticsPanel(GetGame(), stats));
+		CurrentStatisticsPanel.Size = new(1, 1);
+		CurrentStatisticsPanel.DynamicallySized = true;
+
+		PlaySound(SceneSound.Victory, 0);
+	}
+	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
+}
+
+class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
+{
+	ICharacterVictoryInstance victory = null!;
+	ISongChart? chart;
+	double start = 0;
+	double Time() => globals.CurTime - start;
+
+	protected override void Initialize() {
+		chart = game.GetSongChart();
+		if (chart == null) return;
+		start = globals.CurTime;
+
+		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
+		if (character == null) return;
+
+		victory = character.CreateVictory();
+		victory.Initialize(game);
+		victory.PlayAudio();
+		stats.Compute();
+
+		var bottom = Add<Panel>();
+		bottom.DrawPanelBackground = false;
+
+		bottom.DynamicallySized = true;
+		bottom.Size = new(0.07f);
+		bottom.Dock = Dock.Bottom;
+
+		var restart = bottom.Add<Nucleus.UI.Button>();
+		restart.DynamicallySized = true;
+		restart.Size = new(.2f);
+		restart.Text = "Restart";
+		restart.Dock = Dock.Left;
+		restart.MouseReleaseEvent += (_, _, _) => {
+			// TODO: Probably should just hard restart it...
+			// Maybe seeking is stable enough now to justify this though?
+			game.Restart();
+			this.Remove();
+		};
+
+		var back = bottom.Add<Nucleus.UI.Button>();
+		back.DynamicallySized = true;
+		back.Size = new(.2f);
+		back.Text = "Main Menu";
+		back.Dock = Dock.Right;
+		back.MouseReleaseEvent += (_, _, _) => LevelTransitions.LoadMainMenu();
+
+		BorderSize = 0;
+	}
+	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
+		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
+		y += fs + 4;
+	}
+	public override void Paint(float width, float height) {
+		BackgroundColor = new(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true))));
+		base.Paint(width, height);
+
+		Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
+		EngineCore.Window.BeginMode2D(new() {
+			Zoom = height / 900 / 2.4f,
+			Offset = (new Vector2F(width / 2, height / 1)).ToNumerics()
+		});
+		victory.Render();
+		EngineCore.Window.EndMode2D();
+
+		var chart = (MD1_SongChart?)this.chart;
+		if (chart == null) return;
+		if (stats == null) return;
+
+		Graphics2D.SetDrawColor(255, 255, 255);
+		stats.Compute();
+		var fs = 24;
+		var y = 0;
+
+		Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.Name);
+		Graphics2D.DrawText(16, 16 + y,
+							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.Name,
+							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
+							fs);
+		y += fs + 4;
+
+		RenderOneLine($"      Rating: {chart.Rating}", fs, ref y);
+		RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
+		RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
+		RenderOneLine($"      Score: {stats.Score}", fs, ref y);
+		RenderOneLine($"      Max Combo: {stats.MaxCombo}", fs, ref y);
+		RenderOneLine("", fs, ref y);
+		RenderOneLine($"      Perfects: {stats.Perfects}", fs, ref y);
+		RenderOneLine($"      Greats: {stats.Greats}", fs, ref y);
+		RenderOneLine($"      Passes: {stats.Passes}", fs, ref y);
+		RenderOneLine($"      Misses: {stats.Misses}", fs, ref y);
+		RenderOneLine("", fs, ref y);
+		RenderOneLine($"      Earlys: {stats.Earlys}", fs, ref y);
+		RenderOneLine($"      Exacts: {stats.Exacts}", fs, ref y);
+		RenderOneLine($"      Lates: {stats.Lates}", fs, ref y);
+		RenderOneLine("", fs, ref y);
+		RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
+	}
+	protected override void OnThink(FrameState frameState) {
+		base.OnThink(frameState);
+		if (victory != null) {
+			victory.Think();
+		}
+	}
 }

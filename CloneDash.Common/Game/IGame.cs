@@ -13,4 +13,5 @@ public interface IGame
 	ISongChart? GetSongChart();
 	object? GetGamemodeData();
 	IConductor GetConductor();
+	void Restart();
 }
