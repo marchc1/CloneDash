@@ -740,6 +740,101 @@ public class SceneObject
 		return sb.ToString();
 	}
 
+	public static SceneObject Instantiate(SceneObject original) {
+		return DeepClone(original, null, false, null, null);
+	}
+
+	public static SceneObject Instantiate(SceneObject original, SceneTransform? parent) {
+		return DeepClone(original, parent, false, null, null);
+	}
+
+	public static SceneObject Instantiate(SceneObject original, SceneTransform? parent, bool instantiateInWorldSpace) {
+		return DeepClone(original, parent, instantiateInWorldSpace, null, null);
+	}
+
+	public static SceneObject Instantiate(SceneObject original, Vector3 position, Quaternion rotation) {
+		return DeepClone(original, null, false, position, rotation);
+	}
+
+	public static SceneObject Instantiate(SceneObject original, Vector3 position, Quaternion rotation, SceneTransform? parent) {
+		return DeepClone(original, parent, false, position, rotation);
+	}
+
+	private static SceneObject DeepClone(SceneObject original, SceneTransform? parent, bool instantiateInWorldSpace, Vector3? position, Quaternion? rotation) {
+		var clone = CloneHierarchy(original);
+
+		if (parent != null) {
+			if (instantiateInWorldSpace) 
+				clone.Transform.SetParent(parent);
+			else 
+				clone.Transform.SetParent(parent);
+		}
+
+		if (position.HasValue) {
+			clone.Transform.LocalX = position.Value.X;
+			clone.Transform.LocalY = position.Value.Y;
+			clone.Transform.LocalZ = position.Value.Z;
+		}
+		if (rotation.HasValue) {
+			clone.Transform.LocalRotationX = rotation.Value.X;
+			clone.Transform.LocalRotationY = rotation.Value.Y;
+			clone.Transform.LocalRotationZ = rotation.Value.Z;
+			clone.Transform.LocalRotationW = rotation.Value.W;
+		}
+
+		if (original.Scene != null)
+			PropagateScene(clone, original.Scene);
+
+		return clone;
+	}
+
+	private static SceneObject CloneHierarchy(SceneObject original) {
+		var clone = new SceneObject {
+			Name = original.Name,
+			Active = original.Active,
+			Color = original.Color,
+		};
+
+		var srcT = original.Transform;
+		var dstT = clone.Transform;
+		dstT.LocalX = srcT.LocalX;
+		dstT.LocalY = srcT.LocalY;
+		dstT.LocalZ = srcT.LocalZ;
+		dstT.LocalScaleX = srcT.LocalScaleX;
+		dstT.LocalScaleY = srcT.LocalScaleY;
+		dstT.LocalScaleZ = srcT.LocalScaleZ;
+		dstT.LocalRotationX = srcT.LocalRotationX;
+		dstT.LocalRotationY = srcT.LocalRotationY;
+		dstT.LocalRotationZ = srcT.LocalRotationZ;
+		dstT.LocalRotationW = srcT.LocalRotationW;
+
+		for (int i = 1; i < original.Components.Count; i++) {
+			var comp = original.Components[i];
+			switch (comp) {
+				case SceneSpriteRenderer sr:
+					clone.AddComponent(new SceneSpriteRenderer(sr.UnitySpriteRenderer));
+					break;
+				case SceneAnimator anim:
+					clone.AddComponent(new SceneAnimator { UnityAnimator = anim.UnityAnimator });
+					break;
+			}
+		}
+
+		foreach (var childTransform in srcT.Children) {
+			var childClone = CloneHierarchy(childTransform.Object);
+			childClone.Transform.SetParent(dstT);
+		}
+
+		return clone;
+	}
+
+	private static void PropagateScene(SceneObject obj, BaseMuseDash1UnitySimScene scene) {
+		obj.Scene = scene;
+		obj.Awake();
+		foreach (var child in obj.Transform.Children)
+			PropagateScene(child.Object, scene);
+	}
+
 	public System.Numerics.Vector4 GetColor() {
 		var c = new System.Numerics.Vector4(1, 1, 1, 1);
 		var p = this;
@@ -776,7 +871,11 @@ public abstract class BaseMuseDash1UnitySimScene
 		return tex;
 	}
 
-	protected SceneObject ImportGameObject(GameObject unityGO, SceneTransform? parent) {
+
+	protected SceneObject? ImportGameObject(GameObject? unityGO, SceneTransform? parent) {
+		if (unityGO == null)
+			return null;
+
 		if (pathIdToObject.TryGetValue(unityGO.m_PathID, out var existing)) return existing;
 
 		var obj = new SceneObject { Name = unityGO.m_Name ?? "", Active = unityGO.m_IsActive, Scene = this };

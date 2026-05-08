@@ -366,54 +366,65 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	StatisticsPanel? CurrentStatisticsPanel;
 	readonly BaseMuseDash1UnitySimScene unitySim = unitySim;
 
-	GameObject ImgDoubleGoldGreat = null!;
-	GameObject ImgDoubleGoldPerfect = null!;
-	GameObject ImgDoubleGreat = null!;
-	GameObject ImgDoublePerfect = null!;
-	GameObject ImgEarly = null!;
-	GameObject ImgGoldGreat = null!;
-	GameObject ImgGoldGreatBg = null!;
-	GameObject ImgGoldPerfect = null!;
-	GameObject ImgGoldPerfectBg = null!;
-	GameObject ImgLate = null!;
-	GameObject ImgScoreGoldGreat = null!;
-	GameObject ImgScoreGoldGreatAir = null!;
-	GameObject ImgScoreGoldPerfect = null!;
-	GameObject ImgScoreGoldPerfectAir = null!;
-	GameObject ImgScoreGreat = null!;
-	GameObject ImgScoreGreatAir = null!;
-	GameObject ImgScorePass = null!;
-	GameObject ImgScorePerfect = null!;
-	GameObject ImgScoreAir = null!;
-	GameObject MultiHitCombo = null!;
-	GameObject MultiHitTip = null!;
+	SceneObject ImgDoubleGoldGreat = null!;
+	SceneObject ImgDoubleGoldPerfect = null!;
+	SceneObject ImgDoubleGreat = null!;
+	SceneObject ImgDoublePerfect = null!;
+	SceneObject ImgEarly = null!;
+	SceneObject ImgGoldGreat = null!;
+	SceneObject ImgGoldGreatBg = null!;
+	SceneObject ImgGoldPerfect = null!;
+	SceneObject ImgGoldPerfectBg = null!;
+	SceneObject ImgLate = null!;
+	SceneObject ImgScoreGoldGreat = null!;
+	SceneObject ImgScoreGoldGreatAir = null!;
+	SceneObject ImgScoreGoldPerfect = null!;
+	SceneObject ImgScoreGoldPerfectAir = null!;
+	SceneObject ImgScoreGreat = null!;
+	SceneObject ImgScoreGreatAir = null!;
+	SceneObject ImgScorePass = null!;
+	SceneObject ImgScorePerfect = null!;
+	SceneObject ImgScorePerfectAir = null!;
+	SceneObject MultiHitCombo = null!;
+	SceneObject MultiHitTip = null!;
 
+	SceneObject? FindSceneObject(ReadOnlySpan<char> name) => ImportGameObject(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name), null);
 	public virtual void Initialize() {
-		ImgDoubleGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGoldGreat")!;
-		ImgDoubleGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGoldPerfect")!;
-		ImgDoubleGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoubleGreat")!;
-		ImgDoublePerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgDoublePerfect")!;
-		ImgEarly = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgEarly")!;
-		ImgGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldGreat")!;
-		ImgGoldGreatBg = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldGreatBg")!;
-		ImgGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldPerfect")!;
-		ImgGoldPerfectBg = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgGoldPerfectBg")!;
-		ImgLate = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgLate")!;
-		ImgScoreGoldGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldGreat")!;
-		ImgScoreGoldGreatAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldGreatAir")!;
-		ImgScoreGoldPerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldPerfect")!;
-		ImgScoreGoldPerfectAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGoldPerfectAir")!;
-		ImgScoreGreat = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGreat")!;
-		ImgScoreGreatAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreGreatAir")!;
-		ImgScorePass = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScorePass")!;
-		ImgScorePerfect = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScorePerfect")!;
-		ImgScoreAir = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>("ImgScoreAir")!;
+		ImgDoubleGoldGreat = FindSceneObject("ImgDoubleGoldGreat")!;
+		ImgDoubleGoldPerfect = FindSceneObject("ImgDoubleGoldPerfect")!;
+		ImgDoubleGreat = FindSceneObject("ImgDoubleGreat")!;
+		ImgDoublePerfect = FindSceneObject("ImgDoublePerfect")!;
+		ImgEarly = FindSceneObject("ImgEarly")!;
+		ImgGoldGreat = FindSceneObject("ImgGoldGreat")!;
+		ImgGoldGreatBg = FindSceneObject("ImgGoldGreatBg")!;
+		ImgGoldPerfect = FindSceneObject("ImgGoldPerfect")!;
+		ImgGoldPerfectBg = FindSceneObject("ImgGoldPerfectBg")!;
+		ImgLate = FindSceneObject("ImgLate")!;
+		ImgScoreGoldGreat = FindSceneObject("ImgScoreGoldGreat")!;
+		ImgScoreGoldGreatAir = FindSceneObject("ImgScoreGoldGreatAir")!;
+		ImgScoreGoldPerfect = FindSceneObject("ImgScoreGoldPerfect")!;
+		ImgScoreGoldPerfectAir = FindSceneObject("ImgScoreGoldPerfectAir")!;
+		ImgScoreGreat = FindSceneObject("ImgScoreGreat")!;
+		ImgScoreGreatAir = FindSceneObject("ImgScoreGreatAir")!;
+		ImgScorePass = FindSceneObject("ImgScorePass")!;
+		ImgScorePerfect = FindSceneObject("ImgScorePerfect")!;
+		ImgScorePerfectAir = FindSceneObject("ImgScorePerfectAir")!;
 	}
 
 	public double GetTime() => timingFunc();
 
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-
+		switch (pathway) {
+			case PathwaySide.Top:
+				SceneObject.Instantiate(inFever ? ImgScoreGoldGreatAir : ImgScoreGreatAir);
+				break;
+			case PathwaySide.Bottom:
+				SceneObject.Instantiate(inFever ? ImgScoreGoldGreat : ImgScoreGreat);
+				break;
+			case PathwaySide.Both:
+				SceneObject.Instantiate(inFever ? ImgDoubleGoldGreat : ImgDoubleGreat);
+				break;
+		}
 	}
 
 	public void CreateHealthText(float healthGiven) {
@@ -425,7 +436,17 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-
+		switch (pathway) {
+			case PathwaySide.Top:
+				SceneObject.Instantiate(inFever ? ImgScoreGoldPerfectAir : ImgScorePerfectAir);
+				break;
+			case PathwaySide.Bottom:
+				SceneObject.Instantiate(inFever ? ImgScoreGoldPerfect : ImgScorePerfect);
+				break;
+			case PathwaySide.Both:
+				SceneObject.Instantiate(inFever ? ImgDoubleGoldPerfect : ImgDoublePerfect);
+				break;
+		}
 	}
 
 	public void CreateScoreText(int scoreGiven) {
@@ -437,7 +458,7 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	}
 
 	public void EndWarning() {
-		
+
 	}
 	public void OnVictory(StatisticsData stats) {
 		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
@@ -461,43 +482,43 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 
 
 	public void StartMultiHitText() {
-		
+
 	}
 
 	public void StartWarning() {
-		
+
 	}
 
 	public void UpdateAllPerfect(bool allPerfect) {
-		
+
 	}
 
 	public void UpdateCombo(int currentCombo) {
-		
+
 	}
 
 	public void UpdateFeverProgress(double fever, double maxFever) {
-		
+
 	}
 
 	public void UpdateFullCombo(bool fullCombo) {
-		
+
 	}
 
 	public void UpdateHP(double hp, double maxHP) {
-		
+
 	}
 
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
-		
+
 	}
 
 	public void UpdateMultiHitText(int hits) {
-		
+
 	}
 
 	public void UpdateScore(double score) {
-		
+
 	}
 }
 
