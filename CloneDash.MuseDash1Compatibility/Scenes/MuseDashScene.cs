@@ -776,8 +776,8 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		obj.Color.W = alpha / 255f;
 	}
 
-	public void Think() {
-		RunThinkFuncs(globals.CurTimeDelta);
+	public void Think(double scrollSpeed) {
+		RunThinkFuncs(globals.CurTimeDelta * scrollSpeed);
 
 		if (!Game.Paused && IValidatable.IsValid(pressIdle))
 			audiosystem.UpdatePlayback(pressIdle);

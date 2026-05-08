@@ -20,7 +20,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance {
 	void PlaySound(SceneSound sound, int hits);
 	void OnPressStateChange(bool wasSustaining, bool startSustaining);
 
-	void Think();
+	void Think(double scrollSpeed);
 	void RenderBackground();
 	void RenderPathway(PathwaySide side, float alpha, float size, float rotation);
 

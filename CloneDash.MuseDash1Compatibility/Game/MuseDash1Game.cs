@@ -566,6 +566,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
+		ResetScreenspaceEffects();
 
 		Stats = new(gameParameters.Chart);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
@@ -1111,7 +1112,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
 
 		if (HasActiveScene(out var scene)) {
-			scene.Think();
+			scene.Think(GetBgScrollSpeedMultiplier());
 		}
 		// if (InFever)
 		// FeverFX?.Think(this);
@@ -2101,6 +2102,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void ResetScreenspaceEffects() {
 		Array.Clear(ScreenspaceEffectStates);
 	}
+	public double GetBgScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.BgFreeze]);
+	public double GetNoteScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]);
+
 	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length) {
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
 
@@ -2168,7 +2172,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)value * 20);
+		shader.SetUniform("uStrength", (float)value * 3);
 
 		return true;
 	}
