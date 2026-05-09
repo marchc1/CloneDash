@@ -16,10 +16,12 @@ using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.NewEngine;
 using Nucleus.UI;
+using Nucleus.Util;
 using System.Diagnostics;
 using Velopack;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
@@ -95,6 +97,18 @@ internal class Program
 
 public class GameDLL : IGameDLL
 {
+	MemorySearchPath? fontSearchpath;
+	void NucleusRegisterMDFont(ReadOnlySpan<char> fontName, ReadOnlySpan<char> fontAsset) {
+		if (fontSearchpath == null) {
+			fontSearchpath = new MemorySearchPath();
+			filesystem.AddSearchPath("fonts", fontSearchpath);
+		}
+		AssetStudio.Font font = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset);
+		Graphics2D.FontManager.FontNameToFilepath[fontName.Hash(invariant: false)] = new(new(fontAsset), "fonts");
+
+		using (var writer = fontSearchpath.Open(fontAsset, FileAccess.Write, FileMode.Create))
+			writer!.Write(font.m_FontData);
+	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
@@ -122,6 +136,13 @@ public class GameDLL : IGameDLL
 					_ => res.ToString()
 				}}");
 			}
+		}
+
+		// Load muse dash fonts
+		{
+			NucleusRegisterMDFont("Infinity Font", "InfinityFont_midiam_dot");
+			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
+			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
 		}
 
 		Interlude.Spin();
