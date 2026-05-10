@@ -1453,6 +1453,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//Raylib.DrawLineV(new(-100000, 0), new(100000, 0), Color.Red);
 		//Raylib.DrawLineV(new(0, -100000), new(0, 100000), Color.Green);
 
+		SceneUI?.PreRenderWorldspace();
+
 		// Pathways
 		TopPathway.Render();
 		BottomPathway.Render();
@@ -1471,7 +1473,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
-		SceneUI?.RenderWorldspace();
+		SceneUI?.PostRenderWorldspace();
 
 		Rlgl.DrawRenderBatchActive();
 	}
@@ -1481,13 +1483,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void Render2D(FrameState frameState) {
 		base.Render2D(frameState);
 
-		foreach (Entity ent in VisibleEntities) {
-			if (ent is not DashEnemy)
-				continue;
-
-			var entCD = (DashEnemy)ent;
-			//Graphics2D.DrawText(ent.Position, entCD.DebuggingInfo, "Consolas", 20);
-		}
+		SceneUI?.RenderUI();
 
 		renderTexture?.EndDrawing();
 		ScreenspaceDraw(frameState);

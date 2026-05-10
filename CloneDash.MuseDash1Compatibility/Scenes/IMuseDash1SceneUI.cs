@@ -11,7 +11,9 @@ public interface IMuseDash1SceneUI
 	void OpenVictory(StatisticsData stats);
 	void CloseVictory();
 	bool ShowingVictoryScreen();
-	void RenderWorldspace();
+	void PreRenderWorldspace();
+	void PostRenderWorldspace();
+	void RenderUI();
 	void UpdateHP(double hp, double maxHP);
 	void UpdateFeverProgress(double fever, double maxFever);
 	void UpdateInFever(double feverRemainingTime, double feverTotalTime);

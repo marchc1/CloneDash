@@ -367,6 +367,8 @@ public class CloneDashSceneUI(IMuseDash1SceneInstance scene) : IMuseDash1SceneUI
 	readonly List<(SceneObject obj, double expiry)> timedObjects = [];
 	double time;
 
+
+
 	public virtual void Initialize() {
 		
 	}
@@ -407,7 +409,15 @@ public class CloneDashSceneUI(IMuseDash1SceneInstance scene) : IMuseDash1SceneUI
 		CurrentStatisticsPanel = null;
 	}
 
-	public void RenderWorldspace() {
+	public void PreRenderWorldspace() {
+
+	}
+
+	public void PostRenderWorldspace() {
+
+	}
+
+	public void RenderUI() {
 
 	}
 
