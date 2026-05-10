@@ -258,7 +258,7 @@ public record class MuseDash1SceneInfo
 		return this;
 	}
 
-	public MuseDash1SceneInfo WithUI(Func<BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance, IMuseDash1SceneUI> uiFactory) {
+	public MuseDash1SceneInfo WithUI(UIFactoryFn uiFactory) {
 		UIFactory = uiFactory;
 		return this;
 	}
@@ -306,8 +306,9 @@ public record class MuseDash1SceneInfo
 	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
 												.MarkUnusable();
 
-	public Func<BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance, IMuseDash1SceneUI> UIFactory = (sim, scene) => new MuseDash1SceneUI(sim, scene);
+	public UIFactoryFn UIFactory = scene => new CloneDashSceneUI(scene);
 }
+public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene);
 public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 {
 	public readonly MuseDash1SceneInfo SceneInfo;
@@ -360,79 +361,17 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 	}
 }
 
-public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1SceneInstance scene) : BaseMuseDash1UnitySimScene, IMuseDash1SceneUI
+public class CloneDashSceneUI(IMuseDash1SceneInstance scene) : IMuseDash1SceneUI
 {
 	StatisticsPanel? CurrentStatisticsPanel;
-	readonly BaseMuseDash1UnitySimScene unitySim = unitySim;
 	readonly List<(SceneObject obj, double expiry)> timedObjects = [];
-	double elapsed;
+	double time;
 
-	SceneObject ImgDoubleGoldGreat = null!;
-	SceneObject ImgDoubleGoldPerfect = null!;
-	SceneObject ImgDoubleGreat = null!;
-	SceneObject ImgDoublePerfect = null!;
-	SceneObject ImgEarly = null!;
-	SceneObject ImgGoldGreat = null!;
-	SceneObject ImgGoldGreatBg = null!;
-	SceneObject ImgGoldPerfect = null!;
-	SceneObject ImgGoldPerfectBg = null!;
-	SceneObject ImgLate = null!;
-	SceneObject ImgScoreGoldGreat = null!;
-	SceneObject ImgScoreGoldGreatAir = null!;
-	SceneObject ImgScoreGoldPerfect = null!;
-	SceneObject ImgScoreGoldPerfectAir = null!;
-	SceneObject ImgScoreGreat = null!;
-	SceneObject ImgScoreGreatAir = null!;
-	SceneObject ImgScorePass = null!;
-	SceneObject ImgScorePerfect = null!;
-	SceneObject ImgScorePerfectAir = null!;
-	SceneObject MultiHitCombo = null!;
-	SceneObject MultiHitTip = null!;
-
-	SceneObject? FindSceneObject(ReadOnlySpan<char> name) => ImportGameObject(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name), null);
 	public virtual void Initialize() {
-		ImgDoubleGoldGreat = FindSceneObject("ImgDoubleGoldGreat")!;
-		ImgDoubleGoldPerfect = FindSceneObject("ImgDoubleGoldPerfect")!;
-		ImgDoubleGreat = FindSceneObject("ImgDoubleGreat")!;
-		ImgDoublePerfect = FindSceneObject("ImgDoublePerfect")!;
-		ImgEarly = FindSceneObject("ImgEarly")!;
-		ImgGoldGreat = FindSceneObject("ImgGoldGreat")!;
-		ImgGoldGreatBg = FindSceneObject("ImgGoldGreatBg")!;
-		ImgGoldPerfect = FindSceneObject("ImgGoldPerfect")!;
-		ImgGoldPerfectBg = FindSceneObject("ImgGoldPerfectBg")!;
-		ImgLate = FindSceneObject("ImgLate")!;
-		ImgScoreGoldGreat = FindSceneObject("ImgScoreGoldGreat")!;
-		ImgScoreGoldGreatAir = FindSceneObject("ImgScoreGoldGreatAir")!;
-		ImgScoreGoldPerfect = FindSceneObject("ImgScoreGoldPerfect")!;
-		ImgScoreGoldPerfectAir = FindSceneObject("ImgScoreGoldPerfectAir")!;
-		ImgScoreGreat = FindSceneObject("ImgScoreGreat")!;
-		ImgScoreGreatAir = FindSceneObject("ImgScoreGreatAir")!;
-		ImgScorePass = FindSceneObject("ImgScorePass")!;
-		ImgScorePerfect = FindSceneObject("ImgScorePerfect")!;
-		ImgScorePerfectAir = FindSceneObject("ImgScorePerfectAir")!;
-
-		foreach (var obj in allObjects) obj.Awake();
-
-		// Remove templates from allObjects so they dont render, but keep the references for cloning via Instantiate
-		allObjects.Clear();
+		
 	}
-
-	const double HitTextLifetime = 0.5;
-
-	SceneObject SpawnTimedClone(SceneObject template) {
-		var clone = SceneObject.Instantiate(template);
-		timedObjects.Add((clone, elapsed + HitTextLifetime));
-		return clone;
-	}
-
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		SceneObject? template = pathway switch {
-			PathwaySide.Top => inFever ? ImgScoreGoldGreatAir : ImgScoreGreatAir,
-			PathwaySide.Bottom => inFever ? ImgScoreGoldGreat : ImgScoreGreat,
-			PathwaySide.Both => inFever ? ImgDoubleGoldGreat : ImgDoubleGreat,
-			_ => null
-		};
-		if (template != null) SpawnTimedClone(template);
+
 	}
 
 	public void CreateHealthText(float healthGiven) {
@@ -440,18 +379,11 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 	}
 
 	public void CreatePassText(double precision, PathwaySide pathway) {
-		SceneObject? template = ImgScorePass;
-		if (template != null) SpawnTimedClone(template);
+
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		SceneObject? template = pathway switch {
-			PathwaySide.Top => inFever ? ImgScoreGoldPerfectAir : ImgScorePerfectAir,
-			PathwaySide.Bottom => inFever ? ImgScoreGoldPerfect : ImgScorePerfect,
-			PathwaySide.Both => inFever ? ImgDoubleGoldPerfect : ImgDoublePerfect,
-			_ => null
-		};
-		if (template != null) SpawnTimedClone(template);
+		
 	}
 
 	public void CreateScoreText(int scoreGiven) {
@@ -466,33 +398,22 @@ public class MuseDash1SceneUI(BaseMuseDash1UnitySimScene unitySim, IMuseDash1Sce
 
 	}
 
-	public void OnVictory(StatisticsData stats) {
-		if (IValidatable.IsValid(CurrentStatisticsPanel)) return;
+	public void OpenVictory(StatisticsData stats) {
 
-		CurrentStatisticsPanel = EngineCore.Level.UI.Add(new StatisticsPanel(scene.GetGame(), stats));
-		CurrentStatisticsPanel.Size = new(1, 1);
-		CurrentStatisticsPanel.DynamicallySized = true;
+	}
 
-		scene.PlaySound(SceneSound.Victory, 0);
+	public void CloseVictory(){
+		CurrentStatisticsPanel?.Remove();
+		CurrentStatisticsPanel = null;
 	}
 
 	public void RenderWorldspace() {
-		BuildRenderOrder();
-		Rlgl.PushMatrix();
-		foreach (var renderer in sortedRenderers) renderer.Render(this);
-		Rlgl.PopMatrix();
+
 	}
 
 	public void Think(double dt) {
-		elapsed += dt;
-		RunThinkFuncs(dt);
+		time = scene.GetGame().GetConductor().GetTime();
 
-		for (int i = timedObjects.Count - 1; i >= 0; i--) {
-			if (elapsed >= timedObjects[i].expiry) {
-				SceneObject.Destroy(timedObjects[i].obj);
-				timedObjects.RemoveAt(i);
-			}
-		}
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
@@ -1311,7 +1232,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	}
 
-	public IMuseDash1SceneUI CreateUI() => SceneInfo.UIFactory(this, this);
+	public IMuseDash1SceneUI CreateUI() => SceneInfo.UIFactory(this);
 }
 
 class StatisticsPanel(IGame game, StatisticsData stats) : Panel()

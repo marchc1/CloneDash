@@ -1,47 +1,13 @@
-﻿using CloneDash.Common;
-using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Scenes;
 using CloneDash.Game;
-using CloneDash.Game.Statistics;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 
 namespace CloneDash.Scenes;
-
-public interface IMuseDash1SceneDescriptor : ISceneDescriptor
-{
-
-}
-
-public interface IMuseDash1SceneUI
-{
-	void Initialize();
-	void Think(double dt);
-	void OnVictory(StatisticsData stats);
-	bool ShowingVictoryScreen();
-	void RenderWorldspace();
-	void UpdateHP(double hp, double maxHP);
-	void UpdateFeverProgress(double fever, double maxFever);
-	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
-	void UpdateScore(double score);
-	void UpdateAllPerfect(bool allPerfect);
-	void UpdateFullCombo(bool fullCombo);
-	void UpdateCombo(int currentCombo);
-
-	void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreatePassText(double precision, PathwaySide pathway);
-	void StartMultiHitText();
-	void UpdateMultiHitText(int hits);
-	void EndMultiHitText();
-	void CreateScoreText(int scoreGiven);
-	void CreateHealthText(float healthGiven);
-	void StartWarning();
-	void EndWarning();
-}
 
 public interface IMuseDash1SceneInstance : ISceneInstance
 {

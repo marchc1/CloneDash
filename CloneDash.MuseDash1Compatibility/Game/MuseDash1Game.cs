@@ -828,7 +828,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
 			Stats.UploadScore(Score);
-			SceneUI?.OnVictory(Stats);
+			SceneUI?.OpenVictory(Stats);
 			audiosystem.PauseSound(Music);
 			return;
 		}
