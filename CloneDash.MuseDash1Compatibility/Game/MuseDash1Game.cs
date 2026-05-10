@@ -19,6 +19,7 @@ using CloneDash.Menu;
 using CloneDash.Scenes;
 using CloneDash.Settings;
 using CloneDash.Systems;
+using CommunityToolkit.HighPerformance;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
@@ -38,6 +39,7 @@ using Nucleus.Util;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Color = Nucleus.Common.Types.Color;
@@ -72,8 +74,167 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 	public static readonly string UUID = "gamemode/musedash1/standard";
 }
 
+public class MuseDash1EnemyManager
+{
+	public const int MIN_TEMP_ENTITY_BUFFER = 256;
+	public const int CHUNK_INTERVAL = 6; // seconds, a chunk consists of entities in these intervals
+	class DashEnemyChunk
+	{
+		public readonly List<DashEnemy> EnemiesInThisChunk = [];
+		public int Length => EnemiesInThisChunk.Count;
+		public void CopyTo(Span<DashEnemy> enemies) => EnemiesInThisChunk.CopyTo(enemies);
+	}
+
+	readonly HashSet<DashEnemy> EnemyHash = [];
+	readonly List<DashEnemy> Enemies = [];
+	readonly List<DashEnemyChunk> Chunks = [];
+	bool Dirty = true;
+	DashEnemy[] TempEnemyBuffer = new DashEnemy[MIN_TEMP_ENTITY_BUFFER];
+	readonly HashSet<DashEnemy> VisibleEnemiesCheck = [];
+	int VisibleEnemiesCount;
+
+	/// <summary>
+	/// Does not clear the memory!
+	/// </summary>
+	Span<DashEnemy> GetTempEnemyBuffer(int length) {
+		if (length > TempEnemyBuffer.Length) {
+			TempEnemyBuffer = new DashEnemy[(int)BitOperations.RoundUpToPowerOf2((uint)length)];
+		}
+
+		return TempEnemyBuffer.AsSpan()[..length];
+	}
+
+	public void Invalidate() {
+		Dirty = true;
+	}
+
+	void Validate() {
+		if (!Dirty)
+			return;
+
+		Chunks.Clear();
+		if (Enemies.Count == 0) {
+			Dirty = false;
+			return;
+		}
+
+		Enemies.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+
+		var lastEnemy = Enemies[^1];
+		var numChunks = (int)Math.Ceiling((lastEnemy.HitTime + lastEnemy.Length) / CHUNK_INTERVAL);
+		if (numChunks <= (int)Math.Floor(lastEnemy.HitTime / CHUNK_INTERVAL))
+			numChunks = (int)Math.Floor(lastEnemy.HitTime / CHUNK_INTERVAL) + 1;
+		for (int i = 0; i < numChunks; i++)
+			Chunks.Add(new());
+
+		var enemies = Enemies.AsSpan();
+		for (int i = 0; i < enemies.Length; i++) {
+			var enemy = enemies[i];
+			var startChunk = (int)Math.Floor(enemy.HitTime / CHUNK_INTERVAL); 
+			var endChunk = (int)Math.Ceiling((enemy.HitTime + enemy.Length) / CHUNK_INTERVAL);
+			if (endChunk <= startChunk)
+				endChunk = startChunk + 1;
+			endChunk = Math.Min(endChunk, numChunks);
+			for (int chunkIdx = startChunk; chunkIdx < endChunk; chunkIdx++)
+				Chunks[chunkIdx].EnemiesInThisChunk.Add(enemy);
+		}
+
+		Dirty = false;
+	}
+
+	public void AddEnemy(DashEnemy enemy) {
+		if (!EnemyHash.Add(enemy))
+			return;
+
+		Enemies.Add(enemy);
+		Invalidate();
+	}
+
+	public void RemoveEnemy(DashEnemy enemy) {
+		if (!EnemyHash.Remove(enemy))
+			return;
+
+		Enemies.Remove(enemy);
+		Invalidate();
+	}
+
+	/// <summary>
+	/// Returns all enemies registered in order of time
+	/// </summary>
+	/// <returns></returns>
+	public Span<DashEnemy> GetAllEnemies() {
+		Validate();
+
+		return Enemies.AsSpan();
+	}
+
+	public DashEnemy? GetFirstEnemy() {
+		Validate();
+		if (Enemies.Count == 0) return null;
+		return Enemies.AsSpan()[0];
+	}
+
+	public DashEnemy? GetLastEnemy() {
+		Validate();
+		if (Enemies.Count == 0) return null;
+		return Enemies.AsSpan()[^1];
+	}
+
+	/// <summary>
+	/// Returns all visible enemies registered in order of time, given a curtime
+	/// Uses chunking under the hood
+	/// </summary>
+	/// <param name="curtime"></param>
+	/// <returns></returns>
+	public void RebuildVisibleEnemies(double curtime) {
+		Validate();
+
+		int chunkIdx = (int)Math.Floor(curtime / CHUNK_INTERVAL); 
+		if (chunkIdx < -1 || chunkIdx >= Chunks.Count + 1){
+			VisibleEnemiesCount = 0;
+			return;
+		}
+
+		int start = Math.Clamp(chunkIdx - 1, 0, Chunks.Count - 1);
+		int end = Math.Clamp(chunkIdx + 1, 0, Chunks.Count - 1);
+
+		int totalLength = 0;
+		for (int i = start; i <= end; i++)
+			totalLength += Chunks[i].Length;
+
+		VisibleEnemiesCheck.Clear();
+		var enemies = GetTempEnemyBuffer(totalLength);
+		int offset = 0;
+		for (int i = start; i <= end; i++) {
+			var chunk = Chunks[i];
+			for (int j = 0; j < chunk.EnemiesInThisChunk.Count; j++) {
+				var enemy = chunk.EnemiesInThisChunk[j];
+				if (VisibleEnemiesCheck.Add(enemy) && (enemy.CheckVisTest() || enemy.ForceDraw) && enemy.ShouldDraw)
+					enemies[offset++] = enemy;
+			}
+		}
+		enemies[..offset].Sort(VisibleEntitySorter);
+		VisibleEnemiesCount = offset;
+	}
+
+
+	private static int VisibleEntitySorter(DashEnemy x, DashEnemy y) {
+		return x.SortIndex.CompareTo(y.SortIndex);
+	}
+
+
+	/// <summary>
+	/// Make sure to call RebuildVisibleEnemies on think!!!
+	/// </summary>
+	/// <returns></returns>
+	public Span<DashEnemy> GetLastVisibleEnemies() {
+		return TempEnemyBuffer.AsSpan()[..VisibleEnemiesCount];
+	}
+}
+
 public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
+	public readonly MuseDash1EnemyManager EnemyManager = new();
 	public ISongChart? GetChart() => gameParameters.Chart;
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<MuseDash1Game>();
@@ -397,12 +558,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastMasherAttemptedHit = double.NaN;
 	}
 
-	/// <summary>
-	/// Is an entity on-screen and/or event currently warning the player? Used to draw the "!" warning on the side (and, if the entity wants to, on the entity itself)
-	/// </summary>
-	public bool IsWarning { get; set; } = false;
-
-
 	// Player input system
 	public InputState InputState { get; private set; }
 	public List<ICloneDashInputSystem> InputReceivers { get; } = [];
@@ -556,7 +711,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
-	DashEnemy? lastEntity;
 	IMuseDash1SceneUI? SceneUI;
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
@@ -708,9 +862,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							Boss.BuildForScene(scene);
 						BuildQueues();
 
-						Enemies.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
 						Events.Sort((x, y) => x.Time.CompareTo(y.Time));
-						lastEntity = Enemies.Last();
 					}
 				}
 			}
@@ -995,21 +1147,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Character.Think();
 
-		VisibleEntities.Clear();
-
-		foreach (var entity in Enemies) {
-			if (entity is Boss) continue;
-
-			// Visibility testing
-			// ShouldDraw overrides ForceDraw here, which is intentional, although the naming convention is confusing and should be adjusted (maybe the names swapped?)
-			if ((entity.CheckVisTest(frameState) || entity.ForceDraw) && entity.ShouldDraw) {
-				VisibleEntities.Add(entity);
-
-				if (entity.Warns && !entity.Dead && !InMashState)
-					IsWarning = true;
-			}
-		}
-
+		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
+		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
+		var lastEntity = EnemyManager.GetLastEnemy();
 
 		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
@@ -1020,16 +1160,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		// Sort the visible entities by their hit time
-		VisibleEntities.Sort(VisibleEntitySorter);
 
 		IterateEvents();
 
 		//LockEntityBuffer();
-
-		// Removes entities marked for removal safely
-		foreach (var entity in Enemies)
-			if (entity.MarkedForRemoval)
-				Remove(entity);
 
 		//UnlockEntityBuffer(); LockEntityBuffer();
 
@@ -1048,7 +1182,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
 		// It is ran after input processing.
-		foreach (var entity in VisibleEntities) {
+		foreach (var entity in visibleEnemies) {
 			var timeToHit = entity.GetJudgementTimeUntilHit();
 			switch (entity.Interactivity) {
 				case EntityInteractivity.Hit:
@@ -1113,10 +1247,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 
 	public int EnemySortIndexCounter;
-
-	private static int VisibleEntitySorter(DashEnemy x, DashEnemy y) {
-		return x.SortIndex.CompareTo(y.SortIndex);
-	}
 
 	private void Button_PaintOverride(Element self, float width, float height) {
 		Button b = self as Button;
@@ -1191,7 +1321,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="pathway"></param>
 	/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
 	public PollResult Poll(in PollParams parms) {
-		foreach (DashEnemy entity in VisibleEntities) {
+		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
+		foreach (DashEnemy entity in visibleEnemies) {
 			// If the entity has no interactivity, ignore it in the poll
 			if (!entity.Interactive)
 				continue;
@@ -1221,7 +1352,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return LastPollResult;
 	}
 
-	public List<DashEnemy> Enemies = [];
 	public List<DashEvent> Events = [];
 	public HashSet<DashEvent> ActiveEvents = [];
 	public HashSet<DashEvent> HandledEvents = [];
@@ -1338,7 +1468,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Stats.RegisterEnemy(ent);
 		readyToBuildEntities.Add(ent);
-		Enemies.Add(ent);
+		EnemyManager.AddEnemy(ent);
 	}
 
 	List<DashEnemy> readyToBuildEntities = [];
@@ -1419,13 +1549,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//cam.Target = cam.Offset;
 	}
 
-	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate) {
+	public void ConditionallyRenderVisibleEntities(FrameState frameState, Predicate<DashEnemy> enemyPredicate, Span<DashEnemy> visibleEnemies) {
 		DeadEntityVisibility deadVis = GameSettings.DeadEntityVisibility;
-		foreach (Entity ent in VisibleEntities) {
-			if (ent is not DashEnemy entCD) continue;
-			if (!enemyPredicate(entCD)) continue;
+		foreach (DashEnemy ent in visibleEnemies) {
+			if (!enemyPredicate(ent)) continue;
 
-			if (entCD.Dead) {
+			if (ent.Dead) {
 				switch (deadVis) {
 					case DeadEntityVisibility.UseGamemodeDefaults:
 					case DeadEntityVisibility.FullyVisible:
@@ -1438,11 +1567,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						continue;
 				}
 			}
+
 			ent.Render(frameState);
 			Rlgl.DrawRenderBatchActive();
 			Model4System.PopRenderBlend();
 		}
 	}
+	int render_visibleEntitiesCount;
 	public override void Render(FrameState frameState) {
 		Rlgl.DrawRenderBatchActive();
 
@@ -1459,17 +1590,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		TopPathway.Render();
 		BottomPathway.Render();
 
+		Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisibleEnemies();
+
 		// Hold notes
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type == EntityType.SustainBeam);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == EntityType.SustainBeam, visibleEnemies);
 
 		// Boss
 		Boss.Render();
 
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top);
-		ConditionallyRenderVisibleEntities(frameState, x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
 
-		AddDebugString("Visible Entities", VisibleEntities.Count);
+		AddDebugString("Visible Entities", EnemyManager.GetLastVisibleEnemies().Length);
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
@@ -1489,37 +1622,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ScreenspaceDraw(frameState);
 	}
 
-	/// <summary>
-	/// Currently visible entities this tick
-	/// </summary>
-	public List<DashEnemy> VisibleEntities { get; private set; } = [];
 
 	private double LastAttackTime;
 	private PathwaySide LastAttackPathway;
 
-	public void BroadcastEntitySignal(Entity? entityFrom, EntitySignalType signalType, object? data = null) {
-		DashEnemy? mentFrom = null;
-		if (entityFrom != null) {
-			if (entityFrom is not DashEnemy mentFromC)
-				return;
-			mentFrom = mentFromC;
-		}
-
-		foreach (var entity in Entities) {
-			if (entity is not DashEnemy ment) continue;
-			ment.OnSignalReceived(mentFrom, signalType, data);
-		}
+	public void BroadcastEntitySignal(DashEnemy? entityFrom, EntitySignalType signalType, object? data = null) {
+		foreach (var enemy in EnemyManager.GetAllEnemies()) 
+			enemy.OnSignalReceived(entityFrom, signalType, data);
 	}
-	public void SendEntitySignal(Entity? entityFrom, Entity entityTo, EntitySignalType signalType, object? data = null) {
-		DashEnemy? mentFrom = null;
-		if (entityFrom != null) {
-			if (entityFrom is not DashEnemy mentFromC)
-				return;
-			mentFrom = mentFromC;
-		}
 
-		if (entityTo is not DashEnemy ment) return;
-		ment.OnSignalReceived(mentFrom, signalType, data);
+	public void SendEntitySignal(DashEnemy? entityFrom, DashEnemy entityTo, EntitySignalType signalType, object? data = null) {
+		entityTo.OnSignalReceived(entityFrom, signalType, data);
 	}
 
 

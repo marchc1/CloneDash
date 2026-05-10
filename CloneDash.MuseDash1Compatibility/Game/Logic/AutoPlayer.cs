@@ -113,14 +113,14 @@ namespace CloneDash.Game.Logic
 			}
 
 			// Sort the visible entities by closest to furthest
-			var ents = level.VisibleEntities;
+			var ents = level.EnemyManager.GetLastVisibleEnemies();
 			ents.Sort((x, y) => x.GetJudgementTimeUntilHit().CompareTo(y.GetJudgementTimeUntilHit()));
 
 			// Find the closest interactive entity that hasnt been passed
-			var entIndex = ents.FindIndex(x => x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead);
+			var entIndex = GetClosestInteractiveIdx(ents);
 			bool avoidedTop = false, avoidedBottom = false;
 			if (entIndex != -1) {
-				while (entIndex < ents.Count) {
+				while (entIndex < ents.Length) {
 					var ent = ents[entIndex];
 					entIndex++;
 
@@ -184,6 +184,15 @@ namespace CloneDash.Game.Logic
 
 			// Sustain holding logic
 			SustainHoldThink(ref input);
+		}
+
+		private int GetClosestInteractiveIdx(Span<DashEnemy> ents) {
+			for (int i = 0; i < ents.Length; i++) {
+				var x = ents[i];
+				if (x.Interactivity != EntityInteractivity.Noninteractive && !PassedEntity(x) && !x.Dead)
+					return i;
+			}
+			return -1;
 		}
 
 		public const string STRING_AUTO = "AUTO";

@@ -288,10 +288,6 @@ public class DashEnemy : Entity
 	/// Is the entity dead?
 	/// </summary>
 	public bool Dead { get; private set; } = false;
-	/// <summary>
-	/// Is the entity marked for removal from the entities list?
-	/// </summary>
-	public bool MarkedForRemoval { get; set; } = false;
 
 	/// <summary>
 	/// Does the entity warn the player when it is visible?
@@ -353,11 +349,13 @@ public class DashEnemy : Entity
 
 	public bool Shown { get; protected set; } = false;
 
-	public bool CheckVisTest(FrameState frameState) {
+	public bool CheckVisTest() {
 		var level = Level;
+		var windowWidth = EngineCore.GetWindowWidth();
+		var windowHeight= EngineCore.GetWindowHeight();
 
 		XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
-		float w = frameState.WindowWidth / 200, h = frameState.WindowHeight; // 200;
+		float w = windowWidth / 200, h = windowHeight; // 200;
 
 		var ret = VisTest(w, h, (float)XPos);
 		if (Shown == false && ret == true) {
@@ -489,8 +487,6 @@ public class DashEnemy : Entity
 		Hits = 0;
 		WasHitPerfect = false;
 		LastHitTime = 0;
-
-		MarkedForRemoval = false;
 
 		DidDamagePlayer = false;
 		DidRewardPlayer = false;
