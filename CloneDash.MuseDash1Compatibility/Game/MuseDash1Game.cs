@@ -347,6 +347,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		SceneUI?.UpdateAllPerfect(true);
 		SceneUI?.UpdateFullCombo(true);
+		SceneUI?.Reset();
+		SceneUI?.SetSeeking(true);
 
 		if (time < 0.06f)
 			audiosystem.RestartSound(Music);
@@ -473,6 +475,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		IsSeeking = false;
+		SceneUI?.SetSeeking(false);
 		Conductor.InvalidateTime();
 	}
 

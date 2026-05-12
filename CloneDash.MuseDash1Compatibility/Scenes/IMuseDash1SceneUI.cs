@@ -32,4 +32,6 @@ public interface IMuseDash1SceneUI
 	void CreateHealthText(float healthGiven);
 	void StartWarning();
 	void EndWarning();
+	void SetSeeking(bool seeking);
+	void Reset();
 }
