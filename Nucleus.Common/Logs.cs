@@ -60,11 +60,15 @@ namespace Nucleus
 			}
 
 			public bool PushSource(ReadOnlySpan<char> text) {
+				Span<char> pushText = stackalloc char[7];
+				for (int i = 0; i < pushText.Length; i++)
+					pushText[i] = ' ';
+				text.CopyTo(pushText[(pushText.Length - text.Length)..]);
 				int offset = Sources.Count == 0 ? 0 : Sources.Peek().End.Value;
-				if (offset + text.Length > BackingMemory.Length)
+				if (offset + pushText.Length > BackingMemory.Length)
 					return false;
-				text.CopyTo(BackingMemory.AsSpan(offset));
-				Sources.Push(new Range(offset, offset + text.Length));
+				pushText.CopyTo(BackingMemory.AsSpan(offset));
+				Sources.Push(new Range(offset, offset + pushText.Length));
 				return true;
 			}
 

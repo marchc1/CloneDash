@@ -185,7 +185,7 @@ public static class EngineCore
 				if (submessage.StartsWith("Glyph height is bigger than"))
 					return true;
 			}
-			else if (submessage.StartsWith("Requested codepoint glyphs"))
+			else if (submessage.StartsWith("Requested codepoints glyphs"))
 				return true;
 		}
 
