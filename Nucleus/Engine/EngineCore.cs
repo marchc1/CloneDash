@@ -168,7 +168,27 @@ public static class EngineCore
 		}
 	}
 
-	private static bool DetectAnnoyingRaylibMessages(string message) {
+	private static bool DetectAnnoyingRaylibMessages(ReadOnlySpan<char> message) {
+		const string FONT_START = "FONT: ";
+		if (message.StartsWith(FONT_START)) {
+			// Raylib 6 introduced a message for when glyph heights are bigger than requested font size.
+			// Not a bad thing in particular but way too annoying. We intentionally spray and pray how many
+			// codepoints the font can load for us as well which triggers another message about how Raylib
+			// didn't produce all requested codepoints. So this catches both.
+			ReadOnlySpan<char> submessage = message[FONT_START.Length..];
+			if (submessage.StartsWith('[')) {
+				// skip by (lbrack) 1 + (hex) 6 + (rbrack) 1 + (space) 1 to skip past the hex
+				const int SKIP_BY = 1 + 6 + 1 + 1;
+				if (submessage.Length < SKIP_BY)
+					return false;
+				submessage = submessage[SKIP_BY..];
+				if (submessage.StartsWith("Glyph height is bigger than"))
+					return true;
+			}
+			else if (submessage.StartsWith("Requested codepoint glyphs"))
+				return true;
+		}
+
 		return false;
 	}
 
@@ -411,7 +431,7 @@ public static class EngineCore
 	}
 
 
-	
+
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
