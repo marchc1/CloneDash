@@ -232,6 +232,7 @@ public class MuseDash1EnemyManager
 	}
 }
 
+[MarkForStaticConstruction]
 public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
 	public readonly MuseDash1EnemyManager EnemyManager = new();
@@ -262,6 +263,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		this.speed = speed;
 		audiosystem.SetSoundPitchControl(Music, (float)speed);
 	}
+
 
 	public void InitSpeedFromCvar() {
 		SetSpeed(musicspeed.GetDouble());
@@ -1680,10 +1682,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							// TODO: tolerances for early/late..
 						}
 
-						if (pollResult.IsPerfect)
-							SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
-						else
-							SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
+						// Mashers don't create perfects, they'll start the mash hit UI
+						if (pollResult.HitEntity.Type != EntityType.Masher) {
+							if (pollResult.IsPerfect)
+								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
+							else
+								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
+						}
 
 						PlaySceneSound(pollResult.HitEntity.Type switch {
 							EntityType.Single => pollResult.HitEntity.Variant switch {

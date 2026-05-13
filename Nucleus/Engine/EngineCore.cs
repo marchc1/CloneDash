@@ -143,6 +143,9 @@ public static class EngineCore
 		if (message == "FILEIO: [] Failed to open text file") return;
 		Logs.Source = " raylib";
 
+		if (DetectAnnoyingRaylibMessages(message))
+			return;
+
 		switch ((TraceLogLevel)logLevel) {
 			case TraceLogLevel.LOG_ALL:
 			case TraceLogLevel.LOG_NONE:
@@ -164,6 +167,10 @@ public static class EngineCore
 				break;
 		}
 		Logs.Source = "nucleus";
+	}
+
+	private static bool DetectAnnoyingRaylibMessages(string message) {
+		throw new NotImplementedException();
 	}
 
 	public static Window OpenProfiler() {
@@ -833,6 +840,8 @@ public static class EngineCore
 
 			earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
 			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+
+			gameDLL.PreStaticInitialize();
 
 			Logs.Info("BOOT: Initializing static constructors...");
 			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()

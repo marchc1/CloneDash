@@ -10,4 +10,5 @@ namespace Nucleus.Common.Engine;
 public interface IGameDLL
 {
 	void Init();
+	public void PreStaticInitialize() { }
 }

@@ -109,6 +109,10 @@ public class GameDLL : IGameDLL
 		using (var writer = fontSearchpath.Open(fontAsset, FileAccess.Write, FileMode.Create))
 			writer!.Write(font.m_FontData);
 	}
+	public void PreStaticInitialize() {
+		// stupid hack to fix dependency-loading issues...
+		MuseDash1Game _ = null!; if (_ == null) { }
+	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")

@@ -7,6 +7,7 @@ using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game.Statistics;
 using Nucleus;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Rendering;
@@ -125,44 +126,43 @@ class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 
 public static class UITextAnimationFns
 {
-	public static void UpwardFadeout(WorldspaceRenderText self, double curtime) {
+	public static void UpwardFadeout(WorldspaceRenderItem self, double curtime) {
 		double t = curtime - self.StartTime;
 		double len = self.Length;
 
 		double moveT = NMath.Remap(t, 0, len * 0.8, 0, 1, clampInput: true);
 		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
-		double scaleT = NMath.Remap(t, 0, len * 0.9, 0, 1, clampInput: true);
 
 		float y = (float)(NMath.Ease.OutCirc(moveT) * 4);
-		float scaleX = (float)NMath.Ease.OutElastic(scaleT);
-		float scaleY = (float)NMath.Ease.OutElastic(scaleT * 1.4);
+
+		double squishT = NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
+		double ease = NMath.Ease.OutElastic(squishT);
+		double ease2 = NMath.Ease.OutElastic(squishT - 0.1);
+
+		float scaleX = (float)NMath.Lerp(0.1, 1.0, ease2);
+		float scaleY = (float)NMath.Lerp(2.0, 1.0, ease);
 
 		self.Position = new(0, y);
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleX, scaleY);
 	}
+	public static void UpwardFadeoutMoveLeft(WorldspaceRenderItem self, double curtime) {
+		UpwardFadeout(self, curtime);
+
+		double t = curtime - self.StartTime;
+		double len = self.Length;
+
+		double moveT = NMath.Remap(t, len * 0.6, len, 0, 1, clampInput: true);
+		self.Position.X = (float)(NMath.Ease.InQuart(moveT) * -4.5);
+	}
 }
 
-public delegate void RenderTextAnimationFn(WorldspaceRenderText self, double curtime);
+public delegate void RenderTextAnimationFn(WorldspaceRenderItem self, double curtime);
 
-public class WorldspaceRenderText
+public class WorldspaceRenderItem
 {
 	public double StartTime;
 	public double Length;
-
-	public WorldspaceRenderText(double start, double length, Vector2F pos, float rotation, Vector2F scale, string text, string font, Color color, RenderTextAnimationFn? fn = null) {
-		StartTime = start;
-		Length = length;
-		StartPosition = pos;
-		StartRotation = rotation;
-		StartScale = scale;
-		Text = text;
-		Font = font;
-		StartColor = color;
-		Fn = fn;
-	}
-
-	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
 
 	public Vector2F StartPosition;
 	public float StartRotation;
@@ -174,12 +174,35 @@ public class WorldspaceRenderText
 	public Vector2F Scale = new(1, 1);
 	public Color Color = new(255, 255, 255, 255);
 
-	public float Border = 2;
-	public Color BorderColor = new(0, 0, 0, 255);
-
 	public string? Text;
 	public string? Font;
+	public ITexture? Texture;
 	public RenderTextAnimationFn? Fn;
+
+	public WorldspaceRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, string text, string font, Color color, RenderTextAnimationFn? fn = null) {
+		StartTime = start;
+		Length = length;
+		StartPosition = pos;
+		StartRotation = rotation;
+		StartScale = scale;
+		Text = text;
+		Font = font;
+		StartColor = color;
+		Fn = fn;
+	}
+
+	public WorldspaceRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, ITexture? texture, Color color, RenderTextAnimationFn? fn = null) {
+		StartTime = start;
+		Length = length;
+		StartPosition = pos;
+		StartRotation = rotation;
+		StartScale = scale;
+		Texture = texture;
+		StartColor = color;
+		Fn = fn;
+	}
+
+	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
 
 	public static float FontResolution => 90;
 
@@ -209,17 +232,15 @@ public class WorldspaceRenderText
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(position.x, -position.y, 0);
 		Rlgl.Rotatef(rotation, 0, 0, 1);
-		Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
+		if (Text != null && Font != null)
 		{
-			if (Border != 0) {
-				Graphics2D.SetDrawColor(BorderColor * Color);
-				for (float ox = -Border; ox <= Border; ox += Border)
-					for (float oy = -Border; oy <= Border; oy += Border)
-						if (ox != 0 || oy != 0)
-							Graphics2D.DrawText(new Vector2F(ox, oy) / FontResolution, Text, Font, FontResolution, Anchor.Center);
-			}
+			Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
 			Graphics2D.SetDrawColor(color);
 			Graphics2D.DrawText(new(0, 0), Text, Font, FontResolution, Anchor.Center);
+		}
+		else if(Texture != null){
+			Rlgl.Scalef(scale.x, scale.y, 1);
+			Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
 		}
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
@@ -236,19 +257,19 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 {
 	StatisticsPanel? CurrentStatisticsPanel;
 
-	readonly List<WorldspaceRenderText> BackgroundText = [];
-	readonly List<WorldspaceRenderText> ForegroundText = [];
+	readonly List<WorldspaceRenderItem> BackgroundItems = [];
+	readonly List<WorldspaceRenderItem> ForegroundItems = [];
 
 	void CleanupTextLists(double curtime) {
-		for (int i = BackgroundText.Count - 1; i >= 0; i--)
-			if (BackgroundText[i].IsOver(curtime))
-				BackgroundText.RemoveAt(i);
-		for (int i = ForegroundText.Count - 1; i >= 0; i--)
-			if (ForegroundText[i].IsOver(curtime))
-				ForegroundText.RemoveAt(i);
+		for (int i = BackgroundItems.Count - 1; i >= 0; i--)
+			if (BackgroundItems[i].IsOver(curtime))
+				BackgroundItems.RemoveAt(i);
+		for (int i = ForegroundItems.Count - 1; i >= 0; i--)
+			if (ForegroundItems[i].IsOver(curtime))
+				ForegroundItems.RemoveAt(i);
 	}
 
-	double Time;
+	double Time => scene.GetGame().GetConductor().GetTime();
 	bool AllPerfect, FullCombo;
 	int Combo;
 	double CurrentFever, MaxFever;
@@ -261,14 +282,16 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	bool Warning;
 	bool Seeking;
 
-	public static float TextScale => 0.4f;
+	public static float TextScale => 0.35f;
 
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-
+		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"GREAT", "Luckiest Guy", color, UITextAnimationFns.UpwardFadeout);
+		BackgroundItems.Add(text);
 	}
 
 	public void CreateHealthText(float healthGiven) {
@@ -276,12 +299,16 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void CreatePassText(double precision, PathwaySide pathway) {
-
+		var pos = scene.GetPathwayPosition(pathway);
+		pos.X -= 0.8f;
+		var text = new WorldspaceRenderItem(Time, 0.5, pos, 0, new(TextScale), $"PASS", "Luckiest Guy", new(255, 128, 19), UITextAnimationFns.UpwardFadeoutMoveLeft);
+		BackgroundItems.Add(text);
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		var text = new WorldspaceRenderText(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"PERFECT {Math.Round(precision, 1)}ms", "Luckiest Guy", new(255, 255, 255), UITextAnimationFns.UpwardFadeout);
-		BackgroundText.Add(text);
+		Color color = inFever ? new(255, 184, 0) : new(255, 55, 146);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"PERFECT", "Luckiest Guy", color, UITextAnimationFns.UpwardFadeout);
+		BackgroundItems.Add(text);
 	}
 
 	public void CreateScoreText(int scoreGiven) {
@@ -306,13 +333,15 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void PreRenderWorldspace() {
-		foreach (var text in BackgroundText)
-			text.Render(Time);
+		var t = Time;
+		foreach (var text in BackgroundItems)
+			text.Render(t);
 	}
 
 	public void PostRenderWorldspace() {
-		foreach (var text in ForegroundText)
-			text.Render(Time);
+		var t = Time;
+		foreach (var text in ForegroundItems)
+			text.Render(t);
 	}
 
 	public void RenderUI() {
@@ -320,7 +349,6 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void Think(double dt) {
-		Time = scene.GetGame().GetConductor().GetTime();
 		CleanupTextLists(Time);
 	}
 
@@ -374,7 +402,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void Reset() {
-		BackgroundText.Clear();
-		ForegroundText.Clear();
+		BackgroundItems.Clear();
+		ForegroundItems.Clear();
 	}
 }
