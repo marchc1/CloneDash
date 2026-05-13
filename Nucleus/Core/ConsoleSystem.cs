@@ -72,17 +72,25 @@ public static class ConsoleSystem
 				ScreenMessages.RemoveAt(j);
 		}
 
+		// Snapshot the count ONCE after pruning
+		int messageCount = ScreenMessages.Count;
+		if (messageCount <= 0)
+			return;
+
 		const int MAX_CHARS_PER_LINE = 1024;
 		var currentMessages = ScreenMessages.AsSpan();
-		Span<float> fades = stackalloc float[ScreenMessages.Count];
-		Span<RectangleF> rectangles = stackalloc RectangleF[ScreenMessages.Count];
-		Span<int> textLengths = stackalloc int[ScreenMessages.Count];
-		Span<char> textMessages = stackalloc char[MAX_CHARS_PER_LINE * ScreenMessages.Count];
-		Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * ScreenMessages.Count];
+		Span<float> fades = stackalloc float[messageCount];
+		Span<RectangleF> rectangles = stackalloc RectangleF[messageCount];
+		Span<int> textLengths = stackalloc int[messageCount];
+		Span<char> textMessages = stackalloc char[MAX_CHARS_PER_LINE * messageCount];
+		Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * messageCount];
 		const string START_BRACKET = "[";
 		const string END_BRACKET = "] ";
 		int lines = 0;
 		foreach (ref readonly ConsoleMessage message in currentMessages) {
+			if (i >= messageCount)
+				break;
+
 			Span<char> textMessage = textMessages[(i * MAX_CHARS_PER_LINE)..];
 			float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 			int len = 0;
@@ -91,7 +99,6 @@ public static class ConsoleSystem
 				break;
 
 			if (message.Message.Length > 950)
-				// Excessive message; skipping
 				continue;
 
 			START_BRACKET.CopyTo(textMessage[len..]); len += START_BRACKET.Length;
@@ -111,14 +118,15 @@ public static class ConsoleSystem
 			lines += 1 + CountNewlines(text);
 		}
 
-		for (int j = 0; j < ScreenMessages.Count; j++) {
+		// Use 'i' (actual items written) not ScreenMessages.Count
+		for (int j = 0; j < i; j++) {
 			RectangleF drawRectangle = rectangles[j];
 			float fade = fades[j];
 			Graphics2D.SetDrawColor(30, 30, 30, (int)(110 * fade));
 			Graphics2D.DrawRectangle(drawRectangle.X, drawRectangle.Y + 2, drawRectangle.W + 4, drawRectangle.H + 4);
 		}
 
-		for (int j = 0; j < ScreenMessages.Count; j++) {
+		for (int j = 0; j < i; j++) {
 			Span<char> textMessage = textMessages[(j * MAX_CHARS_PER_LINE)..];
 			RectangleF drawRectangle = rectangles[j];
 			float fade = fades[j];
@@ -127,6 +135,7 @@ public static class ConsoleSystem
 			Graphics2D.DrawText(new(drawRectangle.X - 1, drawRectangle.Y + 4 + 1), textMessage[..textLengths[j]], "Consolas", textSize);
 		}
 	}
+
 	static int CountNewlines(ReadOnlySpan<char> x) {
 		int ret = 0;
 		for (int i = 0; i < x.Length; i++) 
