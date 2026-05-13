@@ -87,7 +87,7 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public nuint Length => length;
 	public Sound Sound {
 		get {
-			if (!Raylib.IsSoundReady(sound))
+			if (!Raylib.IsSoundValid(sound))
 				sound = RaylibAudioHelpers.AllocSound(data, length);
 
 			return sound;
@@ -146,7 +146,7 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public void Destroy() {
 		if (destroyed) return;
 		destroyed = true;
-		if (Raylib.IsSoundReady(sound))
+		if (Raylib.IsSoundValid(sound))
 			Raylib.UnloadSound(sound);
 		if (data != null)
 			Raylib.MemFree(data);
@@ -266,13 +266,13 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null || !ch.Active) return;
 
 		if (ch.IsStream) {
-			if (Raylib.IsMusicReady(ch.MusicStream)) {
+			if (Raylib.IsMusicValid(ch.MusicStream)) {
 				Raylib.StopMusicStream(ch.MusicStream);
 				Raylib.UnloadMusicStream(ch.MusicStream);
 			}
 		}
 		else {
-			if (Raylib.IsSoundReady(ch.SoundAlias)) {
+			if (Raylib.IsSoundValid(ch.SoundAlias)) {
 				Raylib.StopSound(ch.SoundAlias);
 				Raylib.UnloadSoundAlias(ch.SoundAlias);
 			}

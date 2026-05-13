@@ -78,7 +78,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a shader is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsShaderReady(Shader shader);
+	public static extern CBool IsShaderValid(Shader shader);
 
 	/// <summary>Get shader uniform location</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -719,7 +719,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if an image is ready</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsImageReady(Image image) {
+	public static bool IsImageValid(Image image) {
 		return ((image.Data != null) &&     // Validate pixel data available
 			(image.Width > 0) &&
 			(image.Height > 0) &&       // Validate image size
@@ -1145,7 +1145,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a texture is ready</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsTextureReady(Texture2D texture) {
+	public static bool IsTextureValidy(Texture2D texture) {
 		return ((texture.Id > 0) &&         // Validate OpenGL id
 			(texture.Width > 0) &&
 			(texture.Height > 0) &&     // Validate texture size
@@ -1174,7 +1174,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a render texture is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsRenderTextureReady(RenderTexture2D target);
+	public static extern CBool IsRenderTextureValid(RenderTexture2D target);
 
 	/// <summary>Unload render texture from GPU memory (VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1349,7 +1349,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a font is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsFontReady(Font font);
+	public static extern CBool IsFontValid(Font font);
 
 	/// <summary>Load font data for further use</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1733,7 +1733,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a model is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsModelReady(Model model);
+	public static extern CBool IsModelValid(Model model);
 
 	/// <summary>Unload model from memory (RAM and/or VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1911,7 +1911,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a material is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsMaterialReady(Material material);
+	public static extern CBool IsMaterialValid(Material material);
 
 	/// <summary>Unload material from GPU memory (VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2004,7 +2004,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if audio device has been initialized successfully</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsAudioDeviceReady();
+	public static extern CBool IsAudioDeviceValid();
 
 	/// <summary>Set master volume (listener)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2027,7 +2027,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if wave data is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsWaveReady(Wave wave);
+	public static extern CBool IsWaveValid(Wave wave);
 
 	/// <summary>Load sound from file</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2042,8 +2042,8 @@ public static unsafe partial class Raylib
 	public static extern Sound LoadSoundAlias(Sound source);
 
 	/// <summary>Checks if a sound is ready</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsSoundReady(Sound sound);
+	[DllImport( NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern CBool IsSoundValid(Sound sound);
 
 	/// <summary>Update sound buffer with new data</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2140,7 +2140,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if a music stream is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsMusicReady(Music music);
+	public static extern CBool IsMusicValid(Music music);
 
 	/// <summary>Unload music stream</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2214,7 +2214,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if an audio stream is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsAudioStreamReady(AudioStream stream);
+	public static extern CBool IsAudioStreamValid(AudioStream stream);
 
 	/// <summary>Unload audio stream and free memory</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]

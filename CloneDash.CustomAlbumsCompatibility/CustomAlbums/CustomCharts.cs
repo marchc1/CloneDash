@@ -108,7 +108,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 			~MD1_CustomChartsSong() {
 				MainThread.RunASAP(() => {
-					if (CoverTexture != null && Raylib.IsTextureReady(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
+					if (CoverTexture != null && Raylib.IsTextureValidy(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
 
 				});
 			}
