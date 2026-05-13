@@ -509,15 +509,12 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void DrawRectangleRounded(Rectangle rec, float roundness, int segments, Color color);
 
-	/// <summary>Draw rectangle with rounded edges outline</summary>
+
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void DrawRectangleRoundedLines(
-		Rectangle rec,
-		float roundness,
-		int segments,
-		float lineThick,
-		Color color
-	);
+	public static extern void DrawRectangleRoundedLines(Rectangle rec, float roundness, int segments, Color color);
+
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern void DrawRectangleRoundedLinesEx(Rectangle rec, float roundness, int segments, float lineThick, Color color);
 
 	/// <summary>Draw a color-filled triangle (vertex in counter-clockwise order!)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2042,7 +2039,7 @@ public static unsafe partial class Raylib
 	public static extern Sound LoadSoundAlias(Sound source);
 
 	/// <summary>Checks if a sound is ready</summary>
-	[DllImport( NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern CBool IsSoundValid(Sound sound);
 
 	/// <summary>Update sound buffer with new data</summary>

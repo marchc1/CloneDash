@@ -407,10 +407,11 @@ namespace Nucleus.Core
 		public static void DrawRectangleOutline(float x, float y, float width, float height, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), thickness, __drawColor);
 		public static void DrawRectangleOutline(Vector2F pos, Vector2F size, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), thickness, __drawColor);
 		public static void DrawRectangleOutline(RectangleF rect, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(rect), thickness, __drawColor);
-
-		public static float ConvertRoundnessToRelative(float w, float h, float roundness){
+		
+		public static float ConvertRoundnessToRelative(float w, float h, float roundness) {
 			float ratio = Math.Min(w, h);
-			return (roundness * 2) / ratio;
+			if (ratio <= 0f) return 0f;
+			return Math.Clamp((roundness * 2f) / ratio, 0f, 1f);
 		}
 
 		public static void DrawRectangleRounded(int x, int y, int width, int height, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, __drawColor);
@@ -418,10 +419,10 @@ namespace Nucleus.Core
 		public static void DrawRectangleRounded(Vector2F pos, Vector2F size, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, __drawColor);
 		public static void DrawRectangleRounded(RectangleF rect, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, __drawColor);
 
-		public static void DrawRectangleRoundedOutline(int x, int y, int width, int height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(float x, float y, float width, float height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(Vector2F pos, Vector2F size, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(RectangleF rect, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(int x, int y, int width, int height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(float x, float y, float width, float height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(Vector2F pos, Vector2F size, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(RectangleF rect, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, thickness, __drawColor);
 
 		public static void DrawCircle(Vector2F pos, Vector2F size) {
 			var local = AFV2ToSNV2(pos);
