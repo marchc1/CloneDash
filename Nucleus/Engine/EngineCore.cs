@@ -141,36 +141,35 @@ public static class EngineCore
 	private static unsafe void LogCustom(int logLevel, sbyte* text, sbyte* args) {
 		var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
 		if (message == "FILEIO: [] Failed to open text file") return;
-		Logs.Source = " raylib";
+		using (Logs.SourceScope("raylib")) {
+			if (DetectAnnoyingRaylibMessages(message))
+				return;
 
-		if (DetectAnnoyingRaylibMessages(message))
-			return;
-
-		switch ((TraceLogLevel)logLevel) {
-			case TraceLogLevel.LOG_ALL:
-			case TraceLogLevel.LOG_NONE:
-				Logs.Print(message);
-				break;
-			case TraceLogLevel.LOG_TRACE:
-			case TraceLogLevel.LOG_DEBUG:
-				Logs.Debug(message);
-				break;
-			case TraceLogLevel.LOG_INFO:
-				Logs.Info(message);
-				break;
-			case TraceLogLevel.LOG_WARNING:
-				Logs.Warn(message);
-				break;
-			case TraceLogLevel.LOG_ERROR:
-			case TraceLogLevel.LOG_FATAL:
-				Logs.Error(message);
-				break;
+			switch ((TraceLogLevel)logLevel) {
+				case TraceLogLevel.LOG_ALL:
+				case TraceLogLevel.LOG_NONE:
+					Logs.Print(message);
+					break;
+				case TraceLogLevel.LOG_TRACE:
+				case TraceLogLevel.LOG_DEBUG:
+					Logs.Debug(message);
+					break;
+				case TraceLogLevel.LOG_INFO:
+					Logs.Info(message);
+					break;
+				case TraceLogLevel.LOG_WARNING:
+					Logs.Warn(message);
+					break;
+				case TraceLogLevel.LOG_ERROR:
+				case TraceLogLevel.LOG_FATAL:
+					Logs.Error(message);
+					break;
+			}
 		}
-		Logs.Source = "nucleus";
 	}
 
 	private static bool DetectAnnoyingRaylibMessages(string message) {
-		throw new NotImplementedException();
+		return false;
 	}
 
 	public static Window OpenProfiler() {
@@ -657,25 +656,44 @@ public static class EngineCore
 			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
 
 			int y = 0;
-			var msgs = ConsoleSystem.GetMessages();
 			int txS = 12;
-			for (int j = ConsoleSystem.GetMessagesCount() - 1; j >= 0; j--) {
-				ref readonly ConsoleMessage cmsg = ref msgs[j];
+			var msgList = ConsoleSystem.GetAllMessagesList();
+			msgList.BeginRead();
+			int msgCount = msgList.ComputeCount();
+			Span<int> offsets = stackalloc int[msgCount];
+			int found = msgList.GetMessages(offsets, out _);
 
-				int c = 1;
-				for (int ci = 0; ci < cmsg.Message.Length; ci++) {
-					char curchar = cmsg.Message[ci];
-					if (curchar == '\r' && ((ci < cmsg.Message.Length - 1 && cmsg.Message[ci + 1] == '\n') || ci == cmsg.Message.Length - 1)) {
-						c++;
+			Span<char> formatted = stackalloc char[512];
+
+			for (int j = found - 1; j >= 0; j--) {
+				if (!msgList.GetMessageAt(offsets, j, out var cmsg, out var msgText))
+					continue;
+
+				int lineCount = 1;
+				for (int ci = 0; ci < msgText.Length; ci++) {
+					if (msgText[ci] == '\r' && ci + 1 < msgText.Length && msgText[ci + 1] == '\n') {
+						lineCount++;
 						ci++;
 					}
-					else if (curchar == '\n')
-						c++;
+					else if (msgText[ci] == '\n')
+						lineCount++;
 				}
-				y += c;
-				Graphics2D.DrawText(4, screenBounds.Y - 24 - (y * txS), cmsg.Message.Replace('\r', ' '), "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
 
+				int pos = 0;
+				formatted[pos++] = '[';
+				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
+				levelStr.CopyTo(formatted[pos..]);
+				pos += levelStr.Length;
+				formatted[pos++] = ']';
+				formatted[pos++] = ' ';
+				msgText.CopyTo(formatted[pos..]);
+				pos += msgText.Length;
+
+				y += lineCount;
+				Graphics2D.DrawText(4, screenBounds.Y - 24 - (y * txS),
+					formatted[..pos], "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
 			}
+			msgList.EndRead();
 			// mini game loop
 			KeyboardState keyboardState = new();
 			Window.FlushKeyboardStateInto(ref keyboardState);
