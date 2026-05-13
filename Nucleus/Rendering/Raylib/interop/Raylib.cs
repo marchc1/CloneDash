@@ -221,24 +221,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void SetTraceLogCallback(delegate* unmanaged[Cdecl]<int, sbyte*, sbyte*, void> callback);
 
-	// Compression/Encoding functionality
-
-	/// <summary>Compress data (DEFLATE algorithm), memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* CompressData(byte* data, int dataSize, int* compDataSize);
-
-	/// <summary>Decompress data (DEFLATE algorithm), memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* DecompressData(byte* compData, int compDataSize, int* dataSize);
-
-	/// <summary>Encode data to Base64 string, memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* EncodeDataBase64(byte* data, int dataSize, int* outputSize);
-
-	/// <summary>Decode Base64 string data, memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* DecodeDataBase64(byte* data, int* outputSize);
-
 	/// <summary>Open URL with default system browser (if available)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void OpenURL(sbyte* url);
