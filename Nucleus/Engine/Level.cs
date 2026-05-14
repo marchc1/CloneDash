@@ -230,6 +230,7 @@ namespace Nucleus.Engine
 		public virtual void PreRenderBackground(FrameState frameState) { }
 		public virtual void PreRender(FrameState frameState) { }
 		public virtual void Render(FrameState frameState) { }
+		public virtual void PostRenderEntities(FrameState frameState) { }
 		public virtual void Render2D(FrameState frameState) { }
 		public virtual void PostRender(FrameState frameState) { }
 		public virtual void PreWindowClose() { }
@@ -267,6 +268,7 @@ namespace Nucleus.Engine
 			foreach (Entity entity in EntityList)
 				if (entity.Enabled && entity.RendersItself)
 					entity.Render(frameState);
+			PostRenderEntities(frameState);
 		}
 		public void RunEventRender2D(FrameState frameState) {
 			Render2D(frameState);

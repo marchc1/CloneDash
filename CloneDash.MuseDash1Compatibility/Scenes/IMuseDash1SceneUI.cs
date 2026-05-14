@@ -28,8 +28,8 @@ public interface IMuseDash1SceneUI
 	void StartMultiHitText();
 	void UpdateMultiHitText(int hits);
 	void EndMultiHitText();
-	void CreateScoreText(int scoreGiven);
-	void CreateHealthText(float healthGiven);
+	void CreateScoreText(int scoreGiven, PathwaySide pathway);
+	void CreateHealthText(float healthGiven, PathwaySide pathway);
 	void StartWarning();
 	void EndWarning();
 	void SetSeeking(bool seeking);

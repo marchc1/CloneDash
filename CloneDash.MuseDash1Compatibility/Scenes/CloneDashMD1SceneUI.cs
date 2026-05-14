@@ -5,6 +5,7 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Game;
 using CloneDash.Game.Statistics;
 using Nucleus;
 using Nucleus.Common.Graphics;
@@ -145,6 +146,46 @@ public static class UITextAnimationFns
 		self.Position = new(0, 1 + y);
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleX, scaleY);
+	}
+	public static void FadeoutInv(WorldspaceRenderItem self, double curtime) {
+		double t = curtime - self.StartTime;
+		double len = self.Length;
+
+		double moveT = NMath.Remap(t, 0, len * 0.8, 0, 1, clampInput: true);
+		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
+
+		float y = 1.5f;
+
+		double squishT = NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
+		double ease = NMath.Ease.OutElastic(squishT);
+		double ease2 = NMath.Ease.OutElastic(squishT - 0.1);
+
+		float scaleX = (float)NMath.Lerp(0.1, 1.0, ease2);
+		float scaleY = (float)NMath.Lerp(2.0, 1.0, ease);
+
+		self.Position = new(-1.2f, y);
+		self.Color.A = (byte)(255 * (1 - alphaT));
+		self.Scale = new(scaleY, scaleX);
+	}
+	public static void UpwardFadeoutInv(WorldspaceRenderItem self, double curtime) {
+		double t = curtime - self.StartTime;
+		double len = self.Length;
+
+		double moveT = NMath.Remap(t, 0, len * 0.8, 0, 1, clampInput: true);
+		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
+
+		float y = (float)(NMath.Ease.OutCirc(moveT) * 1.5f);
+
+		double squishT = NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
+		double ease = NMath.Ease.OutElastic(squishT);
+		double ease2 = NMath.Ease.OutElastic(squishT - 0.1);
+
+		float scaleX = (float)NMath.Lerp(0.1, 1.0, ease2);
+		float scaleY = (float)NMath.Lerp(2.0, 1.0, ease);
+
+		self.Position = new(-1.2f, y);
+		self.Color.A = (byte)(255 * (1 - alphaT));
+		self.Scale = new(scaleY, scaleX);
 	}
 	public static void UpwardFadeoutMoveLeft(WorldspaceRenderItem self, double curtime) {
 		UpwardFadeout(self, curtime);
@@ -314,7 +355,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		BackgroundItems.Add(text);
 	}
 
-	public void CreateHealthText(float healthGiven) {
+	public void CreateHealthText(float healthGiven, PathwaySide pathway) {
 
 	}
 
@@ -331,7 +372,9 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		BackgroundItems.Add(text);
 	}
 
-	public void CreateScoreText(int scoreGiven) {
+	public void CreateScoreText(int scoreGiven, PathwaySide pathway) {
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		ForegroundItems.Add(text);
 
 	}
 

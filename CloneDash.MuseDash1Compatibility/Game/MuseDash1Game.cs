@@ -1611,12 +1611,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AddDebugString("Player Y", CharacterYRatio);
 		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
-		SceneUI?.PostRenderWorldspace();
-
 		Rlgl.DrawRenderBatchActive();
 	}
-	public override void PostRender(FrameState frameState) {
-		base.PostRender(frameState);
+	public override void PostRenderEntities(FrameState frameState) {
+		base.PostRenderEntities(frameState);
+
+		SceneUI?.PostRenderWorldspace();
+		Rlgl.DrawRenderBatchActive();
 	}
 	public override void Render2D(FrameState frameState) {
 		base.Render2D(frameState);

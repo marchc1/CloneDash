@@ -264,12 +264,12 @@ public class DashEnemy : Entity
 
 		if (heal) {
 			level.Heal(HealthGiven);
-			level.GetSceneUI()?.CreateHealthText(HealthGiven);
+			level.GetSceneUI()?.CreateHealthText(HealthGiven, Pathway);
 		}
 
 		if (Blood) {
 			level.Heal(MD1_SongChartEntity.DEFAULT_HP);
-			level.GetSceneUI()?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP);
+			level.GetSceneUI()?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP, Pathway);
 			level.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
 		}
 
