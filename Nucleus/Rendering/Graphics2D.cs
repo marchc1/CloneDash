@@ -476,15 +476,22 @@ namespace Nucleus.Core
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
 
-		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) {
+		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) {
 			if (__textureFlippedY)
 				flipY = !flipY;
-
-			Raylib.DrawTexturePro(__texture, new Rectangle(
+			space.RoundInPlace();
+			Rectangle source = new Rectangle(
 				(flipX ? 1 : 0) * __texture.Width, (flipY ? 1 : 0) * __texture.Height,
-				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero), rotation, __drawColor);
+				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height);
+			Rectangle dest = AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y)));
+			Vector2 originV2 = AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero);
+			source.Width *= horizontalProgress;
+			dest.Width *= horizontalProgress;
+
+			Raylib.DrawTexturePro(__texture, source, dest, originV2, rotation, __drawColor);
 		}
-		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY);
+		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, 1);
+		public static void DrawImageHorizontalProgress(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, horizontalProgress);
 		public static void DrawRing(Vector2F center, float innerRadius, float outerRadius, float startAngle = 0, float endAngle = 360, int segments = 32) {
 			Raylib.DrawRing(AFV2ToSNV2(center), innerRadius, outerRadius, startAngle, endAngle, segments, __drawColor);
 		}

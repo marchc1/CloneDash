@@ -737,7 +737,6 @@ namespace Nucleus.Engine
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("Resolution", frameState.WindowSize);
-						debugrecords.Write("FPS", $"{FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
 					}
 					debugrecords.ExitScope();
 					debugrecords.Write("Engine - Current Level");

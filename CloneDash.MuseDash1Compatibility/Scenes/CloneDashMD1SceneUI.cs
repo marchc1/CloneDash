@@ -430,12 +430,14 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	ITexture? BelowBase;
 	ITexture? hp_icon;
 	ITexture? hp_icon_mistake;
+	ITexture? hp_slider;
 	ITexture? hp_slider_base;
 	ITexture? HpFeverBase;
 	ITexture? slider_light;
 	ITexture? power_slider;
 	ITexture? power_slider_white;
 	ITexture? Fever;
+	ITexture? bubble;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static void CleanupList(List<WorldspaceRenderItem> list, double curtime) {
@@ -484,12 +486,14 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		BelowBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("BelowBase")!);
 		hp_icon = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon")!);
 		hp_icon_mistake = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon_mistake")!);
+		hp_slider = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_slider")!);
 		hp_slider_base = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_slider_base")!);
 		HpFeverBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("HpFeverBase")!);
 		slider_light = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("slider_light")!);
 		power_slider = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider")!);
 		power_slider_white = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider_white")!);
 		Fever = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("Fever")!);
+		bubble = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("bubble")!);
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
@@ -554,28 +558,81 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		DrawHealthBar(width, height);
 	}
 
+	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.Width, tex.Height);
+	public void DrawSomeBubbles() {
+		if (bubble == null) return;
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.SetTexture(bubble.GetTextureHandle());
+		Rlgl.Begin(DrawMode.QUADS);
+
+		float size = 500;
+		float bubbleScaling = 5;
+		float uvOffset = (float)((Time / 6) % 1.0);
+
+		Rlgl.TexCoord2f(0f, (0f + uvOffset) * bubbleScaling);
+		Rlgl.Vertex3f(-size, -size, 0f);
+
+		Rlgl.TexCoord2f(1f * bubbleScaling, (0f + uvOffset) * bubbleScaling);
+		Rlgl.Vertex3f(size, -size, 0f);
+
+		Rlgl.TexCoord2f(1f * bubbleScaling, (1f + uvOffset) * bubbleScaling);
+		Rlgl.Vertex3f(size, size, 0f);
+
+		Rlgl.TexCoord2f(0f, (1f + uvOffset) * bubbleScaling);
+		Rlgl.Vertex3f(-size, size, 0f);
+
+		Rlgl.End();
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.SetTexture(0);
+	}
 	private void DrawHealthBar(float w, float h) {
 		if (BelowBase == null) return;
 		if (HpFeverBase == null) return;
+		if (hp_slider == null) return;
+		if (power_slider == null) return;
+		if (power_slider_white == null) return;
 
-		Vector2F healthOffset = new(0, 0);
-		Graphics2D.OffsetDrawing(healthOffset);
-		float resize = h / 1080f;
-		Vector2F belowBaseSize = new Vector2F(BelowBase.Width * resize, BelowBase.Height * resize);
-		Vector2F hpFeverBaseSize = new Vector2F(HpFeverBase.Width * resize, HpFeverBase.Height * resize);
+		Rlgl.PushMatrix();
+		float resize = (h / 1080f);
+
+		Rlgl.Translatef(w / 2, h, 0);
+		Rlgl.Scalef(resize, resize, 1);
+
+		Vector2F belowBaseSize = GetTextureSize(BelowBase);
+		Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
+		Vector2F hp_sliderSize = GetTextureSize(hp_slider);
+		Vector2F power_sliderSize = GetTextureSize(power_slider);
+		Vector2F power_slider_whiteSize = GetTextureSize(power_slider_white);
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		Graphics2D.SetTexture(BelowBase);
-		Graphics2D.DrawImage(new(w / 2, h - belowBaseSize.H), belowBaseSize);
-		Graphics2D.DrawImage(new((w / 2) - belowBaseSize.W, h - belowBaseSize.H), belowBaseSize, flipX: true);
+		Graphics2D.DrawImage(new(0, -belowBaseSize.H), belowBaseSize);
+		Graphics2D.DrawImage(new(-belowBaseSize.W, -belowBaseSize.H), belowBaseSize, flipX: true);
 
 		Graphics2D.SetTexture(HpFeverBase);
-		Graphics2D.DrawImage(new((w / 2) - (hpFeverBaseSize.W / 2), h - hpFeverBaseSize.H), hpFeverBaseSize);
+		Graphics2D.DrawImage(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
 
-		float fontSize = 32 * resize;
-		Graphics2D.DrawText(new(w / 2, h - fontSize), $"{HP}/{MaxHP}", "Noto Sans", fontSize);
+		float hpRatio = (float)(HP / MaxHP);
+		float feverRatio;
+		if (!InFever)
+			feverRatio = (float)(CurrentFever / MaxFever);
+		else
+			feverRatio = (float)(FeverRemainingTime / FeverTotalTime);
 
-		Graphics2D.OffsetDrawing(-healthOffset);
+		Graphics2D.SetTexture(hp_slider);
+		Graphics2D.SetDrawColor(255, 53, 133);
+		Graphics2D.DrawImageHorizontalProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, horizontalProgress: hpRatio);
+		Graphics2D.SetDrawColor(255, 255, 255);
+
+		Graphics2D.SetTexture(power_slider);
+		Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
+		DrawSomeBubbles();
+
+		float fontSize = 32;
+		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{HP}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
+
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.PopMatrix();
 	}
 
 	public void Think(double dt) {

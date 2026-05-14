@@ -126,9 +126,14 @@ namespace Nucleus.ManagedMemory
 			get {
 				ulong ret = 0;
 
-				foreach (var tex in Textures) 
+				foreach (var tex in Textures)
 					ret += tex!.UsedBits;
-				
+
+				foreach (var tex in RenderTextures) {
+					ret += (ulong)(tex.Texture.Format.GetBitsPerPixel() * tex.Texture.Width * tex.Texture.Height);
+					ret += (ulong)(tex.Depth.Format.GetBitsPerPixel() * tex.Depth.Width * tex.Depth.Height);
+				}
+
 				return ret;
 			}
 		}
@@ -137,7 +142,7 @@ namespace Nucleus.ManagedMemory
 			get {
 				ulong ret = 0;
 
-				foreach (var tex in Textures) 
+				foreach (var tex in Textures)
 					ret += tex!.UsedBits_CPU;
 
 				return ret;
@@ -149,7 +154,7 @@ namespace Nucleus.ManagedMemory
 			Textures.Add(tex);
 		}
 
-		
+
 		public bool IsValid() => !disposedValue;
 
 		protected virtual void Dispose(bool disposing) {

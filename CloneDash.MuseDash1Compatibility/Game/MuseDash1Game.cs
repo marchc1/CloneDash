@@ -130,7 +130,7 @@ public class MuseDash1EnemyManager
 		var enemies = Enemies.AsSpan();
 		for (int i = 0; i < enemies.Length; i++) {
 			var enemy = enemies[i];
-			var startChunk = (int)Math.Floor(enemy.HitTime / CHUNK_INTERVAL); 
+			var startChunk = (int)Math.Floor(enemy.HitTime / CHUNK_INTERVAL);
 			var endChunk = (int)Math.Ceiling((enemy.HitTime + enemy.Length) / CHUNK_INTERVAL);
 			if (endChunk <= startChunk)
 				endChunk = startChunk + 1;
@@ -189,8 +189,8 @@ public class MuseDash1EnemyManager
 	public void RebuildVisibleEnemies(double curtime) {
 		Validate();
 
-		int chunkIdx = (int)Math.Floor(curtime / CHUNK_INTERVAL); 
-		if (chunkIdx < -1 || chunkIdx >= Chunks.Count + 1){
+		int chunkIdx = (int)Math.Floor(curtime / CHUNK_INTERVAL);
+		if (chunkIdx < -1 || chunkIdx >= Chunks.Count + 1) {
 			VisibleEnemiesCount = 0;
 			return;
 		}
@@ -1152,6 +1152,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Character.Think();
 
+		var sceneUI = SceneUI;
+		if (sceneUI != null) {
+			sceneUI.UpdateCombo(Combo);
+			if (InFever)
+				sceneUI.UpdateInFever(FeverTimeLeft, FeverTime);
+			else
+				sceneUI.UpdateFeverProgress(Fever, MaxFever);
+
+			if (MashingEntity != null)
+				sceneUI.UpdateMultiHitText(MashingEntity.Hits);
+
+			sceneUI.UpdateHP(Health, MaxHealth);
+		}
+
 		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
 		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
 		var lastEntity = EnemyManager.GetLastEnemy();
@@ -1633,7 +1647,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private PathwaySide LastAttackPathway;
 
 	public void BroadcastEntitySignal(DashEnemy? entityFrom, EntitySignalType signalType, object? data = null) {
-		foreach (var enemy in EnemyManager.GetAllEnemies()) 
+		foreach (var enemy in EnemyManager.GetAllEnemies())
 			enemy.OnSignalReceived(entityFrom, signalType, data);
 	}
 
