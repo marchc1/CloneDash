@@ -273,15 +273,19 @@ namespace Nucleus.Core
 		}
 
 		private static Texture2D __texture;
-		public static void SetTexture(ITexture tex) => __texture = new() {
-			Id = tex.GetTextureHandle(),
-			Width = tex.Width,
-			Height = tex.Height,
-			Format = tex.Format,
-			Mipmaps = tex.GetMipmapCount()
-		};
-		public static void SetTexture(Texture2D tex) => __texture = tex;
-		public static void SetTexture(RenderTexture2D tex) => __texture = tex.Texture;
+		private static bool __textureFlippedY;
+		public static void SetTexture(ITexture tex) {
+			__texture = new() {
+				Id = tex.GetTextureHandle(),
+				Width = tex.Width,
+				Height = tex.Height,
+				Format = tex.Format,
+				Mipmaps = tex.GetMipmapCount()
+			};
+			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		}
+		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false;}
+		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = false; }
 
 		public static Color GetDrawColor() => __drawColor;
 		public static void SetDrawColor(in Color c) => __drawColor = c;
@@ -469,6 +473,9 @@ namespace Nucleus.Core
 		public static RectangleF GetScissorRect() => __scissorRect;
 
 		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) {
+			if (__textureFlippedY)
+				flipY = !flipY;
+
 			Raylib.DrawTexturePro(__texture, new Rectangle(
 				(flipX ? 1 : 0) * __texture.Width, (flipY ? 1 : 0) * __texture.Height,
 				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero), rotation, __drawColor);
@@ -589,6 +596,11 @@ namespace Nucleus.Core
 
 					bottomRight.x = x + (dx + dest.Width) * cosRotation - (dy + dest.Height) * sinRotation;
 					bottomRight.y = y + (dx + dest.Width) * sinRotation + (dy + dest.Height) * cosRotation;
+				}
+
+				if(__textureFlippedY){
+					(bottomLeft.y, topLeft.y) = (topLeft.y, bottomLeft.y);
+					(bottomRight.y, topRight.y) = (topRight.y, bottomRight.y);
 				}
 
 				Rlgl.SetTexture(texture.Id);
