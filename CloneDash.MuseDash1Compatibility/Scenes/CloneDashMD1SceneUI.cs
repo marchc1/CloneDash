@@ -11,10 +11,12 @@ using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Core;
+using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace CloneDash.Scenes;
@@ -264,16 +266,20 @@ public class WorldspaceRenderItem
 	}
 
 	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
-
-	public static float FontResolution => 90;
-
-	public void Render(double curtime) {
-		if (Font == null)
-			return;
-
-		if (Text == null)
-			return;
-
+	public void Dispose() {
+		if (textRT.HasValue)
+			Graphics2D.DestroyRenderTarget(textRT.Value);
+	}
+	static float FontResolution => 90;
+	static float BorderSize => 2.6f;
+	static float DarkenAmount => 0.3f;
+	static float DesaturateAmount => 0.35f;
+	static float SplitY => 0.55f;
+	static int RTPadding => (int)MathF.Ceiling(BorderSize) + 2;
+	public void PreRender() {
+		DetermineRenderTexture();
+	}
+	public void Render(double curtime, IShader? styledTextShader) {
 		if (Fn != null)
 			Fn(this, curtime);
 
@@ -290,19 +296,94 @@ public class WorldspaceRenderItem
 
 		Color color = StartColor * Color;
 
+		if (Text != null && Font != null)
+			RenderStyledText(position, scale, rotation, color, styledTextShader);
+		else if (Texture != null) {
+			Rlgl.PushMatrix();
+			Rlgl.Translatef(position.x, -position.y, 0);
+			Rlgl.Rotatef(rotation, 0, 0, 1);
+			Rlgl.Scalef(scale.x, scale.y, 1);
+			Graphics2D.SetDrawColor(color);
+			Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.PopMatrix();
+		}
+	}
+
+	RenderTexture2D? textRT;
+	public Vector2F GetTextSize() {
+		Vector2F textSize = Graphics2D.GetTextSize(Text!, Font!, FontResolution);
+		int pad = RTPadding;
+		int rtW = (int)textSize.X + pad * 2;
+		int rtH = (int)textSize.Y + pad * 2;
+		return new(rtW, rtH);
+	}
+	public RenderTexture2D? DetermineRenderTexture() {
+		if (Text == null || Font == null)
+			return null;
+
+		var rtSize = GetTextSize();
+		if (textRT.HasValue && textRT.Value.Texture.Width != rtSize.W && textRT.Value.Texture.Height != rtSize.H) {
+			Graphics2D.DestroyRenderTarget(textRT.Value);
+			textRT = null;
+		}
+
+		if (!textRT.HasValue) {
+			textRT = Graphics2D.CreateRenderTarget(rtSize.W, rtSize.H);
+			RenderTexture2D rt = textRT.Value;
+
+			int pad = RTPadding;
+			Graphics2D.BeginRenderTarget(rt);
+			Rlgl.ClearColor(55, 0, 0, 255);
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawText(pad, pad, Text!, Font!, FontResolution);
+			Rlgl.DrawRenderBatchActive();
+			Graphics2D.EndRenderTarget();
+		}
+
+		return textRT.Value;
+	}
+	void RenderStyledText(Vector2F position, Vector2F scale, float rotation, Color color, IShader? shader) {
+		float alpha = color.A / 255f;
+		var rtN = DetermineRenderTexture();
+		if (!rtN.HasValue) return;
+
+		var rt = rtN.Value;
+		var rtSize = GetTextSize();
+		var rtW = rtSize.W;
+		var rtH = rtSize.H;
+
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(position.x, -position.y, 0);
 		Rlgl.Rotatef(rotation, 0, 0, 1);
-		if (Text != null && Font != null)
-		{
-			Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
+		Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
+
+		if (shader != null) {
+			shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
+			shader.SetUniform("uTextColor", new System.Numerics.Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
+			shader.SetUniform("uBorderSize", BorderSize);
+			shader.SetUniform("uDarkenAmount", DarkenAmount);
+			shader.SetUniform("uDesaturateAmount", DesaturateAmount);
+			shader.SetUniform("uSplitY", SplitY);
+			shader.SetUniform("uAlpha", alpha);
+			shader.Activate();
+		}
+		else {
 			Graphics2D.SetDrawColor(color);
-			Graphics2D.DrawText(new(0, 0), Text, Font, FontResolution, Anchor.Center);
 		}
-		else if(Texture != null){
-			Rlgl.Scalef(scale.x, scale.y, 1);
-			Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
-		}
+
+		float drawX = -rtW / 2f;
+		float drawY = -rtH / 2f;
+		Graphics2D.SetTexture(rt);
+
+		Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM);
+		Rlgl.SetBlendFactors(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD);
+		Graphics2D.DrawRendertarget(drawX, drawY, rtW, rtH);
+		Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA);
+
+		if (shader != null)
+			shader.Deactivate();
+
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
 	}
@@ -321,13 +402,21 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	readonly List<WorldspaceRenderItem> BackgroundItems = [];
 	readonly List<WorldspaceRenderItem> ForegroundItems = [];
 
+	IShader? StyledTextShader;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static void CleanupList(List<WorldspaceRenderItem> list, double curtime) {
+		for (int i = list.Count - 1; i >= 0; i--) {
+			var item = list[i];
+			if (item.IsOver(curtime)) {
+				list.RemoveAt(i);
+				item.Dispose();
+			}
+		}
+	}
 	void CleanupTextLists(double curtime) {
-		for (int i = BackgroundItems.Count - 1; i >= 0; i--)
-			if (BackgroundItems[i].IsOver(curtime))
-				BackgroundItems.RemoveAt(i);
-		for (int i = ForegroundItems.Count - 1; i >= 0; i--)
-			if (ForegroundItems[i].IsOver(curtime))
-				ForegroundItems.RemoveAt(i);
+		CleanupList(BackgroundItems, curtime);
+		CleanupList(ForegroundItems, curtime);
 	}
 
 	double Time => scene.GetGame().GetConductor().GetTime();
@@ -347,7 +436,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
-
+		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
@@ -398,13 +487,13 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	public void PreRenderWorldspace() {
 		var t = Time;
 		foreach (var text in BackgroundItems)
-			text.Render(t);
+			text.Render(t, StyledTextShader);
 	}
 
 	public void PostRenderWorldspace() {
 		var t = Time;
 		foreach (var text in ForegroundItems)
-			text.Render(t);
+			text.Render(t, StyledTextShader);
 	}
 
 	public void RenderUI() {
@@ -413,6 +502,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	public void Think(double dt) {
 		CleanupTextLists(Time);
+		foreach (var text in BackgroundItems) text.DetermineRenderTexture();
+		foreach (var text in ForegroundItems) text.DetermineRenderTexture();
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
