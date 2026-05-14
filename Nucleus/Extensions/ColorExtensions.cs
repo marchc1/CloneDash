@@ -102,54 +102,63 @@ public static class ColorExtensions
 		return new Color((int)Math.Clamp(R * 255, 0, 255), (int)Math.Clamp(G * 255, 0, 255), (int)Math.Clamp(B * 255, 0, 255), 255);
 	}
 
-	public static Color FromHexRGB(string hex, int alpha = 255) {
-		if (hex.Length != 6 && hex.Length == 7 && hex[0] != '#')
-			throw new Exception("Bad hex argument (expected six-character string OR seven-character with # at the start");
+	public static bool TryParseHexToColor(this ReadOnlySpan<char> hex, out Color color, out ReadOnlySpan<char> error) {
+		color = default;
+		error = default;
 
-		if (hex[0] == '#')
-			hex = hex.Substring(1);
-
-		string rS = hex.Substring(0, 2);
-		string gS = hex.Substring(2, 2);
-		string bS = hex.Substring(4, 2);
-
-		return new Color(
-			int.Parse(rS, System.Globalization.NumberStyles.HexNumber),
-			int.Parse(gS, System.Globalization.NumberStyles.HexNumber),
-			int.Parse(bS, System.Globalization.NumberStyles.HexNumber),
-			alpha
-		);
-	}
-
-	public static bool TryParseHexToColor(this string hex, out Color col) {
-		col = default;
-
-		if (hex.Length < 6)
+		if (hex.Length == 0) {
+			error = "Expected string with length greater than or equal to 6 characters";
 			return false;
+		}
 
-		if (hex[0] == '#')
-			hex = hex.Substring(1);
+		if (hex[0] == '#') hex = hex[1..];
 
-		string rS = hex.Substring(0, 2);
-		string gS = hex.Substring(2, 2);
-		string bS = hex.Substring(4, 2);
-		string aS = "FF";
-		if (hex.Length == 8)
-			aS = hex.Substring(6, 2);
+		if (hex.Length < 6){
+			error = "Expected string with length greater than or equal to 6 characters";
+			return false;
+		}
 
-		col = new Color(
-			int.Parse(rS, System.Globalization.NumberStyles.HexNumber),
-			int.Parse(gS, System.Globalization.NumberStyles.HexNumber),
-			int.Parse(bS, System.Globalization.NumberStyles.HexNumber),
-			int.Parse(aS, System.Globalization.NumberStyles.HexNumber)
-		);
+		ReadOnlySpan<char> rS = hex.Slice(0, 2);
+		ReadOnlySpan<char> gS = hex.Slice(2, 2);
+		ReadOnlySpan<char> bS = hex.Slice(4, 2);
+		ReadOnlySpan<char> aS = "";
+		if (hex.Length >= 8)
+			aS = hex.Slice(6, 2);
+
+		if (!int.TryParse(rS, System.Globalization.NumberStyles.HexNumber, null, out int r)) { error = "Hexadecimal number for red channel was not in the expected format (hexadecimal two-letter)"; return false; }
+		if (!int.TryParse(gS, System.Globalization.NumberStyles.HexNumber, null, out int g)) { error = "Hexadecimal number for green channel was not in the expected format (hexadecimal two-letter)"; return false; }
+		if (!int.TryParse(bS, System.Globalization.NumberStyles.HexNumber, null, out int b)) { error = "Hexadecimal number for blue channel was not in the expected format (hexadecimal two-letter)"; return false; }
+
+		int a;
+		if (aS.Length == 0 || !int.TryParse(aS, System.Globalization.NumberStyles.HexNumber, null, out a))
+			a = 255;
+
+		color = new Color(r, g, b, a);
 		return true;
 	}
-	public static string ToHex(this Color color, bool includeAlpha) {
+
+	public static ReadOnlySpan<char> ToHex(this Color color, bool includeAlpha) {
 		string hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 		if (includeAlpha)
 			hex += $"{color.A:X2}";
 
 		return hex;
+	}
+
+	public static bool ToHex(this Color color, bool includeAlpha, Span<char> writeBuffer) {
+		int targetLen = includeAlpha ? 9 : 7;
+		if (writeBuffer.Length < targetLen) return false;
+
+		writeBuffer[0] = '#';
+		if (!color.R.TryFormat(writeBuffer[1..], out _, "X2")) return false;
+		if (!color.G.TryFormat(writeBuffer[3..], out _, "X2")) return false;
+		if (!color.B.TryFormat(writeBuffer[5..], out _, "X2")) return false;
+		if (includeAlpha)
+			if (!color.A.TryFormat(writeBuffer[7..], out _, "X2")) return false;
+
+		if (writeBuffer.Length > targetLen)
+			writeBuffer[targetLen] = '\0';
+
+		return true;
 	}
 }
