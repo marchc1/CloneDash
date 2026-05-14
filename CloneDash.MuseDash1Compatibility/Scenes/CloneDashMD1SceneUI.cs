@@ -304,7 +304,8 @@ public class WorldspaceRenderItem
 			Rlgl.Rotatef(rotation, 0, 0, 1);
 			Rlgl.Scalef(scale.x, scale.y, 1);
 			Graphics2D.SetDrawColor(color);
-			Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
+			Graphics2D.SetTexture(Texture);
+			Graphics2D.DrawTexture(new(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.PopMatrix();
 		}
@@ -403,6 +404,11 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	readonly List<WorldspaceRenderItem> ForegroundItems = [];
 
 	IShader? StyledTextShader;
+	ITexture? GoldGreat;
+	ITexture? GoldPerfect;
+	ITexture? ScoreGreat;
+	ITexture? ScorePerfect;
+	ITexture? ScorePass;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static void CleanupList(List<WorldspaceRenderItem> list, double curtime) {
@@ -437,34 +443,39 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
+
+		GoldGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldGreat")!);
+		GoldPerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldPerfect")!);
+		ScoreGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScoreGreat")!);
+		ScorePerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePerfect")!);
+		ScorePass = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePass")!);
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"GREAT", "Luckiest Guy", color, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
 		BackgroundItems.Add(text);
 	}
 
 	public void CreateHealthText(float healthGiven, PathwaySide pathway) {
-
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		ForegroundItems.Add(text);
 	}
 
 	public void CreatePassText(double precision, PathwaySide pathway) {
 		var pos = scene.GetPathwayPosition(pathway);
 		pos.X -= 0.8f;
-		var text = new WorldspaceRenderItem(Time, 0.5, pos, 0, new(TextScale), $"PASS", "Luckiest Guy", new(255, 128, 19), UITextAnimationFns.UpwardFadeoutMoveLeft);
+		var text = new WorldspaceRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
 		BackgroundItems.Add(text);
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		Color color = inFever ? new(255, 184, 0) : new(255, 55, 146);
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"PERFECT", "Luckiest Guy", color, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
 		BackgroundItems.Add(text);
 	}
 
 	public void CreateScoreText(int scoreGiven, PathwaySide pathway) {
 		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		ForegroundItems.Add(text);
-
 	}
 
 	public void EndMultiHitText() {

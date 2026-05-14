@@ -43,6 +43,7 @@ namespace Nucleus.ManagedMemory
 		public uint UWidth => (uint)underlying.Width;
 		public uint UHeight => (uint)underlying.Height;
 		public ImageFormat Format => underlying.Format;
+		public int GetMipmapCount() => underlying.Mipmaps;
 
 		PublicTextureFlags publicFlags;
 

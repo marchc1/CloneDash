@@ -273,7 +273,13 @@ namespace Nucleus.Core
 		}
 
 		private static Texture2D __texture;
-		public static Texture2D GetTexture() => __texture;
+		public static void SetTexture(ITexture tex) => __texture = new() {
+			Id = tex.GetTextureHandle(),
+			Width = tex.Width,
+			Height = tex.Height,
+			Format = tex.Format,
+			Mipmaps = tex.GetMipmapCount()
+		};
 		public static void SetTexture(Texture2D tex) => __texture = tex;
 		public static void SetTexture(RenderTexture2D tex) => __texture = tex.Texture;
 
