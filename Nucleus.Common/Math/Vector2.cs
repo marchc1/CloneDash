@@ -299,9 +299,21 @@ public struct Vector2F : ISpanFormattable
 	public readonly override int GetHashCode() => HashCode.Combine(X, Y);
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-		if (!X.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
-		if (!" x ".TryCopyTo(destination)) return false; destination = destination[3..];
-		if (!Y.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
+		int charsWrittenThisPass = 0;
+		charsWritten = 0;
+
+		if (!X.TryFormat(destination, out charsWrittenThisPass, format, provider)) return false;
+		charsWritten += charsWrittenThisPass;
+		destination = destination[charsWrittenThisPass..];
+
+		if (!" x ".TryCopyTo(destination)) return false;
+		charsWritten += 3;
+		destination = destination[3..];
+
+		if (!Y.TryFormat(destination, out charsWrittenThisPass, format, provider)) return false;
+		charsWritten += charsWrittenThisPass;
+		destination = destination[charsWrittenThisPass..];
+
 		return true;
 	}
 
