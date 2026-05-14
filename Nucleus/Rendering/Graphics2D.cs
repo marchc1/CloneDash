@@ -19,7 +19,6 @@ namespace Nucleus.Core
 		[DllImport("raylib", CallingConvention = CallingConvention.Cdecl)]
 		public static extern void glTexImage2DMultisample(int target, int level, int format, int width, int height, bool fixedsamplelocs);
 	}
-	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
 		public const string UI_FONT_NAME = "Noto Sans";

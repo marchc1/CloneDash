@@ -91,6 +91,23 @@ public static class Filesystem
 		}
 	}
 
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int* codepointsPtr, int codepointCount) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			return font;
+		}
+	}
+
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, Span<int> codepoints) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed(int* codepointsPtr = codepoints)
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepoints.Length);
+			return font;
+		}
+	}
+
 	public static Shader ReadVertexShader(string pathID, string vertexShader) {
 		string? data = filesystem.ReadAllText(pathID, vertexShader);
 		if (data == null) throw NotFound(pathID, vertexShader);
