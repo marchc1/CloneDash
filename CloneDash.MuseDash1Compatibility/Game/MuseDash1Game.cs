@@ -1703,6 +1703,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
 							else
 								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
+							SceneUI?.UpdateHit();
 						}
 
 						PlaySceneSound(pollResult.HitEntity.Type switch {

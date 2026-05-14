@@ -34,4 +34,5 @@ public interface IMuseDash1SceneUI
 	void EndWarning();
 	void SetSeeking(bool seeking);
 	void Reset();
+	void UpdateHit();
 }

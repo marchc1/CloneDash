@@ -418,6 +418,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	readonly List<WorldspaceRenderItem> ForegroundItems = [];
 
 	IShader? StyledTextShader;
+	IShader? UIAlphatestShader;
 	ITexture? GoldGreat;
 	ITexture? GoldPerfect;
 	ITexture? ScoreGreat;
@@ -460,7 +461,9 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	double CurrentFever, MaxFever;
 	double HP, MaxHP;
 	bool InFever;
+	double EnterFeverTime = -20000;
 	double FeverRemainingTime, FeverTotalTime;
+	double LastHitTime = -2000000;
 	int MultiHits = 0;
 	bool InMultiHit;
 	double Score = 0;
@@ -473,6 +476,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
+		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
 		GoldGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldGreat")!);
 		GoldPerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldPerfect")!);
@@ -540,6 +544,10 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		CurrentStatisticsPanel = null;
 	}
 
+	public void UpdateHit(){
+		LastHitTime = Time;
+	}
+
 	public void PreRenderWorldspace() {
 		var t = Time;
 		foreach (var text in BackgroundItems)
@@ -559,31 +567,52 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.Width, tex.Height);
-	public void DrawSomeBubbles() {
+	public void DrawSomeBubbles(ITexture? stencilMask, Vector2F stencilSize, float progress, float uvAdd, Vector2F offset, Color bubbleColor) {
 		if (bubble == null) return;
+
+		if (stencilMask != null) {
+			Stencils.Begin();
+			Stencils.Function = StencilFunction.Always;
+			Stencils.Reference = 1;
+			Stencils.Mask = 0xFF;
+			Stencils.OnFail = StencilOperation.Keep;
+			Stencils.OnDepthFail = StencilOperation.Keep;
+			Stencils.OnDepthPass = StencilOperation.Replace;
+			Stencils.BeginMask();
+
+			Graphics2D.SetTexture(stencilMask);
+			Graphics2D.DrawImageHorizontalProgress(new(-(stencilSize.W / 2) + offset.X, -stencilSize.H + offset.Y), stencilSize, horizontalProgress: progress);
+
+			Stencils.EndMask();
+		}
+
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetTexture(bubble.GetTextureHandle());
 		Rlgl.Begin(DrawMode.QUADS);
 
+		Rlgl.Color4ub(bubbleColor.R, bubbleColor.G, bubbleColor.B, bubbleColor.A);
+
 		float size = 500;
 		float bubbleScaling = 5;
-		float uvOffset = (float)((Time / 6) % 1.0);
+		float uvOffset = (float)((Time / 12) % 1.0);
 
-		Rlgl.TexCoord2f(0f, (0f + uvOffset) * bubbleScaling);
+		Rlgl.TexCoord2f(0f, ((0f + uvOffset) * bubbleScaling) + uvAdd);
 		Rlgl.Vertex3f(-size, -size, 0f);
 
-		Rlgl.TexCoord2f(1f * bubbleScaling, (0f + uvOffset) * bubbleScaling);
+		Rlgl.TexCoord2f(1f * bubbleScaling, ((0f + uvOffset) * bubbleScaling) + uvAdd);
 		Rlgl.Vertex3f(size, -size, 0f);
 
-		Rlgl.TexCoord2f(1f * bubbleScaling, (1f + uvOffset) * bubbleScaling);
+		Rlgl.TexCoord2f(1f * bubbleScaling, ((1f + uvOffset) * bubbleScaling) + uvAdd);
 		Rlgl.Vertex3f(size, size, 0f);
 
-		Rlgl.TexCoord2f(0f, (1f + uvOffset) * bubbleScaling);
+		Rlgl.TexCoord2f(0f, ((1f + uvOffset) * bubbleScaling) + uvAdd);
 		Rlgl.Vertex3f(-size, size, 0f);
 
 		Rlgl.End();
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetTexture(0);
+
+		if (stencilMask != null) { Stencils.End(); }
 	}
 	private void DrawHealthBar(float w, float h) {
 		if (BelowBase == null) return;
@@ -591,6 +620,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		if (hp_slider == null) return;
 		if (power_slider == null) return;
 		if (power_slider_white == null) return;
+
+		UIAlphatestShader?.Activate();
 
 		Rlgl.PushMatrix();
 		float resize = (h / 1080f);
@@ -623,16 +654,36 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		Graphics2D.SetDrawColor(255, 53, 133);
 		Graphics2D.DrawImageHorizontalProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, horizontalProgress: hpRatio);
 		Graphics2D.SetDrawColor(255, 255, 255);
+		DrawSomeBubbles(hp_slider, hp_sliderSize, (float)hpRatio, 0, new(-56, -4), new(185, 43, 105));
 
 		Graphics2D.SetTexture(power_slider);
 		Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
-		DrawSomeBubbles();
+		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
 
+		float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
+		if (feverActivated < 1) {
+			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InCirc(1 - feverActivated) * 255));
+			Graphics2D.SetTexture(power_slider_white);
+			Graphics2D.DrawImage(new(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
+		}
+
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		float fontSize = 32;
 		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{HP}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
+		if (Fever != null) {
+			Graphics2D.SetTexture(Fever);
+			Graphics2D.DrawImage(new(300, -38f), new(Fever.Width, Fever.Height));
+		}
+		if (hp_icon != null) {
+			Graphics2D.SetTexture(hp_icon);
+			float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
+			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
 
+			Graphics2D.DrawImage(new(-360, -64f), new(hp_icon.Width * size, hp_icon.Height * size));
+		}
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
+		UIAlphatestShader?.Deactivate();
 	}
 
 	public void Think(double dt) {
@@ -677,6 +728,9 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
+		if (!InFever) {
+			EnterFeverTime = Time;
+		}
 		InFever = true;
 		FeverRemainingTime = feverRemainingTime;
 		FeverTotalTime = feverTotalTime;
@@ -693,5 +747,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	public void Reset() {
 		BackgroundItems.Clear();
 		ForegroundItems.Clear();
+		EnterFeverTime = -2000000;
+		LastHitTime = -2000000;
 	}
 }
