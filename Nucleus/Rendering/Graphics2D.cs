@@ -24,7 +24,7 @@ namespace Nucleus.Core
 		public const string UI_FONT_NAME = "Noto Sans";
 
 		public const string UI_MONO_BOLD_FONT_NAME = "Noto Sans Mono Bold";
-		
+
 		// See here for possible values of CultureInfo.Name:
 		// https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
 		public readonly static string UI_CN_JP_FONT_NAME = CultureInfo.CurrentCulture.Name switch {
@@ -36,7 +36,7 @@ namespace Nucleus.Core
 			"ja-JP" => "Noto Sans JP",
 			_ => "Noto Sans SC"
 		};
-		
+
 		public static FontManager FontManager { get; private set; } = new(new() {
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
@@ -138,9 +138,6 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
-		public static ref readonly Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
-			return ref FontManager[string.Empty, fontName, (int)fontSize].GetFont();
-		}
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, (int)fontSize, 0);
 			return new(s.X, s.Y);
@@ -156,7 +153,8 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct TextChunk {
+		public struct TextChunk
+		{
 			public string Text;
 			public string Font;
 			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
@@ -165,40 +163,41 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct MappedText {
+		public struct MappedText
+		{
 			public string Text;
 			public string Font;
 			public Vector2F RelativePos;
 		}
 
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment());
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
-		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) 
+		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
 			=> DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment());
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment) 
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, alignment.Horizontal, alignment.Vertical);
-		
-		
+
+
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
 
 		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
-			Vector2F combinedSize = new ();
+			Vector2F combinedSize = new();
 			mappedTextsCache.Clear();
 
 			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
@@ -274,7 +273,12 @@ namespace Nucleus.Core
 
 		private static Texture2D __texture;
 		private static bool __textureFlippedY;
-		public static void SetTexture(ITexture tex) {
+		public static void SetTexture(ITexture? tex) {
+			if (tex == null) {
+				__texture = default;
+				__textureFlippedY = false;
+				return;
+			}
 			__texture = new() {
 				Id = tex.GetTextureHandle(),
 				Width = tex.Width,
@@ -284,7 +288,7 @@ namespace Nucleus.Core
 			};
 			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		}
-		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false;}
+		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false; }
 		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = false; }
 
 		public static Color GetDrawColor() => __drawColor;
@@ -416,7 +420,7 @@ namespace Nucleus.Core
 		public static void DrawRectangleOutline(float x, float y, float width, float height, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), thickness, __drawColor);
 		public static void DrawRectangleOutline(Vector2F pos, Vector2F size, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), thickness, __drawColor);
 		public static void DrawRectangleOutline(RectangleF rect, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(rect), thickness, __drawColor);
-		
+
 		public static float ConvertRoundnessToRelative(float w, float h, float roundness) {
 			float ratio = Math.Min(w, h);
 			if (ratio <= 0f) return 0f;
@@ -598,7 +602,7 @@ namespace Nucleus.Core
 					bottomRight.y = y + (dx + dest.Width) * sinRotation + (dy + dest.Height) * cosRotation;
 				}
 
-				if(__textureFlippedY){
+				if (__textureFlippedY) {
 					(bottomLeft.y, topLeft.y) = (topLeft.y, bottomLeft.y);
 					(bottomRight.y, topRight.y) = (topRight.y, bottomRight.y);
 				}

@@ -15,9 +15,11 @@ using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.Util;
 using Raylib_cs;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Velopack.Sources;
 
 namespace CloneDash.Scenes;
 
@@ -242,6 +244,9 @@ public class WorldspaceRenderItem
 	public ITexture? Texture;
 	public RenderTextAnimationFn? Fn;
 
+	ulong lastTextHash;
+	ulong lastFontHash;
+
 	public WorldspaceRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, string text, string font, Color color, RenderTextAnimationFn? fn = null) {
 		StartTime = start;
 		Length = length;
@@ -324,8 +329,14 @@ public class WorldspaceRenderItem
 			return null;
 
 		var rtSize = GetTextSize();
-		if (textRT.HasValue && textRT.Value.Texture.Width != rtSize.W && textRT.Value.Texture.Height != rtSize.H) {
-			Graphics2D.DestroyRenderTarget(textRT.Value);
+		ulong textHash = Text.Hash(invariant: false);
+		ulong fontHash = Font.Hash(invariant: false);
+		if (
+			(textRT.HasValue && textRT.Value.Texture.Width != rtSize.W && textRT.Value.Texture.Height != rtSize.H)
+			|| (textHash != lastTextHash || fontHash != lastFontHash)
+		) {
+			if (textRT.HasValue)
+				Graphics2D.DestroyRenderTarget(textRT.Value);
 			textRT = null;
 		}
 
@@ -340,6 +351,9 @@ public class WorldspaceRenderItem
 			Graphics2D.DrawText(pad, pad, Text!, Font!, FontResolution);
 			Rlgl.DrawRenderBatchActive();
 			Graphics2D.EndRenderTarget();
+
+			lastTextHash = textHash;
+			lastFontHash = fontHash;
 		}
 
 		return textRT.Value;
@@ -410,6 +424,19 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	ITexture? ScorePerfect;
 	ITexture? ScorePass;
 
+	ITexture? MultiHitTip;
+	ITexture? MultiHitTipDialog;
+	ITexture? HitsBase;
+	ITexture? BelowBase;
+	ITexture? hp_icon;
+	ITexture? hp_icon_mistake;
+	ITexture? hp_slider_base;
+	ITexture? HpFeverBase;
+	ITexture? slider_light;
+	ITexture? power_slider;
+	ITexture? power_slider_white;
+	ITexture? Fever;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static void CleanupList(List<WorldspaceRenderItem> list, double curtime) {
 		for (int i = list.Count - 1; i >= 0; i--) {
@@ -438,7 +465,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	bool Warning;
 	bool Seeking;
 
-	public static float TextScale => 0.65f;
+	public static float MinorTextScale => 0.65f;
+	public static float TextScale => 0.85f;
 
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
@@ -449,6 +477,19 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		ScoreGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScoreGreat")!);
 		ScorePerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePerfect")!);
 		ScorePass = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePass")!);
+
+		MultiHitTip = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("MultiHitTip")!);
+		MultiHitTipDialog = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("MultiHitTipDialog")!);
+		HitsBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("HitsBase")!);
+		BelowBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("BelowBase")!);
+		hp_icon = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon")!);
+		hp_icon_mistake = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon_mistake")!);
+		hp_slider_base = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_slider_base")!);
+		HpFeverBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("HpFeverBase")!);
+		slider_light = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("slider_light")!);
+		power_slider = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider")!);
+		power_slider_white = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider_white")!);
+		Fever = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("Fever")!);
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
@@ -457,7 +498,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void CreateHealthText(float healthGiven, PathwaySide pathway) {
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		ForegroundItems.Add(text);
 	}
 
@@ -474,7 +515,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void CreateScoreText(int scoreGiven, PathwaySide pathway) {
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		ForegroundItems.Add(text);
 	}
 
@@ -508,7 +549,33 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 
 	public void RenderUI() {
+		float width = EngineCore.Level.FrameState.WindowWidth;
+		float height = EngineCore.Level.FrameState.WindowHeight;
+		DrawHealthBar(width, height);
+	}
 
+	private void DrawHealthBar(float w, float h) {
+		if (BelowBase == null) return;
+		if (HpFeverBase == null) return;
+
+		Vector2F healthOffset = new(0, 0);
+		Graphics2D.OffsetDrawing(healthOffset);
+		float resize = h / 1080f;
+		Vector2F belowBaseSize = new Vector2F(BelowBase.Width * resize, BelowBase.Height * resize);
+		Vector2F hpFeverBaseSize = new Vector2F(HpFeverBase.Width * resize, HpFeverBase.Height * resize);
+
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		Graphics2D.SetTexture(BelowBase);
+		Graphics2D.DrawImage(new(w / 2, h - belowBaseSize.H), belowBaseSize);
+		Graphics2D.DrawImage(new((w / 2) - belowBaseSize.W, h - belowBaseSize.H), belowBaseSize, flipX: true);
+
+		Graphics2D.SetTexture(HpFeverBase);
+		Graphics2D.DrawImage(new((w / 2) - (hpFeverBaseSize.W / 2), h - hpFeverBaseSize.H), hpFeverBaseSize);
+
+		float fontSize = 32 * resize;
+		Graphics2D.DrawText(new(w / 2, h - fontSize), $"{HP}/{MaxHP}", "Noto Sans", fontSize);
+
+		Graphics2D.OffsetDrawing(-healthOffset);
 	}
 
 	public void Think(double dt) {

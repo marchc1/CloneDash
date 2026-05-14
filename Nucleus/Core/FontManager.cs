@@ -1,5 +1,6 @@
 ﻿using Nucleus.Common.Extensions;
 using Nucleus.Common.Graphics;
+using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.ManagedMemory;
@@ -128,7 +129,6 @@ namespace Nucleus.Core
 		private bool AreFontsMarkedForDeath => FontsMarkedForDeath.Count != 0;
 
 		public void RegisterCodepoints(ReadOnlySpan<char> chars) {
-			char ch;
 			bool dirty = false;
 			for (int i = 0; i < chars.Length;) {
 				Rune unicodeRune = chars.GetRuneAt(i);
@@ -201,20 +201,42 @@ namespace Nucleus.Core
 				FontKey key = new FontKey(symbols.AddString(fontName), fontSize);
 
 				if (!FontTable.TryGetValue(key, out FontState? state)) {
-					var entry = FontNameToFilepath[key.FontSymbol];
-					var registeredCodepoints = RegisteredCodepoints.AsSpan();
-					entry.PushCodepoints(registeredCodepoints);
-					Font newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, entry.GetGoodOrUnknownCodepoints());
-					entry.ValidateCodepoints(in newFont);
-					Raylib.GenTextureMipmaps(ref newFont.Texture);
-					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
-					state = FontTable[key] = new FontState();
-					state.OwnFont(newFont);
-					state.Key = key;
+					if (FontNameToFilepath.TryGetValue(key.FontSymbol, out var entry)) {
+						var registeredCodepoints = RegisteredCodepoints.AsSpan();
+						entry.PushCodepoints(registeredCodepoints);
+						Font newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, entry.GetGoodOrUnknownCodepoints());
+						entry.ValidateCodepoints(in newFont);
+						Raylib.GenTextureMipmaps(ref newFont.Texture);
+						Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+						state = FontTable[key] = new FontState();
+						state.OwnFont(newFont);
+						state.Key = key;
+					}
+					else {
+						return GetFallbackFont(fontSize);
+					}
 				}
+
 				state.Rehydrate();
 				return state;
 			}
+		}
+
+		readonly FontEntry fallbackEntry = new("NotoSans-Regular.ttf", "fonts");
+		readonly Dictionary<int, FontState> fallbackFonts = [];
+		private FontState GetFallbackFont(int fontSize) {
+			if (!fallbackFonts.TryGetValue(fontSize, out FontState? state)) {
+				var registeredCodepoints = RegisteredCodepoints.AsSpan();
+				fallbackEntry.PushCodepoints(registeredCodepoints);
+				Font newFont = Filesystem.ReadFont(fallbackEntry.PathID, fallbackEntry.Path, fontSize, fallbackEntry.GetGoodOrUnknownCodepoints());
+				fallbackEntry.ValidateCodepoints(in newFont);
+				Raylib.GenTextureMipmaps(ref newFont.Texture);
+				Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+				state = fallbackFonts[fontSize] = new FontState();
+				state.OwnFont(newFont);
+				state.Key = new(0, fontSize);
+			}
+			return state;
 		}
 	}
 }
