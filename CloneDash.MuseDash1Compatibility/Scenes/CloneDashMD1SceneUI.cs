@@ -133,7 +133,7 @@ public static class UITextAnimationFns
 		double moveT = NMath.Remap(t, 0, len * 0.8, 0, 1, clampInput: true);
 		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
 
-		float y = (float)(NMath.Ease.OutCirc(moveT) * 4);
+		float y = (float)(NMath.Ease.OutCirc(moveT) * 1.5f);
 
 		double squishT = NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
 		double ease = NMath.Ease.OutElastic(squishT);
@@ -142,7 +142,7 @@ public static class UITextAnimationFns
 		float scaleX = (float)NMath.Lerp(0.1, 1.0, ease2);
 		float scaleY = (float)NMath.Lerp(2.0, 1.0, ease);
 
-		self.Position = new(0, y);
+		self.Position = new(0, 1 + y);
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleX, scaleY);
 	}
@@ -154,6 +154,26 @@ public static class UITextAnimationFns
 
 		double moveT = NMath.Remap(t, len * 0.6, len, 0, 1, clampInput: true);
 		self.Position.X = (float)(NMath.Ease.InQuart(moveT) * -4.5);
+	}
+	public static void VibrateAndMoveLeft(WorldspaceRenderItem self, double curtime) {
+		double t = curtime - self.StartTime;
+		double len = self.Length;
+
+		double scaleT = NMath.Remap(t, 0, len * 0.5, 0, 1, clampInput: true);
+		float scale = (float)NMath.Lerp(NMath.Ease.OutCirc(scaleT), 1.5, 1.0);
+
+		double vibrateDecay = 1.0 - NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
+		float shakeX = (float)(Math.Sin(t * 60) * 0.08 * vibrateDecay);
+		float shakeY = (float)(Math.Sin(t * 45 + 1.5) * 0.06 * vibrateDecay);
+
+		double moveT = NMath.Remap(t, len * 0.5, len, 0, 1, clampInput: true);
+		float moveX = (float)(NMath.Ease.InQuart(moveT) * -4.5);
+
+		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
+
+		self.Position = new(moveX + shakeX, 1 + shakeY);
+		self.Scale = new(scale, scale);
+		self.Color.A = (byte)(255 * (1 - alphaT));
 	}
 }
 
@@ -282,7 +302,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	bool Warning;
 	bool Seeking;
 
-	public static float TextScale => 0.35f;
+	public static float TextScale => 0.65f;
 
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
@@ -290,7 +310,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	}
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"GREAT", "Luckiest Guy", color, UITextAnimationFns.UpwardFadeout);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"GREAT", "Luckiest Guy", color, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
 		BackgroundItems.Add(text);
 	}
 
@@ -307,7 +327,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 184, 0) : new(255, 55, 146);
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"PERFECT", "Luckiest Guy", color, UITextAnimationFns.UpwardFadeout);
+		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), $"PERFECT", "Luckiest Guy", color, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
 		BackgroundItems.Add(text);
 	}
 
