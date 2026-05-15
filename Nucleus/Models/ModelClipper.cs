@@ -91,7 +91,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		shape.Points.EnsureCapacity(verticesLength);
 		for (int i = 0; i < verticesLength; i++) {
 			var vertex = clipPolygon[i];
-			shape.Points.Add(new(vertex.X, vertex.Y, vertex));
+			shape.Points.Add(new(vertex.X, vertex.Y));
 		}
 
 		triangles.Clear();
