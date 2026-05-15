@@ -1309,12 +1309,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Loads an entity from a <see cref="ChartEntity"/> representation, builds a <see cref="MapEntity"/> out of it, and adds it to <see cref="GameplayManager.Entities"/>.
 	/// </summary>
 	/// <param name="ChartEntity"></param>
-	public void LoadEntity(MD1_SongChartEntity ChartEntity) {
+	public virtual DashEnemy? LoadEntity(MD1_SongChartEntity ChartEntity) {
 		Interlude.Spin(submessage: "Loading entities...");
 
 		if (!DashEnemy.TryCreateFromType(this, ChartEntity.Type, out DashEnemy? ent)) {
 			Console.WriteLine("No load entity handler for type " + ChartEntity.Type);
-			return;
+			return null;
 		}
 
 		ent.Pathway = ChartEntity.Pathway;
@@ -1334,13 +1334,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.HealthGiven = ChartEntity.Health;
 
 		ent.RelatedToBoss = ChartEntity.RelatedToBoss;
-
 		ent.RendersItself = false;
 		ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 
 		Stats.RegisterEnemy(ent);
 		readyToBuildEntities.Add(ent);
 		EnemyManager.AddEnemy(ent);
+
+		return ent;
 	}
 
 	List<DashEnemy> readyToBuildEntities = [];
@@ -1504,8 +1505,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			enemy.OnSignalReceived(entityFrom, signalType, data);
 	}
 
-	public void SendEntitySignal(DashEnemy? entityFrom, DashEnemy entityTo, EntitySignalType signalType, object? data = null) {
-		entityTo.OnSignalReceived(entityFrom, signalType, data);
+	public void SendEntitySignal(DashEnemy? entityFrom, DashEnemy? entityTo, EntitySignalType signalType, object? data = null) {
+		entityTo?.OnSignalReceived(entityFrom, signalType, data);
 	}
 
 

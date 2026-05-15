@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using Nucleus;
@@ -26,5 +27,14 @@ public partial class MuseDash1TouhouGamemode : IGamemodeDescriptor
 [MarkForStaticConstruction]
 public partial class MuseDash1TouhouGame(DashGameParams gameParameters) : MuseDash1Game(gameParameters), IGame
 {
+	public override DashEnemy? LoadEntity(MD1_SongChartEntity ChartEntity) {
+		DashEnemy? enemy = base.LoadEntity(ChartEntity);
+		if (enemy == null) return null;
 
+		// flip it for touhou mode
+		if (enemy.Interactivity == EntityInteractivity.Hit && enemy.Type == EntityType.Single)
+			enemy.Interactivity = EntityInteractivity.Avoid;
+
+		return enemy;
+	}
 }

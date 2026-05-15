@@ -527,12 +527,27 @@ namespace CloneDash.Compatibility.MuseDash
 							IBMSCode.Music => EntityType.Score,
 							IBMSCode.Hp => EntityType.Heart,
 
+							IBMSCode.Touhou_MediumBulletUp => EntityType.Single,
+							IBMSCode.Touhou_MediumBulletDown => EntityType.Single,
+							IBMSCode.Touhou_MediumBulletLaneshift => EntityType.Single,
+							IBMSCode.Touhou_SmallBullet => EntityType.Single,
+							IBMSCode.Touhou_SmallBulletUp => EntityType.Single,
+							IBMSCode.Touhou_SmallBulletDown => EntityType.Single,
+							IBMSCode.Touhou_SmallBulletLaneshift => EntityType.Single,
+							IBMSCode.Touhou_LargeBullet => EntityType.Single,
+							IBMSCode.Touhou_LargeBulletUp => EntityType.Single,
+							IBMSCode.Touhou_LargeBulletDown => EntityType.Single,
+							IBMSCode.Touhou_LargeBulletLaneshift => EntityType.Single,
+							IBMSCode.Touhou_BossBullet1 => EntityType.Single,
+							IBMSCode.Touhou_BossBullet1Laneshift => EntityType.Single,
+							IBMSCode.Touhou_BossBullet2 => EntityType.Single,
+							IBMSCode.Touhou_BossBullet2Laneshift => EntityType.Single,
+
 							_ => EntityType.Unknown
 						};
 						var health = ib.code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
 
 						if (entityType != EntityType.Unknown) {
-
 							EntityVariant variant = ib.code switch {
 								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
 								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
@@ -543,6 +558,22 @@ namespace CloneDash.Compatibility.MuseDash
 								IBMSCode.BossAttack1 => EntityVariant.Boss1,
 								IBMSCode.BossAttack2_1 => EntityVariant.Boss2,
 								IBMSCode.BossAttack2_2 => EntityVariant.Boss3,
+
+								IBMSCode.Touhou_MediumBulletUp =>		EntityVariant.Medium1,
+								IBMSCode.Touhou_MediumBulletDown =>		EntityVariant.Medium1,
+								IBMSCode.Touhou_MediumBulletLaneshift =>EntityVariant.Medium1,
+								IBMSCode.Touhou_SmallBullet =>			EntityVariant.Small,
+								IBMSCode.Touhou_SmallBulletUp =>		EntityVariant.Small,
+								IBMSCode.Touhou_SmallBulletDown =>		EntityVariant.Small,
+								IBMSCode.Touhou_SmallBulletLaneshift =>	EntityVariant.Small,
+								IBMSCode.Touhou_LargeBullet =>			EntityVariant.Large1,
+								IBMSCode.Touhou_LargeBulletUp =>		EntityVariant.Large1,
+								IBMSCode.Touhou_LargeBulletDown =>		EntityVariant.Large1,
+								IBMSCode.Touhou_LargeBulletLaneshift =>	EntityVariant.Large1,
+								IBMSCode.Touhou_BossBullet1 =>			EntityVariant.Boss1,
+								IBMSCode.Touhou_BossBullet1Laneshift =>	EntityVariant.Boss1,
+								IBMSCode.Touhou_BossBullet2 =>			EntityVariant.Boss2,
+								IBMSCode.Touhou_BossBullet2Laneshift => EntityVariant.Boss2,
 
 								// :/
 								IBMSCode.BossBlock => s.noteData.IsPhase2BossGear() ? EntityVariant.Boss2 : EntityVariant.Boss1,
@@ -573,7 +604,6 @@ namespace CloneDash.Compatibility.MuseDash
 							ent.Score = s.noteData.score;
 							ent.Speed = s.noteData.speed;
 							ent.Health = health;
-
 							ent.Blood = blood;
 
 							ent.RelatedToBoss = isBoss;
@@ -590,7 +620,6 @@ namespace CloneDash.Compatibility.MuseDash
 							Logs.Info($"NoteID: {s.noteData.id}");
 							Logs.Info("");
 						}
-
 					}
 				}
 				first = false;
