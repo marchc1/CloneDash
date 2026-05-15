@@ -8,7 +8,7 @@ namespace Poly2Tri
     {
         List<Node> _nodes;
 
-        public void Triangulate(SweepContext tcx)
+        public void Triangulate(ref SweepContext tcx)
         {
             _nodes = [];
 
@@ -16,10 +16,10 @@ namespace Poly2Tri
             tcx.CreateAdvancingFront(_nodes);
 
             // Sweep points; build mesh
-            SweepPoints(tcx);
+            SweepPoints(ref tcx);
 
             // Clean up
-            FinalizationPolygon(tcx);
+            FinalizationPolygon(ref tcx);
         }
 
         public void Reset()
@@ -27,22 +27,22 @@ namespace Poly2Tri
             _nodes.Clear();
         }
 
-        private void SweepPoints(SweepContext tcx)
+        private void SweepPoints(ref SweepContext tcx)
         {
             for (int i = 1; i < tcx.PointCount(); i++)
             {
                 TriPoint point = tcx.GetPoint(i);
-                Node node = PointEvent(tcx, point);
+                Node node = PointEvent(ref tcx, point);
 
                 if (point.EdgeList != null)
                 {
                     for (int j = 0; j < point.EdgeList.Count; j++)
-                        EdgeEvent(tcx, point.EdgeList[j], node);
+                        EdgeEvent(ref tcx, point.EdgeList[j], node);
                 }
             }
         }
 
-        private void FinalizationPolygon(SweepContext tcx)
+        private void FinalizationPolygon(ref SweepContext tcx)
         {
             // Get an Internal triangle to start with
             Triangle t = tcx.Front._head.Next.Triangle;
@@ -54,27 +54,27 @@ namespace Poly2Tri
                 tcx.MeshClean(t);
         }
 
-        private Node PointEvent(SweepContext tcx, TriPoint point)
+        private Node PointEvent(ref SweepContext tcx, TriPoint point)
         {
             Node node = tcx.LocateNode(point);
 
             if (node == null || node.Point == null || node.Next == null || node.Next.Point == null)
                 throw new Exception("PointEvent - null node");
 
-            Node new_node = NewFrontTriangle(tcx, point, node);
+            Node new_node = NewFrontTriangle(ref tcx, point, node);
 
             // Only need to check +epsilon since point never have smaller
             // x value than node due to how we fetch nodes from the front
             if (point.X <= node.Point.X + TriUtil.EPSILON)
-                Fill(tcx, node);
+                Fill(ref tcx, node);
 
             //tcx.AddNode(new_node);
 
-            FillAdvancingFront(tcx, new_node);
+            FillAdvancingFront(ref tcx, new_node);
             return new_node;
         }
 
-        private void EdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void EdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             tcx.EdgeEvent.ConstrainedEdge = edge;
             tcx.EdgeEvent.Right = (edge.P.X > edge.Q.X);
@@ -85,11 +85,11 @@ namespace Poly2Tri
             // For now we will do all needed filling
             // TODO: integrate with flip process might give some better performance
             //       but for now this avoid the issue with cases that needs both flips and fills
-            FillEdgeEvent(tcx, edge, node);
-            EdgeEvent(tcx, edge.P, edge.Q, node.Triangle, edge.Q);
+            FillEdgeEvent(ref tcx, edge, node);
+            EdgeEvent(ref tcx, edge.P, edge.Q, node.Triangle, edge.Q);
         }
 
-        private void EdgeEvent(SweepContext tcx, TriPoint ep, TriPoint eq, Triangle triangle, TriPoint point)
+        private void EdgeEvent(ref SweepContext tcx, TriPoint ep, TriPoint eq, Triangle triangle, TriPoint point)
         {
             if(triangle == null)
                 throw new Exception("EdgeEvent - null triangle");
@@ -108,7 +108,7 @@ namespace Poly2Tri
                     // not change the given constraint and just keep a variable for the new constraint
                     tcx.EdgeEvent.ConstrainedEdge.Q = p1;
                     triangle = triangle.NeighborAcross(point);
-                    EdgeEvent(tcx, ep, p1, triangle, p1);
+                    EdgeEvent(ref tcx, ep, p1, triangle, p1);
                 }
                 else
                 {
@@ -129,7 +129,7 @@ namespace Poly2Tri
                     // not change the given constraint and just keep a variable for the new constraint
                     tcx.EdgeEvent.ConstrainedEdge.Q = p2;
                     triangle = triangle.NeighborAcross(point);
-                    EdgeEvent(tcx, ep, p2, triangle, p2);
+                    EdgeEvent(ref tcx, ep, p2, triangle, p2);
                 }
                 else
                 {
@@ -148,13 +148,13 @@ namespace Poly2Tri
                 else
                     triangle = triangle.NeighborCW(point);
 
-                EdgeEvent(tcx, ep, eq, triangle, point);
+                EdgeEvent(ref tcx, ep, eq, triangle, point);
             }
             else
             {
                 // This triangle crosses constraint so lets flippin start!
                 Debug.Assert(triangle != null);
-                FlipEdgeEvent(tcx, ep, eq, triangle, point);
+                FlipEdgeEvent(ref tcx, ep, eq, triangle, point);
             }
         }
 
@@ -174,7 +174,7 @@ namespace Poly2Tri
             return false;
         }
 
-        private Node NewFrontTriangle(SweepContext tcx, TriPoint point, Node node)
+        private Node NewFrontTriangle(ref SweepContext tcx, TriPoint point, Node node)
         {
             Triangle triangle = new Triangle(point, node.Point, node.Next.Point);
 
@@ -189,13 +189,13 @@ namespace Poly2Tri
             node.Next.Prev = new_node;
             node.Next = new_node;
 
-            if (!Legalize(tcx, triangle))
+            if (!Legalize(ref tcx, triangle))
                 tcx.MapTriangleToNodes(triangle);
 
             return new_node;
         }
 
-        private void Fill(SweepContext tcx, Node node)
+        private void Fill(ref SweepContext tcx, Node node)
         {
             Triangle triangle = new Triangle(node.Prev.Point, node.Point, node.Next.Point);
 
@@ -211,11 +211,11 @@ namespace Poly2Tri
             node.Next.Prev = node.Prev;
 
             // If it was legalized the triangle has already been mapped
-            if (!Legalize(tcx, triangle))
+            if (!Legalize(ref tcx, triangle))
                 tcx.MapTriangleToNodes(triangle);
         }
 
-        private void FillAdvancingFront(SweepContext tcx, Node n)
+        private void FillAdvancingFront(ref SweepContext tcx, Node n)
         {
             // Fill right holes
             Node node = n.Next;
@@ -224,7 +224,7 @@ namespace Poly2Tri
             {
                 // if HoleAngle exceeds 90 degrees then break.
                 if (LargeHole_DontFill(node)) break;
-                Fill(tcx, node);
+                Fill(ref tcx, node);
                 node = node.Next;
             }
 
@@ -235,7 +235,7 @@ namespace Poly2Tri
             {
                 // if HoleAngle exceeds 90 degrees then break.
                 if (LargeHole_DontFill(node)) break;
-                Fill(tcx, node);
+                Fill(ref tcx, node);
                 node = node.Prev;
             }
 
@@ -244,7 +244,7 @@ namespace Poly2Tri
             {
                 double angle = BasinAngle(n);
                 if (angle < TriUtil.PI_3div4)
-                    FillBasin(tcx, n);
+                    FillBasin(ref tcx, n);
             }
         }
 
@@ -335,7 +335,7 @@ namespace Poly2Tri
             return Math.Atan2(ax * by - ay * bx, ax * bx + ay * by);
         }
 
-        private bool Legalize(SweepContext tcx, Triangle t)
+        private bool Legalize(ref SweepContext tcx, Triangle t)
         {
             // To legalize a triangle we start by finding if any of the three edges
             // violate the Delaunay condition
@@ -375,11 +375,11 @@ namespace Poly2Tri
                         // This gives us 4 new edges to check for Delaunay
 
                         // Make sure that triangle to node mapping is done only one time for a specific triangle
-                        bool not_legalized = !Legalize(tcx, t);
+                        bool not_legalized = !Legalize(ref tcx, t);
                         if (not_legalized)
                             tcx.MapTriangleToNodes(t);
 
-                        not_legalized = !Legalize(tcx, ot);
+                        not_legalized = !Legalize(ref tcx, ot);
                         if (not_legalized)
                             tcx.MapTriangleToNodes(ot);
 
@@ -523,7 +523,7 @@ namespace Poly2Tri
             t.MarkNeighbor(ot);
         }
 
-        private void FillBasin(SweepContext tcx, Node node)
+        private void FillBasin(ref SweepContext tcx, Node node)
         {
             if (TriUtil.Orient2d(node.Point, node.Next.Point, node.Next.Next.Point) == Winding.CCW)
                 tcx.Basin.LeftNode = node.Next.Next;
@@ -549,6 +549,7 @@ namespace Poly2Tri
             {
                 tcx.Basin.RightNode = tcx.Basin.RightNode.Next;
             }
+
             if (tcx.Basin.RightNode == tcx.Basin.BottomNode)
             {
                 // No valid basins
@@ -558,18 +559,18 @@ namespace Poly2Tri
             tcx.Basin.Width = tcx.Basin.RightNode.Point.X - tcx.Basin.LeftNode.Point.X;
             tcx.Basin.LeftHighest = tcx.Basin.LeftNode.Point.Y > tcx.Basin.RightNode.Point.Y;
 
-            FillBasinReq(tcx, tcx.Basin.BottomNode);
+            FillBasinReq(ref tcx, tcx.Basin.BottomNode);
         }
 
-        private void FillBasinReq(SweepContext tcx, Node node)
+        private void FillBasinReq(ref SweepContext tcx, Node node)
         {
             // if shallow stop filling
-            if (IsShallow(tcx, node))
+            if (IsShallow(ref tcx, node))
             {
                 return;
             }
 
-            Fill(tcx, node);
+            Fill(ref tcx, node);
 
             if (node.Prev == tcx.Basin.LeftNode && node.Next == tcx.Basin.RightNode)
             {
@@ -600,10 +601,10 @@ namespace Poly2Tri
                     node = node.Next;
             }
 
-            FillBasinReq(tcx, node);
+            FillBasinReq(ref tcx, node);
         }
 
-        private bool IsShallow(SweepContext tcx, Node node)
+        private bool IsShallow(ref SweepContext tcx, Node node)
         {
             double height;
 
@@ -619,48 +620,48 @@ namespace Poly2Tri
             return false;
         }
 
-        private void FillEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             if (tcx.EdgeEvent.Right)
-                FillRightAboveEdgeEvent(tcx, edge, node);
+                FillRightAboveEdgeEvent(ref tcx, edge, node);
             else
-                FillLeftAboveEdgeEvent(tcx, edge, node);
+                FillLeftAboveEdgeEvent(ref tcx, edge, node);
         }
 
-        private void FillRightAboveEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillRightAboveEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             while (node.Next.Point.X < edge.P.X)
             {
                 // Check if next node is below the edge
                 if (TriUtil.Orient2d(edge.Q, node.Next.Point, edge.P) == Winding.CCW)
-                    FillRightBelowEdgeEvent(tcx, edge, node);
+                    FillRightBelowEdgeEvent(ref tcx, edge, node);
                 else
                     node = node.Next;
             }
         }
 
-        private void FillRightBelowEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillRightBelowEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             if (node.Point.X < edge.P.X)
             {
                 if (TriUtil.Orient2d(node.Point, node.Next.Point, node.Next.Next.Point) == Winding.CCW)
                 {
                     // Concave
-                    FillRightConcaveEdgeEvent(tcx, edge, node);
+                    FillRightConcaveEdgeEvent(ref tcx, edge, node);
                 }
                 else
                 {
                     // Convex
-                    FillRightConvexEdgeEvent(tcx, edge, node);
+                    FillRightConvexEdgeEvent(ref tcx, edge, node);
                     // Retry this one
-                    FillRightBelowEdgeEvent(tcx, edge, node);
+                    FillRightBelowEdgeEvent(ref tcx, edge, node);
                 }
             }
         }
 
-        private void FillRightConcaveEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillRightConcaveEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
-            Fill(tcx, node.Next);
+            Fill(ref tcx, node.Next);
             if (node.Next.Point != edge.P)
             {
                 // Next above or below edge?
@@ -670,7 +671,7 @@ namespace Poly2Tri
                     if (TriUtil.Orient2d(node.Point, node.Next.Point, node.Next.Next.Point) == Winding.CCW)
                     {
                         // Next is concave
-                        FillRightConcaveEdgeEvent(tcx, edge, node);
+                        FillRightConcaveEdgeEvent(ref tcx, edge, node);
                     }
                     else
                     {
@@ -680,13 +681,13 @@ namespace Poly2Tri
             }
         }
 
-        private void FillRightConvexEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillRightConvexEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             // Next concave or convex?
             if (TriUtil.Orient2d(node.Next.Point, node.Next.Next.Point, node.Next.Next.Next.Point) == Winding.CCW)
             {
                 // Concave
-                FillRightConcaveEdgeEvent(tcx, edge, node.Next);
+                FillRightConcaveEdgeEvent(ref tcx, edge, node.Next);
             }
             else
             {
@@ -695,7 +696,7 @@ namespace Poly2Tri
                 if (TriUtil.Orient2d(edge.Q, node.Next.Next.Point, edge.P) == Winding.CCW)
                 {
                     // Below
-                    FillRightConvexEdgeEvent(tcx, edge, node.Next);
+                    FillRightConvexEdgeEvent(ref tcx, edge, node.Next);
                 }
                 else
                 {
@@ -704,44 +705,44 @@ namespace Poly2Tri
             }
         }
 
-        private void FillLeftAboveEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillLeftAboveEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             while (node.Prev.Point.X > edge.P.X)
             {
                 // Check if next node is below the edge
                 if (TriUtil.Orient2d(edge.Q, node.Prev.Point, edge.P) == Winding.CW)
-                    FillLeftBelowEdgeEvent(tcx, edge, node);
+                    FillLeftBelowEdgeEvent(ref tcx, edge, node);
                 else
                     node = node.Prev;
             }
         }
 
-        private void FillLeftBelowEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillLeftBelowEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             if (node.Point.X > edge.P.X)
             {
                 if (TriUtil.Orient2d(node.Point, node.Prev.Point, node.Prev.Prev.Point) == Winding.CW)
                 {
                     // Concave
-                    FillLeftConcaveEdgeEvent(tcx, edge, node);
+                    FillLeftConcaveEdgeEvent(ref tcx, edge, node);
                 }
                 else
                 {
                     // Convex
-                    FillLeftConvexEdgeEvent(tcx, edge, node);
+                    FillLeftConvexEdgeEvent(ref tcx, edge, node);
                     // Retry this one
-                    FillLeftBelowEdgeEvent(tcx, edge, node);
+                    FillLeftBelowEdgeEvent(ref tcx, edge, node);
                 }
             }
         }
 
-        private void FillLeftConvexEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillLeftConvexEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
             // Next concave or convex?
             if (TriUtil.Orient2d(node.Prev.Point, node.Prev.Prev.Point, node.Prev.Prev.Prev.Point) == Winding.CW)
             {
                 // Concave
-                FillLeftConcaveEdgeEvent(tcx, edge, node.Prev);
+                FillLeftConcaveEdgeEvent(ref tcx, edge, node.Prev);
             }
             else
             {
@@ -750,7 +751,7 @@ namespace Poly2Tri
                 if (TriUtil.Orient2d(edge.Q, node.Prev.Prev.Point, edge.P) == Winding.CW)
                 {
                     // Below
-                    FillLeftConvexEdgeEvent(tcx, edge, node.Prev);
+                    FillLeftConvexEdgeEvent(ref tcx, edge, node.Prev);
                 }
                 else
                 {
@@ -759,9 +760,9 @@ namespace Poly2Tri
             }
         }
 
-        private void FillLeftConcaveEdgeEvent(SweepContext tcx, Edge edge, Node node)
+        private void FillLeftConcaveEdgeEvent(ref SweepContext tcx, Edge edge, Node node)
         {
-            Fill(tcx, node.Prev);
+            Fill(ref tcx, node.Prev);
             if (node.Prev.Point != edge.P)
             {
                 // Next above or below edge?
@@ -771,7 +772,7 @@ namespace Poly2Tri
                     if (TriUtil.Orient2d(node.Point, node.Prev.Point, node.Prev.Prev.Point) == Winding.CW)
                     {
                         // Next is concave
-                        FillLeftConcaveEdgeEvent(tcx, edge, node);
+                        FillLeftConcaveEdgeEvent(ref tcx, edge, node);
                     }
                     else
                     {
@@ -781,7 +782,7 @@ namespace Poly2Tri
             }
         }
 
-        private void FlipEdgeEvent(SweepContext tcx, TriPoint ep, TriPoint eq, Triangle t, TriPoint p)
+        private void FlipEdgeEvent(ref SweepContext tcx, TriPoint ep, TriPoint eq, Triangle t, TriPoint p)
         {
             Triangle ot = t.NeighborAcross(p);
             if (ot == null)
@@ -802,8 +803,8 @@ namespace Poly2Tri
                     {
                         t.MarkConstrainedEdge(ep, eq);
                         ot.MarkConstrainedEdge(ep, eq);
-                        Legalize(tcx, t);
-                        Legalize(tcx, ot);
+                        Legalize(ref tcx, t);
+                        Legalize(ref tcx, ot);
                     }
                     else
                     {
@@ -813,19 +814,19 @@ namespace Poly2Tri
                 else
                 {
                     Winding o = TriUtil.Orient2d(eq, op, ep);
-                    t = NextFlipTriangle(tcx, o, t, ot, p, op);
-                    FlipEdgeEvent(tcx, ep, eq, t, p);
+                    t = NextFlipTriangle(ref tcx, o, t, ot, p, op);
+                    FlipEdgeEvent(ref tcx, ep, eq, t, p);
                 }
             }
             else
             {
                 TriPoint newP = NextFlipPoint(ep, eq, ot, op);
-                FlipScanEdgeEvent(tcx, ep, eq, t, ot, newP);
-                EdgeEvent(tcx, ep, eq, t, p);
+                FlipScanEdgeEvent(ref tcx, ep, eq, t, ot, newP);
+                EdgeEvent(ref tcx, ep, eq, t, p);
             }
         }
 
-        private Triangle NextFlipTriangle(SweepContext tcx, Winding o, Triangle t, Triangle ot, TriPoint p, TriPoint op)
+        private Triangle NextFlipTriangle(ref SweepContext tcx, Winding o, Triangle t, Triangle ot, TriPoint p, TriPoint op)
         {
             int edge_index;
 
@@ -834,7 +835,7 @@ namespace Poly2Tri
                 // ot is not crossing edge after flip
                 edge_index = ot.EdgeIndex(p, op);
                 ot.DelaunayEdge[edge_index] = true;
-                Legalize(tcx, ot);
+                Legalize(ref tcx, ot);
                 ot.ClearDelaunayEdges();
                 return t;
             }
@@ -843,7 +844,7 @@ namespace Poly2Tri
             edge_index = t.EdgeIndex(p, op);
 
             t.DelaunayEdge[edge_index] = true;
-            Legalize(tcx, t);
+            Legalize(ref tcx, t);
             t.ClearDelaunayEdges();
             return ot;
         }
@@ -865,7 +866,7 @@ namespace Poly2Tri
             throw new NotSupportedException("[Unsupported] Opposing point on constrained edge");
         }
 
-        private void FlipScanEdgeEvent(SweepContext tcx, TriPoint ep, TriPoint eq, Triangle flip_triangle, Triangle t, TriPoint p)
+        private void FlipScanEdgeEvent(ref SweepContext tcx, TriPoint ep, TriPoint eq, Triangle flip_triangle, Triangle t, TriPoint p)
         {
             Triangle ot = t.NeighborAcross(p);
             if (ot == null)
@@ -883,7 +884,7 @@ namespace Poly2Tri
             if (TriUtil.InScanArea(eq, p1, p2, op))
             {
                 // flip with new edge op->eq
-                FlipEdgeEvent(tcx, eq, op, ot, op);
+                FlipEdgeEvent(ref tcx, eq, op, ot, op);
                 // TODO: Actually I just figured out that it should be possible to
                 //       improve this by getting the next ot and op before the the above
                 //       flip and continue the flipScanEdgeEvent here
@@ -895,7 +896,7 @@ namespace Poly2Tri
             else
             {
                 TriPoint newP = NextFlipPoint(ep, eq, ot, op);
-                FlipScanEdgeEvent(tcx, ep, eq, flip_triangle, ot, newP);
+                FlipScanEdgeEvent(ref tcx, ep, eq, flip_triangle, ot, newP);
             }
         }
     }

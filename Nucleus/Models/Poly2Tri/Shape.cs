@@ -139,7 +139,7 @@ namespace Poly2Tri
 		/// <param name="output">The output list.</param>
 		public void Triangulate(IList<Vector2> output, Vector2 offset, float scale = 1.0f) {
 			Points.Reverse();
-			using SweepContext tcx = new();
+			SweepContext tcx = new();
 			tcx.AddPoints(Points);
 
 			// Hole edges
@@ -151,7 +151,7 @@ namespace Poly2Tri
 
 			tcx.InitTriangulation();
 			Sweep sweep = new();
-			sweep.Triangulate(tcx);
+			sweep.Triangulate(ref tcx);
 
 			List<Triangle> triangles = tcx.GetTriangles();
 			foreach (Triangle tri in triangles) {
@@ -159,6 +159,8 @@ namespace Poly2Tri
 				output.Add(((Vector2)tri.Points[2] * scale) + offset);
 				output.Add(((Vector2)tri.Points[1] * scale) + offset);
 			}
+
+			tcx.Dispose();
 		}
 
 		/// <summary>
@@ -167,7 +169,7 @@ namespace Poly2Tri
 		/// <param name="output">The output list.</param>
 		public void Triangulate(IList<Triangle> output) {
 			if (Points.Count == 0) return;
-			using SweepContext tcx = new();
+			SweepContext tcx = new();
 			tcx.AddPoints(Points);
 
 			foreach (Shape p in Holes)
@@ -181,11 +183,13 @@ namespace Poly2Tri
 
 			tcx.InitTriangulation();
 			Sweep sweep = new();
-			sweep.Triangulate(tcx);
+			sweep.Triangulate(ref tcx);
 
 			List<Triangle> triangles = tcx.GetTriangles();
 			foreach (Triangle tri in triangles)
 				output.Add(tri);
+
+			tcx.Dispose();
 		}
 
 		public void Scale(float scale) {
