@@ -544,11 +544,11 @@ namespace CloneDash.Compatibility.MuseDash
 							IBMSCode.Touhou_BossBullet2 => MuseDash1EntityType.Single,
 							IBMSCode.Touhou_BossBullet2Laneshift => MuseDash1EntityType.Single,
 
-							_ => MuseDash1EntityType.Unknown
+							_ => 0
 						};
 						var health = ib.code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
 
-						if (entityType != MuseDash1EntityType.Unknown) {
+						if (entityType != 0) {
 							EntityVariant variant = ib.code switch {
 								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
 								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,

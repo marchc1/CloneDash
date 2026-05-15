@@ -310,6 +310,13 @@ public class DashEnemy : Entity
 	}
 
 	/// <summary>
+	/// Kills the entity, but does not add to combo, fever, or reward player
+	/// </summary>
+	public void SoftKill(){
+		Dead = true;
+	}
+
+	/// <summary>
 	/// The distance, in seconds, to when the entity needs to be hit. A negative value means that the player hit too late, a positive means the player hit too early.
 	/// <br/>
 	/// <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>

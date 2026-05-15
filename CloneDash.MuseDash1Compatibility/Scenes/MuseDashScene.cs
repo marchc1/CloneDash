@@ -1008,11 +1008,24 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 
 	public string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType type) {
-		string request = type == HitAnimationType.Great ? ActionKeys.COMEOUT2 : ActionKeys.COMEOUT3;
+		string request = type switch {
+			HitAnimationType.Great => ActionKeys.COMEOUT2,
+			HitAnimationType.Perfect => ActionKeys.COMEOUT3,
+			HitAnimationType.Break => ActionKeys.BLOCK_DESTROY,
+			_ => throw new Exception("invalid hit animation type")
+		};
+
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
 			case MuseDash1EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
 			case MuseDash1EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Gear:
+				anim = (enemy.Variant switch {
+					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBossGearA_Anims : RoadBossGearA_Anims,
+					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBossGearA_Anims : RoadBossGearB_Anims,
+					_ => enemy.Pathway == PathwaySide.Top ? AirGearAnims : RoadGearAnims,
+				}).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+				break;
 			case MuseDash1EntityType.Masher: anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
 			case MuseDash1EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
 			case MuseDash1EntityType.Hammer:

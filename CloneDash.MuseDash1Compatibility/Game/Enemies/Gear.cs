@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using Nucleus.Types;
 using Raylib_cs;
 namespace CloneDash.Game.Entities
@@ -14,6 +15,11 @@ namespace CloneDash.Game.Entities
 			base.Initialize();
 		}
 
+		protected override void OnHit(PathwaySide side, double distanceToHit) {
+			SoftKill();
+			GetStats().Pass(this); // I think this is applicable here?
+		}
+
 		protected override void OnPass() {
 			RewardPlayer();
 			GetStats().Pass(this);
@@ -25,6 +31,14 @@ namespace CloneDash.Game.Entities
 		}
 
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
+			if (visuals.Model == null) return;
+
+			if (Dead) {
+				GetGameLevel().SetEnemyKilledPosition(this);
+				visuals.PerfectHitAnimation?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
+				return;
+			}
+
 			GetGameLevel().SetEnemyPosition(this);
 			base.DetermineAnimationPlayback(visuals);
 		}

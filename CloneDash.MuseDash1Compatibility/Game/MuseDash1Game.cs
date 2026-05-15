@@ -1134,7 +1134,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
-						entity.DamagePlayer();
+						if (BreaksAvoids())
+							entity.Hit(Pathway, 0);
+						else
+							entity.DamagePlayer();
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
@@ -1764,6 +1767,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
 	public void Damage(float damage, DashEnemy? responsible) {
+		if (InFever && Quirks.InvincibleInFever)
+			return;
+
 		double damageD = (double)damage;
 		if (Quirks.DamageModifier != null) Quirks.DamageModifier.Invoke(ProduceSnapshot(responsible), ref damageD);
 		damage = (float)damageD;
@@ -2094,6 +2100,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public IMuseDash1SceneUI? GetSceneUI() => SceneUI;
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
+	public bool BreaksAvoids() => !Quirks.BreaksAvoids;
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

@@ -3,5 +3,6 @@
 public enum HitAnimationType
 {
 	Great,
-	Perfect
+	Perfect,
+	Break
 }
