@@ -1132,16 +1132,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
 
+					bool broken = false;
 					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
-						if (BreaksAvoids())
-							entity.Hit(Pathway, 0);
+						if (BreaksAvoids()) {
+							if (entity.Hits == 0)
+								entity.Hit(Pathway, 0);
+							broken = true;
+						}
 						else
 							entity.DamagePlayer();
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
-					if (Pathway != entity.Pathway && timeToHit < 0 && !entity.DidDamagePlayer) {
+					if (!broken && Pathway != entity.Pathway && timeToHit < 0 && !entity.DidDamagePlayer) {
 						entity.Pass();
 					}
 
@@ -2100,7 +2104,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public IMuseDash1SceneUI? GetSceneUI() => SceneUI;
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
-	public bool BreaksAvoids() => !Quirks.BreaksAvoids;
+	public bool BreaksAvoids() => Quirks.BreaksAvoids;
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

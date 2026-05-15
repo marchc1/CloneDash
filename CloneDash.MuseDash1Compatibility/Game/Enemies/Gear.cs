@@ -35,6 +35,7 @@ namespace CloneDash.Game.Entities
 
 			if (Dead) {
 				GetGameLevel().SetEnemyKilledPosition(this);
+				Position.Y += 1.3f; // TODO: Why..?
 				visuals.PerfectHitAnimation?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
@@ -56,6 +57,7 @@ namespace CloneDash.Game.Entities
 			SetShowTimeViaLength(showtime);
 
 			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
+			visuals.PerfectHitAnimation = visuals.Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Break));
 		}
 	}
 }

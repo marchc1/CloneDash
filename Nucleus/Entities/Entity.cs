@@ -44,10 +44,8 @@ namespace Nucleus.Entities
 		public bool ThinksForItself { get; set; } = true;
 		public bool RendersItself { get; set; } = true;
 
-		public Vector2F Position { 
-			get;
-			set; } = Vector2F.Zero;
-		public float Rotation { get; set; } = 0;
-		public Vector2F Scale { get; set; } = Vector2F.One;
+		public Vector2F Position = Vector2F.Zero;
+		public float Rotation = 0;
+		public Vector2F Scale = Vector2F.One;
 	}
 }
