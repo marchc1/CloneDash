@@ -476,14 +476,6 @@ namespace Nucleus.Engine
 			FrameState.Reset();
 		}
 
-		private void test() {
-			Vector2F screenBounds = new(1600, 900);
-			Graphics2D.SetDrawColor(30, 5, 0);
-			Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
-			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", Graphics2D.UI_FONT_NAME, 24, TextAlignment.Center, TextAlignment.Bottom);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
-		}
 		double lastRenderTime = -10;
 		public bool RenderedFrame { get; set; } = false;
 		public bool IsRendering { get; set; } = false;
