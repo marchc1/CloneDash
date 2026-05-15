@@ -6,6 +6,7 @@ uniform sampler2D texture0;
 
 uniform vec2 uTexelSize;
 uniform vec3 uTextColor;
+uniform vec3 uBorderColor;
 uniform float uBorderSize;
 uniform float uDarkenAmount;
 uniform float uDesaturateAmount;
@@ -33,12 +34,12 @@ void main()
         borderAlpha = max(borderAlpha, texture(texture0, fragTexCoord + offset).a);
     }
 
-    vec3 borderColor = uTextColor * (1.0 - uDarkenAmount);
+    vec3 borderColor = uBorderColor;
 
     float v = fragTexCoord.y;
     float topFactor = smoothstep(uSplitY - 0.02, uSplitY + 0.02, v);
 
-    vec3 topColor = uTextColor * (1.0 - uDarkenAmount * 0.4);
+    vec3 topColor = uTextColor * (1.0);
     float luma = dot(uTextColor, vec3(0.299, 0.587, 0.114));
     vec3 desaturated = mix(uTextColor, vec3(luma), uDesaturateAmount);
     vec3 bottomColor = desaturated * 1.25;
@@ -46,11 +47,11 @@ void main()
     vec3 bodyColor = mix(topColor, bottomColor, topFactor);
 
     // Border layer
-    vec3 color = borderColor;
-    float alpha = borderAlpha;
+    vec3 premulBorder = borderColor * borderAlpha;
+    vec3 premulBody = bodyColor * centerAlpha;
 
-    color = mix(color, bodyColor, centerAlpha);
-    alpha = max(alpha, centerAlpha);
+    vec3 color = premulBody + premulBorder * (1.0 - centerAlpha);
+    float alpha = centerAlpha + borderAlpha * (1.0 - centerAlpha);
 
-    finalColor = vec4(color * alpha * uAlpha, alpha * uAlpha);
+    finalColor = vec4(color * uAlpha, alpha * uAlpha);
 }

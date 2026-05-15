@@ -338,7 +338,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override bool IsInGame => true;
 	public void Restart() => SeekTo(0);
-
+	public override void OnUnload() {
+		SceneUI?.Dispose();
+		SceneUI = null;
+	}
 	public bool IsSeeking { get; private set; } = false;
 	public void SeekTo(double time) {
 		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
@@ -347,10 +350,18 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ExitMashState();
 		ResetScreenspaceEffects();
 
+		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
+			scene.OnPressStateChange(false, true);
+
 		SceneUI?.UpdateAllPerfect(true);
 		SceneUI?.UpdateFullCombo(true);
 		SceneUI?.Reset();
 		SceneUI?.SetSeeking(true);
+		SceneUI?.UpdateScore(0);
+		SceneUI?.UpdateCombo(0);
+		SceneUI?.UpdateHP(MaxHealth, MaxHealth);
+		SceneUI?.UpdateFeverProgress(0, 0);
+		Character?.Reset();
 
 		if (time < 0.06f)
 			audiosystem.RestartSound(Music);
@@ -657,7 +668,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				break;
 			default:
 				if (Sustains.IsSustaining()) {
-					Character.GetSecondary().PlayAnimation(type);
+					if (!IsSeeking)
+						Character.GetSecondary().PlayAnimation(type);
 				}
 				else {
 					Character.GetPrimary().PlayAnimation(type);
@@ -1215,6 +1227,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							&& !(entity is Masher me && me.Hits > 0)
 						) {
 							entity.Miss();
+							SceneUI?.UpdateFullCombo(false);
 						}
 					}
 					break;
@@ -1701,8 +1714,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						if (pollResult.HitEntity.Type != EntityType.Masher) {
 							if (pollResult.IsPerfect)
 								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
-							else
+							else {
 								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
+								SceneUI?.UpdateAllPerfect(false);
+							}
 							SceneUI?.UpdateHit();
 						}
 
@@ -1882,6 +1897,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		ResetCombo();
+		SceneUI?.UpdateFullCombo(false);
 	}
 	public double LastFeverIncreaseTime { get; private set; } = -2000;
 	/// <summary>
@@ -1934,13 +1950,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void AddScore(int score) {
 		float s = (float)score;
 		Score += (int)s;
+		SceneUI?.UpdateScore(Score);
 	}
 	/// <summary>
 	/// Removes from the players score.
 	/// </summary>
 	/// <param name="score"></param>
-	public void RemoveScore(int score) => Score -= score;
-
+	public void RemoveScore(int score) {
+		Score -= score;
+		SceneUI?.UpdateScore(Score);
+	}
 	/// <summary>
 	/// This is a callback for <see cref="ISustainManager"/> implementations. It expects wasSustaining, inSustaining, and sustainCount to be relative to the current pathway.
 	/// </summary>

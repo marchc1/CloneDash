@@ -78,6 +78,11 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		}
 	}
 
+	public void Reset(){
+		HologramPlayer.Player.Visible = false;
+		HologramPlayer.Player.Animations.ClearAllAnimation();
+	}
+
 	internal void NotifyAnimation(MuseDash1CharacterIndividual museDash1CharacterIndividual, bool isSecondary, CharacterAnimationType type) {
 		if(isSecondary)
 			lastHologramAnimationTime = game.Conductor.Time;

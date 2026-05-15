@@ -27,4 +27,5 @@ public interface IMuseDash1CharacterInstance : ICharacterInGameInstance
 	void Initialize();
 	bool IsInAir();
 	void Think();
+	void Reset();
 }

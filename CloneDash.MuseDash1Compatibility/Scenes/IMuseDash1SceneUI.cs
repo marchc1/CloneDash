@@ -4,7 +4,7 @@ using CloneDash.Game.Statistics;
 
 namespace CloneDash.Scenes;
 
-public interface IMuseDash1SceneUI
+public interface IMuseDash1SceneUI : IDisposable
 {
 	void Initialize();
 	void Think(double dt);

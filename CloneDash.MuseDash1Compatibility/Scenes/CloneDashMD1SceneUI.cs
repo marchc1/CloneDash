@@ -7,6 +7,7 @@ using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
+using CommunityToolkit.HighPerformance;
 using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
@@ -131,7 +132,7 @@ class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 
 public static class UITextAnimationFns
 {
-	public static void UpwardFadeout(WorldspaceRenderItem self, double curtime) {
+	public static void UpwardFadeout(TextImageRenderItem self, double curtime) {
 		double t = curtime - self.StartTime;
 		double len = self.Length;
 
@@ -151,7 +152,28 @@ public static class UITextAnimationFns
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleX, scaleY);
 	}
-	public static void FadeoutInv(WorldspaceRenderItem self, double curtime) {
+	// TODO: get this looking right
+	public static void UpwardFadeoutCurved(TextImageRenderItem self, double curtime) {
+		double t = curtime - self.StartTime;
+		double len = self.Length;
+
+		double moveT = NMath.Remap(t, 0, len * 0.8, 0, 1, clampInput: true);
+		double alphaT = NMath.Remap(t, len * 0.75, len, 0, 1, clampInput: true);
+
+		float y = (float)(NMath.Ease.InOutCirc(t * 0.5) * 14.5f);
+
+		double squishT = NMath.Remap(t, 0, 0.5, 0, 1, clampInput: true);
+		double ease = NMath.Ease.OutElastic(squishT);
+		double ease2 = NMath.Ease.OutElastic(squishT - 0.1);
+
+		float scaleX = (float)NMath.Lerp(0.1, 1.0, ease2);
+		float scaleY = (float)NMath.Lerp(2.0, 1.0, ease);
+
+		self.Position = new(0, 1 + y);
+		self.Color.A = (byte)(255 * (1 - alphaT));
+		self.Scale = new(scaleX, scaleY);
+	}
+	public static void FadeoutInv(TextImageRenderItem self, double curtime) {
 		double t = curtime - self.StartTime;
 		double len = self.Length;
 
@@ -171,7 +193,7 @@ public static class UITextAnimationFns
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleY, scaleX);
 	}
-	public static void UpwardFadeoutInv(WorldspaceRenderItem self, double curtime) {
+	public static void UpwardFadeoutInv(TextImageRenderItem self, double curtime) {
 		double t = curtime - self.StartTime;
 		double len = self.Length;
 
@@ -191,7 +213,7 @@ public static class UITextAnimationFns
 		self.Color.A = (byte)(255 * (1 - alphaT));
 		self.Scale = new(scaleY, scaleX);
 	}
-	public static void UpwardFadeoutMoveLeft(WorldspaceRenderItem self, double curtime) {
+	public static void UpwardFadeoutMoveLeft(TextImageRenderItem self, double curtime) {
 		UpwardFadeout(self, curtime);
 
 		double t = curtime - self.StartTime;
@@ -200,7 +222,7 @@ public static class UITextAnimationFns
 		double moveT = NMath.Remap(t, len * 0.6, len, 0, 1, clampInput: true);
 		self.Position.X = (float)(NMath.Ease.InQuart(moveT) * -4.5);
 	}
-	public static void VibrateAndMoveLeft(WorldspaceRenderItem self, double curtime) {
+	public static void VibrateAndMoveLeft(TextImageRenderItem self, double curtime) {
 		double t = curtime - self.StartTime;
 		double len = self.Length;
 
@@ -222,12 +244,15 @@ public static class UITextAnimationFns
 	}
 }
 
-public delegate void RenderTextAnimationFn(WorldspaceRenderItem self, double curtime);
+public delegate void RenderTextAnimationFn(TextImageRenderItem self, double curtime);
 
-public class WorldspaceRenderItem
+public class TextImageRenderItem
 {
 	public double StartTime;
 	public double Length;
+
+	public bool TopLeftAligned;
+	public bool Worldspace;
 
 	public Vector2F StartPosition;
 	public float StartRotation;
@@ -238,6 +263,7 @@ public class WorldspaceRenderItem
 	public float Rotation;
 	public Vector2F Scale = new(1, 1);
 	public Color Color = new(255, 255, 255, 255);
+	public Color? borderColor;
 
 	public string? Text;
 	public string? Font;
@@ -247,7 +273,11 @@ public class WorldspaceRenderItem
 	ulong lastTextHash;
 	ulong lastFontHash;
 
-	public WorldspaceRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, string text, string font, Color color, RenderTextAnimationFn? fn = null) {
+	public bool IsImmortal() => StartTime == 0 && Length == 0;
+	public double LifeLived(double curtime) => IsImmortal() ? 0 : curtime - StartTime;
+	public double LifeRemaining(double curtime) => IsImmortal() ? 200000000 : (Length) - LifeLived(curtime);
+
+	public TextImageRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, string text, string font, Color color, RenderTextAnimationFn? fn = null) {
 		StartTime = start;
 		Length = length;
 		StartPosition = pos;
@@ -259,7 +289,7 @@ public class WorldspaceRenderItem
 		Fn = fn;
 	}
 
-	public WorldspaceRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, ITexture? texture, Color color, RenderTextAnimationFn? fn = null) {
+	public TextImageRenderItem(double start, double length, Vector2F pos, float rotation, Vector2F scale, ITexture? texture, Color color, RenderTextAnimationFn? fn = null) {
 		StartTime = start;
 		Length = length;
 		StartPosition = pos;
@@ -275,15 +305,12 @@ public class WorldspaceRenderItem
 		if (textRT.HasValue)
 			Graphics2D.DestroyRenderTarget(textRT.Value);
 	}
-	static float FontResolution => 90;
-	static float BorderSize => 2.6f;
-	static float DarkenAmount => 0.3f;
-	static float DesaturateAmount => 0.35f;
-	static float SplitY => 0.55f;
-	static int RTPadding => (int)MathF.Ceiling(BorderSize) + 2;
-	public void PreRender() {
-		DetermineRenderTexture();
-	}
+	float FontResolution = 90;
+	public float BorderSize = 2.6f;
+	public float DarkenAmount = 0.3f;
+	public float DesaturateAmount = 0.35f;
+	public float SplitY = 0.55f;
+	int RTPadding => (int)MathF.Ceiling(BorderSize) + 2;
 	public void Render(double curtime, IShader? styledTextShader) {
 		if (Fn != null)
 			Fn(this, curtime);
@@ -302,7 +329,7 @@ public class WorldspaceRenderItem
 		Color color = StartColor * Color;
 
 		if (Text != null && Font != null)
-			RenderStyledText(position, scale, rotation, color, styledTextShader);
+			RenderStyledText(position, scale, rotation, color, borderColor, styledTextShader);
 		else if (Texture != null) {
 			Rlgl.PushMatrix();
 			Rlgl.Translatef(position.x, -position.y, 0);
@@ -310,7 +337,18 @@ public class WorldspaceRenderItem
 			Rlgl.Scalef(scale.x, scale.y, 1);
 			Graphics2D.SetDrawColor(color);
 			Graphics2D.SetTexture(Texture);
-			Graphics2D.DrawTexture(new(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
+			if (TopLeftAligned) {
+				if (Worldspace)
+					Graphics2D.DrawTexture(new(0, 0), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
+				else
+					Graphics2D.DrawTexture(new(0, 0), new(Texture.Width, Texture.Height));
+			}
+			else {
+				if (Worldspace)
+					Graphics2D.DrawTexture(new(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
+				else
+					Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
+			}
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.PopMatrix();
 		}
@@ -331,22 +369,27 @@ public class WorldspaceRenderItem
 		var rtSize = GetTextSize();
 		ulong textHash = Text.Hash(invariant: false);
 		ulong fontHash = Font.Hash(invariant: false);
-		if (
-			(textRT.HasValue && textRT.Value.Texture.Width != rtSize.W && textRT.Value.Texture.Height != rtSize.H)
-			|| (textHash != lastTextHash || fontHash != lastFontHash)
-		) {
-			if (textRT.HasValue)
+		bool requiresRedraw = !textRT.HasValue || (textHash != lastTextHash || fontHash != lastFontHash);
+		bool requiresResize = !textRT.HasValue || (textRT.Value.Texture.Width < rtSize.W || textRT.Value.Texture.Height < rtSize.H);
+		if (requiresResize) {
+			if (textRT.HasValue) {
 				Graphics2D.DestroyRenderTarget(textRT.Value);
-			textRT = null;
+				textRT = null;
+			}
 		}
 
 		if (!textRT.HasValue) {
 			textRT = Graphics2D.CreateRenderTarget(rtSize.W, rtSize.H);
+			Raylib.SetTextureFilter(textRT!.Value.Texture, TextureFilter.Bilinear);
+		}
+
+		if (requiresRedraw) {
 			RenderTexture2D rt = textRT.Value;
 
 			int pad = RTPadding;
 			Graphics2D.BeginRenderTarget(rt);
-			Rlgl.ClearColor(55, 0, 0, 255);
+			Rlgl.ClearColor(255, 255, 255, 0);
+			Rlgl.ClearScreenBuffers();
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.DrawText(pad, pad, Text!, Font!, FontResolution);
 			Rlgl.DrawRenderBatchActive();
@@ -358,24 +401,29 @@ public class WorldspaceRenderItem
 
 		return textRT.Value;
 	}
-	void RenderStyledText(Vector2F position, Vector2F scale, float rotation, Color color, IShader? shader) {
+	void RenderStyledText(Vector2F position, Vector2F scale, float rotation, Color color, Color? borderColor, IShader? shader) {
 		float alpha = color.A / 255f;
-		var rtN = DetermineRenderTexture();
+		var rtN = textRT;
 		if (!rtN.HasValue) return;
 
 		var rt = rtN.Value;
 		var rtSize = GetTextSize();
-		var rtW = rtSize.W;
-		var rtH = rtSize.H;
+		var rtW = rt.Texture.Width;
+		var rtH = rt.Texture.Height;
 
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(position.x, -position.y, 0);
 		Rlgl.Rotatef(rotation, 0, 0, 1);
-		Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
+		if (Worldspace)
+			Rlgl.Scalef(scale.x / FontResolution, scale.y / FontResolution, 1);
+		else
+			Rlgl.Scalef(scale.x, scale.y, 1);
 
+		Color borderC = borderColor ?? color.Multiply(0.5f);
 		if (shader != null) {
 			shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
 			shader.SetUniform("uTextColor", new System.Numerics.Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
+			shader.SetUniform("uBorderColor", new System.Numerics.Vector3(borderC.R / 255f, borderC.G / 255f, borderC.B / 255f));
 			shader.SetUniform("uBorderSize", BorderSize);
 			shader.SetUniform("uDarkenAmount", DarkenAmount);
 			shader.SetUniform("uDesaturateAmount", DesaturateAmount);
@@ -386,9 +434,15 @@ public class WorldspaceRenderItem
 		else {
 			Graphics2D.SetDrawColor(color);
 		}
-
-		float drawX = -rtW / 2f;
-		float drawY = -rtH / 2f;
+		float drawX, drawY;
+		if (TopLeftAligned) {
+			drawX = 0;
+			drawY = 0;
+		}
+		else {
+			drawX = -rtW / 2f;
+			drawY = -rtH / 2f;
+		}
 		Graphics2D.SetTexture(rt);
 
 		Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM);
@@ -414,8 +468,14 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 {
 	StatisticsPanel? CurrentStatisticsPanel;
 
-	readonly List<WorldspaceRenderItem> BackgroundItems = [];
-	readonly List<WorldspaceRenderItem> ForegroundItems = [];
+	readonly List<TextImageRenderItem> BackgroundItems = [];
+	readonly List<TextImageRenderItem> ForegroundItems = [];
+
+	static Color ScoreColor => new(165, 254, 254);
+
+	readonly TextImageRenderItem ScoreNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", ScoreColor, null);
+	TextImageRenderItem ScoreLabel = null!;
+	readonly TextImageRenderItem ComboNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Luckiest Guy", new(165, 254, 254), null);
 
 	IShader? StyledTextShader;
 	IShader? UIAlphatestShader;
@@ -439,9 +499,18 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	ITexture? power_slider_white;
 	ITexture? Fever;
 	ITexture? bubble;
+	ITexture? score_English;
+
+	public void Dispose() {
+		foreach (var item in BackgroundItems) item.Dispose();
+		foreach (var item in ForegroundItems) item.Dispose();
+		ScoreNumber.Dispose();
+		ScoreLabel.Dispose();
+		ComboNumber.Dispose();
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static void CleanupList(List<WorldspaceRenderItem> list, double curtime) {
+	static void CleanupList(List<TextImageRenderItem> list, double curtime) {
 		for (int i = list.Count - 1; i >= 0; i--) {
 			var item = list[i];
 			if (item.IsOver(curtime)) {
@@ -478,6 +547,9 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
+		score_English = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
+		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
+
 		GoldGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldGreat")!);
 		GoldPerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldPerfect")!);
 		ScoreGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScoreGreat")!);
@@ -499,31 +571,38 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		Fever = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("Fever")!);
 		bubble = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("bubble")!);
 	}
+
+
 	public void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
+		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
 	public void CreateHealthText(float healthGiven, PathwaySide pathway) {
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
 	public void CreatePassText(double precision, PathwaySide pathway) {
 		var pos = scene.GetPathwayPosition(pathway);
 		pos.X -= 0.8f;
-		var text = new WorldspaceRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
+		var text = new TextImageRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
+		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
 	public void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : UITextAnimationFns.UpwardFadeout);
+		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
 	public void CreateScoreText(int scoreGiven, PathwaySide pathway) {
-		var text = new WorldspaceRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
@@ -544,7 +623,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		CurrentStatisticsPanel = null;
 	}
 
-	public void UpdateHit(){
+	public void UpdateHit() {
 		LastHitTime = Time;
 	}
 
@@ -563,7 +642,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	public void RenderUI() {
 		float width = EngineCore.Level.FrameState.WindowWidth;
 		float height = EngineCore.Level.FrameState.WindowHeight;
-		DrawHealthBar(width, height);
+		DrawUI(width, height);
 	}
 
 	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.Width, tex.Height);
@@ -612,77 +691,91 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetTexture(0);
 
-		if (stencilMask != null) { Stencils.End(); }
+		if (stencilMask != null) Stencils.End();
 	}
-	private void DrawHealthBar(float w, float h) {
-		if (BelowBase == null) return;
-		if (HpFeverBase == null) return;
-		if (hp_slider == null) return;
-		if (power_slider == null) return;
-		if (power_slider_white == null) return;
-
+	private void DrawUI(float w, float h) {
 		UIAlphatestShader?.Activate();
 
-		Rlgl.PushMatrix();
 		float resize = (h / 1080f);
+		// Draw the health/fever bars
+		{
+			Rlgl.PushMatrix();
 
-		Rlgl.Translatef(w / 2, h, 0);
-		Rlgl.Scalef(resize, resize, 1);
+			Rlgl.Translatef(w / 2, h, 0);
+			Rlgl.Scalef(resize, resize, 1);
 
-		Vector2F belowBaseSize = GetTextureSize(BelowBase);
-		Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
-		Vector2F hp_sliderSize = GetTextureSize(hp_slider);
-		Vector2F power_sliderSize = GetTextureSize(power_slider);
-		Vector2F power_slider_whiteSize = GetTextureSize(power_slider_white);
+			Vector2F belowBaseSize = GetTextureSize(BelowBase);
+			Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
+			Vector2F hp_sliderSize = GetTextureSize(hp_slider);
+			Vector2F power_sliderSize = GetTextureSize(power_slider);
+			Vector2F power_slider_whiteSize = GetTextureSize(power_slider_white);
 
-		Graphics2D.SetDrawColor(255, 255, 255, 255);
-		Graphics2D.SetTexture(BelowBase);
-		Graphics2D.DrawImage(new(0, -belowBaseSize.H), belowBaseSize);
-		Graphics2D.DrawImage(new(-belowBaseSize.W, -belowBaseSize.H), belowBaseSize, flipX: true);
+			Graphics2D.SetDrawColor(255, 255, 255, 255);
+			Graphics2D.SetTexture(BelowBase);
+			Graphics2D.DrawImage(new(0, -belowBaseSize.H), belowBaseSize);
+			Graphics2D.DrawImage(new(-belowBaseSize.W, -belowBaseSize.H), belowBaseSize, flipX: true);
 
-		Graphics2D.SetTexture(HpFeverBase);
-		Graphics2D.DrawImage(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
+			Graphics2D.SetTexture(HpFeverBase);
+			Graphics2D.DrawImage(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
 
-		float hpRatio = (float)(HP / MaxHP);
-		float feverRatio;
-		if (!InFever)
-			feverRatio = (float)(CurrentFever / MaxFever);
-		else
-			feverRatio = (float)(FeverRemainingTime / FeverTotalTime);
+			float hpRatio = (float)(HP / MaxHP);
+			float feverRatio;
+			if (!InFever)
+				feverRatio = (float)(CurrentFever / MaxFever);
+			else
+				feverRatio = (float)(FeverRemainingTime / FeverTotalTime);
 
-		Graphics2D.SetTexture(hp_slider);
-		Graphics2D.SetDrawColor(255, 53, 133);
-		Graphics2D.DrawImageHorizontalProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, horizontalProgress: hpRatio);
-		Graphics2D.SetDrawColor(255, 255, 255);
-		DrawSomeBubbles(hp_slider, hp_sliderSize, (float)hpRatio, 0, new(-56, -4), new(185, 43, 105));
+			Graphics2D.SetTexture(hp_slider);
+			Graphics2D.SetDrawColor(255, 53, 133);
+			Graphics2D.DrawImageHorizontalProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, horizontalProgress: hpRatio);
+			Graphics2D.SetDrawColor(255, 255, 255);
+			DrawSomeBubbles(hp_slider, hp_sliderSize, (float)hpRatio, 0, new(-56, -4), new(185, 43, 105));
 
-		Graphics2D.SetTexture(power_slider);
-		Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
-		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
+			Graphics2D.SetTexture(power_slider);
+			Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
+			DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
 
-		float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
-		if (feverActivated < 1) {
-			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InCirc(1 - feverActivated) * 255));
-			Graphics2D.SetTexture(power_slider_white);
-			Graphics2D.DrawImage(new(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
+			float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
+			if (feverActivated < 1) {
+				Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InQuart(1 - feverActivated) * 255));
+				Graphics2D.SetTexture(power_slider_white);
+				Graphics2D.DrawImage(new(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
+			}
+
+			Graphics2D.SetDrawColor(255, 255, 255, 255);
+			float fontSize = 32;
+			Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{HP}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
+			if (Fever != null) {
+				Graphics2D.SetTexture(Fever);
+				Graphics2D.DrawImage(new(300, -38f), new(Fever.Width, Fever.Height));
+			}
+			if (hp_icon != null) {
+				Graphics2D.SetTexture(hp_icon);
+				float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
+				float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
+
+				Vector2F sizeOfHeart = new(hp_icon.Width * size, hp_icon.Height * size);
+				Graphics2D.DrawImage(new(-328, -38f), sizeOfHeart, sizeOfHeart / 2);
+			}
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.PopMatrix();
 		}
 
-		Graphics2D.SetDrawColor(255, 255, 255, 255);
-		float fontSize = 32;
-		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{HP}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
-		if (Fever != null) {
-			Graphics2D.SetTexture(Fever);
-			Graphics2D.DrawImage(new(300, -38f), new(Fever.Width, Fever.Height));
-		}
-		if (hp_icon != null) {
-			Graphics2D.SetTexture(hp_icon);
-			float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
-			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
+		// Draw score
+		{
+			Rlgl.PushMatrix();
 
-			Graphics2D.DrawImage(new(-360, -64f), new(hp_icon.Width * size, hp_icon.Height * size));
+			Rlgl.Translatef(0, 0, 0);
+			Rlgl.Scalef(resize, resize, 1);
+
+			ScoreNumber.Render(Time, StyledTextShader);
+			ScoreLabel.Render(Time, StyledTextShader);
+
+			Rlgl.PopMatrix();
 		}
-		Rlgl.DrawRenderBatchActive();
-		Rlgl.PopMatrix();
+
+		// ComboNumber.Render(Time, StyledTextShader);
+
 		UIAlphatestShader?.Deactivate();
 	}
 
@@ -690,6 +783,22 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		CleanupTextLists(Time);
 		foreach (var text in BackgroundItems) text.DetermineRenderTexture();
 		foreach (var text in ForegroundItems) text.DetermineRenderTexture();
+
+		ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
+		ScoreLabel.DesaturateAmount = ScoreNumber.DesaturateAmount = 0;
+		ScoreLabel.DarkenAmount = ScoreNumber.DarkenAmount = 0.3f;
+		ScoreLabel.SplitY = ScoreNumber.SplitY = 0;
+		ScoreNumber.BorderSize = 4;
+		ComboNumber.BorderSize = 4;
+
+		ScoreNumber.StartPosition = new(100, -16);
+		ScoreLabel.StartPosition = new(100, -96);
+		ScoreNumber.borderColor = new(173, 173, 255);
+
+		ScoreNumber.StartScale = new(1f);
+		ScoreNumber.StartScale = new(0.9f);
+		ScoreNumber.DetermineRenderTexture();
+		ComboNumber.DetermineRenderTexture();
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
@@ -699,6 +808,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		InMultiHit = true;
 		MultiHits = 0;
 	}
+
+	double LastComboUpdateTime = -2000000;
 
 	public void StartWarning() {
 		Warning = true;
@@ -710,6 +821,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	public void UpdateCombo(int currentCombo) {
 		Combo = currentCombo;
+		LastComboUpdateTime = Time;
+		ComboNumber.Text = $"{Combo}";
 	}
 
 	public void UpdateFeverProgress(double fever, double maxFever) {
@@ -742,6 +855,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	public void UpdateScore(double score) {
 		Score = score;
+		ScoreNumber.Text = $"{Math.Round(score)}";
 	}
 
 	public void Reset() {
@@ -749,5 +863,6 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		ForegroundItems.Clear();
 		EnterFeverTime = -2000000;
 		LastHitTime = -2000000;
+		LastComboUpdateTime = -2000000;
 	}
 }
