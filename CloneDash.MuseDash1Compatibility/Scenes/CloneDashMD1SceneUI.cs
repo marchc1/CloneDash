@@ -983,11 +983,13 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	void ForceDeactivateCombo1() {
 		animations_1.ClearAllAnimation();
 		animations_1.SetAnimation(0, "end");
+		if(animations_1.IsAnimationQueued())
 		animations_1.AddDeltaTime(animations_1.Channels[0].QueuedEntries.Peek().Animation.Duration);
 	}
 	void ForceDeactivateCombo2() {
 		animations_2.ClearAllAnimation();
 		animations_2.SetAnimation(0, "end");
+		if(animations_2.IsAnimationQueued())
 		animations_2.AddDeltaTime(animations_2.Channels[0].QueuedEntries.Peek().Animation.Duration);
 	}
 	public bool ShouldRenderCombo1() => animations_1.IsPlayingAnimation();
