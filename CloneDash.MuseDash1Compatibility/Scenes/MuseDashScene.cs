@@ -296,7 +296,8 @@ public record class MuseDash1SceneInfo
 												.WithSounds(new MuseDash1SceneSounds {
 													Begin = "sfx_readygo_gc",
 													Ghost = "sfx_ghost_gc"
-												});
+												})
+												.WithUI((scene, game) => new MD1SceneUIGrooveCoaster(scene, game));
 	public static readonly MuseDash1SceneInfo Gensokyo = new MuseDash1SceneInfo(8, "Gensokyo");
 	public static readonly MuseDash1SceneInfo GameGraveyard = new MuseDash1SceneInfo(9, "Game Graveyard");
 	public static readonly MuseDash1SceneInfo Museland = new MuseDash1SceneInfo(10, "Museland", "scene_{0:00}_miku");
@@ -306,9 +307,9 @@ public record class MuseDash1SceneInfo
 	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
 												.MarkUnusable();
 
-	public UIFactoryFn UIFactory = scene => new CloneDashMD1SceneUI(scene);
+	public UIFactoryFn UIFactory = (scene, game) => new MD1SceneUI(scene, game);
 }
-public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene);
+public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, IGame game);
 public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 {
 	public readonly MuseDash1SceneInfo SceneInfo;
@@ -1134,5 +1135,5 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	}
 
-	public IMuseDash1SceneUI CreateUI() => SceneInfo.UIFactory(this);
+	public IMuseDash1SceneUI CreateUI() => SceneInfo.UIFactory(this, Game);
 }

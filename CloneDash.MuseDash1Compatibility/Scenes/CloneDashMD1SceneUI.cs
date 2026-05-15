@@ -472,7 +472,7 @@ public enum ComboGrade
 	High = 30
 }
 
-public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
+public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
 {
 	StatisticsPanel? CurrentStatisticsPanel;
 
@@ -1088,12 +1088,12 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IM
 	}
 }
 
-public class CloneDashMD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : CloneDashMD1SceneUI(scene, game)
+public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
 {
 
 }
 
-public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : CloneDashMD1SceneUI(scene, game)
+public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
 {
 
 }
