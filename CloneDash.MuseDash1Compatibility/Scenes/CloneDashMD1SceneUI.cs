@@ -664,12 +664,16 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
+	public void OpenFailure() {
+
+	}
+
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats){
 		var panel = EngineCore.Level.UI.Add(new StatisticsPanel(game, stats));
 		return panel;
 	}
 
-	public void CloseVictory() {
+	void CloseVictory() {
 		CurrentStatisticsPanel?.Remove();
 		CurrentStatisticsPanel = null;
 	}
@@ -926,6 +930,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
+	public bool ShowingFailureScreen() => false; // todo
 
 
 	public void StartMultiHitText() {
@@ -1082,6 +1087,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Combo = 0;
 		FeverRemainingTime = 0;
 		FeverTotalTime = 0;
+		CloseVictory();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();

@@ -13,11 +13,9 @@ namespace CloneDash.Game;
 
 public class Pathway : LogicalEntity
 {
-
-
-	public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopClicked > 0, Level.As<MuseDash1Game>().InputState.BottomClicked > 0);
-	public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopHeld, Level.As<MuseDash1Game>().InputState.BottomHeld);
-	public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().InputState.TopHeldCount, Level.As<MuseDash1Game>().InputState.BottomHeldCount);
+	public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopClicked > 0, Level.As<MuseDash1Game>().GetInputState().BottomClicked > 0);
+	public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopHeld, Level.As<MuseDash1Game>().GetInputState().BottomHeld);
+	public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopHeldCount, Level.As<MuseDash1Game>().GetInputState().BottomHeldCount);
 
 	/// <summary>
 	/// The half of the screen the pathway resides on.

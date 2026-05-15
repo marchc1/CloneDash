@@ -11,7 +11,8 @@ using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Engine;
 using Nucleus.Models.Runtime;
-
+using Nucleus.Util;
+using System.Collections.Frozen;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 
@@ -57,6 +58,25 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 }
 
+public struct MuseDash1CharacterQuirks
+{
+	public bool Autoplay;
+
+	static MuseDash1CharacterQuirks(){
+		AddQuirks("character/musedash1/char_1_sleepy", new() { Autoplay = true });
+	}
+
+	static readonly Dictionary<ulong, MuseDash1CharacterQuirks> lookup = [];
+	public static readonly MuseDash1CharacterQuirks Default = new() {};
+
+	public static MuseDash1CharacterQuirks GetQuirks(ReadOnlySpan<char> characterName)
+		=> lookup.TryGetValue(characterName.Hash(), out MuseDash1CharacterQuirks quirks) ? quirks : Default;
+
+	public static void AddQuirks(ReadOnlySpan<char> name, MuseDash1CharacterQuirks quirks) {
+		lookup[name.Hash()] = quirks;
+	}
+}
+
 public class MuseDash1CharacterRetriever : ICharacterProvider
 {
 	int ICharacterProvider.Priority => 0;
@@ -87,6 +107,8 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
+	public readonly MuseDash1CharacterQuirks Quirks = MuseDash1CharacterQuirks.GetQuirks(name);
+
 	public ReadOnlySpan<char> GetUUID() => name;
 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
@@ -142,7 +164,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CharacterName, x => x.CharacterName);
 
 	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
-	
+
 	public ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
 		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Description, x => x.Description);
 	public ReadOnlySpan<char> GetAuthor(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
@@ -365,8 +387,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);
 	public ICharacterFailureInstance CreateFailure() => new MuseDashCharacterFailureInstance(this);
 
-	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance{
-		switch(game.GetGamemode().GetUUID()){
+	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance {
+		switch (game.GetGamemode().GetUUID()) {
 			case "gamemode/musedash1/standard":
 				return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
 		}

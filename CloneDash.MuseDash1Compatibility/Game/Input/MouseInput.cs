@@ -26,7 +26,7 @@ namespace CloneDash.Game.Input
 			Pause = InputSettings.GetButtonCodesOfAction(InputAction.PauseGame).ToArray();
 		}
 
-		public void Poll(ref FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
+		public void Poll(FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
 			bool pollForTop = actionFilter == null || actionFilter == InputAction.AirAttack;
 			bool pollForBottom = actionFilter == null || actionFilter == InputAction.GroundAttack;
 			bool pollForFever = actionFilter == null || actionFilter == InputAction.FeverStart;

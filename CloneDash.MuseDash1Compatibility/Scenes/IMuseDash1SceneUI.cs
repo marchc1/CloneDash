@@ -9,8 +9,9 @@ public interface IMuseDash1SceneUI : IDisposable
 	void Initialize();
 	void Think(double dt);
 	void OpenVictory(StatisticsData stats);
-	void CloseVictory();
+	void OpenFailure();
 	bool ShowingVictoryScreen();
+	bool ShowingFailureScreen();
 	void PreRenderWorldspace();
 	void PostRenderWorldspace();
 	void RenderUI();

@@ -11,6 +11,8 @@ namespace CloneDash.Common.Gamemodes.MuseDash.V1;
 /// </summary>
 public interface IMuseDash1CharacterIndividual
 {
+	double GetTimeToAnimationEnd();
+	double GetAnimationDuration();
 	void PlayAnimation(CharacterAnimationType type);
 	void SetPos(Vector2F vector2F);
 	void SetScale(Vector2F value);
@@ -28,4 +30,5 @@ public interface IMuseDash1CharacterInstance : ICharacterInGameInstance
 	bool IsInAir();
 	void Think();
 	void Reset();
+	double GetJumpDuration();
 }

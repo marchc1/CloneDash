@@ -116,6 +116,7 @@ namespace CloneDash.Game
 
 		private void UIBar_DragUpdate() {
 			var game = Level.As<MuseDash1Game>();
+			if (game.IsDead()) return;
 			// if (!game.AutoPlayer.Enabled) return;
 
 			dragSeconds = uiSeconds;
@@ -123,6 +124,7 @@ namespace CloneDash.Game
 
 		private void UIBar_DragEnd() {
 			var game = Level.As<MuseDash1Game>();
+			if (game.IsDead()) return;
 			// if (!game.AutoPlayer.Enabled) return;
 
 			if (dragSeconds != null)

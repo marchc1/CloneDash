@@ -9,7 +9,6 @@ using System.Numerics;
 
 namespace CloneDash.Characters;
 
-
 public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, bool isSecondary) : IMuseDash1CharacterIndividual
 {
 	public readonly MuseDash1CharacterInstance instance = instance;
@@ -23,6 +22,28 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, b
 
 	public void SetPos(Vector2F pos) => Player.Position = pos;
 	public void SetScale(Vector2F scale) => Player.Scale = scale;
+	public double GetAnimationDuration() {
+		var anims = Player.Animations;
+		if (!anims.IsPlayingAnimation())
+			return 0;
+
+		var entry = anims.Channels[0].CurrentEntry;
+		if (entry == null)
+			return 0;
+
+		return entry.Animation.Duration;
+	}
+	public double GetTimeToAnimationEnd() {
+		var anims = Player.Animations;
+		if (!anims.IsPlayingAnimation())
+			return 0;
+
+		var entry = anims.Channels[0].CurrentEntry;
+		if (entry == null)
+			return 0;
+
+		return entry.Animation.Duration - anims.Channels[0].Time;
+	}
 }
 
 public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
@@ -68,7 +89,7 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	public bool IsInAir() => Player.PlayerController.Animation.Channels[0].CurrentEntry?.Animation?.Name?.Contains("double") ?? false;
 	private double lastHologramAnimationTime = -20000;
 
-	public void Think(){
+	public void Think() {
 		if (HologramPlayer.Player.PlayingAnimation || HologramPlayer.Player.AnimationQueued) {
 			HologramPlayer.Player.Visible = true;
 			HologramPlayer.Player.SetShaderUniform("time", NMath.Ease.InQuint((float)(game.Conductor.Time - lastHologramAnimationTime) * 3));
@@ -78,13 +99,17 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		}
 	}
 
-	public void Reset(){
+	public void Reset() {
 		HologramPlayer.Player.Visible = false;
 		HologramPlayer.Player.Animations.ClearAllAnimation();
 	}
 
+	public double GetJumpDuration() {
+		return 0.5;
+	}
+
 	internal void NotifyAnimation(MuseDash1CharacterIndividual museDash1CharacterIndividual, bool isSecondary, CharacterAnimationType type) {
-		if(isSecondary)
+		if (isSecondary)
 			lastHologramAnimationTime = game.Conductor.Time;
 	}
 }

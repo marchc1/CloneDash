@@ -111,7 +111,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private static void clonedash_openmdlevel_execute(ConCommand cmd, in TokenizedCommand args) {
 		var md_level = args.Arg(1);
-		if (md_level == null) {
+		if (md_level.IsEmpty) {
 			Logs.Warn("Provide a name.");
 			return;
 		}
@@ -183,10 +183,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI = null;
 	}
 	public bool IsSeeking { get; private set; } = false;
-	public void SeekTo(double time) {
-		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
-		IsSeeking = true;
 
+	/// <summary>
+	/// Resets the entire game state and variables.
+	/// </summary>
+	public virtual void Reset() {
 		ExitMashState();
 		ResetScreenspaceEffects();
 
@@ -201,12 +202,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.UpdateCombo(0);
 		SceneUI?.UpdateHP(MaxHealth, MaxHealth);
 		SceneUI?.UpdateFeverProgress(0, 0);
-		Character?.Reset();
 
-		if (time < 0.06f)
-			audiosystem.RestartSound(Music);
-		else
-			audiosystem.SetSoundPlayhead(Music, time);
+		Character.Reset();
 
 		SetScene(FirstScene);
 
@@ -225,7 +222,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Health = (float)Character.GetDefaultHP();
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
-		LastFeverIncreaseTime = -2000;
 		lastNoteHit = false;
 		Score = 0;
 		Fever = 0;
@@ -233,9 +229,23 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		AutoPlayer.Reset();
 		__whenjump = -2000000000000d;
 		__whenHjump = -2000000000000d;
+		DeathTime = -2000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
 		lastIFrameGivenTime = -10000d;
+		Dead = false;
+	}
+
+	public void SeekTo(double time) {
+		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
+		IsSeeking = true;
+
+		Reset();
+
+		if (time < 0.06f)
+			audiosystem.RestartSound(Music);
+		else
+			audiosystem.SetSoundPlayhead(Music, time);
 
 		if (time > 0) {
 			foreach (var ev in Events) {
@@ -415,29 +425,38 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	// Player input system
-	public InputState InputState { get; private set; }
+	InputState InputState;
+	public ref readonly InputState GetInputState() => ref InputState;
 	public List<ICloneDashInputSystem> InputReceivers { get; } = [];
 
-	public AutoPlayer AutoPlayer { get; private set; }
+	public AutoPlayer AutoPlayer { get; private set; } = null!;
 	/// <summary>
 	/// Timing system.
 	/// </summary>
-	public Conductor Conductor { get; private set; }
+	public Conductor Conductor { get; private set; } = null!;
 	public AudioPlaybackHandle Music;
 	public IMuseDash1CharacterInstance Character { get; set; }
 	// public ModelEntity Player { get; set; }
 	// public ModelEntity HologramPlayer { get; set; }
 	// public MD1_SpineActionController PlayerController { get; set; }
 	// public MD1_SpineActionController HologramPlayerController { get; set; }
-	public Boss Boss { get; set; }
-	public Pathway TopPathway { get; set; }
-	public Pathway BottomPathway { get; set; }
+	public Boss Boss { get; set; } = null!;
+	public Pathway TopPathway { get; set; } = null!;
+	public Pathway BottomPathway { get; set; } = null!;
 
 	/// <summary>
 	/// Is the game currently paused
 	/// </summary>
 	public double UnpauseTime { get; private set; } = 0;
 	public double DeltaUnpauseTime => Realtime - UnpauseTime;
+
+	public bool SetPauseGuarded(bool paused) {
+		if (IsDead())
+			return false;
+
+		Paused = paused;
+		return true;
+	}
 
 	// WIP pausing
 	// return false to not spawn the pause menu
@@ -447,14 +466,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (Conductor.Time < 0)
 			return false;
 
-		audiosystem.PauseSound(in Music);
-		Paused = true;
-		UnpauseTime = 0;
-
-		return true;
+		if (SetPauseGuarded(true)) {
+			audiosystem.PauseSound(in Music);
+			UnpauseTime = 0;
+			return true;
+		}
+		return false;
 	}
 	private void startUnpause() {
-		activeScene.PlaySound(SceneSound.Unpause, 0);
+		if (HasActiveScene(out var scene))
+			scene.PlaySound(SceneSound.Unpause, 0);
 		UnpauseTime = Realtime;
 		Timers.Simple(3, () => {
 			fullUnpause();
@@ -462,17 +483,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 	private void fullUnpause() {
 		audiosystem.ResumeSound(in Music);
-		Paused = false;
+		SetPauseGuarded(false);
 		UnpauseTime = 0;
 	}
 
 	public void ForcePause() {
 		audiosystem.PauseSound(in Music);
-		Paused = true;
+		SetPauseGuarded(true);
 	}
 	public void ForceUnpause() {
 		audiosystem.ResumeSound(in Music);
-		Paused = false;
+		SetPauseGuarded(false);
 	}
 
 	int attackP = 0;
@@ -480,7 +501,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private bool __deferringAsync = false;
 
-	public StatisticsData Stats;
+	public StatisticsData Stats = null!;
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
 		switch (type) {
@@ -593,7 +614,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
-				Character = charData.CreateInGame<IMuseDash1CharacterInstance>(this);
+				Character = charData.CreateInGame<IMuseDash1CharacterInstance>(this)!;
 				if (Character == null)
 					throw new Exception("The character isn't supported for Muse Dash 1");
 
@@ -634,6 +655,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				sceneChanges.Add(new(this, 0));
 				SetScene(sceneToActivate);
 				FirstScene = sceneToActivate;
+				// The Scene UI never changes, it always inherits the original starting scene it seems
 				SceneUI = FirstScene?.CreateUI();
 
 				// var feverFX = FeverMod.GetFeverData();
@@ -654,17 +676,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Health = MaxHealth;
 
 			Interlude.Spin(submessage: "Initializing input...");
-			using (StaticSequentialProfiler.StartStackFrame("Build Inputs")) {
-				// build the input system
-				var inputInterface = typeof(ICloneDashInputSystem);
-				var inputs = AppDomain.CurrentDomain.GetAssemblies()
-					.SelectMany(x => x.GetTypes())
-					.Where(x => inputInterface.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract)
-					.Select(x => Activator.CreateInstance(x)).ToList();
-
-				foreach (object input in inputs)
-					InputReceivers.Add((ICloneDashInputSystem)input);
-			}
+			using (StaticSequentialProfiler.StartStackFrame("Build Input Systems"))
+				InputReceivers.AddRange(ICloneDashInputSystem.InstantiateAllInputSystems());
 
 			Interlude.Spin(submessage: "Initializing your character...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
@@ -825,7 +838,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private SecondOrderSystem? sos_yoff;
 
-	InputState inputState = new();
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
@@ -836,124 +848,128 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return;
 		}
 
+		if (IsDead() && ShowDeathTrigger()) {
+			return;
+		}
+
 		if (ShouldExitFever && InFever)
 			ExitFever();
 
-		inputState.Reset();
-		if (AutoPlayer.Enabled) {
-			AutoPlayer.Play(ref inputState);
-			foreach (ICloneDashInputSystem playerInput in InputReceivers)
-				playerInput.Poll(ref frameState, ref inputState, InputAction.PauseGame);
-		}
-
-		else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
-			foreach (ICloneDashInputSystem playerInput in InputReceivers)
-				playerInput.Poll(ref frameState, ref inputState);
-		}
-
-		InputState = inputState;
-
-		if (InMashState) {
-			UpdateMashTextEffect();
-			if (CheckMashHit())
-				MashingEntity.Hit(PathwaySide.Bottom, 0);
-		}
-
-		if (inputState.PauseButton) {
-			if (Music.IsValid() && audiosystem.IsPlaybackPaused(Music)) {
-				startUnpause();
-				if (IValidatable.IsValid(PauseWindow))
-					PauseWindow.Remove();
+		InputState.Reset();
+		if (!IsDead()) {
+			if (AutoPlayer.Enabled) {
+				AutoPlayer.Play(ref InputState);
+				foreach (ICloneDashInputSystem playerInput in InputReceivers)
+					playerInput.Poll(frameState, ref InputState, InputAction.PauseGame);
 			}
-			else {
-				if (startPause()) {
-					PauseWindow = this.UI.Add<Panel>();
-					PauseWindow.Size = new(300, 400);
-					PauseWindow.Center();
 
-					var flex = PauseWindow.Add<FlexPanel>();
-					flex.Dock = Dock.Fill;
-					flex.Direction = Directional180.Vertical;
-					flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-					flex.DockPadding = RectangleF.TLRB(4);
+			else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
+				foreach (ICloneDashInputSystem playerInput in InputReceivers)
+					playerInput.Poll(frameState, ref InputState);
+			}
 
-					var play = flex.Add<Button>();
-					play.BorderSize = 0;
-					play.Text = "Return to Game";
-					play.TextSize = 24;
-					play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
-					play.ImageOrientation = ImageOrientation.Fit;
-					play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+			if (InMashState) {
+				UpdateMashTextEffect();
+				if (CheckMashHit())
+					MashingEntity.Hit(PathwaySide.Bottom, 0);
+			}
+
+			if (InputState.PauseButton) {
+				if (Music.IsValid() && audiosystem.IsPlaybackPaused(Music)) {
+					startUnpause();
+					if (IValidatable.IsValid(PauseWindow))
 						PauseWindow.Remove();
-						startUnpause();
-					};
-					play.PaintOverride += Button_PaintOverride;
-
-					var restart = flex.Add<Button>();
-					restart.BorderSize = 0;
-					restart.Text = "Restart Level";
-					restart.TextSize = 24;
-					restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
-					restart.ImageOrientation = ImageOrientation.Fit;
-					restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
-						// 
-						// if (profilegameload.GetBool())
-						// 	StaticSequentialProfiler.Start();
-						// 
-						// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
-
-						// Maybe seeking is stable enough now to justify this though?
-						SeekTo(0);
-						PauseWindow.Remove();
-						fullUnpause();
-					};
-					restart.PaintOverride += Button_PaintOverride;
-
-					var settings = flex.Add<Button>();
-					settings.BorderSize = 0;
-					settings.Text = "Open Preferences...";
-					settings.TextSize = 24;
-					settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
-					settings.ImageOrientation = ImageOrientation.Fit;
-					settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						var panel = UI.Add<Panel>();
-						panel.DrawPanelBackground = false;
-						panel.Anchor = Anchor.Center;
-						panel.Origin = Anchor.Center;
-						panel.DynamicallySized = true;
-						panel.Size = new(0.9f);
-
-						var titlebar = panel.Add<Titlebar>();
-						titlebar.Dock = Dock.Top;
-						titlebar.MinimizeButton.Visible = false;
-						titlebar.MaximizeButton.Visible = false;
-						titlebar.CloseButton.MouseReleaseEvent += (_, _, _) => {
-							panel.Remove();
-						};
-						titlebar.Title = "Settings";
-
-						var settings = panel.Add<SettingsEditor>();
-						settings.Dock = Dock.Fill;
-						settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
-
-						panel.MakePopup();
-					};
-					settings.PaintOverride += Button_PaintOverride;
-
-					var back2menu = flex.Add<Button>();
-					back2menu.BorderSize = 0;
-					back2menu.Text = "Exit to Menu";
-					back2menu.TextSize = 24;
-					back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
-					back2menu.ImageOrientation = ImageOrientation.Fit;
-					back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-						LevelTransitions.LoadMainMenu();
-					};
-					back2menu.PaintOverride += Button_PaintOverride;
 				}
+				else {
+					if (startPause()) {
+						PauseWindow = this.UI.Add<Panel>();
+						PauseWindow.Size = new(300, 400);
+						PauseWindow.Center();
+
+						var flex = PauseWindow.Add<FlexPanel>();
+						flex.Dock = Dock.Fill;
+						flex.Direction = Directional180.Vertical;
+						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+						flex.DockPadding = RectangleF.TLRB(4);
+
+						var play = flex.Add<Button>();
+						play.BorderSize = 0;
+						play.Text = "Return to Game";
+						play.TextSize = 24;
+						play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
+						play.ImageOrientation = ImageOrientation.Fit;
+						play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+							PauseWindow.Remove();
+							startUnpause();
+						};
+						play.PaintOverride += Button_PaintOverride;
+
+						var restart = flex.Add<Button>();
+						restart.BorderSize = 0;
+						restart.Text = "Restart Level";
+						restart.TextSize = 24;
+						restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
+						restart.ImageOrientation = ImageOrientation.Fit;
+						restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+							// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
+							// 
+							// if (profilegameload.GetBool())
+							// 	StaticSequentialProfiler.Start();
+							// 
+							// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
+
+							// Maybe seeking is stable enough now to justify this though?
+							SeekTo(0);
+							PauseWindow.Remove();
+							fullUnpause();
+						};
+						restart.PaintOverride += Button_PaintOverride;
+
+						var settings = flex.Add<Button>();
+						settings.BorderSize = 0;
+						settings.Text = "Open Preferences...";
+						settings.TextSize = 24;
+						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
+						settings.ImageOrientation = ImageOrientation.Fit;
+						settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+							var panel = UI.Add<Panel>();
+							panel.DrawPanelBackground = false;
+							panel.Anchor = Anchor.Center;
+							panel.Origin = Anchor.Center;
+							panel.DynamicallySized = true;
+							panel.Size = new(0.9f);
+
+							var titlebar = panel.Add<Titlebar>();
+							titlebar.Dock = Dock.Top;
+							titlebar.MinimizeButton.Visible = false;
+							titlebar.MaximizeButton.Visible = false;
+							titlebar.CloseButton.MouseReleaseEvent += (_, _, _) => {
+								panel.Remove();
+							};
+							titlebar.Title = "Settings";
+
+							var settings = panel.Add<SettingsEditor>();
+							settings.Dock = Dock.Fill;
+							settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
+
+							panel.MakePopup();
+						};
+						settings.PaintOverride += Button_PaintOverride;
+
+						var back2menu = flex.Add<Button>();
+						back2menu.BorderSize = 0;
+						back2menu.Text = "Exit to Menu";
+						back2menu.TextSize = 24;
+						back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
+						back2menu.ImageOrientation = ImageOrientation.Fit;
+						back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+							LevelTransitions.LoadMainMenu();
+						};
+						back2menu.PaintOverride += Button_PaintOverride;
+					}
+				}
+				return;
 			}
-			return;
 		}
 
 		float? yoff = null;
@@ -1603,6 +1619,29 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public float Health { get; private set; }
 
+	bool Dead;
+	double DeathTime = -2000000;
+	public bool IsDead() => Dead;
+
+	void TriggerDeath() {
+		if (IsDead()) return;
+		if (Health <= 0) {
+			Dead = true;
+			DeathTime = Curtime;
+			Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+		}
+	}
+
+	bool ShowDeathTrigger() {
+		if ((Curtime - DeathTime) > 5) {
+			if (SceneUI != null && !SceneUI.ShowingFailureScreen())
+				SceneUI.OpenFailure();
+				// always return true if curtime - deathtime > 5
+			return true;
+		}
+		return false;
+	}
+
 	/// <summary>
 	/// Maximum health the player can have, the player will have this much health on spawn<br></br>
 	/// Default: 250
@@ -1690,13 +1729,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Is the player in the air right now?
 	/// </summary>
-	public bool InAir => Conductor.Time - __whenjump < __jumpmax;
+	public bool InAir => Conductor.Time - __whenjump < Character.GetJumpDuration();
 
 	public double AirTime => (Conductor.Time - __whenjump);
-	public double TimeToAnimationEnds => __jumpAnimationStops - (Conductor.Time - __whenjump);
+	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - __whenjump);
 
 	public double Hologram_AirTime => (Conductor.Time - __whenHjump);
-	public double Hologram_TimeToAnimationEnds => __jumpAnimationHStops - (Conductor.Time - __whenHjump);
+	public double Hologram_TimeToAnimationEnds => Character.GetSecondary().GetAnimationDuration() - (Conductor.Time - __whenHjump);
 
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
@@ -1705,9 +1744,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public bool CanJump => !InAir;
 
-	private double __jumpmax = 0.5d;
-	private double __jumpAnimationStops = 0.5d;
-	private double __jumpAnimationHStops = 0.5d;
 	private double __whenjump = -2000000000000d;
 	private double __whenHjump = -2000000000000d;
 
@@ -1722,9 +1758,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="damage"></param>
 	public void Damage(DashEnemy? entity, float damage) {
 		if (!InIFrame) {
-			Health -= damage;
+			Health = Math.Clamp(Health - damage, 0, MaxHealth);
 			SetIFrameTime();
-
+			if (Health <= 0)
+				TriggerDeath();
 			if (InAir)
 				PlayCharacterAnimation(CharacterAnimationType.JumpHurt);
 			else
@@ -1734,7 +1771,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ResetCombo();
 		SceneUI?.UpdateFullCombo(false);
 	}
-	public double LastFeverIncreaseTime { get; private set; } = -2000;
 	/// <summary>
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 	/// </summary>
@@ -1743,7 +1779,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (InFever) return;
 
 		Fever = Math.Clamp(Fever + fever, 0, MaxFever);
-		LastFeverIncreaseTime = Conductor.Time;
 		if (Fever >= MaxFever)
 			EnterFever();
 	}

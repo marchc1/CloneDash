@@ -14,11 +14,11 @@
 		/// <summary>
 		/// Is the top key held?
 		/// </summary>
-		public bool TopHeld => TopHeldCount > 0;
+		public readonly bool TopHeld => TopHeldCount > 0;
 		/// <summary>
 		/// Is the bottom key held?
 		/// </summary>
-		public bool BottomHeld => BottomHeldCount > 0;
+		public readonly bool BottomHeld => BottomHeldCount > 0;
 
 		/// <summary>
 		/// Is the top key held?
