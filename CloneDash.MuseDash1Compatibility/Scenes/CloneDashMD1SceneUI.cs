@@ -13,6 +13,7 @@ using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
+using Nucleus.Models.Runtime;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -440,8 +441,8 @@ public class TextImageRenderItem
 			drawY = 0;
 		}
 		else {
-			drawX = -rtW / 2f;
-			drawY = -rtH / 2f;
+			drawX = -rtSize.x / 2f;
+			drawY = -rtSize.y / 2f;
 		}
 		Graphics2D.SetTexture(rt);
 
@@ -464,6 +465,13 @@ public class TextImageRenderItem
 	}
 }
 
+public enum ComboGrade
+{
+	NotApplicable = 0,
+	Low = 5,
+	High = 30
+}
+
 public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1SceneUI
 {
 	StatisticsPanel? CurrentStatisticsPanel;
@@ -475,7 +483,12 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 	readonly TextImageRenderItem ScoreNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", ScoreColor, null);
 	TextImageRenderItem ScoreLabel = null!;
-	readonly TextImageRenderItem ComboNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Luckiest Guy", new(165, 254, 254), null);
+	readonly TextImageRenderItem ComboNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", new(165, 254, 254), null);
+
+	static Color ComboLowColor => new(154, 233, 254);
+	static Color ComboLowBorderColor => new(61, 139, 224);
+	static Color ComboHighColor => new(255, 225, 41);
+	static Color ComboHighBorderColor => new(180, 49, 79);
 
 	IShader? StyledTextShader;
 	IShader? UIAlphatestShader;
@@ -500,6 +513,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	ITexture? Fever;
 	ITexture? bubble;
 	ITexture? score_English;
+	ModelData? fx_combo_1;
+	ModelData? fx_combo_2;
 
 	public void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
@@ -538,10 +553,13 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	double Score = 0;
 	bool Warning;
 	bool Seeking;
+	ComboGrade ComboGrade;
+	double ComboGradeUpdateTime = -200000;
 
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
 
+	ITexture? LoadTextureByName(ReadOnlySpan<char> name) => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
@@ -550,26 +568,28 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		score_English = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
 		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
 
-		GoldGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldGreat")!);
-		GoldPerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("GoldPerfect")!);
-		ScoreGreat = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScoreGreat")!);
-		ScorePerfect = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePerfect")!);
-		ScorePass = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("ScorePass")!);
+		GoldGreat = LoadTextureByName("GoldGreat");
+		GoldPerfect = LoadTextureByName("GoldPerfect");
+		ScoreGreat = LoadTextureByName("ScoreGreat");
+		ScorePerfect = LoadTextureByName("ScorePerfect");
+		ScorePass = LoadTextureByName("ScorePass");
+		MultiHitTip = LoadTextureByName("MultiHitTip");
+		MultiHitTipDialog = LoadTextureByName("MultiHitTipDialog");
+		HitsBase = LoadTextureByName("HitsBase");
+		BelowBase = LoadTextureByName("BelowBase");
+		hp_icon = LoadTextureByName("hp_icon");
+		hp_icon_mistake = LoadTextureByName("hp_icon_mistake");
+		hp_slider = LoadTextureByName("hp_slider");
+		hp_slider_base = LoadTextureByName("hp_slider_base");
+		HpFeverBase = LoadTextureByName("HpFeverBase");
+		slider_light = LoadTextureByName("slider_light");
+		power_slider = LoadTextureByName("power_slider");
+		power_slider_white = LoadTextureByName("power_slider_white");
+		Fever = LoadTextureByName("Fever");
+		bubble = LoadTextureByName("bubble");
 
-		MultiHitTip = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("MultiHitTip")!);
-		MultiHitTipDialog = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("MultiHitTipDialog")!);
-		HitsBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("HitsBase")!);
-		BelowBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("BelowBase")!);
-		hp_icon = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon")!);
-		hp_icon_mistake = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_icon_mistake")!);
-		hp_slider = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_slider")!);
-		hp_slider_base = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("hp_slider_base")!);
-		HpFeverBase = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("HpFeverBase")!);
-		slider_light = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("slider_light")!);
-		power_slider = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider")!);
-		power_slider_white = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("power_slider_white")!);
-		Fever = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("Fever")!);
-		bubble = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("bubble")!);
+		combo1model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_1_SkeletonData")!)?.Instantiate();
+		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
 	}
 
 
@@ -774,15 +794,56 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 			Rlgl.PopMatrix();
 		}
 
-		// ComboNumber.Render(Time, StyledTextShader);
+		// Draw combo
+		if(ComboGrade != ComboGrade.NotApplicable)
+		{
+			Rlgl.PushMatrix();
 
+			Rlgl.Translatef(w / 2, 0, 0);
+			Rlgl.Scalef(resize, resize, 1);
+
+			renderOneCombo(combo1model, animations_1);
+			renderOneCombo(combo2model, animations_2);
+
+			switch(ComboGrade){
+				case ComboGrade.Low:
+					ComboNumber.borderColor = ComboLowBorderColor;
+					ComboNumber.StartColor = ComboLowColor;
+					break;
+				case ComboGrade.High:
+					ComboNumber.borderColor = ComboHighBorderColor;
+					ComboNumber.StartColor = ComboHighColor;
+					break;
+			}
+
+			ComboNumber.SplitY = 1;
+			ComboNumber.StartPosition = new(0, -180);
+			float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
+			float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
+			ComboNumber.Scale = new(size);
+			ComboNumber.Render(Time, StyledTextShader);
+
+			Rlgl.PopMatrix();
+		}
 		UIAlphatestShader?.Deactivate();
 	}
-
+	void renderOneCombo(ModelInstance? model, AnimationHandler anims){
+		if (model == null) return;
+		model.Scale = new(24);
+		anims.Apply(model);
+		model.Render();
+	}
+	ModelInstance? combo1model;
+	ModelInstance? combo2model;
+	AnimationHandler animations_1 = new();
+	AnimationHandler animations_2 = new();
 	public void Think(double dt) {
 		CleanupTextLists(Time);
 		foreach (var text in BackgroundItems) text.DetermineRenderTexture();
 		foreach (var text in ForegroundItems) text.DetermineRenderTexture();
+
+		animations_1.AddDeltaTime(dt);
+		animations_2.AddDeltaTime(dt);
 
 		ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
 		ScoreLabel.DesaturateAmount = ScoreNumber.DesaturateAmount = 0;
@@ -793,7 +854,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 		ScoreNumber.StartPosition = new(100, -16);
 		ScoreLabel.StartPosition = new(100, -96);
-		ScoreNumber.borderColor = new(173, 173, 255);
+		ScoreNumber.borderColor = new Color(173, 173, 255) * new Color(200, 255);
 
 		ScoreNumber.StartScale = new(1f);
 		ScoreNumber.StartScale = new(0.9f);
@@ -819,10 +880,61 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		AllPerfect = allPerfect;
 	}
 
+	public static ComboGrade GetGrade(int combo){
+		if (combo >= (int)ComboGrade.High)
+			return ComboGrade.High;
+		if (combo >= (int)ComboGrade.Low)
+			return ComboGrade.Low;
+		return ComboGrade.NotApplicable;
+	}
+
 	public void UpdateCombo(int currentCombo) {
+		if (Combo == currentCombo) return;
 		Combo = currentCombo;
-		LastComboUpdateTime = Time;
 		ComboNumber.Text = $"{Combo}";
+		LastComboUpdateTime = Time;
+		var currentComboGrade = GetGrade(currentCombo);
+		if (currentComboGrade != ComboGrade)
+			UpdateComboGrade(currentComboGrade);
+	}
+
+	private void UpdateComboGrade(ComboGrade currentComboGrade) {
+		var lastComboGrade = ComboGrade;
+		ComboGrade = currentComboGrade;
+
+		if(animations_1.GetModelData() == null) animations_1.SetModel(combo1model);
+		if(animations_2.GetModelData() == null) animations_2.SetModel(combo2model);
+
+		switch (currentComboGrade){
+			case ComboGrade.NotApplicable:
+				if (lastComboGrade == ComboGrade.Low) {
+					animations_1.ClearAllAnimation();
+					animations_1.SetAnimation(0, "end");
+				}
+
+				if (lastComboGrade == ComboGrade.High) {
+					animations_2.ClearAllAnimation();
+					animations_2.SetAnimation(0, "end");
+				}
+				break;
+			case ComboGrade.Low:
+				if (lastComboGrade == ComboGrade.NotApplicable) {
+					animations_1.ClearAllAnimation();
+					animations_1.SetAnimation(0, "start");
+					animations_1.AddAnimation(0, "stand", true);
+				}
+				break;
+			case ComboGrade.High:
+				if (lastComboGrade == ComboGrade.Low) {
+					animations_2.ClearAllAnimation();
+					animations_2.SetAnimation(0, "start");
+					animations_2.AddAnimation(0, "stand", true);
+
+					animations_1.ClearAllAnimation();
+					animations_1.SetAnimation(0, "end");
+				}
+				break;
+		}
 	}
 
 	public void UpdateFeverProgress(double fever, double maxFever) {
@@ -864,5 +976,10 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		EnterFeverTime = -2000000;
 		LastHitTime = -2000000;
 		LastComboUpdateTime = -2000000;
+
+		Combo = 0;
+		ComboGrade = 0;
+		FeverRemainingTime = 0;
+		FeverTotalTime = 0;
 	}
 }
