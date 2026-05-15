@@ -9,7 +9,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Score : DashBonusEntity
 	{
-		public Score() : base(EntityType.Score) {
+		public Score() : base(MuseDash1EntityType.Score) {
 			Interactivity = EntityInteractivity.SamePath;
 			DeathAddsToCombo = false;
 			DoesDamagePlayer = true;

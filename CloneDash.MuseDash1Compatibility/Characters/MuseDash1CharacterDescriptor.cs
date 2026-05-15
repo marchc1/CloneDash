@@ -58,25 +58,6 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 }
 
-public struct MuseDash1CharacterQuirks
-{
-	public bool Autoplay;
-
-	static MuseDash1CharacterQuirks(){
-		AddQuirks("character/musedash1/char_1_sleepy", new() { Autoplay = true });
-	}
-
-	static readonly Dictionary<ulong, MuseDash1CharacterQuirks> lookup = [];
-	public static readonly MuseDash1CharacterQuirks Default = new() {};
-
-	public static MuseDash1CharacterQuirks GetQuirks(ReadOnlySpan<char> characterName)
-		=> lookup.TryGetValue(characterName.Hash(), out MuseDash1CharacterQuirks quirks) ? quirks : Default;
-
-	public static void AddQuirks(ReadOnlySpan<char> name, MuseDash1CharacterQuirks quirks) {
-		lookup[name.Hash()] = quirks;
-	}
-}
-
 public class MuseDash1CharacterRetriever : ICharacterProvider
 {
 	int ICharacterProvider.Priority => 0;
@@ -107,7 +88,7 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
-	public readonly MuseDash1CharacterQuirks Quirks = MuseDash1CharacterQuirks.GetQuirks(name);
+	public readonly MuseDash1GameplayQuirks Quirks = MuseDash1GameplayQuirks.GetQuirks(name);
 
 	public ReadOnlySpan<char> GetUUID() => name;
 
@@ -197,6 +178,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 			voiceline
 		);
 	}
+
+	public ref readonly MuseDash1GameplayQuirks GetQuirks() => ref Quirks;
 
 	// I hate this!
 	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
@@ -390,6 +373,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance {
 		switch (game.GetGamemode().GetUUID()) {
 			case "gamemode/musedash1/standard":
+				return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
+			case "gamemode/musedash1/touhou":
 				return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
 		}
 

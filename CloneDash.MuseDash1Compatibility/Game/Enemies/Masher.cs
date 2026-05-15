@@ -17,7 +17,7 @@ namespace CloneDash.Game.Entities
 		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_HITS_PER_SECOND_OF_LENGTH), 1, int.MaxValue);
 		private double lastHitTime = 0;
 
-		public Masher() : base(EntityType.Masher) {
+		public Masher() : base(MuseDash1EntityType.Masher) {
 			Warns = true;
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = true;

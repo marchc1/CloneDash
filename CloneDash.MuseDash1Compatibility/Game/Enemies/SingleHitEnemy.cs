@@ -9,7 +9,7 @@ namespace CloneDash.Game.Entities
 {
 	public class SingleHitEnemy : DashEnemy
 	{
-		public SingleHitEnemy() : base(EntityType.Single) {
+		public SingleHitEnemy() : base(MuseDash1EntityType.Single) {
 			Interactivity = EntityInteractivity.Hit;
 		}
 

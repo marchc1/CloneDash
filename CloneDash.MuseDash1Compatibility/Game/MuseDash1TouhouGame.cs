@@ -32,7 +32,7 @@ public partial class MuseDash1TouhouGame(DashGameParams gameParameters) : MuseDa
 		if (enemy == null) return null;
 
 		// flip it for touhou mode
-		if (enemy.Interactivity == EntityInteractivity.Hit && enemy.Type == EntityType.Single)
+		if (enemy.Interactivity == EntityInteractivity.Hit && enemy.Type == MuseDash1EntityType.Single)
 			enemy.Interactivity = EntityInteractivity.Avoid;
 
 		return enemy;

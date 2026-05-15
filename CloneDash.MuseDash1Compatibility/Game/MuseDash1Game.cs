@@ -200,7 +200,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.SetSeeking(true);
 		SceneUI?.UpdateScore(0);
 		SceneUI?.UpdateCombo(0);
-		SceneUI?.UpdateHP(MaxHealth, MaxHealth);
+		SceneUI?.UpdateHP(Quirks.MaxHP, Quirks.MaxHP);
 		SceneUI?.UpdateFeverProgress(0, 0);
 
 		Character.Reset();
@@ -219,7 +219,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ResetPathwaySpeeds();
 
 		Combo = 0;
-		Health = (float)Character.GetDefaultHP();
+		Health = Quirks.MaxHP;
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
 		lastNoteHit = false;
@@ -424,6 +424,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastMasherAttemptedHit = double.NaN;
 	}
 
+	MuseDash1GameplayQuirks Quirks = new();
 	// Player input system
 	InputState InputState;
 	public ref readonly InputState GetInputState() => ref InputState;
@@ -614,6 +615,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
+				Quirks = charData.GetQuirks();
 				Character = charData.CreateInGame<IMuseDash1CharacterInstance>(this)!;
 				if (Character == null)
 					throw new Exception("The character isn't supported for Muse Dash 1");
@@ -662,6 +664,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				// FeverFX = feverFX;
 			}
 
+			// Before loading the scene, load quirks, since some quirks might affect entity data
+			// TODO: Elfin quirk mods
+			MuseDash1GameplayQuirks.ApplyMods(ref Quirks);
+
 			Interlude.Spin(submessage: "Initializing the scene...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				foreach (var scene in GetAllScenes())
@@ -671,9 +677,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Interlude.Spin();
 
-			MaxHealth = (float)Character.GetDefaultHP();
 			Render3D = false;
-			Health = MaxHealth;
+			Health = Quirks.MaxHP;
 
 			Interlude.Spin(submessage: "Initializing input...");
 			using (StaticSequentialProfiler.StartStackFrame("Build Input Systems"))
@@ -1021,12 +1026,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			if (InFever)
 				sceneUI.UpdateInFever(FeverTimeLeft, FeverTime);
 			else
-				sceneUI.UpdateFeverProgress(Fever, MaxFever);
+				sceneUI.UpdateFeverProgress(Fever, Quirks.MaxFever);
 
 			if (MashingEntity != null)
 				sceneUI.UpdateMultiHitText(MashingEntity.Hits);
 
-			sceneUI.UpdateHP(Health, MaxHealth);
+			sceneUI.UpdateHP(Health, Quirks.MaxHP);
 		}
 
 		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
@@ -1088,8 +1093,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
 							entity.Hit(pathCurrentCharacter, 0);
 							PlaySceneSound(entity.Type switch {
-								EntityType.Heart => SceneSound.GotHeart,
-								EntityType.Score => SceneSound.GotScore,
+								MuseDash1EntityType.Heart => SceneSound.GotHeart,
+								MuseDash1EntityType.Score => SceneSound.GotScore,
 								_ => SceneSound.GotScore
 							}, 1);
 						}
@@ -1477,14 +1482,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisibleEnemies();
 
 		// Hold notes
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == EntityType.SustainBeam, visibleEnemies);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == MuseDash1EntityType.SustainBeam, visibleEnemies);
 
 		// Boss
 		Boss.Render();
 
 		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
+		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisibleEnemies().Length);
 
@@ -1561,7 +1566,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						}
 
 						// Mashers don't create perfects, they'll start the mash hit UI
-						if (pollResult.HitEntity.Type != EntityType.Masher) {
+						if (pollResult.HitEntity.Type != MuseDash1EntityType.Masher) {
 							if (pollResult.IsPerfect)
 								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
 							else {
@@ -1572,7 +1577,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						}
 
 						PlaySceneSound(pollResult.HitEntity.Type switch {
-							EntityType.Single => pollResult.HitEntity.Variant switch {
+							MuseDash1EntityType.Single => pollResult.HitEntity.Variant switch {
 								EntityVariant.Small => SceneSound.HitSmall,
 								EntityVariant.Medium1 => SceneSound.HitMedium1,
 								EntityVariant.Medium2 => SceneSound.HitMedium2,
@@ -1585,11 +1590,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 								EntityVariant.BossHitSlow => SceneSound.HitBossSlow,
 								_ => SceneSound.HitMedium1
 							},
-							EntityType.Hammer => SceneSound.HitHammer,
-							EntityType.Double => SceneSound.HitGemini,
-							EntityType.SustainBeam => SceneSound.StartedHold,
-							EntityType.Raider => SceneSound.HitRaider,
-							EntityType.Ghost => SceneSound.HitGhost,
+							MuseDash1EntityType.Hammer => SceneSound.HitHammer,
+							MuseDash1EntityType.Double => SceneSound.HitGemini,
+							MuseDash1EntityType.SustainBeam => SceneSound.StartedHold,
+							MuseDash1EntityType.Raider => SceneSound.HitRaider,
+							MuseDash1EntityType.Ghost => SceneSound.HitGhost,
 							// I think HP/score get handled on their own
 							_ => SceneSound.HitMedium1
 						}, 1);
@@ -1641,22 +1646,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return false;
 	}
 
-	/// <summary>
-	/// Maximum health the player can have, the player will have this much health on spawn<br></br>
-	/// Default: 250
-	/// </summary>
-	public float MaxHealth { get; set; } = 250;
-
-	/// <summary>
-	/// How much health does the player lose every second?<br></br>
-	/// Default: 0
-	/// </summary>
-	public float HealthDrain { get; set; } = 0;
-
-	/// <summary>
-	/// How long an invincibility frame lasts in seconds.
-	/// </summary>
-	public double IFrameLength { get; set; } = 1.25;
 	private double lastIFrameGivenTime = -200000;
 
 	/// <summary>
@@ -1666,7 +1655,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Currently in an invincibility frame?
 	/// </summary>
-	public bool InIFrame => TimeSinceLastIFrame < IFrameLength;
+	public bool InIFrame => TimeSinceLastIFrame < Quirks.IFrameLength;
 	/// <summary>
 	/// Gives the player an invincibility frame. No checks are performed here
 	/// </summary>
@@ -1679,12 +1668,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Default: 0
 	/// </summary>
 	public float Fever { get; private set; } = 0;
-
-	/// <summary>
-	/// How much fever needs to be obtained until entering fever state<br></br>
-	/// Default: 120
-	/// </summary>
-	public float MaxFever { get; set; } = 120;
 
 	/// <summary>
 	/// How much fever, in seconds, does a full fever bar provide?<br></br>
@@ -1747,7 +1730,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private double __whenHjump = -2000000000000d;
 
 	public void Heal(float health) {
-		Health = Math.Clamp(Health + health, 0, MaxHealth);
+		Health = Math.Clamp(Health + health, 0, Quirks.MaxHP);
 	}
 
 	/// <summary>
@@ -1757,7 +1740,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="damage"></param>
 	public void Damage(DashEnemy? entity, float damage) {
 		if (!InIFrame) {
-			Health = Math.Clamp(Health - damage, 0, MaxHealth);
+			Health = Math.Clamp(Health - damage, 0, Quirks.MaxHP);
 			SetIFrameTime();
 			if (Health <= 0)
 				TriggerDeath();
@@ -1777,8 +1760,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void AddFever(float fever) {
 		if (InFever) return;
 
-		Fever = Math.Clamp(Fever + fever, 0, MaxFever);
-		if (Fever >= MaxFever)
+		Fever = Math.Clamp(Fever + fever, 0, Quirks.MaxFever);
+		if (Fever >= Quirks.MaxFever)
 			EnterFever();
 	}
 	/// <summary>

@@ -5,7 +5,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Gear : DashEnemy
 	{
-		public Gear() : base(EntityType.Gear) {
+		public Gear() : base(MuseDash1EntityType.Gear) {
 			Interactivity = EntityInteractivity.Avoid;
 			DoesDamagePlayer = true;
 		}

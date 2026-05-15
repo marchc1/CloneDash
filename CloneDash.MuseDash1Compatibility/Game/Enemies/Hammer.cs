@@ -5,7 +5,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Hammer : DashEnemy
 	{
-		public Hammer() : base(EntityType.Hammer) {
+		public Hammer() : base(MuseDash1EntityType.Hammer) {
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = true;
 		}

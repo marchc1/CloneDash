@@ -20,7 +20,7 @@ public class BossMasher(MuseDash1Game game, int type) : DashEvent(game)
 
 		Debug.Assert(time != 0);
 		Game.LoadEntity(new() {
-			Type = EntityType.Masher,
+			Type = MuseDash1EntityType.Masher,
 			Pathway = PathwaySide.Both,
 			Variant = type == 1 ? EntityVariant.BossMasher : EntityVariant.BossMasherEnd,
 			ShowTime = Time - time,

@@ -911,7 +911,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		MD1_SpineActionControllerData? anim = null;
 
 		switch (enemy.Type) {
-			case EntityType.Single: {
+			case MuseDash1EntityType.Single: {
 					anim = enemy.Variant switch {
 						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss1Anims, RoadBoss1Anims).GetSpeed(enemy.Speed),
 						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss2Anims, RoadBoss2Anims).GetSpeed(enemy.Speed),
@@ -929,7 +929,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 					};
 					break;
 				}
-			case EntityType.Gear: {
+			case MuseDash1EntityType.Gear: {
 					anim = enemy.Variant switch {
 						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearA_Anims, RoadBossGearA_Anims).GetSpeed(enemy.Speed),
 						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearB_Anims, RoadBossGearB_Anims).GetSpeed(enemy.Speed),
@@ -937,21 +937,21 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 					};
 					break;
 				}
-			case EntityType.Masher: {
+			case MuseDash1EntityType.Masher: {
 					anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection);
 					break;
 				}
-			case EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
-			case EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHeartAnims, RoadHeartAnims).GetSpeed(enemy.Speed); break;
-			case EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirScoreAnims, RoadScoreAnims).GetSpeed(enemy.Speed); break;
-			case EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed); break;
-			case EntityType.Hammer:
+			case MuseDash1EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHeartAnims, RoadHeartAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirScoreAnims, RoadScoreAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Hammer:
 				if (enemy.Flipped)
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				else
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				break;
-			case EntityType.Raider:
+			case MuseDash1EntityType.Raider:
 				if (enemy.Flipped)
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				else
@@ -1011,20 +1011,20 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		string request = type == HitAnimationType.Great ? ActionKeys.COMEOUT2 : ActionKeys.COMEOUT3;
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
-			case EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case EntityType.Masher: anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case EntityType.Hammer:
+			case MuseDash1EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Masher: anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Hammer:
 				if (enemy.Flipped)
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				else
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;
-			case EntityType.Heart:
-			case EntityType.Score:
+			case MuseDash1EntityType.Heart:
+			case MuseDash1EntityType.Score:
 				return "out"; // todo
-			case EntityType.Raider:
+			case MuseDash1EntityType.Raider:
 				if (enemy.Flipped)
 					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				else
@@ -1040,8 +1040,8 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
 		switch (enemy.Type) {
-			case EntityType.Boss: return BossModel;
-			case EntityType.Single:
+			case MuseDash1EntityType.Boss: return BossModel;
+			case MuseDash1EntityType.Single:
 				return enemy.Variant switch {
 					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBoss1Model : RoadBoss1Model,
 					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBoss2Model : RoadBoss2Model,
@@ -1053,19 +1053,19 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 					EntityVariant.Large2 => enemy.Pathway == PathwaySide.Top ? AirLarge2Model : RoadLarge2Model,
 					_ => throw new NotImplementedException()
 				};
-			case EntityType.Gear:
+			case MuseDash1EntityType.Gear:
 				return enemy.Variant switch {
 					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
 					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
 					_ => enemy.Pathway == PathwaySide.Top ? AirGearModel : RoadGearModel,
 				};
-			case EntityType.Double: return enemy.Pathway == PathwaySide.Top ? AirDoubleModel : RoadDoubleModel;
-			case EntityType.Ghost: return enemy.Pathway == PathwaySide.Top ? AirGhostModel : RoadGhostModel;
-			case EntityType.Hammer: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirHammerBModel : RoadHammerBModel) : (enemy.Pathway == PathwaySide.Top ? AirHammerModel : RoadHammerModel);
-			case EntityType.Masher: return MasherModel;
-			case EntityType.Raider: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirRaiderBModel : RoadRaiderBModel) : (enemy.Pathway == PathwaySide.Top ? AirRaiderModel : RoadRaiderModel);
-			case EntityType.Heart: return enemy.Pathway == PathwaySide.Top ? AirHeartModel : RoadHeartModel;
-			case EntityType.Score: return enemy.Pathway == PathwaySide.Top ? AirScoreModel : RoadScoreModel;
+			case MuseDash1EntityType.Double: return enemy.Pathway == PathwaySide.Top ? AirDoubleModel : RoadDoubleModel;
+			case MuseDash1EntityType.Ghost: return enemy.Pathway == PathwaySide.Top ? AirGhostModel : RoadGhostModel;
+			case MuseDash1EntityType.Hammer: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirHammerBModel : RoadHammerBModel) : (enemy.Pathway == PathwaySide.Top ? AirHammerModel : RoadHammerModel);
+			case MuseDash1EntityType.Masher: return MasherModel;
+			case MuseDash1EntityType.Raider: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirRaiderBModel : RoadRaiderBModel) : (enemy.Pathway == PathwaySide.Top ? AirRaiderModel : RoadRaiderModel);
+			case MuseDash1EntityType.Heart: return enemy.Pathway == PathwaySide.Top ? AirHeartModel : RoadHeartModel;
+			case MuseDash1EntityType.Score: return enemy.Pathway == PathwaySide.Top ? AirScoreModel : RoadScoreModel;
 			default: throw new NotImplementedException();
 		}
 	}

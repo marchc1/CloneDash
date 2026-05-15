@@ -6,7 +6,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Raider : DashEnemy
 	{
-		public Raider() : base(EntityType.Raider) {
+		public Raider() : base(MuseDash1EntityType.Raider) {
 			Interactivity = EntityInteractivity.Hit;
 		}
 

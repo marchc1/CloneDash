@@ -101,7 +101,7 @@ public class DashEnemy : Entity
 	/// <summary>
 	/// Type of the entity
 	/// </summary>
-	public EntityType Type { get; set; } = EntityType.Unknown;
+	public MuseDash1EntityType Type { get; set; } = MuseDash1EntityType.Unknown;
 
 	/// <summary>
 	/// Entity variant (usually not applicable). Mostly for determining models.
@@ -503,17 +503,17 @@ public class DashEnemy : Entity
 	}
 	public int SortIndex;
 
-	public static Dictionary<EntityType, Type> TypeConvert { get; } = new() {
-		{ EntityType.Single, typeof(SingleHitEnemy) },
-		{ EntityType.Double, typeof(DoubleHitEnemy) },
-		{ EntityType.Score, typeof(Score) },
-		{ EntityType.Hammer, typeof(Hammer) },
-		{ EntityType.Masher, typeof(Masher) },
-		{ EntityType.Gear, typeof(Gear) },
-		{ EntityType.Ghost, typeof(Ghost) },
-		{ EntityType.Raider, typeof(Raider) },
-		{ EntityType.Heart, typeof(Health) },
-		{ EntityType.SustainBeam, typeof(SustainBeam) },
+	public static Dictionary<MuseDash1EntityType, Type> TypeConvert { get; } = new() {
+		{ MuseDash1EntityType.Single, typeof(SingleHitEnemy) },
+		{ MuseDash1EntityType.Double, typeof(DoubleHitEnemy) },
+		{ MuseDash1EntityType.Score, typeof(Score) },
+		{ MuseDash1EntityType.Hammer, typeof(Hammer) },
+		{ MuseDash1EntityType.Masher, typeof(Masher) },
+		{ MuseDash1EntityType.Gear, typeof(Gear) },
+		{ MuseDash1EntityType.Ghost, typeof(Ghost) },
+		{ MuseDash1EntityType.Raider, typeof(Raider) },
+		{ MuseDash1EntityType.Heart, typeof(Health) },
+		{ MuseDash1EntityType.SustainBeam, typeof(SustainBeam) },
 	};
 
 	public virtual void OnReset() {
@@ -541,14 +541,14 @@ public class DashEnemy : Entity
 		SetupHitAnimations(visuals);
 	}
 
-	protected DashEnemy(EntityType type) {
+	protected DashEnemy(MuseDash1EntityType type) {
 		Type = type;
 		Scale = new(MuseDash1Game.GlobalScale);
 	}
 
 	public string? DebuggingInfo { get; internal set; }
 
-	public static bool TryCreateFromType(MuseDash1Game game, EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
+	public static bool TryCreateFromType(MuseDash1Game game, MuseDash1EntityType type, [NotNullWhen(true)] out DashEnemy? entity) {
 		if (!TypeConvert.TryGetValue(type, out var ctype)) {
 			entity = null;
 			return false;
@@ -556,7 +556,7 @@ public class DashEnemy : Entity
 		entity = CreateFromType(game, ctype);
 		return true;
 	}
-	public static DashEnemy CreateFromType(MuseDash1Game game, EntityType type) => CreateFromType(game, TypeConvert[type]);
+	public static DashEnemy CreateFromType(MuseDash1Game game, MuseDash1EntityType type) => CreateFromType(game, TypeConvert[type]);
 	public static DashEnemy CreateFromType(MuseDash1Game game, Type type) {
 		var enemy = game.Add((DashEnemy)Activator.CreateInstance(type)!)!;
 		enemy.SortIndex = game.EnemySortIndexCounter++;

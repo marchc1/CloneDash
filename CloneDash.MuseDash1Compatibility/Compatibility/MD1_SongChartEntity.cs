@@ -10,7 +10,7 @@ public class MD1_SongChartEntity
 	/// <summary>
 	/// Entity type
 	/// </summary>
-	public EntityType Type;
+	public MuseDash1EntityType Type;
 	/// <summary>
 	/// Entity pathway
 	/// </summary>

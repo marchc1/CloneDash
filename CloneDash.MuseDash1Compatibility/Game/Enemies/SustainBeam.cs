@@ -15,7 +15,7 @@ namespace CloneDash.Game.Entities
 {
 	public class SustainBeam : DashEnemy
 	{
-		public SustainBeam() : base(EntityType.SustainBeam) {
+		public SustainBeam() : base(MuseDash1EntityType.SustainBeam) {
 			Interactivity = EntityInteractivity.Sustain;
 			DoesDamagePlayer = true;
 		}

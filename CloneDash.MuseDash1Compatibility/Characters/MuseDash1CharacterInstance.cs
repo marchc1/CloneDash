@@ -103,7 +103,6 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	}
 
 	public ICharacterDescriptor GetCharacter() => descriptor;
-	public double GetDefaultHP() => defaultHP;
 	public IMuseDash1CharacterIndividual GetPrimary() => Player;
 	public IMuseDash1CharacterIndividual GetSecondary() => HologramPlayer;
 

@@ -7,7 +7,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Health : DashBonusEntity
 	{
-		public Health() : base(EntityType.Heart) {
+		public Health() : base(MuseDash1EntityType.Heart) {
 			Interactivity = EntityInteractivity.SamePath;
 			DeathAddsToCombo = false;
 			DoesDamagePlayer = true;

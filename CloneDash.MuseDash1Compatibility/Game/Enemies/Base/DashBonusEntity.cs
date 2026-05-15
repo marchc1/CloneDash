@@ -4,7 +4,7 @@ using Nucleus;
 
 namespace CloneDash.Game
 {
-	public class DashBonusEntity(EntityType type) : DashEnemy(type)
+	public class DashBonusEntity(MuseDash1EntityType type) : DashEnemy(type)
 	{
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {

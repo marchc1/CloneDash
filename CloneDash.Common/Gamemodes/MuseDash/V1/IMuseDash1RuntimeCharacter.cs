@@ -19,12 +19,12 @@ public interface IMuseDash1CharacterIndividual
 	bool IsInAir();
 }
 
+
 /// <summary>
 /// This is an instance of the character selected
 /// </summary>
 public interface IMuseDash1CharacterInstance : ICharacterInGameInstance
 {
-	double GetDefaultHP();
 	IMuseDash1CharacterIndividual GetPrimary();
 	IMuseDash1CharacterIndividual GetSecondary();
 	void Initialize();

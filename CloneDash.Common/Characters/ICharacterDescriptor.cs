@@ -56,4 +56,6 @@ public interface ICharacterDescriptor : IUniquelyIdentifiableObject
 	/// If the gamemode is not supported, this will return null!
 	/// </summary>
 	T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance;
+
+	ref readonly MuseDash1GameplayQuirks GetQuirks();
 }

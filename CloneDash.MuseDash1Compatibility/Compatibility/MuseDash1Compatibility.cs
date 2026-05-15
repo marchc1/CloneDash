@@ -374,7 +374,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 					if (s.isLongPressStart) {
 						MD1_SongChartEntity press = new MD1_SongChartEntity();
-						press.Type = EntityType.SustainBeam;
+						press.Type = MuseDash1EntityType.SustainBeam;
 						press.Pathway = pathwayType;
 						press.EnterDirection = EntityEnterDirection.RightSide;
 						press.HitTime = tick_hit;
@@ -511,44 +511,44 @@ namespace CloneDash.Compatibility.MuseDash
 						}
 					}
 					else {
-						EntityType entityType = ib.code switch {
+						MuseDash1EntityType entityType = ib.code switch {
 							IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown
 							or IBMSCode.Medium1Normal or IBMSCode.Medium2Normal or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Medium1Up or IBMSCode.Medium2Up
 							or IBMSCode.Large1 or IBMSCode.Large2
 							or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
-								=> EntityType.Single,
+								=> MuseDash1EntityType.Single,
 
-							IBMSCode.Gemini => EntityType.Double,
-							IBMSCode.Hammer or IBMSCode.HammerFlip => EntityType.Hammer,
-							IBMSCode.Mul => EntityType.Masher,
-							IBMSCode.BossBlock or IBMSCode.Block => EntityType.Gear,
-							IBMSCode.Ghost => EntityType.Ghost,
-							IBMSCode.Raider or IBMSCode.RaiderFlip => EntityType.Raider,
-							IBMSCode.Music => EntityType.Score,
-							IBMSCode.Hp => EntityType.Heart,
+							IBMSCode.Gemini => MuseDash1EntityType.Double,
+							IBMSCode.Hammer or IBMSCode.HammerFlip => MuseDash1EntityType.Hammer,
+							IBMSCode.Mul => MuseDash1EntityType.Masher,
+							IBMSCode.BossBlock or IBMSCode.Block => MuseDash1EntityType.Gear,
+							IBMSCode.Ghost => MuseDash1EntityType.Ghost,
+							IBMSCode.Raider or IBMSCode.RaiderFlip => MuseDash1EntityType.Raider,
+							IBMSCode.Music => MuseDash1EntityType.Score,
+							IBMSCode.Hp => MuseDash1EntityType.Heart,
 
-							IBMSCode.Touhou_MediumBullet => EntityType.Single,
-							IBMSCode.Touhou_MediumBulletUp => EntityType.Single,
-							IBMSCode.Touhou_MediumBulletDown => EntityType.Single,
-							IBMSCode.Touhou_MediumBulletLaneshift => EntityType.Single,
-							IBMSCode.Touhou_SmallBullet => EntityType.Single,
-							IBMSCode.Touhou_SmallBulletUp => EntityType.Single,
-							IBMSCode.Touhou_SmallBulletDown => EntityType.Single,
-							IBMSCode.Touhou_SmallBulletLaneshift => EntityType.Single,
-							IBMSCode.Touhou_LargeBullet => EntityType.Single,
-							IBMSCode.Touhou_LargeBulletUp => EntityType.Single,
-							IBMSCode.Touhou_LargeBulletDown => EntityType.Single,
-							IBMSCode.Touhou_LargeBulletLaneshift => EntityType.Single,
-							IBMSCode.Touhou_BossBullet1 => EntityType.Single,
-							IBMSCode.Touhou_BossBullet1Laneshift => EntityType.Single,
-							IBMSCode.Touhou_BossBullet2 => EntityType.Single,
-							IBMSCode.Touhou_BossBullet2Laneshift => EntityType.Single,
+							IBMSCode.Touhou_MediumBullet => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_MediumBulletUp => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_MediumBulletDown => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_MediumBulletLaneshift => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_SmallBullet => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_SmallBulletUp => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_SmallBulletDown => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_SmallBulletLaneshift => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_LargeBullet => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_LargeBulletUp => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_LargeBulletDown => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_LargeBulletLaneshift => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_BossBullet1 => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_BossBullet1Laneshift => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_BossBullet2 => MuseDash1EntityType.Single,
+							IBMSCode.Touhou_BossBullet2Laneshift => MuseDash1EntityType.Single,
 
-							_ => EntityType.Unknown
+							_ => MuseDash1EntityType.Unknown
 						};
 						var health = ib.code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
 
-						if (entityType != EntityType.Unknown) {
+						if (entityType != MuseDash1EntityType.Unknown) {
 							EntityVariant variant = ib.code switch {
 								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
 								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,

@@ -9,7 +9,7 @@ namespace CloneDash.Game.Entities;
 
 public class Boss : DashEnemy
 {
-	public Boss() : base(EntityType.Boss) {
+	public Boss() : base(MuseDash1EntityType.Boss) {
 		Interactivity = EntityInteractivity.Noninteractive;
 		Visible = false;
 	}

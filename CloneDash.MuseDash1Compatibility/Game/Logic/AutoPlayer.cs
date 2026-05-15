@@ -28,7 +28,7 @@ namespace CloneDash.Game.Logic
 		/// <param name="ent"></param>
 		public void MarkEntityAsPassed(DashEnemy ent) => Passed.Add(ent);
 		public void MarkSustainAsActive(DashEnemy ent) {
-			if (ent.Type == EntityType.SustainBeam)
+			if (ent.Type == MuseDash1EntityType.SustainBeam)
 				CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 		}
 
@@ -37,7 +37,7 @@ namespace CloneDash.Game.Logic
 		/// </summary>
 		/// <param name="ent"></param>
 		public void MarkSustainAsInactive(DashEnemy ent) {
-			if (ent.Type == EntityType.SustainBeam) {
+			if (ent.Type == MuseDash1EntityType.SustainBeam) {
 				bool popped = CurrentSustains[ent.Pathway].TryPop(out var beam);
 				Debug.Assert(popped && beam == (SustainBeam)ent);
 				beam?.Complete();
@@ -147,7 +147,7 @@ namespace CloneDash.Game.Logic
 									}
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
-									if (ent.Type == EntityType.SustainBeam)
+									if (ent.Type == MuseDash1EntityType.SustainBeam)
 										CurrentSustains[ent.Pathway].Push((SustainBeam)ent);
 
 									// Record the entity as passed

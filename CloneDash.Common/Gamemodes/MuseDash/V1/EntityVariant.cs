@@ -1,7 +1,7 @@
 ﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1;
 
 /// <summary>
-/// Only applicable to <see cref="EntityType.Single"/>.
+/// Only applicable to <see cref="MuseDash1EntityType.Single"/>.
 /// </summary>
 public enum EntityVariant
 {
