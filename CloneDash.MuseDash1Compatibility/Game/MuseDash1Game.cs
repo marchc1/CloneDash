@@ -2090,6 +2090,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private void PrepareShaders() {
 		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
+		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
+	}
+
+	private bool PrepareVignette(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uStrength", (float)value);
+		shader.SetUniform("uSoftness", 0.3f);
+
+		return true;
 	}
 
 	private bool PrepareChromaticAberration(IShader shader, ref ScreenspaceEffectState state) {
