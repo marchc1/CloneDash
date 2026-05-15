@@ -972,10 +972,10 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			case ComboGrade.NotApplicable:
 				switch (lastComboGrade) {
 					case ComboGrade.Low:
-						ActivateCombo1();
+						DeactivateCombo1();
 						break;
 					case ComboGrade.High:
-						ActivateCombo2();
+						DeactivateCombo2();
 						break;
 				}
 				break;
