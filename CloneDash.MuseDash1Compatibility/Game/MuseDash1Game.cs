@@ -805,16 +805,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
 	public Vector2F GetPathwayPosition(PathwaySide side) => HasActiveScene(out var scene) ? scene.GetPathwayPosition(side) : default;
 
-	public float GetPlayerY(double jumpRatio) {
-		if (Character.IsInAir())
-			jumpRatio = 0;
-
+	public float GetPlayerY(bool secondary) {
 		var height = EngineCore.GetWindowHeight();
 
-		var top = GetPathwayPosition(PathwaySide.Top);
 		var bot = GetPathwayPosition(PathwaySide.Bottom);
+		var character = secondary ? Character.GetSecondary() : Character.GetPrimary();
+		if (!character.IsInAir())
+			return bot.Y + -1f;
 
-		return (float)(NMath.Remap(jumpRatio, 0, 1, bot.Y, top.Y)) + -1f; // TODO: re-evaluate
+		var top = GetPathwayPosition(PathwaySide.Top);
+		float ratio = (float)NMath.Remap(character.GetTimeToAnimationEnd(), character.GetAnimationDuration(), 0, 0, 1, clampOutput: true);
+		return (float)NMath.Remap(NMath.Ease.InCirc(NMath.Ease.InExpo(ratio)), 0, 1, top.Y, bot.Y) + -1f; // TODO: re-evaluate
 	}
 
 
@@ -992,7 +993,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		else
 			sos_yoff = null;
 
-		var playerY = yoff ?? GetPlayerY(CharacterYRatio);
+		var playerY = yoff ?? GetPlayerY(false);
 
 		float conductorInTime = Conductor.PreStartTime <= 0 ? 1 : (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
@@ -1008,7 +1009,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Character.GetSecondary().SetPos(new Vector2F(
 			(leftPlayer - 1),
-			-GetPlayerY(HologramCharacterYRatio)
+			-GetPlayerY(true)
 		));
 		Character.GetSecondary().SetScale(new(PlayerScale));
 
@@ -1486,8 +1487,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisibleEnemies().Length);
-		AddDebugString("Player Y", CharacterYRatio);
-		AddDebugString("Hologram-Player Y", HologramCharacterYRatio);
 
 		Rlgl.DrawRenderBatchActive();
 	}
@@ -1729,7 +1728,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Is the player in the air right now?
 	/// </summary>
-	public bool InAir => Conductor.Time - __whenjump < Character.GetJumpDuration();
+	public bool InAir => (Conductor.Time - __whenjump) < Character.GetJumpDuration();
 
 	public double AirTime => (Conductor.Time - __whenjump);
 	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - __whenjump);
@@ -1867,8 +1866,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public event AttackEvent? OnAirAttack;
 	public event AttackEvent? OnGroundAttack;
 
-	public float CharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(TimeToAnimationEnds * 10), 0, 1);
-	public float HologramCharacterYRatio => (float)Math.Clamp(NMath.Ease.OutExpo(Hologram_TimeToAnimationEnds * 10), 0, 1);
 
 
 	// todo: confirm this is the right behavior

@@ -16,6 +16,7 @@ public interface IMuseDash1CharacterIndividual
 	void PlayAnimation(CharacterAnimationType type);
 	void SetPos(Vector2F vector2F);
 	void SetScale(Vector2F value);
+	bool IsInAir();
 }
 
 /// <summary>
@@ -27,7 +28,6 @@ public interface IMuseDash1CharacterInstance : ICharacterInGameInstance
 	IMuseDash1CharacterIndividual GetPrimary();
 	IMuseDash1CharacterIndividual GetSecondary();
 	void Initialize();
-	bool IsInAir();
 	void Think();
 	void Reset();
 	double GetJumpDuration();
