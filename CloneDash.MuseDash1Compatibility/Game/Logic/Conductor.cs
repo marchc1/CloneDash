@@ -238,7 +238,7 @@ namespace CloneDash.Game
 
 		public bool firstTick = true;
 		private double lastTime;
-		public override void Think(FrameState frameState) {
+		public override void PreThink(ref FrameState frameState) {
 			lastTime = Time;
 			var game = Level.As<MuseDash1Game>();
 			Level.AddDebugString("Conductor Time", Time);

@@ -439,11 +439,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public double UnpauseTime { get; private set; } = 0;
 	public double DeltaUnpauseTime => Realtime - UnpauseTime;
 
-	/// <summary>
-	/// How many ticks have passed, meant for debugging
-	/// </summary>
-	public int Ticks { get; private set; } = 0;
-
 	// WIP pausing
 	// return false to not spawn the pause menu
 	private bool startPause() {
@@ -831,8 +826,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private SecondOrderSystem? sos_yoff;
 
 	InputState inputState = new();
-	public override void PreThink(ref FrameState frameState) {
-		Ticks++;
+	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
 		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
