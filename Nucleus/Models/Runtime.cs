@@ -89,6 +89,9 @@ public static class Model4System
 	}
 
 	static uint activeTexture;
+	internal static void NotifyNewModelRender() {
+		activeTexture = 0;
+	}
 	internal static void CheckTextureUpdate(ITexture tex) {
 		var textureIdx = tex.GetTextureHandle();
 		if (textureIdx != activeTexture) {
@@ -289,6 +292,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 	public void Render(bool useDefaultShader = true) {
 		var offset = Graphics2D.Offset;
+		Model4System.NotifyNewModelRender();
 		Graphics2D.ResetDrawingOffset();
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.DisableBackfaceCulling();

@@ -794,8 +794,10 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 			Rlgl.PopMatrix();
 		}
 
+		UIAlphatestShader?.Deactivate();
+
 		// Draw combo
-		if(ComboGrade != ComboGrade.NotApplicable)
+		if (ComboGrade != ComboGrade.NotApplicable)
 		{
 			Rlgl.PushMatrix();
 
@@ -816,20 +818,23 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 					break;
 			}
 
+			Rlgl.DrawRenderBatchActive();
+
+			UIAlphatestShader?.Activate();
 			ComboNumber.SplitY = 1;
 			ComboNumber.StartPosition = new(0, -180);
 			float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
 			float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
 			ComboNumber.Scale = new(size);
 			ComboNumber.Render(Time, StyledTextShader);
+			UIAlphatestShader?.Deactivate();
 
 			Rlgl.PopMatrix();
 		}
-		UIAlphatestShader?.Deactivate();
 	}
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims){
 		if (model == null) return;
-		model.Scale = new(24);
+		model.Scale = new(1);
 		anims.Apply(model);
 		model.Render();
 	}
@@ -922,6 +927,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 					animations_1.ClearAllAnimation();
 					animations_1.SetAnimation(0, "start");
 					animations_1.AddAnimation(0, "stand", true);
+
+					combo1model?.SetToSetupPose();
 				}
 				break;
 			case ComboGrade.High:
@@ -932,6 +939,8 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 					animations_1.ClearAllAnimation();
 					animations_1.SetAnimation(0, "end");
+
+					combo2model?.SetToSetupPose();
 				}
 				break;
 		}
