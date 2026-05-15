@@ -1239,8 +1239,9 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				y = Curve(1).Last!.Value * GetSetup(bone).Y;
 			}
 			else {
-				x = Curve(0).DetermineValueAtTime(time) * GetSetup(bone).X;
-				y = Curve(1).DetermineValueAtTime(time) * GetSetup(bone).Y;
+				int index = Curve(0).DetermineIndexAtTime(time);
+				x = Curve(0).DetermineValueAtTime(time, index) * GetSetup(bone).X;
+				y = Curve(1).DetermineValueAtTime(time, index) * GetSetup(bone).Y;
 			}
 
 
@@ -1287,8 +1288,10 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				y = Curve(1).Last!.Value;
 			}
 			else {
-				x = Curve(0).DetermineValueAtTime(time);
-				y = Curve(1).DetermineValueAtTime(time);
+				int index = Curve(0).DetermineIndexAtTime(time);
+
+				x = Curve(0).DetermineValueAtTime(time, index);
+				y = Curve(1).DetermineValueAtTime(time, index);
 			}
 
 			switch (blend) {
@@ -1334,10 +1337,12 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 			a = Curve(3).Last?.Value ?? 1;
 		}
 		else {
-			r = Curve(0).DetermineValueAtTime(time);
-			g = Curve(1).DetermineValueAtTime(time);
-			b = Curve(2).DetermineValueAtTime(time);
-			a = Curve(3).DetermineValueAtTime(time);
+			int index = Curve(0).DetermineIndexAtTime(time);
+
+			r = Curve(0).DetermineValueAtTime(time, index);
+			g = Curve(1).DetermineValueAtTime(time, index);
+			b = Curve(2).DetermineValueAtTime(time, index);
+			a = Curve(3).DetermineValueAtTime(time, index);
 		}
 
 		if (mix != 1) {

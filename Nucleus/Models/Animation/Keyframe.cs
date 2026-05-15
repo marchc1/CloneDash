@@ -92,32 +92,14 @@ public class Keyframe<T> : IKeyframe
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static Vector2F CubicBezier(in Vector2F p0, in Vector2F p1, in Vector2F p2, in Vector2F p3, float t) {
-		float u = 1 - t;
-		return u * u * u * p0 +
-			   3 * u * u * t * p1 +
-			   3 * u * t * t * p2 +
-			   t * t * t * p3;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	public static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f, int maxIterations = 100) {
+	static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f) {
 		float tLow = 0f;
 		float tHigh = 1f;
-		float tMid = 0f;
 
-		Vector2F p0 = new(0);
-		Vector2F p1 = ic2;
-		Vector2F p2 = ic3;
-		Vector2F p3 = new(1);
-
-		for (int i = 0; i < maxIterations; i++) {
-			tMid = (tLow + tHigh) * 0.5f;
-			Vector2F point = CubicBezier(p0, p1, p2, p3, tMid);
-			float x = point.X;
-
-			if (Math.Abs(x - targetX) < epsilon)
-				return point.Y;
+		for (int i = 0; i < 17; i++) {
+			float tMid = (tLow + tHigh) * 0.5f;
+			float u = 1 - tMid;
+			float x = u * u * u * 0f + 3f * u * u * tMid * ic2.X + 3f * u * tMid * tMid * ic3.X + tMid * tMid * tMid * 1f;
 
 			if (x < targetX)
 				tLow = tMid;
@@ -125,8 +107,9 @@ public class Keyframe<T> : IKeyframe
 				tHigh = tMid;
 		}
 
-		// Final approximation if convergence not perfect
-		return CubicBezier(p0, p1, p2, p3, tMid).Y;
+		float t = (tLow + tHigh) * 0.5f;
+		float u2 = 1 - t;
+		return u2 * u2 * u2 * 0f + 3f * u2 * u2 * t * ic2.Y + 3f * u2 * t * t * ic3.Y + t * t * t * 1f;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(in KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
