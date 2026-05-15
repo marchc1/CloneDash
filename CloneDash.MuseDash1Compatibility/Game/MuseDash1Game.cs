@@ -2051,6 +2051,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ComplexRenderTexture read = renderTexture;
 		ComplexRenderTexture write = renderTexture2;
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
+		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
 
 		read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
 	}
@@ -2097,7 +2098,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)value);
+		shader.SetUniform("uStrength", (float)value * 3);
 		shader.SetUniform("uSoftness", 0.3f);
 
 		return true;
