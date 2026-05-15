@@ -13,7 +13,8 @@ public struct ChartSceneChange
 	public string? Value;
 }
 
-public class MD1_GamemodeData{
+public class MD1_GamemodeData
+{
 	public readonly List<MD1_SongChartEntity> Entities = [];
 	public readonly List<MD1_SongChartEvent> Events = [];
 	public readonly List<TempoChange> TempoChanges = [];
@@ -40,9 +41,12 @@ public class MD1_SongChart : ISongChart
 	}
 	public ISong GetSong() => Song;
 	public IGamemodeDescriptor GetGamemode() {
-		return GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
+		if (Difficulty == MuseDashDifficulty.Touhou)
+			return GamemodeMod.GetGamemode(MuseDash1TouhouGamemode.UUID)!;
+		else
+			return GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
 	}
-	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty)) 
+	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
 									?? throw new Exception("uninitialized gamemode data");
 
 	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {

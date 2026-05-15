@@ -355,6 +355,7 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 		var uuid = gamemodeDescriptor.GetUUID();
 		switch (uuid) {
 			case "gamemode/musedash1/standard":
+			case "gamemode/musedash1/touhou":
 				return true;
 		}
 		return false;
