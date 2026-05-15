@@ -956,10 +956,6 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		}
 	}
 
-	// remove these when not hot reloading
-	bool Combo1ForceDeactivated = true;
-	bool Combo2ForceDeactivated = true;
-
 	void ActivateCombo1() {
 		animations_1.ClearAllAnimation();
 		animations_1.SetAnimation(0, "start");
