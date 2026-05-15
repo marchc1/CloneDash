@@ -60,7 +60,7 @@ public static class Model4System
 		Span<T> items = list.AsSpan();
 		T? item = null;
 		for (int i = 0, c = items.Length; i < c; i++)
-			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+			if ((item = items[i]) != null && item.Name.Equals(name, StringComparison.InvariantCulture))
 				return item;
 
 		return null;
@@ -69,7 +69,7 @@ public static class Model4System
 	public static int SearchReturnIndex<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		for (int i = 0, c = items.Length; i < c; i++)
-			if (items[i].Name.Equals(name, StringComparison.InvariantCulture))
+			if (items[i] != null && items[i].Name.Equals(name, StringComparison.InvariantCulture))
 				return i;
 
 		return -1;
