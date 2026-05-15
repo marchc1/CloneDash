@@ -466,6 +466,7 @@ public class MD_ModelDetailWindow : Window
 	int SelectedChannel = 0;
 	bool LoopAnimation = true;
 	int SelectedAnimIndex = -1;
+	double PlaybackSpeed = 1.0;
 
 	bool ShowBones;
 	bool ShowWireframe;
@@ -620,6 +621,18 @@ public class MD_ModelDetailWindow : Window
 			Instance?.SetToSetupPose();
 			CenterCamera();
 		};
+
+		var speedSlider = tab.Panel.Add<NumSlider>();
+		speedSlider.Dock = Dock.Top;
+		speedSlider.Size = new Vector2F(240, 24);
+		speedSlider.Prefix = "Speed: ";
+		speedSlider.Suffix = "%";
+		speedSlider.TextSize = 11;
+		speedSlider.Digits = 0;
+		speedSlider.Value = 100f;
+		speedSlider.MinimumValue = 0;
+		speedSlider.MaximumValue = 100;
+		speedSlider.OnValueChanged += (_, _, v) => PlaybackSpeed = v / 100;
 
 		AnimList = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
 		AnimList.Dock = Dock.Fill;
@@ -781,7 +794,7 @@ public class MD_ModelDetailWindow : Window
 		base.OnThink(frameState);
 
 		if (Instance == null) return;
-		AnimHandler.AddDeltaTime(globals.CurTimeDelta);
+		AnimHandler.AddDeltaTime(globals.CurTimeDelta * PlaybackSpeed);
 
 		if (AnimHandler.IsPlayingAnimation()) {
 			var channel = AnimHandler.Channels[SelectedChannel];
