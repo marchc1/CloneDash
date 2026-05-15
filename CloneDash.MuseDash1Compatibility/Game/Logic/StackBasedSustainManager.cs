@@ -87,7 +87,7 @@ public class StackBasedSustainManager : ISustainManager
 			sustain.Complete();
 		}
 		// check if pathway being held
-		else if (!pathwayCheck.IsPressed()) {
+		else if (!pathwayCheck.IsPressed() && lvl.NeedsToHoldSustains()) {
 			sustain.Fail();
 		}
 		else {

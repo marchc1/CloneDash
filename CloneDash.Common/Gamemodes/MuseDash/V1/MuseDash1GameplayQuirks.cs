@@ -31,6 +31,7 @@ public struct MuseDash1GameplayQuirks()
 		public double Health;
 		public double MaxHealth;
 
+		public readonly bool IsEnemyCall() => EntityType != 0;
 		public readonly bool IsHealthFull() => Health >= MaxHealth;
 	}
 

@@ -30,12 +30,14 @@ public class MD1_GamemodeData
 public class MD1_SongChart : ISongChart
 {
 	public readonly MD1_Song Song;
+	public int RatingNumber;
 	public string? Rating;
 	public MuseDashDifficulty Difficulty;
 	public MD1_GamemodeData GamemodeData = null!;
 
 	public MD1_SongChart(MD1_Song song, int difficultyID) {
 		Song = song;
+		song.TryGetDifficultyInteger(difficultyID, out RatingNumber);
 		Rating = song.GetDifficultyString(difficultyID);
 		Difficulty = (MuseDashDifficulty)difficultyID;
 	}

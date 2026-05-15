@@ -89,14 +89,10 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 
 	private readonly MuseDash1CharacterIndividual Player;
 	private readonly MuseDash1CharacterIndividual HologramPlayer;
-	int defaultHP = 250;
 
 	public MuseDash1CharacterInstance(MuseDash1CharacterDescriptor descriptor, MuseDash1Game game) {
 		this.descriptor = descriptor;
 		this.game = game;
-
-		if (!int.TryParse(descriptor.ConfigData.DefaultHP, out defaultHP))
-			defaultHP = 250;
 
 		Player = new(this, game, false);
 		HologramPlayer = new(this, game, true);

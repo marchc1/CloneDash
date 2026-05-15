@@ -49,7 +49,7 @@ namespace CloneDash.Game.Entities
 			lastCheckTime = lvl.Conductor.Time;
 			lvl.Sustains.StartSustainBeam(this);
 			lvl.AddCombo();
-			lvl.AddFever(FeverGiven);
+			lvl.AddFever(FeverGiven, this);
 		}
 
 		protected override void OnMiss() {
@@ -197,7 +197,7 @@ namespace CloneDash.Game.Entities
 			RewardPlayer();
 
 			lvl.AddCombo();
-			lvl.AddFever(FeverGiven);
+			lvl.AddFever(FeverGiven, this);
 			lvl.Sustains.CompleteSustainBeam(this);
 			lvl.PlaySceneSound(SceneSound.StartedHold, 1);
 		}

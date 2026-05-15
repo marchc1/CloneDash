@@ -236,6 +236,31 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Dead = false;
 	}
 
+	/// <summary>
+	/// Produces a quirks snapshot for use with the current gameplay quirks
+	/// </summary>
+	protected MuseDash1GameplayQuirks.GameSnapshot ProduceSnapshot(DashEnemy? enemy = null, MuseDash1GameplayQuirks.Judgement judgement = 0) {
+		MuseDash1GameplayQuirks.GameSnapshot snapshot = new() {
+			Difficulty = gameParameters.Chart?.RatingNumber ?? 0,
+			CurrentCombo = Combo,
+			CurrentScore = Score,
+			InFever = InFever,
+			Health = Health,
+			MaxHealth = Quirks.MaxHP,
+			Judgement = judgement
+		};
+
+		if (enemy != null) {
+			snapshot = snapshot with {
+				EntityBlood = enemy.Blood ? 80 : 0,
+				EntityType = enemy.Type,
+				EntityWarning = enemy.Warns,
+			};
+		}
+
+		return snapshot;
+	}
+
 	public void SeekTo(double time) {
 		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
 		IsSeeking = true;
@@ -1640,7 +1665,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if ((Curtime - DeathTime) > 5) {
 			if (SceneUI != null && !SceneUI.ShowingFailureScreen())
 				SceneUI.OpenFailure();
-				// always return true if curtime - deathtime > 5
+			// always return true if curtime - deathtime > 5
 			return true;
 		}
 		return false;
@@ -1729,7 +1754,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private double __whenjump = -2000000000000d;
 	private double __whenHjump = -2000000000000d;
 
-	public void Heal(float health) {
+	public void Heal(float health, DashEnemy? responsible = null) {
 		Health = Math.Clamp(Health + health, 0, Quirks.MaxHP);
 	}
 
@@ -1738,7 +1763,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
-	public void Damage(DashEnemy? entity, float damage) {
+	public void Damage(float damage, DashEnemy? responsible) {
+		double damageD = (double)damage;
+		if (Quirks.DamageModifier != null) Quirks.DamageModifier.Invoke(ProduceSnapshot(responsible), ref damageD);
+		damage = (float)damageD;
+
 		if (!InIFrame) {
 			Health = Math.Clamp(Health - damage, 0, Quirks.MaxHP);
 			SetIFrameTime();
@@ -1757,8 +1786,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 	/// </summary>
 	/// <param name="fever"></param>
-	public void AddFever(float fever) {
+	public void AddFever(float fever, DashEnemy? responsible = null) {
 		if (InFever) return;
+
+		double feverD = (double)fever;
+		if (Quirks.FeverModifier != null) Quirks.FeverModifier.Invoke(ProduceSnapshot(responsible), ref feverD);
+		fever = (float)feverD;
 
 		Fever = Math.Clamp(Fever + fever, 0, Quirks.MaxFever);
 		if (Fever >= Quirks.MaxFever)
@@ -1786,7 +1819,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Adds 1 to the players combo.
 	/// </summary>
-	public void AddCombo() {
+	public void AddCombo(DashEnemy? responsible = null) {
 		Combo++;
 		__lastCombo = Conductor.Time;
 	}
@@ -1794,22 +1827,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Resets the players combo.
 	/// </summary>
-	public void ResetCombo() => Combo = 0;
+	public void ResetCombo(DashEnemy? responsible = null) {
+		Combo = 0;
+	}
+
 	/// <summary>
 	/// Adds to the players score.
 	/// </summary>
 	/// <param name="score"></param>
-	public void AddScore(int score) {
-		float s = (float)score;
-		Score += (int)s;
-		SceneUI?.UpdateScore(Score);
-	}
-	/// <summary>
-	/// Removes from the players score.
-	/// </summary>
-	/// <param name="score"></param>
-	public void RemoveScore(int score) {
-		Score -= score;
+	public void AddScore(int score, DashEnemy? responsible = null) {
+		double s = (double)score;
+		if (Quirks.ScoreModifier != null) Quirks.ScoreModifier.Invoke(ProduceSnapshot(responsible), ref s);
+		score = (int)(float)s;
+
+		Score += (int)(float)s;
 		SceneUI?.UpdateScore(Score);
 	}
 	/// <summary>
@@ -2061,6 +2092,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public IMuseDash1SceneUI? GetSceneUI() => SceneUI;
+
+	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)

@@ -101,7 +101,7 @@ public class DashEnemy : Entity
 	/// <summary>
 	/// Type of the entity
 	/// </summary>
-	public MuseDash1EntityType Type { get; set; } = MuseDash1EntityType.Unknown;
+	public MuseDash1EntityType Type { get; set; } = 0;
 
 	/// <summary>
 	/// Entity variant (usually not applicable). Mostly for determining models.
@@ -224,7 +224,7 @@ public class DashEnemy : Entity
 			return;
 
 		PunishPlayer(); // Reset combo
-		level.Damage(this, DamageTaken);
+		level.Damage(DamageTaken, this);
 		DidDamagePlayer = true;
 	}
 
@@ -263,12 +263,12 @@ public class DashEnemy : Entity
 			return;
 
 		if (heal) {
-			level.Heal(HealthGiven);
+			level.Heal(HealthGiven, this);
 			level.GetSceneUI()?.CreateHealthText(HealthGiven, Pathway);
 		}
 
 		if (Blood) {
-			level.Heal(MD1_SongChartEntity.DEFAULT_HP);
+			level.Heal(MD1_SongChartEntity.DEFAULT_HP, this);
 			level.GetSceneUI()?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP, Pathway);
 			level.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
 		}
@@ -304,7 +304,7 @@ public class DashEnemy : Entity
 		if (DeathAddsToCombo)
 			level.AddCombo();
 
-		level.AddFever((int)this.FeverGiven);
+		level.AddFever((int)this.FeverGiven, this);
 
 		RewardPlayer();
 	}
