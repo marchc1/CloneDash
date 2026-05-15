@@ -231,7 +231,7 @@ public class MD_ModelViewerWindow : Window
 
 		var searchLabel = topBar.Add<Label>();
 		searchLabel.Text = "Filter:";
-		searchLabel.TextSize = 14;
+		searchLabel.TextSize = 19;
 		searchLabel.Dock = Dock.Left;
 		searchLabel.Size = new(50, 0);
 
@@ -243,7 +243,7 @@ public class MD_ModelViewerWindow : Window
 		StatusLabel = this.Add<Label>();
 		StatusLabel.Dock = Dock.Bottom;
 		StatusLabel.Size = new(0, 24);
-		StatusLabel.TextSize = 12;
+		StatusLabel.TextSize = 17;
 		StatusLabel.Text = $"Found {AllEntries.Count} skeleton assets";
 
 		LeftPanel = this.Add<Panel>();
@@ -269,7 +269,7 @@ public class MD_ModelViewerWindow : Window
 		rootBtn.Text = $"{folder.Name} ({folder.TotalCount()})";
 		rootBtn.Dock = Dock.Top;
 		rootBtn.Size = new(0, 24);
-		rootBtn.TextSize = 13;
+		rootBtn.TextSize = 18;
 		rootBtn.TextAlignment = Anchor.CenterLeft;
 		rootBtn.TextPadding = new(6);
 		rootBtn.MouseReleaseEvent += (_, _, _) => SelectFolder(folder);
@@ -279,7 +279,7 @@ public class MD_ModelViewerWindow : Window
 			btn.Text = $"  {sub.Name} ({sub.TotalCount()})";
 			btn.Dock = Dock.Top;
 			btn.Size = new(0, 22);
-			btn.TextSize = 12;
+			btn.TextSize = 17;
 			btn.TextAlignment = Anchor.CenterLeft;
 			btn.TextPadding = new(6);
 			btn.BackgroundColor = new(0, 0, 0, 0);
@@ -466,7 +466,6 @@ public class MD_ModelDetailWindow : Window
 	int SelectedChannel = 0;
 	bool LoopAnimation = true;
 	int SelectedAnimIndex = -1;
-	double PlaybackSpeed = 1.0;
 
 	bool ShowBones;
 	bool ShowWireframe;
@@ -564,7 +563,7 @@ public class MD_ModelDetailWindow : Window
 		AnimInfoLabel = controls.Add<Label>();
 		AnimInfoLabel.Dock = Dock.Top;
 		AnimInfoLabel.Size = new(0, 18);
-		AnimInfoLabel.TextSize = 12;
+		AnimInfoLabel.TextSize = 17;
 		AnimInfoLabel.Text = "No animation playing";
 
 		var channelBar = controls.Add<Panel>();
@@ -574,7 +573,7 @@ public class MD_ModelDetailWindow : Window
 
 		var chLabel = channelBar.Add<Label>();
 		chLabel.Text = "Channel:";
-		chLabel.TextSize = 12;
+		chLabel.TextSize = 17;
 		chLabel.Dock = Dock.Left;
 		chLabel.Size = new(60, 0);
 
@@ -584,7 +583,7 @@ public class MD_ModelDetailWindow : Window
 			chBtn.Dock = Dock.Left;
 			chBtn.Size = new(28, 0);
 			chBtn.Text = $"{ch}";
-			chBtn.TextSize = 11;
+			chBtn.TextSize = 16;
 			chBtn.MouseReleaseEvent += (_, _, _) => SelectedChannel = capturedCh;
 		}
 
@@ -597,7 +596,7 @@ public class MD_ModelDetailWindow : Window
 		loopCb.Dock = Dock.Left;
 		loopCb.Size = new(70, 0);
 		loopCb.Text = "Loop";
-		loopCb.TextSize = 12;
+		loopCb.TextSize = 17;
 		loopCb.Checked = true;
 		loopCb.OnCheckedChanged += (cb) => LoopAnimation = cb.Checked;
 
@@ -605,7 +604,7 @@ public class MD_ModelDetailWindow : Window
 		stopBtn.Dock = Dock.Left;
 		stopBtn.Size = new(50, 0);
 		stopBtn.Text = "Stop";
-		stopBtn.TextSize = 11;
+		stopBtn.TextSize = 16;
 		stopBtn.MouseReleaseEvent += (_, _, _) => {
 			AnimHandler.StopAllAnimation();
 			Instance?.SetToSetupPose();
@@ -615,24 +614,12 @@ public class MD_ModelDetailWindow : Window
 		resetBtn.Dock = Dock.Left;
 		resetBtn.Size = new(60, 0);
 		resetBtn.Text = "Reset";
-		resetBtn.TextSize = 11;
+		resetBtn.TextSize = 16;
 		resetBtn.MouseReleaseEvent += (_, _, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
 			CenterCamera();
 		};
-
-		var speedSlider = tab.Panel.Add<NumSlider>();
-		speedSlider.Dock = Dock.Top;
-		speedSlider.Size = new Vector2F(240, 24);
-		speedSlider.Prefix = "Speed: ";
-		speedSlider.Suffix = "%";
-		speedSlider.TextSize = 11;
-		speedSlider.Digits = 0;
-		speedSlider.Value = 100f;
-		speedSlider.MinimumValue = 0;
-		speedSlider.MaximumValue = 100;
-		speedSlider.OnValueChanged += (_, _, v) => PlaybackSpeed = v / 100;
 
 		AnimList = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
 		AnimList.Dock = Dock.Fill;
@@ -646,7 +633,7 @@ public class MD_ModelDetailWindow : Window
 				var btn = AnimList.Add<Button>();
 				btn.Dock = Dock.Top;
 				btn.Size = new(0, 22);
-				btn.TextSize = 12;
+				btn.TextSize = 17;
 				btn.Text = $"{anim.Name} ({anim.Duration:F2}s)";
 				btn.TextAlignment = Anchor.CenterLeft;
 				btn.TextPadding = new(6);
@@ -670,7 +657,7 @@ public class MD_ModelDetailWindow : Window
 		if (Entry?.CachedModelData == null) {
 			var lbl = scroll.Add<Label>();
 			lbl.Text = "Model failed to load.";
-			lbl.TextSize = 13;
+			lbl.TextSize = 18;
 			lbl.Dock = Dock.Top;
 			lbl.Size = new(0, 24);
 			return;
@@ -707,7 +694,7 @@ public class MD_ModelDetailWindow : Window
 	void AddInfoRow(DirectionalLayoutPanel parent, string text) {
 		var lbl = parent.Add<Label>();
 		lbl.Text = text;
-		lbl.TextSize = 11;
+		lbl.TextSize = 16;
 		lbl.Dock = Dock.Top;
 		lbl.Size = new(0, 16);
 		lbl.TextAlignment = Anchor.CenterLeft;
@@ -724,35 +711,35 @@ public class MD_ModelDetailWindow : Window
 		bonesCb.Dock = Dock.Top;
 		bonesCb.Size = new(0, 26);
 		bonesCb.Text = "Show Bones";
-		bonesCb.TextSize = 12;
+		bonesCb.TextSize = 17;
 		bonesCb.OnCheckedChanged += (cb) => ShowBones = cb.Checked;
 
 		var wireCb = panel.Add<Checkbox>();
 		wireCb.Dock = Dock.Top;
 		wireCb.Size = new(0, 26);
 		wireCb.Text = "Show Wireframe";
-		wireCb.TextSize = 12;
+		wireCb.TextSize = 17;
 		wireCb.OnCheckedChanged += (cb) => ShowWireframe = cb.Checked;
 
 		var slotCb = panel.Add<Checkbox>();
 		slotCb.Dock = Dock.Top;
 		slotCb.Size = new(0, 26);
 		slotCb.Text = "Show Slot Info";
-		slotCb.TextSize = 12;
+		slotCb.TextSize = 17;
 		slotCb.OnCheckedChanged += (cb) => ShowSlotInfo = cb.Checked;
 
 		var attachCb = panel.Add<Checkbox>();
 		attachCb.Dock = Dock.Top;
 		attachCb.Size = new(0, 26);
 		attachCb.Text = "Show Attachment Names";
-		attachCb.TextSize = 12;
+		attachCb.TextSize = 17;
 		attachCb.OnCheckedChanged += (cb) => ShowAttachmentNames = cb.Checked;
 
 		var setupBtn = panel.Add<Button>();
 		setupBtn.Dock = Dock.Top;
 		setupBtn.Size = new(0, 28);
 		setupBtn.Text = "Reset to Setup Pose";
-		setupBtn.TextSize = 12;
+		setupBtn.TextSize = 17;
 		setupBtn.MouseReleaseEvent += (_, _, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
@@ -762,7 +749,7 @@ public class MD_ModelDetailWindow : Window
 		logBtn.Dock = Dock.Top;
 		logBtn.Size = new(0, 28);
 		logBtn.Text = "Log Model Data to Console";
-		logBtn.TextSize = 12;
+		logBtn.TextSize = 17;
 		logBtn.MouseReleaseEvent += (_, _, _) => LogModelData();
 	}
 
@@ -794,7 +781,7 @@ public class MD_ModelDetailWindow : Window
 		base.OnThink(frameState);
 
 		if (Instance == null) return;
-		AnimHandler.AddDeltaTime(globals.CurTimeDelta * PlaybackSpeed);
+		AnimHandler.AddDeltaTime(globals.CurTimeDelta);
 
 		if (AnimHandler.IsPlayingAnimation()) {
 			var channel = AnimHandler.Channels[SelectedChannel];
