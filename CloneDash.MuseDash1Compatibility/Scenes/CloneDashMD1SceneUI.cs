@@ -844,7 +844,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims, float h) {
 		if (model == null) return;
 		model.Scale = new(1f);
-		model.Position = new(0, h * 1.23f);
+		model.Position = new(0, 1105);
 		anims.Apply(model);
 		model.Render();
 	}
