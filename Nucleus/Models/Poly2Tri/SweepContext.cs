@@ -33,17 +33,16 @@ internal ref struct SweepContext : IDisposable
 		_map = ListPool<Triangle>.Shared.Alloc(256);
 		_edge_list = ListPool<Edge>.Shared.Alloc(256);
 		EdgeEvent = new EdgeEvent();
-		Basin = ObjectPool<SweepBasin>.Shared.Alloc();
+		Basin = new SweepBasin();
 	}
 
-	public void Dispose() {
+	public readonly void Dispose() {
 		// return objects
 
 		ListPool<TriPoint>.Shared.Free(_points);
 		ListPool<Triangle>.Shared.Free(_triangles);
 		ListPool<Triangle>.Shared.Free(_map);
 		ListPool<Edge>.Shared.Free(_edge_list);
-		ObjectPool<SweepBasin>.Shared.Free(Basin);
 	}
 
 	public void AddHole(List<TriPoint> holePoints) {
