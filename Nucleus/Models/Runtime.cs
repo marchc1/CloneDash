@@ -1556,7 +1556,6 @@ public class AnimationHandler
 		for (int i = 0; i < Channels.Length; i++) {
 			var channel = Channels[i];
 
-			channel.ElapseTime(time);
 			var anim = channel.CurrentEntry;
 			if (anim == null) {
 				if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
@@ -1566,7 +1565,7 @@ public class AnimationHandler
 				}
 				else continue;
 			}
-
+			channel.ElapseTime(time);
 			if (channel.Time >= anim.Animation.Duration) {
 				if (anim.Looping) {
 					anim.OnPlaybackEnd?.Invoke(anim);

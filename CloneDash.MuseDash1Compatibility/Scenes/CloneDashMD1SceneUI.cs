@@ -590,6 +590,9 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 
 		combo1model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_1_SkeletonData")!)?.Instantiate();
 		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
+
+		ForceDeactivateCombo1();
+		ForceDeactivateCombo2();
 	}
 
 
@@ -797,17 +800,20 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		UIAlphatestShader?.Deactivate();
 
 		// Draw combo
-		if (ComboGrade != ComboGrade.NotApplicable)
-		{
-			Rlgl.PushMatrix();
 
-			Rlgl.Translatef(w / 2, 0, 0);
-			Rlgl.Scalef(resize, resize, 1);
+		Rlgl.PushMatrix();
 
-			renderOneCombo(combo1model, animations_1);
-			renderOneCombo(combo2model, animations_2);
+		Rlgl.Translatef(w / 2, 0, 0);
+		Rlgl.Scalef(resize * 0.5f, resize * 0.5f, 1);
 
-			switch(ComboGrade){
+		if (ShouldRenderCombo1()) renderOneCombo(combo1model, animations_1, h);
+		if (ShouldRenderCombo2()) renderOneCombo(combo2model, animations_2, h);
+
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.PopMatrix();
+
+		if (ComboGrade != ComboGrade.NotApplicable) {
+			switch (ComboGrade) {
 				case ComboGrade.Low:
 					ComboNumber.borderColor = ComboLowBorderColor;
 					ComboNumber.StartColor = ComboLowColor;
@@ -818,7 +824,10 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 					break;
 			}
 
-			Rlgl.DrawRenderBatchActive();
+			Rlgl.PushMatrix();
+
+			Rlgl.Translatef(w / 2, 0, 0);
+			Rlgl.Scalef(resize, resize, 1);
 
 			UIAlphatestShader?.Activate();
 			ComboNumber.SplitY = 1;
@@ -832,9 +841,10 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 			Rlgl.PopMatrix();
 		}
 	}
-	void renderOneCombo(ModelInstance? model, AnimationHandler anims){
+	void renderOneCombo(ModelInstance? model, AnimationHandler anims, float h) {
 		if (model == null) return;
-		model.Scale = new(1);
+		model.Scale = new(1f);
+		model.Position = new(0, h * 1.23f);
 		anims.Apply(model);
 		model.Render();
 	}
@@ -885,7 +895,7 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		AllPerfect = allPerfect;
 	}
 
-	public static ComboGrade GetGrade(int combo){
+	public static ComboGrade GetGrade(int combo) {
 		if (combo >= (int)ComboGrade.High)
 			return ComboGrade.High;
 		if (combo >= (int)ComboGrade.Low)
@@ -903,48 +913,85 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 			UpdateComboGrade(currentComboGrade);
 	}
 
-	private void UpdateComboGrade(ComboGrade currentComboGrade) {
+	private void UpdateComboGrade(ComboGrade nextComboGrade) {
 		var lastComboGrade = ComboGrade;
-		ComboGrade = currentComboGrade;
+		ComboGrade = nextComboGrade;
 
-		if(animations_1.GetModelData() == null) animations_1.SetModel(combo1model);
-		if(animations_2.GetModelData() == null) animations_2.SetModel(combo2model);
+		if (animations_1.GetModelData() == null) animations_1.SetModel(combo1model);
+		if (animations_2.GetModelData() == null) animations_2.SetModel(combo2model);
 
-		switch (currentComboGrade){
+		switch (nextComboGrade) {
 			case ComboGrade.NotApplicable:
-				if (lastComboGrade == ComboGrade.Low) {
-					animations_1.ClearAllAnimation();
-					animations_1.SetAnimation(0, "end");
-				}
-
-				if (lastComboGrade == ComboGrade.High) {
-					animations_2.ClearAllAnimation();
-					animations_2.SetAnimation(0, "end");
+				switch (lastComboGrade) {
+					case ComboGrade.Low:
+						ActivateCombo1();
+						break;
+					case ComboGrade.High:
+						ActivateCombo2();
+						break;
 				}
 				break;
 			case ComboGrade.Low:
-				if (lastComboGrade == ComboGrade.NotApplicable) {
-					animations_1.ClearAllAnimation();
-					animations_1.SetAnimation(0, "start");
-					animations_1.AddAnimation(0, "stand", true);
-
-					combo1model?.SetToSetupPose();
+				switch (lastComboGrade) {
+					case ComboGrade.NotApplicable:
+						ActivateCombo1();
+						break;
+					case ComboGrade.High:
+						DeactivateCombo2();
+						ActivateCombo1();
+						break;
 				}
 				break;
 			case ComboGrade.High:
-				if (lastComboGrade == ComboGrade.Low) {
-					animations_2.ClearAllAnimation();
-					animations_2.SetAnimation(0, "start");
-					animations_2.AddAnimation(0, "stand", true);
-
-					animations_1.ClearAllAnimation();
-					animations_1.SetAnimation(0, "end");
-
-					combo2model?.SetToSetupPose();
+				switch (lastComboGrade) {
+					case ComboGrade.NotApplicable:
+						ActivateCombo2();
+						break;
+					case ComboGrade.Low:
+						DeactivateCombo1();
+						ActivateCombo2();
+						break;
 				}
 				break;
 		}
 	}
+
+	// remove these when not hot reloading
+	bool Combo1ForceDeactivated = true;
+	bool Combo2ForceDeactivated = true;
+
+	void ActivateCombo1() {
+		animations_1.ClearAllAnimation();
+		animations_1.SetAnimation(0, "start");
+		animations_1.AddAnimation(0, "stand", true);
+		combo1model?.SetToSetupPose();
+	}
+	void ActivateCombo2() {
+		animations_2.ClearAllAnimation();
+		animations_2.SetAnimation(0, "start");
+		animations_2.AddAnimation(0, "stand", true);
+		combo2model?.SetToSetupPose();
+	}
+	void DeactivateCombo1() {
+		animations_1.ClearAllAnimation();
+		animations_1.SetAnimation(0, "end");
+	}
+	void DeactivateCombo2() {
+		animations_2.ClearAllAnimation();
+		animations_2.SetAnimation(0, "end");
+	}
+	void ForceDeactivateCombo1() {
+		animations_1.ClearAllAnimation();
+		animations_1.SetAnimation(0, "end");
+		animations_1.AddDeltaTime(animations_1.Channels[0].QueuedEntries.Peek().Animation.Duration);
+	}
+	void ForceDeactivateCombo2() {
+		animations_2.ClearAllAnimation();
+		animations_2.SetAnimation(0, "end");
+		animations_2.AddDeltaTime(animations_2.Channels[0].QueuedEntries.Peek().Animation.Duration);
+	}
+	public bool ShouldRenderCombo1() => animations_1.IsPlayingAnimation();
+	public bool ShouldRenderCombo2() => animations_2.IsPlayingAnimation();
 
 	public void UpdateFeverProgress(double fever, double maxFever) {
 		InFever = false;
@@ -985,10 +1032,12 @@ public class CloneDashMD1SceneUI(IMuseDash1SceneInstance scene) : IMuseDash1Scen
 		EnterFeverTime = -2000000;
 		LastHitTime = -2000000;
 		LastComboUpdateTime = -2000000;
-
+		ComboGrade = ComboGrade.NotApplicable;
 		Combo = 0;
-		ComboGrade = 0;
 		FeverRemainingTime = 0;
 		FeverTotalTime = 0;
+
+		ForceDeactivateCombo1();
+		ForceDeactivateCombo2();
 	}
 }
