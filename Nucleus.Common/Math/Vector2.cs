@@ -92,20 +92,20 @@ public struct Vector2F : ISpanFormattable
 	public Vector2F(float Both) { this.x = Both; this.y = Both; }
 	public static Vector2F FromXY(Vector3 xyz) => new(xyz.X, xyz.Y);
 
-	public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
-	public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
-	public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
-	public static Vector2F operator /(Vector2F from, float by) => new Vector2F(from.X / by, from.Y / by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(Vector2F from, float by) => new Vector2F(from.X / by, from.Y / by);
 
-	public static Vector2F operator +(float from, Vector2F by) => new Vector2F(from + by.X, from + by.Y);
-	public static Vector2F operator -(float from, Vector2F by) => new Vector2F(from - by.X, from - by.Y);
-	public static Vector2F operator *(float from, Vector2F by) => new Vector2F(from * by.X, from * by.Y);
-	public static Vector2F operator /(float from, Vector2F by) => new Vector2F(from / by.X, from / by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(float from, Vector2F by) => new Vector2F(from + by.X, from + by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(float from, Vector2F by) => new Vector2F(from - by.X, from - by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(float from, Vector2F by) => new Vector2F(from * by.X, from * by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(float from, Vector2F by) => new Vector2F(from / by.X, from / by.Y);
 
-	public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
-	public static Vector2F operator -(Vector2F from, Vector2F by) => new Vector2F(from.X - by.X, from.Y - by.Y);
-	public static Vector2F operator *(Vector2F from, Vector2F by) => new Vector2F(from.X * by.X, from.Y * by.Y);
-	public static Vector2F operator /(Vector2F from, Vector2F by) => new Vector2F(from.X / by.X, from.Y / by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(Vector2F from, Vector2F by) => new Vector2F(from.X - by.X, from.Y - by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(Vector2F from, Vector2F by) => new Vector2F(from.X * by.X, from.Y * by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(Vector2F from, Vector2F by) => new Vector2F(from.X / by.X, from.Y / by.Y);
 
 	public static bool operator <(Vector2F a, Vector2F b) => a.X < b.X || a.Y < b.Y;
 	public static bool operator >(Vector2F a, Vector2F b) => a.X > b.X || a.Y > b.Y;

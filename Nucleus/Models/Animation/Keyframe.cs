@@ -1,4 +1,5 @@
 ﻿using Nucleus.Types;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Nucleus.Models;
@@ -66,7 +67,7 @@ public class Keyframe<T> : IKeyframe
 	}
 
 	public double Time;
-	public T Value;
+	public T? Value;
 	public KeyframeHandle<T>? LeftHandle;
 	public KeyframeHandle<T>? RightHandle;
 	public KeyframeInterpolation Interpolation;
@@ -82,13 +83,15 @@ public class Keyframe<T> : IKeyframe
 	public void SetValue(object? value) => Value = value is T tV ? tV : (T?)value;
 	public void SetValue<T2>(T2? value) => SetValue((object?)value);
 
-	private static T LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		switch (leftmostOfTime) {
-			case Keyframe<float> kfL: return rightmostOfTime is Keyframe<float> kfR ? (T)(object)(float)NMath.Remap(time, kfL.Time, kfR.Time, kfL.Value, kfR.Value, true) : throw new Exception();
-			default: return leftmostOfTime.Value;
-		}
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	private static T? LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float))
+			return (T)(object)(float)NMath.Remap(time, ((Keyframe<float>)(object)leftmostOfTime).Time, ((Keyframe<float>)(object)rightmostOfTime).Time, ((Keyframe<float>)(object)leftmostOfTime).Value, ((Keyframe<float>)(object)rightmostOfTime).Value, true);
+		else
+			return leftmostOfTime.Value;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static Vector2F CubicBezier(in Vector2F p0, in Vector2F p1, in Vector2F p2, in Vector2F p3, float t) {
 		float u = 1 - t;
 		return u * u * u * p0 +
@@ -96,6 +99,8 @@ public class Keyframe<T> : IKeyframe
 			   3 * u * t * t * p2 +
 			   t * t * t * p3;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f, int maxIterations = 100) {
 		float tLow = 0f;
 		float tHigh = 1f;
@@ -123,14 +128,15 @@ public class Keyframe<T> : IKeyframe
 		// Final approximation if convergence not perfect
 		return CubicBezier(p0, p1, p2, p3, tMid).Y;
 	}
-	private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
-	private static Vector2F KeyframeToVector2F(in KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
-	private static T BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		switch (leftmostOfTime) {
-			case Keyframe<float> kfL:
-				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(in KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	private static T? BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float)) {
+			Keyframe<float> kfL = (Keyframe<float>)(object)leftmostOfTime;
+			Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
 
-				var factor = CubicBezierYForX(
+			var factor = CubicBezierYForX(
 					KeyframeToVector2F(kfL),
 					KeyframeToVector2F(in kfL.RightHandle),
 					KeyframeToVector2F(in kfR.LeftHandle),
@@ -138,17 +144,18 @@ public class Keyframe<T> : IKeyframe
 					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
 				);
 
-				return (T)(object)factor;
-			default: return leftmostOfTime.Value;
+			return (T)(object)factor;
 		}
+		else
+			return leftmostOfTime.Value;
 	}
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+	private static T? BezierInterpolatorLerped(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float)) {
+			Keyframe<float> kfL = (Keyframe<float>)(object)leftmostOfTime;
+			Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
 
-	private static T BezierInterpolatorLerped(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		switch (leftmostOfTime) {
-			case Keyframe<float> kfL:
-				Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
-
-				var factor = CubicBezierYForX(
+			var factor = CubicBezierYForX(
 					KeyframeToVector2F(kfL),
 					KeyframeToVector2F(in kfL.RightHandle),
 					KeyframeToVector2F(in kfR.LeftHandle),
@@ -156,63 +163,13 @@ public class Keyframe<T> : IKeyframe
 					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
 				);
 
-				factor = NMath.Lerp(factor, kfL.Value, kfR.Value);
+			factor = NMath.Lerp(factor, kfL.Value, kfR.Value);
 
-				return (T)(object)factor;
-			default: return leftmostOfTime.Value;
+			return (T)(object)factor;
 		}
+		else
+			return leftmostOfTime.Value;
 	}
-	//private static T SinusoidalInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T QuadraticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T CubicInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T QuarticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T QuinticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T ExponentialInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T CircularInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T BackInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T BounceInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-	//private static T ElasticInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-	//	switch (default(T)) {
-	//		default: return leftmostOfTime.Value;
-	//	}
-	//}
-
 
 	static readonly Keyframe<float> DUMMY_LEFT = new();
 	static readonly Keyframe<float> DUMMY_RIGHT = new();
@@ -226,26 +183,18 @@ public class Keyframe<T> : IKeyframe
 		var interpolation = leftmostOfTime.Interpolation;
 		DUMMY_LEFT.SetTime(leftmostOfTime.Time); DUMMY_LEFT.SetValue(0f);
 		DUMMY_RIGHT.SetTime(rightmostOfTime.Time); DUMMY_RIGHT.SetValue(1f);
-		DUMMY_LEFT.RightHandle = (leftmostOfTime is Keyframe<float> kfL) ? kfL.RightHandle : null;
-		DUMMY_RIGHT.LeftHandle = (rightmostOfTime is Keyframe<float> kfR) ? kfR.LeftHandle : null;
+		if (typeof(T) == typeof(float)) {
+			DUMMY_LEFT.RightHandle = ((Keyframe<float>)(object)leftmostOfTime).RightHandle;
+			DUMMY_RIGHT.LeftHandle = ((Keyframe<float>)(object)rightmostOfTime).RightHandle;
+		}
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant: return 0;
 			case KeyframeInterpolation.Linear: return Keyframe<float>.LinearInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
 			case KeyframeInterpolation.Bezier: return Keyframe<float>.BezierInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
-			//case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quadratic: return QuadraticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Cubic: return CubicInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quartic: return QuarticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quintic: return QuinticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Exponential: return ExponentialInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Circular: return CircularInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Back: return BackInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Bounce: return BounceInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Elastic: return ElasticInterpolator(time, leftmostOfTime, rightmostOfTime);
 			default: return 0;
 		}
 	}
-	public static T DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
+	public static T? DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
 
@@ -260,16 +209,6 @@ public class Keyframe<T> : IKeyframe
 				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
 			case KeyframeInterpolation.Bezier:
 				return BezierInterpolatorLerped(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Sinusoidal: return SinusoidalInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quadratic: return QuadraticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Cubic: return CubicInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quartic: return QuarticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Quintic: return QuinticInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Exponential: return ExponentialInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Circular: return CircularInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Back: return BackInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Bounce: return BounceInterpolator(time, leftmostOfTime, rightmostOfTime);
-			//case KeyframeInterpolation.Elastic: return ElasticInterpolator(time, leftmostOfTime, rightmostOfTime);
 			default: return leftmostOfTime.Value;
 		}
 	}
