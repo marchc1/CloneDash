@@ -10,8 +10,8 @@ public static class GamemodeMod
 {
 	static IGamemodeDescriptor[]? gamemodes;
 
-	[ConCommand(Help: "Prints all available gamemodes")]
-	public static void characters(ConCommand cmd, in TokenizedCommand args) {
+	[ConCommand(Name: "gamemodes", Help: "Prints all available gamemodes")]
+	public static void gamemodesCmd(ConCommand cmd, in TokenizedCommand args) {
 		var gamemodes = GetAvailableGamemodes();
 		foreach (var gamemode in gamemodes)
 			Logs.Print($"    {gamemode}");
