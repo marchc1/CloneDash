@@ -80,7 +80,7 @@ namespace CloneDash.Game.Entities
 
 					double showtime = 1;
 					string? animationName = scene?.GetEnemyApproachAnimation(this, out showtime);
-					SetShowTimeViaLength(showtime);
+					visuals.SetShowTimeViaLength(showtime, HitTime);
 
 					visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
 					visuals.GreatHitAnimation = visuals.Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Great));

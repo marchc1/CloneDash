@@ -1384,7 +1384,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Variant = ChartEntity.Variant;
 
 		ent.HitTime = ChartEntity.HitTime;
-		ent.ShowTime = ChartEntity.ShowTime;
 		ent.Length = ChartEntity.Length;
 		ent.Speed = ChartEntity.Speed;
 		ent.Flipped = ChartEntity.Flipped;

@@ -54,7 +54,7 @@ namespace CloneDash.Game.Entities
 			visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 			var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
-			SetShowTimeViaLength(showtime);
+			visuals.SetShowTimeViaLength(showtime, HitTime);
 
 			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
 			visuals.PerfectHitAnimation = visuals.Model?.Data.FindAnimation(scene?.GetEnemyHitAnimation(this, HitAnimationType.Break));

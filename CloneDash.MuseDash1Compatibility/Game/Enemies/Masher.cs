@@ -132,7 +132,7 @@ namespace CloneDash.Game.Entities
 				double showtime = 1;
 				visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out showtime));
 				SetupHitAnimations(visuals);
-				SetShowTimeViaLength(showtime);
+				visuals.SetShowTimeViaLength(showtime, HitTime);
 			}
 		}
 	}
