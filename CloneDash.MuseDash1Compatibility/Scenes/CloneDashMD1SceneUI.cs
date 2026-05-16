@@ -474,49 +474,57 @@ public enum ComboGrade
 
 public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
 {
-	StatisticsPanel? CurrentStatisticsPanel;
+	protected StatisticsPanel? CurrentStatisticsPanel;
 
-	readonly List<TextImageRenderItem> BackgroundItems = [];
-	readonly List<TextImageRenderItem> ForegroundItems = [];
+	protected readonly List<TextImageRenderItem> BackgroundItems = [];
+	protected readonly List<TextImageRenderItem> ForegroundItems = [];
 
-	static Color ScoreColor => new(165, 254, 254);
+	protected virtual Color ScoreColor => new(165, 254, 254);
 
-	readonly TextImageRenderItem ScoreNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", ScoreColor, null);
-	TextImageRenderItem ScoreLabel = null!;
-	readonly TextImageRenderItem ComboNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", new(165, 254, 254), null);
+	protected TextImageRenderItem ScoreNumber = null!;
+	protected TextImageRenderItem ScoreLabel = null!;
+	protected TextImageRenderItem ComboNumber = null!;
 
-	static Color ComboLowColor => new(154, 233, 254);
-	static Color ComboLowBorderColor => new(61, 139, 224);
-	static Color ComboHighColor => new(255, 225, 41);
-	static Color ComboHighBorderColor => new(180, 49, 79);
+	public virtual void SetupScoreNumber() {
+		ScoreNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", ScoreColor, null);
+	}
 
-	IShader? StyledTextShader;
-	IShader? UIAlphatestShader;
-	ITexture? GoldGreat;
-	ITexture? GoldPerfect;
-	ITexture? ScoreGreat;
-	ITexture? ScorePerfect;
-	ITexture? ScorePass;
+	public virtual void SetupComboNumber() {
+		ComboNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", new(165, 254, 254), null);
+	}
 
-	ITexture? MultiHitTip;
-	ITexture? MultiHitTipDialog;
-	ITexture? HitsBase;
-	ITexture? BelowBase;
-	ITexture? hp_icon;
-	ITexture? hp_icon_mistake;
-	ITexture? hp_slider;
-	ITexture? hp_slider_base;
-	ITexture? HpFeverBase;
-	ITexture? slider_light;
-	ITexture? power_slider;
-	ITexture? power_slider_white;
-	ITexture? Fever;
-	ITexture? bubble;
-	ITexture? score_English;
-	ModelData? fx_combo_1;
-	ModelData? fx_combo_2;
+	protected virtual Color ComboLowColor => new(154, 233, 254);
+	protected virtual Color ComboLowBorderColor => new(61, 139, 224);
+	protected virtual Color ComboHighColor => new(255, 225, 41);
+	protected virtual Color ComboHighBorderColor => new(180, 49, 79);
 
-	public void Dispose() {
+	protected IShader? StyledTextShader;
+	protected IShader? UIAlphatestShader;
+	protected ITexture? GoldGreat;
+	protected ITexture? GoldPerfect;
+	protected ITexture? ScoreGreat;
+	protected ITexture? ScorePerfect;
+	protected ITexture? ScorePass;
+
+	protected ITexture? MultiHitTip;
+	protected ITexture? MultiHitTipDialog;
+	protected ITexture? HitsBase;
+	protected ITexture? BelowBase;
+	protected ITexture? hp_icon;
+	protected ITexture? hp_icon_mistake;
+	protected ITexture? hp_slider;
+	protected ITexture? hp_slider_base;
+	protected ITexture? HpFeverBase;
+	protected ITexture? slider_light;
+	protected ITexture? power_slider;
+	protected ITexture? power_slider_white;
+	protected ITexture? Fever;
+	protected ITexture? bubble;
+	protected ITexture? score_English;
+	protected ModelData? fx_combo_1;
+	protected ModelData? fx_combo_2;
+
+	public virtual void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
 		foreach (var item in ForegroundItems) item.Dispose();
 		ScoreNumber.Dispose();
@@ -539,7 +547,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		CleanupList(ForegroundItems, curtime);
 	}
 
-	double Time => scene.GetGame().GetConductor().GetTime();
+	protected double Time => scene.GetGame().GetConductor().GetTime();
 	bool AllPerfect, FullCombo;
 	int Combo;
 	double CurrentFever, MaxFever;
@@ -562,6 +570,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
+		SetupScoreNumber();
+		SetupComboNumber();
+
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
@@ -577,7 +588,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		ForceDeactivateCombo2();
 	}
 
-	public virtual void LoadScoreAssets(){
+	public virtual void LoadScoreAssets() {
 		GoldGreat = LoadTextureByName("GoldGreat");
 		GoldPerfect = LoadTextureByName("GoldPerfect");
 		ScoreGreat = LoadTextureByName("ScoreGreat");
@@ -668,7 +679,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 	}
 
-	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats){
+	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
 		var panel = EngineCore.Level.UI.Add(new StatisticsPanel(game, stats));
 		return panel;
 	}
@@ -779,9 +790,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		// Draw combo
 
 		Rlgl.PushMatrix();
-		PreRenderCombo();
-
-		Rlgl.PushMatrix();
 
 		Rlgl.Translatef(w / 2, 0, 0);
 		Rlgl.Scalef(resize * 0.5f, resize * 0.5f, 1);
@@ -792,19 +800,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Rlgl.PopMatrix();
 
 		if (ComboGrade != ComboGrade.NotApplicable) {
-			switch (ComboGrade) {
-				case ComboGrade.Low:
-					ComboNumber.borderColor = ComboLowBorderColor;
-					ComboNumber.StartColor = ComboLowColor;
-					break;
-				case ComboGrade.High:
-					ComboNumber.borderColor = ComboHighBorderColor;
-					ComboNumber.StartColor = ComboHighColor;
-					break;
-			}
+			PrepareComboColors(ComboGrade, out var borderColor, out var color);
+			SetComboColors(borderColor, color);
 
 			Rlgl.PushMatrix();
-
+			PreRenderCombo();
 			Rlgl.Translatef(w / 2, 0, 0);
 			Rlgl.Scalef(resize, resize, 1);
 
@@ -814,7 +814,28 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 			Rlgl.PopMatrix();
 		}
-		Rlgl.PopMatrix();
+	}
+
+	protected virtual void SetComboColors(Color borderColor, Color color) {
+		ComboNumber.borderColor = borderColor;
+		ComboNumber.StartColor = color;
+	}
+
+	protected virtual void PrepareComboColors(ComboGrade comboGrade, out Color borderColor, out Color color) {
+		switch (comboGrade) {
+			case ComboGrade.Low:
+				borderColor = ComboLowBorderColor;
+				color = ComboLowColor;
+				break;
+			case ComboGrade.High:
+				borderColor = ComboHighBorderColor;
+				color = ComboHighColor;
+				break;
+			default:
+				borderColor = default;
+				color = default;
+				break;
+		}
 	}
 
 	public virtual void RenderHealth() {
@@ -885,12 +906,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (ShouldRenderCombo1()) renderOneCombo(combo1model, animations_1);
 		if (ShouldRenderCombo2()) renderOneCombo(combo2model, animations_2);
 	}
+	public float GetSizeForComboHit(){
+		float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
+		float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
+		return size;
+	}
 	public virtual void RenderComboForeground() {
 		ComboNumber.SplitY = 1;
 		ComboNumber.StartPosition = new(0, -180);
-		float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
-		float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
-		ComboNumber.Scale = new(size);
+		ComboNumber.Scale = new(GetSizeForComboHit());
 		ComboNumber.Render(Time, StyledTextShader);
 	}
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims) {
@@ -1096,7 +1120,52 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
 {
+	protected TextImageRenderItem ComboLabel = null!;
 
+	public override void SetupComboNumber() {
+		base.SetupComboNumber();
+		ComboNumber.Font = "Infinity Font";
+		ComboLabel = new(0, 0, new(0, 0), 0, new(1, 1), "COMBO", "Snaps Taste", new(165, 254, 254), null);
+	}
+
+	protected override void SetComboColors(Color borderColor, Color color) {
+		base.SetComboColors(borderColor, color);
+		ComboLabel.borderColor = borderColor;
+		ComboLabel.StartColor = color;
+	}
+
+	public override void SetupScoreNumber() {
+		base.SetupScoreNumber();
+		ScoreNumber.Font = "Infinity Font";
+	}
+
+	public override void LoadScoreAssets() {
+		GoldGreat = LoadTextureByName("GoldGreatGC");
+		GoldPerfect = LoadTextureByName("GoldPerfectGC");
+		ScoreGreat = LoadTextureByName("ScoreGreatGC");
+		ScorePerfect = LoadTextureByName("ScorePerfectGC");
+		ScorePass = LoadTextureByName("ScorePassGC");
+	}
+
+	public override void PreRenderCombo() {
+		float value = GetSizeForComboHit();
+		Rlgl.Scalef(value, value, 1);
+	}
+
+	public override void RenderComboBackground() {
+
+	}
+
+	public override void RenderComboForeground() {
+		float dist = 180;
+		ComboNumber.SplitY = 1;
+		ComboNumber.StartPosition = new(0, -dist);
+		ComboNumber.Render(Time, StyledTextShader);
+
+		ComboLabel.SplitY = 1;
+		ComboLabel.StartPosition = new(0, dist);
+		ComboLabel.Render(Time, StyledTextShader);
+	}
 }
 
 public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
