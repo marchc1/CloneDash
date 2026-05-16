@@ -6,20 +6,20 @@ namespace Nucleus.Extensions;
 
 public static class ColorExtensions
 {
-	public static Vector3 ToHSV(this Color color) {
+	public static Vector3 RGBubToHSVf(this Color color) {
 		return Raylib.ColorToHSV(color);
 	}
-	public static int ToInt(this Color color) {
+	public static int RGBubToInt(this Color color) {
 		return Raylib.ColorToInt(color);
 	}
-	public static Color ToRGB(this Vector3 value, float alpha = 1) {
+	public static Color HSVfToRGBub(this Vector3 value, float alpha = 1) {
 		var c = Raylib.ColorFromHSV(value.X, value.Y, value.Z);
 		c.A = (byte)Math.Clamp(alpha * 255, 0, 255);
 		return c;
 	}
 	public static Color Adjust(this Color color, double hue, double saturation, double value, bool bleed = true) => color.Adjust((float)hue, (float)saturation, (float)value, bleed);
 	public static Color Adjust(this Color color, float hue, float saturation, float value, bool bleed = true) {
-		var hsv = color.ToHSV();
+		var hsv = color.RGBubToHSVf();
 		hsv.X += hue;
 		hsv.Y *= 1 + saturation;
 		hsv.Z *= 1 + value;
@@ -31,17 +31,17 @@ public static class ColorExtensions
 		hsv.Y = Math.Clamp(hsv.Y, 0, 1);
 		hsv.Z = Math.Clamp(hsv.Z, 0, 1);
 
-		return hsv.ToRGB(color.A / 255f);
+		return hsv.HSVfToRGBub(color.A / 255f);
 	}
 
-	public static Vector3 SetHSV(this Vector3 hsv, float? hue = null, float? saturation = null, float? value = null) {
+	public static Vector3 SetHSVf(this Vector3 hsv, float? hue = null, float? saturation = null, float? value = null) {
 		hsv.X = hue ?? hsv.X;
 		hsv.Y = saturation ?? hsv.Y;
 		hsv.Z = value ?? hsv.Z;
 		return hsv;
 	}
 
-	public static Color FromHSV(float H, float S, float V) {
+	public static Color FromHSVf(float H, float S, float V) {
 		H = H % 360;
 
 		if (V <= 0)

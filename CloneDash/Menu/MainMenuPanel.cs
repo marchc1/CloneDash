@@ -78,8 +78,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var menuBtns = btns.Peek();
 
 		Add(out MainMenuButton btn);
-		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).ToRGB();
-		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).ToRGB();
+		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub();
+		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub();
 		btn.Text = text;
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;

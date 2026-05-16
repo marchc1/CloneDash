@@ -322,7 +322,7 @@ namespace Nucleus.Core
 			hsv.X += hue;
 			hsv.Y *= saturation;
 			hsv.Z *= value;
-			__drawColor = hsv.ToRGB(c.A / 255);
+			__drawColor = hsv.HSVfToRGBub(c.A / 255);
 		}
 
 		public static void DrawPixel(int x, int y) => Raylib.DrawPixel(offsetX(x), offsetY(x), __drawColor);
