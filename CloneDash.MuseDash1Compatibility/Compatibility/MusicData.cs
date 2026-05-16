@@ -12,6 +12,9 @@ public class MusicData
 	public bool isLongPressEnd;
 	public decimal longPressPTick;
 	public int endIndex;
+	/// <summary>
+	/// The delta time of (tick - showTick)
+	/// </summary>
 	public decimal dt;
 	public int longPressNum;
 	public decimal showTick;

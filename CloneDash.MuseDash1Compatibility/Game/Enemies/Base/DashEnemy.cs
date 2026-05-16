@@ -43,8 +43,8 @@ public class DashEnemyVisuals
 		Animations.ClearAllAnimation();
 	}
 
-	double ShowTime;
-	public double GetShowTime() => ShowTime;
+	double? ShowTime;
+	public double? GetShowTime() => ShowTime;
 	public void SetShowTimeViaLength(double length, double hittime) => ShowTime = hittime - length;
 	public void SetShowTimeDirect(double showtime) => ShowTime = showtime;
 }
@@ -183,11 +183,13 @@ public class DashEnemy : Entity
 	/// When does this entity need to be hit, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 	/// </summary>
 	public double HitTime { get; set; }
-	public double ChartShowTime;
+	public double ShowTime;
 
-	public double GetVisualShowTime(DashEnemyVisuals visuals) => visuals.GetShowTime() + InputSettings.VisualOffset;
+	public double GetShowTime() => GetActiveVisuals().GetShowTime() ?? ShowTime;
+
+	public double GetVisualShowTime() => GetShowTime() + InputSettings.VisualOffset;
 	public double GetVisualHitTime() => HitTime + InputSettings.VisualOffset;
-	public double GetJudgementShowTime(DashEnemyVisuals visuals) => visuals.GetShowTime() + InputSettings.JudgementOffset;
+	public double GetJudgementShowTime() => GetShowTime() + InputSettings.JudgementOffset;
 	public double GetJudgementHitTime() => HitTime + InputSettings.JudgementOffset;
 	public double GetVisualTimeUntilHit() => DistanceToHit + InputSettings.VisualOffset;
 	public double GetVisualTimeUntilEnd() => DistanceToEnd + InputSettings.VisualOffset;
@@ -340,7 +342,7 @@ public class DashEnemy : Entity
 
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
-		var tickShow = this.GetVisualShowTime(GetActiveVisuals());
+		var tickShow = this.GetVisualShowTime();
 		var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
 		return thisPos;
 	}
@@ -379,7 +381,7 @@ public class DashEnemy : Entity
 	}
 
 	public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-		return xPosition >= -gamewidth * 1f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime(GetActiveVisuals()));
+		return xPosition >= -gamewidth * 1f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
 	}
 
 	/// <summary>
@@ -536,8 +538,9 @@ public class DashEnemy : Entity
 	}
 
 	protected void XPosSetup(DashEnemyVisuals visuals) {
-		visuals.SetShowTimeDirect(ChartShowTime);
+
 	}
+
 	protected void BasicSetup(DashEnemyVisuals visuals) {
 		var level = GetGameLevel();
 		var scene = visuals.Scene;
@@ -545,11 +548,6 @@ public class DashEnemy : Entity
 		visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
-		if (animationName == null)
-			visuals.SetShowTimeDirect(ChartShowTime);
-		else
-			visuals.SetShowTimeViaLength(showtime, HitTime);
-
 		visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
 		SetupHitAnimations(visuals);
 	}
@@ -606,8 +604,8 @@ public class DashEnemy : Entity
 	}
 
 
-	public double AnimationTime => (GetVisualShowTime(GetActiveVisuals()) - GetConductor().Time) * -1;
-	private double tth => HitTime - GetVisualShowTime(GetActiveVisuals()); // debugging, places enemy at exact frame position
+	public double AnimationTime => (GetVisualShowTime() - GetConductor().Time) * -1;
+	private double tth => HitTime - GetShowTime(); // debugging, places enemy at exact frame position
 
 	public virtual void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 		visuals.ApproachAnimation?.Apply(visuals.Model, AnimationTime);

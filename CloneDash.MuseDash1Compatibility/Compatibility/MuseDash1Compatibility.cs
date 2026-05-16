@@ -357,7 +357,7 @@ namespace CloneDash.Compatibility.MuseDash
 				if (s.noteData != null) {
 					var ib = MuseDash1Compatibility.ConvertIBMSCode(s.noteData.ibms_id);
 					var tick_hit = (double)s.configData.time;
-					var tick_show = tick_hit - ((tick_hit - ((double)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
+					var tick_show = (double)s.showTick;
 
 					PathwaySide pathwayType = PathwaySide.Both;
 
