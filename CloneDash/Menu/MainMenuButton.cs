@@ -38,11 +38,11 @@ public class MainMenuButton : Button
 
 		Graphics2D.SetDrawColor(fore);
 
-		float iconHeight = height * 0.8f;
+		float iconHeight = 40;
 
 		ImageOrientation = ImageOrientation.None;
 		ImageColor = fore;
-		ImageDrawing(new Vector2F(16, (height - iconHeight) / 2f - 3), new Vector2F(iconHeight));
+		ImageDrawing(new Vector2F(20, 6.5f), new Vector2F(iconHeight));
 
 		float topHeight = CloneDashUI.GetFontSize(20);
 		float bottomHeight = CloneDashUI.GetFontSize(14);

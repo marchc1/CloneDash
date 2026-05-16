@@ -127,7 +127,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Text = "";
 		back.MouseReleaseEvent += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
-		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png",
+		MakeNavigationButton("Play Muse Dash Chart", "icons/play.png",
 			"Play your installed charts.", 200, (menu) => {
 				var source = ChartMod.GetChartSongProviderByName("Muse Dash");
 				if (source == null) {
@@ -138,7 +138,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
-		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310,
+		MakeNavigationButton("Play Custom Chart", "icons/orange-slice.png", "Play a custom chart (.mdm format).", 310,
 			(menu) => {
 				var source = ChartMod.GetChartSongProviderByName("Custom Albums");
 				if (source == null) {
@@ -149,7 +149,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
-		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png",
+		MakeNavigationButton("Search mdmc.moe Charts", "icons/globe-hemisphere-west.png",
 			"Download new charts from the Muse Dash Modding Community.", 340, (menu) => {
 				var source = ChartMod.GetChartSongProviderByName("MDMC");
 				if (source == null) {
@@ -160,17 +160,17 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
-		MakeNavigationButton("Change Character", "ui/charselect.png",
+		MakeNavigationButton("Change Character", "icons/person-simple-run.png",
 			"Select a character to play as.", 20, (menu) => {
 				var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
 			});
-		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game.", 225,
+		MakeNavigationButton("Modding Tools", "icons/wrench.png", "Various tools for modding the game.", 225,
 			ModdingTools_OpenMenuButtons);
-		MakeNavigationButton("Options", "ui/pause_settings.png", "Change the game's settings.", 47, (menu) => {
+		MakeNavigationButton("Options", "icons/gear-six.png", "Change the game's settings.", 47, (menu) => {
 			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
 			settings.DrawPanelBackground = false;
 		});
-		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
+		MakeNavigationButton("Exit to Desktop", "icons/door-open.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}
 
 
