@@ -510,7 +510,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 				MusicDataManager.Set(fixedGear.objId, fixedGear);
 				bossData[i] = fixedGear;
-				Logs.Info($"Customs: fixed gear at tick {data.tick}");
+				// Logs.Info($"Customs: fixed gear at tick {data.tick}");
 			}
 		}
 		internal static StageInfo TransmuteData(Bms bms) {
