@@ -168,7 +168,7 @@ public class Keyframe<T> : IKeyframe
 		DUMMY_RIGHT.SetTime(rightmostOfTime.Time); DUMMY_RIGHT.SetValue(1f);
 		if (typeof(T) == typeof(float)) {
 			DUMMY_LEFT.RightHandle = ((Keyframe<float>)(object)leftmostOfTime).RightHandle;
-			DUMMY_RIGHT.LeftHandle = ((Keyframe<float>)(object)rightmostOfTime).RightHandle;
+			DUMMY_RIGHT.LeftHandle = ((Keyframe<float>)(object)rightmostOfTime).LeftHandle;
 		}
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant: return 0;
