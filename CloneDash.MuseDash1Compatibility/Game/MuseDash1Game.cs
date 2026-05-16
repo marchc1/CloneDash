@@ -1058,7 +1058,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (sceneUI != null) {
 			sceneUI.UpdateCombo(Combo);
 			if (InFever)
-				sceneUI.UpdateInFever(FeverTimeLeft, FeverTime);
+				sceneUI.UpdateInFever(FeverTimeLeft, Quirks.FeverDuration);
 
 			if (MashingEntity != null)
 				sceneUI.UpdateMultiHitText(MashingEntity.Hits);
@@ -1722,11 +1722,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public float Fever { get; private set; } = 0;
 
 	/// <summary>
-	/// How much fever, in seconds, does a full fever bar provide?<br></br>
-	/// Default: 6
-	/// </summary>
-	public float FeverTime { get; set; } = 6;
-	/// <summary>
 	/// Is the player currently in fever?
 	/// </summary>
 	public bool InFever { get; private set; } = false;
@@ -1737,15 +1732,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Should the player exit fever?
 	/// </summary>
-	private bool ShouldExitFever => (Conductor.Time - WhenDidFeverStart) >= FeverTime;
+	private bool ShouldExitFever => (Conductor.Time - WhenDidFeverStart) >= Quirks.FeverDuration;
 	/// <summary>
 	/// How much fever time is left?
 	/// </summary>
-	public double FeverTimeLeft => FeverTime - (Conductor.Time - WhenDidFeverStart);
+	public double FeverTimeLeft => Quirks.FeverDuration - (Conductor.Time - WhenDidFeverStart);
 	/// <summary>
 	/// Returns the fever time left as a value of 0-1, where 0 is the end and 1 is the start. Good for animation.
 	/// </summary>
-	private double FeverRatio => 1f - ((Conductor.Time - WhenDidFeverStart) / FeverTime);
+	private double FeverRatio => 1f - ((Conductor.Time - WhenDidFeverStart) / Quirks.FeverDuration);
 	/// <summary>
 	/// Current score of the player.
 	/// </summary>
@@ -1808,6 +1803,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double damageD = (double)damage;
 		if (Quirks.DamageModifier != null) Quirks.DamageModifier.Invoke(ProduceSnapshot(responsible), ref damageD);
 		damage = (float)damageD;
+		damage = Math.Max(0, damage);
 
 		if (!InIFrame) {
 			Health = Math.Clamp(Health - damage, 0, Quirks.MaxHP);
@@ -1849,7 +1845,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			// FeverFX?.Start(this);
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
-		SceneUI?.UpdateInFever(FeverTimeLeft, FeverTime);
+		SceneUI?.UpdateInFever(FeverTimeLeft, Quirks.FeverDuration);
 	}
 	/// <summary>
 	/// Exits fever.

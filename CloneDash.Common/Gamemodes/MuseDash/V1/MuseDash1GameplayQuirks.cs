@@ -45,6 +45,7 @@ public struct MuseDash1GameplayQuirks()
 
 	public int MaxHP = DEFAULT_MAX_HP;
 	public int MaxFever = DEFAULT_MAX_FEVER;
+	public double FeverDuration = 6;
 
 	public bool Autoplay;
 
@@ -344,6 +345,74 @@ public struct MuseDash1GameplayQuirks()
 		// I was wondering why this was named "char_3" and now I realize it's just a direct copy of Marija's behavior lol
 		AddCharacterQuirks("character/musedash1/char_3_horse", (ref MuseDash1GameplayQuirks quirks) => {
 			quirks.MissComboForgiveness = 100;
+		});
+
+		// elfin order in the english json
+		// elfin_cat
+		// elfin_angel
+		// elfin_death_god
+		// elfin_carrot_robot
+		// elfin_fan_robot
+		// elfin_magic_girl
+		// elfin_dragon_girl
+		// elfin_devil
+		// elfin_doctor
+		// elfin_ghost
+		// elfin_egg
+		// elfin_tv_dog
+		// elfin_
+		// elfin_
+		// elfin_
+
+		// Angela
+		AddElfinQuirks("elfin/musedash1/elfin_angel", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.DamageModifier += (in state, ref damage) => {
+				damage -= 6;
+			};
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_carrot", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		// Mio Sir
+		AddElfinQuirks("elfin/musedash1/elfin_cat", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.FeverDuration += 2;
+		});
+		// Thanatos
+		AddElfinQuirks("elfin/musedash1/elfin_death_god", (ref MuseDash1GameplayQuirks quirks) => {
+
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_devil", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_doctor", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_dragon_girl", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_egg", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_fan_robot", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_ghost", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_lin", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_magic_girl", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_r6", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_saya", (ref MuseDash1GameplayQuirks quirks) => {
+			
+		});
+		AddElfinQuirks("elfin/musedash1/elfin_TV_dog", (ref MuseDash1GameplayQuirks quirks) => {
+			
 		});
 	}
 
