@@ -135,7 +135,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				var selector = menu.PushActiveElement(menu.Content.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
 		MakeNavigationButton("Play Custom Chart", "icons/orange-slice.png", "Play a custom chart (.mdm format).", 310,
@@ -146,7 +146,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				var selector = menu.PushActiveElement(menu.Content.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
 		MakeNavigationButton("Search mdmc.moe Charts", "icons/globe-hemisphere-west.png",
@@ -157,17 +157,17 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				var selector = menu.PushActiveElement(menu.Content.Add<SongSelector>());
 				selector.SetSource(source.NewState());
 			});
 		MakeNavigationButton("Change Character", "icons/person-simple-run.png",
 			"Select a character to play as.", 20, (menu) => {
-				var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+				var selector = menu.PushActiveElement(menu.Content.Add<CharacterSelector>());
 			});
 		MakeNavigationButton("Modding Tools", "icons/wrench.png", "Various tools for modding the game.", 225,
 			ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "icons/gear-six.png", "Change the game's settings.", 47, (menu) => {
-			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
+			var settings = menu.PushActiveElement(menu.Content.Add<SettingsEditor>());
 			settings.DrawPanelBackground = false;
 		});
 		MakeNavigationButton("Exit to Desktop", "icons/door-open.png", $"Close the application.", 350, (menu) => EngineCore.Close());

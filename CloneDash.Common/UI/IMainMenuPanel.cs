@@ -6,6 +6,7 @@ namespace CloneDash.Game;
 
 public interface IMainMenuLevel
 {
+	Panel Content { get; }
 	T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel;
 
 	void PopActiveElement();
@@ -14,12 +15,13 @@ public interface IMainMenuLevel
 
 public interface IMainMenuPanel
 {
-	public string GetName();
+	string GetName();
 	Color GetPrimaryColor() => CloneDashUI.AccentPrimary;
 	Color GetBackgroundColor() => CloneDashUI.AccentBackground;
-	public void OnHidden();
-	public void OnShown();
-	public void SetRichPresence();
-	public bool InterceptEscape() => true;
-	public bool OnTryClose() => true;
+	(Action act, string name, string icon)? GetFooterAction() => null;
+	void OnHidden();
+	void OnShown();
+	void SetRichPresence();
+	bool InterceptEscape() => true;
+	bool OnTryClose() => true;
 }

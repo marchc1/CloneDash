@@ -113,26 +113,23 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		ActiveElements.Push(element);
 		element.SetRichPresence();
 
-		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
 		
 		_targetPrimaryColor = element.GetPrimaryColor().ToVector();
 		_targetBackgroundColor = element.GetBackgroundColor().ToVector();
-		headerText.Text = element.GetName();
+		_headerText.Text = element.GetName();
 
 		if (ActiveElements.Count == 1) {
 			_primaryColor = _targetPrimaryColor;
 			_backgroundColor = _targetBackgroundColor;
 		}
 
+		UpdateAction(element);
 		element.Dock = Dock.Fill;
+		element.BorderSize = 0;
 		return element;
 	}
 
-	private Button backButton;
-	public override void OnUnload() {
-		base.OnUnload();
-		MDMCWebAPI.CancelPendingRequests();
-	}
 	public void PopActiveElement() {
 		if (ActiveElements.Count <= 1) return;
 
@@ -148,24 +145,47 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		next.Visible = true;
 		next.Enabled = true;
 
-		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
+		UpdateAction(next as IMainMenuPanel);
 
 		if (next is IMainMenuPanel nextmmp) {
 			nextmmp.OnShown();
 			nextmmp.SetRichPresence();
 			_targetPrimaryColor = nextmmp.GetPrimaryColor().ToVector();
 			_targetBackgroundColor = nextmmp.GetBackgroundColor().ToVector();
-			headerText.Text = nextmmp.GetName();
+			_headerText.Text = nextmmp.GetName();
 		}
-
-
 	}
 
-	Panel header;
-	Label headerText;
+	private void UpdateAction(IMainMenuPanel? panel) {
+		(Action act, string name, string icon)? fa = panel?.GetFooterAction();
+		
+		if (fa is null) {
+			_actionButton.Action = null;
+			return;
+		}
+
+		_actionButton.Action = fa.Value.act;
+		_actionButton.Text = fa.Value.name;
+		_actionButton.Image = Textures.LoadTextureFromFile($"{fa.Value.icon}");
+	}
+
+	public override void OnUnload() {
+		base.OnUnload();
+		MDMCWebAPI.CancelPendingRequests();
+	}
+
+	private Panel _header = null!;
+	private Label _headerText = null!;
+
+	public Panel Content { get; private set; } = null!;
+		
+	private Panel _footer = null!;
+	private FooterButton _backButton = null!;
+	private FooterButton _actionButton = null!;
 	
 	public override void Initialize(params object[] args) {
-		var charPanel = UI.Add<Panel>();
+		Panel charPanel = UI.Add<Panel>();
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
 		charPanel.Size = new(1f, 1f);
@@ -176,28 +196,46 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Character.Origin = Anchor.TopCenter;
 		Character.Size = new(1f);
 
-		header = UI.Add<Panel>();
-		header.Position = new Vector2F(0);
-		header.Size = new Vector2F(256, 64);
-		header.Dock = Dock.Top;
-		header.BorderSize = 0;
-		header.BackgroundColor = header.BackgroundColor.Adjust(0, 0, value: 0.5f);
+		_header = UI.Add<Panel>();
+		_header.Size = new Vector2F(256, 64);
+		_header.Dock = Dock.Top;
+		_header.BorderSize = 0;
 
-		backButton = MenuButton(header, Dock.None, "ui/back.png", $"Back", () => {
-			PopActiveElement();
-		});
+		_headerText = _header.Add<Label>();
+		_headerText.Dock = Dock.Fill;
+		_headerText.Font = CloneDashUI.FontBold;
+		_headerText.Text = "Clone Dash";
+		_headerText.TextSize = 32 * 1.4f;
+		_headerText.AutoSize = true;
+		_headerText.DockMargin = RectangleF.TLRB(0, 64, 64, 0);
 
-		headerText = header.Add<Label>();
-		headerText.Dock = Dock.Fill;
-		headerText.Font = CloneDashUI.FontBold;
-		headerText.Text = "Clone Dash";
-		headerText.TextSize = 32 * 1.4f;
-		headerText.AutoSize = true;
-		headerText.DockMargin = RectangleF.TLRB(0, 64, 64, 0);
+		Content = UI.Add<Panel>();
+		Content.DrawPanelBackground = false;
+		Content.BorderSize = 0;
+		Content.Dock = Dock.Fill;
+		
+		_footer = UI.Add<Panel>();
+		_footer.Size = new Vector2F(256, 48);
+		_footer.Dock = Dock.Bottom;
+		_footer.BorderSize = 0;
+		_footer.Clipping = false;
+
+		_backButton = UI.Add<FooterButton>();
+		_backButton.Text = "Back";
+		_backButton.Position = new Vector2F(40, -12);
+		_backButton.Anchor = Anchor.BottomLeft;
+		_backButton.Origin = Anchor.BottomLeft;
+		_backButton.Image = Textures.LoadTextureFromFile("icons/arrow-left.png");
+		
+		_actionButton = UI.Add<FooterButton>();
+		_actionButton.Text = "Back";
+		_actionButton.Position = new Vector2F(-40, -12);
+		_actionButton.Anchor = Anchor.BottomRight;
+		_actionButton.Origin = Anchor.BottomRight;
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
-		PushActiveElement(UI.Add<MainMenuPanel>());
+		PushActiveElement(Content.Add<MainMenuPanel>());
 	}
 
 	public override void PreThink(ref FrameState frameState) {
@@ -212,30 +250,19 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 	}
 
-
-
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
-			Position = new(4 + 6, (int)(header.RenderBounds.H + 4))
+			Position = new(4 + 6, (int)(_header.RenderBounds.H + 4))
 		};
 	}
 
-	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
-		var menuBtn = header.Add<Button>();
-		menuBtn.AutoSize = false;
-		menuBtn.Size = new Vector2F(64);
-		menuBtn.Text = "";
-		menuBtn.ImageOrientation = ImageOrientation.Zoom;
+	private Button MenuButton(Panel panel, Dock dock, string icon, string text, Action onClicked) {
+		FooterButton menuBtn = panel.Add<FooterButton>();
+		menuBtn.Text = text;
 		menuBtn.Dock = dock;
 		menuBtn.Image = Textures.LoadTextureFromFile(icon);
-		menuBtn.ImagePadding = new(4);
-		menuBtn.TextSize = 21;
-		menuBtn.DockMargin = RectangleF.TLRB(0);
-		menuBtn.BorderSize = 0;
 		menuBtn.MouseReleaseEvent += (_, _, _) => onClicked();
-		menuBtn.TooltipText = text;
-
 		return menuBtn;
 	}
 
@@ -567,7 +594,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Color bg = _backgroundColor.ToColor();
 		Graphics2D.SetDrawColor(bg);
 		Graphics2D.DrawRectangle(Vector2F.Zero - frameState.WindowSize / 2f, frameState.WindowSize);
-		backButton.ImageColor = headerText.TextColor = bg;
+		_actionButton.BackgroundColor = _backButton.BackgroundColor = _headerText.TextColor = bg;
 
 		bool first = shapes.Count == 0;
 
@@ -578,7 +605,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 
 		Color primary = _primaryColor.ToColor();
-		header.BackgroundColor = backButton.BackgroundColor = primary;
+		_actionButton.ForegroundColor = _backButton.ForegroundColor = _footer.BackgroundColor = _header.BackgroundColor = primary;
 		
 		Color shapesColor = primary;
 		shapesColor.A = 80;

@@ -241,7 +241,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic
 		if (Level is IMainMenuLevel level)
-			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
+			level.PushActiveElement(level.Content.Add<JudgementOffsetWizard>());
 		else {
 			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
 		}

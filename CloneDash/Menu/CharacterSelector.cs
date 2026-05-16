@@ -131,7 +131,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Label characterHPLabel = null!;
 	Label characterAuthorLabel = null!;
 	Label characterPerkLabel = null!;
-	Button characterSelectButton = null!;
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
 	protected override void Initialize() {
@@ -160,14 +159,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterAuthorLabel.AutoSize = true;
 		characterAuthorLabel.Origin = Anchor.TopRight;
 
-		characterSelectButton = selectedInfo.Add<Button>();
-		characterSelectButton.Dock = Dock.Right;
-		characterSelectButton.Size = new(0.15f);
-		characterSelectButton.DynamicallySized = true;
-		characterSelectButton.BackgroundColor = new(10, 30, 10);
-		characterSelectButton.ForegroundColor = new(48, 220, 70);
-		characterSelectButton.MouseReleaseEvent += CharacterSelectButton_MouseReleaseEvent;
-
 		characterPerkLabel = selectedInfo.Add<Label>();
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
@@ -190,7 +181,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetCharacter(currentCharacter);
 	}
 
-	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void SelectCharacter() {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUUID());
@@ -211,8 +202,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterCostumeLabel.Position = new(32, 72 * ratio);
 		characterHPLabel.Position = new(32, 104 * ratio);
 		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
-
-		characterSelectButton.TextSize = 80 * ratio;
 	}
 
 	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
@@ -239,7 +228,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			characterAuthorLabel.Text = $"Author: {ch.GetAuthor(lang, out _)}";
 			characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
 		}
-		characterSelectButton.Text = "SELECT";
 	}
 
 	public bool OnTryClose()
@@ -250,4 +238,5 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	public Color GetPrimaryColor() => CloneDashUI.CharacterPrimary;
 	public Color GetBackgroundColor() => CloneDashUI.CharacterBackground;
+	public (Action act, string name, string icon)? GetFooterAction() => (SelectCharacter, "Select", "icons/check.png");
 }
