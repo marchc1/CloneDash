@@ -279,21 +279,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					case EventTriggerType.AtTime:
 						Conductor.ForceTimeTo(ev.Time);
 						if (ev.Time < time)
-							ev.Activate();
+							ActivateEvent(ev);
 
 						Conductor.ForceTimeTo(ev.Time + ev.Length);
 						if (ev.Time + ev.Length < time)
-							ev.Deactivate();
+							DeactivateEvent(ev);
 
 						break;
 					case EventTriggerType.AtTimeMinusLength:
 						Conductor.ForceTimeTo(ev.Time - ev.Length);
 						if (ev.Time - ev.Length < time)
-							ev.Activate();
+							ActivateEvent(ev);
 
 						Conductor.ForceTimeTo(ev.Time);
 						if (ev.Time < time)
-							ev.Deactivate();
+							DeactivateEvent(ev);
 						break;
 				}
 			}
@@ -1288,32 +1288,37 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		_ => false
 	};
 
+	public void ActivateEvent(DashEvent ev) {
+		ActiveEvents.Add(ev);
+		ev.Activate();
+		if (!IsSeeking) {
+			if (ev.Length == 0)
+				Logs.Debug($"Triggering {ev.GetType().Name}");
+			else
+				Logs.Debug($"Activating {ev.GetType().Name}");
+		}
+	}
+	public void DeactivateEvent(DashEvent ev) {
+		HandledEvents.Add(ev);
+		ActiveEvents.Remove(ev);
+		ev.Deactivate();
+		if (!IsSeeking) {
+			if (ev.Length != 0)
+				Logs.Debug($"Deactivating {ev.GetType().Name}");
+		}
+	}
+
 	public void IterateEvents() {
 		foreach (var ev in Events) {
 			if (ActiveEvents.Contains(ev)) {
 				// Determine if the event needs to be deactivated
-				if (shouldDeactivateEvent(ev)) {
-					HandledEvents.Add(ev);
-					ActiveEvents.Remove(ev);
-					ev.Deactivate();
-					if (!IsSeeking) {
-						if (ev.Length != 0)
-							Logs.Debug($"Deactivating {ev.GetType().Name}");
-					}
-				}
+				if (shouldDeactivateEvent(ev))
+					DeactivateEvent(ev);
 			}
 			else if (!HandledEvents.Contains(ev)) {
 				// Determine if the event needs to be activated
-				if (shouldActivateEvent(ev)) {
-					ActiveEvents.Add(ev);
-					ev.Activate();
-					if (!IsSeeking) {
-						if (ev.Length == 0)
-							Logs.Debug($"Triggering {ev.GetType().Name}");
-						else
-							Logs.Debug($"Activating {ev.GetType().Name}");
-					}
-				}
+				if (shouldActivateEvent(ev)) 
+					ActivateEvent(ev);
 			}
 			// The event has both been activated and deactivated, so its ignored
 		}
