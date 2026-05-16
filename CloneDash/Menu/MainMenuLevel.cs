@@ -645,7 +645,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			? new Vector2F(Random.Shared.NextSingle() * width, Random.Shared.NextSingle() * height)
 			: new Vector2F(bottom ? value * width : -300, bottom ? height + size * 200 : value * height);
 
-		return new BackgroundShape { Position = pos, Size = size, Type = (ShapeType)Random.Shared.Next(2) };
+		return new BackgroundShape {
+			Position = pos,
+			Size = size,
+			Type = (ShapeType)Random.Shared.Next(2),
+			Rotation = Random.Shared.NextSingle() * 360
+		};
 	}
 
 	private class BackgroundShape
