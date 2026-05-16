@@ -2179,7 +2179,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)value * 0.7f);
+		shader.SetUniform("uStrength", (float)NMath.Remap(value, 0, 1, 1, 0.7f));
 		shader.SetUniform("uSoftness", 0.7f);
 
 		return true;
