@@ -548,7 +548,9 @@ public class DashEnemy : Entity
 		visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
+		visuals.SetShowTimeViaLength(showtime, HitTime);
 		visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
+
 		SetupHitAnimations(visuals);
 	}
 
