@@ -1296,8 +1296,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					HandledEvents.Add(ev);
 					ActiveEvents.Remove(ev);
 					ev.Deactivate();
-					if (ev.Length != 0)
-						Logs.Debug($"Deactivating {ev.GetType().Name}");
+					if (!IsSeeking) {
+						if (ev.Length != 0)
+							Logs.Debug($"Deactivating {ev.GetType().Name}");
+					}
 				}
 			}
 			else if (!HandledEvents.Contains(ev)) {
@@ -1305,10 +1307,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				if (shouldActivateEvent(ev)) {
 					ActiveEvents.Add(ev);
 					ev.Activate();
-					if (ev.Length == 0)
-						Logs.Debug($"Triggering {ev.GetType().Name}");
-					else
-						Logs.Debug($"Activating {ev.GetType().Name}");
+					if (!IsSeeking) {
+						if (ev.Length == 0)
+							Logs.Debug($"Triggering {ev.GetType().Name}");
+						else
+							Logs.Debug($"Activating {ev.GetType().Name}");
+					}
 				}
 			}
 			// The event has both been activated and deactivated, so its ignored
@@ -1335,7 +1339,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Events.Add(ev);
 		readyToBuildEvents.Add(ev);
 		// This is a hack... whatever
-		if(ev is FlashbangEffect flash)
+		if (ev is FlashbangEffect flash)
 			flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
 	}
 
