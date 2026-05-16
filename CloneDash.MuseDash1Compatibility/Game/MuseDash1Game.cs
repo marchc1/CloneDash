@@ -30,6 +30,7 @@ using Nucleus.Engine;
 using Nucleus.Entities;
 using Nucleus.Input;
 using Nucleus.ManagedMemory;
+using Nucleus.Models;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -1314,6 +1315,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
+	readonly FCurve<float> flashbangIntensity = new();
 	/// <summary>
 	/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 	/// </summary>
@@ -1332,6 +1334,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Events.Add(ev);
 		readyToBuildEvents.Add(ev);
+		// This is a hack... whatever
+		if(ev is FlashbangEffect flash)
+			flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
 	}
 
 	public int CurrentAirSpeed;
@@ -2044,6 +2049,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return double.Lerp(state.LastValue, state.CurrentValue, t);
 	}
 
+	double ScreenScrollProgress;
+	double ScreenScrollRate;
+
+	// TODO: Verify effect order...
 	public void ScreenspaceDraw(FrameState frameState) {
 		if (renderTexture == null || renderTexture2 == null)
 			return;
@@ -2052,9 +2061,50 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ComplexRenderTexture write = renderTexture2;
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
+		DoOneEffect(ScreenspaceEffectType.Scanlines, ref read, ref write);
 
-		read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+		// this draws the screen scroll effect, its done as a texture shift instead here
+		double screenScrollDirection = ScreenspaceEffectStates[(int)ScreenspaceEffectType.ScreenScroll].CurrentValue;
+		if (screenScrollDirection == -1)
+			ScreenScrollRate = -0.7;
+		else if (screenScrollDirection == 1)
+			ScreenScrollRate = 1;
+
+		if (ScreenScrollRate != 0 && !Paused) {
+			ScreenScrollProgress += ScreenScrollRate * globals.CurTimeDelta * frameState.WindowHeight * 8;
+
+			double windowH = frameState.WindowHeight;
+
+			if (ScreenScrollRate > 0 && ScreenScrollProgress >= windowH) {
+				ScreenScrollProgress = 0;
+				if (screenScrollDirection == 0) ScreenScrollRate = 0;
+			}
+			else if (ScreenScrollRate < 0 && ScreenScrollProgress <= -windowH) {
+				ScreenScrollProgress = 0;
+				if (screenScrollDirection == 0) ScreenScrollRate = 0;
+			}
+		}
+
+		if (ScreenScrollRate != 0) {
+			float offset = (float)(ScreenScrollProgress % frameState.WindowHeight);
+			float gap = frameState.WindowHeight * 0.02f; // small separation at the seam
+			read.Draw(new(0, offset + gap, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+			read.Draw(new(0, offset - frameState.WindowHeight - gap, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+		}
+		else {
+			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+		}
+
+		// this draws flashbangs
+		double flashbangBrightness = flashbangIntensity.DetermineValueAtTime(Conductor.GetTime());
+		if (flashbangBrightness > 0) {
+			Rlgl.DrawRenderBatchActive();
+			Graphics2D.SetDrawColor(255, 255, 255, (int)(float)(255 * flashbangBrightness)); // todo: flashbang color interp
+			Graphics2D.DrawRectangle(0, 0, frameState.WindowWidth, frameState.WindowHeight);
+			Rlgl.DrawRenderBatchActive();
+		}
 	}
+
 	public void DoOneEffect(ScreenspaceEffectType effect, ref ComplexRenderTexture read, ref ComplexRenderTexture write) {
 		var shaderFn = ScreenspaceEffectShaderFns[(int)effect];
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)effect];
@@ -2092,6 +2142,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private void PrepareShaders() {
 		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
 		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
+		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
+	}
+
+	private bool PrepareScanlines(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uTime", (float)Conductor.GetTime());
+		shader.SetUniform("uStrength", 0.3f);
+
+		return true;
 	}
 
 	private bool PrepareVignette(IShader shader, ref ScreenspaceEffectState state) {

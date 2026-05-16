@@ -70,7 +70,13 @@ public class ScreenspaceEffectEvent(MuseDash1Game game, ScreenspaceEffectType ty
 	}
 }
 
-public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direction) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ScreenScroll, (double)direction);
+public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direction) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ScreenScroll, (double)direction){
+
+	public override void Activate() {
+		Game.TriggerScreenspaceEffectStart(Type, (int)direction, 0);
+	}
+	public override double? GetLengthOfEffect() => 0;
+}
 public class ScanlinesEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Scanlines, active ? 1 : 0);
 public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.ChromaticAberration, active ? 1 : 0)
 {
