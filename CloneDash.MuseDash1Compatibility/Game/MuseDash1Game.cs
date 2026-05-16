@@ -70,7 +70,7 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 		return game;
 	}
 
-	public static readonly string UUID = "gamemode/musedash1/standard";
+	public const string UUID = "gamemode/musedash1/standard";
 }
 
 [MarkForStaticConstruction]

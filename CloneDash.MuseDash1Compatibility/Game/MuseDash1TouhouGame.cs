@@ -21,7 +21,7 @@ public partial class MuseDash1TouhouGamemode : IGamemodeDescriptor
 		return game;
 	}
 
-	public static readonly string UUID = "gamemode/musedash1/touhou";
+	public const string UUID = "gamemode/musedash1/touhou";
 }
 
 [MarkForStaticConstruction]

@@ -1,7 +1,57 @@
-﻿namespace CloneDash.Compatibility.MuseDash
+﻿using Nucleus.Util;
+using System.Collections.Frozen;
+
+namespace CloneDash.Compatibility.MuseDash
 {
 	public static partial class MuseDash1Compatibility
 	{
+		static readonly string?[] ibmsCodeValueToName = new Func<string?[]>(() => {
+			var valuesRaw = (int[])Enum.GetValuesAsUnderlyingType<IBMSCode>();
+			int count = valuesRaw.Max() + 1;
+			string?[] ret = new string?[count];
+
+			Span<char> tempBuffer = stackalloc char[13];
+			for (int i = 0; i < valuesRaw.Length; i++) {
+				int idx = valuesRaw[i];
+				string? name = Enum.GetName<IBMSCode>((IBMSCode)idx);
+				if (name == null)
+					ret[idx] = $"Unknown (b36 {NumberToBase36String(idx, tempBuffer)}, b10 {idx})";
+				else
+					ret[idx] = name;
+			}
+
+			return ret;
+		})();
+
+		static readonly FrozenDictionary<ulong, IBMSCode> ibmsCodeNameToValue = new Func<FrozenDictionary<ulong, IBMSCode>>(() => {
+			var valuesRaw = (int[])Enum.GetValuesAsUnderlyingType<IBMSCode>();
+			int count = valuesRaw.Max() + 1;
+			Dictionary<ulong, IBMSCode> ret = [];
+
+			for (int i = 0; i < valuesRaw.Length; i++) {
+				int idx = valuesRaw[i];
+				string? name = Enum.GetName<IBMSCode>((IBMSCode)idx);
+				if (name == null) continue; // shouldn't happen but just to be safe
+				ret[name.Hash()] = (IBMSCode)idx;
+			}
+
+			return ret.ToFrozenDictionary();
+		})();
+
+		public static ReadOnlySpan<char> IBMSCodeToName(IBMSCode code) {
+			int idx = (int)code;
+			if (idx < 0) return null;
+			if (idx >= ibmsCodeValueToName.Length) return null;
+
+			return ibmsCodeValueToName[(int)code];
+		}
+
+		public static IBMSCode? IBMSNameToCode(ReadOnlySpan<char> name) {
+			if (!ibmsCodeNameToValue.TryGetValue(name.Hash(), out IBMSCode code))
+				return null;
+			return code;
+		}
+
 		/// <summary>
 		/// Muse Dash's IBMS codes, which defines behavior of certain entities
 		/// </summary>

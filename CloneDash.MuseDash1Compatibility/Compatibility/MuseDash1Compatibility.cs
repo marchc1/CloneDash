@@ -255,17 +255,23 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 		}
 
+		public ref struct IBMSCodeReturn
+		{
+			public IBMSCode Code;
+			public ReadOnlySpan<char> Name;
+		}
+
 		/// <summary>
 		/// Converts a Muse Dash IBMS ID (base-36) into the <see cref="IBMSCode"/> it represents
 		/// </summary>
 		/// <param name="ibms_id"></param>
 		/// <returns></returns>
-		public static (IBMSCode code, string name) ConvertIBMSCode(string ibms_id) {
+		public static IBMSCodeReturn ConvertIBMSCode(ReadOnlySpan<char> ibms_id) {
 			int decValue = Base36StringToNumber(ibms_id);
 			IBMSCode code = (IBMSCode)decValue;
-			string name = Enum.GetName(typeof(IBMSCode), decValue);
+			ReadOnlySpan<char> name = IBMSCodeToName(code);
 
-			return (code, name == null ? "Unknown (" + ibms_id + ")" : name);
+			return new IBMSCodeReturn() { Code = code, Name = name };
 		}
 		/// <summary>
 		/// Converts a base-36 character into an integer
@@ -287,7 +293,7 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="s"></param>
 		/// <returns></returns>
-		public static int Base36StringToNumber(string s) {
+		public static int Base36StringToNumber(ReadOnlySpan<char> s) {
 			int mul = 1;
 			int ret = 0;
 			for (int i = s.Length - 1; i >= 0; i--) {
@@ -301,17 +307,22 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="num"></param>
 		/// <returns></returns>
-		public static string NumberToBase36String(int num) {
-			StringBuilder sb = new StringBuilder();
+		public static ReadOnlySpan<char> NumberToBase36String(int num, Span<char> writeBuffer) {
+			if (num == 0) {
+				writeBuffer[^1] = '0';
+				return writeBuffer[^1..];
+			}
+
+			int charPtr = writeBuffer.Length;
 
 			while (num > 0) {
 				int remainder = num % 36;
 				char c = (remainder < 10) ? (char)(remainder + '0') : (char)(remainder - 10 + 'A');
-				sb.Insert(0, c);
+				writeBuffer[--charPtr] = c;
 				num /= 36;
 			}
 
-			return sb.ToString();
+			return writeBuffer[charPtr..];
 		}
 
 		/// <summary>
@@ -319,19 +330,20 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		[ConCommand(Name: "ibmscodes", Help: "Dumps the IBMSCode enum to console.")]
 		public static void DumpIBMSCodes() {
-			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode))) {
-				Logs.Print($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr)})");
-			}
+			Span<char> tempWrite = stackalloc char[13];
+			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode))) 
+				Logs.Print($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr, tempWrite)})");
 		}
 
+		static readonly Stopwatch measureFunctionTime = new();
 		/// <summary>
 		/// Converts a Muse Dash unity asset bundle into a <see cref="DashSheet"/> for use in a <see cref="DashGame"/>
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
 		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
-			Stopwatch measureFunctionTime = Stopwatch.StartNew();
-
+			measureFunctionTime.Reset();
+			measureFunctionTime.Start();
 			MD1_GamemodeData gamemodeData = new();
 
 			gamemodeData.InitialScene = "scene/musedash1/" + MDinfo.scene;
@@ -373,35 +385,35 @@ namespace CloneDash.Compatibility.MuseDash
 					var blood = s.configData.blood;
 
 					if (s.isLongPressStart) {
-						MD1_SongChartEntity press = new MD1_SongChartEntity();
-						press.Type = MuseDash1EntityType.SustainBeam;
-						press.Pathway = pathwayType;
-						press.EnterDirection = EntityEnterDirection.RightSide;
-						press.HitTime = tick_hit;
-						press.ShowTime = tick_show;
+						gamemodeData.Entities.Add(new MD1_SongChartEntity {
+							Type = MuseDash1EntityType.SustainBeam,
+							Pathway = pathwayType,
+							EnterDirection = EntityEnterDirection.RightSide,
+							HitTime = tick_hit,
+							ShowTime = tick_show,
 
-						press.Fever = s.noteData.fever;
-						press.Damage = s.noteData.damage;
-						press.Length = (double)s.configData.length;
-						press.Score = s.noteData.score;
-						press.Speed = s.noteData.speed;
+							Fever = s.noteData.fever,
+							Damage = s.noteData.damage,
+							Length = (double)s.configData.length,
+							Score = s.noteData.score,
+							Speed = s.noteData.speed,
 
-						press.RelatedToBoss = false;
-						press.DebuggingInfo = $"ib.code: {ib.code}";
-						gamemodeData.Entities.Add(press);
+							RelatedToBoss = false,
+							DebuggingInfo = $"ib.code: {ib.Code}"
+						});
 
 						continue;
 					}
 
 					//Switch case for entity type
-					bool isBoss = ib.code switch {
+					bool isBoss = ib.Code switch {
 						IBMSCode.BossBlock
 						or IBMSCode.BossAttack1 or IBMSCode.BossAttack2_1 or IBMSCode.BossAttack2_2
 						=> true,
 						_ => false
 					};
 
-					EventType eventType = ib.code switch {
+					EventType eventType = ib.Code switch {
 						IBMSCode.BossIn => EventType.BossIn,
 						IBMSCode.BossOut => EventType.BossOut,
 
@@ -476,7 +488,7 @@ namespace CloneDash.Compatibility.MuseDash
 					if (eventType != EventType.NotApplicable) {
 						if (eventType == EventType.SceneChange) {
 							gamemodeData.SceneChanges.Add(new ChartSceneChange() {
-								SceneUID = "scene/musedash1/scene_" + $"{ib.code switch {
+								SceneUID = "scene/musedash1/scene_" + $"{ib.Code switch {
 									IBMSCode.ToggleScene1 => 1,
 									IBMSCode.ToggleScene2 => 2,
 									IBMSCode.ToggleScene3 => 3,
@@ -494,10 +506,11 @@ namespace CloneDash.Compatibility.MuseDash
 							});
 						}
 						else {
-							MD1_SongChartEvent ChartEvent = new();
-							ChartEvent.Type = eventType;
-							ChartEvent.Time = tick_hit;
-							ChartEvent.Length = (double)s.configData.length;
+							MD1_SongChartEvent ChartEvent = new() {
+								Type = eventType,
+								Time = tick_hit,
+								Length = (double)s.configData.length
+							};
 
 							if (s.noteData.damage > 0)
 								ChartEvent.Damage = s.noteData.damage;
@@ -511,7 +524,7 @@ namespace CloneDash.Compatibility.MuseDash
 						}
 					}
 					else {
-						MuseDash1EntityType entityType = ib.code switch {
+						MuseDash1EntityType entityType = ib.Code switch {
 							IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown
 							or IBMSCode.Medium1Normal or IBMSCode.Medium2Normal or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Medium1Up or IBMSCode.Medium2Up
 							or IBMSCode.Large1 or IBMSCode.Large2
@@ -546,10 +559,10 @@ namespace CloneDash.Compatibility.MuseDash
 
 							_ => 0
 						};
-						var health = ib.code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
+						var health = ib.Code == IBMSCode.Hp ? MD1_SongChartEntity.DEFAULT_HP : 0;
 
 						if (entityType != 0) {
-							EntityVariant variant = ib.code switch {
+							EntityVariant variant = ib.Code switch {
 								IBMSCode.SmallNormal or IBMSCode.SmallUp or IBMSCode.SmallDown => EntityVariant.Small,
 								IBMSCode.Medium1Normal or IBMSCode.Medium1Down or IBMSCode.Medium1Up => EntityVariant.Medium1,
 								IBMSCode.Medium2Normal or IBMSCode.Medium2Down or IBMSCode.Medium2Up => EntityVariant.Medium2,
@@ -583,39 +596,38 @@ namespace CloneDash.Compatibility.MuseDash
 								_ => EntityVariant.NotApplicable
 							};
 
-							bool flipped = ib.code == IBMSCode.HammerFlip || ib.code == IBMSCode.RaiderFlip;
+							bool flipped = ib.Code == IBMSCode.HammerFlip || ib.Code == IBMSCode.RaiderFlip;
 
-							EntityEnterDirection dir = ib.code switch {
+							EntityEnterDirection dir = ib.Code switch {
 								IBMSCode.SmallDown or IBMSCode.Medium1Down or IBMSCode.Medium2Down or IBMSCode.Hammer => EntityEnterDirection.TopDown,
 								IBMSCode.SmallUp or IBMSCode.Medium1Up or IBMSCode.Medium2Up or IBMSCode.HammerFlip => EntityEnterDirection.BottomUp,
 								_ => EntityEnterDirection.RightSide
 							};
 
-							MD1_SongChartEntity ent = new MD1_SongChartEntity();
-							ent.Type = entityType;
-							ent.Variant = variant;
-							ent.Pathway = pathwayType;
-							ent.EnterDirection = dir;
-							ent.HitTime = tick_hit;
-							ent.ShowTime = tick_show;
-							ent.Flipped = flipped;
+							gamemodeData.Entities.Add(new MD1_SongChartEntity {
+								Type = entityType,
+								Variant = variant,
+								Pathway = pathwayType,
+								EnterDirection = dir,
+								HitTime = tick_hit,
+								ShowTime = tick_show,
+								Flipped = flipped,
 
-							ent.Fever = s.noteData.fever;
-							ent.Damage = s.noteData.damage;
-							ent.Length = (double)s.configData.length;
-							ent.Score = s.noteData.score;
-							ent.Speed = s.noteData.speed;
-							ent.Health = health;
-							ent.Blood = blood;
+								Fever = s.noteData.fever,
+								Damage = s.noteData.damage,
+								Length = (double)s.configData.length,
+								Score = s.noteData.score,
+								Speed = s.noteData.speed,
+								Health = health,
+								Blood = blood,
 
-							ent.RelatedToBoss = isBoss;
-							ent.DebuggingInfo = $"ib.code: {ib.code}";
-
-							gamemodeData.Entities.Add(ent);
+								RelatedToBoss = isBoss,
+								DebuggingInfo = $"ib.code: {ib.Code}"
+							});
 						}
 						else if (WarnedIBMSPresses.Add(s.noteData.ibms_id)) {
 							Logs.Warn("WARNING: An unidentified IBMS code with no compatibility translation definition was found during MD -> CD conversion.");
-							Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.code}, as name-definition: {ib.name})");
+							Logs.Info($"IBMS Code: {s.noteData.ibms_id} (as int: {(int)ib.Code}, as name-definition: {ib.Code})");
 							Logs.Info($"At time {tick_hit}, length of {s.configData.length}");
 							Logs.Info($"DataObjID: {s.objId}");
 							Logs.Info($"ConfigID: {s.configData.id}");
@@ -627,7 +639,7 @@ namespace CloneDash.Compatibility.MuseDash
 				first = false;
 			}
 
-			gamemodeData.Entities.Sort((x, y) => x.HitTime.CompareTo(y.HitTime));
+			gamemodeData.Entities.Sort(static (x, y) => x.HitTime.CompareTo(y.HitTime));
 			Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
 			Logs.Info($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");

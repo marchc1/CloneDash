@@ -335,8 +335,7 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 		var uuid = game.GetGamemode().GetUUID();
 
 		switch (uuid) {
-			case "gamemode/musedash1/standard":
-				return (T)(object)(new MuseDash1SceneRuntime(this, (MuseDash1Game)game));
+			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1SceneRuntime(this, (MuseDash1Game)game));
 		}
 
 		return default;
@@ -355,8 +354,8 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
 		var uuid = gamemodeDescriptor.GetUUID();
 		switch (uuid) {
-			case "gamemode/musedash1/standard":
-			case "gamemode/musedash1/touhou":
+			case MuseDash1Gamemode.UUID:
+			case MuseDash1TouhouGamemode.UUID:
 				return true;
 		}
 		return false;
