@@ -641,7 +641,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
-				Quirks = charData.GetQuirks();
+				Quirks = default;
+				charData.ApplyQuirks(ref Quirks);
 				Character = charData.CreateInGame<IMuseDash1CharacterInstance>(this)!;
 				if (Character == null)
 					throw new Exception("The character isn't supported for Muse Dash 1");

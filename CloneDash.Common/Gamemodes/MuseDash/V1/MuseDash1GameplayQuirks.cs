@@ -182,104 +182,104 @@ public struct MuseDash1GameplayQuirks()
 	public bool MergeHitLocations;
 
 	static MuseDash1GameplayQuirks() {
-		AddQuirks("character/musedash1/char_1_rock", new() {
-			MaxHP = 300
+		AddCharacterQuirks("character/musedash1/char_1_rock", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 300;
 		});
-		AddQuirks("character/musedash1/char_1_rampage", new() {
-			GreatToPerfect = 5
+		AddCharacterQuirks("character/musedash1/char_1_rampage", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.GreatToPerfect = 5;
 		});
-		AddQuirks("character/musedash1/char_1_sleepy", new() {
-			MaxHP = 200,
-			Autoplay = true
+		AddCharacterQuirks("character/musedash1/char_1_sleepy", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.Autoplay = true;
 		});
-		AddQuirks("character/musedash1/char_1_bunny", new() {
-			MaxHP = 200,
-			ScoreMultipliers = EntityTypeLookupArray.Create<double>(1,
+		AddCharacterQuirks("character/musedash1/char_1_bunny", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.ScoreMultipliers = EntityTypeLookupArray.Create<double>(1,
 				(MuseDash1EntityType.Score, 3),
 				(MuseDash1EntityType.Ghost, 3),
 				(MuseDash1EntityType.Gear, 3)
-			),
+			);
 		});
-		AddQuirks("character/musedash1/char_2_pilot", new() {
-			InvincibleInFever = true
+		AddCharacterQuirks("character/musedash1/char_2_pilot", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.InvincibleInFever = true;
 		});
-		AddQuirks("character/musedash1/char_2_robot", new() {
-			MaxHP = 200,
-			XpMultiplier = 1.5
+		AddCharacterQuirks("character/musedash1/char_2_robot", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.XpMultiplier = 1.5;
 		});
-		AddQuirks("character/musedash1/char_2_zombie", new() {
-			DyingSeconds = 15
+		AddCharacterQuirks("character/musedash1/char_2_zombie", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.DyingSeconds = 15;
 		});
-		AddQuirks("character/musedash1/char_2_joker", new() {
-			MaxHP = 200,
-			ScoreModifier = static (in GameSnapshot gameState, ref double scoreGranting) => {
+		AddCharacterQuirks("character/musedash1/char_2_joker", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.ScoreModifier = static (in GameSnapshot gameState, ref double scoreGranting) => {
 				// TODO:
 				// Mixed answers on how this works (minimum 50 or 60? outdated info after nerf/buff?)
 				// Also unsure how much to increase score by right now.
-			}
+			};
 		});
-		AddQuirks("character/musedash1/char_3_violin", new() {
-			MissComboForgiveness = 100
+		AddCharacterQuirks("character/musedash1/char_3_violin", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MissComboForgiveness = 100;
 		});
-		AddQuirks("character/musedash1/char_3_maid", new() {
-			HealthBonusTimes = 1,
-			HealthBonusThreshold = 100,
-			HealthBonusGranted = 2.5
+		AddCharacterQuirks("character/musedash1/char_3_maid", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.HealthBonusTimes = 1;
+			quirks.HealthBonusThreshold = 100;
+			quirks.HealthBonusGranted = 2.5;
 		});
-		AddQuirks("character/musedash1/char_3_magic", new() {
-			MaxHP = 200,
-			MaxFever = 100
+		AddCharacterQuirks("character/musedash1/char_3_magic", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.MaxFever = 100;
 		});
-		AddQuirks("character/musedash1/char_3_evil", new() {
-			MaxHP = 200,
-			ScoreModifier = static (in gameState, ref scoreGranting) => {
+		AddCharacterQuirks("character/musedash1/char_3_evil", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = 200;
+			quirks.ScoreModifier = static (in gameState, ref scoreGranting) => {
 
-			},
-			HealthLossPerSecond = static (in _, ref loss) => loss = 10
+			};
+			quirks.HealthLossPerSecond = static (in _, ref loss) => loss = 10;
 		});
-		AddQuirks("character/musedash1/char_3_black", new() {
+		AddCharacterQuirks("character/musedash1/char_3_black", (ref MuseDash1GameplayQuirks quirks) => {
 			// todo
 		});
-		AddQuirks("character/musedash1/char_1_santa", new() {
-			MaximumApplicableResultAccuracy = 90,
-			ForgivenAccuracy = 5
+		AddCharacterQuirks("character/musedash1/char_1_santa", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaximumApplicableResultAccuracy = 90;
+			quirks.ForgivenAccuracy = 5;
 		});
-		AddQuirks("character/musedash1/char_2_jk", new() {
+		AddCharacterQuirks("character/musedash1/char_2_jk", (ref MuseDash1GameplayQuirks quirks) => {
 			// todo
 		});
-		AddQuirks("character/musedash1/char_4_yume", new() {
-			BreaksAvoids = true
+		AddCharacterQuirks("character/musedash1/char_4_yume", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.BreaksAvoids = true;
 		});
-		AddQuirks("character/musedash1/char_5_neko", new() {
-			PlayableAfterDeath = true
+		AddCharacterQuirks("character/musedash1/char_5_neko", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.PlayableAfterDeath = true;
 		});
-		AddQuirks("character/musedash1/char_1_worker", new() {
+		AddCharacterQuirks("character/musedash1/char_1_worker", (ref MuseDash1GameplayQuirks quirks) => {
 			// I think this just has nothing lol but idk
 		});
-		AddQuirks("character/musedash1/char_6_reimu", new() {
-			AbleToFly = true,
+		AddCharacterQuirks("character/musedash1/char_6_reimu", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.AbleToFly = true;
 			// TODO: "and shrunk the hitbox of obstacles (gears) , making it easier to dodge."
 		});
-		AddQuirks("character/musedash1/char_7_clear", new() {
-			CatchExtras = true
+		AddCharacterQuirks("character/musedash1/char_7_clear", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.CatchExtras = true;
 		});
-		AddQuirks("character/musedash1/char_3_sister", new() {
-			SwapLocations = EntityTypeLookupArray.CreateWhitelist(
+		AddCharacterQuirks("character/musedash1/char_3_sister", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.SwapLocations = EntityTypeLookupArray.CreateWhitelist(
 				MuseDash1EntityType.Raider,
 				MuseDash1EntityType.Hammer,
 				MuseDash1EntityType.Gear
-			)
+			);
 		});
-		AddQuirks("character/musedash1/char_8_marisa", new() {
-			AbleToFly = true,
-			ScoreModifier = static (in gameState, ref scoreGranting) => {
+		AddCharacterQuirks("character/musedash1/char_8_marisa", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.AbleToFly = true;
+			quirks.ScoreModifier = static (in gameState, ref scoreGranting) => {
 				if (gameState.IsHealthFull() && (gameState.EntityType == MuseDash1EntityType.Score || gameState.EntityType == MuseDash1EntityType.Heart || gameState.EntityBlood != 0))
 					scoreGranting *= 3;
-			},
+			};
 		});
-		AddQuirks("character/musedash1/char_9_amiya", new() {
+		AddCharacterQuirks("character/musedash1/char_9_amiya", (ref MuseDash1GameplayQuirks quirks) => {
 			// TODO: Earns more fever by repelling enemies (need specifics)
-			JudgementUpgrade = (in gameState) => {
+			quirks.JudgementUpgrade = (in gameState) => {
 				if (!gameState.InFever)
 					return gameState.Judgement;
 
@@ -288,26 +288,26 @@ public struct MuseDash1GameplayQuirks()
 					Judgement.Great => Judgement.Perfect,
 					_ => gameState.Judgement
 				};
-			},
-			PostFeverDismissalTime = 3,
+			};
+			quirks.PostFeverDismissalTime = 3;
 		});
-		AddQuirks("character/musedash1/char_10_ola", new() {
-			InvincibleInFever = true
+		AddCharacterQuirks("character/musedash1/char_10_ola", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.InvincibleInFever = true;
 		});
-		AddQuirks("character/musedash1/char_2_exorcist", new() {
-			ConsumeFeverBeforeHealth = true,
-			FeverModifier = (in state, ref fever) => fever *= 1.3
+		AddCharacterQuirks("character/musedash1/char_2_exorcist", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.ConsumeFeverBeforeHealth = true;
+			quirks.FeverModifier = (in state, ref fever) => fever *= 1.3;
 		});
-		AddQuirks("character/musedash1/char_11_miku", new() {
-			MergeHitLocations = true
+		AddCharacterQuirks("character/musedash1/char_11_miku", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MergeHitLocations = true;
 		});
-		AddQuirks("character/musedash1/char_12_rin", new() {
+		AddCharacterQuirks("character/musedash1/char_12_rin", (ref MuseDash1GameplayQuirks quirks) => {
 			// TODO
 			// I'm pretty sure this character crashes the game right now anyway, it needs work before it can be supported
 			// the latest restructuring changes should help a lot though with making it work
 		});
-		AddQuirks("character/musedash1/char_1_racer", new() {
-			JudgementUpgrade = (in GameSnapshot gameState) => {
+		AddCharacterQuirks("character/musedash1/char_1_racer", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.JudgementUpgrade = (in GameSnapshot gameState) => {
 				if (gameState.Health >= 150 && gameState.Judgement == Judgement.Miss)
 					return Judgement.Great;
 
@@ -315,54 +315,71 @@ public struct MuseDash1GameplayQuirks()
 					return Judgement.Perfect;
 
 				return gameState.Judgement;
-			}
+			};
 		});
-		AddQuirks("character/musedash1/char_3_dancer", new() {
-			FeverGainPerSecond = (in state, ref fever) => fever = 10, // TODO: This is definitely not right, its based on difficulty...
-			FeverModifier = (in state, ref fever) => fever = 0
+		AddCharacterQuirks("character/musedash1/char_3_dancer", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.FeverGainPerSecond = (in state, ref fever) => fever = 10; // TODO: This is definitely not right, its based on difficulty...
+			quirks.FeverModifier = (in state, ref fever) => fever = 0;
 		});
-		AddQuirks("character/musedash1/char_13_wisadel", new() {
-			C4Bombs = 6,
-			FeverModifier = (in state, ref fever) => fever = 0
+		AddCharacterQuirks("character/musedash1/char_13_wisadel", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.C4Bombs = 6;
+			quirks.FeverModifier = (in state, ref fever) => fever = 0;
 		});
-		AddQuirks("character/musedash1/char_2_legendburo", new() {
-			CompleteMashersInstantly = true,
-			DamageModifier = (in state, ref damage) => damage *= 0.1,
-			AbleToFly = true, // Correct? review
-			Quiz = true
+		AddCharacterQuirks("character/musedash1/char_2_legendburo", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.CompleteMashersInstantly = true;
+			quirks.DamageModifier = (in state, ref damage) => damage *= 0.1;
+			quirks.AbleToFly = true; // Correct? review
+			quirks.Quiz = true;
 		});
-		AddQuirks("character/musedash1/char_2_bloodheir", new() {
-			MaxHP = DEFAULT_MAX_HP + 200,
+		AddCharacterQuirks("character/musedash1/char_2_bloodheir", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MaxHP = DEFAULT_MAX_HP + 200;
 			// TODO: Quality plasma...?
 		});
-		AddQuirks("character/musedash1/char_1_pirate", new() {
-			AutoHoldsSustains = true
+		AddCharacterQuirks("character/musedash1/char_1_pirate", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.AutoHoldsSustains = true;
 		});
-		AddQuirks("character/musedash1/char_2_diver", new() {
-			// Idk 
+		AddCharacterQuirks("character/musedash1/char_2_diver", (ref MuseDash1GameplayQuirks quirks) => {
+
 		});
 		// I was wondering why this was named "char_3" and now I realize it's just a direct copy of Marija's behavior lol
-		AddQuirks("character/musedash1/char_3_horse", new() {
-			MissComboForgiveness = 100
+		AddCharacterQuirks("character/musedash1/char_3_horse", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MissComboForgiveness = 100;
 		});
 	}
 
-	static readonly Dictionary<ulong, MuseDash1GameplayQuirks> lookup = [];
+	static readonly Dictionary<ulong, ModifyQuirksFn> characterLookup = [];
+	static readonly Dictionary<ulong, ModifyQuirksFn> elfinLookup = [];
+
 	public static readonly MuseDash1GameplayQuirks Default = new() { };
 
-	public static MuseDash1GameplayQuirks GetQuirks(ReadOnlySpan<char> characterName)
-		=> lookup.TryGetValue(characterName.Hash(), out MuseDash1GameplayQuirks quirks) ? quirks : Default;
+	public static void ApplyCharacterQuirks(ReadOnlySpan<char> characterName, ref MuseDash1GameplayQuirks quirks) {
+		if (!characterLookup.TryGetValue(characterName.Hash(), out ModifyQuirksFn? quirkFn))
+			return;
 
-	public static void AddQuirks(ReadOnlySpan<char> name, MuseDash1GameplayQuirks quirks) {
-		lookup[name.Hash()] = quirks;
+		quirkFn(ref quirks);
 	}
 
-	public static ModifyQuirksFn? ModifyQuirks;
+	public static void ApplyElfinQuirks(ReadOnlySpan<char> elfinName, ref MuseDash1GameplayQuirks quirks) {
+		if (!elfinLookup.TryGetValue(elfinName.Hash(), out ModifyQuirksFn? quirkFn))
+			return;
+
+		quirkFn(ref quirks);
+	}
+
+	public static event ModifyQuirksFn? ModifyQuirks;
 	/// <summary>
-	/// Allows game mods to modify quirks
+	/// Allows game mods to modify quirks after applying
 	/// </summary>
 	public static void ApplyMods(ref MuseDash1GameplayQuirks quirks) {
 		ModifyQuirks?.Invoke(ref quirks);
+	}
+
+	public static void AddCharacterQuirks(ReadOnlySpan<char> name, ModifyQuirksFn quirkFn) {
+		characterLookup[name.Hash()] = quirkFn;
+	}
+
+	public static void AddElfinQuirks(ReadOnlySpan<char> name, ModifyQuirksFn quirkFn) {
+		elfinLookup[name.Hash()] = quirkFn;
 	}
 }
 

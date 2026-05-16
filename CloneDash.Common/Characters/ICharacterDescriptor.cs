@@ -57,5 +57,5 @@ public interface ICharacterDescriptor : IUniquelyIdentifiableObject
 	/// </summary>
 	T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance;
 
-	ref readonly MuseDash1GameplayQuirks GetQuirks();
+	void ApplyQuirks(ref MuseDash1GameplayQuirks quirks);
 }

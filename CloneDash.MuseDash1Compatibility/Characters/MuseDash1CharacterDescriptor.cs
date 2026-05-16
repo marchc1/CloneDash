@@ -88,7 +88,6 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
-	public readonly MuseDash1GameplayQuirks Quirks = MuseDash1GameplayQuirks.GetQuirks(name);
 
 	public ReadOnlySpan<char> GetUUID() => name;
 
@@ -179,7 +178,9 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		);
 	}
 
-	public ref readonly MuseDash1GameplayQuirks GetQuirks() => ref Quirks;
+	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks){
+		MuseDash1GameplayQuirks.ApplyCharacterQuirks(name, ref quirks);
+	}
 
 	// I hate this!
 	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
