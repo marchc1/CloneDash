@@ -213,6 +213,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Content.DrawPanelBackground = false;
 		Content.BorderSize = 0;
 		Content.Dock = Dock.Fill;
+		Content.DockPadding = RectangleF.TLRB(0, 0, 0, 48);
 		
 		_footer = UI.Add<Panel>();
 		_footer.Size = new Vector2F(256, 48);

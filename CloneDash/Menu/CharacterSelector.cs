@@ -62,15 +62,15 @@ public class CharacterSelectorScroller : Panel
 		InvalidateLayout();
 	}
 
-	protected override void Initialize()
-	{
+	protected override void Initialize() {
 		var language = HumanLanguage.GetCurrentLanguage();
 		foreach (var characterIdx in CharacterMod.GetAvailableCharacters()) {
 			var character = CharacterMod.GetCharacterData(characterIdx);
 			Debug.Assert(character != null);
 
 			var lbl = Add<CharacterButton>();
-			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
+			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _),
+				character.GetThumbnailTexture());
 			lbl.BorderSize = 0;
 
 			lbl.MouseClickEvent += (_, _, _) => PerformPick(character);
@@ -96,7 +96,8 @@ public class CharacterSelectorScroller : Panel
 			var btn = c.label;
 			var chr = c.character;
 
-			float selectedSizeOffset = Math.Clamp(i == lastSelectedIdx ? 2 : (8 + (Math.Abs(i - lastSelectedIdx) * 1)), 0, height);
+			float selectedSizeOffset = Math.Clamp(i == lastSelectedIdx ? 2 : (8 + (Math.Abs(i - lastSelectedIdx) * 1)),
+				0, height);
 			if (selectedSizeOffset == 0)
 				btn.Visible = false;
 			else {
@@ -119,62 +120,99 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	public string GetName() => "Character Selector";
 	public void OnHidden() { }
 	public void OnShown() { }
+
 	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
-			Details = "Main Menu",
-			State = "Selecting a character"
-		});
+		RichPresenceSystem.SetPresence(new() { Details = "Main Menu", State = "Selecting a character" });
 	}
-	Panel selectedInfo = null!;
-	Label characterNameLabel = null!;
-	Label characterCostumeLabel = null!;
-	Label characterHPLabel = null!;
-	Label characterAuthorLabel = null!;
-	Label characterPerkLabel = null!;
+
+	private Label _characterNameLabel = null!;
+	private Label _characterCostumeLabel = null!;
+	private Label _characterHpLabel = null!;
+	private Label _characterAuthorLabel = null!;
+
+	private ITexture _heartTexture = null!;
+	private ITexture _voiceTexture = null!;
+	private ITexture _starTexture = null!;
+
+	private Panel _topRightPanel = null!;
+	private Label _characterSkillLabel = null!;
+	private Label _characterPerkLabel = null!;
+
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
+
 	protected override void Initialize() {
 		base.Initialize();
 
+		_heartTexture = Textures.LoadTextureFromFile("icons/heart-straight.png");
+		_voiceTexture = Textures.LoadTextureFromFile("icons/microphone-stage.png");
+		_starTexture = Textures.LoadTextureFromFile("icons/star.png");
+
+		DockPadding = RectangleF.Zero;
 		BackgroundColor = new Color(0, 0, 0, 0);
 		OnHoverTest += Passthru;
-		
-		selectedInfo = Add<Panel>();
-		selectedInfo.Dock = Dock.Bottom;
-		selectedInfo.DynamicallySized = true;
-		selectedInfo.Size = new(0, 0.125f);
-		selectedInfo.BorderSize = 0;
-		selectedInfo.PaintOverride += SelectedInfo_PaintOverride;
 
-		characterNameLabel = Add<Label>();
-		characterNameLabel.AutoSize = true;
+		_characterNameLabel = Add<Label>();
+		_characterNameLabel.AutoSize = true;
+		_characterNameLabel.Font = CloneDashUI.FontBold;
+		_characterNameLabel.TextColor = CloneDashUI.CharacterText;
 
-		characterCostumeLabel = Add<Label>();
-		characterCostumeLabel.AutoSize = true;
+		_characterCostumeLabel = Add<Label>();
+		_characterCostumeLabel.AutoSize = true;
+		_characterCostumeLabel.TextColor = CloneDashUI.CharacterText;
 
-		characterHPLabel = Add<Label>();
-		characterHPLabel.AutoSize = true;
+		_characterHpLabel = Add<Label>();
+		_characterHpLabel.AutoSize = true;
+		_characterHpLabel.TextColor = CloneDashUI.CharacterText;
 
-		characterAuthorLabel = Add<Label>();
-		characterAuthorLabel.AutoSize = true;
-		characterAuthorLabel.Origin = Anchor.TopRight;
+		_characterAuthorLabel = Add<Label>();
+		_characterAuthorLabel.AutoSize = true;
+		_characterAuthorLabel.TextColor = CloneDashUI.CharacterText;
 
-		characterPerkLabel = selectedInfo.Add<Label>();
-		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
-		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
-		characterPerkLabel.TextAlignment = Anchor.CenterLeft;
-		characterPerkLabel.TextPadding = new(0, 0);
-		characterPerkLabel.Dock = Dock.Fill;
-		characterPerkLabel.TextSize = 24;
-		characterPerkLabel.DynamicallySized = true;
-		characterPerkLabel.BackgroundColor = new(100, 100, 100, 100); // temp
+		_topRightPanel = Add<Panel>();
+		_topRightPanel.DrawPanelBackground = false;
+		_topRightPanel.Clipping = false;
+		_topRightPanel.Origin = Anchor.TopRight;
 
-		backPanel = Add<CharacterSelectorScroller>();
-		backPanel.Dock = Dock.Bottom;
+		_characterSkillLabel = _topRightPanel.Add<Label>();
+		_characterSkillLabel.Text = "Skill";
+		_characterSkillLabel.Font = CloneDashUI.FontBold;
+		_characterSkillLabel.TextColor = CloneDashUI.CharacterText;
+		_characterSkillLabel.TextAlignment = Anchor.TopRight;
+		_characterSkillLabel.Clipping = false;
+		_characterSkillLabel.Dock = Dock.Top;
+		_characterSkillLabel.TextPadding = new Vector2F(40, 0);
+
+		_characterPerkLabel = _topRightPanel.Add<Label>();
+		_characterPerkLabel.TextColor = CloneDashUI.CharacterText;
+		_characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
+		_characterPerkLabel.TextAlignment = Anchor.TopRight;
+		_characterPerkLabel.Clipping = false;
+		_characterPerkLabel.Dock = Dock.Top;
+
+		Panel bottom = Add<Panel>();
+		bottom.Dock = Dock.Bottom;
+		bottom.Size = new Vector2F(0, 180);
+		bottom.BackgroundColor = GetBackgroundColor();
+		bottom.BorderSize = 0;
+		bottom.DockPadding = RectangleF.Zero;
+
+		Panel line = bottom.Add<Panel>();
+		line.Dock = Dock.Top;
+		line.Size = new Vector2F(0, 3);
+		line.BackgroundColor = GetPrimaryColor();
+		line.BorderSize = 0;
+		line.DockPadding = RectangleF.Zero;
+
+		backPanel = bottom.Add<CharacterSelectorScroller>();
+		backPanel.Dock = Dock.Top;
 		backPanel.DynamicallySized = true;
-		backPanel.Size = new(0, 0.1f);
+		backPanel.Size = new Vector2F(0, 0.6f);
+		backPanel.DockMargin = RectangleF.TLRB(20, 0, 0, 0);
 		backPanel.BorderSize = 0;
+		backPanel.DrawPanelBackground = false;
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
+		backPanel.DockPadding = RectangleF.Zero;
 
 		var currentCharacter = CharacterMod.GetCharacterData();
 		BackPanel_CharacterSelected(currentCharacter);
@@ -193,19 +231,46 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		float ratio = height / 900;
 
-		characterNameLabel.TextSize = 80 * ratio;
-		characterCostumeLabel.TextSize = 40 * ratio;
-		characterHPLabel.TextSize = 40 * ratio;
-		characterAuthorLabel.TextSize = 28 * ratio;
+		_characterNameLabel.TextSize = CloneDashUI.GetFontSize(64) * ratio;
+		_characterCostumeLabel.TextSize = CloneDashUI.GetFontSize(36) * ratio;
+		_characterHpLabel.TextSize = CloneDashUI.GetFontSize(32) * ratio;
+		_characterAuthorLabel.TextSize = CloneDashUI.GetFontSize(32) * ratio;
 
-		characterNameLabel.Position = new(32, 10 * ratio);
-		characterCostumeLabel.Position = new(32, 72 * ratio);
-		characterHPLabel.Position = new(32, 104 * ratio);
-		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
+		_characterNameLabel.Position = new Vector2F(32, 12);
+		_characterCostumeLabel.Position =
+			new Vector2F(32, _characterNameLabel.Position.Y + _characterNameLabel.TextSize - 20 * ratio);
+		_characterHpLabel.Position = new Vector2F(72,
+			_characterCostumeLabel.Position.Y + _characterCostumeLabel.TextSize + 16 * ratio);
+		_characterAuthorLabel.Position =
+			new Vector2F(72, _characterHpLabel.Position.Y + _characterHpLabel.TextSize - 8 * ratio);
+
+		_topRightPanel.Position = new Vector2F(width - 32, 32);
+		_topRightPanel.Size = new Vector2F(640 * (width / 1600), 240);
+
+		_characterSkillLabel.TextSize = CloneDashUI.GetFontSize(32) * ratio;
+
+		_characterPerkLabel.TextSize = CloneDashUI.GetFontSize(20) * ratio;
+		_characterPerkLabel.Size = _topRightPanel.Size;
+		_characterPerkLabel.DockMargin = RectangleF.TLRB(12 * ratio, 0, 0, 0);
+	}
+
+	public override void Paint(float width, float height) {
+		base.Paint(width, height);
+
+		float ratio = height / 900;
+
+		DrawImage(_characterHpLabel, _heartTexture);
+		DrawImage(_characterAuthorLabel, _voiceTexture);
+		DrawImage(_characterSkillLabel, _starTexture, width - 64, 32 + (8 * ratio));
+
+		void DrawImage(Label label, ITexture spr, float? x = null, float? y = null) {
+			Graphics2D.SetDrawColor(CloneDashUI.CharacterText);
+			Graphics2D.SetTexture(spr);
+			Graphics2D.DrawImage(new Vector2F(x ?? 32, y ?? label.Position.Y + (8 + ratio)), new Vector2F(32 * ratio));
+		}
 	}
 
 	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
-	
 	}
 
 	ICharacterDescriptor? LastCharacterSelected;
@@ -217,21 +282,22 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		var lang = HumanLanguage.GetCurrentLanguage();
 
 		if (ch == null) {
-			characterNameLabel.Text = "<NULL>";
-			characterCostumeLabel.Text = "<NULL>";
-			characterAuthorLabel.Text = "<NULL>";
-			characterPerkLabel.Text = "<NULL>";
+			_characterNameLabel.Text = "<NULL>";
+			_characterCostumeLabel.Text = "<NULL>";
+			_characterHpLabel.Text = "<NULL>";
+			_characterAuthorLabel.Text = "<NULL>";
+			_characterPerkLabel.Text = "<NULL>";
 		}
 		else {
-			characterNameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
-			characterCostumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
-			characterAuthorLabel.Text = $"Author: {ch.GetAuthor(lang, out _)}";
-			characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
+			_characterNameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
+			_characterCostumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
+			_characterHpLabel.Text = $"{ch.GetQuirks().MaxHP}";
+			_characterAuthorLabel.Text = $"{ch.GetAuthor(lang, out _)}";
+			_characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
 		}
 	}
 
-	public bool OnTryClose()
-	{
+	public bool OnTryClose() {
 		Character.SetCharacter(CharacterMod.GetCharacterData());
 		return true;
 	}
