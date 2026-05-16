@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.UI;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -7,6 +8,7 @@ using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -304,6 +306,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
 		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
 	}
+
+	public Color GetPrimaryColor() => CloneDashUI.OptionsPrimary;
+	public Color GetBackgroundColor() => CloneDashUI.OptionsBackground;
 }
 
 public class InputActionKeybindingButtonsPanel : Panel
