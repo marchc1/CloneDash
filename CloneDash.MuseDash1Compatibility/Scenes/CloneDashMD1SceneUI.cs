@@ -614,7 +614,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		power_slider_white = LoadTextureByName("power_slider_white");
 		Fever = LoadTextureByName("Fever");
 		bubble = LoadTextureByName("bubble");
-
 	}
 
 	public virtual void LoadComboModels() {
@@ -712,6 +711,48 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.Width, tex.Height);
+	public void DrawSliderLight(ITexture? stencilMask, Vector2F stencilSize, float progress, float alpha, Vector2F offset, Color sliderColor) {
+		sliderColor.A = (byte)(int)(255 * Math.Clamp(alpha, 0, 1));
+		Vector2F drawRectPos = new(-(stencilSize.W / 2) + offset.X, -stencilSize.H + offset.Y);
+
+		bool returnBackFlag = false; // used in the gotos
+	drawStencilMask:
+		if (stencilMask != null) {
+			float oldProgress = progress;
+			if (returnBackFlag)
+				progress = 1; // draw the full thing for the second stencil pass
+
+			Stencils.Begin();
+			Stencils.Function = StencilFunction.Always;
+			Stencils.Reference = 1;
+			Stencils.Mask = 0xFF;
+			Stencils.OnFail = StencilOperation.Keep;
+			Stencils.OnDepthFail = StencilOperation.Keep;
+			Stencils.OnDepthPass = StencilOperation.Replace;
+			Stencils.BeginMask();
+
+			Graphics2D.SetTexture(stencilMask);
+			Graphics2D.DrawImageHorizontalProgress(drawRectPos, stencilSize, horizontalProgress: progress);
+
+			Stencils.EndMask();
+
+			if (returnBackFlag) {
+				progress = oldProgress;
+				goto returnBackHere;
+			}
+		}
+		Graphics2D.SetDrawColor(sliderColor);
+		Graphics2D.DrawRectangle(drawRectPos.Round(), new(stencilSize.W * progress, stencilSize.H));
+		if (stencilMask != null) Stencils.End();
+
+		returnBackFlag = true;
+		goto drawStencilMask;
+	returnBackHere:
+		Graphics2D.SetTexture(slider_light);
+		Graphics2D.DrawImage((drawRectPos + new Vector2F((stencilSize.W * progress), 0)).Round(), new(32, stencilSize.H));
+		if (stencilMask != null) Stencils.End();
+	}
+
 	public void DrawSomeBubbles(ITexture? stencilMask, Vector2F stencilSize, float progress, float uvAdd, Vector2F offset, Color bubbleColor) {
 		if (bubble == null) return;
 
@@ -870,17 +911,18 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Graphics2D.SetTexture(power_slider);
 		Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
 		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
+		DrawSliderLight(power_slider, power_sliderSize, (float)feverRatio, (float)NMath.Remap(Time - LastFeverUpdateTime, 0, 0.3, 1, 0, clampInput: true), new(61, -4), new(180, 229, 255));
 
 		float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
 		if (feverActivated < 1) {
 			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InQuart(1 - feverActivated) * 255));
 			Graphics2D.SetTexture(power_slider_white);
-			Graphics2D.DrawImage(new(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
+			Graphics2D.DrawImage(new Vector2F(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
 		}
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		float fontSize = 32;
-		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{HP}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
+		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{Math.Round(HP)}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
 		if (Fever != null) {
 			Graphics2D.SetTexture(Fever);
 			Graphics2D.DrawImage(new(300, -38f), new(Fever.Width, Fever.Height));
@@ -906,7 +948,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (ShouldRenderCombo1()) renderOneCombo(combo1model, animations_1);
 		if (ShouldRenderCombo2()) renderOneCombo(combo2model, animations_2);
 	}
-	public float GetSizeForComboHit(){
+	public float GetSizeForComboHit() {
 		float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
 		float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
 		return size;
@@ -1068,10 +1110,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public bool ShouldRenderCombo1() => animations_1.IsPlayingAnimation();
 	public bool ShouldRenderCombo2() => animations_2.IsPlayingAnimation();
 
+	double LastFeverUpdateTime;
 	public void UpdateFeverProgress(double fever, double maxFever) {
 		InFever = false;
 		CurrentFever = fever;
 		MaxFever = maxFever;
+		LastFeverUpdateTime = Time;
 	}
 
 	public void UpdateFullCombo(bool fullCombo) {

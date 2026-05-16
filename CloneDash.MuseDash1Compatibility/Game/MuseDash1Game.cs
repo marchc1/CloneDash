@@ -887,6 +887,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (ShouldExitFever && InFever)
 			ExitFever();
 
+		// Health drain
+		if (Quirks.HealthLossPerSecond != null && Conductor.GetTime() >= 0) {
+			double loss = 0;
+			Quirks.HealthLossPerSecond(ProduceSnapshot(), ref loss);
+			DrainHealth(loss * Conductor.TimeDelta);
+		}
+
 		InputState.Reset();
 		if (!IsDead()) {
 			if (AutoPlayer.Enabled) {
@@ -1051,8 +1058,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			sceneUI.UpdateCombo(Combo);
 			if (InFever)
 				sceneUI.UpdateInFever(FeverTimeLeft, FeverTime);
-			else
-				sceneUI.UpdateFeverProgress(Fever, Quirks.MaxFever);
 
 			if (MashingEntity != null)
 				sceneUI.UpdateMultiHitText(MashingEntity.Hits);
@@ -1317,7 +1322,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 			else if (!HandledEvents.Contains(ev)) {
 				// Determine if the event needs to be activated
-				if (shouldActivateEvent(ev)) 
+				if (shouldActivateEvent(ev))
 					ActivateEvent(ev);
 			}
 			// The event has both been activated and deactivated, so its ignored
@@ -1780,6 +1785,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	/// <summary>
+	/// Drains health from the player, triggering death if the player has died, but does not call any other events unlike Damage
+	/// </summary>
+	/// <param name="damage"></param>
+	/// <param name="responsible"></param>
+	public void DrainHealth(double damage) {
+		Health = Math.Clamp(Health - (float)damage, 0, Quirks.MaxHP);
+		if (Health <= 0)
+			TriggerDeath();
+	}
+
+	/// <summary>
 	/// Damage the player.
 	/// </summary>
 	/// <param name="entity"></param>
@@ -1818,6 +1834,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		fever = (float)feverD;
 
 		Fever = Math.Clamp(Fever + fever, 0, Quirks.MaxFever);
+		SceneUI?.UpdateFeverProgress(Fever, Quirks.MaxFever);
 		if (Fever >= Quirks.MaxFever)
 			EnterFever();
 	}
@@ -1831,6 +1848,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			// FeverFX?.Start(this);
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
+		SceneUI?.UpdateInFever(FeverTimeLeft, FeverTime);
 	}
 	/// <summary>
 	/// Exits fever.
