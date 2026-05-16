@@ -32,6 +32,7 @@ namespace CloneDash.Game.Entities
 			visuals.Model = visuals.Scene.GetEnemyModel(this)?.Instantiate();
 			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(visuals.Scene.GetEnemyApproachAnimation(this, out _));
 			visuals.OutAnimation = visuals.Model?.Data.FindAnimation(visuals.Scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
+			XPosSetup(visuals);
 		}
 	}
 }

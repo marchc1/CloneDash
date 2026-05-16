@@ -186,6 +186,7 @@ namespace CloneDash.Game.Entities
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
 			visuals.Scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
+			XPosSetup(visuals);
 		}
 
 		internal void Complete() {

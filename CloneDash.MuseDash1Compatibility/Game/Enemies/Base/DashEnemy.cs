@@ -46,6 +46,7 @@ public class DashEnemyVisuals
 	double ShowTime;
 	public double GetShowTime() => ShowTime;
 	public void SetShowTimeViaLength(double length, double hittime) => ShowTime = hittime - length;
+	public void SetShowTimeDirect(double showtime) => ShowTime = showtime;
 }
 
 public class DashEnemy : Entity
@@ -182,6 +183,7 @@ public class DashEnemy : Entity
 	/// When does this entity need to be hit, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
 	/// </summary>
 	public double HitTime { get; set; }
+	public double ChartShowTime;
 
 	public double GetVisualShowTime(DashEnemyVisuals visuals) => visuals.GetShowTime() + InputSettings.VisualOffset;
 	public double GetVisualHitTime() => HitTime + InputSettings.VisualOffset;
@@ -533,6 +535,9 @@ public class DashEnemy : Entity
 		visuals.PerfectHitAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyHitAnimation(this, HitAnimationType.Perfect));
 	}
 
+	protected void XPosSetup(DashEnemyVisuals visuals) {
+		visuals.SetShowTimeDirect(ChartShowTime);
+	}
 	protected void BasicSetup(DashEnemyVisuals visuals) {
 		var level = GetGameLevel();
 		var scene = visuals.Scene;
@@ -540,7 +545,10 @@ public class DashEnemy : Entity
 		visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 
 		var animationName = scene.GetEnemyApproachAnimation(this, out var showtime);
-		visuals.SetShowTimeViaLength(showtime, HitTime);
+		if (animationName == null)
+			visuals.SetShowTimeDirect(ChartShowTime);
+		else
+			visuals.SetShowTimeViaLength(showtime, HitTime);
 
 		visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(animationName);
 		SetupHitAnimations(visuals);
