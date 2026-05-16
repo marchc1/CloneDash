@@ -2101,9 +2101,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		if (ScreenScrollRate != 0) {
 			float offset = (float)(ScreenScrollProgress % frameState.WindowHeight);
-			float gap = frameState.WindowHeight * 0.02f; // small separation at the seam
-			read.Draw(new(0, offset + gap, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
-			read.Draw(new(0, offset - frameState.WindowHeight - gap, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
+			float gap = frameState.WindowHeight * 0.02f;
+			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + gap), Color.White);
+			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - frameState.WindowHeight - gap), Color.White);
 		}
 		else {
 			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
