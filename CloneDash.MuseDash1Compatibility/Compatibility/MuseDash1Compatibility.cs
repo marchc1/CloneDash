@@ -678,7 +678,18 @@ namespace CloneDash.Compatibility.MuseDash
 
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
-
+#if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
+			Logs.Info($"total charts: {Songs.Sum(x => {
+				if (x.Info == null) return 0;
+				int count = 0;
+				count += x.Info.Difficulty1 != null ? 1 : 0;
+				count += x.Info.Difficulty2 != null ? 1 : 0;
+				count += x.Info.Difficulty3 != null ? 1 : 0;
+				count += x.Info.Difficulty4 != null ? 1 : 0;
+				count += x.Info.Difficulty5 != null ? 1 : 0;
+				return count;
+			})}");
+#endif
 			HashSet<char> codepoints = [];
 			foreach (var song in Songs) {
 				string name = song.Name, author = song.Author;
