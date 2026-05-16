@@ -643,15 +643,27 @@ public class RegionAttachment : Attachment
 		float localOffX = (offsetX + cropW * 0.5f) - origW * 0.5f;
 		float localOffY = origH * 0.5f - offsetY - cropH * 0.5f;
 
-		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, widthDiv2 + localOffY);
-		Vector2F TR = worldTransform.LocalToWorld(heightDiv2 + localOffX, widthDiv2 + localOffY);
-		Vector2F BR = worldTransform.LocalToWorld(heightDiv2 + localOffX, -widthDiv2 + localOffY);
-		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, -widthDiv2 + localOffY);
+		Vector2F TL, TR, BR, BL;
+		{
+			float wA = worldTransform.A, wB = worldTransform.B, wC = worldTransform.C, wD = worldTransform.D;
+			float wX = worldTransform.X, wY = worldTransform.Y;
 
-		TL.Y *= -1;
-		TR.Y *= -1;
-		BL.Y *= -1;
-		BR.Y *= -1;
+			float x0 = -heightDiv2 + localOffX;
+			float x1 = heightDiv2 + localOffX;
+			float y0 = widthDiv2 + localOffY;
+			float y1 = -widthDiv2 + localOffY;
+
+			// precompute shared
+			float ax0 = x0 * wA, ax1 = x1 * wA;
+			float by0 = y0 * wB, by1 = y1 * wB;
+			float cx0 = x0 * wC, cx1 = x1 * wC;
+			float dy0 = y0 * wD, dy1 = y1 * wD;
+
+			TL = new(ax0 + by0 + wX, -(cx0 + dy0 + wY));
+			TR = new(ax1 + by0 + wX, -(cx1 + dy0 + wY));
+			BR = new(ax1 + by1 + wX, -(cx1 + dy1 + wY));
+			BL = new(ax0 + by1 + wX, -(cx0 + dy1 + wY));
+		}
 
 		Model4System.CheckTextureUpdate(tex);
 		Rlgl.Begin(DrawMode.TRIANGLES);
@@ -733,24 +745,30 @@ public class VertexAttachment : Attachment
 			return default;
 
 		var vertex = Vertices![vertexI];
-		var bone = slot.Bone;
-		var transform = slot.Bone.WorldTransform;
 
-		if (vertex.Weights == null || vertex.Weights.Length <= 0)
-			return transform.LocalToWorld(vertex.X, vertex.Y);
-
-		var model = slot.GetModel();
-
-		Vector2F pos = Vector2F.Zero;
-
-		foreach (var weightData in vertex.Weights) {
-			if (weightData.IsEmpty) continue;
-			var vertLocalPos = weightData.Position;
-			var weight = weightData.Weight;
-			pos += model.Bones[weightData.Bone].WorldTransform.LocalToWorld(vertLocalPos) * weight;
+		if (vertex.Weights == null || vertex.Weights.Length <= 0) {
+			ref var transform = ref slot.Bone.WorldTransform;
+			return new(
+				vertex.X * transform.A + vertex.Y * transform.B + transform.X,
+				vertex.X * transform.C + vertex.Y * transform.D + transform.Y
+			);
 		}
 
-		return pos;
+		var bones = slot.GetModel().Bones;
+		float px = 0, py = 0;
+
+		var weights = vertex.Weights;
+		for (int i = 0; i < weights.Length; i++) {
+			var wd = weights[i];
+			float w = wd.Weight;
+			if (w == 0) continue;
+			ref var t = ref bones[wd.Bone].WorldTransform;
+			float lx = wd.Position.X, ly = wd.Position.Y;
+			px += (lx * t.A + ly * t.B + t.X) * w;
+			py += (lx * t.C + ly * t.D + t.Y) * w;
+		}
+
+		return new(px, py);
 	}
 
 	public int ComputeWorldVertices(SlotInstance slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
@@ -845,30 +863,29 @@ public class MeshAttachment : VertexAttachment
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 		bool wireframe = Model4System.m4s_wireframe.GetBool();
 
+		const int HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD = 512;
+		int vertCount = vertices.Length;
+		Span<Vector2F> worldVerts = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc Vector2F[vertCount] : new Vector2F[vertCount];
+		for (int vi = 0; vi < vertCount; vi++)
+			worldVerts[vi] = CalculateVertexWorldPosition(slot, vi);
+
+		bool flipV = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		Span<float> uvU = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
+		Span<float> uvV = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
+		for (int vi = 0; vi < vertCount; vi++) {
+			AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, vertices[vi].U, vertices[vi].V, out uvU[vi], out uvV[vi]);
+			if (flipV) uvV[vi] = 1f - uvV[vi];
+		}
+
 		if (triangles.Length > 0) {
 			foreach (var tri in triangles) {
-				var av1 = vertices[tri.V1];
-				var av2 = vertices[tri.V2];
-				var av3 = vertices[tri.V3];
+				Vector2F p1 = worldVerts[tri.V1];
+				Vector2F p2 = worldVerts[tri.V2];
+				Vector2F p3 = worldVerts[tri.V3];
 
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
-
-				if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
-					v1 = 1f - v1;
-					v2 = 1f - v2;
-					v3 = 1f - v3;
-				}
-
-				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
-
-				Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
-				Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
-				Rlgl.TexCoord2f(u3, v3); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
-
+				Rlgl.TexCoord2f(uvU[tri.V1], uvV[tri.V1]); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
+				Rlgl.TexCoord2f(uvU[tri.V2], uvV[tri.V2]); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
+				Rlgl.TexCoord2f(uvU[tri.V3], uvV[tri.V3]); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
 			}
 		}
 
@@ -877,9 +894,9 @@ public class MeshAttachment : VertexAttachment
 		if (wireframe) {
 			Model4System.PrepareWireframeRendering();
 			foreach (var tri in triangles) {
-				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
+				Vector2F p1 = worldVerts[tri.V1];
+				Vector2F p2 = worldVerts[tri.V2];
+				Vector2F p3 = worldVerts[tri.V3];
 
 				Rlgl.Vertex3f(p1.X, -p1.Y, 0); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
 				Rlgl.Vertex3f(p2.X, -p2.Y, 0); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
