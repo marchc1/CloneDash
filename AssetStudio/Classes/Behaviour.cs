@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
     public abstract class Behaviour : Component
     {
         public byte m_Enabled;
+
+        public Behaviour() { }
 
         protected Behaviour(ObjectReader reader) : base(reader)
         {

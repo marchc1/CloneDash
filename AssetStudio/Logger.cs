@@ -19,6 +19,7 @@ namespace AssetStudio
         {
             var sb = new StringBuilder();
             sb.AppendLine(message);
+            sb.AppendLine();
             sb.AppendLine(e.ToString());
             Default.Log(LoggerEvent.Error, sb.ToString());
         }

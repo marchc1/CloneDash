@@ -64,6 +64,7 @@ public static class Stencils
 	/// Make sure to set the stencil parameters before calling this method. Clears the stencil buffer.
 	/// </summary>
 	public static void BeginMask() {
+		Rlgl.DrawRenderBatchActive();
 		OpenGL.Clear(OpenGL.STENCIL_BUFFER_BIT);
 		OpenGL.ColorMask(false, false, false, false);
 		OpenGL.Enable(GLEnum.ALPHA_TEST);

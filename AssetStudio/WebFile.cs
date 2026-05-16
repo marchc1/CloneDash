@@ -6,7 +6,7 @@ namespace AssetStudio
 {
     public class WebFile
     {
-        public StreamFile[] fileList;
+        public List<StreamFile> fileList;
 
         private class WebData
         {
@@ -30,16 +30,15 @@ namespace AssetStudio
                 data.path = Encoding.UTF8.GetString(reader.ReadBytes(pathLength));
                 dataList.Add(data);
             }
-            fileList = new StreamFile[dataList.Count];
-            for (int i = 0; i < dataList.Count; i++)
+            fileList = new List<StreamFile>(dataList.Count);
+            foreach (var data in dataList)
             {
-                var data = dataList[i];
                 var file = new StreamFile();
                 file.path = data.path;
                 file.fileName = Path.GetFileName(data.path);
                 reader.BaseStream.Position = data.dataOffset;
                 file.stream = new MemoryStream(reader.ReadBytes(data.dataLength));
-                fileList[i] = file;
+                fileList.Add(file);
             }
         }
     }

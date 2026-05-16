@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
-    public sealed class MonoBehaviour : Behaviour
+    public class MonoBehaviour : Behaviour
     {
         public PPtr<MonoScript> m_Script;
         public string m_Name;
+
+        public MonoBehaviour() { }
 
         public MonoBehaviour(ObjectReader reader) : base(reader)
         {

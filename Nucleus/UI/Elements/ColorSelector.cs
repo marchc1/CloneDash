@@ -98,14 +98,14 @@ namespace Nucleus.UI.Elements
 		public float Hue {
 			get => _workingHue;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(value, _workingSat, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.RGBubToHSVf().SetHSVf(value, _workingSat, _workingVal).HSVfToRGBub());
 				_workingHue = value;
 			}
 		}
 		public float Saturation {
 			get => _workingSat;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, value, _workingVal).ToRGB());
+				SelectedColor = (SelectedColor.RGBubToHSVf().SetHSVf(_workingHue, value, _workingVal).HSVfToRGBub());
 				_workingSat = value;
 
 			}
@@ -113,14 +113,14 @@ namespace Nucleus.UI.Elements
 		public float Value {
 			get => _workingVal;
 			set {
-				SelectedColor = (SelectedColor.ToHSV().SetHSV(_workingHue, _workingSat, value).ToRGB());
+				SelectedColor = (SelectedColor.RGBubToHSVf().SetHSVf(_workingHue, _workingSat, value).HSVfToRGBub());
 				_workingVal = value;
 			}
 		}
 		public void Setup(ColorSelector parent) {
 			Selector = parent;
 
-			var hsv = SelectedColor.ToHSV();
+			var hsv = SelectedColor.RGBubToHSVf();
 
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
@@ -290,7 +290,7 @@ namespace Nucleus.UI.Elements
 			var offset = Graphics2D.Offset;
 			Graphics2D.ResetDrawingOffset();
 
-			var rgb = new Vector3(Hue, Saturation, Value).ToRGB();
+			var rgb = new Vector3(Hue, Saturation, Value).HSVfToRGBub();
 
 			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(ColorPickerTex);

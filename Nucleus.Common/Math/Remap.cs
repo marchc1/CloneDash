@@ -26,6 +26,9 @@ namespace Nucleus
 		/// <param name="clampOutput">Should the input be clamped to fit within <paramref name="outStart"/> -> <paramref name="outEnd"/></param>
 		/// <returns><paramref name="input"/> remapped to be between <paramref name="outStart"/> -> <paramref name="outEnd"/></returns>
 		public static double Remap(double input, double inStart, double inEnd, double outStart, double outEnd, bool clampInput = false, bool clampOutput = false) {
+			if (inStart == inEnd)
+				return outStart;
+
 			if (clampInput)
 				input = Math.Clamp(input, inStart, inEnd);
 

@@ -1,9 +1,7 @@
-﻿namespace Poly2Tri
-{
-    internal class EdgeEvent
-    {
-        public Edge ConstrainedEdge;
+﻿namespace Poly2Tri;
 
-        public bool Right;
-    }
+internal struct EdgeEvent
+{
+	public Edge ConstrainedEdge;
+	public bool Right;
 }

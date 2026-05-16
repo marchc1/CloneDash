@@ -96,7 +96,7 @@ namespace Nucleus.Core
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
-				profilable = NProfilable.Make(name, retC.ToRGB());
+				profilable = NProfilable.Make(name, retC.HSVfToRGBub());
 			}
 			Start(profilable);
 		}
@@ -112,7 +112,7 @@ namespace Nucleus.Core
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
-				profilable = NProfilable.Make(name, retC.ToRGB());
+				profilable = NProfilable.Make(name, retC.HSVfToRGBub());
 			}
 			End(profilable);
 		}

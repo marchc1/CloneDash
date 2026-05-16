@@ -151,7 +151,7 @@ namespace Poly2Tri
 
 			tcx.InitTriangulation();
 			Sweep sweep = new();
-			sweep.Triangulate(tcx);
+			sweep.Triangulate(ref tcx);
 
 			List<Triangle> triangles = tcx.GetTriangles();
 			foreach (Triangle tri in triangles) {
@@ -159,6 +159,8 @@ namespace Poly2Tri
 				output.Add(((Vector2)tri.Points[2] * scale) + offset);
 				output.Add(((Vector2)tri.Points[1] * scale) + offset);
 			}
+
+			tcx.Dispose();
 		}
 
 		/// <summary>
@@ -181,11 +183,13 @@ namespace Poly2Tri
 
 			tcx.InitTriangulation();
 			Sweep sweep = new();
-			sweep.Triangulate(tcx);
+			sweep.Triangulate(ref tcx);
 
 			List<Triangle> triangles = tcx.GetTriangles();
 			foreach (Triangle tri in triangles)
 				output.Add(tri);
+
+			tcx.Dispose();
 		}
 
 		public void Scale(float scale) {

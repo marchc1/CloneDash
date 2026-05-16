@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
     public sealed class Font : NamedObject
     {
@@ -11,7 +6,7 @@ namespace AssetStudio
 
         public Font(ObjectReader reader) : base(reader)
         {
-            if ((version[0] == 5 && version[1] >= 5) || version[0] > 5)//5.5 and up
+            if (version >= (5, 5))//5.5 and up
             {
                 var m_LineSpacing = reader.ReadSingle();
                 var m_DefaultMaterial = new PPtr<Material>(reader);
@@ -23,12 +18,12 @@ namespace AssetStudio
                 var m_CharacterPadding = reader.ReadInt32();
                 var m_ConvertCase = reader.ReadInt32();
                 int m_CharacterRects_size = reader.ReadInt32();
-                for (int i = 0; i < m_CharacterRects_size; i++)
+                for (var i = 0; i < m_CharacterRects_size; i++)
                 {
                     reader.Position += 44;//CharacterInfo data 41
                 }
                 int m_KerningValues_size = reader.ReadInt32();
-                for (int i = 0; i < m_KerningValues_size; i++)
+                for (var i = 0; i < m_KerningValues_size; i++)
                 {
                     reader.Position += 8;
                 }
@@ -43,7 +38,7 @@ namespace AssetStudio
             {
                 int m_AsciiStartOffset = reader.ReadInt32();
 
-                if (version[0] <= 3)
+                if (version <= 3)
                 {
                     int m_FontCountX = reader.ReadInt32();
                     int m_FontCountY = reader.ReadInt32();
@@ -52,10 +47,10 @@ namespace AssetStudio
                 float m_Kerning = reader.ReadSingle();
                 float m_LineSpacing = reader.ReadSingle();
 
-                if (version[0] <= 3)
+                if (version <= 3)
                 {
                     int m_PerCharacterKerning_size = reader.ReadInt32();
-                    for (int i = 0; i < m_PerCharacterKerning_size; i++)
+                    for (var i = 0; i < m_PerCharacterKerning_size; i++)
                     {
                         int first = reader.ReadInt32();
                         float second = reader.ReadSingle();
@@ -71,7 +66,7 @@ namespace AssetStudio
                 var m_DefaultMaterial = new PPtr<Material>(reader);
 
                 int m_CharacterRects_size = reader.ReadInt32();
-                for (int i = 0; i < m_CharacterRects_size; i++)
+                for (var i = 0; i < m_CharacterRects_size; i++)
                 {
                     int index = reader.ReadInt32();
                     //Rectf uv
@@ -86,7 +81,7 @@ namespace AssetStudio
                     float vertheight = reader.ReadSingle();
                     float width = reader.ReadSingle();
 
-                    if (version[0] >= 4)
+                    if (version >= 4)
                     {
                         var flipped = reader.ReadBoolean();
                         reader.AlignStream();
@@ -96,14 +91,14 @@ namespace AssetStudio
                 var m_Texture = new PPtr<Texture>(reader);
 
                 int m_KerningValues_size = reader.ReadInt32();
-                for (int i = 0; i < m_KerningValues_size; i++)
+                for (var i = 0; i < m_KerningValues_size; i++)
                 {
                     int pairfirst = reader.ReadInt16();
                     int pairsecond = reader.ReadInt16();
                     float second = reader.ReadSingle();
                 }
 
-                if (version[0] <= 3)
+                if (version <= 3)
                 {
                     var m_GridFont = reader.ReadBoolean();
                     reader.AlignStream();

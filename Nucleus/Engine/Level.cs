@@ -230,6 +230,7 @@ namespace Nucleus.Engine
 		public virtual void PreRenderBackground(FrameState frameState) { }
 		public virtual void PreRender(FrameState frameState) { }
 		public virtual void Render(FrameState frameState) { }
+		public virtual void PostRenderEntities(FrameState frameState) { }
 		public virtual void Render2D(FrameState frameState) { }
 		public virtual void PostRender(FrameState frameState) { }
 		public virtual void PreWindowClose() { }
@@ -267,6 +268,7 @@ namespace Nucleus.Engine
 			foreach (Entity entity in EntityList)
 				if (entity.Enabled && entity.RendersItself)
 					entity.Render(frameState);
+			PostRenderEntities(frameState);
 		}
 		public void RunEventRender2D(FrameState frameState) {
 			Render2D(frameState);
@@ -474,14 +476,6 @@ namespace Nucleus.Engine
 			FrameState.Reset();
 		}
 
-		private void test() {
-			Vector2F screenBounds = new(1600, 900);
-			Graphics2D.SetDrawColor(30, 5, 0);
-			Graphics2D.DrawRectangle(0, 0, screenBounds.W, screenBounds.H);
-			Graphics2D.SetDrawColor(240, 70, 60);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "No level loaded or in the process of loading!", Graphics2D.UI_FONT_NAME, 24, TextAlignment.Center, TextAlignment.Bottom);
-			Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
-		}
 		double lastRenderTime = -10;
 		public bool RenderedFrame { get; set; } = false;
 		public bool IsRendering { get; set; } = false;
@@ -735,7 +729,6 @@ namespace Nucleus.Engine
 					debugrecords.EnterScope();
 					{
 						debugrecords.Write("Resolution", frameState.WindowSize);
-						debugrecords.Write("FPS", $"{FPS} ({EngineCore.FrameTime * 1000:0.##}ms render time)");
 					}
 					debugrecords.ExitScope();
 					debugrecords.Write("Engine - Current Level");

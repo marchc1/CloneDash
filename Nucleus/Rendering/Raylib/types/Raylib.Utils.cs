@@ -87,19 +87,6 @@ public static unsafe partial class Raylib
 		TakeScreenshot(str1.AsPointer());
 	}
 
-	/// <summary>Check file extension</summary>
-	public static CBool IsFileExtension(string fileName, string ext) {
-		using var str1 = fileName.ToAnsiBuffer();
-		using var str2 = ext.ToAnsiBuffer();
-		return IsFileExtension(str1.AsPointer(), str2.AsPointer());
-	}
-
-	/// <summary>Get file modification time (last write time)</summary>
-	public static long GetFileModTime(string fileName) {
-		using var str1 = fileName.ToAnsiBuffer();
-		return GetFileModTime(str1.AsPointer());
-	}
-
 	/// <summary>Load image from file into CPU memory (RAM)</summary>
 	public static Image LoadImage(string fileName) {
 		using var str1 = fileName.ToAnsiBuffer();
@@ -290,27 +277,6 @@ public static unsafe partial class Raylib
 	/// <summary>C++ style memory allocator</summary>
 	public static T* New<T>(int count) where T : unmanaged {
 		return (T*)MemAlloc(count * sizeof(T));
-	}
-
-	/// <summary>Load file data as byte array (read)</summary>
-	public static byte* LoadFileData(string fileName, ref uint bytesRead) {
-		using var str1 = fileName.ToAnsiBuffer();
-		fixed (uint* p = &bytesRead) {
-			return LoadFileData(str1.AsPointer(), p);
-		}
-	}
-
-	/// <summary>Get dropped files names (memory should be freed)</summary>
-	public static string[] GetDroppedFiles() {
-		var filePathList = LoadDroppedFiles();
-		var files = new string[filePathList.Count];
-
-		for (var i = 0; i < filePathList.Count; i++) {
-			files[i] = Marshal.PtrToStringUTF8((IntPtr)filePathList.Paths[i]);
-		}
-		UnloadDroppedFiles(filePathList);
-
-		return files;
 	}
 
 	/// <summary>Get gamepad internal name id</summary>

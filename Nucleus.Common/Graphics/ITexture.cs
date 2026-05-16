@@ -26,4 +26,5 @@ public interface ITexture : IManagedMemoryUnit
 	void AddPublicFlags(PublicTextureFlags flags);
 	bool HasPublicFlags(PublicTextureFlags flags);
 	void RemovePublicFlags(PublicTextureFlags flags);
+	int GetMipmapCount();
 }

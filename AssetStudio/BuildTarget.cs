@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
     public enum BuildTarget
     {
@@ -53,6 +48,18 @@ namespace AssetStudio
         PS5,
         EmbeddedLinux,
         QNX,
+        VisionOS,
+        Switch2,
         UnknownPlatform = 9999
+    }
+
+    public enum TuanjieBuildTarget
+    {
+        MiniGame = 47,
+        OpenHarmony,
+        HMIAndroid,
+        ArmLinux,
+        ArmLinuxServer,
+        VisionOS,
     }
 }

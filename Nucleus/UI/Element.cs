@@ -427,10 +427,7 @@ namespace Nucleus.UI
 		/// Returns all children of this element. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
 		/// </summary>
 		/// <returns></returns>
-		public IEnumerable<Element> GetChildren() {
-			foreach (var child in Children)
-				yield return child;
-		}
+		public ReadOnlySpan<Element> GetChildren() => LockAndEnumerateChildren();
 
 		public void AddChild(Element p) {
 			if (p.Parent != null) {
@@ -1262,13 +1259,13 @@ namespace Nucleus.UI
 		/// This function expects HSVA in the format of hueAdditional, saturationMultiplied, valueMultiplied, alphaMultiplied
 		/// </summary>
 		public static Color MixColorBasedOnMouseState(float hoverRatio, float depressedRatio, Color original, Vector4 hoveredHSVA, Vector4 depressedHSVA) {
-			var originalHSV = original.ToHSV();
+			var originalHSV = original.RGBubToHSVf();
 
 
-			var hoveredColor = ColorExtensions.FromHSV(originalHSV.X + hoveredHSVA.X, originalHSV.Y * hoveredHSVA.Y, originalHSV.Z * hoveredHSVA.Z);
+			var hoveredColor = ColorExtensions.FromHSVf(originalHSV.X + hoveredHSVA.X, originalHSV.Y * hoveredHSVA.Y, originalHSV.Z * hoveredHSVA.Z);
 			hoveredColor.A = (byte)Math.Clamp(original.A * hoveredHSVA.W, 0, 255);
 
-			var depressedColor = ColorExtensions.FromHSV(originalHSV.X + depressedHSVA.X, originalHSV.Y * depressedHSVA.Y, originalHSV.Z * depressedHSVA.Z);
+			var depressedColor = ColorExtensions.FromHSVf(originalHSV.X + depressedHSVA.X, originalHSV.Y * depressedHSVA.Y, originalHSV.Z * depressedHSVA.Z);
 			depressedColor.A = (byte)Math.Clamp(hoveredColor.A * depressedHSVA.W, 0, 255);
 
 			return NMath.LerpColor(depressedRatio, NMath.LerpColor(hoverRatio, original, hoveredColor), depressedColor);

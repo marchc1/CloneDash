@@ -1,72 +1,77 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-#nullable enable
-
-namespace AssetStudio
+﻿namespace AssetStudio
 {
+#nullable enable
 	public sealed class Animator : Behaviour
-	{
-		public readonly PPtr<Avatar> m_Avatar;
-		public readonly PPtr<RuntimeAnimatorController> m_Controller;
-		public bool m_HasTransformHierarchy = true;
+    {
+        public PPtr<Avatar> m_Avatar;
+        public PPtr<RuntimeAnimatorController> m_Controller;
+        public bool m_HasTransformHierarchy = true;
 
 		public Avatar? GetAvatar() => m_Avatar.TryGet(out var ret) ? ret : null;
 		public RuntimeAnimatorController? GetController() => m_Controller.TryGet(out var ret) ? ret : null;
 		public GameObject? GetGameObject() => m_GameObject.TryGet(out var ret) ? ret : null;
+		
+        public Animator(ObjectReader reader) : base(reader)
+        {
+            m_Avatar = new PPtr<Avatar>(reader);
+            m_Controller = new PPtr<RuntimeAnimatorController>(reader);
+            var m_CullingMode = reader.ReadInt32();
 
-		public Animator(ObjectReader reader) : base(reader) {
-			m_Avatar = new PPtr<Avatar>(reader);
-			m_Controller = new PPtr<RuntimeAnimatorController>(reader);
-			var m_CullingMode = reader.ReadInt32();
+            if (version >= (4, 5)) //4.5 and up
+            {
+                var m_UpdateMode = reader.ReadInt32();
+            }
 
-			if (version[0] > 4 || (version[0] == 4 && version[1] >= 5)) //4.5 and up
-			{
-				var m_UpdateMode = reader.ReadInt32();
-			}
+            if (version.IsTuanjie && (version > (2022, 3, 48) || version == (2022, 3, 48) && version.Build >= 7)) //2022.3.48t7(1.4.4) and up
+            {
+                var m_UpdateFrequencyMode = reader.ReadInt32();
+                var m_UpdateFrequency = reader.ReadSingle();
+            }
 
-			var m_ApplyRootMotion = reader.ReadBoolean();
-			if (version[0] == 4 && version[1] >= 5) //4.5 and up - 5.0 down
-			{
-				reader.AlignStream();
-			}
+            var m_ApplyRootMotion = reader.ReadBoolean();
+            if (version == 4 && version.Minor >= 5) //4.5 and up - 5.0 down
+            {
+                reader.AlignStream();
+            }
 
-			if (version[0] >= 5) //5.0 and up
-			{
-				var m_LinearVelocityBlending = reader.ReadBoolean();
-				if (version[0] > 2021 || (version[0] == 2021 && version[1] >= 2)) //2021.2 and up
-				{
-					var m_StabilizeFeet = reader.ReadBoolean();
-				}
-				reader.AlignStream();
-			}
+            if (version >= 5) //5.0 and up
+            {
+                var m_LinearVelocityBlending = reader.ReadBoolean();
+                if (version >= (2021, 2)) //2021.2 and up
+                {
+                    var m_StabilizeFeet = reader.ReadBoolean();
+                }
+                if (version >= (2023, 1)) //2023.1 and up
+                {
+                    var m_AnimatePhysics = reader.ReadBoolean();
+                }
+                reader.AlignStream();
+            }
 
-			if (version[0] < 4 || (version[0] == 4 && version[1] < 5)) //4.5 down
-			{
-				var m_AnimatePhysics = reader.ReadBoolean();
-			}
+            if (version < (4, 5)) //4.5 down
+            {
+                var m_AnimatePhysics = reader.ReadBoolean();
+            }
 
-			if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
-			{
-				m_HasTransformHierarchy = reader.ReadBoolean();
-			}
+            if (version >= (4, 3)) //4.3 and up
+            {
+                m_HasTransformHierarchy = reader.ReadBoolean();
+            }
 
-			if (version[0] > 4 || (version[0] == 4 && version[1] >= 5)) //4.5 and up
-			{
-				var m_AllowConstantClipSamplingOptimization = reader.ReadBoolean();
-			}
-			if (version[0] >= 5 && version[0] < 2018) //5.0 and up - 2018 down
-			{
-				reader.AlignStream();
-			}
+            if (version >= (4, 5)) //4.5 and up
+            {
+                var m_AllowConstantClipSamplingOptimization = reader.ReadBoolean();
+            }
+            if (version.IsInRange(5, 2018)) //5.0 and up - 2018 down
+            {
+                reader.AlignStream();
+            }
 
-			if (version[0] >= 2018) //2018 and up
-			{
-				var m_KeepAnimatorControllerStateOnDisable = reader.ReadBoolean();
-				reader.AlignStream();
-			}
-		}
-	}
+            if (version >= 2018) //2018 and up
+            {
+                var m_KeepAnimatorControllerStateOnDisable = reader.ReadBoolean();
+                reader.AlignStream();
+            }
+        }
+    }
 }

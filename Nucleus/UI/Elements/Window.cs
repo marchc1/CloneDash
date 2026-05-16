@@ -146,9 +146,9 @@ namespace Nucleus.UI.Elements
 				Graphics2D.DrawLine(new(14, height / 2), new(width - 14, height / 2));
 			};
 
-			CloseButton.BackgroundColor = CloseButton.BackgroundColor.ToHSV().SetHSV(hue: 0, saturation: 0.54f).ToRGB();
-			CloseButton.ForegroundColor = CloseButton.ForegroundColor.ToHSV().SetHSV(hue: 0, saturation: 0.6f).ToRGB();
-			CloseButton.TextColor = CloseButton.TextColor.ToHSV().SetHSV(hue: 0, saturation: 0.3f).ToRGB();
+			CloseButton.BackgroundColor = CloseButton.BackgroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub();
+			CloseButton.ForegroundColor = CloseButton.ForegroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub();
+			CloseButton.TextColor = CloseButton.TextColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub();
 		}
 
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {

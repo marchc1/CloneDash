@@ -1,4 +1,5 @@
 ﻿using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -43,7 +44,7 @@ public record DebugOverlayTexture(Texture texture, Vector2F pos, Vector2F size, 
 {
 	public void Render() {
 		Graphics2D.SetDrawColor(color);
-		Graphics2D.SetTexture(texture);
+		Graphics2D.SetTexture((ITexture)texture);
 		Graphics2D.DrawTexture(anchor.CalculatePosition(pos, size, true), size, tl, tr, bl, br);
 	}
 }

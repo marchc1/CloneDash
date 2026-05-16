@@ -104,6 +104,7 @@ public class ComplexRenderTexture : IDisposable
 		});
 	}
 	public void EndDrawing() {
+		Rlgl.DrawRenderBatchActive();
 		OpenGL.BindFramebuffer(OpenGL.READ_FRAMEBUFFER, FramebufferMSAA);
 		OpenGL.BindFramebuffer(OpenGL.DRAW_FRAMEBUFFER, Framebuffer);
 		OpenGL.BlitFramebuffer(0, 0, Width, Height,  // src rect
@@ -153,6 +154,7 @@ public class ComplexRenderTexture : IDisposable
 		Height = Height,
 		Id = TextureID
 	};
+
 
 	~ComplexRenderTexture() {
 		Dispose();

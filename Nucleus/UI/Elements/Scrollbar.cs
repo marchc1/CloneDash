@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
 using System;
@@ -151,8 +152,8 @@ namespace Nucleus.UI.Elements
 
 			Graphics2D.SetDrawColor(fore, self.Hovered ? 220 : 200);
 			Graphics2D.SetTexture(Alignment == ScrollbarAlignment.Vertical ?
-				(down ? Level.Textures.LoadTextureFromFile("ui/down32.png") : Level.Textures.LoadTextureFromFile("ui/up32.png")) :
-				(down ? Level.Textures.LoadTextureFromFile("ui/right32.png") : Level.Textures.LoadTextureFromFile("ui/left32.png")));
+				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/down32.png") : Level.Textures.LoadTextureFromFile("ui/up32.png")) :
+				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/right32.png") : Level.Textures.LoadTextureFromFile("ui/left32.png")));
 			Graphics2D.DrawImage(new(2), new(width - 4, height - 4));
 		}
 

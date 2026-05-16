@@ -241,10 +241,21 @@ namespace Nucleus
 
 			consoleInput.DemandKeyboardFocus();
 			consoleInput.Editor.MouseReleaseEvent += (_, _, _) => SetupAutocomplete();
-			var msgs = ConsoleSystem.GetMessages();
-			for (int i = 0, length = ConsoleSystem.GetMessagesCount(); i < length; i++)
-				SetupRow(ref msgs[i]);
-
+			var msgList = ConsoleSystem.GetAllMessagesList();
+			msgList.BeginRead();
+			int msgCount = msgList.ComputeCount();
+			Span<int> offsets = stackalloc int[msgCount];
+			int found = msgList.GetMessages(offsets, out _);
+			for (int i = 0; i < found; i++) {
+				if (msgList.GetMessageAt(offsets, i, out var header, out var text)) {
+					LiveConsoleMessage live = new() {
+						Header = header,
+						Text = text
+					};
+					SetupRow(in live);
+				}
+			}
+			msgList.EndRead();
 			ConsoleSystem.ConsoleMessageWrittenEvent += ConsoleSystem_ConsoleMessageWrittenEvent;
 
 			this.InvalidateChildren(recursive: true);
@@ -256,13 +267,13 @@ namespace Nucleus
 			self.RenderRowPiece(0, 0, autoCompleteStr, new Color(255, 255, 255, 150));
 		}
 
-		private void SetupRow(ref readonly ConsoleMessage message) {
-			consoleLogs.AppendLine($"[{message.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Level)}] {message.Message}");
+		private void SetupRow(ref readonly LiveConsoleMessage message) {
+			consoleLogs.AppendLine($"[{message.Header.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Header.Level)}] {message.Text}");
 			if (consoleLogs.Rows.Count > ConsoleSystem.MaxConsoleMessages)
 				consoleLogs.RemoveLine(0);
 			consoleLogs.ScrollToLine(consoleLogs.Rows.Count, 1f);
 		}
-		private void ConsoleSystem_ConsoleMessageWrittenEvent(ref readonly ConsoleMessage message) {
+		private void ConsoleSystem_ConsoleMessageWrittenEvent(ref readonly LiveConsoleMessage message) {
 			SetupRow(in message);
 		}
 

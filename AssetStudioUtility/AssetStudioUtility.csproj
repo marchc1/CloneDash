@@ -1,19 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
-    <Version>0.16.0.0</Version>
-    <AssemblyVersion>0.16.0.0</AssemblyVersion>
-    <FileVersion>0.16.0.0</FileVersion>
-    <Copyright>Copyright © Perfare 2018-2022</Copyright>
-    <DebugType>embedded</DebugType>
-    <Configurations>Debug;Release;Linux64</Configurations>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
-  </ItemGroup>
+
+    <PropertyGroup>
+        <TargetFrameworks>net10.0</TargetFrameworks>
+        <Version>0.19.0.0</Version>
+        <Copyright>Copyright © Perfare 2018-2022; Copyright © aelurum 2021-2025</Copyright>
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" !$(TargetFramework.Contains('windows')) ">
+        <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.1.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder.macOS" Version="0.1.0" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
+    </ItemGroup>
+	
 </Project>
