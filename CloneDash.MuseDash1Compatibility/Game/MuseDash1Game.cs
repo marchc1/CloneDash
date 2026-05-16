@@ -2059,9 +2059,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		ComplexRenderTexture read = renderTexture;
 		ComplexRenderTexture write = renderTexture2;
+		DoOneEffect(ScreenspaceEffectType.Sepia, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
+		DoOneEffect(ScreenspaceEffectType.Mosaic, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Scanlines, ref read, ref write);
+		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
 
 		// this draws the screen scroll effect, its done as a texture shift instead here
 		double screenScrollDirection = ScreenspaceEffectStates[(int)ScreenspaceEffectType.ScreenScroll].CurrentValue;
@@ -2142,9 +2144,27 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private void PrepareShaders() {
 		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
 		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
+		PrepareShader(ScreenspaceEffectType.Mosaic, "mosaic", PrepareMosaic);
+		PrepareShader(ScreenspaceEffectType.Sepia, "sepia", PrepareSepia);
 		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
 	}
 
+	private bool PrepareSepia(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uStrength", (float)value * 1f);
+
+		return true;
+	}
+	private bool PrepareMosaic(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uStrength", (float)value * 0.05f);
+
+		return true;
+	}
 	private bool PrepareScanlines(IShader shader, ref ScreenspaceEffectState state) {
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
@@ -2159,8 +2179,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)value * 3);
-		shader.SetUniform("uSoftness", 0.3f);
+		shader.SetUniform("uStrength", (float)value * 0.7f);
+		shader.SetUniform("uSoftness", 0.7f);
 
 		return true;
 	}
