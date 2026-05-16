@@ -312,7 +312,7 @@ public class DashEnemy : Entity
 	/// <summary>
 	/// Kills the entity, but does not add to combo, fever, or reward player
 	/// </summary>
-	public void SoftKill(){
+	public void SoftKill() {
 		Dead = true;
 	}
 
@@ -359,7 +359,7 @@ public class DashEnemy : Entity
 	public bool CheckVisTest() {
 		var level = Level;
 		var windowWidth = EngineCore.GetWindowWidth();
-		var windowHeight= EngineCore.GetWindowHeight();
+		var windowHeight = EngineCore.GetWindowHeight();
 
 		XPos = XPosFromTimeOffset((float)-InputSettings.VisualOffset);
 		float w = windowWidth / 200, h = windowHeight; // 200;
@@ -642,7 +642,8 @@ public class DashEnemy : Entity
 		if (visuals.Model == null) return;
 		if (AnimationTime == 0) return;
 
-		DetermineAnimationPlayback(visuals);
+		if (!Level.As<MuseDash1Game>().ShouldFreezeNoteAnimations())
+			DetermineAnimationPlayback(visuals);
 
 		visuals.Model.Position = Position;
 		visuals.Model.Scale = Scale;

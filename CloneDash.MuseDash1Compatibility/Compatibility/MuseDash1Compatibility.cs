@@ -678,7 +678,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
-#if !I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
+#if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
 			Logs.Info($"total songs: {Songs.Count}, charts: {Songs.Sum(x => {
 				if (x.GetInfo() == null)
 					return 0;
