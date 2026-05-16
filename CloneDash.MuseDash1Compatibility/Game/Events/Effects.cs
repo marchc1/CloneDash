@@ -98,7 +98,10 @@ public class SepiaEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEve
 	public override double? GetLengthOfEffect() => 0.4;
 }
 public class FocusLinesEffect(MuseDash1Game game, FocusLineMode mode) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FocusLines, (double)mode);
-public class FilmGrainEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FilmGrain, active ? 1 : 0);
+public class FilmGrainEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FilmGrain, active ? 1 : 0)
+{
+	public override double? GetLengthOfEffect() => 0.2;
+}
 public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FlashbangColor, (double)color);
 
 public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)

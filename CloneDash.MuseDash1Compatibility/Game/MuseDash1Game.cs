@@ -2072,6 +2072,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Mosaic, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Scanlines, ref read, ref write);
+		DoOneEffect(ScreenspaceEffectType.FilmGrain, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
 
 		// this draws the screen scroll effect, its done as a texture shift instead here
@@ -2095,6 +2096,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				if (screenScrollDirection == 0) ScreenScrollRate = 0;
 			}
 		}
+
+		DoOneEffect(ScreenspaceEffectType.TVStatic, ref read, ref write);
 
 		if (ScreenScrollRate != 0) {
 			float offset = (float)(ScreenScrollProgress % frameState.WindowHeight);
@@ -2155,9 +2158,29 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
 		PrepareShader(ScreenspaceEffectType.Mosaic, "mosaic", PrepareMosaic);
 		PrepareShader(ScreenspaceEffectType.Sepia, "sepia", PrepareSepia);
+		PrepareShader(ScreenspaceEffectType.FilmGrain, "filmgrain", PrepareFilmGrain);
+		PrepareShader(ScreenspaceEffectType.TVStatic, "tvstatic", PrepareTVStatic);
 		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
 	}
 
+	private bool PrepareFilmGrain(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uTime", (float)Conductor.GetTime());
+		shader.SetUniform("uStrength", (float)value * 1f);
+
+		return true;
+	}
+	private bool PrepareTVStatic(IShader shader, ref ScreenspaceEffectState state) {
+		double value = GetCurrentInterpolatedValue(ref state);
+		if (value <= 0.0) return false;
+
+		shader.SetUniform("uTime", (float)Conductor.GetTime());
+		shader.SetUniform("uStrength", (float)value * 1f);
+
+		return true;
+	}
 	private bool PrepareSepia(IShader shader, ref ScreenspaceEffectState state) {
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
