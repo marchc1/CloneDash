@@ -1,4 +1,6 @@
-﻿using Nucleus.UI;
+﻿using CloneDash.Common.UI;
+using Nucleus.Common.Types;
+using Nucleus.UI;
 
 namespace CloneDash.Game;
 
@@ -13,6 +15,8 @@ public interface IMainMenuLevel
 public interface IMainMenuPanel
 {
 	public string GetName();
+	Color GetPrimaryColor() => CloneDashUI.AccentPrimary;
+	Color GetBackgroundColor() => CloneDashUI.AccentBackground;
 	public void OnHidden();
 	public void OnShown();
 	public void SetRichPresence();

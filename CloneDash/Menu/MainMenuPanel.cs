@@ -1,6 +1,7 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Charts;
 using CloneDash.Common.Songs;
+using CloneDash.Common.UI;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Menu.Searching;
@@ -18,7 +19,7 @@ using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-
+using System.Numerics;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 
@@ -78,8 +79,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var menuBtns = btns.Peek();
 
 		Add(out MainMenuButton btn);
-		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub();
-		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub();
+		btn.BackgroundColor = CloneDashUI.AccentBackground;
+		btn.ForegroundColor = new Vector3(hue, 0.33f, 1f).HSVfToRGBub();
 		btn.Text = text;
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
@@ -126,41 +127,46 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Text = "";
 		back.MouseReleaseEvent += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
-		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
-			var source = ChartMod.GetChartSongProviderByName("Muse Dash");
-			if(source == null){
-				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-				return;
-			}
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.SetSource(source.NewState());
-		});
-		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
-			var source = ChartMod.GetChartSongProviderByName("Custom Albums");
-			if (source == null) {
-				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-				return;
-			}
+		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png",
+			"Play your installed charts.", 200, (menu) => {
+				var source = ChartMod.GetChartSongProviderByName("Muse Dash");
+				if (source == null) {
+					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+					return;
+				}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.SetSource(source.NewState());
-		});
-		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
-			var source = ChartMod.GetChartSongProviderByName("MDMC");
-			if (source == null) {
-				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-				return;
-			}
+				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				selector.SetSource(source.NewState());
+			});
+		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310,
+			(menu) => {
+				var source = ChartMod.GetChartSongProviderByName("Custom Albums");
+				if (source == null) {
+					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+					return;
+				}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
-			selector.SetSource(source.NewState());
-		});
-		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
-			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
-		});
-		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
-		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
-		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
+				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				selector.SetSource(source.NewState());
+			});
+		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png",
+			"Download new charts from the Muse Dash Modding Community.", 340, (menu) => {
+				var source = ChartMod.GetChartSongProviderByName("MDMC");
+				if (source == null) {
+					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
+					return;
+				}
+
+				var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+				selector.SetSource(source.NewState());
+			});
+		MakeNavigationButton("Change Character", "ui/charselect.png",
+			"Select a character to play as.", 20, (menu) => {
+				var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+			});
+		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game.", 225,
+			ModdingTools_OpenMenuButtons);
+		MakeNavigationButton("Options", "ui/pause_settings.png", "Change the game's settings.", 47, (menu) => {
 			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
 			settings.DrawPanelBackground = false;
 		});
@@ -185,27 +191,22 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
+		
+		if (!btns.TryPeek(out List<MainMenuButton>? currentButtons))
+			return;
+		
+		int buttonCount = currentButtons.Count;
+		
+		// back.Size = new Vector2F(btnHeight * 2);
+		// back.Position = new Vector2F(width * .5f, height / 2);
+		// back.Visible = back.Enabled = !UsingRootNavigationMenu;
 
-		if (this.btns.TryPeek(out var btns)) {
-			var textHeight = height / 20f;
-			var btnWidth = Math.Clamp(width / 3f, 460, 155555);
-			var btnHeight = height / 12f;
-			var btnsLen = btns.Count;
-			back.Size = new(btnHeight * 2);
-			back.Position = new(width * .5f, height / 2);
-			back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		for (int i = 0; i < buttonCount; i++) {
+			MainMenuButton btn = currentButtons[i];
+			btn.Origin = Anchor.CenterRight;
 
-			for (int i = 0; i < btnsLen; i++) {
-				var btn = btns[i];
-
-				btn.Origin = Anchor.Center;
-				btn.TextSize = textHeight;
-				btn.Size = new(btnWidth, btnHeight);
-
-				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
-
-				btn.Position = new(width * .75f, height / 2 + y * height / 3);
-			}
+			float y = buttonCount == 1 ? 0 : NMath.Remap(i, 0, buttonCount - 1, -1, 1);
+			btn.Position = new Vector2F(width - 96, height / 2 + y * height / 3);
 		}
 	}
 }

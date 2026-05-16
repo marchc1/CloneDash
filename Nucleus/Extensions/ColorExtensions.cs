@@ -1,5 +1,6 @@
 ﻿using Nucleus.Common.Types;
 using Raylib_cs;
+using System.Globalization;
 using System.Numerics;
 
 namespace Nucleus.Extensions;
@@ -137,6 +138,37 @@ public static class ColorExtensions
 		return true;
 	}
 
+	public static Color ParseHex(ReadOnlySpan<char> hex) {
+		if (hex.Length == 0)
+			throw new FormatException("Expected string with length greater than or equal to 6 characters");
+
+		if (hex[0] == '#')
+			hex = hex[1..];
+
+		if (hex.Length < 6)
+			throw new FormatException("Expected string with length greater than or equal to 6 characters");
+
+		ReadOnlySpan<char> rS = hex[..2];
+		ReadOnlySpan<char> gS = hex.Slice(2, 2);
+		ReadOnlySpan<char> bS = hex.Slice(4, 2);
+		ReadOnlySpan<char> aS = "";
+		
+		if (hex.Length >= 8)
+			aS = hex.Slice(6, 2);
+
+		if (!int.TryParse(rS, NumberStyles.HexNumber, null, out int r))
+			throw new FormatException("Hexadecimal number for red channel was not in the expected format (hexadecimal two-letter)");
+		if (!int.TryParse(gS, NumberStyles.HexNumber, null, out int g))
+			throw new FormatException("Hexadecimal number for green channel was not in the expected format (hexadecimal two-letter)");
+		if (!int.TryParse(bS, NumberStyles.HexNumber, null, out int b))
+			throw new FormatException("Hexadecimal number for blue channel was not in the expected format (hexadecimal two-letter)");
+
+		if (aS.Length == 0 || !int.TryParse(aS, NumberStyles.HexNumber, null, out int a))
+			a = 255;
+
+		return new Color(r, g, b, a);
+	}
+
 	public static ReadOnlySpan<char> ToHex(this Color color, bool includeAlpha) {
 		string hex = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 		if (includeAlpha)
@@ -161,4 +193,15 @@ public static class ColorExtensions
 
 		return true;
 	}
+	
+	public static Vector4 ToVector(this Color color) {
+		return new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
+	}
+
+	public static Color ToColor(this Vector4 vec) => new(
+		Convert.ToByte(vec.X * 255f),
+		Convert.ToByte(vec.Y * 255f),
+		Convert.ToByte(vec.Z * 255f),
+		Convert.ToByte(vec.W * 255f)
+	);
 }

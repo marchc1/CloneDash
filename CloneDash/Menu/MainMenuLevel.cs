@@ -1,6 +1,7 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Songs;
+using CloneDash.Common.UI;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu;
@@ -23,6 +24,7 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 
 using Raylib_cs;
+using System.Numerics;
 
 namespace CloneDash.Game;
 
@@ -94,6 +96,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public Stack<Element> ActiveElements = [];
 	public CharacterPanel Character = null!;
 
+	private static Vector4 _primaryColor;
+	private static Vector4 _backgroundColor;
+
+	private static Vector4 _targetPrimaryColor;
+	private static Vector4 _targetBackgroundColor;
+
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
 			var last = ActiveElements.Peek();
@@ -106,6 +114,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		element.SetRichPresence();
 
 		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+		
+		_targetPrimaryColor = element.GetPrimaryColor().ToVector();
+		_targetBackgroundColor = element.GetBackgroundColor().ToVector();
+		headerText.Text = element.GetName();
+
+		if (ActiveElements.Count == 1) {
+			_primaryColor = _targetPrimaryColor;
+			_backgroundColor = _targetBackgroundColor;
+		}
 
 		element.Dock = Dock.Fill;
 		return element;
@@ -136,17 +153,23 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (next is IMainMenuPanel nextmmp) {
 			nextmmp.OnShown();
 			nextmmp.SetRichPresence();
+			_targetPrimaryColor = nextmmp.GetPrimaryColor().ToVector();
+			_targetBackgroundColor = nextmmp.GetBackgroundColor().ToVector();
+			headerText.Text = nextmmp.GetName();
 		}
 
 
 	}
 
 	Panel header;
+	Label headerText;
+	
 	public override void Initialize(params object[] args) {
 		var charPanel = UI.Add<Panel>();
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
 		charPanel.Size = new(1f, 1f);
+		charPanel.DrawPanelBackground = false;
 
 		Character = charPanel.Add<CharacterPanel>();
 		Character.DynamicallySized = true;
@@ -160,17 +183,17 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		header.BorderSize = 0;
 		header.BackgroundColor = header.BackgroundColor.Adjust(0, 0, value: 0.5f);
 
-		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
+		backButton = MenuButton(header, Dock.None, "ui/back.png", $"Back", () => {
 			PopActiveElement();
 		});
 
-		var test2 = header.Add<Label>();
-		test2.Size = new Vector2F(158, 32);
-		test2.Dock = Dock.Left;
-		test2.Text = "Clone Dash";
-		test2.TextSize = 30;
-		test2.AutoSize = true;
-		test2.DockMargin = RectangleF.TLRB(4);
+		headerText = header.Add<Label>();
+		headerText.Dock = Dock.Fill;
+		headerText.Font = CloneDashUI.FontBold;
+		headerText.Text = "Clone Dash";
+		headerText.TextSize = 32 * 1.4f;
+		headerText.AutoSize = true;
+		headerText.DockMargin = RectangleF.TLRB(0, 64, 64, 0);
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -531,4 +554,112 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	}
 
 	public Panel? GetSelectedSongPanel() => SelectedSong;
+	
+	private static List<BackgroundShape> shapes = new();
+	private const int MaxShapes = 32;
+
+	public override void Render(FrameState frameState) {
+		_primaryColor = TransitionColor(_primaryColor, _targetPrimaryColor);
+		_backgroundColor = TransitionColor(_backgroundColor, _targetBackgroundColor);
+
+		Rlgl.EnableDepthTest();
+
+		Color bg = _backgroundColor.ToColor();
+		Graphics2D.SetDrawColor(bg);
+		Graphics2D.DrawRectangle(Vector2F.Zero - frameState.WindowSize / 2f, frameState.WindowSize);
+		backButton.ImageColor = headerText.TextColor = bg;
+
+		bool first = shapes.Count == 0;
+
+		if (shapes.Count < MaxShapes) {
+			for (int i = shapes.Count; i < MaxShapes; i++) {
+				shapes.Add(CreateRandomShape(frameState.WindowWidth, frameState.WindowHeight, first));
+			}
+		}
+
+		Color primary = _primaryColor.ToColor();
+		header.BackgroundColor = backButton.BackgroundColor = primary;
+		
+		Color shapesColor = primary;
+		shapesColor.A = 80;
+		Graphics2D.SetDrawColor(shapesColor);
+
+		Graphics2D.DrawRectangle(frameState.WindowSize / 2f, new Vector2F(200));
+
+		for (int i = 0; i < shapes.Count; i++) {
+			BackgroundShape shape = shapes[i];
+			float movement = (float)RendertimeDelta * shape.Size;
+			shape.Position += new Vector2F(movement * 80, movement * -80);
+			shape.Rotation += 10 * movement;
+
+			Vector2F pos = shape.Position - frameState.WindowSize / 2f;
+			Vector2F size = new(200 * shape.Size);
+
+			switch (shape.Type) {
+				case ShapeType.Square:
+					Graphics2D.DrawRectangle(RectangleF.XYWH(pos.X, pos.Y, size.X, size.Y), Vector2F.Zero / 2f,
+						shape.Rotation);
+					break;
+				case ShapeType.Circle:
+					Graphics2D.DrawCircle(pos, size);
+					break;
+				/*case ShapeType.Triangle:
+					Graphics2D.DrawRectangle(pos, size * 50);
+					break;*/
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+
+			if (shape.Position.X > frameState.WindowWidth + size.Y + 50 || shape.Position.Y < -size.Y - 50) {
+				shapes.RemoveAt(i);
+				i--;
+			}
+		}
+
+		Rlgl.DisableDepthTest();
+		base.Render(frameState);
+	}
+
+	private Vector4 TransitionColor(Vector4 current, Vector4 target) {
+		return new Vector4(
+			TransitionNumber(current.X, target.X),
+			TransitionNumber(current.Y, target.Y),
+			TransitionNumber(current.Z, target.Z),
+			TransitionNumber(current.W, target.W)
+		);
+	}
+	
+	private float TransitionNumber(float current, float target) {
+		if (Math.Abs(target - current) < .01)
+			return target;
+
+		return (float)double.Lerp(target, current, Math.Exp(-5f * RendertimeDelta));
+	}
+
+	private BackgroundShape CreateRandomShape(float width, float height, bool shuffle) {
+		bool bottom = Random.Shared.NextSingle() >= 0.5f;
+		float value = Random.Shared.NextSingle();
+		float size = 1f - Random.Shared.NextSingle() * .8f;
+
+		Vector2F pos = shuffle
+			? new Vector2F(Random.Shared.NextSingle() * width, Random.Shared.NextSingle() * height)
+			: new Vector2F(bottom ? value * width : -300, bottom ? height + size * 200 : value * height);
+
+		return new BackgroundShape { Position = pos, Size = size, Type = (ShapeType)Random.Shared.Next(2) };
+	}
+
+	private class BackgroundShape
+	{
+		public Vector2F Position { get; set; }
+		public float Size { get; set; } = 1f;
+		public float Rotation { get; set; } = 0f;
+		public ShapeType Type { get; set; }
+	}
+
+	private enum ShapeType
+	{
+		Square,
+		Circle,
+		Triangle
+	}
 }

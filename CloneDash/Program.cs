@@ -5,6 +5,7 @@
 using CloneDash.Common;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
+using CloneDash.Common.UI;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using CloneDash.Menu.Searching;
@@ -58,6 +59,10 @@ internal class Program
 
 		CommandLineParser commandLine = new();
 		commandLine.CreateCmdLine(Environment.CommandLine);
+		
+		Graphics2D.FontManager.AddFont(CloneDashUI.FontNormal, new FontEntry("Afacad/Afacad-Medium.ttf", "fonts"));
+		Graphics2D.FontManager.AddFont(CloneDashUI.FontBold, new FontEntry("Afacad/Afacad-Bold.ttf", "fonts"));
+		Graphics2D.UI_FONT_NAME = CloneDashUI.FontNormal;
 
 		IEngineAPI engineAPI = new EngineBuilder(commandLine)
 			.WithComponent<IGameDLL, GameDLL>()

@@ -145,9 +145,13 @@ namespace Nucleus.Core
 			codepoints = codepoints ?? [];
 			FontNameToFilepath = [];
 			foreach (var kvp in fonttable)
-				FontNameToFilepath[symbols.AddString(kvp.Key.AsSpan())] = kvp.Value;
+				AddFont(kvp.Key, kvp.Value);
 			foreach (var codepointStr in codepoints)
 				RegisterCodepoints(codepointStr);
+		}
+
+		public void AddFont(string key, FontEntry entry) {
+			FontNameToFilepath[symbols.AddString(key.AsSpan())] = entry;
 		}
 
 		DateTime lastCheckTimes;

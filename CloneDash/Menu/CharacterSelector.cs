@@ -14,6 +14,7 @@ using Nucleus.UI;
 using System.Diagnostics;
 using Nucleus.Common.Types;
 using CloneDash.Common;
+using CloneDash.Common.UI;
 
 namespace CloneDash.Menu;
 
@@ -246,4 +247,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		Character.SetCharacter(CharacterMod.GetCharacterData());
 		return true;
 	}
+
+	public Color GetPrimaryColor() => CloneDashUI.CharacterPrimary;
+	public Color GetBackgroundColor() => CloneDashUI.CharacterBackground;
 }
