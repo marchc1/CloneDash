@@ -18,8 +18,8 @@ namespace Nucleus.UI
 	public class UserInterface : Element, IDisposable
 	{
 		public Element? Focused;
-		public Element? Hovered;
-		public Element? Depressed;
+		public new Element? Hovered;
+		public new Element? Depressed;
 
 		//public List<Element> Popups = [];
 		public List<Element> Popups { get; private set; } = [];
@@ -128,17 +128,17 @@ namespace Nucleus.UI
 		}
 
 		internal override void SetupLayout() {
-			LayoutInvalidated = false;
+			RemoveFlag(ElementFlags.NeedsLayout);
 		}
 
 		public override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus(this, true);
 		}
 
-		private string _tooltipText = "";
+		private string? _tooltipText;
 		private bool disposedValue;
 
-		public override string TooltipText {
+		public override string? TooltipText {
 			get {
 				if (Hovered != null && Hovered != this) {
 					return Hovered.TooltipText;
@@ -164,7 +164,7 @@ namespace Nucleus.UI
 		}
 
 		// temporary, just testing parsing
-		public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
+		// public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
 
 		public event MouseEventDelegate? OnElementClicked;
 		public event MouseEventDelegate? OnElementReleased;
@@ -277,7 +277,7 @@ namespace Nucleus.UI
 								if (pressed)
 									DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
 								if (released)
-									DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.MarkedForDeath);
+									DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.IsMarkedForRemoval());
 
 								if (!ranKeybinds)
 									ranKeybinds = WasKeyEventConsumed();
@@ -389,7 +389,7 @@ namespace Nucleus.UI
 
 			if (!frameState.Mouse.MouseScroll.IsZero()) {
 				if (IValidatable.IsValid(Hovered) && Hovered.InputDisabled == false) {
-					Element e = Hovered;
+					Element? e = Hovered;
 					for (int i = 0; i < 1000; i++) {
 						if (!IValidatable.IsValid(e))
 							break;

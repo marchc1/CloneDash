@@ -19,6 +19,7 @@ using Raylib_cs;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Nucleus.UI;
 
@@ -38,13 +39,29 @@ public enum DynamicSizeReference
 	ParentHeight,
 	SelfHeight
 }
+
+public enum ElementFlags : uint {
+	MarkedForRemoval = 1 << 0,
+	NeedsRepaint = 1 << 1,
+	PaintBorderEnabled = 1 << 2,
+	PaintBackgroundEnabled = 1 << 3,
+	PaintEnabled = 1 << 4,
+	PostChildPaintEnabled = 1 << 5,
+	NeedsLayout = 1 << 6,
+	NeedsSchemeUpdate = 1 << 7,
+	AllowChainKeybindingToParent = 1 << 8,
+	InPerformLayout = 1 << 9,
+	// IsProportional = 1 << 10, // TODO
+}
+
 public class Element : IValidatable
 {
 	public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
 
 	// fields
-	private Vector2F _position = new(0, 0);
-	private Vector2F _size = new(32, 32);
+	private ElementFlags flags;
+	private Vector2F _position;
+	private Vector2F _size;
 	private bool _dynamicallySized = false;
 	private bool _dynamicallySizedText = false;
 	private DynamicSizeReference _dynamicSizeReference = DynamicSizeReference.WindowHeight;
@@ -88,9 +105,16 @@ public class Element : IValidatable
 	internal int CurrentChildrenCount;
 	private bool __layoutinvalid = true;
 
+	string? name;
+	IScheme? scheme;
+
 	private bool __usesRenderTarget = false;
 	private RenderTexture2D? __RT1 = null;
 	private RectangleF? __lastRTSize = null;
+
+	// TODO: make private
+	public Anchor Anchor;
+	public Anchor Origin;
 
 	private bool _fitToParent = false;
 	private float fitPadding = 0;
@@ -102,6 +126,7 @@ public class Element : IValidatable
 	public double TimeToNoBackdropAlpha = 0.15;
 
 	private string __text = "Panel";
+	private string? __tooltipText = null;
 	private float __textSize = 18;
 
 	// properties with backing (should be fields)
@@ -123,8 +148,6 @@ public class Element : IValidatable
 
 	public float Opacity { get; set; } = 1.0f;
 
-	public virtual string? TooltipText { get; set; }
-
 	public Dictionary<string, object> Tags { get; } = [];
 
 	public bool ConsumedScrollEvent { get; internal set; }
@@ -138,8 +161,6 @@ public class Element : IValidatable
 	public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
 	public KeybindSystem Keybinds { get; } = new();
-	public Anchor Anchor { get; set; } = Anchor.TopLeft;
-	public Anchor Origin { get; set; } = Anchor.TopLeft;
 
 	public ITexture? Image { get; set; }
 	public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
@@ -158,6 +179,18 @@ public class Element : IValidatable
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
 	public UserInterface UI { get; internal set; }
+
+	public virtual void Initialize(float x, float y, float width, float height){
+		_position = new(x, y);
+		_size = new(width, height);
+		Anchor = Anchor.TopLeft;
+		Origin = Anchor.TopLeft;
+		flags = ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate;
+		flags = ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
+		flags = ElementFlags.AllowChainKeybindingToParent;
+		__tooltipText = null;
+		Opacity = 1;
+	}
 
 	public Vector2F Position {
 		get { return _position; }
@@ -347,9 +380,30 @@ public class Element : IValidatable
 		__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
 	}
 
-	private Element() { }
-	public Element(Element? parent, ReadOnlySpan<char> name = default) {
+	public IScheme? GetScheme() => scheme;
+	public void SetScheme(IScheme? scheme){
+		if (scheme != this.scheme)
+			this.scheme = scheme;
+	}
+	
+
+	public Element() {
+		Initialize(0, 0, 32, 32);
+	}
+	public Element(Element? parent) {
+		Initialize(0, 0, 32, 32);
 		SetParent(parent?.AddParent);
+	}
+	public Element(Element? parent, ReadOnlySpan<char> name) {
+		Initialize(0, 0, 32, 32);
+		SetName(name);
+		SetParent(parent?.AddParent);
+	}
+	public Element(Element? parent, ReadOnlySpan<char> name, IScheme? scheme) {
+		Initialize(0, 0, 32, 32);
+		SetName(name);
+		SetParent(parent?.AddParent);
+		SetScheme(scheme);
 	}
 
 	/// <summary>
@@ -371,7 +425,17 @@ public class Element : IValidatable
 		}
 	}
 
-	public bool MarkedForDeath => __markedForRemoval;
+	public virtual string? TooltipText{ get; set; } // todo: remove me, turn into methods
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasFlag(ElementFlags flag) => (flags & flag) != 0;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetFlag(ElementFlags flag) => flags |= flag;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void RemoveFlag(ElementFlags flag) => flags &= ~flag;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsMarkedForRemoval() => HasFlag(ElementFlags.MarkedForRemoval);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsLayoutInvalid() => HasFlag(ElementFlags.NeedsLayout);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsSchemeInvalid() => HasFlag(ElementFlags.NeedsSchemeUpdate);
+
+
 	public virtual void OnRemoval() { }
 	public delegate void RemoveDelegate(Element e);
 	public event RemoveDelegate? Removed;
@@ -475,6 +539,16 @@ public class Element : IValidatable
 		p?.Parent?.TriggerOnChildParented(p.Parent, p);
 	}
 
+	public ReadOnlySpan<char> GetName() => name;
+	public void SetName(ReadOnlySpan<char> name){
+		if(name.IsEmpty || name[0] == '\0'){
+			this.name = null;
+			return;
+		}
+
+		this.name = new(name.SliceNullTerminatedString());
+	}
+
 	public void SetParent(Element? p) {
 		if (Parent != null)                 // if current parent isn't null
 			Parent.Children.Remove(this);
@@ -495,16 +569,6 @@ public class Element : IValidatable
 		this.AddParent.Children.Sort(childSortMethod);
 	}
 
-	public bool LayoutInvalidated {
-		get => __layoutinvalid;
-		protected set {
-			if (__layoutinvalid == true && value == false)
-				LastLayoutTime = Level.Curtime;
-
-			__layoutinvalid = value;
-		}
-	}
-
 	public void InvalidateChildren(bool immediate = false, bool recursive = false, bool self = false) {
 		if (self)
 			InvalidateLayout(immediate);
@@ -517,12 +581,6 @@ public class Element : IValidatable
 	}
 
 	/// <summary>
-	/// Internal method to cancel any layout invalidations.
-	/// </summary>
-	public void RevalidateLayout() {
-		LayoutInvalidated = false;
-	}
-	/// <summary>
 	/// Invalidates the layout, registering it for a rebuild with the layout system.
 	/// </summary>
 	/// <param name="immediate"></param>
@@ -534,15 +592,15 @@ public class Element : IValidatable
 			LayoutRecursive(this, ref fs);
 		}
 		else {
-			LayoutInvalidated = true;
+			SetFlag(ElementFlags.NeedsLayout);
 		}
 	}
 
 	public void ValidateLayout() {
-		if (LayoutInvalidated)
+		if (IsLayoutInvalid())
 			SetupLayout();
 
-		LayoutInvalidated = false;
+		RemoveFlag(ElementFlags.NeedsLayout);
 	}
 	/// <summary>
 	/// Alias of calling <see cref="InvalidateLayout(bool)"/> on <seealso cref="Parent"/>
@@ -767,8 +825,7 @@ public class Element : IValidatable
 			currentBounds.RoundInPlace();
 
 		RenderBounds = currentBounds;
-
-		LayoutInvalidated = false;
+		RemoveFlag(ElementFlags.NeedsLayout);
 		PerformLayout(RenderBounds.Width, RenderBounds.Height);
 	}
 
@@ -927,8 +984,8 @@ public class Element : IValidatable
 			ui.Preprocess(frameState.WindowWidth, frameState.WindowHeight);
 
 		element.SizeOfAllChildren = Vector2F.Zero;
-		var wasInvalid = element.LayoutInvalidated;
-		if (element.LayoutInvalidated) {
+		var wasInvalid = element.IsLayoutInvalid();
+		if (wasInvalid) {
 			element.SetupLayout();
 
 			returning += 1;
