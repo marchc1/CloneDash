@@ -19,7 +19,7 @@ using static Nucleus.UI.Elements.ColorSelector;
 namespace Nucleus.UI.Elements
 {
 	public delegate void ColorChangedFn(ColorSelector selector, ref Color color);
-	public class ColorSelector : Element
+	public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) : Element(parent, name)
 	{
 		public event ColorChangedFn? OnColorChanged;
 		public Color SelectedColor {
@@ -37,15 +37,11 @@ namespace Nucleus.UI.Elements
 
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
-		protected override void Initialize() {
-			base.Initialize();
-		}
-
 		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (IValidatable.IsValid(CurrentDialog))
 				return;
 
-			CurrentDialog = UI.Add<ColorSelectorDialog>();
+			CurrentDialog = new ColorSelectorDialog(UI);
 			CurrentDialog.Position = state.Mouse.MousePos;
 			CurrentDialog.Setup(this);
 			CurrentDialog.FitToParent(8);
@@ -70,6 +66,38 @@ namespace Nucleus.UI.Elements
 
 	public class ColorSelectorDialog : Panel
 	{
+		public ColorSelectorDialog(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
+			ColorWheelTex = Level.Textures.LoadTextureFromFile("colorwheel.png");
+			HueWheelTex = Level.Textures.LoadTextureFromFile("huewheel.png");
+			ColorPickerTex = Level.Textures.LoadTextureFromFile("colorpicker.png");
+			ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
+			ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
+
+			Raylib.GenTextureMipmaps(ref ColorWheelTex);
+			Raylib.GenTextureMipmaps(ref HueWheelTex);
+			Raylib.GenTextureMipmaps(ref ColorPickerTex);
+			Raylib.GenTextureMipmaps(ref ColorSatValTex);
+			Raylib.GenTextureMipmaps(ref ColorSatValInnerTex);
+
+			Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(HueWheelTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
+			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
+
+			this.Origin = Anchor.BottomCenter;
+			this.UI.OnElementClicked += delegate (Element el, FrameState fs, ButtonCode mb) {
+				if (!el.IsIndirectChildOf(this)) {
+					this.Remove();
+				}
+			};
+			this.Size = new(180, 320);
+			ColorWheel = new Panel(this);
+			ColorWheel.PaintOverride += ColorWheel_PaintOverride;
+			ColorWheel.MouseClickEvent += ColorWheel_MouseClickEvent;
+			ColorWheel.MouseDragEvent += ColorWheel_MouseDragEvent;
+			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
+		}
 		public ColorSelector Selector = null!;
 		public Color SelectedColor { get => Selector.SelectedColor; set => Selector.SelectedColor = value; }
 
@@ -125,40 +153,6 @@ namespace Nucleus.UI.Elements
 			_workingHue = hsv.X;
 			_workingSat = hsv.Y;
 			_workingVal = hsv.Z;
-		}
-		protected override void Initialize() {
-			base.Initialize();
-
-			ColorWheelTex = Level.Textures.LoadTextureFromFile("colorwheel.png");
-			HueWheelTex = Level.Textures.LoadTextureFromFile("huewheel.png");
-			ColorPickerTex = Level.Textures.LoadTextureFromFile("colorpicker.png");
-			ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
-			ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
-
-			Raylib.GenTextureMipmaps(ref ColorWheelTex);
-			Raylib.GenTextureMipmaps(ref HueWheelTex);
-			Raylib.GenTextureMipmaps(ref ColorPickerTex);
-			Raylib.GenTextureMipmaps(ref ColorSatValTex);
-			Raylib.GenTextureMipmaps(ref ColorSatValInnerTex);
-
-			Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.Anisotropic16x);
-			Raylib.SetTextureFilter(HueWheelTex, TextureFilter.Anisotropic16x);
-			Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.Anisotropic16x);
-			Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
-			Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
-
-			this.Origin = Anchor.BottomCenter;
-			this.UI.OnElementClicked += delegate (Element el, FrameState fs, ButtonCode mb) {
-				if (!el.IsIndirectChildOf(this)) {
-					this.Remove();
-				}
-			};
-			this.Size = new(180, 320);
-			ColorWheel = this.Add<Panel>();
-			ColorWheel.PaintOverride += ColorWheel_PaintOverride;
-			ColorWheel.MouseClickEvent += ColorWheel_MouseClickEvent;
-			ColorWheel.MouseDragEvent += ColorWheel_MouseDragEvent;
-			ColorWheel.MouseReleaseEvent += ColorWheel_MouseReleaseEvent;
 		}
 
 		private void ColorWheel_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {

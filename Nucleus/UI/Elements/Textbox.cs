@@ -108,8 +108,7 @@ namespace Nucleus.UI
 		const int MaxUndoEntries = 128;
 		DateTime lastUndoPush = DateTime.MinValue;
 
-		protected override void Initialize() {
-			base.Initialize();
+		public Textbox(Element? parent) : base(parent) {
 			Text = "";
 			KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 			TextSize = 20;

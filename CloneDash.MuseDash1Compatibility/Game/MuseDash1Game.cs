@@ -922,17 +922,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				}
 				else {
 					if (startPause()) {
-						PauseWindow = this.UI.Add<Panel>();
+						PauseWindow = new Panel(this.UI);
 						PauseWindow.Size = new(300, 400);
 						PauseWindow.Center();
 
-						var flex = PauseWindow.Add<FlexPanel>();
+						var flex = new FlexPanel(PauseWindow);
 						flex.Dock = Dock.Fill;
 						flex.Direction = Directional180.Vertical;
 						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 						flex.DockPadding = RectangleF.TLRB(4);
 
-						var play = flex.Add<Button>();
+						var play = new Button(flex);
 						play.BorderSize = 0;
 						play.Text = "Return to Game";
 						play.TextSize = 24;
@@ -944,7 +944,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 						play.PaintOverride += Button_PaintOverride;
 
-						var restart = flex.Add<Button>();
+						var restart = new Button(flex);
 						restart.BorderSize = 0;
 						restart.Text = "Restart Level";
 						restart.TextSize = 24;
@@ -965,21 +965,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 						restart.PaintOverride += Button_PaintOverride;
 
-						var settings = flex.Add<Button>();
+						var settings = new Button(flex);
 						settings.BorderSize = 0;
 						settings.Text = "Open Preferences...";
 						settings.TextSize = 24;
 						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 						settings.ImageOrientation = ImageOrientation.Fit;
 						settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
-							var panel = UI.Add<Panel>();
+							var panel = new Panel(UI);
 							panel.DrawPanelBackground = false;
 							panel.Anchor = Anchor.Center;
 							panel.Origin = Anchor.Center;
 							panel.DynamicallySized = true;
 							panel.Size = new(0.9f);
 
-							var titlebar = panel.Add<Titlebar>();
+							var titlebar = new Titlebar(panel);
 							titlebar.Dock = Dock.Top;
 							titlebar.MinimizeButton.Visible = false;
 							titlebar.MaximizeButton.Visible = false;
@@ -988,7 +988,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							};
 							titlebar.Title = "Settings";
 
-							var settings = panel.Add<SettingsEditor>();
+							var settings = new SettingsEditor(panel);
 							settings.Dock = Dock.Fill;
 							settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
 
@@ -996,7 +996,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 						settings.PaintOverride += Button_PaintOverride;
 
-						var back2menu = flex.Add<Button>();
+						var back2menu = new Button(flex);
 						back2menu.BorderSize = 0;
 						back2menu.Text = "Exit to Menu";
 						back2menu.TextSize = 24;

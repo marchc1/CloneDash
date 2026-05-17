@@ -26,14 +26,19 @@ using Velopack.Sources;
 namespace CloneDash.Scenes;
 
 
-public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
+public class StatisticsPanel : Panel
 {
 	ICharacterVictoryInstance victory = null!;
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
+	IGame game;
+	StatisticsData stats;
 
-	protected override void Initialize() {
+	public StatisticsPanel(Element? parent, IGame game, StatisticsData stats) : base(parent){
+		this.game = game;
+		this.stats = stats;
+
 		chart = game.GetSongChart();
 		if (chart == null) return;
 		start = globals.CurTime;
@@ -46,14 +51,14 @@ public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 		victory.PlayAudio();
 		stats.Compute();
 
-		var bottom = Add<Panel>();
+		var bottom = new Panel(this);
 		bottom.DrawPanelBackground = false;
 
 		bottom.DynamicallySized = true;
 		bottom.Size = new(0.07f);
 		bottom.Dock = Dock.Bottom;
 
-		var restart = bottom.Add<Nucleus.UI.Button>();
+		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
 		restart.Size = new(.2f);
 		restart.Text = "Restart";
@@ -65,7 +70,7 @@ public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 			this.Remove();
 		};
 
-		var back = bottom.Add<Nucleus.UI.Button>();
+		var back = new Button(bottom);
 		back.DynamicallySized = true;
 		back.Size = new(.2f);
 		back.Text = "Main Menu";
@@ -679,7 +684,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var panel = EngineCore.Level.UI.Add(new StatisticsPanel(game, stats));
+		var panel = new StatisticsPanel(EngineCore.Level.UI, game, stats);
 		return panel;
 	}
 

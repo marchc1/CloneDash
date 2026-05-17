@@ -16,7 +16,7 @@ namespace Nucleus.UI.Elements
 	record MenuButton(string text, string? icon = null, Action? invoke = null) : IMenuItem;
 	record MenuSubmenu(string text, string? icon = null, Func<Menu, bool>? invoke = null) : IMenuItem;
 	record MenuSeparator() : IMenuItem;
-	public class Menu : Panel
+	public class Menu(Element? parent) : Panel(parent)
 	{
 		private List<IMenuItem> items = [];
 		public void AddItem(IMenuItem item) {
@@ -51,13 +51,13 @@ namespace Nucleus.UI.Elements
 						if (item == first || item == last)
 							continue;
 
-						var s = this.Add<Panel>();
+						var s = new Panel(this);
 						s.Dock = Dock.Top;
 						s.Size = new Types.Vector2F(0, 5);
 						s.PaintOverride += S_PaintOverride;
 						break;
 					case MenuButton btn: {
-							var b = this.Add<Button>();
+							var b = new Button(this);
 							b.Dock = Dock.Top;
 							b.Size = new Types.Vector2F(0, 28);
 							b.Text = btn.text;
@@ -104,7 +104,7 @@ namespace Nucleus.UI.Elements
 						}
 						break;
 					case MenuSubmenu submenu: {
-							var b = this.Add<Button>();
+							var b = new Button(this);
 							b.Dock = Dock.Top;
 							b.Size = new Types.Vector2F(0, 28);
 							b.Text = submenu.text;
@@ -118,7 +118,7 @@ namespace Nucleus.UI.Elements
 								if (s.Hovered) {
 									if (lastHoveredPiece != s) {
 										activeSubmenu?.Close();
-										activeSubmenu = this.Add<Menu>();
+										activeSubmenu = new Menu(this);
 										var shouldUse = submenu.invoke?.Invoke(activeSubmenu) ?? false;
 										if (shouldUse) {
 											activeSubmenu.Open(new Vector2F(s.RenderBounds.W + 8, s.GetGlobalPosition().Y - 7), false, this);

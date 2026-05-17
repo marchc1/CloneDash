@@ -117,7 +117,7 @@ public class Element : IValidatable
 	public Color TextColor { get; set; } = DefaultTextColor;
 	public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
 	public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
-	public Element Parent { get; internal set; }
+	public Element? Parent { get; internal set; }
 	public double LastLayoutTime { get; private set; } = 0;
 
 	public bool Clipping { get; set; } = true;
@@ -348,9 +348,10 @@ public class Element : IValidatable
 		__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
 	}
 
-	protected virtual void Initialize() { }
-
-	protected Element() { }
+	private Element() { }
+	public Element(Element? parent, ReadOnlySpan<char> name = default) {
+		SetParent(parent?.AddParent);
+	}
 
 	/// <summary>
 	/// The element which Add<>() adds to. Can be used to defer add operations to a different part of the element.<br></br>
@@ -371,30 +372,6 @@ public class Element : IValidatable
 		}
 	}
 
-	// Avoid overriding this unless needed
-	public virtual T Add<T>(T? toAdd = null) where T : Element {
-		return Create<T>(AddParent, toAdd);
-	}
-
-	public virtual void Add<T>([NotNull] out T? addInto) where T : Element => addInto = Add<T>();
-
-	public static T Create<T>(Element? parent = null, T? ret = null) where T : Element {
-		ret = ret ?? (T?)Activator.CreateInstance(typeof(T)) ?? throw new Exception("A fatal exception occured during element creation.");
-
-		if (parent == null) {
-			ret.Initialize();
-			return ret;
-		}
-
-		ret.UI = parent.UI;
-		parent.AddChild(ret);
-		ret.UI.Elements.Add(ret);
-		ret.Initialize();
-		parent.TriggerOnChildParented(parent, ret);
-		return ret;
-	}
-
-	
 	public bool MarkedForDeath => __markedForRemoval;
 	public virtual void OnRemoval() { }
 	public delegate void RemoveDelegate(Element e);
@@ -499,11 +476,12 @@ public class Element : IValidatable
 		p?.Parent?.TriggerOnChildParented(p.Parent, p);
 	}
 
-	public void SetParent(Element p) {
+	public void SetParent(Element? p) {
 		if (Parent != null)                 // if current parent isn't null
 			Parent.Children.Remove(this);
 
 		Parent = p;                   // set parent to P
+		UI = p?.UI!;
 
 		if (p != null) {                    // if new parent isn't just null, add it to its children
 			p.Children.Add(this);
@@ -808,7 +786,7 @@ public class Element : IValidatable
 				hasBackdropped = true;
 		}
 	}
-	
+
 	public double BackdropAlpha {
 		get {
 			if (!hasBackdropped)
@@ -1479,16 +1457,6 @@ public class Element : IValidatable
 
 	public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
 
-	public void AddAndInitializeIncompleteElement<T>(T? element) where T : Element {
-		if (element == null)
-			return;
-		if (element.UI != null) {
-			//Logs.Info("Tried to initialize a supposedly incomplete element, but it was complete. Ignoring.");
-			return;
-		}
-		Add(element);
-	}
-
 	public Vector2F CursorPos() {
 		return Level.FrameState.Mouse.MousePos - GetGlobalPosition();
 	}
@@ -1536,7 +1504,7 @@ public class Element : IValidatable
 	public static Elements.Window CreateExampleWindow() {
 		UserInterface UI = EngineCore.Level.UI;
 
-		var examples = UI.Add<Elements.Window>();
+		var examples = new Elements.Window(UI);
 		examples.Size = new(1280, 720);
 		examples.Center();
 		examples.Title = "Nucleus - UI Element Examples";

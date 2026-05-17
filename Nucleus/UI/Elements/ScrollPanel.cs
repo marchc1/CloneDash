@@ -9,9 +9,30 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI
 {
-	public class ScrollMainPanel : Panel;
+	public class ScrollMainPanel(Element? parent, ReadOnlySpan<char> name = default) : Panel(parent, name);
 	public class ScrollPanel : Panel
 	{
+		public ScrollPanel(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
+			VerticalScrollbar = new Scrollbar(this);
+			VerticalScrollbar.Alignment = ScrollbarAlignment.Vertical;
+			VerticalScrollbar.Enabled = true;
+
+			HorizontalScrollbar = new Scrollbar(this);
+			HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
+			HorizontalScrollbar.Enabled = true;
+
+			MainPanel = new ScrollMainPanel(this);
+			MainPanel.Dock = Dock.Fill;
+			MainPanel.DrawPanelBackground = false;
+			MainPanel.PaintOverride += delegate (Element self, float width, float height) {
+
+			};
+			MainPanel.DockMargin = RectangleF.TLRB(4);
+			AddParent = MainPanel;
+			MainPanel.Clipping = false;
+
+			MouseScrollEvent += ScrollPanel_MouseScrollEvent;
+		}
 		public Scrollbar VerticalScrollbar { get; private set; }
 		public Scrollbar HorizontalScrollbar { get; private set; }
 		public ScrollMainPanel MainPanel { get; private set; }
@@ -32,29 +53,6 @@ namespace Nucleus.UI
 			}
 		}
 
-		protected override void Initialize() {
-			base.Initialize();
-			VerticalScrollbar = base.Add<Scrollbar>();
-			VerticalScrollbar.Alignment = ScrollbarAlignment.Vertical;
-			VerticalScrollbar.Enabled = true;
-
-			HorizontalScrollbar = base.Add<Scrollbar>();
-			HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
-			HorizontalScrollbar.Enabled = true;
-
-			MainPanel = this.Add<ScrollMainPanel>();
-			MainPanel.Dock = Dock.Fill;
-			MainPanel.DrawPanelBackground = false;
-			MainPanel.PaintOverride += delegate (Element self, float width, float height) {
-
-			};
-			MainPanel.DockMargin = RectangleF.TLRB(4);
-			AddParent = MainPanel;
-			MainPanel.Clipping = false;
-
-			MouseScrollEvent += ScrollPanel_MouseScrollEvent;
-		}
-
 		protected override void PostLayoutChildren() {
 
 		}
@@ -66,10 +64,6 @@ namespace Nucleus.UI
 				HorizontalScrollbar.MouseScrolled(HorizontalScrollbar, state, delta);
 			if (delta.Y != 0)
 				VerticalScrollbar.MouseScrolled(VerticalScrollbar, state, delta);
-		}
-		public override T Add<T>(T? toAdd = default) where T : class {
-			var ret = base.Add<T>(toAdd);
-			return ret;
 		}
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);

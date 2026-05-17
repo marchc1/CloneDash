@@ -13,6 +13,74 @@ namespace Nucleus.UI.Elements
 {
 	public class Titlebar : Panel
 	{
+		public Titlebar(Element? parent) : base(parent) {
+			ImagePadding = new(6, 6);
+			Dock = Dock.Top;
+			Size = new(0, this.Parent is UserInterface ? 34 : 42);
+			if (this.Parent is not UserInterface)
+				DockMargin = RectangleF.TLRB(4);
+			TextSize = 20;
+
+			CloseButton = new Button(this);
+			CloseButton.Dock = Dock.Right;
+			CloseButton.AutoSize = false;
+			CloseButton.Size = new(48, 0);
+
+			CloseButton.DockMargin = RectangleF.TLRB(3);
+			CloseButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
+				OnClosePressed?.Invoke(this, state, button);
+			};
+			MaximizeButton = new Button(this);
+			MaximizeButton.Dock = Dock.Right;
+			MaximizeButton.AutoSize = false;
+			MaximizeButton.Size = new(48, 0);
+
+			MaximizeButton.DockMargin = RectangleF.TLRB(3);
+			MaximizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
+				OnMaximizePressed?.Invoke(this, state, button);
+			};
+			MinimizeButton = new Button(this);
+			MinimizeButton.Dock = Dock.Right;
+			MinimizeButton.AutoSize = false;
+			MinimizeButton.Size = new(48, 0);
+
+			MinimizeButton.DockMargin = RectangleF.TLRB(3);
+			MinimizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
+				OnMinimizePressed?.Invoke(this, state, button);
+			};
+
+			CloseButton.Text = "X";
+			MaximizeButton.Text = "";
+			MinimizeButton.Text = "";
+
+			MaximizeButton.PaintOverride += (self, width, height) => {
+				(self as Button).Paint(width, height);
+				Graphics2D.SetDrawColor(TextColor);
+				var size = new Vector2F(10);
+				var pos = new Vector2F((width / 2) - (size.X / 2), (height / 2) - (size.Y / 2));
+				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
+					pos, size), 1);
+
+				if (Level.FrameState.Keyboard.ShiftDown && self.Hovered) {
+					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
+					pos - new Vector2F(2), size + new Vector2F(4)), 1);
+					Graphics2D.DrawLine(pos + new Vector2F(-2, -2), new(4, 4));
+					Graphics2D.DrawLine(pos + new Vector2F(0, size.Y) + new Vector2F(-2, 2), new(4, height - 4));
+					Graphics2D.DrawLine(pos + new Vector2F(size.X, 0) + new Vector2F(2, -2), new(width - 4, 4));
+					Graphics2D.DrawLine(pos + new Vector2F(size.X, size.Y) + new Vector2F(2, 2), new(width - 4, height - 4));
+				}
+			};
+			MinimizeButton.PaintOverride += (self, width, height) => {
+				(self as Button).Paint(width, height);
+				Graphics2D.SetDrawColor(TextColor);
+				Graphics2D.DrawLine(new(14, height / 2), new(width - 14, height / 2));
+			};
+
+			CloseButton.BackgroundColor = CloseButton.BackgroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub();
+			CloseButton.ForegroundColor = CloseButton.ForegroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub();
+			CloseButton.TextColor = CloseButton.TextColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub();
+		}
+
 		private bool imageChanged;
 		private string? imagePath;
 		public new string? Image {
@@ -78,78 +146,10 @@ namespace Nucleus.UI.Elements
 
 		[MemberNotNull(nameof(ImageRenderer))]
 		void setupImageRenderer() {
-			ImageRenderer = Add<Panel>();
+			ImageRenderer = new Panel(this);
 			ImageRenderer.OnHoverTest += Element.Passthru;
 		}
 
-		protected override void Initialize() {
-			base.Initialize();
-			ImagePadding = new(6, 6);
-			Dock = Dock.Top;
-			Size = new(0, this.Parent is UserInterface ? 34 : 42);
-			if (this.Parent is not UserInterface)
-				DockMargin = RectangleF.TLRB(4);
-			TextSize = 20;
-
-			CloseButton = Add<Button>();
-			CloseButton.Dock = Dock.Right;
-			CloseButton.AutoSize = false;
-			CloseButton.Size = new(48, 0);
-
-			CloseButton.DockMargin = RectangleF.TLRB(3);
-			CloseButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
-				OnClosePressed?.Invoke(this, state, button);
-			};
-			MaximizeButton = Add<Button>();
-			MaximizeButton.Dock = Dock.Right;
-			MaximizeButton.AutoSize = false;
-			MaximizeButton.Size = new(48, 0);
-
-			MaximizeButton.DockMargin = RectangleF.TLRB(3);
-			MaximizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
-				OnMaximizePressed?.Invoke(this, state, button);
-			};
-			MinimizeButton = Add<Button>();
-			MinimizeButton.Dock = Dock.Right;
-			MinimizeButton.AutoSize = false;
-			MinimizeButton.Size = new(48, 0);
-
-			MinimizeButton.DockMargin = RectangleF.TLRB(3);
-			MinimizeButton.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
-				OnMinimizePressed?.Invoke(this, state, button);
-			};
-
-			CloseButton.Text = "X";
-			MaximizeButton.Text = "";
-			MinimizeButton.Text = "";
-
-			MaximizeButton.PaintOverride += (self, width, height) => {
-				(self as Button).Paint(width, height);
-				Graphics2D.SetDrawColor(TextColor);
-				var size = new Vector2F(10);
-				var pos = new Vector2F((width / 2) - (size.X / 2), (height / 2) - (size.Y / 2));
-				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
-					pos, size), 1);
-
-				if (Level.FrameState.Keyboard.ShiftDown && self.Hovered) {
-					Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
-					pos - new Vector2F(2), size + new Vector2F(4)), 1);
-					Graphics2D.DrawLine(pos + new Vector2F(-2, -2), new(4, 4));
-					Graphics2D.DrawLine(pos + new Vector2F(0, size.Y) + new Vector2F(-2, 2), new(4, height - 4));
-					Graphics2D.DrawLine(pos + new Vector2F(size.X, 0) + new Vector2F(2, -2), new(width - 4, 4));
-					Graphics2D.DrawLine(pos + new Vector2F(size.X, size.Y) + new Vector2F(2, 2), new(width - 4, height - 4));
-				}
-			};
-			MinimizeButton.PaintOverride += (self, width, height) => {
-				(self as Button).Paint(width, height);
-				Graphics2D.SetDrawColor(TextColor);
-				Graphics2D.DrawLine(new(14, height / 2), new(width - 14, height / 2));
-			};
-
-			CloseButton.BackgroundColor = CloseButton.BackgroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub();
-			CloseButton.ForegroundColor = CloseButton.ForegroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub();
-			CloseButton.TextColor = CloseButton.TextColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub();
-		}
 
 		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			OnTitlebarDragged?.Invoke(self, state, delta);
@@ -179,7 +179,7 @@ namespace Nucleus.UI.Elements
 			Graphics2D.DrawText(pnt.X, pnt.Y, Title, Graphics2D.UI_FONT_NAME, TextSize, TitlePos);
 		}
 	}
-	public class Taskbar : Element
+	public class Taskbar(Element? parent) : Element(parent)
 	{
 
 	}
@@ -187,7 +187,7 @@ namespace Nucleus.UI.Elements
 	{
 		public static List<WeakReference<Window>> Windows { get; } = [];
 
-		private string _title = "Untitled Window";
+		private string _title = "";
 		public string Title {
 			get => Titlebar == null ? _title : Titlebar.Title;
 			set {
@@ -209,43 +209,19 @@ namespace Nucleus.UI.Elements
 			}
 		}
 
-		public Window() {
+		public Window(Element? element, ReadOnlySpan<char> title = "Untitled Window", ReadOnlySpan<char> name = default) : base(element, name) {
 			Position = new(64, 64);
 			Size = new(640, 480);
 			Windows.Add(new(this));
-		}
-		~Window() {
-			MainThread.RunASAP(() => Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this), ThreadExecutionTime.AfterFrame);
-		}
-		public override void OnRemoval() {
-			base.OnRemoval();
-			Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this);
-		}
-		bool opening = true;
-		bool closing = false;
-		double closeTime;
-		public void Close() {
-			closing = true;
-			closeTime = Lifetime;
-			Backdrop = false;
-			UsesRenderTarget = true;
-		}
+			_title = new(title);
 
-		public Titlebar Titlebar { get; private set; }
-
-		public Button ResizeTL { get; private set; }
-		public Button ResizeTR { get; private set; }
-		public Button ResizeBL { get; private set; }
-		public Button ResizeBR { get; private set; }
-		public static float CornerSize => 8;
-		protected override void Initialize() {
-			Titlebar = Add<Titlebar>();
+			Titlebar = new Titlebar(this);
 			Titlebar.Title = _title;
 			Titlebar.OnClosePressed += Titlebar_OnTitlebarClosePressed;
 			Titlebar.OnTitlebarDragged += dragWindow;
 
 			MakePopup();
-			Panel ap = this.Add<Panel>();
+			Panel ap = new(this);
 			ap.Dock = Dock.Fill;
 			ap.Size = new(0, 36);
 			ap.PaintOverride += delegate (Element self, float width, float height) {
@@ -257,25 +233,25 @@ namespace Nucleus.UI.Elements
 			};
 			ap.DockMargin = RectangleF.TLRB(4, 8, 8, 4);
 
-			ResizeTL = Add<Button>();
+			ResizeTL = new Button(this);
 			ResizeTL.Size = new(24, 24);
 			ResizeTL.Origin = Anchor.TopLeft;
 			ResizeTL.Anchor = Anchor.TopLeft;
 			ResizeTL.Enabled = Resizable;
 
-			ResizeTR = Add<Button>();
+			ResizeTR = new Button(this);
 			ResizeTR.Size = new(24, 24);
 			ResizeTR.Origin = Anchor.TopRight;
 			ResizeTR.Anchor = Anchor.TopRight;
 			ResizeTR.Enabled = Resizable;
 
-			ResizeBL = Add<Button>();
+			ResizeBL = new Button(this);
 			ResizeBL.Size = new(24, 24);
 			ResizeBL.Origin = Anchor.BottomLeft;
 			ResizeBL.Anchor = Anchor.BottomLeft;
 			ResizeBL.Enabled = Resizable;
 
-			ResizeBR = Add<Button>();
+			ResizeBR = new Button(this);
 			ResizeBR.Size = new(24, 24);
 			ResizeBR.Origin = Anchor.BottomRight;
 			ResizeBR.Anchor = Anchor.BottomRight;
@@ -327,10 +303,34 @@ namespace Nucleus.UI.Elements
 			ResizeBL.PaintOverride += ResizeBL_PaintOverride;
 			ResizeBR.PaintOverride += ResizeBR_PaintOverride;
 
-
 			this.AddParent = ap;
 			this.UsesRenderTarget = true;
 		}
+		~Window() {
+			MainThread.RunASAP(() => Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this), ThreadExecutionTime.AfterFrame);
+		}
+		public override void OnRemoval() {
+			base.OnRemoval();
+			Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this);
+		}
+		bool opening = true;
+		bool closing = false;
+		double closeTime;
+		public void Close() {
+			closing = true;
+			closeTime = Lifetime;
+			Backdrop = false;
+			UsesRenderTarget = true;
+		}
+
+		public Titlebar Titlebar { get; private set; }
+
+		public Button ResizeTL { get; private set; }
+		public Button ResizeTR { get; private set; }
+		public Button ResizeBL { get; private set; }
+		public Button ResizeBR { get; private set; }
+		public static float CornerSize => 8;
+
 		private void ResizeBR_PaintOverride(Element self, float width, float height) {
 			var fore = MixColorBasedOnMouseState(self, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 			Graphics2D.SetDrawColor(fore);
@@ -414,7 +414,7 @@ namespace Nucleus.UI.Elements
 				Rlgl.PushMatrix();
 
 				float mulX = 1 - (NMath.Ease.InBack(originalMul) * 0.2f);
-				float mulY = 1-(NMath.Ease.InBack(originalMul) * -2);
+				float mulY = 1 - (NMath.Ease.InBack(originalMul) * -2);
 
 				Vector2F sizeOffset = new(
 					((RenderBounds.X + (RenderBounds.W / 2)) * 0.5f * (mulX - 1)),

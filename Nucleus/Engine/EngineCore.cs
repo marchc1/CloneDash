@@ -193,7 +193,7 @@ public static class EngineCore
 	}
 
 	public static Window OpenProfiler() {
-		Window window = Level.UI.Add<Window>();
+		Window window = new Window(Level.UI);
 
 		window.Title = "Nucleus Profiler";
 		window.AddParent.PaintOverride += AddParent_PaintOverride;

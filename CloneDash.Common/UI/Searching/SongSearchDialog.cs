@@ -13,12 +13,11 @@ public class DialogLabelPanel<T> : Panel where T : Element
 {
 	Label label = null!;
 	T element = null!;
-	protected override void Initialize() {
-		base.Initialize();
+	public DialogLabelPanel(Element? parent) : base(parent){ 
 		BorderSize = 0;
 
-		label = Add<Label>();
-		element = Add<T>();
+		label = new(this);
+		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
 	}
 	public T Get() => element;
 	public override void TextChanged(string oldText, string newText) {
@@ -55,8 +54,7 @@ public class SongSearchDialog : Window
 
 	public void SetBarText(string text) => Bar.SearchQuery = string.IsNullOrEmpty(text) ? null : text;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public SongSearchDialog(Element? parent) : base(parent) {
 		MakePopup();
 
 		DynamicallySized = true;
@@ -65,14 +63,14 @@ public class SongSearchDialog : Window
 		HideNonCloseButtons();
 		Title = "Song Search Dialog";
 
-		Add(out applyButton);
+		applyButton = new(this);
 		applyButton.Text = "Apply";
 		applyButton.BorderSize = 0;
 		applyButton.Dock = Dock.Bottom;
 
 		applyButton.MouseReleaseEvent += ApplyButton_MouseReleaseEvent;
 
-		Add(out parameters);
+		parameters = new(this);
 		parameters.Dock = Dock.Fill;
 		AddParent = parameters;
 
@@ -80,7 +78,7 @@ public class SongSearchDialog : Window
 	}
 
 	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
-		parameters.Add(out DialogLabelPanel<T> pnl);
+		DialogLabelPanel<T> pnl = new(parameters);
 		pnl.Dock = Dock.Top;
 		pnl.Size = new(0, 0.15f);
 		pnl.DynamicallySized = true;

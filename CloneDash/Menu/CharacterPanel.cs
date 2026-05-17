@@ -38,11 +38,10 @@ public class CharacterPanel : Panel
 
 	Label ExpressionLabel = null!;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public CharacterPanel(Element? parent) : base(parent){ 
 		BorderSize = 0;
 		DrawPanelBackground = false;
-		ExpressionLabel = Add<Label>();
+		ExpressionLabel = new Label(this);
 		ExpressionLabel.Visible = false;
 		ExpressionLabel.Origin = Anchor.Center;
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;

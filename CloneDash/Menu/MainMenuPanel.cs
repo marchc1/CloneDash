@@ -77,7 +77,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MainMenuLevel menu = Level.As<MainMenuLevel>();
 		var menuBtns = btns.Peek();
 
-		Add(out MainMenuButton btn);
+		MainMenuButton btn = new(this);
 		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub();
 		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub();
 		btn.Text = text;
@@ -109,15 +109,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	public override void OnRemoval() {
 		base.OnRemoval();
 	}
-	protected override void Initialize() {
-		base.Initialize();
-
+	public MainMenuPanel(Element? parent) : base(parent){ 
 		BorderSize = 0;
 		DrawPanelBackground = false;
 
 		OnHoverTest += Element.Passthru;
 
-		Add(out back);
+		back = new(this);
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.BackgroundColor = new(0, 0);
@@ -132,7 +130,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
 				return;
 			}
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
@@ -142,7 +140,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				return;
 			}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
@@ -152,16 +150,16 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				return;
 			}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
-			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+			var selector = menu.PushActiveElement(new CharacterSelector(UI));
 		});
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
-			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
+			var settings = menu.PushActiveElement(new SettingsEditor(UI));
 			settings.DrawPanelBackground = false;
 		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());

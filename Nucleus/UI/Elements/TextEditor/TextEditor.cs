@@ -59,10 +59,9 @@ namespace Nucleus.UI
 		public int SelectionIndex;
 		public int LastPulsingIndex;
 		public ScrollPanel OptionsParent;
-		protected override void Initialize() {
-			base.Initialize();
+		public AutocompletePanel(Element? parent) : base(parent) { 
 			Size = new(480, 180);
-			OptionsParent = Add<ScrollPanel>();
+			OptionsParent = new ScrollPanel(this);
 			OptionsParent.DrawPanelBackground = false;
 			OptionsParent.Dock = Dock.Fill;
 		}
@@ -76,7 +75,7 @@ namespace Nucleus.UI
 
 		public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
 			Options.Add(new(text));
-			Button btn = OptionsParent.Add<Button>();
+			Button btn = new Button(OptionsParent);
 			btn.Dock = Dock.Top;
 			btn.AutoSize = true;
 			btn.TextSize = fontHeight;
@@ -147,7 +146,7 @@ namespace Nucleus.UI
 		[MemberNotNull(nameof(AutocompletePanel))]
 		public void ShowAutocomplete() {
 			if (!IValidatable.IsValid(AutocompletePanel)) {
-				AutocompletePanel = Editor!.Add<AutocompletePanel>();
+				AutocompletePanel = new AutocompletePanel(Editor);
 				AutocompletePanel.Editor = this;
 				AutocompletePanel.Selected += AutocompletePanel_Selected;
 			}
@@ -298,11 +297,10 @@ namespace Nucleus.UI
 				OnEdit();
 			}
 		}
-
-		protected override void Initialize() {
-			Gutter = Add<Panel>();
-			VScrollbar = Add<Scrollbar>();
-			Editor = Add<Panel>();
+		public TextEditor(Element? parent) : base(parent) { 
+			Gutter = new Panel(this);
+			VScrollbar = new Scrollbar(this);
+			Editor = new Panel(this);
 			RefreshFromParams();
 			//Editor.DockMargin = RectangleF.TLRB(6);
 			//Gutter.DockMargin = RectangleF.TLRB(6);

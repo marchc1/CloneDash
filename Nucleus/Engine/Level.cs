@@ -216,7 +216,7 @@ namespace Nucleus.Engine
 		public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
 		public void ResetUI() {
-			UI = Element.Create<UserInterface>();
+			UI = new();
 			UI.EngineLevel = this;
 			UI.Window = EngineCore.Window;
 		}
@@ -348,7 +348,7 @@ namespace Nucleus.Engine
 		public UserInterface UI { get; private set; }
 		public void InitializeUI() {
 			if (UI != null) return;
-			UI = Element.Create<UserInterface>();
+			UI = new UserInterface();
 			UI.EngineLevel = this;
 			UI.Window = EngineCore.Window;
 		}
@@ -868,27 +868,27 @@ namespace Nucleus.Engine
 		}
 
 		internal void SetUpDebugOverlays() {
-			UpdateGraph = UI.Add(new PerfGraph() {
+			UpdateGraph = new PerfGraph(UI) {
 				Anchor = Anchor.BottomRight,
 				Origin = Anchor.BottomRight,
 				Position = new(-8, -8 + -52 + -16),
 				Size = new(400, 26),
 				Mode = PerfGraphMode.CPU_UpdateTime
-			});
-			RenderGraph = UI.Add(new PerfGraph() {
+			};
+			RenderGraph = new PerfGraph(UI) {
 				Anchor = Anchor.BottomRight,
 				Origin = Anchor.BottomRight,
 				Position = new(-8, -8 + -26 + -8),
 				Size = new(400, 26),
 				Mode = PerfGraphMode.CPU_RenderTime
-			});
-			MemGraph = UI.Add(new PerfGraph() {
+			};
+			MemGraph = new PerfGraph(UI) {
 				Anchor = Anchor.BottomRight,
 				Origin = Anchor.BottomRight,
 				Position = new(-8, -8),
 				Size = new(400, 26),
 				Mode = PerfGraphMode.RAM_Usage
-			});
+			};
 
 			EvaluatePerfGraphVisibility();
 		}

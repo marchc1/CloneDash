@@ -24,17 +24,10 @@ namespace Nucleus.UI
 		/// </summary>
 		StretchToFit
 	}
-	public class FlexPanel : Panel
+	public class FlexPanel(Element? parent) : Panel(parent)
 	{
 		public Directional180 Direction { get; set; } = Directional180.Horizontal;
 		public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
-		protected override void Initialize() {
-			base.Initialize();
-		}
-		public override T Add<T>(T? toAdd = null) where T : class {
-			InvalidateChildren(self: true, recursive: true);
-			return base.Add(toAdd);
-		}
 		public override void Paint(float width, float height) {
 
 		}

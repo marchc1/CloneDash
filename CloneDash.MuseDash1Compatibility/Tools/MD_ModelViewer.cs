@@ -31,7 +31,7 @@ public static class MD_ModelViewerCommand
 			return;
 		}
 
-		var window = EngineCore.Level.UI.Add<MD_ModelViewerWindow>();
+		var window = new MD_ModelViewerWindow(EngineCore.Level.UI);
 		window.Populate(searchPath);
 	}
 }
@@ -143,9 +143,7 @@ public class MD_ModelViewerWindow : Window
 
 	const int THUMB_SIZE = 140;
 	const int THUMB_PADDING = 6;
-
-	protected override void Initialize() {
-		base.Initialize();
+	public MD_ModelViewerWindow(Element? parent) : base(parent) {
 		Title = "MuseDash Model Viewer";
 		Size = new(1200, 750);
 		Position = new(50, 50);
@@ -224,48 +222,48 @@ public class MD_ModelViewerWindow : Window
 	}
 
 	void BuildUI() {
-		var topBar = this.Add<Panel>();
+		var topBar = new Panel(this);
 		topBar.Dock = Dock.Top;
 		topBar.Size = new(0, 32);
 		topBar.DrawPanelBackground = false;
 
-		var searchLabel = topBar.Add<Label>();
+		var searchLabel = new Label(topBar);
 		searchLabel.Text = "Filter:";
 		searchLabel.TextSize = 19;
 		searchLabel.Dock = Dock.Left;
 		searchLabel.Size = new(50, 0);
 
-		SearchBox = topBar.Add<Textbox>();
+		SearchBox = new Textbox(topBar);
 		SearchBox.Dock = Dock.Fill;
 		SearchBox.Text = "";
 		SearchBox.OnTextChanged += (_, _, _) => ApplyFilter();
 
-		StatusLabel = this.Add<Label>();
+		StatusLabel = new Label(this);
 		StatusLabel.Dock = Dock.Bottom;
 		StatusLabel.Size = new(0, 24);
 		StatusLabel.TextSize = 17;
 		StatusLabel.Text = $"Found {AllEntries.Count} skeleton assets";
 
-		LeftPanel = this.Add<Panel>();
+		LeftPanel = new Panel(this);
 		LeftPanel.Dock = Dock.Left;
 		LeftPanel.Size = new(220, 0);
 
-		var treeScroll = LeftPanel.Add<DirectionalLayoutPanel>();
+		var treeScroll = new DirectionalLayoutPanel(LeftPanel);
 		treeScroll.Dock = Dock.Fill;
 
 		BuildTreeNodes(treeScroll, RootFolder);
 
-		RightPanel = this.Add<ScrollPanel>();
+		RightPanel = new ScrollPanel(this);
 		RightPanel.Dock = Dock.Fill;
 		RightPanel.HorizontalOverflow = false;
 
-		GridContainer = RightPanel.Add<Panel>();
+		GridContainer = new Panel(RightPanel);
 		GridContainer.Dock = Dock.Top;
 		GridContainer.DrawPanelBackground = false;
 	}
 
 	void BuildTreeNodes(DirectionalLayoutPanel parent, SkeletonFolder folder) {
-		var rootBtn = parent.Add<Button>();
+		var rootBtn = new Button(parent);
 		rootBtn.Text = $"{folder.Name} ({folder.TotalCount()})";
 		rootBtn.Dock = Dock.Top;
 		rootBtn.Size = new(0, 24);
@@ -275,7 +273,7 @@ public class MD_ModelViewerWindow : Window
 		rootBtn.MouseReleaseEvent += (_, _, _) => SelectFolder(folder);
 
 		foreach (var sub in folder.Subfolders.Values.OrderBy(f => f.Name)) {
-			var btn = parent.Add<Button>();
+			var btn = new Button(parent);
 			btn.Text = $"  {sub.Name} ({sub.TotalCount()})";
 			btn.Dock = Dock.Top;
 			btn.Size = new(0, 22);
@@ -321,7 +319,7 @@ public class MD_ModelViewerWindow : Window
 			int col = i % columns;
 			int row = i / columns;
 
-			var card = GridContainer.Add<MD_ModelThumbnailCard>();
+			var card = new MD_ModelThumbnailCard(GridContainer);
 			card.Dock = Dock.None;
 			card.Position = new(
 				col * (THUMB_SIZE + THUMB_PADDING) + THUMB_PADDING,
@@ -334,7 +332,7 @@ public class MD_ModelViewerWindow : Window
 	}
 
 	void OpenDetailWindow(SkeletonEntry entry) {
-		var detail = EngineCore.Level.UI.Add<MD_ModelDetailWindow>();
+		var detail = new MD_ModelDetailWindow(EngineCore.Level.UI);
 		detail.Setup(entry);
 		this.AttachWindowAndLockInput(detail);
 	}
@@ -347,8 +345,7 @@ public class MD_ModelThumbnailCard : Button
 	int CurrentAnimIndex;
 	bool animating;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public MD_ModelThumbnailCard(Element? parent) : base(parent){ 
 		BorderSize = 1;
 		BackgroundColor = new(25, 30, 38);
 		ForegroundColor = new(55, 62, 72);
@@ -480,8 +477,7 @@ public class MD_ModelDetailWindow : Window
 	DirectionalLayoutPanel SlotList = null!;
 	Label ModelInfoLabel = null!;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public MD_ModelDetailWindow(Element? parent) : base(parent) {
 		Title = "Model Detail";
 		Size = new(900, 650);
 		Position = new(150, 80);
@@ -528,7 +524,7 @@ public class MD_ModelDetailWindow : Window
 	}
 
 	void BuildUI() {
-		PreviewPanel = this.Add<Panel>();
+		PreviewPanel = new(this);
 		PreviewPanel.Dock = Dock.Fill;
 		PreviewPanel.DrawPanelBackground = false;
 		PreviewPanel.PaintOverride += PaintPreview;
@@ -540,11 +536,11 @@ public class MD_ModelDetailWindow : Window
 			CameraZoom = Math.Clamp(CameraZoom, 0.01f, 50f);
 		};
 
-		var rightPanel = this.Add<Panel>();
+		var rightPanel = new Panel(this);
 		rightPanel.Dock = Dock.Right;
 		rightPanel.Size = new(320, 0);
 
-		InfoTabs = rightPanel.Add<TabView>();
+		InfoTabs = new TabView(rightPanel);
 		InfoTabs.Dock = Dock.Fill;
 
 		BuildAnimationsTab();
@@ -555,23 +551,23 @@ public class MD_ModelDetailWindow : Window
 	void BuildAnimationsTab() {
 		var tab = InfoTabs.AddTab("Animations");
 
-		var controls = ((Panel)tab.Panel).Add<Panel>();
+		var controls = new Panel(tab.Panel);
 		controls.Dock = Dock.Top;
 		controls.Size = new(0, 70);
 		controls.DrawPanelBackground = false;
 
-		AnimInfoLabel = controls.Add<Label>();
+		AnimInfoLabel = new Label(controls);
 		AnimInfoLabel.Dock = Dock.Top;
 		AnimInfoLabel.Size = new(0, 18);
 		AnimInfoLabel.TextSize = 17;
 		AnimInfoLabel.Text = "No animation playing";
 
-		var channelBar = controls.Add<Panel>();
+		var channelBar = new Panel(controls);
 		channelBar.Dock = Dock.Top;
 		channelBar.Size = new(0, 26);
 		channelBar.DrawPanelBackground = false;
 
-		var chLabel = channelBar.Add<Label>();
+		var chLabel = new Label(channelBar);
 		chLabel.Text = "Channel:";
 		chLabel.TextSize = 17;
 		chLabel.Dock = Dock.Left;
@@ -579,7 +575,7 @@ public class MD_ModelDetailWindow : Window
 
 		for (int ch = 0; ch < 5; ch++) {
 			int capturedCh = ch;
-			var chBtn = channelBar.Add<Button>();
+			var chBtn = new Button(channelBar);
 			chBtn.Dock = Dock.Left;
 			chBtn.Size = new(28, 0);
 			chBtn.Text = $"{ch}";
@@ -587,12 +583,12 @@ public class MD_ModelDetailWindow : Window
 			chBtn.MouseReleaseEvent += (_, _, _) => SelectedChannel = capturedCh;
 		}
 
-		var optBar = controls.Add<Panel>();
+		var optBar = new Panel(controls);
 		optBar.Dock = Dock.Top;
 		optBar.Size = new(0, 26);
 		optBar.DrawPanelBackground = false;
 
-		var loopCb = optBar.Add<Checkbox>();
+		var loopCb = new Checkbox(optBar);
 		loopCb.Dock = Dock.Left;
 		loopCb.Size = new(70, 0);
 		loopCb.Text = "Loop";
@@ -600,7 +596,7 @@ public class MD_ModelDetailWindow : Window
 		loopCb.Checked = true;
 		loopCb.OnCheckedChanged += (cb) => LoopAnimation = cb.Checked;
 
-		var stopBtn = optBar.Add<Button>();
+		var stopBtn = new Button(optBar);
 		stopBtn.Dock = Dock.Left;
 		stopBtn.Size = new(50, 0);
 		stopBtn.Text = "Stop";
@@ -610,7 +606,7 @@ public class MD_ModelDetailWindow : Window
 			Instance?.SetToSetupPose();
 		};
 
-		var resetBtn = optBar.Add<Button>();
+		var resetBtn = new Button(optBar);
 		resetBtn.Dock = Dock.Left;
 		resetBtn.Size = new(60, 0);
 		resetBtn.Text = "Reset";
@@ -621,7 +617,7 @@ public class MD_ModelDetailWindow : Window
 			CenterCamera();
 		};
 
-		AnimList = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
+		AnimList = new DirectionalLayoutPanel(tab.Panel);
 		AnimList.Dock = Dock.Fill;
 
 		if (Entry?.CachedModelData != null) {
@@ -630,7 +626,7 @@ public class MD_ModelDetailWindow : Window
 				var anim = anims[i];
 				int capturedIdx = i;
 
-				var btn = AnimList.Add<Button>();
+				var btn = new Button(AnimList);
 				btn.Dock = Dock.Top;
 				btn.Size = new(0, 22);
 				btn.TextSize = 17;
@@ -651,11 +647,11 @@ public class MD_ModelDetailWindow : Window
 	void BuildInfoTab() {
 		var tab = InfoTabs.AddTab("Info");
 
-		var scroll = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
+		var scroll = new DirectionalLayoutPanel(tab.Panel);
 		scroll.Dock = Dock.Fill;
 
 		if (Entry?.CachedModelData == null) {
-			var lbl = scroll.Add<Label>();
+			var lbl = new Label(scroll);
 			lbl.Text = "Model failed to load.";
 			lbl.TextSize = 18;
 			lbl.Dock = Dock.Top;
@@ -692,7 +688,7 @@ public class MD_ModelDetailWindow : Window
 	}
 
 	void AddInfoRow(DirectionalLayoutPanel parent, string text) {
-		var lbl = parent.Add<Label>();
+		var lbl = new Label(parent);
 		lbl.Text = text;
 		lbl.TextSize = 16;
 		lbl.Dock = Dock.Top;
@@ -704,38 +700,38 @@ public class MD_ModelDetailWindow : Window
 	void BuildDebugTab() {
 		var tab = InfoTabs.AddTab("Debug");
 
-		var panel = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
+		var panel = new DirectionalLayoutPanel(tab.Panel);
 		panel.Dock = Dock.Fill;
 
-		var bonesCb = panel.Add<Checkbox>();
+		var bonesCb = new Checkbox(panel);
 		bonesCb.Dock = Dock.Top;
 		bonesCb.Size = new(0, 26);
 		bonesCb.Text = "Show Bones";
 		bonesCb.TextSize = 17;
 		bonesCb.OnCheckedChanged += (cb) => ShowBones = cb.Checked;
 
-		var wireCb = panel.Add<Checkbox>();
+		var wireCb = new Checkbox(panel);
 		wireCb.Dock = Dock.Top;
 		wireCb.Size = new(0, 26);
 		wireCb.Text = "Show Wireframe";
 		wireCb.TextSize = 17;
 		wireCb.OnCheckedChanged += (cb) => ShowWireframe = cb.Checked;
 
-		var slotCb = panel.Add<Checkbox>();
+		var slotCb = new Checkbox(panel);
 		slotCb.Dock = Dock.Top;
 		slotCb.Size = new(0, 26);
 		slotCb.Text = "Show Slot Info";
 		slotCb.TextSize = 17;
 		slotCb.OnCheckedChanged += (cb) => ShowSlotInfo = cb.Checked;
 
-		var attachCb = panel.Add<Checkbox>();
+		var attachCb = new Checkbox(panel);
 		attachCb.Dock = Dock.Top;
 		attachCb.Size = new(0, 26);
 		attachCb.Text = "Show Attachment Names";
 		attachCb.TextSize = 17;
 		attachCb.OnCheckedChanged += (cb) => ShowAttachmentNames = cb.Checked;
 
-		var setupBtn = panel.Add<Button>();
+		var setupBtn = new Button(panel);
 		setupBtn.Dock = Dock.Top;
 		setupBtn.Size = new(0, 28);
 		setupBtn.Text = "Reset to Setup Pose";
@@ -745,7 +741,7 @@ public class MD_ModelDetailWindow : Window
 			Instance?.SetToSetupPose();
 		};
 
-		var logBtn = panel.Add<Button>();
+		var logBtn = new Button(panel);
 		logBtn.Dock = Dock.Top;
 		logBtn.Size = new(0, 28);
 		logBtn.Text = "Log Model Data to Console";

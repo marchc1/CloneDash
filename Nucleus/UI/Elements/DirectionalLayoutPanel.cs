@@ -7,6 +7,9 @@ namespace Nucleus.UI.Elements
 	/// </summary>
 	public class DirectionalLayoutPanel : ScrollPanel
 	{
+		public DirectionalLayoutPanel(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
+			MainPanel.OnChildParented += MainPanel_OnChildParented;
+		}
 		private Directional180 direction = Directional180.Vertical;
 		public Directional180 Direction {
 			get => direction;
@@ -35,12 +38,6 @@ namespace Nucleus.UI.Elements
 				sizetoedge = value;
 				InvalidateLayout();
 			}
-		}
-
-		protected override void Initialize() {
-			base.Initialize();
-
-			MainPanel.OnChildParented += MainPanel_OnChildParented;
 		}
 
 		private void MainPanel_OnChildParented(Element parent, Element child) {

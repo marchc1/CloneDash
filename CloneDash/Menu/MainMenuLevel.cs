@@ -32,18 +32,18 @@ public class MainMenuLevel : Level, IMainMenuLevel
 {
 	public static ConCommand hologramtest = new(nameof(hologramtest), (_, in _) => {
 		var level = EngineCore.Level;
-		var window = level.UI.Add<Window>();
+		var window = new Window(level.UI);
 		window.Title = "Hologram Test";
 		window.Size = new(600, 600);
 		window.Center();
 
-		var refresh = window.Add<Button>();
+		var refresh = new Button(window);
 		refresh.Dock = Dock.Bottom;
 		refresh.Size = new(32);
 		refresh.Text = "Refresh Shader";
 
 
-		var renderPanel = window.Add<Panel>();
+		var renderPanel = new Panel(window);
 		renderPanel.Dock = Dock.Fill;
 		var charData = CharacterMod.GetCharacterData();
 		if (charData == null) return;
@@ -143,17 +143,17 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	Panel header;
 	public override void Initialize(params object[] args) {
-		var charPanel = UI.Add<Panel>();
+		var charPanel = new Panel(UI);
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
 		charPanel.Size = new(1f, 1f);
 
-		Character = charPanel.Add<CharacterPanel>();
+		Character = new(charPanel);
 		Character.DynamicallySized = true;
 		Character.Origin = Anchor.TopCenter;
 		Character.Size = new(1f);
 
-		header = UI.Add<Panel>();
+		header = new(UI);
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
@@ -164,7 +164,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			PopActiveElement();
 		});
 
-		var test2 = header.Add<Label>();
+		var test2 = new Label(header);
 		test2.Size = new Vector2F(158, 32);
 		test2.Dock = Dock.Left;
 		test2.Text = "Clone Dash";
@@ -174,7 +174,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
-		PushActiveElement(UI.Add<MainMenuPanel>());
+		PushActiveElement(new MainMenuPanel(UI));
 	}
 
 	public override void PreThink(ref FrameState frameState) {
@@ -199,7 +199,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	}
 
 	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
-		var menuBtn = header.Add<Button>();
+		var menuBtn = new Button(header);
 		menuBtn.AutoSize = false;
 		menuBtn.Size = new Vector2F(64);
 		menuBtn.Text = "";
@@ -232,7 +232,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
 
-		Panel levelSelector = UI.Add<Panel>();
+		Panel levelSelector = new Panel(UI);
 		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();
@@ -289,7 +289,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			SelectedSong = null;
 		};
 
-		var back = levelSelector.Add<Button>();
+		var back = new Button(levelSelector);
 
 		back.Anchor = Anchor.Center;
 		back.Origin = Anchor.Center;
@@ -310,7 +310,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			self.Paint(w, h);
 		};
 
-		SongLabel title = levelSelector.Add<SongLabel>();
+		SongLabel title = new SongLabel(levelSelector);
 		title.TextSize = 48;
 		title.Text = info.Name;
 		title.AutoSize = true;
@@ -328,7 +328,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			s.Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(s, 1.35f, 6));
 		};
 
-		SongLabel author = levelSelector.Add<SongLabel>();
+		SongLabel author = new SongLabel(levelSelector);
 		author.TextSize = 22;
 		author.Text = $"by {info.Author}";
 		author.AutoSize = true;
@@ -377,7 +377,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
 			});
 
-		var difficulties = levelSelector.Add<FlexPanel>();
+		var difficulties = new FlexPanel(levelSelector);
 		difficulties.Direction = Directional180.Vertical;
 		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
 		difficulties.Anchor = Anchor.Center;
@@ -476,11 +476,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (metadata.Difficulty == "") return null;
 		if (metadata.Difficulty == "0") return null;
 
-		Button play = levelSelector.Add<Button>();
+		Button play = new(levelSelector);
 		play.Size = new(64);
 		play.Dock = Dock.Bottom;
 
-		SongLabel mapper = play.Add<SongLabel>();
+		SongLabel mapper = new SongLabel(play);
 		mapper.AutoSize = true;
 		mapper.Text = $"by {designer}";
 		mapper.TextSize = 15;

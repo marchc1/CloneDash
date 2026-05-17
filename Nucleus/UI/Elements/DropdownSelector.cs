@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI.Elements
 {
-	public class DropdownSelector<T> : Button
+	public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, name)
 	{
 		public T? Selected { get; set; } = default;
 		public List<T> Items { get; } = [];
 		public bool Editable { get; set; } = false;
 
 		public static DropdownSelector<ET> FromEnum<ET>(ET v) where ET : Enum {
-			DropdownSelector<ET> selector = new DropdownSelector<ET>();
+			DropdownSelector<ET> selector = new DropdownSelector<ET>(null);
 			selector.Selected = v;
 			foreach (var value in Enum.GetValuesAsUnderlyingType(typeof(ET))) {
 				selector.Items.Add((ET)value);

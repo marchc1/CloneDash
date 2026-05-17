@@ -60,33 +60,31 @@ namespace Nucleus.UI.Elements
 
 		Panel TabContainer;
 
-		protected override void Initialize() {
-			base.Initialize();
-
-			TabSelector = Add<Panel>();
+		public TabView(Element? parent) : base(parent) {
+			TabSelector = new Panel(this);
 			TabSelector.DrawPanelBackground = false;
 			TabSelector.Size = new(0, 32);
 			TabSelector.Dock = Dock.Top;
 
-			TabGoLeft = TabSelector.Add<Button>();
+			TabGoLeft = new Button(TabSelector);
 			TabGoLeft.Size = new(28);
 			TabGoLeft.Dock = Dock.Left;
 			TabGoLeft.BorderSize = 0;
 			TabGoLeft.Text = "<";
 			TabGoLeft.TextSize = 18;
 
-			TabGoRight = TabSelector.Add<Button>();
+			TabGoRight = new Button(TabSelector);
 			TabGoRight.Size = new(28);
 			TabGoRight.Dock = Dock.Right;
 			TabGoRight.BorderSize = 0;
 			TabGoRight.Text = ">";
 			TabGoRight.TextSize = 18;
 
-			TabSelectorContainer = TabSelector.Add<Panel>();
+			TabSelectorContainer = new Panel(TabSelector);
 			TabSelectorContainer.DrawPanelBackground = false;
 			TabSelectorContainer.Dock = Dock.Fill;
 
-			TabContainer = Add<Panel>();
+			TabContainer = new Panel(this);
 			TabContainer.Dock = Dock.Fill;
 			TabContainer.BackgroundColor = SWITCHER_ACTIVE;
 			TabContainer.BorderSize = 0;
@@ -101,12 +99,12 @@ namespace Nucleus.UI.Elements
 
 		public Tab AddTab(string name, string? icon = null, string? tooltip = null) {
 			// We create the tab in TabContainer
-			Panel panel = TabContainer.Add<Panel>();
+			Panel panel = new Panel(TabContainer);
 			panel.Dock = Dock.Fill;
 			panel.DrawPanelBackground = false;
 
 			// The switcher in TabSelectorContainer
-			Button switcher = TabSelectorContainer.Add<Button>();
+			Button switcher = new Button(TabSelectorContainer);
 			switcher.Dock = Dock.Left;
 			switcher.BackgroundColor = SWITCHER_INACTIVE;
 			switcher.TextPadding = new(4);

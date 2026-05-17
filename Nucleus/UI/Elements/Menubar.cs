@@ -26,14 +26,14 @@ namespace Nucleus.UI.Elements
 	}
 	public class Menubar : Panel
 	{
-		protected override void Initialize() {
-			base.Initialize();
+	public Menubar(Element? parent) : base(parent){
+
 			this.Size = new(0, 32);
 			this.Dock = Dock.Top;
 		}
 		public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 			MenuContext context = new MenuContext(this.UI);
-			Button b = Add<Button>();
+			Button b = new Button(this);
 			action = action ?? (() => context.Show());
 			b.TextPadding = new(8);
 			b.Dock = Dock.Left;

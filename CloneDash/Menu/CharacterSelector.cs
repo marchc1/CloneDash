@@ -17,7 +17,7 @@ using CloneDash.Common;
 
 namespace CloneDash.Menu;
 
-public class CharacterButton : Button
+public class CharacterButton(Element? parent) : Button(parent)
 {
 	public string? CosplayName;
 	public string? CharacterName;
@@ -61,14 +61,13 @@ public class CharacterSelectorScroller : Panel
 		InvalidateLayout();
 	}
 
-	protected override void Initialize()
-	{
+	public CharacterSelectorScroller(Element? parent) : base(parent) {
 		var language = HumanLanguage.GetCurrentLanguage();
 		foreach (var characterIdx in CharacterMod.GetAvailableCharacters()) {
 			var character = CharacterMod.GetCharacterData(characterIdx);
 			Debug.Assert(character != null);
 
-			var lbl = Add<CharacterButton>();
+			var lbl = new CharacterButton(this);
 			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
 			lbl.BorderSize = 0;
 
@@ -133,33 +132,31 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Button characterSelectButton = null!;
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
-	protected override void Initialize() {
-		base.Initialize();
-
+	public CharacterSelector(Element? parent) : base(parent) {
 		BackgroundColor = new Color(0, 0, 0, 0);
 		OnHoverTest += Passthru;
-		
-		selectedInfo = Add<Panel>();
+
+		selectedInfo = new Panel(this);
 		selectedInfo.Dock = Dock.Bottom;
 		selectedInfo.DynamicallySized = true;
 		selectedInfo.Size = new(0, 0.125f);
 		selectedInfo.BorderSize = 0;
 		selectedInfo.PaintOverride += SelectedInfo_PaintOverride;
 
-		characterNameLabel = Add<Label>();
+		characterNameLabel = new(this);
 		characterNameLabel.AutoSize = true;
 
-		characterCostumeLabel = Add<Label>();
+		characterCostumeLabel = new(this);
 		characterCostumeLabel.AutoSize = true;
 
-		characterHPLabel = Add<Label>();
+		characterHPLabel = new(this);
 		characterHPLabel.AutoSize = true;
 
-		characterAuthorLabel = Add<Label>();
+		characterAuthorLabel = new(this);
 		characterAuthorLabel.AutoSize = true;
 		characterAuthorLabel.Origin = Anchor.TopRight;
 
-		characterSelectButton = selectedInfo.Add<Button>();
+		characterSelectButton = new(selectedInfo);
 		characterSelectButton.Dock = Dock.Right;
 		characterSelectButton.Size = new(0.15f);
 		characterSelectButton.DynamicallySized = true;
@@ -167,7 +164,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton.ForegroundColor = new(48, 220, 70);
 		characterSelectButton.MouseReleaseEvent += CharacterSelectButton_MouseReleaseEvent;
 
-		characterPerkLabel = selectedInfo.Add<Label>();
+		characterPerkLabel = new(selectedInfo);
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
 		characterPerkLabel.TextAlignment = Anchor.CenterLeft;
@@ -177,7 +174,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterPerkLabel.DynamicallySized = true;
 		characterPerkLabel.BackgroundColor = new(100, 100, 100, 100); // temp
 
-		backPanel = Add<CharacterSelectorScroller>();
+		backPanel = new CharacterSelectorScroller(this);
 		backPanel.Dock = Dock.Bottom;
 		backPanel.DynamicallySized = true;
 		backPanel.Size = new(0, 0.1f);
@@ -215,7 +212,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	}
 
 	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
-	
+
 	}
 
 	ICharacterDescriptor? LastCharacterSelected;
@@ -241,8 +238,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton.Text = "SELECT";
 	}
 
-	public bool OnTryClose()
-	{
+	public bool OnTryClose() {
 		Character.SetCharacter(CharacterMod.GetCharacterData());
 		return true;
 	}

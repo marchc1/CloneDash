@@ -11,11 +11,10 @@ namespace Nucleus.UI
 {
 	public class Panel : Element
 	{
-		public bool DrawPanelBackground { get; set; } = true;
-		protected override void Initialize() {
-			base.Initialize();
-			this.DockPadding = RectangleF.TLRB(2);
+		public Panel(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
+			DockPadding = RectangleF.TLRB(2);
 		}
+		public bool DrawPanelBackground { get; set; } = true;
 
 		public override void Paint(float width, float height) {
 			if (!DrawPanelBackground) {

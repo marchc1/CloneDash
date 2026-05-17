@@ -37,8 +37,8 @@ namespace Nucleus.UI
 		public string? TextFormat { get => numslider.TextFormat; set => numslider.TextFormat = value; }
 
 		public new string Text { get => label.Text; set => label.Text = value; }
-		protected override void Initialize() {
-			label = Add<Label>();
+		public LabeledNumSlider(Element? parent) : base(parent){
+			label = new Label(this);
 			label.Dock = Dock.Left;
 			label.AutoSize = true;
 			label.Text = "Num";
@@ -46,7 +46,7 @@ namespace Nucleus.UI
 			label.BackgroundColor = Color.Blank;
 			label.DockMargin = RectangleF.XYWH(0, 0, 16, 0);
 
-			numslider = Add<NumSlider>();
+			numslider = new NumSlider(this);
 			numslider.Dock = Dock.Fill;
 			numslider.Digits = 3;
 		}
@@ -93,8 +93,7 @@ namespace Nucleus.UI
 		public string Prefix { get; set; } = "";
 		public string Suffix { get; set; } = "";
 
-		protected override void Initialize() {
-			base.Initialize();
+		public NumSlider(Element? parent) : base(parent) {
 			SetValueNoUpdate(Value);
 		}
 		protected override void OnThink(FrameState frameState) {

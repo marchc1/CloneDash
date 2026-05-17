@@ -81,13 +81,8 @@ namespace Nucleus.UI
 			Window.StopTextInput();
 		}
 
-		public UserInterface() {
-			Preprocess(EngineCore.Window.Size);
-		}
-
-		protected override void Initialize() {
+		public UserInterface() : base(null) {
 			UI = this;
-
 			Preprocess(EngineCore.Window.Size);
 		}
 
@@ -173,7 +168,7 @@ namespace Nucleus.UI
 		public void TriggerElementClicked(Element? e, FrameState fs, ButtonCode mb) => OnElementClicked?.Invoke(e!, fs, mb);
 		public void TriggerElementReleased(Element e, FrameState fs, ButtonCode mb) => OnElementReleased?.Invoke(e, fs, mb);
 		public Menu Menu() {
-			return this.Add<Menu>();
+			return new Menu(this);
 		}
 		public Level? EngineLevel { get; set; }
 

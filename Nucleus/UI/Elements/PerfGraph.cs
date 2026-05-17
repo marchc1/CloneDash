@@ -16,7 +16,7 @@ namespace Nucleus.UI.Elements
 		CPU_RenderTime,
 		RAM_Usage
 	}
-	public class PerfGraph : Panel
+	public class PerfGraph(Element? parent) : Panel(parent)
 	{
 		public const int MAX_PERFGRAPH_ITEMS = (1000 / 100) * 4;
 		public PerfGraphMode Mode;

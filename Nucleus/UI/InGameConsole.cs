@@ -29,8 +29,7 @@ namespace Nucleus
 			HelpStrings = null;
 		}
 
-		protected override void Initialize() {
-			base.Initialize();
+		public ConsoleAutocomplete(Element? parent) : base(parent) {
 			Clipping = false;
 		}
 
@@ -201,13 +200,11 @@ namespace Nucleus
 			renderBounds.W = Parent.Size.W - 16;
 			renderBounds.H = 384;
 		}
-		protected override void Initialize() {
-			base.Initialize();
-
+		public ConsoleWindow(Element? parent) : base(parent){ 
 			this.DockMargin = RectangleF.TLRB(8);
 			this.BorderSize = 0;
 
-			consoleInput = Add<TextEditor>();
+			consoleInput = new TextEditor(this);
 			consoleInput.Size = new(0, 32);
 			consoleInput.Dock = Dock.Bottom;
 			consoleInput.Multiline = false;
@@ -223,7 +220,7 @@ namespace Nucleus
 			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
-			consoleLogs = Add<TextEditor>();
+			consoleLogs = new TextEditor(this);
 			consoleLogs.Dock = Dock.Fill;
 			consoleLogs.TextSize = 12;
 			consoleLogs.DockMargin = new(0, 0, 0, 0);
@@ -312,7 +309,7 @@ namespace Nucleus
 
 		private void EnsureAutocompletePanel() {
 			if (!IValidatable.IsValid(autoComplete)) {
-				autoComplete = consoleInput.Add<ConsoleAutocomplete>();
+				autoComplete = new ConsoleAutocomplete(consoleInput);
 				autoComplete.Dock = Dock.Bottom;
 				autoComplete.Size = new(0, 0);
 			}
@@ -595,7 +592,7 @@ namespace Nucleus
 				return;
 			}
 
-			inputPanel = parent.Add<ConsoleWindow>();
+			inputPanel = new ConsoleWindow(parent);
 
 			ConsoleSystem.AddScreenBlocker(inputPanel);
 			inputPanel.Removed += (self) => OnConsoleClosed();

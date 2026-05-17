@@ -9,8 +9,7 @@ namespace CloneDash.Menu;
 
 public class MainMenuButton : Button
 {
-	protected override void Initialize() {
-		base.Initialize();
+	public MainMenuButton(Element? parent) : base(parent) {
 		TextAlignment = Anchor.CenterRight;
 		ShouldDrawImage = false;
 		Clipping = false;

@@ -47,6 +47,9 @@ public static class TextOverflowModeTools
 
 public class Label : Element
 {
+	public Label(Element? parent, ReadOnlySpan<char> text = "Label", ReadOnlySpan<char> name = default) : base(parent, name) {
+		Text = new(text);
+	}
 	public bool DrawBackground { get; set; } = false;
 	public Anchor TextAlignment { get; set; } = Anchor.Center;
 	private bool __autosize = false;
@@ -198,10 +201,6 @@ public class Label : Element
 		textInvalid = false;
 	}
 
-
-	protected override void Initialize() {
-		base.Initialize();
-	}
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		InvalidateText();

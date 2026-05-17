@@ -15,8 +15,7 @@ namespace Nucleus.UI
 {
 	public class Button : Label
 	{
-		protected override void Initialize() {
-			base.Initialize();
+		public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
 			BackgroundColor = new(20, 25, 32, 220);
 		}
 		protected override void OnThink(FrameState frameState) {

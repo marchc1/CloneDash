@@ -62,7 +62,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (Source == null) return;
 		SearchFilter = Source.NewFilter();
 
-		UI.Add(out ActiveDialog);
+		ActiveDialog = new(UI);
 		ActiveDialog.MakeModal();
 		ActiveDialog.Selector = this;
 		ActiveDialog.Bar = SearchBar;
@@ -443,24 +443,23 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public static int VisibleDiscs => 5;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public SongSelector(Element? parent) : base(parent){ 
 		DrawPanelBackground = false;
 
 		Discs = new Button[VisibleDiscs];
 		for (int i = 0; i < VisibleDiscs; i++)
-			Add(out Discs[i]);
+			Discs[i] = new(this);
 
-		Add(out CurrentTrackName);
-		Add(out CurrentTrackAuthor);
-		Add(out SearchBar);
-		Add(out FilterResults);
+		CurrentTrackName = new(this);
+		CurrentTrackAuthor = new(this);
+		SearchBar = new(this);
+		FilterResults = new(this);
 		FilterResults.Anchor = Anchor.TopCenter;
 		FilterResults.Origin = Anchor.Center;
 
 		SearchBar.MouseReleaseEvent += SearchBar_MouseReleaseEvent;
 
-		Add(out Loading);
+		Loading = new(this);
 		Loading.Anchor = Anchor.Center;
 		Loading.Origin = Anchor.Center;
 		Loading.Text = "LOADING";

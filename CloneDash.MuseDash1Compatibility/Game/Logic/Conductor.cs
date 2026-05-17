@@ -54,7 +54,7 @@ namespace CloneDash.Game
 			audiosystem.GetSoundPlayhead(game.Music, out currentInaccurateTime);
 		}
 
-		private class CD_Conductor_UIBar : Element
+		private class CD_Conductor_UIBar(Element? parent) : Element(parent)
 		{
 			public float Playhead { get; set; }
 			public float Duration { get; set; }
@@ -100,7 +100,7 @@ namespace CloneDash.Game
 		private CD_Conductor_UIBar UIBar;
 
 		public override void Initialize() {
-			UIBar = Level.UI.Add<CD_Conductor_UIBar>();
+			UIBar = new CD_Conductor_UIBar(Level.UI);
 			UIBar.Dock = Dock.Top;
 			UIBar.Size = new(0, 8);
 

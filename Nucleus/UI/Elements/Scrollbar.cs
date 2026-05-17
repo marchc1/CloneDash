@@ -69,12 +69,12 @@ namespace Nucleus.UI.Elements
 				Down.Dock = Dock.Right;
 			}
 		}
-		protected override void Initialize() {
+		public Scrollbar(Element? parent) : base(parent) {
 			this.Size = new(18, 18);
 
-			Up = this.Add<Button>();
-			Down = this.Add<Button>();
-			Grip = this.Add<Button>();
+			Up = new Button(this);
+			Down = new Button(this);
+			Grip = new Button(this);
 
 			Up.Size = new(18, 18);
 			Down.Size = new(18, 18);

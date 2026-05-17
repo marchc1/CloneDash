@@ -18,7 +18,7 @@ namespace Nucleus.UI
 		Save
 	}
 
-	public class PopupWindow : Window
+	public class PopupWindow(Element? parent) : Window(parent)
 	{
 		public bool AutomateLayout {
 			get => field;
@@ -71,8 +71,8 @@ namespace Nucleus.UI
     public static class Popups
     {
         public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
-            PopupWindow popup = UI.Add<PopupWindow>();
-            popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
+			PopupWindow popup = new PopupWindow(UI);
+			popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
             popup.Title = title;
             popup.Titlebar.MinimizeButton.Visible = false;
             popup.Titlebar.MaximizeButton.Visible = false;
@@ -86,15 +86,15 @@ namespace Nucleus.UI
         private static (PopupWindow popup, FlexPanel buttonContainer) SetupDialogCore(UserInterface UI, string title, string text) {
             PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
-            FlexPanel containButtons = popup.Add<FlexPanel>();
+            FlexPanel containButtons = new FlexPanel(popup);
             containButtons.Dock = Dock.Bottom;
             containButtons.DockMargin = RectangleF.TLRB(0, 0, 0, 5);
             containButtons.Size = new(0, 48);
             containButtons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
             containButtons.DockPadding = RectangleF.TLRB(2, 2, 2, 2);
 
-            Label lb = popup.Add<Label>();
-            lb.TextSize = 17;
+			Label lb = new Label(popup);
+			lb.TextSize = 17;
             lb.Text = text.Replace("\r", "");
             lb.Dock = Dock.Fill;
 
@@ -112,7 +112,7 @@ namespace Nucleus.UI
         public static void DialogOK(this UserInterface UI, string title, string text, Action? onOK = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
-            Button ok = containButtons.Add<Button>();
+            Button ok = new Button(containButtons);
             ok.Text = "OK";
             ok.MouseReleaseEvent += (_, _, _) => {
                 onOK?.Invoke();
@@ -124,14 +124,14 @@ namespace Nucleus.UI
         public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
-            Button close = containButtons.Add<Button>();
+            Button close = new Button(containButtons);
             close.Text = "Cancel";
             close.MouseReleaseEvent += (_, _, _) => {
                 onCancel?.Invoke();
                 popup.Close();
             };
 
-            Button ok = containButtons.Add<Button>();
+            Button ok = new Button(containButtons);
             ok.Text = "OK";
             ok.MouseReleaseEvent += (_, _, _) => {
                 onOK?.Invoke();

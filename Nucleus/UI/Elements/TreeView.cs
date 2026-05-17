@@ -11,9 +11,8 @@ namespace Nucleus.UI.Elements
 	public class TreeNode : Button, IContainsNodes
 	{
 		DirectionalLayoutPanel ChildrenPanel;
-		protected override void Initialize() {
-			base.Initialize();
-			Parent.Add(out ChildrenPanel);
+		public TreeNode(Element? parent) : base(parent) {
+			ChildrenPanel = new(Parent);
 			ChildrenPanel.AutoSize = true;
 			ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
 			ChildrenPanel.BorderSize = 0;
@@ -55,7 +54,7 @@ namespace Nucleus.UI.Elements
 
 		public List<TreeNode> Nodes { get; set; } = [];
 		public TreeNode AddNode(string text) {
-			TreeNode node = ChildrenPanel.Add<TreeNode>();
+			TreeNode node = new TreeNode(ChildrenPanel);
 			node.Text = text;
 			Nodes.Add(node);
 			return node;
@@ -75,14 +74,13 @@ namespace Nucleus.UI.Elements
 	}
 	public class TreeView : DirectionalLayoutPanel, IContainsNodes
 	{
-		protected override void Initialize() {
-			base.Initialize();
+		public TreeView(Element? parent) : base(parent) {
 			SizeChildrensOppositeSideToEdge = true;
 		}
 
 		public List<TreeNode> Nodes { get; set; } = [];
 		public TreeNode AddNode(string text) {
-			TreeNode node = Add<TreeNode>();
+			TreeNode node = new TreeNode(this);
 			node.Text = text;
 			Nodes.Add(node);
 			return node;
