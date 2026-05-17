@@ -1,90 +1,88 @@
 ﻿using Nucleus.Common.Input;
-using Nucleus.Input;
 using Nucleus.Types;
 
-namespace Nucleus.UI.Elements
+namespace Nucleus.UI.Elements;
+
+public interface IContainsNodes
 {
-	public interface IContainsNodes
-	{
-		public TreeNode AddNode(string text);
+	public TreeNode AddNode(string text);
+}
+public class TreeNode : Button, IContainsNodes
+{
+	DirectionalLayoutPanel ChildrenPanel;
+	public TreeNode(Element? parent) : base(parent) {
+		ChildrenPanel = new(Parent);
+		ChildrenPanel.AutoSize = true;
+		ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
+		ChildrenPanel.BorderSize = 0;
+		ChildrenPanel.SetPaintBackgroundEnabled(false);
+		ChildrenPanel.SetPaintEnabled(false);
+		ChildrenPanel.Visible = false;
+		ChildrenPanel.Enabled = false;
+		ChildrenPanel.Size = new(0, 0);
+		ChildrenPanel.DockPadding = RectangleF.TLRB(0, 8, 0, 0);
+
+		TextAlignment = Anchor.CenterLeft;
+		TextPadding = new(8);
 	}
-	public class TreeNode : Button, IContainsNodes
-	{
-		DirectionalLayoutPanel ChildrenPanel;
-		public TreeNode(Element? parent) : base(parent) {
-			ChildrenPanel = new(Parent);
-			ChildrenPanel.AutoSize = true;
-			ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
-			ChildrenPanel.BorderSize = 0;
-			ChildrenPanel.SetPaintBackgroundEnabled(false);
-			ChildrenPanel.SetPaintEnabled(false);
-			ChildrenPanel.Visible = false;
-			ChildrenPanel.Enabled = false;
-			ChildrenPanel.Size = new(0, 0);
-			ChildrenPanel.DockPadding = RectangleF.TLRB(0, 8, 0, 0);
 
-			TextAlignment = Anchor.CenterLeft;
-			TextPadding = new(8);
-		}
+	private bool expanded = false;
 
-		private bool expanded = false;
+	public delegate void ExpansionStateChanged(bool expanded);
 
-		public delegate void ExpansionStateChanged(bool expanded);
+	public event ExpansionStateChanged? OnExpanded;
+	public event ExpansionStateChanged? OnCollapsed;
+	public event ExpansionStateChanged? OnExpandToggled;
 
-		public event ExpansionStateChanged? OnExpanded;
-		public event ExpansionStateChanged? OnCollapsed;
-		public event ExpansionStateChanged? OnExpandToggled;
+	public bool Expanded {
+		get => expanded;
+		set {
+			if (expanded != value) {
+				expanded = value;
+				ChildrenPanel.Visible = value;
+				ChildrenPanel.Enabled = value;
 
-		public bool Expanded {
-			get => expanded;
-			set {
-				if (expanded != value) {
-					expanded = value;
-					ChildrenPanel.Visible = value;
-					ChildrenPanel.Enabled = value;
-
-					OnExpandToggled?.Invoke(expanded);
-					if (expanded) OnExpanded?.Invoke(expanded);
-					else OnCollapsed?.Invoke(expanded);
-				}
+				OnExpandToggled?.Invoke(expanded);
+				if (expanded) OnExpanded?.Invoke(expanded);
+				else OnCollapsed?.Invoke(expanded);
 			}
 		}
-		public void Expand() => Expanded = true;
-		public void Collapse() => Expanded = false;
-		public void ToggleExpanded() => Expanded = !Expanded;
-
-		public List<TreeNode> Nodes { get; set; } = [];
-		public TreeNode AddNode(string text) {
-			TreeNode node = new TreeNode(ChildrenPanel);
-			node.Text = text;
-			Nodes.Add(node);
-			return node;
-		}
-
-		DateTime LastRelease;
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
-			base.MouseRelease(self, state, button);
-
-			if ((DateTime.UtcNow - LastRelease).TotalSeconds < 0.3333f) {
-				ToggleExpanded();
-				LastRelease = DateTime.MinValue;
-			}
-			else
-				LastRelease = DateTime.UtcNow;
-		}
 	}
-	public class TreeView : DirectionalLayoutPanel, IContainsNodes
-	{
-		public TreeView(Element? parent) : base(parent) {
-			SizeChildrensOppositeSideToEdge = true;
-		}
+	public void Expand() => Expanded = true;
+	public void Collapse() => Expanded = false;
+	public void ToggleExpanded() => Expanded = !Expanded;
 
-		public List<TreeNode> Nodes { get; set; } = [];
-		public TreeNode AddNode(string text) {
-			TreeNode node = new TreeNode(this);
-			node.Text = text;
-			Nodes.Add(node);
-			return node;
+	public List<TreeNode> Nodes { get; set; } = [];
+	public TreeNode AddNode(string text) {
+		TreeNode node = new TreeNode(ChildrenPanel);
+		node.Text = text;
+		Nodes.Add(node);
+		return node;
+	}
+
+	DateTime LastRelease;
+	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		base.MouseRelease(self, state, button);
+
+		if ((DateTime.UtcNow - LastRelease).TotalSeconds < 0.3333f) {
+			ToggleExpanded();
+			LastRelease = DateTime.MinValue;
 		}
+		else
+			LastRelease = DateTime.UtcNow;
+	}
+}
+public class TreeView : DirectionalLayoutPanel, IContainsNodes
+{
+	public TreeView(Element? parent) : base(parent) {
+		SizeChildrensOppositeSideToEdge = true;
+	}
+
+	public List<TreeNode> Nodes { get; set; } = [];
+	public TreeNode AddNode(string text) {
+		TreeNode node = new TreeNode(this);
+		node.Text = text;
+		Nodes.Add(node);
+		return node;
 	}
 }

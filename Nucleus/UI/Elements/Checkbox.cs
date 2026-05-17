@@ -14,85 +14,84 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nucleus.UI
+namespace Nucleus.UI;
+
+public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, "", name), IBindableToConVar
 {
-	public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, "", name), IBindableToConVar
-	{
-		public bool Checked { get; set; } = false;
+	public bool Checked { get; set; } = false;
 
-		public delegate void CheckboxClicked(Checkbox self);
-		public event CheckboxClicked? OnCheckedChanged;
+	public delegate void CheckboxClicked(Checkbox self);
+	public event CheckboxClicked? OnCheckedChanged;
 
-		private HashSet<Checkbox> __otherRadioButtons = [];
+	private HashSet<Checkbox> __otherRadioButtons = [];
 
-		public void BindToConVar(string convar) {
-			ConVar? cv = cvar.FindVar(convar);
-			Debug.Assert(cv != null, "Tried to bind to a non-existant convar");
-			if (cv == null) return;
+	public void BindToConVar(string convar) {
+		ConVar? cv = cvar.FindVar(convar);
+		Debug.Assert(cv != null, "Tried to bind to a non-existant convar");
+		if (cv == null) return;
 
-			BindToConVar(cv);
-		}
+		BindToConVar(cv);
+	}
 
-		public void BindToConVar(IConVar cv) {
-			Checked = cv.GetBool();
-			OnCheckedChanged += _ => cv.SetValue(Checked);
-		}
+	public void BindToConVar(IConVar cv) {
+		Checked = cv.GetBool();
+		OnCheckedChanged += _ => cv.SetValue(Checked);
+	}
 
-		public bool Radio { get; set; } = false;
-		public void LinkRadioButton(Checkbox other) {
-			if (__otherRadioButtons.Contains(other)) return;
-			__otherRadioButtons.Add(other);
-			other.OnCheckedChanged += (e) => {
-				if (other.Checked && other.Radio)
-					this.Checked = false;
-			};
-			other.LinkRadioButton(this);
-		}
+	public bool Radio { get; set; } = false;
+	public void LinkRadioButton(Checkbox other) {
+		if (__otherRadioButtons.Contains(other)) return;
+		__otherRadioButtons.Add(other);
+		other.OnCheckedChanged += (e) => {
+			if (other.Checked && other.Radio)
+				this.Checked = false;
+		};
+		other.LinkRadioButton(this);
+	}
 
-		private float? CheckAnim = null;
+	private float? CheckAnim = null;
 
-		public override void Paint(float width, float height) {
-			float c = CheckAnim ?? (Checked ? 1 : 0);
-			c = Math.Clamp(c + ((float)Level.RendertimeDelta * 6f * (Checked ? 1 : -1)), 0, 1);
-			CheckAnim = c;
+	public override void Paint(float width, float height) {
+		float c = CheckAnim ?? (Checked ? 1 : 0);
+		c = Math.Clamp(c + ((float)Level.RendertimeDelta * 6f * (Checked ? 1 : -1)), 0, 1);
+		CheckAnim = c;
 
-			DrawAsCircle = Radio;
-			if (Radio) {
-				var smallest = Math.Min(width, height);
-				var largest = Math.Max(width, height);
-				var diff = largest - smallest;
+		DrawAsCircle = Radio;
+		if (Radio) {
+			var smallest = Math.Min(width, height);
+			var largest = Math.Max(width, height);
+			var diff = largest - smallest;
 
-				var offset = new Vector2F(
-					width > height ? diff / 2 : 0,
-					width > height ? 0 : diff / 2
-				);
-				Graphics2D.OffsetDrawing(offset);
+			var offset = new Vector2F(
+				width > height ? diff / 2 : 0,
+				width > height ? 0 : diff / 2
+			);
+			Graphics2D.OffsetDrawing(offset);
 
-				base.Paint(smallest, smallest);
-				if (c > 0) {
-					c = NMath.Ease.OutQuart(c);
-					Graphics2D.SetDrawColor(TextColor);
-					Graphics2D.DrawCircle(new Vector2F(smallest / 2, smallest / 2), new Vector2F((c * smallest) / 5f));
-				}
-
-				Graphics2D.OffsetDrawing(-offset);
+			base.Paint(smallest, smallest);
+			if (c > 0) {
+				c = NMath.Ease.OutQuart(c);
+				Graphics2D.SetDrawColor(TextColor);
+				Graphics2D.DrawCircle(new Vector2F(smallest / 2, smallest / 2), new Vector2F((c * smallest) / 5f));
 			}
-			else {
-				base.Paint(width, height);
-				if (c > 0) {
-					c = NMath.Ease.InQuad(c);
-					Graphics2D.SetDrawColor(TextColor);
-					Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
-				}
+
+			Graphics2D.OffsetDrawing(-offset);
+		}
+		else {
+			base.Paint(width, height);
+			if (c > 0) {
+				c = NMath.Ease.InQuad(c);
+				Graphics2D.SetDrawColor(TextColor);
+				Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
 			}
 		}
+	}
 
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
-			if (Radio)
-				Checked = true;
-			else
-				Checked = !Checked;
-			OnCheckedChanged?.Invoke(this);
-		}
+	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (Radio)
+			Checked = true;
+		else
+			Checked = !Checked;
+		OnCheckedChanged?.Invoke(this);
 	}
 }
