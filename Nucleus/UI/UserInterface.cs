@@ -97,7 +97,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void PostRenderChildren() {
+		public override void PostChildPaint() {
 			var text = TooltipText;
 			if (text != "" && text != null) {
 				var fontsize = 20;
@@ -439,11 +439,10 @@ namespace Nucleus.UI
 
 		public void Render() {
 			activePopups.Clear();
-			Element.DrawRecursive(UI, activePopups);
+			UI.PaintTraverse(activePopups);
 
-			foreach (var popup in activePopups) {
-				Element.DrawRecursive(popup);
-			}
+			foreach (var popup in activePopups) 
+				popup.PaintTraverse();
 		}
 
 		internal void HandleThinking() => Element.ThinkRecursive(UI, Level.FrameState);

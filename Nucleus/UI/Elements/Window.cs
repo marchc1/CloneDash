@@ -405,7 +405,7 @@ public class Window : Element
 	static float OPEN_TIME => 0.5f;
 	static float CLOSE_TIME => 0.25f;
 	public bool Closing => closing;
-	public override void PreRender() {
+	public override void PreRenderRT() {
 		if (!closing && !opening) return;
 		float t = (float)(closing ? Lifetime - closeTime : Lifetime);
 
@@ -447,7 +447,7 @@ public class Window : Element
 
 		Opacity = mul;
 	}
-	public override void PostRender() {
+	public override void PostRenderRT() {
 		if (closing) {
 			Rlgl.PopMatrix();
 		}
@@ -457,7 +457,7 @@ public class Window : Element
 			EngineCore.Window.EndMode2D();
 		}
 	}
-	public override void PostRenderChildren() {
+	public override void PostChildPaint() {
 		if (InputDisabled) {
 			Graphics2D.SetDrawColor(0, 0, 0, 155);
 			Graphics2D.DrawRectangle(4, 4, RenderBounds.Width - 8, 34);
