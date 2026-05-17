@@ -76,7 +76,7 @@ internal class Program
 				var b = new Button(tools);
 				b.Text = test.Text;
 				b.Dock = Dock.Top;
-				b.MouseClickEvent += (_, _, _) => test.Click(this);
+				b.OnButtonClick += (_, _) => test.Click(this);
 			}
 		}
 

@@ -166,11 +166,11 @@ namespace Nucleus.UI
 		// temporary, just testing parsing
 		// public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
 
-		public event MouseEventDelegate? OnElementClicked;
-		public event MouseEventDelegate? OnElementReleased;
+		public event Action<Element, ButtonCode>? OnElementClicked;
+		public event Action<Element, ButtonCode>? OnElementReleased;
 
-		public void TriggerElementClicked(Element? e, FrameState fs, ButtonCode mb) => OnElementClicked?.Invoke(e!, fs, mb);
-		public void TriggerElementReleased(Element e, FrameState fs, ButtonCode mb) => OnElementReleased?.Invoke(e, fs, mb);
+		public void TriggerElementClicked(Element? e, ButtonCode mb) => OnElementClicked?.Invoke(e!, mb);
+		public void TriggerElementReleased(Element e, ButtonCode mb) => OnElementReleased?.Invoke(e, mb);
 		public Menu Menu() {
 			return new Menu(this);
 		}
@@ -346,11 +346,11 @@ namespace Nucleus.UI
 					if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse5);
 				}
 				else {
-					if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse1);
-					if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse2);
-					if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse3);
-					if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse4);
-					if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, frameState, ButtonCode.Mouse5);
+					if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, ButtonCode.Mouse1);
+					if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, ButtonCode.Mouse2);
+					if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, ButtonCode.Mouse3);
+					if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, ButtonCode.Mouse4);
+					if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, ButtonCode.Mouse5);
 				}
 			}
 

@@ -123,7 +123,7 @@ namespace Nucleus.UI.Elements
 				ActiveTab = newTab;
 			}
 
-			switcher.MouseReleaseEvent += (_, _, _) => ActiveTab = newTab;
+			switcher.OnButtonClick += (_, _) => ActiveTab = newTab;
 
 			return newTab;
 		}

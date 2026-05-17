@@ -71,7 +71,7 @@ public class CharacterSelectorScroller : Panel
 			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
 			lbl.BorderSize = 0;
 
-			lbl.MouseClickEvent += (_, _, _) => PerformPick(character);
+			lbl.OnButtonClick += (_, _) => PerformPick(character);
 			chars.Add((lbl, character));
 		}
 	}
@@ -134,14 +134,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
 	public CharacterSelector(Element? parent) : base(parent) {
 		BackgroundColor = new Color(0, 0, 0, 0);
-		OnHoverTest += Passthru;
+		SetPassthru(true);
 
 		selectedInfo = new Panel(this);
 		selectedInfo.Dock = Dock.Bottom;
 		selectedInfo.DynamicallySized = true;
 		selectedInfo.Size = new(0, 0.125f);
 		selectedInfo.BorderSize = 0;
-		selectedInfo.PaintOverride += SelectedInfo_PaintOverride;
+		selectedInfo.SetPaintBackgroundEnabled(false);
+		selectedInfo.SetPaintBorderEnabled(false);
+		selectedInfo.SetPaintEnabled(false);
 
 		characterNameLabel = new(this);
 		characterNameLabel.AutoSize = true;
@@ -162,7 +164,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton.DynamicallySized = true;
 		characterSelectButton.BackgroundColor = new(10, 30, 10);
 		characterSelectButton.ForegroundColor = new(48, 220, 70);
-		characterSelectButton.MouseReleaseEvent += CharacterSelectButton_MouseReleaseEvent;
+		characterSelectButton.OnButtonClick += CharacterSelectButton_MouseReleaseEvent;
 
 		characterPerkLabel = new(selectedInfo);
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
@@ -186,7 +188,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetCharacter(currentCharacter);
 	}
 
-	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void CharacterSelectButton_MouseReleaseEvent(Button self, ButtonCode button) {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUUID());
@@ -209,10 +211,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
 
 		characterSelectButton.TextSize = 80 * ratio;
-	}
-
-	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
-
 	}
 
 	ICharacterDescriptor? LastCharacterSelected;

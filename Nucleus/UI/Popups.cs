@@ -114,7 +114,7 @@ namespace Nucleus.UI
 
             Button ok = new Button(containButtons);
             ok.Text = "OK";
-            ok.MouseReleaseEvent += (_, _, _) => {
+            ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
             };
@@ -126,14 +126,14 @@ namespace Nucleus.UI
 
             Button close = new Button(containButtons);
             close.Text = "Cancel";
-            close.MouseReleaseEvent += (_, _, _) => {
+            close.OnButtonClick += (_, _) => {
                 onCancel?.Invoke();
                 popup.Close();
             };
 
             Button ok = new Button(containButtons);
             ok.Text = "OK";
-            ok.MouseReleaseEvent += (_, _, _) => {
+            ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
             };

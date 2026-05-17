@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Nucleus.Common.Input;
+using Nucleus.Types;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +8,8 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI.Elements
 {
-	public class MenuContext(UserInterface UI) {
+	public class MenuContext(UserInterface UI)
+	{
 		private List<IMenuItem> MenuItems = [];
 
 		public void AddMenuItem(IMenuItem item) => MenuItems.Add(item);
@@ -17,7 +20,7 @@ namespace Nucleus.UI.Elements
 		public void Show() {
 			Menu menu = UI.Menu();
 
-			foreach(var item in MenuItems) {
+			foreach (var item in MenuItems) {
 				menu.AddItem(item);
 			}
 
@@ -26,21 +29,25 @@ namespace Nucleus.UI.Elements
 	}
 	public class Menubar : Panel
 	{
-	public Menubar(Element? parent) : base(parent){
-
+		public class MenubarButton(Menubar menu, Action? action) : Button(menu)
+		{
+			protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+				action?.Invoke();
+			}
+		}
+		public Menubar(Element? parent) : base(parent) {
 			this.Size = new(0, 32);
 			this.Dock = Dock.Top;
 		}
 		public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 			MenuContext context = new MenuContext(this.UI);
-			Button b = new Button(this);
+			Button b = new MenubarButton(this, action);
 			action = action ?? (() => context.Show());
 			b.TextPadding = new(8);
 			b.Dock = Dock.Left;
 			b.AutoSize = true;
 			b.Text = text;
 			b.BorderSize = 0;
-			b.MouseReleaseEvent += (self, state, btn) => action?.Invoke();
 
 			return context;
 		}

@@ -871,6 +871,23 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private SecondOrderSystem? sos_yoff;
 
+	public class PauseMenuButton(Element parent) : Button(parent){
+		public override void Paint(float width, float height) {
+			var backpre = BackgroundColor;
+
+			var back = Element.MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.4f, 1f), new(0, 1.2f, 0.6f, 1f));
+			var fore = Element.MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+
+			Graphics2D.SetDrawColor(back);
+			Graphics2D.DrawRectangle(0, 0, width, height);
+			var text = Text;
+			var tSize = Graphics2D.GetTextSize(text, Font, TextSize);
+			ImageDrawing(new((height / -4) + (tSize.X / -2), 0), new(height, height));
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, Font, TextSize, Anchor.Center);
+		}
+	}
+
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
@@ -932,25 +949,24 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 						flex.DockPadding = RectangleF.TLRB(4);
 
-						var play = new Button(flex);
+						var play = new PauseMenuButton(flex);
 						play.BorderSize = 0;
 						play.Text = "Return to Game";
 						play.TextSize = 24;
 						play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 						play.ImageOrientation = ImageOrientation.Fit;
-						play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+						play.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							PauseWindow.Remove();
 							startUnpause();
 						};
-						play.PaintOverride += Button_PaintOverride;
 
-						var restart = new Button(flex);
+						var restart = new PauseMenuButton(flex);
 						restart.BorderSize = 0;
 						restart.Text = "Restart Level";
 						restart.TextSize = 24;
 						restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 						restart.ImageOrientation = ImageOrientation.Fit;
-						restart.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+						restart.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
 							// 
 							// if (profilegameload.GetBool())
@@ -963,15 +979,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							PauseWindow.Remove();
 							fullUnpause();
 						};
-						restart.PaintOverride += Button_PaintOverride;
 
-						var settings = new Button(flex);
+						var settings = new PauseMenuButton(flex);
 						settings.BorderSize = 0;
 						settings.Text = "Open Preferences...";
 						settings.TextSize = 24;
 						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 						settings.ImageOrientation = ImageOrientation.Fit;
-						settings.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+						settings.OnButtonClick += delegate (Button self,  ButtonCode clickedButton) {
 							var panel = new Panel(UI);
 							panel.DrawPanelBackground = false;
 							panel.Anchor = Anchor.Center;
@@ -983,7 +998,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							titlebar.Dock = Dock.Top;
 							titlebar.MinimizeButton.Visible = false;
 							titlebar.MaximizeButton.Visible = false;
-							titlebar.CloseButton.MouseReleaseEvent += (_, _, _) => {
+							titlebar.CloseButton.OnButtonClick += (_, _) => {
 								panel.Remove();
 							};
 							titlebar.Title = "Settings";
@@ -994,18 +1009,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 							panel.MakePopup();
 						};
-						settings.PaintOverride += Button_PaintOverride;
 
-						var back2menu = new Button(flex);
+						var back2menu = new PauseMenuButton(flex);
 						back2menu.BorderSize = 0;
 						back2menu.Text = "Exit to Menu";
 						back2menu.TextSize = 24;
 						back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 						back2menu.ImageOrientation = ImageOrientation.Fit;
-						back2menu.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode clickedButton) {
+						back2menu.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							LevelTransitions.LoadMainMenu();
 						};
-						back2menu.PaintOverride += Button_PaintOverride;
 					}
 				}
 				return;
@@ -1174,22 +1187,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 
 	public int EnemySortIndexCounter;
-
-	private void Button_PaintOverride(Element self, float width, float height) {
-		Button b = self as Button;
-		var backpre = self.BackgroundColor;
-
-		var back = Element.MixColorBasedOnMouseState(self, backpre, new(0, 0.8f, 2.4f, 1f), new(0, 1.2f, 0.6f, 1f));
-		var fore = Element.MixColorBasedOnMouseState(self, self.ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
-
-		Graphics2D.SetDrawColor(back);
-		Graphics2D.DrawRectangle(0, 0, width, height);
-		var text = b.Text;
-		var tSize = Graphics2D.GetTextSize(text, b.Font, b.TextSize);
-		b.ImageDrawing(new((height / -4) + (tSize.X / -2), 0), new(height, height));
-		Graphics2D.SetDrawColor(255, 255, 255);
-		Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, b.Font, b.TextSize, Anchor.Center);
-	}
 
 	/// <summary>
 	/// Gets the games <see cref="Pathway"/> from a <see cref="PathwaySide"/><br></br>

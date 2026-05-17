@@ -114,7 +114,7 @@ namespace Nucleus.UI
 			dragStart = state.Mouse.MousePos;
 		}
 
-		protected override void KeyboardFocusGained(bool demanded) {
+		public override void KeyboardFocusGained(bool demanded) {
 			Text = $"{Value}";
 			caret = 0;
 		}
@@ -127,7 +127,7 @@ namespace Nucleus.UI
 			return null;
 		}
 		bool didDrag = false;
-		protected override void KeyboardFocusLost(Element lostTo, bool demanded) {
+		public override void KeyboardFocusLost(Element lostTo, bool demanded) {
 			double? v = ParseString(workType);
 			if (v != null) {
 				Value = v.Value;

@@ -26,7 +26,8 @@ public struct ChartSongSourceMoveInit
 	public bool ImmediatelyAvailable;
 }
 
-public struct ChartSongSourceMoveFinish {
+public struct ChartSongSourceMoveFinish
+{
 	public bool OperationExecuted;
 	public int Movement;
 }
@@ -79,7 +80,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			ClearFilter();
 			return;
 		}
-		
+
 		Source = ActiveDialog.Apply(Source, SearchFilter);
 
 		ClearSongs();
@@ -134,9 +135,25 @@ public class SongSelector : Panel, IMainMenuPanel
 		UserWantsMoreSongs?.Invoke();
 	}
 
+	public class SongDiscButton(SongSelector selector, int i) : Button(selector)
+	{
+		public override void Paint(float w, float h) {
+			float a;
+			if (selector.InSheetSelection)
+				a = i == selector.IntegerMidpoint ? selector.FlyAway : 1;
+			else
+				a = 1;
+			var c = MixColorBasedOnMouseState(this, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
+			Graphics2D.SetDrawColor(c);
+			Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
+			ImageColor = new(255, 255, 255, (int)(255 * a));
+			base.Paint(w, h);
+		}
+	}
+
 	public SongLabel CurrentTrackName = null!;
 	public SongLabel CurrentTrackAuthor = null!;
-	public Button[] Discs = null!;
+	public SongDiscButton[] Discs = null!;
 	public readonly SecondOrderSystem DiscAnimationOffset = new(4.5f, 1, 1, 0);
 
 	public void MoveLeft() {
@@ -164,9 +181,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		UpdateFilterText();
 	}
 
-	public static int GetButtonLocalIndex(Button discButton) => discButton.GetTagSafely<int>("localDiscIndex");
+	public static int GetButtonLocalIndex(SongDiscButton discButton) => discButton.GetTagSafely<int>("localDiscIndex");
 
-	public ISong? GetDiscSong(Button discButton) => Source?.At(GetButtonLocalIndex(discButton));
+	public ISong? GetDiscSong(SongDiscButton discButton) => Source?.At(GetButtonLocalIndex(discButton));
 	public ISong? GetDiscSong(int idx) => Source?.At(idx);
 
 	public int DiscIndexToSelectIndex(int idx) => idx - (VisibleDiscs / 2);
@@ -176,7 +193,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public float DiscVibrate = 0;
 	public float FlyAway = 0;
 
-	public Button GetActiveDisc() => Discs[Discs.Length / 2];
+	public SongDiscButton GetActiveDisc() => Discs[Discs.Length / 2];
 
 	AudioPlaybackHandle activeTrack;
 	bool doNotTryToGetTrackAgain;
@@ -214,7 +231,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 		if (Source.GetSongCount() <= 0) return;
 
-		if(!Source.IsBusy() && wasBusy){
+		if (!Source.IsBusy() && wasBusy) {
 			wasBusy = false;
 			InvalidateLayout();
 			UpdateFilterText();
@@ -265,7 +282,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
-	public void NavigateToDisc(Button disc){
+	public void NavigateToDisc(Button disc) {
 		var idx = -1;
 		for (int i = 0; i < Discs.Length; i++) {
 			if (Discs[i] == disc) {
@@ -357,7 +374,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		rot = (float)NMath.Remap(index + lrOut, 0, Discs.Length - 1, -25 - flyAway * rR, 25 + flyAway * rR);
 	}
 
-	public float GetDiscSize(float width, Button b) {
+	public float GetDiscSize(float width, SongDiscButton b) {
 		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset.Out), 0, 1);
 		return width / Discs.Length + mainDiscMult * 64;
 	}
@@ -395,10 +412,10 @@ public class SongSelector : Panel, IMainMenuPanel
 			var discWidth = GetDiscSize(width, disc);
 
 			var song = GetDiscSong(DiscIndexToSelectIndex(i));
-				disc.Visible = song != null;
+			disc.Visible = song != null;
 			if (song == null)
 				continue;
-			
+
 			disc.Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
@@ -443,12 +460,15 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public static int VisibleDiscs => 5;
 
-	public SongSelector(Element? parent) : base(parent){ 
+	public readonly int IntegerMidpoint;
+
+	public SongSelector(Element? parent) : base(parent) {
 		DrawPanelBackground = false;
 
-		Discs = new Button[VisibleDiscs];
+		Discs = new SongDiscButton[VisibleDiscs];
+		IntegerMidpoint = Discs.Length / 2;
 		for (int i = 0; i < VisibleDiscs; i++)
-			Discs[i] = new(this);
+			Discs[i] = new(this, i);
 
 		CurrentTrackName = new(this);
 		CurrentTrackAuthor = new(this);
@@ -457,7 +477,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.Anchor = Anchor.TopCenter;
 		FilterResults.Origin = Anchor.Center;
 
-		SearchBar.MouseReleaseEvent += SearchBar_MouseReleaseEvent;
+		SearchBar.OnButtonClick += SearchBar_MouseReleaseEvent;
 
 		Loading = new(this);
 		Loading.Anchor = Anchor.Center;
@@ -473,29 +493,20 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 
-			disc.MouseReleaseEvent += (s, _, _) => {
+			disc.OnButtonClick += (s, _) => {
 				NavigateToDisc(s as Button);
 				var song = GetDiscSong(0);
 				LevelTransitions.LoadSongSelector(this, song);
 			};
 			disc.BorderSize = 0;
-			var midpoint = Discs.Length / 2;
 			disc.BackgroundColor = new(0, 0, 0, 0);
-			disc.ImageColor = i == midpoint ? new Color(255) : new Color(155);
-			disc.PaintOverride += (s, w, h) => {
-				var a = i == midpoint ? 1 - FlyAway : 1;
-				var c = MixColorBasedOnMouseState(s, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
-				Graphics2D.SetDrawColor(c);
-				Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
-				ImageColor = new(255, 255, 255, (int)(255 * a));
-				s.Paint(w, h);
-			};
+			disc.ImageColor = i == IntegerMidpoint ? new Color(255) : new Color(155);
 		}
 
 		DemandKeyboardFocus();
 	}
 
-	private void SearchBar_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void SearchBar_MouseReleaseEvent(Button self, ButtonCode button) {
 		TriggerUserInitializeSearch();
 	}
 

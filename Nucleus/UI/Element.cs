@@ -53,6 +53,7 @@ public enum ElementFlags : uint
 	AllowChainKeybindingToParent = 1 << 8,
 	InPerformLayout = 1 << 9,
 	// IsProportional = 1 << 10, // TODO
+	MousePassthru = 1 << 11,
 }
 
 public class Element : IValidatable
@@ -441,17 +442,22 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPaintBackgroundEnabled() => HasFlag(ElementFlags.PaintBackgroundEnabled);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPaintEnabled() => HasFlag(ElementFlags.PaintEnabled);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPostChildPaintEnabled() => HasFlag(ElementFlags.PostChildPaintEnabled);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsPassthru() => HasFlag(ElementFlags.MousePassthru);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintBorderEnabled(bool state) => SetFlag(ElementFlags.PaintBorderEnabled, state);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintBackgroundEnabled(bool state) => SetFlag(ElementFlags.PaintBackgroundEnabled, state);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintEnabled(bool state) => SetFlag(ElementFlags.PaintEnabled, state);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPostChildPaintEnabled(bool state) => SetFlag(ElementFlags.PostChildPaintEnabled, state);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPassthru(bool state) => SetFlag(ElementFlags.MousePassthru, state);
 
+	public event Action<Element> Removed;
 
 	private void REMOVE() {
 		if (__markedForRemoval == true)
 			return;
+
 		OnRemoval();
+		Removed?.Invoke(this);
 
 		__markedForRemoval = true;
 
@@ -490,7 +496,7 @@ public class Element : IValidatable
 
 	protected virtual void OnThink(FrameState frameState) { }
 
-	public void Think(FrameState frameState) {
+	internal void Think(FrameState frameState) {
 		if (_firstThink) {
 			_firstThink = false;
 			Birth = DateTime.Now;
@@ -1159,7 +1165,7 @@ public class Element : IValidatable
 	internal void MouseClickOccur(FrameState state, ButtonCode button) {
 		Depressed = true;
 		MouseClick(state, button);
-		UI.TriggerElementClicked(this, state, button);
+		UI.TriggerElementClicked(this, button);
 	}
 
 	internal void MouseReleaseOccur(FrameState state, ButtonCode button, bool forced = false) {
@@ -1175,7 +1181,7 @@ public class Element : IValidatable
 
 		Dragged = false;
 		DragVector = Vector2F.Zero;
-		UI.TriggerElementReleased(this, state, button);
+		UI.TriggerElementReleased(this, button);
 	}
 	internal void MouseLostOccur(FrameState state, ButtonCode button, bool forced = false) {
 		Depressed = false;
@@ -1518,6 +1524,9 @@ public class Element : IValidatable
 	}
 
 	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
+		if (IsPassthru())
+			return false;
+
 		var containsPoint = bounds.ContainsPoint(mousePos);
 		if (containsPoint && IValidatable.IsValid(Parent)) {
 			var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition() - Parent.ChildRenderOffset, Parent.RenderBounds.Size);
@@ -1534,8 +1543,8 @@ public class Element : IValidatable
 	protected virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 	protected virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
-	protected virtual void KeyboardFocusGained(bool demanded) { }
-	protected virtual void KeyboardFocusLost(Element lostTo, bool demanded) { }
+	public virtual void KeyboardFocusGained(bool demanded) { }
+	public virtual void KeyboardFocusLost(Element lostTo, bool demanded) { }
 
 	protected virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
 	protected virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }

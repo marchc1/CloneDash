@@ -63,7 +63,7 @@ public class StatisticsPanel : Panel
 		restart.Size = new(.2f);
 		restart.Text = "Restart";
 		restart.Dock = Dock.Left;
-		restart.MouseReleaseEvent += (_, _, _) => {
+		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
 			// Maybe seeking is stable enough now to justify this though?
 			game.Restart();
@@ -75,7 +75,7 @@ public class StatisticsPanel : Panel
 		back.Size = new(.2f);
 		back.Text = "Main Menu";
 		back.Dock = Dock.Right;
-		back.MouseReleaseEvent += (_, _, _) => LevelTransitions.LoadMainMenu();
+		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
 		BorderSize = 0;
 	}

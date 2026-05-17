@@ -16,7 +16,8 @@ namespace Nucleus.UI.Elements
 			ChildrenPanel.AutoSize = true;
 			ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
 			ChildrenPanel.BorderSize = 0;
-			ChildrenPanel.PaintOverride += (_, _, _) => { };
+			ChildrenPanel.SetPaintBackgroundEnabled(false);
+			ChildrenPanel.SetPaintEnabled(false);
 			ChildrenPanel.Visible = false;
 			ChildrenPanel.Enabled = false;
 			ChildrenPanel.Size = new(0, 0);

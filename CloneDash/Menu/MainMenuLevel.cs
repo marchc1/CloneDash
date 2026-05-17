@@ -30,67 +30,6 @@ namespace CloneDash.Game;
 [Nucleus.MarkForStaticConstruction]
 public class MainMenuLevel : Level, IMainMenuLevel
 {
-	public static ConCommand hologramtest = new(nameof(hologramtest), (_, in _) => {
-		var level = EngineCore.Level;
-		var window = new Window(level.UI);
-		window.Title = "Hologram Test";
-		window.Size = new(600, 600);
-		window.Center();
-
-		var refresh = new Button(window);
-		refresh.Dock = Dock.Bottom;
-		refresh.Size = new(32);
-		refresh.Text = "Refresh Shader";
-
-
-		var renderPanel = new Panel(window);
-		renderPanel.Dock = Dock.Fill;
-		var charData = CharacterMod.GetCharacterData();
-		if (charData == null) return;
-
-		// TODO FIXME decluttering-2 var model = charData.GetPlayModel(level).Instantiate();
-		// TODO FIXME decluttering-2 var anims = new AnimationHandler();
-		// TODO FIXME decluttering-2 anims.SetModel(model);
-
-		var shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
-		float time = 0;
-		var shaderTimeLoc = shader.GetUniformLocation("time");
-		// TODO FIXME decluttering-2 model.SetToSetupPose();
-		// TODO FIXME decluttering-2 anims.SetAnimation(0, "air_hit_great_2", false);
-
-		renderPanel.PaintOverride += (s, w, h) => {
-			EngineCore.Window.BeginMode2D(new() {
-				Zoom = 1f,
-				Offset = s.GetGlobalPosition().ToNumerics() + new System.Numerics.Vector2(w / 2, h / 2) + new System.Numerics.Vector2(0, 200)
-			});
-
-			// TODO FIXME decluttering-2 anims.AddDeltaTime(EngineCore.Level.RendertimeDelta);
-			// TODO FIXME decluttering-2 anims.Apply(model);
-			time += (float)EngineCore.Level.RendertimeDelta;
-			shader.SetUniform("time", Math.Clamp(NMath.Ease.InCubic(time) * 5f, 0, 1));
-			if (shader.IsValid()) {
-				shader.Activate();
-				// TODO FIXME decluttering-2 model.Render(false);
-				shader.Deactivate();
-			}
-
-			EngineCore.Window.EndMode2D();
-		};
-
-		refresh.MouseReleaseEvent += (_, _, _) => {
-			shader.Dispose();
-			shader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
-			time = 0;
-			shaderTimeLoc = shader.GetUniformLocation("time");
-			// TODO FIXME decluttering-2 model.SetToSetupPose();
-			// TODO FIXME decluttering-2 anims.SetAnimation(0, "air_hit_great_2", false);
-		};
-
-		window.Removed += (s) => {
-			shader.Dispose();
-		};
-	});
-
 	public Stack<Element> ActiveElements = [];
 	public CharacterPanel Character = null!;
 
@@ -210,45 +149,44 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtn.TextSize = 21;
 		menuBtn.DockMargin = RectangleF.TLRB(0);
 		menuBtn.BorderSize = 0;
-		menuBtn.MouseReleaseEvent += (_, _, _) => onClicked();
+		menuBtn.OnButtonClick += (_, _) => onClicked();
 		menuBtn.TooltipText = text;
 
 		return menuBtn;
 	}
 
 
-	private float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
+	private static float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
 
 	// At some point, this should just become an element type. This whole thing is a wreck otherwise and injects a bunch of callbacks into
 	// random things... I hate it
 
-	public Panel? SelectedSong { get; private set; }
+	LevelSelectorPanel? SelectedSong;
 
-	internal void LoadChartSelector(SongSelector selector, ISong song) {
-		// Load all slow-to-get info now before the Window loads
-		AudioPlaybackHandle track = selector.ActiveTrack;
-		var info = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
-
-		ConstantLengthNumericalQueue<float> framesOverTime = new(240);
-
-		Panel levelSelector = new Panel(UI);
-		SelectedSong = levelSelector;
-		levelSelector.MakePopup();
-		levelSelector.MakeModal();
-		levelSelector.ForegroundColor = Color.Blank;
-		levelSelector.Dock = Dock.Fill;
-		selector.FlyAway = 1;
-		levelSelector.Thinking += (s) => {
-			s.BackgroundColor = new(0, 0, 0, (int)Math.Clamp(NMath.Ease.OutCubic(s.Lifetime * 1.4f) * 155, 0, 155));
-		};
-		// TODO: the opposite of whatever this mess is
-		SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
+	class LevelSelectorPanel(Element parent, SongSelector selector) : Panel(parent)
+	{
+		const int BUFFER_CAPACITY = 240;
+		readonly ConstantLengthNumericalQueue<float> framesOverTime = new(BUFFER_CAPACITY);
+		readonly Vector2F[] lineBufferL = new Vector2F[BUFFER_CAPACITY];
+		readonly Vector2F[] lineBufferR = new Vector2F[BUFFER_CAPACITY];
 		float currentAvgVolume = 0;
-		Vector2F[] lineBufferL = new Vector2F[framesOverTime.Capacity];
-		Vector2F[] lineBufferR = new Vector2F[framesOverTime.Capacity];
-		levelSelector.PaintOverride += (s, w, h) => {
-			s.Paint(w, h);
+		readonly SecondOrderSystem animationSmoother = new SecondOrderSystem(6, 0.98f, 1f, 0);
+		AudioPlaybackHandle track;
+		bool setupTrack;
+
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+
+			BackgroundColor = BackgroundColor with { A = (byte)(int)Math.Clamp(NMath.Ease.OutCubic(Lifetime * 1.4f) * 155, 0, 155) };
+
+			if (!setupTrack) 
+				TrySetupTrack();
+		}
+
+		public override void Paint(float w, float h) {
+			base.Paint(w, h);
+
 			var length = framesOverTime.Capacity;
 			for (int i = 0; i < framesOverTime.Capacity; i++) {
 				float sample = framesOverTime[framesOverTime.Capacity - 1 - i];
@@ -258,7 +196,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				lineBufferL[i] = new(xL, y);
 				lineBufferR[i] = new(xR, y);
 			}
-			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(s.Lifetime * .6f, 0, 1) * 190));
+
+			Graphics2D.SetDrawColor(50, 50, 50, (int)(Math.Clamp(Lifetime * .6f, 0, 1) * 190));
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.SetLineWidth(2);
 			Graphics2D.DrawLineStrip(lineBufferL);
@@ -278,8 +217,142 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			disc.Paint(disc.RenderBounds.W, disc.RenderBounds.H);
 			Graphics2D.OffsetDrawing(-pos);
 
-			selector.DiscRotateAnimation = s.Lifetime * 90;
-		};
+			selector.DiscRotateAnimation = Lifetime * 90;
+		}
+
+		internal void TrySetupTrack() {
+			track = selector.ActiveTrack;
+			if (track.IsValid())
+				setupTrack = true;
+				audiosystem.AttachProcessor(track, (frames, userdata) => {
+					currentAvgVolume = 0;
+					for (int i = 0; i < frames.Length; i++) {
+						float val = frames[i];
+						currentAvgVolume += val;
+						if (i % 256 == 0)
+							framesOverTime.Add(val);
+					}
+					currentAvgVolume /= frames.Length;
+					currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
+				});
+		}
+	}
+
+	class LevelSelectorBackButton(LevelSelectorPanel levelSelector, SongSelector selector) : Button(levelSelector)
+	{
+		public override void Paint(float w, float h) {
+			ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
+				(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
+				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
+			Position = new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0);
+			base.Paint(w, h);
+		}
+	}
+
+	class LevelSelectorTitleLabel(LevelSelectorPanel levelSelector, SongSelector selector) : SongLabel(levelSelector)
+	{
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+
+			var oldSize = TextSize;
+			var w = levelSelector.RenderBounds.W;
+			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
+			if (oldSize != TextSize)
+				InvalidateLayout();
+
+			TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 6, 0, 1)) * 255));
+			Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6));
+		}
+	}
+
+
+	class LevelSelectorAuthorLabel(LevelSelectorPanel levelSelector, SongSelector selector) : SongLabel(levelSelector)
+	{
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+
+			var oldSize = TextSize;
+			var w = levelSelector.RenderBounds.W;
+			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155);
+			if (oldSize != TextSize)
+				InvalidateLayout();
+
+			TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 1.3f, 0, 1)) * 255));
+			Position = new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12));
+		}
+	}
+
+	class LevelSelectorDifficultiesPanel(LevelSelectorPanel levelSelector, SongSelector selector, float height) : FlexPanel(levelSelector)
+	{
+		float height = height;
+
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+
+			Position = new(levelSelector.RenderBounds.W / 4f, 0);
+			Size = new(256, height);
+		}
+
+		internal void UpdateHeight(int v) {
+			height = v;
+		}
+	}
+
+	class LevelSelectorSelectDifficultyButton(Element parent, string difficultyName, SongChartMetadata metadata) : Button(parent)
+	{
+		public override void Paint(float w, float h) {
+			var life = Lifetime - (offset * .15f);
+			var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
+			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
+
+			var a = BackgroundColor.A;
+			BackgroundColor = new(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, (int)(a * alpha));
+			ChildRenderOffset = new(xOffset, 0);
+
+			base.Paint(w, h);
+
+			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
+			Graphics2D.SetDrawColor(TextColor);
+			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", Font, TextSize, Anchor.CenterRight);
+
+			BackgroundColor = new(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, a);
+		}
+
+		bool autoplayChart;
+		float offset;
+
+		protected override void OnThink(FrameState frameState) {
+			base.OnThink(frameState);
+			if (frameState.Keyboard.AltDown) 
+				Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
+			else 
+				Text = $"{difficultyName.ToUpper()}";
+
+			autoplayChart = frameState.Keyboard.AltDown;
+		}
+
+		internal void RunFunction(Action<bool> onClick) {
+			onClick(autoplayChart);
+		}
+
+		internal void SetButtonOffset(float thisOffset) {
+			offset = thisOffset;
+		}
+	}
+
+	internal void LoadChartSelector(SongSelector selector, ISong song) {
+		// Load all slow-to-get info now before the Window loads
+		AudioPlaybackHandle track = selector.ActiveTrack;
+		var info = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+		selector.FlyAway = 1;
+
+		LevelSelectorPanel levelSelector = new LevelSelectorPanel(UI, selector);
+		SelectedSong = levelSelector;
+		levelSelector.MakePopup();
+		levelSelector.MakeModal();
+		levelSelector.ForegroundColor = Color.Blank;
+		levelSelector.Dock = Dock.Fill;
+
 		selector.EnterSheetSelection();
 		selector.DiscRotateSOS.ResetTo(0);
 		levelSelector.Removed += (s) => {
@@ -289,106 +362,41 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			SelectedSong = null;
 		};
 
-		var back = new Button(levelSelector);
-
+		LevelSelectorBackButton back = new(levelSelector, selector);
 		back.Anchor = Anchor.Center;
 		back.Origin = Anchor.Center;
 		back.Position = new(-256, 0);
 		back.Image = Textures.LoadTextureFromFile("ui/back.png");
-		back.MouseReleaseEvent += (_, _, _) => levelSelector.Remove();
+		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.Text = "";
 		back.ImageOrientation = ImageOrientation.Centered;
 		back.BackgroundColor = new(0, 0);
 		back.ForegroundColor = new(0, 0);
 		back.Size = new(106);
 
-		back.PaintOverride += (self, w, h) => {
-			self.ImageColor = Element.MixColorBasedOnMouseState(self, new(200, 200, 200,
-				(int)(Math.Clamp(NMath.Ease.OutCubic(self.Lifetime - 0.35f), 0, 1) * 255)
-				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
-			self.Position = new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (self.Lifetime - 0.3), 0, 1)) * -64), 0);
-			self.Paint(w, h);
-		};
-
-		SongLabel title = new SongLabel(levelSelector);
+		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
 		title.TextSize = 48;
 		title.Text = info.Name;
 		title.AutoSize = true;
 		title.Anchor = Anchor.Center;
 		title.Origin = Anchor.Center;
 
-		title.Thinking += (s) => {
-			var oldSize = s.TextSize;
-			var w = levelSelector.RenderBounds.W;
-			s.TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
-			if (oldSize != s.TextSize)
-				s.InvalidateLayout();
-
-			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 6, 0, 1)) * 255));
-			s.Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(s, 1.35f, 6));
-		};
-
-		SongLabel author = new SongLabel(levelSelector);
+		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
 		author.TextSize = 22;
 		author.Text = $"by {info.Author}";
 		author.AutoSize = true;
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
 
-		bool setupTrack = track.IsValid();
-		author.Thinking += (s) => {
-			var oldSize = s.TextSize;
-			var w = levelSelector.RenderBounds.W;
-			s.TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155);
-			if (oldSize != s.TextSize)
-				s.InvalidateLayout();
+		levelSelector.TrySetupTrack();
 
-			s.TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(s.Lifetime * 1.3f, 0, 1)) * 255));
-			s.Position = new(0, (w / -6f) - offsetBasedOnLifetime(s, 1.35f, 12));
-
-			if (!setupTrack) {
-				track = selector.ActiveTrack;
-				if (track.IsValid()) {
-					setupTrack = true;
-					audiosystem.AttachProcessor(track, (frames, userdata) => {
-						currentAvgVolume = 0;
-						for (int i = 0; i < frames.Length; i++) {
-							float val = frames[i];
-							currentAvgVolume += val;
-							if (i % 256 == 0)
-								framesOverTime.Add(val);
-						}
-						currentAvgVolume /= frames.Length;
-						currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-					});
-				}
-			}
-		};
-		if (track.IsValid())
-			audiosystem.AttachProcessor(track, (frames, userdata) => {
-				currentAvgVolume = 0;
-				for (int i = 0; i < frames.Length; i++) {
-					float val = frames[i];
-					currentAvgVolume += val;
-					if (i % 256 == 0)
-						framesOverTime.Add(val);
-				}
-				currentAvgVolume /= frames.Length;
-				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-			});
-
-		var difficulties = new FlexPanel(levelSelector);
+		LevelSelectorDifficultiesPanel difficulties = new(levelSelector, selector, 356);
 		difficulties.Direction = Directional180.Vertical;
 		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
 		difficulties.Anchor = Anchor.Center;
 		difficulties.Origin = Anchor.Center;
-		int height = 356;
-		difficulties.Thinking += (s) => {
-			s.Position = new(levelSelector.RenderBounds.W / 4f, 0);
-			s.Size = new(256, height);
-		};
 
-		List<Button> btns = [];
+		List<LevelSelectorSelectDifficultyButton> btns = [];
 		foreach (var chart in song.GetCharts()) {
 			var chartInfo = chart.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 			var b = CreateDifficulty(difficulties, chart, in chartInfo);
@@ -396,40 +404,27 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				btns.Add(b);
 		}
 
-		height = btns.Count * 80;
+		difficulties.UpdateHeight(btns.Count * 80);
 		float offsetButtonSlide = 2f;
 		for (int i = 0; i < btns.Count; i++) {
 			var btn = btns[i];
 			if (btn == null) continue;
-			var thisOffset = offsetButtonSlide;
-
-			btn.PaintOverride += (s, w, h) => {
-				var life = s.Lifetime - (thisOffset * .15f);
-				var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
-				var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
-
-				var a = s.BackgroundColor.A;
-				s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, (int)(a * alpha));
-				s.ChildRenderOffset = new(xOffset, 0);
-				s.Paint(w, h);
-
-				s.BackgroundColor = new(s.BackgroundColor.R, s.BackgroundColor.G, s.BackgroundColor.B, a);
-			};
+			btn.SetButtonOffset(offsetButtonSlide);
 
 			offsetButtonSlide += 1;
 		}
 	}
 
-	private static Button? CreateDifficulty(
+	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(
 		FlexPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
 	)
-		=> CreateDifficulty(levelSelector, (state) => {
-			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(chart, state.Keyboard.AltDown);
+		=> CreateDifficulty(levelSelector, (autoplay) => {
+			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(chart, autoplay);
 		}, metadata);
 
 
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
-		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", chart, new(){
+		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", chart, new() {
 			Autoplay = autoplay
 		});
 	}
@@ -440,15 +435,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var active = ActiveElements.Peek();
 		var wasHidden = !Character.Visible;
 
-		if (active is not (CharacterSelector or MainMenuPanel))
-		{
+		if (active is not (CharacterSelector or MainMenuPanel)) {
 			Character.Visible = false;
 			Character.StopAudio();
 			return;
 		}
 
-		if (wasHidden)
-		{
+		if (wasHidden) {
 			Character.Visible = true;
 			Character.Reset();
 			Character.PlayAudio();
@@ -468,7 +461,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
-	private static Button? CreateDifficulty(FlexPanel levelSelector, Action<FrameState> onClick, SongChartMetadata metadata) {
+	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(FlexPanel levelSelector, Action<bool> onClick, SongChartMetadata metadata) {
 		var difficultyName = metadata.DifficultyName;
 		var buttonColor = metadata.Color;
 		var designer = metadata.ChartAuthors;
@@ -476,7 +469,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (metadata.Difficulty == "") return null;
 		if (metadata.Difficulty == "0") return null;
 
-		Button play = new(levelSelector);
+		LevelSelectorSelectDifficultyButton play = new(levelSelector, difficultyName, metadata);
 		play.Size = new(64);
 		play.Dock = Dock.Bottom;
 
@@ -487,10 +480,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.TextAlignment = Anchor.BottomCenter;
 		mapper.Position = new(-6, -3);
 		mapper.Anchor = Anchor.BottomRight;
-		mapper.OnHoverTest += Element.Passthru;
+		mapper.SetPassthru(true);
 		mapper.Origin = Anchor.BottomRight;
 		mapper.TextAlignment = Anchor.TopLeft;
-
 
 		play.BackgroundColor = buttonColor;
 		play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
@@ -499,28 +491,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		play.TextPadding = new(8, 0);
 		play.TextSize = 28;
 
-
 		play.BorderSize = 2;
-		play.PaintOverride += delegate (Element self, float w, float h) {
-			if (self is not Button btn) return; // make nullable happy, it will always be Button
-			btn.Paint(w, h);
+		play.SetPaintBackgroundEnabled(false);
 
-			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(btn.RenderBounds.Size, btn.TextPadding);
-			Graphics2D.SetDrawColor(btn.TextColor);
-			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", btn.Font, btn.TextSize, Anchor.CenterRight);
-		};
-
-		play.Thinking += delegate (Element self) {
-			if (EngineCore.Level.FrameState.Keyboard.AltDown) {
-				play.Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
-			}
-			else {
-				play.Text = $"{difficultyName.ToUpper()}";
-			}
-		};
-
-		play.MouseReleaseEvent += delegate (Element self, FrameState state, ButtonCode button) {
-			onClick(state);
+		play.OnButtonClick += delegate (Button self, ButtonCode button) {
+			play.RunFunction(onClick);
 		};
 
 		return play;

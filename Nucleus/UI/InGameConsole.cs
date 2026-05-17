@@ -186,8 +186,8 @@ namespace Nucleus
 			return at;
 		}
 
-		TextEditor consoleLogs;
-		TextEditor consoleInput;
+		ConsoleLogs consoleLogs;
+		ConsoleInput consoleInput;
 		ConsoleAutocomplete? autoComplete;
 
 		bool isArgumentAutocomplete = false;
@@ -200,11 +200,32 @@ namespace Nucleus
 			renderBounds.W = Parent.Size.W - 16;
 			renderBounds.H = 384;
 		}
-		public ConsoleWindow(Element? parent) : base(parent){ 
+
+		internal class ConsoleLogs(ConsoleWindow parent) : TextEditor(parent)
+		{
+			protected override void OnThink(FrameState frameState) {
+				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.KeyboardFocused) {
+					parent.autoComplete.Remove();
+				}
+			}
+		}
+
+		internal class ConsoleInput(ConsoleWindow parent) : TextEditor(parent)
+		{
+			protected override void OnThink(FrameState frameState) {
+
+			}
+			protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+				base.MouseRelease(self, state, button);
+				parent.SetupAutocomplete();
+			}
+		}
+
+		public ConsoleWindow(Element? parent) : base(parent) {
 			this.DockMargin = RectangleF.TLRB(8);
 			this.BorderSize = 0;
 
-			consoleInput = new TextEditor(this);
+			consoleInput = new ConsoleInput(this);
 			consoleInput.Size = new(0, 32);
 			consoleInput.Dock = Dock.Bottom;
 			consoleInput.Multiline = false;
@@ -212,15 +233,16 @@ namespace Nucleus
 			consoleInput.ShowGutter = false;
 			consoleInput.TriggerExecuteOnEnter = true;
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
-			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
-			consoleInput.Editor.OnTextInput += ConsoleInput_OnTextInput;
+
+			consoleInput.OnKeyPressed += ConsoleInput_OnKeyPressed;
+			consoleInput.OnTextInput += ConsoleInput_OnTextInput;
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => InGameConsole.CloseConsole());
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyUp], HandleArrowUp);
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyDown], HandleArrowDown);
 			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
-			consoleLogs = new TextEditor(this);
+			consoleLogs = new ConsoleLogs(this);
 			consoleLogs.Dock = Dock.Fill;
 			consoleLogs.TextSize = 12;
 			consoleLogs.DockMargin = new(0, 0, 0, 0);
@@ -234,10 +256,7 @@ namespace Nucleus
 			consoleLogs.DrawPanelBackground = false;
 			consoleInput.DrawPanelBackground = false;
 
-			consoleLogs.Thinking += ConsoleLogs_Thinking;
-
 			consoleInput.DemandKeyboardFocus();
-			consoleInput.Editor.MouseReleaseEvent += (_, _, _) => SetupAutocomplete();
 			var msgList = ConsoleSystem.GetAllMessagesList();
 			msgList.BeginRead();
 			int msgCount = msgList.ComputeCount();
@@ -508,7 +527,7 @@ namespace Nucleus
 			NavigateHistory(-1);
 		}
 
-		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, ButtonCode key) {
+		private void ConsoleInput_OnKeyPressed(TextEditor self, in KeyboardState state, ButtonCode key) {
 			if (IValidatable.IsValid(autoComplete)) {
 				if (key == ButtonCode.KeySpace && autoComplete.HasSelection) {
 					string? selected = autoComplete.GetSelected();
@@ -542,7 +561,7 @@ namespace Nucleus
 			SetupAutocomplete();
 		}
 
-		private void ConsoleInput_OnTextInput(Element self, in KeyboardState state, string inText) {
+		private void ConsoleInput_OnTextInput(TextEditor self, in KeyboardState state, string inText) {
 			browsingHistory = false;
 			userHistoryPos = 0;
 			SetupAutocomplete();
@@ -551,12 +570,6 @@ namespace Nucleus
 		protected override void OnRemoval() {
 			base.OnRemoval();
 			autoComplete?.Remove();
-		}
-
-		private void ConsoleLogs_Thinking(Element self) {
-			if (IValidatable.IsValid(autoComplete) && !consoleInput.Editor.KeyboardFocused) {
-				autoComplete.Remove();
-			}
 		}
 
 		private void ConsoleInput_OnExecute(TextEditor self) {

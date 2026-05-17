@@ -188,7 +188,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		categories.Add(category);
 
 		category.Text = name;
-		category.MouseReleaseEvent += (_, _, _) => SelectCategory(category);
+		category.OnButtonClick += (_, _) => SelectCategory(category);
 		category.Dock = Dock.Top;
 		category.DynamicallySized = true;
 		category.Size = new(0.06f);
@@ -243,7 +243,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		btn.Dock = Dock.Fill;
 		btn.Text = "Open Offset Wizard";
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
-		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard();
+		btn.OnButtonClick += (_, _) => OpenOffsetWizard();
 
 		return btn;
 	}
@@ -280,7 +280,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 			}
 		};
 
-		linkBtn.MouseReleaseEvent += (_, _, _) => {
+		linkBtn.OnButtonClick += (_, _) => {
 			offsetsLinked = !offsetsLinked;
 			linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
 
@@ -321,10 +321,11 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		lbl.Anchor = Anchor.TopCenter;
 		lbl.Origin = Anchor.TopCenter;
 
-		dialog.OnKeyPressed += (_, in _, key) => {
-			keySubmitted(key);
-			dialog.Close();
-		};
+		// TODO nucleus-ui-improvements-try-2: FIX THIS
+		// dialog.OnKeyPressed += (_, in _, key) => {
+		// 	keySubmitted(key);
+		// 	dialog.Close();
+		// };
 	}
 
 	private void InvalidateKeyButtons() {
@@ -340,7 +341,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 			b.Text = key.GetString();
 			b.SetTag("key", key);
 
-			b.MouseReleaseEvent += ButtonEditOrRemoveHandler;
+			b.OnButtonClick += ButtonEditOrRemoveHandler;
 
 			buttons.Add(b);
 		}
@@ -349,14 +350,14 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		b.BackgroundColor = BackgroundColor;
 		b.ForegroundColor = ForegroundColor;
 		b.Text = "Add...";
-		b.MouseReleaseEvent += ButtonAddHandler;
+		b.OnButtonClick += ButtonAddHandler;
 		buttons.Add(b);
 		addButton = b;
 
 		InvalidateLayout();
 	}
 
-	private void ButtonAddHandler(Element self, FrameState state, ButtonCode button) {
+	private void ButtonAddHandler(Element self, ButtonCode button) {
 		if (button == ButtonCode.Mouse1)
 			ButtonModal("Bind", AddSubmittedHandler);
 	}
@@ -401,7 +402,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 	}
 
 
-	private void ButtonEditOrRemoveHandler(Element self, FrameState state, ButtonCode button) {
+	private void ButtonEditOrRemoveHandler(Element self,ButtonCode button) {
 		if (button == ButtonCode.Mouse2) {
 			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}
@@ -495,29 +496,28 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		track = audiosystem.CreatePlayback(clip);
 		BorderSize = 0;
 
-		MouseClickEvent += (_, _, btn) => {
-			if (btn == ButtonCode.Mouse1) isDragging = true;
-			DemandKeyboardFocus();
-		};
-
-		MouseReleaseEvent += (_, _, btn) => {
-			if (btn == ButtonCode.Mouse1) isDragging = false;
-			DemandKeyboardFocus();
-		};
-
-		OnKeyPressed += (_, in _, key) => {
-			if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
-				var len = audiosystem.GetPlaybackDuration(track);
-				float midpoint = currentWidth / 2f;
-				float normX = CalculateJudgementOffset((float)playhead);
-				float currentX = midpoint + normX * (currentWidth / 2f);
-				hitMarkers.Add((currentX, DateTime.Now));
-
-				lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
-			}
-		};
-
 		DemandKeyboardFocus();
+	}
+
+	protected override void MouseClick(FrameState state, ButtonCode btn) {
+		if (btn == ButtonCode.Mouse1) isDragging = true;
+		DemandKeyboardFocus();
+	}
+	protected override void MouseRelease(Element self, FrameState state, ButtonCode btn) {
+		if (btn == ButtonCode.Mouse1) isDragging = false;
+		DemandKeyboardFocus();
+	}
+
+	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
+			var len = audiosystem.GetPlaybackDuration(track);
+			float midpoint = currentWidth / 2f;
+			float normX = CalculateJudgementOffset((float)playhead);
+			float currentX = midpoint + normX * (currentWidth / 2f);
+			hitMarkers.Add((currentX, DateTime.Now));
+
+			lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
+		}
 	}
 
 	protected override void OnThink(FrameState frameState) {

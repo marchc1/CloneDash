@@ -84,7 +84,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
-		btn.MouseReleaseEvent += (_, _, _) => action?.Invoke(menu);
+		btn.OnButtonClick += (_, _) => action?.Invoke(menu);
 		btn.SetStart((menuBtns.Count + 1) * 24);
 
 		menuBtns.Add(btn);
@@ -113,7 +113,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		BorderSize = 0;
 		DrawPanelBackground = false;
 
-		OnHoverTest += Element.Passthru;
+		SetPassthru(true);
 
 		back = new(this);
 		back.Origin = Anchor.Center;
@@ -122,7 +122,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
 		back.ImageOrientation = ImageOrientation.Zoom;
 		back.Text = "";
-		back.MouseReleaseEvent += Back_MouseReleaseEvent;
+		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var source = ChartMod.GetChartSongProviderByName("Muse Dash");
@@ -170,7 +170,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		base.OnThink(frameState);
 		// Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
 	}
-	private void Back_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void Back_MouseReleaseEvent(Button self, ButtonCode mouseButton) {
 		DestroyNavigationMenu();
 	}
 

@@ -16,6 +16,9 @@ using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Tools;
 
+// I do not feel like fixing this right now
+// todo nucleus-ui-improvement-try-2 fixme
+/*
 public static class MD_ModelViewerCommand
 {
 	[ConCommand(Name: "md_modelviewer", Help: "Opens the MuseDash Spine model browser.")]
@@ -270,7 +273,7 @@ public class MD_ModelViewerWindow : Window
 		rootBtn.TextSize = 18;
 		rootBtn.TextAlignment = Anchor.CenterLeft;
 		rootBtn.TextPadding = new(6);
-		rootBtn.MouseReleaseEvent += (_, _, _) => SelectFolder(folder);
+		rootBtn.OnButtonClick += (_, _) => SelectFolder(folder);
 
 		foreach (var sub in folder.Subfolders.Values.OrderBy(f => f.Name)) {
 			var btn = new Button(parent);
@@ -283,7 +286,7 @@ public class MD_ModelViewerWindow : Window
 			btn.BackgroundColor = new(0, 0, 0, 0);
 			btn.ForegroundColor = new(0, 0, 0, 0);
 			var capturedSub = sub;
-			btn.MouseReleaseEvent += (_, _, _) => SelectFolder(capturedSub);
+			btn.OnButtonClick += (_, _) => SelectFolder(capturedSub);
 		}
 	}
 
@@ -327,7 +330,7 @@ public class MD_ModelViewerWindow : Window
 			);
 			card.Size = new(THUMB_SIZE, THUMB_SIZE + 20);
 			card.Setup(entry);
-			card.MouseReleaseEvent += (_, _, _) => OpenDetailWindow(entry);
+			card.OnButtonClick += (_, _) => OpenDetailWindow(entry);
 		}
 	}
 
@@ -914,3 +917,4 @@ public class MD_ModelDetailWindow : Window
 		}
 	}
 }
+*/

@@ -94,6 +94,7 @@ namespace Nucleus.UI
 		public readonly Caret Caret = new();
 		public DateTime LastKeyboardInteraction { get; private set; } = DateTime.Now;
 
+		public delegate void TextChangedDelegate(Textbox textbox, string oldText, string newText);
 		public event TextChangedDelegate? OnUserPressedEnter;
 		public event TextChangedDelegate? OnTextChanged;
 
@@ -395,7 +396,7 @@ namespace Nucleus.UI
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 		}
 
-		protected override void KeyboardFocusLost(Element self, bool demanded) {
+		public override void KeyboardFocusLost(Element self, bool demanded) {
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
@@ -496,7 +497,7 @@ namespace Nucleus.UI
 			FireTextChanged(old);
 		}
 
-		public override void TextInput(in KeyboardState keyboardState, string text) {
+		protected override void TextInput(in KeyboardState keyboardState, string text) {
 			var oldText = Text;
 
 			PushUndo();

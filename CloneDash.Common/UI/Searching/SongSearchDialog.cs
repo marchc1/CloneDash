@@ -68,7 +68,7 @@ public class SongSearchDialog : Window
 		applyButton.BorderSize = 0;
 		applyButton.Dock = Dock.Bottom;
 
-		applyButton.MouseReleaseEvent += ApplyButton_MouseReleaseEvent;
+		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;
 
 		parameters = new(this);
 		parameters.Dock = Dock.Fill;
@@ -168,7 +168,7 @@ public class SongSearchDialog : Window
 		return source;
 	}
 
-	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) => Submit();
+	private void ApplyButton_MouseReleaseEvent(Element self, ButtonCode button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
 		Close();
