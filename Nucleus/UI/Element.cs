@@ -7,6 +7,7 @@ using Nucleus.Commands;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -1560,6 +1561,16 @@ public class Element : IValidatable
 			return false;
 
 		return Parent?.CanInput() ?? true;
+	}
+
+	public virtual void ApplySchemeSettings(IScheme scheme){
+		BackgroundColor = scheme.GetColor("Nucleus.Background");
+		ForegroundColor = scheme.GetColor("Nucleus.Border");
+		TextColor = scheme.GetColor("Nucleus.Text");
+
+		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
+		Font = fontStyle.Name;
+		TextSize = fontStyle.Tall;
 	}
 }
 

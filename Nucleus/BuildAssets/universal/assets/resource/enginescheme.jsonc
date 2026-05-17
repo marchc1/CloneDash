@@ -10,7 +10,9 @@
         "MouseDepressed.InitialResponse":       0.94,
 
         // Colors
-        "Button.BackgroundColor":               "Nucleus.Background with { A = 220 }"
+        // Inheriting a setting requires typing #settingkey:value#
+        // This will recursively resolve at runtime (if a loop is detected, it will default out, and you'll get a warning)
+        "Button.BackgroundColor":               "#colors:Nucleus.Background# with { A = 220 }"
     },
     "fontStyles": {
         "Default": {

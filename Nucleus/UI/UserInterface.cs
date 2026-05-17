@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Input;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Input;
@@ -161,6 +162,9 @@ namespace Nucleus.UI
 		~UserInterface() {
 			MainThread.RunASAP(Remove);
 		}
+
+		// temporary, just testing parsing
+		public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
 
 		public event MouseEventDelegate? OnElementClicked;
 		public event MouseEventDelegate? OnElementReleased;
