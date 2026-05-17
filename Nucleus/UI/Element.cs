@@ -89,8 +89,6 @@ public class Element : IValidatable
 
 	private bool __usesRenderTarget = false;
 	private RenderTexture2D? __RT1 = null;
-	private RenderTexture2D? __RT2 = null;
-	private bool UseRT2 = false;
 	private RectangleF? __lastRTSize = null;
 
 	private bool _fitToParent = false;
@@ -1055,7 +1053,6 @@ public class Element : IValidatable
 			// quick check if needing to create a new RT
 			if (!element.__lastRTSize.HasValue || element.RenderBounds != element.__lastRTSize) {
 				if (element.__RT1.HasValue) Raylib.UnloadRenderTexture(element.__RT1.Value);
-				if (element.__RT2.HasValue) Raylib.UnloadRenderTexture(element.__RT2.Value);
 
 				element.__RT1 = Graphics2D.CreateRenderTarget(element.RenderBounds.W, element.RenderBounds.H);
 				element.__lastRTSize = element.RenderBounds;
