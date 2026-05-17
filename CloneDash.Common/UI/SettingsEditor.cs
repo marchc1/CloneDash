@@ -198,7 +198,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.DynamicallySized = true;
 		category.Size = new(0.06f);
 		if (icon != null)
-			category.Icon.Image = Textures.LoadTextureFromFile(icon);
+			category.Icon.Image = Level.Textures.LoadTextureFromFile(icon);
 
 		if (activeCategory == null)
 			SelectCategory(category);

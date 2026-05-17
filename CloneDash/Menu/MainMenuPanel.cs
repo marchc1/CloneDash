@@ -121,7 +121,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.BackgroundColor = new(0, 0);
-		back.Image = Textures.LoadTextureFromFile("ui/back.png");
+		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
 		back.ImageOrientation = ImageOrientation.Zoom;
 		back.Text = "";
 		back.MouseReleaseEvent += Back_MouseReleaseEvent;
