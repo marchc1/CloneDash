@@ -190,7 +190,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		doNotTryToGetTrackAgain = false;
 	}
 
-	public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
 		if (delta.Y == 0) return;
 
 		for (int i = 0; i < Math.Abs(delta.Y); i++) {
@@ -499,7 +499,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		TriggerUserInitializeSearch();
 	}
 
-	public override void MouseClick(FrameState state, ButtonCode button) {
+	protected override void MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
 		DemandKeyboardFocus();
 	}
@@ -514,7 +514,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.AutoSize = true;
 	}
 
-	public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		base.KeyPressed(in keyboardState, key);
 		if (key == ButtonCode.KeyLeft || key == ButtonCode.KeyA) {
 			MoveLeft();

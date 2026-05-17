@@ -40,7 +40,8 @@ public enum DynamicSizeReference
 	SelfHeight
 }
 
-public enum ElementFlags : uint {
+public enum ElementFlags : uint
+{
 	MarkedForRemoval = 1 << 0,
 	NeedsRepaint = 1 << 1,
 	PaintBorderEnabled = 1 << 2,
@@ -180,7 +181,7 @@ public class Element : IValidatable
 	/// </summary>
 	public UserInterface UI { get; internal set; }
 
-	public virtual void Initialize(float x, float y, float width, float height){
+	public virtual void Initialize(float x, float y, float width, float height) {
 		_position = new(x, y);
 		_size = new(width, height);
 		Anchor = Anchor.TopLeft;
@@ -381,11 +382,11 @@ public class Element : IValidatable
 	}
 
 	public IScheme? GetScheme() => scheme;
-	public void SetScheme(IScheme? scheme){
+	public void SetScheme(IScheme? scheme) {
 		if (scheme != this.scheme)
 			this.scheme = scheme;
 	}
-	
+
 
 	public Element() {
 		Initialize(0, 0, 32, 32);
@@ -425,26 +426,32 @@ public class Element : IValidatable
 		}
 	}
 
-	public virtual string? TooltipText{ get; set; } // todo: remove me, turn into methods
+	public virtual string? TooltipText { get; set; } // todo: remove me, turn into methods
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasFlag(ElementFlags flag) => (flags & flag) != 0;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetFlag(ElementFlags flag) => flags |= flag;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void AddFlag(ElementFlags flag) => flags |= flag;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void RemoveFlag(ElementFlags flag) => flags &= ~flag;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetFlag(ElementFlags flag, bool state) { if (state) AddFlag(flag); else RemoveFlag(flag); }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsMarkedForRemoval() => HasFlag(ElementFlags.MarkedForRemoval);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsLayoutInvalid() => HasFlag(ElementFlags.NeedsLayout);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsSchemeInvalid() => HasFlag(ElementFlags.NeedsSchemeUpdate);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPaintBorderEnabled() => HasFlag(ElementFlags.PaintBorderEnabled);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPaintBackgroundEnabled() => HasFlag(ElementFlags.PaintBackgroundEnabled);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPaintEnabled() => HasFlag(ElementFlags.PaintEnabled);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void IsPostChildPaintEnabled() => HasFlag(ElementFlags.PostChildPaintEnabled);
 
-	public virtual void OnRemoval() { }
-	public delegate void RemoveDelegate(Element e);
-	public event RemoveDelegate? Removed;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintBorderEnabled(bool state) => SetFlag(ElementFlags.PaintBorderEnabled, state);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintBackgroundEnabled(bool state) => SetFlag(ElementFlags.PaintBackgroundEnabled, state);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPaintEnabled(bool state) => SetFlag(ElementFlags.PaintEnabled, state);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPostChildPaintEnabled(bool state) => SetFlag(ElementFlags.PostChildPaintEnabled, state);
+
 
 	private void REMOVE() {
 		if (__markedForRemoval == true)
 			return;
 		OnRemoval();
-		Removed?.Invoke(this);
 
 		__markedForRemoval = true;
 
@@ -477,12 +484,8 @@ public class Element : IValidatable
 
 	public bool IsValid() => !__markedForRemoval;
 
-	public delegate void ChildParentedDelegate(Element parent, Element child);
-	public event ChildParentedDelegate? OnChildParented;
-	public virtual void ChildParented(Element parent, Element child) { }
-	public void TriggerOnChildParented(Element parent, Element child) {
+	internal void TriggerOnChildParented(Element parent, Element child) {
 		ChildParented(parent, child);
-		OnChildParented?.Invoke(parent, child);
 	}
 
 	protected virtual void OnThink(FrameState frameState) { }
@@ -540,8 +543,8 @@ public class Element : IValidatable
 	}
 
 	public ReadOnlySpan<char> GetName() => name;
-	public void SetName(ReadOnlySpan<char> name){
-		if(name.IsEmpty || name[0] == '\0'){
+	public void SetName(ReadOnlySpan<char> name) {
+		if (name.IsEmpty || name[0] == '\0') {
 			this.name = null;
 			return;
 		}
@@ -592,7 +595,7 @@ public class Element : IValidatable
 			LayoutRecursive(this, ref fs);
 		}
 		else {
-			SetFlag(ElementFlags.NeedsLayout);
+			AddFlag(ElementFlags.NeedsLayout);
 		}
 	}
 
@@ -615,25 +618,7 @@ public class Element : IValidatable
 
 		Parent.InvalidateChildren(immediate, true, true);
 	}
-	protected virtual void PerformLayout(float width, float height) { }
-	public delegate void PostLayoutChildrenD(Element self);
-	public event PostLayoutChildrenD? OnPostLayoutChildren;
-	protected virtual void PostLayoutChildren() { }
-	/// <summary>
-	/// Called before calculating a childs layout.
-	/// </summary>
-	/// <param name="element"></param>
-	protected virtual void PreLayoutChild(Element element) { }
-	/// <summary>
-	/// Called when a childs layout is complete.
-	/// </summary>
-	/// <param name="element"></param>
-	protected virtual void PostLayoutChild(Element element) { }
-	/// <summary>
-	/// Called before calculating childrens layout.
-	/// </summary>
-	protected virtual void PreLayoutChildren() { }
-	protected virtual void ModifyLayout(ref RectangleF renderBounds) { }
+
 
 	/// <summary>
 	/// Renders this element and all of its children to a render-target rather than straight to the screen every frame.<br></br>
@@ -914,16 +899,6 @@ public class Element : IValidatable
 		Parent.Children.Insert(0, this);
 		Parent.InvalidateLayout();
 	}
-	public virtual void Paint(float width, float height) {
-		ImageDrawing();
-	}
-	public void UnregisterPaintOverrides() {
-		if (PaintOverride == null) return;
-		foreach (Delegate d in PaintOverride.GetInvocationList())
-			PaintOverride -= (PaintEvent)d;
-	}
-	public delegate void PaintEvent(Element self, float width, float height);
-	public event PaintEvent? PaintOverride;
 
 	public string TextNocall {
 		set {
@@ -941,12 +916,8 @@ public class Element : IValidatable
 			var oldText = __text;
 			__text = value;
 			TextChanged(oldText, value);
-			TextChangedEvent?.Invoke(this, oldText, __text);
 		}
 	}
-	public virtual void TextChanged(string oldText, string newText) { }
-	public delegate void TextChangedDelegate(Element self, string oldText, string newText);
-	public event TextChangedDelegate? TextChangedEvent;
 
 	public string Font { get; set; } = Graphics2D.UI_FONT_NAME;
 	public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
@@ -1002,25 +973,12 @@ public class Element : IValidatable
 			}
 		}
 		element.UnlockChildren();
-		if (wasInvalid) {
-			element.OnPostLayoutChildren?.Invoke(element);
+		if (wasInvalid)
 			element.PostLayoutChildren();
-		}
 
 		return returning;
 	}
 
-	public delegate bool HoverTestDelegate(Element self, RectangleF bounds, Vector2F mousePos);
-	public event HoverTestDelegate? OnHoverTest;
-	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
-		var containsPoint = bounds.ContainsPoint(mousePos);
-		if (containsPoint && IValidatable.IsValid(Parent)) {
-			var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition() - Parent.ChildRenderOffset, Parent.RenderBounds.Size);
-			return scissor.ContainsPoint(mousePos);
-		}
-
-		return containsPoint;
-	}
 	public static Element? ResolveElementHoveringState(Element element, Vector2F mousepos, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
 		if (!element.Enabled) return lastHovered;
 		if (!element.Visible) return lastHovered;
@@ -1047,11 +1005,7 @@ public class Element : IValidatable
 
 		var bounds = element.RenderBounds.AddPosition(offset);
 
-		if (element.OnHoverTest == null) {
-			if (element.HoverTest(bounds, mousepos))
-				lastHovered = element;
-		}
-		else if (element.OnHoverTest(element, bounds, mousepos))
+		if (element.HoverTest(bounds, mousepos))
 			lastHovered = element;
 
 		offset += element.RenderBounds.Pos;
@@ -1061,15 +1015,12 @@ public class Element : IValidatable
 
 		return lastHovered;
 	}
-	public delegate void ElementSingleArg(Element self);
-	public event ElementSingleArg? Thinking;
 
 	public static void ThinkRecursive(Element element, FrameState frameState) {
 		if (element == null) return; // wtf?
 		if (!element.Enabled) return;
 
 		element.Think(frameState);
-		element.Thinking?.Invoke(element);
 
 		element.Children.RemoveAll(x => x.__markedForRemoval);
 		foreach (Element child in element.LockAndEnumerateChildren())
@@ -1090,9 +1041,6 @@ public class Element : IValidatable
 	public virtual void PostRender() { }
 	public virtual void PostRenderChildren() { }
 	public virtual bool PostRenderChildRT(Element element) => true;
-
-	public delegate void PaintRenderTargetOverrideFn(Element self, in RenderTexture2D texture, in RectangleF renderBounds);
-	public event PaintRenderTargetOverrideFn? PaintRenderTargetOverride;
 
 	public static void DrawRecursive(Element element, List<Element>? popups = null, int iteration = 0) {
 		if (!element.Enabled) return;
@@ -1120,10 +1068,7 @@ public class Element : IValidatable
 				Graphics2D.ResetDrawingOffset();
 				Graphics2D.BeginRenderTarget(element.__RT1.Value);
 
-				if (element.PaintOverride != null)
-					element.PaintOverride.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
-				else
-					element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
+				element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
 
 				foreach (Element child in element.Children)
 					DrawRecursive(child, popups, iteration + 1);
@@ -1138,10 +1083,7 @@ public class Element : IValidatable
 						element.PreRender();
 						var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
 						Graphics2D.SetDrawColor(t, t, t, t);
-						if (element.PaintRenderTargetOverride != null)
-							element.PaintRenderTargetOverride(element, element.__RT1.Value, element.RenderBounds);
-						else
-							Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
+						Graphics2D.DrawRenderTexture(element.__RT1.Value, element.RenderBounds.Size);
 						element.PostRender();
 					}
 
@@ -1167,10 +1109,7 @@ public class Element : IValidatable
 																																		 //Graphics2D.ScissorRect();
 		Graphics2D.PushAlpha(element.Opacity * 255);
 		element.PreRender();
-		if (element.PaintOverride != null)
-			element.PaintOverride?.Invoke(element, element.RenderBounds.Width, element.RenderBounds.Height);
-		else
-			element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
+		element.Paint(element.RenderBounds.Width, element.RenderBounds.Height);
 		element.PostRender();
 
 
@@ -1194,12 +1133,6 @@ public class Element : IValidatable
             }*/
 	}
 
-	public delegate void MouseEventDelegate(Element self, FrameState state, ButtonCode button);
-	public delegate void MouseReleaseDelegate(Element self, FrameState state, ButtonCode button, bool lost);
-	public delegate void MouseV2Delegate(Element self, FrameState state, Vector2F delta);
-
-	public event MouseEventDelegate? MouseClickEvent;
-	public virtual void MouseClick(FrameState state, ButtonCode button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
 
 	public bool HasTag(string key) => Tags.ContainsKey(key);
 	public T GetTag<T>(string key) => (T)Tags[key];
@@ -1208,19 +1141,6 @@ public class Element : IValidatable
 	public void UnsetTag(string key) => Tags.Remove(key);
 
 
-	public event MouseEventDelegate MouseReleaseEvent;
-	public virtual void MouseRelease(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-
-	public event MouseEventDelegate? MouseLostEvent;
-	public virtual void MouseLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-	public event MouseReleaseDelegate? MouseReleasedOrLostEvent;
-	public virtual void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-
-	public event MouseV2Delegate? MouseDragEvent;
-	public virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
-
-	public event MouseV2Delegate? MouseScrollEvent;
-	public virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
 	public void ClearChildren() {
 		foreach (var child in this.AddParent.LockAndEnumerateChildren())
@@ -1239,7 +1159,6 @@ public class Element : IValidatable
 	internal void MouseClickOccur(FrameState state, ButtonCode button) {
 		Depressed = true;
 		MouseClick(state, button);
-		MouseClickEvent?.Invoke(this, state, button);
 		UI.TriggerElementClicked(this, state, button);
 	}
 
@@ -1249,14 +1168,10 @@ public class Element : IValidatable
 		if (!Hovered && !forced)
 			return;
 
-
 		MouseRelease(this, state, button);
-		MouseReleaseEvent?.Invoke(this, state, button);
 
-		if (!UI.WasMouseEventConsumed()) {
+		if (!UI.WasMouseEventConsumed())
 			MouseReleasedOrLost(this, state, button);
-			MouseReleasedOrLostEvent?.Invoke(this, state, button, false);
-		}
 
 		Dragged = false;
 		DragVector = Vector2F.Zero;
@@ -1266,21 +1181,16 @@ public class Element : IValidatable
 		Depressed = false;
 
 		MouseLost(this, state, button);
-		MouseLostEvent?.Invoke(this, state, button);
-
 		MouseReleasedOrLost(this, state, button);
-		MouseReleasedOrLostEvent?.Invoke(this, state, button, true);
 
 		Dragged = false;
 		DragVector = Vector2F.Zero;
 	}
 	internal void MouseDragOccur(FrameState state, Vector2F delta) {
 		MouseDrag(this, state, delta);
-		MouseDragEvent?.Invoke(this, state, delta);
 	}
 	internal void MouseScrollOccur(FrameState state, Vector2F delta) {
 		MouseScroll(this, state, delta);
-		MouseScrollEvent?.Invoke(this, state, delta);
 	}
 
 	public double Lifetime => (DateTime.Now - Birth).TotalSeconds;
@@ -1326,14 +1236,6 @@ public class Element : IValidatable
 		//InvalidateChildren(self: true, recursive: true);
 	}
 
-	public virtual void KeyboardFocusGained(bool demanded) {
-
-	}
-
-	public virtual void KeyboardFocusLost(Element lostTo, bool demanded) {
-
-	}
-
 	/// <summary>
 	/// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
 	/// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
@@ -1348,37 +1250,15 @@ public class Element : IValidatable
 	public virtual void DemandKeyboardFocus() => UI.DemandKeyboardFocus(this);
 	public virtual void KeyboardUnfocus() => UI.KeyboardUnfocus(this);
 
-	public void KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
+	internal void KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
 		KeyPressed(in keyboardState, key);
-		if (OnKeyPressed != null) {
-			UI.ResetKeyEventConsumed();
-			OnKeyPressed?.Invoke(this, in keyboardState, key);
-		}
 	}
-	public void KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
+	internal void KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
 		KeyReleased(in keyboardState, key);
-		if (OnKeyReleased != null) {
-			UI.ResetKeyEventConsumed();
-			OnKeyReleased?.Invoke(this, in keyboardState, key);
-		}
 	}
-	public void TextInputOccur(in KeyboardState keyboardState, string text) {
+	internal void TextInputOccur(in KeyboardState keyboardState, string text) {
 		TextInput(in keyboardState, text);
-		if (OnTextInput != null) {
-			UI.ResetKeyEventConsumed();
-			OnTextInput?.Invoke(this, in keyboardState, text);
-		}
 	}
-
-	public virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
-	public virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
-	public virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
-
-	public delegate void KeyDelegate(Element self, in KeyboardState state, ButtonCode key);
-	public delegate void TextDelegate(Element self, in KeyboardState state, string text);
-	public event KeyDelegate? OnKeyPressed;
-	public event KeyDelegate? OnKeyReleased;
-	public event TextDelegate? OnTextInput;
 
 	public bool IsIndirectChildOf(Element parent) {
 		var p = this;
@@ -1594,18 +1474,6 @@ public class Element : IValidatable
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
 	/// <summary>
-	/// Allows you to pass mouse events into another element and make this element passthru instead.
-	/// </summary>
-	/// <param name="other"></param>
-	public void PassMouseTo(Element other) {
-		// mark ourselves as passthru
-		OnHoverTest += Passthru;
-		other.OnHoverTest += (self, bounds, mousePos) => {
-			return bounds.ContainsPoint(mousePos) || ScreenspaceRenderBounds.ContainsPoint(mousePos);
-		};
-	}
-
-	/// <summary>
 	/// Recursively searches through parents to confirm if input is disabled or not.
 	/// <br></br>
 	/// Returns true if all elements have input enabled; or false if even one parent has input disabled.
@@ -1620,7 +1488,7 @@ public class Element : IValidatable
 		return Parent?.CanInput() ?? true;
 	}
 
-	public virtual void ApplySchemeSettings(IScheme scheme){
+	public virtual void ApplySchemeSettings(IScheme scheme) {
 		BackgroundColor = scheme.GetColor("Nucleus.Background");
 		ForegroundColor = scheme.GetColor("Nucleus.Border");
 		TextColor = scheme.GetColor("Nucleus.Text");
@@ -1629,6 +1497,49 @@ public class Element : IValidatable
 		Font = fontStyle.Name;
 		TextSize = fontStyle.Tall;
 	}
+
+	// Virtual overrides
+	protected virtual void ChildParented(Element parent, Element child) { }
+	protected virtual void OnRemoval() { }
+
+	protected virtual void PerformLayout(float width, float height) { }
+	protected virtual void PostLayoutChildren() { }
+
+	protected virtual void TextChanged(string oldText, string newText) { }
+
+	protected virtual void PreLayoutChild(Element element) { }
+	protected virtual void PostLayoutChild(Element element) { }
+	protected virtual void PreLayoutChildren() { }
+	protected virtual void ModifyLayout(ref RectangleF renderBounds) { }
+
+	// TODO: Make protected
+	public virtual void Paint(float width, float height) {
+		ImageDrawing();
+	}
+
+	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
+		var containsPoint = bounds.ContainsPoint(mousePos);
+		if (containsPoint && IValidatable.IsValid(Parent)) {
+			var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition() - Parent.ChildRenderOffset, Parent.RenderBounds.Size);
+			return scissor.ContainsPoint(mousePos);
+		}
+
+		return containsPoint;
+	}
+
+	protected virtual void MouseClick(FrameState state, ButtonCode button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
+	protected virtual void MouseRelease(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
+	protected virtual void MouseLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
+	protected virtual void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
+	protected virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
+	protected virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
+
+	protected virtual void KeyboardFocusGained(bool demanded) { }
+	protected virtual void KeyboardFocusLost(Element lostTo, bool demanded) { }
+
+	protected virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
+	protected virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
+	protected virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
 }
 
 [Nucleus.MarkForStaticConstruction]

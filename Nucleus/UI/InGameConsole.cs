@@ -548,7 +548,7 @@ namespace Nucleus
 			SetupAutocomplete();
 		}
 
-		public override void OnRemoval() {
+		protected override void OnRemoval() {
 			base.OnRemoval();
 			autoComplete?.Remove();
 		}

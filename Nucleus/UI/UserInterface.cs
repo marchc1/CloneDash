@@ -131,7 +131,7 @@ namespace Nucleus.UI
 			RemoveFlag(ElementFlags.NeedsLayout);
 		}
 
-		public override void MouseClick(FrameState state, ButtonCode button) {
+		protected override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus(this, true);
 		}
 

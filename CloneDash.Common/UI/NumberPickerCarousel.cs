@@ -43,7 +43,7 @@ public class NumberPickerCarousel : Element
 		Clipping = true;
 	}
 
-	public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
 		if (delta.Y > 0)
 			Value++;
 		else if (delta.Y < 0)
@@ -54,13 +54,13 @@ public class NumberPickerCarousel : Element
 	private bool _isDragging = false;
 	public float DragThreshold { get; set; } = 5f;
 
-	public override void MouseClick(FrameState state, Nucleus.Common.Input.ButtonCode button) {
+	protected override void MouseClick(FrameState state, Nucleus.Common.Input.ButtonCode button) {
 		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return;
 		_totalDragDistance = 0f;
 		_isDragging = false;
 	}
 
-	public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+	protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 		_totalDragDistance += MathF.Abs(delta.X);
 
 		if (!_isDragging && _totalDragDistance > DragThreshold)
@@ -80,7 +80,7 @@ public class NumberPickerCarousel : Element
 			}
 		}
 	}
-	public override void MouseReleasedOrLost(Element self, FrameState state, Nucleus.Common.Input.ButtonCode button) {
+	protected override void MouseReleasedOrLost(Element self, FrameState state, Nucleus.Common.Input.ButtonCode button) {
 		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return;
 		if (_isDragging) {
 			_isDragging = false;

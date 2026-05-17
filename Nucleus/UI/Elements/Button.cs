@@ -22,7 +22,7 @@ namespace Nucleus.UI
 			if (Hovered)
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
-		public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 			if (!TriggeredWhenEnterPressed) {
 				UI.MarkKeyEventNotConsumed();
 				return;
@@ -33,7 +33,7 @@ namespace Nucleus.UI
 
 		}
 
-		public override void MouseClick(FrameState state, ButtonCode button) {
+		protected override void MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
 			audiosystem.PlaySound("click.wav", AudioPlaybackSettings.Unaltered);
 		}

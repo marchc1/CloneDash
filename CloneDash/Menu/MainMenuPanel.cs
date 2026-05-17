@@ -106,7 +106,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		return ret;
 	}
-	public override void OnRemoval() {
+	protected override void OnRemoval() {
 		base.OnRemoval();
 	}
 	public MainMenuPanel(Element? parent) : base(parent){ 

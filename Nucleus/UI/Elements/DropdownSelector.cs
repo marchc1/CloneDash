@@ -25,7 +25,7 @@ namespace Nucleus.UI.Elements
 			return selector;
 		}
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			Menu m = UI.Menu();
 
 			foreach (var i in Items) {

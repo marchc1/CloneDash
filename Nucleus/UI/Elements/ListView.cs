@@ -17,7 +17,7 @@ namespace Nucleus.UI
 			Graphics2D.SetDrawColor(85, 95, 110);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 		}
-		public override void ChildParented(Element parent, Element child) {
+		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
 			child.Dock = Dock.Top;
 		}

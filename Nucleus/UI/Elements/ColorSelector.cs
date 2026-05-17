@@ -37,7 +37,7 @@ namespace Nucleus.UI.Elements
 
 		public ColorSelectorDialog CurrentDialog { get; protected set; }
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (IValidatable.IsValid(CurrentDialog))
 				return;
 
@@ -66,6 +66,10 @@ namespace Nucleus.UI.Elements
 
 	public class ColorSelectorDialog : Panel
 	{
+		public class ColorSelectorWheel : Panel
+		{
+
+		}
 		public ColorSelectorDialog(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
 			ColorWheelTex = Level.Textures.LoadTextureFromFile("colorwheel.png");
 			HueWheelTex = Level.Textures.LoadTextureFromFile("huewheel.png");

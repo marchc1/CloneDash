@@ -119,7 +119,7 @@ namespace Nucleus.UI
 			InvalidateLines();
 		}
 
-		public override void TextChanged(string oldText, string newText) {
+		protected override void TextChanged(string oldText, string newText) {
 			base.TextChanged(oldText, newText);
 			InvalidateLines();
 		}
@@ -395,7 +395,7 @@ namespace Nucleus.UI
 				EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 		}
 
-		public override void KeyboardFocusLost(Element self, bool demanded) {
+		protected override void KeyboardFocusLost(Element self, bool demanded) {
 			base.KeyboardFocusLost(self, demanded);
 			Caret.ClearSelection();
 		}
@@ -403,7 +403,7 @@ namespace Nucleus.UI
 		private DateTime lastClickTime = DateTime.MinValue;
 		private int clickCount = 0;
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (ReadOnly && !MultiLine) return;
 			if (button != ButtonCode.MouseLeft) return;
 
@@ -441,7 +441,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			base.MouseDrag(self, state, delta);
 
 			if (!Caret.HasSelection && !Caret.SelectionOrigin.HasValue)
@@ -454,7 +454,7 @@ namespace Nucleus.UI
 			EnsureCaretVisible();
 		}
 
-		public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
 			if (!MultiLine) {
 				base.MouseScroll(self, state, delta);
 				return;
@@ -517,7 +517,7 @@ namespace Nucleus.UI
 			return;
 		}
 
-		public override void KeyPressed(in KeyboardState state, ButtonCode key) {
+		protected override void KeyPressed(in KeyboardState state, ButtonCode key) {
 			var action = key.GetAction();
 			if (action.Type == CharacterType.NoAction)
 				return;

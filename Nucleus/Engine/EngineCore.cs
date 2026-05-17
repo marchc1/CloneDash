@@ -196,7 +196,7 @@ public static class EngineCore
 		Window window = new Window(Level.UI);
 
 		window.Title = "Nucleus Profiler";
-		window.AddParent.PaintOverride += AddParent_PaintOverride;
+		window.AddParent.SetPaintBackgroundEnabled(false);
 		window.Titlebar.MinimizeButton.Enabled = false;
 		window.Titlebar.MaximizeButton.Enabled = false;
 

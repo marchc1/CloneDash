@@ -52,13 +52,13 @@ public class CharacterPanel : Panel
 			CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 	}
 
-	public override void OnRemoval() {
+	protected override void OnRemoval() {
 		base.OnRemoval();
 		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 		CharacterInstance?.Dispose();
 	}
 
-	public override void MouseClick(FrameState state, ButtonCode button) {
+	protected override void MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
 	}
 

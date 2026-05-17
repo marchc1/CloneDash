@@ -87,7 +87,7 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (Radio)
 				Checked = true;
 			else

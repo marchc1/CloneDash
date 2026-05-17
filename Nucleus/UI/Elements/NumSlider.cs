@@ -109,12 +109,12 @@ namespace Nucleus.UI
 		}
 		string? workType = null;
 		int caret = 0;
-		public override void MouseClick(FrameState state, ButtonCode button) {
+		protected override void MouseClick(FrameState state, ButtonCode button) {
 			KeyboardUnfocus();
 			dragStart = state.Mouse.MousePos;
 		}
 
-		public override void KeyboardFocusGained(bool demanded) {
+		protected override void KeyboardFocusGained(bool demanded) {
 			Text = $"{Value}";
 			caret = 0;
 		}
@@ -127,14 +127,14 @@ namespace Nucleus.UI
 			return null;
 		}
 		bool didDrag = false;
-		public override void KeyboardFocusLost(Element lostTo, bool demanded) {
+		protected override void KeyboardFocusLost(Element lostTo, bool demanded) {
 			double? v = ParseString(workType);
 			if (v != null) {
 				Value = v.Value;
 			}
 			workType = null;
 		}
-		public override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 			if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
 				double? v = ParseString(Text);
 				if (v != null) {
@@ -150,7 +150,7 @@ namespace Nucleus.UI
 
 
 		Vector2F dragStart;
-		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			if (dragStart.Distance(state.Mouse.MousePos) > 5 || didDrag) {
 				if (!didDrag)
 					dragStart = state.Mouse.MousePos;
@@ -165,12 +165,12 @@ namespace Nucleus.UI
 			}
 		}
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
 			if (!didDrag)
 				base.MouseRelease(self, state, button);
 			didDrag = false;
 		}
-		public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
 			base.MouseScroll(self, state, delta);
 		}
 		public bool TriggeredWhenEnterPressed { get; set; } = false;

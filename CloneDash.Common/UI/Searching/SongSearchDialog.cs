@@ -20,7 +20,7 @@ public class DialogLabelPanel<T> : Panel where T : Element
 		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
 	}
 	public T Get() => element;
-	public override void TextChanged(string oldText, string newText) {
+	protected override void TextChanged(string oldText, string newText) {
 		label.Text = newText;
 	}
 	protected override void PerformLayout(float width, float height) {

@@ -151,7 +151,7 @@ namespace Nucleus.UI.Elements
 		}
 
 
-		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
 			OnTitlebarDragged?.Invoke(self, state, delta);
 		}
 
@@ -309,7 +309,7 @@ namespace Nucleus.UI.Elements
 		~Window() {
 			MainThread.RunASAP(() => Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this), ThreadExecutionTime.AfterFrame);
 		}
-		public override void OnRemoval() {
+		protected override void OnRemoval() {
 			base.OnRemoval();
 			Windows.RemoveAll((x) => x.TryGetTarget(out Window? window) == true && window == this);
 		}

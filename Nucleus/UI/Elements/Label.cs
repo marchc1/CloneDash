@@ -71,7 +71,7 @@ public class Label : Element
 		}
 	}
 
-	public override void TextChanged(string oldText, string newText) {
+	protected override void TextChanged(string oldText, string newText) {
 		base.TextChanged(oldText, newText);
 		if (__autosize)
 			InvalidateLayout();
