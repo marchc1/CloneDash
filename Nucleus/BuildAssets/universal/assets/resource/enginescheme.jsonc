@@ -1,0 +1,32 @@
+{
+    // "parent": "", can be used if using a parent scheme for fallbacks. All new values in this scheme will be considered overrides
+    "basesettings": {
+        // Second order system settings for responsiveness
+        "MouseHovered.NaturalFrequency":        4.1,
+        "MouseHovered.DampingCoefficient":      0.5,
+        "MouseHovered.InitialResponse":         0.94,
+        "MouseDepressed.NaturalFrequency":      4.1,
+        "MouseDepressed.DampingCoefficient":    0.5,
+        "MouseDepressed.InitialResponse":       0.94,
+
+        // Colors
+        "Button.BackgroundColor":               "Nucleus.Background with { A = 220 }"
+    },
+    "fonts": {
+
+    },
+    "colors": {
+        // These are in different formats just for testing purposes
+        "White":                "ffffffff",
+        "OffWhite":             "#d0d0d0ff",
+        "DullWhite":            "190 190 190 255",
+        "TransparentBlack":     "0, 0, 0, 128",
+        "Black":                "0, 0, 0",
+        "Blank":                "0 0 0",
+
+        // standard nucleus colors
+        "Nucleus.Background":   "20, 25, 32, 127",
+        "Nucleus.Border":       "85, 95, 110, 255",
+        "Nucleus.Text":         "230, 236, 255, 255"
+    }
+}
