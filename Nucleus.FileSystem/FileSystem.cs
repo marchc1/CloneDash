@@ -151,6 +151,7 @@ public class FileSystem : IFileSystem
 			AddSearchPath("images", DiskSearchPath.Combine(assets, "images"));
 			AddSearchPath("models", DiskSearchPath.Combine(assets, "models"));
 			AddSearchPath("shaders", DiskSearchPath.Combine(assets, "shaders"));
+			AddSearchPath("resource", DiskSearchPath.Combine(assets, "resource"));
 		}
 	}
 
@@ -343,7 +344,7 @@ public class FileSystem : IFileSystem
 		return false;
 	}
 
-	public string? ReadAllText(string pathID, string path) {
+	public string? ReadAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var text = pathObj.ReadText(path);
 			if (text != null) return text;
@@ -352,7 +353,7 @@ public class FileSystem : IFileSystem
 		return null;
 	}
 
-	public byte[]? ReadAllBytes(string pathID, string path) {
+	public byte[]? ReadAllBytes(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
 		foreach (var pathObj in GetSearchPathID(pathID)) {
 			var bytes = pathObj.ReadBytes(path);
 			if (bytes != null) return bytes;
@@ -361,12 +362,12 @@ public class FileSystem : IFileSystem
 		return null;
 	}
 
-	public bool ReadAllText(string pathID, string path, [NotNullWhen(true)] out string? text) {
+	public bool ReadAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, [NotNullWhen(true)] out string? text) {
 		text = ReadAllText(pathID, path);
 		return text != null;
 	}
 
-	public bool ReadAllBytes(string pathID, string path, [NotNullWhen(true)] out byte[]? bytes) {
+	public bool ReadAllBytes(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, [NotNullWhen(true)] out byte[]? bytes) {
 		bytes = ReadAllBytes(pathID, path);
 		return bytes != null;
 	}
