@@ -620,29 +620,25 @@ public class Element : IValidatable
 	}
 
 
+	public bool IsUsingRenderTarget() => __usesRenderTarget;
 	/// <summary>
 	/// Renders this element and all of its children to a render-target rather than straight to the screen every frame.<br></br>
 	/// This can be used for FPS limiting and for special effects on some elements.
 	/// </summary>
-	public bool UsesRenderTarget {
-		get {
-			return __usesRenderTarget;
+	public void SetUseRenderTarget(bool value) {
+		if (value == __usesRenderTarget)
+			return;
+
+		__usesRenderTarget = value;
+		if (value == false) {
+			if (__RT1.HasValue)
+				Raylib.UnloadRenderTexture(__RT1.Value);
+
+			__RT1 = null;
+			__lastRTSize = null;
 		}
-		set {
-			if (value == __usesRenderTarget)
-				return;
+		else {
 
-			__usesRenderTarget = value;
-			if (value == false) {
-				if (__RT1.HasValue)
-					Raylib.UnloadRenderTexture(__RT1.Value);
-
-				__RT1 = null;
-				__lastRTSize = null;
-			}
-			else {
-
-			}
 		}
 	}
 
@@ -1132,7 +1128,7 @@ public class Element : IValidatable
 				));
 		}
 
-		if (UsesRenderTarget) {
+		if (IsUsingRenderTarget()) {
 			// quick check if needing to create a new RT
 			if (IsRenderTargetAvailable(out RenderTexture2D rt)) {
 				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later

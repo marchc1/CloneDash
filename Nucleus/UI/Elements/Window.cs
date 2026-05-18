@@ -359,7 +359,7 @@ public class Window : Element
 		ResizeBR.Text = "";
 
 		this.AddParent = ap;
-		this.UsesRenderTarget = true;
+		SetUseRenderTarget(true);
 	}
 	protected override void OnRemoval() {
 		base.OnRemoval();
@@ -371,7 +371,7 @@ public class Window : Element
 		closing = true;
 		closeTime = Lifetime;
 		Backdrop = false;
-		UsesRenderTarget = true;
+		SetUseRenderTarget(true);
 	}
 
 	public Titlebar Titlebar { get; private set; }
@@ -399,7 +399,7 @@ public class Window : Element
 		}
 		else if (Lifetime >= OPEN_TIME && opening) {
 			opening = false;
-			UsesRenderTarget = false;
+			SetUseRenderTarget(false);
 		}
 	}
 	static float OPEN_TIME => 0.5f;
