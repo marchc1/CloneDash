@@ -492,7 +492,7 @@ public abstract class Level : IValidatable
 			while (e != null) {
 				if (e.FileDropped(item, FrameState.Mouse.MousePos))
 					break;
-				e = e.Parent;
+				e = e.GetParent();
 			}
 		}
 	}
@@ -510,7 +510,7 @@ public abstract class Level : IValidatable
 			while (e != null) {
 				if (e.TextDropped(item, FrameState.Mouse.MousePos))
 					break;
-				e = e.Parent;
+				e = e.GetParent();
 			}
 		}
 	}

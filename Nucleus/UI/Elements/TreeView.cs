@@ -11,7 +11,7 @@ public class TreeNode : Button, IContainsNodes
 {
 	DirectionalLayoutPanel ChildrenPanel;
 	public TreeNode(Element? parent) : base(parent) {
-		ChildrenPanel = new(Parent);
+		ChildrenPanel = new(GetParent());
 		ChildrenPanel.AutoSize = true;
 		ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
 		ChildrenPanel.BorderSize = 0;

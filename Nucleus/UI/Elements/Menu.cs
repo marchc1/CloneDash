@@ -30,7 +30,7 @@ public class Menu(Element? parent) : Panel(parent)
 
 			Menu ultimateMenu = parent;
 			while (true) {
-				var parent = ultimateMenu.Parent;
+				var parent = ultimateMenu.GetParent();
 				if (parent is not Menu parentMenu) break;
 				ultimateMenu = parentMenu;
 			}

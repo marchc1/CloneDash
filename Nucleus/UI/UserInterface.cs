@@ -402,7 +402,7 @@ public class UserInterface : Element, IDisposable
 					if (e.ConsumedScrollEvent)
 						break;
 
-					e = e.Parent;
+					e = e.GetParent();
 				}
 			}
 		}

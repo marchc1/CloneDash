@@ -148,7 +148,7 @@ public class Element : IValidatable
 	public Color TextColor { get; set; } = DefaultTextColor;
 	public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
 	public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
-	public Element? Parent { get; internal set; }
+	internal Element? Parent;
 	public double LastLayoutTime { get; private set; } = 0;
 
 	public bool Clipping { get; set; } = true;
@@ -201,6 +201,7 @@ public class Element : IValidatable
 		SetMouseInputEnabled(true);
 		SetKeyboardInputEnabled(true);
 	}
+
 
 	public Vector2F Position {
 		get { return _position; }
@@ -547,6 +548,9 @@ public class Element : IValidatable
 		this.name = new(name.SliceNullTerminatedString());
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Element? GetParent() => Parent;
+
 	public void SetParent(Element? p) {
 		if (Parent != null)                 // if current parent isn't null
 			Parent.Children.Remove(this);
@@ -810,8 +814,8 @@ public class Element : IValidatable
 		PerformLayout(RenderBounds.Width, RenderBounds.Height);
 	}
 
-	public bool Parented => Parent != null;
-	public bool HasChildren => Children.Count > 0;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsParented() => Parent != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasChildren() => Children.Count > 0;
 
 	public bool Backdrop {
 		get => backdrop;

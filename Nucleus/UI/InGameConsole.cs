@@ -197,7 +197,7 @@ namespace Nucleus
 		protected override void ModifyLayout(ref RectangleF renderBounds) {
 			renderBounds.X = 8;
 			renderBounds.Y = Level.GetConsoleOverlaySettings().Position.Y;
-			renderBounds.W = Parent.Size.W - 16;
+			renderBounds.W = GetParent()!.Size.W - 16;
 			renderBounds.H = 384;
 		}
 

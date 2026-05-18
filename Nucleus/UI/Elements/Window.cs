@@ -61,8 +61,8 @@ public class Titlebar : Panel
 	public Titlebar(Element? parent) : base(parent) {
 		ImagePadding = new(6, 6);
 		Dock = Dock.Top;
-		Size = new(0, this.Parent is UserInterface ? 34 : 42);
-		if (this.Parent is not UserInterface)
+		Size = new(0, this.GetParent() is UserInterface ? 34 : 42);
+		if (this.GetParent() is not UserInterface)
 			DockMargin = RectangleF.TLRB(4);
 		TextSize = 20;
 

@@ -62,8 +62,8 @@ namespace Nucleus.UI
 					MathF.Max(size.Y, MinimumInternalSize.H)
 				);
 
-				if (Parent != null)
-					Position = (Parent.Size / 2) - (Size / 2);
+				if (GetParent() != null)
+					Position = (GetParent().Size / 2) - (Size / 2);
 			}
 		}
 	}
