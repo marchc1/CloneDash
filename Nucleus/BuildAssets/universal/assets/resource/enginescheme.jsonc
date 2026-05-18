@@ -15,19 +15,19 @@
         "Button.BackgroundColor":               "#colors:Nucleus.Background# with { A = 220 }"
     },
     "fontStyles": {
-        "Default": {
+        "Nucleus.Default": {
             "name": "Noto Sans",
             "tall": 18
         },
-        "DefaultBold": {
+        "Nucleus.DefaultBold": {
             "name": "Noto Sans Bold",
             "tall": 18
         },
-        "DefaultFixed": {
+        "Nucleus.DefaultFixed": {
             "name": "Noto Sans Mono",
             "tall": 16
         },
-        "DefaultFixedBold": {
+        "Nucleus.DefaultFixedBold": {
             "name": "Noto Sans Mono Bold",
             "tall": 16
         } 
