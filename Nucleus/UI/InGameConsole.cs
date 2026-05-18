@@ -617,6 +617,6 @@ namespace Nucleus
 		private static void OnConsoleClosed() {
 			ConsoleSystem.RemoveScreenBlocker(inputPanel);
 		}
-		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => OpenConsole(level.UI));
+		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => OpenConsole(level.RootPanel));
 	}
 }

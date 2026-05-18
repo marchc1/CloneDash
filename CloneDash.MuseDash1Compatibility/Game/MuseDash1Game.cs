@@ -921,7 +921,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					playerInput.Poll(frameState, ref InputState, InputAction.PauseGame);
 			}
 
-			else if (!IValidatable.IsValid(UI.KeyboardFocusedElement)) {
+			else if (!IValidatable.IsValid(RootPanel.KeyboardFocusedElement)) {
 				foreach (ICloneDashInputSystem playerInput in InputReceivers)
 					playerInput.Poll(frameState, ref InputState);
 			}
@@ -940,7 +940,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				}
 				else {
 					if (startPause()) {
-						PauseWindow = new Panel(this.UI);
+						PauseWindow = new Panel(this.RootPanel);
 						PauseWindow.Size = new(300, 400);
 						PauseWindow.Center();
 
@@ -988,7 +988,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 						settings.ImageOrientation = ImageOrientation.Fit;
 						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							var panel = new Panel(UI);
+							var panel = new Panel(RootPanel);
 							panel.SetPaintBackgroundEnabled(false);
 							panel.Anchor = Anchor.Center;
 							panel.Origin = Anchor.Center;

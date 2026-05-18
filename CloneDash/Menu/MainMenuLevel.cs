@@ -82,7 +82,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	Panel header;
 	public override void Initialize(params object[] args) {
-		var charPanel = new Panel(UI);
+		var charPanel = new Panel(RootPanel);
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
 		charPanel.Size = new(1f, 1f);
@@ -92,7 +92,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Character.Origin = Anchor.TopCenter;
 		Character.Size = new(1f);
 
-		header = new(UI);
+		header = new(RootPanel);
 		header.Position = new Vector2F(0);
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
@@ -113,7 +113,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
-		PushActiveElement(new MainMenuPanel(UI));
+		PushActiveElement(new MainMenuPanel(RootPanel));
 	}
 
 	public override void PreThink(ref FrameState frameState) {
@@ -346,7 +346,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var info = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 		selector.FlyAway = 1;
 
-		LevelSelectorPanel levelSelector = new LevelSelectorPanel(UI, selector);
+		LevelSelectorPanel levelSelector = new LevelSelectorPanel(RootPanel, selector);
 		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();

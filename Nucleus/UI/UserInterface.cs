@@ -13,457 +13,456 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
 
-namespace Nucleus.UI
+namespace Nucleus.UI;
+
+public class UserInterface : Element, IDisposable
 {
-	public class UserInterface : Element, IDisposable
-	{
-		public Element? Focused;
-		public new Element? Hovered;
-		public new Element? Depressed;
+	public Element? Focused;
+	public new Element? Hovered;
+	public new Element? Depressed;
 
-		//public List<Element> Popups = [];
-		public List<Element> Popups { get; private set; } = [];
-		public List<Element> Modals { get; private set; } = [];
-		public List<Element> Elements { get; private set; } = [];
-		public bool PopupActive => Popups.Count > 0;
-		public bool ModalActive => Modals.Count > 0;
+	//public List<Element> Popups = [];
+	public List<Element> Popups { get; private set; } = [];
+	public List<Element> Modals { get; private set; } = [];
+	public List<Element> Elements { get; private set; } = [];
+	public bool PopupActive => Popups.Count > 0;
+	public bool ModalActive => Modals.Count > 0;
 
-		public void RemovePopup(Element e) {
-			Popups.Remove(e);
-		}
+	public void RemovePopup(Element e) {
+		Popups.Remove(e);
+	}
 
-		public void RemoveModal(Element e) {
-			Modals.Remove(e);
-		}
+	public void RemoveModal(Element e) {
+		Modals.Remove(e);
+	}
 
-		OSWindow? window;
-		public OSWindow Window {
-			get => window ?? throw new NullReferenceException();
-			set => window = value ?? throw new NullReferenceException();
-		}
-		public Element? KeyboardFocusedElement { get; internal set; } = null;
-		public bool DemandedFocus { get; private set; } = false;
-		public void RequestKeyboardFocus(Element self) {
-			if (!IValidatable.IsValid(self))
+	OSWindow? window;
+	public OSWindow Window {
+		get => window ?? throw new NullReferenceException();
+		set => window = value ?? throw new NullReferenceException();
+	}
+	public Element? KeyboardFocusedElement { get; internal set; } = null;
+	public bool DemandedFocus { get; private set; } = false;
+	public void RequestKeyboardFocus(Element self) {
+		if (!IValidatable.IsValid(self))
+			return;
+
+		if (IValidatable.IsValid(KeyboardFocusedElement)) {
+			if (DemandedFocus)
 				return;
 
-			if (IValidatable.IsValid(KeyboardFocusedElement)) {
-				if (DemandedFocus)
-					return;
-
-				KeyboardFocusedElement.KeyboardFocusLost(self, true);
-			}
-
-			KeyboardFocusedElement = self;
-			self.KeyboardFocusGained(DemandedFocus);
-			Window.StartTextInput();
+			KeyboardFocusedElement.KeyboardFocusLost(self, true);
 		}
-		public void DemandKeyboardFocus(Element self) {
-			DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
-			RequestKeyboardFocus(self);
-			DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
-		}
-		public void KeyboardUnfocus(Element self, bool force = false) {
-			if (!IValidatable.IsValid(KeyboardFocusedElement))
-				return;
-			if (!IValidatable.IsValid(self))
-				return;
-			if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
-				KeyboardFocusedElement.KeyboardFocusLost(self, false);
-				KeyboardFocusedElement = null;
 
-				return;
-			}
-			if (self != KeyboardFocusedElement && force == false)
-				return;
-
+		KeyboardFocusedElement = self;
+		self.KeyboardFocusGained(DemandedFocus);
+		Window.StartTextInput();
+	}
+	public void DemandKeyboardFocus(Element self) {
+		DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
+		RequestKeyboardFocus(self);
+		DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
+	}
+	public void KeyboardUnfocus(Element self, bool force = false) {
+		if (!IValidatable.IsValid(KeyboardFocusedElement))
+			return;
+		if (!IValidatable.IsValid(self))
+			return;
+		if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
 			KeyboardFocusedElement.KeyboardFocusLost(self, false);
 			KeyboardFocusedElement = null;
-			Window.StopTextInput();
-		}
 
-		public UserInterface() : base(null) {
-			UI = this;
-			Preprocess(EngineCore.Window.Size);
+			return;
 		}
+		if (self != KeyboardFocusedElement && force == false)
+			return;
 
-		public void Preprocess(Vector2F size) => Preprocess(size.X, size.Y);
-		public void Preprocess(float width, float height) {
-			if (width != this.Size.W || height != this.Size.H) {
-				this.Position = new(0, 0);
-				this.Size = new(width, height);
-				RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
-				InvalidateChildren(recursive: true, self: true);
+		KeyboardFocusedElement.KeyboardFocusLost(self, false);
+		KeyboardFocusedElement = null;
+		Window.StopTextInput();
+	}
+
+	public UserInterface() : base(null) {
+		UI = this;
+		Preprocess(EngineCore.Window.Size);
+	}
+
+	public void Preprocess(Vector2F size) => Preprocess(size.X, size.Y);
+	public void Preprocess(float width, float height) {
+		if (width != this.Size.W || height != this.Size.H) {
+			this.Position = new(0, 0);
+			this.Size = new(width, height);
+			RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
+			InvalidateChildren(recursive: true, self: true);
+		}
+	}
+
+	public override void PostChildPaint() {
+		var text = TooltipText;
+		if (text != "" && text != null) {
+			var fontsize = 20;
+			var size = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, fontsize) + new Vector2F(8, 4);
+			var mousepos = Level.FrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
+
+			// determine if tooltip goes over screen bounds and fix it if so
+			var drawingOffset = Vector2F.Zero;
+			var whereIsEnd = mousepos + size + new Vector2F(4, 4);
+
+			if (whereIsEnd.X > EngineCore.GetScreenSize().W) drawingOffset.X -= (size.X) + 4;
+			if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24 + 24;
+
+			Graphics2D.SetDrawColor(50, 57, 65, 120);
+			Graphics2D.DrawRectangle(mousepos + drawingOffset, size);
+			Graphics2D.SetDrawColor(10, 15, 25, 225);
+			Graphics2D.SetDrawColor(235, 235, 235, 255);
+			Graphics2D.DrawRectangleOutline(mousepos + drawingOffset, size + new Vector2F(4, 4), 1);
+			Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, Graphics2D.UI_FONT_NAME, fontsize);
+		}
+	}
+
+	protected override void OnThink(FrameState frameState) {
+		Clipping = false;
+		//this.Position = new(0, 0);
+		//this.Size = new(frameState.WindowWidth, frameState.WindowHeight);
+		//RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
+	}
+
+	internal override void SetupLayout() {
+		RemoveFlag(ElementFlags.NeedsLayout);
+	}
+
+	protected override void MouseClick(FrameState state, ButtonCode button) {
+		KeyboardUnfocus(this, true);
+	}
+
+	private string? _tooltipText;
+	private bool disposedValue;
+
+	public override string? TooltipText {
+		get {
+			if (Hovered != null && Hovered != this) {
+				return Hovered.TooltipText;
 			}
+			return _tooltipText;
 		}
-
-		public override void PostChildPaint() {
-			var text = TooltipText;
-			if (text != "" && text != null) {
-				var fontsize = 20;
-				var size = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, fontsize) + new Vector2F(8, 4);
-				var mousepos = Level.FrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
-
-				// determine if tooltip goes over screen bounds and fix it if so
-				var drawingOffset = Vector2F.Zero;
-				var whereIsEnd = mousepos + size + new Vector2F(4, 4);
-
-				if (whereIsEnd.X > EngineCore.GetScreenSize().W) drawingOffset.X -= (size.X) + 4;
-				if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24 + 24;
-
-				Graphics2D.SetDrawColor(50, 57, 65, 120);
-				Graphics2D.DrawRectangle(mousepos + drawingOffset, size);
-				Graphics2D.SetDrawColor(10, 15, 25, 225);
-				Graphics2D.SetDrawColor(235, 235, 235, 255);
-				Graphics2D.DrawRectangleOutline(mousepos + drawingOffset, size + new Vector2F(4, 4), 1);
-				Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, Graphics2D.UI_FONT_NAME, fontsize);
-			}
+		set {
+			_tooltipText = value;
 		}
+	}
 
-		protected override void OnThink(FrameState frameState) {
-			Clipping = false;
-			//this.Position = new(0, 0);
-			//this.Size = new(frameState.WindowWidth, frameState.WindowHeight);
-			//RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
-		}
+	public override void Center() {
+		OSMonitor screen = EngineCore.Window.Monitor;
+		var mpos = screen.Position;
+		var msize = screen.Bounds;
 
-		internal override void SetupLayout() {
-			RemoveFlag(ElementFlags.NeedsLayout);
-		}
+		var mposCenter = mpos + (msize / 2);
+		var mposFinal = mposCenter - (EngineCore.Window.Size / 2);
+		EngineCore.SetWindowPosition(mposFinal);
+	}
+	~UserInterface() {
+		MainThread.RunASAP(Remove);
+	}
 
-		protected override void MouseClick(FrameState state, ButtonCode button) {
-			KeyboardUnfocus(this, true);
-		}
+	// temporary, just testing parsing
+	// public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
 
-		private string? _tooltipText;
-		private bool disposedValue;
+	public event Action<Element, ButtonCode>? OnElementClicked;
+	public event Action<Element, ButtonCode>? OnElementReleased;
 
-		public override string? TooltipText {
-			get {
-				if (Hovered != null && Hovered != this) {
-					return Hovered.TooltipText;
-				}
-				return _tooltipText;
-			}
-			set {
-				_tooltipText = value;
-			}
-		}
+	public void TriggerElementClicked(Element? e, ButtonCode mb) => OnElementClicked?.Invoke(e!, mb);
+	public void TriggerElementReleased(Element e, ButtonCode mb) => OnElementReleased?.Invoke(e, mb);
+	public Menu Menu() {
+		return new Menu(this);
+	}
+	public Level? EngineLevel { get; set; }
 
-		public override void Center() {
-			OSMonitor screen = EngineCore.Window.Monitor;
-			var mpos = screen.Position;
-			var msize = screen.Bounds;
-
-			var mposCenter = mpos + (msize / 2);
-			var mposFinal = mposCenter - (EngineCore.Window.Size / 2);
-			EngineCore.SetWindowPosition(mposFinal);
-		}
-		~UserInterface() {
-			MainThread.RunASAP(Remove);
-		}
-
-		// temporary, just testing parsing
-		// public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
-
-		public event Action<Element, ButtonCode>? OnElementClicked;
-		public event Action<Element, ButtonCode>? OnElementReleased;
-
-		public void TriggerElementClicked(Element? e, ButtonCode mb) => OnElementClicked?.Invoke(e!, mb);
-		public void TriggerElementReleased(Element e, ButtonCode mb) => OnElementReleased?.Invoke(e, mb);
-		public Menu Menu() {
-			return new Menu(this);
-		}
-		public Level? EngineLevel { get; set; }
-
-		// Tries to trash up a bunch of references
+	// Tries to trash up a bunch of references
 #nullable disable
-		private void trashElement(Element e) {
-			e.UI = null;
-			foreach (var child in e.Children)
-				trashElement(child);
-			e.Children.Clear();
-			e.Parent = null;
+	private void trashElement(Element e) {
+		e.UI = null;
+		foreach (var child in e.Children)
+			trashElement(child);
+		e.Children.Clear();
+		e.Parent = null;
 
-			foreach (var ev in e.GetType().GetEvents(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)) {
-				var field = e.GetType().GetField(ev.Name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
-				if (field != null) {
-					field.SetValue(e, null);
+		foreach (var ev in e.GetType().GetEvents(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)) {
+			var field = e.GetType().GetField(ev.Name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+			if (field != null) {
+				field.SetValue(e, null);
+			}
+			else {
+				var altField = e.GetType().GetField($"_{ev.Name}", BindingFlags.Instance | BindingFlags.NonPublic);
+				if (altField != null) {
+					altField.SetValue(e, null);
 				}
 				else {
-					var altField = e.GetType().GetField($"_{ev.Name}", BindingFlags.Instance | BindingFlags.NonPublic);
-					if (altField != null) {
-						altField.SetValue(e, null);
-					}
-					else {
-						//Debug.Assert(false);
-					}
+					//Debug.Assert(false);
 				}
 			}
 		}
+	}
 #nullable enable
 
-		protected virtual void Dispose(bool disposing) {
-			if (!disposedValue) {
-				if (disposing) {
-					EngineLevel = null;
-					// trash the element
-					this.Remove();
-					trashElement(this);
-					Elements.Clear();
-					Popups.Clear();
-					Focused = null;
-					Hovered = null;
-					Depressed = null;
-				}
-
-				// TODO: free unmanaged resources (unmanaged objects) and override finalizer
-				// TODO: set large fields to null
-				disposedValue = true;
+	protected virtual void Dispose(bool disposing) {
+		if (!disposedValue) {
+			if (disposing) {
+				EngineLevel = null;
+				// trash the element
+				this.Remove();
+				trashElement(this);
+				Elements.Clear();
+				Popups.Clear();
+				Focused = null;
+				Hovered = null;
+				Depressed = null;
 			}
+
+			// TODO: free unmanaged resources (unmanaged objects) and override finalizer
+			// TODO: set large fields to null
+			disposedValue = true;
 		}
+	}
 
-		// // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-		// ~UserInterface()
-		// {
-		//     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-		//     Dispose(disposing: false);
-		// }
+	// // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+	// ~UserInterface()
+	// {
+	//     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+	//     Dispose(disposing: false);
+	// }
 
-		public void Dispose() {
-			// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-			Dispose(disposing: true);
-			GC.SuppressFinalize(this);
+	public void Dispose() {
+		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+		Dispose(disposing: true);
+		GC.SuppressFinalize(this);
+	}
+
+	readonly List<Element> activePopups = [];
+
+	// TODO: Is this more efficient than recursive in this case?
+	readonly Queue<Element> popupWork = [];
+
+	Element? lastPopup;
+	Element? lastModal;
+
+	void DetermineLasts() {
+		lastPopup = null;
+		lastModal = null;
+		popupWork.Clear();
+		popupWork.Enqueue(UI);
+		while (popupWork.TryDequeue(out Element? el)) {
+			if (el.IsPopup)
+				lastPopup = el;
+			if (el.IsModal)
+				lastModal = el;
+			foreach (var child in el.Children)
+				popupWork.Enqueue(child);
 		}
+	}
 
-		readonly List<Element> activePopups = [];
+	bool tryRunKeybinds(Element? target, FrameState frameState) {
+		bool ranKeybinds = false;
+		if (IValidatable.IsValid(target)) {
+			KeyboardState emulatedState = frameState.Keyboard;
+			target.KeyboardInputMarshal.State(ref emulatedState);
+			if (emulatedState.TotalKeysThisFrame > 0 || emulatedState.GetTextInputsThisFrame() > 0) {
+				ranKeybinds = target.Keybinds.TestKeybinds(emulatedState);
 
-		// TODO: Is this more efficient than recursive in this case?
-		readonly Queue<Element> popupWork = [];
-
-		Element? lastPopup;
-		Element? lastModal;
-
-		void DetermineLasts() {
-			lastPopup = null;
-			lastModal = null;
-			popupWork.Clear();
-			popupWork.Enqueue(UI);
-			while (popupWork.TryDequeue(out Element? el)) {
-				if (el.IsPopup)
-					lastPopup = el;
-				if (el.IsModal)
-					lastModal = el;
-				foreach (var child in el.Children)
-					popupWork.Enqueue(child);
-			}
-		}
-
-		bool tryRunKeybinds(Element? target, FrameState frameState) {
-			bool ranKeybinds = false;
-			if (IValidatable.IsValid(target)) {
-				KeyboardState emulatedState = frameState.Keyboard;
-				target.KeyboardInputMarshal.State(ref emulatedState);
-				if (emulatedState.TotalKeysThisFrame > 0 || emulatedState.GetTextInputsThisFrame() > 0) {
-					ranKeybinds = target.Keybinds.TestKeybinds(emulatedState);
+				if (!ranKeybinds) {
+					ranKeybinds = Keybinds.TestKeybinds(emulatedState);
 
 					if (!ranKeybinds) {
-						ranKeybinds = Keybinds.TestKeybinds(emulatedState);
+						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+							var pressed = emulatedState.WasKeyPressed(i);
+							var released = emulatedState.WasKeyReleased(i);
+							if (pressed)
+								DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
+							if (released)
+								DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.IsMarkedForRemoval());
 
-						if (!ranKeybinds) {
-							for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
-								var pressed = emulatedState.WasKeyPressed(i);
-								var released = emulatedState.WasKeyReleased(i);
-								if (pressed)
-									DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
-								if (released)
-									DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.IsMarkedForRemoval());
-
-								if (!ranKeybinds)
-									ranKeybinds = WasKeyEventConsumed();
-							}
-
-							for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++)
-								target?.TextInputOccur(in emulatedState, emulatedState.GetTextInputThisFrameAtIndex(i));
+							if (!ranKeybinds)
+								ranKeybinds = WasKeyEventConsumed();
 						}
+
+						for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++)
+							target?.TextInputOccur(in emulatedState, emulatedState.GetTextInputThisFrameAtIndex(i));
 					}
 				}
 			}
-			return ranKeybinds;
 		}
-		public void HandleInput() {
-			DetermineLasts();
-			activePopups.Clear();
+		return ranKeybinds;
+	}
+	public void HandleInput() {
+		DetermineLasts();
+		activePopups.Clear();
 
-			FrameState frameState = Level.FrameState;
+		FrameState frameState = Level.FrameState;
 
-			bool ranKeybinds = false;
-			Element? target;
-			if (IValidatable.IsValid(lastModal)) {
-				if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
-					target = KeyboardFocusedElement;
-				else if (lastModal.Enabled && lastModal.Visible)
-					target = lastModal;
-				else
-					target = null;
-			}
-			else if (IValidatable.IsValid(lastPopup)) {
-				if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
-					target = KeyboardFocusedElement;
-				else if (lastPopup.Enabled && lastPopup.Visible)
-					target = lastPopup;
-				else
-					target = null;
-			}
-			else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+		bool ranKeybinds = false;
+		Element? target;
+		if (IValidatable.IsValid(lastModal)) {
+			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
 				target = KeyboardFocusedElement;
+			else if (lastModal.Enabled && lastModal.Visible)
+				target = lastModal;
 			else
 				target = null;
+		}
+		else if (IValidatable.IsValid(lastPopup)) {
+			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+				target = KeyboardFocusedElement;
+			else if (lastPopup.Enabled && lastPopup.Visible)
+				target = lastPopup;
+			else
+				target = null;
+		}
+		else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+			target = KeyboardFocusedElement;
+		else
+			target = null;
 
-			ranKeybinds = tryRunKeybinds(target, frameState);
-			if (!ranKeybinds) {
-				// Lets try again, but only if the target wasnt keyboard focused.
-				// Because we might have a passive keyboard focused element that wants keybinds.
-				if (target != KeyboardFocusedElement)
-					ranKeybinds = tryRunKeybinds(KeyboardFocusedElement, frameState);
+		ranKeybinds = tryRunKeybinds(target, frameState);
+		if (!ranKeybinds) {
+			// Lets try again, but only if the target wasnt keyboard focused.
+			// Because we might have a passive keyboard focused element that wants keybinds.
+			if (target != KeyboardFocusedElement)
+				ranKeybinds = tryRunKeybinds(KeyboardFocusedElement, frameState);
+		}
+
+		if (!ranKeybinds)
+			Level.RunKeybinds();
+		int rebuilds = Element.LayoutRecursive(this, ref frameState);
+
+		Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+		Hovered = hoveredElement;
+
+		if (frameState.Mouse.MouseClicked) {
+			if (Hovered != null) {
+				Depressed = Hovered;
+
+				if (frameState.Mouse.Mouse1Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse1);
+				if (frameState.Mouse.Mouse2Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse2);
+				if (frameState.Mouse.Mouse3Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse3);
+				if (frameState.Mouse.Mouse4Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse4);
+				if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse5);
 			}
+			else {
+				if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, ButtonCode.Mouse1);
+				if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, ButtonCode.Mouse2);
+				if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, ButtonCode.Mouse3);
+				if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, ButtonCode.Mouse4);
+				if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, ButtonCode.Mouse5);
+			}
+		}
 
-			if (!ranKeybinds)
-				Level.RunKeybinds();
-			int rebuilds = Element.LayoutRecursive(this, ref frameState);
-
-			Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
-			Hovered = hoveredElement;
-
-			if (frameState.Mouse.MouseClicked) {
-				if (Hovered != null) {
-					Depressed = Hovered;
-
-					if (frameState.Mouse.Mouse1Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse1);
-					if (frameState.Mouse.Mouse2Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse2);
-					if (frameState.Mouse.Mouse3Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse3);
-					if (frameState.Mouse.Mouse4Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse4);
-					if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse5);
+		if (frameState.Mouse.MouseReleased) {
+			if (Depressed != null) {
+				if (Hovered == Depressed) {
+					if (frameState.Mouse.Mouse1Released)
+						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse1);
+					if (frameState.Mouse.Mouse2Released)
+						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse2);
+					if (frameState.Mouse.Mouse3Released)
+						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse3);
+					if (frameState.Mouse.Mouse4Released)
+						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse4);
+					if (frameState.Mouse.Mouse5Released)
+						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse5);
 				}
 				else {
-					if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, ButtonCode.Mouse1);
-					if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, ButtonCode.Mouse2);
-					if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, ButtonCode.Mouse3);
-					if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, ButtonCode.Mouse4);
-					if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, ButtonCode.Mouse5);
+					if (frameState.Mouse.Mouse1Released)
+						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse1);
+					if (frameState.Mouse.Mouse2Released)
+						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse2);
+					if (frameState.Mouse.Mouse3Released)
+						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse3);
+					if (frameState.Mouse.Mouse4Released)
+						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse4);
+					if (frameState.Mouse.Mouse5Released)
+						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse5);
 				}
-			}
-
-			if (frameState.Mouse.MouseReleased) {
 				if (Depressed != null) {
-					if (Hovered == Depressed) {
-						if (frameState.Mouse.Mouse1Released)
-							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse1);
-						if (frameState.Mouse.Mouse2Released)
-							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse2);
-						if (frameState.Mouse.Mouse3Released)
-							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse3);
-						if (frameState.Mouse.Mouse4Released)
-							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse4);
-						if (frameState.Mouse.Mouse5Released)
-							Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse5);
-					}
-					else {
-						if (frameState.Mouse.Mouse1Released)
-							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse1);
-						if (frameState.Mouse.Mouse2Released)
-							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse2);
-						if (frameState.Mouse.Mouse3Released)
-							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse3);
-						if (frameState.Mouse.Mouse4Released)
-							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse4);
-						if (frameState.Mouse.Mouse5Released)
-							Depressed.MouseLostOccur(frameState, ButtonCode.Mouse5);
-					}
-					if (Depressed != null) {
-						Depressed.Depressed = false;
-						Depressed = null;
-					}
+					Depressed.Depressed = false;
+					Depressed = null;
 				}
 			}
+		}
 
-			if (!frameState.Mouse.MouseScroll.IsZero()) {
-				if (IValidatable.IsValid(Hovered) && Hovered.InputDisabled == false) {
-					Element? e = Hovered;
-					for (int i = 0; i < 1000; i++) {
-						if (!IValidatable.IsValid(e))
-							break;
+		if (!frameState.Mouse.MouseScroll.IsZero()) {
+			if (IValidatable.IsValid(Hovered) && Hovered.InputDisabled == false) {
+				Element? e = Hovered;
+				for (int i = 0; i < 1000; i++) {
+					if (!IValidatable.IsValid(e))
+						break;
 
-						e.ConsumedScrollEvent = false;
-						e.MouseScrollOccur(frameState, frameState.Mouse.MouseScroll);
-						if (e.ConsumedScrollEvent)
-							break;
+					e.ConsumedScrollEvent = false;
+					e.MouseScrollOccur(frameState, frameState.Mouse.MouseScroll);
+					if (e.ConsumedScrollEvent)
+						break;
 
-						e = e.Parent;
-					}
+					e = e.Parent;
 				}
 			}
-
-			if (frameState.Mouse.MouseHeld && !frameState.Mouse.MouseClicked && !frameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(Depressed) && Depressed.InputDisabled == false)
-				Depressed.MouseDragOccur(frameState, frameState.Mouse.MouseDelta);
 		}
 
+		if (frameState.Mouse.MouseHeld && !frameState.Mouse.MouseClicked && !frameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(Depressed) && Depressed.InputDisabled == false)
+			Depressed.MouseDragOccur(frameState, frameState.Mouse.MouseDelta);
+	}
 
-		private bool DoKeyPressed(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
-			ResetKeyEventConsumed();
-			element.KeyPressedOccur(in emulatedState, keyboardKey);
-			if (WasKeyEventConsumed())
-				return true;
 
-			if (recurseChildren)
-				foreach (var child in element.Children)
-					if (DoKeyPressed(child, in emulatedState, keyboardKey, true))
-						return true;
+	private bool DoKeyPressed(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
+		ResetKeyEventConsumed();
+		element.KeyPressedOccur(in emulatedState, keyboardKey);
+		if (WasKeyEventConsumed())
+			return true;
 
-			return false;
-		}
+		if (recurseChildren)
+			foreach (var child in element.Children)
+				if (DoKeyPressed(child, in emulatedState, keyboardKey, true))
+					return true;
 
-		private bool DoKeyReleased(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
-			ResetKeyEventConsumed();
-			element.KeyReleasedOccur(in emulatedState, keyboardKey);
-			if (WasKeyEventConsumed())
-				return true;
+		return false;
+	}
 
-			if (recurseChildren)
-				foreach (var child in element.Children)
-					if (DoKeyReleased(child, in emulatedState, keyboardKey, true))
-						return true;
+	private bool DoKeyReleased(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
+		ResetKeyEventConsumed();
+		element.KeyReleasedOccur(in emulatedState, keyboardKey);
+		if (WasKeyEventConsumed())
+			return true;
 
-			return false;
-		}
+		if (recurseChildren)
+			foreach (var child in element.Children)
+				if (DoKeyReleased(child, in emulatedState, keyboardKey, true))
+					return true;
 
-		public void Render() {
-			activePopups.Clear();
-			UI.PaintTraverse(activePopups);
+		return false;
+	}
 
-			foreach (var popup in activePopups) 
-				popup.PaintTraverse();
-		}
+	public void Render() {
+		activePopups.Clear();
+		UI.PaintTraverse(activePopups);
 
-		internal void HandleThinking() => Element.ThinkRecursive(UI, Level.FrameState);
+		foreach (var popup in activePopups) 
+			popup.PaintTraverse();
+	}
 
-		bool KeyEventConsumed = true;
-		public bool ResetKeyEventConsumed() => KeyEventConsumed = true;
-		public bool MarkKeyEventNotConsumed() => KeyEventConsumed = false;
-		public bool WasKeyEventConsumed() => KeyEventConsumed;
+	internal void HandleThinking() => Element.ThinkRecursive(UI, Level.FrameState);
 
-		bool MouseEventConsumed = true;
-		public bool ResetMouseEventConsumed() => MouseEventConsumed = true;
-		public bool MarkMouseEventNotConsumed() => MouseEventConsumed = false;
-		public bool WasMouseEventConsumed() => MouseEventConsumed;
+	bool KeyEventConsumed = true;
+	public bool ResetKeyEventConsumed() => KeyEventConsumed = true;
+	public bool MarkKeyEventNotConsumed() => KeyEventConsumed = false;
+	public bool WasKeyEventConsumed() => KeyEventConsumed;
 
-		private void DoMouseClick(Element hovered, FrameState frameState, ButtonCode button) {
-			if (hovered.IsPopup)
-				hovered.MoveToFront();
-			else if (hovered.IsParentedToPopup(out Element? parent))
-				parent.MoveToFront();
+	bool MouseEventConsumed = true;
+	public bool ResetMouseEventConsumed() => MouseEventConsumed = true;
+	public bool MarkMouseEventNotConsumed() => MouseEventConsumed = false;
+	public bool WasMouseEventConsumed() => MouseEventConsumed;
 
-			hovered.MouseClickOccur(frameState, button);
-		}
+	private void DoMouseClick(Element hovered, FrameState frameState, ButtonCode button) {
+		if (hovered.IsPopup)
+			hovered.MoveToFront();
+		else if (hovered.IsParentedToPopup(out Element? parent))
+			parent.MoveToFront();
+
+		hovered.MouseClickOccur(frameState, button);
 	}
 }

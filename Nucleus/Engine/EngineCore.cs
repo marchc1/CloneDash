@@ -193,7 +193,7 @@ public static class EngineCore
 	}
 
 	public static Window OpenProfiler() {
-		Window window = new Window(Level.UI);
+		Window window = new Window(Level.RootPanel);
 
 		window.Title = "Nucleus Profiler";
 		window.AddParent.SetPaintBackgroundEnabled(false);

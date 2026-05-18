@@ -684,7 +684,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var panel = new StatisticsPanel(EngineCore.Level.UI, game, stats);
+		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats);
 		return panel;
 	}
 

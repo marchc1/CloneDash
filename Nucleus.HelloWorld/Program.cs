@@ -27,7 +27,7 @@ internal class Program
 	{
 		readonly TestBtn[] tests = [
 			new("Label Content Alignment", (level) => {
-				var window = new Window(level.UI);
+				var window = new Window(level.RootPanel);
 
 				Panel row(Dock vertical){
 					var row = new Panel(window);
@@ -65,7 +65,7 @@ internal class Program
 		public override void Initialize(params object[] args) {
 			base.Initialize(args);
 
-			var tools = new Panel(UI);
+			var tools = new Panel(RootPanel);
 			tools.Dock = Dock.Right;
 			tools.Size = new(640, 0);
 			var testLabel = new Label(tools);

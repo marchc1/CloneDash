@@ -1460,7 +1460,7 @@ public class Element : IValidatable
 	public virtual void ProvideExample(Panel buildHere) { }
 
 	public static Elements.Window CreateExampleWindow() {
-		UserInterface UI = EngineCore.Level.UI;
+		UserInterface UI = EngineCore.Level.RootPanel;
 
 		var examples = new Elements.Window(UI);
 		examples.Size = new(1280, 720);
