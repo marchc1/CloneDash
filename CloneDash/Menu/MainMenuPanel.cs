@@ -166,8 +166,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		// Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
 	}
 	private void Back_MouseReleaseEvent(Button self, ButtonCode mouseButton) {

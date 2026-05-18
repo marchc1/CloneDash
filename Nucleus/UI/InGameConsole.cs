@@ -203,7 +203,7 @@ namespace Nucleus
 
 		internal class ConsoleLogs(ConsoleWindow parent) : TextEditor(parent)
 		{
-			protected override void OnThink(FrameState frameState) {
+			protected override void OnThink() {
 				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.IsKeyboardFocused()) {
 					parent.autoComplete.Remove();
 				}
@@ -212,12 +212,14 @@ namespace Nucleus
 
 		internal class ConsoleInput(ConsoleWindow parent) : TextEditor(parent)
 		{
-			protected override void OnThink(FrameState frameState) {
+			protected override void OnThink() {
 
 			}
-			protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+			protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+				if (!IsHovered()) return true;
 				base.MouseRelease(self, state, button);
 				parent.SetupAutocomplete();
+				return true;
 			}
 		}
 
@@ -256,7 +258,7 @@ namespace Nucleus
 			consoleLogs.SetPaintBackgroundEnabled(false);
 			consoleInput.SetPaintBackgroundEnabled(false);
 
-			consoleInput.DemandKeyboardFocus();
+			consoleInput.KeyboardFocus();
 			var msgList = ConsoleSystem.GetAllMessagesList();
 			msgList.BeginRead();
 			int msgCount = msgList.ComputeCount();

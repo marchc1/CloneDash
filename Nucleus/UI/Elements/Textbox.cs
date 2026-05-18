@@ -391,24 +391,25 @@ public class Textbox : Label
 		scrollOffsetY = Math.Max(0, scrollOffsetY);
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		if (Hovered)
+	protected override void OnThink() {
+		if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 	}
 
-	public override void KeyboardFocusLost(Element self, bool demanded) {
-		base.KeyboardFocusLost(self, demanded);
+	protected override bool OnLosingKeyboardFocus(Element? lostTo) {
+		base.OnLosingKeyboardFocus(lostTo);
 		Caret.ClearSelection();
+		return true;
 	}
 
 	private DateTime lastClickTime = DateTime.MinValue;
 	private int clickCount = 0;
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
-		if (ReadOnly && !MultiLine) return;
-		if (button != ButtonCode.MouseLeft) return;
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (ReadOnly && !MultiLine) return true;
+		if (button != ButtonCode.MouseLeft) return true;
 
-		DemandKeyboardFocus();
+		KeyboardFocus();
 
 		var now = DateTime.Now;
 		if ((now - lastClickTime).TotalMilliseconds < 400)
@@ -440,9 +441,11 @@ public class Textbox : Label
 			Caret.Position = charIdx;
 			Caret.ClearSelection();
 		}
+
+		return true;
 	}
 
-	protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		base.MouseDrag(self, state, delta);
 
 		if (!Caret.HasSelection && !Caret.SelectionOrigin.HasValue)
@@ -453,12 +456,14 @@ public class Textbox : Label
 		var localPos = self.GetMousePos();
 		Caret.Position = HitTestPosition(localPos);
 		EnsureCaretVisible();
+
+		return true;
 	}
 
-	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 		if (!MultiLine) {
 			base.MouseScroll(self, state, delta);
-			return;
+			return true;
 		}
 
 		scrollOffsetY -= delta.Y * 20;
@@ -469,6 +474,8 @@ public class Textbox : Label
 		scrollOffsetY = Math.Clamp(scrollOffsetY, 0, Math.Max(0, totalH - visibleH));
 
 		ConsumeScrollEvent();
+
+		return true;
 	}
 
 	void FireTextChanged(string oldText) {
@@ -497,7 +504,7 @@ public class Textbox : Label
 		FireTextChanged(old);
 	}
 
-	protected override void TextInput(in KeyboardState keyboardState, string text) {
+	protected override bool TextInput(in KeyboardState keyboardState, string text) {
 		var oldText = Text;
 
 		PushUndo();
@@ -506,7 +513,7 @@ public class Textbox : Label
 
 		if (MaxLength > 0 && Text.Length >= MaxLength) {
 			FireTextChanged(oldText);
-			return;
+			return true;
 		}
 
 		// todo: MaxLength handling here...
@@ -515,13 +522,13 @@ public class Textbox : Label
 		Caret.ClearSelection();
 		FireTextChanged(oldText);
 		EnsureCaretVisible();
-		return;
+		return true;
 	}
 
-	protected override void KeyPressed(in KeyboardState state, ButtonCode key) {
+	protected override bool KeyPressed(in KeyboardState state, ButtonCode key) {
 		var action = key.GetAction();
 		if (action.Type == CharacterType.NoAction)
-			return;
+			return true;
 
 		LastKeyboardInteraction = DateTime.Now;
 		var oldText = Text;
@@ -533,12 +540,12 @@ public class Textbox : Label
 			switch (key) {
 				case ButtonCode.KeyA:
 					SelectAll();
-					return;
+					return true;
 
 				case ButtonCode.KeyC:
 					if (Caret.HasSelection)
 						Clipboard.Text = Caret.GetSelectedText(Text);
-					return;
+					return true;
 
 				case ButtonCode.KeyX:
 					if (!ReadOnly && Caret.HasSelection) {
@@ -547,7 +554,7 @@ public class Textbox : Label
 						Text = Caret.DeleteSelection(Text);
 						FireTextChanged(oldText);
 					}
-					return;
+					return true;
 
 				case ButtonCode.KeyV:
 					if (!ReadOnly) {
@@ -556,7 +563,7 @@ public class Textbox : Label
 							clip = clip.Replace("\n", "").Replace("\r", "");
 						InsertText(clip);
 					}
-					return;
+					return true;
 
 				case ButtonCode.KeyZ:
 					if (!ReadOnly) {
@@ -565,12 +572,12 @@ public class Textbox : Label
 						else
 							PerformUndo();
 					}
-					return;
+					return true;
 
 				case ButtonCode.KeyY:
 					if (!ReadOnly)
 						PerformRedo();
-					return;
+					return true;
 			}
 		}
 
@@ -630,7 +637,7 @@ public class Textbox : Label
 				Caret.ClearSelection();
 
 			EnsureCaretVisible();
-			return;
+			return true;
 		}
 
 		if (key == ButtonCode.KeyHome) {
@@ -646,7 +653,7 @@ public class Textbox : Label
 			if (!shift) Caret.ClearSelection();
 			Caret.PreferredX = null;
 			EnsureCaretVisible();
-			return;
+			return true;
 		}
 
 		if (key == ButtonCode.KeyEnd) {
@@ -663,14 +670,14 @@ public class Textbox : Label
 			if (!shift) Caret.ClearSelection();
 			Caret.PreferredX = null;
 			EnsureCaretVisible();
-			return;
+			return true;
 		}
 
-		if (ReadOnly) return;
+		if (ReadOnly) return true;
 
 		if (action.Type == CharacterType.VisibleCharacter) {
 			// Handled by text input now
-			return;
+			return true;
 		}
 
 		switch (action.Type) {
@@ -726,6 +733,8 @@ public class Textbox : Label
 				}
 				break;
 		}
+
+		return true;
 	}
 
 	void MoveCaretVertically(int direction) {

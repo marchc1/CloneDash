@@ -128,11 +128,10 @@ public class StatisticsPanel : Panel
 		RenderOneLine("", fs, ref y);
 		RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
 	}
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		if (victory != null) {
+	protected override void OnThink() {
+		base.OnThink();
+		if (victory != null) 
 			victory.Think();
-		}
 	}
 }
 

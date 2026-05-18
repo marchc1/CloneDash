@@ -92,8 +92,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		UpdateFilterText();
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		ThinkDiscs();
 	}
 
@@ -181,7 +181,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		UpdateFilterText();
 	}
 
-	public static int GetButtonLocalIndex(SongDiscButton discButton) => discButton.GetTagSafely<int>("localDiscIndex");
+	public static int GetButtonLocalIndex(SongDiscButton discButton) => discButton.GetTag<int>("localDiscIndex");
 
 	public ISong? GetDiscSong(SongDiscButton discButton) => Source?.At(GetButtonLocalIndex(discButton));
 	public ISong? GetDiscSong(int idx) => Source?.At(idx);
@@ -207,8 +207,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		doNotTryToGetTrackAgain = false;
 	}
 
-	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
-		if (delta.Y == 0) return;
+	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
+		if (delta.Y == 0) return true;
 
 		for (int i = 0; i < Math.Abs(delta.Y); i++) {
 			if (delta.Y > 0)
@@ -218,6 +218,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 		InvalidateLayout();
+		return true;
 	}
 
 	bool wasBusy;
@@ -305,7 +306,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	// Constantly running logic
 	public void ThinkDiscs() {
 		FigureOutDisk();
-		RequestKeyboardFocus();
+		KeyboardFocus();
 
 		float width = RenderBounds.W, height = RenderBounds.H;
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
@@ -329,7 +330,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
-			var index = disc.GetTagSafely<int>("localDiscIndex");
+			var index = disc.GetTag<int>("localDiscIndex");
 
 			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
 				disc.ImageRotation = DiscRotateSOS.Update((float)(
@@ -375,7 +376,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public float GetDiscSize(float width, SongDiscButton b) {
-		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTagSafely<int>("localDiscIndex") + DiscAnimationOffset.Out), 0, 1);
+		var mainDiscMult = 0.75f - Math.Clamp(Math.Abs(b.GetTag<int>("localDiscIndex") + DiscAnimationOffset.Out), 0, 1);
 		return width / Discs.Length + mainDiscMult * 64;
 	}
 
@@ -503,16 +504,17 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.ImageColor = i == IntegerMidpoint ? new Color(255) : new Color(155);
 		}
 
-		DemandKeyboardFocus();
+		KeyboardFocus();
 	}
 
 	private void SearchBar_MouseReleaseEvent(Button self, ButtonCode button) {
 		TriggerUserInitializeSearch();
 	}
 
-	protected override void MouseClick(FrameState state, ButtonCode button) {
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
-		DemandKeyboardFocus();
+		KeyboardFocus();
+		return true;
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -525,7 +527,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.AutoSize = true;
 	}
 
-	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		base.KeyPressed(in keyboardState, key);
 		if (key == ButtonCode.KeyLeft || key == ButtonCode.KeyA) {
 			MoveLeft();
@@ -535,6 +537,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			MoveRight();
 			InvalidateLayout();
 		}
+		return true;
 	}
 
 	public bool InterceptEscape() {

@@ -231,7 +231,7 @@ public class TextEditor : Panel
 		if (Gutter != null) 
 			Gutter.SetVisible(_showGutter);
 		
-		InvalidateLayout(true);
+		InvalidateLayout();
 		InvalidateChildren(true, true);
 	}
 
@@ -301,28 +301,34 @@ public class TextEditor : Panel
 	internal class TextEditorInternals(TextEditor editor) : Panel(editor)
 	{
 		// TODO: Move these to the TextEditorInternals class. This is easier for the event transition.
-		protected override void MouseClick(FrameState state, ButtonCode button) {
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
 			editor.Editor_MouseClickEvent(this, state, button);
+			return true;
 		}
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
 			editor.Editor_MouseReleaseEvent(this, state, button);
+			return true;
 		}
-		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			editor.Editor_MouseDragEvent(this, state, delta);
+			return true;
 		}
-		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			editor.Editor_MouseScrollEvent(this, state, delta);
+			return true;
 		}
-		protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 			editor.Editor_OnKeyPressed(this, in keyboardState, key);
+			return true;
 		}
-		protected override void TextInput(in KeyboardState keyboardState, string text) {
+		protected override bool TextInput(in KeyboardState keyboardState, string text) {
 			editor.Editor_OnTextInput(this, in keyboardState, text);
+			return true;
 		}
 		public override void Paint(float width, float height) {
 			editor.Editor_PaintOverride(this, width, height);
 		}
-		protected override void OnThink(FrameState frameState) {
+		protected override void OnThink() {
 			editor.Editor_Thinking(this);
 		}
 	}
@@ -418,14 +424,14 @@ public class TextEditor : Panel
 	bool wasHovered = false;
 	private void Editor_Thinking(Element self) {
 		// The second part is a hack, but it allows mouse selecting autocomplete items.
-		if (UI.KeyboardFocusedElement != self && (!IValidatable.IsValid(UI.Hovered) || !UI.Hovered.IsIndirectChildOf(self)))
+		if (UI.GetKeyboardFocusedElement() != self && (!IValidatable.IsValid(UI.Hovered) || !UI.Hovered.IsIndirectChildOf(self)))
 			CloseAutocomplete();
-		if (self.Hovered)
+		if (self.IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 		else if (wasHovered)
 			EngineCore.ResetMouseCursor();
 
-		wasHovered = self.Hovered;
+		wasHovered = self.IsHovered();
 		MoveAutocompletePanel(Caret.Row, lastAutocompleteStart);
 	}
 
@@ -981,8 +987,8 @@ public class TextEditor : Panel
 	public event OnVoid? OnExecute;
 	public event OnVoid? OnTab;
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		VScrollbar.Scroll = TopRow;
 		VScrollbar.Update(new(0, Rows.Count), new(0, MaxVisibleRows));
 		VScrollbar.ScrollDelta = 3;
@@ -1013,7 +1019,7 @@ public class TextEditor : Panel
 	private void Editor_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 		CloseAutocomplete();
 		if (button == ButtonCode.Mouse1) {
-			self.DemandKeyboardFocus();
+			self.KeyboardFocus();
 
 			Vector2F xy = self.CursorPos();
 			TextEditorCaret pos = CalculatePos(xy.X, xy.Y);
@@ -1378,9 +1384,10 @@ public class TextEditor : Panel
 		return true;
 	}
 
-	public override void RequestKeyboardFocus() => Editor?.RequestKeyboardFocus();
-	public override void DemandKeyboardFocus() => Editor?.DemandKeyboardFocus();
-	public override void KeyboardUnfocus() => Editor?.KeyboardUnfocus();
+	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
+		passTo = Editor;
+		return base.OnGainingKeyboardFocus(lastFocus, ref passTo);
+	}
 
 	private void Gutter_PaintOverride(Element self, float width, float height) {
 		Graphics2D.SetDrawColor(40, 50, 55, 155);

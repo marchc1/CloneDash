@@ -31,8 +31,8 @@ public class CharacterPanel : Panel
 		return character != null;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		CharacterInstance?.Update();
 	}
 
@@ -58,8 +58,9 @@ public class CharacterPanel : Panel
 		CharacterInstance?.Dispose();
 	}
 
-	protected override void MouseClick(FrameState state, ButtonCode button) {
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
+		return true;
 	}
 
 	public void PlayApplyExpression() {

@@ -361,8 +361,8 @@ public class MD_ModelThumbnailCard : Button
 		Text = entry.Name;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		if (Entry == null) return;
 		var instance = Entry.EnsureInstance();
 		if (instance == null) return;
@@ -776,8 +776,8 @@ public class MD_ModelDetailWindow : Window
 		}
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 
 		if (Instance == null) return;
 		AnimHandler.AddDeltaTime(globals.CurTimeDelta);

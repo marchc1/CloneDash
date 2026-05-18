@@ -49,12 +49,12 @@ public class DirectionalLayoutPanel : ScrollPanel
 		}
 	}
 
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		if (!AutoSize) {
-			base.OnThink(frameState);
+			base.OnThink();
 		}
 		else {
-			base.OnThink(frameState);
+			base.OnThink();
 			VerticalScrollbar.SetVisible(false);
 			HorizontalScrollbar.SetVisible(false);
 		}

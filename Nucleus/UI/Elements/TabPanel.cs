@@ -14,7 +14,8 @@ public class Tab(Button switcher, Element panel)
 	public void SetName(string newName) {
 		Name = newName;
 		Switcher.Text = newName;
-		Switcher.InvalidateParentAndItsChildren();
+		Switcher.GetParent()?.InvalidateLayout();
+		Switcher.InvalidateLayout();
 	}
 	public void SetIcon(string? newIcon) {
 		Icon = newIcon; // unimplemented; but prob should invalidate parent etc here

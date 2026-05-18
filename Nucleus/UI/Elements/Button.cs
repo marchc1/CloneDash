@@ -24,28 +24,26 @@ public class Button : Label
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
 	}
-	protected override void OnThink(FrameState frameState) {
-		if (Hovered)
+	protected override void OnThink() {
+		if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 	}
-	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
-		if (!TriggeredWhenEnterPressed) {
-			UI.MarkKeyEventNotConsumed();
-			return;
-		}
 
-		if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter)
-			MouseReleaseOccur(Level.FrameState, ButtonCode.MouseLeft, true);
+	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		return true;
 	}
 
-	protected override void MouseClick(FrameState state, ButtonCode button) {
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
 		audiosystem.PlaySound("click.wav", AudioPlaybackSettings.Unaltered);
+		return true;
 	}
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		base.MouseRelease(self, state, button);
 		OnButtonClick?.Invoke(this, button);
+		return true;
 	}
 
 	public bool TriggeredWhenEnterPressed {
@@ -99,7 +97,7 @@ public class Button : Label
 			fore = fore.Adjust(0, 0, -0.5f);
 		}
 
-		if (!b.DrawBackgroundWhenMouseIdle && !b.Hovered && !b.Pulsing) {
+		if (!b.DrawBackgroundWhenMouseIdle && !b.IsHovered() && !b.Pulsing) {
 			back.A = 0;
 			fore.A = 0;
 		}

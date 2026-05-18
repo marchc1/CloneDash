@@ -197,12 +197,12 @@ namespace CloneDash.Game.Logic
 
 		public const string STRING_AUTO = "AUTO";
 
-		public override void Render2D(FrameState frameState) {
-			if (Enabled) {
-				Graphics2D.SetDrawColor(255, 255, 255, 255);
-				Graphics2D.DrawText((frameState.WindowWidth / 2), 24, STRING_AUTO, Graphics2D.UI_FONT_NAME, 30, Anchor.Center);
-			}
-		}
+		// public override void Render2D(FrameState frameState) {
+		// 	if (Enabled) {
+		// 		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		// 		Graphics2D.DrawText((frameState.WindowWidth / 2), 24, STRING_AUTO, Graphics2D.UI_FONT_NAME, 30, Anchor.Center);
+		// 	}
+		// }
 
 		public void Reset() {
 			Passed.Clear();

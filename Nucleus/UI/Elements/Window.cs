@@ -37,7 +37,7 @@ public class Titlebar : Panel
 			Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
 				pos, size), 1);
 
-			if (Level.FrameState.Keyboard.ShiftDown && Hovered) {
+			if (Level.FrameState.Keyboard.ShiftDown && IsHovered()) {
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
 				pos - new Vector2F(2), size + new Vector2F(4)), 1);
 				Graphics2D.DrawLine(pos + new Vector2F(-2, -2), new(4, 4));
@@ -130,8 +130,8 @@ public class Titlebar : Panel
 
 	Panel? ImageRenderer;
 
-	protected override void OnThink(FrameState frameState) {
-		if (Hovered)
+	protected override void OnThink() {
+		if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_ALL);
 
 		if (imageChanged) {
@@ -169,9 +169,9 @@ public class Titlebar : Panel
 		ImageRenderer.SetPassthru(true);
 	}
 
-
-	protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		OnTitlebarDragged?.Invoke(this, delta);
+		return true;
 	}
 
 	public override void Paint(float width, float height) {
@@ -256,7 +256,7 @@ public class Window : Element
 			}
 		}
 
-		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			switch (anchor) {
 				case Anchor.TopLeft:
 					window.Position += delta;
@@ -276,6 +276,7 @@ public class Window : Element
 				default:
 					break;
 			}
+			return true;
 		}
 		public override void Paint(float width, float height) {
 			Color fore;
@@ -390,7 +391,7 @@ public class Window : Element
 		this.Position += delta;
 	}
 
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		if (closing) {
 			if ((Lifetime - closeTime) >= CLOSE_TIME) {
 				Remove();

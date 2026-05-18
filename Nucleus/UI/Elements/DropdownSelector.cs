@@ -25,7 +25,8 @@ public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = defa
 		return selector;
 	}
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		Menu m = UI.Menu();
 
 		foreach (var i in Items) {
@@ -54,8 +55,9 @@ public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = defa
 			});
 		}
 		m.Open(EngineCore.MousePos);
+		return true;
 	}
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		this.Text = OnToString?.Invoke(this.Selected) ?? Selected?.ToString() ?? "<not-set>";
 	}
 

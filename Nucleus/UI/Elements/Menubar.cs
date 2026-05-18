@@ -26,8 +26,10 @@ public class Menubar : Panel
 {
 	public class MenubarButton(Menubar menu, Action? action) : Button(menu)
 	{
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			if (!IsHovered()) return true;
 			action?.Invoke();
+			return true;
 		}
 	}
 	public Menubar(Element? parent) : base(parent) {

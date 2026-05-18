@@ -43,24 +43,26 @@ public class NumberPickerCarousel : Element
 		Clipping = true;
 	}
 
-	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 		if (delta.Y > 0)
 			Value++;
 		else if (delta.Y < 0)
 			Value--;
+		return true;
 	}
 
 	private float _totalDragDistance = 0f;
 	private bool _isDragging = false;
 	public float DragThreshold { get; set; } = 5f;
 
-	protected override void MouseClick(FrameState state, Nucleus.Common.Input.ButtonCode button) {
-		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return;
+	protected override bool MouseClick(FrameState state, Nucleus.Common.Input.ButtonCode button) {
+		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return false;
 		_totalDragDistance = 0f;
 		_isDragging = false;
+		return true;
 	}
 
-	protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		_totalDragDistance += MathF.Abs(delta.X);
 
 		if (!_isDragging && _totalDragDistance > DragThreshold)
@@ -79,16 +81,17 @@ public class NumberPickerCarousel : Element
 				Value++;
 			}
 		}
+		return true;
 	}
-	protected override void MouseReleasedOrLost(Element self, FrameState state, Nucleus.Common.Input.ButtonCode button) {
-		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return;
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return false;
 		if (_isDragging) {
 			_isDragging = false;
 			float cellWidth = RenderBounds.Width / (VisibleSideCount * 2 + 1);
 			int snap = (int)MathF.Round(_scrollOffset / cellWidth);
 			Value -= snap;
 			_scrollOffset = 0;
-			return;
+			return true;
 		}
 
 		float cw = RenderBounds.Width / (VisibleSideCount * 2 + 1);
@@ -99,10 +102,11 @@ public class NumberPickerCarousel : Element
 			_scrollOffset = 0;
 			Value += offset;
 		}
+		return true;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 	}
 
 	private int WrapValue(int v) {

@@ -32,17 +32,19 @@ public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) :
 
 	public ColorSelectorDialog CurrentDialog { get; protected set; }
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		if (IValidatable.IsValid(CurrentDialog))
-			return;
+			return true;
 
 		CurrentDialog = new ColorSelectorDialog(UI);
 		CurrentDialog.Position = state.Mouse.MousePos;
 		CurrentDialog.Setup(this);
 		CurrentDialog.FitToParent(8);
+		return true;
 	}
 	public override void Paint(float width, float height) {
-		if (Hovered) {
+		if (IsHovered()) {
 			if (Depressed)
 				Graphics2D.SetDrawColor(50, 50, 50);
 			else
@@ -111,7 +113,7 @@ public class ColorSelectorDialog : Panel
 			Graphics2D.OffsetDrawing(offset);
 			Rlgl.PopMatrix();
 		}
-		protected override void MouseClick(FrameState state, ButtonCode button) {
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
 			dialog.DragMode = dialog.DetermineDragMode();
 			switch (dialog.DragMode) {
 				case ColorSelectorDragMode.Hue:
@@ -121,8 +123,9 @@ public class ColorSelectorDialog : Panel
 					dialog.SetSatValToMousePos();
 					break;
 			}
+			return true;
 		}
-		protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			switch (dialog.DragMode) {
 				case ColorSelectorDragMode.Hue:
 					dialog.SetHueToMousePos();
@@ -131,9 +134,12 @@ public class ColorSelectorDialog : Panel
 					dialog.SetSatValToMousePos();
 					break;
 			}
+			return true;
 		}
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			if (!IsHovered()) return true;
 			dialog.DragMode = ColorSelectorDragMode.None;
+			return true;
 		}
 	}
 	public ColorSelectorDialog(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
@@ -156,8 +162,8 @@ public class ColorSelectorDialog : Panel
 		Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
 
 		this.Origin = Anchor.BottomCenter;
-		this.UI.OnElementClicked += delegate (Element el, ButtonCode mb) {
-			if (!el.IsIndirectChildOf(this)) {
+		this.UI.Input.OnClick += delegate (Element? el) {
+			if (el != null && !el.IsIndirectChildOf(this)) {
 				this.Remove();
 			}
 		};

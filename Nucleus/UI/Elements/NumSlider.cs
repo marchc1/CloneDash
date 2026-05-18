@@ -90,27 +90,24 @@ public class NumSlider : Textbox, INumSlider
 	public NumSlider(Element? parent) : base(parent) {
 		SetValueNoUpdate(Value);
 	}
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		if (didDrag && Depressed)
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
-		else if (Hovered)
+		else if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
-
-		// TODO: This is a horrible hack
-		if (TriggeredWhenEnterPressed && frameState.Keyboard.WasKeyPressed(ButtonCode.KeyEnter)) {
-			MouseReleaseOccur(frameState, ButtonCode.MouseLeft, true);
-		}
 	}
 	string? workType = null;
 	int caret = 0;
-	protected override void MouseClick(FrameState state, ButtonCode button) {
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		KeyboardUnfocus();
 		dragStart = state.Mouse.MousePos;
+		return true;
 	}
 
-	public override void KeyboardFocusGained(bool demanded) {
+	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
 		Text = $"{Value}";
 		caret = 0;
+		return true;
 	}
 	public virtual double? ParseString(string? input) {
 		double t;
@@ -121,14 +118,16 @@ public class NumSlider : Textbox, INumSlider
 		return null;
 	}
 	bool didDrag = false;
-	public override void KeyboardFocusLost(Element lostTo, bool demanded) {
+
+	protected override bool OnLosingKeyboardFocus(Element? lostTo) {
 		double? v = ParseString(workType);
 		if (v != null) {
 			Value = v.Value;
 		}
 		workType = null;
+		return true;
 	}
-	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
 			double? v = ParseString(Text);
 			if (v != null) {
@@ -138,13 +137,14 @@ public class NumSlider : Textbox, INumSlider
 			workType = null;
 		}
 		else {
-			base.KeyPressed(in keyboardState, key);
+			return base.KeyPressed(in keyboardState, key);
 		}
+		return true;
 	}
 
 
 	Vector2F dragStart;
-	protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		if (dragStart.Distance(state.Mouse.MousePos) > 5 || didDrag) {
 			if (!didDrag)
 				dragStart = state.Mouse.MousePos;
@@ -157,15 +157,19 @@ public class NumSlider : Textbox, INumSlider
 			}
 			else Value += delta.X / MathF.Pow(1.5f, Digits);
 		}
+		return true;
 	}
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		if (!didDrag)
 			base.MouseRelease(self, state, button);
 		didDrag = false;
+		return true;
 	}
-	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 		base.MouseScroll(self, state, delta);
+		return true;
 	}
 	public bool TriggeredWhenEnterPressed { get; set; } = false;
 

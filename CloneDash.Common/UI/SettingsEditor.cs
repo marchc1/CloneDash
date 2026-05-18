@@ -501,20 +501,23 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var clip = audiosystem.CreateFileAudioClip("offset_cowbell.wav");
 		track = audiosystem.CreatePlayback(clip);
 		BorderSize = 0;
-
-		DemandKeyboardFocus();
+		KeyboardFocus();
 	}
 
-	protected override void MouseClick(FrameState state, ButtonCode btn) {
+	protected override bool MouseClick(FrameState state, ButtonCode btn) {
+		if (!IsHovered()) return true;
 		if (btn == ButtonCode.Mouse1) isDragging = true;
-		DemandKeyboardFocus();
+		KeyboardFocus();
+		return true;
 	}
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode btn) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode btn) {
+		if (!IsHovered()) return true;
 		if (btn == ButtonCode.Mouse1) isDragging = false;
-		DemandKeyboardFocus();
+		KeyboardFocus();
+		return true;
 	}
 
-	protected override void KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
 			var len = audiosystem.GetPlaybackDuration(track);
 			float midpoint = currentWidth / 2f;
@@ -524,10 +527,11 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 			lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
 		}
+		return true;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		audiosystem.UpdatePlayback(track);
 		currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
 
@@ -535,7 +539,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 			lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
 
 		if (isDragging && currentWidth > 0) {
-			float mouseX = frameState.Mouse.MousePos.X;
+			float mouseX = EngineCore.Level.FrameState.Mouse.MousePos.X;
 
 			mouseX = Math.Clamp(mouseX, 0, currentWidth);
 

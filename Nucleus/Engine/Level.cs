@@ -218,8 +218,8 @@ public abstract class Level : IValidatable
 	public virtual void PreRender(FrameState frameState) { }
 	public virtual void Render(FrameState frameState) { }
 	public virtual void PostRenderEntities(FrameState frameState) { }
-	public virtual void Render2D(FrameState frameState) { }
 	public virtual void PostRender(FrameState frameState) { }
+	public virtual void PostRenderUI(FrameState frameState) { }
 	public virtual void PreWindowClose() { }
 	public virtual HitTestResult WindowHitTest(Vector2F point) => HitTestResult.Normal;
 
@@ -257,12 +257,6 @@ public abstract class Level : IValidatable
 				entity.Render(frameState);
 		PostRenderEntities(frameState);
 	}
-	public void RunEventRender2D(FrameState frameState) {
-		Render2D(frameState);
-		foreach (Entity entity in EntityList)
-			if (entity.Enabled && entity.RendersItself)
-				entity.Render2D(frameState);
-	}
 	public void RunEventPostRender(FrameState frameState) {
 		PostRender(frameState);
 		foreach (Entity entity in EntityList)
@@ -270,6 +264,9 @@ public abstract class Level : IValidatable
 				entity.PostRender(frameState);
 	}
 
+	public void RunEventPostRenderUI(FrameState frameState) {
+		PostRenderUI(frameState);
+	}
 	public void Unload() {
 		runFinalizers();
 
@@ -485,7 +482,7 @@ public abstract class Level : IValidatable
 			if (OnFileDropped(item, FrameState.Mouse.MousePos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = Element.ResolveElementHoveringState(RootPanel, FrameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+			Element? e = RootPanel.Hovered;
 
 			while (e != null) {
 				if (e.FileDropped(item, FrameState.Mouse.MousePos))
@@ -504,7 +501,7 @@ public abstract class Level : IValidatable
 			if (OnTextDropped(item, FrameState.Mouse.MousePos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = Element.ResolveElementHoveringState(RootPanel, FrameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
+			Element? e = RootPanel.Hovered; 
 			while (e != null) {
 				if (e.TextDropped(item, FrameState.Mouse.MousePos))
 					break;
@@ -567,10 +564,16 @@ public abstract class Level : IValidatable
 
 		frameState.Keyboard.Clear();
 
-		if (EngineCore.Window.MouseFocused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
-		if (EngineCore.Window.InputFocused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
+		frameState.Mouse.Focused = EngineCore.Window.MouseFocused;
+		frameState.Keyboard.Focused = EngineCore.Window.InputFocused;
+		if (frameState.Mouse.Focused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
+		if (frameState.Keyboard.Focused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
-		RootPanel.HandleInput();
+		RootPanel.Position = new(0, 0);
+		RootPanel.Size = new(frameState.WindowWidth,frameState.WindowHeight);
+
+		ref ElementSolveState solveState = ref RootPanel.ProduceSolveState();
+		RootPanel.Scheme.ApplyScheme(RootPanel, ref solveState);
 
 		EngineCore.Window.FlushDragNDropStateInto(ref frameState.DragNDrop);
 
@@ -587,8 +590,6 @@ public abstract class Level : IValidatable
 
 		if (!Paused) RunEventPreThink(ref frameState);
 
-		RootPanel.HandleThinking();
-
 		if (EngineCore.Window.MouseFocused) {
 			while (DragNDropFileEvents_ForNextMouseHover.TryDequeue(out DragNDropItem item))
 				FileDropped(item, true);
@@ -596,9 +597,9 @@ public abstract class Level : IValidatable
 				TextDropped(item, true);
 		}
 
-		// If an element has keyboard focus, wipe the keyboard state because the game shouldnt get that information
-		if (IValidatable.IsValid(RootPanel.KeyboardFocusedElement))
-			frameState.Keyboard = new();
+		RootPanel.Thinking.Think(RootPanel, ref solveState);
+		RootPanel.Input.SolveHovered(RootPanel, ref solveState, frameState);
+		RootPanel.Input.DispatchEvents(ref solveState, frameState);
 
 		if (!Paused) RunEventThink(frameState);
 		if (!Paused) RunEventPostThink(frameState);
@@ -660,8 +661,6 @@ public abstract class Level : IValidatable
 				EngineCore.Window.EndMode2D();
 			//Graphics.ScissorRect();
 
-			RunEventRender2D(frameState);
-			RootPanel.Render();
 			//Raylib.EndTextureMode();
 
 			/*Raylib.DrawTexturePro(RenderTarget.Value.Texture,
@@ -673,6 +672,11 @@ public abstract class Level : IValidatable
 
 			// Only really exists for REALLY late rendering
 			RunEventPostRender(frameState);
+
+			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.NoPopups);
+			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.OnlyPopups);
+
+			RunEventPostRenderUI(frameState);
 
 			DebugOverlay.Render();
 
@@ -727,9 +731,9 @@ public abstract class Level : IValidatable
 				debugrecords.Write("Engine - User Interface");
 				debugrecords.EnterScope();
 				{
-					debugrecords.Write("UI Elements", RootPanel.Elements.Count);
+					debugrecords.Write("UI Elements", RootPanel.GetAllElements().Length);
 					debugrecords.Write("UI Rebuilds", 0);
-					debugrecords.Write("UI State:", $"hovered {RootPanel.Hovered?.ToString() ?? "<null>"}, depressed {RootPanel.Depressed?.ToString() ?? "<null>"}, focused {RootPanel.Focused?.ToString() ?? "<null>"}, kb-focused {RootPanel.KeyboardFocusedElement?.ToString() ?? "<null>"}");
+					debugrecords.Write("UI State:", $"hovered {RootPanel.Hovered?.ToString() ?? "<null>"}, depressed {RootPanel.Depressed?.ToString() ?? "<null>"}, focused {RootPanel.Focused?.ToString() ?? "<null>"}, kb-focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}");
 				}
 				debugrecords.ExitScope();
 				debugrecords.Write("Engine - State");
@@ -788,7 +792,7 @@ public abstract class Level : IValidatable
 
 	private void RenderShowUpdates() {
 		var now = Curtime;
-		foreach (var element in RootPanel.Elements) {
+		foreach (var element in RootPanel.GetAllElements()) {
 			var lastLayout = element.LastLayoutTime;
 			var delta = 1 - (Math.Min(now - lastLayout, 0.5) * 2);
 			if (delta > 1) continue;
@@ -814,7 +818,7 @@ public abstract class Level : IValidatable
 	public static ConVar ui_showupdates
 		= new("ui_showupdates", "0", FCvar.None, "Visualize layout updates.", 0, 1);
 	public static ConCommand ui_elementcount
-		= new("ui_elementcount", (_, in _) => Logs.Print($"UI Elements: {EngineCore.Level.RootPanel.Elements.Count}"), FCvar.None, "Highlights the currently hovered element");
+		= new("ui_elementcount", (_, in _) => Logs.Print($"UI Elements: {EngineCore.Level.RootPanel.GetAllElements().Length}"), FCvar.None, "Highlights the currently hovered element");
 
 	public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
 	public T GetEntity<T>(Predicate<Entity> predicate) where T : Entity {

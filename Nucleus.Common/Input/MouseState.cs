@@ -64,12 +64,47 @@ namespace Nucleus.Input
 			throw new NotImplementedException("No Released handler for ButtonCode " + button);
 		}
 
+		public void SetClicked(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Clicked = state; break;
+				case ButtonCode.Mouse2: Mouse2Clicked = state; break;
+				case ButtonCode.Mouse3: Mouse3Clicked = state; break;
+				case ButtonCode.Mouse4: Mouse4Clicked = state; break;
+				case ButtonCode.Mouse5: Mouse5Clicked = state; break;
+			}
+			throw new NotImplementedException("No Clicked handler for ButtonCode " + button);
+		}
+
+		public void SetHeld(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Held = state; break;
+				case ButtonCode.Mouse2: Mouse2Held = state; break;
+				case ButtonCode.Mouse3: Mouse3Held = state; break;
+				case ButtonCode.Mouse4: Mouse4Held = state; break;
+				case ButtonCode.Mouse5: Mouse5Held = state; break;
+			}
+			throw new NotImplementedException("No Held handler for ButtonCode " + button);
+		}
+
+		public void SetReleased(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Released = state; break;
+				case ButtonCode.Mouse2: Mouse2Released = state; break;
+				case ButtonCode.Mouse3: Mouse3Released = state; break;
+				case ButtonCode.Mouse4: Mouse4Released = state; break;
+				case ButtonCode.Mouse5: Mouse5Released = state; break;
+			}
+			throw new NotImplementedException("No Released handler for ButtonCode " + button);
+		}
+
+
 		/// <summary>
 		/// Mouse position, localized to the window.
 		/// </summary>
 		public Vector2F MousePos = new(0);
 		public Vector2F MouseDelta  = new(0);
 		public Vector2F MouseScroll  = new(0);
+		public bool Focused;
 
 		public MouseState() { }
 

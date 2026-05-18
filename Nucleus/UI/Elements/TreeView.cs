@@ -59,7 +59,8 @@ public class TreeNode : Button, IContainsNodes
 	}
 
 	DateTime LastRelease;
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		base.MouseRelease(self, state, button);
 
 		if ((DateTime.UtcNow - LastRelease).TotalSeconds < 0.3333f) {
@@ -68,6 +69,7 @@ public class TreeNode : Button, IContainsNodes
 		}
 		else
 			LastRelease = DateTime.UtcNow;
+		return true;
 	}
 }
 public class TreeView : DirectionalLayoutPanel, IContainsNodes

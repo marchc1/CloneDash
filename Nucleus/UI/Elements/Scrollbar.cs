@@ -18,17 +18,17 @@ public class Scrollbar : Panel
 			var fore = MixColorBasedOnMouseState(this, TextColor, new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
 			var down = this == scrollbar.Down;
 
-			Graphics2D.SetDrawColor(fore, Hovered ? 220 : 200);
+			Graphics2D.SetDrawColor(fore, IsHovered() ? 220 : 200);
 			Graphics2D.SetTexture(scrollbar.Alignment == ScrollbarAlignment.Vertical ?
 				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/down32.png") : Level.Textures.LoadTextureFromFile("ui/up32.png")) :
 				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/right32.png") : Level.Textures.LoadTextureFromFile("ui/left32.png")));
 			Graphics2D.DrawImage(new(2), new(width - 4, height - 4));
 		}
-		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) => scrollbar.MouseScrolled(self, state, delta);
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => scrollbar.MouseScrolled(self, state, delta);
 	}
 	internal class ScrollbarGrip(Scrollbar scrollbar) : Button(scrollbar)
 	{
-		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			// Remap the new mouse pos
 			var map = state.Mouse.MousePos - self.GetGlobalPosition();
 			//Console.WriteLine(map);
@@ -39,6 +39,7 @@ public class Scrollbar : Panel
 				);
 
 			scrollbar.Scroll = newScroll;
+			return true;
 		}
 		public override void Paint(float width, float height) {
 			var fore = MixColorBasedOnMouseState(this, TextColor, new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
@@ -131,11 +132,12 @@ public class Scrollbar : Panel
 		SetVisible(false);
 	}
 
-	internal void MouseScrolled(Element self, FrameState state, Vector2F delta) {
+	internal bool MouseScrolled(Element self, FrameState state, Vector2F delta) {
 		Scroll += delta.Y * -ScrollDelta;
 		ConsumeScrollEvent();
+		return true;
 	}
-	protected override void MouseScroll(Element self, FrameState state, Vector2F delta) => MouseScrolled(self, state, delta);
+	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => MouseScrolled(self, state, delta);
 
 	public float ScrollDelta { get; set; } = 30;
 

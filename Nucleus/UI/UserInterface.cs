@@ -1,7 +1,9 @@
-﻿using Nucleus.Common.Input;
+﻿using Microsoft.VisualBasic;
+using Nucleus.Common.Input;
 using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI.Elements;
@@ -11,93 +13,352 @@ using Raylib_cs;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace Nucleus.UI;
 
-public class UserInterface : Element, IDisposable
+public struct ElementSolveState
 {
-	public Element? Focused;
-	public new Element? Hovered;
-	public new Element? Depressed;
+	// This is the embedded panel (UserInterface right now)
+	public Element EmbeddedPanel;
+	public Element? KeyboardFocused;
 
-	//public List<Element> Popups = [];
-	public List<Element> Popups { get; private set; } = [];
-	public List<Element> Modals { get; private set; } = [];
-	public List<Element> Elements { get; private set; } = [];
-	public bool PopupActive => Popups.Count > 0;
-	public bool ModalActive => Modals.Count > 0;
+	// Input specific state
+	public Element? Hovered;
+	public InlineArray10<Element?> Depressed;
+}
 
-	public void RemovePopup(Element e) {
-		Popups.Remove(e);
+public class ElementSchemeSystem
+{
+	public void ApplyScheme(Element? element, ref ElementSolveState state, bool force = false) {
+		if (element == null) return;
+
+		foreach (var child in element.GetChildren())
+			if (child.IsVisible() || force)
+				ApplyScheme(child, ref state);
+
+		element.PerformApplySchemeSettings();
+	}
+}
+
+public class ElementInputSystem
+{
+	public event Action<Element?>? OnClick;
+	public void SolveHovered(Element? workingElement, ref ElementSolveState state, FrameState frameState) {
+		if (workingElement == null) return;
+
+		state.Hovered = null;
+
+		Vector2F mousePos = frameState.Mouse.MousePos;
+		state.Hovered = SolveTraverse(workingElement, ref state, frameState, workingElement.RenderBounds, mousePos);
 	}
 
-	public void RemoveModal(Element e) {
-		Modals.Remove(e);
+	private Element? SolveTraverse(Element? workingElement, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
+		if (workingElement == null) return null;
+
+		if (workingElement.HoverTest(globalSpaceBounds, mousePos)) {
+			var children = workingElement.GetChildren();
+			// If this element contains a modal, only process that modal.
+			// Also, process popups first here too.
+			for (int i = children.Length - 1; i >= 0; i--) {
+				Element child = children[i];
+				bool modal = child.IsModal(), popup = child.IsPopup();
+
+				if (modal || popup) {
+					// Only traverse this modal child
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + workingElement.ChildRenderOffset, child.RenderBounds.Size);
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
+
+					if (modal) {
+						if (subElementHovered == null)
+							return workingElement;
+						return subElementHovered;
+					}
+					else {
+						if (subElementHovered != null)
+							return subElementHovered;
+					}
+				}
+			}
+			// Process non-modal non-popups now
+			for (int i = children.Length - 1; i >= 0; i--) {
+				Element child = children[i];
+				bool modal = child.IsModal(), popup = child.IsPopup();
+				if (!modal && !popup) {
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + workingElement.ChildRenderOffset, child.RenderBounds.Size);
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
+					if (subElementHovered != null)
+						return subElementHovered;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public void DispatchEvents(ref ElementSolveState solveState, FrameState frameState) {
+		ref MouseState mouse = ref frameState.Mouse;
+		ref KeyboardState keyboard = ref frameState.Keyboard;
+
+		Element? hovered = solveState.Hovered;
+		// Handle mouse clicking
+		if (IValidatable.IsValid(hovered)) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+				if (mouse.Clicked(i)) {
+					mouse.SetClicked(i, false); // disengage input from game
+					mouse.SetHeld(i, false); // disengage input from game
+					solveState.Depressed[i - ButtonCode.MouseFirst] = hovered;
+				}
+			}
+		}
+
+		// Handle mouse dragging
+		if (!mouse.MouseDelta.IsZero()) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
+				if (IValidatable.IsValid(depressed))
+					depressed.MouseDragOccur(frameState, mouse.MouseDelta);
+			}
+		}
+
+		// Handle mouse releases
+		// A click might invalidate via removing, so a second guard is done
+		if (IValidatable.IsValid(hovered)) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+				if (mouse.Released(i) && hovered.MouseReleaseOccur(frameState, i)) {
+					mouse.SetHeld(i, false); // disengage input from game
+					mouse.SetReleased(i, false); // disengage input from game
+				}
+			}
+		}
+
+		Element? keyboardFocused = solveState.KeyboardFocused;
+		KeyboardState emulated;
+		while (keyboardFocused != null) {
+			emulated = keyboard;
+			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
+				int key = emulated.KeysThisFrame[i];
+				bool consumed = false;
+
+				if (emulated.WasKeyPressed(key))
+					consumed |= keyboardFocused.KeyPressedOccur(in emulated, key.ToButtonCode());
+				if (emulated.WasKeyReleased(key))
+					consumed |= keyboardFocused.KeyReleasedOccur(in emulated, key.ToButtonCode());
+
+				if (consumed)
+					keyboard.ConsumeKeyAtIndex(i);
+			}
+
+			for (int i = emulated.GetTextInputsThisFrame() - 1; i >= 0; i--)
+				if (keyboardFocused.TextInputOccur(in emulated, emulated.GetTextInputThisFrameAtIndex(i)))
+					keyboard.ConsumeTextAtIndex(i);
+		}
+	}
+}
+
+
+public class ElementThinkingSystem
+{
+	public void Think(Element? element, ref ElementSolveState state) {
+		ThinkTraverse(element, ref state);
+	}
+
+	private void ThinkTraverse(Element? element, ref ElementSolveState state) {
+		if (element == null) return;
+
+		element.Think();
+
+		foreach (var child in element.GetChildren())
+			if (child.IsVisible())
+				Think(child, ref state);
+	}
+}
+
+public enum ElementPaintPopupMode
+{
+	NoPopups,
+	OnlyPopups
+}
+
+public class ElementPaintSystem
+{
+	public void Paint(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) => PaintTraverse(element, ref state, skipPopups);
+	void PaintTraverse(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
+		if (element == null) return;
+
+		if (!element.IsVisible()) return;
+
+		if (element.IsPopup() && skipPopups == ElementPaintPopupMode.NoPopups)
+			return;
+
+		Element? parent = element.GetParent();
+
+		if (element.BackdropAlpha > 0) {
+			if (parent != null) {
+				RectangleF size = parent.RenderBounds;
+				Graphics2D.SetDrawColor(0, 0, 0, (int)float.Lerp(0, 100, (float)element.BackdropAlpha));
+				Graphics2D.DrawRectangle(size.X, size.Y, size.W, size.H);
+			}
+		}
+
+		RectangleF renderBounds = element.RenderBounds;
+
+		if (element.IsUsingRenderTarget()) {
+			// quick check if needing to create a new RT
+			if (element.IsRenderTargetAvailable(out RenderTexture2D rt)) {
+				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
+				Graphics2D.ResetDrawingOffset();
+				{
+					Graphics2D.BeginRenderTarget(rt);
+					PaintElement(element, ref state, skipPopups);
+					Graphics2D.EndRenderTarget();
+				}
+				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
+
+				if (IValidatable.IsValid(parent)) {
+					Graphics2D.OffsetDrawing(element.ChildRenderOffset);
+					if (parent.PostRenderChildRT(element) == true) {
+						Graphics2D.OffsetDrawing(renderBounds.Pos);
+						{
+							element.PreRenderRT();
+							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
+							Graphics2D.SetDrawColor(t, t, t, t);
+							Graphics2D.DrawRenderTexture(rt, renderBounds.Size);
+							element.PostRenderRT();
+						}
+						Graphics2D.OffsetDrawing(-renderBounds.Pos);
+					}
+					Graphics2D.OffsetDrawing(-element.ChildRenderOffset);
+				}
+			}
+			else
+				Logs.Error("No render-target for element??");
+
+			return;
+		}
+
+		Vector2F childRenderOffset = IValidatable.IsValid(parent) ? element.ChildRenderOffset : Vector2F.Zero;
+		childRenderOffset = childRenderOffset.Round(5);
+
+		Graphics2D.OffsetDrawing(childRenderOffset);
+		{
+			Graphics2D.OffsetDrawing(renderBounds.Pos);
+			{
+				PaintElement(element, ref state, skipPopups);
+			}
+			Graphics2D.OffsetDrawing(-renderBounds.Pos);
+		}
+		Graphics2D.OffsetDrawing(-childRenderOffset);
+	}
+
+	private void PaintElement(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
+		if (element == null) return;
+		var renderBounds = element.RenderBounds;
+		float w = renderBounds.Width, h = renderBounds.Height;
+		if (w <= 0 || h <= 0) return;
+
+		if (element.Clipping)
+			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, renderBounds.Size));
+		{
+			Graphics2D.PushAlpha(element.Opacity * 255);
+			{
+				// Calculate border insetting
+				float iw = w, ih = h;
+				float border = element.BorderSize;
+				iw -= (border * 2);
+				ih -= (border * 2);
+				bool rounded = element.Roundness != 0;
+				Vector2F drawingOffset = new(border);
+				if (iw > 0 && ih > 0) {
+					if (element.IsPaintBackgroundEnabled()) {
+						if (rounded) // kinda hacky but required for border/background right now. Fixme
+							element.PaintBackground(w, h);
+						else {
+							Graphics2D.OffsetDrawing(drawingOffset);
+							element.PaintBackground(iw, ih);
+							Graphics2D.OffsetDrawing(-drawingOffset);
+						}
+					}
+
+					if (element.IsPaintEnabled()) {
+						Graphics2D.OffsetDrawing(drawingOffset);
+						element.Paint(iw, ih);
+						Graphics2D.OffsetDrawing(-drawingOffset);
+					}
+				}
+
+				if (element.IsPaintBorderEnabled())
+					element.PaintBorder(w, h);
+
+				foreach (Element child in element.GetChildren())
+					PaintTraverse(child, ref state, skipPopups);
+
+				if (element.IsPostChildPaintEnabled())
+					element.PostChildPaint();
+			}
+			Graphics2D.PopAlpha();
+		}
+		if (element.Clipping)
+			Graphics2D.ScissorRect();
+	}
+}
+
+public class UserInterface : Element, IDisposable
+{
+	public UserInterface() : base(null) {
+		UI = this;
+		SetPaintBorderEnabled(false);
+		SetPaintBackgroundEnabled(false);
+		SetPaintEnabled(false);
+	}
+
+
+	public Element? Focused;
+	public Element? Hovered;
+	public new Element? Depressed;
+
+	ElementSolveState SolveState;
+
+	readonly List<Element> Popups = [];
+	readonly List<Element> Modals = [];
+
+	public readonly ElementSchemeSystem Scheme = new();
+	public readonly ElementThinkingSystem Thinking = new();
+	public readonly ElementInputSystem Input = new();
+	public readonly ElementPaintSystem Painting = new();
+
+	internal bool MakePopup(Element? element) {
+		if (!IValidatable.IsValid(element)) return false;
+		if (!Popups.Contains(element))
+			Popups.Add(element);
+		return true;
+	}
+	internal bool RemovePopup(Element? element) {
+		if (!IValidatable.IsValid(element)) return false;
+		return Popups.Remove(element);
+	}
+	internal bool MakeModal(Element? element) {
+		if (!IValidatable.IsValid(element)) return false;
+		if (!Modals.Contains(element))
+			Modals.Add(element);
+		return true;
+	}
+	internal bool RemoveModal(Element? element) {
+		if (!IValidatable.IsValid(element)) return false;
+		return Modals.Remove(element);
+	}
+
+	public ref ElementSolveState ProduceSolveState() {
+		SolveState.EmbeddedPanel = this;
+		SolveState.Hovered = null;
+		return ref SolveState;
 	}
 
 	OSWindow? window;
 	public OSWindow Window {
 		get => window ?? throw new NullReferenceException();
 		set => window = value ?? throw new NullReferenceException();
-	}
-	public Element? KeyboardFocusedElement { get; internal set; } = null;
-	public bool DemandedFocus { get; private set; } = false;
-	public void RequestKeyboardFocus(Element self) {
-		if (!IValidatable.IsValid(self))
-			return;
-
-		if (IValidatable.IsValid(KeyboardFocusedElement)) {
-			if (DemandedFocus)
-				return;
-
-			KeyboardFocusedElement.KeyboardFocusLost(self, true);
-		}
-
-		KeyboardFocusedElement = self;
-		self.KeyboardFocusGained(DemandedFocus);
-		Window.StartTextInput();
-	}
-	public void DemandKeyboardFocus(Element self) {
-		DemandedFocus = false;      // have to reset it even if its true so the return doesnt occur in the request method
-		RequestKeyboardFocus(self);
-		DemandedFocus = true;       // set this flag to true so requestkeyboardfocus fails
-	}
-	public void KeyboardUnfocus(Element self, bool force = false) {
-		if (!IValidatable.IsValid(KeyboardFocusedElement))
-			return;
-		if (!IValidatable.IsValid(self))
-			return;
-		if (KeyboardFocusedElement.IsIndirectChildOf(self)) {
-			KeyboardFocusedElement.KeyboardFocusLost(self, false);
-			KeyboardFocusedElement = null;
-
-			return;
-		}
-		if (self != KeyboardFocusedElement && force == false)
-			return;
-
-		KeyboardFocusedElement.KeyboardFocusLost(self, false);
-		KeyboardFocusedElement = null;
-		Window.StopTextInput();
-	}
-
-	public UserInterface() : base(null) {
-		UI = this;
-		Preprocess(EngineCore.Window.Size);
-		SetPaintBorderEnabled(false);
-		SetPaintBackgroundEnabled(false);
-		SetPaintEnabled(false);
-	}
-
-	public void Preprocess(Vector2F size) => Preprocess(size.X, size.Y);
-	public void Preprocess(float width, float height) {
-		if (width != this.Size.W || height != this.Size.H) {
-			this.Position = new(0, 0);
-			this.Size = new(width, height);
-			RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
-			InvalidateChildren(recursive: true, self: true);
-		}
 	}
 
 	public override void PostChildPaint() {
@@ -123,19 +384,11 @@ public class UserInterface : Element, IDisposable
 		}
 	}
 
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		Clipping = false;
 		//this.Position = new(0, 0);
 		//this.Size = new(frameState.WindowWidth, frameState.WindowHeight);
 		//RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
-	}
-
-	internal override void SetupLayout() {
-		RemoveFlag(ElementFlags.NeedsLayout);
-	}
-
-	protected override void MouseClick(FrameState state, ButtonCode button) {
-		KeyboardUnfocus(this, true);
 	}
 
 	private string? _tooltipText;
@@ -166,14 +419,6 @@ public class UserInterface : Element, IDisposable
 		MainThread.RunASAP(Remove);
 	}
 
-	// temporary, just testing parsing
-	// public readonly SchemeSettings EngineScheme = new("enginescheme.jsonc", "resource");
-
-	public event Action<Element, ButtonCode>? OnElementClicked;
-	public event Action<Element, ButtonCode>? OnElementReleased;
-
-	public void TriggerElementClicked(Element? e, ButtonCode mb) => OnElementClicked?.Invoke(e!, mb);
-	public void TriggerElementReleased(Element e, ButtonCode mb) => OnElementReleased?.Invoke(e, mb);
 	public Menu Menu() {
 		return new Menu(this);
 	}
@@ -211,7 +456,6 @@ public class UserInterface : Element, IDisposable
 				// trash the element
 				this.Remove();
 				trashElement(this);
-				Elements.Clear();
 				Popups.Clear();
 				Focused = null;
 				Hovered = null;
@@ -237,233 +481,48 @@ public class UserInterface : Element, IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	readonly List<Element> activePopups = [];
+	readonly List<Element> Elements = [];
+	public ReadOnlySpan<Element> GetAllElements() => Elements.AsSpan();
 
-	// TODO: Is this more efficient than recursive in this case?
-	readonly Queue<Element> popupWork = [];
-
-	Element? lastPopup;
-	Element? lastModal;
-
-	void DetermineLasts() {
-		lastPopup = null;
-		lastModal = null;
-		popupWork.Clear();
-		popupWork.Enqueue(UI);
-		while (popupWork.TryDequeue(out Element? el)) {
-			if (el.IsPopup)
-				lastPopup = el;
-			if (el.IsModal)
-				lastModal = el;
-			foreach (var child in el.Children)
-				popupWork.Enqueue(child);
-		}
+	internal void AddElement(Element element) {
+		if (element == null) return;
+		Elements.Add(element);
 	}
 
-	bool tryRunKeybinds(Element? target, FrameState frameState) {
-		bool ranKeybinds = false;
-		if (IValidatable.IsValid(target)) {
-			KeyboardState emulatedState = frameState.Keyboard;
-			target.KeyboardInputMarshal.State(ref emulatedState);
-			if (emulatedState.TotalKeysThisFrame > 0 || emulatedState.GetTextInputsThisFrame() > 0) {
-				ranKeybinds = target.Keybinds.TestKeybinds(emulatedState);
-
-				if (!ranKeybinds) {
-					ranKeybinds = Keybinds.TestKeybinds(emulatedState);
-
-					if (!ranKeybinds) {
-						for (int i = 0; i < KeyboardState.MAXIMUM_KEY_ARRAY_LENGTH; i++) {
-							var pressed = emulatedState.WasKeyPressed(i);
-							var released = emulatedState.WasKeyReleased(i);
-							if (pressed)
-								DoKeyPressed(target, emulatedState, i.ToButtonCode(), target == lastModal);
-							if (released)
-								DoKeyReleased(target, emulatedState, i.ToButtonCode(), target == lastModal && !lastModal.IsMarkedForRemoval());
-
-							if (!ranKeybinds)
-								ranKeybinds = WasKeyEventConsumed();
-						}
-
-						for (int i = 0, c = emulatedState.GetTextInputsThisFrame(); i < c; i++)
-							target?.TextInputOccur(in emulatedState, emulatedState.GetTextInputThisFrameAtIndex(i));
-					}
-				}
-			}
-		}
-		return ranKeybinds;
-	}
-	public void HandleInput() {
-		DetermineLasts();
-		activePopups.Clear();
-
-		FrameState frameState = Level.FrameState;
-
-		bool ranKeybinds = false;
-		Element? target;
-		if (IValidatable.IsValid(lastModal)) {
-			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.IsVisible())
-				target = KeyboardFocusedElement;
-			else if (lastModal.IsVisible())
-				target = lastModal;
-			else
-				target = null;
-		}
-		else if (IValidatable.IsValid(lastPopup)) {
-			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.IsVisible())
-				target = KeyboardFocusedElement;
-			else if (lastPopup.IsVisible())
-				target = lastPopup;
-			else
-				target = null;
-		}
-		else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsVisible())
-			target = KeyboardFocusedElement;
-		else
-			target = null;
-
-		ranKeybinds = tryRunKeybinds(target, frameState);
-		if (!ranKeybinds) {
-			// Lets try again, but only if the target wasnt keyboard focused.
-			// Because we might have a passive keyboard focused element that wants keybinds.
-			if (target != KeyboardFocusedElement)
-				ranKeybinds = tryRunKeybinds(KeyboardFocusedElement, frameState);
-		}
-
-		if (!ranKeybinds)
-			Level.RunKeybinds();
-		int rebuilds = Element.LayoutRecursive(this, ref frameState);
-
-		Element? hoveredElement = Element.ResolveElementHoveringState(this, frameState.Mouse.MousePos, EngineCore.GetGlobalScreenOffset(), EngineCore.GetScreenBounds());
-		Hovered = hoveredElement;
-
-		if (frameState.Mouse.MouseClicked) {
-			if (Hovered != null) {
-				Depressed = Hovered;
-
-				if (frameState.Mouse.Mouse1Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse1);
-				if (frameState.Mouse.Mouse2Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse2);
-				if (frameState.Mouse.Mouse3Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse3);
-				if (frameState.Mouse.Mouse4Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse4);
-				if (frameState.Mouse.Mouse5Clicked) DoMouseClick(Hovered, frameState, ButtonCode.Mouse5);
-			}
-			else {
-				if (frameState.Mouse.Mouse1Clicked) TriggerElementClicked(null, ButtonCode.Mouse1);
-				if (frameState.Mouse.Mouse2Clicked) TriggerElementClicked(null, ButtonCode.Mouse2);
-				if (frameState.Mouse.Mouse3Clicked) TriggerElementClicked(null, ButtonCode.Mouse3);
-				if (frameState.Mouse.Mouse4Clicked) TriggerElementClicked(null, ButtonCode.Mouse4);
-				if (frameState.Mouse.Mouse5Clicked) TriggerElementClicked(null, ButtonCode.Mouse5);
-			}
-		}
-
-		if (frameState.Mouse.MouseReleased) {
-			if (Depressed != null) {
-				if (Hovered == Depressed) {
-					if (frameState.Mouse.Mouse1Released)
-						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse1);
-					if (frameState.Mouse.Mouse2Released)
-						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse2);
-					if (frameState.Mouse.Mouse3Released)
-						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse3);
-					if (frameState.Mouse.Mouse4Released)
-						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse4);
-					if (frameState.Mouse.Mouse5Released)
-						Hovered.MouseReleaseOccur(frameState, ButtonCode.Mouse5);
-				}
-				else {
-					if (frameState.Mouse.Mouse1Released)
-						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse1);
-					if (frameState.Mouse.Mouse2Released)
-						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse2);
-					if (frameState.Mouse.Mouse3Released)
-						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse3);
-					if (frameState.Mouse.Mouse4Released)
-						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse4);
-					if (frameState.Mouse.Mouse5Released)
-						Depressed.MouseLostOccur(frameState, ButtonCode.Mouse5);
-				}
-				if (Depressed != null) {
-					Depressed.Depressed = false;
-					Depressed = null;
-				}
-			}
-		}
-
-		if (!frameState.Mouse.MouseScroll.IsZero()) {
-			if (IValidatable.IsValid(Hovered) && Hovered.IsMouseInputEnabled() == false) {
-				Element? e = Hovered;
-				for (int i = 0; i < 1000; i++) {
-					if (!IValidatable.IsValid(e))
-						break;
-
-					e.ConsumedScrollEvent = false;
-					e.MouseScrollOccur(frameState, frameState.Mouse.MouseScroll);
-					if (e.ConsumedScrollEvent)
-						break;
-
-					e = e.GetParent();
-				}
-			}
-		}
-
-		if (frameState.Mouse.MouseHeld && !frameState.Mouse.MouseClicked && !frameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(Depressed) && Depressed.IsMouseInputEnabled() == false)
-			Depressed.MouseDragOccur(frameState, frameState.Mouse.MouseDelta);
+	internal bool RemoveElement(Element element) {
+		if (element == null) return false;
+		return Elements.Remove(element);
 	}
 
+	public Element? GetHoveredElement() => SolveState.Hovered;
+	public Element? GetKeyboardFocusedElement() => SolveState.KeyboardFocused;
 
-	private bool DoKeyPressed(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
-		ResetKeyEventConsumed();
-		element.KeyPressedOccur(in emulatedState, keyboardKey);
-		if (WasKeyEventConsumed())
+	ulong keyboardFocusReentrantID = 0;
+
+	public bool SetKeyboardFocusedElement(Element? element){
+		ulong currentFunctionID = keyboardFocusReentrantID++;
+
+		Element? keyboardFocused = SolveState.KeyboardFocused;
+		if(keyboardFocused != null){
+			if (keyboardFocused.CanKeyboardFocusLostOccur(element))
+				return false;
+		}
+
+		if(element == null){
+			SolveState.KeyboardFocused = null;
 			return true;
+		}
 
-		if (recurseChildren)
-			foreach (var child in element.Children)
-				if (DoKeyPressed(child, in emulatedState, keyboardKey, true))
-					return true;
+		if (!element.CanKeyboardFocusGainedOccur(keyboardFocused, ref element))
+			return false;
 
-		return false;
-	}
+		if (keyboardFocusReentrantID != currentFunctionID)
+			return false; // If another caller calls into this function in a keyboard focus hook, it would cause their focus to be
+					      // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
+						  // the result to not immediately override it. Although you should just use the ref element if you can. 
+						  // (or maybe we should just have the re-entrant check and nix the ref... todo)
 
-	private bool DoKeyReleased(Element element, in KeyboardState emulatedState, ButtonCode keyboardKey, bool recurseChildren) {
-		ResetKeyEventConsumed();
-		element.KeyReleasedOccur(in emulatedState, keyboardKey);
-		if (WasKeyEventConsumed())
-			return true;
-
-		if (recurseChildren)
-			foreach (var child in element.Children)
-				if (DoKeyReleased(child, in emulatedState, keyboardKey, true))
-					return true;
-
-		return false;
-	}
-
-	public void Render() {
-		activePopups.Clear();
-		UI.PaintTraverse(activePopups);
-
-		foreach (var popup in activePopups) 
-			popup.PaintTraverse();
-	}
-
-	internal void HandleThinking() => Element.ThinkRecursive(UI, Level.FrameState);
-
-	bool KeyEventConsumed = true;
-	public bool ResetKeyEventConsumed() => KeyEventConsumed = true;
-	public bool MarkKeyEventNotConsumed() => KeyEventConsumed = false;
-	public bool WasKeyEventConsumed() => KeyEventConsumed;
-
-	bool MouseEventConsumed = true;
-	public bool ResetMouseEventConsumed() => MouseEventConsumed = true;
-	public bool MarkMouseEventNotConsumed() => MouseEventConsumed = false;
-	public bool WasMouseEventConsumed() => MouseEventConsumed;
-
-	private void DoMouseClick(Element hovered, FrameState frameState, ButtonCode button) {
-		if (hovered.IsPopup)
-			hovered.MoveToFront();
-		else if (hovered.IsParentedToPopup(out Element? parent))
-			parent.MoveToFront();
-
-		hovered.MouseClickOccur(frameState, button);
+		SolveState.KeyboardFocused = element;
+		return true;
 	}
 }

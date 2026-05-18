@@ -73,22 +73,27 @@ namespace CloneDash.Game
 			public event Mouse? DragUpdate;
 			public event Mouse? DragEnd;
 
-			protected override void MouseClick(FrameState state, ButtonCode button) {
-				if (button != ButtonCode.MouseLeft) return;
+			protected override bool MouseClick(FrameState state, ButtonCode button) {
+				if (!IsHovered()) return true;
+				if (button != ButtonCode.MouseLeft) return true;
 				base.MouseClick(state, button);
 				DragStart?.Invoke();
+				return true;
 			}
 
-			protected override void MouseDrag(Element self, FrameState state, Vector2F delta) {
-				if (!state.Mouse.Mouse1Held) return;
+			protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+				if (!IsHovered()) return true;
+				if (!state.Mouse.Mouse1Held) return true;
 				base.MouseDrag(self, state, delta);
 				DragUpdate?.Invoke();
+				return true;
 			}
 
-			protected override void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) {
-				if (button != ButtonCode.MouseLeft) return;
+			protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+				if (button != ButtonCode.MouseLeft) return false;
 				base.MouseRelease(self, state, button);
 				DragEnd?.Invoke();
+				return true;
 			}
 
 			public override void Paint(float width, float height) {

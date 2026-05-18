@@ -41,12 +41,12 @@ public class ListViewItem : Button
 		this.Clipping = false;
 	}
 
-	protected override void OnThink(FrameState frameState) {
+	protected override void OnThink() {
 		if (Depressed) {
 			BackgroundColor = new(30, 35, 45, 65);
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
-		else if (Hovered) {
+		else if (IsHovered()) {
 			BackgroundColor = new(200, 210, 230, 50);
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}

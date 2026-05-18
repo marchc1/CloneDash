@@ -23,9 +23,9 @@ public class MainMenuButton : Button
 
 	public float Offscreen { get; set; }
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		ChildRenderOffset = new(sos.Update(Offscreen != 0 ? frameState.WindowWidth / 2 * Offscreen : Hovered ? -50 : 0), 0);
+	protected override void OnThink() {
+		base.OnThink();
+		ChildRenderOffset = new(sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0);
 	}
 
 	public override void Paint(float width, float height) {

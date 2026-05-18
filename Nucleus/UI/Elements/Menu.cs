@@ -25,7 +25,8 @@ public class Menu(Element? parent) : Panel(parent)
 
 	internal class MenuButtonPanel(Menu parent, MenuButton btn) : Button(parent)
 	{
-		protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			if (!IsHovered()) return true;
 			btn.invoke?.Invoke();
 
 			Menu ultimateMenu = parent;
@@ -36,9 +37,10 @@ public class Menu(Element? parent) : Panel(parent)
 			}
 
 			ultimateMenu?.Close();
+			return true;
 		}
-		protected override void OnThink(FrameState frameState) {
-			if (Hovered) {
+		protected override void OnThink() {
+			if (IsHovered()) {
 				if (parent.lastHoveredPiece != this)
 					parent.activeSubmenu?.Close();
 
@@ -49,7 +51,7 @@ public class Menu(Element? parent) : Panel(parent)
 			float x = 0;
 			var by = new Vector2F(x, 0);
 			Graphics2D.OffsetDrawing(by);
-			if (Hovered) {
+			if (IsHovered()) {
 				Graphics2D.SetDrawColor(70, 80, 90, 222);
 				Graphics2D.DrawRectangle(0, 0, width, height);
 			}
@@ -61,8 +63,8 @@ public class Menu(Element? parent) : Panel(parent)
 
 	internal class MenuSubMenuButtonPanel(Menu parent, MenuSubmenu submenu) : Button(parent)
 	{
-		protected override void OnThink(FrameState frameState) {
-			if (Hovered) {
+		protected override void OnThink() {
+			if (IsHovered()) {
 				if (parent.lastHoveredPiece != this) {
 					parent.activeSubmenu?.Close();
 					parent.activeSubmenu = new Menu(this);
@@ -83,7 +85,7 @@ public class Menu(Element? parent) : Panel(parent)
 			float x = 0;
 			var by = new Vector2F(x, 0);
 			Graphics2D.OffsetDrawing(by);
-			if (Hovered) {
+			if (IsHovered()) {
 				Graphics2D.SetDrawColor(70, 80, 90, 222);
 				Graphics2D.DrawRectangle(0, 0, width, height);
 			}
@@ -169,11 +171,9 @@ public class Menu(Element? parent) : Panel(parent)
 			}
 			i++;
 		}
-		this.InvalidateLayout(true);
 		float pX = 0;
 		float pY = 0;
 		foreach (var child in Children) {
-			child.InvalidateLayout(true);
 			var newP = child.RenderBounds.Pos + Graphics2D.GetTextSize(child.Text, child.Font, child.TextSize) + 16;
 			if (newP.X > pX) pX = newP.X;
 			if (newP.Y > pY) pY = newP.Y;
@@ -200,7 +200,7 @@ public class Menu(Element? parent) : Panel(parent)
 		this.Backdrop = true;
 		this.TimeToBackdropAlpha = 0.15;
 
-		UI.OnElementClicked += UI_OnElementClicked;
+		UI.Input.OnClick += UI_OnElementClicked;
 	}
 
 	private void S_PaintOverride(Element self, float width, float height) {
@@ -212,8 +212,8 @@ public class Menu(Element? parent) : Panel(parent)
 		Backdrop = false;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 
 		Opacity = (float)BackdropAlpha;
 
@@ -223,10 +223,10 @@ public class Menu(Element? parent) : Panel(parent)
 		}
 	}
 
-	private void UI_OnElementClicked(Element el, ButtonCode mb) {
+	private void UI_OnElementClicked(Element? el) {
 		if (this.Lifetime > 0.2f && (el == null || !el.IsIndirectChildOf(this))) {
 			this.Close();
-			UI.OnElementClicked -= UI_OnElementClicked;
+			UI.Input.OnClick -= UI_OnElementClicked;
 		}
 	}
 }

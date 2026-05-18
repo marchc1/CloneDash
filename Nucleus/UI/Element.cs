@@ -51,10 +51,14 @@ public enum ElementFlags : uint
 	PostChildPaintEnabled = 1 << 5,
 	NeedsLayout = 1 << 6,
 	NeedsSchemeUpdate = 1 << 7,
-	AllowChainKeybindingToParent = 1 << 8,
-	InPerformLayout = 1 << 9,
-	// IsProportional = 1 << 10, // TODO
-	MousePassthru = 1 << 11,
+	AllowChainInputToParent = 1 << 8,
+	AllowChainKeybindingToParent = 1 << 9,
+	InPerformLayout = 1 << 10,
+	IsProportional = 1 << 11, // TODO
+	MousePassthru = 1 << 12,
+	IsPopup = 1 << 13,
+	IsModal = 1 << 14,
+	NeedsRenderBoundsFlush = 1 << 15,
 }
 
 public class Element : IValidatable
@@ -78,25 +82,6 @@ public class Element : IValidatable
 
 	private bool __engineDisabled = false;
 	private bool __engineInvisible = false;
-
-	// These store an internal value for when we're setting up children for the first time/after a full-child update.
-	// The elements individual value is stored in the equiv. Self value.
-	protected float ChildrensDockingLayoutTop = 0;
-	protected float ChildrensDockingLayoutLeft = 0;
-	protected float ChildrensDockingLayoutRight = 0;
-	protected float ChildrensDockingLayoutBottom = 0;
-
-	// These store the internal value so when rebuilds happen they can use an old value.
-	// They will be reset on full child updates (ie. InvalidateChildren)
-	protected float? SelfDockingLayoutTop = null;
-	protected float? SelfDockingLayoutLeft = null;
-	protected float? SelfDockingLayoutRight = null;
-	protected float? SelfDockingLayoutBottom = null;
-
-	protected float DockingLayoutTop = 0;
-	protected float DockingLayoutLeft = 0;
-	protected float DockingLayoutRight = 0;
-	protected float DockingLayoutBottom = 0;
 
 	private RectangleF __renderbounds = RectangleF.Zero;
 
@@ -138,9 +123,6 @@ public class Element : IValidatable
 
 	// properties with backing (should be fields)
 
-	public bool IsPopup { get; private set; }
-	public bool IsModal { get; private set; }
-
 	public float BorderSize { get; set; } = 2;
 	public float Roundness { get; set; } = 0;
 	public Color BackgroundColor { get; set; } = DefaultBackgroundColor;
@@ -155,7 +137,7 @@ public class Element : IValidatable
 
 	public float Opacity { get; set; } = 1.0f;
 
-	public Dictionary<string, object> Tags { get; } = [];
+	public Dictionary<string, object?> Tags { get; } = [];
 
 	public bool ConsumedScrollEvent { get; internal set; }
 
@@ -185,7 +167,7 @@ public class Element : IValidatable
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
-	public UserInterface UI { get; internal set; }
+	public UserInterface UI { get; internal set; } = null!;
 
 	public virtual void Initialize(float x, float y, float width, float height) {
 		_position = new(x, y);
@@ -237,10 +219,7 @@ public class Element : IValidatable
 				return;
 
 			_size = value;
-			if (Dock != Dock.None)
-				InvalidateParentAndItsChildren();
-			else
-				InvalidateChildren(recursive: true, self: true);
+			InvalidateLayout();
 		}
 	}
 
@@ -258,7 +237,8 @@ public class Element : IValidatable
 				return;
 
 			_dock = value;
-			InvalidateParentAndItsChildren();
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
 		}
 	}
 	/// <summary>
@@ -272,7 +252,8 @@ public class Element : IValidatable
 				return;
 
 			_dockMargin = value;
-			InvalidateParentAndItsChildren();
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
 		}
 	}
 	/// <summary>
@@ -285,31 +266,14 @@ public class Element : IValidatable
 			if (_dockPadding == value)
 				return;
 
-			InvalidateChildren(recursive: true, self: true);
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
 			if (AddParent != this)
 				AddParent.DockPadding = value;
 			else
 				_dockPadding = value;
 		}
 	}
-
-	/// <summary>
-	/// Resets the docking layout. This resets all ChildrensDockingLayout values on this element, and resets all childrens SelfDockingLayout values.
-	/// </summary>
-	public void ResetDockingLayout() {
-		ChildrensDockingLayoutTop = 0;
-		ChildrensDockingLayoutLeft = 0;
-		ChildrensDockingLayoutRight = 0;
-		ChildrensDockingLayoutBottom = 0;
-
-		foreach (var child in Children) {
-			child.SelfDockingLayoutTop = null;
-			child.SelfDockingLayoutLeft = null;
-			child.SelfDockingLayoutRight = null;
-			child.SelfDockingLayoutBottom = null;
-		}
-	}
-
 
 	public virtual RectangleF RenderBounds {
 		get {
@@ -342,30 +306,27 @@ public class Element : IValidatable
 		__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
 	}
 
-	public IScheme? GetScheme() => scheme;
-	public void SetScheme(IScheme? scheme) {
-		if (scheme != this.scheme)
-			this.scheme = scheme;
-	}
-
-
 	public Element() {
 		Initialize(0, 0, 32, 32);
+		UI?.AddElement(this);
 	}
 	public Element(Element? parent) {
 		Initialize(0, 0, 32, 32);
 		SetParent(parent?.AddParent);
+		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name) {
 		Initialize(0, 0, 32, 32);
 		SetName(name);
 		SetParent(parent?.AddParent);
+		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name, IScheme? scheme) {
 		Initialize(0, 0, 32, 32);
 		SetName(name);
 		SetParent(parent?.AddParent);
 		SetScheme(scheme);
+		UI?.AddElement(this);
 	}
 
 	/// <summary>
@@ -412,8 +373,7 @@ public class Element : IValidatable
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetKeyboardInputEnabled(bool state) {
-		if (state == false && KbInput == true)
-			KeyboardUnfocus();
+		// if (state == false && KbInput == true) // todo: disable keyboard state
 		KbInput = state;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetMouseInputEnabled(bool state) => MouseInput = state;
@@ -440,7 +400,7 @@ public class Element : IValidatable
 		return MouseInput;
 	}
 
-	public event Action<Element> Removed;
+	public event Action<Element>? Removed;
 
 	private void REMOVE() {
 		if (__markedForRemoval == true)
@@ -451,13 +411,14 @@ public class Element : IValidatable
 
 		__markedForRemoval = true;
 
-		if (IsPopup)
+		if (IsPopup())
 			UI.RemovePopup(this);
 
-		if (IsModal)
+		if (IsModal())
 			UI.RemoveModal(this);
 
-		UI.Elements.Remove(this);
+		UI.RemoveElement(this);
+
 		foreach (Element element in this.LockAndEnumerateChildren())
 			element.REMOVE();
 		this.UnlockChildren();
@@ -484,15 +445,18 @@ public class Element : IValidatable
 		ChildParented(parent, child);
 	}
 
-	protected virtual void OnThink(FrameState frameState) { }
+	protected virtual void OnThink() { }
 
-	internal void Think(FrameState frameState) {
+	internal void Think() {
 		if (_firstThink) {
 			_firstThink = false;
 			Birth = DateTime.Now;
 		}
 
-		OnThink(frameState);
+		if (IsVisible())
+			ValidateLayout();
+
+		OnThink();
 	}
 
 	/// <summary>
@@ -552,18 +516,26 @@ public class Element : IValidatable
 	public Element? GetParent() => Parent;
 
 	public void SetParent(Element? p) {
-		if (Parent != null)                 // if current parent isn't null
+		if (p == this)
+			return; // not valid at all
+
+		// Detach ourselves from the current parent
+		if (Parent != null) {
 			Parent.Children.Remove(this);
-
-		Parent = p;                         // set parent to P
-		UI = p?.UI!;
-
-		if (p != null) {                    // if new parent isn't just null, add it to its children
-			p.Children.Add(this);
-
 			p.InvalidateLayout();
 		}
 
+		// Set up fields from the new parent
+		Parent = p;                         // set parent to P
+		UI = p?.UI!;
+
+		// Attach ourselves to the new parent
+		if (p != null) {
+			p.Children.Add(this);
+			p.InvalidateLayout();
+		}
+
+		// Trigger invalidations on ourselves just in case
 		InvalidateLayout();
 		p?.TriggerOnChildParented(p, this);
 	}
@@ -572,14 +544,14 @@ public class Element : IValidatable
 		this.AddParent.Children.Sort(childSortMethod);
 	}
 
-	public void InvalidateChildren(bool immediate = false, bool recursive = false, bool self = false) {
+	public void InvalidateChildren(bool recursive = false, bool self = false) {
 		if (self)
-			InvalidateLayout(immediate);
-		ResetDockingLayout();
+			InvalidateLayout();
+
 		foreach (Element e in Children) {
-			e.InvalidateLayout(immediate);
+			e.InvalidateLayout();
 			if (recursive)
-				e.InvalidateChildren(immediate, recursive);
+				e.InvalidateChildren(recursive);
 		}
 	}
 
@@ -587,38 +559,123 @@ public class Element : IValidatable
 	/// Invalidates the layout, registering it for a rebuild with the layout system.
 	/// </summary>
 	/// <param name="immediate"></param>
-	public void InvalidateLayout(bool immediate = false) {
-		ChildrensDockingLayoutTop = ChildrensDockingLayoutLeft = ChildrensDockingLayoutRight = ChildrensDockingLayoutBottom = 0;
+	public void InvalidateLayout() {
+		AddFlag(ElementFlags.NeedsLayout);
+		AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+	}
 
-		if (immediate) {
-			var fs = Level.FrameState;
-			LayoutRecursive(this, ref fs);
-		}
-		else {
-			AddFlag(ElementFlags.NeedsLayout);
-		}
+	public void MarkRenderBoundsAsDirty() {
+		AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+	}
+
+	public void FlushRenderBounds() {
+		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
+			return;
+		__renderbounds.X = _position.X;
+		__renderbounds.Y = _position.Y;
+		__renderbounds.W = _size.W;
+		__renderbounds.H = _size.H;
+		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
 	public void ValidateLayout() {
-		if (IsLayoutInvalid())
-			SetupLayout();
-
-		RemoveFlag(ElementFlags.NeedsLayout);
-	}
-	/// <summary>
-	/// Alias of calling <see cref="InvalidateLayout(bool)"/> on <seealso cref="Parent"/>
-	/// </summary>
-	/// <param name="immediate"></param>
-	public void InvalidateParent(bool immediate = false) {
-		if (Parent != null)
-			Parent.InvalidateLayout(immediate);
-	}
-	public void InvalidateParentAndItsChildren(bool immediate = false) {
-		if (Parent == null) return;
-
-		Parent.InvalidateChildren(immediate, true, true);
+		if (IsLayoutInvalid()) {
+			Layout();
+			RemoveFlag(ElementFlags.NeedsLayout);
+		}
 	}
 
+	private void Layout() {
+		// Flush render bounds if we need that
+		FlushRenderBounds();
+		// Perform the internal layout based on our size
+		PerformLayout(__renderbounds.W, __renderbounds.H);
+		// Perform child docking
+		DoChildDocking();
+	}
+
+	private void DoChildDocking() {
+		RectangleF availableSpace = __renderbounds;
+
+		// Shrink available space by dock padding
+		if (!_dockPadding.IsZero) {
+			availableSpace.AddPosition(new(_dockPadding.X, _dockPadding.Y));
+			availableSpace.AddSize(new(_dockPadding.W * -2, _dockPadding.H * -2));
+		}
+
+		foreach (var child in Children) {
+			Dock dock = child.Dock;
+			if (dock == Dock.None)
+				continue;
+
+			// We will modify the render bounds of the child, and mark its render bounds as NOT dirty after
+			// This is kind of a hack but its the cleanest way to do it probably, forcing the render bounds flush
+			child.AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+			child.FlushRenderBounds();
+			RectangleF childBoundsPreEdit = child.__renderbounds;
+			ref RectangleF childBounds = ref child.__renderbounds;
+			// Aligning child bounds to our bounds...
+			switch (dock) {
+				case Dock.Top:
+					childBounds.X = availableSpace.X;
+					childBounds.Y = availableSpace.Y;
+					childBounds.W = availableSpace.W;
+					// height untouched
+					break;
+				case Dock.Left:
+					childBounds.X = availableSpace.X;
+					childBounds.Y = availableSpace.Y;
+					childBounds.H = availableSpace.H;
+					// width untouched
+					break;
+				case Dock.Right:
+					childBounds.X = availableSpace.W - childBounds.X;
+					childBounds.Y = availableSpace.Y;
+					childBounds.H = availableSpace.H;
+					// width untouched
+					break;
+				case Dock.Bottom:
+					childBounds.X = availableSpace.W - childBounds.X;
+					childBounds.Y = availableSpace.H - childBounds.Y;
+					childBounds.W = availableSpace.W;
+					// height untouched
+					break;
+				case Dock.Fill:
+
+					break;
+			}
+			// ... then fixing up our bounds
+			switch (dock) {
+				case Dock.Top:
+					availableSpace.Y += childBounds.H;
+					availableSpace.H -= childBounds.H;
+					break;
+				case Dock.Left:
+					availableSpace.X += childBounds.W;
+					availableSpace.W -= childBounds.W;
+					break;
+				// we only need to shrink size for the next two
+				case Dock.Right:
+					availableSpace.W -= childBounds.W;
+					break;
+				case Dock.Bottom:
+					availableSpace.H -= childBounds.H;
+					break;
+			}
+
+			// Then shrink the child by DockMargin..
+			if (!_dockMargin.IsZero) {
+				childBounds.AddPosition(new(_dockMargin.X, _dockMargin.Y));
+				childBounds.AddSize(new(_dockMargin.W * -2, _dockMargin.H * -2));
+			}
+
+			// manual layout flag setting here
+			if (childBoundsPreEdit != childBounds)
+				child.AddFlag(ElementFlags.NeedsLayout);
+
+			child.RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
+		}
+	}
 
 	public bool IsUsingRenderTarget() => __usesRenderTarget;
 	/// <summary>
@@ -640,174 +697,6 @@ public class Element : IValidatable
 		else {
 
 		}
-	}
-
-	/// <summary>
-	/// Don't override this unless you 100% know what you're doing. This is NOT the same as PerformLayout. <br></br>
-	/// This method performs the calculations for this panels docking offsets, etc...<br></br>
-	/// It's only exposed for elements (such as the root UserInterface) to modify their logic.
-	/// </summary>
-	internal virtual void SetupLayout() {
-		ChildrensDockingLayoutTop = 0;
-		ChildrensDockingLayoutLeft = 0;
-		ChildrensDockingLayoutRight = 0;
-		ChildrensDockingLayoutBottom = 0;
-
-
-		var layoutSize = _size;
-		if (_dynamicallySized && Parent != null) {
-			var parentSize = Parent.RenderBounds.Size;
-			layoutSize = _size * parentSize;
-		}
-
-		__renderbounds = RectangleF.FromPosAndSize(_position, layoutSize);
-
-		if (FORCE_ROUNDED_RENDERBOUNDS)
-			__renderbounds.RoundInPlace();
-
-		ModifyLayout(ref __renderbounds);
-		//PerformLayout(_size.w, _size.h); used to be here...
-
-		RectangleF currentBounds = __renderbounds;
-		if (Dock != Dock.None) {
-			var dT = SelfDockingLayoutTop ?? Parent.ChildrensDockingLayoutTop;
-			var dL = SelfDockingLayoutLeft ?? Parent.ChildrensDockingLayoutLeft;
-			var dR = SelfDockingLayoutRight ?? Parent.ChildrensDockingLayoutRight;
-			var dB = SelfDockingLayoutBottom ?? Parent.ChildrensDockingLayoutBottom;
-
-			SelfDockingLayoutTop = dT;
-			SelfDockingLayoutLeft = dL;
-			SelfDockingLayoutRight = dR;
-			SelfDockingLayoutBottom = dB;
-
-			float parentWidth = 0, parentHeight = 0;
-			float childWidth = currentBounds.W, childHeight = currentBounds.H;
-
-			if (!IValidatable.IsValid(Parent)) {
-				parentWidth = UI.Size.W;
-				parentHeight = UI.Size.H;
-			}
-			else {
-				parentWidth = Parent.RenderBounds.Width;
-				parentHeight = Parent.RenderBounds.Height;
-			}
-
-			switch (Dock) {
-				case Dock.Top:
-					currentBounds.X = dL;
-					currentBounds.Y = dT;
-					currentBounds.W = (parentWidth - dR) - dL;
-					currentBounds.H = childHeight;
-					Parent.ChildrensDockingLayoutTop += childHeight;
-					break;
-				case Dock.Left:
-					currentBounds.X = dL;
-					currentBounds.Y = dT;
-					currentBounds.W = childWidth;
-					currentBounds.H = (parentHeight - dT) - dB;
-					Parent.ChildrensDockingLayoutLeft += childWidth;
-					break;
-				case Dock.Right:
-					currentBounds.X = (parentWidth - childWidth) - dR;
-					currentBounds.Y = dT;
-					currentBounds.W = childWidth;
-					currentBounds.H = (parentHeight - dB) - dT;
-					Parent.ChildrensDockingLayoutRight += childWidth;
-					break;
-				case Dock.Bottom:
-					currentBounds.X = dL;
-					currentBounds.Y = (parentHeight - childHeight) - dB;
-					currentBounds.W = (parentWidth - dL) - dR;
-					currentBounds.H = childHeight;
-					Parent.ChildrensDockingLayoutBottom += childHeight;
-					break;
-				case Dock.Fill:
-					currentBounds.X = dL;
-					currentBounds.Y = dT;
-					currentBounds.W = (parentWidth - dL) - dR;
-					currentBounds.H = (parentHeight - dT) - dB;
-					break;
-			}
-
-			if (!DockMargin.IsZero) {
-				currentBounds.X += DockMargin.Left;
-				currentBounds.W -= DockMargin.Left;
-				currentBounds.W -= DockMargin.Right;
-
-				currentBounds.Y += DockMargin.Top;
-				currentBounds.H -= DockMargin.Top;
-				currentBounds.H -= DockMargin.Bottom;
-			}
-
-			if (IValidatable.IsValid(Parent) && !Parent.DockPadding.IsZero) {
-				switch (Dock) {
-					case Dock.Top:
-						currentBounds.X += Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Right;
-
-						currentBounds.Y += Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Bottom;
-						break;
-					case Dock.Left:
-						currentBounds.X += Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Right;
-
-						currentBounds.Y += Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Bottom;
-						break;
-					case Dock.Right:
-						currentBounds.X += Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Right;
-
-						currentBounds.Y += Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Bottom;
-						break;
-					case Dock.Bottom:
-						currentBounds.X += Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Right;
-
-						currentBounds.Y += Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Bottom;
-						break;
-					case Dock.Fill:
-						currentBounds.X += Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Left;
-						currentBounds.W -= Parent.DockPadding.Right;
-
-						currentBounds.Y += Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Top;
-						currentBounds.H -= Parent.DockPadding.Bottom;
-						break;
-				}
-			}
-		}
-		else if (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft) {
-			var np = Origin.CalculatePosition(currentBounds.Pos, currentBounds.Size, true);
-			var npO = Anchor.CalculatePosition(new(0, 0), Parent.RenderBounds.Size, false);
-			currentBounds.Pos = npO + np;
-		}
-
-		if (_fitToParent) {
-			var parentBounds = Parent?.RenderBounds ?? UI.RenderBounds;
-			var overflow = parentBounds.GetOverflow(currentBounds, fitPadding);
-			currentBounds.Pos += overflow;
-			_fitToParent = false;
-		}
-
-		if (FORCE_ROUNDED_RENDERBOUNDS)
-			currentBounds.RoundInPlace();
-
-		RenderBounds = currentBounds;
-		RemoveFlag(ElementFlags.NeedsLayout);
-		PerformLayout(RenderBounds.Width, RenderBounds.Height);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsParented() => Parent != null;
@@ -841,21 +730,45 @@ public class Element : IValidatable
 		}
 	}
 
-	public void MakePopup() {
-		IsPopup = true;
-		UI.Popups.Add(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsPopup() => HasFlag(ElementFlags.IsPopup);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsModal() => HasFlag(ElementFlags.IsPopup);
+
+	/// <summary>
+	/// Requires a valid parent, otherwise this just resolves to parenting to itself (invalid)
+	/// </summary>
+	public void ReparentToRoot() {
+		var parent = this;
+		while (parent != null) {
+			var last = parent.GetParent();
+			if (last == null) {
+				SetParent(parent);
+				break;
+			}
+			parent = last;
+		}
 	}
 
-	public void MakeModal(bool backdrop = true) {
-		IsModal = true;
-		UI.Modals.Add(this);
-		Backdrop |= backdrop;
+	/// <summary>
+	/// A popup ensures the following behavior: <br/>
+	/// - That, out of all children in the parent, its input will be handled first <br/>
+	/// - That, out of all children in the parent, its rendering will be done last <br/>
+	/// - It also ensures that the parent children get a chance at input, unlike modals. <br/>
+	/// - It also bypasses clipping setups and ensures that it renderes last in the frame loop
+	/// </summary>
+	public void MakePopup() {
+		if (UI.MakePopup(this))
+			AddFlag(ElementFlags.IsPopup);
+	}
+
+	public void MakeModal() {
+		if (UI.MakeModal(this))
+			AddFlag(ElementFlags.IsModal);
 	}
 
 	public bool IsParentedToPopup([NotNullWhen(true)] out Element? parent) {
 		parent = Parent;
 		while (parent != null) {
-			if (parent.IsPopup)
+			if (parent.IsPopup())
 				return true;
 			parent = parent.Parent;
 		}
@@ -865,7 +778,7 @@ public class Element : IValidatable
 	public bool IsParentedToModal([NotNullWhen(true)] out Element? parent) {
 		parent = Parent;
 		while (parent != null) {
-			if (parent.IsModal)
+			if (parent.IsModal())
 				return true;
 			parent = parent.Parent;
 		}
@@ -921,7 +834,7 @@ public class Element : IValidatable
 	public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
 		DynamicSizeReference.None => 1f,
 		DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
-		DynamicSizeReference.ParentHeight => Parent.RenderBounds.Height / 20f,
+		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.RenderBounds.Height / 20f,
 		DynamicSizeReference.SelfHeight => RenderBounds.Height / 20f,
 		_ => throw new NotImplementedException()
 	};
@@ -937,90 +850,6 @@ public class Element : IValidatable
 		set {
 			__textSize = value;
 		}
-	}
-
-
-	// The element cycle
-
-	public static int LayoutRecursive(Element element, ref FrameState frameState) {
-		if (!element.IsVisible()) return 0;
-
-		int returning = 0;
-
-		if (element is UserInterface ui)
-			ui.Preprocess(frameState.WindowWidth, frameState.WindowHeight);
-
-		element.SizeOfAllChildren = Vector2F.Zero;
-		var wasInvalid = element.IsLayoutInvalid();
-		if (wasInvalid) {
-			element.SetupLayout();
-
-			returning += 1;
-		}
-		foreach (Element child in element.LockAndEnumerateChildren()) {
-			returning += LayoutRecursive(child, ref frameState);
-			if (child.IsVisible()) {
-				var ps = (child.RenderBounds.Pos + child.RenderBounds.Size);
-				if (ps > element.SizeOfAllChildren)
-					element.SizeOfAllChildren = ps;
-			}
-			else {
-				child.RenderBounds = RectangleF.Zero;
-			}
-		}
-		element.UnlockChildren();
-		if (wasInvalid)
-			element.PostLayoutChildren();
-
-		return returning;
-	}
-
-	public static Element? ResolveElementHoveringState(Element element, Vector2F mousepos, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
-		if (!element.IsVisible()) return lastHovered;
-		if (!element.IsMouseInputEnabled()) return lastHovered;
-
-		if (element.Parent != null)
-			offset += element.Parent.ChildRenderOffset;
-
-		var boundsOfSelf = lastBounds.FitInto(element.RenderBounds.AddPosition(offset));
-
-		if (modalActive || (element is UserInterface ui && ui.ModalActive)) {
-			if (element == element.UI.Modals.Last())
-				modalActive = false;
-			else
-				modalActive = true;
-
-			offset += element.RenderBounds.Pos;
-
-			foreach (Element child in element.Children)
-				lastHovered = ResolveElementHoveringState(child, mousepos, offset, boundsOfSelf, lastHovered, modalActive);
-
-			return lastHovered;
-		}
-
-		var bounds = element.RenderBounds.AddPosition(offset);
-
-		if (element.HoverTest(bounds, mousepos))
-			lastHovered = element;
-
-		offset += element.RenderBounds.Pos;
-
-		foreach (Element child in element.Children)
-			lastHovered = ResolveElementHoveringState(child, mousepos, offset, boundsOfSelf, lastHovered);
-
-		return lastHovered;
-	}
-
-	public static void ThinkRecursive(Element element, FrameState frameState) {
-		if (element == null) return; // wtf?
-		if (!element.IsVisible()) return;
-
-		element.Think(frameState);
-
-		element.Children.RemoveAll(x => x.__markedForRemoval);
-		foreach (Element child in element.LockAndEnumerateChildren())
-			ThinkRecursive(child, frameState);
-		element.UnlockChildren();
 	}
 
 	~Element() {
@@ -1041,13 +870,16 @@ public class Element : IValidatable
 			return;
 
 		Visible = visible;
-		InvalidateParentAndItsChildren();
+		GetParent()?.InvalidateLayout();
+		InvalidateLayout();
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public virtual bool IsVisible() {
 		return Visible;
 	}
 
-	private bool IsRenderTargetAvailable(out RenderTexture2D rt) {
+	public bool IsRenderTargetAvailable(out RenderTexture2D rt) {
 		if (!__lastRTSize.HasValue || RenderBounds != __lastRTSize) {
 			if (__RT1.HasValue) Raylib.UnloadRenderTexture(__RT1.Value);
 
@@ -1064,125 +896,10 @@ public class Element : IValidatable
 		return true;
 	}
 
-	private void PaintElement(List<Element>? popups = null, int iteration = 0) {
-		float w = RenderBounds.Width, h = RenderBounds.Height;
-		if (w <= 0 || h <= 0) return;
-
-		if (Clipping)
-			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - ChildRenderOffset, RenderBounds.Size));
-		{
-			Graphics2D.PushAlpha(Opacity * 255);
-			{
-				// Calculate border insetting
-				float iw = w, ih = h;
-				float border = BorderSize;
-				iw -= (border * 2);
-				ih -= (border * 2);
-				bool rounded = Roundness != 0;
-				Vector2F drawingOffset = new(border);
-				if (iw > 0 && ih > 0) {
-					if (IsPaintBackgroundEnabled()) {
-						if (rounded) // kinda hacky but required for border/background right now. Fixme
-							PaintBackground(w, h);
-						else {
-							Graphics2D.OffsetDrawing(drawingOffset);
-							PaintBackground(iw, ih);
-							Graphics2D.OffsetDrawing(-drawingOffset);
-						}
-					}
-
-					if (IsPaintEnabled()) {
-						Graphics2D.OffsetDrawing(drawingOffset);
-						Paint(iw, ih);
-						Graphics2D.OffsetDrawing(-drawingOffset);
-					}
-				}
-
-				if (IsPaintBorderEnabled())
-					PaintBorder(w, h);
-
-				foreach (Element child in Children)
-					child.PaintTraverse(popups, iteration + 1);
-
-				if (IsPostChildPaintEnabled())
-					PostChildPaint();
-			}
-			Graphics2D.PopAlpha();
-		}
-		if (Clipping)
-			Graphics2D.ScissorRect();
-	}
-
-	public void PaintTraverse(List<Element>? popups = null, int iteration = 0) {
-		if (!IsVisible()) return;
-
-		if (IsPopup && popups != null) {
-			// We are in pre-popup mode, because popups isnt null, so add the element to the popups list and short circuit
-			popups.Add(this);
-			return;
-		}
-
-		if (BackdropAlpha >= 0) {
-			Raylib.DrawRectangle(0, 0, (int)UI.Size.X, (int)UI.Size.Y, new(0, 0, 0,
-				(int)(float)double.Lerp(0, 100, BackdropAlpha)
-				));
-		}
-
-		if (IsUsingRenderTarget()) {
-			// quick check if needing to create a new RT
-			if (IsRenderTargetAvailable(out RenderTexture2D rt)) {
-				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
-				Graphics2D.ResetDrawingOffset();
-				{
-					Graphics2D.BeginRenderTarget(rt);
-					PaintElement();
-					Graphics2D.EndRenderTarget();
-				}
-				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
-
-				if (IValidatable.IsValid(Parent)) {
-					Graphics2D.OffsetDrawing(ChildRenderOffset);
-					if (Parent.PostRenderChildRT(this) == true) {
-						Graphics2D.OffsetDrawing(RenderBounds.Pos);
-						{
-							PreRenderRT();
-							var t = (byte)Math.Clamp(Opacity * 255, 0, 255);
-							Graphics2D.SetDrawColor(t, t, t, t);
-							Graphics2D.DrawRenderTexture(rt, RenderBounds.Size);
-							PostRenderRT();
-						}
-						Graphics2D.OffsetDrawing(-RenderBounds.Pos);
-					}
-					Graphics2D.OffsetDrawing(-ChildRenderOffset);
-				}
-			}
-			else
-				Logs.Error("No render-target for element??");
-
-			return;
-		}
-
-		Vector2F childRenderOffset = IValidatable.IsValid(Parent) ? ChildRenderOffset : Vector2F.Zero;
-		childRenderOffset = childRenderOffset.Round(5);
-
-		Graphics2D.OffsetDrawing(childRenderOffset);
-		{
-			Graphics2D.OffsetDrawing(RenderBounds.Pos);
-			{
-				PaintElement(popups, iteration);
-			}
-			Graphics2D.OffsetDrawing(-RenderBounds.Pos);
-		}
-		Graphics2D.OffsetDrawing(-childRenderOffset);
-	}
-
-
 	public bool HasTag(string key) => Tags.ContainsKey(key);
-	public T GetTag<T>(string key) => (T)Tags[key];
-	public T? GetTagSafely<T>(string key) => Tags.ContainsKey(key) ? (T)Tags[key] : default(T);
-	public void SetTag<T>(string key, T value) => Tags[key] = value;
+	public T? GetTag<T>(string key) => Tags.TryGetValue(key, out object? v) ? (T?)v : default;
+	public void SetTag<T>(string key, T? value) => Tags[key] = value;
 	public void UnsetTag(string key) => Tags.Remove(key);
-
 
 
 	public void ClearChildren() {
@@ -1197,43 +914,38 @@ public class Element : IValidatable
 		this.AddParent.Children.Clear();
 		InvalidateLayout();
 	}
-	public bool Hovered => UI.Hovered == this;
 
-	internal void MouseClickOccur(FrameState state, ButtonCode button) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsHovered() {
+		return MouseInput && UI.Hovered == this;
+	}
+
+	internal bool MouseClickOccur(FrameState state, ButtonCode button) {
+		if (!MouseInput)
+			return false;
 		Depressed = true;
-		MouseClick(state, button);
-		UI.TriggerElementClicked(this, button);
+		return MouseClick(state, button);
 	}
 
-	internal void MouseReleaseOccur(FrameState state, ButtonCode button, bool forced = false) {
-		Depressed = false;
-
-		if (!Hovered && !forced)
-			return;
-
-		MouseRelease(this, state, button);
-
-		if (!UI.WasMouseEventConsumed())
-			MouseReleasedOrLost(this, state, button);
-
+	internal bool MouseReleaseOccur(FrameState state, ButtonCode button) {
+		if (!MouseInput)
+			return false;
 		Dragged = false;
 		DragVector = Vector2F.Zero;
-		UI.TriggerElementReleased(this, button);
-	}
-	internal void MouseLostOccur(FrameState state, ButtonCode button, bool forced = false) {
-		Depressed = false;
 
-		MouseLost(this, state, button);
-		MouseReleasedOrLost(this, state, button);
-
-		Dragged = false;
-		DragVector = Vector2F.Zero;
+		bool handled = MouseRelease(this, state, button);
+		Depressed = false; // todo: this is breaking, but it might be a good idea to keep this true during the release
+		return handled;
 	}
-	internal void MouseDragOccur(FrameState state, Vector2F delta) {
-		MouseDrag(this, state, delta);
+	internal bool MouseDragOccur(FrameState state, Vector2F delta) {
+		if (!MouseInput)
+			return false;
+		return MouseDrag(this, state, delta);
 	}
-	internal void MouseScrollOccur(FrameState state, Vector2F delta) {
-		MouseScroll(this, state, delta);
+	internal bool MouseScrollOccur(FrameState state, Vector2F delta) {
+		if (!MouseInput)
+			return false;
+		return MouseScroll(this, state, delta);
 	}
 
 	public double Lifetime => (DateTime.Now - Birth).TotalSeconds;
@@ -1248,7 +960,7 @@ public class Element : IValidatable
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 		e.__mouseColorableHoverState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
 		e.__mouseColorableDepressState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
-		return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.Hovered ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
+		return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
 #else
 		return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
 #endif
@@ -1270,37 +982,29 @@ public class Element : IValidatable
 	}
 
 	public virtual void Center() {
-		ValidateLayout();
+		if (Parent == null)
+			return;
 		var parentBounds = Parent.RenderBounds;
 		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
 		var tb2 = new Vector2F(RenderBounds.Width / 2, RenderBounds.Height / 2);
 		this.Position = pb2 - tb2;
-		//InvalidateLayout();
-		//InvalidateChildren(self: true, recursive: true);
 	}
 
-	/// <summary>
-	/// Requests keyboard focus from the engine. Keyboard events are then able to be sent to this element.<br></br>
-	/// Will silently fail if an element demanded keyboard focus, see <see cref="DemandKeyboardFocus"/>
-	/// </summary>
-	public virtual void RequestKeyboardFocus() => UI.RequestKeyboardFocus(this);
-	/// <summary>
-	/// Demands keyboard focus from the engine, which blocks RequestKeyboardFocus from working until KeyboardUnfocus is called from the element.<br></br>
-	/// An example use case where the difference matters; say you want to request keyboard focus when hovering over some elements in an editor. But when a text box needs <br></br>
-	/// keyboard focus, you dont want hovering over something else to cause the textbox to lose focus; in this case, you'd demand keyboard focus from the textbox to avoid that.<br></br>
-	/// Note that demands don't respect demands.
-	/// </summary>
-	public virtual void DemandKeyboardFocus() => UI.DemandKeyboardFocus(this);
-	public virtual void KeyboardUnfocus() => UI.KeyboardUnfocus(this);
 
-	internal void KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
-		KeyPressed(in keyboardState, key);
+	internal bool KeyPressedOccur(in KeyboardState keyboardState, ButtonCode key) {
+		if (!KbInput)
+			return false;
+		return KeyPressed(in keyboardState, key);
 	}
-	internal void KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
-		KeyReleased(in keyboardState, key);
+	internal bool KeyReleasedOccur(in KeyboardState keyboardState, ButtonCode key) {
+		if (!KbInput)
+			return false;
+		return KeyReleased(in keyboardState, key);
 	}
-	internal void TextInputOccur(in KeyboardState keyboardState, string text) {
-		TextInput(in keyboardState, text);
+	internal bool TextInputOccur(in KeyboardState keyboardState, string text) {
+		if (!KbInput)
+			return false;
+		return TextInput(in keyboardState, text);
 	}
 
 	public bool IsIndirectChildOf(Element parent) {
@@ -1315,7 +1019,7 @@ public class Element : IValidatable
 		return false;
 	}
 
-	public bool IsKeyboardFocused() => UI.KeyboardFocusedElement == this;
+	public bool IsKeyboardFocused() => UI.GetKeyboardFocusedElement() == this;
 
 	public Vector2F GetGlobalPosition() {
 		Vector2F ret = new Vector2F(0, 0);
@@ -1491,6 +1195,17 @@ public class Element : IValidatable
 	/// <returns></returns>
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
+	public IScheme? GetScheme(){
+		return scheme;
+	}
+	public void SetScheme(IScheme? scheme){
+		if (this.scheme == scheme) return;
+
+		this.scheme = scheme;
+		if (scheme != null)
+			AddFlag(ElementFlags.NeedsSchemeUpdate);
+	}
+
 	public virtual void ApplySchemeSettings(IScheme scheme) {
 		BackgroundColor = scheme.GetColor("Nucleus.Background");
 		ForegroundColor = scheme.GetColor("Nucleus.Border");
@@ -1570,19 +1285,33 @@ public class Element : IValidatable
 		return containsPoint;
 	}
 
-	protected virtual void MouseClick(FrameState state, ButtonCode button) { UI.KeyboardUnfocus(this, true); UI.MarkMouseEventNotConsumed(); }
-	protected virtual void MouseRelease(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-	protected virtual void MouseLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-	protected virtual void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) { UI.MarkMouseEventNotConsumed(); }
-	protected virtual void MouseDrag(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
-	protected virtual void MouseScroll(Element self, FrameState state, Vector2F delta) { UI.MarkMouseEventNotConsumed(); }
 
-	public virtual void KeyboardFocusGained(bool demanded) { }
-	public virtual void KeyboardFocusLost(Element lostTo, bool demanded) { }
+	public bool CanKeyboardFocusGainedOccur(Element? lastFocus, ref Element? passTo) => OnGainingKeyboardFocus(lastFocus, ref passTo);
+	public bool CanKeyboardFocusLostOccur(Element? newFocus) => OnLosingKeyboardFocus(newFocus);
 
-	protected virtual void KeyPressed(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
-	protected virtual void KeyReleased(in KeyboardState keyboardState, ButtonCode key) { UI.MarkKeyEventNotConsumed(); }
-	protected virtual void TextInput(in KeyboardState keyboardState, string text) { UI.MarkKeyEventNotConsumed(); }
+	public bool KeyboardFocus() => UI.SetKeyboardFocusedElement(this);
+	public bool KeyboardUnfocus() => UI.SetKeyboardFocusedElement(null);
+
+	protected virtual bool MouseClick(FrameState state, ButtonCode button) => true;
+	protected virtual bool MouseRelease(Element self, FrameState state, ButtonCode button) => true;
+	protected virtual bool MouseDrag(Element self, FrameState state, Vector2F delta) => true;
+	protected virtual bool MouseScroll(Element self, FrameState state, Vector2F delta) => false;
+
+	protected virtual bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) => true;
+	protected virtual bool OnLosingKeyboardFocus(Element? newFocus) => true;
+
+	protected virtual bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) => false;
+	protected virtual bool KeyReleased(in KeyboardState keyboardState, ButtonCode key) => false;
+	protected virtual bool TextInput(in KeyboardState keyboardState, string text) => false;
+
+	internal void PerformApplySchemeSettings() {
+		if(HasFlag(ElementFlags.NeedsSchemeUpdate)){
+			IScheme? scheme = GetScheme();
+			if(scheme != null){
+				ApplySchemeSettings(scheme);
+			}
+		}
+	}
 }
 
 [Nucleus.MarkForStaticConstruction]

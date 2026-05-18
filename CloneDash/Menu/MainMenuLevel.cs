@@ -171,8 +171,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		AudioPlaybackHandle track;
 		bool setupTrack;
 
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
+		protected override void OnThink() {
+			base.OnThink();
 
 			BackgroundColor = BackgroundColor with { A = (byte)(int)Math.Clamp(NMath.Ease.OutCubic(Lifetime * 1.4f) * 155, 0, 155) };
 
@@ -247,8 +247,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	class LevelSelectorTitleLabel(LevelSelectorPanel levelSelector, SongSelector selector) : SongLabel(levelSelector)
 	{
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
+		protected override void OnThink() {
+			base.OnThink();
 
 			var oldSize = TextSize;
 			var w = levelSelector.RenderBounds.W;
@@ -264,8 +264,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	class LevelSelectorAuthorLabel(LevelSelectorPanel levelSelector, SongSelector selector) : SongLabel(levelSelector)
 	{
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
+		protected override void OnThink() {
+			base.OnThink();
 
 			var oldSize = TextSize;
 			var w = levelSelector.RenderBounds.W;
@@ -282,8 +282,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	{
 		float height = height;
 
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
+		protected override void OnThink() {
+			base.OnThink();
 
 			Position = new(levelSelector.RenderBounds.W / 4f, 0);
 			Size = new(256, height);
@@ -317,8 +317,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		bool autoplayChart;
 		float offset;
 
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
+		protected override void OnThink() {
+			base.OnThink();
+			var frameState = EngineCore.Level.FrameState;
 			if (frameState.Keyboard.AltDown) 
 				Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
 			else 

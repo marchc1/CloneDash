@@ -87,11 +87,13 @@ public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Butt
 		}
 	}
 
-	protected override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		if (Radio)
 			Checked = true;
 		else
 			Checked = !Checked;
 		OnCheckedChanged?.Invoke(this);
+		return true;
 	}
 }

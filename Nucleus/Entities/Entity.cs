@@ -35,7 +35,6 @@ namespace Nucleus.Entities
 		public virtual void PostThink(FrameState frameState) { }
 		public virtual void PreRender(FrameState frameState) { }
 		public virtual void Render(FrameState frameState) { }
-		public virtual void Render2D(FrameState frameState) { }
 		public virtual void PostRender(FrameState frameState) { }
 
 		public DateTime Created { get; private set; } = DateTime.Now;

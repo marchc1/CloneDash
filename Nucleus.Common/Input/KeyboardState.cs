@@ -19,6 +19,7 @@ public struct KeyboardState()
 	public InlineArray512<bool> KeysReleased;
 
 	public InlineArray256<string?> TextInputs;
+	public bool Focused;
 
 	public int GetTextInputsThisFrame() {
 		int len = 0;
@@ -119,5 +120,24 @@ public struct KeyboardState()
 			KeysPressed[i] = 0;
 			KeysReleased[i] = false;
 		}
+	}
+
+	public void ConsumeKeyAtIndex(int index) {
+		int key = KeysThisFrame[index];
+		KeysPressed[key] = 0;
+		KeysReleased[key] = false;
+
+		for (int i = index; i < TotalKeysThisFrame - 1; i++) {
+			KeysThisFrame[i] = KeysThisFrame[i + 1];
+			KeyTimesThisFrame[i] = KeyTimesThisFrame[i + 1];
+		}
+		TotalKeysThisFrame--;
+	}
+
+	public void ConsumeTextAtIndex(int index) {
+		for (int i = index; i < MAX_TEXT_INPUTS - 1; i++) {
+			TextInputs[i] = TextInputs[i + 1];
+		}
+		TextInputs[MAX_TEXT_INPUTS - 1] = null;
 	}
 }

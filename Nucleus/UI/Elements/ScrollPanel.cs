@@ -14,13 +14,15 @@ public class ScrollPanel : Panel
 			if (ChildDock.HasValue)
 				child.Dock = ChildDock.Value;
 		}
-		protected override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			parent.ConsumeScrollEvent();
 
 			if (delta.X != 0)
 				parent.HorizontalScrollbar.MouseScrolled(parent.HorizontalScrollbar, state, delta);
 			if (delta.Y != 0)
 				parent.VerticalScrollbar.MouseScrolled(parent.VerticalScrollbar, state, delta);
+
+			return true;
 		}
 	}
 
@@ -70,8 +72,8 @@ public class ScrollPanel : Panel
 	public virtual bool ShouldItemBeVisible(Element e) {
 		return true;
 	}
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 
 		if (VerticalOverflow) {
 			VerticalScrollbar.PageContents = AddParent.SizeOfAllChildren;

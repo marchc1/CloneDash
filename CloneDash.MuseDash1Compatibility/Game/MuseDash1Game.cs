@@ -921,7 +921,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					playerInput.Poll(frameState, ref InputState, InputAction.PauseGame);
 			}
 
-			else if (!IValidatable.IsValid(RootPanel.KeyboardFocusedElement)) {
+			else if (!IValidatable.IsValid(RootPanel.GetKeyboardFocusedElement())) {
 				foreach (ICloneDashInputSystem playerInput in InputReceivers)
 					playerInput.Poll(frameState, ref InputState);
 			}
@@ -1551,8 +1551,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.PostRenderWorldspace();
 		Rlgl.DrawRenderBatchActive();
 	}
-	public override void Render2D(FrameState frameState) {
-		base.Render2D(frameState);
+	public override void PostRender(FrameState frameState) {
+		base.PostRender(frameState);
 
 		SceneUI?.RenderUI();
 
