@@ -1438,8 +1438,6 @@ public class Element : IValidatable
 	/// </summary>
 	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
 
-	public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
-
 	public Vector2F CursorPos() {
 		return Level.FrameState.Mouse.MousePos - GetGlobalPosition();
 	}
