@@ -55,10 +55,8 @@ public class DirectionalLayoutPanel : ScrollPanel
 		}
 		else {
 			base.OnThink(frameState);
-			VerticalScrollbar.Visible = false;
-			VerticalScrollbar.Enabled = false;
-			HorizontalScrollbar.Visible = false;
-			HorizontalScrollbar.Enabled = false;
+			VerticalScrollbar.SetVisible(false);
+			HorizontalScrollbar.SetVisible(false);
 		}
 	}
 

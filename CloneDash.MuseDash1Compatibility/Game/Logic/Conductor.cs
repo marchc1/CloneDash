@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Data;
 using CloneDash.Common.Game;
+using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -54,8 +55,12 @@ namespace CloneDash.Game
 			audiosystem.GetSoundPlayhead(game.Music, out currentInaccurateTime);
 		}
 
-		private class CD_Conductor_UIBar(Element? parent) : Element(parent)
+		private class CD_Conductor_UIBar : Element
 		{
+			public CD_Conductor_UIBar(Element? parent) : base(parent) {
+				SetPaintBackgroundEnabled(false);
+				SetPaintBorderEnabled(false);
+			}
 			public float Playhead { get; set; }
 			public float Duration { get; set; }
 			public float Completion => Playhead / Duration;

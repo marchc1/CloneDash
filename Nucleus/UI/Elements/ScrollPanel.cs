@@ -27,11 +27,11 @@ public class ScrollPanel : Panel
 	public ScrollPanel(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
 		VerticalScrollbar = new Scrollbar(this);
 		VerticalScrollbar.Alignment = ScrollbarAlignment.Vertical;
-		VerticalScrollbar.Enabled = true;
+		VerticalScrollbar.SetVisible(true);
 
 		HorizontalScrollbar = new Scrollbar(this);
 		HorizontalScrollbar.Alignment = ScrollbarAlignment.Horizontal;
-		HorizontalScrollbar.Enabled = true;
+		HorizontalScrollbar.SetVisible(true);
 
 		MainPanel = new ScrollMainPanel(this);
 		MainPanel.Dock = Dock.Fill;
@@ -95,14 +95,10 @@ public class ScrollPanel : Panel
 		HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
 		foreach (Element child in MainPanel.Children) {
-			if (ShouldItemBeVisible(child)) {
-				child.EngineDisabled = false;
-				child.EngineInvisible = !RectangleF.IsSubrectangleWithinRectangle(MainPanel.RenderBounds.AddPosition(-MainPanel.ChildRenderOffset), child.RenderBounds);
-			}
-			else {
-				child.EngineDisabled = true;
-				child.EngineInvisible = true;
-			}
+			if (ShouldItemBeVisible(child)) 
+				child.SetVisible(false);
+			else 
+				child.SetVisible(true);
 		}
 
 		MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();

@@ -197,8 +197,8 @@ public static class EngineCore
 
 		window.Title = "Nucleus Profiler";
 		window.AddParent.SetPaintBackgroundEnabled(false);
-		window.Titlebar.MinimizeButton.Enabled = false;
-		window.Titlebar.MaximizeButton.Enabled = false;
+		window.Titlebar.MinimizeButton.SetMouseInputEnabled(false);
+		window.Titlebar.MaximizeButton.SetMouseInputEnabled(false);
 
 		return window;
 	}

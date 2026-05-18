@@ -228,10 +228,9 @@ public class TextEditor : Panel
 		}
 	}
 	private void RefreshFromParams() {
-		if (Gutter != null) {
-			Gutter.Enabled = _showGutter;
-			Gutter.Visible = _showGutter;
-		}
+		if (Gutter != null) 
+			Gutter.SetVisible(_showGutter);
+		
 		InvalidateLayout(true);
 		InvalidateChildren(true, true);
 	}

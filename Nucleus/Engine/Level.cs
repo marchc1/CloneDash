@@ -802,7 +802,7 @@ public abstract class Level : IValidatable
 
 	private void VisRenderBounds(Element e) {
 		foreach (var element in e.Children) {
-			if (!element.Visible || element.EngineInvisible) continue;
+			if (!element.IsVisible()) continue;
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.RenderBounds.Size);
 			VisRenderBounds(element);
@@ -888,8 +888,8 @@ public abstract class Level : IValidatable
 		Debug.Assert(MemGraph != null);
 
 		bool vis = EngineCore.ShouldShowDeveloperOverlays();
-		UpdateGraph.Visible = UpdateGraph.Enabled = vis;
-		RenderGraph.Visible = RenderGraph.Enabled = vis;
-		MemGraph.Visible = MemGraph.Enabled = vis;
+		UpdateGraph.SetVisible(vis);
+		RenderGraph.SetVisible(vis);
+		MemGraph.SetVisible(vis);
 	}
 }

@@ -128,7 +128,7 @@ public class Scrollbar : Panel
 		Down.Dock = Dock.Bottom;
 		Grip.Dock = Dock.Fill;
 
-		Visible = false;
+		SetVisible(false);
 	}
 
 	internal void MouseScrolled(Element self, FrameState state, Vector2F delta) {
@@ -151,7 +151,6 @@ public class Scrollbar : Panel
 			Scroll = Math.Max(0, overflowing);
 		}
 
-		this.Visible = ShouldShow();
-		this.Enabled = this.Visible;
+		SetVisible(ShouldShow());
 	}
 }

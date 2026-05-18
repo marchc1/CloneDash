@@ -997,8 +997,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 							var titlebar = new Titlebar(panel);
 							titlebar.Dock = Dock.Top;
-							titlebar.MinimizeButton.Visible = false;
-							titlebar.MaximizeButton.Visible = false;
+							titlebar.MinimizeButton.SetVisible(false);
+							titlebar.MaximizeButton.SetVisible(false);
 							titlebar.CloseButton.OnButtonClick += (_, _) => {
 								panel.Remove();
 							};

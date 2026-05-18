@@ -36,15 +36,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
 			var last = ActiveElements.Peek();
-			last.Visible = false;
-			last.Enabled = false;
+			last.SetVisible(false);
 			if (last is IMainMenuPanel mmp) mmp.OnHidden();
 		}
 
 		ActiveElements.Push(element);
 		element.SetRichPresence();
 
-		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+		backButton.SetVisible(ActiveElements.Count > 1);
 
 		element.Dock = Dock.Fill;
 		return element;
@@ -67,17 +66,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		element.Remove();
 
 		var next = ActiveElements.Peek();
-		next.Visible = true;
-		next.Enabled = true;
+		next.SetVisible(true);
 
-		backButton.Enabled = backButton.Visible = ActiveElements.Count > 1;
+		backButton.SetVisible(ActiveElements.Count > 1);
 
 		if (next is IMainMenuPanel nextmmp) {
 			nextmmp.OnShown();
 			nextmmp.SetRichPresence();
 		}
-
-
 	}
 
 	Panel header;
@@ -433,16 +429,16 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		base.Think(frameState);
 
 		var active = ActiveElements.Peek();
-		var wasHidden = !Character.Visible;
+		var wasHidden = !Character.IsVisible();
 
 		if (active is not (CharacterSelector or MainMenuPanel)) {
-			Character.Visible = false;
+			Character.SetVisible(false);
 			Character.StopAudio();
 			return;
 		}
 
 		if (wasHidden) {
-			Character.Visible = true;
+			Character.SetVisible(true);
 			Character.Reset();
 			Character.PlayAudio();
 		}

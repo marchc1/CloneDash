@@ -42,7 +42,7 @@ public class CharacterPanel : Panel
 		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
 		ExpressionLabel = new Label(this);
-		ExpressionLabel.Visible = false;
+		ExpressionLabel.SetVisible(false);
 		ExpressionLabel.Origin = Anchor.Center;
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 
@@ -112,7 +112,7 @@ public class CharacterPanel : Panel
 
 				ExpressionLabel.Position = textPos;
 				ExpressionLabel.Size = textSize;
-				ExpressionLabel.Visible = true;
+				ExpressionLabel.SetVisible(true);
 				ExpressionLabel.DrawBackground = true;
 				ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
 				ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
@@ -121,7 +121,7 @@ public class CharacterPanel : Panel
 				ExpressionLabel.Text = ExpressionText;
 			}
 			else
-				ExpressionLabel.Visible = false;
+				ExpressionLabel.SetVisible(false);
 		}
 	}
 

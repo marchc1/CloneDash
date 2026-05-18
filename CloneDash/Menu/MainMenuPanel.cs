@@ -50,7 +50,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		List<MainMenuButton> newBtns = [];
 		btns.Push(newBtns);
 		InvalidateLayout();
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		back.SetVisible( !UsingRootNavigationMenu);
 		return newBtns;
 	}
 	public bool UsingRootNavigationMenu => btns.Count == 1;
@@ -69,7 +69,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var menu = btns.Peek();
 		foreach (var btn in menu)
 			btn.Offscreen = 0;
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		back.SetVisible(!UsingRootNavigationMenu);
 		InvalidateLayout();
 	}
 
@@ -191,7 +191,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			var btnsLen = btns.Count;
 			back.Size = new(btnHeight * 2);
 			back.Position = new(width * .5f, height / 2);
-			back.Visible = back.Enabled = !UsingRootNavigationMenu;
+			back.SetVisible(!UsingRootNavigationMenu);
 
 			for (int i = 0; i < btnsLen; i++) {
 				var btn = btns[i];

@@ -34,15 +34,13 @@ public class TabView : Panel
 			foreach (var tab in Tabs) {
 				if (tab != activeTab) {
 					tab.Switcher.BackgroundColor = SWITCHER_INACTIVE;
-					tab.Panel.Visible = false;
-					tab.Panel.Enabled = false;
+					tab.Panel.SetVisible(false);
 				}
 			}
 
 			if (activeTab != null) {
 				activeTab.Switcher.BackgroundColor = SWITCHER_ACTIVE;
-				activeTab.Panel.Visible = true;
-				activeTab.Panel.Enabled = true;
+				activeTab.Panel.SetVisible(true);
 			}
 		}
 	}

@@ -96,9 +96,9 @@ public class CharacterSelectorScroller : Panel
 
 			float selectedSizeOffset = Math.Clamp(i == lastSelectedIdx ? 2 : (8 + (Math.Abs(i - lastSelectedIdx) * 1)), 0, height);
 			if (selectedSizeOffset == 0)
-				btn.Visible = false;
+				btn.SetVisible(false);
 			else {
-				btn.Visible = true;
+				btn.SetVisible(true);
 				btn.Size = new(height, height);
 				float baseX = (width / 2) - (height / 2);
 				float adjustedIndexX = baseX + (i * height);

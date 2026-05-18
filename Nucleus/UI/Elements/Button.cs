@@ -81,7 +81,7 @@ public class Button : Label
 		var backpre = b.BackgroundColor;
 		var forepre = b.ForegroundColor;
 
-		var canInput = b.CanInput();
+		var canInput = b.IsMouseInputEnabled();
 
 		if ((b.TriggeredWhenEnterPressed || b.Pulsing) && canInput) {
 			double val = ((Math.Sin(b.PulseTime * 6) + 1) / 2);

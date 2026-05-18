@@ -130,7 +130,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public SecondOrderSystem FlyAwaySOS = new(1.5f, 0.94f, 1.1f, 0);
 
 	protected void GetMoreSongs() {
-		Loading.Visible = true;
+		Loading.SetVisible(true);
 		Loading.MoveToFront();
 		UserWantsMoreSongs?.Invoke();
 	}
@@ -381,38 +381,38 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	private void DisableDiscs(bool disabled) {
 		for (int i = 0; i < Discs.Length; i++) {
-			Discs[i].InputDisabled = disabled;
-			Discs[i].Visible = !disabled;
+			Discs[i].SetMouseInputEnabled(disabled);
+			Discs[i].SetVisible(!disabled);
 		}
 	}
 
 	public void LayoutDiscs(float width, float height) {
 		if (Source == null || (Source.GetSongCount() <= 0 && !Source.IsBusy())) {
 			Loading.Text = "No songs available.";
-			Loading.Visible = true;
+			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
 		}
 
 		if (Source.IsBusy()) {
 			Loading.Text = "LOADING";
-			Loading.Visible = true;
+			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
 		}
 
-		if (Loading.Visible) {
-			Loading.Visible = false;
+		if (Loading.IsVisible()) {
+			Loading.SetVisible(false);
 			DisableDiscs(false);
 		}
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
-			disc.Visible = true;
+			disc.SetVisible(true);
 			var discWidth = GetDiscSize(width, disc);
 
 			var song = GetDiscSong(DiscIndexToSelectIndex(i));
-			disc.Visible = song != null;
+			disc.SetVisible(song != null);
 			if (song == null)
 				continue;
 
@@ -485,11 +485,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		Loading.Text = "LOADING";
 		Loading.TextSize = 100;
 		Loading.AutoSize = true;
-		Loading.Visible = false;
+		Loading.SetVisible(false);
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
-			disc.Visible = false;
+			disc.SetVisible(false);
 			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 

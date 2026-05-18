@@ -815,7 +815,7 @@ public class Textbox : Label
 	void DrawTextLines(float width, float height) {
 		string text = DisplayText;
 		var textC = TextColor;
-		if (!CanInput())
+		if (!IsMouseInputEnabled())
 			textC = textC.Adjust(0, 0, -0.5f);
 
 		Graphics2D.SetDrawColor(textC);

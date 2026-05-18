@@ -260,7 +260,7 @@ public class Label : Element
 			Graphics2D.DrawRectangle(0, 0, width, height);
 		}
 		var textC = TextColor;
-		if (!CanInput()) {
+		if (!IsMouseInputEnabled()) {
 			textC = textC.Adjust(0, 0, -0.5f);
 		}
 

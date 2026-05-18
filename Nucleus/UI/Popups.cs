@@ -74,8 +74,8 @@ namespace Nucleus.UI
 			PopupWindow popup = new PopupWindow(UI);
 			popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
             popup.Title = title;
-            popup.Titlebar.MinimizeButton.Visible = false;
-            popup.Titlebar.MaximizeButton.Visible = false;
+            popup.Titlebar.MinimizeButton.SetVisible(false);
+			popup.Titlebar.MaximizeButton.SetVisible(false);
             popup.MakePopup();
             popup.MakeModal();
             popup.AutomateLayout = automateLayout;

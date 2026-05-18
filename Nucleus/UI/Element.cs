@@ -132,6 +132,10 @@ public class Element : IValidatable
 	private string? __tooltipText = null;
 	private float __textSize = 18;
 
+	private bool KbInput;
+	private bool MouseInput;
+	private bool Visible;
+
 	// properties with backing (should be fields)
 
 	public bool IsPopup { get; private set; }
@@ -193,6 +197,9 @@ public class Element : IValidatable
 		flags |= ElementFlags.AllowChainKeybindingToParent;
 		__tooltipText = null;
 		Opacity = 1;
+		SetVisible(true);
+		SetMouseInputEnabled(true);
+		SetKeyboardInputEnabled(true);
 	}
 
 	public Vector2F Position {
@@ -239,55 +246,6 @@ public class Element : IValidatable
 	public static readonly Color DefaultBackgroundColor = new(20, 25, 32, 127);
 	public static readonly Color DefaultForegroundColor = new(85, 95, 110, 255);
 	public static readonly Color DefaultTextColor = new(230, 236, 255, 255);
-
-	public bool EngineDisabled {
-		get => __engineDisabled;
-		set {
-			__engineDisabled = value;
-			if (__engineDisabled != value)
-				InvalidateParentAndItsChildren();
-		}
-	}
-	public bool EngineInvisible {
-		get => __engineInvisible;
-		set {
-			__engineInvisible = value;
-			if (__engineInvisible != value)
-				InvalidateParentAndItsChildren();
-		}
-	}
-
-	/// <summary>
-	/// Disables all functionality and blocks rendering of this element. To only block rendering, see <see cref="Visible"/>.
-	/// </summary>
-	public bool Enabled {
-		get { return __enabled && !__engineDisabled; }
-		set {
-			if (__enabled != value)
-				InvalidateParentAndItsChildren();
-			__enabled = value;
-		}
-	}
-	/// <summary>
-	/// Blocks rendering of this element. To block rendering alongside functionality, see <see cref="Enabled"/>.
-	/// </summary>
-	public bool Visible {
-		get { return __visible && !__engineInvisible; }
-		set {
-			if (__visible != value)
-				InvalidateParentAndItsChildren();
-			__visible = value;
-		}
-	}
-
-	public bool InputDisabled {
-		get { return __inputDisabled; }
-		set {
-			if (value == false && __inputDisabled == true)
-				KeyboardUnfocus();
-			__inputDisabled = value;
-		}
-	}
 
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
@@ -451,6 +409,36 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPostChildPaintEnabled(bool state) => SetFlag(ElementFlags.PostChildPaintEnabled, state);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetPassthru(bool state) => SetFlag(ElementFlags.MousePassthru, state);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetKeyboardInputEnabled(bool state) {
+		if (state == false && KbInput == true)
+			KeyboardUnfocus();
+		KbInput = state;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void SetMouseInputEnabled(bool state) => MouseInput = state;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsKeyboardInputEnabled() {
+		Element? e = this;
+		while (e != null) {
+			if (!e.KbInput)
+				return false;
+			e = e.Parent;
+		}
+		return KbInput;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsMouseInputEnabled() {
+		Element? e = this;
+		while (e != null) {
+			if (!e.MouseInput)
+				return false;
+			e = e.Parent;
+		}
+		return MouseInput;
+	}
+
 	public event Action<Element> Removed;
 
 	private void REMOVE() {
@@ -563,11 +551,12 @@ public class Element : IValidatable
 		if (Parent != null)                 // if current parent isn't null
 			Parent.Children.Remove(this);
 
-		Parent = p;                   // set parent to P
+		Parent = p;                         // set parent to P
 		UI = p?.UI!;
 
 		if (p != null) {                    // if new parent isn't just null, add it to its children
 			p.Children.Add(this);
+
 			p.InvalidateLayout();
 		}
 
@@ -954,7 +943,7 @@ public class Element : IValidatable
 	// The element cycle
 
 	public static int LayoutRecursive(Element element, ref FrameState frameState) {
-		if (!element.Enabled) return 0;
+		if (!element.IsVisible()) return 0;
 
 		int returning = 0;
 
@@ -970,7 +959,7 @@ public class Element : IValidatable
 		}
 		foreach (Element child in element.LockAndEnumerateChildren()) {
 			returning += LayoutRecursive(child, ref frameState);
-			if (child.Enabled) {
+			if (child.IsVisible()) {
 				var ps = (child.RenderBounds.Pos + child.RenderBounds.Size);
 				if (ps > element.SizeOfAllChildren)
 					element.SizeOfAllChildren = ps;
@@ -987,9 +976,8 @@ public class Element : IValidatable
 	}
 
 	public static Element? ResolveElementHoveringState(Element element, Vector2F mousepos, Vector2F offset, RectangleF lastBounds, Element? lastHovered = null, bool modalActive = false) {
-		if (!element.Enabled) return lastHovered;
-		if (!element.Visible) return lastHovered;
-		if (!element.CanInput()) return lastHovered;
+		if (!element.IsVisible()) return lastHovered;
+		if (!element.IsMouseInputEnabled()) return lastHovered;
 
 		if (element.Parent != null)
 			offset += element.Parent.ChildRenderOffset;
@@ -1025,7 +1013,7 @@ public class Element : IValidatable
 
 	public static void ThinkRecursive(Element element, FrameState frameState) {
 		if (element == null) return; // wtf?
-		if (!element.Enabled) return;
+		if (!element.IsVisible()) return;
 
 		element.Think(frameState);
 
@@ -1049,7 +1037,11 @@ public class Element : IValidatable
 	public virtual bool PostRenderChildRT(Element element) => true;
 
 	public virtual void SetVisible(bool visible) {
-		Visible = false;
+		if (Visible == visible)
+			return;
+
+		Visible = visible;
+		InvalidateParentAndItsChildren();
 	}
 	public virtual bool IsVisible() {
 		return Visible;
@@ -1106,7 +1098,7 @@ public class Element : IValidatable
 					}
 				}
 
-				if (IsPaintBorderEnabled()) 
+				if (IsPaintBorderEnabled())
 					PaintBorder(w, h);
 
 				foreach (Element child in Children)
@@ -1414,7 +1406,7 @@ public class Element : IValidatable
 
 		Color thisC = ImageColor ?? TextColor;
 
-		if (!CanInput())
+		if (!IsMouseInputEnabled())
 			thisC = thisC.Adjust(0, 0, -.5f);
 
 		if (Image.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
@@ -1495,21 +1487,6 @@ public class Element : IValidatable
 	/// <param name="mousePos"></param>
 	/// <returns></returns>
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
-
-	/// <summary>
-	/// Recursively searches through parents to confirm if input is disabled or not.
-	/// <br></br>
-	/// Returns true if all elements have input enabled; or false if even one parent has input disabled.
-	/// <br></br>
-	/// Also includes the element itself.
-	/// </summary>
-	/// <returns></returns>
-	public virtual bool CanInput() {
-		if (InputDisabled)
-			return false;
-
-		return Parent?.CanInput() ?? true;
-	}
 
 	public virtual void ApplySchemeSettings(IScheme scheme) {
 		BackgroundColor = scheme.GetColor("Nucleus.Background");

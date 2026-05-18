@@ -115,7 +115,8 @@ public class SettingsPanel : ScrollPanel
 		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
 		if (cv.IsFlagSet(FCvar.AlwaysDefault)) {
-			slider.InputDisabled = true;
+			slider.SetMouseInputEnabled(false);
+			slider.SetKeyboardInputEnabled(false);
 			slider.Parent.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
 		}
 		else
@@ -200,17 +201,20 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		if (activeCategory == null)
 			SelectCategory(category);
 		else {
-			category.Panel.Visible = category.Panel.Enabled = false;
+			category.Panel.SetVisible(false);
 		}
 		return category.Panel;
 	}
 
 	public void SelectCategory(SettingsCategory category) {
-		if (activeCategory != null)
-			activeCategory.Panel.Visible = activeCategory.Panel.Enabled = activeCategory.Pulsing = false;
+		if (activeCategory != null) {
+			activeCategory.Panel.SetVisible(false);
+			activeCategory.Pulsing = false;
+		}
 
 		activeCategory = category;
-		category.Panel.Visible = category.Panel.Enabled = category.Pulsing = true;
+		category.Panel.SetVisible(true);
+		category.Pulsing = true;
 	}
 
 	public SettingsEditor(Element? parent) : base(parent) {

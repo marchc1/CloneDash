@@ -85,6 +85,9 @@ public class UserInterface : Element, IDisposable
 	public UserInterface() : base(null) {
 		UI = this;
 		Preprocess(EngineCore.Window.Size);
+		SetPaintBorderEnabled(false);
+		SetPaintBackgroundEnabled(false);
+		SetPaintEnabled(false);
 	}
 
 	public void Preprocess(Vector2F size) => Preprocess(size.X, size.Y);
@@ -300,22 +303,22 @@ public class UserInterface : Element, IDisposable
 		bool ranKeybinds = false;
 		Element? target;
 		if (IValidatable.IsValid(lastModal)) {
-			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastModal) && KeyboardFocusedElement.IsVisible())
 				target = KeyboardFocusedElement;
-			else if (lastModal.Enabled && lastModal.Visible)
+			else if (lastModal.IsVisible())
 				target = lastModal;
 			else
 				target = null;
 		}
 		else if (IValidatable.IsValid(lastPopup)) {
-			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+			if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsIndirectChildOf(lastPopup) && KeyboardFocusedElement.IsVisible())
 				target = KeyboardFocusedElement;
-			else if (lastPopup.Enabled && lastPopup.Visible)
+			else if (lastPopup.IsVisible())
 				target = lastPopup;
 			else
 				target = null;
 		}
-		else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.Enabled && KeyboardFocusedElement.Visible)
+		else if (IValidatable.IsValid(KeyboardFocusedElement) && KeyboardFocusedElement.IsVisible())
 			target = KeyboardFocusedElement;
 		else
 			target = null;
@@ -388,7 +391,7 @@ public class UserInterface : Element, IDisposable
 		}
 
 		if (!frameState.Mouse.MouseScroll.IsZero()) {
-			if (IValidatable.IsValid(Hovered) && Hovered.InputDisabled == false) {
+			if (IValidatable.IsValid(Hovered) && Hovered.IsMouseInputEnabled() == false) {
 				Element? e = Hovered;
 				for (int i = 0; i < 1000; i++) {
 					if (!IValidatable.IsValid(e))
@@ -404,7 +407,7 @@ public class UserInterface : Element, IDisposable
 			}
 		}
 
-		if (frameState.Mouse.MouseHeld && !frameState.Mouse.MouseClicked && !frameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(Depressed) && Depressed.InputDisabled == false)
+		if (frameState.Mouse.MouseHeld && !frameState.Mouse.MouseClicked && !frameState.Mouse.MouseDelta.IsZero() && IValidatable.IsValid(Depressed) && Depressed.IsMouseInputEnabled() == false)
 			Depressed.MouseDragOccur(frameState, frameState.Mouse.MouseDelta);
 	}
 

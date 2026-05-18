@@ -219,10 +219,10 @@ public class Window : Element
 		get => __resizable;
 		set {
 			__resizable = value;
-			if (ResizeTL != null) ResizeTL.Enabled = value;
-			if (ResizeTR != null) ResizeTR.Enabled = value;
-			if (ResizeBL != null) ResizeBL.Enabled = value;
-			if (ResizeBR != null) ResizeBR.Enabled = value;
+			ResizeTL?.SetVisible(value);
+			ResizeTR?.SetVisible(value);
+			ResizeBL?.SetVisible(value);
+			ResizeBR?.SetVisible(value);
 		}
 	}
 
@@ -330,25 +330,25 @@ public class Window : Element
 		ResizeTL.Size = new(24, 24);
 		ResizeTL.Origin = Anchor.TopLeft;
 		ResizeTL.Anchor = Anchor.TopLeft;
-		ResizeTL.Enabled = Resizable;
+		ResizeTL.SetVisible(Resizable);
 
 		ResizeTR = new WindowResizerButton(this, Anchor.TopRight);
 		ResizeTR.Size = new(24, 24);
 		ResizeTR.Origin = Anchor.TopRight;
 		ResizeTR.Anchor = Anchor.TopRight;
-		ResizeTR.Enabled = Resizable;
+		ResizeTR.SetVisible(Resizable);
 
 		ResizeBL = new WindowResizerButton(this, Anchor.BottomLeft);
 		ResizeBL.Size = new(24, 24);
 		ResizeBL.Origin = Anchor.BottomLeft;
 		ResizeBL.Anchor = Anchor.BottomLeft;
-		ResizeBL.Enabled = Resizable;
+		ResizeBL.SetVisible(Resizable);
 
 		ResizeBR = new WindowResizerButton(this, Anchor.BottomRight);
 		ResizeBR.Size = new(24, 24);
 		ResizeBR.Origin = Anchor.BottomRight;
 		ResizeBR.Anchor = Anchor.BottomRight;
-		ResizeBR.Enabled = Resizable;
+		ResizeBR.SetVisible(Resizable);
 
 		ResizeBL.Position = new(4, 0);
 		ResizeBR.Position = new(-4, 0);
@@ -458,7 +458,7 @@ public class Window : Element
 		}
 	}
 	public override void PostChildPaint() {
-		if (InputDisabled) {
+		if (!IsMouseInputEnabled()) {
 			Graphics2D.SetDrawColor(0, 0, 0, 155);
 			Graphics2D.DrawRectangle(4, 4, RenderBounds.Width - 8, 34);
 			Graphics2D.DrawRectangle(4, 4 + 34 + 8, RenderBounds.Width - 8, RenderBounds.Height - 8 - 34 - 8);
@@ -468,20 +468,24 @@ public class Window : Element
 
 
 	public void AttachWindowAndLockInput(Window window) {
-		InputDisabled = true;
+		bool kb = IsKeyboardInputEnabled(), m = IsMouseInputEnabled();
+
+		SetKeyboardInputEnabled(false);
+		SetMouseInputEnabled(false);
 		window.Removed += delegate (Element self) {
-			InputDisabled = false;
+			SetKeyboardInputEnabled(kb);
+			SetMouseInputEnabled(m);
 		};
 	}
 
 	public void HideNonCloseButtons() {
-		Titlebar.MaximizeButton.Visible = false;
-		Titlebar.MinimizeButton.Visible = false;
+		Titlebar.MaximizeButton.SetVisible(false);
+		Titlebar.MinimizeButton.SetVisible(false);
 	}
 
 	public void HideAllButtons() {
-		Titlebar.MaximizeButton.Visible = false;
-		Titlebar.MinimizeButton.Visible = false;
-		Titlebar.CloseButton.Visible = false;
+		Titlebar.MaximizeButton.SetVisible(false);
+		Titlebar.MinimizeButton.SetVisible(false);
+		Titlebar.CloseButton.SetVisible(false);
 	}
 }

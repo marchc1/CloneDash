@@ -17,8 +17,7 @@ public class TreeNode : Button, IContainsNodes
 		ChildrenPanel.BorderSize = 0;
 		ChildrenPanel.SetPaintBackgroundEnabled(false);
 		ChildrenPanel.SetPaintEnabled(false);
-		ChildrenPanel.Visible = false;
-		ChildrenPanel.Enabled = false;
+		ChildrenPanel.SetVisible(false);
 		ChildrenPanel.Size = new(0, 0);
 		ChildrenPanel.DockPadding = RectangleF.TLRB(0, 8, 0, 0);
 
@@ -39,8 +38,7 @@ public class TreeNode : Button, IContainsNodes
 		set {
 			if (expanded != value) {
 				expanded = value;
-				ChildrenPanel.Visible = value;
-				ChildrenPanel.Enabled = value;
+				ChildrenPanel.SetVisible(value);
 
 				OnExpandToggled?.Invoke(expanded);
 				if (expanded) OnExpanded?.Invoke(expanded);
