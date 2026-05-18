@@ -177,7 +177,6 @@ public class UserInterface : Element, IDisposable
 	public Menu Menu() {
 		return new Menu(this);
 	}
-	public Level? EngineLevel { get; set; }
 
 	// Tries to trash up a bunch of references
 #nullable disable
@@ -209,7 +208,6 @@ public class UserInterface : Element, IDisposable
 	protected virtual void Dispose(bool disposing) {
 		if (!disposedValue) {
 			if (disposing) {
-				EngineLevel = null;
 				// trash the element
 				this.Remove();
 				trashElement(this);

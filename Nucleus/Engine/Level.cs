@@ -205,7 +205,6 @@ public abstract class Level : IValidatable
 
 	public void ResetUI() {
 		RootPanel = new();
-		RootPanel.EngineLevel = this;
 		RootPanel.Window = EngineCore.Window;
 	}
 	public virtual void PreThink(ref FrameState frameState) { }
@@ -337,7 +336,6 @@ public abstract class Level : IValidatable
 	public void InitializeUI() {
 		if (RootPanel != null) return;
 		RootPanel = new UserInterface();
-		RootPanel.EngineLevel = this;
 		RootPanel.Window = EngineCore.Window;
 	}
 

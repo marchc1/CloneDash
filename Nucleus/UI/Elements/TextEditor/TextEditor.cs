@@ -444,8 +444,8 @@ public class TextEditor : Panel
 		int i = 0;
 		int row = (int)TopRow;
 		PreRenderEditorLines?.Invoke(this, width, height);
-		BackgroundColor = self.KeyboardFocused ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED;
-		ForegroundColor = self.KeyboardFocused ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED;
+		BackgroundColor = self.IsKeyboardFocused() ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED;
+		ForegroundColor = self.IsKeyboardFocused() ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED;
 
 		while (i < MaxVisibleRows) {
 			if (row >= Rows.Count)
@@ -459,7 +459,7 @@ public class TextEditor : Panel
 			TextEditorCaret t = GetCaretTopLeft(), b = GetCaretBottomRight();
 			var inRange = NMath.InRange(row, t.Row, b.Row);
 
-			Graphics2D.SetDrawColor((inRange && this.Editor.KeyboardFocused) ? new Color(42, 45, 50, 155) : i % 2 == 1 ? new Color(2, 5, 10, 155) : new Color(13, 16, 22, 155));
+			Graphics2D.SetDrawColor((inRange && this.Editor.IsKeyboardFocused()) ? new Color(42, 45, 50, 155) : i % 2 == 1 ? new Color(2, 5, 10, 155) : new Color(13, 16, 22, 155));
 			Graphics2D.DrawRectangle(0, y, width, FontHeight);
 
 			row += 1;
@@ -513,13 +513,13 @@ public class TextEditor : Panel
 
 		float aF = (1 - ((EngineCore.Level.CurtimeF * 3) % 1)) * 255.5f;
 		byte a = (byte)(int)aF;
-		if (this.Editor!.KeyboardFocused) {
+		if (this.Editor!.IsKeyboardFocused()) {
 			Graphics2D.SetDrawColor(255, 255, 255, a);
 			Graphics2D.DrawRectangle(PaddingLeft + (Caret.EndCol) * FontWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, CaretWidth, FontHeight);
 			Graphics2D.SetDrawColor(255, 255, 255, a / 2);
 			Graphics2D.DrawRectangle((PaddingLeft + (Caret.EndCol) * FontWidth) + CaretWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, CaretWidth, FontHeight);
 		}
-		if (HasSelection() && this.Editor.KeyboardFocused) {
+		if (HasSelection() && this.Editor.IsKeyboardFocused()) {
 			Graphics2D.SetDrawColor(97, 137, 200, 140);
 			if (Caret.StartRow == (int)MathF.Max(Caret.EndRow, 0)) {
 				int leftmost = (int)MathF.Min(Caret.StartCol, Caret.EndCol);
@@ -1399,7 +1399,7 @@ public class TextEditor : Panel
 			TextEditorCaret t = GetCaretTopLeft(), b = GetCaretBottomRight();
 			var inRange = NMath.InRange(row, t.Row, b.Row);
 
-			Graphics2D.SetDrawColor((inRange && this.Editor.KeyboardFocused) ? new Color(90, 100, 110, 155) : i % 2 == 1 ? new Color(4, 7, 10, 125) : new Color(24, 30, 40, 125));
+			Graphics2D.SetDrawColor((inRange && this.Editor.IsKeyboardFocused()) ? new Color(90, 100, 110, 155) : i % 2 == 1 ? new Color(4, 7, 10, 125) : new Color(24, 30, 40, 125));
 			Graphics2D.DrawRectangle(0, y, width, FontHeight);
 
 			row += 1;

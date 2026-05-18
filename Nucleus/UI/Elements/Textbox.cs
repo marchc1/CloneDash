@@ -767,8 +767,8 @@ public class Textbox : Label
 	public override void Paint(float width, float height) {
 		ValidateLines();
 
-		BackgroundColor = KeyboardFocused ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
-		ForegroundColor = KeyboardFocused ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
+		BackgroundColor = IsKeyboardFocused() ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
+		ForegroundColor = IsKeyboardFocused() ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
 
 		Color back;
 		if (!ReadOnly) {
@@ -803,7 +803,7 @@ public class Textbox : Label
 			TextColor = colorStore;
 		}
 
-		if (KeyboardFocused && (DateTime.Now - LastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
+		if (IsKeyboardFocused() && (DateTime.Now - LastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
 			DrawCaret(width, height);
 	}
 	public override void PaintBorder(float width, float height) {

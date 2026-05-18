@@ -1315,7 +1315,7 @@ public class Element : IValidatable
 		return false;
 	}
 
-	public bool KeyboardFocused => UI.KeyboardFocusedElement == this;
+	public bool IsKeyboardFocused() => UI.KeyboardFocusedElement == this;
 
 	public Vector2F GetGlobalPosition() {
 		Vector2F ret = new Vector2F(0, 0);
@@ -1431,7 +1431,12 @@ public class Element : IValidatable
 			Raylib.DrawTexturePro((Texture)Image, sourceRect, destRect, new(0, 0), ImageRotation, color ?? thisC);
 	}
 
-	public Level Level => UI.EngineLevel ?? throw new Exception("No level associated with the user interface object!");
+	// TODO: Get rid of this
+	// It is a backwards compatibility feature in the meantime
+	/// <summary>
+	/// This feature is being phased out, and will likely be fully replaced in the future. <br/> It is still a valid macro in the meantime, as texture management is still tightly coupled to level objects.
+	/// </summary>
+	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
 
 	public RenderTexture2D GetRenderTarget() => __RT1 ?? throw new Exception("No render target.");
 
@@ -1537,7 +1542,7 @@ public class Element : IValidatable
 		float borderSize = BorderSize, roundness = Roundness;
 
 		if (roundness <= 0) {
-			Graphics2D.SetDrawColor(KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
+			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
 		}
 		else {
@@ -1545,7 +1550,7 @@ public class Element : IValidatable
 			roundness = Math.Clamp(roundness, 0, width / 2);
 			roundness = Math.Clamp(roundness, 0, height / 2);
 			int segments = (int)Math.Clamp(roundness * 1.5f, 0, 12);
-			Graphics2D.SetDrawColor(KeyboardFocused ? new Color(210, 255, 225, 255) : fore);
+			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);
 			Graphics2D.DrawRectangleRoundedOutline(0, 0, width, height, roundness, borderSize, segments);
 		}
 	}

@@ -204,7 +204,7 @@ namespace Nucleus
 		internal class ConsoleLogs(ConsoleWindow parent) : TextEditor(parent)
 		{
 			protected override void OnThink(FrameState frameState) {
-				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.KeyboardFocused) {
+				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.IsKeyboardFocused()) {
 					parent.autoComplete.Remove();
 				}
 			}
