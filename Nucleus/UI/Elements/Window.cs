@@ -159,7 +159,7 @@ public class Titlebar : Panel
 			};
 			ImageRenderer.ImageOrientation = ImageOrientation.Zoom;
 			ImageRenderer.ImagePadding = ImagePadding;
-			ImageRenderer.DrawPanelBackground = false;
+			ImageRenderer.SetPaintBackgroundEnabled(false);
 		}
 	}
 

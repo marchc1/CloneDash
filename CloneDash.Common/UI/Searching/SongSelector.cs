@@ -463,7 +463,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public readonly int IntegerMidpoint;
 
 	public SongSelector(Element? parent) : base(parent) {
-		DrawPanelBackground = false;
+		SetPaintBackgroundEnabled(false);
 
 		Discs = new SongDiscButton[VisibleDiscs];
 		IntegerMidpoint = Discs.Length / 2;

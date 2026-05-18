@@ -50,7 +50,7 @@ internal class Program
 					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
 					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
 					row.Size = new(0, window.Size.H / 3);
-					row.DrawPanelBackground = false;
+					row.SetPaintBackgroundEnabled(false);
 
 					return row;
 				}

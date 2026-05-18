@@ -253,8 +253,8 @@ namespace Nucleus
 			consoleLogs.Highlighter = new ConsoleLogHighlighter();
 			consoleLogs.SetScroll(1f);
 
-			consoleLogs.DrawPanelBackground = false;
-			consoleInput.DrawPanelBackground = false;
+			consoleLogs.SetPaintBackgroundEnabled(false);
+			consoleInput.SetPaintBackgroundEnabled(false);
 
 			consoleInput.DemandKeyboardFocus();
 			var msgList = ConsoleSystem.GetAllMessagesList();

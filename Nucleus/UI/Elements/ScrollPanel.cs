@@ -9,9 +9,6 @@ public class ScrollPanel : Panel
 	public class ScrollMainPanel(ScrollPanel parent, ReadOnlySpan<char> name = default) : Panel(parent, name)
 	{
 		public Dock? ChildDock;
-		public override void Paint(float width, float height) {
-
-		}
 		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
 			if (ChildDock.HasValue)
@@ -38,7 +35,7 @@ public class ScrollPanel : Panel
 
 		MainPanel = new ScrollMainPanel(this);
 		MainPanel.Dock = Dock.Fill;
-		MainPanel.DrawPanelBackground = false;
+		MainPanel.SetPaintBackgroundEnabled(false);
 		MainPanel.DockMargin = RectangleF.TLRB(4);
 		AddParent = MainPanel;
 		MainPanel.Clipping = false;
@@ -113,7 +110,7 @@ public class ScrollPanel : Panel
 	protected override void PostLayoutChild(Element element) {
 
 	}
-	public override void Paint(float width, float height) {
+	public override void PaintBorder(float width, float height) {
 		Graphics2D.SetDrawColor(ForegroundColor);
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, 1);
 	}

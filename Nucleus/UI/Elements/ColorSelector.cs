@@ -53,7 +53,8 @@ public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) :
 
 		Graphics2D.SetDrawColor(SelectedColor);
 		Graphics2D.DrawRectangle(3, 3, width - 6, height - 6);
-
+	}
+	public override void PaintBorder(float width, float height) {
 		Graphics2D.SetDrawColor(120 + (SelectedColor.R / 2), 120 + (SelectedColor.G / 2), 120 + (SelectedColor.B / 2), 255);
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 	}

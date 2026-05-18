@@ -40,7 +40,7 @@ public class CharacterPanel : Panel
 
 	public CharacterPanel(Element? parent) : base(parent){ 
 		BorderSize = 0;
-		DrawPanelBackground = false;
+		SetPaintBackgroundEnabled(false);
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.Visible = false;
 		ExpressionLabel.Origin = Anchor.Center;

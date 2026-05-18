@@ -21,6 +21,8 @@ public class Button : Label
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
 		BackgroundColor = new(20, 25, 32, 220);
+		SetPaintBackgroundEnabled(true);
+		SetPaintBorderEnabled(true);
 	}
 	protected override void OnThink(FrameState frameState) {
 		if (Hovered)
@@ -107,10 +109,11 @@ public class Button : Label
 		ColorStateSetup(this, out var back, out var fore);
 
 		Graphics2D.SetDrawColor(back);
-		var whd2 = new Vector2F(width / 2, width / 2);
-		var whd3 = new Vector2F(width / 3, width / 3);
-		if (DrawAsCircle)
+		if (DrawAsCircle) {
+			var whd2 = new Vector2F(width / 2, width / 2);
+			var whd3 = new Vector2F(width / 3, width / 3);
 			Graphics2D.DrawCircle(whd2, whd3);
+		}
 		else
 			Graphics2D.DrawRectangle(0, 0, width, height);
 
@@ -122,14 +125,21 @@ public class Button : Label
 		}
 
 		ImageDrawing(posOffset);
-		if (BorderSize > 0) {
-			Graphics2D.SetDrawColor(fore);
-			if (DrawAsCircle)
-				Graphics2D.DrawCircleLines(whd2, whd3);
-			else
-				Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
-		}
 
 		base.Paint(width, height);
+	}
+	public override void PaintBorder(float width, float height) {
+		ColorStateSetup(this, out var back, out var fore);
+
+		if (BorderSize > 0) {
+			Graphics2D.SetDrawColor(fore);
+			if (DrawAsCircle) {
+				var whd2 = new Vector2F(width / 2, width / 2);
+				var whd3 = new Vector2F(width / 3, width / 3);
+				Graphics2D.DrawCircleLines(whd2, whd3);
+			}
+			else
+				base.PaintBorder(width, height);
+		}
 	}
 }

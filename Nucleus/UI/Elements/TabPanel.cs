@@ -56,7 +56,7 @@ public class TabView : Panel
 
 	public TabView(Element? parent) : base(parent) {
 		TabSelector = new Panel(this);
-		TabSelector.DrawPanelBackground = false;
+		TabSelector.SetPaintBackgroundEnabled(false);
 		TabSelector.Size = new(0, 32);
 		TabSelector.Dock = Dock.Top;
 
@@ -75,7 +75,7 @@ public class TabView : Panel
 		TabGoRight.TextSize = 18;
 
 		TabSelectorContainer = new Panel(TabSelector);
-		TabSelectorContainer.DrawPanelBackground = false;
+		TabSelectorContainer.SetPaintBackgroundEnabled(false);
 		TabSelectorContainer.Dock = Dock.Fill;
 
 		TabContainer = new Panel(this);
@@ -95,7 +95,7 @@ public class TabView : Panel
 		// We create the tab in TabContainer
 		Panel panel = new Panel(TabContainer);
 		panel.Dock = Dock.Fill;
-		panel.DrawPanelBackground = false;
+		panel.SetPaintBackgroundEnabled(false);
 
 		// The switcher in TabSelectorContainer
 		Button switcher = new Button(TabSelectorContainer);

@@ -52,7 +52,7 @@ public class StatisticsPanel : Panel
 		stats.Compute();
 
 		var bottom = new Panel(this);
-		bottom.DrawPanelBackground = false;
+		bottom.SetPaintBackgroundEnabled(false);
 
 		bottom.DynamicallySized = true;
 		bottom.Size = new(0.07f);

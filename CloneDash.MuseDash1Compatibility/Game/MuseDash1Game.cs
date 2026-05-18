@@ -871,7 +871,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private SecondOrderSystem? sos_yoff;
 
-	public class PauseMenuButton(Element parent) : Button(parent){
+	public class PauseMenuButton(Element parent) : Button(parent)
+	{
 		public override void Paint(float width, float height) {
 			var backpre = BackgroundColor;
 
@@ -986,9 +987,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						settings.TextSize = 24;
 						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 						settings.ImageOrientation = ImageOrientation.Fit;
-						settings.OnButtonClick += delegate (Button self,  ButtonCode clickedButton) {
+						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							var panel = new Panel(UI);
-							panel.DrawPanelBackground = false;
+							panel.SetPaintBackgroundEnabled(false);
 							panel.Anchor = Anchor.Center;
 							panel.Origin = Anchor.Center;
 							panel.DynamicallySized = true;

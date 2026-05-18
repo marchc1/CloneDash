@@ -228,7 +228,7 @@ public class MD_ModelViewerWindow : Window
 		var topBar = new Panel(this);
 		topBar.Dock = Dock.Top;
 		topBar.Size = new(0, 32);
-		topBar.DrawPanelBackground = false;
+		topBar.SetPaintBackgroundEnabled(false);
 
 		var searchLabel = new Label(topBar);
 		searchLabel.Text = "Filter:";
@@ -262,7 +262,7 @@ public class MD_ModelViewerWindow : Window
 
 		GridContainer = new Panel(RightPanel);
 		GridContainer.Dock = Dock.Top;
-		GridContainer.DrawPanelBackground = false;
+		GridContainer.SetPaintBackgroundEnabled(false);
 	}
 
 	void BuildTreeNodes(DirectionalLayoutPanel parent, SkeletonFolder folder) {
@@ -529,7 +529,7 @@ public class MD_ModelDetailWindow : Window
 	void BuildUI() {
 		PreviewPanel = new(this);
 		PreviewPanel.Dock = Dock.Fill;
-		PreviewPanel.DrawPanelBackground = false;
+		PreviewPanel.SetPaintBackgroundEnabled(false);
 		PreviewPanel.PaintOverride += PaintPreview;
 		PreviewPanel.MouseDragEvent += (self, state, delta) => {
 			CameraOffset -= delta / CameraZoom;
@@ -557,7 +557,7 @@ public class MD_ModelDetailWindow : Window
 		var controls = new Panel(tab.Panel);
 		controls.Dock = Dock.Top;
 		controls.Size = new(0, 70);
-		controls.DrawPanelBackground = false;
+		controls.SetPaintBackgroundEnabled(false);
 
 		AnimInfoLabel = new Label(controls);
 		AnimInfoLabel.Dock = Dock.Top;
@@ -568,7 +568,7 @@ public class MD_ModelDetailWindow : Window
 		var channelBar = new Panel(controls);
 		channelBar.Dock = Dock.Top;
 		channelBar.Size = new(0, 26);
-		channelBar.DrawPanelBackground = false;
+		channelBar.SetPaintBackgroundEnabled(false);
 
 		var chLabel = new Label(channelBar);
 		chLabel.Text = "Channel:";
@@ -589,7 +589,7 @@ public class MD_ModelDetailWindow : Window
 		var optBar = new Panel(controls);
 		optBar.Dock = Dock.Top;
 		optBar.Size = new(0, 26);
-		optBar.DrawPanelBackground = false;
+		optBar.SetPaintBackgroundEnabled(false);
 
 		var loopCb = new Checkbox(optBar);
 		loopCb.Dock = Dock.Left;

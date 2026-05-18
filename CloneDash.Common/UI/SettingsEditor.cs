@@ -33,7 +33,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 
 		Icon = new(this);
 		BorderSize = 0;
-		Icon.DrawPanelBackground = false;
+		Icon.SetPaintBackgroundEnabled(false);
 		Icon.ImagePadding = new(4);
 		Icon.ImageOrientation = ImageOrientation.Zoom;
 	}
@@ -50,12 +50,13 @@ public class SettingsPanel : ScrollPanel
 {
 	public SettingsCategory Category;
 	public SettingsPanel(Element? parent) : base(parent) {
-		BorderSize = 0;
+		SetPaintBorderEnabled(false);
 	}
 
 	private (Panel Top, Panel Bottom, Label Name, Label Description) buildBackPanel(string nameTxt, string descTxt) {
 		var panel = new Panel(this);
-		panel.DrawPanelBackground = false;
+		panel.SetPaintBackgroundEnabled(false);
+		panel.SetPaintBorderEnabled(false);
 		panel.DynamicallySized = true;
 		panel.Dock = Dock.Top;
 		panel.Size = new(0.08f);
@@ -64,7 +65,8 @@ public class SettingsPanel : ScrollPanel
 		top.DynamicallySized = true;
 		top.Size = new(0.5f);
 		top.Dock = Dock.Top;
-		top.DrawPanelBackground = false;
+		top.SetPaintBackgroundEnabled(false);
+		top.SetPaintBorderEnabled(false);
 
 		var name = new Label(top);
 		name.Dock = Dock.Left;
@@ -213,7 +215,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	public SettingsEditor(Element? parent) : base(parent) {
 		settingCategoryPicker = new(this);
-		settingCategoryPicker.DrawPanelBackground = false;
+		settingCategoryPicker.SetPaintBackgroundEnabled(false);
 		settingCategoryPicker.Dock = Dock.Left;
 		settingCategoryPicker.DynamicallySized = true;
 		settingCategoryPicker.Size = new(0.25f);

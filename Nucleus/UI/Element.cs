@@ -1,5 +1,6 @@
 ﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 
+using Microsoft.VisualBasic;
 using Newtonsoft.Json.Linq;
 
 using Nucleus.Audio;
@@ -187,9 +188,9 @@ public class Element : IValidatable
 		_size = new(width, height);
 		Anchor = Anchor.TopLeft;
 		Origin = Anchor.TopLeft;
-		flags = ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate;
-		flags = ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
-		flags = ElementFlags.AllowChainKeybindingToParent;
+		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate;
+		flags |= ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
+		flags |= ElementFlags.AllowChainKeybindingToParent;
 		__tooltipText = null;
 		Opacity = 1;
 	}
@@ -1050,8 +1051,74 @@ public class Element : IValidatable
 	public virtual void SetVisible(bool visible) {
 		Visible = false;
 	}
-	public virtual bool IsVisible(){
+	public virtual bool IsVisible() {
 		return Visible;
+	}
+
+	private bool IsRenderTargetAvailable(out RenderTexture2D rt) {
+		if (!__lastRTSize.HasValue || RenderBounds != __lastRTSize) {
+			if (__RT1.HasValue) Raylib.UnloadRenderTexture(__RT1.Value);
+
+			__RT1 = Graphics2D.CreateRenderTarget(RenderBounds.W, RenderBounds.H);
+			__lastRTSize = RenderBounds;
+		}
+
+		if (!__RT1.HasValue) {
+			rt = default;
+			return false;
+		}
+
+		rt = __RT1.Value;
+		return true;
+	}
+
+	private void PaintElement(List<Element>? popups = null, int iteration = 0) {
+		float w = RenderBounds.Width, h = RenderBounds.Height;
+		if (w <= 0 || h <= 0) return;
+
+		if (Clipping)
+			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - ChildRenderOffset, RenderBounds.Size));
+		{
+			Graphics2D.PushAlpha(Opacity * 255);
+			{
+				// Calculate border insetting
+				float iw = w, ih = h;
+				float border = BorderSize;
+				iw -= (border * 2);
+				ih -= (border * 2);
+				bool rounded = Roundness != 0;
+				Vector2F drawingOffset = new(border);
+				if (iw > 0 && ih > 0) {
+					if (IsPaintBackgroundEnabled()) {
+						if (rounded) // kinda hacky but required for border/background right now. Fixme
+							PaintBackground(w, h);
+						else {
+							Graphics2D.OffsetDrawing(drawingOffset);
+							PaintBackground(iw, ih);
+							Graphics2D.OffsetDrawing(-drawingOffset);
+						}
+					}
+
+					if (IsPaintEnabled()) {
+						Graphics2D.OffsetDrawing(drawingOffset);
+						Paint(iw, ih);
+						Graphics2D.OffsetDrawing(-drawingOffset);
+					}
+				}
+
+				if (IsPaintBorderEnabled()) 
+					PaintBorder(w, h);
+
+				foreach (Element child in Children)
+					child.PaintTraverse(popups, iteration + 1);
+
+				if (IsPostChildPaintEnabled())
+					PostChildPaint();
+			}
+			Graphics2D.PopAlpha();
+		}
+		if (Clipping)
+			Graphics2D.ScissorRect();
 	}
 
 	public void PaintTraverse(List<Element>? popups = null, int iteration = 0) {
@@ -1068,41 +1135,34 @@ public class Element : IValidatable
 				(int)(float)double.Lerp(0, 100, BackdropAlpha)
 				));
 		}
+
 		if (UsesRenderTarget) {
 			// quick check if needing to create a new RT
-			if (!__lastRTSize.HasValue || RenderBounds != __lastRTSize) {
-				if (__RT1.HasValue) Raylib.UnloadRenderTexture(__RT1.Value);
-
-				__RT1 = Graphics2D.CreateRenderTarget(RenderBounds.W, RenderBounds.H);
-				__lastRTSize = RenderBounds;
-			}
-			if (__RT1.HasValue) {
+			if (IsRenderTargetAvailable(out RenderTexture2D rt)) {
 				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
 				Graphics2D.ResetDrawingOffset();
-				Graphics2D.BeginRenderTarget(__RT1.Value);
-
-				Paint(RenderBounds.Width, RenderBounds.Height);
-
-				foreach (Element child in Children)
-					child.PaintTraverse(popups, iteration + 1);
-
-				Graphics2D.EndRenderTarget();
+				{
+					Graphics2D.BeginRenderTarget(rt);
+					PaintElement();
+					Graphics2D.EndRenderTarget();
+				}
 				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
+
 				if (IValidatable.IsValid(Parent)) {
 					Graphics2D.OffsetDrawing(ChildRenderOffset);
-
-					if (Parent.PostRenderChildRT(element) == true) {
+					if (Parent.PostRenderChildRT(this) == true) {
 						Graphics2D.OffsetDrawing(RenderBounds.Pos);
-						PreRenderRT();
-						var t = (byte)Math.Clamp(Opacity * 255, 0, 255);
-						Graphics2D.SetDrawColor(t, t, t, t);
-						Graphics2D.DrawRenderTexture(__RT1.Value, RenderBounds.Size);
-						PostRenderRT();
+						{
+							PreRenderRT();
+							var t = (byte)Math.Clamp(Opacity * 255, 0, 255);
+							Graphics2D.SetDrawColor(t, t, t, t);
+							Graphics2D.DrawRenderTexture(rt, RenderBounds.Size);
+							PostRenderRT();
+						}
+						Graphics2D.OffsetDrawing(-RenderBounds.Pos);
 					}
-
 					Graphics2D.OffsetDrawing(-ChildRenderOffset);
 				}
-				Graphics2D.OffsetDrawing(-RenderBounds.Pos);
 			}
 			else
 				Logs.Error("No render-target for element??");
@@ -1114,33 +1174,14 @@ public class Element : IValidatable
 		childRenderOffset = childRenderOffset.Round(5);
 
 		Graphics2D.OffsetDrawing(childRenderOffset);
-		Graphics2D.OffsetDrawing(RenderBounds.Pos);
-
-		if (Clipping)
-			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - ChildRenderOffset, RenderBounds.Size)); // ?
-																																		 //else
-																																		 //Graphics2D.ScissorRect();
-		Graphics2D.PushAlpha(Opacity * 255);
-
-		foreach (Element child in Children)
-			child.PaintTraverse(popups, iteration + 1);
-		if (IsPostChildPaintEnabled())
-			PostChildPaint();
-		Graphics2D.PopAlpha();
-
-		if (Clipping)
-			Graphics2D.ScissorRect();
-
-		//Graphics2D.DrawText(new(0, 0), $"Pos: {RenderBounds.Pos}", Graphics2D.UI_FONT_NAME, 20);
-
-		Graphics2D.OffsetDrawing(-RenderBounds.Pos);
+		{
+			Graphics2D.OffsetDrawing(RenderBounds.Pos);
+			{
+				PaintElement(popups, iteration);
+			}
+			Graphics2D.OffsetDrawing(-RenderBounds.Pos);
+		}
 		Graphics2D.OffsetDrawing(-childRenderOffset);
-
-		/*if (Hovered && Parent != null) {
-                Graphics2D.SetDrawColor(100, 255, 100, 50);
-                Graphics2D.DrawRectangle(RenderBounds);
-                Graphics2D.SetDrawColor(Color.WHITE);
-            }*/
 	}
 
 
@@ -1511,7 +1552,7 @@ public class Element : IValidatable
 			Graphics2D.DrawRectangleRounded(0, 0, width, height, roundness, segments);
 		}
 	}
-	public virtual void Paint_(float width, float height) {
+	public virtual void Paint(float width, float height) {
 
 	}
 	public virtual void PaintBorder(float width, float height) {

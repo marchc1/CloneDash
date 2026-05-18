@@ -112,6 +112,7 @@ public class Textbox : Label
 		Text = "";
 		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 		TextSize = 20;
+		SetPaintBorderEnabled(true);
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -769,20 +770,16 @@ public class Textbox : Label
 		BackgroundColor = KeyboardFocused ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
 		ForegroundColor = KeyboardFocused ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
 
-		Color back, fore;
+		Color back;
 		if (!ReadOnly) {
 			back = MixColorBasedOnMouseState(this, BackgroundColor, new(0, 1.1f, 2.3f, 1f), new(0, 1.2f, 0.6f, 1f));
-			fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		}
 		else {
 			back = BackgroundColor;
-			fore = ForegroundColor;
 		}
 
 		Graphics2D.SetDrawColor(back);
 		Graphics2D.DrawRectangle(0, 0, width, height);
-		Graphics2D.SetDrawColor(fore);
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
 		string text = DisplayText ?? "";
 		bool showPlaceholder = text.Length == 0;
@@ -808,6 +805,11 @@ public class Textbox : Label
 
 		if (KeyboardFocused && (DateTime.Now - LastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
 			DrawCaret(width, height);
+	}
+	public override void PaintBorder(float width, float height) {
+		Color fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
+		Graphics2D.SetDrawColor(fore);
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}
 
 	void DrawTextLines(float width, float height) {

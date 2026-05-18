@@ -14,6 +14,8 @@ public class ListView : ScrollPanel
 	public override void Paint(float width, float height) {
 		Graphics2D.SetDrawColor(20, 25, 32, 127);
 		Graphics2D.DrawRectangle(0, 0, width, height);
+	}
+	public override void PaintBorder(float width, float height) {
 		Graphics2D.SetDrawColor(85, 95, 110);
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
 	}

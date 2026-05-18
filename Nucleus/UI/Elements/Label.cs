@@ -49,6 +49,8 @@ public class Label : Element
 {
 	public Label(Element? parent, ReadOnlySpan<char> text = "Label", ReadOnlySpan<char> name = default) : base(parent, name) {
 		Text = new(text);
+		SetPaintBackgroundEnabled(false);
+		SetPaintBorderEnabled(false);
 	}
 	public bool DrawBackground { get; set; } = false;
 	public Anchor TextAlignment { get; set; } = Anchor.Center;

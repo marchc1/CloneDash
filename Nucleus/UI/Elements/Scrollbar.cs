@@ -142,21 +142,6 @@ public class Scrollbar : Panel
 	public bool ShouldShow() => Alignment == ScrollbarAlignment.Horizontal ? PageContents.W > PageSize.W : PageContents.H > PageSize.H;
 	public float GetOverflow() => Alignment == ScrollbarAlignment.Horizontal ? PageContents.W / PageSize.W : PageContents.H / PageSize.H;
 
-	private void Grip_PaintOverride(Element self, float width, float height) {
-		
-
-	}
-
-
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-
-	}
-
-	public override void Paint(float width, float height) {
-
-	}
-
 	public void Update(Vector2F contents, Vector2F size) {
 		PageContents = contents;
 		PageSize = size;

@@ -111,7 +111,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	public MainMenuPanel(Element? parent) : base(parent){ 
 		BorderSize = 0;
-		DrawPanelBackground = false;
+		SetPaintBackgroundEnabled(false);
 
 		SetPassthru(true);
 
@@ -160,7 +160,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
 			var settings = menu.PushActiveElement(new SettingsEditor(UI));
-			settings.DrawPanelBackground = false;
+			settings.SetPaintBackgroundEnabled(false);
 		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}

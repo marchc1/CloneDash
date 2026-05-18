@@ -57,7 +57,7 @@ public class AutocompletePanel : Panel
 	public AutocompletePanel(Element? parent) : base(parent) {
 		Size = new(480, 180);
 		OptionsParent = new ScrollPanel(this);
-		OptionsParent.DrawPanelBackground = false;
+		OptionsParent.SetPaintBackgroundEnabled(false);
 		OptionsParent.Dock = Dock.Fill;
 	}
 	public override void Paint(float width, float height) {
@@ -552,11 +552,6 @@ public class TextEditor : Panel
 			else
 				linePart = $"line {Caret.StartRow} / {Rows.Count}";
 			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
-		}
-
-		if (BorderSize > 0) {
-			Graphics2D.SetDrawColor(ForegroundColor);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height);
 		}
 	}
 
