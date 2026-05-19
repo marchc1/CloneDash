@@ -110,12 +110,13 @@ public class ElementInputSystem
 		// Handle mouse clicking
 		if (IValidatable.IsValid(hovered)) {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
-				if (mouse.Clicked(i) && hovered.IsMouseInputEnabled() && hovered.MouseClickOccur(frameState, i)) {
+				bool clicked = mouse.Clicked(i);
+				if (clicked && hovered.IsMouseInputEnabled() && hovered.MouseClickOccur(frameState, i)) {
 					mouse.SetClicked(i, false); // disengage input from game
 					mouse.SetHeld(i, false); // disengage input from game
 					solveState.Depressed[i - ButtonCode.MouseFirst] = hovered;
 				}
-				if (mouse.Clicked(i))
+				if (clicked)
 					OnClick?.Invoke(hovered);
 			}
 		}
