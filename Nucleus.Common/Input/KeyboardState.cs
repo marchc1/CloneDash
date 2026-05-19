@@ -122,16 +122,19 @@ public struct KeyboardState()
 		}
 	}
 
-	public void ConsumeKeyAtIndex(int index) {
-		int key = KeysThisFrame[index];
+	public void ConsumeKey(int key) {
 		KeysPressed[key] = 0;
 		KeysReleased[key] = false;
 
-		for (int i = index; i < TotalKeysThisFrame - 1; i++) {
-			KeysThisFrame[i] = KeysThisFrame[i + 1];
-			KeyTimesThisFrame[i] = KeyTimesThisFrame[i + 1];
+		for (int i = TotalKeysThisFrame - 1; i >= 0; i--) {
+			if (KeysThisFrame[i] == key) {
+				for (int j = i; j < TotalKeysThisFrame - 1; j++) {
+					KeysThisFrame[j] = KeysThisFrame[j + 1];
+					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
+				}
+				TotalKeysThisFrame--;
+			}
 		}
-		TotalKeysThisFrame--;
 	}
 
 	public void ConsumeTextAtIndex(int index) {

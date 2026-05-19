@@ -15,8 +15,6 @@ public class ScrollPanel : Panel
 				child.Dock = ChildDock.Value;
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
-			parent.ConsumeScrollEvent();
-
 			if (delta.X != 0)
 				parent.HorizontalScrollbar.MouseScrolled(parent.HorizontalScrollbar, state, delta);
 			if (delta.Y != 0)

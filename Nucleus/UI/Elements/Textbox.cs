@@ -473,8 +473,6 @@ public class Textbox : Label
 		float visibleH = RenderBounds.Height - TextPadding.Y * 2 - 4;
 		scrollOffsetY = Math.Clamp(scrollOffsetY, 0, Math.Max(0, totalH - visibleH));
 
-		ConsumeScrollEvent();
-
 		return true;
 	}
 

@@ -134,7 +134,6 @@ public class Scrollbar : Panel
 
 	internal bool MouseScrolled(Element self, FrameState state, Vector2F delta) {
 		Scroll += delta.Y * -ScrollDelta;
-		ConsumeScrollEvent();
 		return true;
 	}
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => MouseScrolled(self, state, delta);

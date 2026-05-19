@@ -417,8 +417,6 @@ public class TextEditor : Panel
 
 		float v = Math.Max(MathF.Round(value), 0);
 		TopRow = Math.Clamp(v, 0, Math.Max(Rows.Count - maxRows, 0));
-
-		ConsumeScrollEvent();
 	}
 
 	bool wasHovered = false;
@@ -1005,7 +1003,6 @@ public class TextEditor : Panel
 		else {
 			TopRow = Rows.Count - MaxVisibleRows;
 		}
-		self.ConsumeScrollEvent();
 	}
 
 	private void Editor_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {

@@ -105,7 +105,7 @@ public class ElementInputSystem
 		// Handle mouse clicking
 		if (IValidatable.IsValid(hovered)) {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
-				if (mouse.Clicked(i)) {
+				if (mouse.Clicked(i) && hovered.IsMouseInputEnabled()) {
 					mouse.SetClicked(i, false); // disengage input from game
 					mouse.SetHeld(i, false); // disengage input from game
 					solveState.Depressed[i - ButtonCode.MouseFirst] = hovered;
@@ -117,7 +117,7 @@ public class ElementInputSystem
 		if (!mouse.MouseDelta.IsZero()) {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
 				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
-				if (IValidatable.IsValid(depressed))
+				if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled())
 					depressed.MouseDragOccur(frameState, mouse.MouseDelta);
 			}
 		}
@@ -126,17 +126,40 @@ public class ElementInputSystem
 		// A click might invalidate via removing, so a second guard is done
 		if (IValidatable.IsValid(hovered)) {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
-				if (mouse.Released(i) && hovered.MouseReleaseOccur(frameState, i)) {
-					mouse.SetHeld(i, false); // disengage input from game
-					mouse.SetReleased(i, false); // disengage input from game
+				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
+				if (mouse.Released(i)) {
+					if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled() && depressed.MouseReleaseOccur(frameState, i)) {
+						mouse.SetHeld(i, false); // disengage input from game
+						mouse.SetReleased(i, false); // disengage input from game
+						depressed = null;
+					}
 				}
+			}
+		}
+
+		// Handle mouse scrolling
+		if (!mouse.MouseDelta.IsZero()) {
+			if (IValidatable.IsValid(hovered)) {
+				// Do a backwards search first
+				var checkBack = hovered;
+				while (checkBack != null) {
+					if (checkBack.IsMouseInputEnabled() && checkBack.MouseScrollOccur(hovered, frameState, mouse.MouseDelta))
+						break;
+					checkBack = checkBack.GetParent();
+				}
+				// Forwards check maybe? todo
 			}
 		}
 
 		Element? keyboardFocused = solveState.KeyboardFocused;
 		KeyboardState emulated;
 		while (keyboardFocused != null) {
+			if (!keyboardFocused.IsKeyboardInputEnabled())
+				break;
+
 			emulated = keyboard;
+			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
+
 			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
 				int key = emulated.KeysThisFrame[i];
 				bool consumed = false;
@@ -147,7 +170,7 @@ public class ElementInputSystem
 					consumed |= keyboardFocused.KeyReleasedOccur(in emulated, key.ToButtonCode());
 
 				if (consumed)
-					keyboard.ConsumeKeyAtIndex(i);
+					keyboard.ConsumeKey(key);
 			}
 
 			for (int i = emulated.GetTextInputsThisFrame() - 1; i >= 0; i--)
@@ -499,16 +522,16 @@ public class UserInterface : Element, IDisposable
 
 	ulong keyboardFocusReentrantID = 0;
 
-	public bool SetKeyboardFocusedElement(Element? element){
+	public bool SetKeyboardFocusedElement(Element? element) {
 		ulong currentFunctionID = keyboardFocusReentrantID++;
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
-		if(keyboardFocused != null){
+		if (keyboardFocused != null) {
 			if (keyboardFocused.CanKeyboardFocusLostOccur(element))
 				return false;
 		}
 
-		if(element == null){
+		if (element == null) {
 			SolveState.KeyboardFocused = null;
 			return true;
 		}
@@ -518,7 +541,7 @@ public class UserInterface : Element, IDisposable
 
 		if (keyboardFocusReentrantID != currentFunctionID)
 			return false; // If another caller calls into this function in a keyboard focus hook, it would cause their focus to be
-					      // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
+						  // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
 						  // the result to not immediately override it. Although you should just use the ref element if you can. 
 						  // (or maybe we should just have the re-entrant check and nix the ref... todo)
 

@@ -139,8 +139,6 @@ public class Element : IValidatable
 
 	public Dictionary<string, object?> Tags { get; } = [];
 
-	public bool ConsumedScrollEvent { get; internal set; }
-
 	public bool Depressed { get; internal set; }
 	public bool Dragged { get; internal set; } = false;
 	public Vector2F DragVector { get; internal set; } = Vector2F.Zero;
@@ -512,8 +510,7 @@ public class Element : IValidatable
 		this.name = new(name.SliceNullTerminatedString());
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Element? GetParent() => Parent;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public Element? GetParent() => Parent;
 
 	public void SetParent(Element? p) {
 		if (p == this)
@@ -605,7 +602,7 @@ public class Element : IValidatable
 	}
 
 	private void DoChildDocking() {
-		RectangleF availableSpace = __renderbounds;
+		RectangleF availableSpace = RectangleF.FromPosAndSize(Vector2F.Zero, __renderbounds.Size);
 
 		// Shrink available space by dock padding
 		if (!_dockPadding.IsZero) {
@@ -639,19 +636,22 @@ public class Element : IValidatable
 					// width untouched
 					break;
 				case Dock.Right:
-					childBounds.X = availableSpace.W - childBounds.X;
+					childBounds.X = availableSpace.X + availableSpace.W - childBounds.W;
 					childBounds.Y = availableSpace.Y;
 					childBounds.H = availableSpace.H;
 					// width untouched
 					break;
 				case Dock.Bottom:
-					childBounds.X = availableSpace.W - childBounds.X;
-					childBounds.Y = availableSpace.H - childBounds.Y;
+					childBounds.X = availableSpace.X;
+					childBounds.Y = availableSpace.Y + availableSpace.H - childBounds.H;
 					childBounds.W = availableSpace.W;
 					// height untouched
 					break;
 				case Dock.Fill:
-
+					childBounds.X = availableSpace.X;
+					childBounds.Y = availableSpace.Y;
+					childBounds.W = availableSpace.W;
+					childBounds.H = availableSpace.H;
 					break;
 			}
 			// ... then fixing up our bounds
@@ -674,9 +674,9 @@ public class Element : IValidatable
 			}
 
 			// Then shrink the child by DockMargin..
-			if (!_dockMargin.IsZero) {
-				childBounds.AddPosition(new(_dockMargin.X, _dockMargin.Y));
-				childBounds.AddSize(new(_dockMargin.W * -2, _dockMargin.H * -2));
+			if (!child._dockMargin.IsZero) {
+				childBounds.AddPosition(new(child._dockMargin.X, child._dockMargin.Y));
+				childBounds.AddSize(new(child._dockMargin.W * -2, child._dockMargin.H * -2));
 			}
 
 			// manual layout flag setting here
@@ -952,14 +952,13 @@ public class Element : IValidatable
 			return false;
 		return MouseDrag(this, state, delta);
 	}
-	internal bool MouseScrollOccur(FrameState state, Vector2F delta) {
+	internal bool MouseScrollOccur(Element element, FrameState state, Vector2F delta) {
 		if (!MouseInput)
 			return false;
-		return MouseScroll(this, state, delta);
+		return MouseScroll(element, state, delta);
 	}
 
 	public double Lifetime => (DateTime.Now - Birth).TotalSeconds;
-	public void ConsumeScrollEvent() => ConsumedScrollEvent = true;
 
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 	private SecondOrderSystem? __mouseColorableHoverState;
