@@ -54,7 +54,7 @@ public enum ElementFlags : uint
 	MousePassthru = 1 << 12,
 	IsPopup = 1 << 13,
 	IsModal = 1 << 14,
-	NeedsRenderBoundsFlush = 1 << 15,
+	NeedsRenderBoundsFlush = 1 << 15
 }
 
 public class Element : IValidatable
@@ -92,6 +92,7 @@ public class Element : IValidatable
 
 	string? name;
 	IScheme? scheme;
+	IScheme? lastAppliedScheme;
 
 	private bool __usesRenderTarget = false;
 	private RenderTexture2D? __RT1 = null;
@@ -1298,15 +1299,18 @@ public class Element : IValidatable
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
 	public IScheme? GetScheme() {
+		//return scheme ?? GetParent()?.GetScheme();
 		return scheme;
 	}
 	public void SetScheme(ReadOnlySpan<char> scheme) => SetScheme(ElementSchemeSystem.GetSchemeByName(scheme));
 	public void SetScheme(IScheme? scheme) {
 		if (this.scheme == scheme) return;
 
-		this.scheme = scheme;
-		if (scheme != null)
+		if (scheme != null) {
 			AddFlag(ElementFlags.NeedsSchemeUpdate);
+		}
+		OnSchemeChanged(this.scheme, scheme);
+		this.scheme = scheme;
 	}
 
 	/// <summary>
@@ -1314,7 +1318,7 @@ public class Element : IValidatable
 	/// </summary>
 	/// <param name="prev"></param>
 	/// <param name="now"></param>
-	public virtual void OnSchemeChanged(IScheme? prev, IScheme now){
+	public virtual void OnSchemeChanged(IScheme? prev, IScheme? now) {
 		__mouseColorableHoverState = null;
 		__mouseColorableDepressState = null;
 	}
@@ -1409,12 +1413,16 @@ public class Element : IValidatable
 	protected virtual bool TextInput(in KeyboardState keyboardState, string text) => false;
 
 	internal void PerformApplySchemeSettings() {
-		if (HasFlag(ElementFlags.NeedsSchemeUpdate)) {
-			IScheme? scheme = GetScheme();
-			if (scheme != null) {
-				ApplySchemeSettings(scheme);
-			}
-		}
+		IScheme? current = GetScheme(); 
+
+		// Recursive descent of schemes, but this overrides custom colors... hmn
+		// if (current != lastAppliedScheme) {
+		// 	AddFlag(ElementFlags.NeedsSchemeUpdate);
+		// 	lastAppliedScheme = current;
+		// }
+
+		if (HasFlag(ElementFlags.NeedsSchemeUpdate) && current != null)
+			ApplySchemeSettings(current);
 	}
 }
 
