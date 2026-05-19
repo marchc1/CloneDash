@@ -40,10 +40,10 @@ public class Menubar : Panel
 		MenuContext context = new MenuContext(this.UI);
 		Button b = new MenubarButton(this, action);
 		action = action ?? (() => context.Show());
-		b.TextPadding = new(8);
+		b.SetTextPadding(new(8));
 		b.Dock = Dock.Left;
-		b.AutoSize = true;
-		b.Text = text;
+		b.SetAutoSize(true);
+		b.SetText(text);
 		b.BorderSize = 0;
 
 		return context;

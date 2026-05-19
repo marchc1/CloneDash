@@ -17,7 +17,7 @@ public interface INumSlider
 	string Prefix { get; set; }
 	string Suffix { get; set; }
 }
-public class LabeledNumSlider : Panel, INumSlider
+public class LabeledNumSlider : Panel, INumSlider, ITextElement
 {
 	private Label label;
 	private NumSlider numslider;
@@ -30,12 +30,12 @@ public class LabeledNumSlider : Panel, INumSlider
 	public string Suffix { get => numslider.Suffix; set => numslider.Suffix = value; }
 	public string? TextFormat { get => numslider.TextFormat; set => numslider.TextFormat = value; }
 
-	public new string Text { get => label.Text; set => label.Text = value; }
+
 	public LabeledNumSlider(Element? parent) : base(parent){
 		label = new Label(this);
 		label.Dock = Dock.Left;
-		label.AutoSize = true;
-		label.Text = "Num";
+		label.SetAutoSize(true);
+		label.SetText("Num");
 		label.BorderSize = 0;
 		label.SetBgColor(Color.Blank);
 		label.DockMargin = RectangleF.XYWH(0, 0, 16, 0);
@@ -47,6 +47,22 @@ public class LabeledNumSlider : Panel, INumSlider
 
 	public override void Paint(float width, float height) {
 
+	}
+
+	public ReadOnlySpan<char> GetFont() {
+		return ((ITextElement)label).GetFont();
+	}
+
+	public float GetTextSize() {
+		return ((ITextElement)label).GetTextSize();
+	}
+
+	public void SetFont(ReadOnlySpan<char> font) {
+		((ITextElement)label).SetFont(font);
+	}
+
+	public void SetTextSize(float textSize) {
+		((ITextElement)label).SetTextSize(textSize);
 	}
 }
 public class NumSlider : Textbox, INumSlider
@@ -69,7 +85,7 @@ public class NumSlider : Textbox, INumSlider
 		_value = Math.Round(value, Digits);
 		if (MinimumValue.HasValue) _value = Math.Max(MinimumValue.Value, _value);
 		if (MaximumValue.HasValue) _value = Math.Min(MaximumValue.Value, _value);
-		Text = GetTextVariant();
+		SetText(GetTextVariant());
 	}
 
 	public delegate void OnValueChangedDelegate(NumSlider self, double oldValue, double newValue);
@@ -105,11 +121,11 @@ public class NumSlider : Textbox, INumSlider
 	}
 
 	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
-		Text = $"{Value}";
+		SetText($"{Value}");
 		caret = 0;
 		return true;
 	}
-	public virtual double? ParseString(string? input) {
+	public virtual double? ParseString(ReadOnlySpan<char> input) {
 		double t;
 
 		if (double.TryParse(input, out t))
@@ -129,7 +145,7 @@ public class NumSlider : Textbox, INumSlider
 	}
 	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
-			double? v = ParseString(Text);
+			double? v = ParseString(GetText());
 			if (v != null) {
 				Value = v.Value;
 				KeyboardUnfocus();

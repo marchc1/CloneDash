@@ -61,7 +61,7 @@ public class StatisticsPanel : Panel
 		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
 		restart.Size = new(.2f);
-		restart.Text = "Restart";
+		restart.SetText("Restart");
 		restart.Dock = Dock.Left;
 		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
@@ -73,7 +73,7 @@ public class StatisticsPanel : Panel
 		var back = new Button(bottom);
 		back.DynamicallySized = true;
 		back.Size = new(.2f);
-		back.Text = "Main Menu";
+		back.SetText("Main Menu");
 		back.Dock = Dock.Right;
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 

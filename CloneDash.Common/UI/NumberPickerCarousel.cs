@@ -2,6 +2,7 @@
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
@@ -11,6 +12,23 @@ namespace CloneDash.UI;
 
 public class NumberPickerCarousel : Element
 {
+	SchemeableSetting<Color> textColor = SchemeableSetting<Color>.Default(DefaultTextColor);
+
+	SchemeableSetting<float> TextSize = SchemeableSetting<float>.Default(DefaultTextSize);
+	SchemeableSetting<string> Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
+	public Color GetTextColor() => textColor.Get();
+	public void SetTextColor(Color value) => textColor.SetUserValue(value);
+
+	public override void ApplySchemeSettings(IScheme scheme) {
+		base.ApplySchemeSettings(scheme);
+
+		SetTextColor(scheme.GetColor("Nucleus.Text"));
+		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
+		Font.SetSchemeValue(fontStyle.Name);
+		TextSize.SetSchemeValue(fontStyle.Tall);
+	}
+
+
 	public int MinimumValue { get; set; } = 1;
 	public int MaximumValue { get; set; } = 2;
 	private int _value = 1;
@@ -114,6 +132,13 @@ public class NumberPickerCarousel : Element
 		return ((v - MinimumValue) % range + range) % range + MinimumValue;
 	}
 
+
+	public ReadOnlySpan<char> GetFont() => Font.Get();
+	public void SetFont(ReadOnlySpan<char> font) => Font.SetUserValue(new(font));
+
+	public float GetTextSize() => TextSize.Get();
+	public void SetTextSize(float textSize) => TextSize.SetUserValue(textSize);
+
 	char[] text = new char[32];
 
 	public override void Paint(float width, float height) {
@@ -139,15 +164,15 @@ public class NumberPickerCarousel : Element
 
 			bool isSelected = offset == 0;
 			float fontSize = isSelected ? SelectedFontSize : UnselectedFontSize;
-			Color textCol = isSelected ? TextColor : GetFgColor().Adjust(0, 0, .3f);
+			Color textCol = isSelected ? GetTextColor() : GetFgColor().Adjust(0, 0, .3f);
 
 			numberValue.TryFormat(text, out int written);
-			var textSize = Graphics2D.GetTextSize(text[..written], Font, fontSize);
+			var textSize = Graphics2D.GetTextSize(text[..written], GetFont(), fontSize);
 			float tx = cellX + (cellWidth - textSize.X) / 2f;
 			float ty = (height - textSize.Y) / 2f;
 
 			Graphics2D.SetDrawColor(textCol);
-			Graphics2D.DrawText(new Vector2F(tx, ty), text[..written], Font, fontSize);
+			Graphics2D.DrawText(new Vector2F(tx, ty), text[..written], GetFont(), fontSize);
 		}
 
 		Graphics2D.SetDrawColor(GetFgColor());

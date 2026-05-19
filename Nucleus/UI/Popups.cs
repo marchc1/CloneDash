@@ -92,12 +92,12 @@ namespace Nucleus.UI
             containButtons.DockPadding = RectangleF.TLRB(2, 2, 2, 2);
 
 			Label lb = new Label(popup);
-			lb.TextSize = 17;
-            lb.Text = text.Replace("\r", "");
+			lb.SetTextSize ( 17);
+            lb.SetText(text.Replace("\r", ""));
             lb.Dock = Dock.Fill;
 
-            var txtsize = Graphics2D.GetTextSize(lb.Text, lb.Font, lb.TextSize);
-            var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.Font, popup.Titlebar.TextSize);
+            var txtsize = Graphics2D.GetTextSize(lb.GetText(), lb.GetFont(), lb.GetTextSize());
+            var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.GetFont(), popup.Titlebar.GetTextSize());
             var finalsize = new Vector2F(MathF.Max(txtsize.X, titlesize.X + 64), txtsize.Y);
             popup.Size = new Vector2F(100, 200) + finalsize;
             popup.Center();
@@ -111,7 +111,7 @@ namespace Nucleus.UI
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button ok = new Button(containButtons);
-            ok.Text = "OK";
+            ok.SetText("OK");
             ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
@@ -123,14 +123,14 @@ namespace Nucleus.UI
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button close = new Button(containButtons);
-            close.Text = "Cancel";
+            close.SetText("Cancel");
             close.OnButtonClick += (_, _) => {
                 onCancel?.Invoke();
                 popup.Close();
             };
 
             Button ok = new Button(containButtons);
-            ok.Text = "OK";
+            ok.SetText("OK");
             ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();

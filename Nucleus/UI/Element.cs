@@ -163,7 +163,6 @@ public class Element : IValidatable
 	public float BorderSize { get; set; } = 2;
 	public float Roundness { get; set; } = 0;
 
-	public Color TextColor { get; set; } = DefaultTextColor;
 	public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
 	public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
 	internal Element? Parent;
@@ -272,7 +271,8 @@ public class Element : IValidatable
 	public static readonly Color DefaultBackgroundColor = new(0, 0, 0, 255);
 	public static readonly Color DefaultForegroundColor = new(155, 155, 155, 255);
 	public static readonly Color DefaultTextColor = new(255, 255, 255, 255);
-
+	public static readonly float DefaultTextSize = 18;
+	
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
 	/// </summary>
@@ -939,7 +939,6 @@ public class Element : IValidatable
 		Parent.InvalidateLayout();
 	}
 
-	public string Font { get; set; } = Graphics2D.UI_FONT_NAME;
 	public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
 
 	public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
@@ -1225,7 +1224,7 @@ public class Element : IValidatable
 		destRect.Width -= ImagePadding.X * 2;
 		destRect.Height -= ImagePadding.Y * 2;
 
-		Color thisC = ImageColor ?? TextColor;
+		Color thisC = ImageColor ?? Color.White;
 
 		if (!IsMouseInputEnabled())
 			thisC = thisC.Adjust(0, 0, -.5f);
@@ -1338,12 +1337,8 @@ public class Element : IValidatable
 	}
 
 	public virtual void ApplySchemeSettings(IScheme scheme) {
-		SetBgColor(scheme.GetColor("Nucleus.Background"));
-		SetFgColor(scheme.GetColor("Nucleus.Border"));
-		TextColor = scheme.GetColor("Nucleus.Text");
-
-		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
-		Font = fontStyle.Name;
+		backgroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Background"));
+		foregroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Border"));
 
 		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}

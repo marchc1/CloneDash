@@ -31,7 +31,7 @@ public class CharacterButton(Element? parent) : Button(parent)
 		SetBgColor(new Color(0, 0, 0, 0));
 		BorderSize = 0;
 		ImagePadding = new(0, 0);
-		Text = "";
+		SetText("");
 	}
 
 	public override void Paint(float width, float height) {
@@ -55,7 +55,7 @@ public class CharacterSelectorScroller : Panel
 			var c = chars[i];
 			c.label.SetFgColor(i == lastSelectedIdx ? new Color(255, 255, 255, 255) : new Color(155, 155, 155, 255));
 			c.label.Pulsing = i == lastSelectedIdx;
-			c.label.DrawBackground = i == lastSelectedIdx;
+			c.label.SetPaintBackgroundEnabled(i == lastSelectedIdx);
 		}
 
 		InvalidateLayout();
@@ -146,16 +146,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		selectedInfo.SetPaintEnabled(false);
 
 		characterNameLabel = new(this);
-		characterNameLabel.AutoSize = true;
+		characterNameLabel.SetAutoSize(true);
 
 		characterCostumeLabel = new(this);
-		characterCostumeLabel.AutoSize = true;
+		characterCostumeLabel.SetAutoSize(true);
 
 		characterHPLabel = new(this);
-		characterHPLabel.AutoSize = true;
+		characterHPLabel.SetAutoSize(true);
 
 		characterAuthorLabel = new(this);
-		characterAuthorLabel.AutoSize = true;
+		characterAuthorLabel.SetAutoSize(true);
 		characterAuthorLabel.Origin = Anchor.TopRight;
 
 		characterSelectButton = new(selectedInfo);
@@ -169,10 +169,10 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterPerkLabel = new(selectedInfo);
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
-		characterPerkLabel.TextAlignment = Anchor.CenterLeft;
-		characterPerkLabel.TextPadding = new(0, 0);
+		characterPerkLabel.SetTextAlignment(Anchor.CenterLeft);
+		characterPerkLabel.SetTextPadding(new(0, 0));
 		characterPerkLabel.Dock = Dock.Fill;
-		characterPerkLabel.TextSize = 24;
+		characterPerkLabel.SetTextSize(24);
 		characterPerkLabel.DynamicallySized = true;
 		characterPerkLabel.SetBgColor(new Color(100, 100, 100, 100)); // temp
 
@@ -200,17 +200,17 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		float ratio = height / 900;
 
-		characterNameLabel.TextSize = 80 * ratio;
-		characterCostumeLabel.TextSize = 40 * ratio;
-		characterHPLabel.TextSize = 40 * ratio;
-		characterAuthorLabel.TextSize = 28 * ratio;
+		characterNameLabel.SetTextSize(80 * ratio);
+		characterCostumeLabel.SetTextSize(40 * ratio);
+		characterHPLabel.SetTextSize(40 * ratio);
+		characterAuthorLabel.SetTextSize(28 * ratio);
 
 		characterNameLabel.Position = new(32, 10 * ratio);
 		characterCostumeLabel.Position = new(32, 72 * ratio);
 		characterHPLabel.Position = new(32, 104 * ratio);
 		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
 
-		characterSelectButton.TextSize = 80 * ratio;
+		characterSelectButton.SetTextSize(80 * ratio);
 	}
 
 	ICharacterDescriptor? LastCharacterSelected;
@@ -222,18 +222,18 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		var lang = HumanLanguage.GetCurrentLanguage();
 
 		if (ch == null) {
-			characterNameLabel.Text = "<NULL>";
-			characterCostumeLabel.Text = "<NULL>";
-			characterAuthorLabel.Text = "<NULL>";
-			characterPerkLabel.Text = "<NULL>";
+			characterNameLabel.SetText("<NULL>");
+			characterCostumeLabel.SetText("<NULL>");
+			characterAuthorLabel.SetText("<NULL>");
+			characterPerkLabel.SetText("<NULL>");
 		}
 		else {
-			characterNameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
-			characterCostumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
-			characterAuthorLabel.Text = $"Author: {ch.GetAuthor(lang, out _)}";
-			characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
+			characterNameLabel.SetText($"{ch.GetCharacterName(lang, out _)}");
+			characterCostumeLabel.SetText($"{ch.GetCosplayName(lang, out _)}");
+			characterAuthorLabel.SetText($"Author: {ch.GetAuthor(lang, out _)}");
+			characterPerkLabel.SetText($"{ch.GetPerk(lang, out _)}");
 		}
-		characterSelectButton.Text = "SELECT";
+		characterSelectButton.SetText("SELECT");
 	}
 
 	public bool OnTryClose() {

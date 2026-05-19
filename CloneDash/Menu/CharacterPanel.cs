@@ -83,7 +83,7 @@ public class CharacterPanel : Panel
 
 		string? text = null;
 		expression?.GetSpeech(EngineCore.Level, out text, out _);
-		ExpressionLabel.TextPadding = new(16);
+		ExpressionLabel.SetTextPadding(new(16));
 		ExpressionText = text;
 	}
 
@@ -115,12 +115,12 @@ public class CharacterPanel : Panel
 				ExpressionLabel.Position = textPos;
 				ExpressionLabel.Size = textSize;
 				ExpressionLabel.SetVisible(true);
-				ExpressionLabel.DrawBackground = true;
+				ExpressionLabel.SetPaintBackgroundEnabled(true);
 				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
-				ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
-				ExpressionLabel.AutoSize = true;
+				ExpressionLabel.SetTextColor(new(255, 255, 255, (int)(alphaMult * 255)));
+				ExpressionLabel.SetAutoSize(true);
 				ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
-				ExpressionLabel.Text = ExpressionText;
+				ExpressionLabel.SetText(ExpressionText);
 			}
 			else
 				ExpressionLabel.SetVisible(false);

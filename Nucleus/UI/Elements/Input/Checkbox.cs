@@ -71,7 +71,7 @@ public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Butt
 			base.Paint(smallest, smallest);
 			if (c > 0) {
 				c = NMath.Ease.OutQuart(c);
-				Graphics2D.SetDrawColor(TextColor);
+				Graphics2D.SetDrawColor(GetTextColor());
 				Graphics2D.DrawCircle(new Vector2F(smallest / 2, smallest / 2), new Vector2F((c * smallest) / 5f));
 			}
 
@@ -81,7 +81,7 @@ public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Butt
 			base.Paint(width, height);
 			if (c > 0) {
 				c = NMath.Ease.InQuad(c);
-				Graphics2D.SetDrawColor(TextColor);
+				Graphics2D.SetDrawColor(GetTextColor());
 				Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
 			}
 		}

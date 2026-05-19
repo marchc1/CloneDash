@@ -21,8 +21,8 @@ public class TreeNode : Button, IContainsNodes
 		ChildrenPanel.Size = new(0, 0);
 		ChildrenPanel.DockPadding = RectangleF.TLRB(0, 8, 0, 0);
 
-		TextAlignment = Anchor.CenterLeft;
-		TextPadding = new(8);
+		SetTextAlignment(Anchor.CenterLeft);
+		SetTextPadding(new(8));
 	}
 
 	private bool expanded = false;
@@ -53,7 +53,7 @@ public class TreeNode : Button, IContainsNodes
 	public List<TreeNode> Nodes { get; set; } = [];
 	public TreeNode AddNode(string text) {
 		TreeNode node = new TreeNode(ChildrenPanel);
-		node.Text = text;
+		node.SetText(text);
 		Nodes.Add(node);
 		return node;
 	}
@@ -81,7 +81,7 @@ public class TreeView : DirectionalLayoutPanel, IContainsNodes
 	public List<TreeNode> Nodes { get; set; } = [];
 	public TreeNode AddNode(string text) {
 		TreeNode node = new TreeNode(this);
-		node.Text = text;
+		node.SetText(text);
 		Nodes.Add(node);
 		return node;
 	}

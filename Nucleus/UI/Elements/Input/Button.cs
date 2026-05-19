@@ -137,7 +137,7 @@ public class Button : Label
 
 		Vector2F posOffset = new(0);
 
-		Vector2F textDrawingPosition = TextAlignment.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
+		Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
 		if (ImageFollowsText && Image != null) {
 			posOffset = new Vector2F(textDrawingPosition.X - (width / 2) - (Image.Width / 2) - 2, 0);
 		}

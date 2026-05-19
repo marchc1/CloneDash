@@ -65,24 +65,24 @@ public class AutocompletePanel : Panel
 	}
 	public readonly List<string> Options = [];
 	public readonly List<Button> Buttons = [];
-	public delegate void SelectedFn(string selectedText);
+	public delegate void SelectedFn(ReadOnlySpan<char> selectedText);
 	public event SelectedFn? Selected;
 
 	public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
 		Options.Add(new(text));
 		Button btn = new Button(OptionsParent);
 		btn.Dock = Dock.Top;
-		btn.AutoSize = true;
-		btn.TextSize = fontHeight;
-		btn.Font = Graphics2D.UI_MONO_BOLD_FONT_NAME;
-		btn.Text = new(text);
-		btn.TextAlignment = Anchor.CenterLeft;
-		btn.TextPadding = new(12, 0);
+		btn.SetAutoSize(true);
+		btn.SetTextSize(fontHeight);
+		btn.SetFont (Graphics2D.UI_MONO_BOLD_FONT_NAME);
+		btn.SetText(text);
+		btn.SetTextAlignment(Anchor.CenterLeft);
+		btn.SetTextPadding(new(12, 0));
 		btn.BorderSize = 0;
 		btn.PulsePreservesAlpha = true;
 		if (Buttons.Count == 0)
 			btn.Pulsing = true;
-		btn.OnButtonClick += (_, _) => Selected?.Invoke(btn.Text);
+		btn.OnButtonClick += (_, _) => Selected?.Invoke(btn.GetText());
 		Buttons.Add(btn);
 	}
 	public void Reset() {
@@ -114,8 +114,11 @@ public class AutocompletePanel : Panel
 	}
 }
 
-public class TextEditor : Panel
+public class TextEditor : Panel, ITextElement
 {
+	SchemeableSetting<float> TextSize = SchemeableSetting<float>.Default(18);
+	SchemeableSetting<string> Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
+
 	internal TextEditorInternals Editor { get; set; }
 	internal TextEditorGutter Gutter { get; set; }
 	public Scrollbar VScrollbar { get; set; }
@@ -147,11 +150,24 @@ public class TextEditor : Panel
 		}
 	}
 
-	private void AutocompletePanel_Selected(string selectedText) {
+	private void AutocompletePanel_Selected(ReadOnlySpan<char> selectedText) {
 		string option = AutocompleteOption!;
 		Logs.Info(option);
 		CloseAutocomplete();
 	}
+
+	public ReadOnlySpan<char> GetFont() => Font.Get();
+	public void SetFont(ReadOnlySpan<char> font) {
+		Font.SetUserValue(new(font));
+		InvalidateLayout();
+	}
+
+	public float GetTextSize() => TextSize.Get();
+	public void SetTextSize(float textSize) {
+		TextSize.SetUserValue(textSize);
+		InvalidateLayout();
+	}
+
 
 	public void PopulateAutocomplete() {
 		if (!Autocomplete)
@@ -263,7 +279,7 @@ public class TextEditor : Panel
 		this.Width = width;
 		this.Height = height;
 
-		var s = Graphics2D.GetTextSize("W", Font, TextSize);
+		var s = Graphics2D.GetTextSize("W", GetFont(), GetTextSize());
 		FontWidth = s.X + textedit_fontwidthpad.GetInt();
 		FontHeight = s.Y + textedit_fontheightpad.GetInt();
 
@@ -440,7 +456,7 @@ public class TextEditor : Panel
 
 	public void RenderRowPiece(int character, int row, string text, Color color) {
 		Graphics2D.SetDrawColor(color);
-		Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
+		Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, GetFont(), GetTextSize());
 	}
 
 	private void Editor_PaintOverride(Element self, float width, float height) {
@@ -554,7 +570,7 @@ public class TextEditor : Panel
 				linePart = $"selected: {Math.Min(Caret.StartRow, Caret.EndRow)} - {Math.Max(Caret.StartRow, Caret.EndRow)}";
 			else
 				linePart = $"line {Caret.StartRow} / {Rows.Count}";
-			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
+			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", GetFont(), 14, Anchor.BottomRight);
 		}
 	}
 
@@ -1426,16 +1442,16 @@ public class TextEditor : Panel
 			var inRange = NMath.InRange(row, t.Row, b.Row);
 
 			Graphics2D.SetDrawColor(220, 220, 220, 255);
-			Graphics2D.DrawText(x, y + 2, str, Font, TextSize);
+			Graphics2D.DrawText(x, y + 2, str, GetFont(), GetTextSize());
 
 			row += 1;
 			i += 1;
 		}
 	}
 
-	public void SetFont(string fontName, int fontSize) {
-		this.Font = fontName;
-		this.TextSize = fontSize;
+	public void SetFont(ReadOnlySpan<char> fontName, float fontSize) {
+		Font.SetUserValue(new(fontName.SliceNullTerminatedString()));
+		TextSize.SetUserValue(fontSize);
 
 		var s = Graphics2D.GetTextSize("W", fontName, fontSize);
 		FontWidth = s.X;

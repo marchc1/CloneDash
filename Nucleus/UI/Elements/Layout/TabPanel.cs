@@ -13,7 +13,7 @@ public class Tab(Button switcher, Element panel)
 
 	public void SetName(string newName) {
 		Name = newName;
-		Switcher.Text = newName;
+		Switcher.SetText(newName);
 		Switcher.GetParent()?.InvalidateLayout();
 		Switcher.InvalidateLayout();
 	}
@@ -63,15 +63,15 @@ public class TabView : Panel
 		TabGoLeft.Size = new(28);
 		TabGoLeft.Dock = Dock.Left;
 		TabGoLeft.BorderSize = 0;
-		TabGoLeft.Text = "<";
-		TabGoLeft.TextSize = 18;
+		TabGoLeft.SetText("<");
+		TabGoLeft.SetTextSize(18);
 
 		TabGoRight = new Button(TabSelector);
 		TabGoRight.Size = new(28);
 		TabGoRight.Dock = Dock.Right;
 		TabGoRight.BorderSize = 0;
-		TabGoRight.Text = ">";
-		TabGoRight.TextSize = 18;
+		TabGoRight.SetText(">");
+		TabGoRight.SetTextSize(18);
 
 		TabSelectorContainer = new Panel(TabSelector);
 		TabSelectorContainer.SetPaintBackgroundEnabled(false);
@@ -100,8 +100,8 @@ public class TabView : Panel
 		Button switcher = new Button(TabSelectorContainer);
 		switcher.Dock = Dock.Left;
 		switcher.SetBgColor(SWITCHER_INACTIVE);
-		switcher.TextPadding = new(4);
-		switcher.AutoSize = true;
+		switcher.SetTextPadding(new(4));
+		switcher.SetAutoSize(true);
 		switcher.BorderSize = 0;
 
 		// A new tab instance
@@ -122,7 +122,7 @@ public class TabView : Panel
 	}
 
 	public void SetActiveTabByName(ReadOnlySpan<char> name) {
-		foreach(var tab in Tabs) 
+		foreach (var tab in Tabs)
 			if (name.Equals(tab.Name, StringComparison.InvariantCultureIgnoreCase))
 				ActiveTab = tab;
 	}

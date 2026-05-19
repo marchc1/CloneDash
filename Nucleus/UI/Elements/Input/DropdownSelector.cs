@@ -58,7 +58,7 @@ public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = defa
 		return true;
 	}
 	protected override void OnThink() {
-		this.Text = OnToString?.Invoke(this.Selected) ?? Selected?.ToString() ?? "<not-set>";
+		this.SetText(OnToString?.Invoke(this.Selected) ?? Selected?.ToString() ?? "<not-set>");
 	}
 
 	public delegate void OnSelectionChangedDelegate(DropdownSelector<T> self, T oldValue, T newValue);

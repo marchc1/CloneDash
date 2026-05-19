@@ -881,11 +881,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, width, height);
-			var text = Text;
-			var tSize = Graphics2D.GetTextSize(text, Font, TextSize);
+			var text = GetText();
+			var tSize = Graphics2D.GetTextSize(text, GetFont(), GetTextSize());
 			ImageDrawing(new((height / -4) + (tSize.X / -2), 0), new(height, height));
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, Font, TextSize, Anchor.Center);
+			Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, GetFont(), GetTextSize(), Anchor.Center);
 		}
 	}
 
@@ -952,8 +952,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						var play = new PauseMenuButton(flex);
 						play.BorderSize = 0;
-						play.Text = "Return to Game";
-						play.TextSize = 24;
+						play.SetText("Return to Game");
+						play.SetTextSize(24);
 						play.Image = Textures.LoadTextureFromFile("ui/pause_play.png");
 						play.ImageOrientation = ImageOrientation.Fit;
 						play.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -963,8 +963,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						var restart = new PauseMenuButton(flex);
 						restart.BorderSize = 0;
-						restart.Text = "Restart Level";
-						restart.TextSize = 24;
+						restart.SetText("Restart Level");
+						restart.SetTextSize(24);
 						restart.Image = Textures.LoadTextureFromFile("ui/pause_restart.png");
 						restart.ImageOrientation = ImageOrientation.Fit;
 						restart.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -983,8 +983,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						var settings = new PauseMenuButton(flex);
 						settings.BorderSize = 0;
-						settings.Text = "Open Preferences...";
-						settings.TextSize = 24;
+						settings.SetText("Open Preferences...");
+						settings.SetTextSize(24);
 						settings.Image = Textures.LoadTextureFromFile("ui/pause_settings.png");
 						settings.ImageOrientation = ImageOrientation.Fit;
 						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -1013,8 +1013,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						var back2menu = new PauseMenuButton(flex);
 						back2menu.BorderSize = 0;
-						back2menu.Text = "Exit to Menu";
-						back2menu.TextSize = 24;
+						back2menu.SetText("Exit to Menu");
+						back2menu.SetTextSize(24);
 						back2menu.Image = Textures.LoadTextureFromFile("ui/pause_exit.png");
 						back2menu.ImageOrientation = ImageOrientation.Fit;
 						back2menu.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {

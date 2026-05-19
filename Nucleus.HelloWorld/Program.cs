@@ -37,9 +37,9 @@ internal class Program
 						var column = new Label(row);
 						var h = alignment.ToTextAlignment().Horizontal;
 						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
-						column.Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
+						column.SetText("The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString()) ;
 						column.Size = new(window.Size.W / 3, 0);
-						column.TextAlignment = alignment;
+						column.SetTextAlignment(alignment) ;
 						column.TextOverflowMode = TextOverflowMode.WordWrap;
 						return column;
 					}
@@ -69,12 +69,12 @@ internal class Program
 			tools.Dock = Dock.Right;
 			tools.Size = new(640, 0);
 			var testLabel = new Label(tools);
-			testLabel.AutoSize = true;
+			testLabel.SetAutoSize(true);
 			testLabel.Dock = Dock.Top;
-			testLabel.Text = "Test Functions";
+			testLabel.SetText("Test Functions");
 			foreach (var test in tests) {
 				var b = new Button(tools);
-				b.Text = test.Text;
+				b.SetText(test.Text);
 				b.Dock = Dock.Top;
 				b.OnButtonClick += (_, _) => test.Click(this);
 			}

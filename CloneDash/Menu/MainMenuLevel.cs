@@ -102,9 +102,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var test2 = new Label(header);
 		test2.Size = new Vector2F(158, 32);
 		test2.Dock = Dock.Left;
-		test2.Text = "Clone Dash";
-		test2.TextSize = 30;
-		test2.AutoSize = true;
+		test2.SetText("Clone Dash");
+		test2.SetTextSize(30);
+		test2.SetAutoSize(true);
 		test2.DockMargin = RectangleF.TLRB(4);
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
@@ -135,14 +135,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
 		var menuBtn = new Button(header);
-		menuBtn.AutoSize = false;
+		menuBtn.SetAutoSize(false);
 		menuBtn.Size = new Vector2F(64);
-		menuBtn.Text = "";
+		menuBtn.SetText("");
 		menuBtn.ImageOrientation = ImageOrientation.Zoom;
 		menuBtn.Dock = dock;
 		menuBtn.Image = Textures.LoadTextureFromFile(icon);
 		menuBtn.ImagePadding = new(4);
-		menuBtn.TextSize = 21;
+		menuBtn.SetTextSize(21);
 		menuBtn.DockMargin = RectangleF.TLRB(0);
 		menuBtn.BorderSize = 0;
 		menuBtn.OnButtonClick += (_, _) => onClicked();
@@ -176,7 +176,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			SetBgColor(GetBgColor() with { A = (byte)(int)Math.Clamp(NMath.Ease.OutCubic(Lifetime * 1.4f) * 155, 0, 155) });
 
-			if (!setupTrack) 
+			if (!setupTrack)
 				TrySetupTrack();
 		}
 
@@ -220,17 +220,17 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			track = selector.ActiveTrack;
 			if (track.IsValid())
 				setupTrack = true;
-				audiosystem.AttachProcessor(track, (frames, userdata) => {
-					currentAvgVolume = 0;
-					for (int i = 0; i < frames.Length; i++) {
-						float val = frames[i];
-						currentAvgVolume += val;
-						if (i % 256 == 0)
-							framesOverTime.Add(val);
-					}
-					currentAvgVolume /= frames.Length;
-					currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
-				});
+			audiosystem.AttachProcessor(track, (frames, userdata) => {
+				currentAvgVolume = 0;
+				for (int i = 0; i < frames.Length; i++) {
+					float val = frames[i];
+					currentAvgVolume += val;
+					if (i % 256 == 0)
+						framesOverTime.Add(val);
+				}
+				currentAvgVolume /= frames.Length;
+				currentAvgVolume = Math.Clamp(NMath.Ease.InQuad(MathF.Abs(currentAvgVolume) * 1.5f), 0, 1.5f);
+			});
 		}
 	}
 
@@ -250,13 +250,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			var oldSize = TextSize;
+			var oldSize = GetTextSize();
 			var w = levelSelector.RenderBounds.W;
-			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
-			if (oldSize != TextSize)
+			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155));
+			if (oldSize != GetTextSize())
 				InvalidateLayout();
 
-			TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 6, 0, 1)) * 255));
+			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 6, 0, 1)) * 255)));
 			Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6));
 		}
 	}
@@ -267,13 +267,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			var oldSize = TextSize;
+			var oldSize = GetTextSize();
 			var w = levelSelector.RenderBounds.W;
-			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155);
-			if (oldSize != TextSize)
+			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155));
+			if (oldSize != GetTextSize())
 				InvalidateLayout();
 
-			TextColor = new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 1.3f, 0, 1)) * 255));
+			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 1.3f, 0, 1)) * 255)));
 			Position = new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12));
 		}
 	}
@@ -307,9 +307,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			base.Paint(w, h);
 
-			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, TextPadding);
-			Graphics2D.SetDrawColor(TextColor);
-			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", Font, TextSize, Anchor.CenterRight);
+			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
+			Graphics2D.SetDrawColor(GetTextColor());
+			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
 
 			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
 		}
@@ -320,10 +320,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 			var frameState = EngineCore.Level.FrameState;
-			if (frameState.Keyboard.AltDown) 
-				Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
-			else 
-				Text = $"{difficultyName.ToUpper()}";
+			if (frameState.Keyboard.AltDown)
+				SetText($"[AUTOPLAY] {difficultyName.ToUpper()}");
+			else
+				SetText($"{difficultyName.ToUpper()}");
 
 			autoplayChart = frameState.Keyboard.AltDown;
 		}
@@ -365,23 +365,23 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.Position = new(-256, 0);
 		back.Image = Textures.LoadTextureFromFile("ui/back.png");
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
-		back.Text = "";
+		back.SetText("");
 		back.ImageOrientation = ImageOrientation.Centered;
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
 		back.Size = new(106);
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
-		title.TextSize = 48;
-		title.Text = info.Name;
-		title.AutoSize = true;
+		title.SetTextSize(48);
+		title.SetText(info.Name);
+		title.SetAutoSize(true);
 		title.Anchor = Anchor.Center;
 		title.Origin = Anchor.Center;
 
 		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
-		author.TextSize = 22;
-		author.Text = $"by {info.Author}";
-		author.AutoSize = true;
+		author.SetTextSize(22);
+		author.SetText($"by {info.Author}");
+		author.SetAutoSize(true);
 		author.Anchor = Anchor.Center;
 		author.Origin = Anchor.Center;
 
@@ -473,22 +473,22 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		play.Dock = Dock.Bottom;
 
 		SongLabel mapper = new SongLabel(play);
-		mapper.AutoSize = true;
-		mapper.Text = $"by {designer}";
-		mapper.TextSize = 15;
-		mapper.TextAlignment = Anchor.BottomCenter;
+		mapper.SetAutoSize(true);
+		mapper.SetText($"by {designer}");
+		mapper.SetTextSize(15);
+		mapper.SetTextAlignment(Anchor.BottomCenter);
 		mapper.Position = new(-6, -3);
 		mapper.Anchor = Anchor.BottomRight;
 		mapper.SetPassthru(true);
 		mapper.Origin = Anchor.BottomRight;
-		mapper.TextAlignment = Anchor.TopLeft;
+		mapper.SetTextAlignment(Anchor.TopLeft);
 
 		play.SetBgColor(buttonColor);
 		play.SetFgColor(buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f));
-		play.Text = "";
-		play.TextAlignment = Anchor.CenterLeft;
-		play.TextPadding = new(8, 0);
-		play.TextSize = 28;
+		play.SetText("");
+		play.SetTextAlignment(Anchor.CenterLeft);
+		play.SetTextPadding(new(8, 0));
+		play.SetTextSize(28);
 
 		play.BorderSize = 2;
 		play.SetPaintBackgroundEnabled(false);

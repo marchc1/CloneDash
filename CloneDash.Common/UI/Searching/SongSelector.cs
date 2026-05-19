@@ -112,7 +112,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		return text;
 	}
 
-	public void UpdateFilterText() => FilterResults.Text = GetFilterText();
+	public void UpdateFilterText() => FilterResults.SetText(GetFilterText());
 
 	public void ClearFilter() {
 		Source = Source?.GetRootSource();
@@ -363,7 +363,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				continue;
 			var cover = song.GetCoverTexture();
 
-			disc.Text = "";
+			disc.SetText("");
 			if (cover.Texture != null) {
 				disc.ImageOrientation = ImageOrientation.Stretch;
 				disc.ImagePadding = new(16);
@@ -402,14 +402,14 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public void LayoutDiscs(float width, float height) {
 		if (Source == null || (Source.GetSongCount() <= 0 && !Source.IsBusy())) {
-			Loading.Text = "No songs available.";
+			Loading.SetText("No songs available.");
 			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
 		}
 
 		if (Source.IsBusy()) {
-			Loading.Text = "LOADING";
+			Loading.SetText("LOADING");
 			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
@@ -435,30 +435,30 @@ public class SongSelector : Panel, IMainMenuPanel
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 			disc.ImageRotation = rot;
 			disc.Position = new(x, y);
-			disc.Text = "";
+			disc.SetText("");
 		}
 
 		var heightDiv2 = height / 2;
 
 		CurrentTrackName.Origin = Anchor.Center;
 		CurrentTrackName.Anchor = Anchor.Center;
-		CurrentTrackName.AutoSize = true;
+		CurrentTrackName.SetAutoSize(true);
 
 		CurrentTrackAuthor.Origin = Anchor.Center;
 		CurrentTrackAuthor.Anchor = Anchor.Center;
-		CurrentTrackAuthor.AutoSize = true;
+		CurrentTrackAuthor.SetAutoSize(true);
 
 		CurrentTrackName.Position = new(0, heightDiv2 / 1.8f);
 		CurrentTrackAuthor.Position = new(0, heightDiv2 / 1.8f + 42);
 
-		CurrentTrackName.TextSize = 48;
-		CurrentTrackAuthor.TextSize = 24;
+		CurrentTrackName.SetTextSize(48);
+		CurrentTrackAuthor.SetTextSize(24);
 
 		var mainSong = GetDiscSong(0);
 		var info = mainSong?.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 		if (info != null) {
-			CurrentTrackName.Text = info.Value.Name ?? "";
-			CurrentTrackAuthor.Text = info.Value.Author ?? "";
+			CurrentTrackName.SetText(info.Value.Name ?? "");
+			CurrentTrackAuthor.SetText(info.Value.Author ?? "");
 		}
 	}
 
@@ -487,9 +487,9 @@ public class SongSelector : Panel, IMainMenuPanel
 		Loading = new(this);
 		Loading.Anchor = Anchor.Center;
 		Loading.Origin = Anchor.Center;
-		Loading.Text = "LOADING";
-		Loading.TextSize = 100;
-		Loading.AutoSize = true;
+		Loading.SetText("LOADING");
+		Loading.SetTextSize(100);
+		Loading.SetAutoSize(true);
 		Loading.SetVisible(false);
 
 		for (int i = 0; i < Discs.Length; i++) {
@@ -527,8 +527,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		SearchBar.Position = new(width / 2, height * .1f);
 		SearchBar.Size = new(width / 2f, height * 0.06f);
 		FilterResults.Position = new(0, height * .1f + height * 0.06f + height * 0.00f);
-		FilterResults.TextSize = height / 30f;
-		FilterResults.AutoSize = true;
+		FilterResults.SetTextSize(height / 30f);
+		FilterResults.SetAutoSize(true);
 	}
 
 	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
@@ -557,7 +557,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	public override void Paint(float width, float height) {
 		base.Paint(width, height);
 
-		CurrentTrackName.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
-		CurrentTrackAuthor.TextColor = new(255, 255, 255, (int)(255 * (1 - FlyAway)));
+		CurrentTrackName.SetTextColor(new(255, 255, 255, (int)(255 * (1 - FlyAway))));
+		CurrentTrackAuthor.SetTextColor(new(255, 255, 255, (int)(255 * (1 - FlyAway))));
 	}
 }

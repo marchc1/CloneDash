@@ -31,7 +31,7 @@ public class Titlebar : Panel
 
 		private void PaintMaximize(float width, float height) {
 			base.Paint(width, height);
-			Graphics2D.SetDrawColor(TextColor);
+			Graphics2D.SetDrawColor(GetTextColor());
 			var size = new Vector2F(10);
 			var pos = new Vector2F((width / 2) - (size.X / 2), (height / 2) - (size.Y / 2));
 			Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(
@@ -50,7 +50,7 @@ public class Titlebar : Panel
 		private void PaintMinimize(float width, float height) {
 			base.Paint(width, height);
 
-			Graphics2D.SetDrawColor(TextColor);
+			Graphics2D.SetDrawColor(GetTextColor());
 			Graphics2D.DrawLine(new(14, height / 2), new(width - 14, height / 2));
 		}
 
@@ -64,11 +64,13 @@ public class Titlebar : Panel
 		Size = new(0, this.GetParent() is UserInterface ? 34 : 42);
 		if (this.GetParent() is not UserInterface)
 			DockMargin = RectangleF.TLRB(4);
-		TextSize = 20;
+
+		TitleLabel = new(this);
+		TitleLabel.SetTextSize(20);
 
 		CloseButton = new TitlebarButton(this, TitlebarButtonType.Close);
 		CloseButton.Dock = Dock.Right;
-		CloseButton.AutoSize = false;
+		CloseButton.SetAutoSize(false);
 		CloseButton.Size = new(48, 0);
 
 		CloseButton.DockMargin = RectangleF.TLRB(3);
@@ -76,26 +78,26 @@ public class Titlebar : Panel
 
 		MaximizeButton = new TitlebarButton(this, TitlebarButtonType.Maximize);
 		MaximizeButton.Dock = Dock.Right;
-		MaximizeButton.AutoSize = false;
+		MaximizeButton.SetAutoSize(false);
 		MaximizeButton.Size = new(48, 0);
 
 		MaximizeButton.DockMargin = RectangleF.TLRB(3);
 		MaximizeButton.OnButtonClick += (self, button) => OnMaximizePressed?.Invoke(self, button);
 		MinimizeButton = new TitlebarButton(this, TitlebarButtonType.Minimize);
 		MinimizeButton.Dock = Dock.Right;
-		MinimizeButton.AutoSize = false;
+		MinimizeButton.SetAutoSize(false);
 		MinimizeButton.Size = new(48, 0);
 
 		MinimizeButton.DockMargin = RectangleF.TLRB(3);
 		MinimizeButton.OnButtonClick += (self, button) => OnMinimizePressed?.Invoke(self, button);
 
-		CloseButton.Text = "X";
-		MaximizeButton.Text = "";
-		MinimizeButton.Text = "";
+		CloseButton.SetText("X");
+		MaximizeButton.SetText("");
+		MinimizeButton.SetText("");
 
 		CloseButton.SetBgColor(CloseButton.GetBgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub());
 		CloseButton.SetFgColor(CloseButton.GetFgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub());
-		CloseButton.TextColor = CloseButton.TextColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub();
+		CloseButton.SetTextColor(CloseButton.GetTextColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub());
 	}
 
 	private bool imageChanged;
@@ -124,6 +126,32 @@ public class Titlebar : Panel
 	public delegate void TitlebarDragFn(Titlebar titlebar, Vector2F delta);
 	public event TitlebarDragFn? OnTitlebarDragged;
 
+	string text = "";
+	SchemeableSetting<float> TextSize = SchemeableSetting<float>.Default(18);
+	SchemeableSetting<string> Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
+	SchemeableSetting<Color> textColor = SchemeableSetting<Color>.Default(DefaultTextColor);
+
+	public virtual ReadOnlySpan<char> GetText() => GetText();
+	public virtual void SetText(ReadOnlySpan<char> text) {
+		if (GetText().Equals(text, StringComparison.InvariantCulture))
+			return;
+
+		this.text = new(text);
+	}
+	public Color GetTextColor() => textColor.Get();
+	public void SetTextColor(Color value) => textColor.SetUserValue(value);
+	public ReadOnlySpan<char> GetFont() => Font.Get();
+	public void SetFont(ReadOnlySpan<char> font) {
+		Font.SetUserValue(new(font));
+		InvalidateLayout();
+	}
+
+	public float GetTextSize() => TextSize.Get();
+	public void SetTextSize(float textSize) {
+		TextSize.SetUserValue(textSize);
+		InvalidateLayout();
+	}
+	public Label TitleLabel { get; private set; }
 	public TitlebarButton CloseButton { get; private set; }
 	public TitlebarButton MaximizeButton { get; private set; }
 	public TitlebarButton MinimizeButton { get; private set; }
@@ -154,7 +182,7 @@ public class Titlebar : Panel
 			ImageRenderer.Size = new(height, height);
 			ImageRenderer.Position = TitlePos switch {
 				Anchor.CenterLeft => new(0, 0),
-				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(Title, Graphics2D.UI_FONT_NAME, TextSize).W / 2), 0),
+				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(Title, Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
 				_ => new(0, 0),
 			};
 			ImageRenderer.ImageOrientation = ImageOrientation.Zoom;
@@ -181,7 +209,7 @@ public class Titlebar : Panel
 		Graphics2D.SetDrawColor(GetFgColor());
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
-		Graphics2D.SetDrawColor(TextColor);
+		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
 		if (imageChanged) {
 			if (imagePath == null)
@@ -195,7 +223,7 @@ public class Titlebar : Panel
 		if (base.Image != null)
 			pnt.X += height - 4;
 
-		Graphics2D.DrawText(pnt.X, pnt.Y, Title, Graphics2D.UI_FONT_NAME, TextSize, TitlePos);
+		Graphics2D.DrawText(pnt.X, pnt.Y, Title, Graphics2D.UI_FONT_NAME, GetTextSize(), TitlePos);
 	}
 }
 public class Taskbar(Element? parent) : Element(parent)
@@ -354,10 +382,10 @@ public class Window : Element
 		ResizeBL.Position = new(4, 0);
 		ResizeBR.Position = new(-4, 0);
 
-		ResizeTL.Text = "";
-		ResizeTR.Text = "";
-		ResizeBL.Text = "";
-		ResizeBR.Text = "";
+		ResizeTL.SetText("");
+		ResizeTR.SetText("");
+		ResizeBL.SetText("");
+		ResizeBR.SetText("");
 
 		this.AddParent = ap;
 		SetUseRenderTarget(true);

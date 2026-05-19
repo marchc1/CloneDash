@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace CloneDash.Menu.Searching;
 
-public class DialogLabelPanel<T> : Panel where T : Element
+public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 {
 	Label label = null!;
 	T element = null!;
@@ -20,9 +20,32 @@ public class DialogLabelPanel<T> : Panel where T : Element
 		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
 	}
 	public T Get() => element;
-	protected override void TextChanged(string oldText, string newText) {
-		label.Text = newText;
+
+
+	public ReadOnlySpan<char> GetText() {
+		return ((ITextElement)label).GetText();
 	}
+
+	public void SetText(ReadOnlySpan<char> text) {
+		((ITextElement)label).SetText(text);
+	}
+
+	public ReadOnlySpan<char> GetFont() {
+		return ((ITextElement)label).GetFont();
+	}
+
+	public float GetTextSize() {
+		return ((ITextElement)label).GetTextSize();
+	}
+
+	public void SetFont(ReadOnlySpan<char> font) {
+		((ITextElement)label).SetFont(font);
+	}
+
+	public void SetTextSize(float textSize) {
+		((ITextElement)label).SetTextSize(textSize);
+	}
+
 	protected override void PerformLayout(float width, float height) {
 		label.Position = new(0, 0);
 		var div = 4f;
@@ -64,7 +87,7 @@ public class SongSearchDialog : Window
 		Title = "Song Search Dialog";
 
 		applyButton = new(this);
-		applyButton.Text = "Apply";
+		applyButton.SetText("Apply");
 		applyButton.BorderSize = 0;
 		applyButton.Dock = Dock.Bottom;
 
@@ -82,7 +105,7 @@ public class SongSearchDialog : Window
 		pnl.Dock = Dock.Top;
 		pnl.Size = new(0, 0.15f);
 		pnl.DynamicallySized = true;
-		pnl.Text = new(label.SliceNullTerminatedString());
+		pnl.SetText(label.SliceNullTerminatedString());
 		return pnl;
 	}
 
@@ -123,16 +146,16 @@ public class SongSearchDialog : Window
 
 	public Textbox TextboxInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, ReadOnlySpan<char> value) {
 		var pnl = InputPanel<Textbox>(label);
-		pnl.Text = new(label.SliceNullTerminatedString());
-		pnl.Get().Text = new(value.SliceNullTerminatedString());
-		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Text });
+		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.Get().SetText(value.SliceNullTerminatedString());
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => new string(pnl.Get().GetText()) });
 
 		return pnl.Get();
 	}
 
 	public void BoolInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, bool state) {
 		var pnl = InputPanel<Checkbox>(label);
-		pnl.Text = new(label.SliceNullTerminatedString());
+		pnl.SetText(label.SliceNullTerminatedString());
 		pnl.Get().Checked = state;
 		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Checked });
 	}

@@ -15,7 +15,7 @@ public class Scrollbar : Panel
 	internal class ScrollbarButton(Scrollbar scrollbar) : Button(scrollbar)
 	{
 		public override void Paint(float width, float height) {
-			var fore = MixColorBasedOnMouseState(this, TextColor, new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
+			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
 			var down = this == scrollbar.Down;
 
 			Graphics2D.SetDrawColor(fore, IsHovered() ? 220 : 200);
@@ -42,7 +42,7 @@ public class Scrollbar : Panel
 			return true;
 		}
 		public override void Paint(float width, float height) {
-			var fore = MixColorBasedOnMouseState(this, TextColor, new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
+			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
 			var gripThickness = 4;
 			Graphics2D.SetDrawColor(fore, 200);
 

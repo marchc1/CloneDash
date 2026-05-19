@@ -51,7 +51,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		List<MainMenuButton> newBtns = [];
 		btns.Push(newBtns);
 		InvalidateLayout();
-		back.SetVisible( !UsingRootNavigationMenu);
+		back.SetVisible(!UsingRootNavigationMenu);
 		return newBtns;
 	}
 	public bool UsingRootNavigationMenu => btns.Count == 1;
@@ -81,7 +81,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MainMenuButton btn = new(this);
 		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
 		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
-		btn.Text = text;
+		btn.SetText(text);
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
@@ -110,7 +110,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	protected override void OnRemoval() {
 		base.OnRemoval();
 	}
-	public MainMenuPanel(Element? parent) : base(parent){ 
+	public MainMenuPanel(Element? parent) : base(parent) {
 		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
 
@@ -122,12 +122,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.SetBgColor(new Color(0, 0));
 		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
 		back.ImageOrientation = ImageOrientation.Zoom;
-		back.Text = "";
+		back.SetText("");
 		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var source = ChartMod.GetChartSongProviderByName("Muse Dash");
-			if(source == null){
+			if (source == null) {
 				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
 				return;
 			}
@@ -198,7 +198,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				var btn = btns[i];
 
 				btn.Origin = Anchor.Center;
-				btn.TextSize = textHeight;
+				btn.SetTextSize(textHeight);
 				btn.Size = new(btnWidth, btnHeight);
 
 				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);

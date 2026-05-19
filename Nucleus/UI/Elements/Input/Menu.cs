@@ -139,11 +139,11 @@ public class Menu(Element? parent) : Panel(parent)
 						var b = new MenuButtonPanel(this, btn);
 						b.Dock = Dock.Top;
 						b.Size = new Types.Vector2F(0, 28);
-						b.Text = btn.text;
-						b.AutoSize = false;
-						b.TextPadding = new(12, 12);
-						b.TextSize = 18;
-						b.TextAlignment = Anchor.CenterLeft;
+						b.SetText(btn.text);
+						b.SetAutoSize(false);
+						b.SetTextPadding(new(12, 12));
+						b.SetTextSize(18);
+						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
 						b.Clipping = false;
@@ -153,11 +153,11 @@ public class Menu(Element? parent) : Panel(parent)
 						var b = new MenuSubMenuButtonPanel(this, submenu);
 						b.Dock = Dock.Top;
 						b.Size = new Types.Vector2F(0, 28);
-						b.Text = submenu.text;
-						b.AutoSize = false;
-						b.TextPadding = new(12, 12);
-						b.TextSize = 18;
-						b.TextAlignment = Anchor.CenterLeft;
+						b.SetText(submenu.text);
+						b.SetAutoSize(false);
+						b.SetTextPadding(new(12, 12));
+						b.SetTextSize(18);
+						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
 
@@ -174,9 +174,11 @@ public class Menu(Element? parent) : Panel(parent)
 		float pX = 0;
 		float pY = 0;
 		foreach (var child in Children) {
-			var newP = child.RenderBounds.Pos + Graphics2D.GetTextSize(child.Text, child.Font, child.TextSize) + 16;
-			if (newP.X > pX) pX = newP.X;
-			if (newP.Y > pY) pY = newP.Y;
+			if (child is ITextElement textElement) {
+				var newP = child.RenderBounds.Pos + Graphics2D.GetTextSize(textElement.GetText(), textElement.GetFont(), textElement.GetTextSize()) + 16;
+				if (newP.X > pX) pX = newP.X;
+				if (newP.Y > pY) pY = newP.Y;
+			}
 
 		}
 		this.Size = new(pX + 12, pY - 4);

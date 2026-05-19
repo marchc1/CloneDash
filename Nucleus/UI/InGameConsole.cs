@@ -247,7 +247,7 @@ namespace Nucleus
 
 			consoleLogs = new ConsoleLogs(this);
 			consoleLogs.Dock = Dock.Fill;
-			consoleLogs.TextSize = 12;
+			consoleLogs.SetTextSize(12);
 			consoleLogs.DockMargin = new(0, 0, 0, 0);
 			consoleLogs.Readonly = true;
 			consoleLogs.ShowDetails = false;
@@ -367,7 +367,7 @@ namespace Nucleus
 
 			float xOffset = 0;
 			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
-				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
+				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.GetTextSize()).X + 4;
 			}
 			autoComplete.ChildRenderOffset = new(xOffset, 12);
 		}
