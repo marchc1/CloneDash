@@ -415,8 +415,6 @@ public class Element : IValidatable
 		OnRemoval();
 		Removed?.Invoke(this);
 
-		__markedForRemoval = true;
-
 		if (IsPopup())
 			UI.RemovePopup(this);
 
@@ -425,6 +423,7 @@ public class Element : IValidatable
 
 		UI.RemoveElement(this);
 
+		__markedForRemoval = true;
 		foreach (Element element in this.LockAndEnumerateChildren())
 			element.REMOVE();
 		this.UnlockChildren();

@@ -32,7 +32,7 @@ public struct ElementSolveState
 public class ElementSchemeSystem
 {
 	public void ApplyScheme(Element? element, ref ElementSolveState state, bool force = false) {
-		if (element == null) return;
+		if (!IValidatable.IsValid(element)) return;
 
 		foreach (var child in element.GetChildren())
 			if (child.IsVisible() || force)
@@ -45,22 +45,22 @@ public class ElementSchemeSystem
 public class ElementInputSystem
 {
 	public event Action<Element?>? OnClick;
-	public void SolveHovered(Element? workingElement, ref ElementSolveState state, FrameState frameState) {
-		if (workingElement == null) return;
+	public void SolveHovered(Element? element, ref ElementSolveState state, FrameState frameState) {
+		if (!IValidatable.IsValid(element)) return;
 
 		state.Hovered = null;
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
-		state.Hovered = SolveTraverse(workingElement, ref state, frameState, workingElement.RenderBounds, mousePos);
+		state.Hovered = SolveTraverse(element, ref state, frameState, element.RenderBounds, mousePos);
 		// Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
-	private Element? SolveTraverse(Element? workingElement, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
-		if (workingElement == null) return null;
+	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
+		if (!IValidatable.IsValid(element)) return null;
 
-		if (workingElement.HoverTest(globalSpaceBounds, mousePos)) {
-			bool selfHovered = workingElement.HoverTest(globalSpaceBounds, mousePos);
-			var children = workingElement.GetChildren();
+		if (element.HoverTest(globalSpaceBounds, mousePos)) {
+			bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos);
+			var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
 			// Also, process popups first here too.
 			for (int i = children.Length - 1; i >= 0; i--) {
@@ -69,16 +69,16 @@ public class ElementInputSystem
 
 				if (modal || popup) {
 					// Only traverse this modal child
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + workingElement.ChildRenderOffset, child.RenderBounds.Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + element.ChildRenderOffset, child.RenderBounds.Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 
 					if (modal) {
-						if (subElementHovered == null)
-							return workingElement;
+						if (!IValidatable.IsValid(subElementHovered))
+							return element;
 						return subElementHovered;
 					}
 					else {
-						if (subElementHovered != null)
+						if (IValidatable.IsValid(subElementHovered))
 							return subElementHovered;
 					}
 				}
@@ -88,15 +88,15 @@ public class ElementInputSystem
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + workingElement.ChildRenderOffset, child.RenderBounds.Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + element.ChildRenderOffset, child.RenderBounds.Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
-					if (subElementHovered != null)
+					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
 				}
 			}
 
-			if (!workingElement.IsPassthru())
-				return workingElement;
+			if (!element.IsPassthru())
+				return element;
 		}
 
 		return null;
@@ -149,7 +149,7 @@ public class ElementInputSystem
 			if (IValidatable.IsValid(hovered)) {
 				// Do a backwards search first
 				var checkBack = hovered;
-				while (checkBack != null) {
+				while (IValidatable.IsValid(checkBack)) {
 					if (checkBack.IsMouseInputEnabled() && checkBack.MouseScrollOccur(hovered, frameState, mouse.MouseDelta))
 						break;
 					checkBack = checkBack.GetParent();
@@ -165,7 +165,7 @@ public class ElementInputSystem
 	public bool TestKeyboard(Element? keyboardFocused, ref KeyboardState keyboard) {
 		KeyboardState emulated;
 		bool keybindChainingAllowed = true;
-		while (keyboardFocused != null) {
+		while (IValidatable.IsValid(keyboardFocused)) {
 			if (!keyboardFocused.IsKeyboardInputEnabled())
 				return false;
 
@@ -211,7 +211,7 @@ public class ElementThinkingSystem
 	}
 
 	private void ThinkTraverse(Element? element, ref ElementSolveState state) {
-		if (element == null) return;
+		if (!IValidatable.IsValid(element)) return;
 
 		element.Think();
 
@@ -231,13 +231,12 @@ public class ElementPaintSystem
 {
 	public void Paint(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) => PaintTraverse(element, ref state, skipPopups);
 	void PaintTraverse(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
-		if (element == null) return;
-
+		if (!IValidatable.IsValid(element)) return;
 		if (!element.IsVisible()) return;
 
 		switch (skipPopups) {
 			case ElementPaintPopupMode.OnlyPopups:
-				if (!element.IsPopup() && element.GetParent() != null)
+				if (!element.IsPopup() && IValidatable.IsValid(element.GetParent()))
 					return;
 				break;
 			case ElementPaintPopupMode.NoPopups:
@@ -249,7 +248,7 @@ public class ElementPaintSystem
 		Element? parent = element.GetParent();
 
 		if (element.BackdropAlpha > 0) {
-			if (parent != null) {
+			if (IValidatable.IsValid(parent)) {
 				RectangleF size = parent.RenderBounds;
 				Graphics2D.SetDrawColor(0, 0, 0, (int)float.Lerp(0, 100, (float)element.BackdropAlpha));
 				Graphics2D.DrawRectangle(size.X, size.Y, size.W, size.H);
@@ -307,7 +306,7 @@ public class ElementPaintSystem
 	}
 
 	private void PaintElement(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
-		if (element == null) return;
+		if (!IValidatable.IsValid(element)) return;
 		var renderBounds = element.RenderBounds;
 		float w = renderBounds.Width, h = renderBounds.Height;
 		if ((w <= 0 || h <= 0) && element.Clipping) return;
@@ -452,7 +451,7 @@ public class UserInterface : Element, IDisposable
 
 	public override string? TooltipText {
 		get {
-			if (GetHoveredElement() != null && GetHoveredElement() != this) {
+			if (IValidatable.IsValid(GetHoveredElement()) && GetHoveredElement() != this) {
 				return GetHoveredElement()!.TooltipText;
 			}
 			return _tooltipText;
@@ -538,12 +537,12 @@ public class UserInterface : Element, IDisposable
 	public ReadOnlySpan<Element> GetAllElements() => Elements.AsSpan();
 
 	internal void AddElement(Element element) {
-		if (element == null) return;
+		if (!IValidatable.IsValid(element)) return;
 		Elements.Add(element);
 	}
 
 	internal bool RemoveElement(Element element) {
-		if (element == null) return false;
+		if (!IValidatable.IsValid(element)) return false;
 		return Elements.Remove(element);
 	}
 
@@ -568,13 +567,13 @@ public class UserInterface : Element, IDisposable
 		ulong currentFunctionID = ++keyboardFocusReentrantID;
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
-		if (keyboardFocused != null) {
+		if (IValidatable.IsValid(keyboardFocused)) {
 			if (!keyboardFocused.CanKeyboardFocusLostOccur(element))
 				return false;
 		}
 
 		EngineCore.Window.StopTextInput();
-		if (element == null) {
+		if (!IValidatable.IsValid(element)) {
 			SolveState.KeyboardFocused = null;
 			return true;
 		}
