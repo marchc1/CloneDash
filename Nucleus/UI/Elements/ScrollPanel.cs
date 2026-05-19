@@ -60,10 +60,6 @@ public class ScrollPanel : Panel
 		}
 	}
 
-	protected override void PostLayoutChildren() {
-
-	}
-
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 	}

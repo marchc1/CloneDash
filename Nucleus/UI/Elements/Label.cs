@@ -204,10 +204,6 @@ public class Label : Element
 	}
 
 	protected override void PerformLayout(float width, float height) {
-		base.PerformLayout(width, height);
-		InvalidateText();
-	}
-	protected override void OnThink() {
 		if (!AutoSize)
 			return;
 

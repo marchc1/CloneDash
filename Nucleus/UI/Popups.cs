@@ -42,9 +42,7 @@ namespace Nucleus.UI
 			}
 		} = new(320, 260);
 
-		protected override void PostLayoutChildren() {
-			base.PostLayoutChildren();
-
+		protected override void PerformLayout(float width, float height) {
 			if (AutomateLayout) {
 				Vector2F size = new();
 				foreach (var child in Children) {

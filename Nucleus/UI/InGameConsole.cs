@@ -193,7 +193,7 @@ namespace Nucleus
 		bool isArgumentAutocomplete = false;
 		string argumentPrefix = "";
 
-		protected override void OnThink() {
+		protected override void PrePerformLayout() {
 			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
 			Size = new(GetParent()!.Size.W - 16, 384);
 		}

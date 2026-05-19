@@ -60,8 +60,7 @@ public class DirectionalLayoutPanel : ScrollPanel
 		}
 	}
 
-	protected override void PostLayoutChildren() {
-		base.PostLayoutChildren();
+	protected override void PerformLayout(float width, float height) {
 		float size = 0;
 
 		foreach(var child in AddParent.Children) {

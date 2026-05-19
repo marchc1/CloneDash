@@ -452,6 +452,9 @@ public class Element : IValidatable
 			Birth = DateTime.Now;
 		}
 
+		if (IsVisible())
+			ValidateLayout();
+
 		OnThink();
 	}
 
@@ -566,6 +569,8 @@ public class Element : IValidatable
 	public void FlushRenderBounds() {
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
+		if (_dock != Dock.None)
+			return;
 		__renderbounds.X = _position.X;
 		__renderbounds.Y = _position.Y;
 		__renderbounds.W = _size.W;
@@ -582,12 +587,13 @@ public class Element : IValidatable
 
 	private void Layout() {
 		// Flush render bounds if we need that
+		PrePerformLayout();
 		FlushRenderBounds();
 		DoOriginAnchor();
-		// Perform the internal layout based on our size
-		PerformLayout(__renderbounds.W, __renderbounds.H);
 		// Perform child docking
 		DoChildDocking();
+		// Perform the internal layout based on our size
+		PerformLayout(__renderbounds.W, __renderbounds.H);
 	}
 
 	private void DoOriginAnchor() {
@@ -613,7 +619,7 @@ public class Element : IValidatable
 			if (dock == Dock.None)
 				continue;
 			if (!child.IsVisible())
-				return;
+				continue;
 
 			// We will modify the render bounds of the child, and mark its render bounds as NOT dirty after
 			// This is kind of a hack but its the cleanest way to do it probably, forcing the render bounds flush
@@ -1229,8 +1235,8 @@ public class Element : IValidatable
 	protected virtual void ChildParented(Element parent, Element child) { }
 	protected virtual void OnRemoval() { }
 
+	protected virtual void PrePerformLayout() { }
 	protected virtual void PerformLayout(float width, float height) { }
-	protected virtual void PostLayoutChildren() { }
 
 	protected virtual void TextChanged(string oldText, string newText) { }
 

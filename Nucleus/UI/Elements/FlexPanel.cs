@@ -28,7 +28,7 @@ public class FlexPanel(Element? parent) : Panel(parent)
 {
 	public Directional180 Direction { get; set; } = Directional180.Horizontal;
 	public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
-	protected override void PostLayoutChildren() {
+	protected override void PerformLayout(float width, float height) {
 		var childrenCount = Children.Count;
 		var ourBounds = RenderBounds;
 
