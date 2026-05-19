@@ -88,6 +88,7 @@ public class Element : IValidatable
 	private Element? __parentToAddTo = null;
 	private bool __markedForRemoval = false;
 	private bool _firstThink = true;
+	private bool QueueCenter = true;
 	internal List<Element> Children = [];
 	internal Element?[] FlushedChildren = [];
 	internal int CurrentChildrenCount;
@@ -576,10 +577,15 @@ public class Element : IValidatable
 	public void FlushRenderBounds() {
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
-		__renderbounds.X = _position.X;
-		__renderbounds.Y = _position.Y;
-		__renderbounds.W = _size.W;
-		__renderbounds.H = _size.H;
+		Vector2F layoutPos = _position, layoutSize = _size;
+		if (_dynamicallySized && Parent != null) {
+			layoutPos = _position * Parent.__renderbounds.Size;
+			layoutSize = _size * Parent.__renderbounds.Size;
+		}
+		__renderbounds.X = layoutPos.X;
+		__renderbounds.Y = layoutPos.Y;
+		__renderbounds.W = layoutSize.W;
+		__renderbounds.H = layoutSize.H;
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
@@ -593,6 +599,8 @@ public class Element : IValidatable
 	private void Layout() {
 		// Flush render bounds if we need that
 		FlushRenderBounds();
+		if (QueueCenter)
+			DoCentering();
 		DoOriginAnchor();
 		// Perform the internal layout based on our size
 		AddFlag(ElementFlags.InPerformLayout);
@@ -602,6 +610,17 @@ public class Element : IValidatable
 		DoChildDocking();
 	}
 
+	private void DoCentering() {
+		var parent = GetParent();
+		if (parent == null)
+			return;
+
+		var parentBounds = parent.RenderBounds;
+		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
+		var tb2 = new Vector2F(RenderBounds.Width / 2, RenderBounds.Height / 2);
+		this.Position = pb2 - tb2;
+		QueueCenter = false;
+	}
 	private void DoOriginAnchor() {
 		Element? parent = GetParent();
 		if (IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
@@ -616,8 +635,8 @@ public class Element : IValidatable
 
 		// Shrink available space by dock padding
 		if (!_dockPadding.IsZero) {
-			availableSpace.X += _dockPadding.X;   
-			availableSpace.Y += _dockPadding.Y;   
+			availableSpace.X += _dockPadding.X;
+			availableSpace.Y += _dockPadding.Y;
 			availableSpace.W -= _dockPadding.X + _dockPadding.W;
 			availableSpace.H -= _dockPadding.Y + _dockPadding.H;
 		}
@@ -689,10 +708,10 @@ public class Element : IValidatable
 
 			// Then shrink the child by DockMargin..
 			if (!child._dockMargin.IsZero) {
-				childBounds.X += child._dockMargin.X;                         
-				childBounds.Y += child._dockMargin.Y;                         
-				childBounds.W -= child._dockMargin.X + child._dockMargin.W;   
-				childBounds.H -= child._dockMargin.Y + child._dockMargin.H;   
+				childBounds.X += child._dockMargin.X;
+				childBounds.Y += child._dockMargin.Y;
+				childBounds.W -= child._dockMargin.X + child._dockMargin.W;
+				childBounds.H -= child._dockMargin.Y + child._dockMargin.H;
 			}
 
 			// manual layout flag setting here
@@ -787,8 +806,10 @@ public class Element : IValidatable
 	}
 
 	public void MakeModal() {
-		if (UI.MakeModal(this))
+		if (UI.MakeModal(this)) {
 			AddFlag(ElementFlags.IsModal);
+			Backdrop = true;
+		}
 	}
 
 	public bool IsParentedToPopup([NotNullWhen(true)] out Element? parent) {
@@ -1009,10 +1030,11 @@ public class Element : IValidatable
 	public virtual void Center() {
 		if (Parent == null)
 			return;
-		var parentBounds = Parent.RenderBounds;
-		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
-		var tb2 = new Vector2F(RenderBounds.Width / 2, RenderBounds.Height / 2);
-		this.Position = pb2 - tb2;
+		if (!Parent.IsLayoutInvalid() || IsLayoutInvalid())
+			QueueCenter = true;
+		else {
+			DoCentering();
+		}
 	}
 
 

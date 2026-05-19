@@ -224,6 +224,7 @@ public class ElementThinkingSystem
 
 public enum ElementPaintPopupMode
 {
+	DontCare,
 	NoPopups,
 	OnlyPopups
 }
@@ -237,8 +238,10 @@ public class ElementPaintSystem
 
 		switch (skipPopups) {
 			case ElementPaintPopupMode.OnlyPopups:
-				if (!element.IsPopup() && IValidatable.IsValid(element.GetParent()))
+				if (!element.IsPopup() && element.GetParent() != null)
 					return;
+				if (element.IsPopup())
+					skipPopups = ElementPaintPopupMode.DontCare;
 				break;
 			case ElementPaintPopupMode.NoPopups:
 				if (element.IsPopup())
