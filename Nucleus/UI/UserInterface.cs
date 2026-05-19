@@ -77,7 +77,7 @@ public class ElementInputSystem
 	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
 		if (!IValidatable.IsValid(element)) return null;
 
-		if (element.HoverTest(globalSpaceBounds, mousePos)) {
+		if (element.IsVisible() && element.HoverTest(globalSpaceBounds, mousePos)) {
 			bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos);
 			var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
