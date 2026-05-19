@@ -207,14 +207,21 @@ public class Label : Element
 		base.PerformLayout(width, height);
 		InvalidateText();
 	}
-	protected override void ModifyLayout(ref RectangleF renderBounds) {
+	protected override void OnThink() {
 		if (!AutoSize)
+			return;
+
+		if (!HasFlag(ElementFlags.NeedsLayout))
+			return;
+
+		Element? parent = GetParent();
+		if (parent == null)
 			return;
 
 		Vector2F textSize;
 		ValidateText();
 
-		var parentBounds = Parent?.RenderBounds ?? renderBounds;
+		var parentBounds = parent!.RenderBounds;
 		Span<TextRange> ranges = textRanges.AsSpan();
 		Vector2F startDrawingPosition = TextAlignment.GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(parentBounds.W, parentBounds.H)), TextPadding);
 		TextAlignment vertical = TextAlignment.ToTextAlignment().Vertical;
@@ -240,17 +247,12 @@ public class Label : Element
 			}
 		}
 
-		renderBounds.W = textSize.X + TextPadding.X;
-		renderBounds.H = textSize.Y + TextPadding.Y;
+		Size = new(textSize.X + TextPadding.X, textSize.Y + TextPadding.Y);
 
-		if (!DockMargin.IsZero) {
-			renderBounds.W += (DockMargin.X + DockMargin.W) * 2;
-			renderBounds.H += (DockMargin.Y + DockMargin.H) * 2;
-		}
-		if (!Parent.DockPadding.IsZero) {
-			renderBounds.W += (Parent.DockPadding.X + Parent.DockPadding.W) * 2;
-			renderBounds.H += (Parent.DockPadding.Y + Parent.DockPadding.H) * 2;
-		}
+		if (!DockMargin.IsZero)
+			Size = Size + new Vector2F((DockMargin.X + DockMargin.W) * 2, (DockMargin.Y + DockMargin.H) * 2);
+		if (!parent.DockPadding.IsZero)
+			Size = Size + new Vector2F((parent.DockPadding.X + parent.DockPadding.W) * 2, (parent.DockPadding.Y + parent.DockPadding.H) * 2);
 	}
 	public override void Paint(float width, float height) {
 		ValidateText();

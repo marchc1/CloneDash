@@ -1238,7 +1238,6 @@ public class Element : IValidatable
 	protected virtual void PreLayoutChild(Element element) { }
 	protected virtual void PostLayoutChild(Element element) { }
 	protected virtual void PreLayoutChildren() { }
-	protected virtual void ModifyLayout(ref RectangleF renderBounds) { }
 
 	public virtual void PaintBackground(float width, float height) {
 		Color back = BackgroundColor, fore = ForegroundColor;

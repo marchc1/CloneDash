@@ -226,8 +226,16 @@ public class ElementPaintSystem
 
 		if (!element.IsVisible()) return;
 
-		if (element.IsPopup() && skipPopups == ElementPaintPopupMode.NoPopups)
-			return;
+		switch (skipPopups) {
+			case ElementPaintPopupMode.OnlyPopups:
+				if (!element.IsPopup() && element.GetParent() != null)
+					return;
+				break;
+			case ElementPaintPopupMode.NoPopups:
+				if (element.IsPopup())
+					return;
+				break;
+		}
 
 		Element? parent = element.GetParent();
 

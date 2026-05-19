@@ -193,12 +193,9 @@ namespace Nucleus
 		bool isArgumentAutocomplete = false;
 		string argumentPrefix = "";
 
-
-		protected override void ModifyLayout(ref RectangleF renderBounds) {
-			renderBounds.X = 8;
-			renderBounds.Y = Level.GetConsoleOverlaySettings().Position.Y;
-			renderBounds.W = GetParent()!.Size.W - 16;
-			renderBounds.H = 384;
+		protected override void OnThink() {
+			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
+			Size = new(GetParent()!.Size.W - 16, 384);
 		}
 
 		internal class ConsoleLogs(ConsoleWindow parent) : TextEditor(parent)
