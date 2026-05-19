@@ -36,8 +36,6 @@ public delegate void ChartSongSourceMoveFinishFn(in ChartSongSourceMoveFinish fi
 
 public class SongSelector : Panel, IMainMenuPanel
 {
-
-
 	public void SetRichPresence() {
 		RichPresenceSystem.SetPresence(new() {
 			Details = "Main Menu",
@@ -470,6 +468,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public SongSelector(Element? parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
+		SetPaintBorderEnabled(false);
 
 		Discs = new SongDiscButton[VisibleDiscs];
 		IntegerMidpoint = Discs.Length / 2;
