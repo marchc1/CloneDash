@@ -388,6 +388,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		levelSelector.TrySetupTrack();
 
 		LevelSelectorDifficultiesPanel difficulties = new(levelSelector, selector, 356);
+		difficulties.SetPaintBorderEnabled(false);
+		difficulties.SetPaintBackgroundEnabled(false);
 		difficulties.Direction = Directional180.Vertical;
 		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
 		difficulties.Anchor = Anchor.Center;

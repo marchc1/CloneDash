@@ -24,79 +24,142 @@ public enum FlexChildrenResizingMode
 	/// </summary>
 	StretchToFit
 }
+
 public class FlexPanel(Element? parent) : Panel(parent)
 {
 	public Directional180 Direction { get; set; } = Directional180.Horizontal;
 	public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
+
+	public float Spacing { get; set; } = 0;
+
+	protected override void ChildParented(Element parent, Element child) {
+		base.ChildParented(parent, child);
+		child.Dock = Dock.None;
+	}
+
 	protected override void PerformLayout(float width, float height) {
-		var childrenCount = Children.Count;
-		var ourBounds = RenderBounds;
+		int visibleCount = 0;
+		foreach (var child in Children)
+			if (child.IsVisible())
+				visibleCount++;
 
-		for (int i = 0; i < childrenCount; i++) {
-			Element child = Children[i];
+		if (visibleCount == 0)
+			return;
 
-			var chT = 1.0f / (childrenCount + 1.0f);
-			var chF0 = (1.0f / childrenCount) * (i + 0.0f);
-			var chF1 = chT * (i + 1.0f);
+		bool horiz = Direction == Directional180.Horizontal;
+
+		var dp = DockPadding;
+		float ax = dp.X;
+		float ay = dp.Y;
+		float aw = width - dp.X - dp.W;
+		float ah = height - dp.Y - dp.H;
+
+		float totalSpacing = Spacing * (visibleCount - 1);
+
+		float slotSize = horiz ? (aw - totalSpacing) / visibleCount : (ah - totalSpacing) / visibleCount;
+
+		int idx = 0;
+		float cursor = 0;
+
+		foreach (var child in Children) {
+			if (!child.IsVisible())
+				continue;
+
+			float mLeft = child.DockMargin.X;
+			float mTop = child.DockMargin.Y;
+			float mRight = child.DockMargin.W;
+			float mBot = child.DockMargin.H;
+
+			Vector2F naturalSize = child.DynamicallySized
+				? child.Size * new Vector2F(width, height)
+				: child.Size;
+
+			float cx, cy, cw, ch;
 
 			switch (ChildrenResizingMode) {
-				case FlexChildrenResizingMode.DoNotResize:
-				case FlexChildrenResizingMode.FitToOppositeDirection:
-				case FlexChildrenResizingMode.StretchToOppositeDirection:
-					if (Direction == Directional180.Horizontal)
-						child.Position = new((int)(chF1 * ourBounds.Width), ourBounds.Height / 2);
-					else
-						child.Position = new(ourBounds.Width / 2, (int)(chF1 * ourBounds.Height));
+				case FlexChildrenResizingMode.StretchToFit: {
+						if (horiz) {
+							cx = ax + cursor + mLeft;
+							cy = ay + mTop;
+							cw = slotSize - mLeft - mRight;
+							ch = ah - mTop - mBot;
+							cursor += slotSize + Spacing;
+						}
+						else {
+							cx = ax + mLeft;
+							cy = ay + cursor + mTop;
+							cw = aw - mLeft - mRight;
+							ch = slotSize - mTop - mBot;
+							cursor += slotSize + Spacing;
+						}
+						break;
+					}
 
-					child.Dock = Dock.None;
-					child.Origin = Anchor.Center;
-					break;
-				case FlexChildrenResizingMode.StretchToFit:
-					if (Direction == Directional180.Horizontal)
-						child.Position = new((int)(chF0 * ourBounds.Width), 0);
-					else
-						child.Position = new(0, (int)(chF0 * ourBounds.Height));
+				case FlexChildrenResizingMode.FitToOppositeDirection: {
+						if (horiz) {
+							float childW = naturalSize.W;
+							cx = ax + cursor + mLeft;
+							cy = ay + mTop;
+							cw = childW;
+							ch = ah - mTop - mBot;
+							cursor += childW + mLeft + mRight + Spacing;
+						}
+						else {
+							float childH = naturalSize.H;
+							cx = ax + mLeft;
+							cy = ay + cursor + mTop;
+							cw = aw - mLeft - mRight;
+							ch = childH;
+							cursor += childH + mTop + mBot + Spacing;
+						}
+						break;
+					}
 
-					child.Dock = Dock.None;
-					child.Origin = Anchor.TopLeft;
-					break;
+				case FlexChildrenResizingMode.StretchToOppositeDirection: {
+						float sq = horiz ? (ah - mTop - mBot) : (aw - mLeft - mRight);
+						if (horiz) {
+							cx = ax + cursor + mLeft;
+							cy = ay + mTop;
+							cw = sq;
+							ch = sq;
+							cursor += sq + mLeft + mRight + Spacing;
+						}
+						else {
+							cx = ax + mLeft;
+							cy = ay + cursor + mTop;
+							cw = sq;
+							ch = sq;
+							cursor += sq + mTop + mBot + Spacing;
+						}
+						break;
+					}
+
+				default: {
+						float childW = naturalSize.W;
+						float childH = naturalSize.H;
+						if (horiz) {
+							float slotCenter = ax + cursor + slotSize / 2;
+							cx = slotCenter - childW / 2;
+							cy = ay + (ah - childH) / 2;
+							cw = childW;
+							ch = childH;
+							cursor += slotSize + Spacing;
+						}
+						else {
+							float slotCenter = ay + cursor + slotSize / 2;
+							cx = ax + (aw - childW) / 2;
+							cy = slotCenter - childH / 2;
+							cw = childW;
+							ch = childH;
+							cursor += slotSize + Spacing;
+						}
+						break;
+					}
 			}
 
-			switch (ChildrenResizingMode) {
-				case FlexChildrenResizingMode.DoNotResize:
-					break;
-				case FlexChildrenResizingMode.FitToOppositeDirection:
-					if (Direction == Directional180.Horizontal)
-						child.Size = new(child.RenderBounds.Width, ourBounds.Height);
-					else
-						child.Size = new(ourBounds.Width, child.RenderBounds.Height);
-					break;
-				case FlexChildrenResizingMode.StretchToOppositeDirection:
-					if (Direction == Directional180.Horizontal)
-						child.Size = new(ourBounds.Height, ourBounds.Height);
-					else
-						child.Size = new(ourBounds.Width, ourBounds.Width);
-					break;
-				case FlexChildrenResizingMode.StretchToFit:
-					if (Direction == Directional180.Horizontal)
-						child.Size = new((int)(ourBounds.Width / childrenCount), ourBounds.Height);
-					else
-						child.Size = new(ourBounds.Width, ourBounds.Height / childrenCount);
+			LayoutChild(child, new RectangleF(cx, cy, cw, ch));
 
-					break;
-			}
-
-			if (!DockPadding.IsZero) {
-				child.Position += new Vector2F(DockPadding.X, DockPadding.Y);
-				child.Size -= new Vector2F(DockPadding.X, DockPadding.Y);
-				child.Size -= new Vector2F(DockPadding.W, DockPadding.H);
-			}
-
-			if (!child.DockMargin.IsZero) {
-				child.Position += new Vector2F(child.DockMargin.X, child.DockMargin.Y);
-				child.Size -= new Vector2F(child.DockMargin.X, child.DockMargin.Y);
-				child.Size -= new Vector2F(child.DockMargin.W, child.DockMargin.H);
-			}
+			idx++;
 		}
 	}
 }

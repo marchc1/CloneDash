@@ -337,6 +337,16 @@ public class Element : IValidatable
 		}
 	}
 
+	protected void LayoutChild(Element child, RectangleF bounds) {
+		child.AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+		child.FlushRenderBounds();
+		RectangleF before = child.RenderBounds;
+		child.__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
+		if (before != child.__renderbounds)
+			child.AddFlag(ElementFlags.NeedsLayout);
+		child.RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
+	}
+
 	public Element() {
 		Initialize(0, 0, 32, 32);
 		UI?.AddElement(this);
