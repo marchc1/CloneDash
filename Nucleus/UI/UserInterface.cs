@@ -146,7 +146,7 @@ public class ElementInputSystem
 		}
 
 		// Handle mouse scrolling
-		if (!mouse.MouseDelta.IsZero()) {
+		if (!mouse.MouseScroll.IsZero()) {
 			if (IValidatable.IsValid(hovered)) {
 				// Do a backwards search first
 				var checkBack = hovered;
