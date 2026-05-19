@@ -88,7 +88,7 @@ public class Element : IValidatable
 	private Element? __parentToAddTo = null;
 	private bool __markedForRemoval = false;
 	private bool _firstThink = true;
-	private bool QueueCenter = true;
+	private bool QueueCenter = false;
 	internal List<Element> Children = [];
 	internal Element?[] FlushedChildren = [];
 	internal int CurrentChildrenCount;
@@ -616,8 +616,11 @@ public class Element : IValidatable
 
 		var parentBounds = parent.RenderBounds;
 		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
-		var tb2 = new Vector2F(RenderBounds.Width / 2, RenderBounds.Height / 2);
-		this.Position = pb2 - tb2;
+		var tb2 = new Vector2F(__renderbounds.Width / 2, __renderbounds.Height / 2);
+		var centered = pb2 - tb2;
+		_position = centered;
+		__renderbounds.X = centered.X;
+		__renderbounds.Y = centered.Y;
 		QueueCenter = false;
 	}
 	private void DoOriginAnchor() {
@@ -1029,10 +1032,11 @@ public class Element : IValidatable
 	public virtual void Center() {
 		if (Parent == null)
 			return;
-		var parentBounds = Parent.RenderBounds;
-		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
-		var tb2 = _size / 2;
-		this.Position = pb2 - tb2;
+		if (!Parent.IsLayoutInvalid() || IsLayoutInvalid())
+			QueueCenter = true;
+		else {
+			DoCentering();
+		}
 	}
 
 
