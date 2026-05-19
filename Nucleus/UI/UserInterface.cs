@@ -554,7 +554,7 @@ public class UserInterface : Element, IDisposable
 	ulong keyboardFocusReentrantID = 0;
 
 	public bool SetKeyboardFocusedElement(Element? element) {
-		ulong currentFunctionID = keyboardFocusReentrantID++;
+		ulong currentFunctionID = ++keyboardFocusReentrantID;
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
 		if (keyboardFocused != null) {
