@@ -305,8 +305,10 @@ public class SongSelector : Panel, IMainMenuPanel
 	public Label Loading = null!;
 	// Constantly running logic
 	public void ThinkDiscs() {
+		if (!IsKeyboardFocused())
+			KeyboardFocus();
+
 		FigureOutDisk();
-		KeyboardFocus();
 
 		float width = RenderBounds.W, height = RenderBounds.H;
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
@@ -325,7 +327,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
-			LayoutDiscs(width, height);
+			InvalidateLayout();
 		}
 
 		for (int i = 0; i < Discs.Length; i++) {
@@ -382,7 +384,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	private void DisableDiscs(bool disabled) {
 		for (int i = 0; i < Discs.Length; i++) {
-			Discs[i].SetMouseInputEnabled(disabled);
+			Discs[i].SetMouseInputEnabled(!disabled);
 			Discs[i].SetVisible(!disabled);
 		}
 	}

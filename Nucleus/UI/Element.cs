@@ -586,12 +586,13 @@ public class Element : IValidatable
 		__renderbounds.W = layoutSize.W;
 		__renderbounds.H = layoutSize.H;
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
+
 	}
 
 	public void ValidateLayout() {
 		if (IsVisible() && IsLayoutInvalid()) {
-			Layout();
 			RemoveFlag(ElementFlags.NeedsLayout);
+			Layout();
 		}
 	}
 
@@ -605,6 +606,8 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.InPerformLayout);
 		PerformLayout(__renderbounds.W, __renderbounds.H);
 		RemoveFlag(ElementFlags.InPerformLayout);
+		foreach (var child in Children) 
+			child.FlushRenderBounds();
 		// Perform child docking
 		DoChildDocking();
 	}
