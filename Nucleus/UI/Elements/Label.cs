@@ -207,9 +207,6 @@ public class Label : Element
 		if (!AutoSize)
 			return;
 
-		if (!HasFlag(ElementFlags.NeedsLayout))
-			return;
-
 		Element? parent = GetParent();
 		if (parent == null)
 			return;
