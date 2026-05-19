@@ -453,8 +453,6 @@ public class Element : IValidatable
 		}
 
 		OnThink();
-		if (IsVisible())
-			ValidateLayout();
 	}
 
 	/// <summary>
@@ -576,7 +574,7 @@ public class Element : IValidatable
 	}
 
 	public void ValidateLayout() {
-		if (IsLayoutInvalid()) {
+		if (IsVisible() && IsLayoutInvalid()) {
 			Layout();
 			RemoveFlag(ElementFlags.NeedsLayout);
 		}

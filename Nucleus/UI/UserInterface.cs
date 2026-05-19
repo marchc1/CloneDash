@@ -204,6 +204,17 @@ public class ElementThinkingSystem
 {
 	public void Think(Element? element, ref ElementSolveState state) {
 		ThinkTraverse(element, ref state);
+		LayoutTraverse(element, ref state);
+	}
+
+	private void LayoutTraverse(Element? element, ref ElementSolveState state) {
+		if (element == null) return;
+
+		element.ValidateLayout();
+
+		foreach (var child in element.GetChildren())
+			if (child.IsVisible())
+				LayoutTraverse(child, ref state);
 	}
 
 	private void ThinkTraverse(Element? element, ref ElementSolveState state) {
@@ -213,7 +224,7 @@ public class ElementThinkingSystem
 
 		foreach (var child in element.GetChildren())
 			if (child.IsVisible())
-				Think(child, ref state);
+				ThinkTraverse(child, ref state);
 	}
 }
 
