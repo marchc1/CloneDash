@@ -578,10 +578,9 @@ public class Element : IValidatable
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
 		Vector2F layoutPos = _position, layoutSize = _size;
-		if (_dynamicallySized && Parent != null) {
-			layoutPos = _position * Parent.__renderbounds.Size;
+		if (_dynamicallySized && Parent != null) 
 			layoutSize = _size * Parent.__renderbounds.Size;
-		}
+		
 		__renderbounds.X = layoutPos.X;
 		__renderbounds.Y = layoutPos.Y;
 		__renderbounds.W = layoutSize.W;
@@ -1030,11 +1029,10 @@ public class Element : IValidatable
 	public virtual void Center() {
 		if (Parent == null)
 			return;
-		if (!Parent.IsLayoutInvalid() || IsLayoutInvalid())
-			QueueCenter = true;
-		else {
-			DoCentering();
-		}
+		var parentBounds = Parent.RenderBounds;
+		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
+		var tb2 = _size / 2;
+		this.Position = pb2 - tb2;
 	}
 
 

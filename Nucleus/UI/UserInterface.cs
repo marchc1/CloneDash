@@ -313,7 +313,8 @@ public class ElementPaintSystem
 		if (!IValidatable.IsValid(element)) return;
 		var renderBounds = element.RenderBounds;
 		float w = renderBounds.Width, h = renderBounds.Height;
-		if ((w <= 0 || h <= 0) && element.Clipping) return;
+		if ((w <= 0 || h <= 0) && element.Clipping) 
+			return;
 
 		if (element.Clipping)
 			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, renderBounds.Size));
