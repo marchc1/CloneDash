@@ -149,9 +149,7 @@ public class Element : IValidatable
 	public double TimeToBackdropAlpha = 0.3;
 	public double TimeToNoBackdropAlpha = 0.15;
 
-	private string __text = "Panel";
 	private string? __tooltipText = null;
-	private SchemeableSetting<float> __textSize = SchemeableSetting<float>.Default(18);
 
 	private bool KbInput;
 	private bool MouseInput;
@@ -941,25 +939,6 @@ public class Element : IValidatable
 		Parent.InvalidateLayout();
 	}
 
-	public string TextNocall {
-		set {
-			__text = value;
-		}
-	}
-	public string Text {
-		get {
-			return __text;
-		}
-		set {
-			if (value == __text)
-				return;
-
-			var oldText = __text;
-			__text = value;
-			TextChanged(oldText, value);
-		}
-	}
-
 	public string Font { get; set; } = Graphics2D.UI_FONT_NAME;
 	public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
 
@@ -970,19 +949,6 @@ public class Element : IValidatable
 		DynamicSizeReference.SelfHeight => RenderBounds.Height / 20f,
 		_ => throw new NotImplementedException()
 	};
-
-	public float TextSize {
-		get {
-			if (!DynamicallySized)
-				return __textSize.Get();
-
-			var heightRatio = GetReferenceSize(DynamicTextSizeReference);
-			return Math.Clamp(__textSize.Get() * heightRatio, 8, 160);
-		}
-		set {
-			__textSize.SetUserValue(value);
-		}
-	}
 
 	~Element() {
 		if (__RT1.HasValue) {
@@ -1378,7 +1344,6 @@ public class Element : IValidatable
 
 		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
 		Font = fontStyle.Name;
-		TextSize = fontStyle.Tall;
 
 		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}
@@ -1388,9 +1353,6 @@ public class Element : IValidatable
 	protected virtual void OnRemoval() { }
 
 	protected virtual void PerformLayout(float width, float height) { }
-
-	protected virtual void TextChanged(string oldText, string newText) { }
-
 	protected virtual void PreLayoutChild(Element element) { }
 	protected virtual void PostLayoutChild(Element element) { }
 	protected virtual void PreLayoutChildren() { }
