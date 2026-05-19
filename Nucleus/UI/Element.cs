@@ -195,6 +195,8 @@ public class Element : IValidatable
 			if (!HasFlag(ElementFlags.InPerformLayout)) {
 				InvalidateLayout();
 			}
+			else
+				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		}
 	}
 
@@ -227,6 +229,8 @@ public class Element : IValidatable
 					GetParent()?.InvalidateLayout();
 				InvalidateLayout();
 			}
+			else
+				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		}
 	}
 
@@ -578,9 +582,9 @@ public class Element : IValidatable
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
 		Vector2F layoutPos = _position, layoutSize = _size;
-		if (_dynamicallySized && Parent != null) 
+		if (_dynamicallySized && Parent != null)
 			layoutSize = _size * Parent.__renderbounds.Size;
-		
+
 		__renderbounds.X = layoutPos.X;
 		__renderbounds.Y = layoutPos.Y;
 		__renderbounds.W = layoutSize.W;
@@ -601,12 +605,14 @@ public class Element : IValidatable
 		FlushRenderBounds();
 		if (QueueCenter)
 			DoCentering();
-		DoOriginAnchor();
 		// Perform the internal layout based on our size
 		AddFlag(ElementFlags.InPerformLayout);
 		PerformLayout(__renderbounds.W, __renderbounds.H);
 		RemoveFlag(ElementFlags.InPerformLayout);
-		foreach (var child in Children) 
+		if (Dock == Dock.None)
+			FlushRenderBounds();
+		DoOriginAnchor();
+		foreach (var child in Children)
 			child.FlushRenderBounds();
 		// Perform child docking
 		DoChildDocking();

@@ -239,7 +239,6 @@ public class Label : Element
 				startDrawingPosition.Y += range.Height;
 			}
 		}
-
 		Size = new(textSize.X + TextPadding.X, textSize.Y + TextPadding.Y);
 
 		if (!DockMargin.IsZero)
