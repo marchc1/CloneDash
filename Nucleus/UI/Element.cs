@@ -612,10 +612,31 @@ public class Element : IValidatable
 		if (Dock == Dock.None)
 			FlushRenderBounds();
 		DoOriginAnchor();
+		CommitFitToParent();
 		foreach (var child in Children)
 			child.FlushRenderBounds();
 		// Perform child docking
 		DoChildDocking();
+		ComputeSizeOfAllChildren();
+	}
+
+	private void CommitFitToParent() {
+		if (_fitToParent) {
+			var parentBounds = GetParent()?.RenderBounds ?? UI.RenderBounds;
+			var overflow = parentBounds.GetOverflow(__renderbounds, fitPadding);
+			__renderbounds.Pos += overflow;
+			_fitToParent = false;
+		}
+	}
+	private void ComputeSizeOfAllChildren() {
+		SizeOfAllChildren = Vector2F.Zero;
+		foreach (var child in Children) {
+			if (child.IsVisible()) {
+				var ps = child.RenderBounds.Pos + child.RenderBounds.Size;
+				if (ps > SizeOfAllChildren)
+					SizeOfAllChildren = ps;
+			}
+		}
 	}
 
 	private void DoCentering() {

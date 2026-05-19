@@ -50,26 +50,16 @@ public class DirectionalLayoutPanel : ScrollPanel
 	}
 
 	protected override void OnThink() {
-		if (!AutoSize) {
-			base.OnThink();
-		}
-		else {
-			base.OnThink();
+		base.OnThink();
+		if (AutoSize) {
+			float size = 0;
+			foreach (var child in AddParent.Children)
+				size = MathF.Max(size, child.RenderBounds.Y + child.RenderBounds.H + 8);
+			Size = new(Size.W, size + 8);
+			MainPanel.Size = new(MainPanel.Size.W, size + 8);
+
 			VerticalScrollbar.SetVisible(false);
 			HorizontalScrollbar.SetVisible(false);
-		}
-	}
-
-	protected override void PerformLayout(float width, float height) {
-		float size = 0;
-
-		foreach(var child in AddParent.Children) {
-			size = MathF.Max(size, child.RenderBounds.Y + child.RenderBounds.H + 8);
-		}
-
-		if (AutoSize) {
-			this.SetRenderBounds(h: size + 8);
-			this.MainPanel.SetRenderBounds(h: size + 8);
 		}
 	}
 }

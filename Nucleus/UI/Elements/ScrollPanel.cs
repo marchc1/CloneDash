@@ -90,13 +90,9 @@ public class ScrollPanel : Panel
 		VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 		HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
-		foreach (Element child in MainPanel.Children) {
-			if (ShouldItemBeVisible(child)) 
-				child.SetVisible(false);
-			else 
-				child.SetVisible(true);
-		}
-
+		foreach (Element child in MainPanel.Children) 
+			child.SetVisible(ShouldItemBeVisible(child));
+		
 		MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
 	}
 	protected override void PostLayoutChild(Element element) {
