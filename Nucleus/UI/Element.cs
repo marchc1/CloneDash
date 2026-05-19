@@ -337,23 +337,6 @@ public class Element : IValidatable
 		}
 	}
 
-	/// <summary>
-	/// Not recommended unless your use case involves a post-layout hook such as <see cref="PostLayoutChildren"/>
-	/// </summary>
-	/// <param name="x"></param>
-	/// <param name="y"></param>
-	/// <param name="w"></param>
-	/// <param name="h"></param>
-	public void SetRenderBounds(float? x = null, float? y = null, float? w = null, float? h = null) {
-		if (x.HasValue) __renderbounds.X = x.Value;
-		if (y.HasValue) __renderbounds.Y = y.Value;
-		if (w.HasValue) __renderbounds.W = w.Value;
-		if (h.HasValue) __renderbounds.H = h.Value;
-	}
-	public void SetRenderBounds(RectangleF bounds) {
-		__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
-	}
-
 	public Element() {
 		Initialize(0, 0, 32, 32);
 		UI?.AddElement(this);
