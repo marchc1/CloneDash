@@ -193,7 +193,8 @@ namespace Nucleus
 		bool isArgumentAutocomplete = false;
 		string argumentPrefix = "";
 
-		protected override void PrePerformLayout() {
+
+		protected override void OnThink() {
 			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
 			Size = new(GetParent()!.Size.W - 16, 384);
 		}
@@ -221,6 +222,9 @@ namespace Nucleus
 		}
 
 		public ConsoleWindow(Element? parent) : base(parent) {
+			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
+			Size = new(GetParent()!.Size.W - 16, 384);
+
 			this.DockMargin = RectangleF.TLRB(8);
 			this.BorderSize = 0;
 

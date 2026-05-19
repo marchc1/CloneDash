@@ -172,7 +172,7 @@ public class Element : IValidatable
 		_size = new(width, height);
 		Anchor = Anchor.TopLeft;
 		Origin = Anchor.TopLeft;
-		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate;
+		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate | ElementFlags.NeedsRenderBoundsFlush;
 		flags |= ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
 		flags |= ElementFlags.AllowChainKeybindingToParent;
 		flags |= ElementFlags.AllowChainInputToParent;
@@ -190,7 +190,10 @@ public class Element : IValidatable
 			if (value == _position)
 				return;
 
-			_position = value; InvalidateLayout();
+			_position = value;
+			if (!HasFlag(ElementFlags.InPerformLayout)) {
+				InvalidateLayout();
+			}
 		}
 	}
 
@@ -218,9 +221,11 @@ public class Element : IValidatable
 				return;
 
 			_size = value;
-			if (_dock != Dock.None)
-				GetParent()?.InvalidateLayout();
-			InvalidateLayout();
+			if (!HasFlag(ElementFlags.InPerformLayout)) {
+				if (_dock != Dock.None)
+					GetParent()?.InvalidateLayout();
+				InvalidateLayout();
+			}
 		}
 	}
 
@@ -588,13 +593,14 @@ public class Element : IValidatable
 
 	private void Layout() {
 		// Flush render bounds if we need that
-		PrePerformLayout();
 		FlushRenderBounds();
 		DoOriginAnchor();
+		// Perform the internal layout based on our size
+		AddFlag(ElementFlags.InPerformLayout);
+		PerformLayout(__renderbounds.W, __renderbounds.H);
+		RemoveFlag(ElementFlags.InPerformLayout);
 		// Perform child docking
 		DoChildDocking();
-		// Perform the internal layout based on our size
-		PerformLayout(__renderbounds.W, __renderbounds.H);
 	}
 
 	private void DoOriginAnchor() {
@@ -611,8 +617,10 @@ public class Element : IValidatable
 
 		// Shrink available space by dock padding
 		if (!_dockPadding.IsZero) {
-			availableSpace.AddPosition(new(_dockPadding.X, _dockPadding.Y));
-			availableSpace.AddSize(new(_dockPadding.W * -2, _dockPadding.H * -2));
+			availableSpace.X += _dockPadding.X;   
+			availableSpace.Y += _dockPadding.Y;   
+			availableSpace.W -= _dockPadding.X + _dockPadding.W;
+			availableSpace.H -= _dockPadding.Y + _dockPadding.H;
 		}
 
 		foreach (var child in Children) {
@@ -682,8 +690,10 @@ public class Element : IValidatable
 
 			// Then shrink the child by DockMargin..
 			if (!child._dockMargin.IsZero) {
-				childBounds.AddPosition(new(child._dockMargin.X, child._dockMargin.Y));
-				childBounds.AddSize(new(child._dockMargin.W * -2, child._dockMargin.H * -2));
+				childBounds.X += child._dockMargin.X;                         
+				childBounds.Y += child._dockMargin.Y;                         
+				childBounds.W -= child._dockMargin.X + child._dockMargin.W;   
+				childBounds.H -= child._dockMargin.Y + child._dockMargin.H;   
 			}
 
 			// manual layout flag setting here
@@ -748,7 +758,7 @@ public class Element : IValidatable
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsPopup() => HasFlag(ElementFlags.IsPopup);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsModal() => HasFlag(ElementFlags.IsPopup);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsModal() => HasFlag(ElementFlags.IsModal);
 
 	/// <summary>
 	/// Requires a valid parent, otherwise this just resolves to parenting to itself (invalid)
@@ -1236,7 +1246,6 @@ public class Element : IValidatable
 	protected virtual void ChildParented(Element parent, Element child) { }
 	protected virtual void OnRemoval() { }
 
-	protected virtual void PrePerformLayout() { }
 	protected virtual void PerformLayout(float width, float height) { }
 
 	protected virtual void TextChanged(string oldText, string newText) { }
