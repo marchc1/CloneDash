@@ -77,9 +77,9 @@ public struct KeyboardState()
 	public readonly bool WasKeyReleased(ButtonCode key) => KeysReleased[(int)key];
 
 	static readonly char[] ros_state = new char[1024];
-	static bool writeToROSState(ref int i, ReadOnlySpan<char> text){
+	static bool writeToROSState(ref int i, ReadOnlySpan<char> text) {
 		return text.TryCopyTo(ros_state.AsSpan()[(i += text.Length)..]);
-	} 
+	}
 	public ReadOnlySpan<char> ToReadOnlySpan() {
 		int i = 0;
 
@@ -94,7 +94,7 @@ public struct KeyboardState()
 		writeToROSState(ref i, "] Held [");
 
 		wroteOne = false;
-		foreach(var key in GetKeysThisFrame()) {
+		foreach (var key in GetKeysThisFrame()) {
 			wroteOne = writeToROSState(ref i, key.ToButtonCode().GetString());
 			writeToROSState(ref i, ", ");
 		}
@@ -122,19 +122,25 @@ public struct KeyboardState()
 		}
 	}
 
-	public void ConsumeKey(int key) {
-		KeysPressed[key] = 0;
-		KeysReleased[key] = false;
+	public void ConsumeKeyPressAtIndex(int index) {
+		int key = KeysThisFrame[index];
+		if (KeysPressed[key] > 0)
+			KeysPressed[key]--;
+		RemoveKeyAtIndex(index);
+	}
 
-		for (int i = TotalKeysThisFrame - 1; i >= 0; i--) {
-			if (KeysThisFrame[i] == key) {
-				for (int j = i; j < TotalKeysThisFrame - 1; j++) {
-					KeysThisFrame[j] = KeysThisFrame[j + 1];
-					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
-				}
-				TotalKeysThisFrame--;
-			}
+	public void ConsumeKeyReleaseAtIndex(int index) {
+		int key = KeysThisFrame[index];
+		KeysReleased[key] = false;
+		RemoveKeyAtIndex(index);
+	}
+
+	private void RemoveKeyAtIndex(int index) {
+		for (int j = index; j < TotalKeysThisFrame - 1; j++) {
+			KeysThisFrame[j] = KeysThisFrame[j + 1];
+			KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
 		}
+		TotalKeysThisFrame--;
 	}
 
 	public void ConsumeTextAtIndex(int index) {
@@ -142,5 +148,21 @@ public struct KeyboardState()
 			TextInputs[i] = TextInputs[i + 1];
 		}
 		TextInputs[MAX_TEXT_INPUTS - 1] = null;
+	}
+
+	public void ConsumeFirstKeyPress(ButtonCode key) {
+		if (KeysPressed[(int)key] > 0)
+			KeysPressed[(int)key]--;
+
+		for (int i = 0; i < TotalKeysThisFrame; i++) {
+			if (KeysThisFrame[i] == (int)key) {
+				for (int j = i; j < TotalKeysThisFrame - 1; j++) {
+					KeysThisFrame[j] = KeysThisFrame[j + 1];
+					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
+				}
+				TotalKeysThisFrame--;
+				return;
+			}
+		}
 	}
 }

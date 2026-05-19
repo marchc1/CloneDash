@@ -157,37 +157,43 @@ public class ElementInputSystem
 
 	public bool TestKeyboard(Element? keyboardFocused, ref KeyboardState keyboard) {
 		KeyboardState emulated;
+		bool keybindChainingAllowed = true;
 		while (keyboardFocused != null) {
 			if (!keyboardFocused.IsKeyboardInputEnabled())
 				return false;
 
 			emulated = keyboard;
 			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
-			if (keyboardFocused.Keybinds.TestKeybinds(in emulated))
+			if (keybindChainingAllowed && keyboardFocused.Keybinds.TestKeybinds(ref emulated))
 				return true;
 
 			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
 				int key = emulated.KeysThisFrame[i];
-				bool consumed = false;
 
 				if (emulated.WasKeyPressed(key))
-					consumed |= keyboardFocused.KeyPressedOccur(in emulated, key.ToButtonCode());
-				if (emulated.WasKeyReleased(key))
-					consumed |= keyboardFocused.KeyReleasedOccur(in emulated, key.ToButtonCode());
+					if (keyboardFocused.KeyPressedOccur(in emulated, key.ToButtonCode()))
+						keyboard.ConsumeKeyPressAtIndex(i);
 
-				if (consumed)
-					keyboard.ConsumeKey(key);
+				if (emulated.WasKeyReleased(key))
+					if (keyboardFocused.KeyReleasedOccur(in emulated, key.ToButtonCode()))
+						keyboard.ConsumeKeyReleaseAtIndex(i);
 			}
 
 			for (int i = emulated.GetTextInputsThisFrame() - 1; i >= 0; i--)
 				if (keyboardFocused.TextInputOccur(in emulated, emulated.GetTextInputThisFrameAtIndex(i)))
 					keyboard.ConsumeTextAtIndex(i);
+
+			if (keybindChainingAllowed && !keyboardFocused.HasFlag(ElementFlags.AllowChainKeybindingToParent))
+				keybindChainingAllowed = false;
+			if (keyboardFocused.HasFlag(ElementFlags.AllowChainInputToParent))
+				keyboardFocused = keyboardFocused.GetParent();
+			else
+				return false;
 		}
 
 		return false;
 	}
 }
-
 
 public class ElementThinkingSystem
 {

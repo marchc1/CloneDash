@@ -22,7 +22,7 @@ namespace Nucleus.Core
 			return ret;
 		}
 
-		public bool TestKeybinds(in KeyboardState state) {
+		public bool TestKeybinds(ref KeyboardState state, bool wipeKeys = true) {
 			bool ranKeybinds = false;
 
 			foreach (var keybindFinal in FinalKeybindAssociation) {
@@ -34,6 +34,7 @@ namespace Nucleus.Core
 					if (keybindTest.Test(state)) {
 						ranKeybinds = true;
 						keybindTest.Bind?.Invoke();
+						keybindTest.WipeState(ref state);
 						return true;
 					}
 				}
@@ -86,6 +87,10 @@ namespace Nucleus.Core
 			ret.NiceKeybindString = string.Join(" + ", keyNames);
 
 			return ret;
+		}
+
+		internal void WipeState(ref KeyboardState state) {
+			state.ConsumeFirstKeyPress(FinalKey);
 		}
 	}
 }

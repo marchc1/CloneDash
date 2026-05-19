@@ -600,6 +600,7 @@ public abstract class Level : IValidatable
 		RootPanel.Thinking.Think(RootPanel, ref solveState);
 		RootPanel.Input.SolveHovered(RootPanel, ref solveState, frameState);
 		RootPanel.Input.DispatchEvents(ref solveState, frameState);
+		Keybinds.TestKeybinds(ref frameState.Keyboard);
 
 		if (!Paused) RunEventThink(frameState);
 		if (!Paused) RunEventPostThink(frameState);
@@ -846,7 +847,7 @@ public abstract class Level : IValidatable
 	}
 
 	internal void RunKeybinds() {
-		Keybinds.TestKeybinds(in FrameState.Keyboard);
+		Keybinds.TestKeybinds(ref FrameState.Keyboard);
 	}
 
 	static readonly char[] formatconvs = new char[256];

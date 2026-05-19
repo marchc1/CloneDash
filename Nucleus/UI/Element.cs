@@ -175,6 +175,7 @@ public class Element : IValidatable
 		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate;
 		flags |= ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
 		flags |= ElementFlags.AllowChainKeybindingToParent;
+		flags |= ElementFlags.AllowChainInputToParent;
 		__tooltipText = null;
 		Opacity = 1;
 		SetVisible(true);
