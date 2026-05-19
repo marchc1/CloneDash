@@ -156,8 +156,8 @@ public class ElementInputSystem
 			}
 		}
 
-		if (!TestKeyboard(solveState.EmbeddedPanel, ref keyboard))
-			TestKeyboard(solveState.KeyboardFocused, ref keyboard);
+		if (!TestKeyboard(solveState.KeyboardFocused, ref keyboard))
+			TestKeyboard(solveState.EmbeddedPanel, ref keyboard);
 	}
 
 	public bool TestKeyboard(Element? keyboardFocused, ref KeyboardState keyboard) {
@@ -558,7 +558,7 @@ public class UserInterface : Element, IDisposable
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
 		if (keyboardFocused != null) {
-			if (keyboardFocused.CanKeyboardFocusLostOccur(element))
+			if (!keyboardFocused.CanKeyboardFocusLostOccur(element))
 				return false;
 		}
 
