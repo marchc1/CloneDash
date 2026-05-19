@@ -28,7 +28,7 @@ public class CharacterButton(Element? parent) : Button(parent)
 		CharacterName = character.Length == 0 ? null : new(character);
 		Image = texture;
 		ImageOrientation = ImageOrientation.Zoom;
-		BackgroundColor = new(0, 0, 0, 0);
+		SetBgColor(new(0, 0, 0, 0));
 		BorderSize = 0;
 		ImagePadding = new(0, 0);
 		Text = "";
@@ -53,7 +53,7 @@ public class CharacterSelectorScroller : Panel
 
 		for (int i = 0; i < chars.Count; i++) {
 			var c = chars[i];
-			c.label.ForegroundColor = i == lastSelectedIdx ? new(255, 255, 255, 255) : new(155, 155, 155, 255);
+			c.label.SetFgColor(i == lastSelectedIdx ? new(255, 255, 255, 255) : new(155, 155, 155, 255));
 			c.label.Pulsing = i == lastSelectedIdx;
 			c.label.DrawBackground = i == lastSelectedIdx;
 		}
@@ -133,7 +133,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
 	public CharacterSelector(Element? parent) : base(parent) {
-		BackgroundColor = new Color(0, 0, 0, 0);
+		SetBgColor(new Color(0, 0, 0, 0));
 		SetPassthru(true);
 
 		selectedInfo = new Panel(this);
@@ -162,8 +162,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton.Dock = Dock.Right;
 		characterSelectButton.Size = new(0.15f);
 		characterSelectButton.DynamicallySized = true;
-		characterSelectButton.BackgroundColor = new(10, 30, 10);
-		characterSelectButton.ForegroundColor = new(48, 220, 70);
+		characterSelectButton.SetBgColor(new(10, 30, 10));
+		characterSelectButton.SetFgColor(new(48, 220, 70));
 		characterSelectButton.OnButtonClick += CharacterSelectButton_MouseReleaseEvent;
 
 		characterPerkLabel = new(selectedInfo);
@@ -174,7 +174,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterPerkLabel.Dock = Dock.Fill;
 		characterPerkLabel.TextSize = 24;
 		characterPerkLabel.DynamicallySized = true;
-		characterPerkLabel.BackgroundColor = new(100, 100, 100, 100); // temp
+		characterPerkLabel.SetBgColor(new(100, 100, 100, 100)); // temp
 
 		backPanel = new CharacterSelectorScroller(this);
 		backPanel.Dock = Dock.Bottom;

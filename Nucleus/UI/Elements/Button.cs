@@ -20,7 +20,7 @@ public class Button : Label
 	public event ButtonActionFn? OnButtonClick;
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
-		BackgroundColor = new(20, 25, 32, 220);
+		SetBgColor(new(20, 25, 32, 220));
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
 	}
@@ -76,8 +76,8 @@ public class Button : Label
 	public bool DrawBackgroundWhenMouseIdle = true;
 
 	public static void ColorStateSetup(Button b, out Color back, out Color fore) {
-		var backpre = b.BackgroundColor;
-		var forepre = b.ForegroundColor;
+		var backpre = b.GetBgColor();
+		var forepre = b.GetFgColor();
 
 		var canInput = b.IsMouseInputEnabled();
 

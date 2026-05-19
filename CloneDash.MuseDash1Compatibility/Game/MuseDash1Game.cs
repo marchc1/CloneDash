@@ -874,10 +874,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public class PauseMenuButton(Element parent) : Button(parent)
 	{
 		public override void Paint(float width, float height) {
-			var backpre = BackgroundColor;
+			var backpre = GetBgColor();
 
 			var back = Element.MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.4f, 1f), new(0, 1.2f, 0.6f, 1f));
-			var fore = Element.MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+			var fore = Element.MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, width, height);

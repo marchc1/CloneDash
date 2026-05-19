@@ -250,7 +250,7 @@ public class Label : Element
 		ValidateText();
 
 		if (DrawBackground) {
-			Graphics2D.SetDrawColor(BackgroundColor);
+			Graphics2D.SetDrawColor(GetBgColor());
 			Graphics2D.DrawRectangle(0, 0, width, height);
 		}
 		var textC = TextColor;

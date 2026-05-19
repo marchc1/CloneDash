@@ -113,8 +113,8 @@ public class Menu(Element? parent) : Panel(parent)
 		this.Position = pos;
 		this.BorderSize = 1;
 
-		this.BackgroundColor = new Color(20, 30, 45, 220);
-		this.ForegroundColor = new Color(190, 195, 195, 114);
+		this.SetBgColor(new Color(20, 30, 45, 220));
+		this.SetFgColor(new Color(190, 195, 195, 114));
 
 		var i = 0;
 		this.Clipping = false;
@@ -144,7 +144,7 @@ public class Menu(Element? parent) : Panel(parent)
 						b.TextPadding = new(12, 12);
 						b.TextSize = 18;
 						b.TextAlignment = Anchor.CenterLeft;
-						b.BackgroundColor = new Color(0, 0, 0, 0);
+						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
 						b.Clipping = false;
 					}
@@ -158,7 +158,7 @@ public class Menu(Element? parent) : Panel(parent)
 						b.TextPadding = new(12, 12);
 						b.TextSize = 18;
 						b.TextAlignment = Anchor.CenterLeft;
-						b.BackgroundColor = new Color(0, 0, 0, 0);
+						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
 
 						b.Clipping = false;

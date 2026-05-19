@@ -505,7 +505,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				LevelTransitions.LoadSongSelector(this, song);
 			};
 			disc.BorderSize = 0;
-			disc.BackgroundColor = new(0, 0, 0, 0);
+			disc.SetBgColor(new(0, 0, 0, 0));
 			disc.ImageColor = i == IntegerMidpoint ? new Color(255) : new Color(155);
 		}
 

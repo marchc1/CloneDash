@@ -78,8 +78,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var menuBtns = btns.Peek();
 
 		MainMenuButton btn = new(this);
-		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub();
-		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub();
+		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
+		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
 		btn.Text = text;
 		btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
@@ -118,7 +118,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back = new(this);
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
-		back.BackgroundColor = new(0, 0);
+		back.SetBgColor(new(0, 0));
 		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
 		back.ImageOrientation = ImageOrientation.Zoom;
 		back.Text = "";

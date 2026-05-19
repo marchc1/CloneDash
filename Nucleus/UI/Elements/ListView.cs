@@ -36,21 +36,21 @@ public class ListViewItem : Button
 		set => __isLVIVisible = value;
 	}
 	public ListViewItem(Element? parent) : base(parent) {
-		BackgroundColor = new(0, 0, 0, 0);
-		ForegroundColor = new(0, 0, 0, 0);
+		SetBgColor(new(0, 0, 0, 0));
+		SetFgColor(new(0, 0, 0, 0));
 		this.Clipping = false;
 	}
 
 	protected override void OnThink() {
 		if (Depressed) {
-			BackgroundColor = new(30, 35, 45, 65);
+			SetBgColor(new(30, 35, 45, 65));
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
 		else if (IsHovered()) {
-			BackgroundColor = new(200, 210, 230, 50);
+			SetBgColor(new(200, 210, 230, 50));
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
 		else
-			BackgroundColor = new(0, 0, 0, 0);
+			SetBgColor(new(0, 0, 0, 0));
 	}
 }

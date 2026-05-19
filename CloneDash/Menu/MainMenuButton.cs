@@ -37,7 +37,7 @@ public class MainMenuButton : Button
 		var p = 2;
 
 		ImageOrientation = ImageOrientation.None;
-		ImageColor = ForegroundColor.Adjust(0, -0.2, 2, false);
+		ImageColor = GetFgColor().Adjust(0, -0.2, 2, false);
 		ImageDrawing(new(p / 2, p / 2), new(height - p * 2, height - p * 2));
 
 		Graphics2D.DrawText(new(width - 8, 8), Text, Font, TextSize * 0.85f, Anchor.TopRight);

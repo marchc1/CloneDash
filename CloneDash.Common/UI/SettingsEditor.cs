@@ -342,8 +342,8 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		Button b;
 		foreach (var key in keys) {
 			b = new Button(this);
-			b.BackgroundColor = BackgroundColor;
-			b.ForegroundColor = ForegroundColor;
+			b.SetBgColor(GetBgColor());
+			b.SetFgColor(GetFgColor());
 			b.Text = key.GetString();
 			b.SetTag("key", key);
 
@@ -353,8 +353,8 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		}
 
 		b = new Button(this);
-		b.BackgroundColor = BackgroundColor;
-		b.ForegroundColor = ForegroundColor;
+		b.SetBgColor(GetBgColor());
+		b.SetFgColor(GetFgColor());
 		b.Text = "Add...";
 		b.OnButtonClick += ButtonAddHandler;
 		buttons.Add(b);
@@ -441,13 +441,13 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 
 		switch (action) {
 			case InputAction.AirAttack:
-				BackgroundColor = PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5);
-				ForegroundColor = PathwayExts.GetColor(PathwaySide.Top);
+				SetBgColor(PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayExts.GetColor(PathwaySide.Top));
 				InvalidateKeys();
 				break;
 			case InputAction.GroundAttack:
-				BackgroundColor = PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5);
-				ForegroundColor = PathwayExts.GetColor(PathwaySide.Bottom);
+				SetBgColor(PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayExts.GetColor(PathwaySide.Bottom));
 				InvalidateKeys();
 				break;
 			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
@@ -565,10 +565,10 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 	public override void Paint(float width, float height) {
 		currentWidth = width;
 
-		BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
+		SetBgColor(DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 });
 		base.Paint(width, height);
 
-		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
+		Graphics2D.SetDrawColor(GetBgColor().Adjust(0, -0.3f, 2));
 		var h = height / 2;
 		Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
 
@@ -608,7 +608,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var startY = h - h / 2;
 		var endY = h - h / 2 + h;
 		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
-		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
 	}

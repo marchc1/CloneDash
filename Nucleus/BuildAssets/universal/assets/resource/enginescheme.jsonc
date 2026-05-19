@@ -32,6 +32,9 @@
             "tall": 16
         } 
     },
+    "borders": {
+        
+    },
     "colors": {
         // These are in different formats just for testing purposes
         "White":                "ffffffff",             // 8-char rgba hexadecimal

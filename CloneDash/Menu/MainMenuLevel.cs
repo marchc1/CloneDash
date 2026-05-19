@@ -93,7 +93,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		header.Size = new Vector2F(256, 64);
 		header.Dock = Dock.Top;
 		header.BorderSize = 0;
-		header.BackgroundColor = header.BackgroundColor.Adjust(0, 0, value: 0.5f);
+		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
 
 		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
 			PopActiveElement();
@@ -174,7 +174,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			BackgroundColor = BackgroundColor with { A = (byte)(int)Math.Clamp(NMath.Ease.OutCubic(Lifetime * 1.4f) * 155, 0, 155) };
+			SetBgColor(GetBgColor() with { A = (byte)(int)Math.Clamp(NMath.Ease.OutCubic(Lifetime * 1.4f) * 155, 0, 155) });
 
 			if (!setupTrack) 
 				TrySetupTrack();
@@ -301,8 +301,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
 			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 
-			var a = BackgroundColor.A;
-			BackgroundColor = new(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, (int)(a * alpha));
+			var a = GetBgColor().A;
+			SetBgColor(new(GetBgColor().R, GetBgColor().G, GetBgColor().B, (int)(a * alpha)));
 			ChildRenderOffset = new(xOffset, 0);
 
 			base.Paint(w, h);
@@ -311,7 +311,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Graphics2D.SetDrawColor(TextColor);
 			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", Font, TextSize, Anchor.CenterRight);
 
-			BackgroundColor = new(BackgroundColor.R, BackgroundColor.G, BackgroundColor.B, a);
+			SetBgColor(new(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
 		}
 
 		bool autoplayChart;
@@ -347,7 +347,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();
-		levelSelector.ForegroundColor = Color.Blank;
+		levelSelector.SetFgColor(Color.Blank);
 		levelSelector.Dock = Dock.Fill;
 
 		selector.EnterSheetSelection();
@@ -367,8 +367,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.Text = "";
 		back.ImageOrientation = ImageOrientation.Centered;
-		back.BackgroundColor = new(0, 0);
-		back.ForegroundColor = new(0, 0);
+		back.SetBgColor(new(0, 0));
+		back.SetFgColor(new(0, 0));
 		back.Size = new(106);
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
@@ -481,8 +481,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.Origin = Anchor.BottomRight;
 		mapper.TextAlignment = Anchor.TopLeft;
 
-		play.BackgroundColor = buttonColor;
-		play.ForegroundColor = buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f);
+		play.SetBgColor(buttonColor);
+		play.SetFgColor(buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f));
 		play.Text = "";
 		play.TextAlignment = Anchor.CenterLeft;
 		play.TextPadding = new(8, 0);

@@ -99,7 +99,7 @@ public class ScrollPanel : Panel
 
 	}
 	public override void PaintBorder(float width, float height) {
-		Graphics2D.SetDrawColor(ForegroundColor);
+		Graphics2D.SetDrawColor(GetFgColor());
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, 1);
 	}
 }

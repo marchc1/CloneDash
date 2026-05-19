@@ -93,8 +93,8 @@ public class Titlebar : Panel
 		MaximizeButton.Text = "";
 		MinimizeButton.Text = "";
 
-		CloseButton.BackgroundColor = CloseButton.BackgroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub();
-		CloseButton.ForegroundColor = CloseButton.ForegroundColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub();
+		CloseButton.SetBgColor(CloseButton.GetBgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub());
+		CloseButton.SetFgColor(CloseButton.GetFgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub());
 		CloseButton.TextColor = CloseButton.TextColor.RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub();
 	}
 
@@ -175,10 +175,10 @@ public class Titlebar : Panel
 	}
 
 	public override void Paint(float width, float height) {
-		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
-		Graphics2D.SetDrawColor(ForegroundColor);
+		Graphics2D.SetDrawColor(GetFgColor());
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
 		Graphics2D.SetDrawColor(TextColor);
@@ -282,25 +282,25 @@ public class Window : Element
 			Color fore;
 			switch (anchor) {
 				case Anchor.TopLeft:
-					fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+					fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 					Graphics2D.SetDrawColor(fore);
 					Graphics2D.DrawRectangle(0, 0, width / 2, 2);
 					Graphics2D.DrawRectangle(0, 0, 2, height / 2);
 					break;
 				case Anchor.TopRight:
-					fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+					fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 					Graphics2D.SetDrawColor(fore);
 					Graphics2D.DrawRectangle(width / 2, 0, width / 2, 2);
 					Graphics2D.DrawRectangle(width - 2, 0, 2, height / 2);
 					break;
 				case Anchor.BottomLeft:
-					fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+					fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 					Graphics2D.SetDrawColor(fore);
 					Graphics2D.DrawRectangle(0, height - 2, width / 2, 2);
 					Graphics2D.DrawRectangle(0, height / 2, 2, height / 2);
 					break;
 				case Anchor.BottomRight:
-					fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
+					fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
 					Graphics2D.SetDrawColor(fore);
 					Graphics2D.DrawRectangle(width / 2, height - 2, width / 2, 2);
 					Graphics2D.DrawRectangle(width - 2, height / 2, 2, height / 2);

@@ -448,8 +448,8 @@ public class TextEditor : Panel
 		int i = 0;
 		int row = (int)TopRow;
 		PreRenderEditorLines?.Invoke(this, width, height);
-		BackgroundColor = self.IsKeyboardFocused() ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED;
-		ForegroundColor = self.IsKeyboardFocused() ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED;
+		SetBgColor(self.IsKeyboardFocused() ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED);
+		SetFgColor(self.IsKeyboardFocused() ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED);
 
 		while (i < MaxVisibleRows) {
 			if (row >= Rows.Count)

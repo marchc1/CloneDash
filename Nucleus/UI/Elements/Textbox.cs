@@ -774,15 +774,15 @@ public class Textbox : Label
 	public override void Paint(float width, float height) {
 		ValidateLines();
 
-		BackgroundColor = IsKeyboardFocused() ? new(20, 32, 25, 127) : new(20, 25, 32, 127);
-		ForegroundColor = IsKeyboardFocused() ? new(85, 110, 95, 255) : new(85, 95, 110, 255);
+		SetBgColor(IsKeyboardFocused() ? new(20, 32, 25, 127) : new(20, 25, 32, 127));
+		SetFgColor(IsKeyboardFocused() ? new(85, 110, 95, 255) : new(85, 95, 110, 255));
 
 		Color back;
 		if (!ReadOnly) {
-			back = MixColorBasedOnMouseState(this, BackgroundColor, new(0, 1.1f, 2.3f, 1f), new(0, 1.2f, 0.6f, 1f));
+			back = MixColorBasedOnMouseState(this, GetBgColor(), new(0, 1.1f, 2.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		}
 		else {
-			back = BackgroundColor;
+			back = GetBgColor();
 		}
 
 		Graphics2D.SetDrawColor(back);
@@ -814,7 +814,7 @@ public class Textbox : Label
 			DrawCaret(width, height);
 	}
 	public override void PaintBorder(float width, float height) {
-		Color fore = MixColorBasedOnMouseState(this, ForegroundColor, new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
+		Color fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		Graphics2D.SetDrawColor(fore);
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}

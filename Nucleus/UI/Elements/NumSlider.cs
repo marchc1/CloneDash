@@ -37,7 +37,7 @@ public class LabeledNumSlider : Panel, INumSlider
 		label.AutoSize = true;
 		label.Text = "Num";
 		label.BorderSize = 0;
-		label.BackgroundColor = Color.Blank;
+		label.SetBgColor(Color.Blank);
 		label.DockMargin = RectangleF.XYWH(0, 0, 16, 0);
 
 		numslider = new NumSlider(this);

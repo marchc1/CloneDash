@@ -34,13 +34,13 @@ public class TabView : Panel
 
 			foreach (var tab in Tabs) {
 				if (tab != activeTab) {
-					tab.Switcher.BackgroundColor = SWITCHER_INACTIVE;
+					tab.Switcher.SetBgColor(SWITCHER_INACTIVE);
 					tab.Panel.SetVisible(false);
 				}
 			}
 
 			if (activeTab != null) {
-				activeTab.Switcher.BackgroundColor = SWITCHER_ACTIVE;
+				activeTab.Switcher.SetBgColor(SWITCHER_ACTIVE);
 				activeTab.Panel.SetVisible(true);
 			}
 		}
@@ -79,7 +79,7 @@ public class TabView : Panel
 
 		TabContainer = new Panel(this);
 		TabContainer.Dock = Dock.Fill;
-		TabContainer.BackgroundColor = SWITCHER_ACTIVE;
+		TabContainer.SetBgColor(SWITCHER_ACTIVE);
 		TabContainer.BorderSize = 0;
 		TabContainer.DockMargin = RectangleF.TLRB(-4, 8, 8, 8);
 	}
@@ -99,7 +99,7 @@ public class TabView : Panel
 		// The switcher in TabSelectorContainer
 		Button switcher = new Button(TabSelectorContainer);
 		switcher.Dock = Dock.Left;
-		switcher.BackgroundColor = SWITCHER_INACTIVE;
+		switcher.SetBgColor(SWITCHER_INACTIVE);
 		switcher.TextPadding = new(4);
 		switcher.AutoSize = true;
 		switcher.BorderSize = 0;

@@ -120,11 +120,11 @@ public class NumberPickerCarousel : Element
 		int totalVisible = VisibleSideCount * 2 + 1;
 		float cellWidth = width / totalVisible;
 
-		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
 		float selectedX = VisibleSideCount * cellWidth + _scrollOffset;
-		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, 0, .4f));
+		Graphics2D.SetDrawColor(GetBgColor().Adjust(0, 0, .4f));
 		Graphics2D.DrawRectangle(selectedX, 0, cellWidth, height);
 
 		Span<char> text = this.text;
@@ -139,7 +139,7 @@ public class NumberPickerCarousel : Element
 
 			bool isSelected = offset == 0;
 			float fontSize = isSelected ? SelectedFontSize : UnselectedFontSize;
-			Color textCol = isSelected ? TextColor : ForegroundColor.Adjust(0, 0, .3f);
+			Color textCol = isSelected ? TextColor : GetFgColor().Adjust(0, 0, .3f);
 
 			numberValue.TryFormat(text, out int written);
 			var textSize = Graphics2D.GetTextSize(text[..written], Font, fontSize);
@@ -150,7 +150,7 @@ public class NumberPickerCarousel : Element
 			Graphics2D.DrawText(new Vector2F(tx, ty), text[..written], Font, fontSize);
 		}
 
-		Graphics2D.SetDrawColor(ForegroundColor);
+		Graphics2D.SetDrawColor(GetFgColor());
 		float divLeft = selectedX;
 		float divRight = selectedX + cellWidth;
 		float divPadY = height * 0.1f;
@@ -158,7 +158,7 @@ public class NumberPickerCarousel : Element
 		Graphics2D.DrawRectangle(divLeft - DividerThickness / 2f, divPadY, DividerThickness, height - divPadY * 2);
 		Graphics2D.DrawRectangle(divRight - DividerThickness / 2f, divPadY, DividerThickness, height - divPadY * 2);
 
-		Graphics2D.SetDrawColor(ForegroundColor);
+		Graphics2D.SetDrawColor(GetFgColor());
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}
 }

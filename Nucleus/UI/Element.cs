@@ -1,9 +1,5 @@
 ﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 
-using Microsoft.VisualBasic;
-using Newtonsoft.Json.Linq;
-
-using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
@@ -122,12 +118,14 @@ public class Element : IValidatable
 	private bool MouseInput;
 	private bool Visible;
 
+	Color backgroundColor = DefaultBackgroundColor;
+	Color foregroundColor = DefaultForegroundColor;
+
 	// properties with backing (should be fields)
 
 	public float BorderSize { get; set; } = 2;
 	public float Roundness { get; set; } = 0;
-	public Color BackgroundColor { get; set; } = DefaultBackgroundColor;
-	public Color ForegroundColor { get; set; } = DefaultForegroundColor;
+
 	public Color TextColor { get; set; } = DefaultTextColor;
 	public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
 	public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
@@ -410,6 +408,11 @@ public class Element : IValidatable
 		}
 		return MouseInput;
 	}
+
+	public virtual Color GetBgColor() => backgroundColor;
+	public virtual void SetBgColor(Color value) => backgroundColor = value;
+	public virtual Color GetFgColor() => foregroundColor;
+	public virtual void SetFgColor(Color value) => foregroundColor = value;
 
 	public event Action<Element>? Removed;
 
@@ -1286,8 +1289,8 @@ public class Element : IValidatable
 	}
 
 	public virtual void ApplySchemeSettings(IScheme scheme) {
-		BackgroundColor = scheme.GetColor("Nucleus.Background");
-		ForegroundColor = scheme.GetColor("Nucleus.Border");
+		SetBgColor(scheme.GetColor("Nucleus.Background"));
+		SetFgColor(scheme.GetColor("Nucleus.Border"));
 		TextColor = scheme.GetColor("Nucleus.Text");
 
 		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
@@ -1308,7 +1311,7 @@ public class Element : IValidatable
 	protected virtual void PreLayoutChildren() { }
 
 	public virtual void PaintBackground(float width, float height) {
-		Color back = BackgroundColor, fore = ForegroundColor;
+		Color back = GetBgColor(), fore = GetFgColor();
 		float borderSize = BorderSize, roundness = Roundness;
 
 		Graphics2D.SetDrawColor(back);
@@ -1328,7 +1331,7 @@ public class Element : IValidatable
 
 	}
 	public virtual void PaintBorder(float width, float height) {
-		Color back = BackgroundColor, fore = ForegroundColor;
+		Color back = GetBgColor(), fore = GetFgColor();
 		float borderSize = BorderSize, roundness = Roundness;
 
 		if (roundness <= 0) {
