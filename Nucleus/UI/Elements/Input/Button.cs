@@ -1,11 +1,12 @@
 ﻿using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
-
+using Nucleus.UI.Elements;
 using Raylib_cs;
 
 using System.Numerics;
@@ -18,11 +19,16 @@ public delegate void ButtonActionFn(Button button, ButtonCode mouseButton);
 public class Button : Label
 {
 	public event ButtonActionFn? OnButtonClick;
+	UI.Elements.Image Image;
+
+	public ITexture? GetTexture() => Image.GetTexture();
+	public void SetTexture(ITexture? tex) => Image.SetTexture(tex);
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
 		SetBgColor(new Color(20, 25, 32, 220));
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
+		Image = new(this);
 	}
 	protected override void OnThink() {
 		if (IsHovered())

@@ -183,19 +183,7 @@ public class Element : IValidatable
 	public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
 	public KeybindSystem Keybinds { get; } = new();
-
-	public ITexture? Image { get; set; }
-	public ImageOrientation ImageOrientation { get; set; } = ImageOrientation.None;
-
-	public Vector2F ImageOffset { get; set; } = new(0);
-	public Vector2F ImagePadding { get; set; } = new(0);
-	public float ImageRotation { get; set; } = 0;
-	public bool ImageFlipX { get; set; } = false;
-	public bool ImageFlipY { get; set; } = false;
-
-	public bool ImageFollowsText { get; set; } = false;
-	public Color? ImageColor { get; set; } = null;
-	public bool ShouldDrawImage { get; set; } = true;
+	
 
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
@@ -1150,106 +1138,6 @@ public class Element : IValidatable
 		return ret;
 	}
 
-	public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null, Color? color = null) {
-		if (Image == null)
-			return;
-
-		var offset = Graphics2D.Offset + (pos ?? new Vector2F(0));
-		var bounds = RenderBounds;
-		if (size != null) {
-			bounds.W = size.Value.X;
-			bounds.H = size.Value.Y;
-		}
-
-		Rectangle sourceRect = new(0, 0, Image.Width, Image.Height);
-		Rectangle destRect = new(offset.X, offset.Y, Image.Width, Image.Height);
-		var scldiv2 = RenderBounds.Size / 2;
-
-		var width = RenderBounds.Size.W;
-		var height = RenderBounds.Size.H;
-
-		switch (ImageOrientation) {
-			case ImageOrientation.None:
-				destRect.X += pos?.X ?? 0;
-				destRect.Y += pos?.Y ?? 0;
-				destRect.Width = size?.X ?? destRect.Width;
-				destRect.Height = size?.Y ?? destRect.Height;
-				break;
-			case ImageOrientation.Centered:
-				var x = (bounds.Width / 2) - (Image.Width / 2);
-				var y = (bounds.Height / 2) - (Image.Height / 2);
-				destRect.X += x;
-				destRect.Y += y;
-				break;
-			case ImageOrientation.Stretch:
-				destRect.Width = width;
-				destRect.Height = height;
-				break;
-			case ImageOrientation.Zoom:
-				if (width <= height) { // Width is the bottleneck
-					var ratio = (float)Image.Height / Image.Width;
-					destRect.Width = width;
-					destRect.Height = width * ratio;
-					destRect.Y += (height / 2) - (width / 2);
-				}
-				else {
-					var ratio = (float)Image.Width / Image.Height;
-					destRect.Height = height;
-					destRect.Width = height * ratio;
-					destRect.X += (width / 2) - (height / 2);
-				}
-
-				break;
-			case ImageOrientation.Fit:
-				var clampWidth = Math.Clamp(width, 0, Image.Width);
-				var clampHeight = Math.Clamp(height, 0, Image.Height);
-				if (clampWidth <= clampHeight) { // Width is the bottleneck
-					var ratio = (float)Image.Height / Image.Width;
-					destRect.Width = clampWidth;
-					destRect.Height = clampWidth * ratio;
-					destRect.Y += (height / 2) - (width / 2);
-				}
-				else {
-					var ratio = (float)Image.Width / Image.Height;
-					destRect.Height = clampHeight;
-					destRect.Width = clampHeight * ratio;
-					destRect.X += (width / 2) - (height / 2);
-				}
-
-				break;
-		}
-
-		destRect.X += ImagePadding.X + ImageOffset.X;
-		destRect.Y += ImagePadding.Y + ImageOffset.Y;
-		destRect.Width -= ImagePadding.X * 2;
-		destRect.Height -= ImagePadding.Y * 2;
-
-		Color thisC = ImageColor ?? Color.White;
-
-		if (!IsMouseInputEnabled())
-			thisC = thisC.Adjust(0, 0, -.5f);
-
-		if (Image.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
-			sourceRect.Height *= -1;
-
-		if (ImageRotation != 0 || ImageFlipX || ImageFlipY) {
-			destRect.X += destRect.Width / 2;
-			destRect.Y += destRect.Height / 2;
-
-			if (ImageFlipX) {
-				sourceRect.X = sourceRect.Width;
-				sourceRect.Width *= -1;
-			}
-			if (ImageFlipY) {
-				sourceRect.Y = sourceRect.Height;
-				sourceRect.Height *= -1;
-			}
-
-			Raylib.DrawTexturePro((Texture)Image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, color ?? thisC);
-		}
-		else
-			Raylib.DrawTexturePro((Texture)Image, sourceRect, destRect, new(0, 0), ImageRotation, color ?? thisC);
-	}
 
 	// TODO: Get rid of this
 	// It is a backwards compatibility feature in the meantime
