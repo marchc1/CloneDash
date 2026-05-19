@@ -409,10 +409,11 @@ public class Element : IValidatable
 		return MouseInput;
 	}
 
-	public virtual Color GetBgColor() => backgroundColor;
-	public virtual void SetBgColor(Color value) => backgroundColor = value;
-	public virtual Color GetFgColor() => foregroundColor;
-	public virtual void SetFgColor(Color value) => foregroundColor = value;
+	// Real colors
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetBgColor() => backgroundColor;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetBgColor(Color value) => backgroundColor = value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetFgColor() => foregroundColor;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetFgColor(Color value) => foregroundColor = value;
 
 	public event Action<Element>? Removed;
 
@@ -1286,6 +1287,16 @@ public class Element : IValidatable
 		this.scheme = scheme;
 		if (scheme != null)
 			AddFlag(ElementFlags.NeedsSchemeUpdate);
+	}
+
+	/// <summary>
+	/// Allows flushing out fields
+	/// </summary>
+	/// <param name="prev"></param>
+	/// <param name="now"></param>
+	public virtual void OnSchemeChanged(IScheme? prev, IScheme now){
+		__mouseColorableHoverState = null;
+		__mouseColorableDepressState = null;
 	}
 
 	public virtual void ApplySchemeSettings(IScheme scheme) {

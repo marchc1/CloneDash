@@ -7,13 +7,12 @@ using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI.Elements;
-
+using Nucleus.Util;
 using Raylib_cs;
 
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace Nucleus.UI;
@@ -31,6 +30,26 @@ public struct ElementSolveState
 
 public class ElementSchemeSystem
 {
+	static Dictionary<UtlSymId_t, IScheme> Schemes = [];
+
+	public static IScheme? GetSchemeByName(ReadOnlySpan<char> name) {
+		UtlSymId_t nameSymbol = name.Hash();
+		if (Schemes.TryGetValue(nameSymbol, out IScheme? scheme))
+			return scheme;
+		return null;
+	}
+
+	public static IScheme? LoadScheme(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) {
+		ReadOnlySpan<char> name = Path.GetFileNameWithoutExtension(path);
+		UtlSymId_t nameSymbol = name.Hash();
+		if (Schemes.TryGetValue(nameSymbol, out IScheme? scheme))
+			return scheme;
+
+		SchemeSettings newScheme = new(path, pathID);
+		Schemes[nameSymbol] = newScheme;
+		return newScheme;
+	}
+
 	public void ApplyScheme(Element? element, ref ElementSolveState state, bool force = false) {
 		if (!IValidatable.IsValid(element)) return;
 
@@ -369,6 +388,7 @@ public class UserInterface : Element, IDisposable
 		SetPaintBorderEnabled(false);
 		SetPaintBackgroundEnabled(false);
 		SetPaintEnabled(false);
+		SetScheme(ElementSchemeSystem.LoadScheme("resource", "enginescheme.jsonc"));
 
 		Input.OnClick += Input_OnClick;
 	}

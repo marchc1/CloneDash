@@ -75,36 +75,56 @@ public class Button : Label
 
 	public bool DrawBackgroundWhenMouseIdle = true;
 
-	public static void ColorStateSetup(Button b, out Color back, out Color fore) {
-		var backpre = b.GetBgColor();
-		var forepre = b.GetFgColor();
+	// kinda a hack to get what we want here for hovering
+	Color painttimeBgColor;
+	Color painttimeFgColor;
+	bool switchToPaintTimeColors = false;
+	double lastRenderTime;
 
-		var canInput = b.IsMouseInputEnabled();
+	public override Color GetBgColor() => switchToPaintTimeColors ? painttimeBgColor :base.GetBgColor();
+	public override Color GetFgColor() => switchToPaintTimeColors ? painttimeFgColor : base.GetFgColor();
+	
 
-		if ((b.TriggeredWhenEnterPressed || b.Pulsing) && canInput) {
-			double val = ((Math.Sin(b.PulseTime * 6) + 1) / 2);
-			backpre = backpre.Adjust(0, 0, 1 + (val * 1.9));
-			forepre = forepre.Adjust(0, 0, 1 + (val * 0.1f));
-			if (!b.PulsePreservesAlpha)
-				backpre.A = (byte)(int)(float)Math.Clamp(backpre.A * val, byte.MinValue, byte.MaxValue);
+	public void ColorStateSetup(out Color back, out Color fore) {
+		if (lastRenderTime != globals.CurTime) {
+			lastRenderTime = globals.CurTime;
+			var backpre = GetBgColor();
+			var forepre = GetFgColor();
+
+			var canInput = IsMouseInputEnabled();
+
+			if ((TriggeredWhenEnterPressed || Pulsing) && canInput) {
+				double val = ((Math.Sin(PulseTime * 6) + 1) / 2);
+				backpre = backpre.Adjust(0, 0, 1 + (val * 1.9));
+				forepre = forepre.Adjust(0, 0, 1 + (val * 0.1f));
+				if (!PulsePreservesAlpha)
+					backpre.A = (byte)(int)(float)Math.Clamp(backpre.A * val, byte.MinValue, byte.MaxValue);
+			}
+
+			back = MixColorBasedOnMouseState(this, backpre, HoveredMultiplier, DepressedMultiplier);
+			fore = MixColorBasedOnMouseState(this, forepre, HoveredMultiplier, DepressedMultiplier);
+
+			if (!canInput) {
+				back = back.Adjust(0, 0, -0.5f);
+				fore = fore.Adjust(0, 0, -0.5f);
+			}
+
+			if (!DrawBackgroundWhenMouseIdle && !IsHovered() && !Pulsing) {
+				back.A = 0;
+				fore.A = 0;
+			}
+
+			painttimeBgColor = back;
+			painttimeFgColor = fore;
 		}
-
-		back = MixColorBasedOnMouseState(b, backpre, b.HoveredMultiplier, b.DepressedMultiplier);
-		fore = MixColorBasedOnMouseState(b, forepre, b.HoveredMultiplier, b.DepressedMultiplier);
-
-		if (!canInput) {
-			back = back.Adjust(0, 0, -0.5f);
-			fore = fore.Adjust(0, 0, -0.5f);
-		}
-
-		if (!b.DrawBackgroundWhenMouseIdle && !b.IsHovered() && !b.Pulsing) {
-			back.A = 0;
-			fore.A = 0;
+		else { // re-entrants in the current frame will use cached colors
+			back = painttimeBgColor;
+			fore = painttimeFgColor;
 		}
 	}
 
 	public override void Paint(float width, float height) {
-		ColorStateSetup(this, out var back, out var fore);
+		ColorStateSetup(out var back, out var fore);
 
 		Graphics2D.SetDrawColor(back);
 		if (DrawAsCircle) {
@@ -123,11 +143,12 @@ public class Button : Label
 		}
 
 		ImageDrawing(posOffset);
-
+		switchToPaintTimeColors = true;
 		base.Paint(width, height);
+		switchToPaintTimeColors = false;
 	}
 	public override void PaintBorder(float width, float height) {
-		ColorStateSetup(this, out var back, out var fore);
+		ColorStateSetup(out var back, out var fore);
 
 		if (BorderSize > 0) {
 			Graphics2D.SetDrawColor(fore);
@@ -136,8 +157,11 @@ public class Button : Label
 				var whd3 = new Vector2F(width / 3, width / 3);
 				Graphics2D.DrawCircleLines(whd2, whd3);
 			}
-			else
+			else {
+				switchToPaintTimeColors = true;
 				base.PaintBorder(width, height);
+				switchToPaintTimeColors = false;
+			}
 		}
 	}
 }

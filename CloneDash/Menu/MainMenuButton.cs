@@ -29,7 +29,7 @@ public class MainMenuButton : Button
 	}
 
 	public override void Paint(float width, float height) {
-		ColorStateSetup(this, out Color back, out Color fore);
+		ColorStateSetup(out Color back, out Color fore);
 
 		var decomposed = fore.Adjust(0, 0, 2555, false);
 
