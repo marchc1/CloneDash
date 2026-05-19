@@ -411,7 +411,6 @@ public class UserInterface : Element, IDisposable
 
 	public ref ElementSolveState ProduceSolveState() {
 		SolveState.EmbeddedPanel = this;
-		SolveState.Hovered = null;
 		return ref SolveState;
 	}
 
@@ -551,20 +550,21 @@ public class UserInterface : Element, IDisposable
 		return Elements.Remove(element);
 	}
 
-	public Element? GetHoveredElement() => SolveState.Hovered;
+	public Element? GetHoveredElement() => IValidatable.IsValid(SolveState.Hovered) ? SolveState.Hovered: null;
 	public Element? GetDepressedElement(ButtonCode? code = null) {
+		Element? ret = null;
 		if (code.HasValue) {
-			return SolveState.Depressed[(int)code.Value];
+			ret = SolveState.Depressed[(int)code.Value];
 		}
 		else {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
 				if (SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)] != null)
-					return SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
+					ret =  SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
 			}
 		}
-		return null;
+		return IValidatable.IsValid(ret) ? SolveState.Hovered : null;
 	}
-	public Element? GetKeyboardFocusedElement() => SolveState.KeyboardFocused;
+	public Element? GetKeyboardFocusedElement() => IValidatable.IsValid(SolveState.KeyboardFocused) ? SolveState.KeyboardFocused : null;
 
 	ulong keyboardFocusReentrantID = 0;
 
