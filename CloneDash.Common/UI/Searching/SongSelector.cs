@@ -308,6 +308,16 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (!IsKeyboardFocused())
 			KeyboardFocus();
 
+		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
+			DiscAnimationOffset.Update(0);
+			InvalidateLayout(); // loop for next frame
+		}
+		else if (DiscAnimationOffset.Out != 0) {
+			// set it to 0 and don't invalidate again after
+			DiscAnimationOffset.ResetTo(0);
+			InvalidateLayout();
+		}
+
 		FigureOutDisk();
 
 		float width = RenderBounds.W, height = RenderBounds.H;
@@ -316,11 +326,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.IsKeyboardFocused()) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
-			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA)) {
+			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA)) {
 				MoveLeft();
 				InvalidateLayout();
 			}
-			else if (keyboard.IsKeyDown(ButtonCode.KeyRight) || keyboard.IsKeyDown(ButtonCode.KeyD)) {
+			else if (keyboard.IsKeyDown(ButtonCode.KeyRight) || keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD)) {
 				MoveRight();
 				InvalidateLayout();
 			}
@@ -343,7 +353,10 @@ public class SongSelector : Panel, IMainMenuPanel
 				var discWidth = GetDiscSize(width, disc);
 				float size = discWidth * (FlyAwaySOS.Out / 4 + 1) - DiscVibrate;
 				CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
-				disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
+				// DON'T do: disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
+				// DO: set Position/Size and let DoOriginAnchor handle center-origin
+				disc.Size = new(size, size);
+				disc.Position = new(x, y);
 			}
 
 
@@ -448,16 +461,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		if (info != null) {
 			CurrentTrackName.Text = info.Value.Name ?? "";
 			CurrentTrackAuthor.Text = info.Value.Author ?? "";
-		}
-
-		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
-			DiscAnimationOffset.Update(0);
-			InvalidateLayout(); // loop for next frame
-		}
-		else if (DiscAnimationOffset.Out != 0) {
-			// set it to 0 and don't invalidate again after
-			DiscAnimationOffset.ResetTo(0);
-			InvalidateLayout();
 		}
 	}
 
