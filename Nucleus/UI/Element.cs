@@ -353,14 +353,14 @@ public class Element : IValidatable
 	}
 	public Element(Element? parent) {
 		Initialize(0, 0, 32, 32);
-		SetParent(parent?.AddParent);
+		SetParent(parent);
 		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name) {
 		Initialize(0, 0, 32, 32);
 		SetName(name);
-		SetParent(parent?.AddParent);
+		SetParent(parent);
 		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
@@ -564,6 +564,7 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public Element? GetParent() => Parent;
 
 	public void SetParent(Element? p) {
+		p = p?.AddParent;
 		if (p == this)
 			return; // not valid at all
 
