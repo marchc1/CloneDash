@@ -1040,13 +1040,32 @@ public class Element : IValidatable
 
 	public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
-		e.__mouseColorableHoverState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
-		e.__mouseColorableDepressState ??= new SecondOrderSystem(4.1f, 0.5f, 0.94f, 0);
+		e.__mouseColorableHoverState ??= e.BuildHoveredSOS();
+		e.__mouseColorableDepressState ??= e.BuildDepressedSOS();
 		return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
 #else
 		return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
 #endif
 	}
+
+	private float GetSpecificSOSFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> keyName) {
+		Span<char> lookup = stackalloc char[prefix.Length + keyName.Length + 1];
+		prefix.CopyTo(lookup);
+		lookup[prefix.Length] = '.';
+		keyName.CopyTo(lookup[(prefix.Length + 1)..]);
+		return GetScheme()?.GetFloat(lookup) ?? 0;
+	}
+
+	private SecondOrderSystem BuildSpecificSOS(ReadOnlySpan<char> prefix) {
+		float naturalFrequency = GetSpecificSOSFloat(prefix, "NaturalFrequency");
+		float dampingCoefficient = GetSpecificSOSFloat(prefix, "DampingCoefficient");
+		float initialResponse = GetSpecificSOSFloat(prefix, "InitialResponse");
+		return new SecondOrderSystem(naturalFrequency, dampingCoefficient, initialResponse, 0);
+	}
+
+	private SecondOrderSystem BuildHoveredSOS() => BuildSpecificSOS("MouseHovered");
+	private SecondOrderSystem BuildDepressedSOS() => BuildSpecificSOS("MouseDepressed");
+
 	/// <summary>
 	/// This function expects HSVA in the format of hueAdditional, saturationMultiplied, valueMultiplied, alphaMultiplied
 	/// </summary>
