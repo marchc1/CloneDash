@@ -774,8 +774,8 @@ public class Textbox : Label
 	public override void Paint(float width, float height) {
 		ValidateLines();
 
-		SetBgColor(IsKeyboardFocused() ? new(20, 32, 25, 127) : new(20, 25, 32, 127));
-		SetFgColor(IsKeyboardFocused() ? new(85, 110, 95, 255) : new(85, 95, 110, 255));
+		SetBgColor(IsKeyboardFocused() ? new Color(20, 32, 25, 127) : new Color(20, 25, 32, 127));
+		SetFgColor(IsKeyboardFocused() ? new Color(85, 110, 95, 255) : new Color(85, 95, 110, 255));
 
 		Color back;
 		if (!ReadOnly) {

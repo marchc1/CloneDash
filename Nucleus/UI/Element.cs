@@ -211,7 +211,7 @@ public class Element : IValidatable
 		Anchor = Anchor.TopLeft;
 		Origin = Anchor.TopLeft;
 		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate | ElementFlags.NeedsRenderBoundsFlush;
-		flags |= ElementFlags.PaintBackgroundEnabled | ElementFlags.PaintBorderEnabled | ElementFlags.PaintEnabled;
+		flags |= ElementFlags.PaintEnabled;
 		flags |= ElementFlags.AllowChainKeybindingToParent;
 		flags |= ElementFlags.AllowChainInputToParent;
 		__tooltipText = null;
@@ -449,6 +449,19 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetBgColor(Color value) => backgroundColor.SetUserValue(value);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetFgColor() => foregroundColor.Get();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetFgColor(Color value) => foregroundColor.SetUserValue(value);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBgColor(ReadOnlySpan<char> schemeColor) {
+		var scheme = GetScheme();
+		if (scheme == null) return;
+		SetBgColor(scheme.GetColor(schemeColor, backgroundColor.Get()));
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetFgColor(ReadOnlySpan<char> schemeColor) {
+		var scheme = GetScheme();
+		if (scheme == null) return;
+		SetFgColor(scheme.GetColor(schemeColor, foregroundColor.Get()));
+	}
 
 	public event Action<Element>? Removed;
 

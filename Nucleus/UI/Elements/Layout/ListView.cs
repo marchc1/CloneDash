@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Types;
 using Raylib_cs;
 
@@ -36,21 +37,21 @@ public class ListViewItem : Button
 		set => __isLVIVisible = value;
 	}
 	public ListViewItem(Element? parent) : base(parent) {
-		SetBgColor(new(0, 0, 0, 0));
-		SetFgColor(new(0, 0, 0, 0));
+		SetBgColor(new Color(0, 0, 0, 0));
+		SetFgColor(new Color(0, 0, 0, 0));
 		this.Clipping = false;
 	}
 
 	protected override void OnThink() {
 		if (Depressed) {
-			SetBgColor(new(30, 35, 45, 65));
+			SetBgColor(new Color(30, 35, 45, 65));
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
 		else if (IsHovered()) {
-			SetBgColor(new(200, 210, 230, 50));
+			SetBgColor(new Color(200, 210, 230, 50));
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 		}
 		else
-			SetBgColor(new(0, 0, 0, 0));
+			SetBgColor(new Color(0, 0, 0, 0));
 	}
 }

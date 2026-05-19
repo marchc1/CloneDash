@@ -2,6 +2,7 @@
 using CloneDash.Common;
 using Nucleus;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
@@ -115,7 +116,7 @@ public class CharacterPanel : Panel
 				ExpressionLabel.Size = textSize;
 				ExpressionLabel.SetVisible(true);
 				ExpressionLabel.DrawBackground = true;
-				ExpressionLabel.SetBgColor(new(10, 20, 25, (int)(alphaMult * 200)));
+				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
 				ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
 				ExpressionLabel.AutoSize = true;
 				ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);

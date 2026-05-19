@@ -10,6 +10,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -118,7 +119,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back = new(this);
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
-		back.SetBgColor(new(0, 0));
+		back.SetBgColor(new Color(0, 0));
 		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
 		back.ImageOrientation = ImageOrientation.Zoom;
 		back.Text = "";

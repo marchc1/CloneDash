@@ -1,13 +1,20 @@
 ﻿using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI.Elements;
+using System.Xml.Linq;
 
 namespace Nucleus.UI;
 
 public class ScrollPanel : Panel
 {
-	public class ScrollMainPanel(ScrollPanel parent, ReadOnlySpan<char> name = default) : Panel(parent, name)
+	public class ScrollMainPanel : Panel
 	{
+		ScrollPanel parent;
+		public ScrollMainPanel(ScrollPanel parent, ReadOnlySpan<char> name = default) : base(parent, name) {
+			this.parent = parent;
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+		}
 		public Dock? ChildDock;
 		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
@@ -90,9 +97,9 @@ public class ScrollPanel : Panel
 		VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 		HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
 
-		foreach (Element child in MainPanel.Children) 
+		foreach (Element child in MainPanel.Children)
 			child.SetVisible(ShouldItemBeVisible(child));
-		
+
 		MainPanel.ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
 	}
 	protected override void PostLayoutChild(Element element) {

@@ -20,7 +20,7 @@ public class Button : Label
 	public event ButtonActionFn? OnButtonClick;
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
-		SetBgColor(new(20, 25, 32, 220));
+		SetBgColor(new Color(20, 25, 32, 220));
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
 	}

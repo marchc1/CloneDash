@@ -84,7 +84,7 @@ public class StatisticsPanel : Panel
 		y += fs + 4;
 	}
 	public override void Paint(float width, float height) {
-		SetBgColor(new(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true)))));
+		SetBgColor(new Color(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true)))));
 		base.Paint(width, height);
 
 		Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));

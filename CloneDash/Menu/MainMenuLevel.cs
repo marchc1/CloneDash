@@ -302,7 +302,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 
 			var a = GetBgColor().A;
-			SetBgColor(new(GetBgColor().R, GetBgColor().G, GetBgColor().B, (int)(a * alpha)));
+			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, (int)(a * alpha)));
 			ChildRenderOffset = new(xOffset, 0);
 
 			base.Paint(w, h);
@@ -311,7 +311,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Graphics2D.SetDrawColor(TextColor);
 			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", Font, TextSize, Anchor.CenterRight);
 
-			SetBgColor(new(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
+			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
 		}
 
 		bool autoplayChart;
@@ -367,8 +367,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.Text = "";
 		back.ImageOrientation = ImageOrientation.Centered;
-		back.SetBgColor(new(0, 0));
-		back.SetFgColor(new(0, 0));
+		back.SetBgColor(new Color(0, 0));
+		back.SetFgColor(new Color(0, 0));
 		back.Size = new(106);
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
