@@ -39,7 +39,7 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Clicked;
 				case ButtonCode.Mouse5: return Mouse5Clicked;
 			}
-			throw new NotImplementedException("No Clicked handler for ButtonCode " + button);
+			return false;
 		}
 
 		public bool Held(ButtonCode button) {
@@ -50,7 +50,7 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Held;
 				case ButtonCode.Mouse5: return Mouse5Held;
 			}
-			throw new NotImplementedException("No Held handler for ButtonCode " + button);
+			return false;
 		}
 
 		public bool Released(ButtonCode button) {
@@ -61,7 +61,7 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Released;
 				case ButtonCode.Mouse5: return Mouse5Released;
 			}
-			throw new NotImplementedException("No Released handler for ButtonCode " + button);
+			return false;
 		}
 
 		public void SetClicked(ButtonCode button, bool state) {
@@ -72,7 +72,6 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: Mouse4Clicked = state; break;
 				case ButtonCode.Mouse5: Mouse5Clicked = state; break;
 			}
-			throw new NotImplementedException("No Clicked handler for ButtonCode " + button);
 		}
 
 		public void SetHeld(ButtonCode button, bool state) {
@@ -83,7 +82,6 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: Mouse4Held = state; break;
 				case ButtonCode.Mouse5: Mouse5Held = state; break;
 			}
-			throw new NotImplementedException("No Held handler for ButtonCode " + button);
 		}
 
 		public void SetReleased(ButtonCode button, bool state) {
@@ -94,7 +92,6 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: Mouse4Released = state; break;
 				case ButtonCode.Mouse5: Mouse5Released = state; break;
 			}
-			throw new NotImplementedException("No Released handler for ButtonCode " + button);
 		}
 
 

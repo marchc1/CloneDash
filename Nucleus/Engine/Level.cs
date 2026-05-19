@@ -482,7 +482,7 @@ public abstract class Level : IValidatable
 			if (OnFileDropped(item, FrameState.Mouse.MousePos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = RootPanel.Hovered;
+			Element? e = RootPanel.GetHoveredElement();
 
 			while (e != null) {
 				if (e.FileDropped(item, FrameState.Mouse.MousePos))
@@ -501,7 +501,7 @@ public abstract class Level : IValidatable
 			if (OnTextDropped(item, FrameState.Mouse.MousePos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = RootPanel.Hovered; 
+			Element? e = RootPanel.GetHoveredElement(); 
 			while (e != null) {
 				if (e.TextDropped(item, FrameState.Mouse.MousePos))
 					break;
@@ -681,16 +681,16 @@ public abstract class Level : IValidatable
 
 			DebugOverlay.Render();
 
-			if (ui_hoverresult.GetBool() && RootPanel.Hovered != null) {
-				var uiPosition = RootPanel.Hovered.GetGlobalPosition();
-				var uiSize = RootPanel.Hovered.RenderBounds.Size;
+			if (ui_hoverresult.GetBool() && RootPanel.GetHoveredElement() != null) {
+				var uiPosition = RootPanel.GetHoveredElement()!.GetGlobalPosition();
+				var uiSize = RootPanel.GetHoveredElement()!.RenderBounds.Size;
 				Graphics2D.SetDrawColor(255, 255, 255);
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(uiPosition, uiSize), 1);
 
 				Vector2F drawpos = uiPosition + new Vector2F(0, uiSize.H);
 				drawpos.Y = Math.Clamp(drawpos.Y, 0, frameState.WindowHeight);
 
-				Graphics2D.DrawText(drawpos, $"Element: {RootPanel.Hovered}", "Consolas", 14, Anchor.BottomLeft);
+				Graphics2D.DrawText(drawpos, $"Element: {RootPanel.GetHoveredElement()}", "Consolas", 14, Anchor.BottomLeft);
 			}
 
 			Graphics2D.ResetDrawingOffset();
@@ -734,7 +734,7 @@ public abstract class Level : IValidatable
 				{
 					debugrecords.Write("UI Elements", RootPanel.GetAllElements().Length);
 					debugrecords.Write("UI Rebuilds", 0);
-					debugrecords.Write("UI State:", $"hovered {RootPanel.Hovered?.ToString() ?? "<null>"}, depressed {RootPanel.Depressed?.ToString() ?? "<null>"}, focused {RootPanel.Focused?.ToString() ?? "<null>"}, kb-focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}");
+					debugrecords.Write("UI State:", $"hovered {RootPanel.GetHoveredElement()?.ToString() ?? "<null>"}, depressed {RootPanel.GetDepressedElement()?.ToString() ?? "<null>"}, focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}, kb-focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}");
 				}
 				debugrecords.ExitScope();
 				debugrecords.Write("Engine - State");

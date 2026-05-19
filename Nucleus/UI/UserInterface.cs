@@ -52,6 +52,7 @@ public class ElementInputSystem
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
 		state.Hovered = SolveTraverse(workingElement, ref state, frameState, workingElement.RenderBounds, mousePos);
+		Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
 	private Element? SolveTraverse(Element? workingElement, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
@@ -92,6 +93,7 @@ public class ElementInputSystem
 						return subElementHovered;
 				}
 			}
+			return workingElement;
 		}
 
 		return null;
@@ -104,7 +106,7 @@ public class ElementInputSystem
 		Element? hovered = solveState.Hovered;
 		// Handle mouse clicking
 		if (IValidatable.IsValid(hovered)) {
-			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast; i++) {
 				if (mouse.Clicked(i) && hovered.IsMouseInputEnabled()) {
 					mouse.SetClicked(i, false); // disengage input from game
 					mouse.SetHeld(i, false); // disengage input from game
@@ -115,7 +117,7 @@ public class ElementInputSystem
 
 		// Handle mouse dragging
 		if (!mouse.MouseDelta.IsZero()) {
-			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast; i++) {
 				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
 				if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled())
 					depressed.MouseDragOccur(frameState, mouse.MouseDelta);
@@ -125,7 +127,7 @@ public class ElementInputSystem
 		// Handle mouse releases
 		// A click might invalidate via removing, so a second guard is done
 		if (IValidatable.IsValid(hovered)) {
-			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast; i++) {
 				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
 				if (mouse.Released(i)) {
 					if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled() && depressed.MouseReleaseOccur(frameState, i)) {
@@ -358,11 +360,6 @@ public class UserInterface : Element, IDisposable
 		SetPaintEnabled(false);
 	}
 
-
-	public Element? Focused;
-	public Element? Hovered;
-	public new Element? Depressed;
-
 	ElementSolveState SolveState;
 
 	readonly List<Element> Popups = [];
@@ -441,8 +438,8 @@ public class UserInterface : Element, IDisposable
 
 	public override string? TooltipText {
 		get {
-			if (Hovered != null && Hovered != this) {
-				return Hovered.TooltipText;
+			if (GetHoveredElement() != null && GetHoveredElement() != this) {
+				return GetHoveredElement()!.TooltipText;
 			}
 			return _tooltipText;
 		}
@@ -502,9 +499,6 @@ public class UserInterface : Element, IDisposable
 				this.Remove();
 				trashElement(this);
 				Popups.Clear();
-				Focused = null;
-				Hovered = null;
-				Depressed = null;
 			}
 
 			// TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -540,6 +534,18 @@ public class UserInterface : Element, IDisposable
 	}
 
 	public Element? GetHoveredElement() => SolveState.Hovered;
+	public Element? GetDepressedElement(ButtonCode? code = null) {
+		if (code.HasValue) {
+			return SolveState.Depressed[(int)code.Value];
+		}
+		else {
+			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast; i++) {
+				if (SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)] != null)
+					return SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
+			}
+		}
+		return null;
+	}
 	public Element? GetKeyboardFocusedElement() => SolveState.KeyboardFocused;
 
 	ulong keyboardFocusReentrantID = 0;

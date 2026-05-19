@@ -452,10 +452,9 @@ public class Element : IValidatable
 			Birth = DateTime.Now;
 		}
 
+		OnThink();
 		if (IsVisible())
 			ValidateLayout();
-
-		OnThink();
 	}
 
 	/// <summary>
@@ -928,7 +927,7 @@ public class Element : IValidatable
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsHovered() {
-		return MouseInput && UI.Hovered == this;
+		return MouseInput && UI.GetHoveredElement() == this;
 	}
 
 	internal bool MouseClickOccur(FrameState state, ButtonCode button) {

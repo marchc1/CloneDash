@@ -422,7 +422,7 @@ public class TextEditor : Panel
 	bool wasHovered = false;
 	private void Editor_Thinking(Element self) {
 		// The second part is a hack, but it allows mouse selecting autocomplete items.
-		if (UI.GetKeyboardFocusedElement() != self && (!IValidatable.IsValid(UI.Hovered) || !UI.Hovered.IsIndirectChildOf(self)))
+		if (UI.GetKeyboardFocusedElement() != self && (!IValidatable.IsValid(UI.GetHoveredElement()) || !UI.GetHoveredElement()!.IsIndirectChildOf(self)))
 			CloseAutocomplete();
 		if (self.IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
