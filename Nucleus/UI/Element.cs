@@ -614,6 +614,8 @@ public class Element : IValidatable
 			Dock dock = child.Dock;
 			if (dock == Dock.None)
 				continue;
+			if (!child.IsVisible())
+				return;
 
 			// We will modify the render bounds of the child, and mark its render bounds as NOT dirty after
 			// This is kind of a hack but its the cleanest way to do it probably, forcing the render bounds flush

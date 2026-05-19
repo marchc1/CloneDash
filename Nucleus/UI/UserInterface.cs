@@ -306,7 +306,7 @@ public class ElementPaintSystem
 		if (element == null) return;
 		var renderBounds = element.RenderBounds;
 		float w = renderBounds.Width, h = renderBounds.Height;
-		if (w <= 0 || h <= 0) return;
+		if ((w <= 0 || h <= 0) && element.Clipping) return;
 
 		if (element.Clipping)
 			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, renderBounds.Size));
@@ -320,7 +320,7 @@ public class ElementPaintSystem
 				ih -= (border * 2);
 				bool rounded = element.Roundness != 0;
 				Vector2F drawingOffset = new(border);
-				if (iw > 0 && ih > 0) {
+				if ((iw > 0 && ih > 0) || !element.Clipping) {
 					if (element.IsPaintBackgroundEnabled()) {
 						if (rounded) // kinda hacky but required for border/background right now. Fixme
 							element.PaintBackground(w, h);
