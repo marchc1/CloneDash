@@ -151,14 +151,20 @@ public class ElementInputSystem
 			}
 		}
 
-		Element? keyboardFocused = solveState.KeyboardFocused;
+		if (!TestKeyboard(solveState.EmbeddedPanel, ref keyboard))
+			TestKeyboard(solveState.KeyboardFocused, ref keyboard);
+	}
+
+	public bool TestKeyboard(Element? keyboardFocused, ref KeyboardState keyboard) {
 		KeyboardState emulated;
 		while (keyboardFocused != null) {
 			if (!keyboardFocused.IsKeyboardInputEnabled())
-				break;
+				return false;
 
 			emulated = keyboard;
 			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
+			if (keyboardFocused.Keybinds.TestKeybinds(in emulated))
+				return true;
 
 			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
 				int key = emulated.KeysThisFrame[i];
@@ -177,6 +183,8 @@ public class ElementInputSystem
 				if (keyboardFocused.TextInputOccur(in emulated, emulated.GetTextInputThisFrameAtIndex(i)))
 					keyboard.ConsumeTextAtIndex(i);
 		}
+
+		return false;
 	}
 }
 

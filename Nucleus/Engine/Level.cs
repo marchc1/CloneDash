@@ -846,7 +846,7 @@ public abstract class Level : IValidatable
 	}
 
 	internal void RunKeybinds() {
-		Keybinds.TestKeybinds(FrameState.Keyboard);
+		Keybinds.TestKeybinds(in FrameState.Keyboard);
 	}
 
 	static readonly char[] formatconvs = new char[256];

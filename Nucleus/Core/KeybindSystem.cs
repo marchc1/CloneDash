@@ -22,7 +22,7 @@ namespace Nucleus.Core
 			return ret;
 		}
 
-		public bool TestKeybinds(KeyboardState state) {
+		public bool TestKeybinds(in KeyboardState state) {
 			bool ranKeybinds = false;
 
 			foreach (var keybindFinal in FinalKeybindAssociation) {
