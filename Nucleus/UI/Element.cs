@@ -1281,16 +1281,7 @@ public class Element : IValidatable
 
 
 	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
-		if (IsPassthru())
-			return false;
-
-		var containsPoint = bounds.ContainsPoint(mousePos);
-		if (containsPoint && IValidatable.IsValid(Parent)) {
-			var scissor = RectangleF.FromPosAndSize(Parent.GetGlobalPosition() - Parent.ChildRenderOffset, Parent.RenderBounds.Size);
-			return scissor.ContainsPoint(mousePos);
-		}
-
-		return containsPoint;
+		return bounds.ContainsPoint(mousePos);
 	}
 
 
