@@ -522,7 +522,7 @@ public class Element : IValidatable
 		// Detach ourselves from the current parent
 		if (Parent != null) {
 			Parent.Children.Remove(this);
-			p.InvalidateLayout();
+			p?.InvalidateLayout();
 		}
 
 		// Set up fields from the new parent
@@ -588,10 +588,20 @@ public class Element : IValidatable
 	private void Layout() {
 		// Flush render bounds if we need that
 		FlushRenderBounds();
+		DoOriginAnchor();
 		// Perform the internal layout based on our size
 		PerformLayout(__renderbounds.W, __renderbounds.H);
 		// Perform child docking
 		DoChildDocking();
+	}
+
+	private void DoOriginAnchor() {
+		Element? parent = GetParent();
+		if (IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
+			var np = Origin.CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
+			var npO = Anchor.CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
+			__renderbounds.Pos = npO + np;
+		}
 	}
 
 	private void DoChildDocking() {
@@ -1195,10 +1205,10 @@ public class Element : IValidatable
 	/// <returns></returns>
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
-	public IScheme? GetScheme(){
+	public IScheme? GetScheme() {
 		return scheme;
 	}
-	public void SetScheme(IScheme? scheme){
+	public void SetScheme(IScheme? scheme) {
 		if (this.scheme == scheme) return;
 
 		this.scheme = scheme;
@@ -1305,9 +1315,9 @@ public class Element : IValidatable
 	protected virtual bool TextInput(in KeyboardState keyboardState, string text) => false;
 
 	internal void PerformApplySchemeSettings() {
-		if(HasFlag(ElementFlags.NeedsSchemeUpdate)){
+		if (HasFlag(ElementFlags.NeedsSchemeUpdate)) {
 			IScheme? scheme = GetScheme();
-			if(scheme != null){
+			if (scheme != null) {
 				ApplySchemeSettings(scheme);
 			}
 		}
