@@ -1,5 +1,6 @@
 ﻿using Nucleus.Common.Types;
 using Nucleus.Common.UI;
+using Nucleus.Engine;
 using Nucleus.Util;
 using System.Text.Json;
 
@@ -13,10 +14,33 @@ public class SchemeSettings : IScheme
 	readonly Dictionary<UtlSymId_t, SchemeSettingCustomFont> CustomFonts = [];
 
 	public SchemeSettings(ReadOnlySpan<char> filepath, ReadOnlySpan<char> pathID = "resource") {
+		ParseFile(filepath, pathID);
+	}
+
+	void ParseFile(ReadOnlySpan<char> filepath, ReadOnlySpan<char> pathID) {
+		if (Path.GetExtension(filepath).IsEmpty) {
+			// Make it default to jsonc
+			filepath = $"{filepath}.jsonc";
+		}
+
 		var text = filesystem.ReadAllText(pathID, filepath) ?? "{}";
 		var root = JsonDocument.Parse(text, new JsonDocumentOptions {
 			CommentHandling = JsonCommentHandling.Skip
 		}).RootElement;
+
+		if (root.TryGetProperty("parent", out JsonElement parent)) {
+			ReadOnlySpan<char> parentName = parent.GetString();
+			if (!parentName.IsEmpty) {
+				var colonIdx = parentName.IndexOf('/');
+				if (colonIdx != -1) {
+					ReadOnlySpan<char> parentPathID = parentName[..colonIdx], parentPath = parentName[(colonIdx + 1)..];
+					ParseFile(parentPath, parentPathID);
+				}
+				else {
+					ParseFile(parentName, "resource");
+				}
+			}
+		}
 
 		if (root.TryGetProperty("basesettings", out var baseSettings)) {
 			foreach (var prop in baseSettings.EnumerateObject()) {
@@ -58,7 +82,6 @@ public class SchemeSettings : IScheme
 
 		ResolveReferences();
 	}
-
 	void ResolveReferences() {
 		var keys = new List<UtlSymId_t>(BaseSettings.Keys);
 		foreach (var key in keys) {
@@ -252,22 +275,22 @@ public class SchemeSettings : IScheme
 		return true;
 	}
 
-	public ReadOnlySpan<char> GetString(ReadOnlySpan<char> key)
+	public ReadOnlySpan<char> GetString(ReadOnlySpan<char> key, ReadOnlySpan<char> defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.String
 			: null;
 
-	public int GetInt(ReadOnlySpan<char> key)
+	public int GetInt(ReadOnlySpan<char> key, int defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.Integer
 			: 0;
 
-	public float GetFloat(ReadOnlySpan<char> key)
+	public float GetFloat(ReadOnlySpan<char> key, float defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.Float
 			: 0;
 
-	public Color GetColor(ReadOnlySpan<char> key)
+	public Color GetColor(ReadOnlySpan<char> key, Color defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.Color
 			: Colors.TryGetValue(new UtlSymbol(key), out var value2)

@@ -70,9 +70,9 @@ public readonly struct SchemeSettingCustomFont
 
 public interface IScheme
 {
-	ReadOnlySpan<char> GetString(ReadOnlySpan<char> key);
-	int GetInt(ReadOnlySpan<char> key);
-	float GetFloat(ReadOnlySpan<char> key);
-	Color GetColor(ReadOnlySpan<char> key);
+	ReadOnlySpan<char> GetString(ReadOnlySpan<char> key, ReadOnlySpan<char> defaultValue = default);
+	int GetInt(ReadOnlySpan<char> key, int defaultValue = default);
+	float GetFloat(ReadOnlySpan<char> key, float defaultValue = default);
+	Color GetColor(ReadOnlySpan<char> key, Color defaultValue = default);
 	SchemeSettingFontStyle GetFontStyle(ReadOnlySpan<char> key);
 }
