@@ -57,6 +57,44 @@ public enum ElementFlags : uint
 	NeedsRenderBoundsFlush = 1 << 15
 }
 
+public struct SchemeableSetting<T>
+{
+	public T SchemeValue;
+	public T UserValue;
+	public bool HasUserValue;
+	public static SchemeableSetting<T> Default(in T value) => new() { SchemeValue = value };
+}
+
+public static class SchemeableSettingHelpers
+{
+	extension<T>(ref SchemeableSetting<T> schemeable)
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public ref T Get() {
+			if (schemeable.HasUserValue)
+				return ref schemeable.UserValue;
+			else
+				return ref schemeable.SchemeValue;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void SetUserValue(in T? value) {
+			if (value != null) {
+				schemeable.HasUserValue = true;
+				schemeable.UserValue = value;
+			}
+			else {
+				schemeable.HasUserValue = false;
+				schemeable.UserValue = default!;
+			}
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void SetSchemeValue(in T value) {
+			schemeable.SchemeValue = value;
+		}
+	}
+}
+
 public class Element : IValidatable
 {
 	public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
@@ -113,14 +151,14 @@ public class Element : IValidatable
 
 	private string __text = "Panel";
 	private string? __tooltipText = null;
-	private float __textSize = 18;
+	private SchemeableSetting<float> __textSize = SchemeableSetting<float>.Default(18);
 
 	private bool KbInput;
 	private bool MouseInput;
 	private bool Visible;
 
-	Color backgroundColor = DefaultBackgroundColor;
-	Color foregroundColor = DefaultForegroundColor;
+	SchemeableSetting<Color> backgroundColor = SchemeableSetting<Color>.Default(DefaultBackgroundColor);
+	SchemeableSetting<Color> foregroundColor = SchemeableSetting<Color>.Default(DefaultForegroundColor);
 
 	// properties with backing (should be fields)
 
@@ -233,9 +271,9 @@ public class Element : IValidatable
 		}
 	}
 
-	public static readonly Color DefaultBackgroundColor = new(20, 25, 32, 127);
-	public static readonly Color DefaultForegroundColor = new(85, 95, 110, 255);
-	public static readonly Color DefaultTextColor = new(230, 236, 255, 255);
+	public static readonly Color DefaultBackgroundColor = new(0, 0, 0, 255);
+	public static readonly Color DefaultForegroundColor = new(155, 155, 155, 255);
+	public static readonly Color DefaultTextColor = new(255, 255, 255, 255);
 
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
@@ -323,12 +361,14 @@ public class Element : IValidatable
 	public Element(Element? parent) {
 		Initialize(0, 0, 32, 32);
 		SetParent(parent?.AddParent);
+		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name) {
 		Initialize(0, 0, 32, 32);
 		SetName(name);
 		SetParent(parent?.AddParent);
+		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name, IScheme? scheme) {
@@ -336,6 +376,7 @@ public class Element : IValidatable
 		SetName(name);
 		SetParent(parent?.AddParent);
 		SetScheme(scheme);
+		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
 
@@ -411,10 +452,10 @@ public class Element : IValidatable
 	}
 
 	// Real colors
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetBgColor() => backgroundColor;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetBgColor(Color value) => backgroundColor = value;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetFgColor() => foregroundColor;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetFgColor(Color value) => foregroundColor = value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetBgColor() => backgroundColor.Get();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetBgColor(Color value) => backgroundColor.SetUserValue(value);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetFgColor() => foregroundColor.Get();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetFgColor(Color value) => foregroundColor.SetUserValue(value);
 
 	public event Action<Element>? Removed;
 
@@ -926,13 +967,13 @@ public class Element : IValidatable
 	public float TextSize {
 		get {
 			if (!DynamicallySized)
-				return __textSize;
+				return __textSize.Get();
 
 			var heightRatio = GetReferenceSize(DynamicTextSizeReference);
-			return Math.Clamp(__textSize * heightRatio, 8, 160);
+			return Math.Clamp(__textSize.Get() * heightRatio, 8, 160);
 		}
 		set {
-			__textSize = value;
+			__textSize.SetUserValue(value);
 		}
 	}
 
@@ -1299,8 +1340,8 @@ public class Element : IValidatable
 	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
 
 	public IScheme? GetScheme() {
-		//return scheme ?? GetParent()?.GetScheme();
-		return scheme;
+		return scheme ?? GetParent()?.GetScheme();
+		//return scheme;
 	}
 	public void SetScheme(ReadOnlySpan<char> scheme) => SetScheme(ElementSchemeSystem.GetSchemeByName(scheme));
 	public void SetScheme(IScheme? scheme) {
@@ -1413,13 +1454,12 @@ public class Element : IValidatable
 	protected virtual bool TextInput(in KeyboardState keyboardState, string text) => false;
 
 	internal void PerformApplySchemeSettings() {
-		IScheme? current = GetScheme(); 
+		IScheme? current = GetScheme();
 
-		// Recursive descent of schemes, but this overrides custom colors... hmn
-		// if (current != lastAppliedScheme) {
-		// 	AddFlag(ElementFlags.NeedsSchemeUpdate);
-		// 	lastAppliedScheme = current;
-		// }
+		if (current != lastAppliedScheme) {
+			AddFlag(ElementFlags.NeedsSchemeUpdate);
+			lastAppliedScheme = current;
+		}
 
 		if (HasFlag(ElementFlags.NeedsSchemeUpdate) && current != null)
 			ApplySchemeSettings(current);
