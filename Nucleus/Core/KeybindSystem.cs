@@ -2,6 +2,7 @@
 using Nucleus.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace Nucleus.Core
 			return ret;
 		}
 
-		public bool TestKeybinds(ref KeyboardState state, bool wipeKeys = true) {
+		public bool TestKeybinds(ref KeyboardState state, [NotNullWhen(true)] out Keybind? ranKeybind) {
 			bool ranKeybinds = false;
 
 			foreach (var keybindFinal in FinalKeybindAssociation) {
@@ -34,12 +35,13 @@ namespace Nucleus.Core
 					if (keybindTest.Test(state)) {
 						ranKeybinds = true;
 						keybindTest.Bind?.Invoke();
-						keybindTest.WipeState(ref state);
+						ranKeybind = keybindTest;
 						return true;
 					}
 				}
 			}
 
+			ranKeybind = null;
 			return ranKeybinds;
 		}
 	}

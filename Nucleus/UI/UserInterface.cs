@@ -115,6 +115,8 @@ public class ElementInputSystem
 					mouse.SetHeld(i, false); // disengage input from game
 					solveState.Depressed[i - ButtonCode.MouseFirst] = hovered;
 				}
+				if (mouse.Clicked(i))
+					OnClick?.Invoke(hovered);
 			}
 		}
 
@@ -169,8 +171,10 @@ public class ElementInputSystem
 
 			emulated = keyboard;
 			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
-			if (keybindChainingAllowed && keyboardFocused.Keybinds.TestKeybinds(ref emulated))
+			if (keybindChainingAllowed && keyboardFocused.Keybinds.TestKeybinds(ref emulated, out Keybind? keybind)) {
+				keyboard.ConsumeFirstKeyPress(keybind.FinalKey);
 				return true;
+			}
 
 			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
 				int key = emulated.KeysThisFrame[i];
@@ -361,6 +365,13 @@ public class UserInterface : Element, IDisposable
 		SetPaintBorderEnabled(false);
 		SetPaintBackgroundEnabled(false);
 		SetPaintEnabled(false);
+
+		Input.OnClick += Input_OnClick;
+	}
+
+	private void Input_OnClick(Element? obj) {
+		if (obj != GetKeyboardFocusedElement())
+			SetKeyboardFocusedElement(null);
 	}
 
 	ElementSolveState SolveState;
@@ -562,6 +573,7 @@ public class UserInterface : Element, IDisposable
 				return false;
 		}
 
+		EngineCore.Window.StopTextInput();
 		if (element == null) {
 			SolveState.KeyboardFocused = null;
 			return true;
@@ -575,7 +587,7 @@ public class UserInterface : Element, IDisposable
 						  // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
 						  // the result to not immediately override it. Although you should just use the ref element if you can. 
 						  // (or maybe we should just have the re-entrant check and nix the ref... todo)
-
+		EngineCore.Window.StartTextInput();
 		SolveState.KeyboardFocused = element;
 		return true;
 	}
