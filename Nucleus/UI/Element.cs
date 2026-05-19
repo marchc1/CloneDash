@@ -218,6 +218,8 @@ public class Element : IValidatable
 				return;
 
 			_size = value;
+			if (_dock != Dock.None)
+				GetParent()?.InvalidateLayout();
 			InvalidateLayout();
 		}
 	}
@@ -559,7 +561,8 @@ public class Element : IValidatable
 	/// <param name="immediate"></param>
 	public void InvalidateLayout() {
 		AddFlag(ElementFlags.NeedsLayout);
-		AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+		if (_dock == Dock.None)
+			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
 	public void MarkRenderBoundsAsDirty() {
@@ -568,8 +571,6 @@ public class Element : IValidatable
 
 	public void FlushRenderBounds() {
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
-			return;
-		if (_dock != Dock.None)
 			return;
 		__renderbounds.X = _position.X;
 		__renderbounds.Y = _position.Y;
