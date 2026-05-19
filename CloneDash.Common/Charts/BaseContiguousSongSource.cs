@@ -110,14 +110,17 @@ public class BaseContiguousSongSource : BaseSongSource, ISongSourceState
 			};
 
 		isBusy = true;
-		{
-			var delta = idx - pointer;
-			pointer = idx;
-			callback?.Invoke(new() {
-				OperationExecuted = true,
-				Movement = delta
-			});
-		}
+		int count = Songs.Count;
+		int delta = idx - pointer;
+		if (delta > count / 2)
+			delta -= count;
+		else if (delta < -count / 2)
+			delta += count;
+		pointer = idx;
+		callback?.Invoke(new() {
+			OperationExecuted = true,
+			Movement = delta
+		});
 		isBusy = false;
 
 		return new ChartSongSourceMoveInit {
