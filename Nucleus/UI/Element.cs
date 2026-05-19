@@ -1048,17 +1048,17 @@ public class Element : IValidatable
 #endif
 	}
 
-	private float GetSpecificSOSFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> keyName) {
+	private float GetSpecificSOSFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> keyName, float def = 0) {
 		Span<char> lookup = stackalloc char[prefix.Length + keyName.Length + 1];
 		prefix.CopyTo(lookup);
 		lookup[prefix.Length] = '.';
 		keyName.CopyTo(lookup[(prefix.Length + 1)..]);
-		return GetScheme()?.GetFloat(lookup) ?? 0;
+		return GetScheme()?.GetFloat(lookup) ?? def;
 	}
 
 	private SecondOrderSystem BuildSpecificSOS(ReadOnlySpan<char> prefix) {
-		float naturalFrequency = GetSpecificSOSFloat(prefix, "NaturalFrequency");
-		float dampingCoefficient = GetSpecificSOSFloat(prefix, "DampingCoefficient");
+		float naturalFrequency = GetSpecificSOSFloat(prefix, "NaturalFrequency", 100f);
+		float dampingCoefficient = GetSpecificSOSFloat(prefix, "DampingCoefficient", 1);
 		float initialResponse = GetSpecificSOSFloat(prefix, "InitialResponse");
 		return new SecondOrderSystem(naturalFrequency, dampingCoefficient, initialResponse, 0);
 	}
@@ -1300,6 +1300,7 @@ public class Element : IValidatable
 	public IScheme? GetScheme() {
 		return scheme;
 	}
+	public void SetScheme(ReadOnlySpan<char> scheme) => SetScheme(ElementSchemeSystem.GetSchemeByName(scheme));
 	public void SetScheme(IScheme? scheme) {
 		if (this.scheme == scheme) return;
 
@@ -1326,6 +1327,8 @@ public class Element : IValidatable
 		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
 		Font = fontStyle.Name;
 		TextSize = fontStyle.Tall;
+
+		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}
 
 	// Virtual overrides

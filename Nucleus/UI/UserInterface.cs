@@ -54,9 +54,9 @@ public class ElementSchemeSystem
 		if (!IValidatable.IsValid(element)) return;
 
 		foreach (var child in element.GetChildren())
-			if (child.IsVisible() || force)
+			if (child.IsVisible() || force) 
 				ApplyScheme(child, ref state);
-
+			
 		element.PerformApplySchemeSettings();
 	}
 }
@@ -332,7 +332,7 @@ public class ElementPaintSystem
 		if (!IValidatable.IsValid(element)) return;
 		var renderBounds = element.RenderBounds;
 		float w = renderBounds.Width, h = renderBounds.Height;
-		if ((w <= 0 || h <= 0) && element.Clipping) 
+		if ((w <= 0 || h <= 0) && element.Clipping)
 			return;
 
 		if (element.Clipping)
@@ -570,7 +570,7 @@ public class UserInterface : Element, IDisposable
 		return Elements.Remove(element);
 	}
 
-	public Element? GetHoveredElement() => IValidatable.IsValid(SolveState.Hovered) ? SolveState.Hovered: null;
+	public Element? GetHoveredElement() => IValidatable.IsValid(SolveState.Hovered) ? SolveState.Hovered : null;
 	public Element? GetDepressedElement(ButtonCode? code = null) {
 		Element? ret = null;
 		if (code.HasValue) {
@@ -579,7 +579,7 @@ public class UserInterface : Element, IDisposable
 		else {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
 				if (SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)] != null)
-					ret =  SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
+					ret = SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
 			}
 		}
 		return IValidatable.IsValid(ret) ? SolveState.Hovered : null;
