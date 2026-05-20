@@ -129,8 +129,7 @@ public class Button : Label
 			fore = painttimeFgColor;
 		}
 	}
-
-	public override void Paint(float width, float height) {
+	public override void PaintBackground(float width, float height) {
 		ColorStateSetup(out var back, out var fore);
 
 		Graphics2D.SetDrawColor(back);
@@ -142,9 +141,8 @@ public class Button : Label
 		else
 			Graphics2D.DrawRectangle(0, 0, width, height);
 
-		Vector2F posOffset = new(0);
-
-		Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
+	}
+	public override void Paint(float width, float height) {
 		switchToPaintTimeColors = true;
 		base.Paint(width, height);
 		switchToPaintTimeColors = false;

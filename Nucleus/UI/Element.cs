@@ -183,7 +183,7 @@ public class Element : IValidatable
 	public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
 
 	public KeybindSystem Keybinds { get; } = new();
-	
+
 
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
@@ -260,7 +260,7 @@ public class Element : IValidatable
 	public static readonly Color DefaultForegroundColor = new(155, 155, 155, 255);
 	public static readonly Color DefaultTextColor = new(255, 255, 255, 255);
 	public static readonly float DefaultTextSize = 18;
-	
+
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
 	/// </summary>
@@ -327,10 +327,7 @@ public class Element : IValidatable
 		child.AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		child.FlushRenderBounds();
 		RectangleF before = child.RenderBounds;
-		RectangleF rounded = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
-		child.__renderbounds = rounded;
-		child._position = rounded.Pos;
-		child._size = rounded.Size;
+		child.__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
 		if (before != child.__renderbounds)
 			child.AddFlag(ElementFlags.NeedsLayout);
 		child.RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
@@ -614,6 +611,9 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.NeedsLayout);
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+		foreach (var child in Children)
+			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft)
+				child.InvalidateLayout();
 	}
 
 	public void MarkRenderBoundsAsDirty() {
@@ -632,7 +632,7 @@ public class Element : IValidatable
 		__renderbounds.W = layoutSize.W;
 		__renderbounds.H = layoutSize.H;
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
-
+		LastLayoutTime = globals.CurTime;
 	}
 
 	public void ValidateLayout() {

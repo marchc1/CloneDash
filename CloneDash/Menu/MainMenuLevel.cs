@@ -296,8 +296,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			Position = new(levelSelector.RenderBounds.W / 4f, 0);
+			Position = levelSelector.RenderBounds.Size / 2;
+			Position -= RenderBounds.Size / 2;
+			Position += new Vector2F(levelSelector.RenderBounds.W / 4f, 0);
 			Size = new(256, height);
+		}
+
+		protected override void PerformLayout(float width, float height) {
+			base.PerformLayout(width, height);
 		}
 
 		internal void UpdateHeight(int v) {
@@ -404,9 +410,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		difficulties.SetPaintBorderEnabled(false);
 		difficulties.SetPaintBackgroundEnabled(false);
 		difficulties.Direction = Directional180.Vertical;
-		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.FitToOppositeDirection;
-		difficulties.Anchor = Anchor.Center;
-		difficulties.Origin = Anchor.Center;
+		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 		List<LevelSelectorSelectDifficultyButton> btns = [];
 		foreach (var chart in song.GetCharts()) {
@@ -483,7 +487,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		LevelSelectorSelectDifficultyButton play = new(levelSelector, difficultyName, metadata);
 		play.Size = new(64);
-		play.Dock = Dock.Bottom;
+		play.DockMargin = RectangleF.TLRB(8);
 
 		SongLabel mapper = new SongLabel(play);
 		mapper.SetAutoSize(true);
