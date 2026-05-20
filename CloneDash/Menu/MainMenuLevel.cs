@@ -313,13 +313,25 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	class LevelSelectorSelectDifficultyButton(Element parent, string difficultyName, SongChartMetadata metadata) : Button(parent)
 	{
-		public override void Paint(float w, float h) {
+		public override void PaintBackground(float w, float h) {
 			var life = Lifetime - (offset * .15f);
 			var alpha = (float)(NMath.Ease.InOutQuad(Math.Clamp(life * 2.5f, 0, 1)));
-			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 
-			var a = GetBgColor().A;
-			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, (int)(a * alpha)));
+			ColorStateSetup(out var back, out var fore);
+			back.A = (byte)(int)Math.Clamp(back.A * alpha, 0, 255);
+
+			Graphics2D.SetDrawColor(back);
+			Graphics2D.DrawRectangle(0, 0, w, h);
+
+			if (BorderSize > 0) {
+				fore.A = (byte)(int)Math.Clamp(fore.A * alpha, 0, 255);
+				Graphics2D.SetDrawColor(fore);
+				Graphics2D.DrawRectangleOutline(0, 0, w, h, BorderSize);
+			}
+		}
+		public override void Paint(float w, float h) {
+			var life = Lifetime - (offset * .15f);
+			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
 			ChildRenderOffset = new(xOffset, 0);
 
 			base.Paint(w, h);
@@ -327,8 +339,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
 			Graphics2D.SetDrawColor(GetTextColor());
 			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -h * 0.25f), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
-
-			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
 		}
 
 		bool autoplayChart;
@@ -510,7 +520,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		play.SetTextSize(28);
 
 		play.BorderSize = 2;
-		play.SetPaintBackgroundEnabled(false);
+		play.SetPaintBackgroundEnabled(true);
 
 		play.OnButtonClick += delegate (Button self, ButtonCode button) {
 			play.RunFunction(onClick);

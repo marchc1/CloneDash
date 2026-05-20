@@ -508,21 +508,21 @@ public class Textbox : Label
 		FireTextChanged(old);
 	}
 
-	protected override bool TextInput(in KeyboardState keyboardState, string text) {
-		var oldText = text;
+	protected override bool TextInput(in KeyboardState keyboardState, string inputText) {
+		var oldText = this.text;
 
 		PushUndo();
 		if (Caret.HasSelection)
-			SetText(Caret.DeleteSelection(text));
+			SetText(Caret.DeleteSelection(this.text));
 
-		if (MaxLength > 0 && text.Length >= MaxLength) {
+		if (MaxLength > 0 && this.text.Length >= MaxLength) {
 			FireTextChanged(oldText);
 			return true;
 		}
 
 		// todo: MaxLength handling here...
-		SetText(text.Insert(Caret.Position, text));
-		Caret.MovePosition(text, text.Length);
+		SetText(this.text.Insert(Caret.Position, inputText));
+		Caret.MovePosition(this.text, inputText.Length);
 		Caret.ClearSelection();
 		FireTextChanged(oldText);
 		EnsureCaretVisible();

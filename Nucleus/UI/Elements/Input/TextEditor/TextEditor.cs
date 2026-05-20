@@ -921,7 +921,7 @@ public class TextEditor : Panel, ITextElement
 			col = Math.Clamp(col, 0, rowContent.Length);
 
 			if (col == rowContent.Length) {
-				if (row < Rows.Count) {
+				if (row + 1 < Rows.Count) {
 					var rest = Rows[row + 1];
 					if (rest == null) goto exitFunction;
 					Rows[row] = Rows[row] + rest;
@@ -930,19 +930,12 @@ public class TextEditor : Panel, ITextElement
 			}
 			else if (state.ControlDown) {
 				int endColC = GetSkipGroupRight(rowContent, col, SkipMode.KeyboardSkip) ?? throw new Exception();
-				int startColC = GetSkipGroupLeft(rowContent, endColC, SkipMode.KeyboardSkip) ?? throw new Exception();
-				Rows[row] = rowContent.Substring(0, Math.Clamp(col, 0, rowContent.Length)) + rowContent.Substring(startColC);
+				Rows[row] = rowContent.Substring(0, col) + rowContent.Substring(Math.Clamp(endColC, 0, rowContent.Length));
 				SetCaret(col, row);
 			}
 			else {
-				if (col > 3 && rowContent.Substring(col - 4, 4) == "    ") {
-					Rows[row] = rowContent.Substring(0, col - 4) + rowContent.Substring(col);
-					SetCaret(col - 4, row);
-				}
-				else {
-					Rows[row] = rowContent.Substring(0, col - 1) + rowContent.Substring(col);
-					SetCaret(col - 1, row);
-				}
+				Rows[row] = rowContent.Substring(0, col) + rowContent.Substring(col + 1);
+				SetCaret(col, row);
 			}
 
 			OnEdit();
@@ -1003,9 +996,11 @@ public class TextEditor : Panel, ITextElement
 
 	protected override void OnThink() {
 		base.OnThink();
-		VScrollbar.Scroll = TopRow;
-		VScrollbar.Update(new(0, Rows.Count), new(0, MaxVisibleRows));
-		VScrollbar.ScrollDelta = 3;
+		if (MaxVisibleRows > 0) {
+			VScrollbar.Scroll = TopRow;
+			VScrollbar.Update(new(0, Rows.Count), new(0, MaxVisibleRows));
+			VScrollbar.ScrollDelta = 3;
+		}
 	}
 	private void Editor_MouseScrollEvent(Element self, FrameState state, Vector2F delta) {
 		var diff = TopRow - (delta.Y * 4);
@@ -1175,7 +1170,7 @@ public class TextEditor : Panel, ITextElement
 	public event TextEditorTextInputFn? OnTextInput;
 
 	public void SetScroll(float percent) {
-		if (MaxVisibleRows == -1) {
+		if (MaxVisibleRows <= 0) {
 			this.SetScrollS = percent;
 			return;
 		}
