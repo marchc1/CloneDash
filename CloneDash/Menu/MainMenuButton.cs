@@ -4,15 +4,21 @@ using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 namespace CloneDash.Menu;
 
 public class MainMenuButton : Button
 {
-	public MainMenuButton(Element? parent) : base(parent) {
+	Image image;
+	public MainMenuButton(Element? parent, string icon) : base(parent) {
 		SetTextAlignment(Anchor.CenterRight);
 		Clipping = false;
 		Roundness = 4;
+		image = new(this);
+		image.Anchor = Anchor.CenterLeft;
+		image.Origin = Anchor.CenterLeft;
+		image.SetTexture(Level.Textures.LoadTextureFromFile(icon));
 	}
 
 	public string SubText;
@@ -26,6 +32,13 @@ public class MainMenuButton : Button
 		base.OnThink();
 		ChildRenderOffset = new(sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0);
 	}
+
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		image.Size = new(height, height);
+	}
+
 
 	public override void Paint(float width, float height) {
 		ColorStateSetup(out Color back, out Color fore);

@@ -78,7 +78,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MainMenuLevel menu = Level.As<MainMenuLevel>();
 		var menuBtns = btns.Peek();
 
-		MainMenuButton btn = new(this);
+		MainMenuButton btn = new(this, icon);
 		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
 		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
 		btn.SetText(text);

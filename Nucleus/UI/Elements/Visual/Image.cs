@@ -27,6 +27,9 @@ public class Image : Element
 	public Image(Element? parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
 		SetPaintBorderEnabled(false);
+		// by default, images are just rendered
+		// (usually would be used on buttons etc in the past)
+		SetPassthru(true);
 	}
 
 	public ImageOrientation GetImageOrientation() => ImageOrientation;
