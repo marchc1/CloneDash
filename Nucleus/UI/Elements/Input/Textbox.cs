@@ -92,6 +92,7 @@ public class Textbox : Label
 	public ReadOnlySpan<char> GetHelperText() => HelperText;
 	public void SetHelperText(ReadOnlySpan<char> text) => HelperText = new(text);
 
+	Vector2F startClickPosition;
 	public int MaxLength { get; set; } = 0;
 	public bool IsPassword { get; set; } = false;
 	public int TabSize { get; set; } = 4;
@@ -132,6 +133,11 @@ public class Textbox : Label
 
 	public override void SetText(ReadOnlySpan<char> text) {
 		base.SetText(text);
+		SetText(text, true);
+	}
+
+	public void SetText(ReadOnlySpan<char> text, bool resetCaret) {
+		if(resetCaret)
 		Caret.Position = text.Length;
 		Caret.ClearSelection();
 		InvalidateLines();
@@ -184,6 +190,14 @@ public class Textbox : Label
 	}
 	void InvalidateLines() {
 		linesInvalid = true;
+	}
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
+		base.MouseClick(state, button);
+		startClickPosition = GetMousePos();
+		Caret.ClearSelection();
+		int charIdx = HitTestPosition(startClickPosition);
+		Caret.Position = charIdx;
+		return true;
 	}
 	string DisplayText => IsPassword ? new string('•', text.Length) : text;
 	void ValidateLines() {
@@ -442,7 +456,7 @@ public class Textbox : Label
 			Caret.SelectionOrigin = start;
 			Caret.Position = end;
 		}
-		else {
+		else if((GetMousePos() - startClickPosition).Length <= 3) {
 			int charIdx = HitTestPosition(localPos);
 			Caret.Position = charIdx;
 			Caret.ClearSelection();
@@ -688,7 +702,7 @@ public class Textbox : Label
 			case CharacterType.DeleteBackwards:
 				if (Caret.HasSelection) {
 					PushUndo(force: true);
-					SetText(Caret.DeleteSelection(text));
+					SetText(Caret.DeleteSelection(text), false);
 					FireTextChanged(oldText);
 				}
 				else if (Caret.Position > 0) {

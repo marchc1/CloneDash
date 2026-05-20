@@ -44,7 +44,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		base.PerformLayout(width, height);
 		Icon.Position = new(4, 0);
 		Icon.Size = new(height, height);
-		SetTextPadding(new(height, 0));
+		SetTextPadding(new((height * 2) + 8, 0));
 	}
 }
 

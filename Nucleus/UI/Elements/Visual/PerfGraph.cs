@@ -27,8 +27,8 @@ public class PerfGraph(Element? parent) : Panel(parent)
 		end = start + end;
 		float min = items.Min();
 		float max = items.Max();
-		Graphics2D.DrawText(new(start + offset - 2, height - 2), $"{min:0.##}", "Consolas", 9, Types.Anchor.BottomRight);
-		Graphics2D.DrawText(new(start + offset - 2, 4), $"{max:0.##}", "Consolas", 9, Types.Anchor.TopRight);
+		Graphics2D.DrawText(new(start + offset - 2, height), $"{min:0.##}", "Consolas", 9, Types.Anchor.BottomRight);
+		Graphics2D.DrawText(new(start + offset - 2, 2), $"{max:0.##}", "Consolas", 9, Types.Anchor.TopRight);
 
 		for (int i = 0; i < maxItems; i += 1) {
 			if (i + 1 >= count)
@@ -84,10 +84,10 @@ public class PerfGraph(Element? parent) : Panel(parent)
 		}
 
 		if (lbl2 == "") 
-			Graphics2D.DrawText(new(8, (height / 2) - 4), lbl1, "Consolas", 12);
+			Graphics2D.DrawText(new(2, (height / 2) - 4), lbl1, "Consolas", 12);
 		else {
-			Graphics2D.DrawText(new(4, 5), lbl1, "Consolas", 10);
-			Graphics2D.DrawText(new(4, 15), lbl2, "Consolas", 10);
+			Graphics2D.DrawText(new(3, 3), lbl1, "Consolas", 10);
+			Graphics2D.DrawText(new(3, height + 1), lbl2, "Consolas", 10, Anchor.BottomLeft);
 		}
 
 		DateTime now = DateTime.UtcNow;
@@ -119,7 +119,7 @@ public class PerfGraph(Element? parent) : Panel(parent)
 				break;
 		}
 
-		DrawGraph(90, width - 90, height, MillisecondsOverTime, MAX_PERFGRAPH_ITEMS, color1, color2, 1000f / 60f);
+		DrawGraph(90, width - 84, height, MillisecondsOverTime, MAX_PERFGRAPH_ITEMS, color1, color2, 1000f / 60f);
 	}
 
 	public override bool HoverTest(RectangleF bounds, Vector2F mousePos) {

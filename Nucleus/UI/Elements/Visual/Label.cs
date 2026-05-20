@@ -344,7 +344,7 @@ public class Label : Element, ITextElement
 		}
 
 		Span<TextRange> ranges = textRanges.AsSpan();
-		Vector2F startDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), GetTextPadding());
+		Vector2F startDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), GetTextPadding() / 2);
 		TextAlignment vertical = GetTextAlignment().ToTextAlignment().Vertical;
 		TextAlignment horizontal = GetTextAlignment().ToTextAlignment().Horizontal;
 
@@ -355,7 +355,8 @@ public class Label : Element, ITextElement
 		float textSize = GetRenderTextSize();
 
 		if (ranges.Length == 0) {
-			Graphics2D.DrawText(startDrawingPosition, text, font, textSize, GetTextAlignment());
+			Vector2F drawPos = startDrawingPosition;
+			Graphics2D.DrawText(drawPos, text, font, textSize, GetTextAlignment());
 			return;
 		}
 
@@ -370,9 +371,8 @@ public class Label : Element, ITextElement
 			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : GetText()[range.Start..range.End];
 			Vector2F drawPos = startDrawingPosition;
 			switch (horizontal) {
-				case TextAlignment.Left: drawPos.X = (GetTextPadding().X / 2); break;
-				case TextAlignment.Center: drawPos.X = 0; break;
-				case TextAlignment.Right: drawPos.X = width - (GetTextPadding().X / 2); break;
+				case TextAlignment.Center: drawPos.X = width / 2; break;
+				case TextAlignment.Right: drawPos.X = width; break;
 			}
 			Graphics2D.DrawText(drawPos, subtext, font, textSize, GetTextAlignment());
 			if (range.Truncate)

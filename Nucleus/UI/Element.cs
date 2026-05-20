@@ -325,16 +325,6 @@ public class Element : IValidatable
 		}
 	}
 
-	protected void LayoutChild(Element child, RectangleF bounds) {
-		child.AddFlag(ElementFlags.NeedsRenderBoundsFlush);
-		child.FlushRenderBounds();
-		RectangleF before = child.RenderBounds;
-		child.__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
-		if (before != child.__renderbounds)
-			child.AddFlag(ElementFlags.NeedsLayout);
-		child.RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
-	}
-
 	public Element() {
 		Initialize(0, 0, 32, 32);
 		UI?.AddElement(this);
@@ -631,7 +621,7 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
-	protected virtual void PostRenderBoundsFlush(ref RectangleF bounds){}
+	protected virtual void PostRenderBoundsFlush(ref RectangleF bounds) { }
 
 	public void FlushRenderBounds() {
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
@@ -646,6 +636,12 @@ public class Element : IValidatable
 		__renderbounds.H = layoutSize.H;
 		PostRenderBoundsFlush(ref __renderbounds);
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
+		if (FORCE_ROUNDED_RENDERBOUNDS) {
+			__renderbounds.X = float.Floor(__renderbounds.X);
+			__renderbounds.Y = float.Floor(__renderbounds.Y);
+			__renderbounds.W = float.Floor(__renderbounds.W);
+			__renderbounds.H = float.Floor(__renderbounds.H);
+		}
 		LastLayoutTime = globals.CurTime;
 	}
 

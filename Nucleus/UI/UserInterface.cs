@@ -591,6 +591,8 @@ public class UserInterface : Element, IDisposable
 	ulong keyboardFocusReentrantID = 0;
 
 	public bool SetKeyboardFocusedElement(Element? element) {
+		if (element == SolveState.KeyboardFocused)
+			return true; // already focused, not gonna run the whole thing again
 		ulong currentFunctionID = ++keyboardFocusReentrantID;
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;

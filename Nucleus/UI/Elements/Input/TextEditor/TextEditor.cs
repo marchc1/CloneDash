@@ -831,6 +831,14 @@ public class TextEditor : Panel, ITextElement
 					var charsToDelete = (col % 4);
 					if (charsToDelete == 0)
 						charsToDelete = 4;
+
+					var actualSpaces = 0;
+					while (actualSpaces < charsToDelete && (col - 1 - actualSpaces) >= 0 && rowContent[col - 1 - actualSpaces] == ' ') {
+						actualSpaces++;
+					}
+
+					charsToDelete = actualSpaces;
+
 					Rows[row] = rowContent.Substring(0, col - charsToDelete) + rowContent.Substring(col);
 					SetCaret(col - charsToDelete, row);
 				}
