@@ -51,7 +51,7 @@ public class Image : Element
 	}
 
 	public float GetImageRotation() => ImageRotation;
-	public void SetImagePadding(float rotation) {
+	public void SetImageRotation(float rotation) {
 		ImageRotation = rotation;
 		InvalidateLayout();
 		GetParent()?.InvalidateLayout();

@@ -58,8 +58,18 @@ public class Titlebar : Panel
 			base.Paint(width, height);
 		}
 	}
+
+	private bool imageChanged;
+	private Anchor titlePos = Anchor.Center;
+	Image Image;
+	private string? imagePath;
+
+	public Label TitleLabel { get; private set; }
+	public TitlebarButton CloseButton { get; private set; }
+	public TitlebarButton MaximizeButton { get; private set; }
+	public TitlebarButton MinimizeButton { get; private set; }
+
 	public Titlebar(Element? parent) : base(parent) {
-		ImagePadding = new(6, 6);
 		Dock = Dock.Top;
 		Size = new(0, this.GetParent() is UserInterface ? 34 : 42);
 		if (this.GetParent() is not UserInterface)
@@ -100,17 +110,10 @@ public class Titlebar : Panel
 		CloseButton.SetTextColor(CloseButton.GetTextColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.3f).HSVfToRGBub());
 	}
 
-	private bool imageChanged;
-	private string? imagePath;
-	public new string? Image {
-		get => imagePath;
-		set {
-			imagePath = value;
-			imageChanged = true;
-		}
+	public void SetIcon(ReadOnlySpan<char> text) {
+		imagePath = text.Length == 0 ? null : new(text);
 	}
-	private Anchor titlePos = Anchor.Center;
-	public string Title { get; set; } = "Untitled Window";
+
 	public Anchor TitlePos {
 		get => titlePos;
 		set {
@@ -126,37 +129,17 @@ public class Titlebar : Panel
 	public delegate void TitlebarDragFn(Titlebar titlebar, Vector2F delta);
 	public event TitlebarDragFn? OnTitlebarDragged;
 
-	string text = "";
-	SchemeableSetting<float> TextSize = SchemeableSetting<float>.Default(18);
-	SchemeableSetting<string> Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
-	SchemeableSetting<Color> textColor = SchemeableSetting<Color>.Default(DefaultTextColor);
+	public ReadOnlySpan<char> GetText() => TitleLabel.GetText();
+	public void SetText(ReadOnlySpan<char> text) => TitleLabel.SetText(text);
 
-	public virtual ReadOnlySpan<char> GetText() => GetText();
-	public virtual void SetText(ReadOnlySpan<char> text) {
-		if (GetText().Equals(text, StringComparison.InvariantCulture))
-			return;
+	public Color GetTextColor() => TitleLabel.GetTextColor();
+	public void SetTextColor(Color value) => TitleLabel.SetTextColor(value);
 
-		this.text = new(text);
-	}
-	public Color GetTextColor() => textColor.Get();
-	public void SetTextColor(Color value) => textColor.SetUserValue(value);
-	public ReadOnlySpan<char> GetFont() => Font.Get();
-	public void SetFont(ReadOnlySpan<char> font) {
-		Font.SetUserValue(new(font));
-		InvalidateLayout();
-	}
+	public ReadOnlySpan<char> GetFont() => TitleLabel.GetFont();
+	public void SetFont(ReadOnlySpan<char> font) => TitleLabel.SetFont(font);
 
-	public float GetTextSize() => TextSize.Get();
-	public void SetTextSize(float textSize) {
-		TextSize.SetUserValue(textSize);
-		InvalidateLayout();
-	}
-	public Label TitleLabel { get; private set; }
-	public TitlebarButton CloseButton { get; private set; }
-	public TitlebarButton MaximizeButton { get; private set; }
-	public TitlebarButton MinimizeButton { get; private set; }
-
-	Panel? ImageRenderer;
+	public float GetTextSize() => TitleLabel.GetTextSize();
+	public void SetTextSize(float textSize) => TitleLabel.SetTextSize(textSize);
 
 	protected override void OnThink() {
 		if (IsHovered())
@@ -164,37 +147,36 @@ public class Titlebar : Panel
 
 		if (imageChanged) {
 			if (imagePath == null) {
-				if (IValidatable.IsValid(ImageRenderer))
-					ImageRenderer.Remove();
+				if (IValidatable.IsValid(Image))
+					Image.Remove();
 			}
 			else {
-				if (!IValidatable.IsValid(ImageRenderer))
+				if (!IValidatable.IsValid(Image))
 					setupImageRenderer();
 
-				ImageRenderer.Image = Level.Textures.LoadTextureFromFile(imagePath);
+				Image.SetTexture(Level.Textures.LoadTextureFromFile(imagePath));
 			}
 		}
 	}
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		if (IValidatable.IsValid(ImageRenderer)) {
-			ImageRenderer.Size = new(height, height);
-			ImageRenderer.Position = TitlePos switch {
+		if (IValidatable.IsValid(Image)) {
+			Image.Size = new(height, height);
+			Image.Position = TitlePos switch {
 				Anchor.CenterLeft => new(0, 0),
-				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(Title, Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
+				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(GetText(), Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
 				_ => new(0, 0),
 			};
-			ImageRenderer.ImageOrientation = ImageOrientation.Zoom;
-			ImageRenderer.ImagePadding = ImagePadding;
-			ImageRenderer.SetPaintBackgroundEnabled(false);
+			Image.SetImageOrientation(ImageOrientation.Zoom);
+			Image.SetPaintBackgroundEnabled(false);
 		}
 	}
 
-	[MemberNotNull(nameof(ImageRenderer))]
+	[MemberNotNull(nameof(Image))]
 	void setupImageRenderer() {
-		ImageRenderer = new Panel(this);
-		ImageRenderer.SetPassthru(true);
+		Image = new Image(this);
+		Image.SetPassthru(true);
 	}
 
 	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
@@ -213,17 +195,17 @@ public class Titlebar : Panel
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
 		if (imageChanged) {
 			if (imagePath == null)
-				base.Image = null;
+				Image.SetTexture(null);
 			else
-				base.Image = Level.Textures.LoadTextureFromFile(imagePath);
+				Image.SetTexture(Level.Textures.LoadTextureFromFile(imagePath));
 
 			imageChanged = false;
 		}
 
-		if (base.Image != null)
+		if (Image != null)
 			pnt.X += height - 4;
 
-		Graphics2D.DrawText(pnt.X, pnt.Y, Title, Graphics2D.UI_FONT_NAME, GetTextSize(), TitlePos);
+		Graphics2D.DrawText(pnt.X, pnt.Y, GetText(), Graphics2D.UI_FONT_NAME, GetTextSize(), TitlePos);
 	}
 }
 public class Taskbar(Element? parent) : Element(parent)
@@ -233,13 +215,13 @@ public class Taskbar(Element? parent) : Element(parent)
 public class Window : Element
 {
 	private string _title = "";
-	public string Title {
-		get => Titlebar == null ? _title : Titlebar.Title;
+	public ReadOnlySpan<char> Title {
+		get => Titlebar == null ? _title : Titlebar.GetText();
 		set {
 			if (Titlebar == null)
-				_title = value;
+				_title = new(value);
 			else
-				Titlebar.Title = value;
+				Titlebar.SetText(value);
 		}
 	}
 	private bool __resizable = true;
@@ -345,7 +327,7 @@ public class Window : Element
 		_title = new(title);
 
 		Titlebar = new Titlebar(this);
-		Titlebar.Title = _title;
+		Titlebar.SetText(_title);
 		Titlebar.OnClosePressed += Titlebar_OnTitlebarClosePressed;
 		Titlebar.OnTitlebarDragged += dragWindow;
 

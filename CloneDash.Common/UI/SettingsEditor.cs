@@ -12,6 +12,7 @@ using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 using System;
 using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
@@ -21,7 +22,8 @@ namespace CloneDash.Menu;
 public class SettingsCategory(Element? parent) : Button(parent)
 {
 	public SettingsPanel Panel;
-	public Panel Icon;
+	public Image Icon;
+
 	public void Setup(SettingsEditor panel) {
 		Panel = new(panel);
 		Panel.Category = this;
@@ -34,8 +36,8 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		Icon = new(this);
 		BorderSize = 0;
 		Icon.SetPaintBackgroundEnabled(false);
-		Icon.ImagePadding = new(4);
-		Icon.ImageOrientation = ImageOrientation.Zoom;
+		Icon.SetImagePadding(new(4));
+		Icon.SetImageOrientation(ImageOrientation.Zoom);
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -196,7 +198,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.DynamicallySized = true;
 		category.Size = new(0.06f);
 		if (icon != null)
-			category.Icon.Image = Level.Textures.LoadTextureFromFile(icon);
+			category.Icon.SetTexture(Level.Textures.LoadTextureFromFile(icon));
 
 		if (activeCategory == null)
 			SelectCategory(category);
@@ -408,7 +410,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 	}
 
 
-	private void ButtonEditOrRemoveHandler(Element self,ButtonCode button) {
+	private void ButtonEditOrRemoveHandler(Element self, ButtonCode button) {
 		if (button == ButtonCode.Mouse2) {
 			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}

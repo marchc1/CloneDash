@@ -19,17 +19,13 @@ public delegate void ButtonActionFn(Button button, ButtonCode mouseButton);
 public class Button : Label
 {
 	public event ButtonActionFn? OnButtonClick;
-	UI.Elements.Image Image;
-
-	public ITexture? GetTexture() => Image.GetTexture();
-	public void SetTexture(ITexture? tex) => Image.SetTexture(tex);
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
 		SetBgColor(new Color(20, 25, 32, 220));
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
-		Image = new(this);
 	}
+
 	protected override void OnThink() {
 		if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
@@ -75,6 +71,7 @@ public class Button : Label
 	public bool PulsePreservesAlpha;
 
 	public bool DrawAsCircle { get; set; } = false;
+	public bool ImageFollowsText { get; set; } = false;
 
 	public Vector4 HoveredMultiplier = new(0, 0.8f, 2.5f, 1f);
 	public Vector4 DepressedMultiplier = new(0, 1.2f, 0.6f, 1f);
@@ -144,11 +141,6 @@ public class Button : Label
 		Vector2F posOffset = new(0);
 
 		Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
-		if (ImageFollowsText && Image != null) {
-			posOffset = new Vector2F(textDrawingPosition.X - (width / 2) - (Image.Width / 2) - 2, 0);
-		}
-
-		ImageDrawing(posOffset);
 		switchToPaintTimeColors = true;
 		base.Paint(width, height);
 		switchToPaintTimeColors = false;

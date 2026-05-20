@@ -9,12 +9,14 @@ using FftSharp;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 
 
@@ -133,8 +135,17 @@ public class SongSelector : Panel, IMainMenuPanel
 		UserWantsMoreSongs?.Invoke();
 	}
 
-	public class SongDiscButton(SongSelector selector, int i) : Button(selector)
+	public class SongDiscButton : Button
 	{
+		SongSelector selector;
+		int i;
+		Image imageRenderer;
+		public SongDiscButton(SongSelector selector, int i) : base(selector) {
+			this.selector = selector;
+			this.i = i;
+			imageRenderer = new(this);
+			imageRenderer.Dock = Dock.Fill;
+		}
 		public override void Paint(float w, float h) {
 			float a;
 			if (selector.InSheetSelection)
@@ -144,9 +155,16 @@ public class SongSelector : Panel, IMainMenuPanel
 			var c = MixColorBasedOnMouseState(this, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
 			Graphics2D.SetDrawColor(c);
 			Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
-			ImageColor = new(255, 255, 255, (int)(255 * a));
-			base.Paint(w, h);
+			Opacity = a;
 		}
+
+		internal void SetImageRotation(float value) => imageRenderer.SetImageRotation(value);
+		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.SetImageOrientation(value);
+		internal void SetImagePadding(Vector2F value) => imageRenderer.SetImagePadding(value);
+		internal void SetImage(ITexture value) => imageRenderer.SetTexture(value);
+		internal void SetImageFlipX(bool value) => imageRenderer.SetImageFlipX(value);
+		internal void SetImageFlipY(bool value) => imageRenderer.SetImageFlipY(value);
+		internal void SetImageColor(Color value) => imageRenderer.SetImageColor(value);
 	}
 
 	public SongLabel CurrentTrackName = null!;
@@ -343,10 +361,10 @@ public class SongSelector : Panel, IMainMenuPanel
 			var index = disc.GetTag<int>("localDiscIndex");
 
 			if (i == Discs.Length / 2 && (FlyAwaySOS.Out > 0.00001 || Math.Abs(DiscRotateSOS.Out) > 0.00001)) {
-				disc.ImageRotation = DiscRotateSOS.Update((float)(
+				disc.SetImageRotation(DiscRotateSOS.Update((float)(
 					Math.Floor(DiscRotateAnimation / 360) * 360
 					+ DiscRotateAnimation % 360
-				));
+				)));
 
 				var discWidth = GetDiscSize(width, disc);
 				float size = discWidth * (FlyAwaySOS.Out / 4 + 1) - DiscVibrate;
@@ -365,11 +383,11 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			disc.SetText("");
 			if (cover.Texture != null) {
-				disc.ImageOrientation = ImageOrientation.Stretch;
-				disc.ImagePadding = new(16);
-				disc.Image = cover.Texture;
-				disc.ImageFlipX = false;
-				disc.ImageFlipY = cover.Flipped;
+				disc.SetImageOrientation(ImageOrientation.Stretch);
+				disc.SetImagePadding(new(16));
+				disc.SetImage(cover.Texture);
+				disc.SetImageFlipX(false);
+				disc.SetImageFlipY(cover.Flipped);
 			}
 		}
 	}
@@ -433,7 +451,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
-			disc.ImageRotation = rot;
+			disc.SetImageRotation(rot);
 			disc.Position = new(x, y);
 			disc.SetText("");
 		}
@@ -505,7 +523,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			};
 			disc.BorderSize = 0;
 			disc.SetBgColor(new Color(0, 0, 0, 0));
-			disc.ImageColor = i == IntegerMidpoint ? new Color(255) : new Color(155);
+			disc.SetImageColor(i == IntegerMidpoint ? new Color(255) : new Color(155));
 		}
 
 		KeyboardFocus();

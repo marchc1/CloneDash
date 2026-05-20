@@ -11,7 +11,6 @@ public class MainMenuButton : Button
 {
 	public MainMenuButton(Element? parent) : base(parent) {
 		SetTextAlignment(Anchor.CenterRight);
-		ShouldDrawImage = false;
 		Clipping = false;
 		Roundness = 4;
 	}
@@ -36,9 +35,9 @@ public class MainMenuButton : Button
 		Graphics2D.SetDrawColor(decomposed);
 		var p = 2;
 
-		ImageOrientation = ImageOrientation.None;
-		ImageColor = GetFgColor().Adjust(0, -0.2, 2, false);
-		ImageDrawing(new(p / 2, p / 2), new(height - p * 2, height - p * 2));
+		// ImageOrientation = ImageOrientation.None;
+		// ImageColor = GetFgColor().Adjust(0, -0.2, 2, false);
+		// ImageDrawing(new(p / 2, p / 2), new(height - p * 2, height - p * 2));
 
 		Graphics2D.DrawText(new(width - 8, 8), GetText(), GetFont(), GetTextSize() * 0.85f, Anchor.TopRight);
 		if (SubText != null)

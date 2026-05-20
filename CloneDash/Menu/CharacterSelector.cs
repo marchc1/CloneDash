@@ -26,11 +26,11 @@ public class CharacterButton(Element? parent) : Button(parent)
 	public void Setup(ReadOnlySpan<char> cosplay, ReadOnlySpan<char> character, ITexture? texture) {
 		CosplayName = cosplay.Length == 0 ? null : new(cosplay);
 		CharacterName = character.Length == 0 ? null : new(character);
-		Image = texture;
-		ImageOrientation = ImageOrientation.Zoom;
+		// Image = texture;
+		// ImageOrientation = ImageOrientation.Zoom;
 		SetBgColor(new Color(0, 0, 0, 0));
 		BorderSize = 0;
-		ImagePadding = new(0, 0);
+		// ImagePadding = new(0, 0);
 		SetText("");
 	}
 

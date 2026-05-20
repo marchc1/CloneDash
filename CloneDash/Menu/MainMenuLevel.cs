@@ -138,10 +138,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtn.SetAutoSize(false);
 		menuBtn.Size = new Vector2F(64);
 		menuBtn.SetText("");
-		menuBtn.ImageOrientation = ImageOrientation.Zoom;
+		// menuBtn.ImageOrientation = ImageOrientation.Zoom;
 		menuBtn.Dock = dock;
-		menuBtn.Image = Textures.LoadTextureFromFile(icon);
-		menuBtn.ImagePadding = new(4);
+		// menuBtn.Image = Textures.LoadTextureFromFile(icon);
+		// menuBtn.ImagePadding = new(4);
 		menuBtn.SetTextSize(21);
 		menuBtn.DockMargin = RectangleF.TLRB(0);
 		menuBtn.BorderSize = 0;
@@ -237,9 +237,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	class LevelSelectorBackButton(LevelSelectorPanel levelSelector, SongSelector selector) : Button(levelSelector)
 	{
 		public override void Paint(float w, float h) {
-			ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
-				(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
-				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
+			// ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
+			// 	(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
+			// 	), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
 			Position = new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0);
 			base.Paint(w, h);
 		}
@@ -363,10 +363,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.Anchor = Anchor.Center;
 		back.Origin = Anchor.Center;
 		back.Position = new(-256, 0);
-		back.Image = Textures.LoadTextureFromFile("ui/back.png");
+		// back.Image = Textures.LoadTextureFromFile("ui/back.png");
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.SetText("");
-		back.ImageOrientation = ImageOrientation.Centered;
+		// back.ImageOrientation = ImageOrientation.Centered;
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
 		back.Size = new(106);

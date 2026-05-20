@@ -82,7 +82,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
 		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
 		btn.SetText(text);
-		btn.Image = menu.Textures.LoadTextureFromFile(icon);
+		// btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
 		btn.OnButtonClick += (_, _) => action?.Invoke(menu);
@@ -120,8 +120,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
-		back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
-		back.ImageOrientation = ImageOrientation.Zoom;
+		// back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
+		// back.ImageOrientation = ImageOrientation.Zoom;
 		back.SetText("");
 		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
