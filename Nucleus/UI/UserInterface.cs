@@ -335,8 +335,10 @@ public class ElementPaintSystem
 		if ((w <= 0 || h <= 0) && element.Clipping)
 			return;
 
-		if (element.Clipping)
-			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset - element.ChildRenderOffset, renderBounds.Size));
+		if (element.Clipping) // This aggressively expands the render bounds test. Unclear how much this will help or if this will only make floating point things more annoying.
+							  // Arguably positions and sizes should move to a Vector2I equivalent at this point.
+							  // This also might be a regression due to the latest UI changes, although I vaguely remember this happening before in some cases
+			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Vector2F.Floor(Graphics2D.Offset - element.ChildRenderOffset), Vector2F.Ceil(renderBounds.Size + Vector2F.One)));
 		{
 			Graphics2D.PushAlpha(element.Opacity * 255);
 			{

@@ -320,6 +320,18 @@ public struct Vector2F : ISpanFormattable
 	public string ToString(string? format, IFormatProvider? formatProvider) {
 		throw new NotImplementedException();
 	}
+
+	public static Vector2F Floor(Vector2F vec) {
+		vec.X = float.Floor(vec.X);
+		vec.Y = float.Floor(vec.Y);
+		return vec;
+	}
+
+	public static Vector2F Ceil(Vector2F vec) {
+		vec.X = float.Ceiling(vec.X);
+		vec.Y = float.Ceiling(vec.Y);
+		return vec;
+	}
 }
 public static class VectorConverters
 {

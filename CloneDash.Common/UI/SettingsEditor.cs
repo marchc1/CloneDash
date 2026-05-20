@@ -196,6 +196,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.OnButtonClick += (_, _) => SelectCategory(category);
 		category.Dock = Dock.Top;
 		category.DynamicallySized = true;
+		category.SetTextSize(24);
 		category.Size = new(0.06f);
 		if (icon != null)
 			category.Icon.SetTexture(Level.Textures.LoadTextureFromFile(icon));

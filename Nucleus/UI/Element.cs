@@ -681,6 +681,7 @@ public class Element : IValidatable
 			_fitToParent = false;
 		}
 	}
+
 	private void ComputeSizeOfAllChildren() {
 		SizeOfAllChildren = Vector2F.Zero;
 		foreach (var child in Children) {

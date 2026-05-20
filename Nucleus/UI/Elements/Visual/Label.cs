@@ -98,6 +98,35 @@ public class Label : Element, ITextElement
 		SetPaintBorderEnabled(false);
 	}
 
+	public Vector2F GetContentSize() {
+		if (GetFont().IsEmpty || GetTextSize() <= 1)
+			return Vector2F.Zero;
+
+		ValidateText();
+
+		ReadOnlySpan<char> font = GetFont();
+		float curTextSize = GetTextSize();
+		Span<TextRange> ranges = textRanges.AsSpan();
+
+		Vector2F size;
+		if (ranges.Length <= 0) {
+			size = Graphics2D.GetTextSize(GetText(), font, curTextSize);
+		}
+		else {
+			size = default;
+			foreach (var range in ranges) {
+				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : GetText()[range.Start..range.End];
+				var rangeSize = Graphics2D.GetTextSize(subtext, font, curTextSize);
+				size = new(Math.Max(size.X, rangeSize.X), size.Y + rangeSize.Y);
+				if (range.Truncate)
+					break;
+			}
+		}
+
+		return size + GetTextPadding();
+	}
+
+
 	public Color GetTextColor() => textColor.Get();
 	public void SetTextColor(Color value) => textColor.SetUserValue(value);
 
@@ -149,6 +178,9 @@ public class Label : Element, ITextElement
 		InvalidateText();
 	}
 
+
+	public float GetRenderTextSize() => GetDynamicallyScaledFloat(TextSize.Get(), Axis.Vertical);
+
 	public TextOverflowMode TextOverflowMode {
 		get => textOverflowMode;
 		set {
@@ -173,7 +205,7 @@ public class Label : Element, ITextElement
 
 		ReadOnlySpan<char> text = GetText();
 		ReadOnlySpan<char> font = GetFont();
-		float textSize = GetTextSize();
+		float textSize = GetRenderTextSize();
 		//TextRange workingRange = new() { OriginalText = GetText() };
 		TextRange workingRange = new() { };
 		Vector2F workingArea = RenderBounds.Size - GetTextPadding() - new Vector2F(4, 4);
@@ -271,7 +303,7 @@ public class Label : Element, ITextElement
 		TextAlignment vertical = GetTextAlignment().ToTextAlignment().Vertical;
 
 		ReadOnlySpan<char> font = GetFont();
-		float curTextSize = GetTextSize();
+		float curTextSize = GetRenderTextSize();
 
 		if (ranges.Length <= 0) {
 			textSize = Graphics2D.GetTextSize(GetText(), font, curTextSize);
@@ -320,7 +352,7 @@ public class Label : Element, ITextElement
 
 		ReadOnlySpan<char> text = GetText();
 		ReadOnlySpan<char> font = GetFont();
-		float textSize = GetTextSize();
+		float textSize = GetRenderTextSize();
 
 		if (ranges.Length == 0) {
 			Graphics2D.DrawText(startDrawingPosition, text, font, textSize, GetTextAlignment());
