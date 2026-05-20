@@ -409,7 +409,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		LevelSelectorDifficultiesPanel difficulties = new(levelSelector, selector, 356);
 		difficulties.SetPaintBorderEnabled(false);
 		difficulties.SetPaintBackgroundEnabled(false);
-		difficulties.Direction = Directional180.Vertical;
+		difficulties.Direction = Axis.Vertical;
 		difficulties.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 		List<LevelSelectorSelectDifficultyButton> btns = [];

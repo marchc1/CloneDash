@@ -184,8 +184,7 @@ public class NumSlider : Textbox, INumSlider
 		return true;
 	}
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
-		base.MouseScroll(self, state, delta);
-		return true;
+		return false;
 	}
 	public bool TriggeredWhenEnterPressed { get; set; } = false;
 

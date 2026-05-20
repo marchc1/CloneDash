@@ -12,8 +12,15 @@ public enum ScrollbarAlignment
 public class Scrollbar : Panel
 {
 	// TODO: just use images... in fact, should have an ImageButton, even
-	internal class ScrollbarButton(Scrollbar scrollbar) : Button(scrollbar)
+	internal class ScrollbarButton : Button
 	{
+		Scrollbar scrollbar;
+		public ScrollbarButton(Scrollbar scrollbar) : base(scrollbar, text: "") {
+			this.scrollbar = scrollbar;
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+			BorderSize = 0;
+		}
 		public override void Paint(float width, float height) {
 			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
 			var down = this == scrollbar.Down;
@@ -26,9 +33,16 @@ public class Scrollbar : Panel
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => scrollbar.MouseScrolled(self, state, delta);
 	}
-	internal class ScrollbarGrip(Scrollbar scrollbar) : Button(scrollbar)
+	internal class ScrollbarGrip : Button
 	{
-		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
+		Scrollbar scrollbar;
+		public ScrollbarGrip(Scrollbar scrollbar) : base(scrollbar, text: "") {
+			this.scrollbar = scrollbar;
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+			BorderSize = 0;
+		}
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			// Remap the new mouse pos
 			var map = state.Mouse.MousePos - self.GetGlobalPosition();
 			//Console.WriteLine(map);

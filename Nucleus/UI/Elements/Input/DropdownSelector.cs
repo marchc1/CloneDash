@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI.Elements;
 
-public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, name)
+public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, text: "", name: name)
 {
 	public T? Selected { get; set; } = default;
 	public List<T> Items { get; } = [];

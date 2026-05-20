@@ -98,13 +98,20 @@ public static class SchemeableSettingHelpers
 public class Element : IValidatable
 {
 	public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
+	public const float DYNAMIC_SIZE_W_REFERENCE = 1600;
+	public const float DYNAMIC_SIZE_H_REFERENCE = 900;
+
+	// These constants are not the true defaults, they are basic colors, defaulting is done via the engine scheme
+	public static readonly Color DefaultBackgroundColor = new(0, 0, 0, 255);
+	public static readonly Color DefaultForegroundColor = new(155, 155, 155, 255);
+	public static readonly Color DefaultTextColor = new(255, 255, 255, 255);
+	public static readonly float DefaultTextSize = 18;
 
 	// fields
 	private ElementFlags flags;
 	private Vector2F _position;
 	private Vector2F _size;
 	private bool _dynamicallySized = false;
-	private bool _dynamicallySizedText = false;
 	private DynamicSizeReference _dynamicSizeReference = DynamicSizeReference.WindowHeight;
 	private Dock _dock = Dock.None;
 	private RectangleF _dockMargin = RectangleF.Zero;
@@ -256,11 +263,6 @@ public class Element : IValidatable
 		}
 	}
 
-	public static readonly Color DefaultBackgroundColor = new(0, 0, 0, 255);
-	public static readonly Color DefaultForegroundColor = new(155, 155, 155, 255);
-	public static readonly Color DefaultTextColor = new(255, 255, 255, 255);
-	public static readonly float DefaultTextSize = 18;
-
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
 	/// </summary>
@@ -379,6 +381,15 @@ public class Element : IValidatable
 	}
 
 	public virtual string? TooltipText { get; set; } // todo: remove me, turn into methods
+
+	public float GetDynamicallyScaledFloat(float originalFloat, Axis axis) {
+		switch (axis) {
+			case Axis.Horizontal: return originalFloat * (EngineCore.GetWindowWidth() / DYNAMIC_SIZE_W_REFERENCE);
+			case Axis.Vertical: return originalFloat * (EngineCore.GetWindowHeight() / DYNAMIC_SIZE_H_REFERENCE);
+			default: return originalFloat;
+		}
+	}
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasFlag(ElementFlags flag) => (flags & flag) != 0;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void AddFlag(ElementFlags flag) => flags |= flag;

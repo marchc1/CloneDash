@@ -75,7 +75,6 @@ public class Button : Label
 	public bool PulsePreservesAlpha;
 
 	public bool DrawAsCircle { get; set; } = false;
-	public bool ImageFollowsText { get; set; } = false;
 
 	public Vector4 HoveredMultiplier = new(0, 0.8f, 2.5f, 1f);
 	public Vector4 DepressedMultiplier = new(0, 1.2f, 0.6f, 1f);

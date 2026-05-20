@@ -19,7 +19,7 @@ public enum FlexChildrenResizingMode
 
 public class FlexPanel(Element? parent) : Panel(parent)
 {
-	public Directional180 Direction { get; set; } = Directional180.Horizontal;
+	public Axis Direction { get; set; } = Axis.Horizontal;
 	public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
 
 	protected override void ChildParented(Element parent, Element child) {
@@ -36,7 +36,7 @@ public class FlexPanel(Element? parent) : Panel(parent)
 		if (visibleCount == 0)
 			return;
 
-		bool horiz = Direction == Directional180.Horizontal;
+		bool horiz = Direction == Axis.Horizontal;
 
 		RectangleF dp = DockPadding;
 

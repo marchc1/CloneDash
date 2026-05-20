@@ -45,7 +45,7 @@ public class ScrollPanel : Panel
 		MainPanel.SetPaintBackgroundEnabled(false);
 		MainPanel.DockMargin = RectangleF.TLRB(4);
 		AddParent = MainPanel;
-		MainPanel.Clipping = false;
+		MainPanel.Clipping = true;
 	}
 	public Scrollbar VerticalScrollbar { get; private set; }
 	public Scrollbar HorizontalScrollbar { get; private set; }

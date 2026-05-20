@@ -10,8 +10,8 @@ public class DirectionalLayoutPanel : ScrollPanel
 	public DirectionalLayoutPanel(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
 		MainPanel.ChildDock = Dock.Top;
 	}
-	private Directional180 direction = Directional180.Vertical;
-	public Directional180 Direction {
+	private Axis direction = Axis.Vertical;
+	public Axis Direction {
 		get => direction;
 		set {
 			direction = value;

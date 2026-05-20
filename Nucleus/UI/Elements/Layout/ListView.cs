@@ -43,15 +43,18 @@ public class ListViewItem : Button
 	}
 
 	protected override void OnThink() {
-		if (Depressed) {
-			SetBgColor(new Color(30, 35, 45, 65));
+		if (Depressed || IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
+	}
+
+	public override void PaintBackground(float width, float height) {
+		if (Depressed) {
+			Graphics2D.SetDrawColor(30, 35, 45, 65);
+			Graphics2D.DrawRectangle(0, 0, width, height);
 		}
 		else if (IsHovered()) {
-			SetBgColor(new Color(200, 210, 230, 50));
-			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
+			Graphics2D.SetDrawColor(200, 210, 230, 50);
+			Graphics2D.DrawRectangle(0, 0, width, height);
 		}
-		else
-			SetBgColor(new Color(0, 0, 0, 0));
 	}
 }

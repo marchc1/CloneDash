@@ -964,7 +964,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 						var flex = new FlexPanel(PauseWindow);
 						flex.Dock = Dock.Fill;
-						flex.Direction = Directional180.Vertical;
+						flex.Direction = Axis.Vertical;
 						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 						flex.DockPadding = RectangleF.TLRB(4);
 

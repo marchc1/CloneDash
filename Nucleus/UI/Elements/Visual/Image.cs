@@ -105,10 +105,9 @@ public class Image : Element
 
 		Rectangle sourceRect = new(0, 0, image.Width, image.Height);
 		Rectangle destRect = new(offset.X, offset.Y, image.Width, image.Height);
-		var scldiv2 = RenderBounds.Size / 2;
 
-		var width = RenderBounds.Size.W;
-		var height = RenderBounds.Size.H;
+		var width = bounds.W;
+		var height = bounds.H;
 
 		switch (ImageOrientation) {
 			case ImageOrientation.None:

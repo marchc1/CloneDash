@@ -60,7 +60,7 @@ public class Titlebar : Panel
 
 	private bool imageChanged;
 	private Anchor titlePos = Anchor.Center;
-	Image Image;
+	Image? Image;
 	private string? imagePath;
 
 	public Label TitleLabel { get; private set; }
@@ -194,19 +194,6 @@ public class Titlebar : Panel
 
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
-		if (imageChanged) {
-			if (imagePath == null) {
-				if (IValidatable.IsValid(Image))
-					Image.SetTexture(null);
-			}
-			else {
-				if (!IValidatable.IsValid(Image))
-					setupImageRenderer();
-				Image.SetTexture(Level.Textures.LoadTextureFromFile(imagePath));
-			}
-
-			imageChanged = false;
-		}
 
 		if (IValidatable.IsValid(Image))
 			pnt.X += height - 4;

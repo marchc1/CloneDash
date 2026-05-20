@@ -1,6 +1,6 @@
 ﻿namespace Nucleus.Types;
 
-public enum Directional180
+public enum Axis
 {
 	Horizontal,
 	Vertical
