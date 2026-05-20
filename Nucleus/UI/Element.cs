@@ -631,6 +631,8 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
+	protected virtual void PostRenderBoundsFlush(ref RectangleF bounds){}
+
 	public void FlushRenderBounds() {
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
@@ -642,6 +644,7 @@ public class Element : IValidatable
 		__renderbounds.Y = layoutPos.Y;
 		__renderbounds.W = layoutSize.W;
 		__renderbounds.H = layoutSize.H;
+		PostRenderBoundsFlush(ref __renderbounds);
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
 		LastLayoutTime = globals.CurTime;
 	}

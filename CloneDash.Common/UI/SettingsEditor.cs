@@ -44,7 +44,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		base.PerformLayout(width, height);
 		Icon.Position = new(4, 0);
 		Icon.Size = new(height, height);
-		SetTextPadding(new(height + 16, 0));
+		SetTextPadding(new(height, 0));
 	}
 }
 
@@ -97,11 +97,12 @@ public class SettingsPanel : ScrollPanel
 	public Label Label(string text) {
 		var name = new Label(this);
 		name.Dock = Dock.Top;
-		name.SetTextAlignment(Anchor.BottomLeft);
+		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
 		name.SetText(text);
+		name.DockMargin = RectangleF.TLRB(16);
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
 		name.SetTextSize(20);
 		return name;

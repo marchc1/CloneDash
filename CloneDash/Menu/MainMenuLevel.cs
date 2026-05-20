@@ -106,7 +106,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		test2.SetText("Clone Dash");
 		test2.SetTextSize(30);
 		test2.SetAutoSize(true);
-		test2.DockMargin = RectangleF.TLRB(4);
+		test2.DockMargin = RectangleF.TLRB(16);
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
