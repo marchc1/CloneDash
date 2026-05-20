@@ -10,7 +10,10 @@ namespace Nucleus.UI;
 
 public class Caret
 {
-	public int Position { get; set; } = 0;
+	public int Position {
+		get;
+		set;
+	} = 0;
 	public int? SelectionOrigin { get; set; } = null;
 	public int SelectionStart => HasSelection ? Math.Min(Position, SelectionOrigin!.Value) : Position;
 	public int SelectionEnd => HasSelection ? Math.Max(Position, SelectionOrigin!.Value) : Position;
@@ -132,14 +135,19 @@ public class Textbox : Label
 	}
 
 	public override void SetText(ReadOnlySpan<char> text) {
-		base.SetText(text);
-		SetText(text, true);
+		SetTextInternal(text, true);
 	}
 
-	public void SetText(ReadOnlySpan<char> text, bool resetCaret) {
-		if(resetCaret)
-		Caret.Position = text.Length;
+	bool inPerformUndoOrRedo;
+	public void SetTextInternal(ReadOnlySpan<char> text, bool resetCaret) {
+		if (text.Equals(GetText(), StringComparison.InvariantCulture))
+			return;
+
 		Caret.ClearSelection();
+		if (resetCaret)
+			Caret.Position = text.Length;
+		base.SetText(text);
+
 		InvalidateLines();
 	}
 
@@ -147,11 +155,16 @@ public class Textbox : Label
 		Caret.SelectAll(text);
 	}
 
-	void PushUndo(bool force = false) {
-		if (!force && (DateTime.Now - lastUndoPush).TotalMilliseconds < 400 && undoStack.Count > 0) {
-			undoStack[^1] = new UndoEntry(text, Caret.Position);
+	/// <summary>
+	/// Pushes a state onto the undo list
+	/// </summary>
+	/// <param name="force"></param>
+	void PushUndo(bool force) {
+		if (inPerformUndoOrRedo)
 			return;
-		}
+
+		if (!force && (DateTime.Now - lastUndoPush).TotalMilliseconds < 400 && undoStack.Count > 0)
+			return;
 
 		if (undoStack.Count >= MaxUndoEntries)
 			undoStack.RemoveAt(0);
@@ -163,8 +176,8 @@ public class Textbox : Label
 
 	void PerformUndo() {
 		if (undoStack.Count == 0) return;
-
-		var entry = undoStack[^1];
+		inPerformUndoOrRedo = true;
+		UndoEntry entry = undoStack[^1];
 		undoStack.RemoveAt(undoStack.Count - 1);
 		redoStack.Add(new UndoEntry(text, Caret.Position));
 
@@ -173,11 +186,13 @@ public class Textbox : Label
 		Caret.Position = entry.CaretPosition;
 		Caret.ClearSelection();
 		FireTextChanged(old);
+
+		inPerformUndoOrRedo = false;
 	}
 
 	void PerformRedo() {
 		if (redoStack.Count == 0) return;
-
+		inPerformUndoOrRedo = true;
 		var entry = redoStack[^1];
 		redoStack.RemoveAt(redoStack.Count - 1);
 		undoStack.Add(new UndoEntry(text, Caret.Position));
@@ -187,6 +202,8 @@ public class Textbox : Label
 		Caret.Position = entry.CaretPosition;
 		Caret.ClearSelection();
 		FireTextChanged(old);
+
+		inPerformUndoOrRedo = false;
 	}
 	void InvalidateLines() {
 		linesInvalid = true;
@@ -415,9 +432,20 @@ public class Textbox : Label
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
 	}
 
+	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
+		base.OnGainingKeyboardFocus(lastFocus, ref passTo);
+		// Reset the undo/redo stacks.
+		undoStack.Clear();
+		redoStack.Clear();
+		return true;
+	}
+
 	protected override bool OnLosingKeyboardFocus(Element? lostTo) {
 		base.OnLosingKeyboardFocus(lostTo);
 		Caret.ClearSelection();
+		// Reset the undo/redo stacks.
+		undoStack.Clear();
+		redoStack.Clear();
 		return true;
 	}
 
@@ -456,7 +484,7 @@ public class Textbox : Label
 			Caret.SelectionOrigin = start;
 			Caret.Position = end;
 		}
-		else if((GetMousePos() - startClickPosition).Length <= 3) {
+		else if ((GetMousePos() - startClickPosition).Length <= 3) {
 			int charIdx = HitTestPosition(localPos);
 			Caret.Position = charIdx;
 			Caret.ClearSelection();
@@ -503,11 +531,13 @@ public class Textbox : Label
 
 	void InsertText(string insert) {
 		var old = text;
-		PushUndo(force: true);
 
-		if (Caret.HasSelection)
-			SetText(Caret.DeleteSelection(text));
-
+		bool pushedUndo = false;
+		if (Caret.HasSelection) {
+			pushedUndo = true;
+			PushUndo(true);
+			SetTextInternal(Caret.DeleteSelection(text), true);
+		}
 		if (MaxLength > 0 && text.Length + insert.Length > MaxLength)
 			insert = insert[..(MaxLength - text.Length)];
 
@@ -516,7 +546,10 @@ public class Textbox : Label
 			return;
 		}
 
-		SetText(text.Insert(Caret.Position, insert));
+		if (!pushedUndo)
+			PushUndo(true);
+
+		SetTextInternal(text.Insert(Math.Clamp(Caret.Position, 0, text.Length), insert), false);
 		Caret.Position += insert.Length;
 		Caret.ClearSelection();
 		FireTextChanged(old);
@@ -525,9 +558,10 @@ public class Textbox : Label
 	protected override bool TextInput(in KeyboardState keyboardState, string inputText) {
 		var oldText = this.text;
 
-		PushUndo();
-		if (Caret.HasSelection)
+		if (Caret.HasSelection) {
+			PushUndo(true);
 			SetText(Caret.DeleteSelection(this.text));
+		}
 
 		if (MaxLength > 0 && this.text.Length >= MaxLength) {
 			FireTextChanged(oldText);
@@ -535,11 +569,14 @@ public class Textbox : Label
 		}
 
 		// todo: MaxLength handling here...
+		int oldPosition = Caret.Position;
+		PushUndo(false);
 		SetText(this.text.Insert(Caret.Position, inputText));
 		Caret.MovePosition(this.text, inputText.Length);
 		Caret.ClearSelection();
 		FireTextChanged(oldText);
 		EnsureCaretVisible();
+		Caret.Position = oldPosition + inputText.Length;
 		return true;
 	}
 
@@ -567,8 +604,8 @@ public class Textbox : Label
 
 				case ButtonCode.KeyX:
 					if (!ReadOnly && Caret.HasSelection) {
-						PushUndo(force: true);
 						Clipboard.Text = Caret.GetSelectedText(text);
+						PushUndo(true);
 						SetText(Caret.DeleteSelection(text));
 						FireTextChanged(oldText);
 					}
@@ -701,14 +738,14 @@ public class Textbox : Label
 		switch (action.Type) {
 			case CharacterType.DeleteBackwards:
 				if (Caret.HasSelection) {
-					PushUndo(force: true);
-					SetText(Caret.DeleteSelection(text), false);
+					PushUndo(false);
+					SetTextInternal(Caret.DeleteSelection(text), false);
 					FireTextChanged(oldText);
 				}
 				else if (Caret.Position > 0) {
-					PushUndo();
 					int deleteCount = ctrl ? Caret.Position - FindWordBoundaryLeft(text, Caret.Position) : 1;
 					int deleteStart = Caret.Position - deleteCount;
+					PushUndo(false);
 					SetText(text.Remove(deleteStart, deleteCount));
 					Caret.Position = deleteStart;
 					FireTextChanged(oldText);
@@ -718,14 +755,16 @@ public class Textbox : Label
 
 			case CharacterType.DeleteForwards:
 				if (Caret.HasSelection) {
-					PushUndo(force: true);
-					SetText(Caret.DeleteSelection(text));
+					PushUndo(false);
+					SetTextInternal(Caret.DeleteSelection(text), false);
 					FireTextChanged(oldText);
 				}
 				else if (Caret.Position < text.Length) {
-					PushUndo();
 					int deleteCount = ctrl ? FindWordBoundaryRight(text, Caret.Position) - Caret.Position : 1;
+					int deleteStart = Caret.Position;
+					PushUndo(false);
 					SetText(text.Remove(Caret.Position, deleteCount));
+					Caret.Position = deleteStart;
 					FireTextChanged(oldText);
 				}
 				EnsureCaretVisible();
@@ -733,7 +772,6 @@ public class Textbox : Label
 
 			case CharacterType.Enter:
 				if (MultiLine) {
-					PushUndo(force: true);
 					InsertText("\n");
 					EnsureCaretVisible();
 				}
@@ -745,7 +783,6 @@ public class Textbox : Label
 
 			case CharacterType.Tab:
 				if (MultiLine) {
-					PushUndo(force: true);
 					InsertText(new string(' ', TabSize));
 					EnsureCaretVisible();
 				}
@@ -813,7 +850,7 @@ public class Textbox : Label
 
 		var colorStore = GetTextColor();
 		if (showPlaceholder) {
-			SetText(GetHelperText());
+			text = HelperText; // switch pointer for a minute to helper text
 			SetTextColor(GetTextColor().Adjust(0, -0.1, -0.4));
 		}
 
@@ -826,7 +863,7 @@ public class Textbox : Label
 			DrawTextLines(width, height);
 
 		if (showPlaceholder) {
-			SetText("");
+			text = ""; // switch back to empty
 			SetTextColor(colorStore);
 		}
 

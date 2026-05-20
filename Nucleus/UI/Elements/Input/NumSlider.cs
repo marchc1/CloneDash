@@ -107,9 +107,10 @@ public class NumSlider : Textbox, INumSlider
 		SetValueNoUpdate(Value);
 	}
 	protected override void OnThink() {
+		base.OnThink();
 		if (didDrag && Depressed)
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
-		else if (IsHovered())
+		else if (IsHovered() && !IsKeyboardFocused())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 	}
 	string? workType = null;
@@ -123,7 +124,7 @@ public class NumSlider : Textbox, INumSlider
 	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
 		SetText($"{Value}");
 		caret = 0;
-		return true;
+		return base.OnGainingKeyboardFocus(lastFocus, ref passTo);
 	}
 	public virtual double? ParseString(ReadOnlySpan<char> input) {
 		double t;
