@@ -321,9 +321,6 @@ public class SongSelector : Panel, IMainMenuPanel
 	public Label Loading = null!;
 	// Constantly running logic
 	public void ThinkDiscs() {
-		if (!IsKeyboardFocused())
-			KeyboardFocus();
-
 		if (Math.Abs(DiscAnimationOffset.Out) > 0.005d) {
 			DiscAnimationOffset.Update(0);
 			InvalidateLayout(); // loop for next frame
