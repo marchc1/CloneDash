@@ -19,7 +19,7 @@ using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-
+using Nucleus.UI.Elements;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 
@@ -120,8 +120,10 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
-		// back.Image = Level.Textures.LoadTextureFromFile("ui/back.png");
-		// back.ImageOrientation = ImageOrientation.Zoom;
+		var backImage = new Image(back);
+		backImage.SetTexture(Level.Textures.LoadTextureFromFile("ui/back.png"));
+		backImage.SetImageOrientation(ImageOrientation.Zoom);
+		backImage.Dock = Dock.Fill;
 		back.SetText("");
 		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();

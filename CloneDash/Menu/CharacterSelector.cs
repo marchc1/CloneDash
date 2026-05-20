@@ -14,6 +14,7 @@ using Nucleus.UI;
 using System.Diagnostics;
 using Nucleus.Common.Types;
 using CloneDash.Common;
+using Nucleus.UI.Elements;
 
 namespace CloneDash.Menu;
 
@@ -22,15 +23,19 @@ public class CharacterButton(Element? parent) : Button(parent)
 	public string? CosplayName;
 	public string? CharacterName;
 	public ITexture? Texture;
+	private Image? imageRenderer;
 
 	public void Setup(ReadOnlySpan<char> cosplay, ReadOnlySpan<char> character, ITexture? texture) {
 		CosplayName = cosplay.Length == 0 ? null : new(cosplay);
 		CharacterName = character.Length == 0 ? null : new(character);
-		// Image = texture;
-		// ImageOrientation = ImageOrientation.Zoom;
+		if (texture != null) {
+			imageRenderer ??= new Image(this);
+			imageRenderer.SetTexture(texture);
+			imageRenderer.SetImageOrientation(ImageOrientation.Zoom);
+			imageRenderer.Dock = Dock.Fill;
+		}
 		SetBgColor(new Color(0, 0, 0, 0));
 		BorderSize = 0;
-		// ImagePadding = new(0, 0);
 		SetText("");
 	}
 

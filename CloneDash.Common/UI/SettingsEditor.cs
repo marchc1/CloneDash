@@ -329,11 +329,22 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		lbl.Anchor = Anchor.TopCenter;
 		lbl.Origin = Anchor.TopCenter;
 
-		// TODO nucleus-ui-improvements-try-2: FIX THIS
-		// dialog.OnKeyPressed += (_, in _, key) => {
-		// 	keySubmitted(key);
-		// 	dialog.Close();
-		// };
+		var capture = new KeyCaptureElement(dialog);
+		capture.Dock = Dock.Fill;
+		capture.KeyboardFocus();
+		capture.OnKeyCaptured += (key) => {
+			keySubmitted(key);
+			dialog.Close();
+		};
+	}
+
+	private class KeyCaptureElement(Element? parent) : Element(parent)
+	{
+		public event Action<ButtonCode>? OnKeyCaptured;
+		protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+			OnKeyCaptured?.Invoke(key);
+			return true;
+		}
 	}
 
 	private void InvalidateKeyButtons() {
@@ -365,7 +376,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		InvalidateLayout();
 	}
 
-	private void ButtonAddHandler(Element self, ButtonCode button) {
+	private void ButtonAddHandler(Button self, ButtonCode button) {
 		if (button == ButtonCode.Mouse1)
 			ButtonModal("Bind", AddSubmittedHandler);
 	}
@@ -410,7 +421,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 	}
 
 
-	private void ButtonEditOrRemoveHandler(Element self, ButtonCode button) {
+	private void ButtonEditOrRemoveHandler(Button self, ButtonCode button) {
 		if (button == ButtonCode.Mouse2) {
 			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}

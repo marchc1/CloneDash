@@ -191,7 +191,7 @@ public class SongSearchDialog : Window
 		return source;
 	}
 
-	private void ApplyButton_MouseReleaseEvent(Element self, ButtonCode button) => Submit();
+	private void ApplyButton_MouseReleaseEvent(Button self, ButtonCode button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
 		Close();

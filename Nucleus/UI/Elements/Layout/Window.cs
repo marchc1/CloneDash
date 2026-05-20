@@ -20,7 +20,6 @@ public class Titlebar : Panel
 	}
 	public class TitlebarButton(Titlebar titlebar, TitlebarButtonType type) : Button(titlebar)
 	{
-		TitlebarButtonType type;
 		public override void Paint(float width, float height) {
 			switch (type) {
 				case TitlebarButtonType.Close: PaintClose(width, height); break;
@@ -77,6 +76,7 @@ public class Titlebar : Panel
 
 		TitleLabel = new(this);
 		TitleLabel.SetTextSize(20);
+		TitleLabel.SetVisible(false); // title is rendered manually in Paint() with icon offset
 
 		CloseButton = new TitlebarButton(this, TitlebarButtonType.Close);
 		CloseButton.Dock = Dock.Right;
@@ -112,6 +112,7 @@ public class Titlebar : Panel
 
 	public void SetIcon(ReadOnlySpan<char> text) {
 		imagePath = text.Length == 0 ? null : new(text);
+		imageChanged = true;
 	}
 
 	public Anchor TitlePos {
@@ -194,15 +195,20 @@ public class Titlebar : Panel
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
 		if (imageChanged) {
-			if (imagePath == null)
-				Image.SetTexture(null);
-			else
+			if (imagePath == null) {
+				if (IValidatable.IsValid(Image))
+					Image.SetTexture(null);
+			}
+			else {
+				if (!IValidatable.IsValid(Image))
+					setupImageRenderer();
 				Image.SetTexture(Level.Textures.LoadTextureFromFile(imagePath));
+			}
 
 			imageChanged = false;
 		}
 
-		if (Image != null)
+		if (IValidatable.IsValid(Image))
 			pnt.X += height - 4;
 
 		Graphics2D.DrawText(pnt.X, pnt.Y, GetText(), Graphics2D.UI_FONT_NAME, GetTextSize(), TitlePos);
@@ -397,7 +403,7 @@ public class Window : Element
 		this.Close();
 	}
 
-	private void dragWindow(Element self, Vector2F delta) {
+	private void dragWindow(Titlebar self, Vector2F delta) {
 		this.Position += delta;
 	}
 
@@ -463,7 +469,6 @@ public class Window : Element
 			Rlgl.PopMatrix();
 		}
 		else if (opening) {
-			Rlgl.PopMatrix();
 			Rlgl.PopMatrix();
 			EngineCore.Window.EndMode2D();
 		}

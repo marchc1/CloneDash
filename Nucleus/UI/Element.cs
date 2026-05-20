@@ -327,7 +327,10 @@ public class Element : IValidatable
 		child.AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		child.FlushRenderBounds();
 		RectangleF before = child.RenderBounds;
-		child.__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
+		RectangleF rounded = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(bounds) : bounds;
+		child.__renderbounds = rounded;
+		child._position = rounded.Pos;
+		child._size = rounded.Size;
 		if (before != child.__renderbounds)
 			child.AddFlag(ElementFlags.NeedsLayout);
 		child.RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
@@ -1044,9 +1047,9 @@ public class Element : IValidatable
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 		e.__mouseColorableHoverState ??= e.BuildHoveredSOS();
 		e.__mouseColorableDepressState ??= e.BuildDepressedSOS();
-		return MixColorBasedOnMouseState(e.__mouseColorableDepressState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableHoverState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
+		return MixColorBasedOnMouseState(e.__mouseColorableHoverState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableDepressState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
 #else
-		return MixColorBasedOnMouseState(e.Hovered ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
+		return MixColorBasedOnMouseState(e.IsHovered() ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
 #endif
 	}
 

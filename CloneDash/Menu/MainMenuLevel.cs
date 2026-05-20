@@ -23,6 +23,7 @@ using Nucleus.UI;
 using Nucleus.UI.Elements;
 
 using Raylib_cs;
+using Image = Nucleus.UI.Elements.Image;
 
 namespace CloneDash.Game;
 
@@ -138,10 +139,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtn.SetAutoSize(false);
 		menuBtn.Size = new Vector2F(64);
 		menuBtn.SetText("");
-		// menuBtn.ImageOrientation = ImageOrientation.Zoom;
 		menuBtn.Dock = dock;
-		// menuBtn.Image = Textures.LoadTextureFromFile(icon);
-		// menuBtn.ImagePadding = new(4);
+		var menuBtnImage = new Image(menuBtn);
+		menuBtnImage.SetTexture(EngineCore.Level.Textures.LoadTextureFromFile(icon));
+		menuBtnImage.SetImageOrientation(ImageOrientation.Zoom);
+		menuBtnImage.SetImagePadding(new(4));
+		menuBtnImage.Dock = Dock.Fill;
 		menuBtn.SetTextSize(21);
 		menuBtn.DockMargin = RectangleF.TLRB(0);
 		menuBtn.BorderSize = 0;
@@ -211,6 +214,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Graphics2D.OffsetDrawing(pos);
 
 			disc.Paint(disc.RenderBounds.W, disc.RenderBounds.H);
+			// Paint the disc's children too (cover image etc.)
+			foreach (var child in disc.GetChildren()) {
+				if (child.IsVisible()) {
+					Graphics2D.OffsetDrawing(child.RenderBounds.Pos);
+					child.Paint(child.RenderBounds.W, child.RenderBounds.H);
+					Graphics2D.OffsetDrawing(-child.RenderBounds.Pos);
+				}
+			}
 			Graphics2D.OffsetDrawing(-pos);
 
 			selector.DiscRotateAnimation = Lifetime * 90;
@@ -363,10 +374,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.Anchor = Anchor.Center;
 		back.Origin = Anchor.Center;
 		back.Position = new(-256, 0);
-		// back.Image = Textures.LoadTextureFromFile("ui/back.png");
+		var backImage = new Image(back);
+		backImage.SetTexture(Textures.LoadTextureFromFile("ui/back.png"));
+		backImage.SetImageOrientation(ImageOrientation.Centered);
+		backImage.Dock = Dock.Fill;
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.SetText("");
-		// back.ImageOrientation = ImageOrientation.Centered;
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
 		back.Size = new(106);

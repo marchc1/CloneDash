@@ -97,7 +97,7 @@ public class NumSlider : Textbox, INumSlider
 		get => _digits;
 		set {
 			_digits = value;
-			Math.Round(_value, value);
+			_value = Math.Round(_value, value);
 		}
 	}
 	public string Prefix { get; set; } = "";

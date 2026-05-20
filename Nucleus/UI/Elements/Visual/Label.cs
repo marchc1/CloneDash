@@ -346,7 +346,7 @@ public class Label : Element, ITextElement
 	public override void ApplySchemeSettings(IScheme scheme) {
 		base.ApplySchemeSettings(scheme);
 
-		SetTextColor(scheme.GetColor("Nucleus.Text"));
+		textColor.SetSchemeValue(scheme.GetColor("Nucleus.Text"));
 		var fontStyle = scheme.GetFontStyle("Nucleus.Default");
 		Font.SetSchemeValue(fontStyle.Name);
 		TextSize.SetSchemeValue(fontStyle.Tall);

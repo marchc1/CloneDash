@@ -170,7 +170,7 @@ public class ElementInputSystem
 				// Do a backwards search first
 				var checkBack = hovered;
 				while (IValidatable.IsValid(checkBack)) {
-					if (checkBack.IsMouseInputEnabled() && checkBack.MouseScrollOccur(hovered, frameState, mouse.MouseDelta))
+					if (checkBack.IsMouseInputEnabled() && checkBack.MouseScrollOccur(hovered, frameState, mouse.MouseScroll))
 						break;
 					checkBack = checkBack.GetParent();
 				}
@@ -582,7 +582,7 @@ public class UserInterface : Element, IDisposable
 					ret = SolveState.Depressed[(int)(i - ButtonCode.MouseFirst)];
 			}
 		}
-		return IValidatable.IsValid(ret) ? SolveState.Hovered : null;
+		return IValidatable.IsValid(ret) ? ret : null;
 	}
 	public Element? GetKeyboardFocusedElement() => IValidatable.IsValid(SolveState.KeyboardFocused) ? SolveState.KeyboardFocused : null;
 

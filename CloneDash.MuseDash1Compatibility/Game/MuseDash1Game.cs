@@ -42,6 +42,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Color = Nucleus.Common.Types.Color;
+using Image = Nucleus.UI.Elements.Image;
 
 namespace CloneDash.Game;
 
@@ -871,8 +872,26 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private SecondOrderSystem? sos_yoff;
 
-	public class PauseMenuButton(Element parent, string image) : Button(parent)
+	public class PauseMenuButton : Button
 	{
+		Image? iconImage;
+		public PauseMenuButton(Element parent, string image) : base(parent) {
+			if (image != null) {
+				iconImage = new Image(this);
+				iconImage.SetTexture(Level.Textures.LoadTextureFromFile(image));
+				iconImage.SetImageOrientation(ImageOrientation.Zoom);
+				iconImage.SetImagePadding(new(4));
+				iconImage.Dock = Dock.Left;
+			}
+		}
+
+		protected override void PerformLayout(float width, float height) {
+			base.PerformLayout(width, height);
+			if (iconImage != null) {
+				iconImage.Size = new(height, height);
+			}
+		}
+
 		public override void Paint(float width, float height) {
 			var backpre = GetBgColor();
 

@@ -32,7 +32,11 @@ public class Button : Label
 	}
 
 	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
-		return true;
+		if (TriggeredWhenEnterPressed && (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter)) {
+			OnButtonClick?.Invoke(this, ButtonCode.MouseLeft);
+			return true;
+		}
+		return false;
 	}
 
 	protected override bool MouseClick(FrameState state, ButtonCode button) {
