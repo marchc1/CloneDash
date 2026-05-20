@@ -411,6 +411,7 @@ public class Textbox : Label
 	private int clickCount = 0;
 
 	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
 		if (ReadOnly && !MultiLine) return true;
 		if (button != ButtonCode.MouseLeft) return true;
 

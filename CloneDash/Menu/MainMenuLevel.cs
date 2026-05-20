@@ -326,7 +326,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
 			Graphics2D.SetDrawColor(GetTextColor());
-			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -6), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
+			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -h * 0.25f), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
 
 			SetBgColor(new Color(GetBgColor().R, GetBgColor().G, GetBgColor().B, a));
 		}
@@ -492,9 +492,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		SongLabel mapper = new SongLabel(play);
 		mapper.SetAutoSize(true);
 		mapper.SetText($"by {designer}");
-		mapper.SetTextSize(15);
+		mapper.SetTextSize(16);
 		mapper.SetTextAlignment(Anchor.BottomCenter);
-		mapper.Position = new(-6, -3);
+		mapper.TextOverflowMode = TextOverflowMode.None;
+		mapper.Clipping = false;
+		mapper.Position = new(-8, -8);
 		mapper.Anchor = Anchor.BottomRight;
 		mapper.SetPassthru(true);
 		mapper.Origin = Anchor.BottomRight;
