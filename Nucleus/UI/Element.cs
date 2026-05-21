@@ -377,14 +377,14 @@ public class Element : IValidatable
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name) {
 		Initialize(0, 0, 32, 32);
-		SetName(name);
+		SetElementName(name);
 		SetParent(parent);
 		PerformApplySchemeSettings();
 		UI?.AddElement(this);
 	}
 	public Element(Element? parent, ReadOnlySpan<char> name, IScheme? scheme) {
 		Initialize(0, 0, 32, 32);
-		SetName(name);
+		SetElementName(name);
 		SetParent(parent?.GetAddParent());
 		SetScheme(scheme);
 		PerformApplySchemeSettings();
@@ -590,8 +590,8 @@ public class Element : IValidatable
 		p?.Parent?.TriggerOnChildParented(p.Parent, p);
 	}
 
-	public ReadOnlySpan<char> GetName() => name;
-	public void SetName(ReadOnlySpan<char> name) {
+	public ReadOnlySpan<char> GetElementName() => name;
+	public void SetElementName(ReadOnlySpan<char> name) {
 		if (name.IsEmpty || name[0] == '\0') {
 			this.name = null;
 			return;
