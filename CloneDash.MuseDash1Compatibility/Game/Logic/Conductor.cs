@@ -65,7 +65,7 @@ namespace CloneDash.Game
 			public float Duration { get; set; }
 			public float Completion => Playhead / Duration;
 
-			public double XToSeconds(float x) => (x / RenderBounds.W) * Duration;
+			public double XToSeconds(float x) => (x / GetRenderBounds().W) * Duration;
 
 			public delegate void Mouse();
 

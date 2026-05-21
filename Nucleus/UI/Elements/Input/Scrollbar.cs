@@ -48,7 +48,7 @@ public class Scrollbar : Panel
 			//Console.WriteLine(map);
 			var newScroll = (float)NMath.Remap(
 				scrollbar.Alignment == ScrollbarAlignment.Horizontal ? map.X : map.Y,
-				0, scrollbar.Alignment == ScrollbarAlignment.Horizontal ? self.RenderBounds.W : self.RenderBounds.H,
+				0, scrollbar.Alignment == ScrollbarAlignment.Horizontal ? self.GetRenderBounds().W : self.GetRenderBounds().H,
 				0, scrollbar.MaxScroll
 				);
 

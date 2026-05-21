@@ -130,7 +130,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
-			Position = new(4 + 6, (int)(header.RenderBounds.H + 4))
+			Position = new(4 + 6, (int)(header.GetRenderBounds().H + 4))
 		};
 	}
 
@@ -210,16 +210,16 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			// force-render the selector active disc
 			var disc = selector.GetActiveDisc();
-			var pos = disc.RenderBounds.Pos;
+			var pos = disc.GetRenderBounds().Pos;
 			Graphics2D.OffsetDrawing(pos);
 
-			disc.Paint(disc.RenderBounds.W, disc.RenderBounds.H);
+			disc.Paint(disc.GetRenderBounds().W, disc.GetRenderBounds().H);
 			// Paint the disc's children too (cover image etc.)
 			foreach (var child in disc.GetChildren()) {
 				if (child.IsVisible()) {
-					Graphics2D.OffsetDrawing(child.RenderBounds.Pos);
-					child.Paint(child.RenderBounds.W, child.RenderBounds.H);
-					Graphics2D.OffsetDrawing(-child.RenderBounds.Pos);
+					Graphics2D.OffsetDrawing(child.GetRenderBounds().Pos);
+					child.Paint(child.GetRenderBounds().W, child.GetRenderBounds().H);
+					Graphics2D.OffsetDrawing(-child.GetRenderBounds().Pos);
 				}
 			}
 			Graphics2D.OffsetDrawing(-pos);
@@ -251,7 +251,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			// ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
 			// 	(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
 			// 	), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
-			SetPos(new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0));
+			SetPos(new((levelSelector.GetRenderBounds().W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0));
 			base.Paint(w, h);
 		}
 	}
@@ -262,7 +262,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			base.OnThink();
 
 			var oldSize = GetTextSize();
-			var w = levelSelector.RenderBounds.W;
+			var w = levelSelector.GetRenderBounds().W;
 			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155));
 			if (oldSize != GetTextSize())
 				InvalidateLayout();
@@ -279,7 +279,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			base.OnThink();
 
 			var oldSize = GetTextSize();
-			var w = levelSelector.RenderBounds.W;
+			var w = levelSelector.GetRenderBounds().W;
 			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155));
 			if (oldSize != GetTextSize())
 				InvalidateLayout();
@@ -296,9 +296,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			SetPos(levelSelector.RenderBounds.Size / 2);
-			SetPos(GetPos() - RenderBounds.Size / 2);
-			SetPos(GetPos() + new Vector2F(levelSelector.RenderBounds.W / 4f, 0));
+			SetPos(levelSelector.GetRenderBounds().Size / 2);
+			SetPos(GetPos() - GetRenderBounds().Size / 2);
+			SetPos(GetPos() + new Vector2F(levelSelector.GetRenderBounds().W / 4f, 0));
 			SetSize(new(256, height));
 		}
 
@@ -336,7 +336,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			base.Paint(w, h);
 
-			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(RenderBounds.Size, GetTextPadding());
+			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
 			Graphics2D.SetDrawColor(GetTextColor());
 			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -h * 0.25f), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
 		}

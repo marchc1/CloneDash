@@ -227,9 +227,9 @@ public class ColorSelectorDialog : Panel
 		_workingVal = hsv.Z;
 	}
 
-	protected float GetColorWheelWidth() => ColorWheel.RenderBounds.Width;
-	protected float GetColorWheelWidthRatio() => ColorWheel.RenderBounds.Width / 180;
-	protected Vector2F GetColorWheelCenterPos() => new Vector2F(ColorWheel.RenderBounds.Width) / 2;
+	protected float GetColorWheelWidth() => ColorWheel.GetRenderBounds().Width;
+	protected float GetColorWheelWidthRatio() => ColorWheel.GetRenderBounds().Width / 180;
+	protected Vector2F GetColorWheelCenterPos() => new Vector2F(ColorWheel.GetRenderBounds().Width) / 2;
 
 	protected float GetTriangleTop() => -48 * GetColorWheelWidthRatio();
 	protected float GetTriangleBottom() => 24 * GetColorWheelWidthRatio();

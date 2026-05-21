@@ -427,8 +427,8 @@ public class Window : Element
 			float mulY = 1 - (NMath.Ease.InBack(originalMul) * -2);
 
 			Vector2F sizeOffset = new(
-				((RenderBounds.X + (RenderBounds.W / 2)) * 0.5f * (mulX - 1)),
-				((RenderBounds.Y + (RenderBounds.H / 2)) * 0.5f * (mulY - 1))
+				((GetRenderBounds().X + (GetRenderBounds().W / 2)) * 0.5f * (mulX - 1)),
+				((GetRenderBounds().Y + (GetRenderBounds().H / 2)) * 0.5f * (mulY - 1))
 			);
 
 			Rlgl.Translatef(sizeOffset.X, sizeOffset.Y, 0);
@@ -439,7 +439,7 @@ public class Window : Element
 			mulf = NMath.Ease.InCubic(mulf);
 
 			EngineCore.Window.BeginMode2D(new Camera2D() {
-				Offset = new((RenderBounds.X * -mulf) + ((RenderBounds.W / 2) * -mulf), (RenderBounds.Y * -mulf) + ((RenderBounds.H / 2) * -mulf)),
+				Offset = new((GetRenderBounds().X * -mulf) + ((GetRenderBounds().W / 2) * -mulf), (GetRenderBounds().Y * -mulf) + ((GetRenderBounds().H / 2) * -mulf)),
 				Rotation = 0,
 				Target = new(0, mulf),
 				Zoom = 1.0f + mulf
@@ -463,8 +463,8 @@ public class Window : Element
 	public override void PostChildPaint() {
 		if (!IsMouseInputEnabled()) {
 			Graphics2D.SetDrawColor(0, 0, 0, 155);
-			Graphics2D.DrawRectangle(4, 4, RenderBounds.Width - 8, 34);
-			Graphics2D.DrawRectangle(4, 4 + 34 + 8, RenderBounds.Width - 8, RenderBounds.Height - 8 - 34 - 8);
+			Graphics2D.DrawRectangle(4, 4, GetRenderBounds().Width - 8, 34);
+			Graphics2D.DrawRectangle(4, 4 + 34 + 8, GetRenderBounds().Width - 8, GetRenderBounds().Height - 8 - 34 - 8);
 		}
 	}
 

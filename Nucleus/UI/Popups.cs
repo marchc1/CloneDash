@@ -50,8 +50,8 @@ namespace Nucleus.UI
 						continue;
 
 					size = new(
-						MathF.Max(size.X, child.RenderBounds.W),
-						MathF.Max(size.Y, child.RenderBounds.H)
+						MathF.Max(size.X, child.GetRenderBounds().W),
+						MathF.Max(size.Y, child.GetRenderBounds().H)
 					);
 				}
 

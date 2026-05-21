@@ -333,7 +333,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		FigureOutDisk();
 
-		float width = RenderBounds.W, height = RenderBounds.H;
+		float width = GetRenderBounds().W, height = GetRenderBounds().H;
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
 		// Hack... but no better way right now

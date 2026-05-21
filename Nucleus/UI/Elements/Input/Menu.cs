@@ -70,7 +70,7 @@ public class Menu(Element? parent) : Panel(parent)
 					parent.activeSubmenu = new Menu(this);
 					var shouldUse = submenu.invoke?.Invoke(parent.activeSubmenu) ?? false;
 					if (shouldUse) {
-						parent.activeSubmenu.Open(new Vector2F(RenderBounds.W + 8, GetGlobalPosition().Y - 7), false, parent);
+						parent.activeSubmenu.Open(new Vector2F(GetRenderBounds().W + 8, GetGlobalPosition().Y - 7), false, parent);
 					}
 					else {
 						parent.activeSubmenu.Close();
@@ -175,7 +175,7 @@ public class Menu(Element? parent) : Panel(parent)
 		float pY = 0;
 		foreach (var child in Children) {
 			if (child is ITextElement textElement) {
-				var newP = child.RenderBounds.Pos + Graphics2D.GetTextSize(textElement.GetText(), textElement.GetFont(), textElement.GetTextSize()) + 16;
+				var newP = child.GetRenderBounds().Pos + Graphics2D.GetTextSize(textElement.GetText(), textElement.GetFont(), textElement.GetTextSize()) + 16;
 				if (newP.X > pX) pX = newP.X;
 				if (newP.Y > pY) pY = newP.Y;
 			}

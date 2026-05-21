@@ -70,7 +70,7 @@ public class ElementInputSystem
 		state.Hovered = null;
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
-		state.Hovered = SolveTraverse(element, ref state, frameState, element.RenderBounds, mousePos);
+		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), mousePos);
 		// Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
@@ -88,7 +88,7 @@ public class ElementInputSystem
 
 				if (modal || popup) {
 					// Only traverse this modal child
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + element.ChildRenderOffset, child.RenderBounds.Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 
 					if (modal) {
@@ -107,7 +107,7 @@ public class ElementInputSystem
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.RenderBounds.Pos + element.ChildRenderOffset, child.RenderBounds.Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
@@ -272,13 +272,13 @@ public class ElementPaintSystem
 
 		if (element.BackdropAlpha > 0) {
 			if (IValidatable.IsValid(parent)) {
-				RectangleF size = parent.RenderBounds;
+				RectangleF size = parent.GetRenderBounds();
 				Graphics2D.SetDrawColor(0, 0, 0, (int)float.Lerp(0, 100, (float)element.BackdropAlpha));
 				Graphics2D.DrawRectangle(size.X, size.Y, size.W, size.H);
 			}
 		}
 
-		RectangleF renderBounds = element.RenderBounds;
+		RectangleF renderBounds = element.GetRenderBounds();
 
 		if (element.IsUsingRenderTarget()) {
 			// quick check if needing to create a new RT
@@ -330,7 +330,7 @@ public class ElementPaintSystem
 
 	private void PaintElement(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
 		if (!IValidatable.IsValid(element)) return;
-		var renderBounds = element.RenderBounds;
+		var renderBounds = element.GetRenderBounds();
 		float w = renderBounds.Width, h = renderBounds.Height;
 		if ((w <= 0 || h <= 0) && element.Clipping)
 			return;

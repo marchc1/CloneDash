@@ -78,7 +78,7 @@ public class ScrollPanel : Panel
 
 		if (VerticalOverflow) {
 			VerticalScrollbar.PageContents = AddParent.SizeOfAllChildren;
-			VerticalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			VerticalScrollbar.PageSize = AddParent.GetRenderBounds().Size;
 		}
 		else {
 			VerticalScrollbar.PageContents = new(0);
@@ -86,7 +86,7 @@ public class ScrollPanel : Panel
 
 		if (HorizontalOverflow) {
 			HorizontalScrollbar.PageContents = AddParent.SizeOfAllChildren;
-			HorizontalScrollbar.PageSize = AddParent.RenderBounds.Size;
+			HorizontalScrollbar.PageSize = AddParent.GetRenderBounds().Size;
 		}
 		else {
 			HorizontalScrollbar.PageContents = new(0);
@@ -94,8 +94,8 @@ public class ScrollPanel : Panel
 
 		MainPanel.Clipping = true;
 
-		VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
-		HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.RenderBounds.Size);
+		VerticalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.GetRenderBounds().Size);
+		HorizontalScrollbar.Update(AddParent.SizeOfAllChildren, AddParent.GetRenderBounds().Size);
 
 		foreach (Element child in MainPanel.Children)
 			child.SetVisible(ShouldItemBeVisible(child));

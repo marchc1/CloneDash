@@ -306,18 +306,8 @@ public class Element : IValidatable
 			_dockPadding = value;
 	}
 
-	public virtual RectangleF RenderBounds {
-		get {
-			return __renderbounds;
-		}
-		protected set {
-			__renderbounds = FORCE_ROUNDED_RENDERBOUNDS ? RectangleF.Round(value) : value;
-		}
-	}
-	public RectangleF ScreenspaceRenderBounds {
-		get {
-			return RectangleF.FromPosAndSize(GetGlobalPosition(), __renderbounds.Size);
-		}
+	public virtual RectangleF GetRenderBounds() {
+		return __renderbounds;
 	}
 
 	public Element() {
@@ -669,7 +659,7 @@ public class Element : IValidatable
 
 	private void CommitFitToParent() {
 		if (_fitToParent) {
-			var parentBounds = GetParent()?.RenderBounds ?? UI.RenderBounds;
+			var parentBounds = GetParent()?.GetRenderBounds() ?? UI.GetRenderBounds();
 			var overflow = parentBounds.GetOverflow(__renderbounds, fitPadding);
 			__renderbounds.Pos += overflow;
 			_fitToParent = false;
@@ -680,7 +670,7 @@ public class Element : IValidatable
 		SizeOfAllChildren = Vector2F.Zero;
 		foreach (var child in Children) {
 			if (child.IsVisible()) {
-				var ps = child.RenderBounds.Pos + child.RenderBounds.Size;
+				var ps = child.GetRenderBounds().Pos + child.GetRenderBounds().Size;
 				if (ps > SizeOfAllChildren)
 					SizeOfAllChildren = ps;
 			}
@@ -692,7 +682,7 @@ public class Element : IValidatable
 		if (parent == null)
 			return;
 
-		var parentBounds = parent.RenderBounds;
+		var parentBounds = parent.GetRenderBounds();
 		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
 		var tb2 = new Vector2F(__renderbounds.Width / 2, __renderbounds.Height / 2);
 		var centered = pb2 - tb2;
@@ -941,8 +931,8 @@ public class Element : IValidatable
 	public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
 		DynamicSizeReference.None => 1f,
 		DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
-		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.RenderBounds.Height / 20f,
-		DynamicSizeReference.SelfHeight => RenderBounds.Height / 20f,
+		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.GetRenderBounds().Height / 20f,
+		DynamicSizeReference.SelfHeight => GetRenderBounds().Height / 20f,
 		_ => throw new NotImplementedException()
 	};
 
@@ -974,11 +964,11 @@ public class Element : IValidatable
 	}
 
 	public bool IsRenderTargetAvailable(out RenderTexture2D rt) {
-		if (!__lastRTSize.HasValue || RenderBounds != __lastRTSize) {
+		if (!__lastRTSize.HasValue || GetRenderBounds() != __lastRTSize) {
 			if (__RT1.HasValue) Raylib.UnloadRenderTexture(__RT1.Value);
 
-			__RT1 = Graphics2D.CreateRenderTarget(RenderBounds.W, RenderBounds.H);
-			__lastRTSize = RenderBounds;
+			__RT1 = Graphics2D.CreateRenderTarget(GetRenderBounds().W, GetRenderBounds().H);
+			__lastRTSize = GetRenderBounds();
 		}
 
 		if (!__RT1.HasValue) {
@@ -1138,7 +1128,7 @@ public class Element : IValidatable
 		Vector2F ret = new Vector2F(0, 0);
 		Element? t = this;
 		while (true) {
-			ret += t.RenderBounds.Pos + t.ChildRenderOffset;
+			ret += t.GetRenderBounds().Pos + t.ChildRenderOffset;
 			t = t.Parent;
 			if (t == null || t == t.UI) {
 				break;

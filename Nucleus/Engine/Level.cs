@@ -683,7 +683,7 @@ public abstract class Level : IValidatable
 
 			if (ui_hoverresult.GetBool() && RootPanel.GetHoveredElement() != null) {
 				var uiPosition = RootPanel.GetHoveredElement()!.GetGlobalPosition();
-				var uiSize = RootPanel.GetHoveredElement()!.RenderBounds.Size;
+				var uiSize = RootPanel.GetHoveredElement()!.GetRenderBounds().Size;
 				Graphics2D.SetDrawColor(255, 255, 255);
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(uiPosition, uiSize), 1);
 
@@ -799,7 +799,7 @@ public abstract class Level : IValidatable
 			if (delta > 1) continue;
 
 			Graphics2D.SetDrawColor(255, 50, 50, (int)(150f * delta));
-			Graphics2D.DrawRectangle(element.GetGlobalPosition(), element.RenderBounds.Size);
+			Graphics2D.DrawRectangle(element.GetGlobalPosition(), element.GetRenderBounds().Size);
 		}
 	}
 
@@ -807,7 +807,7 @@ public abstract class Level : IValidatable
 		foreach (var element in e.Children) {
 			if (!element.IsVisible()) continue;
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.RenderBounds.Size);
+			Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.GetRenderBounds().Size);
 			VisRenderBounds(element);
 		}
 	}

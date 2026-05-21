@@ -97,7 +97,7 @@ public class Image : Element
 			return;
 
 		var offset = Graphics2D.Offset + (pos ?? new Vector2F(0));
-		var bounds = RenderBounds;
+		var bounds = GetRenderBounds();
 		if (size != null) {
 			bounds.W = size.Value.X;
 			bounds.H = size.Value.Y;

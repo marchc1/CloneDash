@@ -89,7 +89,7 @@ public class NumberPickerCarousel : Element
 		if (_isDragging) {
 			_scrollOffset += delta.X;
 
-			float cellWidth = RenderBounds.Width / (VisibleSideCount * 2 + 1);
+			float cellWidth = GetRenderBounds().Width / (VisibleSideCount * 2 + 1);
 			while (_scrollOffset > cellWidth / 2f) {
 				_scrollOffset -= cellWidth;
 				Value--;
@@ -105,14 +105,14 @@ public class NumberPickerCarousel : Element
 		if (button != Nucleus.Common.Input.ButtonCode.MouseLeft) return false;
 		if (_isDragging) {
 			_isDragging = false;
-			float cellWidth = RenderBounds.Width / (VisibleSideCount * 2 + 1);
+			float cellWidth = GetRenderBounds().Width / (VisibleSideCount * 2 + 1);
 			int snap = (int)MathF.Round(_scrollOffset / cellWidth);
 			Value -= snap;
 			_scrollOffset = 0;
 			return true;
 		}
 
-		float cw = RenderBounds.Width / (VisibleSideCount * 2 + 1);
+		float cw = GetRenderBounds().Width / (VisibleSideCount * 2 + 1);
 		var mousePos = GetMousePos();
 		int cellIndex = (int)(mousePos.X / cw);
 		int offset = cellIndex - VisibleSideCount;

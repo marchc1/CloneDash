@@ -170,7 +170,7 @@ public class NumSlider : Textbox, INumSlider
 
 			didDrag = true;
 			if (MinimumValue.HasValue && MaximumValue.HasValue) {
-				Value = NMath.Remap(self.GetMousePos().X, BarPadding, self.RenderBounds.Width - (BarPadding * 2), MinimumValue.Value, MaximumValue.Value);
+				Value = NMath.Remap(self.GetMousePos().X, BarPadding, self.GetRenderBounds().Width - (BarPadding * 2), MinimumValue.Value, MaximumValue.Value);
 			}
 			else Value += delta.X / MathF.Pow(1.5f, Digits);
 		}

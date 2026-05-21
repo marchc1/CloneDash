@@ -235,7 +235,7 @@ public class Textbox : Label
 			return;
 		}
 
-		float availableW = RenderBounds.Width - GetTextPadding().X * 2 - 4;
+		float availableW = GetRenderBounds().Width - GetTextPadding().X * 2 - 4;
 		if (availableW <= 0) availableW = 1;
 
 		float yAccum = 0;
@@ -338,7 +338,7 @@ public class Textbox : Label
 
 		var line = lines[targetLine];
 
-		float lineStartX = GetLineDrawX(line, RenderBounds.Width);
+		float lineStartX = GetLineDrawX(line, GetRenderBounds().Width);
 		relX -= lineStartX - textAreaX;
 
 		float accumX = 0;
@@ -417,7 +417,7 @@ public class Textbox : Label
 
 		var line = lines[lineIdx];
 		float caretY = line.Y;
-		float visibleH = RenderBounds.Height - GetTextPadding().Y * 2 - 4;
+		float visibleH = GetRenderBounds().Height - GetTextPadding().Y * 2 - 4;
 
 		if (caretY < scrollOffsetY)
 			scrollOffsetY = caretY;
@@ -518,7 +518,7 @@ public class Textbox : Label
 		ValidateLines();
 
 		float totalH = lines.Count > 0 ? lines[^1].Y + lines[^1].Height : 0;
-		float visibleH = RenderBounds.Height - GetTextPadding().Y * 2 - 4;
+		float visibleH = GetRenderBounds().Height - GetTextPadding().Y * 2 - 4;
 		scrollOffsetY = Math.Clamp(scrollOffsetY, 0, Math.Max(0, totalH - visibleH));
 
 		return true;
