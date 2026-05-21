@@ -222,7 +222,7 @@ public class Label : Element, ITextElement
 		ReadOnlySpan<char> font = GetFont();
 		float textSize = GetRenderTextSize();
 		TextRange workingRange = new() { };
-		Vector2F workingArea = __autosize ? new Vector2F(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight()) : Size - GetTextPadding() - new Vector2F(4, 4);
+		Vector2F workingArea = __autosize ? new Vector2F(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight()) : GetSize() - GetTextPadding() - new Vector2F(4, 4);
 
 		if (textOverflowMode.IsTruncate())
 			workingArea.W -= Graphics2D.GetTextSize("...", font, textSize).X;

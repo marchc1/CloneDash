@@ -110,7 +110,7 @@ public class Menu(Element? parent) : Panel(parent)
 	Element? lastHoveredPiece = null;
 
 	public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
-		this.Position = pos;
+		this.SetPos(pos);
 		this.BorderSize = 1;
 
 		this.SetBgColor(new Color(20, 30, 45, 220));
@@ -133,12 +133,12 @@ public class Menu(Element? parent) : Panel(parent)
 
 					var s = new MenuSeparatorPanel(this);
 					s.Dock = Dock.Top;
-					s.Size = new Types.Vector2F(0, 5);
+					s.SetSize(new Types.Vector2F(0, 5));
 					break;
 				case MenuButton btn: {
 						var b = new MenuButtonPanel(this, btn);
 						b.Dock = Dock.Top;
-						b.Size = new Types.Vector2F(0, 28);
+						b.SetSize(new Types.Vector2F(0, 28));
 						b.SetText(btn.text);
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
@@ -152,7 +152,7 @@ public class Menu(Element? parent) : Panel(parent)
 				case MenuSubmenu submenu: {
 						var b = new MenuSubMenuButtonPanel(this, submenu);
 						b.Dock = Dock.Top;
-						b.Size = new Types.Vector2F(0, 28);
+						b.SetSize(new Types.Vector2F(0, 28));
 						b.SetText(submenu.text);
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
@@ -181,8 +181,8 @@ public class Menu(Element? parent) : Panel(parent)
 			}
 
 		}
-		this.Size = new(pX + 12, pY - 4);
-		var whereIsEnd = this.Position + this.Size + new Vector2F(4, 4);
+		this.SetSize(new(pX + 12, pY - 4));
+		var whereIsEnd = this.GetPos() + this.GetSize() + new Vector2F(4, 4);
 
 		TextAlignment lr = TextAlignment.Left;
 		TextAlignment tb = TextAlignment.Top;

@@ -38,7 +38,7 @@ public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) :
 			return true;
 
 		CurrentDialog = new ColorSelectorDialog(UI);
-		CurrentDialog.Position = state.Mouse.MousePos;
+		CurrentDialog.SetPos(state.Mouse.MousePos);
 		CurrentDialog.Setup(this);
 		CurrentDialog.FitToParent(8);
 		return true;
@@ -167,7 +167,7 @@ public class ColorSelectorDialog : Panel
 				this.Remove();
 			}
 		};
-		this.Size = new(180, 320);
+		this.SetSize(new(180, 320));
 		ColorWheel = new Panel(this);
 	}
 	public ColorSelector Selector = null!;
@@ -317,6 +317,6 @@ public class ColorSelectorDialog : Panel
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		ColorWheel.Size = new(width, width);
+		ColorWheel.SetSize(new(width, width));
 	}
 }

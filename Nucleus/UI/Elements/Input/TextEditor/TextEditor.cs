@@ -55,7 +55,7 @@ public class AutocompletePanel : Panel
 	public int LastPulsingIndex;
 	public ScrollPanel OptionsParent;
 	public AutocompletePanel(Element? parent) : base(parent) {
-		Size = new(480, 180);
+		SetSize(new(480, 180));
 		OptionsParent = new ScrollPanel(this);
 		OptionsParent.SetPaintBackgroundEnabled(false);
 		OptionsParent.Dock = Dock.Fill;
@@ -210,7 +210,7 @@ public class TextEditor : Panel, ITextElement
 		if (AutocompletePanel == null)
 			return;
 
-		AutocompletePanel.Position = new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight));
+		AutocompletePanel.SetPos(new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight)));
 	}
 
 	public void CloseAutocomplete() {
@@ -358,7 +358,7 @@ public class TextEditor : Panel, ITextElement
 		//Gutter.DockMargin = RectangleF.TLRB(6);
 
 		Gutter.Dock = Dock.Left;
-		Gutter.Size = new(64, 0);
+		Gutter.SetSize(new(64, 0));
 		Editor.Dock = Dock.Fill;
 
 		VScrollbar.Dock = Dock.Right;

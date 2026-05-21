@@ -104,14 +104,15 @@ public class CharacterSelectorScroller : Panel
 				btn.SetVisible(false);
 			else {
 				btn.SetVisible(true);
-				btn.Size = new(height, height);
+				btn.SetSize(new(height, height));
 				float baseX = (width / 2) - (height / 2);
 				float adjustedIndexX = baseX + (i * height);
 				float adjustedSelectedX = adjustedIndexX - (lastSelectedIdx * height);
-				btn.Position = new(adjustedSelectedX, 0);
+				btn.SetPos(new(adjustedSelectedX, 0));
 
-				btn.Position += new Vector2F(selectedSizeOffset);
-				btn.Size -= new Vector2F(selectedSizeOffset * 2);
+				btn.SetPos(
+				btn.GetPos() + new Vector2F(selectedSizeOffset));
+				btn.SetSize(btn.GetSize() - new Vector2F(selectedSizeOffset * 2));
 			}
 		}
 	}
@@ -144,7 +145,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		selectedInfo = new Panel(this);
 		selectedInfo.Dock = Dock.Bottom;
 		selectedInfo.DynamicallySized = true;
-		selectedInfo.Size = new(0, 0.125f);
+		selectedInfo.SetSize(new(0, 0.125f));
 		selectedInfo.BorderSize = 0;
 		selectedInfo.SetPaintBackgroundEnabled(false);
 		selectedInfo.SetPaintBorderEnabled(false);
@@ -165,7 +166,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		characterSelectButton = new(selectedInfo);
 		characterSelectButton.Dock = Dock.Right;
-		characterSelectButton.Size = new(0.15f);
+		characterSelectButton.SetSize(new(0.15f));
 		characterSelectButton.DynamicallySized = true;
 		characterSelectButton.SetBgColor(new Color(10, 30, 10));
 		characterSelectButton.SetFgColor(new Color(48, 220, 70));
@@ -184,7 +185,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel = new CharacterSelectorScroller(this);
 		backPanel.Dock = Dock.Bottom;
 		backPanel.DynamicallySized = true;
-		backPanel.Size = new(0, 0.1f);
+		backPanel.SetSize(new(0, 0.1f));
 		backPanel.BorderSize = 0;
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
 
@@ -210,10 +211,10 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterHPLabel.SetTextSize(40 * ratio);
 		characterAuthorLabel.SetTextSize(28 * ratio);
 
-		characterNameLabel.Position = new(32, 10 * ratio);
-		characterCostumeLabel.Position = new(32, 72 * ratio);
-		characterHPLabel.Position = new(32, 104 * ratio);
-		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
+		characterNameLabel.SetPos(new(32, 10 * ratio));
+		characterCostumeLabel.SetPos(new(32, 72 * ratio));
+		characterHPLabel.SetPos(new(32, 104 * ratio));
+		characterAuthorLabel.SetPos(new(width - 32, 48 * ratio));
 
 		characterSelectButton.SetTextSize(80 * ratio);
 	}

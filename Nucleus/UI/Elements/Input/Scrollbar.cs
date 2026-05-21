@@ -130,14 +130,14 @@ public class Scrollbar : Panel
 		}
 	}
 	public Scrollbar(Element? parent) : base(parent) {
-		this.Size = new(18, 18);
+		this.SetSize(new(18, 18));
 
 		Up = new ScrollbarButton(this);
 		Down = new ScrollbarButton(this);
 		Grip = new ScrollbarGrip(this);
 
-		Up.Size = new(18, 18);
-		Down.Size = new(18, 18);
+		Up.SetSize(new(18, 18));
+		Down.SetSize(new(18, 18));
 
 		Up.Dock = Dock.Top;
 		Down.Dock = Dock.Bottom;

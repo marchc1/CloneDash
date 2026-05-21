@@ -18,7 +18,7 @@ public class TreeNode : Button, IContainsNodes
 		ChildrenPanel.SetPaintBackgroundEnabled(false);
 		ChildrenPanel.SetPaintEnabled(false);
 		ChildrenPanel.SetVisible(false);
-		ChildrenPanel.Size = new(0, 0);
+		ChildrenPanel.SetSize(new(0, 0));
 		ChildrenPanel.DockPadding = RectangleF.TLRB(0, 8, 0, 0);
 
 		SetTextAlignment(Anchor.CenterLeft);

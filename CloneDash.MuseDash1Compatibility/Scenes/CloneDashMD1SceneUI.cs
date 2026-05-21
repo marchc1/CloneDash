@@ -55,12 +55,12 @@ public class StatisticsPanel : Panel
 		bottom.SetPaintBackgroundEnabled(false);
 
 		bottom.DynamicallySized = true;
-		bottom.Size = new(0.07f);
+		bottom.SetSize(new(0.07f));
 		bottom.Dock = Dock.Bottom;
 
 		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
-		restart.Size = new(.2f);
+		restart.SetSize(new(.2f));
 		restart.SetText("Restart");
 		restart.Dock = Dock.Left;
 		restart.OnButtonClick += (_,  _) => {
@@ -72,7 +72,7 @@ public class StatisticsPanel : Panel
 
 		var back = new Button(bottom);
 		back.DynamicallySized = true;
-		back.Size = new(.2f);
+		back.SetSize(new(.2f));
 		back.SetText("Main Menu");
 		back.Dock = Dock.Right;
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
@@ -674,7 +674,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (CurrentStatisticsPanel == null)
 			return;
 
-		CurrentStatisticsPanel.Size = new(1, 1);
+		CurrentStatisticsPanel.SetSize(new(1, 1));
 		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 

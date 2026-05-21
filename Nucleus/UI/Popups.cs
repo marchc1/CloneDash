@@ -55,13 +55,13 @@ namespace Nucleus.UI
 					);
 				}
 
-				Size = new(
+				SetSize(new(
 					MathF.Max(size.X, MinimumInternalSize.W),
 					MathF.Max(size.Y, MinimumInternalSize.H)
-				);
+				));
 
 				if (GetParent() != null)
-					Position = (GetParent().Size / 2) - (Size / 2);
+					SetPos((GetParent().GetSize() / 2) - (GetSize() / 2));
 			}
 		}
 	}
@@ -87,7 +87,7 @@ namespace Nucleus.UI
             FlexPanel containButtons = new FlexPanel(popup);
             containButtons.Dock = Dock.Bottom;
             containButtons.DockMargin = RectangleF.TLRB(0, 0, 0, 5);
-            containButtons.Size = new(0, 48);
+            containButtons.SetSize(new(0, 48));
             containButtons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
             containButtons.DockPadding = RectangleF.TLRB(2, 2, 2, 2);
 
@@ -99,7 +99,7 @@ namespace Nucleus.UI
             var txtsize = Graphics2D.GetTextSize(lb.GetText(), lb.GetFont(), lb.GetTextSize());
             var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.GetFont(), popup.Titlebar.GetTextSize());
             var finalsize = new Vector2F(MathF.Max(txtsize.X, titlesize.X + 64), txtsize.Y);
-            popup.Size = new Vector2F(100, 200) + finalsize;
+            popup.SetSize(new Vector2F(100, 200) + finalsize);
             popup.Center();
 
             audiosystem.PlaySound("popup.wav", AudioPlaybackSettings.Unaltered);

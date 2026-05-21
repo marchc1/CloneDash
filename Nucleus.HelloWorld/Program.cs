@@ -38,7 +38,7 @@ internal class Program
 						var h = alignment.ToTextAlignment().Horizontal;
 						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
 						column.SetText("The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString()) ;
-						column.Size = new(window.Size.W / 3, 0);
+						column.SetSize(new(window.GetSize().W / 3, 0)) ;
 						column.SetTextAlignment(alignment) ;
 						column.TextOverflowMode = TextOverflowMode.WordWrap;
 						return column;
@@ -49,7 +49,7 @@ internal class Program
 					var left = column(  new TextAlignment2D(TextAlignment.Left, v).ToAnchor());
 					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
 					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
-					row.Size = new(0, window.Size.H / 3);
+					row.SetSize(new(0, window.GetSize().H / 3)) ;
 					row.SetPaintBackgroundEnabled(false);
 
 					return row;
@@ -67,7 +67,7 @@ internal class Program
 
 			var tools = new Panel(RootPanel);
 			tools.Dock = Dock.Right;
-			tools.Size = new(640, 0);
+			tools.SetSize(new(640, 0));
 			var testLabel = new Label(tools);
 			testLabel.SetAutoSize(true);
 			testLabel.Dock = Dock.Top;

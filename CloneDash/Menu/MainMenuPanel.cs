@@ -192,8 +192,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			var btnWidth = Math.Clamp(width / 3f, 460, 155555);
 			var btnHeight = height / 12f;
 			var btnsLen = btns.Count;
-			back.Size = new(btnHeight * 2);
-			back.Position = new(width * .5f, height / 2);
+			back.SetSize(new(btnHeight * 2));
+			back.SetPos(new(width * .5f, height / 2));
 			back.SetVisible(!UsingRootNavigationMenu);
 
 			for (int i = 0; i < btnsLen; i++) {
@@ -201,11 +201,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 				btn.Origin = Anchor.Center;
 				btn.SetTextSize(textHeight);
-				btn.Size = new(btnWidth, btnHeight);
+				btn.SetSize(new(btnWidth, btnHeight));
 
 				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
 
-				btn.Position = new(width * .75f, height / 2 + y * height / 3);
+				btn.SetPos(new(width * .75f, height / 2 + y * height / 3));
 			}
 		}
 	}

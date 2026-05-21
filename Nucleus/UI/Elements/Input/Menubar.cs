@@ -33,7 +33,7 @@ public class Menubar : Panel
 		}
 	}
 	public Menubar(Element? parent) : base(parent) {
-		this.Size = new(0, 32);
+		this.SetSize(new(0, 32));
 		this.Dock = Dock.Top;
 	}
 	public MenuContext AddButton(string text, string? icon = null, Action? action = null) {

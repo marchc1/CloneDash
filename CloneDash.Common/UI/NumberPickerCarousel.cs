@@ -56,8 +56,8 @@ public class NumberPickerCarousel : Element
 	private float _targetOffset = 0f;
 	private float _scrollSpeed = 10f;
 
-	public NumberPickerCarousel(Element? parent) : base(parent){ 
-		Size = new Vector2F(320, 48);
+	public NumberPickerCarousel(Element? parent) : base(parent){
+		SetSize(new Vector2F(320, 48));
 		Clipping = true;
 	}
 

@@ -569,8 +569,8 @@ public abstract class Level : IValidatable
 		if (frameState.Mouse.Focused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
 		if (frameState.Keyboard.Focused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
-		RootPanel.Position = new(0, 0);
-		RootPanel.Size = new(frameState.WindowWidth,frameState.WindowHeight);
+		RootPanel.SetPos(new(0, 0));
+		RootPanel.SetSize(new(frameState.WindowWidth,frameState.WindowHeight));
 
 		ref ElementSolveState solveState = ref RootPanel.ProduceSolveState();
 		RootPanel.Scheme.ApplyScheme(RootPanel, ref solveState);

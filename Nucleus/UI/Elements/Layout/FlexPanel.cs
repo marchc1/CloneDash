@@ -83,8 +83,8 @@ public class FlexPanel(Element? parent) : Panel(parent)
 					break;
 			}
 
-			child.Position = new(cx, cy);
-			child.Size = new(cw, ch);
+			child.SetPos(new(cx, cy));
+			child.SetSize(new(cw, ch));
 
 			idx++;
 		}

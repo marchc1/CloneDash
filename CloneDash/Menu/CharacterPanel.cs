@@ -112,14 +112,14 @@ public class CharacterPanel : Panel
 				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 				textSize += new Vector2F(16);
 
-				ExpressionLabel.Position = textPos;
-				ExpressionLabel.Size = textSize;
+				ExpressionLabel.SetPos(textPos);
+				ExpressionLabel.SetSize(textSize);
 				ExpressionLabel.SetVisible(true);
 				ExpressionLabel.SetPaintBackgroundEnabled(true);
 				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
 				ExpressionLabel.SetTextColor(new(255, 255, 255, (int)(alphaMult * 255)));
 				ExpressionLabel.SetAutoSize(true);
-				ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
+				ExpressionLabel.SetSize(new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y));
 				ExpressionLabel.SetText(ExpressionText);
 			}
 			else

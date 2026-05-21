@@ -888,7 +888,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
 			if (iconImage != null) {
-				iconImage.Size = new(height, height);
+				iconImage.SetSize(new(height, height));
 			}
 		}
 
@@ -959,7 +959,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				else {
 					if (startPause()) {
 						PauseWindow = new Panel(this.RootPanel);
-						PauseWindow.Size = new(300, 400);
+						PauseWindow.SetSize(new(300, 400));
 						PauseWindow.Center();
 
 						var flex = new FlexPanel(PauseWindow);
@@ -1005,7 +1005,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							panel.Anchor = Anchor.Center;
 							panel.Origin = Anchor.Center;
 							panel.DynamicallySized = true;
-							panel.Size = new(0.9f);
+							panel.SetSize(new(0.9f));
 
 							var titlebar = new Titlebar(panel);
 							titlebar.Dock = Dock.Top;

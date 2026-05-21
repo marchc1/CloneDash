@@ -82,16 +82,16 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var charPanel = new Panel(RootPanel);
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
-		charPanel.Size = new(1f, 1f);
+		charPanel.SetSize(new(1f, 1f));
 
 		Character = new(charPanel);
 		Character.DynamicallySized = true;
 		Character.Origin = Anchor.TopCenter;
-		Character.Size = new(1f);
+		Character.SetSize(new(1f));
 
 		header = new(RootPanel);
-		header.Position = new Vector2F(0);
-		header.Size = new Vector2F(256, 64);
+		header.SetPos(new Vector2F(0));
+		header.SetSize(new Vector2F(256, 64));
 		header.Dock = Dock.Top;
 		header.BorderSize = 0;
 		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
@@ -101,7 +101,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		});
 
 		var test2 = new Label(header);
-		test2.Size = new Vector2F(158, 32);
+		test2.SetSize(new Vector2F(158, 32));
 		test2.Dock = Dock.Left;
 		test2.SetText("Clone Dash");
 		test2.SetTextSize(30);
@@ -137,7 +137,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
 		var menuBtn = new Button(header);
 		menuBtn.SetAutoSize(false);
-		menuBtn.Size = new Vector2F(64);
+		menuBtn.SetSize(new Vector2F(64));
 		menuBtn.SetText("");
 		menuBtn.Dock = dock;
 		var menuBtnImage = new Image(menuBtn);
@@ -251,7 +251,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			// ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
 			// 	(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
 			// 	), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
-			Position = new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0);
+			SetPos(new((levelSelector.RenderBounds.W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0));
 			base.Paint(w, h);
 		}
 	}
@@ -268,7 +268,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				InvalidateLayout();
 
 			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 6, 0, 1)) * 255)));
-			Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6));
+			SetPos(new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6)));
 		}
 	}
 
@@ -285,7 +285,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				InvalidateLayout();
 
 			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 1.3f, 0, 1)) * 255)));
-			Position = new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12));
+			SetPos(new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12)));
 		}
 	}
 
@@ -296,10 +296,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			Position = levelSelector.RenderBounds.Size / 2;
-			Position -= RenderBounds.Size / 2;
-			Position += new Vector2F(levelSelector.RenderBounds.W / 4f, 0);
-			Size = new(256, height);
+			SetPos(levelSelector.RenderBounds.Size / 2);
+			SetPos(GetPos() - RenderBounds.Size / 2);
+			SetPos(GetPos() + new Vector2F(levelSelector.RenderBounds.W / 4f, 0));
+			SetSize(new(256, height));
 		}
 
 		protected override void PerformLayout(float width, float height) {
@@ -389,7 +389,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		LevelSelectorBackButton back = new(levelSelector, selector);
 		back.Anchor = Anchor.Center;
 		back.Origin = Anchor.Center;
-		back.Position = new(-256, 0);
+		back.SetPos(new(-256, 0));
 		var backImage = new Image(back);
 		backImage.SetTexture(Textures.LoadTextureFromFile("ui/back.png"));
 		backImage.SetImageOrientation(ImageOrientation.Centered);
@@ -398,7 +398,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.SetText("");
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
-		back.Size = new(106);
+		back.SetSize(new(106));
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
 		title.SetTextSize(48);
@@ -478,12 +478,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		float x;
 
-		if (Math.Abs(target - Character.Position.X) < 0.1)
+		if (Math.Abs(target - Character.GetPos().X) < 0.1)
 			x = target;
 		else
-			x = (float)double.Lerp(target, Character.Position.X, Math.Exp(-10f * CurtimeDelta));
+			x = (float)double.Lerp(target, Character.GetPos().X, Math.Exp(-10f * CurtimeDelta));
 
-		Character.Position = new(x, 0);
+		Character.SetPos(new(x, 0));
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
@@ -496,7 +496,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (metadata.Difficulty == "0") return null;
 
 		LevelSelectorSelectDifficultyButton play = new(levelSelector, difficultyName, metadata);
-		play.Size = new(64);
+		play.SetSize(new(64));
 		play.DockMargin = RectangleF.TLRB(8);
 
 		SongLabel mapper = new SongLabel(play);
@@ -506,7 +506,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.SetTextAlignment(Anchor.BottomCenter);
 		mapper.TextOverflowMode = TextOverflowMode.None;
 		mapper.Clipping = false;
-		mapper.Position = new(-8, -8);
+		mapper.SetPos(new(-8, -8));
 		mapper.Anchor = Anchor.BottomRight;
 		mapper.SetPassthru(true);
 		mapper.Origin = Anchor.BottomRight;

@@ -42,8 +42,8 @@ public class SettingsCategory(Element? parent) : Button(parent)
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		Icon.Position = new(4, 0);
-		Icon.Size = new(height, height);
+		Icon.SetPos(new(4, 0));
+		Icon.SetSize(new(height, height));
 		SetTextPadding(new((height * 2) + 8, 0));
 	}
 }
@@ -61,11 +61,11 @@ public class SettingsPanel : ScrollPanel
 		panel.SetPaintBorderEnabled(false);
 		panel.DynamicallySized = true;
 		panel.Dock = Dock.Top;
-		panel.Size = new(0.08f);
+		panel.SetSize(new(0.08f));
 
 		var top = new Panel(panel);
 		top.DynamicallySized = true;
-		top.Size = new(0.5f);
+		top.SetSize(new(0.5f));
 		top.Dock = Dock.Top;
 		top.SetPaintBackgroundEnabled(false);
 		top.SetPaintBorderEnabled(false);
@@ -131,7 +131,7 @@ public class SettingsPanel : ScrollPanel
 	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
 		var back = buildBackPanel(name, "");
 		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
-		back.Bottom.Size = new Vector2F(0, 0.13f);
+		back.Bottom.SetSize(new Vector2F(0, 0.13f));
 		buttons.Dock = Dock.Fill;
 		buttons.SetInputAction(action);
 		return buttons;
@@ -198,7 +198,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.Dock = Dock.Top;
 		category.DynamicallySized = true;
 		category.SetTextSize(24);
-		category.Size = new(0.06f);
+		category.SetSize(new(0.06f));
 		if (icon != null)
 			category.Icon.SetTexture(Level.Textures.LoadTextureFromFile(icon));
 
@@ -226,7 +226,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		settingCategoryPicker.SetPaintBackgroundEnabled(false);
 		settingCategoryPicker.Dock = Dock.Left;
 		settingCategoryPicker.DynamicallySized = true;
-		settingCategoryPicker.Size = new(0.25f);
+		settingCategoryPicker.SetSize(new(0.25f));
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
@@ -438,11 +438,11 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		int innerPadding = 4;
 		float x = padding;
 		foreach (var btn in buttons) {
-			btn.Position = new(x, innerPadding);
+			btn.SetPos(new(x, innerPadding));
 			float sizeW = height - padding;
 			if (btn == addButton)
 				sizeW = sizeW * 1.5f;
-			btn.Size = new(sizeW, height - (innerPadding * 2));
+			btn.SetSize(new(sizeW, height - (innerPadding * 2)));
 			if (btn == addButton)
 				btn.SetTextSize(height / 2f);
 			else
@@ -500,7 +500,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		currentOffsetLabel.Anchor = Anchor.TopCenter;
 		currentOffsetLabel.Origin = Anchor.TopCenter;
 		currentOffsetLabel.SetTextAlignment(Anchor.TopCenter);
-		currentOffsetLabel.Position = new(0, 24);
+		currentOffsetLabel.SetPos(new(0, 24));
 		currentOffsetLabel.SetTextSize(36);
 		currentOffsetLabel.SetAutoSize(true);
 
@@ -508,7 +508,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		lastHitLabel.Anchor = Anchor.TopCenter;
 		lastHitLabel.Origin = Anchor.TopCenter;
 		lastHitLabel.SetTextAlignment(Anchor.TopCenter);
-		lastHitLabel.Position = new(0, 64);
+		lastHitLabel.SetPos(new(0, 64));
 		lastHitLabel.SetTextSize(28);
 		lastHitLabel.SetAutoSize(true);
 		lastHitLabel.SetText("Press any key to the beat");

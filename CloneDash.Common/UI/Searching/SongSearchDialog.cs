@@ -47,13 +47,13 @@ public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 	}
 
 	protected override void PerformLayout(float width, float height) {
-		label.Position = new(0, 0);
+		label.SetPos(new(0, 0));
 		var div = 4f;
-		label.Size = new(width / div, height);
+		label.SetSize(new(width / div, height));
 
 		var padding = 4;
-		element.Position = new((width / div) + padding, padding);
-		element.Size = new((width - (width / div)) - (padding * 2), (height) - (padding * 2));
+		element.SetPos(new((width / div) + padding, padding));
+		element.SetSize(new((width - (width / div)) - (padding * 2), (height) - (padding * 2)));
 	}
 }
 
@@ -81,7 +81,7 @@ public class SongSearchDialog : Window
 		MakePopup();
 
 		DynamicallySized = true;
-		Size = new(0.4f);
+		SetSize(new(0.4f));
 		Resizable = false;
 		HideNonCloseButtons();
 		Title = "Song Search Dialog";
@@ -103,7 +103,7 @@ public class SongSearchDialog : Window
 	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
 		DialogLabelPanel<T> pnl = new(parameters);
 		pnl.Dock = Dock.Top;
-		pnl.Size = new(0, 0.15f);
+		pnl.SetSize(new(0, 0.15f));
 		pnl.DynamicallySized = true;
 		pnl.SetText(label.SliceNullTerminatedString());
 		return pnl;
@@ -203,7 +203,7 @@ public class SongSearchDialog : Window
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		applyButton.Size = new(height * 0.1f);
+		applyButton.SetSize(new(height * 0.1f));
 	}
 }
 

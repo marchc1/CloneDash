@@ -195,8 +195,8 @@ namespace Nucleus
 
 
 		protected override void OnThink() {
-			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
-			Size = new(GetParent()!.Size.W - 16, 384);
+			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
+			SetSize(new(GetParent()!.GetSize().W - 16, 384));
 		}
 
 		internal class ConsoleLogs : TextEditor
@@ -236,14 +236,14 @@ namespace Nucleus
 		}
 
 		public ConsoleWindow(Element? parent) : base(parent) {
-			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
-			Size = new(GetParent()!.Size.W - 16, 384);
+			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
+			SetSize(new(GetParent()!.GetSize().W - 16, 384));
 
 			this.DockMargin = RectangleF.TLRB(8);
 			this.BorderSize = 0;
 
 			consoleInput = new ConsoleInput(this);
-			consoleInput.Size = new(0, 32);
+			consoleInput.SetSize(new(0, 32));
 			consoleInput.Dock = Dock.Bottom;
 			consoleInput.Multiline = false;
 			consoleInput.ShowDetails = false;
@@ -347,7 +347,7 @@ namespace Nucleus
 			if (!IValidatable.IsValid(autoComplete)) {
 				autoComplete = new ConsoleAutocomplete(consoleInput);
 				autoComplete.Dock = Dock.Bottom;
-				autoComplete.Size = new(0, 0);
+				autoComplete.SetSize(new(0, 0));
 			}
 		}
 

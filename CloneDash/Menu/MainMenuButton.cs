@@ -36,7 +36,7 @@ public class MainMenuButton : Button
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		image.Size = new(height, height);
+		image.SetSize(new(height, height));
 	}
 
 

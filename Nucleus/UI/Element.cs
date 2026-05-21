@@ -214,19 +214,18 @@ public class Element : IValidatable
 	}
 
 
-	public Vector2F Position {
-		get { return _position; }
-		set {
-			if (value == _position)
-				return;
+	public Vector2F GetPos() { return _position; }
 
-			_position = value;
-			if (!HasFlag(ElementFlags.InPerformLayout)) {
-				InvalidateLayout();
-			}
-			else
-				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+	public void SetPos(Vector2F value) {
+		if (value == _position)
+			return;
+
+		_position = value;
+		if (!HasFlag(ElementFlags.InPerformLayout)) {
+			InvalidateLayout();
 		}
+		else
+			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
 	public DynamicSizeReference DynamicSizeReference {
@@ -246,21 +245,20 @@ public class Element : IValidatable
 		}
 	}
 
-	public Vector2F Size {
-		get { return _size; }
-		set {
-			if (value == _size)
-				return;
+	public Vector2F GetSize() { return _size; }
 
-			_size = value;
-			if (!HasFlag(ElementFlags.InPerformLayout)) {
-				if (_dock != Dock.None)
-					GetParent()?.InvalidateLayout();
-				InvalidateLayout();
-			}
-			else
-				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+	public void SetSize(Vector2F value) {
+		if (value == _size)
+			return;
+
+		_size = value;
+		if (!HasFlag(ElementFlags.InPerformLayout)) {
+			if (_dock != Dock.None)
+				GetParent()?.InvalidateLayout();
+			InvalidateLayout();
 		}
+		else
+			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
 	/// <summary>
@@ -1169,9 +1167,9 @@ public class Element : IValidatable
 	}
 
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
-		this.Size = new(sizeW ? 0 : this.Size.W, sizeH ? 0 : this.Size.H);
+		this.SetSize(new(sizeW ? 0 : this.GetSize().W, sizeH ? 0 : this.GetSize().H));
 		InvalidateLayout();
-		Size = new(sizeW ? SizeOfAllChildren.W : Size.W, sizeH ? SizeOfAllChildren.H : Size.H);
+		SetSize(new(sizeW ? SizeOfAllChildren.W : GetSize().W, sizeH ? SizeOfAllChildren.H : GetSize().H));
 	}
 
 	public virtual void ProvideExample(Panel buildHere) { }
@@ -1180,7 +1178,7 @@ public class Element : IValidatable
 		UserInterface UI = EngineCore.Level.RootPanel;
 
 		var examples = new Elements.Window(UI);
-		examples.Size = new(1280, 720);
+		examples.SetSize(new(1280, 720));
 		examples.Center();
 		examples.Title = "Nucleus - UI Element Examples";
 

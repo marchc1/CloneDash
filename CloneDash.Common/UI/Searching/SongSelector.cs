@@ -368,8 +368,8 @@ public class SongSelector : Panel, IMainMenuPanel
 				CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 				// DON'T do: disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
 				// DO: set Position/Size and let DoOriginAnchor handle center-origin
-				disc.Size = new(size, size);
-				disc.Position = new(x, y);
+				disc.SetSize(new(size, size));
+				disc.SetPos(new(x, y));
 			}
 
 
@@ -445,11 +445,11 @@ public class SongSelector : Panel, IMainMenuPanel
 			if (song == null)
 				continue;
 
-			disc.Size = new(discWidth, discWidth);
+			disc.SetSize(new(discWidth, discWidth));
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 			disc.SetImageRotation(rot);
-			disc.Position = new(x, y);
+			disc.SetPos(new(x, y));
 			disc.SetText("");
 		}
 
@@ -463,8 +463,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor.Anchor = Anchor.Center;
 		CurrentTrackAuthor.SetAutoSize(true);
 
-		CurrentTrackName.Position = new(0, heightDiv2 / 1.8f);
-		CurrentTrackAuthor.Position = new(0, heightDiv2 / 1.8f + 42);
+		CurrentTrackName.SetPos(new(0, heightDiv2 / 1.8f));
+		CurrentTrackAuthor.SetPos(new(0, heightDiv2 / 1.8f + 42));
 
 		CurrentTrackName.SetTextSize(48);
 		CurrentTrackAuthor.SetTextSize(24);
@@ -539,9 +539,9 @@ public class SongSelector : Panel, IMainMenuPanel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		LayoutDiscs(width, height);
-		SearchBar.Position = new(width / 2, height * .1f);
-		SearchBar.Size = new(width / 2f, height * 0.06f);
-		FilterResults.Position = new(0, height * .1f + height * 0.06f + height * 0.00f);
+		SearchBar.SetPos(new(width / 2, height * .1f));
+		SearchBar.SetSize(new(width / 2f, height * 0.06f));
+		FilterResults.SetPos(new(0, height * .1f + height * 0.06f + height * 0.00f));
 		FilterResults.SetTextSize(height / 30f);
 		FilterResults.SetAutoSize(true);
 	}
