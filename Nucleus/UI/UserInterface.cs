@@ -190,7 +190,7 @@ public class ElementInputSystem
 				return false;
 
 			emulated = keyboard;
-			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
+			keyboardFocused.GetKeyboardInputMarshal().State(ref emulated);
 			if (keybindChainingAllowed && keyboardFocused.Keybinds.TestKeybinds(ref emulated, out Keybind? keybind)) {
 				keyboard.ConsumeFirstKeyPress(keybind.FinalKey);
 				return true;

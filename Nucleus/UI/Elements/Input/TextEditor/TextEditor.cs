@@ -364,7 +364,7 @@ public class TextEditor : Panel, ITextElement
 		VScrollbar.SetDock(Dock.Right);
 		VScrollbar.OnScrolled += Scrollbar_OnScrolled;
 
-		Editor.KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
+		Editor.SetKeyboardInputMarshal(new HoldingKeyboardInputMarshal());
 
 		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyA], () => {
 			SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);

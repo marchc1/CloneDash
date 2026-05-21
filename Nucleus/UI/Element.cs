@@ -175,6 +175,10 @@ public class Element : IValidatable
 	internal Element? Parent;
 	private double lastLayoutTime = 0;
 
+	private readonly Dictionary<string, object?> Tags = [];
+	DateTime Birth = DateTime.Now;
+	private IKeyboardInputMarshal keyboardInputMarshal = DefaultKeyboardInputMarshal.Instance;
+
 
 	public float GetBorderSize() {
 		return borderSize;
@@ -235,14 +239,13 @@ public class Element : IValidatable
 		opacity = value;
 	}
 
-	public Dictionary<string, object?> Tags { get; } = [];
+	public IKeyboardInputMarshal GetKeyboardInputMarshal() {
+		return keyboardInputMarshal;
+	}
 
-	public bool Dragged { get; internal set; } = false;
-	public Vector2F DragVector { get; internal set; } = Vector2F.Zero;
-
-	public DateTime Birth { get; private set; } = DateTime.Now;
-
-	public IKeyboardInputMarshal KeyboardInputMarshal { get; set; } = DefaultKeyboardInputMarshal.Instance;
+	public void SetKeyboardInputMarshal(IKeyboardInputMarshal value) {
+		keyboardInputMarshal = value ?? DefaultKeyboardInputMarshal.Instance;
+	}
 
 	public KeybindSystem Keybinds { get; } = new();
 
@@ -1068,9 +1071,6 @@ public class Element : IValidatable
 	internal bool MouseReleaseOccur(FrameState state, ButtonCode button) {
 		if (!MouseInput)
 			return false;
-		Dragged = false;
-		DragVector = Vector2F.Zero;
-
 		bool handled = MouseRelease(this, state, button);
 		return handled;
 	}

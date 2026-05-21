@@ -856,27 +856,26 @@ public abstract class Level : IValidatable
 	}
 
 	internal void SetUpDebugOverlays() {
-		UpdateGraph = new PerfGraph(RootPanel) {
-			Anchor = Anchor.BottomRight,
-			Origin = Anchor.BottomRight,
-			Position = new(-8, -8 + -52 + -16),
-			Size = new(400, 26),
-			Mode = PerfGraphMode.CPU_UpdateTime
-		};
-		RenderGraph = new PerfGraph(RootPanel) {
-			Anchor = Anchor.BottomRight,
-			Origin = Anchor.BottomRight,
-			Position = new(-8, -8 + -26 + -8),
-			Size = new(400, 26),
-			Mode = PerfGraphMode.CPU_RenderTime
-		};
-		MemGraph = new PerfGraph(RootPanel) {
-			Anchor = Anchor.BottomRight,
-			Origin = Anchor.BottomRight,
-			Position = new(-8, -8),
-			Size = new(400, 26),
-			Mode = PerfGraphMode.RAM_Usage
-		};
+		UpdateGraph = new PerfGraph(RootPanel);
+		UpdateGraph.SetAnchor(Anchor.BottomRight);
+		UpdateGraph.SetOrigin(Anchor.BottomRight);
+		UpdateGraph.SetPos(new(-8, -8 + -52 + -16));
+		UpdateGraph.SetSize(new(400, 26));
+		UpdateGraph.Mode = (PerfGraphMode.CPU_UpdateTime);
+
+		RenderGraph = new PerfGraph(RootPanel);
+		RenderGraph.SetAnchor(Anchor.BottomRight);
+		RenderGraph.SetOrigin(Anchor.BottomRight);
+		RenderGraph.SetPos(new(-8, -8 + -26 + -8));
+		RenderGraph.SetSize(new(400, 26));
+		RenderGraph.Mode = (PerfGraphMode.CPU_RenderTime);
+
+		MemGraph = new PerfGraph(RootPanel);
+		MemGraph.SetAnchor(Anchor.BottomRight);
+		MemGraph.SetOrigin(Anchor.BottomRight);
+		MemGraph.SetPos(new(-8, -8));
+		MemGraph.SetSize(new(400, 26));
+		MemGraph.Mode =(PerfGraphMode.RAM_Usage);
 
 		EvaluatePerfGraphVisibility();
 	}

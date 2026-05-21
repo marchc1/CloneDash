@@ -119,7 +119,7 @@ public class Textbox : Label
 
 	public Textbox(Element? parent) : base(parent) {
 		SetText("");
-		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
+		SetKeyboardInputMarshal(new HoldingKeyboardInputMarshal());
 		SetTextSize(20);
 		SetPaintBorderEnabled(true);
 	}
