@@ -58,7 +58,7 @@ public class AutocompletePanel : Panel
 		SetSize(new(480, 180));
 		OptionsParent = new ScrollPanel(this);
 		OptionsParent.SetPaintBackgroundEnabled(false);
-		OptionsParent.Dock = Dock.Fill;
+		OptionsParent.SetDock(Dock.Fill);
 	}
 	public override void Paint(float width, float height) {
 		base.Paint(width, height);
@@ -71,7 +71,7 @@ public class AutocompletePanel : Panel
 	public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
 		Options.Add(new(text));
 		Button btn = new Button(OptionsParent);
-		btn.Dock = Dock.Top;
+		btn.SetDock(Dock.Top);
 		btn.SetAutoSize(true);
 		btn.SetTextSize(fontHeight);
 		btn.SetFont (Graphics2D.UI_MONO_BOLD_FONT_NAME);
@@ -357,11 +357,11 @@ public class TextEditor : Panel, ITextElement
 		//Editor.DockMargin = RectangleF.TLRB(6);
 		//Gutter.DockMargin = RectangleF.TLRB(6);
 
-		Gutter.Dock = Dock.Left;
+		Gutter.SetDock(Dock.Left);
 		Gutter.SetSize(new(64, 0));
-		Editor.Dock = Dock.Fill;
+		Editor.SetDock(Dock.Fill);
 
-		VScrollbar.Dock = Dock.Right;
+		VScrollbar.SetDock(Dock.Right);
 		VScrollbar.OnScrolled += Scrollbar_OnScrolled;
 
 		Editor.KeyboardInputMarshal = new HoldingKeyboardInputMarshal();

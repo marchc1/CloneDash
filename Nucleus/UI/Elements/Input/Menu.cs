@@ -132,12 +132,12 @@ public class Menu(Element? parent) : Panel(parent)
 						continue;
 
 					var s = new MenuSeparatorPanel(this);
-					s.Dock = Dock.Top;
+					s.SetDock(Dock.Top);
 					s.SetSize(new Types.Vector2F(0, 5));
 					break;
 				case MenuButton btn: {
 						var b = new MenuButtonPanel(this, btn);
-						b.Dock = Dock.Top;
+						b.SetDock(Dock.Top);
 						b.SetSize(new Types.Vector2F(0, 28));
 						b.SetText(btn.text);
 						b.SetAutoSize(false);
@@ -151,7 +151,7 @@ public class Menu(Element? parent) : Panel(parent)
 					break;
 				case MenuSubmenu submenu: {
 						var b = new MenuSubMenuButtonPanel(this, submenu);
-						b.Dock = Dock.Top;
+						b.SetDock(Dock.Top);
 						b.SetSize(new Types.Vector2F(0, 28));
 						b.SetText(submenu.text);
 						b.SetAutoSize(false);

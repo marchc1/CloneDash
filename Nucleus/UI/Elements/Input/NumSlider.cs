@@ -33,15 +33,15 @@ public class LabeledNumSlider : Panel, INumSlider, ITextElement
 
 	public LabeledNumSlider(Element? parent) : base(parent){
 		label = new Label(this);
-		label.Dock = Dock.Left;
+		label.SetDock(Dock.Left);
 		label.SetAutoSize(true);
 		label.SetText("Num");
 		label.BorderSize = 0;
 		label.SetBgColor(Color.Blank);
-		label.DockMargin = RectangleF.XYWH(0, 0, 16, 0);
+		label.SetDockMargin(RectangleF.XYWH(0, 0, 16, 0));
 
 		numslider = new NumSlider(this);
-		numslider.Dock = Dock.Fill;
+		numslider.SetDock(Dock.Fill);
 		numslider.Digits = 3;
 	}
 

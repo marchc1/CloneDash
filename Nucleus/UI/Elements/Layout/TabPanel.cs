@@ -57,31 +57,31 @@ public class TabView : Panel
 		TabSelector = new Panel(this);
 		TabSelector.SetPaintBackgroundEnabled(false);
 		TabSelector.SetSize(new(0, 32));
-		TabSelector.Dock = Dock.Top;
+		TabSelector.SetDock(Dock.Top);
 
 		TabGoLeft = new Button(TabSelector);
 		TabGoLeft.SetSize(new(28));
-		TabGoLeft.Dock = Dock.Left;
+		TabGoLeft.SetDock(Dock.Left);
 		TabGoLeft.BorderSize = 0;
 		TabGoLeft.SetText("<");
 		TabGoLeft.SetTextSize(18);
 
 		TabGoRight = new Button(TabSelector);
 		TabGoRight.SetSize(new(28));
-		TabGoRight.Dock = Dock.Right;
+		TabGoRight.SetDock(Dock.Right);
 		TabGoRight.BorderSize = 0;
 		TabGoRight.SetText(">");
 		TabGoRight.SetTextSize(18);
 
 		TabSelectorContainer = new Panel(TabSelector);
 		TabSelectorContainer.SetPaintBackgroundEnabled(false);
-		TabSelectorContainer.Dock = Dock.Fill;
+		TabSelectorContainer.SetDock(Dock.Fill);
 
 		TabContainer = new Panel(this);
-		TabContainer.Dock = Dock.Fill;
+		TabContainer.SetDock(Dock.Fill);
 		TabContainer.SetBgColor(SWITCHER_ACTIVE);
 		TabContainer.BorderSize = 0;
-		TabContainer.DockMargin = RectangleF.TLRB(-4, 8, 8, 8);
+		TabContainer.SetDockMargin(RectangleF.TLRB(-4, 8, 8, 8));
 	}
 
 	public delegate void OnTabChangedDelegate(TabView self, Tab? tab);
@@ -93,12 +93,12 @@ public class TabView : Panel
 	public Tab AddTab(string name, string? icon = null, string? tooltip = null) {
 		// We create the tab in TabContainer
 		Panel panel = new Panel(TabContainer);
-		panel.Dock = Dock.Fill;
+		panel.SetDock(Dock.Fill);
 		panel.SetPaintBackgroundEnabled(false);
 
 		// The switcher in TabSelectorContainer
 		Button switcher = new Button(TabSelectorContainer);
-		switcher.Dock = Dock.Left;
+		switcher.SetDock(Dock.Left);
 		switcher.SetBgColor(SWITCHER_INACTIVE);
 		switcher.SetTextPadding(new(4));
 		switcher.SetAutoSize(true);

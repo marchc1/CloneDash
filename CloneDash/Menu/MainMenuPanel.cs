@@ -123,7 +123,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var backImage = new Image(back);
 		backImage.SetTexture(Level.Textures.LoadTextureFromFile("ui/back.png"));
 		backImage.SetImageOrientation(ImageOrientation.Zoom);
-		backImage.Dock = Dock.Fill;
+		backImage.SetDock(Dock.Fill);
 		back.SetText("");
 		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();

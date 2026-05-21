@@ -34,14 +34,14 @@ public class Menubar : Panel
 	}
 	public Menubar(Element? parent) : base(parent) {
 		this.SetSize(new(0, 32));
-		this.Dock = Dock.Top;
+		this.SetDock(Dock.Top);
 	}
 	public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 		MenuContext context = new MenuContext(this.UI);
 		Button b = new MenubarButton(this, action);
 		action = action ?? (() => context.Show());
 		b.SetTextPadding(new(8));
-		b.Dock = Dock.Left;
+		b.SetDock(Dock.Left);
 		b.SetAutoSize(true);
 		b.SetText(text);
 		b.BorderSize = 0;

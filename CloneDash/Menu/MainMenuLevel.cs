@@ -46,7 +46,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		backButton.SetVisible(ActiveElements.Count > 1);
 
-		element.Dock = Dock.Fill;
+		element.SetDock(Dock.Fill);
 		return element;
 	}
 
@@ -92,7 +92,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		header = new(RootPanel);
 		header.SetPos(new Vector2F(0));
 		header.SetSize(new Vector2F(256, 64));
-		header.Dock = Dock.Top;
+		header.SetDock(Dock.Top);
 		header.BorderSize = 0;
 		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
 
@@ -102,11 +102,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		var test2 = new Label(header);
 		test2.SetSize(new Vector2F(158, 32));
-		test2.Dock = Dock.Left;
+		test2.SetDock(Dock.Left);
 		test2.SetText("Clone Dash");
 		test2.SetTextSize(30);
 		test2.SetAutoSize(true);
-		test2.DockMargin = RectangleF.TLRB(16);
+		test2.SetDockMargin(RectangleF.TLRB(16));
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -139,14 +139,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtn.SetAutoSize(false);
 		menuBtn.SetSize(new Vector2F(64));
 		menuBtn.SetText("");
-		menuBtn.Dock = dock;
+		menuBtn.SetDock(dock);
 		var menuBtnImage = new Image(menuBtn);
 		menuBtnImage.SetTexture(EngineCore.Level.Textures.LoadTextureFromFile(icon));
 		menuBtnImage.SetImageOrientation(ImageOrientation.Zoom);
 		menuBtnImage.SetImagePadding(new(4));
-		menuBtnImage.Dock = Dock.Fill;
+		menuBtnImage.SetDock(Dock.Fill);
 		menuBtn.SetTextSize(21);
-		menuBtn.DockMargin = RectangleF.TLRB(0);
+		menuBtn.SetDockMargin(RectangleF.TLRB(0));
 		menuBtn.BorderSize = 0;
 		menuBtn.OnButtonClick += (_, _) => onClicked();
 		menuBtn.TooltipText = text;
@@ -375,7 +375,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();
 		levelSelector.SetFgColor(Color.Blank);
-		levelSelector.Dock = Dock.Fill;
+		levelSelector.SetDock(Dock.Fill);
 
 		selector.EnterSheetSelection();
 		selector.DiscRotateSOS.ResetTo(0);
@@ -393,7 +393,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var backImage = new Image(back);
 		backImage.SetTexture(Textures.LoadTextureFromFile("ui/back.png"));
 		backImage.SetImageOrientation(ImageOrientation.Centered);
-		backImage.Dock = Dock.Fill;
+		backImage.SetDock(Dock.Fill);
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
 		back.SetText("");
 		back.SetBgColor(new Color(0, 0));
@@ -497,7 +497,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		LevelSelectorSelectDifficultyButton play = new(levelSelector, difficultyName, metadata);
 		play.SetSize(new(64));
-		play.DockMargin = RectangleF.TLRB(8);
+		play.SetDockMargin(RectangleF.TLRB(8));
 
 		SongLabel mapper = new SongLabel(play);
 		mapper.SetAutoSize(true);

@@ -881,7 +881,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				iconImage.SetTexture(Level.Textures.LoadTextureFromFile(image));
 				iconImage.SetImageOrientation(ImageOrientation.Zoom);
 				iconImage.SetImagePadding(new(4));
-				iconImage.Dock = Dock.Left;
+				iconImage.SetDock(Dock.Left);
 			}
 		}
 
@@ -963,10 +963,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						PauseWindow.Center();
 
 						var flex = new FlexPanel(PauseWindow);
-						flex.Dock = Dock.Fill;
+						flex.SetDock(Dock.Fill);
 						flex.Direction = Axis.Vertical;
 						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-						flex.DockPadding = RectangleF.TLRB(4);
+						flex.SetDockPadding(RectangleF.TLRB(4));
 
 						var play = new PauseMenuButton(flex, "ui/pause_play.png");
 						play.BorderSize = 0;
@@ -1008,7 +1008,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							panel.SetSize(new(0.9f));
 
 							var titlebar = new Titlebar(panel);
-							titlebar.Dock = Dock.Top;
+							titlebar.SetDock(Dock.Top);
 							titlebar.MinimizeButton.SetVisible(false);
 							titlebar.MaximizeButton.SetVisible(false);
 							titlebar.CloseButton.OnButtonClick += (_, _) => {
@@ -1017,8 +1017,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							titlebar.SetText("Settings");
 
 							var settings = new SettingsEditor(panel);
-							settings.Dock = Dock.Fill;
-							settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
+							settings.SetDock(Dock.Fill);
+							settings.SetDockMargin(RectangleF.TLRB(0, 8, 8, 0));
 
 							panel.MakePopup();
 						};

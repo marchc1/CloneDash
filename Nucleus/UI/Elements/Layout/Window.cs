@@ -69,36 +69,36 @@ public class Titlebar : Panel
 	public TitlebarButton MinimizeButton { get; private set; }
 
 	public Titlebar(Element? parent) : base(parent) {
-		Dock = Dock.Top;
+		SetDock(Dock.Top);
 		SetSize(new(0, this.GetParent() is UserInterface ? 34 : 42));
 		if (this.GetParent() is not UserInterface)
-			DockMargin = RectangleF.TLRB(4);
+			SetDockMargin(RectangleF.TLRB(4));
 
 		TitleLabel = new(this);
 		TitleLabel.SetTextSize(20);
 		TitleLabel.SetVisible(false); // title is rendered manually in Paint() with icon offset
 
 		CloseButton = new TitlebarButton(this, TitlebarButtonType.Close);
-		CloseButton.Dock = Dock.Right;
+		CloseButton.SetDock(Dock.Right);
 		CloseButton.SetAutoSize(false);
 		CloseButton.SetSize(new(48, 0));
 
-		CloseButton.DockMargin = RectangleF.TLRB(3);
+		CloseButton.SetDockMargin(RectangleF.TLRB(3));
 		CloseButton.OnButtonClick += (self, button) => OnClosePressed?.Invoke(self, button);
 
 		MaximizeButton = new TitlebarButton(this, TitlebarButtonType.Maximize);
-		MaximizeButton.Dock = Dock.Right;
+		MaximizeButton.SetDock(Dock.Right);
 		MaximizeButton.SetAutoSize(false);
 		MaximizeButton.SetSize(new(48, 0));
 
-		MaximizeButton.DockMargin = RectangleF.TLRB(3);
+		MaximizeButton.SetDockMargin(RectangleF.TLRB(3));
 		MaximizeButton.OnButtonClick += (self, button) => OnMaximizePressed?.Invoke(self, button);
 		MinimizeButton = new TitlebarButton(this, TitlebarButtonType.Minimize);
-		MinimizeButton.Dock = Dock.Right;
+		MinimizeButton.SetDock(Dock.Right);
 		MinimizeButton.SetAutoSize(false);
 		MinimizeButton.SetSize(new(48, 0));
 
-		MinimizeButton.DockMargin = RectangleF.TLRB(3);
+		MinimizeButton.SetDockMargin(RectangleF.TLRB(3));
 		MinimizeButton.OnButtonClick += (self, button) => OnMinimizePressed?.Invoke(self, button);
 
 		CloseButton.SetText("X");
@@ -326,9 +326,9 @@ public class Window : Element
 
 		MakePopup();
 		Panel ap = new(this);
-		ap.Dock = Dock.Fill;
+		ap.SetDock(Dock.Fill);
 		ap.SetSize(new(0, 36));
-		ap.DockMargin = RectangleF.TLRB(4, 8, 8, 4);
+		ap.SetDockMargin(RectangleF.TLRB(4, 8, 8, 4));
 
 		ResizeTL = new WindowResizerButton(this, Anchor.TopLeft);
 		ResizeTL.SetSize(new(24, 24));

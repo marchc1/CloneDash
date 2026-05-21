@@ -239,12 +239,12 @@ namespace Nucleus
 			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
 			SetSize(new(GetParent()!.GetSize().W - 16, 384));
 
-			this.DockMargin = RectangleF.TLRB(8);
+			this.SetDockMargin(RectangleF.TLRB(8));
 			this.BorderSize = 0;
 
 			consoleInput = new ConsoleInput(this);
 			consoleInput.SetSize(new(0, 32));
-			consoleInput.Dock = Dock.Bottom;
+			consoleInput.SetDock(Dock.Bottom);
 			consoleInput.Multiline = false;
 			consoleInput.ShowDetails = false;
 			consoleInput.ShowGutter = false;
@@ -260,9 +260,9 @@ namespace Nucleus
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = new ConsoleLogs(this);
-			consoleLogs.Dock = Dock.Fill;
+			consoleLogs.SetDock(Dock.Fill);
 			consoleLogs.SetTextSize(12);
-			consoleLogs.DockMargin = new(0, 0, 0, 0);
+			consoleLogs.SetDockMargin(new(0, 0, 0, 0));
 			consoleLogs.Readonly = true;
 			consoleLogs.ShowDetails = false;
 			consoleLogs.ShowGutter = false;
@@ -346,7 +346,7 @@ namespace Nucleus
 		private void EnsureAutocompletePanel() {
 			if (!IValidatable.IsValid(autoComplete)) {
 				autoComplete = new ConsoleAutocomplete(consoleInput);
-				autoComplete.Dock = Dock.Bottom;
+				autoComplete.SetDock(Dock.Bottom);
 				autoComplete.SetSize(new(0, 0));
 			}
 		}

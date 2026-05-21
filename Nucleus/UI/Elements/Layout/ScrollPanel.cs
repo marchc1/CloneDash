@@ -19,7 +19,7 @@ public class ScrollPanel : Panel
 		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
 			if (ChildDock.HasValue)
-				child.Dock = ChildDock.Value;
+				child.SetDock(ChildDock.Value);
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			if (delta.X != 0)
@@ -41,9 +41,9 @@ public class ScrollPanel : Panel
 		HorizontalScrollbar.SetVisible(true);
 
 		MainPanel = new ScrollMainPanel(this);
-		MainPanel.Dock = Dock.Fill;
+		MainPanel.SetDock(Dock.Fill);
 		MainPanel.SetPaintBackgroundEnabled(false);
-		MainPanel.DockMargin = RectangleF.TLRB(4);
+		MainPanel.SetDockMargin(RectangleF.TLRB(4));
 		AddParent = MainPanel;
 		MainPanel.Clipping = true;
 	}

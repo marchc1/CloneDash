@@ -46,7 +46,7 @@ namespace Nucleus.UI
 			if (AutomateLayout) {
 				Vector2F size = new();
 				foreach (var child in Children) {
-					if (child.Dock != Dock.None)
+					if (child.GetDock() != Dock.None)
 						continue;
 
 					size = new(
@@ -70,7 +70,7 @@ namespace Nucleus.UI
     {
         public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
 			PopupWindow popup = new PopupWindow(UI);
-			popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
+			popup.SetDockPadding(RectangleF.TLRB(2, 8, 8, 2));
             popup.Title = title;
             popup.Titlebar.MinimizeButton.SetVisible(false);
 			popup.Titlebar.MaximizeButton.SetVisible(false);
@@ -85,16 +85,16 @@ namespace Nucleus.UI
             PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
             FlexPanel containButtons = new FlexPanel(popup);
-            containButtons.Dock = Dock.Bottom;
-            containButtons.DockMargin = RectangleF.TLRB(0, 0, 0, 5);
+            containButtons.SetDock(Dock.Bottom);
+            containButtons.SetDockMargin(RectangleF.TLRB(0, 0, 0, 5));
             containButtons.SetSize(new(0, 48));
             containButtons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-            containButtons.DockPadding = RectangleF.TLRB(2, 2, 2, 2);
+            containButtons.SetDockPadding(RectangleF.TLRB(2, 2, 2, 2));
 
 			Label lb = new Label(popup);
 			lb.SetTextSize ( 17);
             lb.SetText(text.Replace("\r", ""));
-            lb.Dock = Dock.Fill;
+            lb.SetDock(Dock.Fill);
 
             var txtsize = Graphics2D.GetTextSize(lb.GetText(), lb.GetFont(), lb.GetTextSize());
             var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.GetFont(), popup.Titlebar.GetTextSize());

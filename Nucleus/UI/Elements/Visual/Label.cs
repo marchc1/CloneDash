@@ -134,7 +134,7 @@ public class Label : Element, ITextElement
 		Vector2F finalSize = size + (GetTextPadding());
 		// We have to expand ourselves by dock margins!
 		// This is weird, but its the only way to make docking happy
-		RectangleF margin = DockMargin;
+		RectangleF margin = GetDockMargin();
 		finalSize.X += margin.Left + margin.Right;
 		finalSize.Y += margin.Top + margin.Bottom;
 

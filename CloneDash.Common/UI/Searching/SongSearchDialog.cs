@@ -89,12 +89,12 @@ public class SongSearchDialog : Window
 		applyButton = new(this);
 		applyButton.SetText("Apply");
 		applyButton.BorderSize = 0;
-		applyButton.Dock = Dock.Bottom;
+		applyButton.SetDock(Dock.Bottom);
 
 		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;
 
 		parameters = new(this);
-		parameters.Dock = Dock.Fill;
+		parameters.SetDock(Dock.Fill);
 		AddParent = parameters;
 
 		Center();
@@ -102,7 +102,7 @@ public class SongSearchDialog : Window
 
 	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
 		DialogLabelPanel<T> pnl = new(parameters);
-		pnl.Dock = Dock.Top;
+		pnl.SetDock(Dock.Top);
 		pnl.SetSize(new(0, 0.15f));
 		pnl.DynamicallySized = true;
 		pnl.SetText(label.SliceNullTerminatedString());

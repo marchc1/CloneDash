@@ -56,13 +56,13 @@ public class StatisticsPanel : Panel
 
 		bottom.DynamicallySized = true;
 		bottom.SetSize(new(0.07f));
-		bottom.Dock = Dock.Bottom;
+		bottom.SetDock(Dock.Bottom);
 
 		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
 		restart.SetSize(new(.2f));
 		restart.SetText("Restart");
-		restart.Dock = Dock.Left;
+		restart.SetDock(Dock.Left);
 		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
 			// Maybe seeking is stable enough now to justify this though?
@@ -74,7 +74,7 @@ public class StatisticsPanel : Panel
 		back.DynamicallySized = true;
 		back.SetSize(new(.2f));
 		back.SetText("Main Menu");
-		back.Dock = Dock.Right;
+		back.SetDock(Dock.Right);
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
 		BorderSize = 0;

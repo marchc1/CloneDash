@@ -32,7 +32,7 @@ public class CharacterButton(Element? parent) : Button(parent)
 			imageRenderer ??= new Image(this);
 			imageRenderer.SetTexture(texture);
 			imageRenderer.SetImageOrientation(ImageOrientation.Zoom);
-			imageRenderer.Dock = Dock.Fill;
+			imageRenderer.SetDock(Dock.Fill);
 		}
 		SetBgColor(new Color(0, 0, 0, 0));
 		BorderSize = 0;
@@ -143,7 +143,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		SetPassthru(true);
 
 		selectedInfo = new Panel(this);
-		selectedInfo.Dock = Dock.Bottom;
+		selectedInfo.SetDock(Dock.Bottom);
 		selectedInfo.DynamicallySized = true;
 		selectedInfo.SetSize(new(0, 0.125f));
 		selectedInfo.BorderSize = 0;
@@ -165,7 +165,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterAuthorLabel.Origin = Anchor.TopRight;
 
 		characterSelectButton = new(selectedInfo);
-		characterSelectButton.Dock = Dock.Right;
+		characterSelectButton.SetDock(Dock.Right);
 		characterSelectButton.SetSize(new(0.15f));
 		characterSelectButton.DynamicallySized = true;
 		characterSelectButton.SetBgColor(new Color(10, 30, 10));
@@ -174,16 +174,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		characterPerkLabel = new(selectedInfo);
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
-		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
+		characterPerkLabel.SetDockMargin(RectangleF.TLRB(8, 32, 32, 8));
 		characterPerkLabel.SetTextAlignment(Anchor.CenterLeft);
 		characterPerkLabel.SetTextPadding(new(0, 0));
-		characterPerkLabel.Dock = Dock.Fill;
+		characterPerkLabel.SetDock(Dock.Fill);
 		characterPerkLabel.SetTextSize(24);
 		characterPerkLabel.DynamicallySized = true;
 		characterPerkLabel.SetBgColor(new Color(100, 100, 100, 100)); // temp
 
 		backPanel = new CharacterSelectorScroller(this);
-		backPanel.Dock = Dock.Bottom;
+		backPanel.SetDock(Dock.Bottom);
 		backPanel.DynamicallySized = true;
 		backPanel.SetSize(new(0, 0.1f));
 		backPanel.BorderSize = 0;

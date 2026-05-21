@@ -115,18 +115,18 @@ public class Scrollbar : Panel
 		}
 		set {
 			__alignment = value;
-			if (Dock == Dock.None)
-				Dock = value == ScrollbarAlignment.Vertical ? Dock.Right : Dock.Bottom;
+			if (GetDock() == Dock.None)
+				SetDock(value == ScrollbarAlignment.Vertical ? Dock.Right : Dock.Bottom);
 		}
 	}
 	protected override void PerformLayout(float width, float height) {
 		if (Alignment == ScrollbarAlignment.Vertical) {
-			Up.Dock = Dock.Top;
-			Down.Dock = Dock.Bottom;
+			Up.SetDock(Dock.Top);
+			Down.SetDock(Dock.Bottom);
 		}
 		else {
-			Up.Dock = Dock.Left;
-			Down.Dock = Dock.Right;
+			Up.SetDock(Dock.Left);
+			Down.SetDock(Dock.Right);
 		}
 	}
 	public Scrollbar(Element? parent) : base(parent) {
@@ -139,9 +139,9 @@ public class Scrollbar : Panel
 		Up.SetSize(new(18, 18));
 		Down.SetSize(new(18, 18));
 
-		Up.Dock = Dock.Top;
-		Down.Dock = Dock.Bottom;
-		Grip.Dock = Dock.Fill;
+		Up.SetDock(Dock.Top);
+		Down.SetDock(Dock.Bottom);
+		Grip.SetDock(Dock.Fill);
 
 		SetVisible(false);
 		SetPaintBackgroundEnabled(false);

@@ -24,7 +24,7 @@ public class FlexPanel(Element? parent) : Panel(parent)
 
 	protected override void ChildParented(Element parent, Element child) {
 		base.ChildParented(parent, child);
-		child.Dock = Dock.None;
+		child.SetDock(Dock.None);
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -38,7 +38,7 @@ public class FlexPanel(Element? parent) : Panel(parent)
 
 		bool horiz = Direction == Axis.Horizontal;
 
-		RectangleF dp = DockPadding;
+		RectangleF dp = GetDockPadding();
 
 		Vector2F sizeOfOne = new((width - dp.Right - dp.Left) / visibleCount, (height - dp.Bottom - dp.Top) / visibleCount);
 		Vector2F elementSpacePosition = new(dp.Left, dp.Top);
@@ -50,10 +50,10 @@ public class FlexPanel(Element? parent) : Panel(parent)
 			if (!child.IsVisible())
 				continue;
 
-			float mLeft = child.DockMargin.X;
-			float mTop = child.DockMargin.Y;
-			float mRight = child.DockMargin.W;
-			float mBot = child.DockMargin.H;
+			float mLeft = child.GetDockMargin().X;
+			float mTop = child.GetDockMargin().Y;
+			float mRight = child.GetDockMargin().W;
+			float mBot = child.GetDockMargin().H;
 
 			float cx, cy, cw, ch;
 

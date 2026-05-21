@@ -264,49 +264,46 @@ public class Element : IValidatable
 	/// <summary>
 	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
 	/// </summary>
-	public Dock Dock {
-		get { return _dock; }
-		set {
-			if (value == _dock)
-				return;
+	public Dock GetDock() { return _dock; }
 
-			_dock = value;
-			GetParent()?.InvalidateLayout();
-			InvalidateLayout();
-		}
+	public void SetDock(Dock value) {
+		if (value == _dock)
+			return;
+
+		_dock = value;
+		GetParent()?.InvalidateLayout();
+		InvalidateLayout();
 	}
 	/// <summary>
 	/// The extra space left around <i>this</i> element when docked to something.<br></br>
 	/// For the extra space left around this elements children when docked; see DockPadding.
 	/// </summary>
-	public RectangleF DockMargin {
-		get { return _dockMargin; }
-		set {
-			if (_dockMargin == value)
-				return;
+	public RectangleF GetDockMargin() { return _dockMargin; }
 
-			_dockMargin = value;
-			GetParent()?.InvalidateLayout();
-			InvalidateLayout();
-		}
+	public void SetDockMargin(RectangleF value) {
+		if (_dockMargin == value)
+			return;
+
+		_dockMargin = value;
+		GetParent()?.InvalidateLayout();
+		InvalidateLayout();
 	}
 	/// <summary>
 	/// The extra space left around this elements children (if the child is docked inside of this element).<br></br>
 	/// For the extra space left around this element when docked; see DockMargin.
 	/// </summary>
-	public RectangleF DockPadding {
-		get { return _dockPadding; }
-		set {
-			if (_dockPadding == value)
-				return;
+	public RectangleF GetDockPadding() { return _dockPadding; }
 
-			GetParent()?.InvalidateLayout();
-			InvalidateLayout();
-			if (AddParent != this)
-				AddParent.DockPadding = value;
-			else
-				_dockPadding = value;
-		}
+	public void SetDockPadding(RectangleF value) {
+		if (_dockPadding == value)
+			return;
+
+		GetParent()?.InvalidateLayout();
+		InvalidateLayout();
+		if (AddParent != this)
+			AddParent.SetDockPadding(value);
+		else
+			_dockPadding = value;
 	}
 
 	public virtual RectangleF RenderBounds {
@@ -363,7 +360,7 @@ public class Element : IValidatable
 		set {
 			__parentToAddTo = value;
 			if (value != null) {
-				value.DockPadding = DockPadding;
+				value.SetDockPadding(GetDockPadding());
 			}
 		}
 	}
@@ -611,7 +608,7 @@ public class Element : IValidatable
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		foreach (var child in Children)
-			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft || child.DynamicallySized)
+			if (child.GetDock() != Dock.None || child.Anchor != Anchor.TopLeft || child.DynamicallySized)
 				child.InvalidateLayout();
 	}
 
@@ -659,7 +656,7 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.InPerformLayout);
 		PerformLayout(__renderbounds.W, __renderbounds.H);
 		RemoveFlag(ElementFlags.InPerformLayout);
-		if (Dock == Dock.None)
+		if (GetDock() == Dock.None)
 			FlushRenderBounds();
 		DoOriginAnchor();
 		CommitFitToParent();
@@ -725,7 +722,7 @@ public class Element : IValidatable
 		}
 
 		foreach (var child in Children) {
-			Dock dock = child.Dock;
+			Dock dock = child.GetDock();
 			if (dock == Dock.None)
 				continue;
 			if (!child.IsVisible())

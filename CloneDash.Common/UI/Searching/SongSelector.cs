@@ -144,7 +144,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			this.selector = selector;
 			this.i = i;
 			imageRenderer = new(this);
-			imageRenderer.Dock = Dock.Fill;
+			imageRenderer.SetDock(Dock.Fill);
 		}
 		public override void Paint(float w, float h) {
 			float a;

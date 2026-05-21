@@ -27,7 +27,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 	public void Setup(SettingsEditor panel) {
 		Panel = new(panel);
 		Panel.Category = this;
-		Panel.Dock = Dock.Fill;
+		Panel.SetDock(Dock.Fill);
 
 		SetTextAlignment(Anchor.CenterLeft); ;
 		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
@@ -60,18 +60,18 @@ public class SettingsPanel : ScrollPanel
 		panel.SetPaintBackgroundEnabled(false);
 		panel.SetPaintBorderEnabled(false);
 		panel.DynamicallySized = true;
-		panel.Dock = Dock.Top;
+		panel.SetDock(Dock.Top);
 		panel.SetSize(new(0.08f));
 
 		var top = new Panel(panel);
 		top.DynamicallySized = true;
 		top.SetSize(new(0.5f));
-		top.Dock = Dock.Top;
+		top.SetDock(Dock.Top);
 		top.SetPaintBackgroundEnabled(false);
 		top.SetPaintBorderEnabled(false);
 
 		var name = new Label(top);
-		name.Dock = Dock.Left;
+		name.SetDock(Dock.Left);
 		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
@@ -80,7 +80,7 @@ public class SettingsPanel : ScrollPanel
 		name.SetText(nameTxt);
 
 		var desc = new Label(top);
-		desc.Dock = Dock.Fill;
+		desc.SetDock(Dock.Fill);
 		desc.SetTextAlignment(Anchor.CenterLeft);
 		desc.DynamicallySized = true;
 		desc.SetTextPadding(new(16));
@@ -96,13 +96,13 @@ public class SettingsPanel : ScrollPanel
 
 	public Label Label(string text) {
 		var name = new Label(this);
-		name.Dock = Dock.Top;
+		name.SetDock(Dock.Top);
 		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
 		name.SetText(text);
-		name.DockMargin = RectangleF.TLRB(16);
+		name.SetDockMargin(RectangleF.TLRB(16));
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
 		name.SetTextSize(20);
 		return name;
@@ -111,7 +111,7 @@ public class SettingsPanel : ScrollPanel
 	public NumSlider Number(ConVar cv, string name, [StringSyntax(StringSyntaxAttribute.NumericFormat)] string format) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = new NumSlider(back.Bottom);
-		slider.Dock = Dock.Fill;
+		slider.SetDock(Dock.Fill);
 
 		if (cv.GetMin(out double min)) slider.MinimumValue = min;
 		if (cv.GetMax(out double max)) slider.MaximumValue = max;
@@ -132,7 +132,7 @@ public class SettingsPanel : ScrollPanel
 		var back = buildBackPanel(name, "");
 		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
 		back.Bottom.SetSize(new Vector2F(0, 0.13f));
-		buttons.Dock = Dock.Fill;
+		buttons.SetDock(Dock.Fill);
 		buttons.SetInputAction(action);
 		return buttons;
 	}
@@ -195,7 +195,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		category.SetText(name);
 		category.OnButtonClick += (_, _) => SelectCategory(category);
-		category.Dock = Dock.Top;
+		category.SetDock(Dock.Top);
 		category.DynamicallySized = true;
 		category.SetTextSize(24);
 		category.SetSize(new(0.06f));
@@ -224,7 +224,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public SettingsEditor(Element? parent) : base(parent) {
 		settingCategoryPicker = new(this);
 		settingCategoryPicker.SetPaintBackgroundEnabled(false);
-		settingCategoryPicker.Dock = Dock.Left;
+		settingCategoryPicker.SetDock(Dock.Left);
 		settingCategoryPicker.DynamicallySized = true;
 		settingCategoryPicker.SetSize(new(0.25f));
 
@@ -250,7 +250,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
-		btn.Dock = Dock.Fill;
+		btn.SetDock(Dock.Fill);
 		btn.SetText("Open Offset Wizard");
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		btn.OnButtonClick += (_, _) => OpenOffsetWizard();
@@ -266,7 +266,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
 		var linkBtn = new Button(linkBack);
-		linkBtn.Dock = Dock.Fill;
+		linkBtn.SetDock(Dock.Fill);
 		linkBtn.SetText("Bound");
 
 		judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
@@ -332,7 +332,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		lbl.Origin = Anchor.TopCenter;
 
 		var capture = new KeyCaptureElement(dialog);
-		capture.Dock = Dock.Fill;
+		capture.SetDock(Dock.Fill);
 		capture.KeyboardFocus();
 		capture.OnKeyCaptured += (key) => {
 			keySubmitted(key);

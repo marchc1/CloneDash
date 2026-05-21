@@ -31,12 +31,12 @@ internal class Program
 
 				Panel row(Dock vertical){
 					var row = new Panel(window);
-					row.Dock = vertical;
+					row.SetDock(vertical) ;
 
 					Label column(Anchor alignment){
 						var column = new Label(row);
 						var h = alignment.ToTextAlignment().Horizontal;
-						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
+						column.SetDock(h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill) ;
 						column.SetText("The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString()) ;
 						column.SetSize(new(window.GetSize().W / 3, 0)) ;
 						column.SetTextAlignment(alignment) ;
@@ -66,16 +66,16 @@ internal class Program
 			base.Initialize(args);
 
 			var tools = new Panel(RootPanel);
-			tools.Dock = Dock.Right;
+			tools.SetDock(Dock.Right);
 			tools.SetSize(new(640, 0));
 			var testLabel = new Label(tools);
 			testLabel.SetAutoSize(true);
-			testLabel.Dock = Dock.Top;
+			testLabel.SetDock(Dock.Top);
 			testLabel.SetText("Test Functions");
 			foreach (var test in tests) {
 				var b = new Button(tools);
 				b.SetText(test.Text);
-				b.Dock = Dock.Top;
+				b.SetDock(Dock.Top);
 				b.OnButtonClick += (_, _) => test.Click(this);
 			}
 		}
