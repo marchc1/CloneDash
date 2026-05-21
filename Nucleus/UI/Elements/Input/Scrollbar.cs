@@ -144,6 +144,7 @@ public class Scrollbar : Panel
 		Grip.Dock = Dock.Fill;
 
 		SetVisible(false);
+		SetPaintBackgroundEnabled(false);
 	}
 
 	internal bool MouseScrolled(Element self, FrameState state, Vector2F delta) {

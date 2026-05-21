@@ -351,8 +351,8 @@ public class TextEditor : Panel, ITextElement
 
 	public TextEditor(Element? parent) : base(parent) {
 		Gutter = new(this);
-		VScrollbar = new Scrollbar(this);
 		Editor = new(this);
+		VScrollbar = new Scrollbar(Editor);
 		RefreshFromParams();
 		//Editor.DockMargin = RectangleF.TLRB(6);
 		//Gutter.DockMargin = RectangleF.TLRB(6);
@@ -1332,6 +1332,7 @@ public class TextEditor : Panel, ITextElement
 	}
 
 	public bool InsertText(string txt) {
+		if (Readonly) return false;
 		if (txt == null)
 			return false;
 
@@ -1383,6 +1384,7 @@ public class TextEditor : Panel, ITextElement
 		return true;
 	}
 	public bool DeleteSelection() {
+		if (Readonly) return false;
 		if (!HasSelection()) return false;
 
 		var top = GetCaretTopLeft();

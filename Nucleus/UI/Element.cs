@@ -613,7 +613,7 @@ public class Element : IValidatable
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		foreach (var child in Children)
-			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft)
+			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft || child.DynamicallySized)
 				child.InvalidateLayout();
 	}
 

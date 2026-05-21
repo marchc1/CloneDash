@@ -199,17 +199,31 @@ namespace Nucleus
 			Size = new(GetParent()!.Size.W - 16, 384);
 		}
 
-		internal class ConsoleLogs(ConsoleWindow parent) : TextEditor(parent)
+		internal class ConsoleLogs : TextEditor
 		{
+			ConsoleWindow parent;
+			public ConsoleLogs(ConsoleWindow parent) : base(parent) {
+				this.parent = parent;
+				SetPaintBorderEnabled(false);
+				HScrollbar?.SetPaintBorderEnabled(false);
+				VScrollbar?.SetPaintBorderEnabled(false);
+				Readonly = true;
+			}
 			protected override void OnThink() {
 				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.IsKeyboardFocused()) {
 					parent.autoComplete.Remove();
 				}
+				base.OnThink();
 			}
 		}
 
-		internal class ConsoleInput(ConsoleWindow parent) : TextEditor(parent)
+		internal class ConsoleInput : TextEditor
 		{
+			ConsoleWindow parent;
+			public ConsoleInput(ConsoleWindow parent) : base(parent) {
+				this.parent = parent;
+				SetPaintBorderEnabled(false);
+			}
 			protected override void OnThink() {
 
 			}
