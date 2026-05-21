@@ -81,11 +81,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override void Initialize(params object[] args) {
 		var charPanel = new Panel(RootPanel);
 		charPanel.SetBorderSize(0);
-		charPanel.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:charPanel.DynamicallySized = true;
 		charPanel.SetSize(new(1f, 1f));
 
 		Character = new(charPanel);
-		Character.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:Character.DynamicallySized = true;
 		Character.SetOrigin(Anchor.TopCenter);
 		Character.SetSize(new(1f));
 

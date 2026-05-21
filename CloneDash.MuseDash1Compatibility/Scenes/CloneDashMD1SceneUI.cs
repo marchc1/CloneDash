@@ -54,12 +54,12 @@ public class StatisticsPanel : Panel
 		var bottom = new Panel(this);
 		bottom.SetPaintBackgroundEnabled(false);
 
-		bottom.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:bottom.DynamicallySized = true;
 		bottom.SetSize(new(0.07f));
 		bottom.SetDock(Dock.Bottom);
 
 		var restart = new Button(bottom);
-		restart.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:restart.DynamicallySized = true;
 		restart.SetSize(new(.2f));
 		restart.SetText("Restart");
 		restart.SetDock(Dock.Left);
@@ -71,7 +71,7 @@ public class StatisticsPanel : Panel
 		};
 
 		var back = new Button(bottom);
-		back.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:back.DynamicallySized = true;
 		back.SetSize(new(.2f));
 		back.SetText("Main Menu");
 		back.SetDock(Dock.Right);
@@ -675,7 +675,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			return;
 
 		CurrentStatisticsPanel.SetSize(new(1, 1));
-		CurrentStatisticsPanel.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
 	public void OpenFailure() {

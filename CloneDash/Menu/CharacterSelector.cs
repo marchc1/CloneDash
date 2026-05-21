@@ -144,7 +144,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		selectedInfo = new Panel(this);
 		selectedInfo.SetDock(Dock.Bottom);
-		selectedInfo.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:selectedInfo.DynamicallySized = true;
 		selectedInfo.SetSize(new(0, 0.125f));
 		selectedInfo.SetBorderSize(0);
 		selectedInfo.SetPaintBackgroundEnabled(false);
@@ -167,7 +167,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterSelectButton = new(selectedInfo);
 		characterSelectButton.SetDock(Dock.Right);
 		characterSelectButton.SetSize(new(0.15f));
-		characterSelectButton.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:characterSelectButton.DynamicallySized = true;
 		characterSelectButton.SetBgColor(new Color(10, 30, 10));
 		characterSelectButton.SetFgColor(new Color(48, 220, 70));
 		characterSelectButton.OnButtonClick += CharacterSelectButton_MouseReleaseEvent;
@@ -179,12 +179,12 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		characterPerkLabel.SetTextPadding(new(0, 0));
 		characterPerkLabel.SetDock(Dock.Fill);
 		characterPerkLabel.SetTextSize(24);
-		characterPerkLabel.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:characterPerkLabel.DynamicallySized = true;
 		characterPerkLabel.SetBgColor(new Color(100, 100, 100, 100)); // temp
 
 		backPanel = new CharacterSelectorScroller(this);
 		backPanel.SetDock(Dock.Bottom);
-		backPanel.DynamicallySized = true;
+		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:backPanel.DynamicallySized = true;
 		backPanel.SetSize(new(0, 0.1f));
 		backPanel.SetBorderSize(0);
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
