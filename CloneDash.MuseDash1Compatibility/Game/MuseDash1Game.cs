@@ -969,7 +969,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						flex.SetDockPadding(RectangleF.TLRB(4));
 
 						var play = new PauseMenuButton(flex, "ui/pause_play.png");
-						play.BorderSize = 0;
+						play.SetBorderSize(0);
 						play.SetText("Return to Game");
 						play.SetTextSize(24);
 						play.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -978,7 +978,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 
 						var restart = new PauseMenuButton(flex, "ui/pause_restart.png");
-						restart.BorderSize = 0;
+						restart.SetBorderSize(0);
 						restart.SetText("Restart Level");
 						restart.SetTextSize(24);
 						restart.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -996,7 +996,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 
 						var settings = new PauseMenuButton(flex, "ui/pause_settings.png");
-						settings.BorderSize = 0;
+						settings.SetBorderSize(0);
 						settings.SetText("Open Preferences...");
 						settings.SetTextSize(24);
 						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
@@ -1024,7 +1024,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						};
 
 						var back2menu = new PauseMenuButton(flex, "ui/pause_exit.png");
-						back2menu.BorderSize = 0;
+						back2menu.SetBorderSize(0);
 						back2menu.SetText("Exit to Menu");
 						back2menu.SetTextSize(24);
 						back2menu.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {

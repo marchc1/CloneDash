@@ -44,7 +44,7 @@ public class Menubar : Panel
 		b.SetDock(Dock.Left);
 		b.SetAutoSize(true);
 		b.SetText(text);
-		b.BorderSize = 0;
+		b.SetBorderSize(0);
 
 		return context;
 	}

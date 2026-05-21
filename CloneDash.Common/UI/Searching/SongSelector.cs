@@ -155,7 +155,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			var c = MixColorBasedOnMouseState(this, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
 			Graphics2D.SetDrawColor(c);
 			Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
-			Opacity = a;
+			SetOpacity(a);
 		}
 
 		internal void SetImageRotation(float value) => imageRenderer.SetImageRotation(value);
@@ -334,7 +334,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FigureOutDisk();
 
 		float width = GetRenderBounds().W, height = GetRenderBounds().H;
-		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
+		SetChildRenderOffset(new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2)));
 
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.IsKeyboardFocused()) {
@@ -349,7 +349,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			}
 		}
 
-		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
+		if (FlyAwaySOS.Update(FlyAway) > 0.001f || GetChildRenderOffset().Y > 0) {
 			InvalidateLayout();
 		}
 
@@ -390,7 +390,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void CalculateDiscPos(float width, float height, int index, out float x, out float y, out float rot) {
-		var offsetYParent = ChildRenderOffset.Y / (width / 2);
+		var offsetYParent = GetChildRenderOffset().Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
 		float flyAwayMw = flyAway * width;
 
@@ -518,7 +518,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				var song = GetDiscSong(0);
 				LevelTransitions.LoadSongSelector(this, song);
 			};
-			disc.BorderSize = 0;
+			disc.SetBorderSize(0);
 			disc.SetBgColor(new Color(0, 0, 0, 0));
 			disc.SetImageColor(i == IntegerMidpoint ? new Color(255) : new Color(155));
 		}

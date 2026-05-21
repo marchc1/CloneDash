@@ -97,10 +97,10 @@ namespace CloneDash.Game
 			}
 
 			public override void Paint(float width, float height) {
-				Graphics2D.SetDrawColor(230, 235, 255, Depressed ? 100 : 255);
+				Graphics2D.SetDrawColor(230, 235, 255, IsDepressed() ? 100 : 255);
 				Graphics2D.DrawRectangle(0, 0, width * Completion, height);
 
-				if (Depressed) {
+				if (IsDepressed()) {
 					Graphics2D.SetDrawColor(230, 235, 255);
 					Graphics2D.DrawRectangle(0, 2, GetMousePos().X, height - 4);
 				}

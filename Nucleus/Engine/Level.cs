@@ -794,7 +794,7 @@ public abstract class Level : IValidatable
 	private void RenderShowUpdates() {
 		var now = Curtime;
 		foreach (var element in RootPanel.GetAllElements()) {
-			var lastLayout = element.LastLayoutTime;
+			var lastLayout = element.GetLastLayoutTime();
 			var delta = 1 - (Math.Min(now - lastLayout, 0.5) * 2);
 			if (delta > 1) continue;
 

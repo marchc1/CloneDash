@@ -149,7 +149,7 @@ public class Button : Label
 	public override void PaintBorder(float width, float height) {
 		ColorStateSetup(out var back, out var fore);
 
-		if (BorderSize > 0) {
+		if (GetBorderSize() > 0) {
 			Graphics2D.SetDrawColor(fore);
 			if (DrawAsCircle) {
 				var whd2 = new Vector2F(width / 2, width / 2);

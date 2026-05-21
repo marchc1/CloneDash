@@ -62,14 +62,14 @@ public class TabView : Panel
 		TabGoLeft = new Button(TabSelector);
 		TabGoLeft.SetSize(new(28));
 		TabGoLeft.SetDock(Dock.Left);
-		TabGoLeft.BorderSize = 0;
+		TabGoLeft.SetBorderSize(0);
 		TabGoLeft.SetText("<");
 		TabGoLeft.SetTextSize(18);
 
 		TabGoRight = new Button(TabSelector);
 		TabGoRight.SetSize(new(28));
 		TabGoRight.SetDock(Dock.Right);
-		TabGoRight.BorderSize = 0;
+		TabGoRight.SetBorderSize(0);
 		TabGoRight.SetText(">");
 		TabGoRight.SetTextSize(18);
 
@@ -80,7 +80,7 @@ public class TabView : Panel
 		TabContainer = new Panel(this);
 		TabContainer.SetDock(Dock.Fill);
 		TabContainer.SetBgColor(SWITCHER_ACTIVE);
-		TabContainer.BorderSize = 0;
+		TabContainer.SetBorderSize(0);
 		TabContainer.SetDockMargin(RectangleF.TLRB(-4, 8, 8, 8));
 	}
 
@@ -102,7 +102,7 @@ public class TabView : Panel
 		switcher.SetBgColor(SWITCHER_INACTIVE);
 		switcher.SetTextPadding(new(4));
 		switcher.SetAutoSize(true);
-		switcher.BorderSize = 0;
+		switcher.SetBorderSize(0);
 
 		// A new tab instance
 		Tab newTab = new Tab(switcher, panel);

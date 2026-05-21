@@ -35,7 +35,7 @@ public class CharacterButton(Element? parent) : Button(parent)
 			imageRenderer.SetDock(Dock.Fill);
 		}
 		SetBgColor(new Color(0, 0, 0, 0));
-		BorderSize = 0;
+		SetBorderSize(0);
 		SetText("");
 	}
 
@@ -74,7 +74,7 @@ public class CharacterSelectorScroller : Panel
 
 			var lbl = new CharacterButton(this);
 			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
-			lbl.BorderSize = 0;
+			lbl.SetBorderSize(0);
 
 			lbl.OnButtonClick += (_, _) => PerformPick(character);
 			chars.Add((lbl, character));
@@ -146,7 +146,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		selectedInfo.SetDock(Dock.Bottom);
 		selectedInfo.DynamicallySized = true;
 		selectedInfo.SetSize(new(0, 0.125f));
-		selectedInfo.BorderSize = 0;
+		selectedInfo.SetBorderSize(0);
 		selectedInfo.SetPaintBackgroundEnabled(false);
 		selectedInfo.SetPaintBorderEnabled(false);
 		selectedInfo.SetPaintEnabled(false);
@@ -186,7 +186,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetDock(Dock.Bottom);
 		backPanel.DynamicallySized = true;
 		backPanel.SetSize(new(0, 0.1f));
-		backPanel.BorderSize = 0;
+		backPanel.SetBorderSize(0);
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
 
 		var currentCharacter = CharacterMod.GetCharacterData();

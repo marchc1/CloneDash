@@ -190,7 +190,7 @@ public class Titlebar : Panel
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
 		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, GetBorderSize());
 
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
@@ -449,7 +449,7 @@ public class Window : Element
 			Rlgl.Scalef(1, 1.0f + ((1 - NMath.Ease.OutCubic(mul)) * 0.5f), 1);
 		}
 
-		Opacity = mul;
+		SetOpacity(mul);
 	}
 	public override void PostRenderRT() {
 		if (closing) {

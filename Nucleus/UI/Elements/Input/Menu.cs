@@ -111,13 +111,13 @@ public class Menu(Element? parent) : Panel(parent)
 
 	public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
 		this.SetPos(pos);
-		this.BorderSize = 1;
+		this.SetBorderSize(1);
 
 		this.SetBgColor(new Color(20, 30, 45, 220));
 		this.SetFgColor(new Color(190, 195, 195, 114));
 
 		var i = 0;
-		this.Clipping = false;
+		this.SetClipping(false);
 		reverse = false;
 		activeSubmenu = null;
 		lastHoveredPiece = null;
@@ -145,8 +145,8 @@ public class Menu(Element? parent) : Panel(parent)
 						b.SetTextSize(18);
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
-						b.BorderSize = 0;
-						b.Clipping = false;
+						b.SetBorderSize(0);
+						b.SetClipping(false);
 					}
 					break;
 				case MenuSubmenu submenu: {
@@ -159,9 +159,9 @@ public class Menu(Element? parent) : Panel(parent)
 						b.SetTextSize(18);
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
-						b.BorderSize = 0;
+						b.SetBorderSize(0);
 
-						b.Clipping = false;
+						b.SetClipping(false);
 						var mic = MathF.Max(items.Count, 8);
 					}
 					break;
@@ -217,7 +217,7 @@ public class Menu(Element? parent) : Panel(parent)
 	protected override void OnThink() {
 		base.OnThink();
 
-		Opacity = (float)BackdropAlpha;
+		SetOpacity((float)BackdropAlpha);
 
 		if (closing) {
 			if (BackdropAlpha <= 0)

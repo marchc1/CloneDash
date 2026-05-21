@@ -34,7 +34,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		SetTextSize(16);
 
 		Icon = new(this);
-		BorderSize = 0;
+		SetBorderSize(0);
 		Icon.SetPaintBackgroundEnabled(false);
 		Icon.SetImagePadding(new(4));
 		Icon.SetImageOrientation(ImageOrientation.Zoom);
@@ -515,7 +515,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 		var clip = audiosystem.CreateFileAudioClip("offset_cowbell.wav");
 		track = audiosystem.CreatePlayback(clip);
-		BorderSize = 0;
+		SetBorderSize(0);
 		KeyboardFocus();
 	}
 

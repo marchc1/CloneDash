@@ -111,14 +111,14 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		base.OnRemoval();
 	}
 	public MainMenuPanel(Element? parent) : base(parent) {
-		BorderSize = 0;
+		SetBorderSize(0);
 		SetPaintBackgroundEnabled(false);
 
 		SetPassthru(true);
 
 		back = new(this);
 		back.SetOrigin(Anchor.Center);
-		back.BorderSize = 0;
+		back.SetBorderSize(0);
 		back.SetBgColor(new Color(0, 0));
 		var backImage = new Image(back);
 		backImage.SetTexture(Level.Textures.LoadTextureFromFile("ui/back.png"));

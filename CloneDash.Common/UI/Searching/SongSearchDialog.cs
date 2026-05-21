@@ -13,8 +13,8 @@ public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 {
 	Label label = null!;
 	T element = null!;
-	public DialogLabelPanel(Element? parent) : base(parent){ 
-		BorderSize = 0;
+	public DialogLabelPanel(Element? parent) : base(parent){
+		SetBorderSize(0);
 
 		label = new(this);
 		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
@@ -88,7 +88,7 @@ public class SongSearchDialog : Window
 
 		applyButton = new(this);
 		applyButton.SetText("Apply");
-		applyButton.BorderSize = 0;
+		applyButton.SetBorderSize(0);
 		applyButton.SetDock(Dock.Bottom);
 
 		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;

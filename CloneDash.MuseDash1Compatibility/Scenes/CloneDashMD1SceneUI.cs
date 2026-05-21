@@ -77,7 +77,7 @@ public class StatisticsPanel : Panel
 		back.SetDock(Dock.Right);
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
-		BorderSize = 0;
+		SetBorderSize(0);
 	}
 	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
 		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);

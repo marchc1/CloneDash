@@ -19,7 +19,7 @@ public class Scrollbar : Panel
 			this.scrollbar = scrollbar;
 			SetPaintBackgroundEnabled(false);
 			SetPaintBorderEnabled(false);
-			BorderSize = 0;
+			SetBorderSize(0);
 		}
 		public override void Paint(float width, float height) {
 			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
@@ -40,7 +40,7 @@ public class Scrollbar : Panel
 			this.scrollbar = scrollbar;
 			SetPaintBackgroundEnabled(false);
 			SetPaintBorderEnabled(false);
-			BorderSize = 0;
+			SetBorderSize(0);
 		}
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			// Remap the new mouse pos

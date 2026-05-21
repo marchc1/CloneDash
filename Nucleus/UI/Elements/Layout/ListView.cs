@@ -39,16 +39,16 @@ public class ListViewItem : Button
 	public ListViewItem(Element? parent) : base(parent) {
 		SetBgColor(new Color(0, 0, 0, 0));
 		SetFgColor(new Color(0, 0, 0, 0));
-		this.Clipping = false;
+		this.SetClipping(false);
 	}
 
 	protected override void OnThink() {
-		if (Depressed || IsHovered())
+		if (IsDepressed() || IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 	}
 
 	public override void PaintBackground(float width, float height) {
-		if (Depressed) {
+		if (IsDepressed()) {
 			Graphics2D.SetDrawColor(30, 35, 45, 65);
 			Graphics2D.DrawRectangle(0, 0, width, height);
 		}

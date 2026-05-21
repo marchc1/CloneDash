@@ -45,7 +45,7 @@ public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) :
 	}
 	public override void Paint(float width, float height) {
 		if (IsHovered()) {
-			if (Depressed)
+			if (IsDepressed())
 				Graphics2D.SetDrawColor(50, 50, 50);
 			else
 				Graphics2D.SetDrawColor(190, 190, 190);

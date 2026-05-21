@@ -873,7 +873,7 @@ public class Textbox : Label
 	public override void PaintBorder(float width, float height) {
 		Color fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		Graphics2D.SetDrawColor(fore);
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, GetBorderSize());
 	}
 
 	void DrawTextLines(float width, float height) {

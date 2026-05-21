@@ -14,7 +14,7 @@ public class TreeNode : Button, IContainsNodes
 		ChildrenPanel = new(GetParent());
 		ChildrenPanel.AutoSize = true;
 		ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
-		ChildrenPanel.BorderSize = 0;
+		ChildrenPanel.SetBorderSize(0);
 		ChildrenPanel.SetPaintBackgroundEnabled(false);
 		ChildrenPanel.SetPaintEnabled(false);
 		ChildrenPanel.SetVisible(false);

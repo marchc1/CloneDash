@@ -36,7 +36,7 @@ public class LabeledNumSlider : Panel, INumSlider, ITextElement
 		label.SetDock(Dock.Left);
 		label.SetAutoSize(true);
 		label.SetText("Num");
-		label.BorderSize = 0;
+		label.SetBorderSize(0);
 		label.SetBgColor(Color.Blank);
 		label.SetDockMargin(RectangleF.XYWH(0, 0, 16, 0));
 
@@ -108,7 +108,7 @@ public class NumSlider : Textbox, INumSlider
 	}
 	protected override void OnThink() {
 		base.OnThink();
-		if (didDrag && Depressed)
+		if (didDrag && IsDepressed())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_EW);
 		else if (IsHovered() && !IsKeyboardFocused())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);

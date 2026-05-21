@@ -205,7 +205,7 @@ public static class EngineCore
 
 	private static void AddParent_PaintOverride(Element self, float width, float height) {
 		int y = 12;
-		self.GetParent()?.BorderSize = 0;
+		self.GetParent()?.SetBorderSize(0);
 
 		DrawBar("Time to Update", new Color(225, 225, 225, 255), width, y, GetTimeToUpdate().TotalSeconds);
 		DrawBar("Time to Render", new Color(225, 225, 225, 255), width, y, GetTimeToRender().TotalSeconds);

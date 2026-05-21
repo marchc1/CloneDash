@@ -13,8 +13,8 @@ public class MainMenuButton : Button
 	Image image;
 	public MainMenuButton(Element? parent, string icon) : base(parent) {
 		SetTextAlignment(Anchor.CenterRight);
-		Clipping = false;
-		Roundness = 4;
+		SetClipping(false);
+		SetRoundness(4);
 		image = new(this);
 		image.SetAnchor(Anchor.CenterLeft);
 		image.SetOrigin(Anchor.CenterLeft);
@@ -30,7 +30,7 @@ public class MainMenuButton : Button
 
 	protected override void OnThink() {
 		base.OnThink();
-		ChildRenderOffset = new(sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0);
+		SetChildRenderOffset(new(sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0));
 	}
 
 

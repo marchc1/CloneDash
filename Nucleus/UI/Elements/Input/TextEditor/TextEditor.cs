@@ -78,7 +78,7 @@ public class AutocompletePanel : Panel
 		btn.SetText(text);
 		btn.SetTextAlignment(Anchor.CenterLeft);
 		btn.SetTextPadding(new(12, 0));
-		btn.BorderSize = 0;
+		btn.SetBorderSize(0);
 		btn.PulsePreservesAlpha = true;
 		if (Buttons.Count == 0)
 			btn.Pulsing = true;

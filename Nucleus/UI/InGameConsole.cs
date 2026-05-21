@@ -30,7 +30,7 @@ namespace Nucleus
 		}
 
 		public ConsoleAutocomplete(Element? parent) : base(parent) {
-			Clipping = false;
+			SetClipping(false);
 		}
 
 		public override void Paint(float width, float height) {
@@ -240,7 +240,7 @@ namespace Nucleus
 			SetSize(new(GetParent()!.GetSize().W - 16, 384));
 
 			this.SetDockMargin(RectangleF.TLRB(8));
-			this.BorderSize = 0;
+			this.SetBorderSize(0);
 
 			consoleInput = new ConsoleInput(this);
 			consoleInput.SetSize(new(0, 32));
@@ -361,7 +361,7 @@ namespace Nucleus
 			var inputText = consoleInput.GetText();
 
 			if (string.IsNullOrEmpty(inputText)) {
-				autoComplete.ChildRenderOffset = new(0, 12);
+				autoComplete.SetChildRenderOffset(new(0, 12));
 				SetupHistoryAutocomplete();
 				return;
 			}
@@ -383,7 +383,7 @@ namespace Nucleus
 			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
 				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.GetTextSize()).X + 4;
 			}
-			autoComplete.ChildRenderOffset = new(xOffset, 12);
+			autoComplete.SetChildRenderOffset(new(xOffset, 12));
 		}
 
 		private void SetupHistoryAutocomplete() {

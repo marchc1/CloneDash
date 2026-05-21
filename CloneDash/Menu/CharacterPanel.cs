@@ -39,8 +39,8 @@ public class CharacterPanel : Panel
 
 	Label ExpressionLabel = null!;
 
-	public CharacterPanel(Element? parent) : base(parent){ 
-		BorderSize = 0;
+	public CharacterPanel(Element? parent) : base(parent){
+		SetBorderSize(0);
 		SetPaintBackgroundEnabled(false);
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);

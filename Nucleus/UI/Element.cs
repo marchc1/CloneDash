@@ -162,26 +162,81 @@ public class Element : IValidatable
 	private bool MouseInput;
 	private bool Visible;
 
+	private bool clipping = true;
+	private float opacity = 1.0f;
+
 	SchemeableSetting<Color> backgroundColor = SchemeableSetting<Color>.Default(DefaultBackgroundColor);
 	SchemeableSetting<Color> foregroundColor = SchemeableSetting<Color>.Default(DefaultForegroundColor);
 
-	// properties with backing (should be fields)
+	private float borderSize = 2;
+	private float roundness = 0;
 
-	public float BorderSize { get; set; } = 2;
-	public float Roundness { get; set; } = 0;
-
-	public Vector2F SizeOfAllChildren { get; private set; } = Vector2F.Zero;
-	public Vector2F ChildRenderOffset { get; set; } = Vector2F.Zero;
+	private Vector2F childRenderOffset = Vector2F.Zero;
 	internal Element? Parent;
-	public double LastLayoutTime { get; private set; } = 0;
+	private double lastLayoutTime = 0;
 
-	public bool Clipping { get; set; } = true;
 
-	public float Opacity { get; set; } = 1.0f;
+	public float GetBorderSize() {
+		return borderSize;
+	}
+
+	public void SetBorderSize(float value) {
+		borderSize = value;
+	}
+
+	public float GetRoundness() {
+		return roundness;
+	}
+
+	public void SetRoundness(float value) {
+		roundness = value;
+	}
+
+	private Vector2F sizeOfAllChildren = Vector2F.Zero;
+
+	public Vector2F GetSizeOfAllChildren() {
+		return sizeOfAllChildren;
+	}
+
+	private void SetSizeOfAllChildren(Vector2F value) {
+		sizeOfAllChildren = value;
+	}
+
+	public Vector2F GetChildRenderOffset() {
+		return childRenderOffset;
+	}
+
+	public void SetChildRenderOffset(Vector2F value) {
+		childRenderOffset = value;
+	}
+
+	public double GetLastLayoutTime() {
+		return lastLayoutTime;
+	}
+
+	private void SetLastLayoutTime(double value) {
+		lastLayoutTime = value;
+	}
+
+	public bool GetClipping() {
+		return clipping;
+	}
+
+	public void SetClipping(bool value) {
+		clipping = value;
+	}
+
+
+	public float GetOpacity() {
+		return opacity;
+	}
+
+	public void SetOpacity(float value) {
+		opacity = value;
+	}
 
 	public Dictionary<string, object?> Tags { get; } = [];
 
-	public bool Depressed { get; internal set; }
 	public bool Dragged { get; internal set; } = false;
 	public Vector2F DragVector { get; internal set; } = Vector2F.Zero;
 
@@ -207,7 +262,7 @@ public class Element : IValidatable
 		flags |= ElementFlags.AllowChainKeybindingToParent;
 		flags |= ElementFlags.AllowChainInputToParent;
 		__tooltipText = null;
-		Opacity = 1;
+		SetOpacity(1);
 		SetVisible(true);
 		SetMouseInputEnabled(true);
 		SetKeyboardInputEnabled(true);
@@ -626,7 +681,7 @@ public class Element : IValidatable
 			__renderbounds.W = float.Floor(__renderbounds.W);
 			__renderbounds.H = float.Floor(__renderbounds.H);
 		}
-		LastLayoutTime = globals.CurTime;
+		SetLastLayoutTime(globals.CurTime);
 	}
 
 	public void ValidateLayout() {
@@ -666,12 +721,12 @@ public class Element : IValidatable
 	}
 
 	private void ComputeSizeOfAllChildren() {
-		SizeOfAllChildren = Vector2F.Zero;
+		SetSizeOfAllChildren(Vector2F.Zero);
 		foreach (var child in Children) {
 			if (child.IsVisible()) {
 				var ps = child.GetRenderBounds().Pos + child.GetRenderBounds().Size;
-				if (ps > SizeOfAllChildren)
-					SizeOfAllChildren = ps;
+				if (ps > GetSizeOfAllChildren())
+					SetSizeOfAllChildren(ps);
 			}
 		}
 	}
@@ -993,20 +1048,20 @@ public class Element : IValidatable
 		this.GetAddParent().Children.Clear();
 		InvalidateLayout();
 	}
+
 	public void ClearChildrenNoRemove() {
 		this.GetAddParent().Children.Clear();
 		InvalidateLayout();
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsHovered() {
-		return MouseInput && UI.GetHoveredElement() == this;
-	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsHovered() => MouseInput && UI.GetHoveredElement() == this;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsDepressed() => MouseInput && UI.GetDepressedElement() == this;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool IsDepressed(ButtonCode code) => MouseInput && UI.GetDepressedElement(code) == this;
+
 
 	internal bool MouseClickOccur(FrameState state, ButtonCode button) {
 		if (!MouseInput)
 			return false;
-		Depressed = true;
 		return MouseClick(state, button);
 	}
 
@@ -1017,7 +1072,6 @@ public class Element : IValidatable
 		DragVector = Vector2F.Zero;
 
 		bool handled = MouseRelease(this, state, button);
-		Depressed = false; // todo: this is breaking, but it might be a good idea to keep this true during the release
 		return handled;
 	}
 	internal bool MouseDragOccur(FrameState state, Vector2F delta) {
@@ -1042,7 +1096,7 @@ public class Element : IValidatable
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 		e.__mouseColorableHoverState ??= e.BuildHoveredSOS();
 		e.__mouseColorableDepressState ??= e.BuildDepressedSOS();
-		return MixColorBasedOnMouseState(e.__mouseColorableHoverState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableDepressState.Update(e.Depressed ? 1 : 0), original, hoveredHSV, depressedHSV);
+		return MixColorBasedOnMouseState(e.__mouseColorableHoverState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableDepressState.Update(e.IsDepressed() ? 1 : 0), original, hoveredHSV, depressedHSV);
 #else
 		return MixColorBasedOnMouseState(e.IsHovered() ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
 #endif
@@ -1127,7 +1181,7 @@ public class Element : IValidatable
 		Vector2F ret = new Vector2F(0, 0);
 		Element? t = this;
 		while (true) {
-			ret += t.GetRenderBounds().Pos + t.ChildRenderOffset;
+			ret += t.GetRenderBounds().Pos + t.GetChildRenderOffset();
 			t = t.Parent;
 			if (t == null || t == t.UI) {
 				break;
@@ -1170,7 +1224,7 @@ public class Element : IValidatable
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
 		this.SetSize(new(sizeW ? 0 : this.GetSize().W, sizeH ? 0 : this.GetSize().H));
 		InvalidateLayout();
-		SetSize(new(sizeW ? SizeOfAllChildren.W : GetSize().W, sizeH ? SizeOfAllChildren.H : GetSize().H));
+		SetSize(new(sizeW ? GetSizeOfAllChildren().W : GetSize().W, sizeH ? GetSizeOfAllChildren().H : GetSize().H));
 	}
 
 	public virtual void ProvideExample(Panel buildHere) { }
@@ -1255,7 +1309,7 @@ public class Element : IValidatable
 
 	public virtual void PaintBackground(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
-		float borderSize = BorderSize, roundness = Roundness;
+		float borderSize = GetBorderSize(), roundness = GetRoundness();
 
 		Graphics2D.SetDrawColor(back);
 
@@ -1275,7 +1329,7 @@ public class Element : IValidatable
 	}
 	public virtual void PaintBorder(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
-		float borderSize = BorderSize, roundness = Roundness;
+		float borderSize = GetBorderSize(), roundness = GetRoundness();
 
 		if (roundness <= 0) {
 			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);

@@ -80,7 +80,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	Panel header;
 	public override void Initialize(params object[] args) {
 		var charPanel = new Panel(RootPanel);
-		charPanel.BorderSize = 0;
+		charPanel.SetBorderSize(0);
 		charPanel.DynamicallySized = true;
 		charPanel.SetSize(new(1f, 1f));
 
@@ -93,7 +93,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		header.SetPos(new Vector2F(0));
 		header.SetSize(new Vector2F(256, 64));
 		header.SetDock(Dock.Top);
-		header.BorderSize = 0;
+		header.SetBorderSize(0);
 		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
 
 		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
@@ -147,7 +147,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtnImage.SetDock(Dock.Fill);
 		menuBtn.SetTextSize(21);
 		menuBtn.SetDockMargin(RectangleF.TLRB(0));
-		menuBtn.BorderSize = 0;
+		menuBtn.SetBorderSize(0);
 		menuBtn.OnButtonClick += (_, _) => onClicked();
 		menuBtn.TooltipText = text;
 
@@ -323,16 +323,16 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, w, h);
 
-			if (BorderSize > 0) {
+			if (GetBorderSize() > 0) {
 				fore.A = (byte)(int)Math.Clamp(fore.A * alpha, 0, 255);
 				Graphics2D.SetDrawColor(fore);
-				Graphics2D.DrawRectangleOutline(0, 0, w, h, BorderSize);
+				Graphics2D.DrawRectangleOutline(0, 0, w, h, GetBorderSize());
 			}
 		}
 		public override void Paint(float w, float h) {
 			var life = Lifetime - (offset * .15f);
 			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
-			ChildRenderOffset = new(xOffset, 0);
+			SetChildRenderOffset(new(xOffset, 0));
 
 			base.Paint(w, h);
 
@@ -505,7 +505,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.SetTextSize(16);
 		mapper.SetTextAlignment(Anchor.BottomCenter);
 		mapper.TextOverflowMode = TextOverflowMode.None;
-		mapper.Clipping = false;
+		mapper.SetClipping(false);
 		mapper.SetPos(new(-8, -8));
 		mapper.SetAnchor(Anchor.BottomRight);
 		mapper.SetPassthru(true);
@@ -519,7 +519,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		play.SetTextPadding(new(8, 0));
 		play.SetTextSize(28);
 
-		play.BorderSize = 2;
+		play.SetBorderSize(2);
 		play.SetPaintBackgroundEnabled(true);
 
 		play.OnButtonClick += delegate (Button self, ButtonCode button) {

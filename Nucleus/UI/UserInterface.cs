@@ -88,7 +88,7 @@ public class ElementInputSystem
 
 				if (modal || popup) {
 					// Only traverse this modal child
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.GetChildRenderOffset(), child.GetRenderBounds().Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 
 					if (modal) {
@@ -107,7 +107,7 @@ public class ElementInputSystem
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.GetChildRenderOffset(), child.GetRenderBounds().Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
@@ -293,19 +293,19 @@ public class ElementPaintSystem
 				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
 
 				if (IValidatable.IsValid(parent)) {
-					Graphics2D.OffsetDrawing(element.ChildRenderOffset);
+					Graphics2D.OffsetDrawing(element.GetChildRenderOffset());
 					if (parent.PostRenderChildRT(element) == true) {
 						Graphics2D.OffsetDrawing(renderBounds.Pos);
 						{
 							element.PreRenderRT();
-							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
+							var t = (byte)Math.Clamp(element.GetOpacity() * 255, 0, 255);
 							Graphics2D.SetDrawColor(t, t, t, t);
 							Graphics2D.DrawRenderTexture(rt, renderBounds.Size);
 							element.PostRenderRT();
 						}
 						Graphics2D.OffsetDrawing(-renderBounds.Pos);
 					}
-					Graphics2D.OffsetDrawing(-element.ChildRenderOffset);
+					Graphics2D.OffsetDrawing(-element.GetChildRenderOffset());
 				}
 			}
 			else
@@ -314,7 +314,7 @@ public class ElementPaintSystem
 			return;
 		}
 
-		Vector2F childRenderOffset = IValidatable.IsValid(parent) ? element.ChildRenderOffset : Vector2F.Zero;
+		Vector2F childRenderOffset = IValidatable.IsValid(parent) ? element.GetChildRenderOffset() : Vector2F.Zero;
 		childRenderOffset = childRenderOffset.Round(5);
 
 		Graphics2D.OffsetDrawing(childRenderOffset);
@@ -332,24 +332,24 @@ public class ElementPaintSystem
 		if (!IValidatable.IsValid(element)) return;
 		var renderBounds = element.GetRenderBounds();
 		float w = renderBounds.Width, h = renderBounds.Height;
-		if ((w <= 0 || h <= 0) && element.Clipping)
+		if ((w <= 0 || h <= 0) && element.GetClipping())
 			return;
 
-		if (element.Clipping) // This aggressively expands the render bounds test. Unclear how much this will help or if this will only make floating point things more annoying.
+		if (element.GetClipping()) // This aggressively expands the render bounds test. Unclear how much this will help or if this will only make floating point things more annoying.
 							  // Arguably positions and sizes should move to a Vector2I equivalent at this point.
 							  // This also might be a regression due to the latest UI changes, although I vaguely remember this happening before in some cases
-			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Vector2F.Floor(Graphics2D.Offset - element.ChildRenderOffset), Vector2F.Ceil(renderBounds.Size + Vector2F.One)));
+			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Vector2F.Floor(Graphics2D.Offset - element.GetChildRenderOffset()), Vector2F.Ceil(renderBounds.Size + Vector2F.One)));
 		{
-			Graphics2D.PushAlpha(element.Opacity * 255);
+			Graphics2D.PushAlpha(element.GetOpacity() * 255);
 			{
 				// Calculate border insetting
 				float iw = w, ih = h;
-				float border = element.BorderSize;
+				float border = element.GetBorderSize();
 				iw -= (border * 2);
 				ih -= (border * 2);
-				bool rounded = element.Roundness != 0;
+				bool rounded = element.GetRoundness() != 0;
 				Vector2F drawingOffset = new(border);
-				if ((iw > 0 && ih > 0) || !element.Clipping) {
+				if ((iw > 0 && ih > 0) || !element.GetClipping()) {
 					if (element.IsPaintBackgroundEnabled()) {
 						if (rounded) // kinda hacky but required for border/background right now. Fixme
 							element.PaintBackground(w, h);
@@ -378,7 +378,7 @@ public class ElementPaintSystem
 			}
 			Graphics2D.PopAlpha();
 		}
-		if (element.Clipping)
+		if (element.GetClipping())
 			Graphics2D.ScissorRect();
 	}
 }
@@ -466,7 +466,7 @@ public class UserInterface : Element, IDisposable
 	}
 
 	protected override void OnThink() {
-		Clipping = false;
+		SetClipping(false);
 		//this.Position = new(0, 0);
 		//this.Size = new(frameState.WindowWidth, frameState.WindowHeight);
 		//RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
