@@ -162,7 +162,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		characterAuthorLabel = new(this);
 		characterAuthorLabel.SetAutoSize(true);
-		characterAuthorLabel.Origin = Anchor.TopRight;
+		characterAuthorLabel.SetOrigin(Anchor.TopRight);
 
 		characterSelectButton = new(selectedInfo);
 		characterSelectButton.SetDock(Dock.Right);

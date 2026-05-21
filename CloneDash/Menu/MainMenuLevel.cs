@@ -86,7 +86,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Character = new(charPanel);
 		Character.DynamicallySized = true;
-		Character.Origin = Anchor.TopCenter;
+		Character.SetOrigin(Anchor.TopCenter);
 		Character.SetSize(new(1f));
 
 		header = new(RootPanel);
@@ -387,8 +387,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		};
 
 		LevelSelectorBackButton back = new(levelSelector, selector);
-		back.Anchor = Anchor.Center;
-		back.Origin = Anchor.Center;
+		back.SetAnchor(Anchor.Center);
+		back.SetOrigin(Anchor.Center);
 		back.SetPos(new(-256, 0));
 		var backImage = new Image(back);
 		backImage.SetTexture(Textures.LoadTextureFromFile("ui/back.png"));
@@ -404,15 +404,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		title.SetTextSize(48);
 		title.SetText(info.Name);
 		title.SetAutoSize(true);
-		title.Anchor = Anchor.Center;
-		title.Origin = Anchor.Center;
+		title.SetAnchor(Anchor.Center);
+		title.SetOrigin(Anchor.Center);
 
 		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
 		author.SetTextSize(22);
 		author.SetText($"by {info.Author}");
 		author.SetAutoSize(true);
-		author.Anchor = Anchor.Center;
-		author.Origin = Anchor.Center;
+		author.SetAnchor(Anchor.Center);
+		author.SetOrigin(Anchor.Center);
 
 		levelSelector.TrySetupTrack();
 
@@ -507,9 +507,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.TextOverflowMode = TextOverflowMode.None;
 		mapper.Clipping = false;
 		mapper.SetPos(new(-8, -8));
-		mapper.Anchor = Anchor.BottomRight;
+		mapper.SetAnchor(Anchor.BottomRight);
 		mapper.SetPassthru(true);
-		mapper.Origin = Anchor.BottomRight;
+		mapper.SetOrigin(Anchor.BottomRight);
 		mapper.SetTextAlignment(Anchor.TopLeft);
 
 		play.SetBgColor(buttonColor);

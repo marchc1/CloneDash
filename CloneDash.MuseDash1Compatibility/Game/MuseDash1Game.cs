@@ -1002,8 +1002,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							var panel = new Panel(RootPanel);
 							panel.SetPaintBackgroundEnabled(false);
-							panel.Anchor = Anchor.Center;
-							panel.Origin = Anchor.Center;
+							panel.SetAnchor(Anchor.Center);
+							panel.SetOrigin(Anchor.Center);
 							panel.DynamicallySized = true;
 							panel.SetSize(new(0.9f));
 

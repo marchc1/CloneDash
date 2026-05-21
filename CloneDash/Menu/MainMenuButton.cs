@@ -16,8 +16,8 @@ public class MainMenuButton : Button
 		Clipping = false;
 		Roundness = 4;
 		image = new(this);
-		image.Anchor = Anchor.CenterLeft;
-		image.Origin = Anchor.CenterLeft;
+		image.SetAnchor(Anchor.CenterLeft);
+		image.SetOrigin(Anchor.CenterLeft);
 		image.SetTexture(Level.Textures.LoadTextureFromFile(icon));
 	}
 

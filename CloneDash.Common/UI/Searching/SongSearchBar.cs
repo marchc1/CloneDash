@@ -7,8 +7,8 @@ namespace CloneDash.Menu.Searching;
 public class SongSearchBar : Button
 {
 	public string? SearchQuery = null;
-	public SongSearchBar(Element? parent) : base(parent){ 
-		Origin = Anchor.Center;
+	public SongSearchBar(Element? parent) : base(parent){
+		SetOrigin(Anchor.Center);
 	}
 
 	protected override void PerformLayout(float width, float height) {

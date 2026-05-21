@@ -117,7 +117,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		SetPassthru(true);
 
 		back = new(this);
-		back.Origin = Anchor.Center;
+		back.SetOrigin(Anchor.Center);
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
 		var backImage = new Image(back);
@@ -199,7 +199,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			for (int i = 0; i < btnsLen; i++) {
 				var btn = btns[i];
 
-				btn.Origin = Anchor.Center;
+				btn.SetOrigin(Anchor.Center);
 				btn.SetTextSize(textHeight);
 				btn.SetSize(new(btnWidth, btnHeight));
 

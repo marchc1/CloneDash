@@ -44,7 +44,7 @@ public class CharacterPanel : Panel
 		SetPaintBackgroundEnabled(false);
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);
-		ExpressionLabel.Origin = Anchor.Center;
+		ExpressionLabel.SetOrigin(Anchor.Center);
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 
 		if (SetCharacter(CharacterMod.GetCharacterData()))

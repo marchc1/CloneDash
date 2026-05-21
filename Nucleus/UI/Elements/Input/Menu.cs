@@ -193,7 +193,7 @@ public class Menu(Element? parent) : Panel(parent)
 		}
 		if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
 
-		this.Origin = new TextAlignment2D(lr, tb).ToAnchor();
+		this.SetOrigin(new TextAlignment2D(lr, tb).ToAnchor());
 		if (popup) {
 			this.MakeModal();
 			this.MakePopup();

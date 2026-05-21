@@ -161,7 +161,7 @@ public class ColorSelectorDialog : Panel
 		Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
 		Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
 
-		this.Origin = Anchor.BottomCenter;
+		this.SetOrigin(Anchor.BottomCenter);
 		this.UI.Input.OnClick += delegate (Element? el) {
 			if (el != null && !el.IsIndirectChildOf(this)) {
 				this.Remove();
