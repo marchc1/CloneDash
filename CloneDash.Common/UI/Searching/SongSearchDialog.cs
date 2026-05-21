@@ -95,7 +95,7 @@ public class SongSearchDialog : Window
 
 		parameters = new(this);
 		parameters.SetDock(Dock.Fill);
-		AddParent = parameters;
+		SetAddParent(parameters);
 
 		Center();
 	}

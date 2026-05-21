@@ -362,7 +362,7 @@ public class Window : Element
 		ResizeBL.SetText("");
 		ResizeBR.SetText("");
 
-		this.AddParent = ap;
+		this.SetAddParent(ap);
 		SetUseRenderTarget(true);
 	}
 	protected override void OnRemoval() {

@@ -53,7 +53,7 @@ public class DirectionalLayoutPanel : ScrollPanel
 		base.OnThink();
 		if (AutoSize) {
 			float size = 0;
-			foreach (var child in AddParent.Children)
+			foreach (var child in GetAddParent().Children)
 				size = MathF.Max(size, child.GetRenderBounds().Y + child.GetRenderBounds().H + 8);
 			SetSize(new(GetSize().W, size + 8));
 			MainPanel.SetSize(new(MainPanel.GetSize().W, size + 8));

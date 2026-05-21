@@ -300,8 +300,8 @@ public class Element : IValidatable
 
 		GetParent()?.InvalidateLayout();
 		InvalidateLayout();
-		if (AddParent != this)
-			AddParent.SetDockPadding(value);
+		if (GetAddParent() != this)
+			GetAddParent().SetDockPadding(value);
 		else
 			_dockPadding = value;
 	}
@@ -330,7 +330,7 @@ public class Element : IValidatable
 	public Element(Element? parent, ReadOnlySpan<char> name, IScheme? scheme) {
 		Initialize(0, 0, 32, 32);
 		SetName(name);
-		SetParent(parent?.AddParent);
+		SetParent(parent?.GetAddParent());
 		SetScheme(scheme);
 		PerformApplySchemeSettings();
 		UI?.AddElement(this);
@@ -340,18 +340,17 @@ public class Element : IValidatable
 	/// The element which Add<>() adds to. Can be used to defer add operations to a different part of the element.<br></br>
 	/// By default, returns itself.
 	/// </summary>
-	public Element AddParent {
-		get {
-			if (__parentToAddTo == null) {
-				return this;
-			}
-			return __parentToAddTo;
+	public Element GetAddParent() {
+		if (__parentToAddTo == null) {
+			return this;
 		}
-		set {
-			__parentToAddTo = value;
-			if (value != null) {
-				value.SetDockPadding(GetDockPadding());
-			}
+		return __parentToAddTo;
+	}
+
+	public void SetAddParent(Element value) {
+		__parentToAddTo = value;
+		if (value != null) {
+			value.SetDockPadding(GetDockPadding());
 		}
 	}
 
@@ -549,7 +548,7 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public Element? GetParent() => Parent;
 
 	public void SetParent(Element? p) {
-		p = p?.AddParent;
+		p = p?.GetAddParent();
 		if (p == this)
 			return; // not valid at all
 
@@ -575,7 +574,7 @@ public class Element : IValidatable
 	}
 
 	public void SortChildren(Comparison<Element> childSortMethod) {
-		this.AddParent.Children.Sort(childSortMethod);
+		this.GetAddParent().Children.Sort(childSortMethod);
 	}
 
 	public void InvalidateChildren(bool recursive = false, bool self = false) {
@@ -987,15 +986,15 @@ public class Element : IValidatable
 
 
 	public void ClearChildren() {
-		foreach (var child in this.AddParent.LockAndEnumerateChildren())
+		foreach (var child in this.GetAddParent().LockAndEnumerateChildren())
 			child.Remove();
-		this.AddParent.UnlockChildren();
+		this.GetAddParent().UnlockChildren();
 
-		this.AddParent.Children.Clear();
+		this.GetAddParent().Children.Clear();
 		InvalidateLayout();
 	}
 	public void ClearChildrenNoRemove() {
-		this.AddParent.Children.Clear();
+		this.GetAddParent().Children.Clear();
 		InvalidateLayout();
 	}
 

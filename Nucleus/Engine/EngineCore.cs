@@ -196,7 +196,7 @@ public static class EngineCore
 		Window window = new Window(Level.RootPanel);
 
 		window.Title = "Nucleus Profiler";
-		window.AddParent.SetPaintBackgroundEnabled(false);
+		window.GetAddParent().SetPaintBackgroundEnabled(false);
 		window.Titlebar.MinimizeButton.SetMouseInputEnabled(false);
 		window.Titlebar.MaximizeButton.SetMouseInputEnabled(false);
 
