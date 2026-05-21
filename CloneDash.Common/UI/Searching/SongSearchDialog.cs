@@ -80,7 +80,7 @@ public class SongSearchDialog : Window
 	public SongSearchDialog(Element? parent) : base(parent) {
 		MakePopup();
 
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:DynamicallySized = true;
+		DynamicallySized = true;
 		SetSize(new(0.4f));
 		Resizable = false;
 		HideNonCloseButtons();
@@ -104,7 +104,7 @@ public class SongSearchDialog : Window
 		DialogLabelPanel<T> pnl = new(parameters);
 		pnl.SetDock(Dock.Top);
 		pnl.SetSize(new(0, 0.15f));
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2: pnl.DynamicallySized = true;
+		pnl.DynamicallySized = true;
 		pnl.SetText(label.SliceNullTerminatedString());
 		return pnl;
 	}

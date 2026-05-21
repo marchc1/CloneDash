@@ -1004,7 +1004,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							panel.SetPaintBackgroundEnabled(false);
 							panel.SetAnchor(Anchor.Center);
 							panel.SetOrigin(Anchor.Center);
-							// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:panel.DynamicallySized = true;
+							panel.DynamicallySized = true;
 							panel.SetSize(new(0.9f));
 
 							var titlebar = new Titlebar(panel);

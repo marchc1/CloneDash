@@ -30,7 +30,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		Panel.SetDock(Dock.Fill);
 
 		SetTextAlignment(Anchor.CenterLeft); ;
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
+		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		SetTextSize(16);
 
 		Icon = new(this);
@@ -59,12 +59,12 @@ public class SettingsPanel : ScrollPanel
 		var panel = new Panel(this);
 		panel.SetPaintBackgroundEnabled(false);
 		panel.SetPaintBorderEnabled(false);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:panel.DynamicallySized = true;
+		panel.DynamicallySized = true;
 		panel.SetDock(Dock.Top);
 		panel.SetSize(new(0.08f));
 
 		var top = new Panel(panel);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:top.DynamicallySized = true;
+		top.DynamicallySized = true;
 		top.SetSize(new(0.5f));
 		top.SetDock(Dock.Top);
 		top.SetPaintBackgroundEnabled(false);
@@ -73,7 +73,7 @@ public class SettingsPanel : ScrollPanel
 		var name = new Label(top);
 		name.SetDock(Dock.Left);
 		name.SetTextAlignment(Anchor.CenterLeft);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:name.DynamicallySized = true;
+		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
 		name.SetTextSize(24);
@@ -82,7 +82,7 @@ public class SettingsPanel : ScrollPanel
 		var desc = new Label(top);
 		desc.SetDock(Dock.Fill);
 		desc.SetTextAlignment(Anchor.CenterLeft);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:desc.DynamicallySized = true;
+		desc.DynamicallySized = true;
 		desc.SetTextPadding(new(16));
 		desc.SetText(descTxt);
 
@@ -98,7 +98,7 @@ public class SettingsPanel : ScrollPanel
 		var name = new Label(this);
 		name.SetDock(Dock.Top);
 		name.SetTextAlignment(Anchor.CenterLeft);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:name.DynamicallySized = true;
+		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
 		name.SetText(text);
@@ -196,7 +196,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.SetText(name);
 		category.OnButtonClick += (_, _) => SelectCategory(category);
 		category.SetDock(Dock.Top);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:category.DynamicallySized = true;
+		category.DynamicallySized = true;
 		category.SetTextSize(24);
 		category.SetSize(new(0.06f));
 		if (icon != null)
@@ -225,7 +225,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		settingCategoryPicker = new(this);
 		settingCategoryPicker.SetPaintBackgroundEnabled(false);
 		settingCategoryPicker.SetDock(Dock.Left);
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:settingCategoryPicker.DynamicallySized = true;
+		settingCategoryPicker.DynamicallySized = true;
 		settingCategoryPicker.SetSize(new(0.25f));
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
@@ -249,10 +249,10 @@ public class SettingsEditor : Panel, IMainMenuPanel
 			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
 	}
 	public Button OffsetWizardCreator(Button btn) {
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:btn.DynamicallySized = true;
+		btn.DynamicallySized = true;
 		btn.SetDock(Dock.Fill);
 		btn.SetText("Open Offset Wizard");
-		// TODO: Fixme, DynamicScaling reimpl, nucleus-ui-improvements-try-2:btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
+		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		btn.OnButtonClick += (_, _) => OpenOffsetWizard();
 
 		return btn;

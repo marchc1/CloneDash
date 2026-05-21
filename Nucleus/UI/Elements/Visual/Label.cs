@@ -194,7 +194,7 @@ public class Label : Element, ITextElement
 	}
 
 
-	public float GetRenderTextSize() => TextSize.Get();
+	public float GetRenderTextSize() => GetDynamicallyScaledFloat(TextSize.Get(), Axis.Vertical);
 
 	public TextOverflowMode TextOverflowMode {
 		get => textOverflowMode;

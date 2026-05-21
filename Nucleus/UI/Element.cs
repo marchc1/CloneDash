@@ -29,6 +29,13 @@ public enum Dock
 	Bottom,
 	Fill
 }
+public enum DynamicSizeReference
+{
+	None,
+	WindowHeight,
+	ParentHeight,
+	SelfHeight
+}
 
 public enum ElementFlags : uint
 {
@@ -91,6 +98,8 @@ public static class SchemeableSettingHelpers
 public class Element : IValidatable
 {
 	public const bool FORCE_ROUNDED_RENDERBOUNDS = true;
+	public const float DYNAMIC_SIZE_W_REFERENCE = 1600;
+	public const float DYNAMIC_SIZE_H_REFERENCE = 900;
 
 	// These constants are not the true defaults, they are basic colors, defaulting is done via the engine scheme
 	public static readonly Color DefaultBackgroundColor = new(0, 0, 0, 255);
@@ -102,6 +111,8 @@ public class Element : IValidatable
 	private ElementFlags flags;
 	private Vector2F _position;
 	private Vector2F _size;
+	private bool _dynamicallySized = false;
+	private DynamicSizeReference _dynamicSizeReference = DynamicSizeReference.WindowHeight;
 	private Dock _dock = Dock.None;
 	private RectangleF _dockMargin = RectangleF.Zero;
 	private RectangleF _dockPadding = RectangleF.Zero;
@@ -168,10 +179,13 @@ public class Element : IValidatable
 	DateTime Birth = DateTime.Now;
 	private IKeyboardInputMarshal keyboardInputMarshal = DefaultKeyboardInputMarshal.Instance;
 
-	public float GetBorderSize() => borderSize;
+
+	public float GetBorderSize() {
+		return borderSize;
+	}
+
 	public void SetBorderSize(float value) {
 		borderSize = value;
-		InvalidateLayout();
 	}
 
 	public float GetRoundness() {
@@ -270,6 +284,23 @@ public class Element : IValidatable
 		}
 		else
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
+	}
+
+	public DynamicSizeReference DynamicSizeReference {
+		get => _dynamicSizeReference;
+		set {
+			_dynamicSizeReference = value;
+			InvalidateChildren(recursive: true, self: true);
+		}
+	}
+	public bool DynamicallySized {
+		get => _dynamicallySized;
+		set {
+			if (_dynamicallySized == value) return;
+
+			_dynamicallySized = value;
+			InvalidateChildren(recursive: true, self: true);
+		}
 	}
 
 	public Vector2F GetSize() { return _size; }
@@ -382,6 +413,15 @@ public class Element : IValidatable
 	}
 
 	public virtual string? TooltipText { get; set; } // todo: remove me, turn into methods
+
+	public float GetDynamicallyScaledFloat(float originalFloat, Axis axis) {
+		switch (axis) {
+			case Axis.Horizontal: return originalFloat * (EngineCore.GetWindowWidth() / DYNAMIC_SIZE_W_REFERENCE);
+			case Axis.Vertical: return originalFloat * (EngineCore.GetWindowHeight() / DYNAMIC_SIZE_H_REFERENCE);
+			default: return originalFloat;
+		}
+	}
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public bool HasFlag(ElementFlags flag) => (flags & flag) != 0;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public void AddFlag(ElementFlags flag) => flags |= flag;
@@ -615,7 +655,7 @@ public class Element : IValidatable
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		foreach (var child in Children)
-			if (child.GetDock() != Dock.None || child.GetAnchor() != Anchor.TopLeft)
+			if (child.GetDock() != Dock.None || child.GetAnchor() != Anchor.TopLeft || child.DynamicallySized)
 				child.InvalidateLayout();
 	}
 
@@ -629,6 +669,9 @@ public class Element : IValidatable
 		if (!HasFlag(ElementFlags.NeedsRenderBoundsFlush))
 			return;
 		Vector2F layoutPos = _position, layoutSize = _size;
+		if (_dynamicallySized && Parent != null)
+			layoutSize = _size * Parent.__renderbounds.Size;
+
 		__renderbounds.X = layoutPos.X;
 		__renderbounds.Y = layoutPos.Y;
 		__renderbounds.W = layoutSize.W;
@@ -939,6 +982,16 @@ public class Element : IValidatable
 		Parent.Children.Insert(0, this);
 		Parent.InvalidateLayout();
 	}
+
+	public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
+
+	public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
+		DynamicSizeReference.None => 1f,
+		DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
+		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.GetRenderBounds().Height / 20f,
+		DynamicSizeReference.SelfHeight => GetRenderBounds().Height / 20f,
+		_ => throw new NotImplementedException()
+	};
 
 	~Element() {
 		if (__RT1.HasValue) {
