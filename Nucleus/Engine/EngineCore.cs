@@ -598,6 +598,7 @@ public static class EngineCore
 		WaitForGameThread();
 		NucleusSingleton.Spin();
 		OSWindow.PropagateEventBuffer();
+		Host.CheckForResave();
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;

@@ -38,7 +38,7 @@ public class Cvar : ICvar
 	}
 
 	public ConCommandBase? FindCommandBase(ReadOnlySpan<char> name) {
-		for(ConCommandBase? cmd = GetCommands(); cmd != null; cmd = cmd.Next)
+		for (ConCommandBase? cmd = GetCommands(); cmd != null; cmd = cmd.Next)
 			if (cmd.Name.AsSpan().Equals(name, StringComparison.OrdinalIgnoreCase))
 				return cmd;
 
@@ -60,7 +60,7 @@ public class Cvar : ICvar
 	public ConCommandBase? GetCommands() => ConCommandList;
 	public IEnumerable<ConCommandBase> GetCommandEnumerable() {
 		ConCommandBase? b = ConCommandList;
-		while(b != null){
+		while (b != null) {
 			yield return b;
 			b = b.Next;
 		}
@@ -71,7 +71,8 @@ public class Cvar : ICvar
 	}
 
 	public void InstallGlobalChangeCallback(ChangeCallback callback) {
-		throw new NotImplementedException();
+		if (!GlobalChangeCallbacks.Contains(callback))
+			GlobalChangeCallbacks.Add(callback);
 	}
 
 	public void RegisterConCommand(ConCommandBase commandBase) {
@@ -88,7 +89,7 @@ public class Cvar : ICvar
 
 		ConCommandBase? other = FindVar(commandBase.GetName());
 		if (other != null) {
-			if (commandBase.IsCommand() || other.IsCommand()) 
+			if (commandBase.IsCommand() || other.IsCommand())
 				Logs.Warn($"Unable to link {commandBase.GetName()} and {other.GetName()} because one or more is a ConCommand.");
 			else {
 				ConVar childVar = (ConVar)commandBase;
@@ -112,7 +113,7 @@ public class Cvar : ICvar
 	}
 
 	public void RemoveGlobalChangeCallback(ChangeCallback callback) {
-		throw new NotImplementedException();
+		GlobalChangeCallbacks.Remove(callback);
 	}
 
 	public void RevertFlaggedConVars(FCvar flag) {

@@ -111,6 +111,7 @@ public class Element : IValidatable
 	private ElementFlags flags;
 	private Vector2F _position;
 	private Vector2F _size;
+	// dynamic sizing really needs to be reworked entirely
 	private bool _dynamicallySized = false;
 	private DynamicSizeReference _dynamicSizeReference = DynamicSizeReference.WindowHeight;
 	private Dock _dock = Dock.None;
