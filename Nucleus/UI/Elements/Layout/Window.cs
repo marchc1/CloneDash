@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using FftSharp;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
@@ -18,8 +19,14 @@ public class Titlebar : Panel
 		Minimize,
 		Maximize
 	}
-	public class TitlebarButton(Titlebar titlebar, TitlebarButtonType type) : Button(titlebar)
+	public class TitlebarButton : Button
 	{
+		Titlebar titlebar;
+		TitlebarButtonType type;
+		public TitlebarButton(Titlebar titlebar, TitlebarButtonType type) : base(titlebar) {
+			this.titlebar = titlebar;
+			this.type = type;
+		}
 		public override void Paint(float width, float height) {
 			switch (type) {
 				case TitlebarButtonType.Close: PaintClose(width, height); break;
@@ -229,8 +236,17 @@ public class Window : Element
 		}
 	}
 
-	internal class WindowResizerButton(Window window, Anchor anchor) : Button(window)
+	internal class WindowResizerButton : Button
 	{
+		Window window;
+		Anchor anchor;
+		public WindowResizerButton(Window window, Anchor anchor) : base(window) {
+			this.window = window;
+			this.anchor = anchor;
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+			SetPaintEnabled(true);
+		}
 		public override bool HoverTest(RectangleF bounds, Vector2F mouse) {
 			RectangleF bounds1, bounds2;
 			switch (anchor) {
