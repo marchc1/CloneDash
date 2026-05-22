@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using static Nucleus.Util.Util;
+using Image = Nucleus.UI.Elements.Image;
 
 namespace Nucleus.ModelEditor
 {
@@ -43,27 +44,17 @@ namespace Nucleus.ModelEditor
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.OperatorButton<ImageSetParentOperator>(buttons, "Set Parent", "models/setparent.png");
 			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
-				Window imageWindow = EngineCore.Level.UI.Add<Window>();
+				Window imageWindow = new Window(EngineCore.Level.RootPanel);
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Image '{Name}'";
 
 				ManagedMemory.Texture tex = new ManagedMemory.Texture(imageWindow.Level.Textures, Raylib.LoadTexture(Filepath), true);
 
-				var imagePanel = imageWindow.Add<Panel>();
-				imagePanel.Image = tex;
-				imagePanel.ImageOrientation = Types.ImageOrientation.Centered;
-				imagePanel.Dock = Dock.Fill;
-
-				imagePanel.PaintOverride += (e, w, h) => {
-					Graphics2D.SetDrawColor(255, 255, 255);
-					e.ImageDrawing(new(0, 0), new(w, h));
-					Graphics2D.SetDrawColor(150, 150, 150);
-					var c = new Vector2F(w / 2, h / 2) - new Vector2F(tex.Width / 2, tex.Height / 2);
-					Graphics2D.DrawRectangleOutline(c - 2, new Vector2F(tex.Width, tex.Height) + 4, 2);
-				};
-
-				imageWindow.Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
-
+				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
+				imagePanel.SetTexture(tex);
+				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
+				imagePanel.SetDock(Dock.Fill);
+				imageWindow.SetSize(new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32)));
 				imageWindow.Center();
 
 				imageWindow.Removed += (_) => tex.Dispose();
@@ -91,7 +82,7 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public string[] ImageNames { get; private set; } = [];
 		[JsonIgnore] public Dictionary<string, ModelImage> ImageLookup { get; private set; } = [];
 
-		[JsonIgnore] public TextureAtlasSystem TextureAtlas { get; } = new();
+		[JsonIgnore] public EditorTextureAtlas TextureAtlas { get; } = new();
 
 		public EditorResult Scan() {
 			Images = [];
@@ -154,33 +145,25 @@ namespace Nucleus.ModelEditor
 
 			var boneRotation = PropertiesPanel.AddFilepath(pathRow, Filepath, (txtbox, txt) => {
 				ModelEditor.Active.File.SetModelImages(Model, txt);
-				txtbox.Text = txt;
+				txtbox.SetText(txt);
 			});
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.ButtonIcon(buttons, "Rescan", "models/search.png", (_, _, _) => ModelEditor.Active.File.RescanModelImages(Model));
 			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
-				Window imageWindow = EngineCore.Level.UI.Add<Window>();
+				Window imageWindow = new Window(EngineCore.Level.RootPanel);
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Texture Atlas";
 
-				ManagedMemory.Texture tex = TextureAtlas.Texture;
+				ManagedMemory.Texture tex = TextureAtlas.PackedTexture;
 
-				var imagePanel = imageWindow.Add<Panel>();
-				imagePanel.Image = tex;
-				imagePanel.ImageOrientation = Types.ImageOrientation.Centered;
-				imagePanel.Dock = Dock.Fill;
+				var imagePanel = new Image(imageWindow);
+				imagePanel.SetTexture(tex);
+				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
+				imagePanel.SetDock(Dock.Fill);
 
-				imagePanel.PaintOverride += (e, w, h) => {
-					Graphics2D.SetDrawColor(255, 255, 255);
-					e.ImageDrawing(new(0, 0), new(w, h));
-					Graphics2D.SetDrawColor(150, 150, 150);
-					var c = new Vector2F(w / 2, h / 2) - new Vector2F(tex.Width / 2, tex.Height / 2);
-					Graphics2D.DrawRectangleOutline(c - 2, new Vector2F(tex.Width, tex.Height) + 4, 2);
-				};
-
-				imageWindow.Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
+				imageWindow.SetSize(new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32)));
 
 				imageWindow.Center();
 

@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -19,8 +20,10 @@ using Raylib_cs;
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Numerics;
-
+using Color = Nucleus.Common.Types.Color;
+using RectangleF = Nucleus.Types.RectangleF;
 using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
@@ -63,36 +66,90 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
-			panel.Size = new(0, 182);
+			panel.SetSize(new(0, 182));
 
-			var win = panel.Add<Window>();
-			win.Size = new(330, panel.Size.H);
+			var win = new Window(panel);
+			win.SetSize(new(330, panel.GetSize().H));
 			win.Center();
 			win.Title = "Edit Mesh";
 			win.HideNonCloseButtons();
 
-			var row1 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
-			var row2 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
+			var row1 = new FlexPanel(win);
+			row1.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
+			row1.SetDock(Dock.Top);
+			row1.SetSize(new(0, 32));
+			row1.Direction = (Axis.Horizontal);
+			row1.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
 
-			ModifyButton = row1.Add(new Button() { Text = "Modify", AutoSize = true, TextPadding = new(32, 0) }); ModifyButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.Modify);
-			CreateButton = row1.Add(new Button() { Text = "Create", AutoSize = true, TextPadding = new(32, 0) }); CreateButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.Create);
-			DeleteButton = row1.Add(new Button() { Text = "Delete", AutoSize = true, TextPadding = new(32, 0) }); DeleteButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.Delete);
+			var row2 = new FlexPanel(win);
+			row2.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
+			row2.SetDock(Dock.Top);
+			row2.SetSize(new(0, 32));
+			row2.Direction = (Axis.Horizontal);
+			row2.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
 
-			NewButton = row2.Add(new Button() { Text = "New", AutoSize = true, TextPadding = new(32, 0) }); NewButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.New);
-			ResetButton = row2.Add(new Button() { Text = "Reset", AutoSize = true, TextPadding = new(32, 0) }); ResetButton.MouseReleaseEvent += (_, _, _) => SetMode(EditMesh_Mode.Reset);
+			ModifyButton = new Button(row1);
+			ModifyButton.SetText("Modify");
+			ModifyButton.SetAutoSize(true);
+			ModifyButton.SetTextPadding(new(32, 0));
+			ModifyButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Modify);
 
-			var row3 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
+			CreateButton = new Button(row1);
+			CreateButton.SetText("Create");
+			CreateButton.SetAutoSize(true);
+			CreateButton.SetTextPadding(new(32, 0));
+			CreateButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Create);
 
-			row3.Add(out Triangles); row3.Add(new Label() { Text = "Triangles", AutoSize = true });
-			row3.Add(out Dim); row3.Add(new Label() { Text = "Dim", AutoSize = true });
-			row3.Add(out Isolate); row3.Add(new Label() { Text = "Isolate", AutoSize = true });
+			DeleteButton = new Button(row1);
+			DeleteButton.SetText("Delete");
+			DeleteButton.SetAutoSize(true);
+			DeleteButton.SetTextPadding(new(32, 0));
+			DeleteButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Delete);
+
+			NewButton = new Button(row2);
+			NewButton.SetText("New");
+			NewButton.SetAutoSize(true);
+			NewButton.SetTextPadding(new(32, 0));
+			NewButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.New);
+
+			ResetButton = new Button(row2);
+			ResetButton.SetText("Reset");
+			ResetButton.SetAutoSize(true);
+			ResetButton.SetTextPadding(new(32, 0));
+			ResetButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Reset);
+
+			var row3 = new FlexPanel(win);
+			row3.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
+			row3.SetDock (Dock.Top);
+			row3.SetSize (new(0, 32));
+			row3.Direction = (Axis.Horizontal);
+			row3.ChildrenResizingMode  = (FlexChildrenResizingMode.StretchToFit);
+
+			Triangles = new(row3);
+			Triangles.SetText("Triangles");
+			Triangles.SetAutoSize(true);
+			Dim = new(row3);
+			Triangles.SetText("Dim");
+			Triangles.SetAutoSize(true);
+			Isolate = new(row3);
+			Triangles.SetText("Isolate");
+			Triangles.SetAutoSize(true);
 
 			Triangles.BindToConVar(meshedit_triangles);
 			Dim.BindToConVar(meshedit_dim);
 			Isolate.BindToConVar(meshedit_isolate);
 
-			var row4 = win.Add(new FlexPanel() { DockPadding = RectangleF.TLRB(0, 4, 4, 0), Dock = Dock.Top, Size = new(0, 32), Direction = Directional180.Horizontal, ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection });
-			row4.Add(out Deform); row4.Add(new Label() { Text = "Deformed", AutoSize = true });
+			var row4 = new FlexPanel(win);
+			row4.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
+			row4.SetDock(Dock.Top);
+			row4.SetSize(new(0, 32));
+			row4.Direction = Axis.Horizontal;
+			row4.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+
+			Deform = new(row4);
+			var deformedLabel = new Label(row4);
+			deformedLabel.SetText("Deformed");
+			deformedLabel.SetAutoSize(true);
 			Deform.BindToConVar(meshedit_deformed);
 
 			UpdateButtonState();
@@ -234,7 +291,7 @@ namespace Nucleus.ModelEditor
 
 						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(attachClickPos) + Attachment.WorldTransform.Translation);
 						var newTexCoord = Attachment.GetVertexUV(newClickP);
-						Logs.Info(newTexCoord);
+						Logs.Info($"{newTexCoord}");
 						WorkingLines.Add(EditorVertex.FromVector(newClickP, newTexCoord, Attachment));
 					}
 					break;
@@ -641,8 +698,24 @@ namespace Nucleus.ModelEditor
 	[Nucleus.MarkForStaticConstruction]
 	public class EditorMeshAttachment : EditorVertexAttachment
 	{
-		[JsonIgnore] public float LocalWidth => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.W;
-		[JsonIgnore] public float LocalHeight => Slot.Bone.Model.Images.TextureAtlas.GetTextureRegion(Slot.Bone.Model.ResolveImage(Path).Name).Value.H;
+		[JsonIgnore]
+		public float LocalWidth {
+			get {
+				var region = Slot.Bone.Model.Images.TextureAtlas.GetRegion(Slot.Bone.Model.ResolveImage(Path)!.Name);
+				if (region == null) return 512;
+				region.GetBounds(out _, out _, out int w, out _);
+				return w;
+			}
+		}
+		[JsonIgnore]
+		public float LocalHeight {
+			get {
+				var region = Slot.Bone.Model.Images.TextureAtlas.GetRegion(Slot.Bone.Model.ResolveImage(Path)!.Name);
+				if (region == null) return 512;
+				region.GetBounds(out _, out _, out _, out int h);
+				return h;
+			}
+		}
 
 		public override string SingleName => "mesh";
 		public override string PluralName => "meshes";
@@ -650,18 +723,21 @@ namespace Nucleus.ModelEditor
 
 		public string GetPath() => Path ?? $"<{Name}>";
 		public string? Path { get; set; } = null;
-		private (Texture Texture, AtlasRegion Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
+		private (Texture Texture, IModelAtlasRegion? Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
 			if (image == null || Path == null) throw new Exception(":(");
 
-			var succeeded = model.Images.TextureAtlas.TryGetTextureRegion(image.Name, out AtlasRegion region);
-			if (!succeeded) region = AtlasRegion.MISSING;
+			IModelAtlasRegion? region = model.Images.TextureAtlas.GetRegion(image.Name);
+			bool succeeded = region != null;
 
-			float width = region.H, height = region.W;
+			int regW = 512, regH = 512;
+			if (succeeded) region!.GetBounds(out _, out _, out regW, out regH);
+
+			float width = regH, height = regW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.Texture : Texture.MISSING;
+			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
 
 			Vector2F TL = WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
 			Vector2F TR = WorldTransform.LocalToWorld(heightDiv2, -widthDiv2);
@@ -724,9 +800,12 @@ namespace Nucleus.ModelEditor
 			// todo ^^ missing texture (prob just purple-black checkerboard)
 			var quadpoints = this.quadpoints();
 
-			AtlasRegion region = quadpoints.Region;
+			IModelAtlasRegion? region = quadpoints.Region;
 			Texture tex = quadpoints.Texture;
 			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
+
+			int regX = 0, regY = 0, regW = 512, regH = 512;
+			region?.GetBounds(out regX, out regY, out regW, out regH);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
@@ -735,11 +814,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4ub(color, color, color, 255);
 
 			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)region.X / (float)tex.Width;
-			uEnd = uStart + ((float)region.W / (float)tex.Width);
+			uStart = (float)regX / (float)tex.Width;
+			uEnd = uStart + ((float)regW / (float)tex.Width);
 
-			vStart = ((float)region.Y / (float)tex.Height);
-			vEnd = vStart + ((float)region.H / (float)tex.Height);
+			vStart = ((float)regY / (float)tex.Height);
+			vEnd = vStart + ((float)regH / (float)tex.Height);
 
 			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
@@ -776,13 +855,15 @@ namespace Nucleus.ModelEditor
 			ModelImage? image = model.ResolveImage(Path);
 			if (Path == null) throw new Exception(":(");
 
-			AtlasRegion region = AtlasRegion.MISSING;
-			var succeeded = image != null && model.Images.TextureAtlas.TryGetTextureRegion(image.Name, out region);
-			if (!succeeded) region = AtlasRegion.MISSING;
+			IModelAtlasRegion? region = image != null ? model.Images.TextureAtlas.GetRegion(image.Name) : null;
+			bool succeeded = region != null;
 
-			float width = region.H, height = region.W;
+			int regX = 0, regY = 0, regW = 512, regH = 512;
+			if (succeeded) region!.GetBounds(out regX, out regY, out regW, out regH);
+
+			float width = regH, height = regW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.Texture : Texture.MISSING;
+			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
@@ -800,11 +881,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
-				uStart = (float)region.X / (float)tex.Width;
-				uEnd = uStart + ((float)region.W / (float)tex.Width);
+				uStart = (float)regX / (float)tex.Width;
+				uEnd = uStart + ((float)regW / (float)tex.Width);
 
-				vStart = ((float)region.Y / (float)tex.Height);
-				vEnd = vStart + ((float)region.H / (float)tex.Height);
+				vStart = ((float)regY / (float)tex.Height);
+				vEnd = vStart + ((float)regH / (float)tex.Height);
 
 				bool block = false;
 				foreach (var tri in triangles) {

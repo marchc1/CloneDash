@@ -13,12 +13,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Nucleus.Common.Models;
+
 namespace Nucleus.ModelEditor
 {
 	public struct QuadPoints
 	{
 		public Texture Texture;
-		public AtlasRegion Region;
+		public IModelAtlasRegion? Region;
 		public Vector2F TL;
 		public Vector2F TR;
 		public Vector2F BL;
@@ -83,13 +85,15 @@ namespace Nucleus.ModelEditor
 			ModelImage? image = model.ResolveImage(Path);
 			if (Path == null) throw new Exception(":(");
 
-			AtlasRegion region = AtlasRegion.MISSING;
-			var succeeded = image != null && model.Images.TextureAtlas.TryGetTextureRegion(image.Name, out region);
-			if (!succeeded) region = AtlasRegion.MISSING;
+			IModelAtlasRegion? region = image != null ? model.Images.TextureAtlas.GetRegion(image.Name) : null;
+			bool succeeded = region != null;
 
-			float width = region.H, height = region.W;
+			int regionW = 512, regionH = 512;
+			if (succeeded) region!.GetBounds(out _, out _, out regionW, out regionH);
+
+			float width = regionH, height = regionW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.Texture : Texture.MISSING;
+			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
 
 			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
 			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
@@ -161,9 +165,12 @@ namespace Nucleus.ModelEditor
 
 			var quadpoints = this.QuadPoints();
 
-			AtlasRegion region = quadpoints.Region;
+			IModelAtlasRegion? region = quadpoints.Region;
 			Texture tex = quadpoints.Texture;
 			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
+
+			int regX = 0, regY = 0, regW = 512, regH = 512;
+			region?.GetBounds(out regX, out regY, out regW, out regH);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(((Texture2D)tex).Id);
@@ -175,11 +182,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)region.X / (float)tex.Width;
-			uEnd = uStart + ((float)region.W / (float)tex.Width);
+			uStart = (float)regX / (float)tex.Width;
+			uEnd = uStart + ((float)regW / (float)tex.Width);
 
-			vStart = ((float)region.Y / (float)tex.Height);
-			vEnd = vStart + ((float)region.H / (float)tex.Height);
+			vStart = ((float)regY / (float)tex.Height);
+			vEnd = vStart + ((float)regH / (float)tex.Height);
 
 			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
@@ -235,12 +242,16 @@ namespace Nucleus.ModelEditor
 			var image = quadpoints.Texture.GetCPUImage();
 			var region = quadpoints.Region;
 			float width = image.Width, height = image.Height;
-				float regionWidth = region.W, regionHeight = region.H;
+
+			int regX = 0, regY = 0, regW = 512, regH = 512;
+			region?.GetBounds(out regX, out regY, out regW, out regH);
+			float regionWidth = regW, regionHeight = regH;
+
 			// translate world gridpos to local pos
 			var localPos = WorldTransform.WorldToLocal(gridPos);
 
-			float trueX = (float)NMath.Remap(localPos.X, -regionWidth / 2, regionWidth / 2, region.X, region.X + regionWidth);
-			float trueY = (float)NMath.Remap(localPos.Y, regionHeight / 2, -regionHeight / 2, region.Y, region.Y + regionHeight);
+			float trueX = (float)NMath.Remap(localPos.X, -regionWidth / 2, regionWidth / 2, regX, regX + regionWidth);
+			float trueY = (float)NMath.Remap(localPos.Y, regionHeight / 2, -regionHeight / 2, regY, regY + regionHeight);
 
 			bool alphatest = !IsTransparent(image, new(trueX, trueY));
 
@@ -248,16 +259,16 @@ namespace Nucleus.ModelEditor
 			/*
 			if (DebugOverlay.Enabled) {
 				DebugOverlay.Text($"Pos:          {localPos}", new(0, 680));
-				DebugOverlay.Text($"Region Pos:   {region.X}, {region.Y}", new(0, 700));
+				DebugOverlay.Text($"Region Pos:   {regX}, {regY}", new(0, 700));
 				DebugOverlay.Text($"Region Size:  {regionWidth}, {regionHeight}", new(0, 720));
 				DebugOverlay.Text($"Remapped Pos: {trueX}, {trueY}", new(0, 740));
 				var drawTextureAt = new Vector2F(32);
 				DebugOverlay.Texture(quadpoints.Texture, drawTextureAt, new Vector2F(image.Width, image.Height) / 2, color: Color.Gray);
-				DebugOverlay.Texture(quadpoints.Texture, drawTextureAt + (new Vector2F(region.X, region.Y) / 2), new Vector2F(region.W, region.H) / 2,
-					new(region.X / width, region.Y / height),
-					new((region.X + region.W) / width, region.Y / height),
-					new(region.X / width, (region.Y + region.H) / height),
-					new((region.X + region.W) / width, (region.Y + region.H) / height)
+				DebugOverlay.Texture(quadpoints.Texture, drawTextureAt + (new Vector2F(regX, regY) / 2), new Vector2F(regW, regH) / 2,
+					new(regX / width, regY / height),
+					new((regX + regW) / width, regY / height),
+					new(regX / width, (regY + regH) / height),
+					new((regX + regW) / width, (regY + regH) / height)
 				);
 
 				DebugOverlay.Circle(drawTextureAt + (new Vector2F(trueX, trueY) / 2), 4, Color.Red);

@@ -68,31 +68,32 @@ public abstract class BaseTimelineView : View
 	// TODO (for consideration): Should this just be default Nucleus
 	// functionality?
 	public void ClipChildrenVisibility(Element parentOfALotOfChildren) {
-		var selfH = RenderBounds.H;
+		var selfH = GetRenderBounds().H;
 		foreach (var child in parentOfALotOfChildren.GetChildren()) {
-			child.Visible =
+			child.SetVisible(
 				// Check if it's overflowing the top...
-				child.RenderBounds.Y > (ScrollOffset - child.RenderBounds.H) &&
+				child.GetRenderBounds().Y > (ScrollOffset - child.GetRenderBounds().H) &&
 				// ... and then the bottom
-				child.RenderBounds.Y < (ScrollOffset + selfH);
+				child.GetRenderBounds().Y < (ScrollOffset + selfH)
+			);
 		}
 	}
-
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		KeyframeChannelsPanel.ChildRenderOffset = new(0, -ScrollOffset);
+	protected override void OnThink() {
+		base.OnThink();
+		KeyframeChannelsPanel.SetChildRenderOffset(new(0, -ScrollOffset));
 		ClipChildrenVisibility(KeyframeChannelsPanel);
 		CheckIfNewChannels();
 	}
 
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
-		button.Text = "";
-		button.BorderSize = 1;
-		button.ImageOrientation = ImageOrientation.Fit;
+		button.SetText ("");
+		button.SetBorderSize (1);
+		// FIXME: buttons dont have images now
+		// button.ImageOrientation = (ImageOrientation.Fit);
 
 		var hP = 3;
 		var vY = smallVertical ? 8 : 4;
-		button.DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
+		button.SetDockMargin (RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY));
 	}
 	protected virtual void PaintTimeOverlay(float width, float height) {
 
@@ -100,41 +101,42 @@ public abstract class BaseTimelineView : View
 	protected virtual void PaintPanelOverlay(float width, float height) {
 
 	}
-	protected override void Initialize() {
+
+	public BaseTimelineView(Element? parent) : base(parent) {
 		base.Initialize();
 
 		ModelEditor.Active.File.AnimationActivated += File_AnimationActivated;
 		ModelEditor.Active.File.AnimationDeactivated += File_AnimationDeactivated;
 
-		DockPadding = RectangleF.Zero;
-		BackgroundColor = BackgroundColor.Adjust(0, -.4, 2);
+		SetDockPadding(RectangleF.Zero);
+		SetBgColor(GetBgColor().Adjust(0, -.4, 2));
 		// Create the initial panels
-		Add(out TopButtonPanel);
-		TopButtonPanel.Dock = Dock.Top;
-		TopButtonPanel.Size = new(44);
-		TopButtonPanel.DockMargin = RectangleF.TLRB(6);
-		TopButtonPanel.DrawPanelBackground = false;
-		TopButtonPanel.DockPadding = RectangleF.Zero;
+		TopButtonPanel = new(this);
+		TopButtonPanel.SetDock(Dock.Top);
+		TopButtonPanel.SetSize(new(44));
+		TopButtonPanel.SetDockMargin(RectangleF.TLRB(6));
+		TopButtonPanel.SetPaintBackgroundEnabled(false);
+		TopButtonPanel.SetDockPadding(RectangleF.Zero);
 
-		Add(out Panel bottomPanel);
-		bottomPanel.Dock = Dock.Bottom;
-		bottomPanel.Size = new(16);
-		bottomPanel.DockMargin = RectangleF.TLRB(0);
-		bottomPanel.BorderSize = 0;
-		bottomPanel.DrawPanelBackground = true;
-		bottomPanel.DockPadding = RectangleF.Zero;
+		Panel bottomPanel = new(this);
+		bottomPanel.SetDock(Dock.Bottom);
+		bottomPanel.SetSize(new(16));
+		bottomPanel.SetDockMargin(RectangleF.TLRB(0));
+		bottomPanel.SetBorderSize(0);
+		bottomPanel.SetPaintBackgroundEnabled(true);
+		bottomPanel.SetDockPadding(RectangleF.Zero);
 
-		bottomPanel.Add(out ZoomSlider);
+		ZoomSlider = new(bottomPanel);
 		ZoomSlider.MinimumValue = MinZoom;
 		ZoomSlider.MaximumValue = MaxZoom;
 		ZoomSlider.Value = Zoom;
-		ZoomSlider.TextColor = Color.Blank;
-		ZoomSlider.Dock = Dock.Left;
-		ZoomSlider.Size = new(230);
-		ZoomSlider.BackgroundColor = new(1, 3, 5);
+		ZoomSlider.SetTextColor(Color.Blank);
+		ZoomSlider.SetDock(Dock.Left);
+		ZoomSlider.SetSize(new(230));
+		ZoomSlider.SetBgColor(new Color(1, 3, 5));
 		ZoomSlider.OnValueChanged += (_, _, v) => {
 			var oob = FrameOutOfBounds(GetCurFrame());
-			var xpos = oob ? TimeInfoPanel.RenderBounds.W / 2 : FrameToX(GetCurFrame());
+			var xpos = oob ? TimeInfoPanel.GetRenderBounds().W / 2 : FrameToX(GetCurFrame());
 			var centerXBefore = XToFrameExact(xpos);
 			Zoom = v;
 			var centerXAfter = XToFrameExact(xpos);
@@ -147,28 +149,28 @@ public abstract class BaseTimelineView : View
 			}
 		};
 
-		Add(out ButtonsAndNames);
-		ButtonsAndNames.Dock = Dock.Left;
-		ButtonsAndNames.Size = new(230);
-		ButtonsAndNames.DockMargin = RectangleF.TLRB(0);
-		ButtonsAndNames.DockPadding = RectangleF.Zero;
-		ButtonsAndNames.BorderSize = 0;
+		ButtonsAndNames = new(this);
+		ButtonsAndNames.SetDock(Dock.Left;
+		ButtonsAndNames.SetSize(new(230);
+		ButtonsAndNames.SetDockMargin(RectangleF.TLRB(0);
+		ButtonsAndNames.SetDockPadding(RectangleF.Zero;
+		ButtonsAndNames.SetBorderSize(0;
 
-		ButtonsAndNames.Add(out Buttons);
-		Buttons.Dock = Dock.Top;
-		Buttons.Size = new(36);
-		Buttons.DockMargin = RectangleF.TLRB(0);
-		Buttons.DockPadding = RectangleF.Zero;
-		Buttons.BorderSize = 0;
+		Buttons = new(ButtonsAndNames);
+		Buttons.SetDock(Dock.Top;
+		Buttons.SetSize(new(36);
+		Buttons.SetDockMargin(RectangleF.TLRB(0);
+		Buttons.SetDockPadding(RectangleF.Zero;
+		Buttons.SetBorderSize(0;
 		Buttons.Direction = Directional180.Horizontal;
 		Buttons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-		Buttons.PaintOverride += Buttons_PaintOverride;
+		// Buttons.PaintOverride += Buttons_PaintOverride;
 
-		ButtonsAndNames.Add(out KeyframeChannelsPanel);
-		KeyframeChannelsPanel.Dock = Dock.Fill;
-		KeyframeChannelsPanel.DockMargin = RectangleF.TLRB(0);
-		KeyframeChannelsPanel.DockPadding = RectangleF.Zero;
-		KeyframeChannelsPanel.BorderSize = 0;
+		KeyframeChannelsPanel = new(ButtonsAndNames);
+		KeyframeChannelsPanel.SetDock(Dock.Fill;
+		KeyframeChannelsPanel.SetDockMargin(RectangleF.TLRB(0);
+		KeyframeChannelsPanel.SetDockPadding(RectangleF.Zero;
+		KeyframeChannelsPanel.SetBorderSize(0;
 
 		// Setup buttons
 		{
@@ -246,7 +248,7 @@ public abstract class BaseTimelineView : View
 		lastButton = button;
 		return button;
 	}
-	
+
 	public void AddTopSpace(float width = 32) {
 		TopButtonPanel.Add(out Panel panel);
 		panel.Dock = Dock.Left;
