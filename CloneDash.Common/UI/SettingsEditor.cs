@@ -44,7 +44,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		base.PerformLayout(width, height);
 		Icon.SetPos(new(4, 0));
 		Icon.SetSize(new(height, height));
-		SetTextPadding(new((height * 2) + 8, 0));
+		SetTextPadding(new((height) + 8, 0));
 	}
 }
 
@@ -576,11 +576,10 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var mld2 = len / 2f;
 		return (float)((localToPlayhead > mld2 ? (len - localToPlayhead) * -1 : localToPlayhead) / mld2);
 	}
-
+	
 	public override void Paint(float width, float height) {
 		currentWidth = width;
-
-		SetBgColor(DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 });
+		
 		base.Paint(width, height);
 
 		Graphics2D.SetDrawColor(GetBgColor().Adjust(0, -0.3f, 2));

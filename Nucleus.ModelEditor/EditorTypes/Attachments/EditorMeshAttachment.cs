@@ -91,31 +91,31 @@ namespace Nucleus.ModelEditor
 			ModifyButton = new Button(row1);
 			ModifyButton.SetText("Modify");
 			ModifyButton.SetAutoSize(true);
-			ModifyButton.SetTextPadding(new(32, 0));
+			ModifyButton.SetTextPadding(new(64, 0));
 			ModifyButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Modify);
 
 			CreateButton = new Button(row1);
 			CreateButton.SetText("Create");
 			CreateButton.SetAutoSize(true);
-			CreateButton.SetTextPadding(new(32, 0));
+			CreateButton.SetTextPadding(new(64, 0));
 			CreateButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Create);
 
 			DeleteButton = new Button(row1);
 			DeleteButton.SetText("Delete");
 			DeleteButton.SetAutoSize(true);
-			DeleteButton.SetTextPadding(new(32, 0));
+			DeleteButton.SetTextPadding(new(64, 0));
 			DeleteButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Delete);
 
 			NewButton = new Button(row2);
 			NewButton.SetText("New");
 			NewButton.SetAutoSize(true);
-			NewButton.SetTextPadding(new(32, 0));
+			NewButton.SetTextPadding(new(64, 0));
 			NewButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.New);
 
 			ResetButton = new Button(row2);
 			ResetButton.SetText("Reset");
 			ResetButton.SetAutoSize(true);
-			ResetButton.SetTextPadding(new(32, 0));
+			ResetButton.SetTextPadding(new(64, 0));
 			ResetButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Reset);
 
 			var row3 = new FlexPanel(win);

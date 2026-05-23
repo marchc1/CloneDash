@@ -325,7 +325,7 @@ public class ViewDivision : Panel
 			switcher.SetDock(Dock.Left);
 			switcher.SetAutoSize(true);
 			switcher.SetBorderSize(0);
-			switcher.SetTextPadding(new(32, 0));
+			switcher.SetTextPadding(new(64, 0));
 			switcher.SetText(view.Name);
 			switcher.SetTag("view", view);
 			switcher.MouseReleaseEvent += (_, _, _) => {
@@ -353,7 +353,7 @@ public class ViewDivision : Panel
 					showDraggedTab.SetPos(state.Mouse.MousePos + new Vector2F(0, -16));
 					showDraggedTab.SetPassthru(true);
 					showDraggedTab.SetAutoSize (true);
-					showDraggedTab.SetTextPadding (new(12));
+					showDraggedTab.SetTextPadding(new(24));
 					showDraggedTab.SetText (view.Name);
 
 					var renderer = Level.Add<DragRenderer>();

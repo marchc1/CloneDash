@@ -200,7 +200,7 @@ public abstract class BaseTimelineView : View
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
 							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png"));
 
-				s.SetBgColor(timeline.PlayingBackwards ? Color.SkyBlue : DefaultBackgroundColor);
+				s.SetBgColor(timeline.PlayingBackwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
 
 			playForward.Thinking += (s) => {
@@ -209,7 +209,7 @@ public abstract class BaseTimelineView : View
 				playForwardImg.SetTexture(timeline.PlayingForwards
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
 							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png"));
-				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : DefaultBackgroundColor);
+				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
 
 			playBackward.OnButtonClick += (_, _) => {
@@ -540,7 +540,7 @@ public abstract class BaseTimelineView : View
 		switch (target) {
 			case EditorAnimation animation:
 				header.SetBgColor(HEADER_SELECTED_COLOR);
-				header.SetTextPadding(new(8, 0));
+				header.SetTextPadding(new(16, 0));
 				header.SetText(animation.Name);
 				header.SetTextSize(17);
 
@@ -570,7 +570,7 @@ public abstract class BaseTimelineView : View
 				header.SetBgColor(bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR);
 
 				header.SetText(bone.Name);
-				header.SetTextPadding(new(24, 0));
+				header.SetTextPadding(new(48, 0));
 				header.SetTextSize(16);
 				var boneImg = new Nucleus.UI.Elements.Image(header);
 				boneImg.SetTexture(Level.Textures.LoadTextureFromFile("models/bone.png"));
@@ -653,7 +653,7 @@ public abstract class BaseTimelineView : View
 			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
 		}}")}.png"));
 		headerImg.SetImageOrientation(ImageOrientation.Centered);
-		header.SetTextPadding(new(38, 0));
+		header.SetTextPadding(new(76, 0));
 
 		header.Thinking += (s) => {
 			bool selected = ModelEditor.Active.SelectedObjectsCount > 0 && property switch {

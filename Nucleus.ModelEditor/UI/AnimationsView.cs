@@ -87,7 +87,7 @@ namespace Nucleus.ModelEditor.UI
 		public class AnimationListViewItem(EditorModel model, EditorAnimation animation, Element parent) : ListViewItem(parent)
 		{
 			public override void Paint(float width, float height) {
-				SetBgColor(model.ActiveAnimation == animation ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor);
+				{ var baseBg = GetBgColor(); SetBgColor(model.ActiveAnimation == animation ? baseBg.Adjust(0, 0.5, 2.4) : baseBg); }
 				base.Paint(width, height);
 			}
 		}

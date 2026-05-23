@@ -34,7 +34,7 @@ namespace Nucleus.ModelEditor
 				KeyframeImage.SetImageColor(Color.Black);
 			}
 			else {
-				SetBgColor(DefaultBackgroundColor);
+				SetBgColor(GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 				KeyframeImage.SetImageColor(Color.Gray);
 			}
 

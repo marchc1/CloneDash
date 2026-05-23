@@ -244,7 +244,7 @@ namespace Nucleus.ModelEditor
 			Expander.SetVisible(Children.Count > 0);
 
 			SetTextAlignment(Anchor.CenterLeft);
-			SetTextPadding(new(Image.GetPos().X + Image.GetSize().X + 8, 0));
+			SetTextPadding(new((Image.GetPos().X + Image.GetSize().X + 8), 0));
 		}
 
 		protected override void TextChanged(ReadOnlySpan<char> text) {
@@ -256,7 +256,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Paint(float width, float height) {
-			SetBgColor((GetRepresentingObject()?.Selected ?? false) ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor);
+			{ var baseBg = GetBgColor(); SetBgColor((GetRepresentingObject()?.Selected ?? false) ? baseBg.Adjust(0, 0.5, 2.4) : baseBg); }
 			base.Paint(width, height);
 			if (Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;

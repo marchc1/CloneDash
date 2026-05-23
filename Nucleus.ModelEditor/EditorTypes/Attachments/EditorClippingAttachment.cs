@@ -70,10 +70,10 @@ namespace Nucleus.ModelEditor
 			row2.Direction = Axis.Horizontal;
 			row2.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
-			CreateButton = new Button(row1); CreateButton.SetText("Create"); CreateButton.SetAutoSize(true); CreateButton.SetTextPadding(new(32, 0)); CreateButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Create);
-			DeleteButton = new Button(row1); DeleteButton.SetText("Delete"); DeleteButton.SetAutoSize(true); DeleteButton.SetTextPadding(new(32, 0)); DeleteButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Delete);
+			CreateButton = new Button(row1); CreateButton.SetText("Create"); CreateButton.SetAutoSize(true); CreateButton.SetTextPadding(new(64, 0)); CreateButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Create);
+			DeleteButton = new Button(row1); DeleteButton.SetText("Delete"); DeleteButton.SetAutoSize(true); DeleteButton.SetTextPadding(new(64, 0)); DeleteButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Delete);
 
-			NewButton = new Button(row2); NewButton.SetText("New"); NewButton.SetAutoSize(true); NewButton.SetTextPadding(new(32, 0)); NewButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.New);
+			NewButton = new Button(row2); NewButton.SetText("New"); NewButton.SetAutoSize(true); NewButton.SetTextPadding(new(64, 0)); NewButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.New);
 
 			UpdateButtonState();
 

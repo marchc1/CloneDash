@@ -344,7 +344,7 @@ public class Label : Element, ITextElement
 		}
 
 		Span<TextRange> ranges = textRanges.AsSpan();
-		Vector2F startDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), GetTextPadding() / 2);
+		Vector2F startDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), __autosize ? GetTextPadding() / 2 : GetTextPadding());
 		TextAlignment vertical = GetTextAlignment().ToTextAlignment().Vertical;
 		TextAlignment horizontal = GetTextAlignment().ToTextAlignment().Horizontal;
 

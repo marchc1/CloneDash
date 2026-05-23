@@ -100,7 +100,7 @@ namespace Nucleus.ModelEditor
 			test.SetText(label);
 			test.SetSize(new(110));
 			test.SetTextAlignment(Anchor.CenterLeft);
-			test.SetTextPadding(new(32, 0));
+			test.SetTextPadding(new(64, 0));
 			test.SetPaintBackgroundEnabled(true);
 			test.SetTextSize(19);
 			test.SetBgColor(new Color(60, 65, 70));
@@ -283,7 +283,7 @@ namespace Nucleus.ModelEditor
 				img.SetDockMargin(RectangleF.TLRB(2));
 				img.SetTexture(buttons.Level.Textures.LoadTextureFromFile(icon));
 
-				newBtn.SetTextPadding(new(34, 0));
+				newBtn.SetTextPadding(new(68, 0));
 				newBtn.SetTextAlignment(Anchor.CenterLeft);
 			}
 
@@ -442,7 +442,7 @@ namespace Nucleus.ModelEditor
 			label.SetText(DetermineHeaderText(determinations));
 			label.SetDock(Dock.Left);
 			label.SetSize(new(38));
-			label.SetTextPadding(new(11));
+			label.SetTextPadding(new(22));
 			label.SetTextAlignment(Types.Anchor.TopLeft);
 			label.SetTextSize(22);
 			label.SetAutoSize(true);
