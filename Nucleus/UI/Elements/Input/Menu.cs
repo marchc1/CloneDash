@@ -74,7 +74,7 @@ public class Menu(Element? parent) : Panel(parent)
 					parent.activeSubmenu = new Menu(this);
 					var shouldUse = submenu.invoke?.Invoke(parent.activeSubmenu) ?? false;
 					if (shouldUse) {
-						parent.activeSubmenu.Open(new Vector2F(GetRenderBounds().W + 8, GetGlobalPosition().Y - 7), false, parent);
+						parent.activeSubmenu.Open(new Vector2F(GetRenderBounds().W + 8, -7), false, parent);
 					}
 					else {
 						parent.activeSubmenu.Close();
@@ -212,9 +212,6 @@ public class Menu(Element? parent) : Panel(parent)
 		this.TimeToBackdropAlpha = 0.15;
 
 		UI.Input.OnClick += UI_OnElementClicked;
-	}
-
-	private void S_PaintOverride(Element self, float width, float height) {
 	}
 
 	bool closing = false;
