@@ -14,8 +14,12 @@ internal record MenuSubmenu(string text, string? icon = null, Func<Menu, bool>? 
 internal record MenuSeparator() : IMenuItem;
 public class Menu(Element? parent) : Panel(parent)
 {
-	internal class MenuSeparatorPanel(Menu parent) : Panel(parent)
+	internal class MenuSeparatorPanel : Panel
 	{
+		public MenuSeparatorPanel(Menu parent) : base(parent) {
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+		}
 		public override void Paint(float width, float height) {
 			var c = 145;
 			Graphics2D.SetDrawColor(c, c, c);
@@ -104,6 +108,9 @@ public class Menu(Element? parent) : Panel(parent)
 	public void AddSeparator() {
 		items.Add(new MenuSeparator());
 	}
+	protected override void PostRenderBoundsFlush(ref RectangleF bounds) {
+
+	}
 
 	bool reverse = false;
 	Menu? activeSubmenu = null;
@@ -173,8 +180,10 @@ public class Menu(Element? parent) : Panel(parent)
 		}
 		float pX = 0;
 		float pY = 0;
+		ValidateLayout();
 		foreach (var child in Children) {
 			if (child is ITextElement textElement) {
+				child.FlushRenderBounds();
 				var newP = child.GetRenderBounds().Pos + Graphics2D.GetTextSize(textElement.GetText(), textElement.GetFont(), textElement.GetTextSize()) + 16;
 				if (newP.X > pX) pX = newP.X;
 				if (newP.Y > pY) pY = newP.Y;

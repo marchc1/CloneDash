@@ -38,8 +38,8 @@ public class Menubar : Panel
 	}
 	public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 		MenuContext context = new MenuContext(this.UI);
-		Button b = new MenubarButton(this, action);
 		action = action ?? (() => context.Show());
+		Button b = new MenubarButton(this, action);
 		b.SetTextPadding(new(8));
 		b.SetDock(Dock.Left);
 		b.SetAutoSize(true);
