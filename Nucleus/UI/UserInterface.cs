@@ -370,8 +370,14 @@ public class ElementPaintSystem
 				if (element.IsPaintBorderEnabled())
 					element.PaintBorder(w, h);
 
-				foreach (Element child in element.GetChildren())
-					PaintTraverse(child, ref state, skipPopups);
+				ReadOnlySpan<Element> children = element.GetChildren();
+				int startIndex = element.GetPaintChildStartIndex();
+				int endIndex = element.GetPaintChildEndIndex();
+				for (int i = startIndex; i < endIndex; i++) {
+					Element child = children[i];
+					if(element.ShouldPaintChild(child))
+						PaintTraverse(child, ref state, skipPopups);
+				}
 
 				if (element.IsPostChildPaintEnabled())
 					element.PostChildPaint();
@@ -582,7 +588,7 @@ public class UserInterface : Element, IDisposable
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
 		if (IValidatable.IsValid(keyboardFocused)) {
-			if (!keyboardFocused.CanKeyboardFocusLostOccur(element))
+			if (!keyboardFocused.TryLoseKeyboardFocus(element))
 				return false;
 		}
 
@@ -592,7 +598,7 @@ public class UserInterface : Element, IDisposable
 			return true;
 		}
 
-		if (!element.CanKeyboardFocusGainedOccur(keyboardFocused, ref element))
+		if (!element.TryGainKeyboardFocus(keyboardFocused, ref element))
 			return false;
 
 		if (keyboardFocusReentrantID != currentFunctionID)

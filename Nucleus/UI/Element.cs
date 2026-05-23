@@ -1,7 +1,6 @@
 ﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 
 using Nucleus.Commands;
-using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Common.UI;
@@ -9,7 +8,6 @@ using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Input;
-using Nucleus.ManagedMemory;
 using Nucleus.Types;
 
 using Raylib_cs;
@@ -400,9 +398,9 @@ public class Element : IValidatable
 	/// By default, returns itself.
 	/// </summary>
 	public Element GetAddParent() {
-		if (__parentToAddTo == null) {
+		if (__parentToAddTo == null) 
 			return this;
-		}
+		
 		return __parentToAddTo;
 	}
 
@@ -581,23 +579,6 @@ public class Element : IValidatable
 	/// </summary>
 	/// <returns></returns>
 	public ReadOnlySpan<Element> GetChildren() => LockAndEnumerateChildren();
-
-	public void AddChild(Element p) {
-		if (p.Parent != null) {
-			p.Parent.Children.Remove(p);
-			p.Parent.InvalidateLayout();
-			p.Parent = null;
-		}
-
-		if (p != null) {
-			p.Parent = this;
-			Children.Add(p);
-			InvalidateLayout();
-		}
-
-		p?.InvalidateLayout();
-		p?.Parent?.TriggerOnChildParented(p.Parent, p);
-	}
 
 	public ReadOnlySpan<char> GetElementName() => name;
 	public void SetElementName(ReadOnlySpan<char> name) {
@@ -1203,29 +1184,13 @@ public class Element : IValidatable
 	/// This feature is being phased out, and will likely be fully replaced in the future. <br/> It is still a valid macro in the meantime, as texture management is still tightly coupled to level objects.
 	/// </summary>
 	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
-	public Anchor GetOrigin() {
-		return origin;
-	}
-
-	public void SetOrigin(Anchor value) {
-		origin = value;
-	}
-
-	public Anchor GetAnchor() {
-		return anchor;
-	}
-
-	public void SetAnchor(Anchor value) {
-		anchor = value;
-	}
-
-	public Vector2F CursorPos() {
-		return Level.FrameState.Mouse.MousePos - GetGlobalPosition();
-	}
-
-	public Vector2F GetMousePos() {
-		return EngineCore.MousePos - this.GetGlobalPosition();
-	}
+	public Anchor GetOrigin() => origin;
+	public void SetOrigin(Anchor value) => origin = value;
+	public Anchor GetAnchor() => anchor;
+	public void SetAnchor(Anchor value) => anchor = value;
+	// TODO: what the hell is the difference???
+	public Vector2F CursorPos() => Level.FrameState.Mouse.MousePos - GetGlobalPosition();
+	public Vector2F GetMousePos() => EngineCore.MousePos - this.GetGlobalPosition();
 
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
 		this.SetSize(new(sizeW ? 0 : this.GetSize().W, sizeH ? 0 : this.GetSize().H));
@@ -1263,10 +1228,7 @@ public class Element : IValidatable
 		InvalidateLayout();
 	}
 
-	public IScheme? GetScheme() {
-		return scheme ?? GetParent()?.GetScheme();
-		//return scheme;
-	}
+	public IScheme? GetScheme() => scheme ?? GetParent()?.GetScheme();
 	public void SetScheme(ReadOnlySpan<char> scheme) => SetScheme(ElementSchemeSystem.GetSchemeByName(scheme));
 	public void SetScheme(IScheme? scheme) {
 		if (this.scheme == scheme) return;
@@ -1293,22 +1255,19 @@ public class Element : IValidatable
 		ElementToPassMouseTo = c;
 	}
 
+	// Virtual overrides
+	protected virtual void ChildParented(Element parent, Element child) { }
+	protected virtual void OnRemoval() { }
+	protected virtual void PerformLayout(float width, float height) { }
+	protected virtual void PreLayoutChild(Element element) { }
+	protected virtual void PostLayoutChild(Element element) { }
+	protected virtual void PreLayoutChildren() { }
 	public virtual void ApplySchemeSettings(IScheme scheme) {
 		backgroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Background"));
 		foregroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Border"));
 
 		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}
-
-	// Virtual overrides
-	protected virtual void ChildParented(Element parent, Element child) { }
-	protected virtual void OnRemoval() { }
-
-	protected virtual void PerformLayout(float width, float height) { }
-	protected virtual void PreLayoutChild(Element element) { }
-	protected virtual void PostLayoutChild(Element element) { }
-	protected virtual void PreLayoutChildren() { }
-
 	public virtual void PaintBackground(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
 		float borderSize = GetBorderSize(), roundness = GetRoundness();
@@ -1326,9 +1285,7 @@ public class Element : IValidatable
 			Graphics2D.DrawRectangleRounded(0, 0, width, height, roundness, segments);
 		}
 	}
-	public virtual void Paint(float width, float height) {
-
-	}
+	public virtual void Paint(float width, float height) { }
 	public virtual void PaintBorder(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
 		float borderSize = GetBorderSize(), roundness = GetRoundness();
@@ -1346,19 +1303,26 @@ public class Element : IValidatable
 			Graphics2D.DrawRectangleRoundedOutline(0, 0, width, height, roundness, borderSize, segments);
 		}
 	}
-	public virtual void PostChildPaint() {
+	public virtual void PostChildPaint() { }
 
+	public virtual int GetPaintChildStartIndex() => 0;
+	public virtual int GetPaintChildEndIndex() => Children.Count;
+	public virtual bool ShouldPaintChild(Element child) {
+		if (!clipping) return true;
+		// otherwise, make sure rect in rect
+		// TODO: Make this not suck
+		RectangleF parent = GetRenderBounds();
+		RectangleF childRect = child.GetRenderBounds();
+		return childRect.X < parent.W &&
+		   childRect.X + childRect.W > 0 &&
+		   childRect.Y < parent.H &&
+		   childRect.Y + childRect.H > 0;
 	}
 
+	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) => bounds.ContainsPoint(mousePos);
 
-	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) {
-		return bounds.ContainsPoint(mousePos);
-	}
-
-
-	public bool CanKeyboardFocusGainedOccur(Element? lastFocus, ref Element? passTo) => OnGainingKeyboardFocus(lastFocus, ref passTo);
-	public bool CanKeyboardFocusLostOccur(Element? newFocus) => OnLosingKeyboardFocus(newFocus);
-
+	public bool TryGainKeyboardFocus(Element? lastFocus, ref Element? passTo) => OnGainingKeyboardFocus(lastFocus, ref passTo);
+	public bool TryLoseKeyboardFocus(Element? newFocus) => OnLosingKeyboardFocus(newFocus);
 	public bool KeyboardFocus() => UI.SetKeyboardFocusedElement(this);
 	public bool KeyboardUnfocus() => UI.SetKeyboardFocusedElement(null);
 

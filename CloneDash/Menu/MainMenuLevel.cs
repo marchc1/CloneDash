@@ -83,6 +83,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		charPanel.SetBorderSize(0);
 		charPanel.DynamicallySized = true;
 		charPanel.SetSize(new(1f, 1f));
+		charPanel.SetClipping(false);
 
 		Character = new(charPanel);
 		Character.DynamicallySized = true;

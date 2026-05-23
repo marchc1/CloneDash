@@ -396,10 +396,10 @@ namespace Nucleus.ModelEditor
 		public List<OutlinerNode> RootNodes = [];
 		private void ReaddNodeIntoChildren(OutlinerNode node, int layer = 0) {
 			node.Layer = layer;
-			GetAddParent().AddChild(node);
-			if (node.Expanded == false) {
+			node.SetParent(this);
+			if (node.Expanded == false) 
 				return;
-			}
+			
 			foreach (var child in node.GetChildNodesInOrder())
 				ReaddNodeIntoChildren(child, layer + 1);
 		}
