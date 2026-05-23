@@ -78,6 +78,7 @@ public class Titlebar : Panel
 	public Titlebar(Element? parent) : base(parent) {
 		SetDock(Dock.Top);
 		SetSize(new(0, this.GetParent() is UserInterface ? 34 : 42));
+		SetMinimumSize(new(96, 96));
 		if (this.GetParent() is not UserInterface)
 			SetDockMargin(RectangleF.TLRB(4));
 

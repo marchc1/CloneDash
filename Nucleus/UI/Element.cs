@@ -108,6 +108,8 @@ public class Element : IValidatable
 	// fields
 	private ElementFlags flags;
 	private Vector2F _position;
+	private Vector2F? _minimumSize;
+	private Vector2F? _maximumSize;
 	private Vector2F _size;
 	// dynamic sizing really needs to be reworked entirely
 	private bool _dynamicallySized = false;
@@ -302,20 +304,46 @@ public class Element : IValidatable
 		}
 	}
 
-	public Vector2F GetSize() { return _size; }
+	public Vector2F GetSize() => _size;
 
 	public void SetSize(Vector2F value) {
 		if (value == _size)
 			return;
 
-		_size = value;
-		if (!HasFlag(ElementFlags.InPerformLayout)) {
-			if (_dock != Dock.None)
-				GetParent()?.InvalidateLayout();
-			InvalidateLayout();
+		ClampedSizeSet(value);
+	}
+
+	public Vector2F? GetMinimumSize() => _minimumSize;
+	public Vector2F? GetMaximumSize() => _maximumSize;
+
+	public void SetMinimumSize(Vector2F? value) {
+		if (value == _minimumSize)
+			return;
+		_minimumSize = value;
+		ClampedSizeSet(_size);
+	}
+	public void SetMaximumSize(Vector2F? value) {
+		if (value == _maximumSize)
+			return;
+		_maximumSize = value;
+		ClampedSizeSet(_size);
+	}
+
+	void ClampedSizeSet(Vector2F size){
+		Vector2F previousSize = _size;
+		Vector2F newSize = size;
+		if (_minimumSize.HasValue) newSize = new(MathF.Max(_minimumSize.Value.X, newSize.X), MathF.Max(_minimumSize.Value.Y, newSize.Y));
+		if (_maximumSize.HasValue) newSize = new(MathF.Min(_maximumSize.Value.X, newSize.X), MathF.Min(_maximumSize.Value.Y, newSize.Y));
+		_size = newSize;
+		if(newSize != previousSize){
+			if (!HasFlag(ElementFlags.InPerformLayout)) {
+				if (_dock != Dock.None)
+					GetParent()?.InvalidateLayout();
+				InvalidateLayout();
+			}
+			else
+				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		}
-		else
-			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 	}
 
 	/// <summary>
