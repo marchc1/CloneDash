@@ -2,6 +2,7 @@
 using CloneDash.Common;
 using Nucleus;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
@@ -31,20 +32,19 @@ public class CharacterPanel : Panel
 		return character != null;
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		CharacterInstance?.Update();
 	}
 
 	Label ExpressionLabel = null!;
 
-	protected override void Initialize() {
-		base.Initialize();
-		BorderSize = 0;
-		DrawPanelBackground = false;
-		ExpressionLabel = Add<Label>();
-		ExpressionLabel.Visible = false;
-		ExpressionLabel.Origin = Anchor.Center;
+	public CharacterPanel(Element? parent) : base(parent){
+		SetBorderSize(0);
+		SetPaintBackgroundEnabled(false);
+		ExpressionLabel = new Label(this);
+		ExpressionLabel.SetVisible(false);
+		ExpressionLabel.SetOrigin(Anchor.Center);
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 
 		if (SetCharacter(CharacterMod.GetCharacterData()))
@@ -53,14 +53,15 @@ public class CharacterPanel : Panel
 			CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 	}
 
-	public override void OnRemoval() {
+	protected override void OnRemoval() {
 		base.OnRemoval();
 		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
 		CharacterInstance?.Dispose();
 	}
 
-	public override void MouseClick(FrameState state, ButtonCode button) {
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
+		return true;
 	}
 
 	public void PlayApplyExpression() {
@@ -82,7 +83,7 @@ public class CharacterPanel : Panel
 
 		string? text = null;
 		expression?.GetSpeech(EngineCore.Level, out text, out _);
-		ExpressionLabel.TextPadding = new(16);
+		ExpressionLabel.SetTextPadding(new(16));
 		ExpressionText = text;
 	}
 
@@ -111,18 +112,18 @@ public class CharacterPanel : Panel
 				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
 				textSize += new Vector2F(16);
 
-				ExpressionLabel.Position = textPos;
-				ExpressionLabel.Size = textSize;
-				ExpressionLabel.Visible = true;
-				ExpressionLabel.DrawBackground = true;
-				ExpressionLabel.BackgroundColor = new(10, 20, 25, (int)(alphaMult * 200));
-				ExpressionLabel.TextColor = new(255, 255, 255, (int)(alphaMult * 255));
-				ExpressionLabel.AutoSize = true;
-				ExpressionLabel.Size = new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y);
-				ExpressionLabel.Text = ExpressionText;
+				ExpressionLabel.SetPos(textPos);
+				ExpressionLabel.SetSize(textSize);
+				ExpressionLabel.SetVisible(true);
+				ExpressionLabel.SetPaintBackgroundEnabled(true);
+				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
+				ExpressionLabel.SetTextColor(new(255, 255, 255, (int)(alphaMult * 255)));
+				ExpressionLabel.SetAutoSize(true);
+				ExpressionLabel.SetSize(new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y));
+				ExpressionLabel.SetText(ExpressionText);
 			}
 			else
-				ExpressionLabel.Visible = false;
+				ExpressionLabel.SetVisible(false);
 		}
 	}
 

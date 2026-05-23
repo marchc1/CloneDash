@@ -1,0 +1,76 @@
+{
+    // "parent": "", can be used if using a parent scheme for fallbacks. All new values in this scheme will be considered overrides
+    "basesettings": {
+        // Second order system settings for responsiveness
+        "MouseHovered.NaturalFrequency":        4.1,
+        "MouseHovered.DampingCoefficient":      0.5,
+        "MouseHovered.InitialResponse":         0.94,
+        "MouseDepressed.NaturalFrequency":      4.1,
+        "MouseDepressed.DampingCoefficient":    0.5,
+        "MouseDepressed.InitialResponse":       0.94,
+
+        // Colors
+        // Inheriting a setting requires typing #settingkey:value#
+        // This will recursively resolve at runtime (if a loop is detected, it will default out, and you'll get a warning)
+        "Button.BackgroundColor":               "#colors:Nucleus.Background# with { A = 220 }"
+    },
+    "fontStyles": {
+        "Nucleus.Default": {
+            "name": "Noto Sans",
+            "tall": 18
+        },
+        "Nucleus.DefaultBold": {
+            "name": "Noto Sans Bold",
+            "tall": 18
+        },
+        "Nucleus.DefaultFixed": {
+            "name": "Noto Sans Mono",
+            "tall": 16
+        },
+        "Nucleus.DefaultFixedBold": {
+            "name": "Noto Sans Mono Bold",
+            "tall": 16
+        } 
+    },
+    "borders": {
+        
+    },
+    "colors": {
+        // These are in different formats just for testing purposes
+        "White":                "ffffffff",             // 8-char rgba hexadecimal
+        "OffWhite":             "#d0d0d0ff",            // 9-char rgba hexadecimal
+        "DullWhite":            "190 190 190 255",      // 4-octet rgba
+        "TransparentBlack":     "0, 0, 0, 128",         // 4-octet rgba comma separated
+        "Black":                "0, 0, 0",              // 3-octet rgb comma separated
+        "Blank":                "0 0 0",                // 3-octet rgb
+
+        // standard nucleus colors (different formats, again, to test - mostly testing ignoring commas here)
+        "Nucleus.Background":   "20, 25, 32 127,",
+        "Nucleus.Border":       "85 95, 110, 255",
+        "Nucleus.Text":         "230, 236 255 255"
+    },
+    // These fonts will be available in the above tables with their keys
+    // The keys should be the font name you'll use above.
+    // The value is a combination of the filesystem path ID and the actual filename.
+    // ie. PATHID:PATH (path ID, in 99% of cases, will just be fonts)
+    "customFonts": {
+        "Consolas":                 "fonts:MonaspaceNeon-Regular.otf",
+        "Open Sans":                "fonts:open-sans.ttf",
+        "Noto Sans":                "fonts:NotoSans-Regular.ttf",
+        "Noto Sans Bold":           "fonts:NotoSans-Bold.ttf",
+        "Noto Sans Arabic":         "fonts:NotoSansArabic-Regular.ttf",
+        "Noto Sans Arabic Bold":    "fonts:NotoSansArabic-Bold.ttf",
+        "Noto Sans HK":             "fonts:NotoSansHK-Regular.ttf",
+        "Noto Sans HK Bold":        "fonts:NotoSansHK-Bold.ttf",
+        "Noto Sans JP":             "fonts:NotoSansJP-Regular.ttf",
+        "Noto Sans JP Bold":        "fonts:NotoSansJP-Bold.ttf",
+        "Noto Sans KR":             "fonts:NotoSansKR-Regular.ttf",
+        "Noto Sans KR Bold":        "fonts:NotoSansKR-Regular.ttf",
+        "Noto Sans SC":             "fonts:NotoSansSC-Regular.ttf",
+        "Noto Sans SC Bold":        "fonts:NotoSansSC-Bold.ttf",
+        "Noto Sans TC":             "fonts:NotoSansTC-Regular.ttf",
+        "Noto Sans TC Bold":        "fonts:NotoSansTC-Bold.ttf",
+        "Noto Sans Mono":           "fonts:NotoSansMono-Regular.ttf",
+        "Noto Sans Mono Bold":      "fonts:NotoSansMono-Bold.ttf"
+    }
+}

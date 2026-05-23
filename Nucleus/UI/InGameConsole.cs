@@ -29,9 +29,8 @@ namespace Nucleus
 			HelpStrings = null;
 		}
 
-		protected override void Initialize() {
-			base.Initialize();
-			Clipping = false;
+		public ConsoleAutocomplete(Element? parent) : base(parent) {
+			SetClipping(false);
 		}
 
 		public override void Paint(float width, float height) {
@@ -187,46 +186,83 @@ namespace Nucleus
 			return at;
 		}
 
-		TextEditor consoleLogs;
-		TextEditor consoleInput;
+		ConsoleLogs consoleLogs;
+		ConsoleInput consoleInput;
 		ConsoleAutocomplete? autoComplete;
 
 		bool isArgumentAutocomplete = false;
 		string argumentPrefix = "";
 
 
-		protected override void ModifyLayout(ref RectangleF renderBounds) {
-			renderBounds.X = 8;
-			renderBounds.Y = Level.GetConsoleOverlaySettings().Position.Y;
-			renderBounds.W = Parent.Size.W - 16;
-			renderBounds.H = 384;
+		protected override void OnThink() {
+			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
+			SetSize(new(GetParent()!.GetSize().W - 16, 384));
 		}
-		protected override void Initialize() {
-			base.Initialize();
 
-			this.DockMargin = RectangleF.TLRB(8);
-			this.BorderSize = 0;
+		internal class ConsoleLogs : TextEditor
+		{
+			ConsoleWindow parent;
+			public ConsoleLogs(ConsoleWindow parent) : base(parent) {
+				this.parent = parent;
+				SetPaintBorderEnabled(false);
+				HScrollbar?.SetPaintBorderEnabled(false);
+				VScrollbar?.SetPaintBorderEnabled(false);
+				Readonly = true;
+			}
+			protected override void OnThink() {
+				if (IValidatable.IsValid(parent.autoComplete) && !parent.consoleInput.Editor.IsKeyboardFocused()) {
+					parent.autoComplete.Remove();
+				}
+				base.OnThink();
+			}
+		}
 
-			consoleInput = Add<TextEditor>();
-			consoleInput.Size = new(0, 32);
-			consoleInput.Dock = Dock.Bottom;
+		internal class ConsoleInput : TextEditor
+		{
+			ConsoleWindow parent;
+			public ConsoleInput(ConsoleWindow parent) : base(parent) {
+				this.parent = parent;
+				SetPaintBorderEnabled(false);
+			}
+			protected override void OnThink() {
+
+			}
+			protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+				if (!IsHovered()) return true;
+				base.MouseRelease(self, state, button);
+				parent.SetupAutocomplete();
+				return true;
+			}
+		}
+
+		public ConsoleWindow(Element? parent) : base(parent) {
+			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
+			SetSize(new(GetParent()!.GetSize().W - 16, 384));
+
+			this.SetDockMargin(RectangleF.TLRB(8));
+			this.SetBorderSize(0);
+
+			consoleInput = new ConsoleInput(this);
+			consoleInput.SetSize(new(0, 32));
+			consoleInput.SetDock(Dock.Bottom);
 			consoleInput.Multiline = false;
 			consoleInput.ShowDetails = false;
 			consoleInput.ShowGutter = false;
 			consoleInput.TriggerExecuteOnEnter = true;
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
-			consoleInput.Editor.OnKeyPressed += ConsoleInput_OnKeyPressed;
-			consoleInput.Editor.OnTextInput += ConsoleInput_OnTextInput;
+
+			consoleInput.OnKeyPressed += ConsoleInput_OnKeyPressed;
+			consoleInput.OnTextInput += ConsoleInput_OnTextInput;
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => InGameConsole.CloseConsole());
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyUp], HandleArrowUp);
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyDown], HandleArrowDown);
 			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
-			consoleLogs = Add<TextEditor>();
-			consoleLogs.Dock = Dock.Fill;
-			consoleLogs.TextSize = 12;
-			consoleLogs.DockMargin = new(0, 0, 0, 0);
+			consoleLogs = new ConsoleLogs(this);
+			consoleLogs.SetDock(Dock.Fill);
+			consoleLogs.SetTextSize(12);
+			consoleLogs.SetDockMargin(new(0, 0, 0, 0));
 			consoleLogs.Readonly = true;
 			consoleLogs.ShowDetails = false;
 			consoleLogs.ShowGutter = false;
@@ -234,13 +270,10 @@ namespace Nucleus
 			consoleLogs.Highlighter = new ConsoleLogHighlighter();
 			consoleLogs.SetScroll(1f);
 
-			consoleLogs.DrawPanelBackground = false;
-			consoleInput.DrawPanelBackground = false;
+			consoleLogs.SetPaintBackgroundEnabled(false);
+			consoleInput.SetPaintBackgroundEnabled(false);
 
-			consoleLogs.Thinking += ConsoleLogs_Thinking;
-
-			consoleInput.DemandKeyboardFocus();
-			consoleInput.Editor.MouseReleaseEvent += (_, _, _) => SetupAutocomplete();
+			consoleInput.KeyboardFocus();
 			var msgList = ConsoleSystem.GetAllMessagesList();
 			msgList.BeginRead();
 			int msgCount = msgList.ComputeCount();
@@ -312,9 +345,9 @@ namespace Nucleus
 
 		private void EnsureAutocompletePanel() {
 			if (!IValidatable.IsValid(autoComplete)) {
-				autoComplete = consoleInput.Add<ConsoleAutocomplete>();
-				autoComplete.Dock = Dock.Bottom;
-				autoComplete.Size = new(0, 0);
+				autoComplete = new ConsoleAutocomplete(consoleInput);
+				autoComplete.SetDock(Dock.Bottom);
+				autoComplete.SetSize(new(0, 0));
 			}
 		}
 
@@ -328,7 +361,7 @@ namespace Nucleus
 			var inputText = consoleInput.GetText();
 
 			if (string.IsNullOrEmpty(inputText)) {
-				autoComplete.ChildRenderOffset = new(0, 12);
+				autoComplete.SetChildRenderOffset(new(0, 12));
 				SetupHistoryAutocomplete();
 				return;
 			}
@@ -348,9 +381,9 @@ namespace Nucleus
 
 			float xOffset = 0;
 			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
-				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
+				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.GetTextSize()).X + 4;
 			}
-			autoComplete.ChildRenderOffset = new(xOffset, 12);
+			autoComplete.SetChildRenderOffset(new(xOffset, 12));
 		}
 
 		private void SetupHistoryAutocomplete() {
@@ -511,7 +544,7 @@ namespace Nucleus
 			NavigateHistory(-1);
 		}
 
-		private void ConsoleInput_OnKeyPressed(Element self, in KeyboardState state, ButtonCode key) {
+		private void ConsoleInput_OnKeyPressed(TextEditor self, in KeyboardState state, ButtonCode key) {
 			if (IValidatable.IsValid(autoComplete)) {
 				if (key == ButtonCode.KeySpace && autoComplete.HasSelection) {
 					string? selected = autoComplete.GetSelected();
@@ -545,21 +578,15 @@ namespace Nucleus
 			SetupAutocomplete();
 		}
 
-		private void ConsoleInput_OnTextInput(Element self, in KeyboardState state, string inText) {
+		private void ConsoleInput_OnTextInput(TextEditor self, in KeyboardState state, string inText) {
 			browsingHistory = false;
 			userHistoryPos = 0;
 			SetupAutocomplete();
 		}
 
-		public override void OnRemoval() {
+		protected override void OnRemoval() {
 			base.OnRemoval();
 			autoComplete?.Remove();
-		}
-
-		private void ConsoleLogs_Thinking(Element self) {
-			if (IValidatable.IsValid(autoComplete) && !consoleInput.Editor.KeyboardFocused) {
-				autoComplete.Remove();
-			}
 		}
 
 		private void ConsoleInput_OnExecute(TextEditor self) {
@@ -595,7 +622,7 @@ namespace Nucleus
 				return;
 			}
 
-			inputPanel = parent.Add<ConsoleWindow>();
+			inputPanel = new ConsoleWindow(parent);
 
 			ConsoleSystem.AddScreenBlocker(inputPanel);
 			inputPanel.Removed += (self) => OnConsoleClosed();
@@ -607,6 +634,6 @@ namespace Nucleus
 		private static void OnConsoleClosed() {
 			ConsoleSystem.RemoveScreenBlocker(inputPanel);
 		}
-		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => OpenConsole(level.UI));
+		public static void HookToLevel(this Level level) => level.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => OpenConsole(level.RootPanel));
 	}
 }

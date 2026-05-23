@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
@@ -25,14 +26,14 @@ namespace Nucleus.ModelEditor
 			Graphics2D.ResetDrawingOffset();
 
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.SetTexture(texX);
+			Graphics2D.SetTexture((ITexture)texX);
 			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
 			Rlgl.DrawRenderBatchActive();
 
 			Rlgl.PushMatrix();
 			Rlgl.Rotatef(target.GetShearX() + -target.GetShearY(), 0, 0, 1);
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.SetTexture(texY);
+			Graphics2D.SetTexture((ITexture)texY);
 			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
 			Rlgl.PopMatrix();
 			Rlgl.DrawRenderBatchActive();

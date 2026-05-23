@@ -3,11 +3,8 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using Nucleus;
 using Nucleus.Commands;
-using Nucleus.Common.Types;
 using Nucleus.Core;
-using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
-using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
@@ -31,7 +28,7 @@ public static class MD_ModelViewerCommand
 			return;
 		}
 
-		var window = EngineCore.Level.UI.Add<MD_ModelViewerWindow>();
+		var window = new MD_ModelViewerWindow(EngineCore.Level.RootPanel);
 		window.Populate(searchPath);
 	}
 }
@@ -141,21 +138,19 @@ public class MD_ModelViewerWindow : Window
 	Label StatusLabel = null!;
 	Textbox SearchBox = null!;
 
+
 	const int THUMB_SIZE = 140;
 	const int THUMB_PADDING = 6;
-
-	protected override void Initialize() {
-		base.Initialize();
+	public MD_ModelViewerWindow(Element? parent) : base(parent) {
 		Title = "MuseDash Model Viewer";
-		Size = new(1200, 750);
-		Position = new(50, 50);
+		SetSize(new(1200, 750));
+		SetPos(new(50, 50));
 		HideNonCloseButtons();
 	}
 
 	public void Populate(UnitySearchPathV2 searchPath) {
 		DiscoverSkeletonAssets(searchPath);
 		BuildUI();
-		SelectFolder(RootFolder);
 	}
 
 	void AddEntry(string name, string assetName, MonoBehaviour? mb) {
@@ -224,68 +219,68 @@ public class MD_ModelViewerWindow : Window
 	}
 
 	void BuildUI() {
-		var topBar = this.Add<Panel>();
-		topBar.Dock = Dock.Top;
-		topBar.Size = new(0, 32);
-		topBar.DrawPanelBackground = false;
+		var topBar = new Panel(this);
+		topBar.SetDock(Dock.Top);
+		topBar.SetSize(new(0, 32));
+		topBar.SetPaintBackgroundEnabled(false);
 
-		var searchLabel = topBar.Add<Label>();
-		searchLabel.Text = "Filter:";
-		searchLabel.TextSize = 19;
-		searchLabel.Dock = Dock.Left;
-		searchLabel.Size = new(50, 0);
+		var searchLabel = new Label(topBar);
+		searchLabel.SetText("Filter:");
+		searchLabel.SetTextSize(19);
+		searchLabel.SetDock(Dock.Left);
+		searchLabel.SetSize(new(50, 0));
 
-		SearchBox = topBar.Add<Textbox>();
-		SearchBox.Dock = Dock.Fill;
-		SearchBox.Text = "";
+		SearchBox = new Textbox(topBar);
+		SearchBox.SetDock(Dock.Fill);
+		SearchBox.SetText("");
 		SearchBox.OnTextChanged += (_, _, _) => ApplyFilter();
 
-		StatusLabel = this.Add<Label>();
-		StatusLabel.Dock = Dock.Bottom;
-		StatusLabel.Size = new(0, 24);
-		StatusLabel.TextSize = 17;
-		StatusLabel.Text = $"Found {AllEntries.Count} skeleton assets";
+		StatusLabel = new Label(this);
+		StatusLabel.SetDock(Dock.Bottom);
+		StatusLabel.SetSize(new(0, 24));
+		StatusLabel.SetTextSize(17);
+		StatusLabel.SetText($"Found {AllEntries.Count} skeleton assets");
 
-		LeftPanel = this.Add<Panel>();
-		LeftPanel.Dock = Dock.Left;
-		LeftPanel.Size = new(220, 0);
+		LeftPanel = new Panel(this);
+		LeftPanel.SetDock(Dock.Left);
+		LeftPanel.SetSize(new(220, 0));
 
-		var treeScroll = LeftPanel.Add<DirectionalLayoutPanel>();
-		treeScroll.Dock = Dock.Fill;
+		var treeScroll = new DirectionalLayoutPanel(LeftPanel);
+		treeScroll.SetDock(Dock.Fill);
 
 		BuildTreeNodes(treeScroll, RootFolder);
 
-		RightPanel = this.Add<ScrollPanel>();
-		RightPanel.Dock = Dock.Fill;
+		RightPanel = new ScrollPanel(this);
+		RightPanel.SetDock(Dock.Fill);
 		RightPanel.HorizontalOverflow = false;
 
-		GridContainer = RightPanel.Add<Panel>();
-		GridContainer.Dock = Dock.Top;
-		GridContainer.DrawPanelBackground = false;
+		GridContainer = new Panel(RightPanel);
+		GridContainer.SetDock(Dock.Top);
+		GridContainer.SetPaintBackgroundEnabled(false);
 	}
 
 	void BuildTreeNodes(DirectionalLayoutPanel parent, SkeletonFolder folder) {
-		var rootBtn = parent.Add<Button>();
-		rootBtn.Text = $"{folder.Name} ({folder.TotalCount()})";
-		rootBtn.Dock = Dock.Top;
-		rootBtn.Size = new(0, 24);
-		rootBtn.TextSize = 18;
-		rootBtn.TextAlignment = Anchor.CenterLeft;
-		rootBtn.TextPadding = new(6);
-		rootBtn.MouseReleaseEvent += (_, _, _) => SelectFolder(folder);
+		var rootBtn = new Button(parent);
+		rootBtn.SetText($"{folder.Name} ({folder.TotalCount()})");
+		rootBtn.SetDock(Dock.Top);
+		rootBtn.SetSize(new(0, 24));
+		rootBtn.SetTextSize(18);
+		rootBtn.SetTextAlignment(Anchor.CenterLeft);
+		rootBtn.SetTextPadding(new(6));
+		rootBtn.OnButtonClick += (_, _) => SelectFolder(folder);
 
 		foreach (var sub in folder.Subfolders.Values.OrderBy(f => f.Name)) {
-			var btn = parent.Add<Button>();
-			btn.Text = $"  {sub.Name} ({sub.TotalCount()})";
-			btn.Dock = Dock.Top;
-			btn.Size = new(0, 22);
-			btn.TextSize = 17;
-			btn.TextAlignment = Anchor.CenterLeft;
-			btn.TextPadding = new(6);
-			btn.BackgroundColor = new(0, 0, 0, 0);
-			btn.ForegroundColor = new(0, 0, 0, 0);
+			var btn = new Button(parent);
+			btn.SetText($"  {sub.Name} ({sub.TotalCount()})");
+			btn.SetDock(Dock.Top);
+			btn.SetSize(new(0, 22));
+			btn.SetTextSize(17);
+			btn.SetTextAlignment(Anchor.CenterLeft);
+			btn.SetTextPadding(new(6));
+			btn.SetBgColor(new Color(0, 0, 0, 0));
+			btn.SetFgColor(new Color(0, 0, 0, 0));
 			var capturedSub = sub;
-			btn.MouseReleaseEvent += (_, _, _) => SelectFolder(capturedSub);
+			btn.OnButtonClick += (_, _) => SelectFolder(capturedSub);
 		}
 	}
 
@@ -297,44 +292,45 @@ public class MD_ModelViewerWindow : Window
 	}
 
 	void ApplyFilter() {
-		string? filter = SearchBox?.Text;
+		ReadOnlySpan<char> filter = SearchBox.GetText();
 		RebuildGrid(filter);
 	}
 
-	void RebuildGrid(string? filter) {
+	void RebuildGrid(ReadOnlySpan<char> filter) {
 		foreach (var child in GridContainer.GetChildren())
 			child.Remove();
 
 		var entries = DisplayedEntries;
-		if (!string.IsNullOrWhiteSpace(filter))
-			entries = entries.Where(e => e.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+		if (filter.Length != 0 && !filter.IsWhiteSpace()) {
+			string filterStr = new(filter);
+			entries = entries.Where(e => e.Name.Contains(filterStr, StringComparison.OrdinalIgnoreCase)).ToList();
+		}
+		StatusLabel.SetText($"Showing {entries.Count} of {AllEntries.Count} models");
 
-		StatusLabel.Text = $"Showing {entries.Count} of {AllEntries.Count} models";
-
-		float availableWidth = RightPanel.RenderBounds.Width - 20;
+		float availableWidth = RightPanel.GetRenderBounds().Width - 20;
 		int columns = Math.Max(1, (int)(availableWidth / (THUMB_SIZE + THUMB_PADDING)));
 		int rows = (int)Math.Ceiling(entries.Count / (float)columns);
-		GridContainer.Size = new(0, rows * (THUMB_SIZE + THUMB_PADDING + 20));
+		GridContainer.SetSize(new(0, rows * (THUMB_SIZE + THUMB_PADDING + 20)));
 
 		for (int i = 0; i < entries.Count; i++) {
 			var entry = entries[i];
 			int col = i % columns;
 			int row = i / columns;
 
-			var card = GridContainer.Add<MD_ModelThumbnailCard>();
-			card.Dock = Dock.None;
-			card.Position = new(
+			var card = new MD_ModelThumbnailCard(GridContainer);
+			card.SetDock(Dock.None);
+			card.SetPos(new(
 				col * (THUMB_SIZE + THUMB_PADDING) + THUMB_PADDING,
 				row * (THUMB_SIZE + THUMB_PADDING + 20) + THUMB_PADDING
-			);
-			card.Size = new(THUMB_SIZE, THUMB_SIZE + 20);
+			));
+			card.SetSize(new(THUMB_SIZE, THUMB_SIZE + 20));
 			card.Setup(entry);
-			card.MouseReleaseEvent += (_, _, _) => OpenDetailWindow(entry);
+			card.OnButtonClick += (_, _) => OpenDetailWindow(entry);
 		}
 	}
 
 	void OpenDetailWindow(SkeletonEntry entry) {
-		var detail = EngineCore.Level.UI.Add<MD_ModelDetailWindow>();
+		var detail = new MD_ModelDetailWindow(EngineCore.Level.RootPanel);
 		detail.Setup(entry);
 		this.AttachWindowAndLockInput(detail);
 	}
@@ -347,22 +343,21 @@ public class MD_ModelThumbnailCard : Button
 	int CurrentAnimIndex;
 	bool animating;
 
-	protected override void Initialize() {
-		base.Initialize();
-		BorderSize = 1;
-		BackgroundColor = new(25, 30, 38);
-		ForegroundColor = new(55, 62, 72);
-		TextSize = 11;
-		TextAlignment = Anchor.BottomCenter;
+	public MD_ModelThumbnailCard(Element? parent) : base(parent) {
+		SetBorderSize(1);
+		SetBgColor(new Color(25, 30, 38));
+		SetFgColor(new Color(55, 62, 72));
+		SetTextSize(11);
+		SetTextAlignment(Anchor.BottomCenter);
 	}
 
 	public void Setup(SkeletonEntry entry) {
 		Entry = entry;
-		Text = entry.Name;
+		SetText(entry.Name);
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		if (Entry == null) return;
 		var instance = Entry.EnsureInstance();
 		if (instance == null) return;
@@ -434,17 +429,17 @@ public class MD_ModelThumbnailCard : Button
 		instance.Position = new(0, 0);
 		bool errored = false;
 		string? error = null;
-		try{
+		try {
 			instance.Render(useDefaultShader: false);
 		}
-		catch(Exception ex){
+		catch (Exception ex) {
 			errored = true;
 			error = ex.Message;
 		}
 
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
-		if(errored){
+		if (errored) {
 			Graphics2D.SetDrawColor(155, 50, 50);
 			Graphics2D.DrawRectangle(0, 0, width, height);
 			Graphics2D.SetDrawColor(255, 150, 150);
@@ -472,7 +467,126 @@ public class MD_ModelDetailWindow : Window
 	bool ShowSlotInfo;
 	bool ShowAttachmentNames;
 
-	Panel PreviewPanel = null!;
+	class ModelPreviewPanel(MD_ModelDetailWindow parent) : Panel(parent)
+	{
+		float CameraZoom => parent.CameraZoom;
+		Vector2F CameraOffset => parent.CameraOffset;
+		AnimationHandler AnimHandler => parent.AnimHandler;
+		ModelInstance? Instance => parent.Instance;
+		bool ShowWireframe => parent.ShowWireframe;
+		bool ShowBones => parent.ShowBones;
+		bool ShowSlotInfo => parent.ShowSlotInfo;
+		bool ShowAttachmentNames => parent.ShowAttachmentNames;
+		public override void Paint(float width, float height) {
+			Graphics2D.SetDrawColor(18, 22, 28);
+			Graphics2D.DrawRectangle(0, 0, width, height);
+
+			parent.DrawGrid(width, height);
+
+			if (Instance == null) {
+				Graphics2D.SetDrawColor(120, 120, 120);
+				Graphics2D.DrawText(new(width / 2, height / 2), "No model", Graphics2D.UI_FONT_NAME, 16, Anchor.Center);
+				return;
+			}
+
+			AnimHandler.Apply(Instance);
+
+			var globalOffset = Graphics2D.Offset;
+			float cx = width / 2;
+			float cy = height / 2;
+
+			Rlgl.PushMatrix();
+			Rlgl.Translatef(globalOffset.X + cx, globalOffset.Y + cy, 0);
+			Rlgl.Scalef(CameraZoom, CameraZoom, 1);
+			Rlgl.Translatef(-CameraOffset.X, -CameraOffset.Y, 0);
+
+			int prevWireframe = Model4System.m4s_wireframe.GetInt();
+			if (ShowWireframe)
+				Model4System.m4s_wireframe.SetValue(1);
+
+			Instance.Scale = new(1);
+			Instance.Position = new(0, 0);
+			Instance.Render(useDefaultShader: false);
+
+			if (ShowWireframe)
+				Model4System.m4s_wireframe.SetValue(prevWireframe);
+
+			if (ShowBones)
+				DrawBoneOverlay();
+
+			if (ShowSlotInfo || ShowAttachmentNames)
+				DrawSlotOverlay();
+
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.PopMatrix();
+
+			Graphics2D.SetDrawColor(60, 70, 80);
+			Graphics2D.DrawLine(new(cx - 8, cy), new(cx + 8, cy));
+			Graphics2D.DrawLine(new(cx, cy - 8), new(cx, cy + 8));
+
+			Graphics2D.SetDrawColor(80, 90, 100);
+			Graphics2D.DrawText(4, 4, $"Zoom: {CameraZoom:F2}x  Offset: {CameraOffset.X:F0}, {CameraOffset.Y:F0}", Graphics2D.UI_FONT_NAME, 11);
+		}
+		void DrawBoneOverlay() {
+			if (Instance == null) return;
+
+			foreach (var bone in Instance.Bones) {
+				var pos = bone.WorldTransform.LocalToWorld(0, 0);
+				float drawX = pos.X;
+				float drawY = -pos.Y;
+
+				Rlgl.DrawRenderBatchActive();
+				Raylib.DrawCircleV(new(drawX, drawY), 3f / CameraZoom, new Color(255, 80, 80, 200));
+
+				if (bone.Parent != null) {
+					var parentPos = bone.Parent.WorldTransform.LocalToWorld(0, 0);
+					Raylib.DrawLineV(
+						new(drawX, drawY),
+						new(parentPos.X, -parentPos.Y),
+						new Color(255, 200, 80, 100));
+				}
+			}
+		}
+		void DrawSlotOverlay() {
+			if (Instance == null) return;
+
+			int idx = 0;
+			foreach (var slot in Instance.DrawOrder) {
+				if (slot.Attachment == null) continue;
+
+				var bonePos = slot.Bone.WorldTransform.LocalToWorld(0, 0);
+				float drawX = bonePos.X;
+				float drawY = -bonePos.Y;
+
+				Rlgl.DrawRenderBatchActive();
+
+				if (ShowAttachmentNames) {
+					float fontSize = 10f / CameraZoom;
+					fontSize = Math.Clamp(fontSize, 8, 14);
+					Graphics2D.SetDrawColor(200, 220, 255, 180);
+					Graphics2D.DrawText(new(drawX, drawY), $"{slot.Data.Name}:{slot.Attachment.Name}", Graphics2D.UI_FONT_NAME, fontSize, Anchor.CenterLeft);
+				}
+
+				if (ShowSlotInfo) {
+					Raylib.DrawCircleV(new(drawX, drawY), 2f / CameraZoom, new Color(80, 200, 255, 150));
+				}
+
+				idx++;
+			}
+		}
+
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
+			parent.CameraZoom *= (delta.Y > 0) ? 1.15f : 0.87f;
+			parent.CameraZoom = Math.Clamp(CameraZoom, 0.01f, 50f);
+			return true;
+		}
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+			parent.CameraOffset -= delta / CameraZoom;
+			return true;
+		}
+	}
+
+	ModelPreviewPanel PreviewPanel = null!;
 	TabView InfoTabs = null!;
 	Label AnimInfoLabel = null!;
 	DirectionalLayoutPanel AnimList = null!;
@@ -480,11 +594,10 @@ public class MD_ModelDetailWindow : Window
 	DirectionalLayoutPanel SlotList = null!;
 	Label ModelInfoLabel = null!;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public MD_ModelDetailWindow(Element? parent) : base(parent) {
 		Title = "Model Detail";
-		Size = new(900, 650);
-		Position = new(150, 80);
+		SetSize(new(900, 650));
+		SetPos(new(150, 80));
 		HideNonCloseButtons();
 	}
 
@@ -528,24 +641,15 @@ public class MD_ModelDetailWindow : Window
 	}
 
 	void BuildUI() {
-		PreviewPanel = this.Add<Panel>();
-		PreviewPanel.Dock = Dock.Fill;
-		PreviewPanel.DrawPanelBackground = false;
-		PreviewPanel.PaintOverride += PaintPreview;
-		PreviewPanel.MouseDragEvent += (self, state, delta) => {
-			CameraOffset -= delta / CameraZoom;
-		};
-		PreviewPanel.MouseScrollEvent += (self, state, delta) => {
-			CameraZoom *= (delta.Y > 0) ? 1.15f : 0.87f;
-			CameraZoom = Math.Clamp(CameraZoom, 0.01f, 50f);
-		};
+		PreviewPanel = new(this);
+		PreviewPanel.SetDock(Dock.Fill);
+		PreviewPanel.SetPaintBackgroundEnabled(false);
+		var rightPanel = new Panel(this);
+		rightPanel.SetDock(Dock.Right);
+		rightPanel.SetSize(new(320, 0));
 
-		var rightPanel = this.Add<Panel>();
-		rightPanel.Dock = Dock.Right;
-		rightPanel.Size = new(320, 0);
-
-		InfoTabs = rightPanel.Add<TabView>();
-		InfoTabs.Dock = Dock.Fill;
+		InfoTabs = new TabView(rightPanel);
+		InfoTabs.SetDock(Dock.Fill);
 
 		BuildAnimationsTab();
 		BuildInfoTab();
@@ -555,74 +659,74 @@ public class MD_ModelDetailWindow : Window
 	void BuildAnimationsTab() {
 		var tab = InfoTabs.AddTab("Animations");
 
-		var controls = ((Panel)tab.Panel).Add<Panel>();
-		controls.Dock = Dock.Top;
-		controls.Size = new(0, 70);
-		controls.DrawPanelBackground = false;
+		var controls = new Panel(tab.Panel);
+		controls.SetDock(Dock.Top);
+		controls.SetSize(new(0, 70));
+		controls.SetPaintBackgroundEnabled(false);
 
-		AnimInfoLabel = controls.Add<Label>();
-		AnimInfoLabel.Dock = Dock.Top;
-		AnimInfoLabel.Size = new(0, 18);
-		AnimInfoLabel.TextSize = 17;
-		AnimInfoLabel.Text = "No animation playing";
+		AnimInfoLabel = new Label(controls);
+		AnimInfoLabel.SetDock(Dock.Top);
+		AnimInfoLabel.SetSize(new(0, 18));
+		AnimInfoLabel.SetTextSize(17);
+		AnimInfoLabel.SetText("No animation playing");
 
-		var channelBar = controls.Add<Panel>();
-		channelBar.Dock = Dock.Top;
-		channelBar.Size = new(0, 26);
-		channelBar.DrawPanelBackground = false;
+		var channelBar = new Panel(controls);
+		channelBar.SetDock(Dock.Top);
+		channelBar.SetSize(new(0, 26));
+		channelBar.SetPaintBackgroundEnabled(false);
 
-		var chLabel = channelBar.Add<Label>();
-		chLabel.Text = "Channel:";
-		chLabel.TextSize = 17;
-		chLabel.Dock = Dock.Left;
-		chLabel.Size = new(60, 0);
+		var chLabel = new Label(channelBar);
+		chLabel.SetText("Channel:");
+		chLabel.SetTextSize(17);
+		chLabel.SetDock(Dock.Left);
+		chLabel.SetSize(new(60, 0));
 
 		for (int ch = 0; ch < 5; ch++) {
 			int capturedCh = ch;
-			var chBtn = channelBar.Add<Button>();
-			chBtn.Dock = Dock.Left;
-			chBtn.Size = new(28, 0);
-			chBtn.Text = $"{ch}";
-			chBtn.TextSize = 16;
-			chBtn.MouseReleaseEvent += (_, _, _) => SelectedChannel = capturedCh;
+			var chBtn = new Button(channelBar);
+			chBtn.SetDock(Dock.Left);
+			chBtn.SetSize(new(28, 0));
+			chBtn.SetText($"{ch}");
+			chBtn.SetTextSize(16);
+			chBtn.OnButtonClick += (_, _) => SelectedChannel = capturedCh;
 		}
 
-		var optBar = controls.Add<Panel>();
-		optBar.Dock = Dock.Top;
-		optBar.Size = new(0, 26);
-		optBar.DrawPanelBackground = false;
+		var optBar = new Panel(controls);
+		optBar.SetDock(Dock.Top);
+		optBar.SetSize(new(0, 26));
+		optBar.SetPaintBackgroundEnabled(false);
 
-		var loopCb = optBar.Add<Checkbox>();
-		loopCb.Dock = Dock.Left;
-		loopCb.Size = new(70, 0);
-		loopCb.Text = "Loop";
-		loopCb.TextSize = 17;
+		var loopCb = new CheckboxButton(optBar);
+		loopCb.SetDock(Dock.Left);
+		loopCb.SetSize(new(70, 0));
+		loopCb.SetText("Loop");
+		loopCb.SetTextSize(17);
 		loopCb.Checked = true;
 		loopCb.OnCheckedChanged += (cb) => LoopAnimation = cb.Checked;
 
-		var stopBtn = optBar.Add<Button>();
-		stopBtn.Dock = Dock.Left;
-		stopBtn.Size = new(50, 0);
-		stopBtn.Text = "Stop";
-		stopBtn.TextSize = 16;
-		stopBtn.MouseReleaseEvent += (_, _, _) => {
+		var stopBtn = new Button(optBar);
+		stopBtn.SetDock(Dock.Left);
+		stopBtn.SetSize(new(50, 0));
+		stopBtn.SetText("Stop");
+		stopBtn.SetTextSize(16);
+		stopBtn.OnButtonClick += (_, _) => {
 			AnimHandler.StopAllAnimation();
 			Instance?.SetToSetupPose();
 		};
 
-		var resetBtn = optBar.Add<Button>();
-		resetBtn.Dock = Dock.Left;
-		resetBtn.Size = new(60, 0);
-		resetBtn.Text = "Reset";
-		resetBtn.TextSize = 16;
-		resetBtn.MouseReleaseEvent += (_, _, _) => {
+		var resetBtn = new Button(optBar);
+		resetBtn.SetDock(Dock.Left);
+		resetBtn.SetSize(new(60, 0));
+		resetBtn.SetText("Reset");
+		resetBtn.SetTextSize(16);
+		resetBtn.OnButtonClick += (_, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
 			CenterCamera();
 		};
 
-		AnimList = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
-		AnimList.Dock = Dock.Fill;
+		AnimList = new DirectionalLayoutPanel(tab.Panel);
+		AnimList.SetDock(Dock.Fill);
 
 		if (Entry?.CachedModelData != null) {
 			var anims = Entry.CachedModelData.Animations;
@@ -630,17 +734,17 @@ public class MD_ModelDetailWindow : Window
 				var anim = anims[i];
 				int capturedIdx = i;
 
-				var btn = AnimList.Add<Button>();
-				btn.Dock = Dock.Top;
-				btn.Size = new(0, 22);
-				btn.TextSize = 17;
-				btn.Text = $"{anim.Name} ({anim.Duration:F2}s)";
-				btn.TextAlignment = Anchor.CenterLeft;
-				btn.TextPadding = new(6);
-				btn.BackgroundColor = new(0, 0, 0, 0);
-				btn.ForegroundColor = new(55, 62, 72);
+				var btn = new Button(AnimList);
+				btn.SetDock(Dock.Top);
+				btn.SetSize(new(0, 22));
+				btn.SetTextSize(17);
+				btn.SetText($"{anim.Name} ({anim.Duration:F2}s)");
+				btn.SetTextAlignment(Anchor.CenterLeft);
+				btn.SetTextPadding(new(6));
+				btn.SetBgColor(new Color(0, 0, 0, 0));
+				btn.SetFgColor(new Color(55, 62, 72));
 
-				btn.MouseReleaseEvent += (_, _, _) => {
+				btn.OnButtonClick += (_, _) => {
 					SelectedAnimIndex = capturedIdx;
 					PlayAnimation(anim.Name);
 				};
@@ -651,15 +755,15 @@ public class MD_ModelDetailWindow : Window
 	void BuildInfoTab() {
 		var tab = InfoTabs.AddTab("Info");
 
-		var scroll = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
-		scroll.Dock = Dock.Fill;
+		var scroll = new DirectionalLayoutPanel(tab.Panel);
+		scroll.SetDock(Dock.Fill);
 
 		if (Entry?.CachedModelData == null) {
-			var lbl = scroll.Add<Label>();
-			lbl.Text = "Model failed to load.";
-			lbl.TextSize = 18;
-			lbl.Dock = Dock.Top;
-			lbl.Size = new(0, 24);
+			var lbl = new Label(scroll);
+			lbl.SetText("Model failed to load.");
+			lbl.SetTextSize(18);
+			lbl.SetDock(Dock.Top);
+			lbl.SetSize(new(0, 24));
 			return;
 		}
 
@@ -692,65 +796,65 @@ public class MD_ModelDetailWindow : Window
 	}
 
 	void AddInfoRow(DirectionalLayoutPanel parent, string text) {
-		var lbl = parent.Add<Label>();
-		lbl.Text = text;
-		lbl.TextSize = 16;
-		lbl.Dock = Dock.Top;
-		lbl.Size = new(0, 16);
-		lbl.TextAlignment = Anchor.CenterLeft;
-		lbl.TextPadding = new(4);
+		var lbl = new Label(parent);
+		lbl.SetText(text);
+		lbl.SetTextSize(16);
+		lbl.SetDock(Dock.Top);
+		lbl.SetSize(new(0, 16));
+		lbl.SetTextAlignment(Anchor.CenterLeft);
+		lbl.SetTextPadding(new(4));
 	}
 
 	void BuildDebugTab() {
 		var tab = InfoTabs.AddTab("Debug");
 
-		var panel = ((Panel)tab.Panel).Add<DirectionalLayoutPanel>();
-		panel.Dock = Dock.Fill;
+		var panel = new DirectionalLayoutPanel(tab.Panel);
+		panel.SetDock(Dock.Fill);
 
-		var bonesCb = panel.Add<Checkbox>();
-		bonesCb.Dock = Dock.Top;
-		bonesCb.Size = new(0, 26);
-		bonesCb.Text = "Show Bones";
-		bonesCb.TextSize = 17;
+		var bonesCb = new CheckboxButton(panel);
+		bonesCb.SetDock(Dock.Top);
+		bonesCb.SetSize(new(0, 26));
+		bonesCb.SetText("Show Bones");
+		bonesCb.SetTextSize(17);
 		bonesCb.OnCheckedChanged += (cb) => ShowBones = cb.Checked;
 
-		var wireCb = panel.Add<Checkbox>();
-		wireCb.Dock = Dock.Top;
-		wireCb.Size = new(0, 26);
-		wireCb.Text = "Show Wireframe";
-		wireCb.TextSize = 17;
+		var wireCb = new CheckboxButton(panel);
+		wireCb.SetDock(Dock.Top);
+		wireCb.SetSize(new(0, 26));
+		wireCb.SetText("Show Wireframe");
+		wireCb.SetTextSize(17);
 		wireCb.OnCheckedChanged += (cb) => ShowWireframe = cb.Checked;
 
-		var slotCb = panel.Add<Checkbox>();
-		slotCb.Dock = Dock.Top;
-		slotCb.Size = new(0, 26);
-		slotCb.Text = "Show Slot Info";
-		slotCb.TextSize = 17;
+		var slotCb = new CheckboxButton(panel);
+		slotCb.SetDock(Dock.Top);
+		slotCb.SetSize(new(0, 26));
+		slotCb.SetText("Show Slot Info");
+		slotCb.SetTextSize(17);
 		slotCb.OnCheckedChanged += (cb) => ShowSlotInfo = cb.Checked;
 
-		var attachCb = panel.Add<Checkbox>();
-		attachCb.Dock = Dock.Top;
-		attachCb.Size = new(0, 26);
-		attachCb.Text = "Show Attachment Names";
-		attachCb.TextSize = 17;
+		var attachCb = new CheckboxButton(panel);
+		attachCb.SetDock(Dock.Top);
+		attachCb.SetSize(new(0, 26));
+		attachCb.SetText("Show Attachment Names");
+		attachCb.SetTextSize(17);
 		attachCb.OnCheckedChanged += (cb) => ShowAttachmentNames = cb.Checked;
 
-		var setupBtn = panel.Add<Button>();
-		setupBtn.Dock = Dock.Top;
-		setupBtn.Size = new(0, 28);
-		setupBtn.Text = "Reset to Setup Pose";
-		setupBtn.TextSize = 17;
-		setupBtn.MouseReleaseEvent += (_, _, _) => {
+		var setupBtn = new Button(panel);
+		setupBtn.SetDock(Dock.Top);
+		setupBtn.SetSize(new(0, 28));
+		setupBtn.SetText("Reset to Setup Pose");
+		setupBtn.SetTextSize(17);
+		setupBtn.OnButtonClick += (_, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
 		};
 
-		var logBtn = panel.Add<Button>();
-		logBtn.Dock = Dock.Top;
-		logBtn.Size = new(0, 28);
-		logBtn.Text = "Log Model Data to Console";
-		logBtn.TextSize = 17;
-		logBtn.MouseReleaseEvent += (_, _, _) => LogModelData();
+		var logBtn = new Button(panel);
+		logBtn.SetDock(Dock.Top);
+		logBtn.SetSize(new(0, 28));
+		logBtn.SetText("Log Model Data to Console");
+		logBtn.SetTextSize(17);
+		logBtn.OnButtonClick += (_, _) => LogModelData();
 	}
 
 	void PlayAnimation(string name) {
@@ -777,8 +881,8 @@ public class MD_ModelDetailWindow : Window
 		}
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 
 		if (Instance == null) return;
 		AnimHandler.AddDeltaTime(globals.CurTimeDelta);
@@ -787,64 +891,13 @@ public class MD_ModelDetailWindow : Window
 			var channel = AnimHandler.Channels[SelectedChannel];
 			var entry = channel.CurrentEntry;
 			if (entry != null)
-				AnimInfoLabel.Text = $"Ch{SelectedChannel}: {entry.Animation.Name} @ {channel.Time:F2}s / {entry.Animation.Duration:F2}s";
+				AnimInfoLabel.SetText($"Ch{SelectedChannel}: {entry.Animation.Name} @ {channel.Time:F2}s / {entry.Animation.Duration:F2}s");
 			else
-				AnimInfoLabel.Text = $"Ch{SelectedChannel}: idle";
+				AnimInfoLabel.SetText($"Ch{SelectedChannel}: idle");
 		}
 		else {
-			AnimInfoLabel.Text = "No animation playing";
+			AnimInfoLabel.SetText("No animation playing");
 		}
-	}
-
-	void PaintPreview(Element self, float width, float height) {
-		Graphics2D.SetDrawColor(18, 22, 28);
-		Graphics2D.DrawRectangle(0, 0, width, height);
-
-		DrawGrid(width, height);
-
-		if (Instance == null) {
-			Graphics2D.SetDrawColor(120, 120, 120);
-			Graphics2D.DrawText(new(width / 2, height / 2), "No model", Graphics2D.UI_FONT_NAME, 16, Anchor.Center);
-			return;
-		}
-
-		AnimHandler.Apply(Instance);
-
-		var globalOffset = Graphics2D.Offset;
-		float cx = width / 2;
-		float cy = height / 2;
-
-		Rlgl.PushMatrix();
-		Rlgl.Translatef(globalOffset.X + cx, globalOffset.Y + cy, 0);
-		Rlgl.Scalef(CameraZoom, CameraZoom, 1);
-		Rlgl.Translatef(-CameraOffset.X, -CameraOffset.Y, 0);
-
-		int prevWireframe = Model4System.m4s_wireframe.GetInt();
-		if (ShowWireframe)
-			Model4System.m4s_wireframe.SetValue(1);
-
-		Instance.Scale = new(1);
-		Instance.Position = new(0, 0);
-		Instance.Render(useDefaultShader: false);
-
-		if (ShowWireframe)
-			Model4System.m4s_wireframe.SetValue(prevWireframe);
-
-		if (ShowBones)
-			DrawBoneOverlay();
-
-		if (ShowSlotInfo || ShowAttachmentNames)
-			DrawSlotOverlay();
-
-		Rlgl.DrawRenderBatchActive();
-		Rlgl.PopMatrix();
-
-		Graphics2D.SetDrawColor(60, 70, 80);
-		Graphics2D.DrawLine(new(cx - 8, cy), new(cx + 8, cy));
-		Graphics2D.DrawLine(new(cx, cy - 8), new(cx, cy + 8));
-
-		Graphics2D.SetDrawColor(80, 90, 100);
-		Graphics2D.DrawText(4, 4, $"Zoom: {CameraZoom:F2}x  Offset: {CameraOffset.X:F0}, {CameraOffset.Y:F0}", Graphics2D.UI_FONT_NAME, 11);
 	}
 
 	void DrawGrid(float width, float height) {
@@ -867,54 +920,5 @@ public class MD_ModelDetailWindow : Window
 		Graphics2D.DrawLine(new(0, axisY), new(width, axisY));
 		Graphics2D.SetDrawColor(40, 80, 40);
 		Graphics2D.DrawLine(new(axisX, 0), new(axisX, height));
-	}
-
-	void DrawBoneOverlay() {
-		if (Instance == null) return;
-
-		foreach (var bone in Instance.Bones) {
-			var pos = bone.WorldTransform.LocalToWorld(0, 0);
-			float drawX = pos.X;
-			float drawY = -pos.Y;
-
-			Rlgl.DrawRenderBatchActive();
-			Raylib.DrawCircleV(new(drawX, drawY), 3f / CameraZoom, new Color(255, 80, 80, 200));
-
-			if (bone.Parent != null) {
-				var parentPos = bone.Parent.WorldTransform.LocalToWorld(0, 0);
-				Raylib.DrawLineV(
-					new(drawX, drawY),
-					new(parentPos.X, -parentPos.Y),
-					new Color(255, 200, 80, 100));
-			}
-		}
-	}
-
-	void DrawSlotOverlay() {
-		if (Instance == null) return;
-
-		int idx = 0;
-		foreach (var slot in Instance.DrawOrder) {
-			if (slot.Attachment == null) continue;
-
-			var bonePos = slot.Bone.WorldTransform.LocalToWorld(0, 0);
-			float drawX = bonePos.X;
-			float drawY = -bonePos.Y;
-
-			Rlgl.DrawRenderBatchActive();
-
-			if (ShowAttachmentNames) {
-				float fontSize = 10f / CameraZoom;
-				fontSize = Math.Clamp(fontSize, 8, 14);
-				Graphics2D.SetDrawColor(200, 220, 255, 180);
-				Graphics2D.DrawText(new(drawX, drawY), $"{slot.Data.Name}:{slot.Attachment.Name}", Graphics2D.UI_FONT_NAME, fontSize, Anchor.CenterLeft);
-			}
-
-			if (ShowSlotInfo) {
-				Raylib.DrawCircleV(new(drawX, drawY), 2f / CameraZoom, new Color(80, 200, 255, 150));
-			}
-
-			idx++;
-		}
 	}
 }

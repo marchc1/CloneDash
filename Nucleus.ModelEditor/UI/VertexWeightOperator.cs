@@ -1,17 +1,18 @@
 ﻿using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
+using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Raylib_cs;
 
 namespace Nucleus.ModelEditor
 {
-	public class VertexWeightWindow : Window {
-		protected override void Initialize() {
-			base.Initialize();
-			Text = "Weights";
-			Dock = Nucleus.UI.Dock.Right;
-			Size = new(256);
+	public class VertexWeightWindow : Window
+	{
+		public VertexWeightWindow(Element parent) : base(parent) {
+			Title = "Weights";
+			SetDock(Nucleus.UI.Dock.Right);
+			SetSize(new(256));
 			HideNonCloseButtons();
 		}
 	}

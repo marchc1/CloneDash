@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Data;
 using CloneDash.Common.Game;
+using NAudio.CoreAudioApi;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Core;
@@ -56,11 +57,15 @@ namespace CloneDash.Game
 
 		private class CD_Conductor_UIBar : Element
 		{
+			public CD_Conductor_UIBar(Element? parent) : base(parent) {
+				SetPaintBackgroundEnabled(false);
+				SetPaintBorderEnabled(false);
+			}
 			public float Playhead { get; set; }
 			public float Duration { get; set; }
 			public float Completion => Playhead / Duration;
 
-			public double XToSeconds(float x) => (x / RenderBounds.W) * Duration;
+			public double XToSeconds(float x) => (x / GetRenderBounds().W) * Duration;
 
 			public delegate void Mouse();
 
@@ -68,29 +73,34 @@ namespace CloneDash.Game
 			public event Mouse? DragUpdate;
 			public event Mouse? DragEnd;
 
-			public override void MouseClick(FrameState state, ButtonCode button) {
-				if (button != ButtonCode.MouseLeft) return;
+			protected override bool MouseClick(FrameState state, ButtonCode button) {
+				if (!IsHovered()) return true;
+				if (button != ButtonCode.MouseLeft) return true;
 				base.MouseClick(state, button);
 				DragStart?.Invoke();
+				return true;
 			}
 
-			public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
-				if (!state.Mouse.Mouse1Held) return;
+			protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+				if (!IsHovered()) return true;
+				if (!state.Mouse.Mouse1Held) return true;
 				base.MouseDrag(self, state, delta);
 				DragUpdate?.Invoke();
+				return true;
 			}
 
-			public override void MouseReleasedOrLost(Element self, FrameState state, ButtonCode button) {
-				if (button != ButtonCode.MouseLeft) return;
+			protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+				if (button != ButtonCode.MouseLeft) return false;
 				base.MouseRelease(self, state, button);
 				DragEnd?.Invoke();
+				return true;
 			}
 
 			public override void Paint(float width, float height) {
-				Graphics2D.SetDrawColor(230, 235, 255, Depressed ? 100 : 255);
+				Graphics2D.SetDrawColor(230, 235, 255, IsDepressed() ? 100 : 255);
 				Graphics2D.DrawRectangle(0, 0, width * Completion, height);
 
-				if (Depressed) {
+				if (IsDepressed()) {
 					Graphics2D.SetDrawColor(230, 235, 255);
 					Graphics2D.DrawRectangle(0, 2, GetMousePos().X, height - 4);
 				}
@@ -100,9 +110,9 @@ namespace CloneDash.Game
 		private CD_Conductor_UIBar UIBar;
 
 		public override void Initialize() {
-			UIBar = Level.UI.Add<CD_Conductor_UIBar>();
-			UIBar.Dock = Dock.Top;
-			UIBar.Size = new(0, 8);
+			UIBar = new CD_Conductor_UIBar(Level.RootPanel);
+			UIBar.SetDock(Dock.Top);
+			UIBar.SetSize(new(0, 8));
 
 			UIBar.DragStart += UIBar_DragStart;
 			UIBar.DragUpdate += UIBar_DragUpdate;

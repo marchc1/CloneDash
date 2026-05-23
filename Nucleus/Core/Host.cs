@@ -64,12 +64,28 @@ public static class Host
 			WriteConfiguration(force: true);
 
 		ConfigCfgExecuted = true;
+		cvar.InstallGlobalChangeCallback(TriggerResave);
 	}
 
-	public static void WriteConfiguration(ReadOnlySpan<char> filename = default, bool allVars = false, bool force = false) {
-		if (filename.IsEmpty)
-			filename = "config.cfg";
+	private static void TriggerResave(ConVar self, ReadOnlySpan<char> oldStr, double oldDouble) => TriggerResave();
 
+	static DateTime lastResave = DateTime.UtcNow;
+	static bool needsResave = false;
+
+	public static void CheckForResave() {
+		if (!needsResave) return;
+		DateTime now = DateTime.UtcNow;
+		if((now - lastResave).TotalSeconds > 1) {
+			WriteConfiguration();
+			lastResave = now;
+			needsResave = false;
+		}
+	}
+	public static void TriggerResave(){
+		needsResave = true;
+	}
+
+	public static void WriteConfiguration(bool allVars = false, bool force = false) {
 		if (!force) {
 			if (!ConfigCfgExecuted)
 				return;
@@ -91,6 +107,7 @@ public static class Host
 		using StreamReader reader = new(stream, leaveOpen: true);
 		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
 		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(DataStore));
+		Logs.Print("Wrote configuration");
 	}
 
 	internal static void ReformatOldHostStore(OldHostStore hoststore) {

@@ -18,7 +18,7 @@ namespace Nucleus.UI
 		Save
 	}
 
-	public class PopupWindow : Window
+	public class PopupWindow(Element? parent) : Window(parent)
 	{
 		public bool AutomateLayout {
 			get => field;
@@ -42,28 +42,26 @@ namespace Nucleus.UI
 			}
 		} = new(320, 260);
 
-		protected override void PostLayoutChildren() {
-			base.PostLayoutChildren();
-
+		protected override void PerformLayout(float width, float height) {
 			if (AutomateLayout) {
 				Vector2F size = new();
 				foreach (var child in Children) {
-					if (child.Dock != Dock.None)
+					if (child.GetDock() != Dock.None)
 						continue;
 
 					size = new(
-						MathF.Max(size.X, child.RenderBounds.W),
-						MathF.Max(size.Y, child.RenderBounds.H)
+						MathF.Max(size.X, child.GetRenderBounds().W),
+						MathF.Max(size.Y, child.GetRenderBounds().H)
 					);
 				}
 
-				Size = new(
+				SetSize(new(
 					MathF.Max(size.X, MinimumInternalSize.W),
 					MathF.Max(size.Y, MinimumInternalSize.H)
-				);
+				));
 
-				if (Parent != null)
-					Position = (Parent.Size / 2) - (Size / 2);
+				if (GetParent() != null)
+					SetPos((GetParent().GetSize() / 2) - (GetSize() / 2));
 			}
 		}
 	}
@@ -71,11 +69,11 @@ namespace Nucleus.UI
     public static class Popups
     {
         public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
-            PopupWindow popup = UI.Add<PopupWindow>();
-            popup.DockPadding = RectangleF.TLRB(2, 8, 8, 2);
+			PopupWindow popup = new PopupWindow(UI);
+			popup.SetDockPadding(RectangleF.TLRB(2, 8, 8, 2));
             popup.Title = title;
-            popup.Titlebar.MinimizeButton.Visible = false;
-            popup.Titlebar.MaximizeButton.Visible = false;
+            popup.Titlebar.MinimizeButton.SetVisible(false);
+			popup.Titlebar.MaximizeButton.SetVisible(false);
             popup.MakePopup();
             popup.MakeModal();
             popup.AutomateLayout = automateLayout;
@@ -86,22 +84,22 @@ namespace Nucleus.UI
         private static (PopupWindow popup, FlexPanel buttonContainer) SetupDialogCore(UserInterface UI, string title, string text) {
             PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
-            FlexPanel containButtons = popup.Add<FlexPanel>();
-            containButtons.Dock = Dock.Bottom;
-            containButtons.DockMargin = RectangleF.TLRB(0, 0, 0, 5);
-            containButtons.Size = new(0, 48);
+            FlexPanel containButtons = new FlexPanel(popup);
+            containButtons.SetDock(Dock.Bottom);
+            containButtons.SetDockMargin(RectangleF.TLRB(0, 0, 0, 5));
+            containButtons.SetSize(new(0, 48));
             containButtons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-            containButtons.DockPadding = RectangleF.TLRB(2, 2, 2, 2);
+            containButtons.SetDockPadding(RectangleF.TLRB(2, 2, 2, 2));
 
-            Label lb = popup.Add<Label>();
-            lb.TextSize = 17;
-            lb.Text = text.Replace("\r", "");
-            lb.Dock = Dock.Fill;
+			Label lb = new Label(popup);
+			lb.SetTextSize ( 17);
+            lb.SetText(text.Replace("\r", ""));
+            lb.SetDock(Dock.Fill);
 
-            var txtsize = Graphics2D.GetTextSize(lb.Text, lb.Font, lb.TextSize);
-            var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.Font, popup.Titlebar.TextSize);
+            var txtsize = Graphics2D.GetTextSize(lb.GetText(), lb.GetFont(), lb.GetTextSize());
+            var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.GetFont(), popup.Titlebar.GetTextSize());
             var finalsize = new Vector2F(MathF.Max(txtsize.X, titlesize.X + 64), txtsize.Y);
-            popup.Size = new Vector2F(100, 200) + finalsize;
+            popup.SetSize(new Vector2F(100, 200) + finalsize);
             popup.Center();
 
             audiosystem.PlaySound("popup.wav", AudioPlaybackSettings.Unaltered);
@@ -112,9 +110,9 @@ namespace Nucleus.UI
         public static void DialogOK(this UserInterface UI, string title, string text, Action? onOK = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
-            Button ok = containButtons.Add<Button>();
-            ok.Text = "OK";
-            ok.MouseReleaseEvent += (_, _, _) => {
+            Button ok = new Button(containButtons);
+            ok.SetText("OK");
+            ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
             };
@@ -124,16 +122,16 @@ namespace Nucleus.UI
         public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
-            Button close = containButtons.Add<Button>();
-            close.Text = "Cancel";
-            close.MouseReleaseEvent += (_, _, _) => {
+            Button close = new Button(containButtons);
+            close.SetText("Cancel");
+            close.OnButtonClick += (_, _) => {
                 onCancel?.Invoke();
                 popup.Close();
             };
 
-            Button ok = containButtons.Add<Button>();
-            ok.Text = "OK";
-            ok.MouseReleaseEvent += (_, _, _) => {
+            Button ok = new Button(containButtons);
+            ok.SetText("OK");
+            ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
             };

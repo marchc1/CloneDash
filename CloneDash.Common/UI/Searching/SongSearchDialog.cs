@@ -9,29 +9,51 @@ using System.Reflection;
 
 namespace CloneDash.Menu.Searching;
 
-public class DialogLabelPanel<T> : Panel where T : Element
+public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 {
 	Label label = null!;
 	T element = null!;
-	protected override void Initialize() {
-		base.Initialize();
-		BorderSize = 0;
+	public DialogLabelPanel(Element? parent) : base(parent){
+		SetBorderSize(0);
 
-		label = Add<Label>();
-		element = Add<T>();
+		label = new(this);
+		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
 	}
 	public T Get() => element;
-	public override void TextChanged(string oldText, string newText) {
-		label.Text = newText;
+
+
+	public ReadOnlySpan<char> GetText() {
+		return ((ITextElement)label).GetText();
 	}
+
+	public void SetText(ReadOnlySpan<char> text) {
+		((ITextElement)label).SetText(text);
+	}
+
+	public ReadOnlySpan<char> GetFont() {
+		return ((ITextElement)label).GetFont();
+	}
+
+	public float GetTextSize() {
+		return ((ITextElement)label).GetTextSize();
+	}
+
+	public void SetFont(ReadOnlySpan<char> font) {
+		((ITextElement)label).SetFont(font);
+	}
+
+	public void SetTextSize(float textSize) {
+		((ITextElement)label).SetTextSize(textSize);
+	}
+
 	protected override void PerformLayout(float width, float height) {
-		label.Position = new(0, 0);
+		label.SetPos(new(0, 0));
 		var div = 4f;
-		label.Size = new(width / div, height);
+		label.SetSize(new(width / div, height));
 
 		var padding = 4;
-		element.Position = new((width / div) + padding, padding);
-		element.Size = new((width - (width / div)) - (padding * 2), (height) - (padding * 2));
+		element.SetPos(new((width / div) + padding, padding));
+		element.SetSize(new((width - (width / div)) - (padding * 2), (height) - (padding * 2)));
 	}
 }
 
@@ -55,36 +77,35 @@ public class SongSearchDialog : Window
 
 	public void SetBarText(string text) => Bar.SearchQuery = string.IsNullOrEmpty(text) ? null : text;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public SongSearchDialog(Element? parent) : base(parent) {
 		MakePopup();
 
 		DynamicallySized = true;
-		Size = new(0.4f);
+		SetSize(new(0.4f));
 		Resizable = false;
 		HideNonCloseButtons();
 		Title = "Song Search Dialog";
 
-		Add(out applyButton);
-		applyButton.Text = "Apply";
-		applyButton.BorderSize = 0;
-		applyButton.Dock = Dock.Bottom;
+		applyButton = new(this);
+		applyButton.SetText("Apply");
+		applyButton.SetBorderSize(0);
+		applyButton.SetDock(Dock.Bottom);
 
-		applyButton.MouseReleaseEvent += ApplyButton_MouseReleaseEvent;
+		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;
 
-		Add(out parameters);
-		parameters.Dock = Dock.Fill;
-		AddParent = parameters;
+		parameters = new(this);
+		parameters.SetDock(Dock.Fill);
+		SetAddParent(parameters);
 
 		Center();
 	}
 
 	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
-		parameters.Add(out DialogLabelPanel<T> pnl);
-		pnl.Dock = Dock.Top;
-		pnl.Size = new(0, 0.15f);
+		DialogLabelPanel<T> pnl = new(parameters);
+		pnl.SetDock(Dock.Top);
+		pnl.SetSize(new(0, 0.15f));
 		pnl.DynamicallySized = true;
-		pnl.Text = new(label.SliceNullTerminatedString());
+		pnl.SetText(label.SliceNullTerminatedString());
 		return pnl;
 	}
 
@@ -125,16 +146,16 @@ public class SongSearchDialog : Window
 
 	public Textbox TextboxInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, ReadOnlySpan<char> value) {
 		var pnl = InputPanel<Textbox>(label);
-		pnl.Text = new(label.SliceNullTerminatedString());
-		pnl.Get().Text = new(value.SliceNullTerminatedString());
-		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Text });
+		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.Get().SetText(value.SliceNullTerminatedString());
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => new string(pnl.Get().GetText()) });
 
 		return pnl.Get();
 	}
 
 	public void BoolInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, bool state) {
 		var pnl = InputPanel<Checkbox>(label);
-		pnl.Text = new(label.SliceNullTerminatedString());
+		pnl.SetText(label.SliceNullTerminatedString());
 		pnl.Get().Checked = state;
 		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Checked });
 	}
@@ -170,7 +191,7 @@ public class SongSearchDialog : Window
 		return source;
 	}
 
-	private void ApplyButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) => Submit();
+	private void ApplyButton_MouseReleaseEvent(Button self, ButtonCode button) => Submit();
 	public void Submit() {
 		OnUserSubmit?.Invoke();
 		Close();
@@ -182,7 +203,7 @@ public class SongSearchDialog : Window
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		applyButton.Size = new(height * 0.1f);
+		applyButton.SetSize(new(height * 0.1f));
 	}
 }
 

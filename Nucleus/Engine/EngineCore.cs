@@ -193,19 +193,19 @@ public static class EngineCore
 	}
 
 	public static Window OpenProfiler() {
-		Window window = Level.UI.Add<Window>();
+		Window window = new Window(Level.RootPanel);
 
 		window.Title = "Nucleus Profiler";
-		window.AddParent.PaintOverride += AddParent_PaintOverride;
-		window.Titlebar.MinimizeButton.Enabled = false;
-		window.Titlebar.MaximizeButton.Enabled = false;
+		window.GetAddParent().SetPaintBackgroundEnabled(false);
+		window.Titlebar.MinimizeButton.SetMouseInputEnabled(false);
+		window.Titlebar.MaximizeButton.SetMouseInputEnabled(false);
 
 		return window;
 	}
 
 	private static void AddParent_PaintOverride(Element self, float width, float height) {
 		int y = 12;
-		self.Parent.BorderSize = 0;
+		self.GetParent()?.SetBorderSize(0);
 
 		DrawBar("Time to Update", new Color(225, 225, 225, 255), width, y, GetTimeToUpdate().TotalSeconds);
 		DrawBar("Time to Render", new Color(225, 225, 225, 255), width, y, GetTimeToRender().TotalSeconds);
@@ -598,6 +598,7 @@ public static class EngineCore
 		WaitForGameThread();
 		NucleusSingleton.Spin();
 		OSWindow.PropagateEventBuffer();
+		Host.CheckForResave();
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;

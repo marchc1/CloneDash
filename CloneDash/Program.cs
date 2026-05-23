@@ -217,7 +217,7 @@ public class GameDLL : IGameDLL
 			if (release != null) {
 				MainThread.RunASAP(() => {
 					try {
-						var ui = EngineCore.Level?.UI;
+						var ui = EngineCore.Level?.RootPanel;
 						if (ui == null) {
 							Logs.Warn("Update available but UI is not ready to show popup.");
 							return;

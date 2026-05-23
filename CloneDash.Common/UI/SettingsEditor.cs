@@ -12,80 +12,79 @@ using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 using System;
 using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Menu;
 
-public class SettingsCategory : Button
+public class SettingsCategory(Element? parent) : Button(parent)
 {
 	public SettingsPanel Panel;
-	public Panel Icon;
-	protected override void Initialize() {
-		base.Initialize();
-	}
+	public Image Icon;
 
 	public void Setup(SettingsEditor panel) {
-		panel.Add(out Panel);
+		Panel = new(panel);
 		Panel.Category = this;
-		Panel.Dock = Dock.Fill;
+		Panel.SetDock(Dock.Fill);
 
-		TextAlignment = Anchor.CenterLeft; ;
+		SetTextAlignment(Anchor.CenterLeft); ;
 		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
-		TextSize = 16;
+		SetTextSize(16);
 
-		Add(out Icon);
-		BorderSize = 0;
-		Icon.DrawPanelBackground = false;
-		Icon.ImagePadding = new(4);
-		Icon.ImageOrientation = ImageOrientation.Zoom;
+		Icon = new(this);
+		SetBorderSize(0);
+		Icon.SetPaintBackgroundEnabled(false);
+		Icon.SetImagePadding(new(4));
+		Icon.SetImageOrientation(ImageOrientation.Zoom);
 	}
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		Icon.Position = new(4, 0);
-		Icon.Size = new(height, height);
-		TextPadding = new(height + 16, 0);
+		Icon.SetPos(new(4, 0));
+		Icon.SetSize(new(height, height));
+		SetTextPadding(new((height) + 8, 0));
 	}
 }
 
 public class SettingsPanel : ScrollPanel
 {
 	public SettingsCategory Category;
-	protected override void Initialize() {
-		base.Initialize();
-		BorderSize = 0;
+	public SettingsPanel(Element? parent) : base(parent) {
+		SetPaintBorderEnabled(false);
 	}
 
 	private (Panel Top, Panel Bottom, Label Name, Label Description) buildBackPanel(string nameTxt, string descTxt) {
-		var panel = Add<Panel>();
-		panel.DrawPanelBackground = false;
+		var panel = new Panel(this);
+		panel.SetPaintBackgroundEnabled(false);
+		panel.SetPaintBorderEnabled(false);
 		panel.DynamicallySized = true;
-		panel.Dock = Dock.Top;
-		panel.Size = new(0.08f);
+		panel.SetDock(Dock.Top);
+		panel.SetSize(new(0.08f));
 
-		var top = panel.Add<Panel>();
+		var top = new Panel(panel);
 		top.DynamicallySized = true;
-		top.Size = new(0.5f);
-		top.Dock = Dock.Top;
-		top.DrawPanelBackground = false;
+		top.SetSize(new(0.5f));
+		top.SetDock(Dock.Top);
+		top.SetPaintBackgroundEnabled(false);
+		top.SetPaintBorderEnabled(false);
 
-		var name = top.Add<Label>();
-		name.Dock = Dock.Left;
-		name.TextAlignment = Anchor.CenterLeft;
+		var name = new Label(top);
+		name.SetDock(Dock.Left);
+		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
-		name.TextPadding = new(16);
-		name.AutoSize = true;
-		name.TextSize = 24;
-		name.Text = nameTxt;
+		name.SetTextPadding(new(16));
+		name.SetAutoSize(true);
+		name.SetTextSize(24);
+		name.SetText(nameTxt);
 
-		var desc = top.Add<Label>();
-		desc.Dock = Dock.Fill;
-		desc.TextAlignment = Anchor.CenterLeft;
+		var desc = new Label(top);
+		desc.SetDock(Dock.Fill);
+		desc.SetTextAlignment(Anchor.CenterLeft);
 		desc.DynamicallySized = true;
-		desc.TextPadding = new(16);
-		desc.Text = descTxt;
+		desc.SetTextPadding(new(16));
+		desc.SetText(descTxt);
 
 		return (top, panel, name, desc);
 	}
@@ -96,32 +95,34 @@ public class SettingsPanel : ScrollPanel
 	}
 
 	public Label Label(string text) {
-		var name = Add<Label>();
-		name.Dock = Dock.Top;
-		name.TextAlignment = Anchor.BottomLeft;
+		var name = new Label(this);
+		name.SetDock(Dock.Top);
+		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
-		name.TextPadding = new(16);
-		name.AutoSize = true;
-		name.Text = text;
+		name.SetTextPadding(new(16));
+		name.SetAutoSize(true);
+		name.SetText(text);
+		name.SetDockMargin(RectangleF.TLRB(16));
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
-		name.TextSize = 20;
+		name.SetTextSize(20);
 		return name;
 	}
 
 	public NumSlider Number(ConVar cv, string name, [StringSyntax(StringSyntaxAttribute.NumericFormat)] string format) {
 		var back = buildBackPanel(name, cv.HelpString);
-		var slider = back.Bottom.Add<NumSlider>();
-		slider.Dock = Dock.Fill;
+		var slider = new NumSlider(back.Bottom);
+		slider.SetDock(Dock.Fill);
 
 		if (cv.GetMin(out double min)) slider.MinimumValue = min;
 		if (cv.GetMax(out double max)) slider.MaximumValue = max;
 		slider.TextFormat = format;
 		slider.Value = cv.GetDouble();
 		if (cv.IsFlagSet(FCvar.AlwaysDefault)) {
-			slider.InputDisabled = true;
-			slider.Parent.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
+			slider.SetMouseInputEnabled(false);
+			slider.SetKeyboardInputEnabled(false);
+			slider.GetParent()!.SetTooltipText("This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.");
 		}
-		else 
+		else
 			slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
 		return slider;
 	}
@@ -129,9 +130,9 @@ public class SettingsPanel : ScrollPanel
 
 	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
 		var back = buildBackPanel(name, "");
-		var buttons = back.Bottom.Add<InputActionKeybindingButtonsPanel>();
-		back.Bottom.Size = new Vector2F(0, 0.13f);
-		buttons.Dock = Dock.Fill;
+		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
+		back.Bottom.SetSize(new Vector2F(0, 0.13f));
+		buttons.SetDock(Dock.Fill);
 		buttons.SetInputAction(action);
 		return buttons;
 	}
@@ -188,42 +189,44 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	SettingsCategory? activeCategory;
 
 	public SettingsPanel Category(string name, string? icon = null) {
-		var category = settingCategoryPicker.Add<SettingsCategory>();
+		var category = new SettingsCategory(settingCategoryPicker);
 		category.Setup(this);
 		categories.Add(category);
 
-		category.Text = name;
-		category.MouseReleaseEvent += (_, _, _) => SelectCategory(category);
-		category.Dock = Dock.Top;
+		category.SetText(name);
+		category.OnButtonClick += (_, _) => SelectCategory(category);
+		category.SetDock(Dock.Top);
 		category.DynamicallySized = true;
-		category.Size = new(0.06f);
+		category.SetTextSize(24);
+		category.SetSize(new(0.06f));
 		if (icon != null)
-			category.Icon.Image = Textures.LoadTextureFromFile(icon);
+			category.Icon.SetTexture(Level.Textures.LoadTextureFromFile(icon));
 
 		if (activeCategory == null)
 			SelectCategory(category);
 		else {
-			category.Panel.Visible = category.Panel.Enabled = false;
+			category.Panel.SetVisible(false);
 		}
 		return category.Panel;
 	}
 
 	public void SelectCategory(SettingsCategory category) {
-		if (activeCategory != null)
-			activeCategory.Panel.Visible = activeCategory.Panel.Enabled = activeCategory.Pulsing = false;
+		if (activeCategory != null) {
+			activeCategory.Panel.SetVisible(false);
+			activeCategory.Pulsing = false;
+		}
 
 		activeCategory = category;
-		category.Panel.Visible = category.Panel.Enabled = category.Pulsing = true;
+		category.Panel.SetVisible(true);
+		category.Pulsing = true;
 	}
 
-	protected override void Initialize() {
-		base.Initialize();
-
-		Add(out settingCategoryPicker);
-		settingCategoryPicker.DrawPanelBackground = false;
-		settingCategoryPicker.Dock = Dock.Left;
+	public SettingsEditor(Element? parent) : base(parent) {
+		settingCategoryPicker = new(this);
+		settingCategoryPicker.SetPaintBackgroundEnabled(false);
+		settingCategoryPicker.SetDock(Dock.Left);
 		settingCategoryPicker.DynamicallySized = true;
-		settingCategoryPicker.Size = new(0.25f);
+		settingCategoryPicker.SetSize(new(0.25f));
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
@@ -241,17 +244,16 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic
 		if (Level is IMainMenuLevel level)
-			level.PushActiveElement(UI.Add<JudgementOffsetWizard>());
-		else {
+			level.PushActiveElement(new JudgementOffsetWizard(UI));
+		else
 			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
-		}
 	}
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
-		btn.Dock = Dock.Fill;
-		btn.Text = "Open Offset Wizard";
+		btn.SetDock(Dock.Fill);
+		btn.SetText("Open Offset Wizard");
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
-		btn.MouseReleaseEvent += (_, _, _) => OpenOffsetWizard();
+		btn.OnButtonClick += (_, _) => OpenOffsetWizard();
 
 		return btn;
 	}
@@ -260,12 +262,12 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 	private void BuildInputPanel(SettingsPanel panel) {
 		var offsets = panel.Blank("Offset Wizard", "Input offset wizard.");
-		var judgeBtn = OffsetWizardCreator(offsets.Add<Button>());
+		var judgeBtn = OffsetWizardCreator(new Button(offsets));
 
 		var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
-		var linkBtn = linkBack.Add<Button>();
-		linkBtn.Dock = Dock.Fill;
-		linkBtn.Text = "Bound";
+		var linkBtn = new Button(linkBack);
+		linkBtn.SetDock(Dock.Fill);
+		linkBtn.SetText("Bound");
 
 		judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
 		visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
@@ -288,9 +290,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 			}
 		};
 
-		linkBtn.MouseReleaseEvent += (_, _, _) => {
+		linkBtn.OnButtonClick += (_, _) => {
 			offsetsLinked = !offsetsLinked;
-			linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
+			linkBtn.SetText(offsetsLinked ? "Bound" : "Unbound");
 
 			if (offsetsLinked) {
 				isUpdating = true;
@@ -306,16 +308,11 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 }
 
-public class InputActionKeybindingButtonsPanel : Panel
+public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 {
 	InputAction action = 0;
 	readonly List<ButtonCode> keys = [];
 	readonly List<Button> buttons = [];
-
-
-	protected override void Initialize() {
-		base.Initialize();
-	}
 
 	public void LoadButtons(IEnumerable<ButtonCode> keys) {
 		this.keys.Clear();
@@ -328,16 +325,28 @@ public class InputActionKeybindingButtonsPanel : Panel
 	private void ButtonModal(string action, Action<ButtonCode> keySubmitted) {
 		var dialog = UI.DialogBase($"{action} Key");
 
-		var lbl = dialog.Add<Label>();
-		lbl.Text = "Press a key...";
-		lbl.AutoSize = true;
-		lbl.Anchor = Anchor.TopCenter;
-		lbl.Origin = Anchor.TopCenter;
+		var lbl = new Label(dialog);
+		lbl.SetText("Press a key...");
+		lbl.SetAutoSize(true);
+		lbl.SetAnchor(Anchor.TopCenter);
+		lbl.SetOrigin(Anchor.TopCenter);
 
-		dialog.OnKeyPressed += (_, in _, key) => {
+		var capture = new KeyCaptureElement(dialog);
+		capture.SetDock(Dock.Fill);
+		capture.KeyboardFocus();
+		capture.OnKeyCaptured += (key) => {
 			keySubmitted(key);
 			dialog.Close();
 		};
+	}
+
+	private class KeyCaptureElement(Element? parent) : Element(parent)
+	{
+		public event Action<ButtonCode>? OnKeyCaptured;
+		protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+			OnKeyCaptured?.Invoke(key);
+			return true;
+		}
 	}
 
 	private void InvalidateKeyButtons() {
@@ -347,29 +356,29 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 		Button b;
 		foreach (var key in keys) {
-			b = Add<Button>();
-			b.BackgroundColor = BackgroundColor;
-			b.ForegroundColor = ForegroundColor;
-			b.Text = key.GetString();
+			b = new Button(this);
+			b.SetBgColor(GetBgColor());
+			b.SetFgColor(GetFgColor());
+			b.SetText(key.GetString());
 			b.SetTag("key", key);
 
-			b.MouseReleaseEvent += ButtonEditOrRemoveHandler;
+			b.OnButtonClick += ButtonEditOrRemoveHandler;
 
 			buttons.Add(b);
 		}
 
-		b = Add<Button>();
-		b.BackgroundColor = BackgroundColor;
-		b.ForegroundColor = ForegroundColor;
-		b.Text = "Add...";
-		b.MouseReleaseEvent += ButtonAddHandler;
+		b = new Button(this);
+		b.SetBgColor(GetBgColor());
+		b.SetFgColor(GetFgColor());
+		b.SetText("Add...");
+		b.OnButtonClick += ButtonAddHandler;
 		buttons.Add(b);
 		addButton = b;
 
 		InvalidateLayout();
 	}
 
-	private void ButtonAddHandler(Element self, FrameState state, ButtonCode button) {
+	private void ButtonAddHandler(Button self, ButtonCode button) {
 		if (button == ButtonCode.Mouse1)
 			ButtonModal("Bind", AddSubmittedHandler);
 	}
@@ -414,7 +423,7 @@ public class InputActionKeybindingButtonsPanel : Panel
 	}
 
 
-	private void ButtonEditOrRemoveHandler(Element self, FrameState state, ButtonCode button) {
+	private void ButtonEditOrRemoveHandler(Button self, ButtonCode button) {
 		if (button == ButtonCode.Mouse2) {
 			RemoveSubmittedHandler(self.GetTag<ButtonCode>("key"));
 		}
@@ -429,15 +438,15 @@ public class InputActionKeybindingButtonsPanel : Panel
 		int innerPadding = 4;
 		float x = padding;
 		foreach (var btn in buttons) {
-			btn.Position = new(x, innerPadding);
+			btn.SetPos(new(x, innerPadding));
 			float sizeW = height - padding;
 			if (btn == addButton)
 				sizeW = sizeW * 1.5f;
-			btn.Size = new(sizeW, height - (innerPadding * 2));
+			btn.SetSize(new(sizeW, height - (innerPadding * 2)));
 			if (btn == addButton)
-				btn.TextSize = height / 2f;
+				btn.SetTextSize(height / 2f);
 			else
-				btn.TextSize = height / 1.4f;
+				btn.SetTextSize(height / 1.4f);
 			x += height;
 		}
 	}
@@ -447,13 +456,13 @@ public class InputActionKeybindingButtonsPanel : Panel
 
 		switch (action) {
 			case InputAction.AirAttack:
-				BackgroundColor = PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5);
-				ForegroundColor = PathwayExts.GetColor(PathwaySide.Top);
+				SetBgColor(PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayExts.GetColor(PathwaySide.Top));
 				InvalidateKeys();
 				break;
 			case InputAction.GroundAttack:
-				BackgroundColor = PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5);
-				ForegroundColor = PathwayExts.GetColor(PathwaySide.Bottom);
+				SetBgColor(PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayExts.GetColor(PathwaySide.Bottom));
 				InvalidateKeys();
 				break;
 			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
@@ -486,65 +495,66 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 	Label lastHitLabel;
 	float? lastHitOffsetMs = null;
 
-	protected override void Initialize() {
-		base.Initialize();
+	public JudgementOffsetWizard(Element? parent) : base(parent) {
+		currentOffsetLabel = new Label(this);
+		currentOffsetLabel.SetAnchor(Anchor.TopCenter);
+		currentOffsetLabel.SetOrigin(Anchor.TopCenter);
+		currentOffsetLabel.SetTextAlignment(Anchor.TopCenter);
+		currentOffsetLabel.SetPos(new(0, 24));
+		currentOffsetLabel.SetTextSize(36);
+		currentOffsetLabel.SetAutoSize(true);
 
-		currentOffsetLabel = Add<Label>();
-		currentOffsetLabel.Anchor = Anchor.TopCenter;
-		currentOffsetLabel.Origin = Anchor.TopCenter;
-		currentOffsetLabel.TextAlignment = Anchor.TopCenter;
-		currentOffsetLabel.Position = new(0, 24);
-		currentOffsetLabel.TextSize = 36;
-		currentOffsetLabel.AutoSize = true;
-
-		lastHitLabel = Add<Label>();
-		lastHitLabel.Anchor = Anchor.TopCenter;
-		lastHitLabel.Origin = Anchor.TopCenter;
-		lastHitLabel.TextAlignment = Anchor.TopCenter;
-		lastHitLabel.Position = new(0, 64);
-		lastHitLabel.TextSize = 28;
-		lastHitLabel.AutoSize = true;
-		lastHitLabel.Text = "Press any key to the beat";
+		lastHitLabel = new Label(this);
+		lastHitLabel.SetAnchor(Anchor.TopCenter);
+		lastHitLabel.SetOrigin(Anchor.TopCenter);
+		lastHitLabel.SetTextAlignment(Anchor.TopCenter);
+		lastHitLabel.SetPos(new(0, 64));
+		lastHitLabel.SetTextSize(28);
+		lastHitLabel.SetAutoSize(true);
+		lastHitLabel.SetText("Press any key to the beat");
 
 		var clip = audiosystem.CreateFileAudioClip("offset_cowbell.wav");
 		track = audiosystem.CreatePlayback(clip);
-		BorderSize = 0;
-
-		MouseClickEvent += (_, _, btn) => {
-			if (btn == ButtonCode.Mouse1) isDragging = true;
-			DemandKeyboardFocus();
-		};
-
-		MouseReleaseEvent += (_, _, btn) => {
-			if (btn == ButtonCode.Mouse1) isDragging = false;
-			DemandKeyboardFocus();
-		};
-
-		OnKeyPressed += (_, in _, key) => {
-			if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
-				var len = audiosystem.GetPlaybackDuration(track);
-				float midpoint = currentWidth / 2f;
-				float normX = CalculateJudgementOffset((float)playhead);
-				float currentX = midpoint + normX * (currentWidth / 2f);
-				hitMarkers.Add((currentX, DateTime.Now));
-
-				lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
-			}
-		};
-
-		DemandKeyboardFocus();
+		SetBorderSize(0);
+		KeyboardFocus();
 	}
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override bool MouseClick(FrameState state, ButtonCode btn) {
+		if (!IsHovered()) return true;
+		if (btn == ButtonCode.Mouse1) isDragging = true;
+		KeyboardFocus();
+		return true;
+	}
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode btn) {
+		if (!IsHovered()) return true;
+		if (btn == ButtonCode.Mouse1) isDragging = false;
+		KeyboardFocus();
+		return true;
+	}
+
+	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
+		if (currentWidth > 0 && audiosystem.GetSoundPlayhead(track, out double playhead)) {
+			var len = audiosystem.GetPlaybackDuration(track);
+			float midpoint = currentWidth / 2f;
+			float normX = CalculateJudgementOffset((float)playhead);
+			float currentX = midpoint + normX * (currentWidth / 2f);
+			hitMarkers.Add((currentX, DateTime.Now));
+
+			lastHitOffsetMs = normX * ((float)len / 2f) * 1000f;
+		}
+		return true;
+	}
+
+	protected override void OnThink() {
+		base.OnThink();
 		audiosystem.UpdatePlayback(track);
-		currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
+		currentOffsetLabel.SetText($"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms");
 
 		if (lastHitOffsetMs != null)
-			lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
+			lastHitLabel.SetText($"Last Hit: {lastHitOffsetMs:0} ms");
 
 		if (isDragging && currentWidth > 0) {
-			float mouseX = frameState.Mouse.MousePos.X;
+			float mouseX = EngineCore.Level.FrameState.Mouse.MousePos.X;
 
 			mouseX = Math.Clamp(mouseX, 0, currentWidth);
 
@@ -566,14 +576,13 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var mld2 = len / 2f;
 		return (float)((localToPlayhead > mld2 ? (len - localToPlayhead) * -1 : localToPlayhead) / mld2);
 	}
-
+	
 	public override void Paint(float width, float height) {
 		currentWidth = width;
-
-		BackgroundColor = DefaultBackgroundColor.Adjust(0, -0.5f, 0) with { A = 255 };
+		
 		base.Paint(width, height);
 
-		Graphics2D.SetDrawColor(BackgroundColor.Adjust(0, -0.3f, 2));
+		Graphics2D.SetDrawColor(GetBgColor().Adjust(0, -0.3f, 2));
 		var h = height / 2;
 		Graphics2D.DrawRectangle(0, height / 2 - h / 2, width, h);
 
@@ -613,7 +622,7 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var startY = h - h / 2;
 		var endY = h - h / 2 + h;
 		Graphics2D.DrawLine(musicPlayhead, startY, musicPlayhead, endY, 4);
-		Graphics2D.SetDrawColor(BackgroundColor);
+		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
 	}

@@ -26,14 +26,19 @@ using Velopack.Sources;
 namespace CloneDash.Scenes;
 
 
-public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
+public class StatisticsPanel : Panel
 {
 	ICharacterVictoryInstance victory = null!;
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
+	IGame game;
+	StatisticsData stats;
 
-	protected override void Initialize() {
+	public StatisticsPanel(Element? parent, IGame game, StatisticsData stats) : base(parent){
+		this.game = game;
+		this.stats = stats;
+
 		chart = game.GetSongChart();
 		if (chart == null) return;
 		start = globals.CurTime;
@@ -46,40 +51,40 @@ public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 		victory.PlayAudio();
 		stats.Compute();
 
-		var bottom = Add<Panel>();
-		bottom.DrawPanelBackground = false;
+		var bottom = new Panel(this);
+		bottom.SetPaintBackgroundEnabled(false);
 
 		bottom.DynamicallySized = true;
-		bottom.Size = new(0.07f);
-		bottom.Dock = Dock.Bottom;
+		bottom.SetSize(new(0.07f));
+		bottom.SetDock(Dock.Bottom);
 
-		var restart = bottom.Add<Nucleus.UI.Button>();
+		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
-		restart.Size = new(.2f);
-		restart.Text = "Restart";
-		restart.Dock = Dock.Left;
-		restart.MouseReleaseEvent += (_, _, _) => {
+		restart.SetSize(new(.2f));
+		restart.SetText("Restart");
+		restart.SetDock(Dock.Left);
+		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
 			// Maybe seeking is stable enough now to justify this though?
 			game.Restart();
 			this.Remove();
 		};
 
-		var back = bottom.Add<Nucleus.UI.Button>();
+		var back = new Button(bottom);
 		back.DynamicallySized = true;
-		back.Size = new(.2f);
-		back.Text = "Main Menu";
-		back.Dock = Dock.Right;
-		back.MouseReleaseEvent += (_, _, _) => LevelTransitions.LoadMainMenu();
+		back.SetSize(new(.2f));
+		back.SetText("Main Menu");
+		back.SetDock(Dock.Right);
+		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
-		BorderSize = 0;
+		SetBorderSize(0);
 	}
 	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
 		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
 		y += fs + 4;
 	}
 	public override void Paint(float width, float height) {
-		BackgroundColor = new(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true))));
+		SetBgColor(new Color(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true)))));
 		base.Paint(width, height);
 
 		Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
@@ -123,11 +128,10 @@ public class StatisticsPanel(IGame game, StatisticsData stats) : Panel()
 		RenderOneLine("", fs, ref y);
 		RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
 	}
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
-		if (victory != null) {
+	protected override void OnThink() {
+		base.OnThink();
+		if (victory != null) 
 			victory.Think();
-		}
 	}
 }
 
@@ -670,7 +674,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (CurrentStatisticsPanel == null)
 			return;
 
-		CurrentStatisticsPanel.Size = new(1, 1);
+		CurrentStatisticsPanel.SetSize(new(1, 1));
 		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
@@ -679,7 +683,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var panel = EngineCore.Level.UI.Add(new StatisticsPanel(game, stats));
+		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats);
 		return panel;
 	}
 

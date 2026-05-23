@@ -14,24 +14,29 @@ using Nucleus.UI;
 using System.Diagnostics;
 using Nucleus.Common.Types;
 using CloneDash.Common;
+using Nucleus.UI.Elements;
 
 namespace CloneDash.Menu;
 
-public class CharacterButton : Button
+public class CharacterButton(Element? parent) : Button(parent)
 {
 	public string? CosplayName;
 	public string? CharacterName;
 	public ITexture? Texture;
+	private Image? imageRenderer;
 
 	public void Setup(ReadOnlySpan<char> cosplay, ReadOnlySpan<char> character, ITexture? texture) {
 		CosplayName = cosplay.Length == 0 ? null : new(cosplay);
 		CharacterName = character.Length == 0 ? null : new(character);
-		Image = texture;
-		ImageOrientation = ImageOrientation.Zoom;
-		BackgroundColor = new(0, 0, 0, 0);
-		BorderSize = 0;
-		ImagePadding = new(0, 0);
-		Text = "";
+		if (texture != null) {
+			imageRenderer ??= new Image(this);
+			imageRenderer.SetTexture(texture);
+			imageRenderer.SetImageOrientation(ImageOrientation.Zoom);
+			imageRenderer.SetDock(Dock.Fill);
+		}
+		SetBgColor(new Color(0, 0, 0, 0));
+		SetBorderSize(0);
+		SetText("");
 	}
 
 	public override void Paint(float width, float height) {
@@ -53,26 +58,25 @@ public class CharacterSelectorScroller : Panel
 
 		for (int i = 0; i < chars.Count; i++) {
 			var c = chars[i];
-			c.label.ForegroundColor = i == lastSelectedIdx ? new(255, 255, 255, 255) : new(155, 155, 155, 255);
+			c.label.SetFgColor(i == lastSelectedIdx ? new Color(255, 255, 255, 255) : new Color(155, 155, 155, 255));
 			c.label.Pulsing = i == lastSelectedIdx;
-			c.label.DrawBackground = i == lastSelectedIdx;
+			c.label.SetPaintBackgroundEnabled(i == lastSelectedIdx);
 		}
 
 		InvalidateLayout();
 	}
 
-	protected override void Initialize()
-	{
+	public CharacterSelectorScroller(Element? parent) : base(parent) {
 		var language = HumanLanguage.GetCurrentLanguage();
 		foreach (var characterIdx in CharacterMod.GetAvailableCharacters()) {
 			var character = CharacterMod.GetCharacterData(characterIdx);
 			Debug.Assert(character != null);
 
-			var lbl = Add<CharacterButton>();
+			var lbl = new CharacterButton(this);
 			lbl.Setup(character.GetCosplayName(language, out _), character.GetCharacterName(language, out _), character.GetThumbnailTexture());
-			lbl.BorderSize = 0;
+			lbl.SetBorderSize(0);
 
-			lbl.MouseClickEvent += (_, _, _) => PerformPick(character);
+			lbl.OnButtonClick += (_, _) => PerformPick(character);
 			chars.Add((lbl, character));
 		}
 	}
@@ -97,17 +101,18 @@ public class CharacterSelectorScroller : Panel
 
 			float selectedSizeOffset = Math.Clamp(i == lastSelectedIdx ? 2 : (8 + (Math.Abs(i - lastSelectedIdx) * 1)), 0, height);
 			if (selectedSizeOffset == 0)
-				btn.Visible = false;
+				btn.SetVisible(false);
 			else {
-				btn.Visible = true;
-				btn.Size = new(height, height);
+				btn.SetVisible(true);
+				btn.SetSize(new(height, height));
 				float baseX = (width / 2) - (height / 2);
 				float adjustedIndexX = baseX + (i * height);
 				float adjustedSelectedX = adjustedIndexX - (lastSelectedIdx * height);
-				btn.Position = new(adjustedSelectedX, 0);
+				btn.SetPos(new(adjustedSelectedX, 0));
 
-				btn.Position += new Vector2F(selectedSizeOffset);
-				btn.Size -= new Vector2F(selectedSizeOffset * 2);
+				btn.SetPos(
+				btn.GetPos() + new Vector2F(selectedSizeOffset));
+				btn.SetSize(btn.GetSize() - new Vector2F(selectedSizeOffset * 2));
 			}
 		}
 	}
@@ -133,55 +138,55 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Button characterSelectButton = null!;
 	CharacterSelectorScroller backPanel = null!;
 	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
-	protected override void Initialize() {
-		base.Initialize();
+	public CharacterSelector(Element? parent) : base(parent) {
+		SetBgColor(new Color(0, 0, 0, 0));
+		SetPassthru(true);
 
-		BackgroundColor = new Color(0, 0, 0, 0);
-		OnHoverTest += Passthru;
-		
-		selectedInfo = Add<Panel>();
-		selectedInfo.Dock = Dock.Bottom;
+		selectedInfo = new Panel(this);
+		selectedInfo.SetDock(Dock.Bottom);
 		selectedInfo.DynamicallySized = true;
-		selectedInfo.Size = new(0, 0.125f);
-		selectedInfo.BorderSize = 0;
-		selectedInfo.PaintOverride += SelectedInfo_PaintOverride;
+		selectedInfo.SetSize(new(0, 0.125f));
+		selectedInfo.SetBorderSize(0);
+		selectedInfo.SetPaintBackgroundEnabled(false);
+		selectedInfo.SetPaintBorderEnabled(false);
+		selectedInfo.SetPaintEnabled(false);
 
-		characterNameLabel = Add<Label>();
-		characterNameLabel.AutoSize = true;
+		characterNameLabel = new(this);
+		characterNameLabel.SetAutoSize(true);
 
-		characterCostumeLabel = Add<Label>();
-		characterCostumeLabel.AutoSize = true;
+		characterCostumeLabel = new(this);
+		characterCostumeLabel.SetAutoSize(true);
 
-		characterHPLabel = Add<Label>();
-		characterHPLabel.AutoSize = true;
+		characterHPLabel = new(this);
+		characterHPLabel.SetAutoSize(true);
 
-		characterAuthorLabel = Add<Label>();
-		characterAuthorLabel.AutoSize = true;
-		characterAuthorLabel.Origin = Anchor.TopRight;
+		characterAuthorLabel = new(this);
+		characterAuthorLabel.SetAutoSize(true);
+		characterAuthorLabel.SetOrigin(Anchor.TopRight);
 
-		characterSelectButton = selectedInfo.Add<Button>();
-		characterSelectButton.Dock = Dock.Right;
-		characterSelectButton.Size = new(0.15f);
+		characterSelectButton = new(selectedInfo);
+		characterSelectButton.SetDock(Dock.Right);
+		characterSelectButton.SetSize(new(0.15f));
 		characterSelectButton.DynamicallySized = true;
-		characterSelectButton.BackgroundColor = new(10, 30, 10);
-		characterSelectButton.ForegroundColor = new(48, 220, 70);
-		characterSelectButton.MouseReleaseEvent += CharacterSelectButton_MouseReleaseEvent;
+		characterSelectButton.SetBgColor(new Color(10, 30, 10));
+		characterSelectButton.SetFgColor(new Color(48, 220, 70));
+		characterSelectButton.OnButtonClick += CharacterSelectButton_MouseReleaseEvent;
 
-		characterPerkLabel = selectedInfo.Add<Label>();
+		characterPerkLabel = new(selectedInfo);
 		characterPerkLabel.TextOverflowMode = TextOverflowMode.WordWrap;
-		characterPerkLabel.DockMargin = RectangleF.TLRB(8, 32, 32, 8);
-		characterPerkLabel.TextAlignment = Anchor.CenterLeft;
-		characterPerkLabel.TextPadding = new(0, 0);
-		characterPerkLabel.Dock = Dock.Fill;
-		characterPerkLabel.TextSize = 24;
+		characterPerkLabel.SetDockMargin(RectangleF.TLRB(8, 32, 32, 8));
+		characterPerkLabel.SetTextAlignment(Anchor.CenterLeft);
+		characterPerkLabel.SetTextPadding(new(0, 0));
+		characterPerkLabel.SetDock(Dock.Fill);
+		characterPerkLabel.SetTextSize(24);
 		characterPerkLabel.DynamicallySized = true;
-		characterPerkLabel.BackgroundColor = new(100, 100, 100, 100); // temp
+		characterPerkLabel.SetBgColor(new Color(100, 100, 100, 100)); // temp
 
-		backPanel = Add<CharacterSelectorScroller>();
-		backPanel.Dock = Dock.Bottom;
+		backPanel = new CharacterSelectorScroller(this);
+		backPanel.SetDock(Dock.Bottom);
 		backPanel.DynamicallySized = true;
-		backPanel.Size = new(0, 0.1f);
-		backPanel.BorderSize = 0;
+		backPanel.SetSize(new(0, 0.1f));
+		backPanel.SetBorderSize(0);
 		backPanel.CharacterSelected += BackPanel_CharacterSelected;
 
 		var currentCharacter = CharacterMod.GetCharacterData();
@@ -189,7 +194,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		backPanel.SetCharacter(currentCharacter);
 	}
 
-	private void CharacterSelectButton_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void CharacterSelectButton_MouseReleaseEvent(Button self, ButtonCode button) {
 		if (LastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(LastCharacterSelected.GetUUID());
@@ -201,21 +206,17 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		float ratio = height / 900;
 
-		characterNameLabel.TextSize = 80 * ratio;
-		characterCostumeLabel.TextSize = 40 * ratio;
-		characterHPLabel.TextSize = 40 * ratio;
-		characterAuthorLabel.TextSize = 28 * ratio;
+		characterNameLabel.SetTextSize(80 * ratio);
+		characterCostumeLabel.SetTextSize(40 * ratio);
+		characterHPLabel.SetTextSize(40 * ratio);
+		characterAuthorLabel.SetTextSize(28 * ratio);
 
-		characterNameLabel.Position = new(32, 10 * ratio);
-		characterCostumeLabel.Position = new(32, 72 * ratio);
-		characterHPLabel.Position = new(32, 104 * ratio);
-		characterAuthorLabel.Position = new(width - 32, 48 * ratio);
+		characterNameLabel.SetPos(new(32, 10 * ratio));
+		characterCostumeLabel.SetPos(new(32, 72 * ratio));
+		characterHPLabel.SetPos(new(32, 104 * ratio));
+		characterAuthorLabel.SetPos(new(width - 32, 48 * ratio));
 
-		characterSelectButton.TextSize = 80 * ratio;
-	}
-
-	private void SelectedInfo_PaintOverride(Element self, float width, float height) {
-	
+		characterSelectButton.SetTextSize(80 * ratio);
 	}
 
 	ICharacterDescriptor? LastCharacterSelected;
@@ -227,22 +228,21 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		var lang = HumanLanguage.GetCurrentLanguage();
 
 		if (ch == null) {
-			characterNameLabel.Text = "<NULL>";
-			characterCostumeLabel.Text = "<NULL>";
-			characterAuthorLabel.Text = "<NULL>";
-			characterPerkLabel.Text = "<NULL>";
+			characterNameLabel.SetText("<NULL>");
+			characterCostumeLabel.SetText("<NULL>");
+			characterAuthorLabel.SetText("<NULL>");
+			characterPerkLabel.SetText("<NULL>");
 		}
 		else {
-			characterNameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
-			characterCostumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
-			characterAuthorLabel.Text = $"Author: {ch.GetAuthor(lang, out _)}";
-			characterPerkLabel.Text = $"{ch.GetPerk(lang, out _)}";
+			characterNameLabel.SetText($"{ch.GetCharacterName(lang, out _)}");
+			characterCostumeLabel.SetText($"{ch.GetCosplayName(lang, out _)}");
+			characterAuthorLabel.SetText($"Author: {ch.GetAuthor(lang, out _)}");
+			characterPerkLabel.SetText($"{ch.GetPerk(lang, out _)}");
 		}
-		characterSelectButton.Text = "SELECT";
+		characterSelectButton.SetText("SELECT");
 	}
 
-	public bool OnTryClose()
-	{
+	public bool OnTryClose() {
 		Character.SetCharacter(CharacterMod.GetCharacterData());
 		return true;
 	}
