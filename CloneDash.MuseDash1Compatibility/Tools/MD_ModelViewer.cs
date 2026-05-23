@@ -151,7 +151,6 @@ public class MD_ModelViewerWindow : Window
 	public void Populate(UnitySearchPathV2 searchPath) {
 		DiscoverSkeletonAssets(searchPath);
 		BuildUI();
-		SelectFolder(RootFolder);
 	}
 
 	void AddEntry(string name, string assetName, MonoBehaviour? mb) {
