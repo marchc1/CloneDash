@@ -329,13 +329,15 @@ public class Element : IValidatable
 		ClampedSizeSet(_size);
 	}
 
-	void ClampedSizeSet(Vector2F size){
+	void ClampedSizeSet(Vector2F size) {
 		Vector2F previousSize = _size;
 		Vector2F newSize = size;
-		if (_minimumSize.HasValue) newSize = new(MathF.Max(_minimumSize.Value.X, newSize.X), MathF.Max(_minimumSize.Value.Y, newSize.Y));
-		if (_maximumSize.HasValue) newSize = new(MathF.Min(_maximumSize.Value.X, newSize.X), MathF.Min(_maximumSize.Value.Y, newSize.Y));
+		if (_minimumSize.HasValue)
+			newSize = new(MathF.Max(_minimumSize.Value.X, newSize.X), MathF.Max(_minimumSize.Value.Y, newSize.Y));
+		if (_maximumSize.HasValue)
+			newSize = new(MathF.Min(_maximumSize.Value.X, newSize.X), MathF.Min(_maximumSize.Value.Y, newSize.Y));
 		_size = newSize;
-		if(newSize != previousSize){
+		if (newSize != previousSize) {
 			if (!HasFlag(ElementFlags.InPerformLayout)) {
 				if (_dock != Dock.None)
 					GetParent()?.InvalidateLayout();
@@ -426,9 +428,9 @@ public class Element : IValidatable
 	/// By default, returns itself.
 	/// </summary>
 	public Element GetAddParent() {
-		if (__parentToAddTo == null) 
+		if (__parentToAddTo == null)
 			return this;
-		
+
 		return __parentToAddTo;
 	}
 

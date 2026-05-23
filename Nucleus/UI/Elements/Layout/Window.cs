@@ -78,7 +78,6 @@ public class Titlebar : Panel
 	public Titlebar(Element? parent) : base(parent) {
 		SetDock(Dock.Top);
 		SetSize(new(0, this.GetParent() is UserInterface ? 34 : 42));
-		SetMinimumSize(new(96, 96));
 		if (this.GetParent() is not UserInterface)
 			SetDockMargin(RectangleF.TLRB(4));
 
@@ -334,6 +333,8 @@ public class Window : Element
 	public Window(Element? element, ReadOnlySpan<char> title = "Untitled Window", ReadOnlySpan<char> name = default) : base(element, name) {
 		SetPos(new(64, 64));
 		SetSize(new(640, 480));
+		SetMinimumSize(new(96, 96));
+
 		_title = new(title);
 
 		Titlebar = new Titlebar(this);
