@@ -17,9 +17,14 @@ using System.Xml.Linq;
 namespace Nucleus.ModelEditor.UI;
 
 // Some class 'typedefs' of sorts for switch-case reasons
-public class ViewDividerHeader(Element parent) : Panel(parent);
+public class ViewDividerHeader(Element parent) : Panel(parent)
+{
+	public override void PaintBorder(float width, float height) { }
+}
 public class ViewDivider(ViewDivision parent, ViewSplit split) : Button(parent)
 {
+	public override void PaintBackground(float width, float height) { }
+	public override void PaintBorder(float width, float height) { }
 	public override void Paint(float w, float h) {
 		var c = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1, 1.5f, 1), new(0, 1, 0.5f, 1));
 		Graphics2D.SetDrawColor(c);
@@ -515,6 +520,7 @@ public class ViewDivision : Panel
 		header.SetDock(Dock.Top);
 		header.SetSize(new(0, 28));
 		SetPaintBackgroundEnabled(false);
+		SetBorderSize(0);
 		header.SetPaintBackgroundEnabled(false);
 	}
 
@@ -590,6 +596,7 @@ public class ViewPanel : Panel
 
 	public ViewPanel(Element parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
+		SetBorderSize(0);
 		SetDockPadding(RectangleF.Zero);
 	}
 

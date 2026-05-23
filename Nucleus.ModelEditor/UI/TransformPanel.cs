@@ -4,8 +4,12 @@ using Nucleus.UI;
 
 namespace Nucleus.ModelEditor
 {
-	public class TransformPanel(Element parent) : Panel(parent)
+	public class TransformPanel : Panel
 	{
+		public TransformPanel(Element parent) : base(parent) {
+			SetBorderSize(0);
+			SetPaintBackgroundEnabled(false);
+		}
 		public delegate void FloatChange(int i, float value);
 		public event FloatChange? FloatChanged;
 

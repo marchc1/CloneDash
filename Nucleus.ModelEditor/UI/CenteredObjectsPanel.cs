@@ -7,6 +7,7 @@ namespace Nucleus.ModelEditor
 	{
 		public CenteredObjectsPanel(Element parent) : base(parent) {
 			SetPaintBackgroundEnabled(false);
+			SetBorderSize(0);
 		}
 		public bool ForceHeight { get; set; } = true;
 		public float XSeparation { get; set; } = 0;

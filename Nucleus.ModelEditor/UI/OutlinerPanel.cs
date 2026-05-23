@@ -44,6 +44,7 @@ namespace Nucleus.ModelEditor
 			Top = new(this);
 			Right = new(this);
 			SetDockPadding(RectangleF.TLRB(0));
+			SetBorderSize(0);
 
 			Top.SetDock(Dock.Top);
 			Top.SetSize(new(24));

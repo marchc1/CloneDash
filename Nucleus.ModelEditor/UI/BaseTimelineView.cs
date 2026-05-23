@@ -161,6 +161,8 @@ public abstract class BaseTimelineView : View
 		ButtonsAndNames.SetDockMargin(RectangleF.TLRB(0));
 		ButtonsAndNames.SetDockPadding(RectangleF.Zero);
 		ButtonsAndNames.SetBorderSize(0);
+		ButtonsAndNames.SetPaintBorderEnabled(false);
+		ButtonsAndNames.SetPaintBackgroundEnabled(false);
 
 		Buttons = new(ButtonsAndNames);
 		Buttons.SetDock(Dock.Top);
@@ -168,15 +170,18 @@ public abstract class BaseTimelineView : View
 		Buttons.SetDockMargin(RectangleF.TLRB(0));
 		Buttons.SetDockPadding(RectangleF.Zero);
 		Buttons.SetBorderSize(0);
+		Buttons.SetPaintBorderEnabled(false);
+		Buttons.SetPaintBackgroundEnabled(false);
 		Buttons.Direction = Axis.Horizontal;
 		Buttons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-		// Buttons.PaintOverride += Buttons_PaintOverride;
 
 		KeyframeChannelsPanel = new(ButtonsAndNames);
 		KeyframeChannelsPanel.SetDock(Dock.Fill);
 		KeyframeChannelsPanel.SetDockMargin(RectangleF.TLRB(0));
 		KeyframeChannelsPanel.SetDockPadding(RectangleF.Zero);
 		KeyframeChannelsPanel.SetBorderSize(0);
+		KeyframeChannelsPanel.SetPaintBorderEnabled(false);
+		KeyframeChannelsPanel.SetPaintBackgroundEnabled(false);
 
 		// Setup buttons
 		{
@@ -223,12 +228,18 @@ public abstract class BaseTimelineView : View
 		TimeInfoPanel.SetSize(new(36));
 		TimeInfoPanel.SetDockMargin(RectangleF.TLRB(0));
 		TimeInfoPanel.SetDockPadding(RectangleF.Zero);
+		TimeInfoPanel.SetBorderSize(0);
+		TimeInfoPanel.SetPaintBorderEnabled(false);
+		TimeInfoPanel.SetPaintBackgroundEnabled(false);
 
 		KeyframeOverlay = new(this);
 		KeyframeOverlay.SetPassthru(true);
 		KeyframeOverlay.SetDock(Dock.Fill);
 		KeyframeOverlay.SetDockMargin(RectangleF.TLRB(0));
 		KeyframeOverlay.SetDockPadding(RectangleF.Zero);
+		KeyframeOverlay.SetBorderSize(0);
+		KeyframeOverlay.SetPaintBorderEnabled(false);
+		KeyframeOverlay.SetPaintBackgroundEnabled(false);
 	}
 
 	protected class TimelineTimeInfoPanel(BaseTimelineView timeline) : Panel(timeline)

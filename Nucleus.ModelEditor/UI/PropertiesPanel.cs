@@ -23,6 +23,7 @@ namespace Nucleus.ModelEditor
 	{
 		public PropertiesPanel(Element parent) : base(parent) {
 			SetPaintBackgroundEnabled(false);
+			SetBorderSize(0);
 			ModelEditor.Active.SelectedChanged += ModelEditor_Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => ModelEditor_Active_SelectedChanged();
 			ModelEditor.Active.File.Cleared += File_Cleared;

@@ -14,6 +14,8 @@ namespace Nucleus.ModelEditor
 		public override void Paint(float width, float height) {
 			PaintOverride?.Invoke(this, width, height);
 		}
+		public override void PaintBackground(float width, float height) { }
+		public override void PaintBorder(float width, float height) { }
 	}
 	public class OutlinerNode : Button, IContainsOutlinerNodes
 	{
@@ -134,12 +136,25 @@ namespace Nucleus.ModelEditor
 			Expander.SetSize(new(23));
 			Image.SetSize(new(16));
 
+			// Sub-buttons should be invisible except for their custom paint
+			Visibility.SetBorderSize(0);
+			Visibility.SetPaintBackgroundEnabled(false);
+			Visibility.SetPaintBorderEnabled(false);
+			Keyframe.SetBorderSize(0);
+			Keyframe.SetPaintBackgroundEnabled(false);
+			Keyframe.SetPaintBorderEnabled(false);
+			Expander.SetBorderSize(0);
+			Expander.SetPaintBackgroundEnabled(false);
+			Expander.SetPaintBorderEnabled(false);
+
 			Image.SetImageColor(Color.White);
 
 			SetBorderSize(0);
+			SetPaintBorderEnabled(false);
 			SetDockMargin(RectangleF.TLRB(0, 2, 2, 0));
 
 			Image.SetPaintBackgroundEnabled(false);
+			Image.SetPaintBorderEnabled(false);
 			Image.SetImageOrientation(ImageOrientation.Fit);
 
 			Visibility.PaintOverride += Visibility_PaintOverride;
