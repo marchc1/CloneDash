@@ -62,19 +62,20 @@ public class TabView : Panel
 		TabGoLeft = new Button(TabSelector);
 		TabGoLeft.SetSize(new(28));
 		TabGoLeft.SetDock(Dock.Left);
-		TabGoLeft.SetBorderSize(0);
+		TabGoLeft.SetPaintBorderEnabled(false);
 		TabGoLeft.SetText("<");
 		TabGoLeft.SetTextSize(18);
 
 		TabGoRight = new Button(TabSelector);
 		TabGoRight.SetSize(new(28));
 		TabGoRight.SetDock(Dock.Right);
-		TabGoRight.SetBorderSize(0);
+		TabGoRight.SetPaintBorderEnabled(false);
 		TabGoRight.SetText(">");
 		TabGoRight.SetTextSize(18);
 
 		TabSelectorContainer = new Panel(TabSelector);
 		TabSelectorContainer.SetPaintBackgroundEnabled(false);
+		TabSelectorContainer.SetPaintBorderEnabled(false);
 		TabSelectorContainer.SetDock(Dock.Fill);
 
 		TabContainer = new Panel(this);

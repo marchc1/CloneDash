@@ -696,7 +696,7 @@ public class MD_ModelDetailWindow : Window
 		optBar.SetSize(new(0, 26));
 		optBar.SetPaintBackgroundEnabled(false);
 
-		var loopCb = new Checkbox(optBar);
+		var loopCb = new CheckboxButton(optBar);
 		loopCb.SetDock(Dock.Left);
 		loopCb.SetSize(new(70, 0));
 		loopCb.SetText("Loop");
@@ -811,28 +811,28 @@ public class MD_ModelDetailWindow : Window
 		var panel = new DirectionalLayoutPanel(tab.Panel);
 		panel.SetDock(Dock.Fill);
 
-		var bonesCb = new Checkbox(panel);
+		var bonesCb = new CheckboxButton(panel);
 		bonesCb.SetDock(Dock.Top);
 		bonesCb.SetSize(new(0, 26));
 		bonesCb.SetText("Show Bones");
 		bonesCb.SetTextSize(17);
 		bonesCb.OnCheckedChanged += (cb) => ShowBones = cb.Checked;
 
-		var wireCb = new Checkbox(panel);
+		var wireCb = new CheckboxButton(panel);
 		wireCb.SetDock(Dock.Top);
 		wireCb.SetSize(new(0, 26));
 		wireCb.SetText("Show Wireframe");
 		wireCb.SetTextSize(17);
 		wireCb.OnCheckedChanged += (cb) => ShowWireframe = cb.Checked;
 
-		var slotCb = new Checkbox(panel);
+		var slotCb = new CheckboxButton(panel);
 		slotCb.SetDock(Dock.Top);
 		slotCb.SetSize(new(0, 26));
 		slotCb.SetText("Show Slot Info");
 		slotCb.SetTextSize(17);
 		slotCb.OnCheckedChanged += (cb) => ShowSlotInfo = cb.Checked;
 
-		var attachCb = new Checkbox(panel);
+		var attachCb = new CheckboxButton(panel);
 		attachCb.SetDock(Dock.Top);
 		attachCb.SetSize(new(0, 26));
 		attachCb.SetText("Show Attachment Names");
