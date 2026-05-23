@@ -174,12 +174,12 @@ public class Element : IValidatable
 
 	private Vector2F childRenderOffset = Vector2F.Zero;
 	internal Element? Parent;
+	internal Element? ElementToPassMouseTo;
 	private double lastLayoutTime = 0;
 
 	private readonly Dictionary<string, object?> Tags = [];
 	DateTime Birth = DateTime.Now;
 	private IKeyboardInputMarshal keyboardInputMarshal = DefaultKeyboardInputMarshal.Instance;
-
 
 	public float GetBorderSize() {
 		return borderSize;
@@ -539,6 +539,8 @@ public class Element : IValidatable
 
 	protected virtual void OnThink() { }
 
+	public event Action<Element>? Thinking;
+
 	internal void Think() {
 		if (_firstThink) {
 			_firstThink = false;
@@ -549,6 +551,7 @@ public class Element : IValidatable
 			ValidateLayout();
 
 		OnThink();
+		Thinking?.Invoke(this);
 	}
 
 	/// <summary>
@@ -1258,15 +1261,6 @@ public class Element : IValidatable
 		InvalidateLayout();
 	}
 
-	/// <summary>
-	/// Passable static method for <see cref="OnHoverTest"/>. Causes hover/click events to "pass through" the element.
-	/// </summary>
-	/// <param name="self"></param>
-	/// <param name="bounds"></param>
-	/// <param name="mousePos"></param>
-	/// <returns></returns>
-	public static bool Passthru(Element self, RectangleF bounds, Vector2F mousePos) => false;
-
 	public IScheme? GetScheme() {
 		return scheme ?? GetParent()?.GetScheme();
 		//return scheme;
@@ -1290,6 +1284,11 @@ public class Element : IValidatable
 	public virtual void OnSchemeChanged(IScheme? prev, IScheme? now) {
 		__mouseColorableHoverState = null;
 		__mouseColorableDepressState = null;
+	}
+
+	public Element GetMouseElement() => ElementToPassMouseTo ?? this;
+	public void PassMouseTo(Element? c) {
+		ElementToPassMouseTo = c;
 	}
 
 	public virtual void ApplySchemeSettings(IScheme scheme) {

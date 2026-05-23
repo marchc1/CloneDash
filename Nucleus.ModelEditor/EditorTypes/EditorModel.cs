@@ -45,10 +45,10 @@ namespace Nucleus.ModelEditor
 			return allbones;
 		}
 
-		public EditorBone? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(GetAllBones(), name);
-		public EditorSlot? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
-		public EditorSkin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
-		public EditorAnimation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
+		public EditorBone? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(GetAllBones(), name);
+		public EditorSlot? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
+		public EditorSkin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Skins, name);
+		public EditorAnimation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Animations, name);
 
 		public bool TryFindBone(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorBone? bone) {
 			bone = FindBone(name);

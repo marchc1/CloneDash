@@ -43,7 +43,7 @@ namespace Nucleus.ModelEditor
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.OperatorButton<ImageSetParentOperator>(buttons, "Set Parent", "models/setparent.png");
-			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
+			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, mb) => {
 				Window imageWindow = new Window(EngineCore.Level.RootPanel);
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Image '{Name}'";
@@ -150,8 +150,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-			PropertiesPanel.ButtonIcon(buttons, "Rescan", "models/search.png", (_, _, _) => ModelEditor.Active.File.RescanModelImages(Model));
-			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, fs, mb) => {
+			PropertiesPanel.ButtonIcon(buttons, "Rescan", "models/search.png", (_, _) => ModelEditor.Active.File.RescanModelImages(Model));
+			PropertiesPanel.ButtonIcon(buttons, "Preview", "models/search.png", (e, mb) => {
 				Window imageWindow = new Window(EngineCore.Level.RootPanel);
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Texture Atlas";

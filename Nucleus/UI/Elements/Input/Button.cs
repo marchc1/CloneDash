@@ -15,6 +15,29 @@ using System.Numerics;
 namespace Nucleus.UI;
 
 public delegate void ButtonActionFn(Button button, ButtonCode mouseButton);
+public class CheckboxButton(Element parent) : Button(parent)
+{
+	public bool Checked { get; set; } = false;
+	public delegate void CheckboxClicked(CheckboxButton self);
+	public event CheckboxClicked? OnCheckedChanged;
+
+	public override void Paint(float width, float height) {
+		var bck = GetBgColor();
+
+		if (Checked)
+			SetBgColor(GetBgColor().Adjust(0, 0, 2));
+
+		base.Paint(width, height);
+		SetBgColor(bck);
+	}
+
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (!IsHovered()) return true;
+		Checked = !Checked;
+		OnCheckedChanged?.Invoke(this);
+		return true;
+	}
+}
 
 public class Button : Label
 {

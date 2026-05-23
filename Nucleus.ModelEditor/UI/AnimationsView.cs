@@ -1,6 +1,8 @@
 ﻿using Nucleus.Extensions;
+using Nucleus.Models.Runtime;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Raylib_cs;
 using static Nucleus.Util.Util;
 
 namespace Nucleus.ModelEditor.UI
@@ -12,17 +14,15 @@ namespace Nucleus.ModelEditor.UI
 		DropdownSelector<EditorModel> selector;
 		ListView listitems;
 
-		protected override void Initialize() {
-			base.Initialize();
-
-			Add(out selector);
-			selector.Dock = Dock.Top;
+		public AnimationsView(Element parent) : base(parent) {
+			selector = new(this);
+			selector.SetDock(Dock.Top);
 			selector.OnSelectionChanged += Selector_OnSelectionChanged;
 			selector.OnToString += Selector_OnToString;
 
-			listitems = Add<ListView>();
-			listitems.Dock = Dock.Fill;
-			listitems.DrawPanelBackground = false;
+			listitems = new(this);
+			listitems.SetDock(Dock.Fill);
+			listitems.SetPaintBackgroundEnabled(false);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 			ModelEditor.Active.File.ModelAdded += File_ModelAdded;
@@ -75,21 +75,33 @@ namespace Nucleus.ModelEditor.UI
 		AlphanumComparatorFast alphanum = new AlphanumComparatorFast();
 
 		public void SortAnimations() {
-			listitems.SortChildren((x, y) => alphanum.Compare(x.Text, y.Text));
+			listitems.SortChildren((x, y) => {
+				if (x is not ITextElement iteX) return 0;
+				if (y is not ITextElement iteY) return 0;
+				return alphanum.Compare(iteX.GetText(), iteY.GetText());
+			});
 		}
 
+
+		public class AnimationListViewItem(EditorModel model, EditorAnimation animation, Element parent) : ListViewItem(parent)
+		{
+			public override void Paint(float width, float height) {
+				SetBgColor(model.ActiveAnimation == animation ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor);
+				base.Paint(width, height);
+			}
+		}
 		private void File_AnimationAdded(EditorFile file, EditorModel model, EditorAnimation animation) {
 			if (model != selector.Selected) return;
 
-			listitems.Add(out ListViewItem lvitem);
-			lvitem.Image = Textures.LoadTextureFromFile("models/animation2.png");
-			lvitem.Text = animation.Name;
+			var lvitem = new AnimationListViewItem(model, animation, listitems);
+			// TODO FIX ICONS lvitem.Image = Textures.LoadTextureFromFile("models/animation2.png");
+			lvitem.SetText(animation.Name);
 
 			SortAnimations();
 
 			ModelEditor.Active.File.AnimationRenamed += (_, anim, _, name) => {
 				if (anim == animation)
-					lvitem.Text = name;
+					lvitem.SetText(name);
 
 				SortAnimations();
 			};
@@ -99,12 +111,7 @@ namespace Nucleus.ModelEditor.UI
 					lvitem.Remove();
 			};
 
-			lvitem.PaintOverride += (self, w, h) => {
-				self.BackgroundColor = model.ActiveAnimation == animation ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor;
-				self.Paint(w, h);
-			};
-
-			lvitem.MouseReleaseEvent += (_, _, _) => {
+			lvitem.OnButtonClick += (_, _) => {
 				file.SetActiveAnimation(model, animation);
 			};
 		}

@@ -53,12 +53,20 @@ public class LabeledNumSlider : Panel, INumSlider, ITextElement
 		return ((ITextElement)label).GetFont();
 	}
 
+	public ReadOnlySpan<char> GetText() {
+		return ((ITextElement)label).GetText();
+	}
+
 	public float GetTextSize() {
 		return ((ITextElement)label).GetTextSize();
 	}
 
 	public void SetFont(ReadOnlySpan<char> font) {
 		((ITextElement)label).SetFont(font);
+	}
+
+	public void SetText(ReadOnlySpan<char> font) {
+		((ITextElement)label).SetText(font);
 	}
 
 	public void SetTextSize(float textSize) {

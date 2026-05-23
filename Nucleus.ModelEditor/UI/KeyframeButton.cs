@@ -14,40 +14,41 @@ namespace Nucleus.ModelEditor
 		public int ArrayIndex { get; set; } = -1;
 
 		public override void Paint(float width, float height) {
-			bool canInput = CanInput();
-			ImagePadding = new(7);
+			bool canInput = ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && IsMouseInputEnabled();
+			// TODO FIX ICONS ImagePadding = new(7);
 			if (canInput) {
 				// todo: determine background color
 				var selected = ModelEditor.Active.LastSelectedObject;
 				var timelineSearch = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(selected, Property, ArrayIndex, false);
 				if (timelineSearch == null) {
-					BackgroundColor = KEYFRAME_COLOR_NOT_KEYFRAMED;
+					SetBgColor(KEYFRAME_COLOR_NOT_KEYFRAMED);
 				}
 				else {
-					BackgroundColor = timelineSearch.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) switch {
+					SetBgColor(timelineSearch.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) switch {
 						KeyframeState.NotKeyframed => KEYFRAME_COLOR_NOT_KEYFRAMED,
 						KeyframeState.PendingKeyframe => KEYFRAME_COLOR_PENDING_KEYFRAME,
 						KeyframeState.Keyframed => KEYFRAME_COLOR_ACTIVE_KEYFRAME
-					};
+					});
 				}
-				ImageColor = Color.Black;
+				// TODO FIX ICONS ImageColor = Color.Black;
 			}
 			else {
-				BackgroundColor = DefaultBackgroundColor;
-				ImageColor = Color.Gray;
+				SetBgColor(DefaultBackgroundColor);
+				// TODO FIX ICONS ImageColor = Color.Gray;
 			}
 
 			base.Paint(width, height);
 		}
 
-		public override bool CanInput() {
-			return ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && base.CanInput();
-		}
+		// TODO
+		// public override bool CanInput() {
+		// 	return ;
+		// }
 
-		protected override void Initialize() {
-			Text = "";
-			Image = Textures.LoadTextureFromFile("models/keyframe.png");
-			ImageOrientation = ImageOrientation.Centered;
+		public KeyframeButton(Element parent) : base(parent) {
+			SetText("");
+			// TODO FIX ICONS Image = Textures.LoadTextureFromFile("models/keyframe.png");
+			// TODO FIX ICONS ImageOrientation = ImageOrientation.Centered;
 		}
 	}
 }

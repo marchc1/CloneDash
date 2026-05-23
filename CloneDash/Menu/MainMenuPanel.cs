@@ -82,7 +82,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
 		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
 		btn.SetText(text);
-		// btn.Image = menu.Textures.LoadTextureFromFile(icon);
+		// TODO FIX ICONS btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
 		btn.OnButtonClick += (_, _) => action?.Invoke(menu);

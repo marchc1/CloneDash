@@ -1,16 +1,17 @@
-﻿using Nucleus.Types;
+﻿using Nucleus.Common.Input;
+using Nucleus.Types;
 using Nucleus.UI;
 
 namespace Nucleus.ModelEditor
 {
-	public class TransformPanel : Panel
+	public class TransformPanel(Element parent) : Panel(parent)
 	{
 		public delegate void FloatChange(int i, float value);
 		public event FloatChange? FloatChanged;
 
 		public delegate void Keyframed(KeyframeProperty property, int index);
 
-		public event Element.MouseEventDelegate? OnSelected;
+		public event Action<Element, ButtonCode>? OnSelected;
 		public event Keyframed? OnKeyframe;
 		private NumSlider[] sliders;
 		private Button button;
@@ -19,11 +20,11 @@ namespace Nucleus.ModelEditor
 		private KeyframeButton keyframeY;
 
 		public bool SeparatedProperties {
-			get => !keyframe.Enabled;
+			get => !keyframe.IsMouseInputEnabled();
 			set {
-				keyframe.Enabled = !value;
-				keyframeX.Enabled = value;
-				keyframeY.Enabled = value;
+				keyframe.SetMouseInputEnabled(!value);
+				keyframeX.SetMouseInputEnabled(value);
+				keyframeY.SetMouseInputEnabled(value);
 			}
 		}
 
@@ -33,8 +34,8 @@ namespace Nucleus.ModelEditor
 			set {
 				enableSliders = value;
 				foreach (var slider in sliders) {
-					var c = slider.TextColor;
-					slider.TextColor = new(c.R, c.G, c.B, value ? 255 : 0);
+					var c = slider.GetTextColor();
+					slider.SetTextColor(new Common.Types.Color(c.R, c.G, c.B, value ? 255 : 0));
 				}
 			}
 		}
@@ -42,64 +43,64 @@ namespace Nucleus.ModelEditor
 		public Button GetButton() => button;
 
 		public static TransformPanel New(Element parent, string text, int floats, KeyframeProperty property = KeyframeProperty.None) {
-			var panel = parent.Add<TransformPanel>();
-			panel.DockPadding = RectangleF.TLRB(2);
-			panel.BorderSize = 2;
+			var panel = new TransformPanel(parent);
+			panel.SetDockPadding(RectangleF.TLRB(2));
+			panel.SetBorderSize(2);
 
-			panel.button = panel.Add<Button>();
-			panel.button.Dock = Dock.Left;
-			panel.button.Text = text;
-			panel.button.Size = new(96);
-			panel.button.MouseReleaseEvent += (v1, v2, v3) => panel.OnSelected?.Invoke(panel, v2, v3);
-			panel.button.BorderSize = 0;
+			panel.button = new Button(panel);
+			panel.button.SetDock(Dock.Left);
+			panel.button.SetText(text);
+			panel.button.SetSize(new(96));
+			panel.button.SetBorderSize(0);
+			panel.button.OnButtonClick += (v1, v3) => panel.OnSelected?.Invoke(panel, v3);
 
-			panel.keyframeY = panel.Add<KeyframeButton>();
-			panel.keyframeY.Dock = Dock.Right;
-			panel.keyframeY.Size = new(26);
+			panel.keyframeY = new KeyframeButton(panel);
+			panel.keyframeY.SetDock(Dock.Right);
 			panel.keyframeY.ArrayIndex = 1;
 			panel.keyframeY.Property = property;
-			panel.keyframeY.MouseReleaseEvent += (_, _, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, 1);
-			panel.keyframeY.BorderSize = 0;
-			panel.keyframeY.Enabled = false;
+			panel.keyframeY.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, 1);
+			panel.keyframeY.SetSize(new(26));
+			panel.keyframeY.SetBorderSize(0);
+			panel.keyframeY.SetMouseInputEnabled(false);
 			panel.keyframeY.TooltipText = "Keyframe Y";
 
-			panel.keyframeX = panel.Add<KeyframeButton>();
-			panel.keyframeX.Dock = Dock.Right;
-			panel.keyframeX.Size = new(26);
+			panel.keyframeX = new KeyframeButton(panel);
+			panel.keyframeX.SetDock(Dock.Right);
 			panel.keyframeX.ArrayIndex = 0;
 			panel.keyframeX.Property = property;
-			panel.keyframeX.MouseReleaseEvent += (_, _, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, 0);
-			panel.keyframeX.BorderSize = 0;
-			panel.keyframeX.Enabled = false;
+			panel.keyframeX.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, 0);
+			panel.keyframeX.SetSize(new(26));
+			panel.keyframeX.SetBorderSize(0);
+			panel.keyframeX.SetMouseInputEnabled(false);
 			panel.keyframeX.TooltipText = "Keyframe X";
 
-			panel.keyframe = panel.Add<KeyframeButton>();
-			panel.keyframe.Dock = Dock.Right;
-			panel.keyframe.Size = new(26);
+			panel.keyframe = new KeyframeButton(panel);
+			panel.keyframe.SetDock(Dock.Right);
+			panel.keyframe.SetSize(new(26));
 			panel.keyframe.ArrayIndex = -1;
 			panel.keyframe.Property = property;
-			panel.keyframe.MouseReleaseEvent += (_, _, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, -1);
-			panel.keyframe.BorderSize = 0;
+			panel.keyframe.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(ModelEditor.Active.LastSelectedObject, property, -1);
+			panel.keyframe.SetBorderSize(0);
 
 			ModelEditor.Active.File.PropertySeparatedOrCombined += (b, prop, separated) => {
 				if (prop == property)
 					panel.SeparatedProperties = separated;
 			};
 
-			var floatparts = panel.Add<FlexPanel>();
-			floatparts.Dock = Dock.Fill;
-			floatparts.Direction = Directional180.Horizontal;
+			var floatparts = new FlexPanel(panel);
+			floatparts.SetDock(Dock.Fill);
+			floatparts.Direction = Axis.Horizontal;
 			floatparts.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			floatparts.DockPadding = RectangleF.Zero;
-			floatparts.BorderSize = 0;
+			floatparts.SetDockPadding(RectangleF.Zero);
+			floatparts.SetBorderSize(0);
 
 			panel.sliders = new NumSlider[floats];
 			for (int i = 0; i < floats; i++) {
-				var floatEdit = floatparts.Add<NumSlider>();
+				var floatEdit = new NumSlider(floatparts);
 				panel.sliders[i] = floatEdit;
-				floatEdit.HelperText = "";
+				floatEdit.SetHelperText("");
 				floatEdit.Value = 0;
-				floatEdit.BorderSize = 0;
+				floatEdit.SetBorderSize(0);
 				floatEdit.OnValueChanged += (self, oldV, newV) => {
 					panel.FloatChanged?.Invoke(i, (float)newV);
 				};

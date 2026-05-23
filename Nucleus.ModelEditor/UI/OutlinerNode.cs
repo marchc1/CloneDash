@@ -9,11 +9,17 @@ using Nucleus.UI;
 
 namespace Nucleus.ModelEditor
 {
+	internal class OutlinerButton(Element parent) : Button(parent){
+		public event Action<Element, float, float>? PaintOverride;
+		public override void Paint(float width, float height) {
+			PaintOverride?.Invoke(this, width, height);
+		}
+	}
 	public class OutlinerNode : Button, IContainsOutlinerNodes
 	{
-		Button Visibility;
-		Button Keyframe;
-		Button Expander;
+		OutlinerButton Visibility;
+		OutlinerButton Keyframe;
+		OutlinerButton Expander;
 		Panel Image;
 
 		private WeakReference? __represents;
@@ -22,12 +28,12 @@ namespace Nucleus.ModelEditor
 		public T? GetRepresentingObject<T>() where T : class => __represents == null ? null : __represents.Target == null ? null : (T)__represents.Target;
 		public void SetRepresentingObject(IEditorType obj) {
 			__represents = new(obj);
-			Visibility.Enabled = obj.CanHide();
+			Visibility.SetVisible(obj.CanHide());
 		}
 
 
 		private void SELECTABLECHANGED() {
-			TextColor = GetSelectable() ? Color.White : Color.Gray;
+			SetTextColor(GetSelectable() ? Color.White : Color.Gray);
 		}
 
 		private bool _selectable = true;
@@ -96,84 +102,83 @@ namespace Nucleus.ModelEditor
 
 				__expanded = value;
 				foreach (var child in Children) {
-					child.EngineDisabled = !__expanded;
+					child.SetVisible(__expanded);
 				}
 			}
 		}
 
-		public ITexture? ImageTexture {
-			get => Image.Image;
-			set => Image.Image = value;
+		// TODO FIX ICONS public ITexture? ImageTexture {
+		// TODO FIX ICONS 	get => Image.Image;
+		// TODO FIX ICONS 	set => Image.Image = value;
+		// TODO FIX ICONS }
+		public Color ImageColor {
+			// TODO FIX ICONS get => Image.ImageColor ?? Image.TextColor;
+			// TODO FIX ICONS set => Image.ImageColor = value;
+			get; set;
 		}
-		public new Color ImageColor {
-			get => Image.ImageColor ?? Image.TextColor;
-			set => Image.ImageColor = value;
-		}
 
-		protected override void Initialize() {
-			base.Initialize();
+		public OutlinerNode(Element parent) : base(parent) {
+			Visibility = new(this);
+			Keyframe = new(this);
+			Expander = new(this);
+			Image = new(this);
 
-			Add(out Visibility);
-			Add(out Keyframe);
-			Add(out Expander);
-			Add(out Image);
+			this.SetSize(new(24));
 
-			this.Size = new(24);
+			Visibility.SetPos(new(-7, 2));
+			Keyframe.SetPos(new(23 - 7, 2));
+			Expander.SetPos(new(46 - 7, 2));
+			Image.SetPos(new(56, 2));
 
-			Visibility.Position = new(-7, 2);
-			Keyframe.Position = new(23 - 7, 2);
-			Expander.Position = new(46 - 7, 2);
-			Image.Position = new(56, 2);
+			Visibility.SetSize(new(23));
+			Keyframe.SetSize(new(23));
+			Expander.SetSize(new(23));
+			Image.SetSize(new(16));
 
-			Visibility.Size = new(23);
-			Keyframe.Size = new(23);
-			Expander.Size = new(23);
-			Image.Size = new(16);
+			// TODO FIX ICONS Image.ImageColor = Color.White;
 
-			Image.ImageColor = Color.White;
+			SetBorderSize(0);
+			SetDockMargin(RectangleF.TLRB(0, 2, 2, 0));
 
-			BorderSize = 0;
-			DockMargin = RectangleF.TLRB(0, 2, 2, 0);
-
-			Image.DrawPanelBackground = false;
-			Image.ImageOrientation = ImageOrientation.Fit;
+			Image.SetPaintBackgroundEnabled(false);
+			// TODO FIX ICONS Image.ImageOrientation = ImageOrientation.Fit;
 
 			Visibility.PaintOverride += Visibility_PaintOverride;
 			Keyframe.PaintOverride += Keyframe_PaintOverride;
 			Expander.PaintOverride += Expander_PaintOverride;
 
-			Visibility.MouseClickEvent += Visibility_MouseClickEvent;
-			Keyframe.MouseClickEvent += Keyframe_MouseClickEvent; ;
+			Visibility.OnButtonClick += Visibility_MouseClickEvent;
+			Keyframe.OnButtonClick += Keyframe_MouseClickEvent;
 
-			Expander.MouseReleaseEvent += Expander_MouseReleaseEvent;
+			Expander.OnButtonClick += Expander_MouseReleaseEvent;
 
 			// we want text and label to passthru
-			Image.OnHoverTest += Passthru;
+			Image.SetPassthru(true);
 
-			Keyframe.Visible = Keyframe.Enabled = ModelEditor.Active.AnimationMode;
+			Keyframe.SetVisible(ModelEditor.Active.AnimationMode);
 			ModelEditor.Active.SetupAnimateModeChanged += (_, animateMode) => {
-				Keyframe.Visible = Keyframe.Enabled = animateMode;
+				Keyframe.SetVisible(animateMode);
 			};
 
-			Dock = Dock.Top;
+			SetDock(Dock.Top);
 		}
 
-		private void Keyframe_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
+		private void Keyframe_MouseClickEvent(Element self, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
 			if (
-				button == ButtonCode.Mouse1 
-				&& ModelEditor.Active.CanInsertKeyframes() 
-				&& editorItem.CanKeyframe() 
+				button == ButtonCode.Mouse1
+				&& ModelEditor.Active.CanInsertKeyframes()
+				&& editorItem.CanKeyframe()
 				&& editorItem.GetKeyframeParameters(out var target, out var prop, out var index)
 			)
 				ModelEditor.Active.File.InsertKeyframe(target, prop, index);
 			else // Redirect the click event to expander
-				Expander_MouseReleaseEvent(self, state, button);
+				Expander_MouseReleaseEvent(self, button);
 		}
 
-		private void Visibility_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
+		private void Visibility_MouseClickEvent(Element self, ButtonCode button) {
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
@@ -190,7 +195,7 @@ namespace Nucleus.ModelEditor
 			Expanded = state;
 		}
 
-		private void Expander_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+		private void Expander_MouseReleaseEvent(Element self, ButtonCode button) {
 			if (button == ButtonCode.Mouse2)
 				__setExpandedRecursive(!Expanded);
 			else
@@ -199,7 +204,7 @@ namespace Nucleus.ModelEditor
 			Outliner.InvalidateChildren();
 		}
 
-		public override void OnRemoval() {
+		protected override void OnRemoval() {
 			base.OnRemoval();
 			foreach (var child in Children.ToArray()) {
 				if (IValidatable.IsValid(child))
@@ -214,22 +219,22 @@ namespace Nucleus.ModelEditor
 		}
 
 		protected override void PerformLayout(float width, float height) {
-			Visibility.Size = new(Visibility.Size.X, height);
-			Keyframe.Size = new(Keyframe.Size.X, height);
+			Visibility.SetSize(new(Visibility.GetSize().X, height));
+			Keyframe.SetSize(new(Keyframe.GetSize().X, height));
 			base.PerformLayout(width, height);
-			Expander.Position = new(40, 2);
-			Expander.Size = new(23 + (Layer * 16), height);
-			Image.Size = new(Image.Size.X, height);
+			Expander.SetPos(new(40, 2));
+			Expander.SetSize(new(23 + (Layer * 16), height));
+			Image.SetSize(new(Image.GetSize().X, height));
 
-			Image.Position = new(Expander.Position.X + Expander.Size.X, 0);
-			Expander.Visible = Children.Count > 0;
+			Image.SetPos(new(Expander.GetPos().X + Expander.GetSize().X, 0));
+			Expander.SetVisible(Children.Count > 0);
 
-			TextAlignment = Anchor.CenterLeft;
-			TextPadding = new(Image.Position.X + Image.Size.X + 8, 0);
+			SetTextAlignment(Anchor.CenterLeft);
+			SetTextPadding(new(Image.GetPos().X + Image.GetSize().X + 8, 0));
 		}
 
-		public override void TextChanged(string oldText, string newText) {
-			base.TextChanged(oldText, newText);
+		protected override void TextChanged(ReadOnlySpan<char> text) {
+			base.TextChanged(text);
 			// Because a lot of things are text-dependent!
 			// ie. alphabetical sorting
 			Outliner.InvalidateLayout();
@@ -237,7 +242,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Paint(float width, float height) {
-			BackgroundColor = (GetRepresentingObject()?.Selected ?? false) ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor;
+			SetBgColor((GetRepresentingObject()?.Selected ?? false) ? DefaultBackgroundColor.Adjust(0, 0.5, 2.4) : DefaultBackgroundColor);
 			base.Paint(width, height);
 			if (Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;
@@ -245,7 +250,7 @@ namespace Nucleus.ModelEditor
 				if (Expanded && Children.Count > 0)
 					last = false;
 				Graphics2D.SetDrawColor(220, 220, 220, 60);
-				var x = (TextPadding.X - 52) + (Layer * 0);
+				var x = (GetTextPadding().X - 52) + (Layer * 0);
 				Graphics2D.DrawLine(x, 0, x, last ? height / 2 : height);
 				Graphics2D.DrawLine(x, height / 2, x + 16, height / 2);
 
@@ -257,16 +262,16 @@ namespace Nucleus.ModelEditor
 			}
 		}
 		private void Expander_PaintOverride(Element self, float width, float height) {
-			var c = self.Depressed ? 100 : self.Hovered ? 220 : 170;
+			var c = self.IsDepressed() ? 100 : self.IsHovered() ? 220 : 170;
 			Graphics2D.SetDrawColor(c, c, c);
-			Graphics2D.SetTexture(UI.Level.Textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
+			Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
 			var s = 16;
 			Graphics2D.DrawImage(new(width - 19, (height / 2) - (s / 2) - 1), new(s), new(0.5f));
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
 			IEditorType? editorItem = GetRepresentingObject();
-			
+
 			if (editorItem == null) return;
 			if (!ModelEditor.Active.CanInsertKeyframes()) return;
 			if (!editorItem.CanKeyframe()) return;
@@ -288,7 +293,7 @@ namespace Nucleus.ModelEditor
 			color = MixColorBasedOnMouseState(self, color, new(0, .6f, 1.2f, 1), new(0, 1, .5f, 1));
 
 			Graphics2D.SetDrawColor(color);
-			Graphics2D.SetTexture(Textures.LoadTextureFromFile("models/keyframe.png"));
+			Graphics2D.SetTexture((ITexture)Level.Textures.LoadTextureFromFile("models/keyframe.png"));
 			Graphics2D.DrawImage(RectangleF.FromPosAndSize(new(2), new(height - 4)));
 		}
 
@@ -296,30 +301,33 @@ namespace Nucleus.ModelEditor
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
-
 			if (editorItem is EditorAttachment attachment) {
 				var visColor = attachment.Slot.GetActiveAttachment() == attachment ? 185 : 80;
-				var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
+				var c = self.IsDepressed() ? (visColor / 2) : self.IsHovered() ? (visColor + 35) : visColor;
 				Graphics2D.SetDrawColor(c, c, c);
-				Graphics2D.SetTexture(UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
+				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
 				Graphics2D.DrawImage(RectangleF.XYWH(4, 4, width - 8, height - 8), new(0, 0));
 			}
 			else {
 				var visColor = editorItem.GetVisible() ? 185 : 125;
-				var c = self.Depressed ? (visColor / 2) : self.Hovered ? (visColor + 35) : visColor;
+				var c = self.IsDepressed() ? (visColor / 2) : self.IsHovered() ? (visColor + 35) : visColor;
 				Graphics2D.SetDrawColor(c, c, c);
 
 				Graphics2D.DrawCircle(new(width / 2f, (height / 2f) - 2), width / 7);
 			}
 		}
 
-		protected override void OnThink(FrameState frameState) {
-			base.OnThink(frameState);
-		}
 
 		public OutlinerNode AddNode(string text, string? icon = null) {
-			OutlinerNode node = OutlinerPanel.SetupNode(Outliner, Layer + 1, this, text, icon);
-			node.EngineDisabled = !Expanded;
+			OutlinerNode node = OutlinerPanel.SetupNode<OutlinerNode>(Outliner, Layer + 1, p => new(p), this, text, icon);
+			node.SetVisible(Expanded);
+
+			return node;
+		}
+
+		public T AddNode<T>(string text, Func<Element, T> factory, string? icon = null) where T : OutlinerNode {
+			T node = OutlinerPanel.SetupNode<T>(Outliner, Layer + 1, factory, this, text, icon);
+			node.SetVisible(Expanded);
 
 			return node;
 		}

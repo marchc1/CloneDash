@@ -11,8 +11,8 @@ namespace Nucleus.ModelEditor.UI
 	public static class EditorDialogs
 	{
 		public static Window CreateDialogWindow(string title) {
-			Window w = EngineCore.Level.UI.Add<Window>();
-			w.Size = new(384, 128);
+			Window w = new Window(EngineCore.Level.RootPanel);
+			w.SetSize(new(384, 128));
 			w.Center();
 			w.MakePopup();
 			w.HideNonCloseButtons();
@@ -22,20 +22,20 @@ namespace Nucleus.ModelEditor.UI
 		}
 
 		public static (Panel Panel, Checkbox Checkbox) CreateOptionPanel(Window dialog, bool isChecked, string label) {
-			Panel p = dialog.Add<Panel>();
-			p.Dock = Dock.Top;
-			p.Size = new(32);
-			p.DrawPanelBackground = false;
+			Panel p = new Panel(dialog);
+			p.SetDock(Dock.Top);
+			p.SetSize(new(32));
+			p.SetPaintBackgroundEnabled(false);
 
-			Checkbox c = p.Add<Checkbox>();
-			c.Dock = Dock.Left;
-			c.Size = new(28);
+			Checkbox c = new Checkbox(p);
+			c.SetDock(Dock.Left);
+			c.SetSize(new(28));
 			c.Checked = isChecked;
 
-			var l = p.Add<Label>();
-			l.AutoSize = true;
-			l.Text = label;
-			l.Dock = Dock.Left;
+			var l = new Label(p);
+			l.SetAutoSize(true);
+			l.SetText(label);
+			l.SetDock(Dock.Left);
 
 			l.PassMouseTo(c);
 
@@ -43,36 +43,36 @@ namespace Nucleus.ModelEditor.UI
 		}
 
 		public static void SetupDescription(Window dialog, string text) {
-			var lbl = dialog.Add<Label>();
-			lbl.Text = text;
-			lbl.AutoSize = true;
-			lbl.Dock = Dock.Top;
-			lbl.DockMargin = Types.RectangleF.TLRB(4);
+			var lbl = new Label(dialog);
+			lbl.SetText(text);
+			lbl.SetAutoSize(true);
+			lbl.SetDock(Dock.Top);
+			lbl.SetDockMargin(Types.RectangleF.TLRB(4));
 		}
 		public static void SetupOKCancelButtons(Window dialog, bool preferOK, Action? confirmed, Action? denied) {
-			var buttons = dialog.Add<CenteredObjectsPanel>();
-			buttons.Dock = Dock.Bottom;
-			buttons.Size = new(0, 42);
+			var buttons = new CenteredObjectsPanel(dialog);
+			buttons.SetDock(Dock.Bottom);
+			buttons.SetSize(new(0, 42));
 			buttons.XSeparation = 8;
 			buttons.YSeparation = 16;
 
-			var cancel = buttons.Add<Button>();
-			cancel.Text = "Cancel";
+			var cancel = new Button(buttons);
+			cancel.SetText("Cancel");
 			cancel.TriggeredWhenEnterPressed = !preferOK;
-			cancel.MouseReleaseEvent += (_, _, _) => {
+			cancel.OnButtonClick += (_, _) => {
 				dialog.Remove();
 				denied?.Invoke();
 			};
-			cancel.Size = new(64);
+			cancel.SetSize(new(64));
 
-			var ok = buttons.Add<Button>();
-			ok.Text = "OK";
+			var ok = new Button(buttons);
+			ok.SetText("OK");
 			ok.TriggeredWhenEnterPressed = preferOK;
-			ok.MouseReleaseEvent += (_, _, _) => {
+			ok.OnButtonClick += (_, _) => {
 				dialog.Remove();
 				confirmed?.Invoke();
 			};
-			ok.Size = new(64);
+			ok.SetSize(new(64));
 		}
 		public static void ConfirmAction(string title, string description, bool preferOK = true, Action? onConfirmed = null, Action? onDenied = null) {
 			Window dialog = CreateDialogWindow(title);
@@ -80,20 +80,20 @@ namespace Nucleus.ModelEditor.UI
 			SetupOKCancelButtons(dialog, preferOK, onConfirmed, onDenied);
 		}
 
-		public static void TextInput(string title, string description, string? text = null, bool preferOK = true, Action<string>? onConfirmed = null, Action? onDenied = null) {
+		public static void TextInput(string title, string description, string? text = null, bool preferOK = true, Action<ReadOnlySpan<char>>? onConfirmed = null, Action? onDenied = null) {
 			Window dialog = CreateDialogWindow(title);
-			dialog.Size += new Types.Vector2F(0, 32);
+			dialog.SetSize(dialog.GetSize() + new Types.Vector2F(0, 32));
 			dialog.Center();
 			SetupDescription(dialog, description);
 			
-			Textbox textbox = dialog.Add<Textbox>();
-			textbox.Dock = Dock.Top;
-			textbox.Text = text ?? "";
-			textbox.Size = new(28);
-			textbox.DockMargin = Types.RectangleF.TLRB(0, 32, 32, 0);
-			textbox.DemandKeyboardFocus();
+			Textbox textbox = new Textbox(dialog);
+			textbox.SetDock(Dock.Top);
+			textbox.SetText(text ?? "");
+			textbox.SetSize(new(28));
+			textbox.SetDockMargin(Types.RectangleF.TLRB(0, 32, 32, 0));
+			textbox.KeyboardFocus();
 
-			SetupOKCancelButtons(dialog, preferOK, () => onConfirmed?.Invoke(textbox.Text), onDenied);
+			SetupOKCancelButtons(dialog, preferOK, () => onConfirmed?.Invoke(textbox.GetText()), onDenied);
 		}
 	}
 }

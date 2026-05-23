@@ -70,7 +70,7 @@ public class ElementInputSystem
 		state.Hovered = null;
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
-		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), mousePos);
+		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), mousePos)?.GetMouseElement();
 		// Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
