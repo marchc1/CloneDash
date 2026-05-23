@@ -1313,6 +1313,7 @@ public class Element : IValidatable
 		// TODO: Make this not suck
 		RectangleF parent = GetRenderBounds();
 		RectangleF childRect = child.GetRenderBounds();
+		childRect.Pos += GetChildRenderOffset();
 		return childRect.X < parent.W &&
 		   childRect.X + childRect.W > 0 &&
 		   childRect.Y < parent.H &&
