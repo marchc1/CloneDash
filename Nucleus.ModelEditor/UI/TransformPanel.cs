@@ -66,7 +66,7 @@ namespace Nucleus.ModelEditor
 			panel.keyframeY.SetSize(new(26));
 			panel.keyframeY.SetBorderSize(0);
 			panel.keyframeY.SetMouseInputEnabled(false);
-			panel.keyframeY.TooltipText = "Keyframe Y";
+			panel.keyframeY.SetTooltipText("Keyframe Y");
 
 			panel.keyframeX = new KeyframeButton(panel);
 			panel.keyframeX.SetDock(Dock.Right);
@@ -76,7 +76,7 @@ namespace Nucleus.ModelEditor
 			panel.keyframeX.SetSize(new(26));
 			panel.keyframeX.SetBorderSize(0);
 			panel.keyframeX.SetMouseInputEnabled(false);
-			panel.keyframeX.TooltipText = "Keyframe X";
+			panel.keyframeX.SetTooltipText("Keyframe X");
 
 			panel.keyframe = new KeyframeButton(panel);
 			panel.keyframe.SetDock(Dock.Right);

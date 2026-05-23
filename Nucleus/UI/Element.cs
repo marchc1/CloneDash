@@ -413,7 +413,9 @@ public class Element : IValidatable
 		}
 	}
 
-	public virtual string? TooltipText { get; set; } // todo: remove me, turn into methods
+	private string? tooltipText;
+	public virtual ReadOnlySpan<char> GetTooltipText() => tooltipText;
+	public virtual void SetTooltipText(ReadOnlySpan<char> value) => tooltipText = (value.Length == 0 || value[0] == '\0') ? null : new(value);
 
 	public float GetDynamicallyScaledFloat(float originalFloat, Axis axis) {
 		switch (axis) {

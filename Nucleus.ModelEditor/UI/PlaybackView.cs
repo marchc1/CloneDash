@@ -13,6 +13,7 @@ namespace Nucleus.ModelEditor.UI
 			label.SetText("");
 			label.SetDock(Dock.Left);
 			label.SetAutoSize(true);
+			label.SetTextPadding(new(16));
 		}
 
 		protected override void ChildParented(Element parent, Element child) {

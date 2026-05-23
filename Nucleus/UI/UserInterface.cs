@@ -443,8 +443,8 @@ public class UserInterface : Element, IDisposable
 	}
 
 	public override void PostChildPaint() {
-		var text = TooltipText;
-		if (text != "" && text != null) {
+		var text = GetTooltipText();
+		if (!text.IsEmpty && text[0] != '\0') {
 			var fontsize = 20;
 			var size = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, fontsize) + new Vector2F(8, 4);
 			var mousepos = Level.FrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
@@ -470,21 +470,6 @@ public class UserInterface : Element, IDisposable
 		//this.Position = new(0, 0);
 		//this.Size = new(frameState.WindowWidth, frameState.WindowHeight);
 		//RenderBounds = RectangleF.FromPosAndSize(this.Position, this.Size);
-	}
-
-	private string? _tooltipText;
-	private bool disposedValue;
-
-	public override string? TooltipText {
-		get {
-			if (IValidatable.IsValid(GetHoveredElement()) && GetHoveredElement() != this) {
-				return GetHoveredElement()!.TooltipText;
-			}
-			return _tooltipText;
-		}
-		set {
-			_tooltipText = value;
-		}
 	}
 
 	public override void Center() {
@@ -530,7 +515,7 @@ public class UserInterface : Element, IDisposable
 		}
 	}
 #nullable enable
-
+	bool disposedValue;
 	protected virtual void Dispose(bool disposing) {
 		if (!disposedValue) {
 			if (disposing) {

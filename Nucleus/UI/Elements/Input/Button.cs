@@ -21,13 +21,13 @@ public class CheckboxButton(Element parent) : Button(parent)
 	public delegate void CheckboxClicked(CheckboxButton self);
 	public event CheckboxClicked? OnCheckedChanged;
 
-	public override void Paint(float width, float height) {
+	public override void PaintBackground(float width, float height) {
 		var bck = GetBgColor();
 
 		if (Checked)
 			SetBgColor(GetBgColor().Adjust(0, 0, 2));
 
-		base.Paint(width, height);
+		base.PaintBackground(width, height);
 		SetBgColor(bck);
 	}
 
@@ -112,7 +112,16 @@ public class Button : Label
 
 	public override Color GetBgColor() => switchToPaintTimeColors ? painttimeBgColor :base.GetBgColor();
 	public override Color GetFgColor() => switchToPaintTimeColors ? painttimeFgColor : base.GetFgColor();
-	
+	// These overrides fix some issues where painting used to set these colors dynamically.
+	// So the last render time gets invalidated so they get calculated again
+	public override void SetBgColor(Color value) {
+		base.SetBgColor(value);
+		lastRenderTime = 0;
+	}
+	public override void SetFgColor(Color value) {
+		base.SetFgColor(value);
+		lastRenderTime = 0;
+	}
 
 	public void ColorStateSetup(out Color back, out Color fore) {
 		if (lastRenderTime != globals.CurTime) {

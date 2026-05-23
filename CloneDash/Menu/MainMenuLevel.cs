@@ -149,7 +149,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		menuBtn.SetDockMargin(RectangleF.TLRB(0));
 		menuBtn.SetBorderSize(0);
 		menuBtn.OnButtonClick += (_, _) => onClicked();
-		menuBtn.TooltipText = text;
+		menuBtn.SetTooltipText(text);
 
 		return menuBtn;
 	}
