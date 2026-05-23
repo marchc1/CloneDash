@@ -157,7 +157,10 @@ namespace Nucleus.ModelEditor
 			searchBtn.SetDock(Dock.Right);
 			searchBtn.SetSize(new(24));
 			searchBtn.SetText("");
-			// TODO FIX ICONS searchBtn.Image = prop.Level.Textures.LoadTextureFromFile("models/search.png");
+			var searchImg = new Nucleus.UI.Elements.Image(searchBtn);
+			searchImg.SetTexture(prop.Level.Textures.LoadTextureFromFile("models/search.png"));
+			searchImg.SetPassthru(true);
+			searchImg.SetDock(Dock.Fill);
 
 			var path = new Textbox(panel);
 			path.SetDock(Dock.Fill);
@@ -271,15 +274,13 @@ namespace Nucleus.ModelEditor
 			newBtn.SetText(text);
 			newBtn.SetAutoSize(true);
 			if (icon != null) {
-				var img = new Panel(newBtn);
+				var img = new Nucleus.UI.Elements.Image(newBtn);
 				img.SetPassthru(true);
-				img.SetPaintBackgroundEnabled(false);
-				// TODO FIX ICONS img.ShouldDrawImage = true;
 				img.SetSize(new(32));
-				// TODO FIX ICONS img.ImageOrientation = ImageOrientation.Zoom;
+				img.SetImageOrientation(ImageOrientation.Zoom);
 				img.SetDock(Dock.Left);
 				img.SetDockMargin(RectangleF.TLRB(2));
-				// TODO FIX ICONS img.Image = buttons.Level.Textures.LoadTextureFromFile(icon);
+				img.SetTexture(buttons.Level.Textures.LoadTextureFromFile(icon));
 
 				newBtn.SetTextPadding(new(34, 0));
 				newBtn.SetTextAlignment(Anchor.CenterLeft);
@@ -383,8 +384,11 @@ namespace Nucleus.ModelEditor
 			btn.SetSize(new(32));
 			btn.SetText("");
 			btn.SetBorderSize(0);
-			// TODO FIX ICONS btn.ImageOrientation = (ImageOrientation.Centered);
-			// TODO FIX ICONS btn.Image = props.Level.Textures.LoadTextureFromFile(icon);
+			var btnImg = new Nucleus.UI.Elements.Image(btn);
+			btnImg.SetTexture(props.Level.Textures.LoadTextureFromFile(icon));
+			btnImg.SetImageOrientation(ImageOrientation.Centered);
+			btnImg.SetPassthru(true);
+			btnImg.SetDock(Dock.Fill);
 			return btn;
 		}
 

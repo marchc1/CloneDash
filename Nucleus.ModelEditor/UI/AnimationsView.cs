@@ -1,5 +1,6 @@
 ﻿using Nucleus.Extensions;
 using Nucleus.Models.Runtime;
+using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Raylib_cs;
@@ -94,7 +95,12 @@ namespace Nucleus.ModelEditor.UI
 			if (model != selector.Selected) return;
 
 			var lvitem = new AnimationListViewItem(model, animation, listitems);
-			// TODO FIX ICONS lvitem.Image = Textures.LoadTextureFromFile("models/animation2.png");
+			var lvitemImg = new Nucleus.UI.Elements.Image(lvitem);
+			lvitemImg.SetTexture(Level.Textures.LoadTextureFromFile("models/animation2.png"));
+			lvitemImg.SetImageOrientation(ImageOrientation.Fit);
+			lvitemImg.SetPassthru(true);
+			lvitemImg.SetDock(Dock.Left);
+			lvitemImg.SetSize(new(24));
 			lvitem.SetText(animation.Name);
 
 			SortAnimations();

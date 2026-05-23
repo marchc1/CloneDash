@@ -20,7 +20,7 @@ namespace Nucleus.ModelEditor
 		OutlinerButton Visibility;
 		OutlinerButton Keyframe;
 		OutlinerButton Expander;
-		Panel Image;
+		Nucleus.UI.Elements.Image Image;
 
 		private WeakReference? __represents;
 
@@ -107,21 +107,20 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		// TODO FIX ICONS public ITexture? ImageTexture {
-		// TODO FIX ICONS 	get => Image.Image;
-		// TODO FIX ICONS 	set => Image.Image = value;
-		// TODO FIX ICONS }
+		public ITexture? ImageTexture {
+			get => Image.GetTexture();
+			set => Image.SetTexture(value);
+		}
 		public Color ImageColor {
-			// TODO FIX ICONS get => Image.ImageColor ?? Image.TextColor;
-			// TODO FIX ICONS set => Image.ImageColor = value;
-			get; set;
+			get => Image.GetImageColor();
+			set => Image.SetImageColor(value);
 		}
 
 		public OutlinerNode(Element parent) : base(parent) {
 			Visibility = new(this);
 			Keyframe = new(this);
 			Expander = new(this);
-			Image = new(this);
+			Image = new Nucleus.UI.Elements.Image(this);
 
 			this.SetSize(new(24));
 
@@ -135,13 +134,13 @@ namespace Nucleus.ModelEditor
 			Expander.SetSize(new(23));
 			Image.SetSize(new(16));
 
-			// TODO FIX ICONS Image.ImageColor = Color.White;
+			Image.SetImageColor(Color.White);
 
 			SetBorderSize(0);
 			SetDockMargin(RectangleF.TLRB(0, 2, 2, 0));
 
 			Image.SetPaintBackgroundEnabled(false);
-			// TODO FIX ICONS Image.ImageOrientation = ImageOrientation.Fit;
+			Image.SetImageOrientation(ImageOrientation.Fit);
 
 			Visibility.PaintOverride += Visibility_PaintOverride;
 			Keyframe.PaintOverride += Keyframe_PaintOverride;

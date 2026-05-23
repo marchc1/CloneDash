@@ -1,4 +1,5 @@
 ﻿using FftSharp.Windows;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -88,12 +89,19 @@ public abstract class BaseTimelineView : View
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
 		button.SetText("");
 		button.SetBorderSize(1);
-		// FIXME: buttons dont have images now
-		// button.ImageOrientation = (ImageOrientation.Fit);
 
 		var hP = 3;
 		var vY = smallVertical ? 8 : 4;
 		button.SetDockMargin(RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY));
+	}
+
+	protected static Nucleus.UI.Elements.Image SetButtonImage(Button button, ITexture texture) {
+		var img = new Nucleus.UI.Elements.Image(button);
+		img.SetTexture(texture);
+		img.SetImageOrientation(ImageOrientation.Fit);
+		img.SetPassthru(true);
+		img.SetDock(Dock.Fill);
+		return img;
 	}
 	protected virtual void PaintTimeOverlay(float width, float height) {
 
@@ -172,20 +180,20 @@ public abstract class BaseTimelineView : View
 
 		// Setup buttons
 		{
-			Button jumpStart = new(Buttons); SetupButton(jumpStart, true, true, false); // TODO FIX ICONS jumpStart.Image = Textures.LoadTextureFromFile("models/jumpStart.png");
-			Button jumpPrevious = new(Buttons); SetupButton(jumpPrevious, true, false, true); // TODO FIX ICONS jumpPrevious.Image = Textures.LoadTextureFromFile("models/jumpPrevious.png");
-			Button playBackward = new(Buttons); SetupButton(playBackward, false, true, false); // TODO FIX ICONS playBackward.Image = Textures.LoadTextureFromFile("models/playBackward.png");
-			Button playForward = new(Buttons); SetupButton(playForward, false, false, true); // TODO FIX ICONS playForward.Image = Textures.LoadTextureFromFile("models/playForward.png");
-			Button jumpNext = new(Buttons); SetupButton(jumpNext, true, true, false); // TODO FIX ICONS jumpNext.Image = Textures.LoadTextureFromFile("models/jumpNext.png");
-			Button jumpEnd = new(Buttons); SetupButton(jumpEnd, true, false, true); // TODO FIX ICONS jumpEnd.Image = Textures.LoadTextureFromFile("models/jumpEnd.png");
-			Button loop = new(Buttons); SetupButton(loop, true, true, true); // TODO FIX ICONS loop.Image = Textures.LoadTextureFromFile("models/loop.png");
+			Button jumpStart = new(Buttons); SetupButton(jumpStart, true, true, false); SetButtonImage(jumpStart, Level.Textures.LoadTextureFromFile("models/jumpStart.png"));
+			Button jumpPrevious = new(Buttons); SetupButton(jumpPrevious, true, false, true); SetButtonImage(jumpPrevious, Level.Textures.LoadTextureFromFile("models/jumpPrevious.png"));
+			Button playBackward = new(Buttons); SetupButton(playBackward, false, true, false); var playBackwardImg = SetButtonImage(playBackward, Level.Textures.LoadTextureFromFile("models/playBackward.png"));
+			Button playForward = new(Buttons); SetupButton(playForward, false, false, true); var playForwardImg = SetButtonImage(playForward, Level.Textures.LoadTextureFromFile("models/playForward.png"));
+			Button jumpNext = new(Buttons); SetupButton(jumpNext, true, true, false); SetButtonImage(jumpNext, Level.Textures.LoadTextureFromFile("models/jumpNext.png"));
+			Button jumpEnd = new(Buttons); SetupButton(jumpEnd, true, false, true); SetButtonImage(jumpEnd, Level.Textures.LoadTextureFromFile("models/jumpEnd.png"));
+			Button loop = new(Buttons); SetupButton(loop, true, true, true); SetButtonImage(loop, Level.Textures.LoadTextureFromFile("models/loop.png"));
 
 			playBackward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				// TODO FIX ICONS s.Image = timeline.PlayingBackwards
-				// TODO FIX ICONS 			? Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
-				// TODO FIX ICONS 			? Textures.LoadTextureFromFile("models/backReset.png") : Textures.LoadTextureFromFile("models/playBackward.png");
+				playBackwardImg.SetTexture(timeline.PlayingBackwards
+							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
+							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png"));
 
 				s.SetBgColor(timeline.PlayingBackwards ? Color.SkyBlue : DefaultBackgroundColor);
 			};
@@ -193,9 +201,9 @@ public abstract class BaseTimelineView : View
 			playForward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				// TODO FIX ICONS s.Image = timeline.PlayingForwards
-				// TODO FIX ICONS 			? Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
-				// TODO FIX ICONS 			? Textures.LoadTextureFromFile("models/forwardReset.png") : Textures.LoadTextureFromFile("models/playForward.png");
+				playForwardImg.SetTexture(timeline.PlayingForwards
+							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
+							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png"));
 				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : DefaultBackgroundColor);
 			};
 
@@ -335,9 +343,9 @@ public abstract class BaseTimelineView : View
 		button.SetSize(new(32));
 		button.SetDockMargin(RectangleF.TLRB(2, 0, 0, 2));
 		button.SetText("");
-		// TODO FIX ICONS button.Image = Textures.LoadTextureFromFile(icon);
-		// TODO FIX ICONS button.ImageOrientation = ImageOrientation.Zoom;
-		// TODO FIX ICONS button.ImagePadding = new(4);
+		var img = SetButtonImage(button, Level.Textures.LoadTextureFromFile(icon));
+		img.SetImageOrientation(ImageOrientation.Zoom);
+		img.SetImagePadding(new(4));
 		button.SetBorderSize(1);
 
 		lastButton = button;
@@ -553,9 +561,12 @@ public abstract class BaseTimelineView : View
 				header.SetText(bone.Name);
 				header.SetTextPadding(new(24, 0));
 				header.SetTextSize(16);
-				// TODO FIX ICONS header.Image = Textures.LoadTextureFromFile("models/bone.png");
-				// TODO FIX ICONS header.ImageOrientation = ImageOrientation.Centered;
-				// TODO FIX ICONS header.ImageFollowsText = true;
+				var boneImg = new Nucleus.UI.Elements.Image(header);
+				boneImg.SetTexture(Level.Textures.LoadTextureFromFile("models/bone.png"));
+				boneImg.SetImageOrientation(ImageOrientation.Centered);
+				boneImg.SetPassthru(true);
+				boneImg.SetDock(Dock.Left);
+				boneImg.SetSize(new(24));
 
 				header.OnButtonClick += (_, _) => {
 					ModelEditor.Active.SelectObject(bone);
@@ -608,27 +619,29 @@ public abstract class BaseTimelineView : View
 			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
 		}}")}");
 
-		// TODO FIX ICONS header.ImagePadding = property switch {
-		// TODO FIX ICONS 	KeyframeProperty.Slot_Attachment => new(8),
-		// TODO FIX ICONS 	_ => new(6)
-		// TODO FIX ICONS };
-		// TODO FIX ICONS header.Image = Textures.LoadTextureFromFile($"models/{property switch {
-		// TODO FIX ICONS 	KeyframeProperty.Bone_Rotation => "rotate_color",
-		// TODO FIX ICONS 	KeyframeProperty.Bone_Translation => "translate_color",
-		// TODO FIX ICONS 	KeyframeProperty.Bone_Scale => "scale_color",
-		// TODO FIX ICONS 	KeyframeProperty.Bone_Shear => "shear_color",
-		// TODO FIX ICONS 
-		// TODO FIX ICONS 	KeyframeProperty.Slot_Attachment => "paperclip",
-		// TODO FIX ICONS 	KeyframeProperty.Slot_Color => "rgba",
-		// TODO FIX ICONS 	_ => "N/A",
-		// TODO FIX ICONS }}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
-		// TODO FIX ICONS 	0 => "x",
-		// TODO FIX ICONS 	1 => "y",
-		// TODO FIX ICONS 	_ => throw new Exception($"Inavlid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
-		// TODO FIX ICONS }}")}.png");
+		var headerImg = new Nucleus.UI.Elements.Image(header);
+		headerImg.SetPassthru(true);
+		headerImg.SetDock(Dock.Left);
+		headerImg.SetSize(new(24));
+		headerImg.SetImagePadding(property switch {
+			KeyframeProperty.Slot_Attachment => new(8),
+			_ => new(6)
+		});
+		headerImg.SetTexture(Level.Textures.LoadTextureFromFile($"models/{property switch {
+			KeyframeProperty.Bone_Rotation => "rotate_color",
+			KeyframeProperty.Bone_Translation => "translate_color",
+			KeyframeProperty.Bone_Scale => "scale_color",
+			KeyframeProperty.Bone_Shear => "shear_color",
 
-		// TODO FIX ICONS header.ImageFollowsText = true;
-		// TODO FIX ICONS header.ImageOrientation = ImageOrientation.Centered;
+			KeyframeProperty.Slot_Attachment => "paperclip",
+			KeyframeProperty.Slot_Color => "rgba",
+			_ => "N/A",
+		}}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
+			0 => "x",
+			1 => "y",
+			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
+		}}")}.png"));
+		headerImg.SetImageOrientation(ImageOrientation.Centered);
 		header.SetTextPadding(new(38, 0));
 
 		header.Thinking += (s) => {

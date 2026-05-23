@@ -425,8 +425,8 @@ namespace Nucleus.ModelEditor
 				node.ParentNode = parent;
 			}
 			node.SetText(text);
-			// TODO FIX ICONS if (icon != null)
-			// TODO FIX ICONS node.ImageTexture = panel.UI.Level.Textures.LoadTextureFromFile(icon);
+			if (icon != null)
+				node.ImageTexture = panel.UI.Level.Textures.LoadTextureFromFile(icon);
 
 			node.OnButtonClick += (_, btn) => {
 				panel.NodeClicked?.Invoke(panel, node, btn);
