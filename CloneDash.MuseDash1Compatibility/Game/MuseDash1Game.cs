@@ -13,6 +13,7 @@ using CloneDash.Game.Events;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
+using CloneDash.MD1_Compat.Compatibility;
 using CloneDash.MD1_Compat.Game.Events;
 using CloneDash.Menu;
 using CloneDash.Scenes;
@@ -357,7 +358,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 
 			// HACK - but it solves fever FX not playing
-			// if (InFever) FeverFX?.Start(this);
+			if (InFever) FeverFX?.Activate();
 
 			// ALSO A HACK - but it solves some animation issues when mid-sustain.
 			if (Sustains.IsSustaining())
@@ -609,6 +610,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return instance;
 	}
 	IMuseDash1SceneInstance? FirstScene;
+	IMuseDash1FeverRuntime FeverFX;
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
@@ -688,8 +690,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				// The Scene UI never changes, it always inherits the original starting scene it seems
 				SceneUI = FirstScene?.CreateUI();
 
-				// var feverFX = FeverMod.GetFeverData();
-				// FeverFX = feverFX;
+				var feverFX = FeverMod.InstantiateCurrentFever(this);
+				FeverFX = feverFX;
 			}
 
 			// Before loading the scene, load quirks, since some quirks might affect entity data
@@ -700,7 +702,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Scene/Fever")) {
 				foreach (var scene in GetAllScenes())
 					scene.Initialize();
-				// FeverFX?.Initialize(this);
+				FeverFX?.Initialize();
 			}
 
 			Interlude.Spin();
@@ -1192,8 +1194,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			scene.Think(GetBgScrollSpeedMultiplier());
 		}
 		SceneUI?.Think(globals.CurTimeDelta);
-		// if (InFever)
-		// FeverFX?.Think(this);
+		if (InFever)
+		FeverFX?.Think();
 	}
 
 
@@ -1481,8 +1483,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (HasActiveScene(out var scene))
 			scene.RenderBackground();
 
-		// if (InFever)
-		// FeverFX?.Render(this);
+		if (InFever)
+		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
 
@@ -1850,7 +1852,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		InFever = true;
 		WhenDidFeverStart = Conductor.Time;
 		if (!IsSeeking) {
-			// FeverFX?.Start(this);
+			FeverFX?.Activate();
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
 		SceneUI?.UpdateInFever(FeverTimeLeft, Quirks.FeverDuration);

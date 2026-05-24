@@ -22,7 +22,7 @@ public static class CharacterMod
 		return activeDescriptor;
 	}
 
-	public static ConVar character = new(nameof(character), "character/musedash1/char_1_rock", FCvar.Saved, "Your character.", null, null, (cv, o, n) => {
+	public static ConVar character = new(nameof(character), "character/musedash1/char_1_rock", FCvar.Saved | FCvar.NotInGame, "Your character.", null, null, (cv, o, n) => {
 		var lastDescriptor = activeDescriptor;
 		activeDescriptor = GetCharacterData();
 		if (lastDescriptor != activeDescriptor)

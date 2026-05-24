@@ -52,6 +52,19 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		return (T?)GetUnderlyingTypeByNecessaryMeans(o);
 	}
 
+	public Vector3? GetVector3(object key) {
+		object? o = Dict[key];
+		if (o == null) return null;
+
+		if(o is OrderedDictionary orderedDict){
+			float x = (float)orderedDict["x"]!;
+			float y = (float)orderedDict["y"]!;
+			float z = (float)orderedDict["z"]!;
+			return new(x, y, z);
+		}
+
+		return null;
+	}
 
 	public List<T?> GetList<T>(object key) where T : AssetStudio.Object {
 		object? o = Dict[key];
