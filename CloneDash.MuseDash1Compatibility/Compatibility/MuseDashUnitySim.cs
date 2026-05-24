@@ -587,10 +587,29 @@ public class SceneAnimator : SceneComponent
 	public Animator? UnityAnimator { get; set; }
 
 	readonly List<RuntimeClip> runtimeClips = [];
+	readonly Dictionary<string, int> stateToClipIndex = [];
+	int activeClipIndex = -1;
+	int defaultClipIndex = -1;
 	float time;
 	public int ResolvedClipCount => runtimeClips.Count;
 
 	public void ResetTime() { time = 0; }
+
+	public void Play(string stateName) {
+		if (stateToClipIndex.TryGetValue(stateName, out var idx)) {
+			activeClipIndex = idx;
+			time = 0;
+		}
+		else {
+			Logs.Warn($"[SceneAnimator] State '{stateName}' not found on '{Object.Name}'. Available: {string.Join(", ", stateToClipIndex.Keys)}");
+		}
+	}
+
+	public void Rebind() {
+		time = 0;
+		if (defaultClipIndex >= 0)
+			activeClipIndex = defaultClipIndex;
+	}
 
 	public void DumpClipInfo() {
 		Logs.Info($"Object '{Object.Name}' clips={runtimeClips.Count}");
@@ -623,16 +642,20 @@ public class SceneAnimator : SceneComponent
 
 		var scene = (BaseMuseDash1UnitySimScene)Object.Scene;
 		List<AnimationClip> animClips = [];
+		AnimatorController? ac = null;
 
 		switch (controller) {
-			case AnimatorController ac:
+			case AnimatorController ac_:
+				ac = ac_;
 				foreach (var pptr in ac.m_AnimationClips)
 					if (pptr.TryGet(out var clip)) animClips.Add(clip);
 				break;
 			case AnimatorOverrideController aoc:
-				if (aoc.m_Controller.TryGet(out var baseCtrl) && baseCtrl is AnimatorController baseAc)
+				if (aoc.m_Controller.TryGet(out var baseCtrl) && baseCtrl is AnimatorController baseAc) {
+					ac = baseAc;
 					foreach (var pptr in baseAc.m_AnimationClips)
 						if (pptr.TryGet(out var clip)) animClips.Add(clip);
+				}
 				if (aoc.m_Clips != null)
 					foreach (var ov in aoc.m_Clips)
 						if (ov.m_OverrideClip.TryGet(out var overrideClip)) animClips.Add(overrideClip);
@@ -731,6 +754,34 @@ public class SceneAnimator : SceneComponent
 				runtimeClips.Add(runtime);
 		}
 
+		// Build state name → clip index mapping from the AnimatorController state machine
+		if (ac?.m_ControllerConstant != null) {
+			var tosLookup = new Dictionary<uint, string>();
+			foreach (var kv in ac.m_TOS) tosLookup[kv.Key] = kv.Value;
+
+			foreach (var sm in ac.m_ControllerConstant.m_StateMachineArray) {
+				for (int si = 0; si < sm.m_StateConstantArray.Length; si++) {
+					var state = sm.m_StateConstantArray[si];
+					if (!tosLookup.TryGetValue(state.m_NameID, out var stateName)) continue;
+
+					if (state.m_BlendTreeConstantArray.Length > 0) {
+						var bt = state.m_BlendTreeConstantArray[0];
+						if (bt.m_NodeArray.Length > 0) {
+							uint clipId = bt.m_NodeArray[0].m_ClipID;
+							if (clipId < runtimeClips.Count)
+								stateToClipIndex[stateName] = (int)clipId;
+						}
+					}
+
+					if (si == sm.m_DefaultState && stateToClipIndex.TryGetValue(stateName, out var defIdx))
+						defaultClipIndex = defIdx;
+				}
+			}
+		}
+
+		if (stateToClipIndex.Count > 0)
+			activeClipIndex = defaultClipIndex >= 0 ? defaultClipIndex : 0;
+
 	}
 
 	static int GetComponentIndex(DecodedClip.CurveData[] curves, int curveIdx, GenericBinding binding) {
@@ -756,7 +807,10 @@ public class SceneAnimator : SceneComponent
 		if (runtimeClips.Count == 0) return;
 		time += deltaTime;
 
-		foreach (var clip in runtimeClips) {
+		for (int ci = 0; ci < runtimeClips.Count; ci++) {
+			if (activeClipIndex >= 0 && ci != activeClipIndex) continue;
+
+			var clip = runtimeClips[ci];
 			float t;
 			if (clip.Loop && clip.Duration > 0) {
 				t = clip.Decoded.StartTime + ((time - clip.Decoded.StartTime) % clip.Duration);

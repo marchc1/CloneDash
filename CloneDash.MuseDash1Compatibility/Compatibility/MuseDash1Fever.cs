@@ -8,6 +8,7 @@ using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Types;
 using Nucleus.Util;
+using Raylib_cs;
 
 namespace CloneDash.MD1_Compat.Compatibility;
 
@@ -91,6 +92,7 @@ public class MuseDash1FeverProvider : IMuseDash1FeverProvider
 		var splits = name.Split('/');
 		splits.MoveNext();
 		splits.MoveNext();
+		splits.MoveNext();
 		var piece = name[splits.Current];
 		foreach (var descriptor in descriptors) {
 			if (descriptor.Name.Equals(piece, StringComparison.InvariantCultureIgnoreCase))
@@ -117,14 +119,14 @@ public class MuseDash1FeverDescriptor(string name) : IMuseDash1FeverDescriptor
 public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash1Game game) : BaseMuseDash1UnitySimScene, IMuseDash1FeverRuntime
 {
 	SceneTransform rootTransform = new();
-	SceneObject background = null!;
-	SceneAnimator backgroundAnimator = null!;
-	SceneObject whitBoard = null!;
-	SceneSpriteRenderer whitBoardRenderer = null!;
+	SceneObject? background;
+	SceneAnimator? backgroundAnimator;
+	SceneObject? whitBoard;
+	SceneSpriteRenderer? whitBoardRenderer;
 	Vector2F outScenePosition = new(15, 0.8f);
 	SceneObject?[] particles = new SceneObject[7];
-	private const float COME_OUT_DURING_TIME = 0.3f;
-	private bool isActivatedComeOut;
+	bool isActivatedComeOut;
+	bool ifShow = true;
 
 	public void Initialize() {
 		var gameobject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(descriptor.Name);
@@ -132,31 +134,135 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 
 		var feverEffectManagerMb = gameobject.GetMonoBehaviorByScriptName("FeverEffectManager");
 		if (feverEffectManagerMb == null) return;
-		
+
 		var feverEffectManager = new MonoBehaviourReader(feverEffectManagerMb);
-		background = ImportGameObject(feverEffectManager.Get<GameObject>("m_Background"), rootTransform)!;
-		whitBoard = ImportGameObject(feverEffectManager.Get<SpriteRenderer>("m_WhitBoardRender")!.GetGameObject(), rootTransform)!;
-		whitBoardRenderer = whitBoard.GetComponent<SceneSpriteRenderer>()!;
-		var outScenePosition = feverEffectManager.GetVector3("outScenePosition");
-		this.outScenePosition = new(outScenePosition!.Value.X, outScenePosition!.Value.Y);
+		background = ImportGameObject(feverEffectManager.Get<GameObject>("m_Background"), rootTransform);
+		var whitBoardSr = feverEffectManager.Get<SpriteRenderer>("m_WhitBoardRender");
+		if (whitBoardSr != null)
+			whitBoard = ImportGameObject(whitBoardSr.GetGameObject(), rootTransform);
+		whitBoardRenderer = whitBoard?.GetComponent<SceneSpriteRenderer>();
+
+		var outScenePositionVec = feverEffectManager.GetVector3("outScenePosition");
+		if (outScenePositionVec.HasValue)
+			outScenePosition = new(outScenePositionVec.Value.X, outScenePositionVec.Value.Y);
+
 		var m_Particles = feverEffectManager.GetList<GameObject>("m_Particles");
-		for (int i = 0; i < m_Particles.Count; i++) 
+		for (int i = 0; i < m_Particles.Count && i < particles.Length; i++)
 			particles[i] = ImportGameObject(m_Particles[i], rootTransform);
+
+		foreach (var obj in allObjects) obj.Awake();
+
+		backgroundAnimator = background?.GetComponent<SceneAnimator>();
+		animators.Add(backgroundAnimator);
+
+		// InitFeverEffect: position at outScenePosition, hide whitboard, disable particles
+		if (background != null) {
+			background.Transform.LocalX = outScenePosition.X;
+			background.Transform.LocalY = outScenePosition.Y;
+		}
+		if (whitBoard != null)
+			whitBoard.Color = new(1, 1, 1, 0);
+		foreach (var p in particles)
+			if (p != null) p.Active = false;
+
+		backgroundAnimator?.Rebind();
+
+		isActivatedComeOut = false;
+		ifShow = true;
 	}
 
 	public void Activate() {
+		// Mirrors InvokeNormalFever
+		if (background != null) {
+			background.Active = true;
+			if (backgroundAnimator != null) {
+				backgroundAnimator.Rebind();
+				backgroundAnimator.Play("come_in");
+			}
+		}
 
-	}
+		if (whitBoard != null) {
+			whitBoard.Active = false;
+			whitBoard.Color = new(1, 1, 1, 0);
+		}
 
-	public void Think() {
+		foreach (var p in particles)
+			if (p != null) p.Active = true;
 
+		isActivatedComeOut = false;
+		ifShow = true;
+
+		BuildRenderOrder();
 	}
 
 	public void Cancel() {
+		isActivatedComeOut = true;
+	}
 
+	public void Think() {
+		float dt = (float)globals.CurTimeDelta;
+
+		RunThinkFuncs(dt);
+
+		if (isActivatedComeOut) {
+			if (ifShow) {
+				if (whitBoard != null) {
+					whitBoard.Active = true;
+					float alpha = whitBoard.Color.W;
+					float step = dt / 0.15f;
+					alpha += step;
+					if (alpha < 1f) {
+						whitBoard.Color = new(1, 1, 1, alpha);
+					}
+					else {
+						whitBoard.Color = new(1, 1, 1, 1);
+						if (background != null) {
+							background.Transform.LocalX = outScenePosition.X;
+							background.Transform.LocalY = outScenePosition.Y;
+							background.Active = false;
+						}
+						foreach (var p in particles)
+							if (p != null) p.Active = false;
+						ifShow = false;
+					}
+				}
+				else {
+					ifShow = false;
+				}
+			}
+			else {
+				if (whitBoard != null) {
+					float alpha = whitBoard.Color.W;
+					float step = dt / 0.15f;
+					alpha -= step;
+					if (alpha > 0f) {
+						whitBoard.Color = new(1, 1, 1, alpha);
+					}
+					else {
+						whitBoard.Color = new(1, 1, 1, 0);
+						whitBoard.Active = false;
+						isActivatedComeOut = false;
+						if (backgroundAnimator != null) {
+							if (background != null) background.Active = true;
+							backgroundAnimator.Rebind();
+							backgroundAnimator.Play("waiting_outside");
+						}
+						ifShow = true;
+					}
+				}
+				else {
+					isActivatedComeOut = false;
+					ifShow = true;
+				}
+			}
+		}
+
+		BuildRenderOrder();
 	}
 
 	public void Render() {
-
+		Rlgl.PushMatrix();
+		foreach (var renderer in sortedRenderers) renderer.Render(this);
+		Rlgl.PopMatrix();
 	}
 }

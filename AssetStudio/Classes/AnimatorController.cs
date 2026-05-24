@@ -601,11 +601,12 @@ namespace AssetStudio
     {
         public List<PPtr<AnimationClip>> m_AnimationClips;
         public List<KeyValuePair<uint, string>> m_TOS;
+        public ControllerConstant m_ControllerConstant;
 
         public AnimatorController(ObjectReader reader) : base(reader)
         {
             var m_ControllerSize = reader.ReadUInt32();
-            var m_Controller = new ControllerConstant(reader);
+            m_ControllerConstant = new ControllerConstant(reader);
 
             int tosSize = reader.ReadInt32();
             m_TOS = new List<KeyValuePair<uint, string>>();
