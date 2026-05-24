@@ -26,6 +26,7 @@ public interface IMuseDash1FeverRuntime
 {
 	void Initialize();
 	void Activate();
+	void Cancel();
 	void Think();
 	void Render();
 }
@@ -148,6 +149,10 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 	}
 
 	public void Think() {
+
+	}
+
+	public void Cancel() {
 
 	}
 

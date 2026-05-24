@@ -590,6 +590,8 @@ public class SceneAnimator : SceneComponent
 	float time;
 	public int ResolvedClipCount => runtimeClips.Count;
 
+	public void ResetTime() { time = 0; }
+
 	public void DumpClipInfo() {
 		Logs.Info($"Object '{Object.Name}' clips={runtimeClips.Count}");
 		foreach (var clip in runtimeClips) {

@@ -1194,7 +1194,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			scene.Think(GetBgScrollSpeedMultiplier());
 		}
 		SceneUI?.Think(globals.CurTimeDelta);
-		if (InFever)
 		FeverFX?.Think();
 	}
 
@@ -1483,7 +1482,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (HasActiveScene(out var scene))
 			scene.RenderBackground();
 
-		if (InFever)
 		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}
@@ -1864,6 +1862,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		InFever = false;
 		Fever = 0;
 		WhenDidFeverStart = -1000000d;
+		FeverFX?.Cancel();
 	}
 	/// <summary>
 	/// Adds 1 to the players combo.

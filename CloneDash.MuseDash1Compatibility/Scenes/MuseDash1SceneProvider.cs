@@ -11,7 +11,7 @@ public class MuseDash1SceneProvider : ISceneProvider
 
 	IEnumerable<string> ISceneProvider.GetAvailable() {
 		foreach (var scene in MuseDash1SceneInfo.GetScenes())
-			yield return scene.MapName;
+			yield return "scene/musedash1/" + scene.MapName;
 	}
 
 	ISceneDescriptor? ISceneProvider.FindByName(ReadOnlySpan<char> name) {
