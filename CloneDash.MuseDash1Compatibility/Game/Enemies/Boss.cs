@@ -173,7 +173,7 @@ public class Boss : DashEnemy
 
 		if (visuals.Model == null) return;
 
-		if (!Level.Paused) visuals.Animations?.AddDeltaTime(Level.RendertimeDelta);
+		if (!Level.Paused) visuals.Animations?.AddDeltaTime(Level.RendertimeDelta * MuseDash1Game.musicspeed.GetDouble());
 
 		visuals.Animations?.Apply(visuals.Model);
 		visuals.Model.Position = Position;
