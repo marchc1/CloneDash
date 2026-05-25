@@ -126,8 +126,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 	}
 
-
-
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
@@ -249,9 +247,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	class LevelSelectorBackButton(LevelSelectorPanel levelSelector, SongSelector selector) : Button(levelSelector)
 	{
 		public override void Paint(float w, float h) {
-			// ImageColor = Element.MixColorBasedOnMouseState(this, new(200, 200, 200,
-			// 	(int)(Math.Clamp(NMath.Ease.OutCubic(Lifetime - 0.35f), 0, 1) * 255)
-			// 	), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
 			SetPos(new((levelSelector.GetRenderBounds().W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0));
 			base.Paint(w, h);
 		}
@@ -391,6 +386,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.SetAnchor(Anchor.Center);
 		back.SetOrigin(Anchor.Center);
 		back.SetPos(new(-256, 0));
+
 		var backImage = new Image(back);
 		backImage.SetTexture(Textures.LoadTextureFromFile("ui/back.png"));
 		backImage.SetImageOrientation(ImageOrientation.Centered);
@@ -400,6 +396,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
 		back.SetSize(new(106));
+
+		back.Thinking += (_) => {
+			backImage.SetImageColor(Element.MixColorBasedOnMouseState(back, new(200, 200, 200,
+				(int)(Math.Clamp(NMath.Ease.OutCubic(back.Lifetime - 0.35f), 0, 1) * 255)
+				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1)));
+		};
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
 		title.SetTextSize(48);
