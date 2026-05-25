@@ -193,6 +193,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public virtual void Reset() {
 		ExitMashState();
 		ResetScreenspaceEffects();
+		FeverFX?.Reset();
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
 			scene.OnPressStateChange(false, true);
@@ -1481,7 +1482,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//Stopwatch test = Stopwatch.StartNew();
 		if (HasActiveScene(out var scene))
 			scene.RenderBackground();
-
 		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}

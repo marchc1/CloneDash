@@ -28,10 +28,12 @@ public interface IMuseDash1FeverRuntime
 	void Initialize();
 	void Activate();
 	void Cancel();
+	void Reset();
 	void Think();
 	void Render();
 }
 
+[MarkForStaticConstruction]
 public static class FeverMod
 {
 	static IMuseDash1FeverDescriptor? activeDescriptor;
@@ -84,6 +86,7 @@ public class MuseDash1FeverProvider : IMuseDash1FeverProvider
 	public const string UUID_PREFIX = "fever/musedash1";
 	readonly MuseDash1FeverDescriptor[] descriptors = [
 		new("battle_fever"),
+		new("battle_fever_miku"),
 	];
 
 	public IMuseDash1FeverDescriptor? FindByName(ReadOnlySpan<char> name) {
@@ -118,6 +121,7 @@ public class MuseDash1FeverDescriptor(string name) : IMuseDash1FeverDescriptor
 
 public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash1Game game) : BaseMuseDash1UnitySimScene, IMuseDash1FeverRuntime
 {
+	readonly MuseDash1Game game = game;
 	SceneTransform rootTransform = new();
 	SceneObject? background;
 	SceneAnimator? backgroundAnimator;
@@ -163,7 +167,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 		foreach (var obj in allObjects) obj.Awake();
 
 		backgroundAnimator = background?.GetComponent<SceneAnimator>();
-		animators.Add(backgroundAnimator);
+		animators.Add(backgroundAnimator!);
 
 		// InitFeverEffect: position at outScenePosition, hide whitboard, disable particles
 		if (background != null) {
@@ -207,6 +211,10 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 
 	public void Cancel() {
 		isActivatedComeOut = true;
+	}
+
+	public void Reset() {
+		isActivatedComeOut = false;
 	}
 
 	public void Think() {
