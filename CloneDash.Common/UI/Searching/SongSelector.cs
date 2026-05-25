@@ -73,6 +73,8 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void TriggerUserSubmittedSearch() {
+		KeyboardFocus();
+
 		if (Source == null) return;
 		if (!IValidatable.IsValid(ActiveDialog)) return;
 
@@ -96,7 +98,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		base.OnThink();
 		ThinkDiscs();
 	}
-
+	protected override bool OnLosingKeyboardFocus(Element? newFocus) {
+		if (newFocus == null || newFocus.IsIndirectChildOf(this))
+			return false;
+		return base.OnLosingKeyboardFocus(newFocus);
+	}
 	public bool IsFiltered => Source?.GetParentSource() != null;
 	public int SongCountFiltered => Source?.GetSongCount() ?? 0;
 	public int SongCountTotal => Source?.GetRootSource()?.GetSongCount() ?? 0;

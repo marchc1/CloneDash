@@ -66,6 +66,7 @@ public class BaseContiguousChartSongFilter(BaseContiguousChartSongFilter? parent
 		var q = dialog.TextboxInput(nameof(Query), "Search Query", Query);
 		q.KeyboardFocus();
 		q.Caret.MovePosition(Query ?? "", Query?.Length ?? 0);
+		q.OnUserPressedEnter += (_, _, _) => dialog.Submit();
 		dialog.NumberCarouselInput(nameof(MinDifficulty), "Min. Difficulty", MinDifficulty, 1, 13);
 		dialog.NumberCarouselInput(nameof(MaxDifficulty), "Max. Difficulty", MaxDifficulty, 1, 13);
 	}

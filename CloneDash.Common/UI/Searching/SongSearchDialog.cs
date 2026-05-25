@@ -81,6 +81,7 @@ public class SongSearchDialog : Window
 		MakePopup();
 
 		DynamicallySized = true;
+		SetMinimumSize(null);
 		SetSize(new(0.4f));
 		Resizable = false;
 		HideNonCloseButtons();
@@ -195,6 +196,7 @@ public class SongSearchDialog : Window
 	public void Submit() {
 		OnUserSubmit?.Invoke();
 		Close();
+
 	}
 
 	public override void Paint(float width, float height) {
