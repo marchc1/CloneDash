@@ -587,28 +587,33 @@ public class SceneAnimator : SceneComponent
 	public Animator? UnityAnimator { get; set; }
 
 	readonly List<RuntimeClip> runtimeClips = [];
-	readonly Dictionary<string, int> stateToClipIndex = [];
-	int activeClipIndex = -1;
-	int defaultClipIndex = -1;
+
+	// State machine
+	record struct AnimState(string Name, int ClipIndex, bool Loop, AnimTransition[] Transitions);
+	record struct AnimTransition(int DestinationStateIndex, bool HasExitTime);
+
+	readonly List<AnimState> states = [];
+	readonly Dictionary<string, int> stateNameToIndex = [];
+	int currentStateIndex = -1;
+	int defaultStateIndex = -1;
 	float time;
 	public int ResolvedClipCount => runtimeClips.Count;
 
 	public void ResetTime() { time = 0; }
 
 	public void Play(string stateName) {
-		if (stateToClipIndex.TryGetValue(stateName, out var idx)) {
-			activeClipIndex = idx;
+		if (stateNameToIndex.TryGetValue(stateName, out var idx)) {
+			currentStateIndex = idx;
 			time = 0;
 		}
 		else {
-			Logs.Warn($"[SceneAnimator] State '{stateName}' not found on '{Object.Name}'. Available: {string.Join(", ", stateToClipIndex.Keys)}");
+			Logs.Warn($"[SceneAnimator] State '{stateName}' not found on '{Object.Name}'. Available: {string.Join(", ", stateNameToIndex.Keys)}");
 		}
 	}
 
 	public void Rebind() {
 		time = 0;
-		if (defaultClipIndex >= 0)
-			activeClipIndex = defaultClipIndex;
+		currentStateIndex = defaultStateIndex;
 	}
 
 	public void DumpClipInfo() {
@@ -754,7 +759,7 @@ public class SceneAnimator : SceneComponent
 				runtimeClips.Add(runtime);
 		}
 
-		// Build state name → clip index mapping from the AnimatorController state machine
+		// Build state machine from the AnimatorController
 		if (ac?.m_ControllerConstant != null) {
 			var tosLookup = new Dictionary<uint, string>();
 			foreach (var kv in ac.m_TOS) tosLookup[kv.Key] = kv.Value;
@@ -764,23 +769,34 @@ public class SceneAnimator : SceneComponent
 					var state = sm.m_StateConstantArray[si];
 					if (!tosLookup.TryGetValue(state.m_NameID, out var stateName)) continue;
 
+					int clipIndex = -1;
 					if (state.m_BlendTreeConstantArray.Length > 0) {
 						var bt = state.m_BlendTreeConstantArray[0];
 						if (bt.m_NodeArray.Length > 0) {
 							uint clipId = bt.m_NodeArray[0].m_ClipID;
 							if (clipId < runtimeClips.Count)
-								stateToClipIndex[stateName] = (int)clipId;
+								clipIndex = (int)clipId;
 						}
 					}
 
-					if (si == sm.m_DefaultState && stateToClipIndex.TryGetValue(stateName, out var defIdx))
-						defaultClipIndex = defIdx;
+					// Build transitions for this state
+					var transitions = new AnimTransition[state.m_TransitionConstantArray.Length];
+					for (int ti = 0; ti < state.m_TransitionConstantArray.Length; ti++) {
+						var tc = state.m_TransitionConstantArray[ti];
+						transitions[ti] = new AnimTransition((int)tc.m_DestinationState, tc.m_HasExitTime);
+					}
+
+					int stateIdx = states.Count;
+					states.Add(new AnimState(stateName, clipIndex, state.m_Loop, transitions));
+					stateNameToIndex[stateName] = stateIdx;
+
+					if (si == sm.m_DefaultState)
+						defaultStateIndex = stateIdx;
 				}
 			}
 		}
 
-		if (stateToClipIndex.Count > 0)
-			activeClipIndex = defaultClipIndex >= 0 ? defaultClipIndex : 0;
+		currentStateIndex = defaultStateIndex;
 
 	}
 
@@ -807,12 +823,44 @@ public class SceneAnimator : SceneComponent
 		if (runtimeClips.Count == 0) return;
 		time += deltaTime;
 
+		// Determine which clip to play based on current state
+		int clipIndex;
+		bool loop;
+		if (currentStateIndex >= 0 && currentStateIndex < states.Count) {
+			var state = states[currentStateIndex];
+			clipIndex = state.ClipIndex;
+			loop = state.Loop;
+
+			// Check for exit-time transitions: if the clip has finished and there's a HasExitTime transition, take it
+			if (clipIndex >= 0 && clipIndex < runtimeClips.Count) {
+				var clip = runtimeClips[clipIndex];
+				if (clip.Duration > 0 && time >= clip.Decoded.StopTime) {
+					foreach (var transition in state.Transitions) {
+						if (transition.HasExitTime && transition.DestinationStateIndex >= 0 && transition.DestinationStateIndex < states.Count) {
+							currentStateIndex = transition.DestinationStateIndex;
+							time = runtimeClips[states[currentStateIndex].ClipIndex].Decoded.StartTime;
+							// Re-read from new state
+							clipIndex = states[currentStateIndex].ClipIndex;
+							loop = states[currentStateIndex].Loop;
+							break;
+						}
+					}
+				}
+			}
+		}
+		else {
+			// Legacy: no state machine, play all clips
+			clipIndex = -1;
+			loop = false;
+		}
+
 		for (int ci = 0; ci < runtimeClips.Count; ci++) {
-			if (activeClipIndex >= 0 && ci != activeClipIndex) continue;
+			if (clipIndex >= 0 && ci != clipIndex) continue;
 
 			var clip = runtimeClips[ci];
 			float t;
-			if (clip.Loop && clip.Duration > 0) {
+			bool shouldLoop = clipIndex >= 0 ? loop : clip.Loop;
+			if (shouldLoop && clip.Duration > 0) {
 				t = clip.Decoded.StartTime + ((time - clip.Decoded.StartTime) % clip.Duration);
 				if (t < clip.Decoded.StartTime) t += clip.Duration;
 			}
