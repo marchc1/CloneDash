@@ -132,13 +132,14 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 		var gameobject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(descriptor.Name);
 		if (gameobject == null) return;
 
-		if (gameobject.m_Transform != null) {
-			rootTransform.LocalX = gameobject.m_Transform.m_LocalPosition.X;
-			rootTransform.LocalY = gameobject.m_Transform.m_LocalPosition.Y;
-			rootTransform.LocalZ = gameobject.m_Transform.m_LocalPosition.Z;
-			rootTransform.LocalScaleX = gameobject.m_Transform.m_LocalScale.X;
-			rootTransform.LocalScaleY = gameobject.m_Transform.m_LocalScale.Y;
-			rootTransform.LocalScaleZ = gameobject.m_Transform.m_LocalScale.Z;
+		AssetStudio.Transform? gameTransform;
+		if ((gameTransform = gameobject.GetFirstComponent<AssetStudio.Transform>()) != null) {
+			rootTransform.LocalX = gameTransform.m_LocalPosition.X;
+			rootTransform.LocalY = gameTransform.m_LocalPosition.Y;
+			rootTransform.LocalZ = gameTransform.m_LocalPosition.Z;
+			rootTransform.LocalScaleX = gameTransform.m_LocalScale.X;
+			rootTransform.LocalScaleY = gameTransform.m_LocalScale.Y;
+			rootTransform.LocalScaleZ = gameTransform.m_LocalScale.Z;
 		}
 
 		var feverEffectManagerMb = gameobject.GetMonoBehaviorByScriptName("FeverEffectManager");
