@@ -114,7 +114,6 @@ namespace CloneDash.Game.Logic
 
 			// Sort the visible entities by closest to furthest
 			var ents = level.EnemyManager.GetLastVisibleEnemies();
-			ents.Sort((x, y) => x.GetJudgementTimeUntilHit().CompareTo(y.GetJudgementTimeUntilHit()));
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = GetClosestInteractiveIdx(ents);
@@ -133,7 +132,8 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.SamePath:
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
-								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f)) {
+								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f) && AvoidHittingAgain(ent)) {
+									Logs.Info($"hit {ent.SortIndex}");
 									if (ent.Pathway == PathwaySide.Top && !avoidedTop)
 										input.TopClicked += 1;
 									else if (!avoidedBottom) {
@@ -184,6 +184,15 @@ namespace CloneDash.Game.Logic
 
 			// Sustain holding logic
 			SustainHoldThink(ref input);
+		}
+
+		private bool AvoidHittingAgain(DashEnemy ent) {
+			switch (ent.Type) {
+				default:
+					return !ent.Dead;
+				case MuseDash1EntityType.Masher:
+					return true;
+			}
 		}
 
 		private int GetClosestInteractiveIdx(Span<DashEnemy> ents) {

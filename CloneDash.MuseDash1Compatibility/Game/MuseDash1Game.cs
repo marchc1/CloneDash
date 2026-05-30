@@ -933,7 +933,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Quirks.HealthLossPerSecond(ProduceSnapshot(), ref loss);
 			DrainHealth(loss * Conductor.TimeDelta);
 		}
-
+		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
 		InputState.Reset();
 		if (!IsDead()) {
 			if (AutoPlayer.Enabled) {
@@ -1093,7 +1093,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			sceneUI.UpdateHP(Health, Quirks.MaxHP);
 		}
 
-		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
 		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
 		var lastEntity = EnemyManager.GetLastEnemy();
 
