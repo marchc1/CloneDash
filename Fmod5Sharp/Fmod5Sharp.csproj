@@ -28,7 +28,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
         <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.7" />
-        <PackageReference Include="IndexRange" Version="1.1.0" />
+        <PackageReference Include="IndexRange" Version="1.1.1" />
         <PackageReference Include="NAudio" Version="2.2.1" />
         <PackageReference Include="NAudio.Core" Version="2.2.1" />
         <PackageReference Include="OggVorbisEncoder" Version="1.2.2" />
