@@ -133,7 +133,6 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f) && AvoidHittingAgain(ent)) {
-									Logs.Info($"hit {ent.SortIndex}");
 									if (ent.Pathway == PathwaySide.Top && !avoidedTop)
 										input.TopClicked += 1;
 									else if (!avoidedBottom) {
