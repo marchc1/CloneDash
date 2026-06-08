@@ -1,9 +1,8 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Charts;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game;
-using CloneDash.Levels;
 using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -11,6 +10,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
@@ -19,8 +19,8 @@ using Nucleus.Input;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+using Nucleus.UI.Elements;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 
 
@@ -51,7 +51,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		List<MainMenuButton> newBtns = [];
 		btns.Push(newBtns);
 		InvalidateLayout();
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		back.SetVisible(!UsingRootNavigationMenu);
 		return newBtns;
 	}
 	public bool UsingRootNavigationMenu => btns.Count == 1;
@@ -70,7 +70,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		var menu = btns.Peek();
 		foreach (var btn in menu)
 			btn.Offscreen = 0;
-		back.Visible = back.Enabled = !UsingRootNavigationMenu;
+		back.SetVisible(!UsingRootNavigationMenu);
 		InvalidateLayout();
 	}
 
@@ -78,14 +78,14 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MainMenuLevel menu = Level.As<MainMenuLevel>();
 		var menuBtns = btns.Peek();
 
-		Add(out MainMenuButton btn);
-		btn.BackgroundColor = new System.Numerics.Vector3(hue, 0.3f, 0.1f).ToRGB();
-		btn.ForegroundColor = new System.Numerics.Vector3(hue, 0.4f, 0.6f).ToRGB();
-		btn.Text = text;
-		btn.Image = menu.Textures.LoadTextureFromFile(icon);
+		MainMenuButton btn = new(this, icon);
+		btn.SetBgColor(new System.Numerics.Vector3(hue, 0.3f, 0.1f).HSVfToRGBub());
+		btn.SetFgColor(new System.Numerics.Vector3(hue, 0.4f, 0.6f).HSVfToRGBub());
+		btn.SetText(text);
+		// TODO FIX ICONS btn.Image = menu.Textures.LoadTextureFromFile(icon);
 		btn.SubText = description;
 
-		btn.MouseReleaseEvent += (_, _, _) => action?.Invoke(menu);
+		btn.OnButtonClick += (_, _) => action?.Invoke(menu);
 		btn.SetStart((menuBtns.Count + 1) * 24);
 
 		menuBtns.Add(btn);
@@ -93,12 +93,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 
 	Button back;
-	public List<ChartSong> RefreshLocalSongs() {
-		List<ChartSong> ret = [];
+	public List<ISong> RefreshLocalSongs() {
+		List<ISong> ret = [];
 
 		foreach (var file in filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
 			try {
-				ret.Add(new CustomChartsSong("charts", file));
+				ret.Add(new MD1_CustomChartsSong("charts", file));
 			}
 			catch (Exception ex) {
 				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");
@@ -107,33 +107,33 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		return ret;
 	}
-	public override void OnRemoval() {
+	protected override void OnRemoval() {
 		base.OnRemoval();
 	}
-	protected override void Initialize() {
-		base.Initialize();
+	public MainMenuPanel(Element? parent) : base(parent) {
+		SetBorderSize(0);
+		SetPaintBackgroundEnabled(false);
 
-		BorderSize = 0;
-		DrawPanelBackground = false;
+		SetPassthru(true);
 
-		OnHoverTest += Element.Passthru;
-
-		Add(out back);
-		back.Origin = Anchor.Center;
-		back.BorderSize = 0;
-		back.BackgroundColor = new(0, 0);
-		back.Image = Textures.LoadTextureFromFile("ui/back.png");
-		back.ImageOrientation = ImageOrientation.Zoom;
-		back.Text = "";
-		back.MouseReleaseEvent += Back_MouseReleaseEvent;
+		back = new(this);
+		back.SetOrigin(Anchor.Center);
+		back.SetBorderSize(0);
+		back.SetBgColor(new Color(0, 0));
+		var backImage = new Image(back);
+		backImage.SetTexture(Level.Textures.LoadTextureFromFile("ui/back.png"));
+		backImage.SetImageOrientation(ImageOrientation.Zoom);
+		backImage.SetDock(Dock.Fill);
+		back.SetText("");
+		back.OnButtonClick += Back_MouseReleaseEvent;
 		CreateNavigationMenu();
 		MakeNavigationButton("Play Muse Dash Chart", "ui/play_md_level.png", "Play a Muse Dash chart (if you have Muse Dash installed).", 48, (menu) => {
 			var source = ChartMod.GetChartSongProviderByName("Muse Dash");
-			if(source == null){
+			if (source == null) {
 				UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
 				return;
 			}
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Play Custom Chart", "ui/play_cam_level.png", "Play a custom chart (.mdm format).", 310, (menu) => {
@@ -143,7 +143,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				return;
 			}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Search mdmc.moe Charts", "ui/webcharts.png", "Find new charts from the Muse Dash Modding Community.", 340, (menu) => {
@@ -153,27 +153,27 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 				return;
 			}
 
-			var selector = menu.PushActiveElement(UI.Add<SongSelector>());
+			var selector = menu.PushActiveElement(new SongSelector(UI));
 			selector.SetSource(source.NewState());
 		});
 		MakeNavigationButton("Change Character", "ui/charselect.png", "Select a character from the characters you have installed.", 20, (menu) => {
-			var selector = menu.PushActiveElement(UI.Add<CharacterSelector>());
+			var selector = menu.PushActiveElement(new CharacterSelector(UI));
 		});
 		MakeNavigationButton("Change Scene", "ui/sceneselect.png", "Select a scene from the scenes you have installed.", 70);
 		MakeNavigationButton("Modding Tools", "ui/solder.png", "Various tools for modding the game", 225, ModdingTools_OpenMenuButtons);
 		MakeNavigationButton("Options", "ui/pause_settings.png", "Change game settings", 200, (menu) => {
-			var settings = menu.PushActiveElement(UI.Add<SettingsEditor>());
-			settings.DrawPanelBackground = false;
+			var settings = menu.PushActiveElement(new SettingsEditor(UI));
+			settings.SetPaintBackgroundEnabled(false);
 		});
 		MakeNavigationButton("Exit to Desktop", "ui/pause_exit.png", $"Close the application.", 350, (menu) => EngineCore.Close());
 	}
 
 
-	protected override void OnThink(FrameState frameState) {
-		base.OnThink(frameState);
+	protected override void OnThink() {
+		base.OnThink();
 		// Char.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Level.Curtime * 1.5, 0, 1))) * -(Level.FrameState.WindowWidth / 2), 0);
 	}
-	private void Back_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private void Back_MouseReleaseEvent(Button self, ButtonCode mouseButton) {
 		DestroyNavigationMenu();
 	}
 
@@ -192,20 +192,20 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			var btnWidth = Math.Clamp(width / 3f, 460, 155555);
 			var btnHeight = height / 12f;
 			var btnsLen = btns.Count;
-			back.Size = new(btnHeight * 2);
-			back.Position = new(width * .5f, height / 2);
-			back.Visible = back.Enabled = !UsingRootNavigationMenu;
+			back.SetSize(new(btnHeight * 2));
+			back.SetPos(new(width * .5f, height / 2));
+			back.SetVisible(!UsingRootNavigationMenu);
 
 			for (int i = 0; i < btnsLen; i++) {
 				var btn = btns[i];
 
-				btn.Origin = Anchor.Center;
-				btn.TextSize = textHeight;
-				btn.Size = new(btnWidth, btnHeight);
+				btn.SetOrigin(Anchor.Center);
+				btn.SetTextSize(textHeight);
+				btn.SetSize(new(btnWidth, btnHeight));
 
 				var y = btnsLen == 1 ? 0 : (float)NMath.Remap(i, 0, btnsLen - 1, -1, 1);
 
-				btn.Position = new(width * .75f, height / 2 + y * height / 3);
+				btn.SetPos(new(width * .75f, height / 2 + y * height / 3));
 			}
 		}
 	}

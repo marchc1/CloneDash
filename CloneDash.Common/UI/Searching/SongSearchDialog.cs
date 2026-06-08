@@ -1,0 +1,211 @@
+﻿using CloneDash.Charts;
+using CloneDash.UI;
+using Nucleus.Common.Input;
+using Nucleus.Input;
+using Nucleus.Types;
+using Nucleus.UI;
+using Nucleus.UI.Elements;
+using System.Reflection;
+
+namespace CloneDash.Menu.Searching;
+
+public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
+{
+	Label label = null!;
+	T element = null!;
+	public DialogLabelPanel(Element? parent) : base(parent){
+		SetBorderSize(0);
+
+		label = new(this);
+		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
+	}
+	public T Get() => element;
+
+
+	public ReadOnlySpan<char> GetText() {
+		return ((ITextElement)label).GetText();
+	}
+
+	public void SetText(ReadOnlySpan<char> text) {
+		((ITextElement)label).SetText(text);
+	}
+
+	public ReadOnlySpan<char> GetFont() {
+		return ((ITextElement)label).GetFont();
+	}
+
+	public float GetTextSize() {
+		return ((ITextElement)label).GetTextSize();
+	}
+
+	public void SetFont(ReadOnlySpan<char> font) {
+		((ITextElement)label).SetFont(font);
+	}
+
+	public void SetTextSize(float textSize) {
+		((ITextElement)label).SetTextSize(textSize);
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		label.SetPos(new(0, 0));
+		var div = 4f;
+		label.SetSize(new(width / div, height));
+
+		var padding = 4;
+		element.SetPos(new((width / div) + padding, padding));
+		element.SetSize(new((width - (width / div)) - (padding * 2), (height) - (padding * 2)));
+	}
+}
+
+public class SongSearchDialog : Window
+{
+	public SongSearchBar Bar;
+	Button applyButton;
+
+	ScrollPanel parameters;
+	public delegate void OnUserSubmitD();
+	public event OnUserSubmitD? OnUserSubmit;
+	public SongSelector Selector;
+
+	class applyStepData
+	{
+		public required string target;
+		public required Func<object?> valueFn;
+	}
+
+	readonly List<applyStepData> applySteps = [];
+
+	public void SetBarText(string text) => Bar.SearchQuery = string.IsNullOrEmpty(text) ? null : text;
+
+	public SongSearchDialog(Element? parent) : base(parent) {
+		MakePopup();
+
+		DynamicallySized = true;
+		SetMinimumSize(null);
+		SetSize(new(0.4f));
+		Resizable = false;
+		HideNonCloseButtons();
+		Title = "Song Search Dialog";
+
+		applyButton = new(this);
+		applyButton.SetText("Apply");
+		applyButton.SetBorderSize(0);
+		applyButton.SetDock(Dock.Bottom);
+
+		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;
+
+		parameters = new(this);
+		parameters.SetDock(Dock.Fill);
+		SetAddParent(parameters);
+
+		Center();
+	}
+
+	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
+		DialogLabelPanel<T> pnl = new(parameters);
+		pnl.SetDock(Dock.Top);
+		pnl.SetSize(new(0, 0.15f));
+		pnl.DynamicallySized = true;
+		pnl.SetText(label.SliceNullTerminatedString());
+		return pnl;
+	}
+
+	public void NumberCarouselInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, int value, int min, int max) {
+		var pnl = InputPanel<NumberPickerCarousel>(label);
+		pnl.Get().MinimumValue = min;
+		pnl.Get().MaximumValue = max;
+		pnl.Get().Value = value;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => Convert.ToInt32(pnl.Get().Value) });
+	}
+
+	public void NumberInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, float value, float? min = null, float? max = null) {
+		var pnl = InputPanel<NumSlider>(label);
+		pnl.Get().Value = value;
+		pnl.Get().Digits = 3;
+		pnl.Get().MinimumValue = min;
+		pnl.Get().MaximumValue = max;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => Convert.ToInt32(pnl.Get().Value) });
+	}
+
+	public void NumberInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, int value, int? min = null, int? max = null) {
+		var pnl = InputPanel<NumSlider>(label);
+		pnl.Get().Value = value;
+		pnl.Get().Digits = 3;
+		pnl.Get().MinimumValue = min;
+		pnl.Get().MaximumValue = max;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => (float)pnl.Get().Value });
+	}
+
+	public void NumberInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, double value, double? min = null, double? max = null) {
+		var pnl = InputPanel<NumSlider>(label);
+		pnl.Get().Value = value;
+		pnl.Get().Digits = 6;
+		pnl.Get().MinimumValue = min;
+		pnl.Get().MaximumValue = max;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Value });
+	}
+
+	public Textbox TextboxInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, ReadOnlySpan<char> value) {
+		var pnl = InputPanel<Textbox>(label);
+		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.Get().SetText(value.SliceNullTerminatedString());
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => new string(pnl.Get().GetText()) });
+
+		return pnl.Get();
+	}
+
+	public void BoolInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, bool state) {
+		var pnl = InputPanel<Checkbox>(label);
+		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.Get().Checked = state;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Checked });
+	}
+
+	public void EnumInput<T>(ReadOnlySpan<char> name, ReadOnlySpan<char> label, T value) where T : Enum {
+		var pnl = InputPanel<DropdownSelector<T>>(label);
+		foreach (var enumValue in Enum.GetValuesAsUnderlyingType(typeof(T)))
+			pnl.Get().Items.Add(value);
+
+		pnl.Get().Selected = value;
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Selected });
+	}
+
+	public ISongSourceState Apply<T, F>(T state, F filter) where T : ISongSourceState where F : IChartSongFilter {
+		var newFilter = (F)state.NewFilter();
+		var type = newFilter.GetType();
+
+		foreach (var applyStep in applySteps) {
+			var member = type.GetMember(applyStep.target, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).First();
+			switch (member) {
+				case FieldInfo field:
+					field.SetValue(newFilter, applyStep.valueFn());
+					break;
+				case PropertyInfo prop:
+					prop.SetValue(newFilter, applyStep.valueFn());
+					break;
+				default:
+					throw new Exception();
+			}
+		}
+
+		var source = state.GetRootSource().ProduceNewSource(newFilter);
+		return source;
+	}
+
+	private void ApplyButton_MouseReleaseEvent(Button self, ButtonCode button) => Submit();
+	public void Submit() {
+		OnUserSubmit?.Invoke();
+		Close();
+
+	}
+
+	public override void Paint(float width, float height) {
+		base.Paint(width, height);
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		applyButton.SetSize(new(height * 0.1f));
+	}
+}
+

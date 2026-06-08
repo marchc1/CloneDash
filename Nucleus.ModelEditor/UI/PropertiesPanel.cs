@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -20,10 +21,9 @@ namespace Nucleus.ModelEditor
 {
 	public class PropertiesPanel : Panel
 	{
-		protected override void Initialize() {
-			base.Initialize();
-			DrawPanelBackground = false;
-
+		public PropertiesPanel(Element parent) : base(parent) {
+			SetPaintBackgroundEnabled(false);
+			SetBorderSize(0);
 			ModelEditor.Active.SelectedChanged += ModelEditor_Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => ModelEditor_Active_SelectedChanged();
 			ModelEditor.Active.File.Cleared += File_Cleared;
@@ -52,40 +52,22 @@ namespace Nucleus.ModelEditor
 			base.Paint(width, height);
 		}
 		Panel Props;
-		public static FlexPanel NewRow(Panel props, string label, string? icon = null) {
-			Panel p = props.Add(new Panel() {
-				Dock = Dock.Top,
-				Size = new(0, 30),
-				DockMargin = RectangleF.TLRB(0, 8, 8, -1),
-				BorderSize = 1,
-				BackgroundColor = new(30, 35, 40),
-				ForegroundColor = new(120, 125, 130)
-			});
 
-			Label test = p.Add<Label>();
-			test.Dock = Dock.Left;
-			test.Text = label;
-			test.Size = new(110);
-			test.TextAlignment = Anchor.CenterLeft;
-			test.TextPadding = new(32, 0);
-			test.DrawBackground = true;
-			test.TextSize = 19;
-			test.BackgroundColor = new(60, 65, 70);
+		public class InnerRow : FlexPanel
+		{
+			public InnerRow(Element parent) : base(parent) {
 
-			FlexPanel inner = p.Add<FlexPanel>();
-			inner.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			inner.Direction = Directional180.Horizontal;
-			inner.DockPadding = RectangleF.Zero;
-			inner.Dock = Dock.Fill;
-
-			ManagedMemory.Texture? tex = null;
-			if (icon != null) {
-				tex = props.UI.Level.Textures.LoadTextureFromFile(icon);
 			}
+		}
 
-			test.PaintOverride += (self, w, h) => {
-				Label l = (self as Label);
-				Graphics2D.SetDrawColor(l.BackgroundColor);
+		public class InnerRowLabel : Label
+		{
+			ITexture? tex;
+			public InnerRowLabel(Element parent, ITexture? tex) : base(parent) {
+				this.tex = tex;
+			}
+			public override void Paint(float w, float h) {
+				Graphics2D.SetDrawColor(GetBgColor());
 				Graphics2D.DrawRectangle(0, 0, w, h);
 
 				if (IValidatable.IsValid(tex)) {
@@ -94,65 +76,101 @@ namespace Nucleus.ModelEditor
 					Graphics2D.DrawImage(new(2, (h - 24) / 2), new(24, 24));
 				}
 
-				Vector2F textDrawingPosition = l.TextAlignment.GetPositionGivenAlignment(self.RenderBounds.Size, l.TextPadding);
-				Graphics2D.SetDrawColor(l.TextColor);
-				Graphics2D.DrawText(textDrawingPosition, l.Text, l.Font, l.TextSize, l.TextAlignment);
-			};
+				Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
+				Graphics2D.SetDrawColor(GetTextColor());
+				Graphics2D.DrawText(textDrawingPosition, GetText(), GetFont(), GetTextSize(), GetTextAlignment());
+			}
+		}
+		public static InnerRow NewRow(Panel props, string label, string? icon = null) {
+			Panel p = new Panel(props);
+			p.SetDock(Dock.Top);
+			p.SetSize(new(0, 30));
+			p.SetDockMargin(RectangleF.TLRB(0, 8, 8, -1));
+			p.SetBorderSize(1);
+			p.SetBgColor(new Color(30, 35, 40));
+			p.SetFgColor(new Color(120, 125, 130));
+
+
+			ManagedMemory.Texture? tex = null;
+			if (icon != null) {
+				tex = props.UI.Level.Textures.LoadTextureFromFile(icon);
+			}
+			InnerRowLabel test = new(p, tex);
+			test.SetDock(Dock.Left);
+			test.SetText(label);
+			test.SetSize(new(110));
+			test.SetTextAlignment(Anchor.CenterLeft);
+			test.SetTextPadding(new(64, 0));
+			test.SetPaintBackgroundEnabled(true);
+			test.SetTextSize(19);
+			test.SetBgColor(new Color(60, 65, 70));
+
+			InnerRow inner = new(p);
+			inner.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+			inner.Direction = Axis.Horizontal;
+			inner.SetDockPadding(RectangleF.Zero);
+			inner.SetDock(Dock.Fill);
 
 			return inner;
 		}
-		public static Panel AddInternalPropPanel(Panel prop) {
-			var first = !prop.AddParent.HasChildren;
 
-			var panel = prop.Add<Panel>();
-			panel.DrawPanelBackground = false;
-			panel.DockPadding = RectangleF.Zero;
-
-			panel.SetTag<bool>("first", first);
-
-			panel.PaintOverride += (s, w, h) => {
-				if (s.GetTag<bool>("first")) return;
-				Graphics2D.SetDrawColor(s.ForegroundColor);
+		class InternalPropPanel(Element parent) : Panel(parent)
+		{
+			public override void Paint(float w, float h) {
+				if (GetTag<bool>("first")) return;
+				Graphics2D.SetDrawColor(GetFgColor());
 				Graphics2D.DrawLine(0, 0, 0, h, 3);
-			};
+			}
+		}
+
+		public static Panel AddInternalPropPanel(Panel prop) {
+			var first = !prop.GetAddParent().HasChildren();
+
+			var panel = new InternalPropPanel(prop);
+			panel.SetPaintBackgroundEnabled(false);
+			panel.SetDockPadding(RectangleF.Zero);
+			panel.SetTag<bool>("first", first);
 
 			return panel;
 		}
 		public static Checkbox AddLabeledCheckbox(Panel prop, string text, bool @checked = false) {
 			var panel = AddInternalPropPanel(prop);
 
-			var checkbox = panel.Add<Checkbox>();
-			var label = panel.Add<Label>();
+			var checkbox = new Checkbox(panel);
+			var label = new Label(panel);
 
-			checkbox.Dock = Dock.Left;
-			checkbox.DockMargin = RectangleF.TLRB(4, 6, 7, 4);
-			checkbox.Checked = (@checked);
+			checkbox.SetDock(Dock.Left);
+			checkbox.SetDockMargin(RectangleF.TLRB(4, 6, 7, 4));
+			checkbox.Checked = @checked;
 
-			label.Dock = Dock.Fill;
-			label.Text = text;
-			label.TextAlignment = Anchor.CenterLeft;
-			label.DockMargin = RectangleF.TLRB(4);
+			label.SetDock(Dock.Fill);
+			label.SetText(text);
+			label.SetTextAlignment(Anchor.CenterLeft);
+			label.SetDockMargin(RectangleF.TLRB(4));
 
 			return checkbox;
 		}
 		public static Textbox AddFilepath(Panel prop, string? currentPath, Action<Textbox, string> chosenPath) {
 			var panel = AddInternalPropPanel(prop);
 
-			var searchBtn = panel.Add<Button>();
-			searchBtn.BorderSize = 0;
-			searchBtn.Dock = Dock.Right;
-			searchBtn.Size = new(24);
-			searchBtn.Text = "";
-			searchBtn.Image = prop.Level.Textures.LoadTextureFromFile("models/search.png");
+			var searchBtn = new Button(panel);
+			searchBtn.SetBorderSize(0);
+			searchBtn.SetDock(Dock.Right);
+			searchBtn.SetSize(new(24));
+			searchBtn.SetText("");
+			var searchImg = new Nucleus.UI.Elements.Image(searchBtn);
+			searchImg.SetTexture(prop.Level.Textures.LoadTextureFromFile("models/search.png"));
+			searchImg.SetPassthru(true);
+			searchImg.SetDock(Dock.Fill);
 
-			var path = panel.Add<Textbox>();
-			path.Dock = Dock.Fill;
-			path.Text = currentPath ?? "<null>";
-			path.TextAlignment = Anchor.Center;
-			path.BorderSize = 0;
+			var path = new Textbox(panel);
+			path.SetDock(Dock.Fill);
+			path.SetText(currentPath ?? "<null>");
+			path.SetTextAlignment(Anchor.Center);
+			path.SetBorderSize(0);
 
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
-			searchBtn.MouseReleaseEvent += (_, _, _) => {
+			searchBtn.OnButtonClick += (_, _) => {
 				var result = Platform.SelectFolderDialog("Select Images Folder", (filesystem.GetSearchPathID("game").First() as DiskSearchPath)!.RootDirectory);
 				if (!result.Cancelled)
 					chosenPath(path, result.Result);
@@ -163,22 +181,22 @@ namespace Nucleus.ModelEditor
 		public static NumSlider AddNumSlider(Panel prop, float currentValue = 0) {
 			var panel = AddInternalPropPanel(prop);
 
-			var numslider = panel.Add<NumSlider>();
-			numslider.Dock = Dock.Fill;
+			var numslider = new NumSlider(panel);
+			numslider.SetDock(Dock.Fill);
 			numslider.Value = currentValue;
-			numslider.TextAlignment = Anchor.Center;
-			numslider.BorderSize = 0;
+			numslider.SetTextAlignment(Anchor.Center);
+			numslider.SetBorderSize(0);
 
 			return numslider;
 		}
 		public static ColorSelector AddColorSelector(Panel prop, Color? currentColor = null) {
 			var panel = AddInternalPropPanel(prop);
 
-			var selector = panel.Add<ColorSelector>();
-			selector.Dock = Dock.Left;
-			selector.Size = new(96);
+			var selector = new ColorSelector(panel);
+			selector.SetDock(Dock.Left);
+			selector.SetSize(new(96));
 			selector.SelectedColor = (currentColor ?? Color.White);
-			selector.BorderSize = 0;
+			selector.SetBorderSize(0);
 
 			return selector;
 		}
@@ -194,18 +212,18 @@ namespace Nucleus.ModelEditor
 			if (target is not EditorSlot slot)
 				throw new Exception("Unsupported type for this method");
 
-			var keyframe = panel.Add<KeyframeButton>();
+			var keyframe = new KeyframeButton(panel);
 			keyframe.Property = property;
 			keyframe.ArrayIndex = arrayIndex;
-			keyframe.Size = new(24);
-			keyframe.Dock = Dock.Right;
-			keyframe.MouseReleaseEvent += (_, _, _) => ModelEditor.Active.File.InsertKeyframe(target, property, 0);
+			keyframe.SetSize(new(24));
+			keyframe.SetDock(Dock.Right);
+			keyframe.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(target, property, 0);
 
-			var selector = panel.Add<ColorSelector>();
-			selector.Dock = Dock.Fill;
-			selector.Size = new(64);
+			var selector = new ColorSelector(panel);
+			selector.SetDock(Dock.Fill);
+			selector.SetSize(new(64));
 			selector.SelectedColor = (currentColor ?? Color.White);
-			selector.BorderSize = 0;
+			selector.SetBorderSize(0);
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = (slot.GetColor());
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = (slot.GetColor());
 
@@ -216,13 +234,13 @@ namespace Nucleus.ModelEditor
 		public static DropdownSelector<T> AddComboBox<T>(Panel prop, T? value, IEnumerable<T> options, Func<T?, string> tostring, Action<T> change) {
 			var panel = AddInternalPropPanel(prop);
 
-			var selector = panel.Add<DropdownSelector<T>>();
+			var selector = new DropdownSelector<T>(panel);
 			selector.Items.AddRange(options);
 			selector.Selected = value;
-			selector.Dock = Dock.Left;
-			selector.Size = new(96);
+			selector.SetDock(Dock.Left);
+			selector.SetSize(new(96));
+			selector.SetBorderSize(0);
 			selector.Selected = value;
-			selector.BorderSize = 0;
 			selector.OnToString += (t) => tostring(t);
 			selector.OnSelectionChanged += (self, o, n) => change(n);
 
@@ -231,11 +249,11 @@ namespace Nucleus.ModelEditor
 		public static DropdownSelector<T> AddEnumComboBox<T>(Panel prop, T? value) where T : Enum {
 			var panel = AddInternalPropPanel(prop);
 
-			var selector = panel.Add(DropdownSelector<T>.FromEnum<T>(value ?? default(T)));
-			selector.Dock = Dock.Left;
-			selector.Size = new(96);
+			var selector = DropdownSelector<T>.FromEnum<T>(panel, value ?? default(T));
+			selector.SetDock(Dock.Left);
+			selector.SetSize(new(96));
+			selector.SetBorderSize(0);
 			selector.Selected = value;
-			selector.BorderSize = 0;
 
 			return selector;
 		}
@@ -252,32 +270,30 @@ namespace Nucleus.ModelEditor
 				OnClicked = clicked;
 			}
 		}
-		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, FrameState, ButtonCode>? onClicked = null) {
-			var newBtn = buttons.Add<Button>();
-			newBtn.Text = text;
-			newBtn.AutoSize = true;
+		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, ButtonCode>? onClicked = null) {
+			var newBtn = new Button(buttons);
+			newBtn.SetText(text);
+			newBtn.SetAutoSize(true);
 			if (icon != null) {
-				var img = newBtn.Add<Panel>();
-				img.OnHoverTest += Element.Passthru;
-				img.DrawPanelBackground = false;
-				img.ShouldDrawImage = true;
-				img.Size = new(32);
-				img.ImageOrientation = ImageOrientation.Zoom;
-				img.Dock = Dock.Left;
-				img.DockMargin = RectangleF.TLRB(2);
-				img.Image = buttons.Level.Textures.LoadTextureFromFile(icon);
+				var img = new Nucleus.UI.Elements.Image(newBtn);
+				img.SetPassthru(true);
+				img.SetSize(new(32));
+				img.SetImageOrientation(ImageOrientation.Zoom);
+				img.SetDock(Dock.Left);
+				img.SetDockMargin(RectangleF.TLRB(2));
+				img.SetTexture(buttons.Level.Textures.LoadTextureFromFile(icon));
 
-				newBtn.TextPadding = new(34, 0);
-				newBtn.TextAlignment = Anchor.CenterLeft;
+				newBtn.SetTextPadding(new(68, 0));
+				newBtn.SetTextAlignment(Anchor.CenterLeft);
 			}
 
-			newBtn.MouseReleaseEvent += (e, fs, mb) => onClicked?.Invoke(e, fs, mb);
+			newBtn.OnButtonClick += (e, mb) => onClicked?.Invoke(e, mb);
 			return newBtn;
 		}
 		public static void OperatorButton<T>(Panel buttons, string text, string? icon = null) where T : Operator, new() {
-			var btn = ButtonIcon(buttons, text, icon, (el, fs, mb) => {
+			var btn = ButtonIcon(buttons, text, icon, (el, mb) => {
 				var btn = ((el as Button) ?? throw new Exception("never should happen im lazy"));
-				Operator? ourOperator = el.GetTagSafely<Operator>("op");
+				Operator? ourOperator = el.GetTag<Operator>("op");
 				if (ourOperator != null && ourOperator == ModelEditor.Active.File.ActiveOperator) {
 					// Multiple select does not cancel this way
 					ModelEditor.Active.File.DeactivateOperator(!ModelEditor.Active.File.ActiveOperator.SelectMultiple);
@@ -292,7 +308,7 @@ namespace Nucleus.ModelEditor
 			});
 		}
 		public static void NewMenu(Panel buttons, List<NewItemAction> actions) {
-			var button = ButtonIcon(buttons, "New...", "models/add.png", (_, fs, _) => {
+			var button = ButtonIcon(buttons, "New...", "models/add.png", (_, _) => {
 				Menu menu = buttons.UI.Menu();
 
 				foreach (var action in actions) {
@@ -301,10 +317,10 @@ namespace Nucleus.ModelEditor
 					});
 				}
 
-				menu.Open(fs.Mouse.MousePos);
+				menu.Open(EngineCore.Level.FrameState.Mouse.MousePos);
 			});
 			button.Thinking += (_) => {
-				button.InputDisabled = ModelEditor.Active.AnimationMode;
+				button.SetMouseInputEnabled(!ModelEditor.Active.AnimationMode);
 			};
 		}
 		public static void NewSlotDialog(EditorFile file, EditorBone bone) {
@@ -314,7 +330,7 @@ namespace Nucleus.ModelEditor
 				"",
 				true,
 				(name) => {
-					var result = file.AddSlot(bone.Model, bone, name);
+					var result = file.AddSlot(bone.Model, bone, new(name));
 					if (result.Failed)
 						EditorDialogs.ConfirmAction("Slot creation error", result.Reason, true, () => NewSlotDialog(file, bone));
 				}, null
@@ -327,7 +343,7 @@ namespace Nucleus.ModelEditor
 				"",
 				true,
 				(name) => {
-					var result = file.AddAttachment<EditorClippingAttachment>(slot, name);
+					var result = file.AddAttachment<EditorClippingAttachment>(slot, new(name));
 					if (result.Failed)
 						EditorDialogs.ConfirmAction("Slot creation error", result.Reason, true, () => NewClippingDialog(file, slot));
 				}, null
@@ -340,7 +356,7 @@ namespace Nucleus.ModelEditor
 				"",
 				true,
 				(name) => {
-					var result = file.AddSkin(model, name);
+					var result = file.AddSkin(model, new(name));
 					if (result.Failed)
 						EditorDialogs.ConfirmAction("Skin creation error", result.Reason, true, () => NewSkinDialog(file, model));
 				}, null
@@ -353,7 +369,7 @@ namespace Nucleus.ModelEditor
 				"",
 				true,
 				(name) => {
-					var result = file.AddAnimation(anims.Model, name);
+					var result = file.AddAnimation(anims.Model, new(name));
 					if (result.Failed)
 						EditorDialogs.ConfirmAction("Animation creation error", result.Reason, true, () => NewAnimationDialog(file, anims));
 				}, null
@@ -363,14 +379,17 @@ namespace Nucleus.ModelEditor
 
 
 		public static Button NewTopOperatorButton(Panel props, string icon) {
-			var btn = props.Add<Button>();
-			btn.Dock = Dock.Right;
-			btn.DockMargin = RectangleF.TLRB(8, 0, 0, 8);
-			btn.Size = new(32);
-			btn.Text = "";
-			btn.BorderSize = 0;
-			btn.ImageOrientation = ImageOrientation.Centered;
-			btn.Image = props.Level.Textures.LoadTextureFromFile(icon);
+			var btn = new Button(props);
+			btn.SetDock(Dock.Right);
+			btn.SetDockMargin(RectangleF.TLRB(8, 0, 0, 8));
+			btn.SetSize(new(32));
+			btn.SetText("");
+			btn.SetBorderSize(0);
+			var btnImg = new Nucleus.UI.Elements.Image(btn);
+			btnImg.SetTexture(props.Level.Textures.LoadTextureFromFile(icon));
+			btnImg.SetImageOrientation(ImageOrientation.Centered);
+			btnImg.SetPassthru(true);
+			btnImg.SetDock(Dock.Fill);
 			return btn;
 		}
 
@@ -403,7 +422,7 @@ namespace Nucleus.ModelEditor
 			this.ClearChildren();
 		}
 		private void ModelEditor_Active_SelectedChanged() {
-			DockMargin = RectangleF.TLRB(-8, 0, 0, 4);
+			SetDockMargin(RectangleF.TLRB(-8, 0, 0, 4));
 			ClearProperties();
 			// Process type
 			//if (!ModelEditor.Active.AreObjectsSelected)
@@ -413,52 +432,42 @@ namespace Nucleus.ModelEditor
 			if (determinations.Count == 0)
 				return;
 
-			var top = Add<Panel>();
-			top.Size = new(48);
-			top.BorderSize = 0;
-			top.Dock = Dock.Top;
-			top.DockMargin = RectangleF.TLRB(4);
+			var top = new Panel(this);
+			top.SetSize(new(48));
+			top.SetBorderSize(0);
+			top.SetDock(Dock.Top);
+			top.SetDockMargin(RectangleF.TLRB(4));
 
-			var label = top.Add<Label>();
-			label.Text = DetermineHeaderText(determinations);
-			label.Dock = Dock.Left;
-			label.Size = new(38);
-			label.TextPadding = new(11);
-			label.TextAlignment = Types.Anchor.TopLeft;
-			label.TextSize = 22;
-			label.AutoSize = true;
-			this.DockPadding = RectangleF.Zero;
+			var label = new Label(top);
+			label.SetText(DetermineHeaderText(determinations));
+			label.SetDock(Dock.Left);
+			label.SetSize(new(38));
+			label.SetTextPadding(new(22));
+			label.SetTextAlignment(Types.Anchor.TopLeft);
+			label.SetTextSize(22);
+			label.SetAutoSize(true);
+			this.SetDockPadding(RectangleF.Zero);
 
 			DetermineTopOperators(top, determinations);
 
 			if (determinations.AllShareAType) {
 				DetermineProperties(this, determinations);
 
-				var buttons = Add<CenteredObjectsPanel>();
-				buttons.Dock = Dock.Top;
-				buttons.Size = new(50);
-				buttons.DockMargin = RectangleF.TLRB(8, 0, 0, 0);
+				var buttons = new CenteredObjectsPanel(this);
+				buttons.SetDock(Dock.Top);
+				buttons.SetSize(new(50));
+				buttons.SetDockMargin(RectangleF.TLRB(8, 0, 0, 0));
 				buttons.XSeparation = 8;
 				buttons.YSeparation = 16;
 				DetermineOperators(buttons, determinations);
 				// If no operators for this type, avoid wasting the space for them
-				if (!buttons.HasChildren)
+				if (!buttons.HasChildren())
 					buttons.Remove();
 			}
 		}
 
-		protected override void ModifyLayout(ref RectangleF renderBounds) {
-			base.ModifyLayout(ref renderBounds);
-		}
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
-			MainThread.RunASAP(() => {
-				Size = SizeOfAllChildren;
-			});
-		}
-		protected override void PostLayoutChildren() {
-			base.PostLayoutChildren();
-
 		}
 	}
 }

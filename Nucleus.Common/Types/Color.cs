@@ -100,4 +100,10 @@ public partial struct Color
 	public static Color operator +(Color from, Color by) => new Color(from.R + by.R, from.G + by.G, from.B + by.B, from.A + by.A);
 	public static Color operator -(Color from, Color by) => new Color(from.R - by.R, from.G - by.G, from.B - by.B, from.A - by.A);
 	public static Color operator *(Color from, float by) => new Color(ftbc(from.R * by), ftbc(from.G * by), ftbc(from.B * by), ftbc(from.A * by));
+    public static Color operator *(Color from, Color by) => new Color(
+        ftbc(((from.R / 255f) * (by.R / 255f)) * 255f),
+        ftbc(((from.G / 255f) * (by.G / 255f)) * 255f),
+        ftbc(((from.B / 255f) * (by.B / 255f)) * 255f),
+        ftbc(((from.A / 255f) * (by.A / 255f)) * 255f)
+    );
 }

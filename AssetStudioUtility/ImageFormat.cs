@@ -5,6 +5,7 @@
         Jpeg,
         Png,
         Bmp,
-        Tga
+        Tga,
+        Webp,
     }
 }

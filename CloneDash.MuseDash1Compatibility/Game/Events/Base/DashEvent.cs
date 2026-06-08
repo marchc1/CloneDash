@@ -1,0 +1,115 @@
+﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Game.Events;
+using CloneDash.MD1_Compat.Game.Events;
+
+namespace CloneDash.Game;
+
+public enum EventTriggerType
+{
+
+	AtTimeMinusLength,
+	AtTime
+}
+public class DashEvent
+{
+	public MuseDash1Game Game;
+	public DashEvent(MuseDash1Game game) {
+		Game = game;
+	}
+
+	public virtual EventTriggerType TriggerType => EventTriggerType.AtTime;
+	public double Time { get; set; }
+	public double Length { get; set; }
+
+	public int? Score { get; set; }
+	public int? Fever { get; set; }
+	public int? Damage { get; set; }
+
+	public string? BossAction { get; set; }
+
+	public void Build() {
+		OnBuild();
+	}
+
+	/// <summary>
+	/// Called by the game level
+	/// </summary>
+	public virtual void Activate() {
+
+	}
+
+	public virtual void Deactivate() {
+
+	}
+
+	public virtual void OnBuild() { }
+	public static DashEvent CreateFromType(MuseDash1Game game, EventType type) {
+		switch (type) {
+			case EventType.BossIn: return new BossInEvent(game);
+			case EventType.BossOut: return new BossOutEvent(game);
+			case EventType.BossSingleHit: return new BossSingleHit(game);
+			case EventType.BossMasher: return new BossMasher(game, 1);
+			case EventType.BossMasherEnd: return new BossMasher(game, 2);
+			case EventType.BossFar1Start: return new BossFar1Start(game);
+			case EventType.BossFar1End: return new BossFar1End(game);
+			case EventType.BossFar1To2: return new BossFar1To2(game);
+			case EventType.BossFar2Start: return new BossFar2Start(game);
+			case EventType.BossFar2End: return new BossFar2End(game);
+			case EventType.BossFar2To1: return new BossFar2To1(game);
+			case EventType.BossHide: return new BossHide(game);
+
+			case EventType.AirSpeed1: return new SpeedChange(game, PathwaySide.Top, 1);
+			case EventType.AirSpeed2: return new SpeedChange(game, PathwaySide.Top, 2);
+			case EventType.AirSpeed3: return new SpeedChange(game, PathwaySide.Top, 3);
+
+			case EventType.GroundSpeed1: return new SpeedChange(game, PathwaySide.Bottom, 1);
+			case EventType.GroundSpeed2: return new SpeedChange(game, PathwaySide.Bottom, 2);
+			case EventType.GroundSpeed3: return new SpeedChange(game, PathwaySide.Bottom, 3);
+
+			case EventType.DoubleSpeed1: return new SpeedChange(game, PathwaySide.Both, 1);
+			case EventType.DoubleSpeed2: return new SpeedChange(game, PathwaySide.Both, 2);
+			case EventType.DoubleSpeed3: return new SpeedChange(game, PathwaySide.Both, 3);
+
+			case EventType.ScreenScrollUp: return new ScreenScrollEffect(game, ScreenScrollDirection.Up);
+			case EventType.ScreenScrollDown: return new ScreenScrollEffect(game, ScreenScrollDirection.Down);
+			case EventType.ScreenScrollEnd: return new ScreenScrollEffect(game, ScreenScrollDirection.NoScroll);
+			case EventType.ScanlinesOn: return new ScanlinesEffect(game, true);
+			case EventType.ScanlinesOff: return new ScanlinesEffect(game, false);
+			case EventType.ChromaticAberrationOn: return new ChromaticAberrationEffect(game, true);
+			case EventType.ChromaticAberrationOff: return new ChromaticAberrationEffect(game, false);
+			case EventType.VignetteOn: return new VignetteEffect(game, true);
+			case EventType.VignetteOff: return new VignetteEffect(game, false);
+			case EventType.TVStaticOn: return new TVStaticEffect(game, true);
+			case EventType.TVStaticOff: return new TVStaticEffect(game, false);
+			case EventType.FlashbangStart: return new FlashbangEffect(game, FlashbangParam.Start);
+			case EventType.FlashbangHigh: return new FlashbangEffect(game, FlashbangParam.High);
+			case EventType.FlashbangEnd: return new FlashbangEffect(game, FlashbangParam.End);
+			case EventType.NoteFreeze: return new NoteFreezeEvent(game, true);
+			case EventType.NoteUnfreeze: return new NoteFreezeEvent(game, false);
+			case EventType.BgFreeze: return new BgFreezeEvent(game, true);
+			case EventType.BgUnfreeze: return new BgFreezeEvent(game, false);
+			case EventType.MosaicStart: return new MosaicEffect(game, true);
+			case EventType.MosaicEnd: return new MosaicEffect(game, false);
+			case EventType.SepiaStart: return new SepiaEffect(game, true);
+			case EventType.SepiaEnd: return new SepiaEffect(game, false);
+			case EventType.FocusLinesBlack: return new FocusLinesEffect(game, FocusLineMode.Black);
+			case EventType.FocusLinesWhite: return new FocusLinesEffect(game, FocusLineMode.White);
+			case EventType.FocusLinesOff: return new FocusLinesEffect(game, FocusLineMode.Off);
+			case EventType.FilmGrainOn: return new FilmGrainEffect(game, true);
+			case EventType.FilmGrainOff: return new FilmGrainEffect(game, false);
+			case EventType.AutoPlayOn: return new AutoPlayEvent(game, true);
+			case EventType.AutoPlayOff: return new AutoPlayEvent(game, false);
+			case EventType.FlashbangColorWhite: return new FlashBangEffectColorChange(game, FlashbangColor.White);
+			case EventType.FlashbangColorBlack: return new FlashBangEffectColorChange(game, FlashbangColor.Black);
+			case EventType.FlashbangColorRed: return new FlashBangEffectColorChange(game, FlashbangColor.Red);
+			case EventType.FlashbangColorGreen: return new FlashBangEffectColorChange(game, FlashbangColor.Green);
+			case EventType.FlashbangColorBlue: return new FlashBangEffectColorChange(game, FlashbangColor.Blue);
+			case EventType.FlashbangColorCyan: return new FlashBangEffectColorChange(game, FlashbangColor.Cyan);
+			case EventType.FlashbangColorMagenta: return new FlashBangEffectColorChange(game, FlashbangColor.Magenta);
+			case EventType.FlashbangColorYellow: return new FlashBangEffectColorChange(game, FlashbangColor.Yellow);
+
+			default: throw new Exception();
+		}
+	}
+}

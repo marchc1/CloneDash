@@ -1,9 +1,8 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Tga;
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Formats.Webp;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
@@ -33,6 +32,13 @@ namespace AssetStudio
                         Compression = TgaCompression.None
                     });
                     break;
+                case ImageFormat.Webp:
+                    image.Save(stream, new WebpEncoder
+                    {
+                        FileFormat = WebpFileFormatType.Lossless,
+                        Quality = 50
+                    });
+                    break;
             }
         }
 
@@ -41,15 +47,6 @@ namespace AssetStudio
             var stream = new MemoryStream();
             image.WriteToStream(stream, imageFormat);
             return stream;
-        }
-
-        public static byte[] ConvertToBytes<TPixel>(this Image<TPixel> image) where TPixel : unmanaged, IPixel<TPixel>
-        {
-            if (image.DangerousTryGetSinglePixelMemory(out var pixelSpan))
-            {
-                return MemoryMarshal.AsBytes(pixelSpan.Span).ToArray();
-            }
-            return null;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Nucleus.Types;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Nucleus.Models
 {
@@ -160,6 +161,7 @@ namespace Nucleus.Models
 		}
 
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector2F WorldToLocal(float worldX, float worldY) {
 			float invDet = WTL_Inverse;
 			float x = worldX - X, y = worldY - Y;
@@ -172,10 +174,12 @@ namespace Nucleus.Models
 
 		public Vector2F WorldToLocal(in Vector2F worldPos) => WorldToLocal(worldPos.X, worldPos.Y);
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector2F LocalToWorld(float localX, float localY) => new(
 			localX * A + localY * B + X,
 			localX * C + localY * D + Y
 		);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector2F LocalToWorld(in Vector2F localPos) => LocalToWorld(localPos.X, localPos.Y);
 
 		public float WorldToLocalRotation(float worldRotation) {

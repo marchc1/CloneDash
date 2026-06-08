@@ -1,18 +1,32 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
+#if NET
+    public static class HalfHelper
+    {
+        public static Half ToHalf(ushort bits)
+        {
+            return (Half)bits;
+        }
+
+        public static Half ToHalf(ReadOnlySpan<byte> bytes, int startIndex)
+        {
+            return BinaryPrimitives.ReadHalfLittleEndian(bytes[startIndex..]);
+        }
+    }
+#else
     /// <summary>
     /// Helper class for Half conversions and some low level operations.
-    /// This class is internally used in the Half class.
     /// </summary>
     /// <remarks>
     /// References:
     ///     - Fast Half Float Conversions, Jeroen van der Zijp, link: http://www.fox-toolkit.org/ftp/fasthalffloatconversion.pdf
     /// </remarks>
     [ComVisible(false)]
-    internal static class HalfHelper
+    public static class HalfHelper
     {
         private static uint[] mantissaTable = GenerateMantissaTable();
         private static uint[] exponentTable = GenerateExponentTable();
@@ -169,27 +183,54 @@ namespace AssetStudio
             ushort result = (ushort)(baseTable[(value >> 23) & 0x1ff] + ((value & 0x007fffff) >> shiftTable[value >> 23]));
             return Half.ToHalf(result);
         }*/
-        public static float HalfToSingle(Half half)
+
+        /// <summary>
+        /// Returns a half-precision floating point number converted from two bytes
+        /// at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within value.</param>
+        /// <returns>A half-precision floating point number formed by two bytes beginning at startIndex.</returns>
+        /// <exception cref="System.ArgumentException">
+        /// startIndex is greater than or equal to the length of value minus 1, and is
+        /// less than or equal to the length of value minus 1.
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">value is null.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">startIndex is less than zero or greater than the length of value minus 1.</exception>
+        public static Half ToHalf(ReadOnlySpan<byte> value, int startIndex)
+        {
+            return ToHalf((ushort)BinaryPrimitives.ReadInt16LittleEndian(value.Slice(startIndex)));
+        }
+        /// <summary>
+        /// Returns a half-precision floating point number converted from its binary representation.
+        /// </summary>
+        /// <param name="bits">Binary representation of System.Half value</param>
+        /// <returns>A half-precision floating point number formed by its binary representation.</returns>
+        public static Half ToHalf(ushort bits)
+        {
+            return new Half { value = bits };
+        }
+        public static Half ToHalf(float single)
+        {
+            byte[] singleBytes = BitConverter.GetBytes(single);
+            uint value = BitConverter.ToUInt32(singleBytes, 0);
+            ushort result = (ushort)(baseTable[(value >> 23) & 0x1ff] + ((value & 0x007fffff) >> shiftTable[value >> 23]));
+            return ToHalf(result);
+        }
+        public static float ToSingle(this Half half)
         {
             uint result = mantissaTable[offsetTable[half.value >> 10] + (half.value & 0x3ff)] + exponentTable[half.value >> 10];
             byte[] uintBytes = BitConverter.GetBytes(result);
             return BitConverter.ToSingle(uintBytes, 0);
         }
-        public static Half SingleToHalf(float single)
-        {
-            byte[] singleBytes = BitConverter.GetBytes(single);
-            uint value = BitConverter.ToUInt32(singleBytes, 0);
-            ushort result = (ushort)(baseTable[(value >> 23) & 0x1ff] + ((value & 0x007fffff) >> shiftTable[value >> 23]));
-            return Half.ToHalf(result);
-        }
 
         public static Half Negate(Half half)
         {
-            return Half.ToHalf((ushort)(half.value ^ 0x8000));
+            return ToHalf((ushort)(half.value ^ 0x8000));
         }
         public static Half Abs(Half half)
         {
-            return Half.ToHalf((ushort)(half.value & 0x7fff));
+            return ToHalf((ushort)(half.value & 0x7fff));
         }
 
         public static bool IsNaN(Half half)
@@ -209,4 +250,5 @@ namespace AssetStudio
             return (half.value == 0xfc00);
         }
     }
+#endif
 }

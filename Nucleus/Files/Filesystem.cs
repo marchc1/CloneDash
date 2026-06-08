@@ -67,11 +67,43 @@ public static class Filesystem
 		}
 	}
 
+	public static string GetFontExtension(ReadOnlySpan<byte> data) {
+		if (data.Length < 4) return "";
+
+		uint magic = (uint)(data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
+
+		return magic switch {
+			0x00010000 => ".ttf",   // TrueType
+			0x74727565 => ".ttf",   // 'true' - old Apple TrueType
+			0x4F54544F => ".otf",   // 'OTTO' - OpenType with CFF
+			0x774F4646 => ".woff",  // wOFF
+			0x774F4632 => ".woff2", // wOF2
+			_ => ""
+		};
+	}
+
 	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int[] codepoints, int codepointCount) {
 		var buffer = ScratchUpload(pathID, path);
 		fixed (int* codepointsPtr = codepoints)
 		fixed (byte* data = buffer) {
-			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			return font;
+		}
+	}
+
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, int* codepointsPtr, int codepointCount) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepointCount);
+			return font;
+		}
+	}
+
+	public static unsafe Font ReadFont(string pathID, string path, int fontSize, Span<int> codepoints) {
+		var buffer = ScratchUpload(pathID, path);
+		fixed(int* codepointsPtr = codepoints)
+		fixed (byte* data = buffer) {
+			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepoints.Length);
 			return font;
 		}
 	}

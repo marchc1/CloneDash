@@ -39,7 +39,7 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Clicked;
 				case ButtonCode.Mouse5: return Mouse5Clicked;
 			}
-			throw new NotImplementedException("No Clicked handler for ButtonCode " + button);
+			return false;
 		}
 
 		public bool Held(ButtonCode button) {
@@ -50,7 +50,7 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Held;
 				case ButtonCode.Mouse5: return Mouse5Held;
 			}
-			throw new NotImplementedException("No Held handler for ButtonCode " + button);
+			return false;
 		}
 
 		public bool Released(ButtonCode button) {
@@ -61,8 +61,39 @@ namespace Nucleus.Input
 				case ButtonCode.Mouse4: return Mouse4Released;
 				case ButtonCode.Mouse5: return Mouse5Released;
 			}
-			throw new NotImplementedException("No Released handler for ButtonCode " + button);
+			return false;
 		}
+
+		public void SetClicked(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Clicked = state; break;
+				case ButtonCode.Mouse2: Mouse2Clicked = state; break;
+				case ButtonCode.Mouse3: Mouse3Clicked = state; break;
+				case ButtonCode.Mouse4: Mouse4Clicked = state; break;
+				case ButtonCode.Mouse5: Mouse5Clicked = state; break;
+			}
+		}
+
+		public void SetHeld(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Held = state; break;
+				case ButtonCode.Mouse2: Mouse2Held = state; break;
+				case ButtonCode.Mouse3: Mouse3Held = state; break;
+				case ButtonCode.Mouse4: Mouse4Held = state; break;
+				case ButtonCode.Mouse5: Mouse5Held = state; break;
+			}
+		}
+
+		public void SetReleased(ButtonCode button, bool state) {
+			switch (button) {
+				case ButtonCode.Mouse1: Mouse1Released = state; break;
+				case ButtonCode.Mouse2: Mouse2Released = state; break;
+				case ButtonCode.Mouse3: Mouse3Released = state; break;
+				case ButtonCode.Mouse4: Mouse4Released = state; break;
+				case ButtonCode.Mouse5: Mouse5Released = state; break;
+			}
+		}
+
 
 		/// <summary>
 		/// Mouse position, localized to the window.
@@ -70,6 +101,7 @@ namespace Nucleus.Input
 		public Vector2F MousePos = new(0);
 		public Vector2F MouseDelta  = new(0);
 		public Vector2F MouseScroll  = new(0);
+		public bool Focused;
 
 		public MouseState() { }
 

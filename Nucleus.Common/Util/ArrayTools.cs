@@ -59,16 +59,12 @@ namespace Nucleus.Util
 
 		public class AlphanumComparatorFast : IComparer
 		{
-			public int Compare(object x, object y) {
-				string s1 = x as string;
-				if (s1 == null) {
-					return 0;
-				}
-				string s2 = y as string;
-				if (s2 == null) {
-					return 0;
-				}
-
+			public int Compare(object? x, object? y) {
+				if (x is not string s1)					return 0;
+				if (y is not string s2)					return 0;
+				return Compare(s1, s2);
+			}
+			public int Compare(ReadOnlySpan<char> s1, ReadOnlySpan<char> s2) {
 				int len1 = s1.Length;
 				int len2 = s2.Length;
 				int marker1 = 0;

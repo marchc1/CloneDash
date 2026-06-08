@@ -4,28 +4,58 @@ namespace AssetStudio
 {
     public static class Progress
     {
-        public static IProgress<int> Default = new Progress<int>();
-        private static int preValue;
+        private static readonly int InstanceCount = 2;
+        private static readonly IProgress<int>[] Instances;
+        private static readonly int[] PreValues;
 
-        public static void Reset()
+        static Progress()
         {
-            preValue = 0;
-            Default.Report(0);
+            Instances = new IProgress<int>[InstanceCount];
+            for (var i = 0; i < InstanceCount; i++)
+            {
+                Instances[i] = new Progress<int>();
+            }
+
+            PreValues = new int[InstanceCount];
         }
 
-        public static void Report(int current, int total)
+        public static int MaxCount => InstanceCount;
+
+        public static IProgress<int> Default //alias
+        {
+            get => Instances[0];
+            set => SetInstance(0, value);
+        }
+
+        public static void Reset(int index = 0)
+        {
+            PreValues[index] = 0;
+            Instances[index].Report(0);
+        }
+
+        public static void Report(int current, int total, int index = 0)
         {
             var value = (int)(current * 100f / total);
-            Report(value);
+            _Report(value, index);
         }
 
-        private static void Report(int value)
+        private static void _Report(int value, int index)
         {
-            if (value > preValue)
+            if (value > PreValues[index])
             {
-                preValue = value;
-                Default.Report(value);
+                PreValues[index] = value;
+                Instances[index].Report(value);
             }
+        }
+
+        public static void SetInstance(int index, IProgress<int> progress)
+        {
+            if (progress == null)
+                throw new ArgumentNullException(nameof(progress));
+            if (index < 0 || index >= MaxCount)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            Instances[index] = progress;
         }
     }
 }

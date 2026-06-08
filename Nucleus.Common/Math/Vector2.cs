@@ -92,20 +92,20 @@ public struct Vector2F : ISpanFormattable
 	public Vector2F(float Both) { this.x = Both; this.y = Both; }
 	public static Vector2F FromXY(Vector3 xyz) => new(xyz.X, xyz.Y);
 
-	public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
-	public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
-	public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
-	public static Vector2F operator /(Vector2F from, float by) => new Vector2F(from.X / by, from.Y / by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(Vector2F from, float by) => new Vector2F(from.X + by, from.Y + by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(Vector2F from, float by) => new Vector2F(from.X - by, from.Y - by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(Vector2F from, float by) => new Vector2F(from.X * by, from.Y * by);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(Vector2F from, float by) => new Vector2F(from.X / by, from.Y / by);
 
-	public static Vector2F operator +(float from, Vector2F by) => new Vector2F(from + by.X, from + by.Y);
-	public static Vector2F operator -(float from, Vector2F by) => new Vector2F(from - by.X, from - by.Y);
-	public static Vector2F operator *(float from, Vector2F by) => new Vector2F(from * by.X, from * by.Y);
-	public static Vector2F operator /(float from, Vector2F by) => new Vector2F(from / by.X, from / by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(float from, Vector2F by) => new Vector2F(from + by.X, from + by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(float from, Vector2F by) => new Vector2F(from - by.X, from - by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(float from, Vector2F by) => new Vector2F(from * by.X, from * by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(float from, Vector2F by) => new Vector2F(from / by.X, from / by.Y);
 
-	public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
-	public static Vector2F operator -(Vector2F from, Vector2F by) => new Vector2F(from.X - by.X, from.Y - by.Y);
-	public static Vector2F operator *(Vector2F from, Vector2F by) => new Vector2F(from.X * by.X, from.Y * by.Y);
-	public static Vector2F operator /(Vector2F from, Vector2F by) => new Vector2F(from.X / by.X, from.Y / by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator +(Vector2F from, Vector2F by) => new Vector2F(from.X + by.X, from.Y + by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator -(Vector2F from, Vector2F by) => new Vector2F(from.X - by.X, from.Y - by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator *(Vector2F from, Vector2F by) => new Vector2F(from.X * by.X, from.Y * by.Y);
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)] public static Vector2F operator /(Vector2F from, Vector2F by) => new Vector2F(from.X / by.X, from.Y / by.Y);
 
 	public static bool operator <(Vector2F a, Vector2F b) => a.X < b.X || a.Y < b.Y;
 	public static bool operator >(Vector2F a, Vector2F b) => a.X > b.X || a.Y > b.Y;
@@ -299,14 +299,38 @@ public struct Vector2F : ISpanFormattable
 	public readonly override int GetHashCode() => HashCode.Combine(X, Y);
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-		if (!X.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
-		if (!" x ".TryCopyTo(destination)) return false; destination = destination[3..];
-		if (!Y.TryFormat(destination, out charsWritten, format, provider)) return false; destination = destination[charsWritten..];
+		int charsWrittenThisPass = 0;
+		charsWritten = 0;
+
+		if (!X.TryFormat(destination, out charsWrittenThisPass, format, provider)) return false;
+		charsWritten += charsWrittenThisPass;
+		destination = destination[charsWrittenThisPass..];
+
+		if (!" x ".TryCopyTo(destination)) return false;
+		charsWritten += 3;
+		destination = destination[3..];
+
+		if (!Y.TryFormat(destination, out charsWrittenThisPass, format, provider)) return false;
+		charsWritten += charsWrittenThisPass;
+		destination = destination[charsWrittenThisPass..];
+
 		return true;
 	}
 
 	public string ToString(string? format, IFormatProvider? formatProvider) {
 		throw new NotImplementedException();
+	}
+
+	public static Vector2F Floor(Vector2F vec) {
+		vec.X = float.Floor(vec.X);
+		vec.Y = float.Floor(vec.Y);
+		return vec;
+	}
+
+	public static Vector2F Ceil(Vector2F vec) {
+		vec.X = float.Ceiling(vec.X);
+		vec.Y = float.Ceiling(vec.Y);
+		return vec;
 	}
 }
 public static class VectorConverters

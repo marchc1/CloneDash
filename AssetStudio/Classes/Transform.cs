@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
+﻿using System.Collections.Generic;
 
-#nullable enable
 namespace AssetStudio
 {
+#nullable enable
 	public class Transform : Component
 	{
 		public Quaternion m_LocalRotation;

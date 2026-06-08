@@ -3,39 +3,57 @@ using Nucleus.UI;
 
 namespace Nucleus.ModelEditor.UI
 {
-	public class RowLabelContainer : Panel {
+	public class RowLabelContainer : Panel, ITextElement
+	{
 		Label label;
-
-		protected override void Initialize() {
-			base.Initialize();
-			Add(out label);
-			Dock = Dock.Top;
-			BorderSize = 0;
-			label.Text = Text;
-			label.Dock = Dock.Left;
-			label.AutoSize = true;
+		public RowLabelContainer(Element parent) : base(parent) {
+			label = new(this);
+			SetDock(Dock.Top);
+			SetBorderSize(0);
+			label.SetText("");
+			label.SetDock(Dock.Left);
+			label.SetAutoSize(true);
+			label.SetTextPadding(new(16));
 		}
 
-		public override void TextChanged(string oldText, string newText) {
-			label.Text = newText;
-		}
-
-		public override void ChildParented(Element parent, Element child) {
+		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
-			child.Dock = Dock.Fill;
+			child.SetDock(Dock.Fill);
 			child.MoveToFront();
+		}
+
+		public ReadOnlySpan<char> GetFont() {
+			return ((ITextElement)label).GetFont();
+		}
+
+		public ReadOnlySpan<char> GetText() {
+			return ((ITextElement)label).GetText();
+		}
+
+		public float GetTextSize() {
+			return ((ITextElement)label).GetTextSize();
+		}
+
+		public void SetFont(ReadOnlySpan<char> font) {
+			((ITextElement)label).SetFont(font);
+		}
+
+		public void SetText(ReadOnlySpan<char> font) {
+			((ITextElement)label).SetText(font);
+		}
+
+		public void SetTextSize(float textSize) {
+			((ITextElement)label).SetTextSize(textSize);
 		}
 	}
 	public class PlaybackView : View
 	{
 		public override string Name => "Playback";
 
-		protected override void Initialize() {
-			base.Initialize();
-
-			Add(out RowLabelContainer row1);
-			row1.Text = "Timeline FPS";
-			row1.Add(out NumSlider fps);
+		public PlaybackView(Element parent) : base(parent) {
+			RowLabelContainer row1 = new(this);
+			row1.SetText("Timeline FPS");
+			NumSlider fps = new(row1);
 			fps.MinimumValue = 0;
 			fps.MaximumValue = 72;
 			fps.OnValueChanged += (_, _, v) => ModelEditor.Active.File.Timeline.FPS = (int)(float)v;
@@ -43,31 +61,31 @@ namespace Nucleus.ModelEditor.UI
 			fps.TextFormat = "{0} FPS";
 			fps.Value = ModelEditor.Active.File.Timeline.FPS;
 
-			Add(out RowLabelContainer row2);
-			row2.Text = "Speed";
-			row2.Add(out NumSlider speed);
+			RowLabelContainer row2 = new(this);
+			row2.SetText("Speed");
+			NumSlider speed =new(row2);
 			speed.MinimumValue = 0.01;
 			speed.MaximumValue = 3.3;
 			speed.OnValueChanged += (_, _, v) => ModelEditor.Active.File.Timeline.Speed = v;
 			speed.TextFormat = "{0:P2}";
 			speed.Value = ModelEditor.Active.File.Timeline.Speed;
 
-			Add(out FlexPanel btns);
-			btns.Dock = Dock.Top;
-			btns.ChildrenResizingMode = FlexChildrenResizingMode.StretchToOppositeDirection;
-			btns.Direction = Types.Directional180.Horizontal;
+			FlexPanel btns = new(this);
+			btns.SetDock(Dock.Top);
+			btns.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+			btns.Direction = Axis.Horizontal;
 
-			var stepped = btns.Add<CheckboxButton>();
-			stepped.Text = "Stepped";
-			stepped.AutoSize = true;
-			stepped.DockMargin = RectangleF.TLRB(-1, 2, 2, -1);
+			var stepped = new CheckboxButton(btns);
+			stepped.SetText("Stepped");
+			stepped.SetAutoSize(true);
+			stepped.SetDockMargin(RectangleF.TLRB(-1, 2, 2, -1));
 			stepped.Checked = ModelEditor.Active.File.Timeline.Stepped;
 			stepped.OnCheckedChanged += (c) => ModelEditor.Active.File.Timeline.Stepped = c.Checked;
 
-			var interp = btns.Add<CheckboxButton>();
-			interp.Text = "Interpolated";
-			interp.AutoSize = true;
-			interp.DockMargin = RectangleF.TLRB(-1, 2, 2, -1);
+			var interp = new CheckboxButton(btns);
+			interp.SetText("Interpolated");
+			interp.SetAutoSize(true);
+			interp.SetDockMargin(RectangleF.TLRB(-1, 2, 2, -1));
 			interp.Checked = ModelEditor.Active.File.Timeline.Interpolated;
 			interp.OnCheckedChanged += (c) => ModelEditor.Active.File.Timeline.Interpolated = c.Checked;
 

@@ -1,4 +1,5 @@
-﻿using Nucleus.Core;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 using Raylib_cs;
@@ -14,7 +15,7 @@ namespace Nucleus.ModelEditor
 			Vector2F worldPos = editorPanel.GridToScreen(target.GetWorldPosition());
 			float worldRot = target.GetScreenRotation();
 
-			Graphics2D.SetTexture(tex);
+			Graphics2D.SetTexture((ITexture)tex);
 			Graphics2D.SetDrawColor(255, 255, 255);
 			var offset = Graphics2D.Offset;
 			Rlgl.PushMatrix();

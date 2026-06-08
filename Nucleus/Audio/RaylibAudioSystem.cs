@@ -1,6 +1,7 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Util;
+using Nucleus.Util;
 using Raylib_cs;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
@@ -86,9 +87,9 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public nuint Length => length;
 	public Sound Sound {
 		get {
-			if (!Raylib.IsSoundReady(sound)) 
+			if (!Raylib.IsSoundValid(sound))
 				sound = RaylibAudioHelpers.AllocSound(data, length);
-			
+
 			return sound;
 		}
 	}
@@ -145,7 +146,7 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public void Destroy() {
 		if (destroyed) return;
 		destroyed = true;
-		if (Raylib.IsSoundReady(sound))
+		if (Raylib.IsSoundValid(sound))
 			Raylib.UnloadSound(sound);
 		if (data != null)
 			Raylib.MemFree(data);
@@ -234,7 +235,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 	readonly GenerationalAllocator allocator = new();
 	readonly PlaybackChannel[] channels = new PlaybackChannel[MAX_CHANNELS];
-	readonly Dictionary<string, BaseAudioClip> clipsByName = new();
+	readonly Dictionary<UtlSymId_t, BaseAudioClip> clipsByName = [];
 	readonly HashSet<BaseAudioClip> allClips = [];
 	float masterVolume = 1f;
 	ulong totalMemory = 0;
@@ -265,13 +266,13 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null || !ch.Active) return;
 
 		if (ch.IsStream) {
-			if (Raylib.IsMusicReady(ch.MusicStream)) {
+			if (Raylib.IsMusicValid(ch.MusicStream)) {
 				Raylib.StopMusicStream(ch.MusicStream);
 				Raylib.UnloadMusicStream(ch.MusicStream);
 			}
 		}
 		else {
-			if (Raylib.IsSoundReady(ch.SoundAlias)) {
+			if (Raylib.IsSoundValid(ch.SoundAlias)) {
 				Raylib.StopSound(ch.SoundAlias);
 				Raylib.UnloadSoundAlias(ch.SoundAlias);
 			}
@@ -321,14 +322,14 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 	public IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, ReadOnlySpan<char> identifier = default) {
 		string id = identifier.Length > 0 ? new string(identifier) : $"__dynamic_{Guid.NewGuid():N}";
-
-		if (identifier.Length > 0 && clipsByName.TryGetValue(id, out var existing)) {
+		UtlSymId_t hash = id.Hash();
+		if (identifier.Length > 0 && clipsByName.TryGetValue(hash, out var existing)) {
 			if (existing.GetSource() != AudioClipSource.Dynamic) return null;
 			return existing;
 		}
 
 		var clip = new DynamicAudioClip(identifier, fn);
-		clipsByName[id] = clip;
+		clipsByName[hash] = clip;
 		allClips.Add(clip);
 		return clip;
 	}
@@ -336,35 +337,53 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	public IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name) => CreateFileAudioClip(name, "audio");
 
 	public IAudioClip? CreateFileAudioClip(ReadOnlySpan<char> name, ReadOnlySpan<char> pathId) {
-		string key = new string(name);
+		name = name.SliceNullTerminatedString();
+		UtlSymId_t nameHash = name.Hash();
 
-		if (clipsByName.TryGetValue(key, out var existing)) {
-			if (existing.GetSource() != AudioClipSource.File) return null;
-			return existing;
+		Stream stream;
+		if (Path.IsPathFullyQualified(name) && pathId.IsEmpty) {
+			if (clipsByName.TryGetValue(nameHash, out var existing)) {
+				if (existing.GetSource() != AudioClipSource.File) return null;
+				return existing;
+			}
+
+			string nameStr = new(name);
+
+			if (!File.Exists(nameStr)) {
+				Logs.Warn($"'{nameStr}' does not exist");
+				return null;
+			}
+
+			stream = File.OpenRead(nameStr);
+		}
+		else{
+			stream = filesystem.Open(pathId, name, FileAccess.Read, FileMode.Open)!;
+			if (stream == null) {
+				Logs.Warn($"'{name}' not found in {pathId}");
+				return null;
+			}
 		}
 
-		string path = Path.Combine(new string(pathId), key);
-		if (!File.Exists(path)) return null;
-
-		using var stream = File.OpenRead(path);
-		var clip = new FileAudioClip(name, stream);
+			var clip = new FileAudioClip(name, stream);
 		totalMemory += clip.Length;
-		clipsByName[key] = clip;
+		clipsByName[nameHash] = clip;
 		allClips.Add(clip);
+		stream.Dispose();
 		return clip;
 	}
 
 	public IAudioClip? CreateStreamAudioClip(Stream stream, ReadOnlySpan<char> identifier = default) {
 		string id = identifier.Length > 0 ? new string(identifier) : $"__stream_{Guid.NewGuid():N}";
+		UtlSymId_t hash = id.Hash();
 
-		if (identifier.Length > 0 && clipsByName.TryGetValue(id, out var existing)) {
+		if (identifier.Length > 0 && clipsByName.TryGetValue(hash, out var existing)) {
 			if (existing.GetSource() != AudioClipSource.Stream) return null;
 			return existing;
 		}
 
 		var clip = new StreamAudioClip(identifier, stream);
 		totalMemory += clip.Length;
-		clipsByName[id] = clip;
+		clipsByName[hash] = clip;
 		allClips.Add(clip);
 		return clip;
 	}
@@ -412,7 +431,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (!allClips.Remove(baseClip)) return false;
 
 		string name = new string(baseClip.GetName());
-		clipsByName.Remove(name);
+		clipsByName.Remove(name.Hash());
 
 		for (int i = 0; i < MAX_CHANNELS; i++) {
 			var ch = channels[i];
@@ -458,7 +477,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		foreach (var clip in toRemove) {
 			allClips.Remove(clip);
 			string name = new string(clip.GetName());
-			clipsByName.Remove(name);
+			clipsByName.Remove(name.Hash());
 			if (clip.Length > 0)
 				totalMemory -= clip.Length;
 			clip.Destroy();
