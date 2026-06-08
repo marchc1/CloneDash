@@ -1,5 +1,6 @@
 ﻿using K4os.Compression.LZ4;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -138,42 +139,42 @@ namespace AssetStudio
                 {
                     sb.Append(ConvertSerializedShaderState(m_Passe.m_State));
 
-                    if (m_Passe.progVertex.m_SubPrograms.Length > 0)
+                    if (m_Passe.progVertex.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"vp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progVertex.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progFragment.m_SubPrograms.Length > 0)
+                    if (m_Passe.progFragment.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"fp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progFragment.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progGeometry.m_SubPrograms.Length > 0)
+                    if (m_Passe.progGeometry.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"gp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progGeometry.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progHull.m_SubPrograms.Length > 0)
+                    if (m_Passe.progHull.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"hp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progHull.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progDomain.m_SubPrograms.Length > 0)
+                    if (m_Passe.progDomain.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"dp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progDomain.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progRayTracing?.m_SubPrograms.Length > 0)
+                    if (m_Passe.progRayTracing?.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"rtp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progRayTracing.m_SubPrograms, platforms, shaderPrograms));
@@ -185,7 +186,7 @@ namespace AssetStudio
             return sb.ToString();
         }
 
-        private static string ConvertSerializedSubPrograms(SerializedSubProgram[] m_SubPrograms, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
+        private static string ConvertSerializedSubPrograms(List<SerializedSubProgram> m_SubPrograms, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
             var sb = new StringBuilder();
             var groups = m_SubPrograms.GroupBy(x => x.m_BlobIndex);
@@ -638,7 +639,7 @@ namespace AssetStudio
         private static string ConvertSerializedTagMap(SerializedTagMap m_Tags, int intent)
         {
             var sb = new StringBuilder();
-            if (m_Tags.tags.Length > 0)
+            if (m_Tags.tags.Count > 0)
             {
                 sb.Append(new string(' ', intent));
                 sb.Append("Tags { ");
@@ -871,11 +872,11 @@ namespace AssetStudio
         public int Length;
         public int Segment;
 
-        public ShaderSubProgramEntry(BinaryReader reader, int[] version)
+        public ShaderSubProgramEntry(BinaryReader reader, UnityVersion version)
         {
             Offset = reader.ReadInt32();
             Length = reader.ReadInt32();
-            if (version[0] > 2019 || (version[0] == 2019 && version[1] >= 3)) //2019.3 and up
+            if (version >= (2019, 3)) //2019.3 and up
             {
                 Segment = reader.ReadInt32();
             }
@@ -887,7 +888,7 @@ namespace AssetStudio
         public ShaderSubProgramEntry[] entries;
         public ShaderSubProgram[] m_SubPrograms;
 
-        public ShaderProgram(BinaryReader reader, int[] version)
+        public ShaderProgram(BinaryReader reader, UnityVersion version)
         {
             var subProgramsCapacity = reader.ReadInt32();
             entries = new ShaderSubProgramEntry[subProgramsCapacity];

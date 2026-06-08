@@ -11,7 +11,10 @@ using Nucleus.UI.Elements;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Numerics;
+using Color = Nucleus.Common.Types.Color;
+using RectangleF = Nucleus.Types.RectangleF;
 
 namespace Nucleus.ModelEditor
 {
@@ -30,45 +33,44 @@ namespace Nucleus.ModelEditor
 
 		public ViewportSelectMode SelectMode { get; set; } = ViewportSelectMode.All;
 		Checkerboard Checkerboard = null!;
-		protected override void Initialize() {
-			base.Initialize();
+		public EditorPanel(Element parent) : base(parent) {
 			Checkerboard = new(Level);
 
-			Add(out MainTransformsPanel);
+			MainTransformsPanel = new(this);
 			MainTransformsPanel.ForceHeight = false;
 
-			MainTransformsPanel.Dock = Dock.Bottom;
-			MainTransformsPanel.Size = new(128);
+			MainTransformsPanel.SetDock(Dock.Bottom);
+			MainTransformsPanel.SetSize(new(128));
 
-			Add(out OperatorPanel);
+			OperatorPanel = new(this);
 			OperatorPanel.ForceHeight = false;
 
-			OperatorPanel.Dock = Dock.Bottom;
-			OperatorPanel.DockMargin = RectangleF.TLRB(0, 0, 0, -120); // Silly way to do this, but w/e
-			OperatorPanel.Size = new(128);
-			OperatorPanel.Visible = false;
+			OperatorPanel.SetDock(Dock.Bottom);
+			OperatorPanel.SetDockMargin(RectangleF.TLRB(0, 0, 0, -120)); // Silly way to do this, but w/e
+			OperatorPanel.SetSize(new(128));
+			OperatorPanel.SetVisible(false);
 
-			var modePanel = MainTransformsPanel.Add<FlexPanel>();
-			modePanel.Direction = Directional180.Vertical;
+			var modePanel = new FlexPanel(MainTransformsPanel);
+			modePanel.Direction = Axis.Vertical;
 			modePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			modePanel.Size = new(98, 90);
+			modePanel.SetSize(new(98, 90));
 
-			PoseBonesOpBtn = modePanel.Add<Button>();
-			PoseBonesOpBtn.Text = "Pose";
-			PoseBonesOpBtn.MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.PoseBoneToTarget);
+			PoseBonesOpBtn = new Button(modePanel);
+			PoseBonesOpBtn.SetText("Pose");
+			PoseBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.PoseBoneToTarget);
 
-			WeighVerticesOpBtn = modePanel.Add<Button>();
-			WeighVerticesOpBtn.Text = "Weights";
-			WeighVerticesOpBtn.MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.ChangeMeshWeights);
+			WeighVerticesOpBtn = new Button(modePanel);
+			WeighVerticesOpBtn.SetText("Weights");
+			WeighVerticesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.ChangeMeshWeights);
 
-			CreateBonesOpBtn = modePanel.Add<Button>();
-			CreateBonesOpBtn.Text = "Create";
-			CreateBonesOpBtn.MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.CreateNewBones);
+			CreateBonesOpBtn = new Button(modePanel);
+			CreateBonesOpBtn.SetText("Create");
+			CreateBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.CreateNewBones);
 
-			var transformPanel = MainTransformsPanel.Add<FlexPanel>();
-			transformPanel.Direction = Directional180.Vertical;
+			var transformPanel = new FlexPanel(MainTransformsPanel);
+			transformPanel.Direction = Axis.Vertical;
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformPanel.Size = new(280, 115);
+			transformPanel.SetSize(new(280, 115));
 
 			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1, KeyframeProperty.Bone_Rotation);
 			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2, KeyframeProperty.Bone_Translation);
@@ -83,27 +85,27 @@ namespace Nucleus.ModelEditor
 			TransformShear.GetNumSlider(0).OnValueChanged += CHANGE_ShearX;
 			TransformShear.GetNumSlider(1).OnValueChanged += CHANGE_ShearY;
 
-			TransformRotation.GetButton().MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.RotateSelection);
-			TransformTranslation.GetButton().MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.TranslateSelection);
-			TransformScale.GetButton().MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.ScaleSelection);
-			TransformShear.GetButton().MouseReleaseEvent += (_, _, _) => SetEditorOperator(EditorDefaultOperator.ShearSelection);
+			TransformRotation.GetButton().OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.RotateSelection);
+			TransformTranslation.GetButton().OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.TranslateSelection);
+			TransformScale.GetButton().OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.ScaleSelection);
+			TransformShear.GetButton().OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.ShearSelection);
 
-			var transformModePanel = MainTransformsPanel.Add<FlexPanel>();
-			transformModePanel.Direction = Directional180.Vertical;
+			var transformModePanel = new FlexPanel(MainTransformsPanel);
+			transformModePanel.Direction = Axis.Vertical;
 			transformModePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformModePanel.Size = new(70, 90);
+			transformModePanel.SetSize(new(70, 90));
 
-			LocalTransformButton = transformModePanel.Add<Button>();
-			LocalTransformButton.Text = "Local";
-			LocalTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.LocalCoordinates);
+			LocalTransformButton = new Button(transformModePanel);
+			LocalTransformButton.SetText("Local");
+			LocalTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.LocalCoordinates);
 
-			ParentTransformButton = transformModePanel.Add<Button>();
-			ParentTransformButton.Text = "Parent";
-			ParentTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.ParentCoordinates);
+			ParentTransformButton = new Button(transformModePanel);
+			ParentTransformButton.SetText("Parent");
+			ParentTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.ParentCoordinates);
 
-			WorldTransformButton = transformModePanel.Add<Button>();
-			WorldTransformButton.Text = "World";
-			WorldTransformButton.MouseReleaseEvent += (_, _, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
+			WorldTransformButton = new Button(transformModePanel);
+			WorldTransformButton.SetText("World");
+			WorldTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => Active_SelectedChanged();
@@ -132,20 +134,20 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
 
-			Add(new PerfGraph() {
-				Anchor = Anchor.BottomRight,
-				Origin = Anchor.BottomRight,
-				Position = new(-8, -8 + -32 + -8),
-				Size = new(300, 32),
-				Mode = PerfGraphMode.CPU_UpdateTime
-			});
-			Add(new PerfGraph() {
-				Anchor = Anchor.BottomRight,
-				Origin = Anchor.BottomRight,
-				Position = new(-8, -8),
-				Size = new(300, 32),
-				Mode = PerfGraphMode.RAM_Usage
-			});
+			var perfGraph1 = new PerfGraph(this);
+			perfGraph1.SetAnchor(Anchor.BottomRight);
+			perfGraph1.SetOrigin(Anchor.BottomRight);
+			perfGraph1.SetPos(new(-8, -8 + -32 + -8));
+			perfGraph1.SetSize(new(300, 32));
+			perfGraph1.Mode = PerfGraphMode.CPU_UpdateTime;
+
+			var perfGraph2 = new PerfGraph(this);
+			perfGraph2.SetAnchor(Anchor.BottomRight);
+			perfGraph2.SetOrigin(Anchor.BottomRight);
+			perfGraph2.SetPos(new(-8, -8));
+			perfGraph2.SetSize(new(300, 32));
+			perfGraph2.Mode = PerfGraphMode.RAM_Usage;
+
 		}
 
 		private void Active_SelectedChanged1() {
@@ -175,7 +177,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
-			
+
 			Active_SelectedChanged1();
 		}
 
@@ -196,17 +198,17 @@ namespace Nucleus.ModelEditor
 		HashSet<Type>? SelectableTypes { get; set; } = null;
 
 		private void File_OperatorActivated(EditorFile self, Operator op) {
-			MainTransformsPanel.Visible = false;
+			MainTransformsPanel.SetVisible(false);
 			OperatorPanel.ClearChildren();
-			OperatorPanel.Visible = true;
+			OperatorPanel.SetVisible(true);
 			SelectableTypes = op.SelectableTypes == null ? null : op.SelectableTypes.ToHashSet();
 			op.ChangeEditorProperties(OperatorPanel);
 		}
 
 		private void File_OperatorDeactivated(EditorFile self, Operator op, bool canceled) {
-			MainTransformsPanel.Visible = true;
+			MainTransformsPanel.SetVisible(true);
 			OperatorPanel.ClearChildren();
-			OperatorPanel.Visible = false;
+			OperatorPanel.SetVisible(false);
 			SelectableTypes = null;
 		}
 
@@ -376,17 +378,13 @@ namespace Nucleus.ModelEditor
 
 		end:
 			TransformRotation.EnableSliders = supportRotation;
-			TransformRotation.InputDisabled = !supportRotation;
+			TransformRotation.SetMouseInputEnabled(supportRotation);
 			TransformTranslation.EnableSliders = supportTranslation;
-			TransformTranslation.InputDisabled = !supportTranslation;
+			TransformTranslation.SetMouseInputEnabled(supportTranslation);
 			TransformScale.EnableSliders = supportScale;
-			TransformScale.InputDisabled = !supportScale;
+			TransformScale.SetMouseInputEnabled(supportScale);
 			TransformShear.EnableSliders = supportShear;
-			TransformShear.InputDisabled = !supportShear;
-		}
-
-		public override void PreRender() {
-			base.PreRender();
+			TransformShear.SetMouseInputEnabled(supportShear);
 		}
 
 		private float cameraX = 0;
@@ -434,11 +432,11 @@ namespace Nucleus.ModelEditor
 		}
 
 
-		protected override void OnThink(FrameState frameState) {
+		protected override void OnThink() {
 			var activeOp = ModelEditor.Active.File.ActiveOperator;
 			ModelEditor.Active.File.Timeline.AddDeltaTime(EngineCore.Level.CurtimeDelta, ModelEditor.Active.File.ActiveAnimation?.CalculateMaxTime() ?? 0);
 
-			if (Hovered) {
+			if (IsHovered()) {
 				// Hover determination
 				HoverGridPos = ScreenToGrid(GetMousePos());
 
@@ -526,22 +524,22 @@ namespace Nucleus.ModelEditor
 			activeOp?.Think(ModelEditor.Active, HoverGridPos);
 		}
 		public Vector2F ScreenToGrid(Vector2F screenPos) {
-			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), RenderBounds.Size, new(0, 0), EngineCore.GetWindowSize());
+			Vector2F screenCoordinates = Vector2F.Remap(screenPos, new(0), GetRenderBounds().Size, new(0, 0), EngineCore.GetWindowSize());
 			Vector2F halfScreenSize = EngineCore.GetWindowSize() / 2;
 			Vector2F centeredCoordinates = screenCoordinates - halfScreenSize;
 
-			Vector2F withoutCamVars = centeredCoordinates * new Vector2F(RenderBounds.W / widthMultiplied, 1);
+			Vector2F withoutCamVars = centeredCoordinates * new Vector2F(GetRenderBounds().W / widthMultiplied, 1);
 			Vector2F accountingForCamVars = (withoutCamVars / CameraZoom) + new Vector2F(CameraX, -CameraY);
 			return accountingForCamVars * new Vector2F(1, -1);
 		}
 		public Vector2F GridToScreen(Vector2F gridPos) {
 			gridPos *= new Vector2F(1, -1);
 			Vector2F size = EngineCore.GetWindowSize();
-			size.W *= RenderBounds.W / widthMultiplied;
+			size.W *= GetRenderBounds().W / widthMultiplied;
 
 			return Vector2F.Remap(
 				(gridPos - new Vector2F(CameraX, -CameraY)) * CameraZoom,
-				-size / 2, size / 2, new(0), RenderBounds.Size) + new Vector2F(0, RenderBounds.Pos.Y);
+				-size / 2, size / 2, new(0), GetRenderBounds().Size) + new Vector2F(0, GetRenderBounds().Pos.Y);
 		}
 
 		Vector2F ClickPos;
@@ -558,7 +556,7 @@ namespace Nucleus.ModelEditor
 		public IEditorType? HoveredObject { get; private set; }
 		public IEditorType? ClickedObject { get; private set; }
 
-		public override void MouseClick(FrameState state, ButtonCode button) {
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
 			ClickPos = GetMousePos();
 			ClickedObject = null;
@@ -568,7 +566,7 @@ namespace Nucleus.ModelEditor
 			if (HoveredObject != null && button == ButtonCode.Mouse1) {
 				if (doesOperatorAllowClick == false) {
 					__dragBlocked = true;
-					return;
+					return true;
 				}
 
 				ClickedObject = HoveredObject;
@@ -588,14 +586,16 @@ namespace Nucleus.ModelEditor
 			__startDraggingOperator = false;
 			CanDragObject = button == ButtonCode.Mouse1;
 			CanDragCamera = button == ButtonCode.Mouse2;
+
+			return true;
 		}
 
 		[MemberNotNullWhen(true, nameof(DefaultOperator))]
 		public bool CanUseDefaultOperator => DefaultOperator != null && !ModelEditor.Active.File.IsOperatorActive;
 
-		public override void MouseDrag(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			base.MouseDrag(self, state, delta);
-			if (__dragBlocked) return;
+			if (__dragBlocked) return false;
 
 			var pos = GetMousePos();
 			if (((pos - ClickPos).Length > __LengthUntilDragStarts || ModelEditor.Active.SelectedObjectsCount > 0) && !__startedDrag) {
@@ -629,9 +629,11 @@ namespace Nucleus.ModelEditor
 				CameraX -= dragGridPos.X;
 				CameraY -= dragGridPos.Y;
 			}
+
+			return true;
 		}
 
-		public override void MouseRelease(Element self, FrameState state, ButtonCode button) {
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
 			base.MouseRelease(self, state, button);
 			CanDragCamera = false;
 			__dragBlocked = false;
@@ -650,10 +652,13 @@ namespace Nucleus.ModelEditor
 						ModelEditor.Active.SelectObject(ClickedObject, state.Keyboard.ShiftDown);
 				}
 			}
+
+			return true;
 		}
 
-		public override void MouseScroll(Element self, FrameState state, Vector2F delta) {
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			CameraZoom = Math.Clamp(CameraZoom + (delta.Y / 5 * CameraZoom), 0.05f, 40);
+			return true;
 		}
 		Camera3D cam;
 		float widthMultiplied;
@@ -778,7 +783,7 @@ namespace Nucleus.ModelEditor
 
 				model.Clipping.End();
 			}
-			
+
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (model.Hidden) continue;
 

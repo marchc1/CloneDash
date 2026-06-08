@@ -23,7 +23,7 @@ namespace AssetStudio
         public Limit(ObjectReader reader)
         {
             var version = reader.version;
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 4))//5.4 and up
+            if (version >= (5, 4))//5.4 and up
             {
                 m_Min = reader.ReadVector3();
                 m_Max = reader.ReadVector3();
@@ -50,7 +50,7 @@ namespace AssetStudio
             var version = reader.version;
             m_PreQ = reader.ReadVector4();
             m_PostQ = reader.ReadVector4();
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) //5.4 and up
+            if (version >= (5, 4)) //5.4 and up
             {
                 m_Sgn = reader.ReadVector3();
             }
@@ -66,7 +66,7 @@ namespace AssetStudio
 
     public class Skeleton
     {
-        public Node[] m_Node;
+        public List<Node> m_Node;
         public uint[] m_ID;
         public Axes[] m_AxesArray;
 
@@ -74,34 +74,35 @@ namespace AssetStudio
         public Skeleton(ObjectReader reader)
         {
             int numNodes = reader.ReadInt32();
-            m_Node = new Node[numNodes];
-            for (int i = 0; i < numNodes; i++)
+            m_Node = new List<Node>();
+            for (var i = 0; i < numNodes; i++)
             {
-                m_Node[i] = new Node(reader);
+                m_Node.Add(new Node(reader));
             }
 
             m_ID = reader.ReadUInt32Array();
 
             int numAxes = reader.ReadInt32();
-            m_AxesArray = new Axes[numAxes];
-            for (int i = 0; i < numAxes; i++)
+            var axesList = new List<Axes>();
+            for (var i = 0; i < numAxes; i++)
             {
-                m_AxesArray[i] = new Axes(reader);
+                axesList.Add(new Axes(reader));
             }
+            m_AxesArray = axesList.ToArray();
         }
     }
 
     public class SkeletonPose
     {
-        public xform[] m_X;
+        public List<xform> m_X;
 
         public SkeletonPose(ObjectReader reader)
         {
             int numXforms = reader.ReadInt32();
-            m_X = new xform[numXforms];
-            for (int i = 0; i < numXforms; i++)
+            m_X = new List<xform>();
+            for (var i = 0; i < numXforms; i++)
             {
-                m_X[i] = new xform(reader);
+                m_X.Add(new xform(reader));
             }
         }
     }
@@ -163,7 +164,7 @@ namespace AssetStudio
         public SkeletonPose m_SkeletonPose;
         public Hand m_LeftHand;
         public Hand m_RightHand;
-        public Handle[] m_Handles;
+        public List<Handle> m_Handles;
         public Collider[] m_ColliderArray;
         public int[] m_HumanBoneIndex;
         public float[] m_HumanBoneMass;
@@ -189,28 +190,29 @@ namespace AssetStudio
             m_LeftHand = new Hand(reader);
             m_RightHand = new Hand(reader);
 
-            if (version[0] < 2018 || (version[0] == 2018 && version[1] < 2)) //2018.2 down
+            if (version < (2018, 2)) //2018.2 down
             {
                 int numHandles = reader.ReadInt32();
-                m_Handles = new Handle[numHandles];
-                for (int i = 0; i < numHandles; i++)
+                m_Handles = new List<Handle>();
+                for (var i = 0; i < numHandles; i++)
                 {
-                    m_Handles[i] = new Handle(reader);
+                    m_Handles.Add(new Handle(reader));
                 }
 
                 int numColliders = reader.ReadInt32();
-                m_ColliderArray = new Collider[numColliders];
-                for (int i = 0; i < numColliders; i++)
+                var colliderList = new List<Collider>();
+                for (var i = 0; i < numColliders; i++)
                 {
-                    m_ColliderArray[i] = new Collider(reader);
+                    colliderList.Add(new Collider(reader));
                 }
+                m_ColliderArray = colliderList.ToArray();
             }
 
             m_HumanBoneIndex = reader.ReadInt32Array();
 
             m_HumanBoneMass = reader.ReadSingleArray();
 
-            if (version[0] < 2018 || (version[0] == 2018 && version[1] < 2)) //2018.2 down
+            if (version < (2018, 2)) //2018.2 down
             {
                 m_ColliderIndex = reader.ReadInt32Array();
             }
@@ -225,7 +227,7 @@ namespace AssetStudio
             m_FeetSpacing = reader.ReadSingle();
             m_HasLeftHand = reader.ReadBoolean();
             m_HasRightHand = reader.ReadBoolean();
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 2)) //5.2 and up
+            if (version >= (5, 2)) //5.2 and up
             {
                 m_HasTDoF = reader.ReadBoolean();
             }
@@ -254,7 +256,7 @@ namespace AssetStudio
             m_AvatarSkeleton = new Skeleton(reader);
             m_AvatarSkeletonPose = new SkeletonPose(reader);
 
-            if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
+            if (version >= (4, 3)) //4.3 and up
             {
                 m_DefaultPose = new SkeletonPose(reader);
 
@@ -265,7 +267,7 @@ namespace AssetStudio
 
             m_HumanSkeletonIndexArray = reader.ReadInt32Array();
 
-            if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
+            if (version >= (4, 3)) //4.3 and up
             {
                 m_HumanSkeletonReverseIndexArray = reader.ReadInt32Array();
             }
@@ -273,7 +275,7 @@ namespace AssetStudio
             m_RootMotionBoneIndex = reader.ReadInt32();
             m_RootMotionBoneX = new xform(reader);
 
-            if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
+            if (version >= (4, 3)) //4.3 and up
             {
                 m_RootMotionSkeleton = new Skeleton(reader);
                 m_RootMotionSkeletonPose = new SkeletonPose(reader);
@@ -287,7 +289,7 @@ namespace AssetStudio
     {
         public uint m_AvatarSize;
         public AvatarConstant m_Avatar;
-        public KeyValuePair<uint, string>[] m_TOS;
+        public List<KeyValuePair<uint, string>> m_TOS;
 
         public Avatar(ObjectReader reader) : base(reader)
         {
@@ -295,10 +297,10 @@ namespace AssetStudio
             m_Avatar = new AvatarConstant(reader);
 
             int numTOS = reader.ReadInt32();
-            m_TOS = new KeyValuePair<uint, string>[numTOS];
-            for (int i = 0; i < numTOS; i++)
+            m_TOS = new List<KeyValuePair<uint, string>>();
+            for (var i = 0; i < numTOS; i++)
             {
-                m_TOS[i] = new KeyValuePair<uint, string>(reader.ReadUInt32(), reader.ReadAlignedString());
+                m_TOS.Add(new KeyValuePair<uint, string>(reader.ReadUInt32(), reader.ReadAlignedString()));
             }
 
             //HumanDescription m_HumanDescription 2019 and up

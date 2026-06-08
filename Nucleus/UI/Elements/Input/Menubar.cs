@@ -1,0 +1,51 @@
+﻿using Nucleus.Common.Input;
+using Nucleus.Types;
+
+namespace Nucleus.UI.Elements;
+
+public class MenuContext(UserInterface UI)
+{
+	private List<IMenuItem> MenuItems = [];
+
+	public void AddMenuItem(IMenuItem item) => MenuItems.Add(item);
+	public void AddButton(string text, string? icon = null, Action? callback = null) => AddMenuItem(new MenuButton(text, icon, callback));
+	public void AddSubMenu(string text, string? icon = null, Func<Menu, bool>? callback = null) => AddMenuItem(new MenuSubmenu(text, icon, callback));
+	public void AddSeparator() => AddMenuItem(new MenuSeparator());
+
+	public void Show() {
+		Menu menu = UI.Menu();
+
+		foreach (var item in MenuItems) {
+			menu.AddItem(item);
+		}
+
+		menu.Open(UI.Level.FrameState.Mouse.MousePos);
+	}
+}
+public class Menubar : Panel
+{
+	public class MenubarButton(Menubar menu, Action? action) : Button(menu)
+	{
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			if (!IsHovered()) return true;
+			action?.Invoke();
+			return true;
+		}
+	}
+	public Menubar(Element? parent) : base(parent) {
+		this.SetSize(new(0, 32));
+		this.SetDock(Dock.Top);
+	}
+	public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
+		MenuContext context = new MenuContext(this.UI);
+		action = action ?? (() => context.Show());
+		Button b = new MenubarButton(this, action);
+		b.SetTextPadding(new(8));
+		b.SetDock(Dock.Left);
+		b.SetAutoSize(true);
+		b.SetText(text);
+		b.SetBorderSize(0);
+
+		return context;
+	}
+}

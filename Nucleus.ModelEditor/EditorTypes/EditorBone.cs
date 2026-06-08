@@ -137,8 +137,8 @@ namespace Nucleus.ModelEditor
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
 			var separateRow = PropertiesPanel.NewRow(props, "Separate", "models/separate.png");
 			props.Thinking += (self) => {
-				separateRow.Parent.Visible = separateRow.Parent.Enabled = ModelEditor.Active.AnimationMode;
-				separateRow.InputDisabled = ModelEditor.Active.File.ActiveAnimation == null;
+				self.GetParent()!.SetVisible(ModelEditor.Active.AnimationMode);
+				self.SetMouseInputEnabled(ModelEditor.Active.File.ActiveAnimation == null);
 			};
 
 			ModelEditor.Active.File.AnimationActivated += (_, _, _) => { };

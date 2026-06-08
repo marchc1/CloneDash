@@ -45,9 +45,9 @@ namespace AssetStudio
 
         public override bool Equals(object other)
         {
-            if (!(other is Vector2))
+            if (!(other is Vector2 vector2))
                 return false;
-            return Equals((Vector2)other);
+            return Equals(vector2);
         }
 
         public bool Equals(Vector2 other)
@@ -73,7 +73,7 @@ namespace AssetStudio
 
         public float Length()
         {
-            return (float)Math.Sqrt(LengthSquared());
+            return MathF.Sqrt(LengthSquared());
         }
 
         public float LengthSquared()

@@ -65,7 +65,7 @@ public class MemorySearchPath : SearchPath
 			__encoded[hash] = writeStream;
 			return writeStream;
 		}
-
+		data.Position = 0;
 		return data;
 	}
 }

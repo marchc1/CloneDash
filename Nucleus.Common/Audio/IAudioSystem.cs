@@ -53,7 +53,7 @@ public struct AudioPlaybackSettings
 {
 	public static readonly AudioPlaybackSettings Unaltered = new() {
 		Volume = 1f,
-		Panning = 0.5f,
+		Panning = 0f,
 		Pitch = 1f
 	};
 
@@ -63,7 +63,7 @@ public struct AudioPlaybackSettings
 	public float TimeStretch;
 	/// <summary> The volume of the audio, from 0 -> 1. </summary>
 	public float Volume;
-	/// <summary> The panning of the audio, from 0 -> 1, where 0.5 is centered. </summary>
+	/// <summary> The panning of the audio, from -1 -> 1, where 0 is centered. </summary>
 	public float Panning;
 
 	/// <summary> Is the audio looping. If this is true, the sound will not be destroyed until stopsound is called on it. </summary>

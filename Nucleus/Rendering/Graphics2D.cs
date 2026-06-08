@@ -19,13 +19,12 @@ namespace Nucleus.Core
 		[DllImport("raylib", CallingConvention = CallingConvention.Cdecl)]
 		public static extern void glTexImage2DMultisample(int target, int level, int format, int width, int height, bool fixedsamplelocs);
 	}
-	public record FontEntry(string Path, string PathID);
 	public static class Graphics2D
 	{
 		public const string UI_FONT_NAME = "Noto Sans";
 
 		public const string UI_MONO_BOLD_FONT_NAME = "Noto Sans Mono Bold";
-		
+
 		// See here for possible values of CultureInfo.Name:
 		// https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c
 		public readonly static string UI_CN_JP_FONT_NAME = CultureInfo.CurrentCulture.Name switch {
@@ -37,7 +36,7 @@ namespace Nucleus.Core
 			"ja-JP" => "Noto Sans JP",
 			_ => "Noto Sans SC"
 		};
-		
+
 		public static FontManager FontManager { get; private set; } = new(new() {
 			{ "Consolas", new FontEntry("MonaspaceNeon-Regular.otf", "fonts") },
 			{ "Open Sans", new FontEntry("open-sans.ttf", "fonts") },
@@ -139,9 +138,6 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
-		public static Font GetFont(ReadOnlySpan<char> fontName, float fontSize) {
-			return FontManager["", fontName, (int)fontSize].GetFont();
-		}
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, (int)fontSize, 0);
 			return new(s.X, s.Y);
@@ -157,7 +153,8 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct TextChunk {
+		public struct TextChunk
+		{
 			public string Text;
 			public string Font;
 			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
@@ -166,40 +163,41 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct MappedText {
+		public struct MappedText
+		{
 			public string Text;
 			public string Font;
 			public Vector2F RelativePos;
 		}
 
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) 
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment());
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor) 
+		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
-		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor) 
+		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
 			=> DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment());
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical) 
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment) 
+		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, alignment.Horizontal, alignment.Vertical);
-		
-		
+
+
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
 
 		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
-			Vector2F combinedSize = new ();
+			Vector2F combinedSize = new();
 			mappedTextsCache.Clear();
 
 			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
@@ -274,9 +272,24 @@ namespace Nucleus.Core
 		}
 
 		private static Texture2D __texture;
-		public static Texture2D GetTexture() => __texture;
-		public static void SetTexture(Texture2D tex) => __texture = tex;
-		public static void SetTexture(RenderTexture2D tex) => __texture = tex.Texture;
+		private static bool __textureFlippedY;
+		public static void SetTexture(ITexture? tex) {
+			if (tex == null) {
+				__texture = default;
+				__textureFlippedY = false;
+				return;
+			}
+			__texture = new() {
+				Id = tex.GetTextureHandle(),
+				Width = tex.Width,
+				Height = tex.Height,
+				Format = tex.Format,
+				Mipmaps = tex.GetMipmapCount()
+			};
+			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		}
+		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false; }
+		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = false; }
 
 		public static Color GetDrawColor() => __drawColor;
 		public static void SetDrawColor(in Color c) => __drawColor = c;
@@ -309,7 +322,7 @@ namespace Nucleus.Core
 			hsv.X += hue;
 			hsv.Y *= saturation;
 			hsv.Z *= value;
-			__drawColor = hsv.ToRGB(c.A / 255);
+			__drawColor = hsv.HSVfToRGBub(c.A / 255);
 		}
 
 		public static void DrawPixel(int x, int y) => Raylib.DrawPixel(offsetX(x), offsetY(x), __drawColor);
@@ -408,9 +421,10 @@ namespace Nucleus.Core
 		public static void DrawRectangleOutline(Vector2F pos, Vector2F size, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), thickness, __drawColor);
 		public static void DrawRectangleOutline(RectangleF rect, float thickness = 1) => Raylib.DrawRectangleLinesEx(AFRToRLR(rect), thickness, __drawColor);
 
-		public static float ConvertRoundnessToRelative(float w, float h, float roundness){
+		public static float ConvertRoundnessToRelative(float w, float h, float roundness) {
 			float ratio = Math.Min(w, h);
-			return (roundness * 2) / ratio;
+			if (ratio <= 0f) return 0f;
+			return Math.Clamp((roundness * 2f) / ratio, 0f, 1f);
 		}
 
 		public static void DrawRectangleRounded(int x, int y, int width, int height, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, __drawColor);
@@ -418,10 +432,10 @@ namespace Nucleus.Core
 		public static void DrawRectangleRounded(Vector2F pos, Vector2F size, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, __drawColor);
 		public static void DrawRectangleRounded(RectangleF rect, float roundness, int segments) => Raylib.DrawRectangleRounded(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, __drawColor);
 
-		public static void DrawRectangleRoundedOutline(int x, int y, int width, int height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(float x, float y, float width, float height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(Vector2F pos, Vector2F size, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, thickness, __drawColor);
-		public static void DrawRectangleRoundedOutline(RectangleF rect, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLines(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(int x, int y, int width, int height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(float x, float y, float width, float height, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.XYWH(x, y, width, height)), ConvertRoundnessToRelative(width, height, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(Vector2F pos, Vector2F size, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(RectangleF.FromPosAndSize(pos, size)), ConvertRoundnessToRelative(size.W, size.H, roundness), segments, thickness, __drawColor);
+		public static void DrawRectangleRoundedOutline(RectangleF rect, float roundness, float thickness, int segments) => Raylib.DrawRectangleRoundedLinesEx(AFRToRLR(rect), ConvertRoundnessToRelative(rect.W, rect.H, roundness), segments, thickness, __drawColor);
 
 		public static void DrawCircle(Vector2F pos, Vector2F size) {
 			var local = AFV2ToSNV2(pos);
@@ -462,12 +476,22 @@ namespace Nucleus.Core
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
 
-		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) {
-			Raylib.DrawTexturePro(__texture, new Rectangle(
+		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) {
+			if (__textureFlippedY)
+				flipY = !flipY;
+			space.RoundInPlace();
+			Rectangle source = new Rectangle(
 				(flipX ? 1 : 0) * __texture.Width, (flipY ? 1 : 0) * __texture.Height,
-				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height), AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y))), AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero), rotation, __drawColor);
+				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height);
+			Rectangle dest = AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y)));
+			Vector2 originV2 = AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero);
+			source.Width *= horizontalProgress;
+			dest.Width *= horizontalProgress;
+
+			Raylib.DrawTexturePro(__texture, source, dest, originV2, rotation, __drawColor);
 		}
-		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY);
+		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, 1);
+		public static void DrawImageHorizontalProgress(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, horizontalProgress);
 		public static void DrawRing(Vector2F center, float innerRadius, float outerRadius, float startAngle = 0, float endAngle = 360, int segments = 32) {
 			Raylib.DrawRing(AFV2ToSNV2(center), innerRadius, outerRadius, startAngle, endAngle, segments, __drawColor);
 		}
@@ -583,6 +607,11 @@ namespace Nucleus.Core
 
 					bottomRight.x = x + (dx + dest.Width) * cosRotation - (dy + dest.Height) * sinRotation;
 					bottomRight.y = y + (dx + dest.Width) * sinRotation + (dy + dest.Height) * cosRotation;
+				}
+
+				if (__textureFlippedY) {
+					(bottomLeft.y, topLeft.y) = (topLeft.y, bottomLeft.y);
+					(bottomRight.y, topRight.y) = (topRight.y, bottomRight.y);
 				}
 
 				Rlgl.SetTexture(texture.Id);

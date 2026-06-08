@@ -1,5 +1,7 @@
 ﻿using Nucleus.Common.Extensions;
 using Nucleus.Common.Graphics;
+using Nucleus.Engine;
+using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
@@ -21,6 +23,46 @@ namespace Nucleus.Core
 		}
 		public readonly UtlSymId_t FontSymbol => fontName;
 		public readonly int Size => size;
+	}
+
+	public record class FontEntry(string Path, string PathID)
+	{
+		public string GetPath() => Path;
+		public string GetPathID() => PathID;
+		public HashSet<int> RegisteredCodepointsHash = [];
+		public List<int> RegisteredCodepoints = [];
+		public List<int> BadCodepointsList = [];
+		public int BadCodepoints;
+
+		// Validate incoming codepoints (did the font fail to make codepoints) and register accordingly
+		internal void ValidateCodepoints(in Font newFont) {
+			for (int i = RegisteredCodepoints.Count - 1; i >= 0; i--) {
+				int codepoint = RegisteredCodepoints[i];
+				int glyphIndex = Raylib.GetGlyphIndex(newFont, codepoint);
+
+				if (glyphIndex == 0 && codepoint != 0) {
+					RegisteredCodepoints.RemoveAt(i);
+					RegisteredCodepointsHash.Remove(codepoint);
+					if (!BadCodepointsList.Contains(codepoint))
+						BadCodepointsList.Add(codepoint);
+					BadCodepoints++;
+				}
+			}
+		}
+
+		// Only return codepoints that are known to be OK
+		internal Span<int> GetGoodOrUnknownCodepoints() {
+			return CollectionsMarshal.AsSpan(RegisteredCodepoints);
+		}
+
+		// Only push codepoints that haven't been registered
+		internal void PushCodepoints(Span<int> registeredCodepoints) {
+			for (int i = 0; i < registeredCodepoints.Length; i++) {
+				int c = registeredCodepoints[i];
+				if (RegisteredCodepointsHash.Add(c))
+					RegisteredCodepoints.Add(c);
+			}
+		}
 	}
 
 	public class FontState
@@ -52,6 +94,7 @@ namespace Nucleus.Core
 	{
 		readonly UtlSymbolTableMT symbols = new();
 		private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
+		private readonly List<int> RegisteredCodepoints = new List<int>();
 
 		public readonly Dictionary<UtlSymId_t, FontEntry> FontNameToFilepath = new();
 
@@ -86,11 +129,13 @@ namespace Nucleus.Core
 		private bool AreFontsMarkedForDeath => FontsMarkedForDeath.Count != 0;
 
 		public void RegisterCodepoints(ReadOnlySpan<char> chars) {
-			char ch;
 			bool dirty = false;
 			for (int i = 0; i < chars.Length;) {
 				Rune unicodeRune = chars.GetRuneAt(i);
-				FullFontRefreshRequired |= RegisteredCodepointsHash.Add(unicodeRune.Value);
+				bool added = RegisteredCodepointsHash.Add(unicodeRune.Value);
+				FullFontRefreshRequired |= added;
+				if (added)
+					RegisteredCodepoints.Add(unicodeRune.Value);
 				i += unicodeRune.Utf16SequenceLength;
 			}
 			FullFontRefreshRequired |= dirty;
@@ -108,9 +153,9 @@ namespace Nucleus.Core
 		DateTime lastCheckTimes;
 		public void CleanUpFontsMarkedForDeath() {
 			DateTime now = DateTime.UtcNow;
-			if((now - lastCheckTimes).TotalSeconds > 3){
+			if ((now - lastCheckTimes).TotalSeconds > 3) {
 				// Garbage collect fonts. A font not used for ~3 seconds will be thrown away.
-				foreach(var font in FontTable){
+				foreach (var font in FontTable) {
 					if ((now - font.Value.GetLastHydrate()).TotalSeconds > 3)
 						MarkFontForDeath(font.Value);
 				}
@@ -137,7 +182,10 @@ namespace Nucleus.Core
 				if (!text.IsEmpty) {
 					for (int i = 0; i < text.Length;) {
 						Rune unicodeRune = text.GetRuneAt(i);
-						FullFontRefreshRequired |= RegisteredCodepointsHash.Add(unicodeRune.Value);
+						bool added = RegisteredCodepointsHash.Add(unicodeRune.Value);
+						FullFontRefreshRequired |= added;
+						if (added)
+							RegisteredCodepoints.Add(unicodeRune.Value);
 						i += unicodeRune.Utf16SequenceLength;
 					}
 
@@ -153,18 +201,42 @@ namespace Nucleus.Core
 				FontKey key = new FontKey(symbols.AddString(fontName), fontSize);
 
 				if (!FontTable.TryGetValue(key, out FontState? state)) {
-					var entry = FontNameToFilepath[key.FontSymbol];
-
-					var newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, RegisteredCodepointsHash.ToArray(), RegisteredCodepointsHash.Count);
-					Raylib.GenTextureMipmaps(ref newFont.Texture);
-					Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
-					state = FontTable[key] = new FontState();
-					state.OwnFont(newFont);
-					state.Key = key;
+					if (FontNameToFilepath.TryGetValue(key.FontSymbol, out var entry)) {
+						var registeredCodepoints = RegisteredCodepoints.AsSpan();
+						entry.PushCodepoints(registeredCodepoints);
+						Font newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, entry.GetGoodOrUnknownCodepoints());
+						entry.ValidateCodepoints(in newFont);
+						Raylib.GenTextureMipmaps(ref newFont.Texture);
+						Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+						state = FontTable[key] = new FontState();
+						state.OwnFont(newFont);
+						state.Key = key;
+					}
+					else {
+						return GetFallbackFont(fontSize);
+					}
 				}
+
 				state.Rehydrate();
 				return state;
 			}
+		}
+
+		readonly FontEntry fallbackEntry = new("NotoSans-Regular.ttf", "fonts");
+		readonly Dictionary<int, FontState> fallbackFonts = [];
+		private FontState GetFallbackFont(int fontSize) {
+			if (!fallbackFonts.TryGetValue(fontSize, out FontState? state)) {
+				var registeredCodepoints = RegisteredCodepoints.AsSpan();
+				fallbackEntry.PushCodepoints(registeredCodepoints);
+				Font newFont = Filesystem.ReadFont(fallbackEntry.PathID, fallbackEntry.Path, fontSize, fallbackEntry.GetGoodOrUnknownCodepoints());
+				fallbackEntry.ValidateCodepoints(in newFont);
+				Raylib.GenTextureMipmaps(ref newFont.Texture);
+				Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+				state = fallbackFonts[fontSize] = new FontState();
+				state.OwnFont(newFont);
+				state.Key = new(0, fontSize);
+			}
+			return state;
 		}
 	}
 }

@@ -62,11 +62,13 @@ namespace Nucleus.Entities
 		public IShader? Shader { get; set; }
 
 		public override void Render(FrameState frameState) => Render();
+		public double AnimationSpeed = 1;
+
 		public virtual void Render() {
 			if (!Visible) return;
 			if (Model == null) return;
 
-			if (!Level.Paused) __anim?.AddDeltaTime(Level.RendertimeDelta);
+			if (!Level.Paused) __anim?.AddDeltaTime(Level.RendertimeDelta * AnimationSpeed);
 
 			__anim?.Apply(Model);
 			Model.Position = Position;

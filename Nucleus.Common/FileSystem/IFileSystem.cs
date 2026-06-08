@@ -25,10 +25,10 @@ public interface IFileSystem
 	IEnumerable<SearchPath> GetSearchPathID(ReadOnlySpan<char> pathID);
 	void Initialize(ReadOnlySpan<char> gameName);
 	Stream? Open(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, FileAccess access = FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate);
-	byte[]? ReadAllBytes(string pathID, string path);
-	bool ReadAllBytes(string pathID, string path, [NotNullWhen(true)] out byte[]? bytes);
-	string? ReadAllText(string pathID, string path);
-	bool ReadAllText(string pathID, string path, [NotNullWhen(true)] out string? text);
+	byte[]? ReadAllBytes(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path);
+	bool ReadAllBytes(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, [NotNullWhen(true)] out byte[]? bytes);
+	string? ReadAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path);
+	bool ReadAllText(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, [NotNullWhen(true)] out string? text);
 	bool RemoveSearchPath(ReadOnlySpan<char> pathID);
 	bool RemoveSearchPath(ReadOnlySpan<char> pathID, SearchPath path);
 	void RemoveTemporarySearchPaths();

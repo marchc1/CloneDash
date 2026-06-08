@@ -1,6 +1,6 @@
 ﻿using Nucleus.Common.Types;
 using Nucleus.Extensions;
-
+using Nucleus.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,26 +15,25 @@ namespace Nucleus.Core
 {
 	public class NProfilable
 	{
-		private static Dictionary<string, NProfilable> Name2ProfilableRecord = [];
+		private static Dictionary<UtlSymbol, NProfilable> Name2ProfilableRecord = [];
 
-		public string Name { get; private set; }
-		public Color Color { get; set; }
-		public NProfilable(string name, Color? color = null) {
+		public readonly UtlSymbol Name;
+		public readonly Color Color;
+		public NProfilable(ReadOnlySpan<char> name, Color? color = null) {
 			Name = name;
 			Color = color ?? Color.White;
-			Name2ProfilableRecord[name] = this;
+			Name2ProfilableRecord[Name] = this;
 		}
 
 		public static NProfilable UI_LAYOUT { get; } = Make("UserInterfaceLayout", new(235, 110, 50, 255));
 		public static NProfilable UI_RENDER { get; } = Make("UserInterfaceRendering", new(50, 110, 235, 255));
 
-		public static NProfilable? FromString(string str) => Name2ProfilableRecord.TryGetValue(string.Intern(str), out var ret) ? ret : null;
-		public static NProfilable Make(string str, Color? color = null) {
-			string interned = string.Intern(str);
-			if (Name2ProfilableRecord.TryGetValue(interned, out var ret))
+		public static NProfilable? FromString(ReadOnlySpan<char> str) => Name2ProfilableRecord.TryGetValue(str, out var ret) ? ret : null;
+		public static NProfilable Make(ReadOnlySpan<char> str, Color? color = null) {
+			if (Name2ProfilableRecord.TryGetValue(str, out var ret))
 				return ret;
 
-			return new(interned, color);
+			return new(str, color);
 		}
 
 		public void Start() => NProfiler.Start(this);
@@ -65,7 +64,7 @@ namespace Nucleus.Core
 
 			foreach (var timer in timers) {
 				results[i] = new NProfileResult() {
-					Name = timer.Key?.Name ?? string.Empty,
+					Name = timer.Key?.Name.String(),
 					Color = timer.Key?.Color ?? Color.White,
 					Elapsed = timer.Value.Elapsed
 				};
@@ -89,15 +88,15 @@ namespace Nucleus.Core
 			Stopwatch s = Get(profilable);
 			s.Start();
 		}
-		private static float Str2Flt(string s) {
-			return MathF.Abs((s.GetHashCode() / 329.248f) % 360);
+		private static float Str2Flt(ReadOnlySpan<char> s) {
+			return MathF.Abs((s.Hash() / 329.248f) % 360);
 		}
-		public static void Start(string name) {
+		public static void Start(ReadOnlySpan<char> name) {
 			if (true) return; // Stubbing for now
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
-				profilable = NProfilable.Make(name, retC.ToRGB());
+				profilable = NProfilable.Make(name, retC.HSVfToRGBub());
 			}
 			Start(profilable);
 		}
@@ -113,7 +112,7 @@ namespace Nucleus.Core
 			NProfilable? profilable = NProfilable.FromString(name);
 			if (profilable == null) {
 				Vector3 retC = new(Str2Flt(name) % 360, 0.86f, 1);
-				profilable = NProfilable.Make(name, retC.ToRGB());
+				profilable = NProfilable.Make(name, retC.HSVfToRGBub());
 			}
 			End(profilable);
 		}

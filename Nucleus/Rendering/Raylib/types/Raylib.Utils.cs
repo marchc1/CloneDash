@@ -87,19 +87,6 @@ public static unsafe partial class Raylib
 		TakeScreenshot(str1.AsPointer());
 	}
 
-	/// <summary>Check file extension</summary>
-	public static CBool IsFileExtension(string fileName, string ext) {
-		using var str1 = fileName.ToAnsiBuffer();
-		using var str2 = ext.ToAnsiBuffer();
-		return IsFileExtension(str1.AsPointer(), str2.AsPointer());
-	}
-
-	/// <summary>Get file modification time (last write time)</summary>
-	public static long GetFileModTime(string fileName) {
-		using var str1 = fileName.ToAnsiBuffer();
-		return GetFileModTime(str1.AsPointer());
-	}
-
 	/// <summary>Load image from file into CPU memory (RAM)</summary>
 	public static Image LoadImage(string fileName) {
 		using var str1 = fileName.ToAnsiBuffer();
@@ -290,27 +277,6 @@ public static unsafe partial class Raylib
 	/// <summary>C++ style memory allocator</summary>
 	public static T* New<T>(int count) where T : unmanaged {
 		return (T*)MemAlloc(count * sizeof(T));
-	}
-
-	/// <summary>Load file data as byte array (read)</summary>
-	public static byte* LoadFileData(string fileName, ref uint bytesRead) {
-		using var str1 = fileName.ToAnsiBuffer();
-		fixed (uint* p = &bytesRead) {
-			return LoadFileData(str1.AsPointer(), p);
-		}
-	}
-
-	/// <summary>Get dropped files names (memory should be freed)</summary>
-	public static string[] GetDroppedFiles() {
-		var filePathList = LoadDroppedFiles();
-		var files = new string[filePathList.Count];
-
-		for (var i = 0; i < filePathList.Count; i++) {
-			files[i] = Marshal.PtrToStringUTF8((IntPtr)filePathList.Paths[i]);
-		}
-		UnloadDroppedFiles(filePathList);
-
-		return files;
 	}
 
 	/// <summary>Get gamepad internal name id</summary>
@@ -947,24 +913,12 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Draw text (using default font)</summary>
-	public static void DrawText(string text, int posX, int posY, int fontSize, Color color) {
+	public static void DrawText(ReadOnlySpan<char> text, int posX, int posY, int fontSize, Color color) {
 		using var str1 = text.ToUtf8Buffer();
 		DrawText(str1.AsPointer(), posX, posY, fontSize, color);
 	}
 
 	/// <summary>Draw text using font and additional parameters</summary>
-	public static void DrawTextEx(
-		Font font,
-		string text,
-		Vector2 position,
-		float fontSize,
-		float spacing,
-		Color tint
-	) {
-		using var str1 = text.ToUtf8Buffer();
-		DrawTextEx(font, str1.AsPointer(), position, fontSize, spacing, tint);
-	}
-
 	public static void DrawTextEx(
 		Font font,
 		ReadOnlySpan<char> text,
@@ -980,7 +934,7 @@ public static unsafe partial class Raylib
 	/// <summary>Draw text using Font and pro parameters (rotation)</summary>
 	public static void DrawTextPro(
 		Font font,
-		string text,
+		ReadOnlySpan<char> text,
 		Vector2 position,
 		Vector2 origin,
 		float rotation,
@@ -993,15 +947,9 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Measure string width for default font</summary>
-	public static int MeasureText(string text, int fontSize) {
+	public static int MeasureText(ReadOnlySpan<char> text, int fontSize) {
 		using var str1 = text.ToUtf8Buffer();
 		return MeasureText(str1.AsPointer(), fontSize);
-	}
-
-	/// <summary>Measure string size for Font</summary>
-	public static Vector2 MeasureTextEx(Font font, string text, float fontSize, float spacing) {
-		using var str1 = text.ToUtf8Buffer();
-		return MeasureTextEx(font, str1.AsPointer(), fontSize, spacing);
 	}
 
 	public static Vector2 MeasureTextEx(Font font, ReadOnlySpan<char> text, float fontSize, float spacing) {
@@ -1010,7 +958,7 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Get all codepoints in a string, codepoints count returned by parameters</summary>
-	public static int[] LoadCodepoints(string text, ref int count) {
+	public static int[] LoadCodepoints(ReadOnlySpan<char> text, ref int count) {
 		using var str1 = text.ToUtf8Buffer();
 		fixed (int* c = &count) {
 			var pointsPtr = LoadCodepoints(str1.AsPointer(), c);
@@ -1021,13 +969,13 @@ public static unsafe partial class Raylib
 	}
 
 	/// <summary>Get total number of codepoints in a UTF8 encoded string</summary>
-	public static int GetCodepointCount(string text) {
+	public static int GetCodepointCount(ReadOnlySpan<char> text) {
 		using var str1 = text.ToUtf8Buffer();
 		return GetCodepointCount(str1.AsPointer());
 	}
 
 	/// <summary>Get next codepoint in a UTF-8 encoded string, 0x3f('?') is returned on failure</summary>
-	public static int GetCodepoint(string text, ref int codepointSize) {
+	public static int GetCodepoint(ReadOnlySpan<char> text, ref int codepointSize) {
 		using var str1 = text.ToUtf8Buffer();
 		fixed (int* p = &codepointSize) {
 			return GetCodepoint(str1.AsPointer(), p);

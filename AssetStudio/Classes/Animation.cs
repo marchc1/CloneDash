@@ -1,22 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace AssetStudio
 {
     public sealed class Animation : Behaviour
     {
-        public PPtr<AnimationClip>[] m_Animations;
+        public List<PPtr<AnimationClip>> m_Animations;
 
         public Animation(ObjectReader reader) : base(reader)
         {
             var m_Animation = new PPtr<AnimationClip>(reader);
             int numAnimations = reader.ReadInt32();
-            m_Animations = new PPtr<AnimationClip>[numAnimations];
-            for (int i = 0; i < numAnimations; i++)
+            m_Animations = new List<PPtr<AnimationClip>>();
+            for (var i = 0; i < numAnimations; i++)
             {
-                m_Animations[i] = new PPtr<AnimationClip>(reader);
+                m_Animations.Add(new PPtr<AnimationClip>(reader));
             }
         }
     }

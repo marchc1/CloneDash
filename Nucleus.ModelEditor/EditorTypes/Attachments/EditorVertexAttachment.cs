@@ -361,7 +361,7 @@ namespace Nucleus.ModelEditor
 
 		public static Color BoneWeightListIndexToColor(int index, int alpha = 255) {
 			var baselineHue = 194 + (index * 90);
-			return (new Vector3(baselineHue, 0.78f, 1.00f)).ToRGB((float)(alpha) / 255f);
+			return (new Vector3(baselineHue, 0.78f, 1.00f)).HSVfToRGBub((float)(alpha) / 255f);
 		}
 	}
 }

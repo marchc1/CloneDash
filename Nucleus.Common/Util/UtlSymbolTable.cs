@@ -6,7 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Util;
 
-public static class HashingUtils {
+public static class HashingUtils
+{
 	public static unsafe ulong Hash(this ReadOnlySpan<char> str, bool invariant = true) {
 		if (str == null || str.Length == 0)
 			return 0;
@@ -48,7 +49,8 @@ public static class HashingUtils {
 	}
 }
 
-public interface ISymbolTable {
+public interface ISymbolTable
+{
 	UtlSymId_t AddString(ReadOnlySpan<char> str);
 	UtlSymId_t Find(ReadOnlySpan<char> str);
 	string? String(UtlSymId_t symbol);
@@ -93,7 +95,9 @@ public class UtlSymbolTableMT(bool caseInsensitive = false) : ISymbolTable
 
 	public UtlSymId_t AddString(ReadOnlySpan<char> str) {
 		UtlSymId_t hash = str.Hash(invariant: caseInsensitive);
-		Symbols.TryAdd(hash, new(str));
+		if (!Symbols.ContainsKey(hash))
+			Symbols.TryAdd(hash, new(str));
+
 		return hash;
 	}
 

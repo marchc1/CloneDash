@@ -35,13 +35,14 @@ namespace Nucleus.Models
 		public Keyframe<T>? First {
 			get {
 				Recompute();
-				return Keyframes.FirstOrDefault();
+				return __first;
 			}
 		}
+
 		public Keyframe<T>? Last {
 			get {
 				Recompute();
-				return Keyframes.LastOrDefault();
+				return __last;
 			}
 		}
 
@@ -108,8 +109,8 @@ namespace Nucleus.Models
 			if (len == 0) return -1;
 
 #nullable disable
-			if (time <= First.Time) return 0; // pre-first
-			if (time >= Last.Time) return len - 2; // post-last
+			if (time <= Keyframes[0].Time) return 0; // pre-first
+			if (time >= Keyframes[len - 1].Time) return len - 2; // post-last
 #nullable enable
 
 			int start = 0;
@@ -129,9 +130,13 @@ namespace Nucleus.Models
 			return start;
 		}
 
+		Keyframe<T>? __first;
+		Keyframe<T>? __last;
 		public void Recompute() {
 			if (valid == false) {
-				Keyframes.Sort((x, y) => x.Time.CompareTo(y.Time));
+				Keyframes.Sort(static (x, y) => x.Time.CompareTo(y.Time));
+				__first = Keyframes.Count == 0 ? null : Keyframes[0];
+				__last = Keyframes.Count == 0 ? null : Keyframes[^1];
 				valid = true;
 			}
 		}
@@ -145,6 +150,23 @@ namespace Nucleus.Models
 				return 0;
 
 			return Keyframe<T>.GetPercentage(time, curframe, Keyframes[frameIdx + 1]);
+		}
+		public int DetermineIndexAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
+			Recompute();
+
+			int count = Keyframes.Count;
+			switch (count) {
+				case 0: return -1;
+				case 1: return 0;
+				case 2: return 0;
+				default:
+					var firstKeyframe = Keyframes[0];
+					if (time <= firstKeyframe.Time)
+						return 0;
+
+					var start = BinarySearchKeyframe(time);
+					return start;
+			}
 		}
 		public T? DetermineValueAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
@@ -161,6 +183,22 @@ namespace Nucleus.Models
 
 					var start = BinarySearchKeyframe(time);
 					return Keyframe<T>.DetermineValue(time, Keyframes[start], Keyframes[start + 1], interpolationOverride);
+			}
+		}
+		public T? DetermineValueAtTime(double time, int index, KeyframeInterpolation? interpolationOverride = null) {
+			Recompute();
+
+			int count = Keyframes.Count;
+			switch (count) {
+				case 0: return default;
+				case 1: return Keyframes[index].Value;
+				case 2: return Keyframe<T>.DetermineValue(time, Keyframes[index], Keyframes[index + 1], interpolationOverride);
+				default:
+					var firstKeyframe = Keyframes[0];
+					if (time <= firstKeyframe.Time)
+						return firstKeyframe.Value;
+
+					return Keyframe<T>.DetermineValue(time, Keyframes[index], Keyframes[index + 1], interpolationOverride);
 			}
 		}
 	}

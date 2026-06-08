@@ -1,6 +1,7 @@
 ﻿// should this be in Nucleus/UI?
 // TODO: cleanup, kind of hastily made
 
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -16,9 +17,71 @@ using System.Xml.Linq;
 namespace Nucleus.ModelEditor.UI;
 
 // Some class 'typedefs' of sorts for switch-case reasons
-public class ViewDividerHeader : Panel;
-public class ViewDivider : Button;
-public class ViewButtonSelector : Button;
+public class ViewDividerHeader(Element parent) : Panel(parent)
+{
+	public override void PaintBorder(float width, float height) { }
+}
+public class ViewDivider(ViewDivision parent, ViewSplit split) : Button(parent)
+{
+	public override void PaintBackground(float width, float height) { }
+	public override void PaintBorder(float width, float height) { }
+	public override void Paint(float w, float h) {
+		var c = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1, 1.5f, 1), new(0, 1, 0.5f, 1));
+		Graphics2D.SetDrawColor(c);
+		var offset = 2;
+		if (GetDock() == Dock.Left || GetDock() == Dock.Right)
+			Graphics2D.DrawLine(w / 2, offset, w / 2, h - (offset * 2));
+		else if (GetDock() == Dock.Top || GetDock() == Dock.Bottom)
+			Graphics2D.DrawLine(offset, h / 2, w - (offset * 2), h / 2);
+	}
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F deltapos) {
+		float delta = 0;
+		bool horizontal = false;
+
+		self = split.Division.ParentDivision;
+
+		switch (split.Direction) {
+			case Dock.Left:
+				delta = deltapos.X / self.GetRenderBounds().W;
+				horizontal = true;
+				break;
+			case Dock.Right:
+				delta = deltapos.X / -self.GetRenderBounds().W;
+				horizontal = true;
+				break;
+			case Dock.Top:
+				delta = deltapos.Y / self.GetRenderBounds().H;
+				horizontal = false;
+				break;
+			case Dock.Bottom:
+				delta = deltapos.Y / -self.GetRenderBounds().H;
+				horizontal = false;
+				break;
+		}
+
+		split.SizePercentage = split.SizePercentage + delta;
+		return true;
+	}
+}
+public class ViewButtonSelector(Element parent) : Button(parent)
+{
+	public event Action<ViewButtonSelector, FrameState, ButtonCode>? MouseClickEvent;
+	public event Action<ViewButtonSelector, FrameState, Vector2F>? MouseDragEvent;
+	public event Action<ViewButtonSelector, FrameState, ButtonCode>? MouseReleaseEvent;
+	public event Action<ViewButtonSelector, FrameState, ButtonCode, bool>? MouseReleasedOrLostEvent;
+	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+		if (IsHovered()) MouseReleaseEvent?.Invoke(this, state, button);
+		MouseReleasedOrLostEvent?.Invoke(this, state, button, !IsHovered());
+		return base.MouseRelease(this, state, button);
+	}
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
+		return base.MouseClick(state, button);
+	}
+	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+		MouseDragEvent?.Invoke(this, state, delta);
+		return true;
+	}
+}
 
 
 public struct ViewMoveResult
@@ -63,31 +126,31 @@ public struct ViewMoveResult
 		ViewMoveResult result = new ViewMoveResult();
 		result.ViewTarget = target;
 
-		switch (UI.Hovered) {
+		switch (UI.GetHoveredElement()) {
 			case ViewButtonSelector buttonSelector:
-				ViewDividerHeader header = buttonSelector.Parent as ViewDividerHeader ?? throw new Exception("Parent mismatch!");
-				result.DivisionTarget = header.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
+				ViewDividerHeader header = buttonSelector.GetParent() as ViewDividerHeader ?? throw new Exception("Parent mismatch!");
+				result.DivisionTarget = header.GetParent() as ViewDivision ?? throw new Exception("Parent mismatch!");
 				// todo: tab index. Just move it to the furthest side for now
 
-				var centerBtn = buttonSelector.GetGlobalPosition() + (buttonSelector.RenderBounds.Size / 2);
+				var centerBtn = buttonSelector.GetGlobalPosition() + (buttonSelector.GetRenderBounds().Size / 2);
 				var rightmost = UI.Level.FrameState.Mouse.MousePos.X > centerBtn.X;
 
 				result.TabIndex = Math.Clamp(result.DivisionTarget.IndexOfButton(buttonSelector) + (rightmost ? 1 : 0), 0, result.DivisionTarget.Views.Count);
 
 				break;
 			case ViewDividerHeader divider:
-				result.DivisionTarget = divider.Parent as ViewDivision ?? throw new Exception("Parent mismatch!");
+				result.DivisionTarget = divider.GetParent() as ViewDivision ?? throw new Exception("Parent mismatch!");
 				result.TabIndex = result.DivisionTarget.Views.Count;
 				break;
 			default:
 				// Navigate through the parent chain until we find a ViewDivision (or just break out)
-				Element? element = UI.Hovered;
+				Element? element = UI.GetHoveredElement();
 				while (IValidatable.IsValid(element)) {
 					if (element is ViewDivision viewDiv) {
 						// If viewdivision == this viewdivision and we only have one view left,
 						// moving the view to a sub-division of that view is going to cause the view
 						// to just "black hole" itself, so this check prevents that
-						if(viewDiv.Views.Count == 1 && viewDiv.Views.Contains(target)) {
+						if (viewDiv.Views.Count == 1 && viewDiv.Views.Contains(target)) {
 							result.Failed = true;
 							return result;
 						}
@@ -97,7 +160,7 @@ public struct ViewMoveResult
 						// Figure out direction
 						if (viewDiv.ActiveView != null) {
 							var center = viewDiv.ActiveView.GetGlobalPosition();
-							center += viewDiv.ActiveView.RenderBounds.Size / 2;
+							center += viewDiv.ActiveView.GetRenderBounds().Size / 2;
 							// TODO: finish implementing this
 							var dir = (center - EngineCore.Level.FrameState.Mouse.MousePos).Normalize();
 							var dotTB = Vector2F.Dot(dir, Vector2F.Up);
@@ -119,7 +182,7 @@ public struct ViewMoveResult
 						return result;
 					}
 
-					element = element.Parent;
+					element = element.GetParent();
 				}
 
 				result.Failed = true;
@@ -136,8 +199,8 @@ public class ViewSplit
 	public ViewDivision Division { get; set; }
 	public ViewDivider Divider { get; set; }
 	public Dock Direction {
-		get => Division.Dock;
-		set => Division.Dock = value;
+		get => Division.GetDock();
+		set => Division.SetDock(value);
 	}
 	private float sizePercentage = 0.5f;
 	public float SizePercentage {
@@ -149,45 +212,19 @@ public class ViewSplit
 		}
 	}
 
-	public ViewSplit(ViewDivision div, ViewDivider divider) {
+	public ViewSplit(ViewDivision div) {
 		Division = div;
-		Divider = divider;
-
-		divider.MouseDragEvent += Divider_MouseDragEvent;
 	}
 
-	private void Divider_MouseDragEvent(Element self, FrameState state, Vector2F deltapos) {
-		float delta = 0;
-		bool horizontal = false;
-
-		self = Division.ParentDivision;
-
-		switch (Direction) {
-			case Dock.Left:
-				delta = deltapos.X / self.RenderBounds.W;
-				horizontal = true;
-				break;
-			case Dock.Right:
-				delta = deltapos.X / -self.RenderBounds.W;
-				horizontal = true;
-				break;
-			case Dock.Top:
-				delta = deltapos.Y / self.RenderBounds.H;
-				horizontal = false;
-				break;
-			case Dock.Bottom:
-				delta = deltapos.Y / -self.RenderBounds.H;
-				horizontal = false;
-				break;
-		}
-
-		SizePercentage = SizePercentage + delta;
+	public void SetViewDivider(ViewDivider divider) {
+		Divider = divider;
 	}
 }
 
 // I am not the biggest fan of this, but this is the easiest way to
 // set up a post-renderer that takes care of itself when no longer needed...
-public class DragRenderer : LogicalEntity {
+public class DragRenderer : LogicalEntity
+{
 	public View Dragging;
 
 	public override void Initialize() {
@@ -197,7 +234,7 @@ public class DragRenderer : LogicalEntity {
 	public override void PostRender(FrameState frameState) {
 		base.PostRender(frameState);
 
-		ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(Dragging, this.Level.UI);
+		ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(Dragging, this.Level.RootPanel);
 		if (dividerAddingTo.Failed) return;
 
 		if (dividerAddingTo.CreatesNewViewDivision) {
@@ -207,7 +244,7 @@ public class DragRenderer : LogicalEntity {
 			if (div == null) return;
 
 			var divpos = div.GetGlobalPosition();
-			var divsize = div.RenderBounds.Size;
+			var divsize = div.GetRenderBounds().Size;
 
 			var dzi = 3;
 			var dzi2 = dzi - 1;
@@ -236,11 +273,11 @@ public class DragRenderer : LogicalEntity {
 			var header = divider.Header;
 			var index = dividerAddingTo.TabIndex;
 
-			Graphics2D.SetTexture(Level.Textures.LoadTextureFromFile("models/viewheadermovearrow.png"));
+			Graphics2D.SetTexture((ITexture)Level.Textures.LoadTextureFromFile("models/viewheadermovearrow.png"));
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Vector2F pos;
 			if (index == divider.Views.Count)
-				pos = divider.GetButton(index - 1).GetGlobalPosition() + new Vector2F(divider.GetButton(index - 1).RenderBounds.W, 0);
+				pos = divider.GetButton(index - 1).GetGlobalPosition() + new Vector2F(divider.GetButton(index - 1).GetRenderBounds().W, 0);
 			else
 				pos = divider.GetButton(index).GetGlobalPosition();
 			pos = pos - new Vector2F(16, 16);
@@ -275,21 +312,21 @@ public class ViewDivision : Panel
 		for (int i = 0; i < buttons.Count; i++) {
 			var active = i == ActiveIndex;
 			ViewButtonSelector button = buttons[i];
-			button.BackgroundColor = new(150, 160, 170, active ? 90 : 35);
+			button.SetBgColor(new Common.Types.Color(150, 160, 170, active ? 90 : 35));
 		}
 	}
 
 	public void SetupViewButtons() {
 		header.ClearChildren();
-		header.DockPadding = RectangleF.Zero;
+		header.SetDockPadding (RectangleF.Zero);
 		buttons.Clear();
 		foreach (var view in Views) {
-			var switcher = header.Add<ViewButtonSelector>();
-			switcher.Dock = Dock.Left;
-			switcher.AutoSize = true;
-			switcher.BorderSize = 0;
-			switcher.TextPadding = new(32, 0);
-			switcher.Text = view.Name;
+			var switcher = new ViewButtonSelector(header);
+			switcher.SetDock(Dock.Left);
+			switcher.SetAutoSize(true);
+			switcher.SetBorderSize(0);
+			switcher.SetTextPadding(new(64, 0));
+			switcher.SetText(view.Name);
 			switcher.SetTag("view", view);
 			switcher.MouseReleaseEvent += (_, _, _) => {
 				SetActive(view);
@@ -303,7 +340,7 @@ public class ViewDivision : Panel
 			};
 			switcher.MouseDragEvent += (self, state, delta) => {
 				if (showDraggedTab != null) {
-					showDraggedTab.Position = state.Mouse.MousePos + new Vector2F(0, -14);
+					showDraggedTab.SetPos(state.Mouse.MousePos + new Vector2F(0, -14));
 				}
 
 				if (dragging) return;
@@ -311,13 +348,13 @@ public class ViewDivision : Panel
 				var distance = state.Mouse.MousePos.Distance(clickPos);
 				if (distance > 8) {
 					dragging = true;
-					showDraggedTab = UI.Add<Button>();
-					showDraggedTab.Origin = Anchor.Center;
-					showDraggedTab.Position = state.Mouse.MousePos + new Vector2F(0, -16);
-					showDraggedTab.OnHoverTest += Passthru;
-					showDraggedTab.AutoSize = true;
-					showDraggedTab.TextPadding = new(12);
-					showDraggedTab.Text = view.Name;
+					showDraggedTab = new Button(UI);
+					showDraggedTab.SetOrigin (Anchor.Center);
+					showDraggedTab.SetPos(state.Mouse.MousePos + new Vector2F(0, -16));
+					showDraggedTab.SetPassthru(true);
+					showDraggedTab.SetAutoSize (true);
+					showDraggedTab.SetTextPadding(new(24));
+					showDraggedTab.SetText (view.Name);
 
 					var renderer = Level.Add<DragRenderer>();
 					renderer.Dragging = view;
@@ -327,7 +364,7 @@ public class ViewDivision : Panel
 				if (dragging) {
 					int index = 0;
 					ViewMoveResult dividerAddingTo = ViewMoveResult.CreateMoveResult(view, UI);
-					
+
 					// TODO: Need a solution to black-holing, ie where moving a parent divider into a child or child-child divider etc
 					// causes the removal of the parent divider, and hence the child itself is removed as well.
 					if (!dividerAddingTo.Failed) {
@@ -364,10 +401,10 @@ public class ViewDivision : Panel
 		UpdateViewButtonHighlight();
 	}
 
-	public T AddView<T>() where T : View {
-		T view = Add<T>();
+	public T AddView<T>(Func<Element, T> factory) where T : View {
+		T view = factory(this);
 		Views.Add(view);
-		view.Dock = Dock.Fill;
+		view.SetDock(Dock.Fill);
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -378,7 +415,7 @@ public class ViewDivision : Panel
 
 	public T AddView<T>(T view) where T : View {
 		Views.Add(view);
-		view.Dock = Dock.Fill;
+		view.SetDock(Dock.Fill);
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -389,7 +426,7 @@ public class ViewDivision : Panel
 
 	public T AddView<T>(T view, int index) where T : View {
 		Views.Insert(Math.Clamp(index, 0, Views.Count), view);
-		view.Dock = Dock.Fill;
+		view.SetDock(Dock.Fill);
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -409,7 +446,7 @@ public class ViewDivision : Panel
 	}
 
 	public void RemoveSplit(ViewDivision division) {
-		foreach(var split in splits.Where(x => x.Division == division)) {
+		foreach (var split in splits.Where(x => x.Division == division)) {
 			split.Divider.Remove();
 			// We need to remove the views from the children of the division,
 			// or they'll get cleaned up here, which leads to views being unrecoverable
@@ -421,40 +458,32 @@ public class ViewDivision : Panel
 		InvalidateChildren(false, true);
 	}
 
-	public ViewDivider AddDivider() {
-		ViewDivider divider = Add<ViewDivider>();
-		divider.Size = new(8);
-		divider.BorderSize = 0;
-		divider.PaintOverride += (e, w, h) => {
-			var c = MixColorBasedOnMouseState(e, e.ForegroundColor, new(0, 1, 1.5f, 1), new(0, 1, 0.5f, 1));
-			Graphics2D.SetDrawColor(c);
-			var offset = 2;
-			if (e.Dock == Dock.Left || e.Dock == Dock.Right)
-				Graphics2D.DrawLine(w / 2, offset, w / 2, h - (offset * 2));
-			else if (e.Dock == Dock.Top || e.Dock == Dock.Bottom)
-				Graphics2D.DrawLine(offset, h / 2, w - (offset * 2), h / 2);
-		};
-		divider.Text = "";
+	public ViewDivider AddDivider(ViewSplit split) {
+		ViewDivider divider = new ViewDivider(this, split);
+		divider.SetSize(new(8));
+		divider.SetBorderSize(0);
+		divider.SetPaintBackgroundEnabled(false);
+		divider.SetPaintBorderEnabled(false);
+		divider.SetPaintEnabled(false);
 		return divider;
 	}
 
 	public ViewSplit SplitApart(Dock direction) {
-		ViewDivision div;
-		Add(out div);
+		ViewDivision div = new(this);
 		div.RootDivision = this.RootDivision;
 		div.RootViewPanel = this.RootViewPanel;
 		div.ParentDivision = this;
-		ViewSplit split = new(div, AddDivider());
+		ViewSplit split = new(div);
+		split.SetViewDivider(new ViewDivider(this, split));
 		split.Direction = direction;
 		splits.Add(split);
 		return split;
 	}
 
 	public bool ShowHeader {
-		get => header.Visible;
+		get => header.IsVisible();
 		set {
-			header.Visible = value;
-			header.Enabled = value;
+			header.SetVisible(value);
 			InvalidateLayout();
 		}
 	}
@@ -475,27 +504,24 @@ public class ViewDivision : Panel
 		else
 			return false;
 
-		foreach (var v in Views) {
-			v.Visible = false;
-			v.Enabled = false;
-		}
-		view.Visible = true;
-		view.Enabled = true;
+		foreach (var v in Views)
+			v.SetVisible(false);
+		view.SetVisible(true);
+
 		UpdateViewButtonHighlight();
 		InvalidateLayout();
 		InvalidateChildren(false, true);
 		return true;
 	}
 
-	protected override void Initialize() {
+	public ViewDivision(Element parent) : base(parent) {
 		RootDivision = this;
-
-		base.Initialize();
-		Add(out header);
-		header.Dock = Dock.Top;
-		header.Size = new(0, 28);
-		DrawPanelBackground = false;
-		header.DrawPanelBackground = false;
+		header = new(this);
+		header.SetDock(Dock.Top);
+		header.SetSize(new(0, 28));
+		SetPaintBackgroundEnabled(false);
+		SetBorderSize(0);
+		header.SetPaintBackgroundEnabled(false);
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -510,26 +536,25 @@ public class ViewDivision : Panel
 
 		View? view = this.ActiveView;
 		if (view == null) return;
-		view.Visible = view.Enabled = true;
+		view.SetVisible(true);
 
 		view.SetParent(this);
 		view.MoveToFront();
-		view.Dock = Dock.Fill;
+		view.SetDock(Dock.Fill);
 		if (splits.Count > 0) {
 			splits.Reverse();
 			foreach (var split in splits) {
 				split.Divider.MoveToBack();
-				split.Divider.Dock = split.Direction;
+				split.Divider.SetDock(split.Direction);
 
-				split.Division.Size = new(width * split.SizePercentage, height * split.SizePercentage);
-				split.Division.Dock = split.Direction;
+				split.Division.SetSize(new(width * split.SizePercentage, height * split.SizePercentage));
+				split.Division.SetDock(split.Direction);
 				split.Division.MoveToBack();
 			}
 			splits.Reverse();
 		}
 
 		UpdateViewButtonHighlight();
-		RevalidateLayout(); // otherwise SetParent/etc calls result in per-frame layout loop
 	}
 }
 
@@ -537,11 +562,9 @@ public class View : Panel
 {
 	public virtual string Name { get; set; } = "View";
 	public virtual string? Icon { get; set; } = null;
-
-	protected override void Initialize() {
-		base.Initialize();
-		Visible = false;
-		BorderSize = 0;
+	public View(Element parent) : base(parent) {
+		SetVisible(false);
+		SetBorderSize(0);
 	}
 }
 
@@ -555,7 +578,7 @@ public class ViewPanel : Panel
 		set {
 			activeWorkspace = value;
 			foreach (var workspace in workspaces) {
-				workspace.Visible = workspace.Enabled = workspace == activeWorkspace;
+				workspace.SetVisible(workspace == activeWorkspace);
 			}
 			InvalidateLayout();
 			InvalidateChildren(false, true);
@@ -571,19 +594,19 @@ public class ViewPanel : Panel
 		InvalidateChildren(false, true);
 	}
 
-	protected override void Initialize() {
-		DrawPanelBackground = true;
-		DockPadding = RectangleF.Zero;
+	public ViewPanel(Element parent) : base(parent) {
+		SetPaintBackgroundEnabled(false);
+		SetBorderSize(0);
+		SetDockPadding(RectangleF.Zero);
 	}
 
 	public ViewDivision AddWorkspace(string name) {
 		bool empty = workspaces.Count <= 0;
-
-		Add(out ViewDivision workspace);
-		workspace.Dock = Dock.Fill;
+		ViewDivision workspace = new(this);
+		workspace.SetDock(Dock.Fill);
 		workspace.ShowHeader = false;
 		workspace.RootViewPanel = this;
-		workspace.Visible = workspace.Enabled = empty;
+		workspace.SetVisible(empty);
 
 		workspaceNames.Add(name, workspace);
 		workspaces.Add(workspace);

@@ -78,7 +78,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a shader is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsShaderReady(Shader shader);
+	public static extern CBool IsShaderValid(Shader shader);
 
 	/// <summary>Get shader uniform location</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -220,154 +220,6 @@ public static unsafe partial class Raylib
 	/// <summary>Set custom trace log</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void SetTraceLogCallback(delegate* unmanaged[Cdecl]<int, sbyte*, sbyte*, void> callback);
-
-	/// <summary>Set custom file binary data loader</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetLoadFileDataCallback(delegate* unmanaged[Cdecl]<sbyte*, uint*, byte*> callback);
-
-	/// <summary>Set custom file binary data saver</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetSaveFileDataCallback(
-		delegate* unmanaged[Cdecl]<sbyte*, void*, uint, CBool> callback
-	);
-
-	/// <summary>Set custom file text data loader</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetLoadFileTextCallback(delegate* unmanaged[Cdecl]<sbyte*, sbyte*> callback);
-
-	/// <summary>Set custom file text data saver</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void SetSaveFileTextCallback(delegate* unmanaged[Cdecl]<sbyte*, sbyte*, CBool> callback);
-
-
-	// Files management functions
-
-	/// <summary>Load file data as byte array (read)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* LoadFileData(sbyte* fileName, uint* bytesRead);
-
-	/// <summary>Unload file data allocated by LoadFileData()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void UnloadFileData(byte* data);
-
-	/// <summary>Save data to file from byte array (write), returns true on success</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool SaveFileData(sbyte* fileName, void* data, uint bytesToWrite);
-
-	/// <summary>Export data to code (.h), returns true on success</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool ExportDataAsCode(byte* data, uint size, sbyte* fileName);
-
-	// Load text data from file (read), returns a '\0' terminated string
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* LoadFileText(sbyte* fileName);
-
-	// Unload file text data allocated by LoadFileText()
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void UnloadFileText(sbyte* text);
-
-	// Save text data to file (write), string must be '\0' terminated, returns true on success
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool SaveFileText(sbyte* fileName, sbyte* text);
-
-	// Check if file exists
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool FileExists(sbyte* fileName);
-
-	// Check if a directory path exists
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool DirectoryExists(sbyte* dirPath);
-
-	/// <summary>Check file extension (including point: .png, .wav)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsFileExtension(sbyte* fileName, sbyte* ext);
-
-	/// <summary>Get file length in bytes</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern int GetFileLength(sbyte* fileName);
-
-	/// <summary>Get pointer to extension for a filename string (includes dot: '.png')</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetFileExtension(sbyte* fileName);
-
-	/// <summary>Get pointer to filename for a path string</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetFileName(sbyte* filePath);
-
-	/// <summary>Get filename string without extension (uses static string)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetFileNameWithoutExt(sbyte* filePath);
-
-	/// <summary>Get full path for a given fileName with path (uses static string)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetDirectoryPath(sbyte* filePath);
-
-	/// <summary>Get previous directory path for a given path (uses static string)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetPrevDirectoryPath(sbyte* dirPath);
-
-	/// <summary>Get current working directory (uses static string)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetWorkingDirectory();
-
-	/// <summary>Get the directory of the running application (uses static string)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* GetApplicationDirectory();
-
-	/// <summary>Load directory filepaths</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern FilePathList LoadDirectoryFiles(sbyte* dirPath, int* count);
-
-	/// <summary>Load directory filepaths with extension filtering and recursive directory scan</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern FilePathList LoadDirectoryFilesEx(sbyte* basePath, sbyte* filter, CBool scanSubdirs);
-
-	/// <summary>Unload filepaths</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void UnloadDirectoryFiles(FilePathList files);
-
-	/// <summary>Check if a given path is a file or a directory</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsPathFile(sbyte* path);
-
-	/// <summary>Change working directory, return true on success</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool ChangeDirectory(sbyte* dir);
-
-	/// <summary>Check if a file has been dropped into window</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsFileDropped();
-
-	/// <summary>Load dropped filepaths</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern FilePathList LoadDroppedFiles();
-
-	/// <summary>Unload dropped filepaths</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void UnloadDroppedFiles(FilePathList files);
-
-	/// <summary>Get file modification time (last write time)</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern long GetFileModTime(sbyte* fileName);
-
-
-	// Compression/Encoding functionality
-
-	/// <summary>Compress data (DEFLATE algorithm), memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* CompressData(byte* data, int dataSize, int* compDataSize);
-
-	/// <summary>Decompress data (DEFLATE algorithm), memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* DecompressData(byte* compData, int compDataSize, int* dataSize);
-
-	/// <summary>Encode data to Base64 string, memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern sbyte* EncodeDataBase64(byte* data, int dataSize, int* outputSize);
-
-	/// <summary>Decode Base64 string data, memory must be MemFree()</summary>
-	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern byte* DecodeDataBase64(byte* data, int* outputSize);
 
 	/// <summary>Open URL with default system browser (if available)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -657,15 +509,12 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void DrawRectangleRounded(Rectangle rec, float roundness, int segments, Color color);
 
-	/// <summary>Draw rectangle with rounded edges outline</summary>
+
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void DrawRectangleRoundedLines(
-		Rectangle rec,
-		float roundness,
-		int segments,
-		float lineThick,
-		Color color
-	);
+	public static extern void DrawRectangleRoundedLines(Rectangle rec, float roundness, int segments, Color color);
+
+	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern void DrawRectangleRoundedLinesEx(Rectangle rec, float roundness, int segments, float lineThick, Color color);
 
 	/// <summary>Draw a color-filled triangle (vertex in counter-clockwise order!)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -867,7 +716,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if an image is ready</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsImageReady(Image image) {
+	public static bool IsImageValid(Image image) {
 		return ((image.Data != null) &&     // Validate pixel data available
 			(image.Width > 0) &&
 			(image.Height > 0) &&       // Validate image size
@@ -1293,7 +1142,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a texture is ready</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsTextureReady(Texture2D texture) {
+	public static bool IsTextureValidy(Texture2D texture) {
 		return ((texture.Id > 0) &&         // Validate OpenGL id
 			(texture.Width > 0) &&
 			(texture.Height > 0) &&     // Validate texture size
@@ -1322,7 +1171,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a render texture is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsRenderTextureReady(RenderTexture2D target);
+	public static extern CBool IsRenderTextureValid(RenderTexture2D target);
 
 	/// <summary>Unload render texture from GPU memory (VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1497,7 +1346,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a font is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsFontReady(Font font);
+	public static extern CBool IsFontValid(Font font);
 
 	/// <summary>Load font data for further use</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -1881,7 +1730,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a model is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsModelReady(Model model);
+	public static extern CBool IsModelValid(Model model);
 
 	/// <summary>Unload model from memory (RAM and/or VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2059,7 +1908,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a material is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsMaterialReady(Material material);
+	public static extern CBool IsMaterialValid(Material material);
 
 	/// <summary>Unload material from GPU memory (VRAM)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2152,7 +2001,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if audio device has been initialized successfully</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsAudioDeviceReady();
+	public static extern CBool IsAudioDeviceValid();
 
 	/// <summary>Set master volume (listener)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2175,7 +2024,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if wave data is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsWaveReady(Wave wave);
+	public static extern CBool IsWaveValid(Wave wave);
 
 	/// <summary>Load sound from file</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2191,7 +2040,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if a sound is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsSoundReady(Sound sound);
+	public static extern CBool IsSoundValid(Sound sound);
 
 	/// <summary>Update sound buffer with new data</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2288,7 +2137,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if a music stream is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsMusicReady(Music music);
+	public static extern CBool IsMusicValid(Music music);
 
 	/// <summary>Unload music stream</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -2362,7 +2211,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Checks if an audio stream is ready</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern CBool IsAudioStreamReady(AudioStream stream);
+	public static extern CBool IsAudioStreamValid(AudioStream stream);
 
 	/// <summary>Unload audio stream and free memory</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]

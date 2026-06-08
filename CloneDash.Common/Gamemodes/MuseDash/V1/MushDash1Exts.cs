@@ -1,0 +1,12 @@
+﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1;
+
+public static class MushDash1Exts
+{
+	public static bool IsBoss(this EntityVariant variant) => variant switch {
+		EntityVariant.Boss1 or EntityVariant.Boss2 or EntityVariant.Boss3
+		or EntityVariant.BossHitFast or EntityVariant.BossHitSlow
+		or EntityVariant.BossMasher or EntityVariant.BossMasherEnd
+		=> true,
+		_ => false
+	};
+}

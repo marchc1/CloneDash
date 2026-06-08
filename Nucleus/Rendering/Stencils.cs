@@ -19,7 +19,7 @@ public enum StencilFunction
 public enum StencilOperation
 {
 	Keep = OpenGL.KEEP,
-	Zero = OpenGL.KEEP,
+	Zero = OpenGL.ZERO,
 	Replace = OpenGL.REPLACE,
 	Increment = OpenGL.INCR,
 	IncrementWrapped = OpenGL.INCR_WRAP,
@@ -64,6 +64,7 @@ public static class Stencils
 	/// Make sure to set the stencil parameters before calling this method. Clears the stencil buffer.
 	/// </summary>
 	public static void BeginMask() {
+		Rlgl.DrawRenderBatchActive();
 		OpenGL.Clear(OpenGL.STENCIL_BUFFER_BIT);
 		OpenGL.ColorMask(false, false, false, false);
 		OpenGL.Enable(GLEnum.ALPHA_TEST);

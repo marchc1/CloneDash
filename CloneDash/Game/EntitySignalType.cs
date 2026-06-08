@@ -1,9 +1,0 @@
-﻿namespace CloneDash.Game
-{
-	public enum EntitySignalType
-	{
-		FirstAppearance,
-		Hit,
-		MashOver
-	}
-}

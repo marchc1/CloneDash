@@ -23,12 +23,21 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Nucleus.Models.Runtime;
 
+public enum M4S_StencilMode : byte
+{
+	Off = 0,
+	On = 1,
+	RenderMask = 2,
+	Count
+}
 /// <summary>
 /// Runtime for the 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
 /// </summary>
@@ -43,26 +52,67 @@ public static class Model4System
 	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
 
 	public static ConVar m4s_wireframe = new(nameof(m4s_wireframe), "0", FCvar.Saved, "Model4 instance wireframe overlay.", 0, 1);
+	public static ConVar m4s_stencilmode = new(nameof(m4s_stencilmode), "1", FCvar.Saved, "Controls stencil rendering.", 0, ((int)M4S_StencilMode.Count) - 1);
 	public const double REFERENCE_FPS = 30;
 
-
-	public static T? SearchName<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static T? SearchReturnItem<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
 		T? item = null;
 		for (int i = 0, c = items.Length; i < c; i++)
-			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+			if ((item = items[i]) != null && item.Name.Equals(name, StringComparison.InvariantCulture))
 				return item;
 
 		return null;
 	}
-	public static int SearchSlot<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int SearchReturnIndex<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
-		T? item = null;
 		for (int i = 0, c = items.Length; i < c; i++)
-			if ((item = items[i]).Name.Equals(name, StringComparison.InvariantCulture))
+			if (items[i] != null && items[i].Name.Equals(name, StringComparison.InvariantCulture))
 				return i;
 
 		return -1;
+	}
+
+	internal static Color RenderBlend = new(255, 255, 255, 255);
+	public static ref readonly Color GetRenderBlend() => ref RenderBlend;
+	static readonly Stack<Color> RenderBlendQueue = new();
+	public static void PushRenderBlend(in Color c) {
+		RenderBlendQueue.Push(RenderBlend);
+		RenderBlend = RenderBlend * c;
+	}
+	public static void PopRenderBlend() {
+		RenderBlend = RenderBlendQueue.Count > 0
+			? RenderBlendQueue.Pop()
+			: Color.White;
+	}
+
+	static uint activeTexture;
+	internal static void NotifyNewModelRender() {
+		activeTexture = 0;
+	}
+	internal static void CheckTextureUpdate(ITexture tex) {
+		var textureIdx = tex.GetTextureHandle();
+		if (textureIdx != activeTexture) {
+			Rlgl.DrawRenderBatchActive();
+			activeTexture = textureIdx;
+		}
+	}
+
+	internal static void SetTexture(ITexture tex) {
+		Rlgl.SetTexture(tex.GetTextureHandle());
+	}
+
+	internal static void PrepareWireframeRendering() {
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.Begin(DrawMode.LINES);
+		Rlgl.SetTexture(0);
+	}
+	internal static void EndWireframeRendering() {
+		Rlgl.End();
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.SetTexture(activeTexture);
 	}
 }
 
@@ -164,13 +214,13 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	// }
 
 
-	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
-	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(BoneDatas, name);
-	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
-	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(SlotDatas, name);
+	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Animations, name);
+	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(BoneDatas, name);
+	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Skins, name);
+	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(SlotDatas, name);
 
-	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(BoneDatas, name);
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(BoneDatas, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(SlotDatas, name);
 
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
@@ -242,7 +292,11 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 	public void Render(bool useDefaultShader = true) {
 		var offset = Graphics2D.Offset;
+		Model4System.NotifyNewModelRender();
 		Graphics2D.ResetDrawingOffset();
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.DisableBackfaceCulling();
+
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(Position.X, Position.Y, 0);
 		Rlgl.Scalef(Scale.X, Scale.Y, 1);
@@ -257,7 +311,6 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 				Clipping.NextSlot(slot);
 				continue;
 			}
-			Rlgl.DrawRenderBatchActive();
 			attachment.Render(slot);
 			Clipping.NextSlot(slot);
 			slot.EndBlendMode();
@@ -275,11 +328,13 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Rlgl.PopMatrix();
 		Graphics2D.OffsetDrawing(offset);
 
-		if (Model4System.m4s_wireframe.GetBool()) {
+		if (Model4System.m4s_wireframe.GetInt() >= 2) {
 			foreach (var bone in Bones) {
 				Raylib.DrawCircleV(bone.WorldTransform.LocalToWorld(0, 0).ToNumerics() * new System.Numerics.Vector2(1, -1), 4, Color.Red);
 			}
 		}
+
+		Rlgl.DrawRenderBatchActive();
 	}
 
 	public void SetToSetupPose() {
@@ -287,14 +342,10 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		SetSlotsToSetupPose();
 	}
 
-	public void SetAttachment(SlotInstance slot, string name) {
-
-	}
-
-	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(Bones, name);
-	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
-	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Bones, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchSlot(Slots, name);
+	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Bones, name);
+	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Bones, name);
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Slots, name);
 
 
 	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
@@ -592,22 +643,34 @@ public class RegionAttachment : Attachment
 		float localOffX = (offsetX + cropW * 0.5f) - origW * 0.5f;
 		float localOffY = origH * 0.5f - offsetY - cropH * 0.5f;
 
-		Vector2F TL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, widthDiv2 + localOffY);
-		Vector2F TR = worldTransform.LocalToWorld(heightDiv2 + localOffX, widthDiv2 + localOffY);
-		Vector2F BR = worldTransform.LocalToWorld(heightDiv2 + localOffX, -widthDiv2 + localOffY);
-		Vector2F BL = worldTransform.LocalToWorld(-heightDiv2 + localOffX, -widthDiv2 + localOffY);
+		Vector2F TL, TR, BR, BL;
+		{
+			float wA = worldTransform.A, wB = worldTransform.B, wC = worldTransform.C, wD = worldTransform.D;
+			float wX = worldTransform.X, wY = worldTransform.Y;
 
-		TL.Y *= -1;
-		TR.Y *= -1;
-		BL.Y *= -1;
-		BR.Y *= -1;
+			float x0 = -heightDiv2 + localOffX;
+			float x1 = heightDiv2 + localOffX;
+			float y0 = widthDiv2 + localOffY;
+			float y1 = -widthDiv2 + localOffY;
 
-		Rlgl.DisableBackfaceCulling();
+			// precompute shared
+			float ax0 = x0 * wA, ax1 = x1 * wA;
+			float by0 = y0 * wB, by1 = y1 * wB;
+			float cx0 = x0 * wC, cx1 = x1 * wC;
+			float dy0 = y0 * wD, dy1 = y1 * wD;
+
+			TL = new(ax0 + by0 + wX, -(cx0 + dy0 + wY));
+			TR = new(ax1 + by0 + wX, -(cx1 + dy0 + wY));
+			BR = new(ax1 + by1 + wX, -(cx1 + dy1 + wY));
+			BL = new(ax0 + by1 + wX, -(cx0 + dy1 + wY));
+		}
+
+		Model4System.CheckTextureUpdate(tex);
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.GetTextureHandle());
+		Model4System.SetTexture(tex);
 
-		var color = slot.Color;
-		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		var color = slot.Color * Model4System.GetRenderBlend();
+		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
@@ -630,9 +693,7 @@ public class RegionAttachment : Attachment
 		Rlgl.End();
 
 		if (Model4System.m4s_wireframe.GetBool()) {
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.Begin(DrawMode.LINES);
-			Rlgl.SetTexture(0);
+			Model4System.PrepareWireframeRendering();
 
 			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(TR.X, TR.Y);
 			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(TL.X, TL.Y);
@@ -641,8 +702,7 @@ public class RegionAttachment : Attachment
 			Rlgl.Vertex2f(TR.X, TR.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 			Rlgl.Vertex2f(BL.X, BL.Y); Rlgl.Vertex2f(BR.X, BR.Y);
 
-			Rlgl.End();
-			Rlgl.DrawRenderBatchActive();
+			Model4System.EndWireframeRendering();
 		}
 	}
 }
@@ -685,24 +745,30 @@ public class VertexAttachment : Attachment
 			return default;
 
 		var vertex = Vertices![vertexI];
-		var bone = slot.Bone;
-		var transform = slot.Bone.WorldTransform;
 
-		if (vertex.Weights == null || vertex.Weights.Length <= 0)
-			return transform.LocalToWorld(vertex.X, vertex.Y);
-
-		var model = slot.GetModel();
-
-		Vector2F pos = Vector2F.Zero;
-
-		foreach (var weightData in vertex.Weights) {
-			if (weightData.IsEmpty) continue;
-			var vertLocalPos = weightData.Position;
-			var weight = weightData.Weight;
-			pos += model.Bones[weightData.Bone].WorldTransform.LocalToWorld(vertLocalPos) * weight;
+		if (vertex.Weights == null || vertex.Weights.Length <= 0) {
+			ref var transform = ref slot.Bone.WorldTransform;
+			return new(
+				vertex.X * transform.A + vertex.Y * transform.B + transform.X,
+				vertex.X * transform.C + vertex.Y * transform.D + transform.Y
+			);
 		}
 
-		return pos;
+		var bones = slot.GetModel().Bones;
+		float px = 0, py = 0;
+
+		var weights = vertex.Weights;
+		for (int i = 0; i < weights.Length; i++) {
+			var wd = weights[i];
+			float w = wd.Weight;
+			if (w == 0) continue;
+			ref var t = ref bones[wd.Bone].WorldTransform;
+			float lx = wd.Position.X, ly = wd.Position.Y;
+			px += (lx * t.A + ly * t.B + t.X) * w;
+			py += (lx * t.C + ly * t.D + t.Y) * w;
+		}
+
+		return new(px, py);
 	}
 
 	public int ComputeWorldVertices(SlotInstance slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
@@ -786,60 +852,57 @@ public class MeshAttachment : VertexAttachment
 		float rotation = region.GetRotation();
 		ITexture tex = region.GetTexture();
 
+		Model4System.CheckTextureUpdate(tex);
 		Rlgl.Begin(DrawMode.TRIANGLES);
-		Rlgl.SetTexture(tex.GetTextureHandle());
+		Model4System.SetTexture(tex);
 
-		var color = slot.Color;
-		float srM = slot.Color.R / 255f, sgM = slot.Color.G / 255f, sbM = slot.Color.B / 255f, saM = slot.Color.A / 255f;
+		var color = slot.Color * Model4System.GetRenderBlend();
+		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
 		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
-		Rlgl.DisableBackfaceCulling();
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
+		bool wireframe = Model4System.m4s_wireframe.GetBool();
+
+		const int HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD = 512;
+		int vertCount = vertices.Length;
+		Span<Vector2F> worldVerts = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc Vector2F[vertCount] : new Vector2F[vertCount];
+		for (int vi = 0; vi < vertCount; vi++)
+			worldVerts[vi] = CalculateVertexWorldPosition(slot, vi);
+
+		bool flipV = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		Span<float> uvU = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
+		Span<float> uvV = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
+		for (int vi = 0; vi < vertCount; vi++) {
+			AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, vertices[vi].U, vertices[vi].V, out uvU[vi], out uvV[vi]);
+			if (flipV) uvV[vi] = 1f - uvV[vi];
+		}
+
 		if (triangles.Length > 0) {
 			foreach (var tri in triangles) {
-				var av1 = vertices[tri.V1];
-				var av2 = vertices[tri.V2];
-				var av3 = vertices[tri.V3];
+				Vector2F p1 = worldVerts[tri.V1];
+				Vector2F p2 = worldVerts[tri.V2];
+				Vector2F p3 = worldVerts[tri.V3];
 
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av1.U, av1.V, out float u1, out float v1);
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av2.U, av2.V, out float u2, out float v2);
-				AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, av3.U, av3.V, out float u3, out float v3);
-
-				if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
-					v1 = 1f - v1;
-					v2 = 1f - v2;
-					v3 = 1f - v3;
-				}
-
-				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
-
-				Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
-				Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
-				Rlgl.TexCoord2f(u3, v3); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
+				Rlgl.TexCoord2f(uvU[tri.V1], uvV[tri.V1]); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
+				Rlgl.TexCoord2f(uvU[tri.V2], uvV[tri.V2]); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
+				Rlgl.TexCoord2f(uvU[tri.V3], uvV[tri.V3]); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
 			}
 		}
 
 		Rlgl.End();
 
-		if (Model4System.m4s_wireframe.GetBool()) {
-			Rlgl.DrawRenderBatchActive();
-			Rlgl.Begin(DrawMode.LINES);
-			Rlgl.SetTexture(0);
-
+		if (wireframe) {
+			Model4System.PrepareWireframeRendering();
 			foreach (var tri in triangles) {
-				Vector2F p1 = CalculateVertexWorldPosition(slot, tri.V1);
-				Vector2F p2 = CalculateVertexWorldPosition(slot, tri.V2);
-				Vector2F p3 = CalculateVertexWorldPosition(slot, tri.V3);
+				Vector2F p1 = worldVerts[tri.V1];
+				Vector2F p2 = worldVerts[tri.V2];
+				Vector2F p3 = worldVerts[tri.V3];
 
 				Rlgl.Vertex3f(p1.X, -p1.Y, 0); Rlgl.Vertex3f(p2.X, -p2.Y, 0);
 				Rlgl.Vertex3f(p2.X, -p2.Y, 0); Rlgl.Vertex3f(p3.X, -p3.Y, 0);
 				Rlgl.Vertex3f(p3.X, -p3.Y, 0); Rlgl.Vertex3f(p1.X, -p1.Y, 0);
 			}
-
-			Rlgl.End();
-			Rlgl.DrawRenderBatchActive();
+			Model4System.EndWireframeRendering();
 		}
 	}
 }
@@ -1193,8 +1256,9 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				y = Curve(1).Last!.Value * GetSetup(bone).Y;
 			}
 			else {
-				x = Curve(0).DetermineValueAtTime(time) * GetSetup(bone).X;
-				y = Curve(1).DetermineValueAtTime(time) * GetSetup(bone).Y;
+				int index = Curve(0).DetermineIndexAtTime(time);
+				x = Curve(0).DetermineValueAtTime(time, index) * GetSetup(bone).X;
+				y = Curve(1).DetermineValueAtTime(time, index) * GetSetup(bone).Y;
 			}
 
 
@@ -1241,8 +1305,10 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				y = Curve(1).Last!.Value;
 			}
 			else {
-				x = Curve(0).DetermineValueAtTime(time);
-				y = Curve(1).DetermineValueAtTime(time);
+				int index = Curve(0).DetermineIndexAtTime(time);
+
+				x = Curve(0).DetermineValueAtTime(time, index);
+				y = Curve(1).DetermineValueAtTime(time, index);
 			}
 
 			switch (blend) {
@@ -1288,10 +1354,12 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 			a = Curve(3).Last?.Value ?? 1;
 		}
 		else {
-			r = Curve(0).DetermineValueAtTime(time);
-			g = Curve(1).DetermineValueAtTime(time);
-			b = Curve(2).DetermineValueAtTime(time);
-			a = Curve(3).DetermineValueAtTime(time);
+			int index = Curve(0).DetermineIndexAtTime(time);
+
+			r = Curve(0).DetermineValueAtTime(time, index);
+			g = Curve(1).DetermineValueAtTime(time, index);
+			b = Curve(2).DetermineValueAtTime(time, index);
+			a = Curve(3).DetermineValueAtTime(time, index);
 		}
 
 		if (mix != 1) {
@@ -1510,7 +1578,6 @@ public class AnimationHandler
 		for (int i = 0; i < Channels.Length; i++) {
 			var channel = Channels[i];
 
-			channel.ElapseTime(time);
 			var anim = channel.CurrentEntry;
 			if (anim == null) {
 				if (channel.QueuedEntries.TryDequeue(out AnimationChannelEntry? newAnim)) {
@@ -1520,7 +1587,7 @@ public class AnimationHandler
 				}
 				else continue;
 			}
-
+			channel.ElapseTime(time);
 			if (channel.Time >= anim.Animation.Duration) {
 				if (anim.Looping) {
 					anim.OnPlaybackEnd?.Invoke(anim);
