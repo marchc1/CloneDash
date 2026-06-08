@@ -15,8 +15,8 @@ public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descr
 	public void Initialize(IGame game){
 		model = Descriptor.GetVictoryModel(EngineCore.Level).Instantiate();
 		anims.SetModel(model);
-		anims.SetAnimation(0, "in", true);
-		anims.SetAnimation(0, Descriptor.GetVictoryStandby(), true);
+		anims.SetAnimation(0, "in");
+		anims.AddAnimation(0, Descriptor.GetVictoryStandby(), true);
 	}
 
 	public void PlayAudio() {
