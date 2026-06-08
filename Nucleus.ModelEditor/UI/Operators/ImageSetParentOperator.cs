@@ -45,21 +45,21 @@ namespace Nucleus.ModelEditor.UI.Operators
 
 					DropdownSelector<EditorSlot>? dropdownSlot = null;
 					if (bone.Slots.Count <= 0) {
-						existingSlotPanel.Panel.Enabled = false;
+						existingSlotPanel.Panel.SetVisible(false);
 						existingSlotPanel.Checkbox.Checked = false;
 						newSlotPanel.Checkbox.Checked = true;
 					}
 					else {
-						dropdownSlot = existingSlotPanel.Panel.Add<DropdownSelector<EditorSlot>>();
+						dropdownSlot = new DropdownSelector<EditorSlot>(existingSlotPanel.Panel);
 						dropdownSlot.OnToString += (eSlot) => eSlot?.Name ?? "<null slot?>";
-						dropdownSlot.Dock = Dock.Fill;
+						dropdownSlot.SetDock(Dock.Fill);
 						dropdownSlot.Items.AddRange(bone.Slots);
 						dropdownSlot.Selected = bone.Slots[0];
 					}
-					var newSlotName = newSlotPanel.Panel.Add<Textbox>();
-					newSlotName.Dock = Dock.Fill;
-					newSlotName.HelperText = "New slot name...";
-					newSlotName.Text = SelectedImage.Name;
+					var newSlotName = new Textbox(newSlotPanel.Panel);
+					newSlotName.SetDock(Dock.Fill);
+					newSlotName.SetHelperText( "New slot name...");
+					newSlotName.SetText( SelectedImage.Name);
 
 					EditorDialogs.SetupOKCancelButtons(
 						boneDialog,
@@ -73,13 +73,13 @@ namespace Nucleus.ModelEditor.UI.Operators
 								}
 							}
 							else {
-								var slotTest = file.AddSlot(bone, newSlotName.Text);
+								var slotTest = file.AddSlot(bone, new(newSlotName.GetText()));
 								if (slotTest.Failed) return;
 								slot = slotTest.Result;
 							}
 							if (slot == null) return;
 
-							var result = file.AddAttachment<EditorRegionAttachment>(slot, newSlotName.Text);
+							var result = file.AddAttachment<EditorRegionAttachment>(slot, new(newSlotName.GetText()));
 							if (result.Failed) {
 
 							}
@@ -89,7 +89,7 @@ namespace Nucleus.ModelEditor.UI.Operators
 						},
 						null
 					);
-					boneDialog.Size = new(boneDialog.Size.X, bone.Slots.Count <= 0 ? 158 : 184);
+					boneDialog.SetSize(new(boneDialog.GetSize().X, bone.Slots.Count <= 0 ? 158 : 184));
 					break;
 			}
 		}

@@ -7,7 +7,8 @@ using Raylib_cs;
 
 namespace Nucleus.Core;
 
-public struct ConsoleOverlaySettings {
+public struct ConsoleOverlaySettings
+{
 	public bool DoNotRender;
 	public int TextSize;
 	public Vector2F Position;
@@ -19,11 +20,11 @@ public struct ConsoleOverlaySettings {
 public static class ConsoleSystem
 {
 	public static LogLevel LogLevel { get; set; } = LogLevel.Debug;
-	private static List<ConsoleMessage> AllMessages = new();
-	private static List<ConsoleMessage> ScreenMessages = new();
+	private static readonly ConsoleMessageList AllMessages = new();
+	private static readonly ConsoleMessageList ScreenMessages = new();
 
-	public static Span<ConsoleMessage> GetMessages() => AllMessages.AsSpan();
-	public static int GetMessagesCount() => AllMessages.Count;
+	public static int ComputeMessagesCount() => AllMessages.ComputeCount();
+	internal static ConsoleMessageList GetAllMessagesList() => AllMessages;
 	public static int MaxConsoleMessages { get; set; } = 300;
 	public static int MaxScreenMessages { get; set; } = 24;
 
@@ -32,20 +33,26 @@ public static class ConsoleSystem
 	public static void Initialize() {
 		Logs.LogWrittenText += Logs_LogWrittenText;
 	}
-	
-	private static void Logs_LogWrittenText(LogLevel level, string text) {
-		ConsoleMessage message = new ConsoleMessage(text, level);
+
+	private static void Logs_LogWrittenText(LogLevel level, ReadOnlySpan<char> text) {
+		var time = DateTime.Now;
+		var message = AllMessages.AddToEnd(level, time, text);
 		ConsoleMessageWrittenEvent?.Invoke(ref message);
 
-		AllMessages.Add(message);
-		message.Message = message.Message.Replace("\r", "");
-		ScreenMessages.Add(message);
-		if (AllMessages.Count > MaxConsoleMessages)
-			AllMessages.RemoveAt(0);
-		if (ScreenMessages.Count > MaxScreenMessages)
-			ScreenMessages.RemoveAt(0);
+		Span<char> clean = stackalloc char[text.Length];
+		int cleanLen = 0;
+		for (int i = 0; i < text.Length; i++)
+			if (text[i] != '\r')
+				clean[cleanLen++] = text[i];
+
+		ScreenMessages.AddToEnd(level, time, clean[..cleanLen]);
+
+		if (AllMessages.ComputeCount() > MaxConsoleMessages)
+			AllMessages.RemoveFromStart();
+		if (ScreenMessages.ComputeCount() > MaxScreenMessages)
+			ScreenMessages.RemoveFromStart();
 	}
-	public delegate void ConsoleMessageWritten(ref readonly ConsoleMessage message);
+	public delegate void ConsoleMessageWritten(ref readonly LiveConsoleMessage message);
 	public static event ConsoleMessageWritten? ConsoleMessageWrittenEvent;
 	public static void Draw(in ConsoleOverlaySettings settings) {
 		if (!EngineCore.ShouldShowDeveloperOverlays() || IsScreenBlockerActive)
@@ -54,10 +61,7 @@ public static class ConsoleSystem
 		RenderToScreen(in settings);
 	}
 	public static bool IsScreenBlockerActive => scrblockers.Count > 0;
-	public static int VisibleLines => ScreenMessages.Count;
-	static bool Expired(in ConsoleMessage x) {
-		return x.Age > MaxMessageTime;
-	}
+
 	public static void RenderToScreen(in ConsoleOverlaySettings settings) {
 		int i = 0;
 
@@ -67,40 +71,60 @@ public static class ConsoleSystem
 		if (textSize < 6)
 			return;
 
-		for (int j = ScreenMessages.Count - 1; j >= 0; j--) {
-			if (Expired(in ScreenMessages.AsSpan()[j]))
-				ScreenMessages.RemoveAt(j);
-		}
+		ScreenMessages.RemoveExpired(MaxMessageTime);
 
+		// Snapshot the count ONCE after pruning
+		int messageCount = ScreenMessages.ComputeCount();
+		if (messageCount <= 0)
+			return;
+
+		ScreenMessages.BeginRead();
 		const int MAX_CHARS_PER_LINE = 1024;
-		var currentMessages = ScreenMessages.AsSpan();
-		Span<float> fades = stackalloc float[ScreenMessages.Count];
-		Span<RectangleF> rectangles = stackalloc RectangleF[ScreenMessages.Count];
-		Span<int> textLengths = stackalloc int[ScreenMessages.Count];
-		Span<char> textMessages = stackalloc char[MAX_CHARS_PER_LINE * ScreenMessages.Count];
-		Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * ScreenMessages.Count];
+		Span<int> offsets = stackalloc int[messageCount];
+		ScreenMessages.GetMessages(offsets, out int maxMessageLength);
+		Span<float> fades = stackalloc float[messageCount];
+		Span<RectangleF> rectangles = stackalloc RectangleF[messageCount];
+		Span<int> textLengths = stackalloc int[messageCount];
+		Span<char> textMessages = stackalloc char[MAX_CHARS_PER_LINE * messageCount];
+		Span<LogLevel> logLevels = stackalloc LogLevel[MAX_CHARS_PER_LINE * messageCount];
+		Span<char> temporaryTextBuffer = stackalloc char[3 + maxMessageLength + 40];
+
 		const string START_BRACKET = "[";
 		const string END_BRACKET = "] ";
 		int lines = 0;
-		foreach (ref readonly ConsoleMessage message in currentMessages) {
+		int idx = 0;
+		for (bool hasMessage = ScreenMessages.GetMessageAt(offsets, idx, out ConsoleMessage message, out ReadOnlySpan<char> msgtext); hasMessage; idx++, hasMessage = ScreenMessages.GetMessageAt(offsets, idx, out message, out msgtext)) {
+			if (i >= messageCount)
+				break;
+
 			Span<char> textMessage = textMessages[(i * MAX_CHARS_PER_LINE)..];
-			float fade = Math.Clamp((float)NMath.Remap(message.Age, MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
+			float fade = Math.Clamp((float)NMath.Remap(message.GetAge(), MaxMessageTime * DisappearTime, MaxMessageTime, 1, 0), 0, 1);
 			int len = 0;
 
 			if (textMessage.Length <= 0)
 				break;
 
-			if (message.Message.Length > 950)
-				// Excessive message; skipping
+			if (msgtext.Length > 950)
 				continue;
 
 			START_BRACKET.CopyTo(textMessage[len..]); len += START_BRACKET.Length;
 			var messageLevel = Logs.LevelToConsoleString(message.Level);
 			messageLevel.CopyTo(textMessage[len..]); len += messageLevel.Length;
 			END_BRACKET.CopyTo(textMessage[len..]); len += END_BRACKET.Length;
-			message.Message.CopyTo(textMessage[len..]); len += message.Message.Length;
+			msgtext.CopyTo(textMessage[len..]); len += msgtext.Length;
 
-			var text = $"[{Logs.LevelToConsoleString(message.Level)}] {message.Message}";
+			Span<char> text = temporaryTextBuffer;
+			int pos = 0;
+			text[pos++] = '[';
+			var consoleString = Logs.LevelToConsoleString(message.Level);
+			consoleString.CopyTo(text[pos..]);
+			pos += consoleString.Length;
+			text[pos++] = ']';
+			text[pos++] = ' ';
+			msgtext.CopyTo(text[pos..]);
+			pos += msgtext.Length;
+			text = text[..pos];
+
 			var thisTextSize = Graphics2D.GetTextSize(text, "Consolas", textSize);
 			rectangles[i] = RectangleF.XYWH(x, y + lines * 15, thisTextSize.W, thisTextSize.H);
 			fades[i] = fade;
@@ -111,14 +135,15 @@ public static class ConsoleSystem
 			lines += 1 + CountNewlines(text);
 		}
 
-		for (int j = 0; j < ScreenMessages.Count; j++) {
+		// Use 'i' (actual items written) not ScreenMessages.Count
+		for (int j = 0; j < i; j++) {
 			RectangleF drawRectangle = rectangles[j];
 			float fade = fades[j];
 			Graphics2D.SetDrawColor(30, 30, 30, (int)(110 * fade));
 			Graphics2D.DrawRectangle(drawRectangle.X, drawRectangle.Y + 2, drawRectangle.W + 4, drawRectangle.H + 4);
 		}
 
-		for (int j = 0; j < ScreenMessages.Count; j++) {
+		for (int j = 0; j < i; j++) {
 			Span<char> textMessage = textMessages[(j * MAX_CHARS_PER_LINE)..];
 			RectangleF drawRectangle = rectangles[j];
 			float fade = fades[j];
@@ -126,10 +151,13 @@ public static class ConsoleSystem
 			Graphics2D.SetDrawColor(Logs.LevelToColor(level), (int)(fade * 255));
 			Graphics2D.DrawText(new(drawRectangle.X - 1, drawRectangle.Y + 4 + 1), textMessage[..textLengths[j]], "Consolas", textSize);
 		}
+
+		ScreenMessages.EndRead();
 	}
+
 	static int CountNewlines(ReadOnlySpan<char> x) {
 		int ret = 0;
-		for (int i = 0; i < x.Length; i++) 
+		for (int i = 0; i < x.Length; i++)
 			if (x[i] == '\n')
 				ret++;
 

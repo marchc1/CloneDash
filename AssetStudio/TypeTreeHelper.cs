@@ -3,25 +3,47 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
     public static class TypeTreeHelper
     {
+        private static readonly JsonSerializerOptions JsonOptions;
+        static TypeTreeHelper()
+        {
+            JsonOptions = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                IncludeFields = true,
+            };
+        }
+
         public static string ReadTypeString(TypeTree m_Type, ObjectReader reader)
         {
             reader.Reset();
+            var readed = 0L;
             var sb = new StringBuilder();
             var m_Nodes = m_Type.m_Nodes;
-            for (int i = 0; i < m_Nodes.Count; i++)
+            try
             {
-                ReadStringValue(sb, m_Nodes, reader, ref i);
+                for (var i = 0; i < m_Nodes.Count; i++)
+                {
+                    ReadStringValue(sb, m_Nodes, reader, ref i);
+                    readed = reader.Position - reader.byteStart;
+                }
             }
-            var readed = reader.Position - reader.byteStart;
+            catch (Exception)
+            {
+                //Ignore
+            }
             if (readed != reader.byteSize)
             {
-                Logger.Info($"Error while read type, read {readed} bytes but expected {reader.byteSize} bytes");
+                Logger.Info($"Failed to read type, read {readed} bytes but expected {reader.byteSize} bytes");
             }
+
             return sb.ToString();
         }
 
@@ -80,7 +102,7 @@ namespace AssetStudio
                 case "bool":
                     value = reader.ReadBoolean();
                     break;
-                case "string":
+                case "string" when m_Nodes[i + 1].m_Type == "Array":
                     append = false;
                     var str = reader.ReadAlignedString();
                     sb.AppendFormat("{0}{1} {2} = \"{3}\"\r\n", (new string('\t', level)), varTypeStr, varNameStr, str);
@@ -116,7 +138,7 @@ namespace AssetStudio
                     {
                         append = false;
                         var size = reader.ReadInt32();
-                        reader.ReadBytes(size);
+                        reader.BaseStream.Position += size;
                         i += 2;
                         sb.AppendFormat("{0}{1} {2}\r\n", (new string('\t', level)), varTypeStr, varNameStr);
                         sb.AppendFormat("{0}{1} {2} = {3}\r\n", (new string('\t', level)), "int", "size", size);
@@ -145,6 +167,8 @@ namespace AssetStudio
                         }
                         else //Class
                         {
+                            if (m_Node.m_Type == "string")
+                                m_Node.m_Type = "CustomType";
                             append = false;
                             sb.AppendFormat("{0}{1} {2}\r\n", (new string('\t', level)), varTypeStr, varNameStr);
                             var @class = GetNodes(m_Nodes, i);
@@ -163,26 +187,42 @@ namespace AssetStudio
                 reader.AlignStream();
         }
 
+        public static byte[] ReadTypeByteArray(TypeTree m_Types, ObjectReader reader)
+        {
+            var type = ReadType(m_Types, reader);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(type, JsonOptions);
+            type.Clear();
+            return bytes;
+        }
+
         public static OrderedDictionary ReadType(TypeTree m_Types, ObjectReader reader)
         {
             reader.Reset();
             var obj = new OrderedDictionary();
             var m_Nodes = m_Types.m_Nodes;
-            for (int i = 1; i < m_Nodes.Count; i++)
+            var readed = 0L;
+            try
             {
-                var m_Node = m_Nodes[i];
-                var varNameStr = m_Node.m_Name;
-                obj[varNameStr] = ReadValue(m_Nodes, reader, ref i);
+                for (int i = 1; i < m_Nodes.Count; i++)
+                {
+                    var m_Node = m_Nodes[i];
+                    var varNameStr = m_Node.m_Name;
+                    obj[varNameStr] = ReadValue(m_Nodes, reader, ref i);
+                    readed = reader.Position - reader.byteStart;
+                }
             }
-            var readed = reader.Position - reader.byteStart;
+            catch (Exception)
+            {
+                //Ignore
+            }
             if (readed != reader.byteSize)
             {
-                Logger.Info($"Error while read type, read {readed} bytes but expected {reader.byteSize} bytes");
+                Logger.Info($"Failed to read type, read {readed} bytes but expected {reader.byteSize} bytes");
             }
             return obj;
         }
 
-        public static object ReadValue(List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
+        private static object ReadValue(List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
         {
             var m_Node = m_Nodes[i];
             var varTypeStr = m_Node.m_Type;
@@ -234,7 +274,7 @@ namespace AssetStudio
                 case "bool":
                     value = reader.ReadBoolean();
                     break;
-                case "string":
+                case "string" when m_Nodes[i + 1].m_Type == "Array":
                     value = reader.ReadAlignedString();
                     var toSkip = GetNodes(m_Nodes, i);
                     i += toSkip.Count - 1;
@@ -262,12 +302,21 @@ namespace AssetStudio
                 case "TypelessData":
                     {
                         var size = reader.ReadInt32();
-                        value = reader.ReadBytes(size);
+                        var offset = size > 0 ? reader.BaseStream.Position : 0;
+                        var dic = new OrderedDictionary
+                        {
+                            {"Offset", offset},
+                            {"Size", size}
+                        };
+                        value = dic;
+                        reader.BaseStream.Position += size;
                         i += 2;
                         break;
                     }
                 default:
                     {
+                        if (m_Node.m_Type == "string")
+                            m_Node.m_Type = "CustomType";
                         if (i < m_Nodes.Count - 1 && m_Nodes[i + 1].m_Type == "Array") //Array
                         {
                             if ((m_Nodes[i + 1].m_MetaFlag & 0x4000) != 0)
@@ -275,13 +324,13 @@ namespace AssetStudio
                             var vector = GetNodes(m_Nodes, i);
                             i += vector.Count - 1;
                             var size = reader.ReadInt32();
-                            var list = new List<object>(size);
+                            var array = new object[size];
                             for (int j = 0; j < size; j++)
                             {
                                 int tmp = 3;
-                                list.Add(ReadValue(vector, reader, ref tmp));
+                                array[j] = ReadValue(vector, reader, ref tmp);
                             }
-                            value = list;
+                            value = array;
                             break;
                         }
                         else //Class

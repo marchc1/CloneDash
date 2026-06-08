@@ -253,7 +253,7 @@ namespace Nucleus.Commands
 				ConVar var = (ConVar)cmdbase;
 
 				bool hasMin = var.GetMin(out double min);
-				bool hasMax = var.GetMin(out double max);
+				bool hasMax = var.GetMax(out double max);
 
 				printCtx ctx = new(stackalloc char[512]);
 				ctx.Print('"');

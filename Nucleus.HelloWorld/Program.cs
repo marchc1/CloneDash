@@ -27,19 +27,19 @@ internal class Program
 	{
 		readonly TestBtn[] tests = [
 			new("Label Content Alignment", (level) => {
-				var window = level.UI.Add<Window>();
+				var window = new Window(level.RootPanel);
 
 				Panel row(Dock vertical){
-					var row = window.Add<Panel>();
-					row.Dock = vertical;
+					var row = new Panel(window);
+					row.SetDock(vertical) ;
 
 					Label column(Anchor alignment){
-						var column = row.Add<Label>();
+						var column = new Label(row);
 						var h = alignment.ToTextAlignment().Horizontal;
-						column.Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
-						column.Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
-						column.Size = new(window.Size.W / 3, 0);
-						column.TextAlignment = alignment;
+						column.SetDock(h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill) ;
+						column.SetText("The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString()) ;
+						column.SetSize(new(window.GetSize().W / 3, 0)) ;
+						column.SetTextAlignment(alignment) ;
 						column.TextOverflowMode = TextOverflowMode.WordWrap;
 						return column;
 					}
@@ -49,8 +49,8 @@ internal class Program
 					var left = column(  new TextAlignment2D(TextAlignment.Left, v).ToAnchor());
 					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
 					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
-					row.Size = new(0, window.Size.H / 3);
-					row.DrawPanelBackground = false;
+					row.SetSize(new(0, window.GetSize().H / 3)) ;
+					row.SetPaintBackgroundEnabled(false);
 
 					return row;
 				}
@@ -65,18 +65,18 @@ internal class Program
 		public override void Initialize(params object[] args) {
 			base.Initialize(args);
 
-			var tools = UI.Add<Panel>();
-			tools.Dock = Dock.Right;
-			tools.Size = new(640, 0);
-			var testLabel = tools.Add<Label>();
-			testLabel.AutoSize = true;
-			testLabel.Dock = Dock.Top;
-			testLabel.Text = "Test Functions";
+			var tools = new Panel(RootPanel);
+			tools.SetDock(Dock.Right);
+			tools.SetSize(new(640, 0));
+			var testLabel = new Label(tools);
+			testLabel.SetAutoSize(true);
+			testLabel.SetDock(Dock.Top);
+			testLabel.SetText("Test Functions");
 			foreach (var test in tests) {
-				var b = tools.Add<Button>();
-				b.Text = test.Text;
-				b.Dock = Dock.Top;
-				b.MouseClickEvent += (_, _, _) => test.Click(this);
+				var b = new Button(tools);
+				b.SetText(test.Text);
+				b.SetDock(Dock.Top);
+				b.OnButtonClick += (_, _) => test.Click(this);
 			}
 		}
 

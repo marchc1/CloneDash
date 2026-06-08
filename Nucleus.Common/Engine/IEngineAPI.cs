@@ -18,6 +18,7 @@ public interface IEngineAPI : IServiceProvider
 	public Result Run();
 	public ref readonly StartupInfo GetStartupInfo();
 	public void SetStartupInfo(in StartupInfo info);
+	public void SetWindowInitialState(in WindowInitialState state);
 }
 
 public delegate void PreInject(IServiceCollection services);

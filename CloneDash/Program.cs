@@ -2,9 +2,12 @@
     A *LOT* of this is subject to change. This is a prototype, and just a testbed of basic game functionality.
 */
 
+using CloneDash.Common;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
-using CloneDash.Data;
 using CloneDash.Game;
+using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;
 
@@ -13,13 +16,15 @@ using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Files;
 using Nucleus.NewEngine;
 using Nucleus.UI;
+using Nucleus.Util;
 using System.Diagnostics;
 using Velopack;
-using static CloneDash.Compatibility.CustomAlbums.CustomAlbumsCompatibility;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash;
 
@@ -44,6 +49,10 @@ internal class Program
 		// Installer stuff, ignored if using zip.
 		VelopackApp.Build().Run();
 
+		LevelTransitions.OnLoadMainMenu += () => EngineCore.LoadLevel(new MainMenuLevel());
+		LevelTransitions.OnLoadSongChart += (chart, parms) => chart.GetGamemode().Load(chart, parms);
+		LevelTransitions.OnLoadSongSelector += LevelTransitions_OnLoadSongSelector;
+
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
 			return;
 
@@ -67,10 +76,43 @@ internal class Program
 		using ServiceLocatorScope locatorScope = new(engineAPI);
 		engineAPI.Run();
 	}
+
+	// This entire function is gross.
+	// TODO: fix this awfulness
+	private static void LevelTransitions_OnLoadSongSelector(SongSelector selector, Common.Songs.ISong song) {
+		if (song is MD1_CustomChartsSong customChartsSong) {
+			customChartsSong.DownloadOrPullFromCache((c) => {
+				if (EngineCore.Level is not MainMenuLevel mml) {
+					Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
+					return;
+				}
+
+				mml.LoadChartSelector(selector, c);
+			});
+		}
+		else
+			EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(selector, song);
+	}
 }
 
 public class GameDLL : IGameDLL
 {
+	MemorySearchPath? fontSearchpath;
+	void NucleusRegisterMDFont(ReadOnlySpan<char> fontName, ReadOnlySpan<char> fontAsset) {
+		if (fontSearchpath == null) {
+			fontSearchpath = new MemorySearchPath();
+			filesystem.AddSearchPath("fonts", fontSearchpath);
+		}
+		AssetStudio.Font font = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset);
+		Graphics2D.FontManager.FontNameToFilepath[fontName.Hash(invariant: false)] = new(new(fontAsset), "fonts");
+
+		using (var writer = fontSearchpath.Open(fontAsset, FileAccess.Write, FileMode.Create))
+			writer!.Write(font.m_FontData);
+	}
+	public void PreStaticInitialize() {
+		// stupid hack to fix dependency-loading issues...
+		MuseDash1Game _ = null!; if (_ == null) { }
+	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()
 			.WithTitle("This is a message box test!")
@@ -87,32 +129,39 @@ public class GameDLL : IGameDLL
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
-			MDCompatLayerInitResult res;
-			if ((res = MuseDashCompatibility.InitializeCompatibilityLayer()) != MDCompatLayerInitResult.OK) {
+			MD1CompatLayerInitResult res;
+			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != MD1CompatLayerInitResult.OK) {
 				throw new Exception($"Muse Dash compatibility layer failed to initialize: {res switch {
-					MDCompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
-					MDCompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
-					MDCompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
-					MDCompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
-					MDCompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
+					MD1CompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
+					MD1CompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
+					MD1CompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
+					MD1CompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
+					MD1CompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
 					_ => res.ToString()
 				}}");
 			}
+		}
+
+		// Load muse dash fonts
+		{
+			NucleusRegisterMDFont("Infinity Font", "InfinityFont_midiam_dot");
+			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
+			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
 		}
 
 		Interlude.Spin();
 
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
-		if (MuseDashCompatibility.WhereIsMuseDashInstalled != null)
-			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDashCompatibility.WhereIsMuseDashInstalled);
+		if (MuseDash1Compatibility.WhereIsMuseDashInstalled != null)
+			musedash = filesystem.AddSearchPath<DiskSearchPath>("musedash", MuseDash1Compatibility.WhereIsMuseDashInstalled);
 
 		var game = filesystem.GetSearchPathID("game").First();
 		var appcache = filesystem.GetSearchPathID("appcache").First();
 		var appdata = filesystem.GetSearchPathID("appdata").First();
 		{
 			// Custom assets should always be top priority for the filesystem
-			if (MuseDashCompatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDashCompatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
+			if (MuseDash1Compatibility.WhereIsMuseDashInstalled != null && musedash != null && Directory.Exists(Path.Combine(MuseDash1Compatibility.WhereIsMuseDashInstalled, "Custom_Albums")))
 				filesystem.AddSearchPath("charts", DiskSearchPath.Combine(musedash, "Custom_Albums", createIfMissing: false));
 
 			// Prioritize custom assets in order of new appdata/ -> game/
@@ -168,13 +217,13 @@ public class GameDLL : IGameDLL
 			if (release != null) {
 				MainThread.RunASAP(() => {
 					try {
-						var ui = EngineCore.Level?.UI;
+						var ui = EngineCore.Level?.RootPanel;
 						if (ui == null) {
 							Logs.Warn("Update available but UI is not ready to show popup.");
 							return;
 						}
 
-                        string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
+						string message = $"A new release ({release.TagName}) is available. Would you like to open the release page?";
 						ui.DialogOKCancel("Update available", message, () => {
 							try {
 								var url = release.Url ?? $"https://github.com/{UpdateChecker.RepoOwner}/{UpdateChecker.RepoName}/releases";
@@ -191,7 +240,7 @@ public class GameDLL : IGameDLL
 				});
 			}
 		}).Start();
-    }
+	}
 
 	static void AddCustomPath(SearchPath basePath, bool createIfMissing = true) {
 		var custom = filesystem.AddSearchPath("custom", DiskSearchPath.Combine(basePath, "custom", createIfMissing: createIfMissing));
@@ -215,13 +264,13 @@ public class GameDLL : IGameDLL
 		if (cmd.HasParm("-md_level")) {
 			string md_level = cmd.ParmValue("-md_level", "");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
-			MuseDashSong song = MuseDashCompatibility.Songs.First(x => x.BaseName == md_level);
-			var sheet = song.GetSheet(difficulty);
+			MD1_Song song = MuseDash1Compatibility.Songs.First(x => x.BaseName == md_level);
+			var chart = song.GetSheet(difficulty);
 
-			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0));
-			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl);
-			if (!first) Interlude.End();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
+					Autoplay = cmd.FindParm("-autoplay") != 0
+				});
 		}
 
 		else if (cmd.HasParm("-cam_level")) {
@@ -229,25 +278,25 @@ public class GameDLL : IGameDLL
 			Logs.Info($"cam_level specified: {cam_level}");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
 
-			CustomChartsSong song = new CustomChartsSong(cam_level);
-			ChartSheet sheet;
+			MD1_CustomChartsSong song = new MD1_CustomChartsSong(cam_level);
+			MD1_SongChart? chart;
 			switch (Path.GetExtension(cam_level)) {
 				case ".bms":
-					sheet = song.LoadFromDiskBMS(cam_level);
+					chart = song.LoadFromDiskBMS(cam_level);
 					break;
 				default:
-					sheet = song.GetSheet(difficulty);
+					chart = song.GetSheet(difficulty);
 					break;
 			}
-
-			var lvl = new DashGameLevel(new DashGameParams(sheet).WithAutoplay(cmd.FindParm("-autoplay") != 0).WithMeasure(cmd.ParmValue("-startmeasure", 0)));
-			if (!first) Interlude.Begin("Interprocess load started!");
-			EngineCore.LoadLevel(lvl);
-			if (!first) Interlude.End();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
+					Autoplay = cmd.FindParm("-autoplay") != 0,
+					StartMeasure = cmd.ParmValue("-startmeasure", 0)
+				});
 		}
 
 		else if (first) {
-			EngineCore.LoadLevel(new MainMenuLevel());
+			LevelTransitions.LoadMainMenu();
 		}
 	}
 }

@@ -45,10 +45,10 @@ namespace Nucleus.ModelEditor
 			return allbones;
 		}
 
-		public EditorBone? FindBone(ReadOnlySpan<char> name) => Model4System.SearchName(GetAllBones(), name);
-		public EditorSlot? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchName(Slots, name);
-		public EditorSkin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchName(Skins, name);
-		public EditorAnimation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchName(Animations, name);
+		public EditorBone? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(GetAllBones(), name);
+		public EditorSlot? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
+		public EditorSkin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Skins, name);
+		public EditorAnimation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Animations, name);
 
 		public bool TryFindBone(ReadOnlySpan<char> name, [NotNullWhen(true)] out EditorBone? bone) {
 			bone = FindBone(name);
@@ -132,8 +132,8 @@ namespace Nucleus.ModelEditor
 
 		public void RemoveUnusedImages() {
 			HashSet<string> unusedRegions = [];
-			foreach (var region in Images.TextureAtlas.AllRegions) {
-				unusedRegions.Add(region.Key);
+			foreach (var key in Images.TextureAtlas.UnpackedImages.Keys) {
+				unusedRegions.Add(key);
 			}
 
 			foreach(var slot in Slots) {
@@ -146,8 +146,7 @@ namespace Nucleus.ModelEditor
 			}
 
 			foreach (var unusedRegion in unusedRegions) {
-				Images.TextureAtlas.UnpackedImages.Remove(unusedRegion);
-				Images.TextureAtlas.AllRegions.Remove(unusedRegion);
+				Images.TextureAtlas.RemoveTexture(unusedRegion);
 			}
 
 			Images.TextureAtlas.Invalidate();

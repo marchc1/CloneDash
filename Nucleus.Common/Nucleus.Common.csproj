@@ -15,7 +15,7 @@
 		<PackageReference Include="Colorful.Console" Version="1.2.15" />
 		<PackageReference Include="FftSharp" Version="2.2.0" />
 		<PackageReference Include="K4os.Hash.xxHash" Version="1.0.8" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
 		<PackageReference Include="ppy.SDL3-CS" Version="2025.1205.0" />

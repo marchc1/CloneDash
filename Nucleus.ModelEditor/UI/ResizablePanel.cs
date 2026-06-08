@@ -32,29 +32,37 @@ namespace Nucleus.ModelEditor.UI
 			}
 		}
 
-		private Button __top, __left, __right, __bottom;
+		class ResizablePanelButton(Element parent) : Button(parent)
+		{
+			public event Action<Element, FrameState, Vector2F>? MouseDragEvent;
+			protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+				MouseDragEvent?.Invoke(self, state, delta);
+				return base.MouseDrag(self, state, delta);
+			}
+		}
+
+		private ResizablePanelButton __top, __left, __right, __bottom;
 		private Panel __inside;
 		private float __size = 4;
-		protected override void Initialize() {
-			base.Initialize();
-			DockPadding = RectangleF.TLRB(0);
+		public ResizablePanel(Element parent) : base(parent) {
+			SetDockPadding(RectangleF.TLRB(0));
 
-			Add(out __top);
-			Add(out __left);
-			Add(out __right);
-			Add(out __bottom);
-			Add(out __inside);
+			__top = new(this);
+			__left = new(this);
+			__right = new(this);
+			__bottom = new(this);
+			__inside = new(this);
 
-			foreach(Button b in new Button[] { __top, __left, __right, __bottom }) {
-				b.Text = "";
-				b.BackgroundColor = Color.Blank;
-				b.BorderSize = 0;
+			foreach (Button b in new Button[] { __top, __left, __right, __bottom }) {
+				b.SetText("");
+				b.SetBgColor(Color.Blank);
+				b.SetBorderSize(0);
 			}
 
-			__inside.Dock = Dock.Fill;
+			__inside.SetDock(Dock.Fill);
 
 			UpdateResizers();
-			AddParent = __inside;
+			SetAddParent(__inside);
 
 			__top.MouseDragEvent += __top_MouseDragEvent;
 			__left.MouseDragEvent += __left_MouseDragEvent;
@@ -66,7 +74,7 @@ namespace Nucleus.ModelEditor.UI
 		public float MinimumHeight { get; set; } = 384;
 
 		private bool overflowCheckX(float deltaX) {
-			if (this.Size.X - deltaX < MinimumWidth)
+			if (this.GetSize().X - deltaX < MinimumWidth)
 				return true;
 			return false;
 		}
@@ -78,32 +86,32 @@ namespace Nucleus.ModelEditor.UI
 		private void __left_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 			if (overflowCheckX(delta.X)) return;
 
-			this.Position = new(this.Position.X + delta.X, this.Position.Y);
-			this.Size = new(this.Size.X + -delta.X, this.Size.Y);
+			this.SetPos(new(this.GetPos().X + delta.X, this.GetPos().Y));
+			this.SetSize(new(this.GetSize().X + -delta.X, this.GetSize().Y));
 		}
 
 		private void __right_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
-			
+
 		}
 
 		private void __bottom_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
-			
+
 		}
 
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
-			__top.Position = new(__size, 0); __top.Size = new(width - (__size * 2), __size);
-			__left.Position = new(0, __size); __left.Size = new(__size, height - (__size * 2));
-			__bottom.Position = new(__size, height - __size); __bottom.Size = new(width - (__size * 2), __size);
-			__right.Position = new(width - __size, __size); __right.Size = new(__size, height - (__size * 2));
-			__inside.DockMargin = RectangleF.TLRB(__size + 2);
+			__top.SetPos(new(__size, 0)); __top.SetSize(new(width - (__size * 2), __size));
+			__left.SetPos(new(0, __size)); __left.SetSize(new(__size, height - (__size * 2)));
+			__bottom.SetPos(new(__size, height - __size)); __bottom.SetSize(new(width - (__size * 2), __size));
+			__right.SetPos(new(width - __size, __size)); __right.SetSize(new(__size, height - (__size * 2)));
+			__inside.SetDockMargin(RectangleF.TLRB(__size + 2));
 		}
 
 		private void UpdateResizers() {
-			__top.Visible = __resizeTop;
-			__left.Visible = __resizeLeft;
-			__right.Visible = __resizeRight;
-			__bottom.Visible = __resizeBottom;
+			__top.SetVisible(__resizeTop);
+			__left.SetVisible(__resizeLeft);
+			__right.SetVisible(__resizeRight);
+			__bottom.SetVisible(__resizeBottom);
 		}
 	}
 }

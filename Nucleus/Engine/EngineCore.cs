@@ -1,6 +1,7 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Input;
+using Nucleus.Common.OS;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -140,45 +141,71 @@ public static class EngineCore
 	private static unsafe void LogCustom(int logLevel, sbyte* text, sbyte* args) {
 		var message = Logging.GetLogMessage(new IntPtr(text), new IntPtr(args));
 		if (message == "FILEIO: [] Failed to open text file") return;
-		Logs.Source = " raylib";
+		using (Logs.SourceScope("raylib")) {
+			if (DetectAnnoyingRaylibMessages(message))
+				return;
 
-		switch ((TraceLogLevel)logLevel) {
-			case TraceLogLevel.LOG_ALL:
-			case TraceLogLevel.LOG_NONE:
-				Logs.Print(message);
-				break;
-			case TraceLogLevel.LOG_TRACE:
-			case TraceLogLevel.LOG_DEBUG:
-				Logs.Debug(message);
-				break;
-			case TraceLogLevel.LOG_INFO:
-				Logs.Info(message);
-				break;
-			case TraceLogLevel.LOG_WARNING:
-				Logs.Warn(message);
-				break;
-			case TraceLogLevel.LOG_ERROR:
-			case TraceLogLevel.LOG_FATAL:
-				Logs.Error(message);
-				break;
+			switch ((TraceLogLevel)logLevel) {
+				case TraceLogLevel.LOG_ALL:
+				case TraceLogLevel.LOG_NONE:
+					Logs.Print(message);
+					break;
+				case TraceLogLevel.LOG_TRACE:
+				case TraceLogLevel.LOG_DEBUG:
+					Logs.Debug(message);
+					break;
+				case TraceLogLevel.LOG_INFO:
+					Logs.Info(message);
+					break;
+				case TraceLogLevel.LOG_WARNING:
+					Logs.Warn(message);
+					break;
+				case TraceLogLevel.LOG_ERROR:
+				case TraceLogLevel.LOG_FATAL:
+					Logs.Error(message);
+					break;
+			}
 		}
-		Logs.Source = "nucleus";
+	}
+
+	private static bool DetectAnnoyingRaylibMessages(ReadOnlySpan<char> message) {
+		const string FONT_START = "FONT: ";
+		if (message.StartsWith(FONT_START)) {
+			// Raylib 6 introduced a message for when glyph heights are bigger than requested font size.
+			// Not a bad thing in particular but way too annoying. We intentionally spray and pray how many
+			// codepoints the font can load for us as well which triggers another message about how Raylib
+			// didn't produce all requested codepoints. So this catches both.
+			ReadOnlySpan<char> submessage = message[FONT_START.Length..];
+			if (submessage.StartsWith('[')) {
+				// skip by (lbrack) 1 + (hex) 6 + (rbrack) 1 + (space) 1 to skip past the hex
+				const int SKIP_BY = 1 + 6 + 1 + 1;
+				if (submessage.Length < SKIP_BY)
+					return false;
+				submessage = submessage[SKIP_BY..];
+				if (submessage.StartsWith("Glyph height is bigger than"))
+					return true;
+			}
+			else if (submessage.StartsWith("Requested codepoints glyphs"))
+				return true;
+		}
+
+		return false;
 	}
 
 	public static Window OpenProfiler() {
-		Window window = Level.UI.Add<Window>();
+		Window window = new Window(Level.RootPanel);
 
 		window.Title = "Nucleus Profiler";
-		window.AddParent.PaintOverride += AddParent_PaintOverride;
-		window.Titlebar.MinimizeButton.Enabled = false;
-		window.Titlebar.MaximizeButton.Enabled = false;
+		window.GetAddParent().SetPaintBackgroundEnabled(false);
+		window.Titlebar.MinimizeButton.SetMouseInputEnabled(false);
+		window.Titlebar.MaximizeButton.SetMouseInputEnabled(false);
 
 		return window;
 	}
 
 	private static void AddParent_PaintOverride(Element self, float width, float height) {
 		int y = 12;
-		self.Parent.BorderSize = 0;
+		self.GetParent()?.SetBorderSize(0);
 
 		DrawBar("Time to Update", new Color(225, 225, 225, 255), width, y, GetTimeToUpdate().TotalSeconds);
 		DrawBar("Time to Render", new Color(225, 225, 225, 255), width, y, GetTimeToRender().TotalSeconds);
@@ -279,7 +306,7 @@ public static class EngineCore
 			Window.Fullscreen = self.GetBool();
 	}
 
-	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags[]? flags = null, Action? gameThreadInit = null) {
+	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags flags = 0, Action? gameThreadInit = null) {
 		// TEMPORARY
 		TemporaryInitializeDependencies();
 		windowName ??= startupInfo.AppName;
@@ -305,21 +332,13 @@ public static class EngineCore
 		Logs.Info($"    > Display server:     {Platform.DisplayServer}");
 		Logs.Info($"    > OpenGL version:     {Rlgl.GetVersion()}");
 
-		ConfigFlags add = (ConfigFlags)0;
-
-		if (flags != null) {
-			foreach (var flag in flags) {
-				add |= flag;
-			}
-		}
-
 		audiosystem.Initialize();
 		// Initialize SDL. This has to be done on the main thread.
 		OS.InitSDL(in startupInfo);
 		if (borderless.GetBool())
-			add |= ConfigFlags.FLAG_WINDOW_UNDECORATED;
+			flags |= ConfigFlags.WindowUndecorated;
 		if (fullscreen.GetBool()) {
-			add |= ConfigFlags.FLAG_FULLSCREEN_MODE;
+			flags |= ConfigFlags.FullScreenMode;
 			// Fix monitor sizing for fullscreens first frame
 			// todo: is there a better way to do this? This interferes with a few things I think
 			OSMonitor curMonitor = CommandLine().ParmValue("monitor", OS.GetPrimaryMonitor().DisplayID);
@@ -327,7 +346,7 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.FLAG_MSAA_4X_HINT | ConfigFlags.FLAG_WINDOW_RESIZABLE | add);
+		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
 		GetWindowCtx(MainWindow).Level = null;
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
@@ -412,7 +431,7 @@ public static class EngineCore
 	}
 
 
-	
+
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
@@ -579,6 +598,7 @@ public static class EngineCore
 		WaitForGameThread();
 		NucleusSingleton.Spin();
 		OSWindow.PropagateEventBuffer();
+		Host.CheckForResave();
 
 		CurrentAppTime = OS.GetTime();
 		UpdateTime = CurrentAppTime - PreviousAppTime;
@@ -657,25 +677,44 @@ public static class EngineCore
 			//Graphics2D.DrawText(screenBounds.X / 2, screenBounds.Y / 2, "Make sure you're changing EngineCore.Level.", Graphics2D.UI_FONT_NAME, 18, TextAlignment.Center, TextAlignment.Top);
 
 			int y = 0;
-			var msgs = ConsoleSystem.GetMessages();
 			int txS = 12;
-			for (int j = ConsoleSystem.GetMessagesCount() - 1; j >= 0; j--) {
-				ref readonly ConsoleMessage cmsg = ref msgs[j];
+			var msgList = ConsoleSystem.GetAllMessagesList();
+			msgList.BeginRead();
+			int msgCount = msgList.ComputeCount();
+			Span<int> offsets = stackalloc int[msgCount];
+			int found = msgList.GetMessages(offsets, out _);
 
-				int c = 1;
-				for (int ci = 0; ci < cmsg.Message.Length; ci++) {
-					char curchar = cmsg.Message[ci];
-					if (curchar == '\r' && ((ci < cmsg.Message.Length - 1 && cmsg.Message[ci + 1] == '\n') || ci == cmsg.Message.Length - 1)) {
-						c++;
+			Span<char> formatted = stackalloc char[512];
+
+			for (int j = found - 1; j >= 0; j--) {
+				if (!msgList.GetMessageAt(offsets, j, out var cmsg, out var msgText))
+					continue;
+
+				int lineCount = 1;
+				for (int ci = 0; ci < msgText.Length; ci++) {
+					if (msgText[ci] == '\r' && ci + 1 < msgText.Length && msgText[ci + 1] == '\n') {
+						lineCount++;
 						ci++;
 					}
-					else if (curchar == '\n')
-						c++;
+					else if (msgText[ci] == '\n')
+						lineCount++;
 				}
-				y += c;
-				Graphics2D.DrawText(4, screenBounds.Y - 24 - (y * txS), cmsg.Message.Replace('\r', ' '), "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
 
+				int pos = 0;
+				formatted[pos++] = '[';
+				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
+				levelStr.CopyTo(formatted[pos..]);
+				pos += levelStr.Length;
+				formatted[pos++] = ']';
+				formatted[pos++] = ' ';
+				msgText.CopyTo(formatted[pos..]);
+				pos += msgText.Length;
+
+				y += lineCount;
+				Graphics2D.DrawText(4, screenBounds.Y - 24 - (y * txS),
+					formatted[..pos], "Consolas", txS, TextAlignment.Left, TextAlignment.Top);
 			}
+			msgList.EndRead();
 			// mini game loop
 			KeyboardState keyboardState = new();
 			Window.FlushKeyboardStateInto(ref keyboardState);
@@ -840,6 +879,8 @@ public static class EngineCore
 
 			earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
 			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+
+			gameDLL.PreStaticInitialize();
 
 			Logs.Info("BOOT: Initializing static constructors...");
 			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()

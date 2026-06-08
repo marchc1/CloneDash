@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace AssetStudio
 {
     public static class BinaryReaderExtensions
     {
-        public static void AlignStream(this BinaryReader reader)
-        {
-            reader.AlignStream(4);
-        }
-
-        public static void AlignStream(this BinaryReader reader, int alignment)
+        public static void AlignStream(this BinaryReader reader, int alignment = 4)
         {
             var pos = reader.BaseStream.Position;
             var mod = pos % alignment;
@@ -25,20 +21,25 @@ namespace AssetStudio
         public static string ReadAlignedString(this BinaryReader reader)
         {
             var length = reader.ReadInt32();
-            if (length > 0 && length <= reader.BaseStream.Length - reader.BaseStream.Position)
+            if (length > reader.BaseStream.Length - reader.BaseStream.Position)
+                throw new EndOfStreamException();
+            if (length > 0)
             {
                 var stringData = reader.ReadBytes(length);
                 var result = Encoding.UTF8.GetString(stringData);
-                reader.AlignStream(4);
+                reader.AlignStream();
                 return result;
             }
             return "";
         }
 
-        public static string ReadStringToNull(this BinaryReader reader, int maxLength = 32767)
+        public static string ReadStringToNull(this BinaryReader reader, int maxLength = 32767, Encoding encoding = null)
         {
-            var bytes = new List<byte>();
-            int count = 0;
+            if (encoding?.CodePage == 1200) //Unicode (UTF-16LE)
+                return reader.ReadUnicodeStringToNull(maxLength * 2);
+
+            Span<byte> bytes = stackalloc byte[maxLength];
+            var count = 0;
             while (reader.BaseStream.Position != reader.BaseStream.Length && count < maxLength)
             {
                 var b = reader.ReadByte();
@@ -46,10 +47,32 @@ namespace AssetStudio
                 {
                     break;
                 }
-                bytes.Add(b);
+                bytes[count] = b;
                 count++;
             }
-            return Encoding.UTF8.GetString(bytes.ToArray());
+            bytes = bytes.Slice(0, count);
+#if NETFRAMEWORK
+            return encoding?.GetString(bytes.ToArray()) ?? Encoding.UTF8.GetString(bytes.ToArray());
+#else
+            return encoding?.GetString(bytes) ?? Encoding.UTF8.GetString(bytes);
+#endif
+        }
+
+        private static string ReadUnicodeStringToNull(this BinaryReader reader, int maxLength)
+        {
+            var bytes = new List<byte>();
+            var count = 0;
+            while (reader.BaseStream.Position != reader.BaseStream.Length && count < maxLength)
+            {
+                var b = reader.ReadBytes(2);
+                if (b.Length < 2 || (b[0] == 0 && b[1] == 0))
+                {
+                    break;
+                }
+                bytes.AddRange(b);
+                count += 2;
+            }
+            return Encoding.Unicode.GetString(bytes.ToArray());
         }
 
         public static Quaternion ReadQuaternion(this BinaryReader reader)
@@ -77,24 +100,22 @@ namespace AssetStudio
             return new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
 
-        public static Matrix4x4 ReadMatrix(this BinaryReader reader)
+        private static T[] ReadArray<T>(BinaryReader reader, int byteLen) where T : struct
         {
-            return new Matrix4x4(reader.ReadSingleArray(16));
-        }
+            if (byteLen < 0)
+                throw new ArgumentOutOfRangeException(nameof(byteLen));
+            if (reader.BaseStream.Position + byteLen > reader.BaseStream.Length)
+                throw new EndOfStreamException();
+            
+            var bytes = reader.ReadBytes(byteLen);
 
-        private static T[] ReadArray<T>(Func<T> del, int length)
-        {
-            var array = new T[length];
-            for (int i = 0; i < length; i++)
-            {
-                array[i] = del();
-            }
-            return array;
+            var span = MemoryMarshal.Cast<byte, T>(bytes);
+            return span.ToArray();
         }
 
         public static bool[] ReadBooleanArray(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadBoolean, reader.ReadInt32());
+            return ReadArray<bool>(reader, reader.ReadInt32());
         }
 
         public static byte[] ReadUInt8Array(this BinaryReader reader)
@@ -104,62 +125,65 @@ namespace AssetStudio
 
         public static ushort[] ReadUInt16Array(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadUInt16, reader.ReadInt32());
+            return ReadArray<ushort>(reader, reader.ReadInt32() * 2);
         }
 
-        public static int[] ReadInt32Array(this BinaryReader reader)
+        public static int[] ReadInt32Array(this BinaryReader reader, int length = -1)
         {
-            return ReadArray(reader.ReadInt32, reader.ReadInt32());
+            if (length == -1)
+                length = reader.ReadInt32();
+            return ReadArray<int>(reader, length * 4);
         }
 
-        public static int[] ReadInt32Array(this BinaryReader reader, int length)
+        public static uint[] ReadUInt32Array(this BinaryReader reader, int length = -1)
         {
-            return ReadArray(reader.ReadInt32, length);
-        }
-
-        public static uint[] ReadUInt32Array(this BinaryReader reader)
-        {
-            return ReadArray(reader.ReadUInt32, reader.ReadInt32());
+            if (length == -1)
+                length = reader.ReadInt32();
+            return ReadArray<uint>(reader, length * 4);
         }
 
         public static uint[][] ReadUInt32ArrayArray(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadUInt32Array, reader.ReadInt32());
+            var length = reader.ReadInt32();
+            var list = new List<uint[]>();
+            for (var i = 0; i < length; i++)
+            {
+                list.Add(ReadArray<uint>(reader, reader.ReadInt32() * 4));
+            }
+            return list.ToArray();
         }
 
-        public static uint[] ReadUInt32Array(this BinaryReader reader, int length)
+        public static float[] ReadSingleArray(this BinaryReader reader, int length = -1)
         {
-            return ReadArray(reader.ReadUInt32, length);
-        }
-
-        public static float[] ReadSingleArray(this BinaryReader reader)
-        {
-            return ReadArray(reader.ReadSingle, reader.ReadInt32());
-        }
-
-        public static float[] ReadSingleArray(this BinaryReader reader, int length)
-        {
-            return ReadArray(reader.ReadSingle, length);
+            if (length == -1)
+                length = reader.ReadInt32();
+            return ReadArray<float>(reader, length * 4);
         }
 
         public static string[] ReadStringArray(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadAlignedString, reader.ReadInt32());
+            var length = reader.ReadInt32();
+            var list = new List<string>();
+            for (var i = 0; i < length; i++)
+            {
+                list.Add(reader.ReadAlignedString());
+            }
+            return list.ToArray();
         }
 
         public static Vector2[] ReadVector2Array(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadVector2, reader.ReadInt32());
+            return ReadArray<Vector2>(reader, reader.ReadInt32() * 8);
         }
 
         public static Vector4[] ReadVector4Array(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadVector4, reader.ReadInt32());
+            return ReadArray<Vector4>(reader, reader.ReadInt32() * 16);
         }
 
         public static Matrix4x4[] ReadMatrixArray(this BinaryReader reader)
         {
-            return ReadArray(reader.ReadMatrix, reader.ReadInt32());
+            return ReadArray<Matrix4x4>(reader, reader.ReadInt32() * 64);
         }
     }
 }

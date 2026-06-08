@@ -99,41 +99,41 @@ public class WeightsPanel : View
 	FlexPanel bottomBtns;
 	NumSlider numSlider;
 	public ListView BoneOrder;
-	protected override void Initialize() {
-		Add(out props);
-		props.Dock = Dock.Fill;
-		props.DockMargin = RectangleF.TLRB(4);
-		props.DrawPanelBackground = false;
+	public WeightsPanel(Element parent) : base(parent) {
+		props = new(this);
+		props.SetDock(Dock.Fill);
+		props.SetDockMargin(RectangleF.TLRB(4));
+		props.SetPaintBackgroundEnabled(false);
 
-		props.Add(out topBtns);
-		topBtns.Dock = Dock.Top;
-		topBtns.Size = new(0, 128);
-		topBtns.DrawPanelBackground = false;
+		topBtns = new(props);
+		topBtns.SetDock(Dock.Top);
+		topBtns.SetSize(new(0, 128));
+		topBtns.SetPaintBackgroundEnabled(false);
 
-		props.Add(out bottomBtns);
-		bottomBtns.Dock = Dock.Bottom;
-		bottomBtns.Size = new(0, 64);
-		bottomBtns.DrawPanelBackground = false;
-		bottomBtns.Direction = Directional180.Horizontal;
+		bottomBtns = new(props);
+		bottomBtns.SetDock(Dock.Bottom);
+		bottomBtns.SetSize(new(0, 64));
+		bottomBtns.SetPaintBackgroundEnabled(false);
+		bottomBtns.Direction = Axis.Horizontal;
 		bottomBtns.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
-		props.Add(out BoneOrder);
-		BoneOrder.Dock = Dock.Fill;
-		BoneOrder.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
-		BoneOrder.DrawPanelBackground = false;
+		BoneOrder = new(props);
+		BoneOrder.SetDock(Dock.Fill);
+		BoneOrder.SetDockMargin(RectangleF.TLRB(0, 8, 8, 0));
+		BoneOrder.SetPaintBackgroundEnabled(false);
 
-		var lblBones = topBtns.Add<Label>();
-		lblBones.Text = "Bones";
-		lblBones.AutoSize = true;
-		lblBones.TextSize = 22;
-		lblBones.Dock = Dock.Bottom;
+		var lblBones = new Label(topBtns);
+		lblBones.SetText("Bones");
+		lblBones.SetAutoSize(true);
+		lblBones.SetTextSize(22);
+		lblBones.SetDock(Dock.Bottom);
 
-		var numslider = topBtns.Add<NumSlider>();
+		var numslider = new NumSlider(topBtns);
 		numslider.MinimumValue = 0;
 		numslider.MaximumValue = 100;
-		numslider.AutoSize = true;
-		numslider.TextSize = 22;
-		numslider.Dock = Dock.Bottom;
+		numslider.SetAutoSize(true);
+		numslider.SetTextSize(22);
+		numslider.SetDock(Dock.Bottom);
 		numslider.Digits = 2;
 		numslider.Suffix = "%";
 		numslider.OnValueChanged += Numslider_OnValueChanged;
@@ -141,7 +141,7 @@ public class WeightsPanel : View
 
 		// TODO: flex panel these into rows
 		PropertiesPanel.OperatorButton<BindOperator>(bottomBtns, "Bind", null);
-		PropertiesPanel.ButtonIcon(bottomBtns, "Update", null, (_, _, _) => {
+		PropertiesPanel.ButtonIcon(bottomBtns, "Update", null, (_, _) => {
 			if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
 				return;
 
@@ -184,11 +184,77 @@ public class WeightsPanel : View
 		activeAttachment.VertexSelected += ActiveAttachment_VertexSelected;
 
 		foreach (var bonepair in meshAttachment.Weights) {
-			var btn = BoneOrder.Add<ListViewItem>();
-			btn.Text = bonepair.Bone.Name;
+			var btn = new BonePairButton(BoneOrder, this);
+			btn.SetText(bonepair.Bone.Name);
 			btn.SetTag("bonepair", bonepair);
-			btn.PaintOverride += Btn_PaintOverride;
-			btn.MouseReleaseEvent += Btn_MouseReleaseEvent;
+		}
+	}
+
+	class BonePairButton(Element parent, WeightsPanel weights) : ListViewItem(parent)
+	{
+		public override void Paint(float width, float height) {
+			EditorWeights bonepair = GetTag<EditorWeights>("bonepair");
+
+			if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
+				return;
+
+			int index = meshAttachment.Weights.IndexOf(bonepair);
+
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawText(32, height / 2, bonepair.Bone.Name, Graphics2D.UI_FONT_NAME, 18, Anchor.CenterLeft);
+
+			bool isSelected = bonepair == weights.ActiveWeights;
+
+			float weight = 0;
+			bool hasWeight = false;
+			bool sharesWeight = true;
+
+			foreach (var vertex in meshAttachment.GetSelectedVertices()) {
+				var vertexWeight = bonepair.TryGetVertexWeight(vertex, out float w) ? w : -1;
+
+				if (!hasWeight && vertexWeight != -1) {
+					weight = vertexWeight;
+					hasWeight = true;
+				}
+				else if (hasWeight && sharesWeight && vertexWeight != weight) {
+					sharesWeight = false;
+					break; // We're going to show no value
+				}
+			}
+
+			var rectSize = 8;
+			Graphics2D.SetDrawColor(EditorVertexAttachment.BoneWeightListIndexToColor(index));
+			Graphics2D.DrawRectangleRounded(rectSize / 2, rectSize / 2, height - rectSize, height - rectSize, 0.2f, 2);
+
+			if (IsHovered()) {
+				Graphics2D.SetDrawColor(255, 255, 255, 40);
+				Graphics2D.DrawRectangle(0, 0, width, height);
+			}
+
+			if (isSelected) {
+				Graphics2D.SetDrawColor(255, 255, 255, 40);
+				Graphics2D.DrawRectangle(0, 0, width, height);
+			}
+
+			if (hasWeight) {
+				Graphics2D.SetDrawColor(255, 255, 255);
+				Graphics2D.DrawText(width - 8, height / 2, sharesWeight ? $"{weight:P2}" : "*", Graphics2D.UI_FONT_NAME, 18, Anchor.CenterRight);
+			}
+		}
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			if (!IsHovered()) return true;
+			if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
+				return true;
+
+			var lvi = self as ListViewItem ?? throw new Exception();
+			EditorWeights bonepair = self.GetTag<EditorWeights>("bonepair");
+			weights.activeWeights = bonepair;
+			var vertex = meshAttachment.SelectedVertices.FirstOrDefault();
+
+			if (vertex == null) return true;
+
+			weights.numSlider.SetValueNoUpdate(bonepair.TryGetVertexWeight(vertex) * 100);
+			return base.MouseRelease(self, state, button);
 		}
 	}
 
@@ -199,70 +265,5 @@ public class WeightsPanel : View
 		if (activeWeights == null) return;
 
 		numSlider.SetValueNoUpdate(activeWeights.TryGetVertexWeight(vertex) * 100);
-	}
-
-	private void Btn_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
-		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
-			return;
-
-		var lvi = self as ListViewItem ?? throw new Exception();
-		EditorWeights bonepair = self.GetTag<EditorWeights>("bonepair");
-		activeWeights = bonepair;
-		var vertex = meshAttachment.SelectedVertices.FirstOrDefault();
-
-		if (vertex == null) return;
-
-		numSlider.SetValueNoUpdate(bonepair.TryGetVertexWeight(vertex) * 100);
-	}
-
-	private void Btn_PaintOverride(Element self, float width, float height) {
-		var lvi = self as ListViewItem ?? throw new Exception();
-		EditorWeights bonepair = self.GetTag<EditorWeights>("bonepair");
-
-		if (ModelEditor.Active.LastSelectedObject is not EditorMeshAttachment meshAttachment)
-			return;
-
-		int index = meshAttachment.Weights.IndexOf(bonepair);
-
-		Graphics2D.SetDrawColor(255, 255, 255);
-		Graphics2D.DrawText(32, height / 2, bonepair.Bone.Name, Graphics2D.UI_FONT_NAME, 18, Anchor.CenterLeft);
-
-		bool isSelected = bonepair == ActiveWeights;
-
-		float weight = 0;
-		bool hasWeight = false;
-		bool sharesWeight = true;
-
-		foreach (var vertex in meshAttachment.GetSelectedVertices()) {
-			var vertexWeight = bonepair.TryGetVertexWeight(vertex, out float w) ? w : -1;
-
-			if (!hasWeight && vertexWeight != -1) {
-				weight = vertexWeight;
-				hasWeight = true;
-			}
-			else if (hasWeight && sharesWeight && vertexWeight != weight) {
-				sharesWeight = false;
-				break; // We're going to show no value
-			}
-		}
-
-		var rectSize = 8;
-		Graphics2D.SetDrawColor(EditorVertexAttachment.BoneWeightListIndexToColor(index));
-		Graphics2D.DrawRectangleRounded(rectSize / 2, rectSize / 2, height - rectSize, height - rectSize, 0.2f, 2);
-
-		if (lvi.Hovered) {
-			Graphics2D.SetDrawColor(255, 255, 255, 40);
-			Graphics2D.DrawRectangle(0, 0, width, height);
-		}
-
-		if (isSelected) {
-			Graphics2D.SetDrawColor(255, 255, 255, 40);
-			Graphics2D.DrawRectangle(0, 0, width, height);
-		}
-
-		if (hasWeight) {
-			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(width - 8, height / 2, sharesWeight ? $"{weight:P2}" : "*", Graphics2D.UI_FONT_NAME, 18, Anchor.CenterRight);
-		}
 	}
 }

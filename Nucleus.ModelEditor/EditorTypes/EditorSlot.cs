@@ -89,7 +89,7 @@ namespace Nucleus.ModelEditor
 			var slotDarkColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? DarkColor : SetupDarkColor);
 			var slotTintCheck = PropertiesPanel.AddLabeledCheckbox(slotColorRow, "Tint black?", TintBlack);
 
-			slotDarkColorSelector.Parent.EngineDisabled = !TintBlack;
+			slotDarkColorSelector.GetParent()!.SetVisible(TintBlack);
 
 			slotColorSelector.SelectedColor = Color;
 			slotColorSelector.OnColorChanged += (_, ref nc) => Color = nc;
@@ -99,7 +99,7 @@ namespace Nucleus.ModelEditor
 
 			slotTintCheck.OnCheckedChanged += (s) => {
 				TintBlack = s.Checked;
-				slotDarkColorSelector.Parent.Enabled = TintBlack;
+				slotDarkColorSelector.GetParent()!.SetVisible(TintBlack);
 				slotColorRow.InvalidateLayout();
 			};
 

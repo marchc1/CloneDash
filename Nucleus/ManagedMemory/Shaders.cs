@@ -92,7 +92,7 @@ public class ShaderInstance : IShader
 		parent?.Deactivate(this);
 	}
 
-	public bool IsValid() => Raylib_cs.Raylib.IsShaderReady(underlying);
+	public bool IsValid() => Raylib_cs.Raylib.IsShaderValid(underlying);
 
 	protected virtual void Dispose(bool disposing) {
 		if (!disposedValue && selfDisposing) {

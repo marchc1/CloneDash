@@ -13,41 +13,42 @@ namespace Nucleus.ModelEditor
 		public KeyframeProperty Property { get; set; }
 		public int ArrayIndex { get; set; } = -1;
 
+		Nucleus.UI.Elements.Image KeyframeImage;
+
 		public override void Paint(float width, float height) {
-			bool canInput = CanInput();
-			ImagePadding = new(7);
+			bool canInput = ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && IsMouseInputEnabled();
 			if (canInput) {
 				// todo: determine background color
 				var selected = ModelEditor.Active.LastSelectedObject;
 				var timelineSearch = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(selected, Property, ArrayIndex, false);
 				if (timelineSearch == null) {
-					BackgroundColor = KEYFRAME_COLOR_NOT_KEYFRAMED;
+					SetBgColor(KEYFRAME_COLOR_NOT_KEYFRAMED);
 				}
 				else {
-					BackgroundColor = timelineSearch.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) switch {
+					SetBgColor(timelineSearch.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) switch {
 						KeyframeState.NotKeyframed => KEYFRAME_COLOR_NOT_KEYFRAMED,
 						KeyframeState.PendingKeyframe => KEYFRAME_COLOR_PENDING_KEYFRAME,
 						KeyframeState.Keyframed => KEYFRAME_COLOR_ACTIVE_KEYFRAME
-					};
+					});
 				}
-				ImageColor = Color.Black;
+				KeyframeImage.SetImageColor(Color.Black);
 			}
 			else {
-				BackgroundColor = DefaultBackgroundColor;
-				ImageColor = Color.Gray;
+				SetBgColor(GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
+				KeyframeImage.SetImageColor(Color.Gray);
 			}
 
 			base.Paint(width, height);
 		}
 
-		public override bool CanInput() {
-			return ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && base.CanInput();
-		}
-
-		protected override void Initialize() {
-			Text = "";
-			Image = Textures.LoadTextureFromFile("models/keyframe.png");
-			ImageOrientation = ImageOrientation.Centered;
+		public KeyframeButton(Element parent) : base(parent) {
+			SetText("");
+			KeyframeImage = new Nucleus.UI.Elements.Image(this);
+			KeyframeImage.SetTexture(Level.Textures.LoadTextureFromFile("models/keyframe.png"));
+			KeyframeImage.SetImageOrientation(ImageOrientation.Centered);
+			KeyframeImage.SetImagePadding(new(7));
+			KeyframeImage.SetPassthru(true);
+			KeyframeImage.SetDock(Dock.Fill);
 		}
 	}
 }

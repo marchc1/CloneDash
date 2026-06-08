@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
@@ -13,7 +14,7 @@ namespace AssetStudio
         public Vector4 uvTransform;
         public float downscaleMultiplier;
         public SpriteSettings settingsRaw;
-        public SecondarySpriteTexture[] secondaryTextures;
+        public List<SecondarySpriteTexture> secondaryTextures;
 
         public SpriteAtlasData(ObjectReader reader)
         {
@@ -22,20 +23,20 @@ namespace AssetStudio
             alphaTexture = new PPtr<Texture2D>(reader);
             textureRect = new Rectf(reader);
             textureRectOffset = reader.ReadVector2();
-            if (version[0] > 2017 || (version[0] == 2017 && version[1] >= 2)) //2017.2 and up
+            if (version >= (2017, 2)) //2017.2 and up
             {
                 atlasRectOffset = reader.ReadVector2();
             }
             uvTransform = reader.ReadVector4();
             downscaleMultiplier = reader.ReadSingle();
             settingsRaw = new SpriteSettings(reader);
-            if (version[0] > 2020 || (version[0] == 2020 && version[1] >= 2)) //2020.2 and up
+            if (version >= (2020, 2)) //2020.2 and up
             {
                 var secondaryTexturesSize = reader.ReadInt32();
-                secondaryTextures = new SecondarySpriteTexture[secondaryTexturesSize];
-                for (int i = 0; i < secondaryTexturesSize; i++)
+                secondaryTextures = new List<SecondarySpriteTexture>();
+                for (var i = 0; i < secondaryTexturesSize; i++)
                 {
-                    secondaryTextures[i] = new SecondarySpriteTexture(reader);
+                    secondaryTextures.Add(new SecondarySpriteTexture(reader));
                 }
                 reader.AlignStream();
             }
@@ -44,24 +45,25 @@ namespace AssetStudio
 
     public sealed class SpriteAtlas : NamedObject
     {
-        public PPtr<Sprite>[] m_PackedSprites;
+        public List<PPtr<Sprite>> m_PackedSprites;
+        [JsonConverter(typeof(JsonConverterHelper.RenderDataMapConverter))]
         public Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData> m_RenderDataMap;
         public bool m_IsVariant;
 
         public SpriteAtlas(ObjectReader reader) : base(reader)
         {
             var m_PackedSpritesSize = reader.ReadInt32();
-            m_PackedSprites = new PPtr<Sprite>[m_PackedSpritesSize];
-            for (int i = 0; i < m_PackedSpritesSize; i++)
+            m_PackedSprites = new List<PPtr<Sprite>>();
+            for (var i = 0; i < m_PackedSpritesSize; i++)
             {
-                m_PackedSprites[i] = new PPtr<Sprite>(reader);
+                m_PackedSprites.Add(new PPtr<Sprite>(reader));
             }
 
             var m_PackedSpriteNamesToIndex = reader.ReadStringArray();
 
             var m_RenderDataMapSize = reader.ReadInt32();
-            m_RenderDataMap = new Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData>(m_RenderDataMapSize);
-            for (int i = 0; i < m_RenderDataMapSize; i++)
+            m_RenderDataMap = new Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData>();
+            for (var i = 0; i < m_RenderDataMapSize; i++)
             {
                 var first = new Guid(reader.ReadBytes(16));
                 var second = reader.ReadInt64();

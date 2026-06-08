@@ -285,7 +285,7 @@ jobs:
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.meta.outputs.tag }}
           name: Clone Dash v${{ steps.meta.outputs.tag }}
