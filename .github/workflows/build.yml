@@ -192,7 +192,7 @@ jobs:
           ln -sf CloneDash.png "$APPDIR/.DirIcon"
 
           # Build AppImage without requiring FUSE on the runner
-          curl -fsSL -o appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
           ./appimagetool-x86_64.AppImage --appimage-extract
           ARCH=x86_64 ./squashfs-root/AppRun "$APPDIR"
