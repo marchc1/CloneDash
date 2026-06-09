@@ -485,9 +485,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 	protected virtual Color ScoreColor => new(165, 254, 254);
 
-	protected TextImageRenderItem ScoreNumber = null!;
-	protected TextImageRenderItem ScoreLabel = null!;
-	protected TextImageRenderItem ComboNumber = null!;
+	protected TextImageRenderItem? ScoreNumber = null;
+	protected TextImageRenderItem? ScoreLabel = null;
+	protected TextImageRenderItem? ComboNumber = null;
 
 	public virtual void SetupScoreNumber() {
 		ScoreNumber = new(0, 0, new(0, 0), 0, new(1, 1), "0", "Snaps Taste", ScoreColor, null);
@@ -531,9 +531,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public virtual void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
 		foreach (var item in ForegroundItems) item.Dispose();
-		ScoreNumber.Dispose();
-		ScoreLabel.Dispose();
-		ComboNumber.Dispose();
+		ScoreNumber?.Dispose();
+		ScoreLabel?.Dispose();
+		ComboNumber?.Dispose();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -862,8 +862,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	protected virtual void SetComboColors(Color borderColor, Color color) {
-		ComboNumber.borderColor = borderColor;
-		ComboNumber.StartColor = color;
+		ComboNumber?.borderColor = borderColor;
+		ComboNumber?.StartColor = color;
 	}
 
 	protected virtual void PrepareComboColors(ComboGrade comboGrade, out Color borderColor, out Color color) {
@@ -941,8 +941,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		}
 	}
 	public virtual void RenderScore() {
-		ScoreNumber.Render(Time, StyledTextShader);
-		ScoreLabel.Render(Time, StyledTextShader);
+		ScoreNumber?.Render(Time, StyledTextShader);
+		ScoreLabel?.Render(Time, StyledTextShader);
 	}
 	// allows setting up custom transforms in inheritors
 	public virtual void PreRenderCombo() {
@@ -958,10 +958,10 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		return size;
 	}
 	public virtual void RenderComboForeground() {
-		ComboNumber.SplitY = 1;
-		ComboNumber.StartPosition = new(0, -180);
-		ComboNumber.Scale = new(GetSizeForComboHit());
-		ComboNumber.Render(Time, StyledTextShader);
+		ComboNumber?.SplitY = 1;
+		ComboNumber?.StartPosition = new(0, -180);
+		ComboNumber?.Scale = new(GetSizeForComboHit());
+		ComboNumber?.Render(Time, StyledTextShader);
 	}
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims) {
 		if (model == null) return;
@@ -982,21 +982,23 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		animations_1.AddDeltaTime(dt);
 		animations_2.AddDeltaTime(dt);
 
-		ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
-		ScoreLabel.DesaturateAmount = ScoreNumber.DesaturateAmount = 0;
-		ScoreLabel.DarkenAmount = ScoreNumber.DarkenAmount = 0.3f;
-		ScoreLabel.SplitY = ScoreNumber.SplitY = 0;
-		ScoreNumber.BorderSize = 4;
-		ComboNumber.BorderSize = 4;
+		if (ScoreLabel != null && ScoreNumber != null) {
+			ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
+			ScoreLabel.DesaturateAmount = ScoreNumber.DesaturateAmount = 0;
+			ScoreLabel.DarkenAmount = ScoreNumber.DarkenAmount = 0.3f;
+			ScoreLabel.SplitY = ScoreNumber.SplitY = 0;
+			ScoreNumber.BorderSize = 4;
+		}
+		ComboNumber?.BorderSize = 4;
 
-		ScoreNumber.StartPosition = new(100, -16);
-		ScoreLabel.StartPosition = new(100, -96);
-		ScoreNumber.borderColor = new Color(173, 173, 255) * new Color(200, 255);
+		ScoreNumber?.StartPosition = new(100, -16);
+		ScoreLabel?.StartPosition = new(100, -96);
+		ScoreNumber?.borderColor = new Color(173, 173, 255) * new Color(200, 255);
 
-		ScoreNumber.StartScale = new(1f);
-		ScoreNumber.StartScale = new(0.9f);
-		ScoreNumber.DetermineRenderTexture();
-		ComboNumber.DetermineRenderTexture();
+		ScoreNumber?.StartScale = new(1f);
+		ScoreNumber?.StartScale = new(0.9f);
+		ScoreNumber?.DetermineRenderTexture();
+		ComboNumber?.DetermineRenderTexture();
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
@@ -1029,7 +1031,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public void UpdateCombo(int currentCombo) {
 		if (Combo == currentCombo) return;
 		Combo = currentCombo;
-		ComboNumber.Text = $"{Combo}";
+		ComboNumber?.Text = $"{Combo}";
 		LastComboUpdateTime = Time;
 		var currentComboGrade = GetGrade(currentCombo);
 		if (currentComboGrade != ComboGrade)
@@ -1146,7 +1148,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 	public void UpdateScore(double score) {
 		Score = score;
-		ScoreNumber.Text = $"{Math.Round(score)}";
+		ScoreNumber?.Text = $"{Math.Round(score)}";
 	}
 
 	public void Reset() {
@@ -1172,7 +1174,7 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 
 	public override void SetupComboNumber() {
 		base.SetupComboNumber();
-		ComboNumber.Font = "Infinity Font";
+		ComboNumber?.Font = "Infinity Font";
 		ComboLabel = new(0, 0, new(0, 0), 0, new(1, 1), "COMBO", "Snaps Taste", new(165, 254, 254), null);
 	}
 
@@ -1184,7 +1186,7 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 
 	public override void SetupScoreNumber() {
 		base.SetupScoreNumber();
-		ScoreNumber.Font = "Infinity Font";
+		ScoreNumber?.Font = "Infinity Font";
 	}
 
 	public override void LoadScoreAssets() {
@@ -1205,6 +1207,8 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 	}
 
 	public override void RenderComboForeground() {
+		if (ComboNumber == null) return;
+		if (ComboLabel == null) return;
 		float dist = 180;
 		ComboNumber.SplitY = 1;
 		ComboNumber.StartPosition = new(0, -dist);
