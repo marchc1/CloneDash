@@ -112,7 +112,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		MakeNavigationButton(
 			"Play", "Play your installed charts.", 200,
-			"ui/play_md_level.png", menu => {
+			"icons/play.png", menu => {
 				var source = ChartMod.GetChartSongProviderByName("Muse Dash");
 				if (source == null) {
 					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
@@ -125,7 +125,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		MakeNavigationButton(
 			"Play Custom Charts", "Play a custom chart (.mdm format).", 310,
-			"ui/play_cam_level.png", menu => {
+			"icons/orange-slice.png", menu => {
 				var source = ChartMod.GetChartSongProviderByName("Custom Albums");
 				if (source == null) {
 					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
@@ -137,7 +137,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			});
 
 		MakeNavigationButton("Browse mdmc.moe Charts", "Download new charts from the Muse Dash Modding Community.", 340,
-			"ui/webcharts.png", (menu) => {
+			"icons/globe-hemisphere-west.png", (menu) => {
 				var source = ChartMod.GetChartSongProviderByName("MDMC");
 				if (source == null) {
 					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
@@ -149,25 +149,25 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,
-			"ui/charselect.png", menu => menu.PushActiveElement(new CharacterSelector(UI))
+			"icons/person-simple-run.png", menu => menu.PushActiveElement(new CharacterSelector(UI))
 		);
 
 		// Hidden because there is not really any functional stuff here
 		/*MakeNavigationButton(
 			"Modding Tools", "Various tools for modding the game", 225,
-			"ui/solder.png", ModdingTools_OpenMenuButtons
+			"icons/wrench.png", ModdingTools_OpenMenuButtons
 		);*/
 
 		MakeNavigationButton(
 			"Options", "Change game settings", 47,
-			"ui/pause_settings.png", (menu) => {
+			"icons/gear-six.png", (menu) => {
 				var settings = menu.PushActiveElement(new SettingsEditor(UI));
 				settings.SetPaintBackgroundEnabled(false);
 			});
 
 		MakeNavigationButton(
 			"Exit to Desktop", $"Close the application.", 350,
-			"ui/pause_exit.png", _ => EngineCore.Close()
+			"icons/door-open.png", _ => EngineCore.Close()
 		);
 	}
 
