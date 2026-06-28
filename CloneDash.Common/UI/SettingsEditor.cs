@@ -140,6 +140,8 @@ public class SettingsPanel : ScrollPanel
 
 public class SettingsEditor : Panel, IMainMenuPanel
 {
+	string IMainMenuPanel.ColorScheme => "Options";
+	
 	NumSlider judgementSlider;
 	NumSlider visualSlider;
 

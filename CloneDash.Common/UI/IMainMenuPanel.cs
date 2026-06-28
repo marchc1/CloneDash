@@ -1,4 +1,7 @@
-﻿using Nucleus.UI;
+﻿using CloneDash.Common.UI;
+using Nucleus.Common.Types;
+using Nucleus.Common.UI;
+using Nucleus.UI;
 
 namespace CloneDash.Game;
 
@@ -12,10 +15,24 @@ public interface IMainMenuLevel
 
 public interface IMainMenuPanel
 {
-	public string GetName();
-	public void OnHidden();
-	public void OnShown();
-	public void SetRichPresence();
-	public bool InterceptEscape() => true;
-	public bool OnTryClose() => true;
+	string ColorScheme => "Accent";
+
+	string GetName();
+	void OnHidden() {}
+	void OnShown() {}
+	void SetRichPresence();
+	bool InterceptEscape() => true;
+	bool OnTryClose() => true;
+}
+
+public static class MainMenuPanelExtensions
+{
+	public static Color GetPrimaryColor(this IMainMenuPanel panel, IScheme? scheme)
+		=> scheme?.GetColor($"Menu.{panel.ColorScheme}.Primary") ?? Color.White;
+
+	public static Color GetBackgroundColor(this IMainMenuPanel panel, IScheme? scheme)
+		=> scheme?.GetColor($"Menu.{panel.ColorScheme}.Background") ?? Color.White;
+
+	public static Color GetTextColor(this IMainMenuPanel panel, IScheme? scheme)
+		=> scheme?.GetColor($"Menu.{panel.ColorScheme}.Text") ?? Color.White;
 }

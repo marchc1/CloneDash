@@ -4,18 +4,15 @@ using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
-using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
-using System.Linq.Expressions;
 
 namespace CloneDash.Menu;
 
 /// <summary>
 /// Renders a character.
 /// </summary>
-public class CharacterPanel : Panel
+public class MainMenuCharacter : Panel
 {
 	private ICharacterMainMenuInstance? CharacterInstance;
 	private int Click = 0;
@@ -39,7 +36,7 @@ public class CharacterPanel : Panel
 
 	Label ExpressionLabel = null!;
 
-	public CharacterPanel(Element? parent) : base(parent){
+	public MainMenuCharacter(Element? parent) : base(parent){
 		SetBorderSize(0);
 		SetPaintBackgroundEnabled(false);
 		ExpressionLabel = new Label(this);

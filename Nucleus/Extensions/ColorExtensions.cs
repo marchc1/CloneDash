@@ -1,11 +1,32 @@
 ﻿using Nucleus.Common.Types;
 using Raylib_cs;
+using System.Globalization;
 using System.Numerics;
 
 namespace Nucleus.Extensions;
 
 public static class ColorExtensions
 {
+	public static Color ParseHex(ReadOnlySpan<char> hex) {
+		if (hex.Length == 0)
+			throw new FormatException("Expected string with length greater than or equal to 6 characters");
+
+		return !hex.TryParseHexToColor(out Color color, out ReadOnlySpan<char> error)
+			? throw new FormatException(new string(error))
+			: color;
+	}
+	
+	public static Vector4 ToVector(this Color color) {
+		return new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
+	}
+
+	public static Color ToColor(this Vector4 vec) => new(
+		Convert.ToByte(vec.X * 255f),
+		Convert.ToByte(vec.Y * 255f),
+		Convert.ToByte(vec.Z * 255f),
+		Convert.ToByte(vec.W * 255f)
+	);
+	
 	public static Vector3 RGBubToHSVf(this Color color) {
 		return Raylib.ColorToHSV(color);
 	}

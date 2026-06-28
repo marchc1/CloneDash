@@ -1,22 +1,18 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common;
 using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
-using Nucleus.Core;
-using Nucleus.Extensions;
-using Nucleus.Input;
-using Nucleus.ManagedMemory;
+using Nucleus.Common.Types;
 using Nucleus.Types;
 using Nucleus.UI;
-using System.Diagnostics;
-using Nucleus.Common.Types;
-using CloneDash.Common;
 using Nucleus.UI.Elements;
+using System.Diagnostics;
 
-namespace CloneDash.Menu;
+namespace CloneDash.Menu.Character;
 
 public class CharacterButton(Element? parent) : Button(parent)
 {
@@ -120,6 +116,8 @@ public class CharacterSelectorScroller : Panel
 
 public class CharacterSelector : Panel, IMainMenuPanel
 {
+	string IMainMenuPanel.ColorScheme => "Character";
+
 	public string GetName() => "Character Selector";
 	public void OnHidden() { }
 	public void OnShown() { }
@@ -137,7 +135,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	Label characterPerkLabel = null!;
 	Button characterSelectButton = null!;
 	CharacterSelectorScroller backPanel = null!;
-	CharacterPanel Character => Level.As<MainMenuLevel>().Character;
+	MainMenuCharacter Character => Level.As<MainMenuLevel>().Character;
 	public CharacterSelector(Element? parent) : base(parent) {
 		SetBgColor(new Color(0, 0, 0, 0));
 		SetPassthru(true);

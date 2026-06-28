@@ -332,9 +332,11 @@ public abstract class Level : IValidatable
 	public UserInterface RootPanel { get; private set; }
 	public void InitializeUI() {
 		if (RootPanel != null) return;
-		RootPanel = new UserInterface();
+		RootPanel = CreateUI();
 		RootPanel.Window = EngineCore.Window;
 	}
+
+	protected virtual UserInterface CreateUI() => new();
 
 	private void __addEntity(Entity ent) {
 		EntityHash.Add(ent);

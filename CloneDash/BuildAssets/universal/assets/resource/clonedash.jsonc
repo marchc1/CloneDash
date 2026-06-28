@@ -1,0 +1,32 @@
+{
+  "parent": "enginescheme",
+  "basesettings": {
+  },
+  "fontStyles": {
+    "Nucleus.Default": {
+      "name": "Afacad Medium",
+      "tall": 18
+    },
+    "Nucleus.DefaultBold": {
+      "name": "Afacad Bold",
+      "tall": 18
+    }
+  },
+  "borders": {
+  },
+  "colors": {
+    "Menu.Accent.Primary": "#7FD0FD",
+    "Menu.Accent.Background": "#182025",
+    "Menu.Accent.Text": "#E9F5FF",
+    "Menu.Character.Primary": "#FFC8AC",
+    "Menu.Character.Background": "#251C18",
+    "Menu.Character.Text": "#FFF0E9",
+    "Menu.Options.Primary": "#FFEDAC",
+    "Menu.Options.Background": "#252218",
+    "Menu.Options.Text": "#FFFAE9"
+  },
+  "customFonts": {
+    "Afacad Medium": "fonts:Afacad/Afacad-Medium.ttf",
+    "Afacad Bold": "fonts:Afacad/Afacad-Bold.ttf"
+  }
+}
