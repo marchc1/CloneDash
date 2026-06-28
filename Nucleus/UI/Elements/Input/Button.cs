@@ -169,9 +169,11 @@ public class Button : Label
 			var whd3 = new Vector2F(width / 3, width / 3);
 			Graphics2D.DrawCircle(whd2, whd3);
 		}
-		else
-			Graphics2D.DrawRectangle(0, 0, width, height);
-
+		else {
+			float roundness = GetRoundness();
+			int segments = (int)Math.Clamp(roundness * 1.5f, 0, 12);
+			Graphics2D.DrawRectangleRounded(0, 0, width, height, roundness, segments);
+		}
 	}
 	public override void Paint(float width, float height) {
 		switchToPaintTimeColors = true;
