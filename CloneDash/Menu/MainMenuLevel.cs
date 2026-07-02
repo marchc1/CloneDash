@@ -58,7 +58,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		
 		_targetPrimaryColor = element.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 		_targetBackgroundColor = element.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-		headerText.SetText(element.GetName());
+		headerText.SetText(element.Name);
 
 		if (ActiveElements.Count == 1) {
 			_primaryColor = _targetPrimaryColor;
@@ -96,7 +96,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			
 			_targetPrimaryColor = nextmmp.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 			_targetBackgroundColor = nextmmp.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-			headerText.SetText(nextmmp.GetName());
+			headerText.SetText(nextmmp.Name);
 		}
 	}
 

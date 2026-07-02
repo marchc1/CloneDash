@@ -17,12 +17,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	#region IMainMenuPanel
 
 	string IMainMenuPanel.ColorScheme => "Character";
-	string IMainMenuPanel.GetName() => "Character Selector";
+	string IMainMenuPanel.Name => "Character Selector";
 
 	void IMainMenuPanel.SetRichPresence()
-		=> RichPresenceSystem.SetPresence(new RichPresenceState {
-			Details = "Main Menu", State = "Selecting a character"
+	{
+		RichPresenceSystem.SetPresence(new RichPresenceState
+		{
+			Details = "Main Menu",
+			State = "Selecting a character"
 		});
+	}
 
 	#endregion
 

@@ -18,16 +18,21 @@ namespace CloneDash.Menu.Main;
 
 public class MainMenuPanel : Panel, IMainMenuPanel
 {
-	private bool UsingRootNavigationMenu => buttons.Count == 1;
-	private readonly Stack<List<MainMenuButton>> buttons = [];
+	#region IMainMenuPanel
+
+	string IMainMenuPanel.Name => "Main Menu";
 	
-	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
+	void IMainMenuPanel.SetRichPresence() {
+		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "Idle"
 		});
 	}
-	public string GetName() => "Main Menu";
+	
+	#endregion
+	
+	private bool UsingRootNavigationMenu => buttons.Count == 1;
+	private readonly Stack<List<MainMenuButton>> buttons = [];
 
 	public void CreateNavigationMenu() {
 		if (buttons.TryPeek(out List<MainMenuButton>? lastList)) {

@@ -15,9 +15,9 @@ public interface IMainMenuLevel
 
 public interface IMainMenuPanel
 {
+	string Name { get; }
 	string ColorScheme => "Accent";
 
-	string GetName();
 	void OnHidden() {}
 	void OnShown() {}
 	void SetRichPresence();
