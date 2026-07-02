@@ -21,12 +21,9 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	MenuFooterAction IMainMenuPanel.GetAction() => new("Select", "icons/check.png", SelectCharacter);
 
-	void IMainMenuPanel.SetRichPresence()
-	{
-		RichPresenceSystem.SetPresence(new RichPresenceState
-		{
-			Details = "Main Menu",
-			State = "Selecting a character"
+	void IMainMenuPanel.SetRichPresence() {
+		RichPresenceSystem.SetPresence(new RichPresenceState {
+			Details = "Main Menu", State = "Selecting a character"
 		});
 	}
 
@@ -38,6 +35,9 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	private readonly CharacterIconLabel _voiceLabel;
 	private readonly CharacterIconLabel _artistLabel;
 	private readonly CharacterSkillDisplay _skill;
+
+	private readonly Element _bottom;
+	private readonly Element _line;
 	private readonly CharacterSelectorScroller _scroller;
 
 	private ICharacterDescriptor? _lastCharacterSelected;
@@ -45,7 +45,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	private MainMenuCharacter Character => Level.As<MainMenuLevel>().Character;
 
 	public CharacterSelector(Element? parent) : base(parent) {
-		SetBgColor(new Color(0, 0, 0, 0));
+		SetPaintBackgroundEnabled(false);
+		SetDockPadding(new RectangleF());
 		SetPassthru(true);
 
 		Color textColor = this.GetTextColor(GetScheme());
@@ -68,23 +69,29 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_skill.SetAnchor(Anchor.TopRight);
 		_skill.SetOrigin(Anchor.TopRight);
 
-		Panel panel = new(this);
-		panel.SetDock(Dock.Bottom);
-		panel.DynamicallySized = true;
-		panel.SetSize(new Vector2F(0, 0.125f));
-		panel.SetBorderSize(0);
-		panel.SetPaintBackgroundEnabled(false);
-		panel.SetPaintBorderEnabled(false);
-		panel.SetPaintEnabled(false);
+		_bottom = new Element(this);
+		_bottom.SetDock(Dock.Bottom);
+		_bottom.SetSize(new Vector2F(0, 180));
+		_bottom.SetDockPadding(new RectangleF());
+		_bottom.SetBorderSize(0);
+		_bottom.SetPaintBackgroundEnabled(true);
+		_bottom.SetBgColor(this.GetBackgroundColor(GetScheme()));
 
-		_scroller = new CharacterSelectorScroller(this);
-		_scroller.SetDock(Dock.Bottom);
-		_scroller.DynamicallySized = true;
-		_scroller.SetSize(new Vector2F(0, 0.1f));
+		_line = new Element(_bottom);
+		_line.SetDock(Dock.Top);
+		_line.SetSize(new Vector2F(0, 3));
+		_line.SetBorderSize(0);
+		_line.SetPaintBackgroundEnabled(true);
+		_line.SetBgColor(this.GetPrimaryColor(GetScheme()));
+
+		_scroller = new CharacterSelectorScroller(_bottom);
+		_scroller.SetDock(Dock.Top);
+		_scroller.SetDockMargin(new RectangleF(20, 0, 0, 0));
+		_scroller.SetSize(new Vector2F(0, 80));
 		_scroller.SetBorderSize(0);
 		_scroller.CharacterSelected += BackPanel_CharacterSelected;
 
-		var currentCharacter = CharacterMod.GetCharacterData();
+		ICharacterDescriptor? currentCharacter = CharacterMod.GetCharacterData();
 		BackPanel_CharacterSelected(currentCharacter);
 		_scroller.SetCharacter(currentCharacter);
 	}
@@ -98,6 +105,9 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_healthLabel.Color = text;
 		_voiceLabel.Color = text;
 		_skill.Color = text;
+
+		_bottom.SetBgColor(this.GetBackgroundColor(now));
+		_line.SetBgColor(this.GetPrimaryColor(now));
 	}
 
 	private void SelectCharacter() {
@@ -138,7 +148,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			_healthLabel.Text = "<NULL>";
 			_voiceLabel.Text = "<NULL>";
 			_artistLabel.Text = "<NULL>";
-			
+
 			_skill.Text = "<NULL>";
 		}
 		else {

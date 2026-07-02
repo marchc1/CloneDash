@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Menu.Character
 {
-	public class CharacterSelectorScroller : Panel
+	public class CharacterSelectorScroller : Element
 	{
 		public event Action<ICharacterDescriptor?>? CharacterSelected;
 		
@@ -68,7 +68,7 @@ namespace CloneDash.Menu.Character
 					btn.SetPos(new Vector2F(adjustedSelectedX, 0));
 
 					btn.SetPos(btn.GetPos() + new Vector2F(selectedSizeOffset));
-					btn.SetSize(btn.GetSize() - new Vector2F(selectedSizeOffset * 2));
+					btn.SetSize(btn.GetSize() - new Vector2F(selectedSizeOffset));
 				}
 			}
 		}
