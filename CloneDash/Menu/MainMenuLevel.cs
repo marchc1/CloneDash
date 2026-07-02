@@ -131,7 +131,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		headerText = new Label(header);
 		headerText.SetDock(Dock.Fill);;
-		headerText.SetFont(CloneDashUI.FontBold);
+		headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
 		headerText.SetText("Clone Dash");
 		headerText.SetTextSize(32 * 1.4f);
 		headerText.SetAutoSize(true);
