@@ -1,6 +1,7 @@
 ﻿using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
+using CloneDash.Common.UI.Binding;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
@@ -30,7 +31,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public Stack<Element> ActiveElements = [];
 	public MainMenuCharacter Character = null!;
 
-
 	private Panel _header = null!;
 	private Label _headerText = null!;
 
@@ -49,6 +49,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			if (last is IMainMenuPanel mmp) mmp.OnHidden();
 		}
 
+		SwitchBindings(element);
 		ActiveElements.Push(element);
 		element.SetRichPresence();
 
@@ -72,27 +73,28 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public void PopActiveElement() {
 		if (ActiveElements.Count <= 1) return;
 
-		var element = ActiveElements.Peek();
-		if (element is IMainMenuPanel mmp)
-			if (!mmp.OnTryClose())
-				return;
+		Element element = ActiveElements.Peek();
+		if (element is IMainMenuPanel mmp && !mmp.OnTryClose())
+			return;
 
 		ActiveElements.Pop();
 		element.Remove();
 
-		var next = ActiveElements.Peek();
+		Element next = ActiveElements.Peek();
+		IMainMenuPanel? nextPanel = next as IMainMenuPanel;
 		next.SetVisible(true);
 
 		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
-		UpdateAction(_screenButton, (next as IMainMenuPanel)?.GetAction());
+		UpdateAction(_screenButton, nextPanel?.GetAction());
+		SwitchBindings(nextPanel);
 
-		if (next is IMainMenuPanel nextmmp) {
-			nextmmp.OnShown();
-			nextmmp.SetRichPresence();
+		if (nextPanel != null) {
+			nextPanel.OnShown();
+			nextPanel.SetRichPresence();
 			
-			_targetPrimaryColor = nextmmp.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
-			_targetBackgroundColor = nextmmp.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-			_headerText.SetText(nextmmp.Name);
+			_targetPrimaryColor = nextPanel.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
+			_targetBackgroundColor = nextPanel.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
+			_headerText.SetText(nextPanel.Name);
 		}
 	}
 
@@ -107,6 +109,37 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		button.Action = action.Action;
 		button.Icon = action.Icon;
 		button.SetText(action.Name);
+	}
+
+	#endregion
+
+	#region Panel Bindings
+
+	private readonly List<Keybind> _boundKeybindings = new();
+	private Flow _bindingFlow = null!;
+
+	private void SwitchBindings(IMainMenuPanel? panel) {
+		_boundKeybindings.ForEach(x => Keybinds.RemoveKeybind(x));
+		_bindingFlow.ClearChildren();
+		
+		if (panel is null) return;
+
+		PanelBinding[] binds = panel.GetBindings();
+		
+		foreach (PanelBinding binding in binds)
+		{
+			_boundKeybindings.AddRange(binding.Bindings.Select(x => Keybinds.AddKeybind(x.buttons.ToList(), x.action)));
+			VisualPanelBinding visual = new(_bindingFlow, binding);
+			visual.SetAnchor(Anchor.CenterLeft);
+			visual.SetOrigin(Anchor.CenterLeft);
+		}
+	}
+
+	private void UpdateBindingColors(Color back, Color front) {
+		foreach (Element element in _bindingFlow.GetChildren()) {
+			element.SetBgColor(back);
+			element.SetFgColor(front);
+		}
 	}
 
 	#endregion
@@ -163,6 +196,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_screenButton.SetAnchor(Anchor.BottomRight);
 		_screenButton.SetOrigin(Anchor.BottomRight);
 		_screenButton.SetPos(new Vector2F(-40, -12));
+
+		_bindingFlow = new Flow(_footer) {
+			AutoSize = Axis.Both,
+			Spacing = 20
+		};
+		_bindingFlow.SetAnchor(Anchor.Center);
+		_bindingFlow.SetOrigin(Anchor.Center);
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -616,6 +656,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_screenButton.SetFgColor(primary);
 		_header.SetBgColor(primary);
 		_footer.SetBgColor(primary);
+		
+		UpdateBindingColors(bg, primary);
 		
 		var shapesColor = primary;
 		shapesColor.A = 80;

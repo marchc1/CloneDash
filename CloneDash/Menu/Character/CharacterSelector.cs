@@ -1,6 +1,7 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.UI;
+using CloneDash.Common.UI.Binding;
 using CloneDash.Game;
 using CloneDash.Systems;
 using Nucleus.Commands;
@@ -20,6 +21,11 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	string IMainMenuPanel.Name => "Character Selector";
 
 	MenuFooterAction IMainMenuPanel.GetAction() => new("Select", "icons/check.png", SelectCharacter);
+
+	PanelBinding[] IMainMenuPanel.GetBindings() => [
+		new("Change Character", ([ButtonCode.KeyLeft], () => _scroller.Cycle(-1)), ([ButtonCode.KeyRight], () => _scroller.Cycle(1))),
+		new("Select", ([ButtonCode.KeyEnter], SelectCharacter))
+	];
 
 	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new RichPresenceState {

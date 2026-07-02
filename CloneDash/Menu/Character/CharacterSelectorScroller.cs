@@ -26,18 +26,16 @@ namespace CloneDash.Menu.Character
 			}
 		}
 
+		public void Cycle(int by = 0) {
+			_lastSelectedIdx += by;
+			if (_lastSelectedIdx > _chars.Count - 1) _lastSelectedIdx = 0;
+			else if (_lastSelectedIdx < 0) _lastSelectedIdx = _chars.Count - 1;
+			PerformPick(_chars[_lastSelectedIdx].character);
+		}
+
 		public void SetCharacter(ICharacterDescriptor? chr) {
 			_lastSelectedIdx = _chars.FindIndex(x => chr != null && x.character.UUIDEquals(chr));
-			if (_lastSelectedIdx == -1)
-				Logs.Warn("Unexpectedly couldnt find the character???");
-
-			for (int i = 0; i < _chars.Count; i++) {
-				var c = _chars[i];
-				c.label.SetFgColor(i == _lastSelectedIdx ? new Color(255, 255, 255, 255) : new Color(155, 155, 155, 255));
-				c.label.Pulsing = i == _lastSelectedIdx;
-				c.label.SetPaintBackgroundEnabled(i == _lastSelectedIdx);
-			}
-
+			if (_lastSelectedIdx == -1) Logs.Warn("Unexpectedly couldnt find the character???");
 			InvalidateLayout();
 		}
 

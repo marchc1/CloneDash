@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.UI;
+using CloneDash.Common.UI.Binding;
 using Nucleus.Common.Types;
 using Nucleus.Common.UI;
 using Nucleus.UI;
@@ -24,6 +25,7 @@ public interface IMainMenuPanel
 	bool InterceptEscape() => true;
 	bool OnTryClose() => true;
 	MenuFooterAction? GetAction() => null;
+	PanelBinding[] GetBindings() => [];
 }
 
 public class MenuFooterAction
