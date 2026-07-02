@@ -1,29 +1,21 @@
-﻿using CloneDash.Characters;
-using CloneDash.Common;
+﻿using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Compatibility.MDMC;
-using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
 using CloneDash.Menu.Main;
 using CloneDash.Menu.Searching;
 
 using Nucleus;
-using Nucleus.Audio;
-using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
-using Nucleus.Files;
-using Nucleus.Input;
-using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-using Nucleus.UI.Elements;
 
 using Raylib_cs;
 using System.Numerics;
@@ -44,6 +36,16 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	private static Vector4 _targetPrimaryColor;
 	private static Vector4 _targetBackgroundColor;
 
+	private MenuFooterButton _backButton = null!;
+	private MenuFooterButton _screenButton = null!;
+
+	private Panel _header = null!;
+	private Label _headerText = null!;
+
+	private Panel _footer = null!;
+
+	#region Panel Switching
+
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
 			var last = ActiveElements.Peek();
@@ -54,26 +56,23 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		ActiveElements.Push(element);
 		element.SetRichPresence();
 
-		backButton.SetVisible(ActiveElements.Count > 1);
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
 		
 		_targetPrimaryColor = element.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 		_targetBackgroundColor = element.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-		headerText.SetText(element.Name);
+		_headerText.SetText(element.Name);
 
 		if (ActiveElements.Count == 1) {
 			_primaryColor = _targetPrimaryColor;
 			_backgroundColor = _targetBackgroundColor;
 		}
 
+		UpdateAction(_screenButton, element.GetAction());
 		element.SetDock(Dock.Fill);
+		element.SetBorderSize(0);
 		return element;
 	}
 
-	private Button backButton;
-	public override void OnUnload() {
-		base.OnUnload();
-		MDMCWebAPI.CancelPendingRequests();
-	}
 	public void PopActiveElement() {
 		if (ActiveElements.Count <= 1) return;
 
@@ -88,7 +87,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var next = ActiveElements.Peek();
 		next.SetVisible(true);
 
-		backButton.SetVisible(ActiveElements.Count > 1);
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
+		UpdateAction(_screenButton, (next as IMainMenuPanel)?.GetAction());
 
 		if (next is IMainMenuPanel nextmmp) {
 			nextmmp.OnShown();
@@ -96,12 +96,29 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			
 			_targetPrimaryColor = nextmmp.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 			_targetBackgroundColor = nextmmp.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-			headerText.SetText(nextmmp.Name);
+			_headerText.SetText(nextmmp.Name);
 		}
 	}
 
-	Panel header;
-	Label headerText;
+	private void UpdateAction(MenuFooterButton button, MenuFooterAction? action)
+	{
+		if (action is null)
+		{
+			button.Action = null;
+			return;
+		}
+
+		button.Action = action.Action;
+		button.Icon = action.Icon;
+		button.SetText(action.Name);
+	}
+
+	#endregion
+
+	public override void OnUnload() {
+		base.OnUnload();
+		MDMCWebAPI.CancelPendingRequests();
+	}
 
 	protected override UserInterface CreateUI() => new CloneDashUI();
 
@@ -109,33 +126,41 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var charPanel = new Panel(RootPanel);
 		charPanel.SetBorderSize(0);
 		charPanel.DynamicallySized = true;
-		charPanel.SetSize(new(1f, 1f));
+		charPanel.SetSize(new Vector2F(1f, 1f));
 		charPanel.SetClipping(false);
 		charPanel.SetPaintBackgroundEnabled(false);
 
-		Character = new(charPanel);
-		Character.DynamicallySized = true;
+		Character = new MainMenuCharacter(charPanel) { DynamicallySized = true };
 		Character.SetOrigin(Anchor.TopCenter);
-		Character.SetSize(new(1f));
+		Character.SetSize(new Vector2F(1f));
 
-		header = new(RootPanel);
-		header.SetPos(new Vector2F(0));
-		header.SetSize(new Vector2F(256, 64));
-		header.SetDock(Dock.Top);
-		header.SetBorderSize(0);
-		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
+		_header = new Panel(RootPanel);
+		_header.SetPos(new Vector2F(0));
+		_header.SetSize(new Vector2F(256, 64));
+		_header.SetDock(Dock.Top);
+		_header.SetBorderSize(0);
 
-		backButton = MenuButton(header, Dock.None, "ui/back.png", $"Back", () => {
-			PopActiveElement();
-		});
+		_headerText = new Label(_header);
+		_headerText.SetDock(Dock.Fill);
+		_headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
+		_headerText.SetTextSize(32 * 1.4f);
+		_headerText.SetAutoSize(true);
 
-		headerText = new Label(header);
-		headerText.SetDock(Dock.Fill);;
-		headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
-		headerText.SetText("Clone Dash");
-		headerText.SetTextSize(32 * 1.4f);
-		headerText.SetAutoSize(true);
-		headerText.SetDockMargin(RectangleF.TLRB(0, 64, 64, 0));
+		_footer = new Panel(RootPanel);
+		_footer.SetSize(new Vector2F(256, 48));
+		_footer.SetDock(Dock.Bottom);
+		_footer.SetBorderSize(0);
+		_footer.SetClipping(false);
+
+		_backButton = new MenuFooterButton(_footer, "icons/arrow-left.png", "Back");
+		_backButton.SetAnchor(Anchor.BottomLeft);
+		_backButton.SetOrigin(Anchor.BottomLeft);
+		_backButton.SetPos(new Vector2F(40, -12));
+		
+		_screenButton = new MenuFooterButton(_footer);
+		_screenButton.SetAnchor(Anchor.BottomRight);
+		_screenButton.SetOrigin(Anchor.BottomRight);
+		_screenButton.SetPos(new Vector2F(-40, -12));
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -157,30 +182,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
-			Position = new(4 + 6, (int)(header.GetRenderBounds().H + 4))
+			Position = new(4 + 6, (int)(_header.GetRenderBounds().H + 4))
 		};
 	}
-
-	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
-		var menuBtn = new Button(header);
-		menuBtn.SetAutoSize(false);
-		menuBtn.SetSize(new Vector2F(64));
-		menuBtn.SetText("");
-		menuBtn.SetDock(dock);
-		var menuBtnImage = new Image(menuBtn);
-		menuBtnImage.SetTexture(EngineCore.Level.Textures.LoadTextureFromFile(icon));
-		menuBtnImage.SetImageOrientation(ImageOrientation.Zoom);
-		menuBtnImage.SetImagePadding(new(4));
-		menuBtnImage.SetDock(Dock.Fill);
-		menuBtn.SetTextSize(21);
-		menuBtn.SetDockMargin(RectangleF.TLRB(0));
-		menuBtn.SetBorderSize(0);
-		menuBtn.OnButtonClick += (_, _) => onClicked();
-		menuBtn.SetTooltipText(text);
-
-		return menuBtn;
-	}
-
 
 	private static float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
@@ -577,11 +581,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Rlgl.EnableDepthTest();
 
-		Color bg = _backgroundColor.ToColor();
+		var bg = _backgroundColor.ToColor();
 		Graphics2D.SetDrawColor(bg);
 		Graphics2D.DrawRectangle(Vector2F.Zero - frameState.WindowSize / 2f, frameState.WindowSize);
-		backButton.SetFgColor(bg);
-		headerText.SetTextColor(bg);
+		_backButton.SetBgColor(bg);
+		_screenButton.SetBgColor(bg);
+		_headerText.SetTextColor(bg);
 
 		bool first = shapes.Count == 0;
 
@@ -591,11 +596,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			}
 		}
 
-		Color primary = _primaryColor.ToColor();
-		backButton.SetBgColor(primary);
-		header.SetBgColor(primary);
+		var primary = _primaryColor.ToColor();
+		_backButton.SetFgColor(primary);
+		_screenButton.SetFgColor(primary);
+		_header.SetBgColor(primary);
+		_footer.SetBgColor(primary);
 		
-		Color shapesColor = primary;
+		var shapesColor = primary;
 		shapesColor.A = 80;
 		Graphics2D.SetDrawColor(shapesColor);
 

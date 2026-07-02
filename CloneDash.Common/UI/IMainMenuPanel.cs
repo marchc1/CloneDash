@@ -23,6 +23,21 @@ public interface IMainMenuPanel
 	void SetRichPresence();
 	bool InterceptEscape() => true;
 	bool OnTryClose() => true;
+	MenuFooterAction? GetAction() => null;
+}
+
+public class MenuFooterAction
+{
+	public string Name { get; }
+	public string Icon { get; }
+	public Action Action { get; }
+	
+	public MenuFooterAction(string name, string icon, Action action)
+	{
+		Name = name;
+		Icon = icon;
+		Action = action;
+	}
 }
 
 public static class MainMenuPanelExtensions

@@ -19,6 +19,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	string IMainMenuPanel.ColorScheme => "Character";
 	string IMainMenuPanel.Name => "Character Selector";
 
+	MenuFooterAction IMainMenuPanel.GetAction() => new("Select", "icons/check.png", SelectCharacter);
+
 	void IMainMenuPanel.SetRichPresence()
 	{
 		RichPresenceSystem.SetPresence(new RichPresenceState
@@ -35,10 +37,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	private readonly CharacterIconLabel _healthLabel;
 	private readonly CharacterIconLabel _voiceLabel;
 	private readonly CharacterIconLabel _artistLabel;
-
 	private readonly CharacterSkillDisplay _skill;
-
-	private readonly Button _selectButton;
 	private readonly CharacterSelectorScroller _scroller;
 
 	private ICharacterDescriptor? _lastCharacterSelected;
@@ -78,14 +77,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		panel.SetPaintBorderEnabled(false);
 		panel.SetPaintEnabled(false);
 
-		_selectButton = new Button(panel);
-		_selectButton.SetDock(Dock.Right);
-		_selectButton.SetSize(new Vector2F(0.15f));
-		_selectButton.DynamicallySized = true;
-		_selectButton.SetBgColor(new Color(10, 30, 10));
-		_selectButton.SetFgColor(new Color(48, 220, 70));
-		_selectButton.OnButtonClick += CharacterSelectButton_MouseReleaseEvent;
-
 		_scroller = new CharacterSelectorScroller(this);
 		_scroller.SetDock(Dock.Bottom);
 		_scroller.DynamicallySized = true;
@@ -109,7 +100,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_skill.Color = text;
 	}
 
-	private void CharacterSelectButton_MouseReleaseEvent(Button self, ButtonCode button) {
+	private void SelectCharacter() {
 		if (_lastCharacterSelected == null) return;
 		ConVar cv = cvar.FindVar("character")!;
 		cv.SetValue(_lastCharacterSelected.GetUUID());
@@ -133,8 +124,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_artistLabel.SetPos(new Vector2F(32, _voiceLabel.GetPos().Y + _voiceLabel.GetSize().Y + 12 * ratio));
 
 		_skill.SetPos(new Vector2F(-32, 32));
-
-		_selectButton.SetTextSize(80 * ratio);
 	}
 
 	private void BackPanel_CharacterSelected(ICharacterDescriptor? ch) {
@@ -161,8 +150,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 			_skill.Text = ch.GetPerk(lang, out _).ToString();
 		}
-
-		_selectButton.SetText("SELECT");
 	}
 
 	public bool OnTryClose() {

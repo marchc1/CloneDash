@@ -2,7 +2,6 @@ using CloneDash.Common.UI;
 using Nucleus.Common.Types;
 using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
 using Image = Nucleus.UI.Elements.Image;
 
 namespace CloneDash.Menu.Character
