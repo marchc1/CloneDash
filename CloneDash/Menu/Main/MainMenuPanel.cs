@@ -5,7 +5,6 @@ using CloneDash.Menu.Character;
 using CloneDash.Menu.Searching;
 using CloneDash.Systems;
 using Nucleus;
-using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
 using Nucleus.Types;
@@ -30,6 +29,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 	
 	#endregion
+
+	private new MainMenuLevel Level => (MainMenuLevel)base.Level;
 	
 	private bool UsingRootNavigationMenu => buttons.Count == 1;
 	private readonly Stack<List<MainMenuButton>> buttons = [];
@@ -124,7 +125,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(new SongSelector(UI));
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
 				selector.SetSource(source.NewState());
 			});
 
@@ -137,7 +138,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(new SongSelector(UI));
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
 				selector.SetSource(source.NewState());
 			});
 
@@ -149,12 +150,12 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				menu.PushActiveElement(new SongSelector(UI)).SetSource(source.NewState());
+				menu.PushActiveElement(new SongSelector(Level.Content)).SetSource(source.NewState());
 			});
 
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,
-			"icons/person-simple-run.png", menu => menu.PushActiveElement(new CharacterSelector(UI))
+			"icons/person-simple-run.png", menu => menu.PushActiveElement(new CharacterSelector(Level.Content))
 		);
 
 		// Hidden because there is not really any functional stuff here
@@ -166,7 +167,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton(
 			"Options", "Change game settings", 47,
 			"icons/gear-six.png", (menu) => {
-				var settings = menu.PushActiveElement(new SettingsEditor(UI));
+				var settings = menu.PushActiveElement(new SettingsEditor(Level.Content));
 				settings.SetPaintBackgroundEnabled(false);
 			});
 

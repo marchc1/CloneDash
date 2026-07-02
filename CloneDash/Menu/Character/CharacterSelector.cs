@@ -76,6 +76,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_bottom.SetBorderSize(0);
 		_bottom.SetPaintBackgroundEnabled(true);
 		_bottom.SetBgColor(this.GetBackgroundColor(GetScheme()));
+		_bottom.SetPassthru(true);
 
 		_line = new Element(_bottom);
 		_line.SetDock(Dock.Top);
@@ -87,7 +88,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_scroller = new CharacterSelectorScroller(_bottom);
 		_scroller.SetDock(Dock.Top);
 		_scroller.SetDockMargin(new RectangleF(20, 0, 0, 0));
-		_scroller.SetSize(new Vector2F(0, 80));
+		_scroller.SetSize(new Vector2F(0, 100)); // margin subtracts from size??
 		_scroller.SetBorderSize(0);
 		_scroller.CharacterSelected += BackPanel_CharacterSelected;
 

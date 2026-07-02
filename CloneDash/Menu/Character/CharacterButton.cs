@@ -6,18 +6,20 @@ using Nucleus.UI.Elements;
 
 namespace CloneDash.Menu.Character
 {
-    public class CharacterButton : Button
-    {
-        public CharacterButton(Element? parent, ITexture? texture) : base(parent)
-        {
-            Image icon = new(this);
-            icon.SetTexture(texture);
-            icon.SetImageOrientation(ImageOrientation.Zoom);
-            icon.SetDock(Dock.Fill);
+	public class CharacterButton : Button
+	{
+		public CharacterButton(Element? parent, ITexture? texture) : base(parent) {
+			SetPaintBackgroundEnabled(false);
+			SetBgColor(Color.Blank);
+			SetBorderSize(0);
+			SetAnchor(Anchor.TopCenter);
+			SetOrigin(Anchor.TopCenter);
 
-            SetBgColor(new Color(0, 0, 0, 0));
-            SetBorderSize(0);
-            SetText("");
-        }
-    }
+			Image icon = new(this);
+			icon.SetTexture(texture);
+			icon.SetImageOrientation(ImageOrientation.Zoom);
+			icon.SetDock(Dock.Fill);
+			icon.SetBorderSize(0);
+		}
+	}
 }

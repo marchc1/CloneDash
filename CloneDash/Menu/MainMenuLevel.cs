@@ -36,13 +36,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	private static Vector4 _targetPrimaryColor;
 	private static Vector4 _targetBackgroundColor;
 
-	private MenuFooterButton _backButton = null!;
-	private MenuFooterButton _screenButton = null!;
-
 	private Panel _header = null!;
 	private Label _headerText = null!;
 
+	public Element Content { get; private set; } = null!;
+	
 	private Panel _footer = null!;
+	private MenuFooterButton _backButton = null!;
+	private MenuFooterButton _screenButton = null!;
 
 	#region Panel Switching
 
@@ -145,6 +146,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
 		_headerText.SetTextSize(32 * 1.4f);
 		_headerText.SetAutoSize(true);
+
+		Content = new Element(RootPanel);
+		Content.SetDock(Dock.Fill);
+		Content.SetBorderSize(0);
+		Content.SetDockPadding(new RectangleF(0, 0, 0, 48));
+		Content.SetPassthru(true);
 
 		_footer = new Panel(RootPanel);
 		_footer.SetSize(new Vector2F(256, 48));

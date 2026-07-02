@@ -48,29 +48,28 @@ namespace CloneDash.Menu.Character
 
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
-			SetupButtons(width, height);
-		}
 
-		private void SetupButtons(float width, float height) {
+			float x = 0;
+			float centerX = 0;
+			
 			for (int i = 0; i < _chars.Count; i++) {
 				(CharacterButton label, ICharacterDescriptor character) c = _chars[i];
 				CharacterButton btn = c.label;
 
-				float selectedSizeOffset = Math.Clamp(i == _lastSelectedIdx ? 2 : 8 + (Math.Abs(i - _lastSelectedIdx) * 1), 0, height);
-				if (selectedSizeOffset == 0)
-					btn.SetVisible(false);
-				else {
-					btn.SetVisible(true);
-					btn.SetSize(new Vector2F(height, height));
-					float baseX = (width / 2) - (height / 2);
-					float adjustedIndexX = baseX + (i * height);
-					float adjustedSelectedX = adjustedIndexX - (_lastSelectedIdx * height);
-					btn.SetPos(new Vector2F(adjustedSelectedX, 0));
+				const int maxIndex = 8;
+				int offsetIndex = i - _lastSelectedIdx;
+				int clampedIndex = Math.Min(Math.Abs(offsetIndex), maxIndex);
+				float scale = 1f - .4f * (clampedIndex / (float)maxIndex);
+				float size = scale * height;
+				
+				btn.SetPos(new Vector2F(x /*offsetIndex * (size + 24)*/, (height - size) / 2f));
+				btn.SetSize(new Vector2F(size, size));
 
-					btn.SetPos(btn.GetPos() + new Vector2F(selectedSizeOffset));
-					btn.SetSize(btn.GetSize() - new Vector2F(selectedSizeOffset));
-				}
+				if (offsetIndex == 0) centerX = x;
+				x += size + 24;
 			}
+			
+			SetChildRenderOffset(new Vector2F(-centerX, 0));
 		}
 	}
 }
