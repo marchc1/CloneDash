@@ -1,11 +1,14 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.UI;
+using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.UI;
+using Raylib_cs;
 
 namespace CloneDash.Menu;
 
@@ -35,14 +38,20 @@ public class MainMenuCharacter : Panel
 	}
 
 	Label ExpressionLabel = null!;
-
+	
 	public MainMenuCharacter(Element? parent) : base(parent){
 		SetBorderSize(0);
 		SetPaintBackgroundEnabled(false);
+		
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);
 		ExpressionLabel.SetOrigin(Anchor.Center);
-		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
+		ExpressionLabel.SetPaintBackgroundEnabled(true);
+		ExpressionLabel.SetBorderSize(3);
+		ExpressionLabel.SetPaintBorderEnabled(true);
+		ExpressionLabel.SetRoundness(4);
+		ExpressionLabel.SetClipping(false);
+		ExpressionLabel.SetTextPadding(new Vector2F(64, 24));
 
 		if (SetCharacter(CharacterMod.GetCharacterData()))
 			CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
@@ -85,11 +94,11 @@ public class MainMenuCharacter : Panel
 	}
 
 	public override void Paint(float width, float height) {
-		EngineCore.Window.BeginMode2D(new() {
-			Zoom = height / 900 / 2.4f,
-			Offset = ((GetGlobalPosition()) + new Vector2F(
+		EngineCore.Window.BeginMode2D(new Camera2D {
+			Zoom = height / 900 / 2.3f,
+			Offset = (GetGlobalPosition() + new Vector2F(
 				width / 2,
-				(height / 1) - 64)
+				height - 32)
 			).ToNumerics()
 		});
 
@@ -100,24 +109,27 @@ public class MainMenuCharacter : Panel
 		if (CharacterInstance != null) {
 			CharacterInstance.GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
 			if (NMath.InRange(Level.Curtime, startTime, endTime) && !string.IsNullOrEmpty(ExpressionText)) {
-				float alphaMult1 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
-				float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
-				float alphaMult2 = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
-				float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
-				float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
-				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
-				textSize += new Vector2F(16);
-
-				ExpressionLabel.SetPos(textPos);
-				ExpressionLabel.SetSize(textSize);
-				ExpressionLabel.SetVisible(true);
-				ExpressionLabel.SetPaintBackgroundEnabled(true);
-				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
-				ExpressionLabel.SetTextColor(new(255, 255, 255, (int)(alphaMult * 255)));
-				ExpressionLabel.SetAutoSize(true);
-				ExpressionLabel.SetSize(new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y));
+				float alphaTweenIn = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
+				float alphaTweenOut = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
+				float alphaTween = NMath.Ease.InCirc(alphaTweenIn) - NMath.Ease.OutQuad(alphaTweenOut);
+				
+				ExpressionLabel.SetOpacity(alphaTween);
 				ExpressionLabel.SetText(ExpressionText);
+				ExpressionLabel.SetVisible(true);
+				
+				Color primary = MainMenuLevel.PrimaryColor;
+				ExpressionLabel.SetBgColor(MainMenuLevel.BackgroundColor);
+				ExpressionLabel.SetFgColor(primary);
+				ExpressionLabel.SetTextColor(primary);
+				
+				float positionTween = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
+				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(positionTween) * (height * -.05f));
+				ExpressionLabel.SetPos(textPos);
+				
+				float fontSize = Math.Clamp(CloneDashUI.GetFontSize(20) * (height / 900f), 12, 120);
+				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, ExpressionLabel.GetFont(), fontSize);
+				ExpressionLabel.SetTextSize(fontSize);
+				ExpressionLabel.SetSize(textSize + ExpressionLabel.GetTextPadding());
 			}
 			else
 				ExpressionLabel.SetVisible(false);

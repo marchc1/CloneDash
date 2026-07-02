@@ -30,11 +30,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public Stack<Element> ActiveElements = [];
 	public MainMenuCharacter Character = null!;
 
-	private static Vector4 _primaryColor;
-	private static Vector4 _backgroundColor;
-
-	private static Vector4 _targetPrimaryColor;
-	private static Vector4 _targetBackgroundColor;
 
 	private Panel _header = null!;
 	private Label _headerText = null!;
@@ -577,6 +572,19 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public Panel? GetSelectedSongPanel() => SelectedSong;
 
+	#region Colors
+	
+	private static Vector4 _primaryColor;
+	private static Vector4 _backgroundColor;
+
+	private static Vector4 _targetPrimaryColor;
+	private static Vector4 _targetBackgroundColor;
+
+	public static Color PrimaryColor => _primaryColor.ToColor();
+	public static Color BackgroundColor => _backgroundColor.ToColor();
+
+	#endregion
+	
 	#region Background Rendering
 	
 	private static List<BackgroundShape> shapes = new();
