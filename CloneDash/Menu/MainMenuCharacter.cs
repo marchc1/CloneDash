@@ -153,7 +153,10 @@ public class MainMenuCharacter : Panel
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
 		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().UUIDEquals(charDescriptor)) return;
+		
+		StopAudio();
 		CharacterInstance = charDescriptor?.CreateMainMenu();
+		
 		if (CharacterInstance == null)
 			return;
 
