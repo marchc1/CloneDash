@@ -93,14 +93,14 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		_clipPolygon = ArrayPool<Vector2F>.Shared.Rent(attachment.GetVerticesCount());
 		_verticesLength = attachment.ComputeWorldVerticesInto(slot, _clipPolygon);
 
-		bool verteciesChanged =
+		bool verticesChanged =
 			_hasCachedTriangulation &&
 			ReferenceEquals(_cachedAttachment, attachment) &&
 			_cachedVerticesLength == _verticesLength &&
 			_cachedVertices != null &&
 			_clipPolygon.AsSpan(0, _verticesLength).SequenceEqual(_cachedVertices.AsSpan(0, _verticesLength));
 
-		if (!verteciesChanged) {
+		if (!verticesChanged) {
 			_shape.Points.Clear();
 			_shape.Points.EnsureCapacity(_verticesLength);
 			for (int i = 0; i < _verticesLength; i++) {
