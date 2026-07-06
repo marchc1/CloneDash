@@ -25,10 +25,11 @@ namespace Nucleus.Debugging
 		
 		private static readonly char[] TempFormatBuffer = new char[256];
 
-		public void Write(ReadOnlySpan<char> key, ISpanFormattable value) {
+		public void Write<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
 			value.TryFormat(TempFormatBuffer, out int chars, default, null);
-			Records[NumRecords++] = new(Spacing * SpacingCharacters, key, TempFormatBuffer.AsSpan()[..chars]);
+			Records[NumRecords++] = new DebugRecord(Spacing * SpacingCharacters, key, TempFormatBuffer.AsSpan()[..chars]);
 		}
+		
 		public void EnterScope() => Spacing += 1;
 		public void ExitScope() => Spacing -= 1;
 
