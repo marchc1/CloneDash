@@ -11,18 +11,22 @@ namespace Nucleus.Debugging
 {
 	public class DeveloperOverlay(Level level) : ICanDraw
 	{
+		private const float LineHeight = 12;
+		private readonly string _header = $"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext";
+		
+		private static GCMemoryInfo GcMemoryInfo => GC.GetGCMemoryInfo();
+
+		private DebugRecordState _cachedState;
+
+		// Update only every 100ms because this whole class is a lot of string allocations
+		private static ThrottledUpdater _throttledUpdater = new ThrottledUpdater(100);
+		
 		public Level Level { get; } = level;
 		public readonly DebugRecordList DebugRecords = new DebugRecordList();
 		public readonly DebugRecordList UserDefinedDebugRecords = new DebugRecordList();
 
 		public PerfGraph UpdateGraph = null!, RenderGraph = null!, MemGraph = null!;
-		
-		private readonly string _header = $"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext";
-		private static GCMemoryInfo GcMemoryInfo => GC.GetGCMemoryInfo();
-		
-		// Update only every 100ms because this whole class is a lot of string allocations
-		private static ThrottledUpdater _throttledUpdater = new ThrottledUpdater(100);
-		
+
 		private void Update() {
 			if (IValidatable.IsValid(InGameConsole.Instance)) return;
 			if(!_throttledUpdater.TryUpdate(Level.Realtime)) return;
@@ -52,7 +56,7 @@ namespace Nucleus.Debugging
 			}
 			DebugRecords.ExitScope();
 
-			DebugRecords.Write("GC");
+			DebugRecords.Write("Garbage Collection");
 			DebugRecords.EnterScope();
 			{
 				DebugRecords.Write("Collections Gen1", GC.CollectionCount(0));
@@ -87,6 +91,8 @@ namespace Nucleus.Debugging
 
 			UserDefinedDebugRecords.Reset();
 			UserDefinedDebugRecords.EnterScope();
+			
+			_cachedState = DebugRecordState.Max(DebugRecords.CompileState(), UserDefinedDebugRecords.CompileState());
 		}
 
 		internal void SetUpDebugOverlays() {
@@ -132,13 +138,10 @@ namespace Nucleus.Debugging
 			Graphics2D.ResetDrawingOffset();
 
 			int totalFields = UserDefinedDebugRecords.NumRecords + DebugRecords.NumRecords;
-			const float lineHeight = 12;
-			float currentLineY = (Level.FrameState.WindowHeight - 8) - (totalFields * lineHeight);
+			float textY = (Level.FrameState.WindowHeight - 8) - (totalFields * LineHeight);
 
-			DebugRecordState state = DebugRecordState.Max(DebugRecords.CompileState(), UserDefinedDebugRecords.CompileState());
-
-			DebugRecords.DrawRecords(in state, lineHeight, ref currentLineY);
-			UserDefinedDebugRecords.DrawRecords(in state, lineHeight, ref currentLineY);
+			DebugRecords.DrawRecords(in _cachedState, LineHeight, ref textY);
+			UserDefinedDebugRecords.DrawRecords(in _cachedState, LineHeight, ref textY);
 
 			ConsoleSystem.Draw(Level.GetConsoleOverlaySettings());
 		}
