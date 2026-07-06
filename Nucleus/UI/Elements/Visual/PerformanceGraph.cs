@@ -2,6 +2,7 @@
 using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.Util;
+using System.Diagnostics;
 
 namespace Nucleus.UI.Elements.Visual
 {
@@ -19,6 +20,14 @@ namespace Nucleus.UI.Elements.Visual
 		private static ThrottledUpdater _labelThrottle = new(250);
 		private string _lbl1 = "", _lbl2 = "";
 		private string _minLabel = "", _maxLabel = "";
+		
+		readonly Stopwatch _timing = new Stopwatch();
+
+		public override void Initialize(float x, float y, float width, float height) {
+			base.Initialize(x, y, width, height);
+			
+			_timing.Start();
+		}
 
 		private void Update() {
 			double statistic = Mode switch {
@@ -38,7 +47,7 @@ namespace Nucleus.UI.Elements.Visual
 				_msMean = 0;
 			}
 
-			if (!_labelThrottle.TryUpdate(EngineCore.CurrentAppTime)) return;
+			if (!_labelThrottle.TryUpdate(_timing.Elapsed.TotalSeconds)) return;
 
 			switch (Mode) {
 				case GraphMode.CpuUpdateTime:
