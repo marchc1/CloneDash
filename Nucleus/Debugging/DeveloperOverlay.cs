@@ -3,7 +3,7 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
-using Nucleus.UI.Elements;
+using Nucleus.UI.Elements.Visual;
 using Nucleus.Util;
 using System.Diagnostics;
 
@@ -18,14 +18,14 @@ namespace Nucleus.Debugging
 
 		private DebugRecordState _cachedState;
 
-		// Update only every 100ms because this whole class is a lot of string allocations
-		private static ThrottledUpdater _throttledUpdater = new ThrottledUpdater(100);
+		// Update only every 250ms because this whole class is a LOT of string allocations
+		private static ThrottledUpdater _throttledUpdater = new ThrottledUpdater(250);
 		
 		public Level Level { get; } = level;
 		public readonly DebugRecordList DebugRecords = new DebugRecordList();
 		public readonly DebugRecordList UserDefinedDebugRecords = new DebugRecordList();
 
-		public PerfGraph UpdateGraph = null!, RenderGraph = null!, MemGraph = null!;
+		public PerformanceGraph UpdateGraph = null!, RenderGraph = null!, MemGraph = null!;
 
 		private void Update() {
 			if (IValidatable.IsValid(InGameConsole.Instance)) return;
@@ -96,26 +96,26 @@ namespace Nucleus.Debugging
 		}
 
 		internal void SetUpDebugOverlays() {
-			UpdateGraph = new PerfGraph(Level.RootPanel);
+			UpdateGraph = new PerformanceGraph(Level.RootPanel);
 			UpdateGraph.SetAnchor(Anchor.BottomRight);
 			UpdateGraph.SetOrigin(Anchor.BottomRight);
 			UpdateGraph.SetPos(new Vector2F(-8, -8 + -52 + -16));
 			UpdateGraph.SetSize(new Vector2F(400, 26));
-			UpdateGraph.Mode = (PerfGraphMode.CPU_UpdateTime);
+			UpdateGraph.Mode = (PerformanceGraph.GraphMode.CpuUpdateTime);
 
-			RenderGraph = new PerfGraph(Level.RootPanel);
+			RenderGraph = new PerformanceGraph(Level.RootPanel);
 			RenderGraph.SetAnchor(Anchor.BottomRight);
 			RenderGraph.SetOrigin(Anchor.BottomRight);
 			RenderGraph.SetPos(new Vector2F(-8, -8 + -26 + -8));
 			RenderGraph.SetSize(new Vector2F(400, 26));
-			RenderGraph.Mode = (PerfGraphMode.CPU_RenderTime);
+			RenderGraph.Mode = (PerformanceGraph.GraphMode.CpuRenderTime);
 
-			MemGraph = new PerfGraph(Level.RootPanel);
+			MemGraph = new PerformanceGraph(Level.RootPanel);
 			MemGraph.SetAnchor(Anchor.BottomRight);
 			MemGraph.SetOrigin(Anchor.BottomRight);
 			MemGraph.SetPos(new Vector2F(-8, -8));
 			MemGraph.SetSize(new Vector2F(400, 26));
-			MemGraph.Mode =(PerfGraphMode.RAM_Usage);
+			MemGraph.Mode =(PerformanceGraph.GraphMode.RamUsage);
 
 			EvaluatePerfGraphVisibility();
 		}
