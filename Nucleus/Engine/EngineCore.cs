@@ -871,6 +871,8 @@ public static class EngineCore
 		GameThreadMutex.ReleaseMutex();
 	}
 
+	static readonly string[] _ownedAssemblyPrefixes = ["Nucleus", "CloneDash"];
+	
 	public static void StartMainThread() {
 		lock (GameThread_GLLock) {
 			var ea = Assembly.GetEntryAssembly();
@@ -883,19 +885,20 @@ public static class EngineCore
 			gameDLL.PreStaticInitialize();
 
 			Logs.Info("BOOT: Initializing static constructors...");
-			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
-							  from t in a.GetTypes()
-							  let attributes = t.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true)
-							  where attributes != null && attributes.Length > 0
-							  select t) {
-				RuntimeHelpers.RunClassConstructor(t.TypeHandle);
-			}
 
-			foreach (var t in from a in AppDomain.CurrentDomain.GetAssemblies()
-							  from t in a.GetTypes()
-							  select t) {
-				foreach (var ccmd in ConCommandAttribute.GetAttributes(t))
-					ConCommandAttribute.RegisterAttribute(t, ccmd.baseMethod, ccmd.attr);
+			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+				string? name = assembly.GetName().Name;
+				if (name == null || !_ownedAssemblyPrefixes.Any(name.StartsWith))
+					continue;
+
+				foreach (Type type in assembly.GetTypes()) {
+					object[] attributes = type.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true);
+					if (attributes is { Length: > 0 })
+						RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+
+					foreach ((MethodInfo baseMethod, ConCommandAttribute attr) ccmd in ConCommandAttribute.GetAttributes(type))
+						ConCommandAttribute.RegisterAttribute(type, ccmd.baseMethod, ccmd.attr);
+				}
 			}
 
 			ConVar.Register();
