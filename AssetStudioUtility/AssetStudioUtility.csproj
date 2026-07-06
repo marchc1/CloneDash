@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup Condition=" !$(TargetFramework.Contains('windows')) ">
-        <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.1.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.2.0" />
         <PackageReference Include="Kyaru.Texture2DDecoder.macOS" Version="0.2.0" />
     </ItemGroup>
     
