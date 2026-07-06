@@ -18,17 +18,9 @@ namespace Nucleus.UI.Elements.Visual
 		private DateTime _lastQuery;
 
 		private static ThrottledUpdater _labelThrottle = new(250);
-		private string _lbl1 = "", _lbl2 = "";
-		private string _minLabel = "", _maxLabel = "";
+		private MemoryBackedString _lbl1 = new(64), _lbl2 = new(64);
+		private MemoryBackedString _minLabel = new(64), _maxLabel = new(64);
 		
-		readonly Stopwatch _timing = new Stopwatch();
-
-		public override void Initialize(float x, float y, float width, float height) {
-			base.Initialize(x, y, width, height);
-			
-			_timing.Start();
-		}
-
 		private void Update() {
 			double statistic = Mode switch {
 				GraphMode.CpuUpdateTime => EngineCore.GetTimeToUpdate().TotalMilliseconds,
@@ -47,25 +39,25 @@ namespace Nucleus.UI.Elements.Visual
 				_msMean = 0;
 			}
 
-			if (!_labelThrottle.TryUpdate(_timing.Elapsed.TotalSeconds)) return;
+			_lbl1.Clear();
+			_lbl2.Clear();
 
 			switch (Mode) {
 				case GraphMode.CpuUpdateTime:
-					_lbl1 = $"UPS: {1000f / statistic:0.##}";
-					_lbl2 = $"PERF: {statistic:0.##} ms";
+					_lbl1.ConcatRighthand("UPS: "); _lbl1.ConcatRighthand(1000f / statistic, "0.##");
+					_lbl2.ConcatRighthand("PERF: "); _lbl2.ConcatRighthand(statistic, "0.##"); _lbl2.ConcatRighthand(" ms");
 					break;
 				case GraphMode.CpuRenderTime:
-					_lbl1 = $"FPS: {1000f / statistic:0.##}";
-					_lbl2 = $"PERF: {statistic:0.##} ms";
+					_lbl1.ConcatRighthand("FPS: "); _lbl1.ConcatRighthand(1000f / statistic, "0.##");
+					_lbl2.ConcatRighthand("PERF: "); _lbl2.ConcatRighthand(statistic, "0.##"); _lbl2.ConcatRighthand(" ms");
 					break;
 				case GraphMode.RamUsage:
-					_lbl1 = $"GC: {statistic:0.#} MB";
-					_lbl2 = "";
+					_lbl1.ConcatRighthand("GC: "); _lbl1.ConcatRighthand(statistic, "0.#"); _lbl1.ConcatRighthand("MB");
 					break;
 			}
 
-			_minLabel = $"{_millisecondsOverTime.Min():0.##}";
-			_maxLabel = $"{_millisecondsOverTime.Max():0.##}";
+			_minLabel.SetText(_millisecondsOverTime.Min(), "0.##");
+			_maxLabel.SetText(_millisecondsOverTime.Max(), "0.##");
 		}
 
 		private void DrawGraph(float start, float end, float height, ConstantLengthNumericalQueue<float> items, int maxItems, Color startColor, Color endColor, float? divider = null, float offset = 32) {
@@ -75,8 +67,8 @@ namespace Nucleus.UI.Elements.Visual
 			end = start + end;
 			float min = items.Min();
 			float max = items.Max();
-			Graphics2D.DrawText(new Vector2F(start + offset - 2, height), _minLabel, "Consolas", 9, Anchor.BottomRight);
-			Graphics2D.DrawText(new Vector2F(start + offset - 2, 2), _maxLabel, "Consolas", 9, Anchor.TopRight);
+			Graphics2D.DrawText(new Vector2F(start + offset - 2, height), _minLabel.ToSpan(), "Consolas", 9, Anchor.BottomRight);
+			Graphics2D.DrawText(new Vector2F(start + offset - 2, 2), _maxLabel.ToSpan(), "Consolas", 9, Anchor.TopRight);
 
 			for (int i = 0; i < maxItems; i += 1) {
 				if (i + 1 >= count)
@@ -108,11 +100,11 @@ namespace Nucleus.UI.Elements.Visual
 
 			Graphics2D.SetDrawColor(255, 255, 255);
 
-			if (_lbl2 == "")
-				Graphics2D.DrawText(new Vector2F(2, (height / 2) - 4), _lbl1, "Consolas", 12);
+			if (_lbl2.Length == 0)
+				Graphics2D.DrawText(new Vector2F(2, (height / 2) - 4), _lbl1.ToSpan(), "Consolas", 12);
 			else {
-				Graphics2D.DrawText(new Vector2F(3, 3), _lbl1, "Consolas", 10);
-				Graphics2D.DrawText(new Vector2F(3, height + 1), _lbl2, "Consolas", 10, Anchor.BottomLeft);
+				Graphics2D.DrawText(new Vector2F(3, 3), _lbl1.ToSpan(), "Consolas", 10);
+				Graphics2D.DrawText(new Vector2F(3, height + 1), _lbl2.ToSpan(), "Consolas", 10, Anchor.BottomLeft);
 			}
 
 			Color color1 = Color.White;
