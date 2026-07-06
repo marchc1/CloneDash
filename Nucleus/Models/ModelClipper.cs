@@ -104,7 +104,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			_shape.Points.Clear();
 			_shape.Points.EnsureCapacity(_verticesLength);
 			for (int i = 0; i < _verticesLength; i++) {
-				var vertex = _clipPolygon[i];
+				Vector2F vertex = _clipPolygon[i];
 				_shape.Points.Add(new(vertex.X, vertex.Y));
 			}
 
@@ -133,7 +133,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.Color4ub(255, 255, 255, 255);
 
-		foreach (var triangle in _triangles) {
+		foreach (Triangle triangle in _triangles) {
 			TriPoint a = triangle.Points[0], b = triangle.Points[1], c = triangle.Points[2];
 			if (FlipY) {
 				Rlgl.Vertex2f((float)a.X, -(float)a.Y);
