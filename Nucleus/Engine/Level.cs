@@ -414,6 +414,9 @@ public abstract class Level : IValidatable
 		UnlockEntityBuffer(); LockEntityBuffer();
 		DeveloperOverlay.EvaluatePerfGraphVisibility();
 
+		DeveloperOverlay.UserDefinedDebugRecords.Reset();
+		DeveloperOverlay.UserDefinedDebugRecords.EnterScope();
+		
 		FrameState frameState = FrameState;
 
 		float x, y, width, height;

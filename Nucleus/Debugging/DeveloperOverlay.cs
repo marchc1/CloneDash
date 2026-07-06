@@ -13,14 +13,14 @@ namespace Nucleus.Debugging
 	{
 		private const float LineHeight = 12;
 		private readonly string _header = $"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext";
-		
+
 		private static GCMemoryInfo GcMemoryInfo => GC.GetGCMemoryInfo();
 
 		private DebugRecordState _cachedState;
 
 		// Update only every 250ms because this whole class is a LOT of string allocations
 		private static ThrottledUpdater _throttledUpdater = new ThrottledUpdater(250);
-		
+
 		public Level Level { get; } = level;
 		public readonly DebugRecordList DebugRecords = new DebugRecordList();
 		public readonly DebugRecordList UserDefinedDebugRecords = new DebugRecordList();
@@ -29,7 +29,7 @@ namespace Nucleus.Debugging
 
 		private void Update() {
 			if (IValidatable.IsValid(InGameConsole.Instance)) return;
-			if(!_throttledUpdater.TryUpdate(Level.Realtime)) return;
+			if (!_throttledUpdater.TryUpdate(Level.Realtime)) return;
 
 			DebugRecords.Reset();
 
@@ -78,9 +78,9 @@ namespace Nucleus.Debugging
 			}
 			DebugRecords.ExitScope();
 
-			
+
 			// Only prints the class name right now anyway, so I commented it out
-			
+
 			// DebugRecords.Write("Input");
 			// DebugRecords.EnterScope();
 			// {
@@ -88,11 +88,6 @@ namespace Nucleus.Debugging
 			// 	DebugRecords.Write("Keyboard State", $"{Level.FrameState.Keyboard}");
 			// }
 			// DebugRecords.ExitScope();
-
-			UserDefinedDebugRecords.Reset();
-			UserDefinedDebugRecords.EnterScope();
-			
-			_cachedState = DebugRecordState.Max(DebugRecords.CompileState(), UserDefinedDebugRecords.CompileState());
 		}
 
 		internal void SetUpDebugOverlays() {
@@ -115,7 +110,7 @@ namespace Nucleus.Debugging
 			MemGraph.SetOrigin(Anchor.BottomRight);
 			MemGraph.SetPos(new Vector2F(-8, -8));
 			MemGraph.SetSize(new Vector2F(400, 26));
-			MemGraph.Mode =(PerformanceGraph.GraphMode.RamUsage);
+			MemGraph.Mode = (PerformanceGraph.GraphMode.RamUsage);
 
 			EvaluatePerfGraphVisibility();
 		}
@@ -130,10 +125,12 @@ namespace Nucleus.Debugging
 			RenderGraph.SetVisible(vis);
 			MemGraph.SetVisible(vis);
 		}
-		
+
 		public void Draw(FrameState frameState) {
 			if (!EngineCore.ShouldShowDeveloperOverlays()) return;
 			Update();
+
+			_cachedState = DebugRecordState.Max(DebugRecords.CompileState(), UserDefinedDebugRecords.CompileState());
 
 			Graphics2D.ResetDrawingOffset();
 
