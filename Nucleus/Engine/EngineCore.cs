@@ -1,5 +1,6 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Common.Commands;
+using Nucleus.Common.Engine;
 using Nucleus.Common.Input;
 using Nucleus.Common.OS;
 using Nucleus.Common.Types;
@@ -871,8 +872,6 @@ public static class EngineCore
 		GameThreadMutex.ReleaseMutex();
 	}
 
-	static readonly string[] _ownedAssemblyPrefixes = ["Nucleus", "CloneDash"];
-	
 	public static void StartMainThread() {
 		lock (GameThread_GLLock) {
 			var ea = Assembly.GetEntryAssembly();
@@ -885,10 +884,8 @@ public static class EngineCore
 			gameDLL.PreStaticInitialize();
 
 			Logs.Info("BOOT: Initializing static constructors...");
-
 			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-				string? name = assembly.GetName().Name;
-				if (name == null || !_ownedAssemblyPrefixes.Any(name.StartsWith))
+				if (!assembly.IsDefined(typeof(NucleusGameAttribute)))
 					continue;
 
 				foreach (Type type in assembly.GetTypes()) {
