@@ -885,7 +885,7 @@ public static class EngineCore
 
 			Logs.Info("BOOT: Initializing static constructors...");
 			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-				if (!assembly.IsDefined(typeof(NucleusGameAttribute)))
+				if (!assembly.IsDefined(typeof(NucleusAssemblyAttribute)))
 					continue;
 
 				foreach (Type type in assembly.GetTypes()) {

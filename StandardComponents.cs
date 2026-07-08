@@ -1,10 +1,11 @@
-﻿global using static Nucleus.StandardComponents;
-using Nucleus.Audio;
+﻿using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 using Nucleus.NewEngine;
+
+[assembly: NucleusAssembly]
 
 namespace Nucleus;
 

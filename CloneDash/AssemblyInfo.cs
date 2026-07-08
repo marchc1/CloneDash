@@ -1,3 +1,3 @@
 ﻿using Nucleus.Common.Engine;
 
-[assembly: NucleusGame]
+[assembly: NucleusAssembly]
