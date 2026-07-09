@@ -32,6 +32,7 @@ public class MainMenuButton : Button
 		Size = new Vector2F(600, Height);
 
 		image = new Image(this);
+		image.Clipping = false;
 		image.SetAnchor(Anchor.CenterLeft);
 		image.SetOrigin(Anchor.CenterLeft);
 		image.Texture = Level.Textures.LoadTextureFromFile(icon);
