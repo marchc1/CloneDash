@@ -33,13 +33,10 @@ public struct MemoryBackedString
 		int textLength = text.Length;
 		if (textLength == 0) return;
 
-		nuint finalSize = (nuint)textLength + (nuint)stringLength;
-		EnsureCharacters(finalSize);
+		EnsureCharacters((nuint)textLength + (nuint)stringLength);
 
-		Array.Reverse(stringBacking, 0, stringLength);
+		Array.Copy(stringBacking, 0, stringBacking, textLength, stringLength);
 		text.CopyTo(stringBacking.AsSpan());
-		Array.Reverse(stringBacking, 0, textLength);
-		Array.Reverse(stringBacking, 0, stringLength + textLength);
 		stringLength += textLength;
 	}
 
