@@ -59,6 +59,20 @@ public abstract class Level : IValidatable
 		Parent = RootPanel
 	};
 
+	public virtual DeveloperOverlaySettings GetDeveloperOverlaySettings() => new() {
+		Offset = new(0, -8),
+
+		DebugStringsOffset = new(12, 0),
+		DebugStringsAnchor = Anchor.BottomLeft,
+
+		PerfGraphOffset = new(-12, 0),
+		PerfGraphAnchor = Anchor.BottomRight,
+
+		DoNotRender = false,
+		DevTextSize = 11,
+		Parent = RootPanel
+	};
+
 	public Level() {
 		Timers = new(this);
 		DeveloperOverlay = new DeveloperOverlay(this);
@@ -570,7 +584,12 @@ public abstract class Level : IValidatable
 			if (ui_showupdates.GetBool()) RenderShowUpdates();
 			if (ui_visrenderbounds.GetBool()) VisRenderBounds(RootPanel);
 
-			DeveloperOverlay.Draw(frameState);
+			DeveloperOverlaySettings devOverlaySetttings = GetDeveloperOverlaySettings();
+			ConsoleOverlaySettings consoleOverlaySetttings = GetConsoleOverlaySettings();
+
+			DeveloperOverlay.EvaluatePerfGraphPositions(devOverlaySetttings);
+			DeveloperOverlay.Draw(frameState, devOverlaySetttings);
+			ConsoleSystem.Draw(consoleOverlaySetttings);
 
 			IsRendering = false;
 			renderTrack.Stop();

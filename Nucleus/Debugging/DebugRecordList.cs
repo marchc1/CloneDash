@@ -6,7 +6,7 @@ using Nucleus.Util;
 
 namespace Nucleus.Debugging;
 
-public class DebugRecordList : ICanDraw
+public class DebugRecordList
 {
 	public InlineArray128<DebugRecord> Records;
 	public int NumRecords;
@@ -54,23 +54,15 @@ public class DebugRecordList : ICanDraw
 		return state;
 	}
 
-	public void Draw(FrameState frameState) {
-		DebugRecordState state = CompileState();
-		const float sizePer = 12;
-		float ty = (frameState.WindowHeight - 8) - (NumRecords * sizePer);
-		DrawRecords(in state, sizePer, ref ty);
-	}
-	
-	public void DrawRecords(in DebugRecordState state, float sizePer, ref float ty) {
-		for (int i = 0; i < NumRecords; i++, ty += sizePer) {
+	public void DrawRecords(in DebugRecordState state, float sizePer, float separation, TextAlignment2D alignment, float tx, ref float ty) {
+		for (int i = 0; i < NumRecords; i++, ty += sizePer + separation) {
 			ref DebugRecord record = ref GetRecord(i);
-			const int tx = 12;
 
 			ReadOnlySpan<char> text = record.Print(in state);
 			Graphics2D.SetDrawColor(BackgroundDrawColor);
-			Graphics2D.DrawRectangle(new Vector2F(tx - 1, ty - 1), Graphics2D.GetTextSize(text, "Consolas", 11) + new Vector2F(2));
+			Graphics2D.DrawRectangle(new Vector2F(tx - 1, ty - 2), Graphics2D.GetTextSize(text, "Consolas", sizePer) + new Vector2F(2));
 			Graphics2D.SetDrawColor(Color.White);
-			Graphics2D.DrawText(tx, ty, text, "Consolas", 11, Anchor.TopLeft);
+			Graphics2D.DrawText(tx, ty, text, "Consolas", sizePer, Anchor.TopLeft);
 		}
 	}
 }

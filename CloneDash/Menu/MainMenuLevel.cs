@@ -13,6 +13,7 @@ using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
+using Nucleus.Debugging;
 using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Types;
@@ -35,7 +36,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	private Label _headerText = null!;
 
 	public Element Content { get; private set; } = null!;
-	
+
 	private Panel _footer = null!;
 	private MenuFooterButton _backButton = null!;
 	private MenuFooterButton _screenButton = null!;
@@ -54,7 +55,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		element.SetRichPresence();
 
 		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
-		
+
 		_targetPrimaryColor = element.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 		_targetBackgroundColor = element.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
 		_headerText.SetText(element.Name);
@@ -91,17 +92,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (nextPanel != null) {
 			nextPanel.OnShown();
 			nextPanel.SetRichPresence();
-			
+
 			_targetPrimaryColor = nextPanel.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 			_targetBackgroundColor = nextPanel.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
 			_headerText.SetText(nextPanel.Name);
 		}
 	}
 
-	private void UpdateAction(MenuFooterButton button, MenuFooterAction? action)
-	{
-		if (action is null)
-		{
+	private void UpdateAction(MenuFooterButton button, MenuFooterAction? action) {
+		if (action is null) {
 			button.Action = null;
 			return;
 		}
@@ -121,13 +120,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	private void SwitchBindings(IMainMenuPanel? panel) {
 		_boundKeybindings.ForEach(x => Keybinds.RemoveKeybind(x));
 		_bindingFlow.ClearChildren();
-		
+
 		if (panel is null) return;
 
 		PanelBinding[] binds = panel.GetBindings();
-		
-		foreach (PanelBinding binding in binds)
-		{
+
+		foreach (PanelBinding binding in binds) {
 			_boundKeybindings.AddRange(binding.Bindings.Select(x => Keybinds.AddKeybind(x.buttons.ToList(), x.action)));
 			VisualPanelBinding visual = new(_bindingFlow, binding);
 			visual.SetAnchor(Anchor.CenterLeft);
@@ -148,6 +146,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		base.OnUnload();
 		MDMCWebAPI.CancelPendingRequests();
 	}
+
 
 	protected override UserInterface CreateUI() => new CloneDashUI();
 
@@ -191,7 +190,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_backButton.SetAnchor(Anchor.BottomLeft);
 		_backButton.SetOrigin(Anchor.BottomLeft);
 		_backButton.SetPos(new Vector2F(40, -12));
-		
+
 		_screenButton = new MenuFooterButton(_footer);
 		_screenButton.SetAnchor(Anchor.BottomRight);
 		_screenButton.SetOrigin(Anchor.BottomRight);
@@ -225,6 +224,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
 			Position = new(4 + 6, (int)(_header.GetRenderBounds().H + 4))
+		};
+	}
+
+	public override DeveloperOverlaySettings GetDeveloperOverlaySettings() {
+		return base.GetDeveloperOverlaySettings() with {
+			Offset = new(0, -_footer.GetRenderBounds().H + -8)
 		};
 	}
 
@@ -613,7 +618,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public Panel? GetSelectedSongPanel() => SelectedSong;
 
 	#region Colors
-	
+
 	private static Vector4 _primaryColor;
 	private static Vector4 _backgroundColor;
 
@@ -624,9 +629,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public static Color BackgroundColor => _backgroundColor.ToColor();
 
 	#endregion
-	
+
 	#region Background Rendering
-	
+
 	private static List<BackgroundShape> shapes = new();
 	private const int MaxShapes = 32;
 
@@ -656,9 +661,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_screenButton.SetFgColor(primary);
 		_header.SetBgColor(primary);
 		_footer.SetBgColor(primary);
-		
+
 		UpdateBindingColors(bg, primary);
-		
+
 		var shapesColor = primary;
 		shapesColor.A = 80;
 		Graphics2D.SetDrawColor(shapesColor);
@@ -719,7 +724,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			TransitionNumber(current.W, target.W)
 		);
 	}
-	
+
 	private float TransitionNumber(float current, float target) {
 		if (Math.Abs(target - current) < .01)
 			return target;
@@ -735,7 +740,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Vector2F pos = shuffle
 			? new Vector2F(Random.Shared.NextSingle() * width, Random.Shared.NextSingle() * height)
 			: new Vector2F(bottom ? value * width : -300, bottom ? height + size * 200 : value * height);
-		
+
 		return new BackgroundShape {
 			Position = pos,
 			Size = size,

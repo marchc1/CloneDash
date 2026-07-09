@@ -4,16 +4,29 @@ using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
+using Nucleus.UI;
 using Nucleus.UI.Elements.Visual;
 using Nucleus.Util;
 using System.Diagnostics;
 
 namespace Nucleus.Debugging;
 
-[MarkForStaticConstruction]
-public class DeveloperOverlay(Level level) : ICanDraw
+public struct DeveloperOverlaySettings
 {
-	private const float LineHeight = 12;
+	public bool DoNotRender;
+	public int DevTextSize;
+	public Vector2F Offset;
+	public Vector2F DebugStringsOffset;
+	public Vector2F PerfGraphOffset;
+	public Anchor DebugStringsAnchor;
+	public Anchor PerfGraphAnchor;
+	public Element? Parent;
+}
+
+
+[MarkForStaticConstruction]
+public class DeveloperOverlay(Level level)
+{
 	private readonly string _header = $"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext";
 
 	private static GCMemoryInfo GcMemoryInfo => GC.GetGCMemoryInfo();
@@ -129,8 +142,11 @@ public class DeveloperOverlay(Level level) : ICanDraw
 		MemGraph.SetVisible(vis);
 	}
 
-	public void Draw(FrameState frameState) {
+	public void Draw(FrameState frameState, in DeveloperOverlaySettings settings) {
 		if (!EngineCore.ShouldShowDeveloperOverlays()) return;
+
+		float lineHeight = settings.DevTextSize;
+
 		Update();
 
 		_cachedState = DebugRecordState.Max(DebugRecords.CompileState(), UserDefinedDebugRecords.CompileState());
@@ -138,11 +154,43 @@ public class DeveloperOverlay(Level level) : ICanDraw
 		Graphics2D.ResetDrawingOffset();
 
 		int totalFields = UserDefinedDebugRecords.NumRecords + DebugRecords.NumRecords;
-		float textY = (Level.FrameState.WindowHeight - 8) - (totalFields * LineHeight);
+		float textX, textY;
+		float separation = 2;
+		TextAlignment2D alignment = settings.DebugStringsAnchor.ToTextAlignment();
 
-		DebugRecords.DrawRecords(in _cachedState, LineHeight, ref textY);
-		UserDefinedDebugRecords.DrawRecords(in _cachedState, LineHeight, ref textY);
+		Vector2F offset = settings.Offset + settings.DebugStringsOffset;
 
-		ConsoleSystem.Draw(Level.GetConsoleOverlaySettings());
+		switch (alignment.Horizontal) {
+			case TextAlignment.Left: textX = offset.X; break;
+			case TextAlignment.Center: textX = (Level.FrameState.WindowWidth / 2) + offset.X; break;
+			case TextAlignment.Right: textX = Level.FrameState.WindowHeight + offset.X; break;
+			default: textX = 0; break;
+		}
+
+		switch (alignment.Vertical) {
+			case TextAlignment.Top: textY = offset.Y; break;
+			case TextAlignment.Center: textY = (Level.FrameState.WindowHeight / 2) - ((totalFields *  (lineHeight + separation)) / 2) + offset.Y; break;
+			case TextAlignment.Bottom: textY = (Level.FrameState.WindowHeight + offset.Y) - (totalFields * (lineHeight + separation)); break;
+			default: textY = 0; break;
+		}
+
+		DebugRecords.DrawRecords(in _cachedState, lineHeight, separation, alignment, textX, ref textY);
+		UserDefinedDebugRecords.DrawRecords(in _cachedState, lineHeight, separation, alignment, textX, ref textY);
+	}
+
+	internal void EvaluatePerfGraphPositions(in DeveloperOverlaySettings settings) {
+		Vector2F offset = settings.Offset + settings.PerfGraphOffset;
+
+		UpdateGraph.SetAnchor(settings.PerfGraphAnchor);
+		UpdateGraph.SetOrigin(settings.PerfGraphAnchor);
+		UpdateGraph.SetPos(offset + new Vector2F(0, (-8 + -52 + -16)));
+
+		RenderGraph.SetAnchor(settings.PerfGraphAnchor);
+		RenderGraph.SetOrigin(settings.PerfGraphAnchor);
+		RenderGraph.SetPos(offset + new Vector2F(0, -8 + -26 + -8));
+
+		MemGraph.SetAnchor(settings.PerfGraphAnchor);
+		MemGraph.SetOrigin(settings.PerfGraphAnchor);
+		MemGraph.SetPos(offset + new Vector2F(0, -8));
 	}
 }
