@@ -1,7 +1,9 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Engine;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.NewEngine;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -21,7 +23,7 @@ struct TestBtn(string text, Action<Level> click)
 	public Action<Level> Click = click;
 }
 
-internal class Program
+internal class Program : IGameDLL
 {
 	public class HelloWorldLevel : Level
 	{
@@ -107,12 +109,27 @@ internal class Program
 		}
 	}
 	static void Main(string[] args) {
-		// EngineCore.GameInfo = new() {
-		// 	AppName = "Hello World",
-		// 	AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
-		// };
-		// EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
-		// EngineCore.LoadLevel(new HelloWorldLevel());
-		// EngineCore.StartMainThread();
+		CommandLineParser commandLine = new();
+		commandLine.CreateCmdLine(Environment.CommandLine);
+
+		IEngineAPI engineAPI = new EngineBuilder(commandLine)
+			.WithComponent<IGameDLL, Program>()
+			.WithStandardComponents()
+			.Build();
+
+		engineAPI.SetStartupInfo(new() {
+			AppName = "Nucleus - Hello World",
+			AppIdentifier = "com.github.marchc1.HelloWorld",
+			AppCreator = "March (github/marchc1)",
+			AppURL = "https://github.com/marchc1/CloneDash",
+			AppType = Nucleus.Types.AppType.Application
+		});
+
+		using ServiceLocatorScope locatorScope = new(engineAPI);
+		engineAPI.Run();
+	}
+
+	public void Init() {
+		EngineCore.LoadLevel(new HelloWorldLevel());
 	}
 }
