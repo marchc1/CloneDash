@@ -568,7 +568,9 @@ namespace Nucleus.Core
 		public static void DrawTexturedRectangle(float x, float y, float w, float h, float rotation = 0, Vector2F rotationOrigin = default, float sU = 0, float sV = 0, float eU = 1, float eV = 1, bool flipX = false, bool flipY = false) {
 			if (flipX) (eU, sU) = (sU, eU);
 			if (flipY) (eV, sV) = (sV, eV);
-			if (__textureFlippedY) (eV, sV) = (sV, eV);
+
+			if (__textureFlippedY) 
+				(eV, sV) = (sV, eV);
 
 			x += __offset.X;
 			y += __offset.Y;

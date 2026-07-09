@@ -170,12 +170,8 @@ public class Image : Element
 		if (!IsMouseInputEnabled())
 			thisC = thisC.Adjust(0, 0, -.5f);
 
-		if (image.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
-			sourceRect.Height *= -1;
-
 		Graphics2D.SetTexture(image);
 		Graphics2D.SetDrawColor(thisC);
-
 
 		if (ImageRotation != 0 || ImageFlipX || ImageFlipY) {
 			destRect.X += destRect.Width / 2;
