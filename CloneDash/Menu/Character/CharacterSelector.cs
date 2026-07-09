@@ -29,7 +29,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new RichPresenceState {
-			Details = "Main Menu", State = "Selecting a character"
+			Details = "Main Menu",
+			State = "Selecting a character"
 		});
 	}
 
@@ -52,7 +53,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	public CharacterSelector(Element? parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
-		SetDockPadding(new RectangleF());
+		DockPadding = new RectangleF();
 		SetPassthru(true);
 
 		Color textColor = this.GetTextColor(GetScheme());
@@ -60,7 +61,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_nameLabel = new Label(this);
 		_nameLabel.SetAutoSize(true);
 		_nameLabel.SetTextColor(textColor);
-		_nameLabel.SetFont(CloneDashUI.GetBoldFont(GetScheme()));
+		_nameLabel.Font = CloneDashUI.GetBoldFont(GetScheme());
 
 		_costumeLabel = new Label(this);
 		_costumeLabel.SetAutoSize(true);
@@ -71,31 +72,31 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_artistLabel = new CharacterIconLabel(this, "icons/palette.png") { Color = textColor };
 
 		_skill = new CharacterSkillDisplay(this) { Color = textColor };
-		_skill.SetSize(new Vector2F(640));
+		_skill.Size = new Vector2F(640);
 		_skill.SetAnchor(Anchor.TopRight);
 		_skill.SetOrigin(Anchor.TopRight);
 
 		_bottom = new Element(this);
-		_bottom.SetDock(Dock.Bottom);
-		_bottom.SetSize(new Vector2F(0, 180));
-		_bottom.SetDockPadding(new RectangleF());
-		_bottom.SetBorderSize(0);
+		_bottom.Dock = Dock.Bottom;
+		_bottom.Size = new Vector2F(0, 180);
+		_bottom.DockPadding = new RectangleF();
+		_bottom.BorderSize = 0;
 		_bottom.SetPaintBackgroundEnabled(true);
 		_bottom.SetBgColor(this.GetBackgroundColor(GetScheme()));
 		_bottom.SetPassthru(true);
 
 		_line = new Element(_bottom);
-		_line.SetDock(Dock.Top);
-		_line.SetSize(new Vector2F(0, 3));
-		_line.SetBorderSize(0);
+		_line.Dock = Dock.Top;
+		_line.Size = new Vector2F(0, 3);
+		_line.BorderSize = 0;
 		_line.SetPaintBackgroundEnabled(true);
 		_line.SetBgColor(this.GetPrimaryColor(GetScheme()));
 
 		_scroller = new CharacterSelectorScroller(_bottom);
-		_scroller.SetDock(Dock.Top);
-		_scroller.SetDockMargin(new RectangleF(20, 0, 0, 0));
-		_scroller.SetSize(new Vector2F(0, 100)); // margin subtracts from size??
-		_scroller.SetBorderSize(0);
+		_scroller.Dock = Dock.Top;
+		_scroller.DockMargin = new RectangleF(20, 0, 0, 0);
+		_scroller.Size = new Vector2F(0, 100); // margin subtracts from size??
+		_scroller.BorderSize = 0;
 		_scroller.CharacterSelected += BackPanel_CharacterSelected;
 
 		ICharacterDescriptor? currentCharacter = CharacterMod.GetCharacterData();
@@ -129,18 +130,21 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		float ratio = height / 900;
 
-		_nameLabel.SetTextSize(CloneDashUI.GetFontSize(64) * ratio);
-		_costumeLabel.SetTextSize(CloneDashUI.GetFontSize(36) * ratio);
+		_nameLabel.
+		TextSize = CloneDashUI.GetFontSize(64) * ratio;
+		_costumeLabel.TextSize = CloneDashUI.GetFontSize(36) * ratio;
 
 		_healthLabel.Scale = _voiceLabel.Scale = _artistLabel.Scale = _skill.Scale = ratio;
 
-		_nameLabel.SetPos(new Vector2F(32, 12));
-		_costumeLabel.SetPos(new Vector2F(32, _nameLabel.GetPos().Y + _nameLabel.GetTextSize() - 20 * ratio));
-		_healthLabel.SetPos(new Vector2F(32, _costumeLabel.GetPos().Y + _costumeLabel.GetTextSize() + 16 * ratio));
-		_voiceLabel.SetPos(new Vector2F(32, _healthLabel.GetPos().Y + _healthLabel.GetSize().Y + 12 * ratio));
-		_artistLabel.SetPos(new Vector2F(32, _voiceLabel.GetPos().Y + _voiceLabel.GetSize().Y + 12 * ratio));
+		_nameLabel.
+		Position = new Vector2F(32, 12);
+		_costumeLabel.Position = new Vector2F(32, _nameLabel.Position.Y + _nameLabel.TextSize - 20 * ratio);
+		_healthLabel.Position = new Vector2F(32, _costumeLabel.Position.Y + _costumeLabel.TextSize + 16 * ratio);
+		_voiceLabel.Position = new Vector2F(32, _healthLabel.Position.Y + _healthLabel.Size.Y + 12 * ratio);
+		_artistLabel.Position = new Vector2F(32, _voiceLabel.Position.Y + _voiceLabel.Size.Y + 12 * ratio);
 
-		_skill.SetPos(new Vector2F(-32, 32));
+		_skill.
+		Position = new Vector2F(-32, 32);
 	}
 
 	private void BackPanel_CharacterSelected(ICharacterDescriptor? ch) {
@@ -150,8 +154,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		HumanLanguage lang = HumanLanguage.GetCurrentLanguage();
 
 		if (ch == null) {
-			_nameLabel.SetText("<NULL>");
-			_costumeLabel.SetText("<NULL>");
+			_nameLabel.Text = "<NULL>";
+			_costumeLabel.Text = "<NULL>";
 			_healthLabel.Text = "<NULL>";
 			_voiceLabel.Text = "<NULL>";
 			_artistLabel.Text = "<NULL>";
@@ -159,8 +163,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			_skill.Text = "<NULL>";
 		}
 		else {
-			_nameLabel.SetText($"{ch.GetCharacterName(lang, out _)}");
-			_costumeLabel.SetText($"{ch.GetCosplayName(lang, out _)}");
+			_nameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
+			_costumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
 			_healthLabel.Text = "250"; // no clue how to get HP values
 			_voiceLabel.Text = $"{ch.GetAuthor(lang, out _)}";
 			_artistLabel.Text = "???"; // needs to be added at some point

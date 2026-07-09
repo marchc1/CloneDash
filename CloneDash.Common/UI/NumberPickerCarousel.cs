@@ -57,8 +57,8 @@ public class NumberPickerCarousel : Element
 	private float _scrollSpeed = 10f;
 
 	public NumberPickerCarousel(Element? parent) : base(parent){
-		SetSize(new Vector2F(320, 48));
-		SetClipping(true);
+		Size = new Vector2F(320, 48);
+		Clipping = true;
 	}
 
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
@@ -184,6 +184,6 @@ public class NumberPickerCarousel : Element
 		Graphics2D.DrawRectangle(divRight - DividerThickness / 2f, divPadY, DividerThickness, height - divPadY * 2);
 
 		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, GetBorderSize());
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}
 }

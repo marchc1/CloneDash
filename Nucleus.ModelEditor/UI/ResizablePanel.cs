@@ -45,7 +45,7 @@ namespace Nucleus.ModelEditor.UI
 		private Panel __inside;
 		private float __size = 4;
 		public ResizablePanel(Element parent) : base(parent) {
-			SetDockPadding(RectangleF.TLRB(0));
+			DockPadding = RectangleF.TLRB(0);
 
 			__top = new(this);
 			__left = new(this);
@@ -54,12 +54,13 @@ namespace Nucleus.ModelEditor.UI
 			__inside = new(this);
 
 			foreach (Button b in new Button[] { __top, __left, __right, __bottom }) {
-				b.SetText("");
+				b.				Text = "";
 				b.SetBgColor(Color.Blank);
-				b.SetBorderSize(0);
+				b.BorderSize = 0;
 			}
 
-			__inside.SetDock(Dock.Fill);
+			__inside.
+			Dock = Dock.Fill;
 
 			UpdateResizers();
 			SetAddParent(__inside);
@@ -74,7 +75,7 @@ namespace Nucleus.ModelEditor.UI
 		public float MinimumHeight { get; set; } = 384;
 
 		private bool overflowCheckX(float deltaX) {
-			if (this.GetSize().X - deltaX < MinimumWidth)
+			if (this.Size.X - deltaX < MinimumWidth)
 				return true;
 			return false;
 		}
@@ -86,8 +87,9 @@ namespace Nucleus.ModelEditor.UI
 		private void __left_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
 			if (overflowCheckX(delta.X)) return;
 
-			this.SetPos(new(this.GetPos().X + delta.X, this.GetPos().Y));
-			this.SetSize(new(this.GetSize().X + -delta.X, this.GetSize().Y));
+			this.
+			Position = new(this.Position.X + delta.X, this.Position.Y);
+			this.			Size = new(this.Size.X + -delta.X, this.Size.Y);
 		}
 
 		private void __right_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
@@ -100,11 +102,11 @@ namespace Nucleus.ModelEditor.UI
 
 		protected override void PerformLayout(float width, float height) {
 			base.PerformLayout(width, height);
-			__top.SetPos(new(__size, 0)); __top.SetSize(new(width - (__size * 2), __size));
-			__left.SetPos(new(0, __size)); __left.SetSize(new(__size, height - (__size * 2)));
-			__bottom.SetPos(new(__size, height - __size)); __bottom.SetSize(new(width - (__size * 2), __size));
-			__right.SetPos(new(width - __size, __size)); __right.SetSize(new(__size, height - (__size * 2)));
-			__inside.SetDockMargin(RectangleF.TLRB(__size + 2));
+			__top.			Position = new(__size, 0); __top.Size = new(width - (__size * 2), __size);
+			__left.			Position = new(0, __size); __left.Size = new(__size, height - (__size * 2));
+			__bottom.			Position = new(__size, height - __size); __bottom.Size = new(width - (__size * 2), __size);
+			__right.			Position = new(width - __size, __size); __right.Size = new(__size, height - (__size * 2));
+			__inside.			DockMargin = RectangleF.TLRB(__size + 2);
 		}
 
 		private void UpdateResizers() {

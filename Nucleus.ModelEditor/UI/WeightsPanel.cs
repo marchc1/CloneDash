@@ -101,39 +101,39 @@ public class WeightsPanel : View
 	public ListView BoneOrder;
 	public WeightsPanel(Element parent) : base(parent) {
 		props = new(this);
-		props.SetDock(Dock.Fill);
-		props.SetDockMargin(RectangleF.TLRB(4));
+		props.		Dock = Dock.Fill;
+		props.		DockMargin = RectangleF.TLRB(4);
 		props.SetPaintBackgroundEnabled(false);
 
 		topBtns = new(props);
-		topBtns.SetDock(Dock.Top);
-		topBtns.SetSize(new(0, 128));
+		topBtns.		Dock = Dock.Top;
+		topBtns.		Size = new(0, 128);
 		topBtns.SetPaintBackgroundEnabled(false);
 
 		bottomBtns = new(props);
-		bottomBtns.SetDock(Dock.Bottom);
-		bottomBtns.SetSize(new(0, 64));
+		bottomBtns.		Dock = Dock.Bottom;
+		bottomBtns.		Size = new(0, 64);
 		bottomBtns.SetPaintBackgroundEnabled(false);
 		bottomBtns.Direction = Axis.Horizontal;
 		bottomBtns.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 		BoneOrder = new(props);
-		BoneOrder.SetDock(Dock.Fill);
-		BoneOrder.SetDockMargin(RectangleF.TLRB(0, 8, 8, 0));
+		BoneOrder.		Dock = Dock.Fill;
+		BoneOrder.		DockMargin = RectangleF.TLRB(0, 8, 8, 0);
 		BoneOrder.SetPaintBackgroundEnabled(false);
 
 		var lblBones = new Label(topBtns);
-		lblBones.SetText("Bones");
+		lblBones.		Text = "Bones";
 		lblBones.SetAutoSize(true);
-		lblBones.SetTextSize(22);
-		lblBones.SetDock(Dock.Bottom);
+		lblBones.		TextSize = 22;
+		lblBones.		Dock = Dock.Bottom;
 
 		var numslider = new NumSlider(topBtns);
 		numslider.MinimumValue = 0;
 		numslider.MaximumValue = 100;
 		numslider.SetAutoSize(true);
-		numslider.SetTextSize(22);
-		numslider.SetDock(Dock.Bottom);
+		numslider.		TextSize = 22;
+		numslider.		Dock = Dock.Bottom;
 		numslider.Digits = 2;
 		numslider.Suffix = "%";
 		numslider.OnValueChanged += Numslider_OnValueChanged;
@@ -185,7 +185,7 @@ public class WeightsPanel : View
 
 		foreach (var bonepair in meshAttachment.Weights) {
 			var btn = new BonePairButton(BoneOrder, this);
-			btn.SetText(bonepair.Bone.Name);
+			btn.			Text = bonepair.Bone.Name;
 			btn.SetTag("bonepair", bonepair);
 		}
 	}

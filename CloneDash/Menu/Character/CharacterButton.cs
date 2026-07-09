@@ -11,15 +11,15 @@ namespace CloneDash.Menu.Character
 		public CharacterButton(Element? parent, ITexture? texture) : base(parent) {
 			SetPaintBackgroundEnabled(false);
 			SetBgColor(Color.Blank);
-			SetBorderSize(0);
+			BorderSize = 0;
 			SetAnchor(Anchor.TopCenter);
 			SetOrigin(Anchor.TopCenter);
 
 			Image icon = new(this);
-			icon.SetImage(texture);
-			icon.SetImageOrientation(ImageOrientation.Zoom);
-			icon.SetDock(Dock.Fill);
-			icon.SetBorderSize(0);
+			icon.Texture = texture;
+			icon.ImageOrientation = ImageOrientation.Zoom;
+			icon.Dock = Dock.Fill;
+			icon.BorderSize = 0;
 		}
 	}
 }

@@ -81,26 +81,26 @@ public abstract class BaseTimelineView : View
 	}
 	protected override void OnThink() {
 		base.OnThink();
-		KeyframeChannelsPanel.SetChildRenderOffset(new(0, -ScrollOffset));
+		KeyframeChannelsPanel.		ChildRenderOffset = new(0, -ScrollOffset);
 		ClipChildrenVisibility(KeyframeChannelsPanel);
 		CheckIfNewChannels();
 	}
 
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
-		button.SetText("");
-		button.SetBorderSize(1);
+		button.		Text = "";
+		button.BorderSize = 1;
 
 		var hP = 3;
 		var vY = smallVertical ? 8 : 4;
-		button.SetDockMargin(RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY));
+		button.		DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
 	}
 
 	protected static Nucleus.UI.Elements.Image SetButtonImage(Button button, ITexture texture) {
 		var img = new Nucleus.UI.Elements.Image(button);
-		img.SetImage(texture);
-		img.SetImageOrientation(ImageOrientation.Fit);
+		img.		Texture = texture;
+		img.		ImageOrientation = ImageOrientation.Fit;
 		img.SetPassthru(true);
-		img.SetDock(Dock.Fill);
+		img.		Dock = Dock.Fill;
 		return img;
 	}
 	protected virtual void PaintTimeOverlay(float width, float height) {
@@ -114,31 +114,31 @@ public abstract class BaseTimelineView : View
 		ModelEditor.Active.File.AnimationActivated += File_AnimationActivated;
 		ModelEditor.Active.File.AnimationDeactivated += File_AnimationDeactivated;
 
-		SetDockPadding(RectangleF.Zero);
+		DockPadding = RectangleF.Zero;
 		SetBgColor(GetBgColor().Adjust(0, -.4, 2));
 		// Create the initial panels
 		TopButtonPanel = new(this);
-		TopButtonPanel.SetDock(Dock.Top);
-		TopButtonPanel.SetSize(new(44));
-		TopButtonPanel.SetDockMargin(RectangleF.TLRB(6));
+		TopButtonPanel.		Dock = Dock.Top;
+		TopButtonPanel.		Size = new(44);
+		TopButtonPanel.		DockMargin = RectangleF.TLRB(6);
 		TopButtonPanel.SetPaintBackgroundEnabled(false);
-		TopButtonPanel.SetDockPadding(RectangleF.Zero);
+		TopButtonPanel.		DockPadding = RectangleF.Zero;
 
 		Panel bottomPanel = new(this);
-		bottomPanel.SetDock(Dock.Bottom);
-		bottomPanel.SetSize(new(16));
-		bottomPanel.SetDockMargin(RectangleF.TLRB(0));
-		bottomPanel.SetBorderSize(0);
+		bottomPanel.		Dock = Dock.Bottom;
+		bottomPanel.		Size = new(16);
+		bottomPanel.		DockMargin = RectangleF.TLRB(0);
+		bottomPanel.BorderSize = 0;
 		bottomPanel.SetPaintBackgroundEnabled(true);
-		bottomPanel.SetDockPadding(RectangleF.Zero);
+		bottomPanel.		DockPadding = RectangleF.Zero;
 
 		ZoomSlider = new(bottomPanel);
 		ZoomSlider.MinimumValue = MinZoom;
 		ZoomSlider.MaximumValue = MaxZoom;
 		ZoomSlider.Value = Zoom;
 		ZoomSlider.SetTextColor(Color.Blank);
-		ZoomSlider.SetDock(Dock.Left);
-		ZoomSlider.SetSize(new(230));
+		ZoomSlider.		Dock = Dock.Left;
+		ZoomSlider.		Size = new(230);
 		ZoomSlider.SetBgColor(new Color(1, 3, 5));
 		ZoomSlider.OnValueChanged += (_, _, v) => {
 			var oob = FrameOutOfBounds(GetCurFrame());
@@ -156,30 +156,30 @@ public abstract class BaseTimelineView : View
 		};
 
 		ButtonsAndNames = new(this);
-		ButtonsAndNames.SetDock(Dock.Left);
-		ButtonsAndNames.SetSize(new(230));
-		ButtonsAndNames.SetDockMargin(RectangleF.TLRB(0));
-		ButtonsAndNames.SetDockPadding(RectangleF.Zero);
-		ButtonsAndNames.SetBorderSize(0);
+		ButtonsAndNames.		Dock = Dock.Left;
+		ButtonsAndNames.		Size = new(230);
+		ButtonsAndNames.		DockMargin = RectangleF.TLRB(0);
+		ButtonsAndNames.		DockPadding = RectangleF.Zero;
+		ButtonsAndNames.BorderSize = 0;
 		ButtonsAndNames.SetPaintBorderEnabled(false);
 		ButtonsAndNames.SetPaintBackgroundEnabled(false);
 
 		Buttons = new(ButtonsAndNames);
-		Buttons.SetDock(Dock.Top);
-		Buttons.SetSize(new(36));
-		Buttons.SetDockMargin(RectangleF.TLRB(0));
-		Buttons.SetDockPadding(RectangleF.Zero);
-		Buttons.SetBorderSize(0);
+		Buttons.		Dock = Dock.Top;
+		Buttons.		Size = new(36);
+		Buttons.		DockMargin = RectangleF.TLRB(0);
+		Buttons.		DockPadding = RectangleF.Zero;
+		Buttons.BorderSize = 0;
 		Buttons.SetPaintBorderEnabled(false);
 		Buttons.SetPaintBackgroundEnabled(false);
 		Buttons.Direction = Axis.Horizontal;
 		Buttons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 		KeyframeChannelsPanel = new(ButtonsAndNames);
-		KeyframeChannelsPanel.SetDock(Dock.Fill);
-		KeyframeChannelsPanel.SetDockMargin(RectangleF.TLRB(0));
-		KeyframeChannelsPanel.SetDockPadding(RectangleF.Zero);
-		KeyframeChannelsPanel.SetBorderSize(0);
+		KeyframeChannelsPanel.		Dock = Dock.Fill;
+		KeyframeChannelsPanel.		DockMargin = RectangleF.TLRB(0);
+		KeyframeChannelsPanel.		DockPadding = RectangleF.Zero;
+		KeyframeChannelsPanel.BorderSize = 0;
 		KeyframeChannelsPanel.SetPaintBorderEnabled(false);
 		KeyframeChannelsPanel.SetPaintBackgroundEnabled(false);
 
@@ -196,9 +196,10 @@ public abstract class BaseTimelineView : View
 			playBackward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				playBackwardImg.SetImage(timeline.PlayingBackwards
+				playBackwardImg.
+				Texture = timeline.PlayingBackwards
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
-							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png"));
+							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png");
 
 				s.SetBgColor(timeline.PlayingBackwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
@@ -206,9 +207,10 @@ public abstract class BaseTimelineView : View
 			playForward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				playForwardImg.SetImage(timeline.PlayingForwards
+				playForwardImg.
+				Texture = timeline.PlayingForwards
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
-							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png"));
+							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png");
 				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
 
@@ -224,20 +226,20 @@ public abstract class BaseTimelineView : View
 		}
 
 		TimeInfoPanel = new(this);
-		TimeInfoPanel.SetDock(Dock.Top);
-		TimeInfoPanel.SetSize(new(36));
-		TimeInfoPanel.SetDockMargin(RectangleF.TLRB(0));
-		TimeInfoPanel.SetDockPadding(RectangleF.Zero);
-		TimeInfoPanel.SetBorderSize(0);
+		TimeInfoPanel.		Dock = Dock.Top;
+		TimeInfoPanel.		Size = new(36);
+		TimeInfoPanel.		DockMargin = RectangleF.TLRB(0);
+		TimeInfoPanel.		DockPadding = RectangleF.Zero;
+		TimeInfoPanel.BorderSize = 0;
 		TimeInfoPanel.SetPaintBorderEnabled(false);
 		TimeInfoPanel.SetPaintBackgroundEnabled(false);
 
 		KeyframeOverlay = new(this);
 		KeyframeOverlay.SetPassthru(true);
-		KeyframeOverlay.SetDock(Dock.Fill);
-		KeyframeOverlay.SetDockMargin(RectangleF.TLRB(0));
-		KeyframeOverlay.SetDockPadding(RectangleF.Zero);
-		KeyframeOverlay.SetBorderSize(0);
+		KeyframeOverlay.		Dock = Dock.Fill;
+		KeyframeOverlay.		DockMargin = RectangleF.TLRB(0);
+		KeyframeOverlay.		DockPadding = RectangleF.Zero;
+		KeyframeOverlay.BorderSize = 0;
 		KeyframeOverlay.SetPaintBorderEnabled(false);
 		KeyframeOverlay.SetPaintBackgroundEnabled(false);
 	}
@@ -270,7 +272,7 @@ public abstract class BaseTimelineView : View
 			var curframe = tl.GetVisualPlayhead(true);
 
 			timeline.SetBgColor(new Color(30, 37, 46));
-			timeline.SetBorderSize(0);
+			timeline.BorderSize = 0;
 			timeline.Paint(width, height);
 
 			Graphics2D.SetDrawColor(130, 135, 142);
@@ -332,7 +334,7 @@ public abstract class BaseTimelineView : View
 			var xstart = timeline.defaultXOffset - timeline.FrameOffset;
 
 			timeline.SetBgColor(new Color(13, 16, 20));
-			timeline.SetBorderSize(0);
+			timeline.BorderSize = 0;
 
 			var curframe = timeline.GetCurFrame();
 			float curframeX = (float)timeline.FrameToX(curframe);
@@ -350,14 +352,14 @@ public abstract class BaseTimelineView : View
 
 	public Button AddTopButton(string icon) {
 		Button button = new(TopButtonPanel);
-		button.SetDock(Dock.Left);
-		button.SetSize(new(32));
-		button.SetDockMargin(RectangleF.TLRB(2, 0, 0, 2));
-		button.SetText("");
+		button.		Dock = Dock.Left;
+		button.		Size = new(32);
+		button.		DockMargin = RectangleF.TLRB(2, 0, 0, 2);
+		button.		Text = "";
 		var img = SetButtonImage(button, Level.Textures.LoadTextureFromFile(icon));
-		img.SetImageOrientation(ImageOrientation.Zoom);
-		img.SetImagePadding(new(4));
-		button.SetBorderSize(1);
+		img.		ImageOrientation = ImageOrientation.Zoom;
+		img.		ImagePadding = new(4);
+		button.BorderSize = 1;
 
 		lastButton = button;
 		return button;
@@ -365,9 +367,9 @@ public abstract class BaseTimelineView : View
 
 	public void AddTopSpace(float width = 32) {
 		Panel panel = new(TopButtonPanel);
-		panel.SetDock(Dock.Left);
-		panel.SetDockMargin(RectangleF.Zero);
-		panel.SetSize(new(width));
+		panel.		Dock = Dock.Left;
+		panel.		DockMargin = RectangleF.Zero;
+		panel.		Size = new(width);
 		panel.SetVisible(false);
 	}
 
@@ -528,10 +530,11 @@ public abstract class BaseTimelineView : View
 		header = new(KeyframeChannelsPanel);
 		keyframes = null!;
 
-		header.SetDock(Dock.Top);
-		header.SetDockMargin(RectangleF.Zero);
-		header.SetBorderSize(1);
-		header.SetSize(new(24));
+		header.
+		Dock = Dock.Top;
+		header.		DockMargin = RectangleF.Zero;
+		header.BorderSize = 1;
+		header.		Size = new(24);
 		header.SetFgColor(new Color(10, 10, 10));
 		header.SetTextAlignment(Anchor.CenterLeft);
 	}
@@ -541,8 +544,8 @@ public abstract class BaseTimelineView : View
 			case EditorAnimation animation:
 				header.SetBgColor(HEADER_SELECTED_COLOR);
 				header.SetTextPadding(new(16, 0));
-				header.SetText(animation.Name);
-				header.SetTextSize(17);
+				header.				Text = animation.Name;
+				header.				TextSize = 17;
 
 				if (ModelEditor.Active.SelectedObjectsCount > 0) {
 					HashSet<EditorBone> foundBones = [];
@@ -569,15 +572,16 @@ public abstract class BaseTimelineView : View
 			case EditorBone bone:
 				header.SetBgColor(bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR);
 
-				header.SetText(bone.Name);
+				header.
+				Text = bone.Name;
 				header.SetTextPadding(new(48, 0));
-				header.SetTextSize(16);
+				header.				TextSize = 16;
 				var boneImg = new Nucleus.UI.Elements.Image(header);
-				boneImg.SetImage(Level.Textures.LoadTextureFromFile("models/bone.png"));
-				boneImg.SetImageOrientation(ImageOrientation.Centered);
+				boneImg.				Texture = Level.Textures.LoadTextureFromFile("models/bone.png");
+				boneImg.				ImageOrientation = ImageOrientation.Centered;
 				boneImg.SetPassthru(true);
-				boneImg.SetDock(Dock.Left);
-				boneImg.SetSize(new(24));
+				boneImg.				Dock = Dock.Left;
+				boneImg.				Size = new(24);
 
 				header.OnButtonClick += (_, _) => {
 					ModelEditor.Active.SelectObject(bone);
@@ -615,7 +619,8 @@ public abstract class BaseTimelineView : View
 
 		CreateChannelPanels(out Button header, out Panel keyframes, timeline);
 
-		header.SetText($"{property switch {
+		header.
+		Text = $"{property switch {
 			KeyframeProperty.Bone_Rotation => "Rotate",
 			KeyframeProperty.Bone_Translation => "Translate",
 			KeyframeProperty.Bone_Scale => "Scale",
@@ -628,17 +633,17 @@ public abstract class BaseTimelineView : View
 			0 => "X",
 			1 => "Y",
 			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
-		}}")}");
+		}}")}";
 
 		var headerImg = new Nucleus.UI.Elements.Image(header);
 		headerImg.SetPassthru(true);
-		headerImg.SetDock(Dock.Left);
-		headerImg.SetSize(new(24));
-		headerImg.SetImagePadding(property switch {
+		headerImg.		Dock = Dock.Left;
+		headerImg.		Size = new(24);
+		headerImg.		ImagePadding = property switch {
 			KeyframeProperty.Slot_Attachment => new(8),
 			_ => new(6)
-		});
-		headerImg.SetImage(Level.Textures.LoadTextureFromFile($"models/{property switch {
+		};
+		headerImg.		Texture = Level.Textures.LoadTextureFromFile($"models/{property switch {
 			KeyframeProperty.Bone_Rotation => "rotate_color",
 			KeyframeProperty.Bone_Translation => "translate_color",
 			KeyframeProperty.Bone_Scale => "scale_color",
@@ -651,8 +656,8 @@ public abstract class BaseTimelineView : View
 			0 => "x",
 			1 => "y",
 			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
-		}}")}.png"));
-		headerImg.SetImageOrientation(ImageOrientation.Centered);
+		}}")}.png");
+		headerImg.		ImageOrientation = ImageOrientation.Centered;
 		header.SetTextPadding(new(76, 0));
 
 		header.Thinking += (s) => {

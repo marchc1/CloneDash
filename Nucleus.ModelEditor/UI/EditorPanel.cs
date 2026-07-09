@@ -40,38 +40,40 @@ namespace Nucleus.ModelEditor
 			MainTransformsPanel = new(this);
 			MainTransformsPanel.ForceHeight = false;
 
-			MainTransformsPanel.SetDock(Dock.Bottom);
-			MainTransformsPanel.SetSize(new(128));
+			MainTransformsPanel.
+			Dock = Dock.Bottom;
+			MainTransformsPanel.			Size = new(128);
 
 			OperatorPanel = new(this);
 			OperatorPanel.ForceHeight = false;
 
-			OperatorPanel.SetDock(Dock.Bottom);
-			OperatorPanel.SetDockMargin(RectangleF.TLRB(0, 0, 0, -120)); // Silly way to do this, but w/e
-			OperatorPanel.SetSize(new(128));
+			OperatorPanel.
+			Dock = Dock.Bottom;
+			OperatorPanel.			DockMargin = RectangleF.TLRB(0, 0, 0, -120); // Silly way to do this, but w/e
+			OperatorPanel.			Size = new(128);
 			OperatorPanel.SetVisible(false);
 
 			var modePanel = new FlexPanel(MainTransformsPanel);
 			modePanel.Direction = Axis.Vertical;
 			modePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			modePanel.SetSize(new(98, 90));
+			modePanel.			Size = new(98, 90);
 
 			PoseBonesOpBtn = new Button(modePanel);
-			PoseBonesOpBtn.SetText("Pose");
+			PoseBonesOpBtn.			Text = "Pose";
 			PoseBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.PoseBoneToTarget);
 
 			WeighVerticesOpBtn = new Button(modePanel);
-			WeighVerticesOpBtn.SetText("Weights");
+			WeighVerticesOpBtn.			Text = "Weights";
 			WeighVerticesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.ChangeMeshWeights);
 
 			CreateBonesOpBtn = new Button(modePanel);
-			CreateBonesOpBtn.SetText("Create");
+			CreateBonesOpBtn.			Text = "Create";
 			CreateBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.CreateNewBones);
 
 			var transformPanel = new FlexPanel(MainTransformsPanel);
 			transformPanel.Direction = Axis.Vertical;
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformPanel.SetSize(new(280, 115));
+			transformPanel.			Size = new(280, 115);
 
 			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1, KeyframeProperty.Bone_Rotation);
 			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2, KeyframeProperty.Bone_Translation);
@@ -94,18 +96,18 @@ namespace Nucleus.ModelEditor
 			var transformModePanel = new FlexPanel(MainTransformsPanel);
 			transformModePanel.Direction = Axis.Vertical;
 			transformModePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformModePanel.SetSize(new(70, 90));
+			transformModePanel.			Size = new(70, 90);
 
 			LocalTransformButton = new Button(transformModePanel);
-			LocalTransformButton.SetText("Local");
+			LocalTransformButton.			Text = "Local";
 			LocalTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.LocalCoordinates);
 
 			ParentTransformButton = new Button(transformModePanel);
-			ParentTransformButton.SetText("Parent");
+			ParentTransformButton.			Text = "Parent";
 			ParentTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.ParentCoordinates);
 
 			WorldTransformButton = new Button(transformModePanel);
-			WorldTransformButton.SetText("World");
+			WorldTransformButton.			Text = "World";
 			WorldTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
@@ -138,15 +140,15 @@ namespace Nucleus.ModelEditor
 			var perfGraph1 = new PerformanceGraph(this);
 			perfGraph1.SetAnchor(Anchor.BottomRight);
 			perfGraph1.SetOrigin(Anchor.BottomRight);
-			perfGraph1.SetPos(new(-8, -8 + -32 + -8));
-			perfGraph1.SetSize(new(300, 32));
+			perfGraph1.			Position = new(-8, -8 + -32 + -8);
+			perfGraph1.			Size = new(300, 32);
 			perfGraph1.Mode = PerformanceGraph.GraphMode.CpuUpdateTime;
 
 			var perfGraph2 = new PerformanceGraph(this);
 			perfGraph2.SetAnchor(Anchor.BottomRight);
 			perfGraph2.SetOrigin(Anchor.BottomRight);
-			perfGraph2.SetPos(new(-8, -8));
-			perfGraph2.SetSize(new(300, 32));
+			perfGraph2.			Position = new(-8, -8);
+			perfGraph2.			Size = new(300, 32);
 			perfGraph2.Mode = PerformanceGraph.GraphMode.RamUsage;
 
 		}

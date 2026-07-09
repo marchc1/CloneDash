@@ -10,7 +10,7 @@ namespace CloneDash.Common.UI
 		public Axis AutoSize { get; set; } = Axis.None;
 
 		public Flow(Element? parent) : base(parent) {
-			SetBorderSize(0);
+			BorderSize = 0;
 		}
 
 		protected override void OnThink() {
@@ -32,15 +32,15 @@ namespace CloneDash.Common.UI
 
 				Element element = children[i];
 				Vector2F s = element.GetRenderBounds().Size;
-				Vector2F p = element.GetPos();
+				Vector2F p = element.Position;
 
 				if (Direction == FlowDirection.Horizontal) {
-					element.SetPos(new Vector2F(current.X, p.Y));
+					element.					Position = new Vector2F(current.X, p.Y);
 					current.X += s.X;
 					current.Y = Math.Max(s.Y, current.Y);
 				}
 				else {
-					element.SetPos(new Vector2F(p.X, current.Y));
+					element.					Position = new Vector2F(p.X, current.Y);
 					current.X = Math.Max(s.X, current.X);
 					current.Y += s.Y;
 				}
@@ -49,10 +49,10 @@ namespace CloneDash.Common.UI
 			if (AutoSize == Axis.None)
 				return;
 
-			Vector2F size = GetSize();
+			Vector2F size = Size;
 			if (AutoSize.HasFlag(Axis.Horizontal)) size.X = current.X;
 			if (AutoSize.HasFlag(Axis.Vertical)) size.Y = current.Y;
-			SetSize(size);
+			Size = size;
 		}
 	}
 

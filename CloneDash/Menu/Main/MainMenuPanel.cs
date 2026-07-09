@@ -20,18 +20,18 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	#region IMainMenuPanel
 
 	string IMainMenuPanel.Name => "Main Menu";
-	
+
 	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "Idle"
 		});
 	}
-	
+
 	#endregion
 
 	private new MainMenuLevel Level => (MainMenuLevel)base.Level;
-	
+
 	private bool UsingRootNavigationMenu => buttons.Count == 1;
 	private readonly Stack<List<MainMenuButton>> buttons = [];
 
@@ -46,7 +46,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		InvalidateLayout();
 		back.SetVisible(!UsingRootNavigationMenu);
 	}
-	
+
 	public void DestroyNavigationMenu() {
 		if (UsingRootNavigationMenu) return;
 		var toRemove = buttons.Pop();
@@ -66,14 +66,14 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
-	private void MakeNavigationButton(string text,string description, float hue, string icon, Action<MainMenuLevel>? action = null) {
+	private void MakeNavigationButton(string text, string description, float hue, string icon, Action<MainMenuLevel>? action = null) {
 		MainMenuLevel menu = Level.As<MainMenuLevel>();
 		var menuBtns = buttons.Peek();
 
 		MainMenuButton btn = new(this, text, description, icon);
 		btn.SetBgColor(this.GetBackgroundColor(GetScheme()));
 		btn.SetFgColor(new Vector3(hue, .33f, 1f).HSVfToRGBub());
-		btn.SetText(text);
+		btn.Text = text;
 
 		btn.OnButtonClick += (_, _) => action?.Invoke(menu);
 		btn.StartOffset = (menuBtns.Count + 1) * 24;
@@ -96,24 +96,24 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		return ret;
 	}
-	
+
 	public MainMenuPanel(Element? parent) : base(parent) {
-		SetBorderSize(0);
+		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
 
 		SetPassthru(true);
 
 		back = new Button(this);
 		back.SetOrigin(Anchor.Center);
-		back.SetBorderSize(0);
+		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
-		back.OnButtonClick += (_, _) => DestroyNavigationMenu();;
-		
+		back.OnButtonClick += (_, _) => DestroyNavigationMenu(); ;
+
 		Image backImage = new(back);
-		backImage.SetImage(Level.Textures.LoadTextureFromFile("ui/back.png"));
-		backImage.SetImageOrientation(ImageOrientation.Zoom);
-		backImage.SetDock(Dock.Fill);
-		
+		backImage.Texture = Level.Textures.LoadTextureFromFile("ui/back.png");
+		backImage.ImageOrientation = ImageOrientation.Zoom;
+		backImage.Dock = Dock.Fill;
+
 		CreateNavigationMenu();
 
 		MakeNavigationButton(
@@ -192,15 +192,16 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		int count = current.Count;
 		float btnHeight = height / 12f;
-		back.SetSize(new Vector2F(btnHeight * 2));
-		back.SetPos(new Vector2F(width * .5f, height / 2));
+		back.Size = new Vector2F(btnHeight * 2);
+		back.Position = new Vector2F(width * .5f, height / 2);
 		back.SetVisible(!UsingRootNavigationMenu);
 
 		for (int i = 0; i < count; i++) {
 			MainMenuButton btn = current[i];
 			float y = count == 1 ? 0 : NMath.Remap(i, 0, count - 1, -count / 2f, count / 2f);
 
-			btn.SetPos(new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing)));
+			btn.
+			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
 			btn.SetOrigin(Anchor.Center);
 		}
 	}

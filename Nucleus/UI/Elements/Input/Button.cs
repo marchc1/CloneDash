@@ -170,7 +170,7 @@ public class Button : Label
 			Graphics2D.DrawCircle(whd2, whd3);
 		}
 		else {
-			float roundness = GetRoundness();
+			float roundness = Roundness;
 			int segments = (int)Math.Clamp(roundness * 1.5f, 0, 12);
 			Graphics2D.DrawRectangleRounded(0, 0, width, height, roundness, segments);
 		}
@@ -183,7 +183,7 @@ public class Button : Label
 	public override void PaintBorder(float width, float height) {
 		ColorStateSetup(out var back, out var fore);
 
-		if (GetBorderSize() > 0) {
+		if (BorderSize > 0) {
 			Graphics2D.SetDrawColor(fore);
 			if (DrawAsCircle) {
 				var whd2 = new Vector2F(width / 2, width / 2);

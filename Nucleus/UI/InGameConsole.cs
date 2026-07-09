@@ -30,7 +30,7 @@ namespace Nucleus
 		}
 
 		public ConsoleAutocomplete(Element? parent) : base(parent) {
-			SetClipping(false);
+			Clipping = false;
 		}
 
 		public override void Paint(float width, float height) {
@@ -195,8 +195,8 @@ namespace Nucleus
 
 
 		protected override void OnThink() {
-			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
-			SetSize(new(GetParent()!.GetSize().W - 16, 384));
+			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
+			Size = new(GetParent()!.Size.W - 16, 384);
 		}
 
 		internal class ConsoleLogs : TextEditor
@@ -236,15 +236,16 @@ namespace Nucleus
 		}
 
 		public ConsoleWindow(Element? parent) : base(parent) {
-			SetPos(new(8, Level.GetConsoleOverlaySettings().Position.Y));
-			SetSize(new(GetParent()!.GetSize().W - 16, 384));
+			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
+			Size = new(GetParent()!.Size.W - 16, 384);
 
-			this.SetDockMargin(RectangleF.TLRB(8));
-			this.SetBorderSize(0);
+			this.
+			DockMargin = RectangleF.TLRB(8);
+			this.BorderSize = 0;
 
 			consoleInput = new ConsoleInput(this);
-			consoleInput.SetSize(new(0, 32));
-			consoleInput.SetDock(Dock.Bottom);
+			consoleInput.			Size = new(0, 32);
+			consoleInput.			Dock = Dock.Bottom;
 			consoleInput.Multiline = false;
 			consoleInput.ShowDetails = false;
 			consoleInput.ShowGutter = false;
@@ -260,9 +261,9 @@ namespace Nucleus
 			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = new ConsoleLogs(this);
-			consoleLogs.SetDock(Dock.Fill);
-			consoleLogs.SetTextSize(12);
-			consoleLogs.SetDockMargin(new(0, 0, 0, 0));
+			consoleLogs.			Dock = Dock.Fill;
+			consoleLogs.			TextSize = 12;
+			consoleLogs.			DockMargin = new(0, 0, 0, 0);
 			consoleLogs.Readonly = true;
 			consoleLogs.ShowDetails = false;
 			consoleLogs.ShowGutter = false;
@@ -346,8 +347,8 @@ namespace Nucleus
 		private void EnsureAutocompletePanel() {
 			if (!IValidatable.IsValid(autoComplete)) {
 				autoComplete = new ConsoleAutocomplete(consoleInput);
-				autoComplete.SetDock(Dock.Bottom);
-				autoComplete.SetSize(new(0, 0));
+				autoComplete.				Dock = Dock.Bottom;
+				autoComplete.				Size = new(0, 0);
 			}
 		}
 
@@ -361,7 +362,7 @@ namespace Nucleus
 			var inputText = consoleInput.GetText();
 
 			if (string.IsNullOrEmpty(inputText)) {
-				autoComplete.SetChildRenderOffset(new(0, 12));
+				autoComplete.				ChildRenderOffset = new(0, 12);
 				SetupHistoryAutocomplete();
 				return;
 			}
@@ -381,9 +382,9 @@ namespace Nucleus
 
 			float xOffset = 0;
 			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
-				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.GetTextSize()).X + 4;
+				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
 			}
-			autoComplete.SetChildRenderOffset(new(xOffset, 12));
+			autoComplete.			ChildRenderOffset = new(xOffset, 12);
 		}
 
 		private void SetupHistoryAutocomplete() {

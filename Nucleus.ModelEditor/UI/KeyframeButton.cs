@@ -31,24 +31,24 @@ namespace Nucleus.ModelEditor
 						KeyframeState.Keyframed => KEYFRAME_COLOR_ACTIVE_KEYFRAME
 					});
 				}
-				KeyframeImage.SetImageColor(Color.Black);
+				KeyframeImage.ImageColor = Color.Black;
 			}
 			else {
 				SetBgColor(GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
-				KeyframeImage.SetImageColor(Color.Gray);
+				KeyframeImage.ImageColor = Color.Gray;
 			}
 
 			base.Paint(width, height);
 		}
 
 		public KeyframeButton(Element parent) : base(parent) {
-			SetText("");
+			Text = "";
 			KeyframeImage = new Nucleus.UI.Elements.Image(this);
-			KeyframeImage.SetImage(Level.Textures.LoadTextureFromFile("models/keyframe.png"));
-			KeyframeImage.SetImageOrientation(ImageOrientation.Centered);
-			KeyframeImage.SetImagePadding(new(7));
+			KeyframeImage.			Texture = Level.Textures.LoadTextureFromFile("models/keyframe.png");
+			KeyframeImage.			ImageOrientation = ImageOrientation.Centered;
+			KeyframeImage.			ImagePadding = new(7);
 			KeyframeImage.SetPassthru(true);
-			KeyframeImage.SetDock(Dock.Fill);
+			KeyframeImage.			Dock = Dock.Fill;
 		}
 	}
 }

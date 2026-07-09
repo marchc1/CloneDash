@@ -23,7 +23,7 @@ namespace Nucleus.ModelEditor
 	{
 		public PropertiesPanel(Element parent) : base(parent) {
 			SetPaintBackgroundEnabled(false);
-			SetBorderSize(0);
+			BorderSize = 0;
 			ModelEditor.Active.SelectedChanged += ModelEditor_Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => ModelEditor_Active_SelectedChanged();
 			ModelEditor.Active.File.Cleared += File_Cleared;
@@ -78,15 +78,15 @@ namespace Nucleus.ModelEditor
 
 				Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
 				Graphics2D.SetDrawColor(GetTextColor());
-				Graphics2D.DrawText(textDrawingPosition, GetText(), GetFont(), GetTextSize(), GetTextAlignment());
+				Graphics2D.DrawText(textDrawingPosition, Text, Font, TextSize, GetTextAlignment());
 			}
 		}
 		public static InnerRow NewRow(Panel props, string label, string? icon = null) {
 			Panel p = new Panel(props);
-			p.SetDock(Dock.Top);
-			p.SetSize(new(0, 30));
-			p.SetDockMargin(RectangleF.TLRB(0, 8, 8, -1));
-			p.SetBorderSize(1);
+			p.			Dock = Dock.Top;
+			p.			Size = new(0, 30);
+			p.			DockMargin = RectangleF.TLRB(0, 8, 8, -1);
+			p.BorderSize = 1;
 			p.SetBgColor(new Color(30, 35, 40));
 			p.SetFgColor(new Color(120, 125, 130));
 
@@ -96,20 +96,20 @@ namespace Nucleus.ModelEditor
 				tex = props.UI.Level.Textures.LoadTextureFromFile(icon);
 			}
 			InnerRowLabel test = new(p, tex);
-			test.SetDock(Dock.Left);
-			test.SetText(label);
-			test.SetSize(new(110));
+			test.			Dock = Dock.Left;
+			test.			Text = label;
+			test.			Size = new(110);
 			test.SetTextAlignment(Anchor.CenterLeft);
 			test.SetTextPadding(new(64, 0));
 			test.SetPaintBackgroundEnabled(true);
-			test.SetTextSize(19);
+			test.			TextSize = 19;
 			test.SetBgColor(new Color(60, 65, 70));
 
 			InnerRow inner = new(p);
 			inner.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 			inner.Direction = Axis.Horizontal;
-			inner.SetDockPadding(RectangleF.Zero);
-			inner.SetDock(Dock.Fill);
+			inner.			DockPadding = RectangleF.Zero;
+			inner.			Dock = Dock.Fill;
 
 			return inner;
 		}
@@ -128,7 +128,7 @@ namespace Nucleus.ModelEditor
 
 			var panel = new InternalPropPanel(prop);
 			panel.SetPaintBackgroundEnabled(false);
-			panel.SetDockPadding(RectangleF.Zero);
+			panel.			DockPadding = RectangleF.Zero;
 			panel.SetTag<bool>("first", first);
 
 			return panel;
@@ -139,14 +139,16 @@ namespace Nucleus.ModelEditor
 			var checkbox = new Checkbox(panel);
 			var label = new Label(panel);
 
-			checkbox.SetDock(Dock.Left);
-			checkbox.SetDockMargin(RectangleF.TLRB(4, 6, 7, 4));
+			checkbox.
+			Dock = Dock.Left;
+			checkbox.			DockMargin = RectangleF.TLRB(4, 6, 7, 4);
 			checkbox.Checked = @checked;
 
-			label.SetDock(Dock.Fill);
-			label.SetText(text);
+			label.
+			Dock = Dock.Fill;
+			label.			Text = text;
 			label.SetTextAlignment(Anchor.CenterLeft);
-			label.SetDockMargin(RectangleF.TLRB(4));
+			label.			DockMargin = RectangleF.TLRB(4);
 
 			return checkbox;
 		}
@@ -154,20 +156,20 @@ namespace Nucleus.ModelEditor
 			var panel = AddInternalPropPanel(prop);
 
 			var searchBtn = new Button(panel);
-			searchBtn.SetBorderSize(0);
-			searchBtn.SetDock(Dock.Right);
-			searchBtn.SetSize(new(24));
-			searchBtn.SetText("");
+			searchBtn.BorderSize = 0;
+			searchBtn.			Dock = Dock.Right;
+			searchBtn.			Size = new(24);
+			searchBtn.			Text = "";
 			var searchImg = new Nucleus.UI.Elements.Image(searchBtn);
-			searchImg.SetImage(prop.Level.Textures.LoadTextureFromFile("models/search.png"));
+			searchImg.			Texture = prop.Level.Textures.LoadTextureFromFile("models/search.png");
 			searchImg.SetPassthru(true);
-			searchImg.SetDock(Dock.Fill);
+			searchImg.			Dock = Dock.Fill;
 
 			var path = new Textbox(panel);
-			path.SetDock(Dock.Fill);
-			path.SetText(currentPath ?? "<null>");
+			path.			Dock = Dock.Fill;
+			path.			Text = currentPath ?? "<null>";
 			path.SetTextAlignment(Anchor.Center);
-			path.SetBorderSize(0);
+			path.BorderSize = 0;
 
 			path.OnUserPressedEnter += (_, _, txt) => chosenPath(path, txt);
 			searchBtn.OnButtonClick += (_, _) => {
@@ -182,10 +184,10 @@ namespace Nucleus.ModelEditor
 			var panel = AddInternalPropPanel(prop);
 
 			var numslider = new NumSlider(panel);
-			numslider.SetDock(Dock.Fill);
+			numslider.			Dock = Dock.Fill;
 			numslider.Value = currentValue;
 			numslider.SetTextAlignment(Anchor.Center);
-			numslider.SetBorderSize(0);
+			numslider.BorderSize = 0;
 
 			return numslider;
 		}
@@ -193,10 +195,10 @@ namespace Nucleus.ModelEditor
 			var panel = AddInternalPropPanel(prop);
 
 			var selector = new ColorSelector(panel);
-			selector.SetDock(Dock.Left);
-			selector.SetSize(new(96));
+			selector.			Dock = Dock.Left;
+			selector.			Size = new(96);
 			selector.SelectedColor = (currentColor ?? Color.White);
-			selector.SetBorderSize(0);
+			selector.BorderSize = 0;
 
 			return selector;
 		}
@@ -215,15 +217,15 @@ namespace Nucleus.ModelEditor
 			var keyframe = new KeyframeButton(panel);
 			keyframe.Property = property;
 			keyframe.ArrayIndex = arrayIndex;
-			keyframe.SetSize(new(24));
-			keyframe.SetDock(Dock.Right);
+			keyframe.			Size = new(24);
+			keyframe.			Dock = Dock.Right;
 			keyframe.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(target, property, 0);
 
 			var selector = new ColorSelector(panel);
-			selector.SetDock(Dock.Fill);
-			selector.SetSize(new(64));
+			selector.			Dock = Dock.Fill;
+			selector.			Size = new(64);
 			selector.SelectedColor = (currentColor ?? Color.White);
-			selector.SetBorderSize(0);
+			selector.BorderSize = 0;
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = (slot.GetColor());
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = (slot.GetColor());
 
@@ -237,9 +239,9 @@ namespace Nucleus.ModelEditor
 			var selector = new DropdownSelector<T>(panel);
 			selector.Items.AddRange(options);
 			selector.Selected = value;
-			selector.SetDock(Dock.Left);
-			selector.SetSize(new(96));
-			selector.SetBorderSize(0);
+			selector.			Dock = Dock.Left;
+			selector.			Size = new(96);
+			selector.BorderSize = 0;
 			selector.Selected = value;
 			selector.OnToString += (t) => tostring(t);
 			selector.OnSelectionChanged += (self, o, n) => change(n);
@@ -250,9 +252,9 @@ namespace Nucleus.ModelEditor
 			var panel = AddInternalPropPanel(prop);
 
 			var selector = DropdownSelector<T>.FromEnum<T>(panel, value ?? default(T));
-			selector.SetDock(Dock.Left);
-			selector.SetSize(new(96));
-			selector.SetBorderSize(0);
+			selector.			Dock = Dock.Left;
+			selector.			Size = new(96);
+			selector.BorderSize = 0;
 			selector.Selected = value;
 
 			return selector;
@@ -272,16 +274,16 @@ namespace Nucleus.ModelEditor
 		}
 		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, ButtonCode>? onClicked = null) {
 			var newBtn = new Button(buttons);
-			newBtn.SetText(text);
+			newBtn.			Text = text;
 			newBtn.SetAutoSize(true);
 			if (icon != null) {
 				var img = new Nucleus.UI.Elements.Image(newBtn);
 				img.SetPassthru(true);
-				img.SetSize(new(32));
-				img.SetImageOrientation(ImageOrientation.Zoom);
-				img.SetDock(Dock.Left);
-				img.SetDockMargin(RectangleF.TLRB(2));
-				img.SetImage(buttons.Level.Textures.LoadTextureFromFile(icon));
+				img.				Size = new(32);
+				img.				ImageOrientation = ImageOrientation.Zoom;
+				img.				Dock = Dock.Left;
+				img.				DockMargin = RectangleF.TLRB(2);
+				img.				Texture = buttons.Level.Textures.LoadTextureFromFile(icon);
 
 				newBtn.SetTextPadding(new(68, 0));
 				newBtn.SetTextAlignment(Anchor.CenterLeft);
@@ -380,16 +382,16 @@ namespace Nucleus.ModelEditor
 
 		public static Button NewTopOperatorButton(Panel props, string icon) {
 			var btn = new Button(props);
-			btn.SetDock(Dock.Right);
-			btn.SetDockMargin(RectangleF.TLRB(8, 0, 0, 8));
-			btn.SetSize(new(32));
-			btn.SetText("");
-			btn.SetBorderSize(0);
+			btn.			Dock = Dock.Right;
+			btn.			DockMargin = RectangleF.TLRB(8, 0, 0, 8);
+			btn.			Size = new(32);
+			btn.			Text = "";
+			btn.BorderSize = 0;
 			var btnImg = new Nucleus.UI.Elements.Image(btn);
-			btnImg.SetImage(props.Level.Textures.LoadTextureFromFile(icon));
-			btnImg.SetImageOrientation(ImageOrientation.Centered);
+			btnImg.			Texture = props.Level.Textures.LoadTextureFromFile(icon);
+			btnImg.			ImageOrientation = ImageOrientation.Centered;
 			btnImg.SetPassthru(true);
-			btnImg.SetDock(Dock.Fill);
+			btnImg.			Dock = Dock.Fill;
 			return btn;
 		}
 
@@ -422,7 +424,7 @@ namespace Nucleus.ModelEditor
 			this.ClearChildren();
 		}
 		private void ModelEditor_Active_SelectedChanged() {
-			SetDockMargin(RectangleF.TLRB(-8, 0, 0, 4));
+			DockMargin = RectangleF.TLRB(-8, 0, 0, 4);
 			ClearProperties();
 			// Process type
 			//if (!ModelEditor.Active.AreObjectsSelected)
@@ -433,20 +435,20 @@ namespace Nucleus.ModelEditor
 				return;
 
 			var top = new Panel(this);
-			top.SetSize(new(48));
-			top.SetBorderSize(0);
-			top.SetDock(Dock.Top);
-			top.SetDockMargin(RectangleF.TLRB(4));
+			top.			Size = new(48);
+			top.BorderSize = 0;
+			top.			Dock = Dock.Top;
+			top.			DockMargin = RectangleF.TLRB(4);
 
 			var label = new Label(top);
-			label.SetText(DetermineHeaderText(determinations));
-			label.SetDock(Dock.Left);
-			label.SetSize(new(38));
+			label.			Text = DetermineHeaderText(determinations);
+			label.			Dock = Dock.Left;
+			label.			Size = new(38);
 			label.SetTextPadding(new(22));
 			label.SetTextAlignment(Types.Anchor.TopLeft);
-			label.SetTextSize(22);
+			label.			TextSize = 22;
 			label.SetAutoSize(true);
-			this.SetDockPadding(RectangleF.Zero);
+			this.			DockPadding = RectangleF.Zero;
 
 			DetermineTopOperators(top, determinations);
 
@@ -454,9 +456,9 @@ namespace Nucleus.ModelEditor
 				DetermineProperties(this, determinations);
 
 				var buttons = new CenteredObjectsPanel(this);
-				buttons.SetDock(Dock.Top);
-				buttons.SetSize(new(50));
-				buttons.SetDockMargin(RectangleF.TLRB(8, 0, 0, 0));
+				buttons.				Dock = Dock.Top;
+				buttons.				Size = new(50);
+				buttons.				DockMargin = RectangleF.TLRB(8, 0, 0, 0);
 				buttons.XSeparation = 8;
 				buttons.YSeparation = 16;
 				DetermineOperators(buttons, determinations);

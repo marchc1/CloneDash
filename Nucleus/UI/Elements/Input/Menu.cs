@@ -117,14 +117,14 @@ public class Menu(Element? parent) : Panel(parent)
 	Element? lastHoveredPiece = null;
 
 	public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
-		this.SetPos(pos);
-		this.SetBorderSize(1);
+		this.		Position = pos;
+		this.BorderSize = 1;
 
 		this.SetBgColor(new Color(20, 30, 45, 220));
 		this.SetFgColor(new Color(190, 195, 195, 114));
 
 		var i = 0;
-		this.SetClipping(false);
+		this.		Clipping = false;
 		reverse = false;
 		activeSubmenu = null;
 		lastHoveredPiece = null;
@@ -139,36 +139,37 @@ public class Menu(Element? parent) : Panel(parent)
 						continue;
 
 					var s = new MenuSeparatorPanel(this);
-					s.SetDock(Dock.Top);
-					s.SetSize(new Types.Vector2F(0, 5));
+					s.					Dock = Dock.Top;
+					s.					Size = new Types.Vector2F(0, 5);
 					break;
 				case MenuButton btn: {
 						var b = new MenuButtonPanel(this, btn);
-						b.SetDock(Dock.Top);
-						b.SetSize(new Types.Vector2F(0, 28));
-						b.SetText(btn.text);
+						b.						Dock = Dock.Top;
+						b.						Size = new Types.Vector2F(0, 28);
+						b.						Text = btn.text;
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
-						b.SetTextSize(18);
+						b.						TextSize = 18;
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
-						b.SetBorderSize(0);
-						b.SetClipping(false);
+						b.BorderSize = 0;
+						b.						Clipping = false;
 					}
 					break;
 				case MenuSubmenu submenu: {
 						var b = new MenuSubMenuButtonPanel(this, submenu);
-						b.SetDock(Dock.Top);
-						b.SetSize(new Types.Vector2F(0, 28));
-						b.SetText(submenu.text);
+						b.						Dock = Dock.Top;
+						b.						Size = new Types.Vector2F(0, 28);
+						b.						Text = submenu.text;
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
-						b.SetTextSize(18);
+						b.						TextSize = 18;
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
-						b.SetBorderSize(0);
+						b.BorderSize = 0;
 
-						b.SetClipping(false);
+						b.
+						Clipping = false;
 						var mic = MathF.Max(items.Count, 8);
 					}
 					break;
@@ -184,14 +185,14 @@ public class Menu(Element? parent) : Panel(parent)
 		foreach (var child in Children) {
 			if (child is ITextElement textElement) {
 				child.FlushRenderBounds();
-				var newP = child.GetRenderBounds().Pos + Graphics2D.GetTextSize(textElement.GetText(), textElement.GetFont(), textElement.GetTextSize()) + 16;
+				var newP = child.GetRenderBounds().Pos + Graphics2D.GetTextSize(textElement.Text, textElement.Font, textElement.TextSize) + 16;
 				if (newP.X > pX) pX = newP.X;
 				if (newP.Y > pY) pY = newP.Y;
 			}
 
 		}
-		this.SetSize(new(pX + 12, pY - 4));
-		var whereIsEnd = this.GetPos() + this.GetSize() + new Vector2F(4, 4);
+		this.		Size = new(pX + 12, pY - 4);
+		var whereIsEnd = this.Position + this.Size + new Vector2F(4, 4);
 
 		TextAlignment lr = TextAlignment.Left;
 		TextAlignment tb = TextAlignment.Top;
@@ -223,7 +224,7 @@ public class Menu(Element? parent) : Panel(parent)
 	protected override void OnThink() {
 		base.OnThink();
 
-		SetOpacity((float)BackdropAlpha);
+		Opacity = (float)BackdropAlpha;
 
 		if (closing) {
 			if (BackdropAlpha <= 0)

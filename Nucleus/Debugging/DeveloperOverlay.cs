@@ -110,22 +110,22 @@ public class DeveloperOverlay(Level level)
 		UpdateGraph = new PerformanceGraph(Level.RootPanel);
 		UpdateGraph.SetAnchor(Anchor.BottomRight);
 		UpdateGraph.SetOrigin(Anchor.BottomRight);
-		UpdateGraph.SetPos(new Vector2F(-8, -8 + -52 + -16));
-		UpdateGraph.SetSize(new Vector2F(400, 26));
+		UpdateGraph.		Position = new Vector2F(-8, -8 + -52 + -16);
+		UpdateGraph.		Size = new Vector2F(400, 26);
 		UpdateGraph.Mode = (PerformanceGraph.GraphMode.CpuUpdateTime);
 
 		RenderGraph = new PerformanceGraph(Level.RootPanel);
 		RenderGraph.SetAnchor(Anchor.BottomRight);
 		RenderGraph.SetOrigin(Anchor.BottomRight);
-		RenderGraph.SetPos(new Vector2F(-8, -8 + -26 + -8));
-		RenderGraph.SetSize(new Vector2F(400, 26));
+		RenderGraph.		Position = new Vector2F(-8, -8 + -26 + -8);
+		RenderGraph.		Size = new Vector2F(400, 26);
 		RenderGraph.Mode = (PerformanceGraph.GraphMode.CpuRenderTime);
 
 		MemGraph = new PerformanceGraph(Level.RootPanel);
 		MemGraph.SetAnchor(Anchor.BottomRight);
 		MemGraph.SetOrigin(Anchor.BottomRight);
-		MemGraph.SetPos(new Vector2F(-8, -8));
-		MemGraph.SetSize(new Vector2F(400, 26));
+		MemGraph.		Position = new Vector2F(-8, -8);
+		MemGraph.		Size = new Vector2F(400, 26);
 		MemGraph.Mode = (PerformanceGraph.GraphMode.RamUsage);
 
 		EvaluatePerfGraphVisibility();
@@ -183,14 +183,14 @@ public class DeveloperOverlay(Level level)
 
 		UpdateGraph.SetAnchor(settings.PerfGraphAnchor);
 		UpdateGraph.SetOrigin(settings.PerfGraphAnchor);
-		UpdateGraph.SetPos(offset + new Vector2F(0, (-8 + -52 + -16)));
+		UpdateGraph.		Position = offset + new Vector2F(0, (-8 + -52 + -16));
 
 		RenderGraph.SetAnchor(settings.PerfGraphAnchor);
 		RenderGraph.SetOrigin(settings.PerfGraphAnchor);
-		RenderGraph.SetPos(offset + new Vector2F(0, -8 + -26 + -8));
+		RenderGraph.		Position = offset + new Vector2F(0, -8 + -26 + -8);
 
 		MemGraph.SetAnchor(settings.PerfGraphAnchor);
 		MemGraph.SetOrigin(settings.PerfGraphAnchor);
-		MemGraph.SetPos(offset + new Vector2F(0, -8));
+		MemGraph.		Position = offset + new Vector2F(0, -8);
 	}
 }

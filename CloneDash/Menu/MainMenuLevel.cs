@@ -58,7 +58,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		_targetPrimaryColor = element.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 		_targetBackgroundColor = element.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-		_headerText.SetText(element.Name);
+		_headerText.Text = element.Name;
 
 		if (ActiveElements.Count == 1) {
 			_primaryColor = _targetPrimaryColor;
@@ -66,8 +66,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 
 		UpdateAction(_screenButton, element.GetAction());
-		element.SetDock(Dock.Fill);
-		element.SetBorderSize(0);
+		element.Dock = Dock.Fill;
+		element.BorderSize = 0;
 		return element;
 	}
 
@@ -95,7 +95,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			_targetPrimaryColor = nextPanel.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
 			_targetBackgroundColor = nextPanel.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
-			_headerText.SetText(nextPanel.Name);
+			_headerText.Text = nextPanel.Name;
 		}
 	}
 
@@ -107,7 +107,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		button.Action = action.Action;
 		button.Icon = action.Icon;
-		button.SetText(action.Name);
+		button.Text = action.Name;
 	}
 
 	#endregion
@@ -152,49 +152,49 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public override void Initialize(params object[] args) {
 		var charPanel = new Panel(RootPanel);
-		charPanel.SetBorderSize(0);
+		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
-		charPanel.SetSize(new Vector2F(1f, 1f));
-		charPanel.SetClipping(false);
+		charPanel.Size = new Vector2F(1f, 1f);
+		charPanel.Clipping = false;
 		charPanel.SetPaintBackgroundEnabled(false);
 
 		Character = new MainMenuCharacter(charPanel) { DynamicallySized = true };
 		Character.SetOrigin(Anchor.TopCenter);
-		Character.SetSize(new Vector2F(1f));
+		Character.Size = new Vector2F(1f);
 
 		_header = new Panel(RootPanel);
-		_header.SetPos(new Vector2F(0));
-		_header.SetSize(new Vector2F(256, 64));
-		_header.SetDock(Dock.Top);
-		_header.SetBorderSize(0);
+		_header.Position = new Vector2F(0);
+		_header.Size = new Vector2F(256, 64);
+		_header.Dock = Dock.Top;
+		_header.BorderSize = 0;
 
 		_headerText = new Label(_header);
-		_headerText.SetDock(Dock.Fill);
-		_headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
-		_headerText.SetTextSize(32 * 1.4f);
+		_headerText.Dock = Dock.Fill;
+		_headerText.Font = CloneDashUI.GetBoldFont(RootPanel.GetScheme());
+		_headerText.TextSize = 32 * 1.4f;
 		_headerText.SetAutoSize(true);
 
 		Content = new Element(RootPanel);
-		Content.SetDock(Dock.Fill);
-		Content.SetBorderSize(0);
-		Content.SetDockPadding(new RectangleF(0, 0, 0, 48));
+		Content.Dock = Dock.Fill;
+		Content.BorderSize = 0;
+		Content.DockPadding = new RectangleF(0, 0, 0, 48);
 		Content.SetPassthru(true);
 
 		_footer = new Panel(RootPanel);
-		_footer.SetSize(new Vector2F(256, 48));
-		_footer.SetDock(Dock.Bottom);
-		_footer.SetBorderSize(0);
-		_footer.SetClipping(false);
+		_footer.Size = new Vector2F(256, 48);
+		_footer.Dock = Dock.Bottom;
+		_footer.BorderSize = 0;
+		_footer.Clipping = false;
 
 		_backButton = new MenuFooterButton(_footer, "icons/arrow-left.png", "Back");
 		_backButton.SetAnchor(Anchor.BottomLeft);
 		_backButton.SetOrigin(Anchor.BottomLeft);
-		_backButton.SetPos(new Vector2F(40, -12));
+		_backButton.Position = new Vector2F(40, -12);
 
 		_screenButton = new MenuFooterButton(_footer);
 		_screenButton.SetAnchor(Anchor.BottomRight);
 		_screenButton.SetOrigin(Anchor.BottomRight);
-		_screenButton.SetPos(new Vector2F(-40, -12));
+		_screenButton.Position = new Vector2F(-40, -12);
 
 		_bindingFlow = new Flow(_footer) {
 			AutoSize = Axis.Both,
@@ -326,7 +326,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	class LevelSelectorBackButton(LevelSelectorPanel levelSelector, SongSelector selector) : Button(levelSelector)
 	{
 		public override void Paint(float w, float h) {
-			SetPos(new((levelSelector.GetRenderBounds().W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0));
+			Position = new((levelSelector.GetRenderBounds().W / -5) - ((float)NMath.Ease.InCubic(Math.Clamp(1 - (Lifetime - 0.3), 0, 1)) * -64), 0);
 			base.Paint(w, h);
 		}
 	}
@@ -336,14 +336,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			var oldSize = GetTextSize();
+			var oldSize = TextSize;
 			var w = levelSelector.GetRenderBounds().W;
-			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155));
-			if (oldSize != GetTextSize())
+			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 20, 80), 12, 155);
+			if (oldSize != TextSize)
 				InvalidateLayout();
 
 			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 6, 0, 1)) * 255)));
-			SetPos(new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6)));
+			Position = new(0, (w / -5.2f) - offsetBasedOnLifetime(this, 1.35f, 6));
 		}
 	}
 
@@ -353,14 +353,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			var oldSize = GetTextSize();
+			var oldSize = TextSize;
 			var w = levelSelector.GetRenderBounds().W;
-			SetTextSize((float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155));
-			if (oldSize != GetTextSize())
+			TextSize = (float)Math.Clamp(NMath.Remap(w, 400, 1920, 12, 32), 12, 155);
+			if (oldSize != TextSize)
 				InvalidateLayout();
 
 			SetTextColor(new(255, 255, 255, (int)(NMath.Ease.InOutCubic(Math.Clamp(Lifetime * 1.3f, 0, 1)) * 255)));
-			SetPos(new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12)));
+			Position = new(0, (w / -6f) - offsetBasedOnLifetime(this, 1.35f, 12));
 		}
 	}
 
@@ -371,10 +371,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		protected override void OnThink() {
 			base.OnThink();
 
-			SetPos(levelSelector.GetRenderBounds().Size / 2);
-			SetPos(GetPos() - GetRenderBounds().Size / 2);
-			SetPos(GetPos() + new Vector2F(levelSelector.GetRenderBounds().W / 4f, 0));
-			SetSize(new(256, height));
+			Position = levelSelector.GetRenderBounds().Size / 2;
+			Position = Position - GetRenderBounds().Size / 2;
+			Position = Position + new Vector2F(levelSelector.GetRenderBounds().W / 4f, 0);
+			Size = new(256, height);
 		}
 
 		protected override void PerformLayout(float width, float height) {
@@ -398,22 +398,22 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Graphics2D.SetDrawColor(back);
 			Graphics2D.DrawRectangle(0, 0, w, h);
 
-			if (GetBorderSize() > 0) {
+			if (BorderSize > 0) {
 				fore.A = (byte)(int)Math.Clamp(fore.A * alpha, 0, 255);
 				Graphics2D.SetDrawColor(fore);
-				Graphics2D.DrawRectangleOutline(0, 0, w, h, GetBorderSize());
+				Graphics2D.DrawRectangleOutline(0, 0, w, h, BorderSize);
 			}
 		}
 		public override void Paint(float w, float h) {
 			var life = Lifetime - (offset * .15f);
 			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
-			SetChildRenderOffset(new(xOffset, 0));
+			ChildRenderOffset = new(xOffset, 0);
 
 			base.Paint(w, h);
 
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
 			Graphics2D.SetDrawColor(GetTextColor());
-			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -h * 0.25f), $"{metadata.Difficulty}", GetFont(), GetTextSize(), Anchor.CenterRight);
+			Graphics2D.DrawText(textDrawingPosition + new Vector2F(0, -h * 0.25f), $"{metadata.Difficulty}", Font, TextSize, Anchor.CenterRight);
 		}
 
 		bool autoplayChart;
@@ -423,9 +423,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			base.OnThink();
 			var frameState = EngineCore.Level.FrameState;
 			if (frameState.Keyboard.AltDown)
-				SetText($"[AUTOPLAY] {difficultyName.ToUpper()}");
+				Text = $"[AUTOPLAY] {difficultyName.ToUpper()}";
 			else
-				SetText($"{difficultyName.ToUpper()}");
+				Text = $"{difficultyName.ToUpper()}";
 
 			autoplayChart = frameState.Keyboard.AltDown;
 		}
@@ -450,7 +450,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();
 		levelSelector.SetFgColor(Color.Blank);
-		levelSelector.SetDock(Dock.Fill);
+		levelSelector.Dock = Dock.Fill;
 
 		selector.EnterSheetSelection();
 		selector.DiscRotateSOS.ResetTo(0);
@@ -464,34 +464,34 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		LevelSelectorBackButton back = new(levelSelector, selector);
 		back.SetAnchor(Anchor.Center);
 		back.SetOrigin(Anchor.Center);
-		back.SetPos(new(-256, 0));
+		back.Position = new(-256, 0);
 
 		var backImage = new Image(back);
-		backImage.SetImage(Textures.LoadTextureFromFile("ui/back.png"));
-		backImage.SetImageOrientation(ImageOrientation.Centered);
-		backImage.SetDock(Dock.Fill);
+		backImage.Texture = Textures.LoadTextureFromFile("ui/back.png");
+		backImage.ImageOrientation = ImageOrientation.Centered;
+		backImage.Dock = Dock.Fill;
 		back.OnButtonClick += (_, _) => levelSelector.Remove();
-		back.SetText("");
+		back.Text = "";
 		back.SetBgColor(new Color(0, 0));
 		back.SetFgColor(new Color(0, 0));
-		back.SetSize(new(106));
+		back.Size = new(106);
 
 		back.Thinking += (_) => {
-			backImage.SetImageColor(Element.MixColorBasedOnMouseState(back, new(200, 200, 200,
+			backImage.ImageColor = Element.MixColorBasedOnMouseState(back, new(200, 200, 200,
 				(int)(Math.Clamp(NMath.Ease.OutCubic(back.Lifetime - 0.35f), 0, 1) * 255)
-				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1)));
+				), new(0, 1, 1.3f, 1), new(0, 1, .7f, 1));
 		};
 
 		LevelSelectorTitleLabel title = new LevelSelectorTitleLabel(levelSelector, selector);
-		title.SetTextSize(48);
-		title.SetText(info.Name);
+		title.TextSize = 48;
+		title.Text = info.Name;
 		title.SetAutoSize(true);
 		title.SetAnchor(Anchor.Center);
 		title.SetOrigin(Anchor.Center);
 
 		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
-		author.SetTextSize(22);
-		author.SetText($"by {info.Author}");
+		author.TextSize = 22;
+		author.Text = $"by {info.Author}";
 		author.SetAutoSize(true);
 		author.SetAnchor(Anchor.Center);
 		author.SetOrigin(Anchor.Center);
@@ -560,12 +560,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		float x;
 
-		if (Math.Abs(target - Character.GetPos().X) < 0.1)
+		if (Math.Abs(target - Character.Position.X) < 0.1)
 			x = target;
 		else
-			x = (float)double.Lerp(target, Character.GetPos().X, Math.Exp(-10f * CurtimeDelta));
+			x = (float)double.Lerp(target, Character.Position.X, Math.Exp(-10f * CurtimeDelta));
 
-		Character.SetPos(new(x, 0));
+		Character.
+		Position = new(x, 0);
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
@@ -578,17 +579,17 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (metadata.Difficulty == "0") return null;
 
 		LevelSelectorSelectDifficultyButton play = new(levelSelector, difficultyName, metadata);
-		play.SetSize(new(64));
-		play.SetDockMargin(RectangleF.TLRB(8));
+		play.Size = new(64);
+		play.DockMargin = RectangleF.TLRB(8);
 
 		SongLabel mapper = new SongLabel(play);
 		mapper.SetAutoSize(true);
-		mapper.SetText($"by {designer}");
-		mapper.SetTextSize(16);
+		mapper.Text = $"by {designer}";
+		mapper.TextSize = 16;
 		mapper.SetTextAlignment(Anchor.BottomCenter);
 		mapper.TextOverflowMode = TextOverflowMode.None;
-		mapper.SetClipping(false);
-		mapper.SetPos(new(-8, -8));
+		mapper.Clipping = false;
+		mapper.Position = new(-8, -8);
 		mapper.SetAnchor(Anchor.BottomRight);
 		mapper.SetPassthru(true);
 		mapper.SetOrigin(Anchor.BottomRight);
@@ -596,12 +597,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		play.SetBgColor(buttonColor);
 		play.SetFgColor(buttonColor.Adjust(hue: 0, saturation: -0.5f, value: -0.4f));
-		play.SetText("");
+		play.Text = "";
 		play.SetTextAlignment(Anchor.CenterLeft);
 		play.SetTextPadding(new(8, 0));
-		play.SetTextSize(28);
+		play.TextSize = 28;
 
-		play.SetBorderSize(2);
+		play.BorderSize = 2;
 		play.SetPaintBackgroundEnabled(true);
 
 		play.OnButtonClick += delegate (Button self, ButtonCode button) {

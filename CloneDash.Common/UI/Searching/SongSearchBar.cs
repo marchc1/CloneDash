@@ -13,11 +13,11 @@ public class SongSearchBar : Button
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		SetTextSize(height / 1.5f);
+		TextSize = height / 1.5f;
 	}
 
 	public override void Paint(float width, float height) {
-		SetText(SearchQuery ?? "Search...");
+		Text = SearchQuery ?? "Search...";
 		SetTextColor(SearchQuery == null ? DefaultTextColor.Adjust(0, 0, -0.3f) : DefaultTextColor);
 
 		base.Paint(width, height);

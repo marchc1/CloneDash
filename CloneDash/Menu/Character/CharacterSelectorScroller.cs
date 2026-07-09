@@ -11,7 +11,7 @@ namespace CloneDash.Menu.Character
 	public class CharacterSelectorScroller : Element
 	{
 		public event Action<ICharacterDescriptor?>? CharacterSelected;
-		
+
 		private readonly List<(CharacterButton label, ICharacterDescriptor character)> _chars = [];
 		private int _lastSelectedIdx = -1;
 
@@ -49,7 +49,7 @@ namespace CloneDash.Menu.Character
 
 			float x = 0;
 			float centerX = 0;
-			
+
 			for (int i = 0; i < _chars.Count; i++) {
 				(CharacterButton label, ICharacterDescriptor character) c = _chars[i];
 				CharacterButton btn = c.label;
@@ -59,15 +59,15 @@ namespace CloneDash.Menu.Character
 				int clampedIndex = Math.Min(Math.Abs(offsetIndex), maxIndex);
 				float scale = 1f - .4f * (clampedIndex / (float)maxIndex);
 				float size = scale * height;
-				
-				btn.SetPos(new Vector2F(x /*offsetIndex * (size + 24)*/, (height - size) / 2f));
-				btn.SetSize(new Vector2F(size, size));
+
+				btn.Position = new Vector2F(x /*offsetIndex * (size + 24)*/, (height - size) / 2f);
+				btn.Size = new Vector2F(size, size);
 
 				if (offsetIndex == 0) centerX = x;
 				x += size + 24;
 			}
-			
-			SetChildRenderOffset(new Vector2F(-centerX, 0));
+
+			ChildRenderOffset = new Vector2F(-centerX, 0);
 		}
 	}
 }

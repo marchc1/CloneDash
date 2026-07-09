@@ -11,8 +11,8 @@ namespace Nucleus.ModelEditor
 	{
 		public VertexWeightWindow(Element parent) : base(parent) {
 			Title = "Weights";
-			SetDock(Nucleus.UI.Dock.Right);
-			SetSize(new(256));
+			Dock = Nucleus.UI.Dock.Right;
+			Size = new(256);
 			HideNonCloseButtons();
 		}
 	}

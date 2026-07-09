@@ -55,10 +55,10 @@ public class AutocompletePanel : Panel
 	public int LastPulsingIndex;
 	public ScrollPanel OptionsParent;
 	public AutocompletePanel(Element? parent) : base(parent) {
-		SetSize(new(480, 180));
+		Size = new(480, 180);
 		OptionsParent = new ScrollPanel(this);
 		OptionsParent.SetPaintBackgroundEnabled(false);
-		OptionsParent.SetDock(Dock.Fill);
+		OptionsParent.		Dock = Dock.Fill;
 	}
 	public override void Paint(float width, float height) {
 		base.Paint(width, height);
@@ -71,18 +71,18 @@ public class AutocompletePanel : Panel
 	public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
 		Options.Add(new(text));
 		Button btn = new Button(OptionsParent);
-		btn.SetDock(Dock.Top);
+		btn.		Dock = Dock.Top;
 		btn.SetAutoSize(true);
-		btn.SetTextSize(fontHeight);
-		btn.SetFont (Graphics2D.UI_MONO_BOLD_FONT_NAME);
-		btn.SetText(text);
+		btn.		TextSize = fontHeight;
+		btn.		Font = Graphics2D.UI_MONO_BOLD_FONT_NAME;
+		btn.		Text = text;
 		btn.SetTextAlignment(Anchor.CenterLeft);
 		btn.SetTextPadding(new(12, 0));
-		btn.SetBorderSize(0);
+		btn.BorderSize = 0;
 		btn.PulsePreservesAlpha = true;
 		if (Buttons.Count == 0)
 			btn.Pulsing = true;
-		btn.OnButtonClick += (_, _) => Selected?.Invoke(btn.GetText());
+		btn.OnButtonClick += (_, _) => Selected?.Invoke(btn.Text);
 		Buttons.Add(btn);
 	}
 	public void Reset() {
@@ -116,8 +116,8 @@ public class AutocompletePanel : Panel
 
 public class TextEditor : Panel, ITextElement
 {
-	SchemeableSetting<float> TextSize = SchemeableSetting<float>.Default(18);
-	SchemeableSetting<string> Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
+	SchemeableSetting<float> __TextSize = SchemeableSetting<float>.Default(18);
+	SchemeableSetting<string> __Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
 
 	internal TextEditorInternals Editor { get; set; }
 	internal TextEditorGutter Gutter { get; set; }
@@ -156,18 +156,21 @@ public class TextEditor : Panel, ITextElement
 		CloseAutocomplete();
 	}
 
-	public ReadOnlySpan<char> GetFont() => Font.Get();
-	public void SetFont(ReadOnlySpan<char> font) {
-		Font.SetUserValue(new(font));
-		InvalidateLayout();
+	public ReadOnlySpan<char> Font {
+		get => __Font.Get();
+		set {
+			__Font.SetUserValue(new(value));
+			InvalidateLayout();
+		}
 	}
 
-	public float GetTextSize() => TextSize.Get();
-	public void SetTextSize(float textSize) {
-		TextSize.SetUserValue(textSize);
-		InvalidateLayout();
+	public float TextSize {
+		get => __TextSize.Get();
+		set {
+			__TextSize.SetUserValue(value);
+			InvalidateLayout();
+		}
 	}
-
 
 	public void PopulateAutocomplete() {
 		if (!Autocomplete)
@@ -210,7 +213,8 @@ public class TextEditor : Panel, ITextElement
 		if (AutocompletePanel == null)
 			return;
 
-		AutocompletePanel.SetPos(new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight)));
+		AutocompletePanel.
+		Position = new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight));
 	}
 
 	public void CloseAutocomplete() {
@@ -279,7 +283,7 @@ public class TextEditor : Panel, ITextElement
 		this.Width = width;
 		this.Height = height;
 
-		var s = Graphics2D.GetTextSize("W", GetFont(), GetTextSize());
+		var s = Graphics2D.GetTextSize("W", Font, TextSize);
 		FontWidth = s.X + textedit_fontwidthpad.GetInt();
 		FontHeight = s.Y + textedit_fontheightpad.GetInt();
 
@@ -357,14 +361,19 @@ public class TextEditor : Panel, ITextElement
 		//Editor.DockMargin = RectangleF.TLRB(6);
 		//Gutter.DockMargin = RectangleF.TLRB(6);
 
-		Gutter.SetDock(Dock.Left);
-		Gutter.SetSize(new(64, 0));
-		Editor.SetDock(Dock.Fill);
+		Gutter.		//Editor.DockMargin = RectangleF.TLRB(6);
+		//Gutter.DockMargin = RectangleF.TLRB(6);
 
-		VScrollbar.SetDock(Dock.Right);
+		Dock = Dock.Left;
+		Gutter.		Size = new(64, 0);
+		Editor.		Dock = Dock.Fill;
+
+		VScrollbar.
+		Dock = Dock.Right;
 		VScrollbar.OnScrolled += Scrollbar_OnScrolled;
 
-		Editor.SetKeyboardInputMarshal(new HoldingKeyboardInputMarshal());
+		Editor.
+		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 
 		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyA], () => {
 			SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);
@@ -456,7 +465,7 @@ public class TextEditor : Panel, ITextElement
 
 	public void RenderRowPiece(int character, int row, string text, Color color) {
 		Graphics2D.SetDrawColor(color);
-		Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, GetFont(), GetTextSize());
+		Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
 	}
 
 	private void Editor_PaintOverride(Element self, float width, float height) {
@@ -570,7 +579,7 @@ public class TextEditor : Panel, ITextElement
 				linePart = $"selected: {Math.Min(Caret.StartRow, Caret.EndRow)} - {Math.Max(Caret.StartRow, Caret.EndRow)}";
 			else
 				linePart = $"line {Caret.StartRow} / {Rows.Count}";
-			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", GetFont(), 14, Anchor.BottomRight);
+			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
 		}
 	}
 
@@ -1447,7 +1456,7 @@ public class TextEditor : Panel, ITextElement
 			var inRange = NMath.InRange(row, t.Row, b.Row);
 
 			Graphics2D.SetDrawColor(220, 220, 220, 255);
-			Graphics2D.DrawText(x, y + 2, str, GetFont(), GetTextSize());
+			Graphics2D.DrawText(x, y + 2, str, Font, TextSize);
 
 			row += 1;
 			i += 1;
@@ -1455,8 +1464,8 @@ public class TextEditor : Panel, ITextElement
 	}
 
 	public void SetFont(ReadOnlySpan<char> fontName, float fontSize) {
-		Font.SetUserValue(new(fontName.SliceNullTerminatedString()));
-		TextSize.SetUserValue(fontSize);
+		__Font.SetUserValue(new(fontName.SliceNullTerminatedString()));
+		__TextSize.SetUserValue(fontSize);
 
 		var s = Graphics2D.GetTextSize("W", fontName, fontSize);
 		FontWidth = s.X;

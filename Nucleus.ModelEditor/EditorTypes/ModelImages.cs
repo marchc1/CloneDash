@@ -51,10 +51,10 @@ namespace Nucleus.ModelEditor
 				ManagedMemory.Texture tex = new ManagedMemory.Texture(imageWindow.Level.Textures, Raylib.LoadTexture(Filepath), true);
 
 				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
-				imagePanel.SetImage(tex);
-				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
-				imagePanel.SetDock(Dock.Fill);
-				imageWindow.SetSize(new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32)));
+				imagePanel.				Texture = tex;
+				imagePanel.				ImageOrientation = Types.ImageOrientation.Centered;
+				imagePanel.				Dock = Dock.Fill;
+				imageWindow.				Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
 				imageWindow.Center();
 
 				imageWindow.Removed += (_) => tex.Dispose();
@@ -145,7 +145,7 @@ namespace Nucleus.ModelEditor
 
 			var boneRotation = PropertiesPanel.AddFilepath(pathRow, Filepath, (txtbox, txt) => {
 				ModelEditor.Active.File.SetModelImages(Model, txt);
-				txtbox.SetText(txt);
+				txtbox.				Text = txt;
 			});
 		}
 
@@ -159,11 +159,12 @@ namespace Nucleus.ModelEditor
 				ManagedMemory.Texture tex = TextureAtlas.PackedTexture;
 
 				var imagePanel = new Image(imageWindow);
-				imagePanel.SetImage(tex);
-				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
-				imagePanel.SetDock(Dock.Fill);
+				imagePanel.				Texture = tex;
+				imagePanel.				ImageOrientation = Types.ImageOrientation.Centered;
+				imagePanel.				Dock = Dock.Fill;
 
-				imageWindow.SetSize(new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32)));
+				imageWindow.
+				Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
 
 				imageWindow.Center();
 

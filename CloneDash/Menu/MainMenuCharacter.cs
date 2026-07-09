@@ -38,19 +38,19 @@ public class MainMenuCharacter : Panel
 	}
 
 	Label ExpressionLabel = null!;
-	
-	public MainMenuCharacter(Element? parent) : base(parent){
-		SetBorderSize(0);
+
+	public MainMenuCharacter(Element? parent) : base(parent) {
+		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
-		
+
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);
 		ExpressionLabel.SetOrigin(Anchor.Center);
 		ExpressionLabel.SetPaintBackgroundEnabled(true);
-		ExpressionLabel.SetBorderSize(3);
+		ExpressionLabel.BorderSize = 3;
 		ExpressionLabel.SetPaintBorderEnabled(true);
-		ExpressionLabel.SetRoundness(4);
-		ExpressionLabel.SetClipping(false);
+		ExpressionLabel.Roundness = 4;
+		ExpressionLabel.Clipping = false;
 		ExpressionLabel.SetTextPadding(new Vector2F(64, 24));
 
 		if (SetCharacter(CharacterMod.GetCharacterData()))
@@ -112,24 +112,25 @@ public class MainMenuCharacter : Panel
 				float alphaTweenIn = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
 				float alphaTweenOut = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
 				float alphaTween = NMath.Ease.InCirc(alphaTweenIn) - NMath.Ease.OutQuad(alphaTweenOut);
-				
-				ExpressionLabel.SetOpacity(alphaTween);
-				ExpressionLabel.SetText(ExpressionText);
+
+				ExpressionLabel.
+				Opacity = alphaTween;
+				ExpressionLabel.Text = ExpressionText;
 				ExpressionLabel.SetVisible(true);
-				
+
 				Color primary = MainMenuLevel.PrimaryColor;
 				ExpressionLabel.SetBgColor(MainMenuLevel.BackgroundColor);
 				ExpressionLabel.SetFgColor(primary);
 				ExpressionLabel.SetTextColor(primary);
-				
+
 				float positionTween = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
 				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(positionTween) * (height * -.05f));
-				ExpressionLabel.SetPos(textPos);
-				
+				ExpressionLabel.Position = textPos;
+
 				float fontSize = Math.Clamp(CloneDashUI.GetFontSize(20) * (height / 900f), 12, 120);
-				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, ExpressionLabel.GetFont(), fontSize);
-				ExpressionLabel.SetTextSize(fontSize);
-				ExpressionLabel.SetSize(textSize + ExpressionLabel.GetTextPadding());
+				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, ExpressionLabel.Font, fontSize);
+				ExpressionLabel.TextSize = fontSize;
+				ExpressionLabel.Size = textSize + ExpressionLabel.GetTextPadding();
 			}
 			else
 				ExpressionLabel.SetVisible(false);
@@ -143,7 +144,7 @@ public class MainMenuCharacter : Panel
 
 	private void ResetExpression() {
 		ExpressionText = null;
-		
+
 		if (CharacterInstance == null)
 			return;
 
@@ -153,10 +154,10 @@ public class MainMenuCharacter : Panel
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
 		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().UUIDEquals(charDescriptor)) return;
-		
+
 		StopAudio();
 		CharacterInstance = charDescriptor?.CreateMainMenu();
-		
+
 		if (CharacterInstance == null)
 			return;
 

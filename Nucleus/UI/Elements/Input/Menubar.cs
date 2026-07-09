@@ -33,18 +33,18 @@ public class Menubar : Panel
 		}
 	}
 	public Menubar(Element? parent) : base(parent) {
-		this.SetSize(new(0, 32));
-		this.SetDock(Dock.Top);
+		this.		Size = new(0, 32);
+		this.		Dock = Dock.Top;
 	}
 	public MenuContext AddButton(string text, string? icon = null, Action? action = null) {
 		MenuContext context = new MenuContext(this.UI);
 		action = action ?? (() => context.Show());
 		Button b = new MenubarButton(this, action);
 		b.SetTextPadding(new(8));
-		b.SetDock(Dock.Left);
+		b.		Dock = Dock.Left;
 		b.SetAutoSize(true);
-		b.SetText(text);
-		b.SetBorderSize(0);
+		b.		Text = text;
+		b.BorderSize = 0;
 
 		return context;
 	}

@@ -10,54 +10,51 @@ namespace CloneDash.Menu;
 
 public class MenuFooterButton : Button
 {
-    public Action? Action { get; set; }
+	public Action? Action { get; set; }
 
-    public string? Icon
-    {
-        set => _image.SetImage(string.IsNullOrWhiteSpace(value) ? null : Level.Textures.LoadTextureFromFile(value));
-    }
+	public string? Icon {
+		set => _image.Texture = string.IsNullOrWhiteSpace(value) ? null : Level.Textures.LoadTextureFromFile(value);
+	}
 
-    private readonly Image _image;
-    private readonly SecondOrderSystem _sos = new(3, 1, 1, 60);
+	private readonly Image _image;
+	private readonly SecondOrderSystem _sos = new(3, 1, 1, 60);
 
-    public MenuFooterButton(Element? parent, string icon = "", string text = "") : base(parent, text)
-    {
-        SetSize(new Vector2F(200, 60));
-        SetBorderSize(3);
-        SetRoundness(8);
-        SetClipping(false);
-        OnButtonClick += (_, _) => Action?.Invoke();
+	public MenuFooterButton(Element? parent, string icon = "", string text = "") : base(parent, text) {
+		Size = new Vector2F(200, 60);
+		BorderSize = 3;
+		Roundness = 8;
+		Clipping = false;
+		OnButtonClick += (_, _) => Action?.Invoke();
 
-        _image = new Image(this);
-        _image.SetAnchor(Anchor.CenterLeft);
-        _image.SetOrigin(Anchor.CenterLeft);
-        _image.SetSize(new Vector2F(24));
-        Icon = icon;
-    }
+		_image = new Image(this);
+		_image.SetAnchor(Anchor.CenterLeft);
+		_image.SetOrigin(Anchor.CenterLeft);
+		_image.Size = new Vector2F(24);
+		Icon = icon;
+	}
 
-    protected override void OnThink()
-    {
-        base.OnThink();
+	protected override void OnThink() {
+		base.OnThink();
 
-        var y = _sos.Update(Action != null ? -12 : 60);
-        SetPos(new Vector2F(GetPos().X, y));
-    }
+		var y = _sos.Update(Action != null ? -12 : 60);
+		Position = new Vector2F(Position.X, y);
+	}
 
-    public override void Paint(float width, float height)
-    {
-        ColorStateSetup(out _, out var fore);
-        Graphics2D.SetDrawColor(fore);
-        _image.SetImageColor(fore);
+	public override void Paint(float width, float height) {
+		ColorStateSetup(out _, out var fore);
+		Graphics2D.SetDrawColor(fore);
+		_image.ImageColor = fore;
 
-        var right = GetAnchor() == Anchor.BottomRight;
+		var right = GetAnchor() == Anchor.BottomRight;
 
-        const float iconSize = 24;
+		const float iconSize = 24;
 
-        var textHeight = CloneDashUI.GetFontSize(20);
-        var size = Graphics2D.DrawText(new Vector2F(32 + (right ? 0 : iconSize + 20), height / 2f), GetText(),
-            CloneDashUI.FontBold, textHeight, Anchor.CenterLeft);
-        SetSize(new Vector2F(size.X + 64 + 20 + iconSize, GetSize().Y));
+		var textHeight = CloneDashUI.GetFontSize(20);
+		var size = Graphics2D.DrawText(new Vector2F(32 + (right ? 0 : iconSize + 20), height / 2f), Text,
+			CloneDashUI.FontBold, textHeight, Anchor.CenterLeft);
+		Size = new Vector2F(size.X + 64 + 20 + iconSize, Size.Y);
 
-        _image.SetPos(new Vector2F(32 + (right ? 20 + size.X : 0), 0));
-    }
+		_image.
+		Position = new Vector2F(32 + (right ? 20 + size.X : 0), 0);
+	}
 }

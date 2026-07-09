@@ -76,41 +76,45 @@ public class Titlebar : Panel
 	public TitlebarButton MinimizeButton { get; private set; }
 
 	public Titlebar(Element? parent) : base(parent) {
-		SetDock(Dock.Top);
-		SetSize(new(0, this.GetParent() is UserInterface ? 34 : 42));
+		Dock = Dock.Top;
+		Size = new(0, this.GetParent() is UserInterface ? 34 : 42);
 		if (this.GetParent() is not UserInterface)
-			SetDockMargin(RectangleF.TLRB(4));
+			DockMargin = RectangleF.TLRB(4);
 
 		TitleLabel = new(this);
-		TitleLabel.SetTextSize(20);
+		TitleLabel.		TextSize = 20;
 		TitleLabel.SetVisible(false); // title is rendered manually in Paint() with icon offset
 
 		CloseButton = new TitlebarButton(this, TitlebarButtonType.Close);
-		CloseButton.SetDock(Dock.Right);
+		CloseButton.		Dock = Dock.Right;
 		CloseButton.SetAutoSize(false);
-		CloseButton.SetSize(new(48, 0));
+		CloseButton.		Size = new(48, 0);
 
-		CloseButton.SetDockMargin(RectangleF.TLRB(3));
+		CloseButton.
+		DockMargin = RectangleF.TLRB(3);
 		CloseButton.OnButtonClick += (self, button) => OnClosePressed?.Invoke(self, button);
 
 		MaximizeButton = new TitlebarButton(this, TitlebarButtonType.Maximize);
-		MaximizeButton.SetDock(Dock.Right);
+		MaximizeButton.		Dock = Dock.Right;
 		MaximizeButton.SetAutoSize(false);
-		MaximizeButton.SetSize(new(48, 0));
+		MaximizeButton.		Size = new(48, 0);
 
-		MaximizeButton.SetDockMargin(RectangleF.TLRB(3));
+		MaximizeButton.
+		DockMargin = RectangleF.TLRB(3);
 		MaximizeButton.OnButtonClick += (self, button) => OnMaximizePressed?.Invoke(self, button);
 		MinimizeButton = new TitlebarButton(this, TitlebarButtonType.Minimize);
-		MinimizeButton.SetDock(Dock.Right);
+		MinimizeButton.		Dock = Dock.Right;
 		MinimizeButton.SetAutoSize(false);
-		MinimizeButton.SetSize(new(48, 0));
+		MinimizeButton.		Size = new(48, 0);
 
-		MinimizeButton.SetDockMargin(RectangleF.TLRB(3));
+		MinimizeButton.
+		DockMargin = RectangleF.TLRB(3);
 		MinimizeButton.OnButtonClick += (self, button) => OnMinimizePressed?.Invoke(self, button);
 
-		CloseButton.SetText("X");
-		MaximizeButton.SetText("");
-		MinimizeButton.SetText("");
+		CloseButton.
+		Text = "X";
+		MaximizeButton.		Text = "";
+		MinimizeButton.		Text = "";
 
 		CloseButton.SetBgColor(CloseButton.GetBgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.54f).HSVfToRGBub());
 		CloseButton.SetFgColor(CloseButton.GetFgColor().RGBubToHSVf().SetHSVf(hue: 0, saturation: 0.6f).HSVfToRGBub());
@@ -137,17 +141,17 @@ public class Titlebar : Panel
 	public delegate void TitlebarDragFn(Titlebar titlebar, Vector2F delta);
 	public event TitlebarDragFn? OnTitlebarDragged;
 
-	public ReadOnlySpan<char> GetText() => TitleLabel.GetText();
-	public void SetText(ReadOnlySpan<char> text) => TitleLabel.SetText(text);
+	public ReadOnlySpan<char> GetText() => TitleLabel.Text;
+	public void SetText(ReadOnlySpan<char> text) => TitleLabel.Text = text;
 
 	public Color GetTextColor() => TitleLabel.GetTextColor();
 	public void SetTextColor(Color value) => TitleLabel.SetTextColor(value);
 
-	public ReadOnlySpan<char> GetFont() => TitleLabel.GetFont();
-	public void SetFont(ReadOnlySpan<char> font) => TitleLabel.SetFont(font);
+	public ReadOnlySpan<char> GetFont() => TitleLabel.Font;
+	public void SetFont(ReadOnlySpan<char> font) => TitleLabel.Font = font;
 
-	public float GetTextSize() => TitleLabel.GetTextSize();
-	public void SetTextSize(float textSize) => TitleLabel.SetTextSize(textSize);
+	public float GetTextSize() => TitleLabel.TextSize;
+	public void SetTextSize(float textSize) => TitleLabel.TextSize = textSize;
 
 	protected override void OnThink() {
 		if (IsHovered())
@@ -162,7 +166,8 @@ public class Titlebar : Panel
 				if (!IValidatable.IsValid(Image))
 					setupImageRenderer();
 
-				Image.SetImage(Level.Textures.LoadTextureFromFile(imagePath));
+				Image.
+				Texture = Level.Textures.LoadTextureFromFile(imagePath);
 			}
 		}
 	}
@@ -170,13 +175,13 @@ public class Titlebar : Panel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		if (IValidatable.IsValid(Image)) {
-			Image.SetSize(new(height, height));
-			Image.SetPos(TitlePos switch {
+			Image.			Size = new(height, height);
+			Image.			Position = TitlePos switch {
 				Anchor.CenterLeft => new(0, 0),
 				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(GetText(), Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
 				_ => new(0, 0),
-			});
-			Image.SetImageOrientation(ImageOrientation.Zoom);
+			};
+			Image.			ImageOrientation = ImageOrientation.Zoom;
 			Image.SetPaintBackgroundEnabled(false);
 		}
 	}
@@ -197,7 +202,7 @@ public class Titlebar : Panel
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
 		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, GetBorderSize());
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
@@ -278,19 +283,19 @@ public class Window : Element
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			switch (anchor) {
 				case Anchor.TopLeft:
-					window.SetPos(window.GetPos() + delta);
-					window.SetSize(window.GetSize() - delta);
+					window.					Position = window.Position + delta;
+					window.					Size = window.Size - delta;
 					break;
 				case Anchor.TopRight:
-					window.SetPos(window.GetPos() + delta.Mutate(zeroX: true));
-					window.SetSize(window.GetSize() - delta.Mutate(negateX: true));
+					window.					Position = window.Position + delta.Mutate(zeroX: true);
+					window.					Size = window.Size - delta.Mutate(negateX: true);
 					break;
 				case Anchor.BottomLeft:
-					window.SetPos(window.GetPos() + delta.Mutate(zeroY: true));
-					window.SetSize(window.GetSize() - delta.Mutate(negateY: true));
+					window.					Position = window.Position + delta.Mutate(zeroY: true);
+					window.					Size = window.Size - delta.Mutate(negateY: true);
 					break;
 				case Anchor.BottomRight:
-					window.SetSize(window.GetSize() + delta);
+					window.					Size = window.Size + delta;
 					break;
 				default:
 					break;
@@ -331,9 +336,9 @@ public class Window : Element
 	}
 
 	public Window(Element? element, ReadOnlySpan<char> title = "Untitled Window", ReadOnlySpan<char> name = default) : base(element, name) {
-		SetPos(new(64, 64));
-		SetSize(new(640, 480));
-		SetMinimumSize(new(96, 96));
+		Position = new(64, 64);
+		Size = new(640, 480);
+		MinimumSize = new(96, 96);
 
 		_title = new(title);
 
@@ -344,41 +349,43 @@ public class Window : Element
 
 		MakePopup();
 		Panel ap = new(this);
-		ap.SetDock(Dock.Fill);
-		ap.SetSize(new(0, 36));
-		ap.SetDockMargin(RectangleF.TLRB(4, 8, 8, 4));
+		ap.		Dock = Dock.Fill;
+		ap.		Size = new(0, 36);
+		ap.		DockMargin = RectangleF.TLRB(4, 8, 8, 4);
 
 		ResizeTL = new WindowResizerButton(this, Anchor.TopLeft);
-		ResizeTL.SetSize(new(24, 24));
+		ResizeTL.		Size = new(24, 24);
 		ResizeTL.SetOrigin(Anchor.TopLeft);
 		ResizeTL.SetAnchor(Anchor.TopLeft);
 		ResizeTL.SetVisible(Resizable);
 
 		ResizeTR = new WindowResizerButton(this, Anchor.TopRight);
-		ResizeTR.SetSize(new(24, 24));
+		ResizeTR.		Size = new(24, 24);
 		ResizeTR.SetOrigin(Anchor.TopRight);
 		ResizeTR.SetAnchor(Anchor.TopRight);
 		ResizeTR.SetVisible(Resizable);
 
 		ResizeBL = new WindowResizerButton(this, Anchor.BottomLeft);
-		ResizeBL.SetSize(new(24, 24));
+		ResizeBL.		Size = new(24, 24);
 		ResizeBL.SetOrigin(Anchor.BottomLeft);
 		ResizeBL.SetAnchor(Anchor.BottomLeft);
 		ResizeBL.SetVisible(Resizable);
 
 		ResizeBR = new WindowResizerButton(this, Anchor.BottomRight);
-		ResizeBR.SetSize(new(24, 24));
+		ResizeBR.		Size = new(24, 24);
 		ResizeBR.SetOrigin(Anchor.BottomRight);
 		ResizeBR.SetAnchor(Anchor.BottomRight);
 		ResizeBR.SetVisible(Resizable);
 
-		ResizeBL.SetPos(new(4, 0));
-		ResizeBR.SetPos(new(-4, 0));
+		ResizeBL.
+		Position = new(4, 0);
+		ResizeBR.		Position = new(-4, 0);
 
-		ResizeTL.SetText("");
-		ResizeTR.SetText("");
-		ResizeBL.SetText("");
-		ResizeBR.SetText("");
+		ResizeTL.
+		Text = "";
+		ResizeTR.		Text = "";
+		ResizeBL.		Text = "";
+		ResizeBR.		Text = "";
 
 		this.SetAddParent(ap);
 		SetUseRenderTarget(true);
@@ -409,7 +416,7 @@ public class Window : Element
 	}
 
 	private void dragWindow(Titlebar self, Vector2F delta) {
-		this.SetPos(this.GetPos() + delta);
+		this.		Position = this.Position + delta;
 	}
 
 	protected override void OnThink() {
@@ -467,7 +474,7 @@ public class Window : Element
 			Rlgl.Scalef(1, 1.0f + ((1 - NMath.Ease.OutCubic(mul)) * 0.5f), 1);
 		}
 
-		SetOpacity(mul);
+		Opacity = mul;
 	}
 	public override void PostRenderRT() {
 		if (closing) {

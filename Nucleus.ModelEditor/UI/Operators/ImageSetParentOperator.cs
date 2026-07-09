@@ -52,14 +52,14 @@ namespace Nucleus.ModelEditor.UI.Operators
 					else {
 						dropdownSlot = new DropdownSelector<EditorSlot>(existingSlotPanel.Panel);
 						dropdownSlot.OnToString += (eSlot) => eSlot?.Name ?? "<null slot?>";
-						dropdownSlot.SetDock(Dock.Fill);
+						dropdownSlot.						Dock = Dock.Fill;
 						dropdownSlot.Items.AddRange(bone.Slots);
 						dropdownSlot.Selected = bone.Slots[0];
 					}
 					var newSlotName = new Textbox(newSlotPanel.Panel);
-					newSlotName.SetDock(Dock.Fill);
+					newSlotName.					Dock = Dock.Fill;
 					newSlotName.SetHelperText( "New slot name...");
-					newSlotName.SetText( SelectedImage.Name);
+					newSlotName.					Text = SelectedImage.Name;
 
 					EditorDialogs.SetupOKCancelButtons(
 						boneDialog,
@@ -73,13 +73,13 @@ namespace Nucleus.ModelEditor.UI.Operators
 								}
 							}
 							else {
-								var slotTest = file.AddSlot(bone, new(newSlotName.GetText()));
+								var slotTest = file.AddSlot(bone, new(newSlotName.Text));
 								if (slotTest.Failed) return;
 								slot = slotTest.Result;
 							}
 							if (slot == null) return;
 
-							var result = file.AddAttachment<EditorRegionAttachment>(slot, new(newSlotName.GetText()));
+							var result = file.AddAttachment<EditorRegionAttachment>(slot, new(newSlotName.Text));
 							if (result.Failed) {
 
 							}
@@ -89,7 +89,7 @@ namespace Nucleus.ModelEditor.UI.Operators
 						},
 						null
 					);
-					boneDialog.SetSize(new(boneDialog.GetSize().X, bone.Slots.Count <= 0 ? 158 : 184));
+					boneDialog.					Size = new(boneDialog.Size.X, bone.Slots.Count <= 0 ? 158 : 184);
 					break;
 			}
 		}

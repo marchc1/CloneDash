@@ -19,7 +19,7 @@ public class Scrollbar : Panel
 			this.scrollbar = scrollbar;
 			SetPaintBackgroundEnabled(false);
 			SetPaintBorderEnabled(false);
-			SetBorderSize(0);
+			BorderSize = 0;
 		}
 		public override void Paint(float width, float height) {
 			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
@@ -40,7 +40,7 @@ public class Scrollbar : Panel
 			this.scrollbar = scrollbar;
 			SetPaintBackgroundEnabled(false);
 			SetPaintBorderEnabled(false);
-			SetBorderSize(0);
+			BorderSize = 0;
 		}
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			// Remap the new mouse pos
@@ -115,33 +115,35 @@ public class Scrollbar : Panel
 		}
 		set {
 			__alignment = value;
-			if (GetDock() == Dock.None)
-				SetDock(value == ScrollbarAlignment.Vertical ? Dock.Right : Dock.Bottom);
+			if (Dock == Dock.None)
+				Dock = value == ScrollbarAlignment.Vertical ? Dock.Right : Dock.Bottom;
 		}
 	}
 	protected override void PerformLayout(float width, float height) {
 		if (Alignment == ScrollbarAlignment.Vertical) {
-			Up.SetDock(Dock.Top);
-			Down.SetDock(Dock.Bottom);
+			Up.			Dock = Dock.Top;
+			Down.			Dock = Dock.Bottom;
 		}
 		else {
-			Up.SetDock(Dock.Left);
-			Down.SetDock(Dock.Right);
+			Up.			Dock = Dock.Left;
+			Down.			Dock = Dock.Right;
 		}
 	}
 	public Scrollbar(Element? parent) : base(parent) {
-		this.SetSize(new(18, 18));
+		this.		Size = new(18, 18);
 
 		Up = new ScrollbarButton(this);
 		Down = new ScrollbarButton(this);
 		Grip = new ScrollbarGrip(this);
 
-		Up.SetSize(new(18, 18));
-		Down.SetSize(new(18, 18));
+		Up.
+		Size = new(18, 18);
+		Down.		Size = new(18, 18);
 
-		Up.SetDock(Dock.Top);
-		Down.SetDock(Dock.Bottom);
-		Grip.SetDock(Dock.Fill);
+		Up.
+		Dock = Dock.Top;
+		Down.		Dock = Dock.Bottom;
+		Grip.		Dock = Dock.Fill;
 
 		SetVisible(false);
 		SetPaintBackgroundEnabled(false);

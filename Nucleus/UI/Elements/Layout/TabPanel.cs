@@ -13,7 +13,7 @@ public class Tab(Button switcher, Element panel)
 
 	public void SetName(string newName) {
 		Name = newName;
-		Switcher.SetText(newName);
+		Switcher.		Text = newName;
 		Switcher.GetParent()?.InvalidateLayout();
 		Switcher.InvalidateLayout();
 	}
@@ -56,33 +56,33 @@ public class TabView : Panel
 	public TabView(Element? parent) : base(parent) {
 		TabSelector = new Panel(this);
 		TabSelector.SetPaintBackgroundEnabled(false);
-		TabSelector.SetSize(new(0, 32));
-		TabSelector.SetDock(Dock.Top);
+		TabSelector.		Size = new(0, 32);
+		TabSelector.		Dock = Dock.Top;
 
 		TabGoLeft = new Button(TabSelector);
-		TabGoLeft.SetSize(new(28));
-		TabGoLeft.SetDock(Dock.Left);
+		TabGoLeft.		Size = new(28);
+		TabGoLeft.		Dock = Dock.Left;
 		TabGoLeft.SetPaintBorderEnabled(false);
-		TabGoLeft.SetText("<");
-		TabGoLeft.SetTextSize(18);
+		TabGoLeft.		Text = "<";
+		TabGoLeft.		TextSize = 18;
 
 		TabGoRight = new Button(TabSelector);
-		TabGoRight.SetSize(new(28));
-		TabGoRight.SetDock(Dock.Right);
+		TabGoRight.		Size = new(28);
+		TabGoRight.		Dock = Dock.Right;
 		TabGoRight.SetPaintBorderEnabled(false);
-		TabGoRight.SetText(">");
-		TabGoRight.SetTextSize(18);
+		TabGoRight.		Text = ">";
+		TabGoRight.		TextSize = 18;
 
 		TabSelectorContainer = new Panel(TabSelector);
 		TabSelectorContainer.SetPaintBackgroundEnabled(false);
 		TabSelectorContainer.SetPaintBorderEnabled(false);
-		TabSelectorContainer.SetDock(Dock.Fill);
+		TabSelectorContainer.		Dock = Dock.Fill;
 
 		TabContainer = new Panel(this);
-		TabContainer.SetDock(Dock.Fill);
+		TabContainer.		Dock = Dock.Fill;
 		TabContainer.SetBgColor(SWITCHER_ACTIVE);
-		TabContainer.SetBorderSize(0);
-		TabContainer.SetDockMargin(RectangleF.TLRB(-4, 8, 8, 8));
+		TabContainer.BorderSize = 0;
+		TabContainer.		DockMargin = RectangleF.TLRB(-4, 8, 8, 8);
 	}
 
 	public delegate void OnTabChangedDelegate(TabView self, Tab? tab);
@@ -94,16 +94,16 @@ public class TabView : Panel
 	public Tab AddTab(string name, string? icon = null, string? tooltip = null) {
 		// We create the tab in TabContainer
 		Panel panel = new Panel(TabContainer);
-		panel.SetDock(Dock.Fill);
+		panel.		Dock = Dock.Fill;
 		panel.SetPaintBackgroundEnabled(false);
 
 		// The switcher in TabSelectorContainer
 		Button switcher = new Button(TabSelectorContainer);
-		switcher.SetDock(Dock.Left);
+		switcher.		Dock = Dock.Left;
 		switcher.SetBgColor(SWITCHER_INACTIVE);
 		switcher.SetTextPadding(new(4));
 		switcher.SetAutoSize(true);
-		switcher.SetBorderSize(0);
+		switcher.BorderSize = 0;
 
 		// A new tab instance
 		Tab newTab = new Tab(switcher, panel);

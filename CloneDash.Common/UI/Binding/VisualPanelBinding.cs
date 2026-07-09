@@ -34,11 +34,11 @@ namespace CloneDash.Common.UI.Binding
 			}
 
 			_label = new Label(this);
-			_label.SetTextSize(CloneDashUI.GetFontSize(20));
+			_label.			TextSize = CloneDashUI.GetFontSize(20);
 			_label.SetAnchor(Anchor.CenterLeft);
 			_label.SetOrigin(Anchor.CenterLeft);
 			_label.SetAutoSize(true);
-			_label.SetText(bind.Label);
+			_label.			Text = bind.Label;
 		}
 
 		public override void SetBgColor(Color value) {
@@ -58,8 +58,8 @@ namespace CloneDash.Common.UI.Binding
 
 			public Key(Element parent, ButtonCode key) : base(parent) {
 				SetPaintBackgroundEnabled(true);
-				SetRoundness(4);
-				SetSize(new Vector2F(Height));
+				Roundness = 4;
+				Size = new Vector2F(Height);
 
 				switch (key) {
 					case ButtonCode.KeyUp:
@@ -67,22 +67,22 @@ namespace CloneDash.Common.UI.Binding
 					case ButtonCode.KeyDown:
 					case ButtonCode.KeyRight: {
 						Image image = new(this);
-						image.SetSize(new Vector2F(20));
-						image.SetImage(Level.Textures.LoadTextureFromFile(key switch {
+							image.						Size = new Vector2F(20);
+							image.						Texture = Level.Textures.LoadTextureFromFile(key switch {
 							ButtonCode.KeyUp => "icons/caret-up.png",
 							ButtonCode.KeyLeft => "icons/caret-left.png",
 							ButtonCode.KeyDown => "icons/caret-down.png",
 							ButtonCode.KeyRight => "icons/caret-right.png",
 							_ => throw new ArgumentOutOfRangeException()
-						}));
+						});
 						_inner = image;
 						break;
 					}
 
 					default: {
 						Label label = new(this);
-						label.SetFont(CloneDashUI.GetBoldFont(GetScheme()));
-						label.SetText(key.ToString().Trim("Key"));
+							label.						Font = CloneDashUI.GetBoldFont(GetScheme());
+							label.						Text = key.ToString().Trim("Key");
 						_inner = label;
 						break;
 					}
@@ -97,13 +97,13 @@ namespace CloneDash.Common.UI.Binding
 
 				float w = _inner.GetRenderBounds().W;
 				if (w <= 20) w = 0; // if its small enough, let it be square
-				SetSize(new Vector2F(Math.Max(Height, w + 16), Height));
+				Size = new Vector2F(Math.Max(Height, w + 16), Height);
 			}
 
 			public override void SetFgColor(Color value) {
 				_inner.SetFgColor(value);
 				(_inner as Label)?.SetTextColor(value);
-				(_inner as Image)?.SetImageColor(value);
+				(_inner as Image)?.ImageColor = value;
 			}
 		}
 	}

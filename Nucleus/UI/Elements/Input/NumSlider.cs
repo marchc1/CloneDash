@@ -33,16 +33,16 @@ public class LabeledNumSlider : Panel, INumSlider, ITextElement
 
 	public LabeledNumSlider(Element? parent) : base(parent){
 		label = new Label(this);
-		label.SetDock(Dock.Left);
+		label.		Dock = Dock.Left;
 		label.SetAutoSize(true);
-		label.SetText("Num");
-		label.SetBorderSize(0);
+		label.		Text = "Num";
+		label.BorderSize = 0;
 		label.SetTextPadding(new(12));
 		label.SetBgColor(Color.Blank);
-		label.SetDockMargin(RectangleF.XYWH(0, 0, 16, 0));
+		label.		DockMargin = RectangleF.XYWH(0, 0, 16, 0);
 
 		numslider = new NumSlider(this);
-		numslider.SetDock(Dock.Fill);
+		numslider.		Dock = Dock.Fill;
 		numslider.Digits = 3;
 	}
 
@@ -50,29 +50,10 @@ public class LabeledNumSlider : Panel, INumSlider, ITextElement
 
 	}
 
-	public ReadOnlySpan<char> GetFont() {
-		return ((ITextElement)label).GetFont();
-	}
+	public ReadOnlySpan<char> Font { get => ((ITextElement)label).Font; set => ((ITextElement)label).Font = value; }
+	public ReadOnlySpan<char> Text { get => ((ITextElement)label).Text; set => ((ITextElement)label).Text = value; }
 
-	public ReadOnlySpan<char> GetText() {
-		return ((ITextElement)label).GetText();
-	}
-
-	public float GetTextSize() {
-		return ((ITextElement)label).GetTextSize();
-	}
-
-	public void SetFont(ReadOnlySpan<char> font) {
-		((ITextElement)label).SetFont(font);
-	}
-
-	public void SetText(ReadOnlySpan<char> font) {
-		((ITextElement)label).SetText(font);
-	}
-
-	public void SetTextSize(float textSize) {
-		((ITextElement)label).SetTextSize(textSize);
-	}
+	public float TextSize { get => ((ITextElement)label).TextSize; set => ((ITextElement)label).TextSize = value; }
 }
 public class NumSlider : Textbox, INumSlider
 {
@@ -94,7 +75,7 @@ public class NumSlider : Textbox, INumSlider
 		_value = Math.Round(value, Digits);
 		if (MinimumValue.HasValue) _value = Math.Max(MinimumValue.Value, _value);
 		if (MaximumValue.HasValue) _value = Math.Min(MaximumValue.Value, _value);
-		SetText(GetTextVariant());
+		Text = GetTextVariant();
 	}
 
 	public delegate void OnValueChangedDelegate(NumSlider self, double oldValue, double newValue);
@@ -131,7 +112,7 @@ public class NumSlider : Textbox, INumSlider
 	}
 
 	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
-		SetText($"{Value}");
+		Text = $"{Value}";
 		caret = 0;
 		return base.OnGainingKeyboardFocus(lastFocus, ref passTo);
 	}
@@ -155,7 +136,7 @@ public class NumSlider : Textbox, INumSlider
 	}
 	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
-			double? v = ParseString(GetText());
+			double? v = ParseString(Text);
 			if (v != null) {
 				Value = v.Value;
 				KeyboardUnfocus();

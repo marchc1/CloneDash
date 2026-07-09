@@ -55,14 +55,14 @@ public class StatisticsPanel : Panel
 		bottom.SetPaintBackgroundEnabled(false);
 
 		bottom.DynamicallySized = true;
-		bottom.SetSize(new(0.07f));
-		bottom.SetDock(Dock.Bottom);
+		bottom.		Size = new(0.07f);
+		bottom.		Dock = Dock.Bottom;
 
 		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
-		restart.SetSize(new(.2f));
-		restart.SetText("Restart");
-		restart.SetDock(Dock.Left);
+		restart.		Size = new(.2f);
+		restart.		Text = "Restart";
+		restart.		Dock = Dock.Left;
 		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
 			// Maybe seeking is stable enough now to justify this though?
@@ -72,12 +72,12 @@ public class StatisticsPanel : Panel
 
 		var back = new Button(bottom);
 		back.DynamicallySized = true;
-		back.SetSize(new(.2f));
-		back.SetText("Main Menu");
-		back.SetDock(Dock.Right);
+		back.		Size = new(.2f);
+		back.		Text = "Main Menu";
+		back.		Dock = Dock.Right;
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
-		SetBorderSize(0);
+		BorderSize = 0;
 	}
 	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
 		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
@@ -674,7 +674,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (CurrentStatisticsPanel == null)
 			return;
 
-		CurrentStatisticsPanel.SetSize(new(1, 1));
+		CurrentStatisticsPanel.
+		Size = new(1, 1);
 		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
