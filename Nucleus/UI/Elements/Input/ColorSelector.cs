@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -149,18 +150,6 @@ public class ColorSelectorDialog : Panel
 		ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
 		ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
 
-		Raylib.GenTextureMipmaps(ref ColorWheelTex);
-		Raylib.GenTextureMipmaps(ref HueWheelTex);
-		Raylib.GenTextureMipmaps(ref ColorPickerTex);
-		Raylib.GenTextureMipmaps(ref ColorSatValTex);
-		Raylib.GenTextureMipmaps(ref ColorSatValInnerTex);
-
-		Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(HueWheelTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
-
 		this.SetOrigin(Anchor.BottomCenter);
 		this.UI.Input.OnClick += delegate (Element? el) {
 			if (el != null && !el.IsIndirectChildOf(this)) {
@@ -175,11 +164,11 @@ public class ColorSelectorDialog : Panel
 
 	Panel ColorWheel;
 
-	Texture2D ColorWheelTex;
-	Texture2D HueWheelTex;
-	Texture2D ColorPickerTex;
-	Texture2D ColorSatValTex;
-	Texture2D ColorSatValInnerTex;
+	ITexture? ColorWheelTex;
+	ITexture? HueWheelTex;
+	ITexture? ColorPickerTex;
+	ITexture? ColorSatValTex;
+	ITexture? ColorSatValInnerTex;
 
 	private float _workingHue = 0;
 	private float _workingSat = 0;

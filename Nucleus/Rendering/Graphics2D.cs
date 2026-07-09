@@ -290,7 +290,10 @@ namespace Nucleus.Core
 			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		}
 
-		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false; }
+		/// <summary>
+		/// This will go in a future Nucleus update when texture management is more uniform!!
+		/// </summary>
+		/// <param name="tex"></param>
 		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = true; }
 
 		public static void SetBlendMode(BlendMode mode) => Rlgl.SetBlendMode(mode);
