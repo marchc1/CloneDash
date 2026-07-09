@@ -93,7 +93,7 @@ public static class Interlude
 
 			// The provider isn't empty
 			if (provider.Pick(Random.Shared.Next(0, provider.Count), out interludeTexture)) {
-				hasTex = Raylib.IsTextureValidy(interludeTexture); // make sure the texture is valid, just in case
+				hasTex = Raylib.IsTextureValid(interludeTexture); // make sure the texture is valid, just in case
 				if (!hasTex) {
 					Logs.Warn("Failed to load the interlude texture, despite a provider giving us one!");
 				}

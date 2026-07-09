@@ -1142,7 +1142,7 @@ public static unsafe partial class Raylib
 
 	/// <summary>Check if a texture is ready</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsTextureValidy(Texture2D texture) {
+	public static bool IsTextureValid(Texture2D texture) {
 		return ((texture.Id > 0) &&         // Validate OpenGL id
 			(texture.Width > 0) &&
 			(texture.Height > 0) &&     // Validate texture size
