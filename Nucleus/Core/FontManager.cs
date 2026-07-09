@@ -145,9 +145,18 @@ namespace Nucleus.Core
 			codepoints = codepoints ?? [];
 			FontNameToFilepath = [];
 			foreach (var kvp in fonttable)
-				FontNameToFilepath[symbols.AddString(kvp.Key.AsSpan())] = kvp.Value;
+				AddFont(kvp.Key, kvp.Value);
 			foreach (var codepointStr in codepoints)
 				RegisterCodepoints(codepointStr);
+		}
+		
+		public void AddFont(ReadOnlySpan<char> key, FontEntry entry) {
+			FontNameToFilepath[symbols.AddString(key)] = entry;
+		}
+
+		public bool HasFont(ReadOnlySpan<char> key) {
+			var sym = symbols.Find(key);
+			return FontNameToFilepath.ContainsKey(sym);
 		}
 
 		DateTime lastCheckTimes;
@@ -231,11 +240,13 @@ namespace Nucleus.Core
 				Font newFont = Filesystem.ReadFont(fallbackEntry.PathID, fallbackEntry.Path, fontSize, fallbackEntry.GetGoodOrUnknownCodepoints());
 				fallbackEntry.ValidateCodepoints(in newFont);
 				Raylib.GenTextureMipmaps(ref newFont.Texture);
-				Raylib.SetTextureFilter(newFont.Texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
+				Raylib.SetTextureFilter(newFont.Texture,
+					TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
 				state = fallbackFonts[fontSize] = new FontState();
 				state.OwnFont(newFont);
 				state.Key = new(0, fontSize);
 			}
+
 			return state;
 		}
 	}

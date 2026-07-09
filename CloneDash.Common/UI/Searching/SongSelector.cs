@@ -38,15 +38,18 @@ public delegate void ChartSongSourceMoveFinishFn(in ChartSongSourceMoveFinish fi
 
 public class SongSelector : Panel, IMainMenuPanel
 {
-	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
+	#region IMainMenuPanel
+	
+	string IMainMenuPanel.Name => "Song Select";
+	
+	void IMainMenuPanel.SetRichPresence() {
+		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "Picking a chart"
 		});
 	}
-	public string GetName() => "Song Selector";
-	public void OnHidden() { }
-	public void OnShown() { }
+
+	#endregion
 
 	SongSearchBar SearchBar = null!;
 	SongLabel FilterResults = null!;

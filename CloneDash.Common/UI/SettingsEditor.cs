@@ -140,17 +140,22 @@ public class SettingsPanel : ScrollPanel
 
 public class SettingsEditor : Panel, IMainMenuPanel
 {
-	NumSlider judgementSlider;
-	NumSlider visualSlider;
-
-	public void SetRichPresence() {
+	#region IMainMenuPanel
+	
+	string IMainMenuPanel.Name => "Options";
+	string IMainMenuPanel.ColorScheme => "Options";
+	
+	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new() {
 			Details = "Main Menu",
 			State = "In Settings"
 		});
 	}
-	public string GetName() => "";
-	public void OnHidden() { }
+
+	#endregion
+	
+	NumSlider judgementSlider;
+	NumSlider visualSlider;
 
 	public bool needsClosed = false;
 	public bool OnTryClose() {
@@ -476,16 +481,18 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 
 public class JudgementOffsetWizard : Panel, IMainMenuPanel
 {
-	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
+	#region IMainMenuPanel
+
+	string IMainMenuPanel.Name => "Offset Wizard";
+	
+	void IMainMenuPanel.SetRichPresence() {
+		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "In Settings"
 		});
 	}
-
-	public string GetName() => "Offset Wizard";
-	public void OnHidden() { }
-	public void OnShown() { }
+	
+	#endregion
 
 	bool isDragging = false;
 	float currentWidth = 0;

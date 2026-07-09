@@ -1,11 +1,6 @@
 ﻿using Nucleus.Common.Input;
 using Nucleus.Input;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.Core
 {
@@ -21,6 +16,10 @@ namespace Nucleus.Core
 			FinalKeybindAssociation[ret.FinalKey].Add(ret);
 
 			return ret;
+		}
+
+		public bool RemoveKeybind(Keybind bind) {
+			return FinalKeybindAssociation.TryGetValue(bind.FinalKey, out List<Keybind>? list) && list.Remove(bind);
 		}
 
 		public bool TestKeybinds(ref KeyboardState state, [NotNullWhen(true)] out Keybind? ranKeybind) {
@@ -74,22 +73,13 @@ namespace Nucleus.Core
 			return state.WasKeyPressed(FinalKey);
 		}
 
-		public static Keybind Make(List<ButtonCode> requiredKeys, Action bind, bool mustBePure) {
-			Keybind ret = new Keybind();
-
-			ret.RequiredKeys = requiredKeys;
-			ret.FinalKey = requiredKeys.Last();
-			ret.Bind = bind;
-			ret.MustBePure = mustBePure;
-
-			List<string> keyNames = [];
-			foreach (ButtonCode key in requiredKeys) {
-				keyNames.Add(key.GetString());
-			}
-			ret.NiceKeybindString = string.Join(" + ", keyNames);
-
-			return ret;
-		}
+		public static Keybind Make(List<ButtonCode> requiredKeys, Action bind, bool mustBePure) => new() {
+			RequiredKeys = requiredKeys,
+			FinalKey = requiredKeys.Last(),
+			Bind = bind,
+			MustBePure = mustBePure,
+			NiceKeybindString = string.Join(" + ", requiredKeys.Select(x => x.ToString()))
+		};
 
 		internal void WipeState(ref KeyboardState state) {
 			state.ConsumeFirstKeyPress(FinalKey);

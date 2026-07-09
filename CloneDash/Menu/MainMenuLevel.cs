@@ -1,28 +1,25 @@
-﻿using CloneDash.Characters;
-using CloneDash.Common;
+﻿using CloneDash.Common;
 using CloneDash.Common.Songs;
+using CloneDash.Common.UI;
+using CloneDash.Common.UI.Binding;
 using CloneDash.Compatibility.MDMC;
-using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu;
+using CloneDash.Menu.Character;
+using CloneDash.Menu.Main;
 using CloneDash.Menu.Searching;
 
 using Nucleus;
-using Nucleus.Audio;
-using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
-using Nucleus.Files;
-using Nucleus.Input;
-using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
-using Nucleus.UI.Elements;
 
 using Raylib_cs;
+using System.Numerics;
 using Image = Nucleus.UI.Elements.Image;
 
 namespace CloneDash.Game;
@@ -32,7 +29,18 @@ namespace CloneDash.Game;
 public class MainMenuLevel : Level, IMainMenuLevel
 {
 	public Stack<Element> ActiveElements = [];
-	public CharacterPanel Character = null!;
+	public MainMenuCharacter Character = null!;
+
+	private Panel _header = null!;
+	private Label _headerText = null!;
+
+	public Element Content { get; private set; } = null!;
+	
+	private Panel _footer = null!;
+	private MenuFooterButton _backButton = null!;
+	private MenuFooterButton _screenButton = null!;
+
+	#region Panel Switching
 
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
 		if (ActiveElements.Count > 0) {
@@ -41,73 +49,160 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			if (last is IMainMenuPanel mmp) mmp.OnHidden();
 		}
 
+		SwitchBindings(element);
 		ActiveElements.Push(element);
 		element.SetRichPresence();
 
-		backButton.SetVisible(ActiveElements.Count > 1);
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
+		
+		_targetPrimaryColor = element.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
+		_targetBackgroundColor = element.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
+		_headerText.SetText(element.Name);
 
+		if (ActiveElements.Count == 1) {
+			_primaryColor = _targetPrimaryColor;
+			_backgroundColor = _targetBackgroundColor;
+		}
+
+		UpdateAction(_screenButton, element.GetAction());
 		element.SetDock(Dock.Fill);
+		element.SetBorderSize(0);
 		return element;
 	}
 
-	private Button backButton;
-	public override void OnUnload() {
-		base.OnUnload();
-		MDMCWebAPI.CancelPendingRequests();
-	}
 	public void PopActiveElement() {
 		if (ActiveElements.Count <= 1) return;
 
-		var element = ActiveElements.Peek();
-		if (element is IMainMenuPanel mmp)
-			if (!mmp.OnTryClose())
-				return;
+		Element element = ActiveElements.Peek();
+		if (element is IMainMenuPanel mmp && !mmp.OnTryClose())
+			return;
 
 		ActiveElements.Pop();
 		element.Remove();
 
-		var next = ActiveElements.Peek();
+		Element next = ActiveElements.Peek();
+		IMainMenuPanel? nextPanel = next as IMainMenuPanel;
 		next.SetVisible(true);
 
-		backButton.SetVisible(ActiveElements.Count > 1);
+		_backButton.Action = ActiveElements.Count > 1 ? PopActiveElement : null;
+		UpdateAction(_screenButton, nextPanel?.GetAction());
+		SwitchBindings(nextPanel);
 
-		if (next is IMainMenuPanel nextmmp) {
-			nextmmp.OnShown();
-			nextmmp.SetRichPresence();
+		if (nextPanel != null) {
+			nextPanel.OnShown();
+			nextPanel.SetRichPresence();
+			
+			_targetPrimaryColor = nextPanel.GetPrimaryColor(RootPanel.GetScheme()).ToVector();
+			_targetBackgroundColor = nextPanel.GetBackgroundColor(RootPanel.GetScheme()).ToVector();
+			_headerText.SetText(nextPanel.Name);
 		}
 	}
 
-	Panel header;
+	private void UpdateAction(MenuFooterButton button, MenuFooterAction? action)
+	{
+		if (action is null)
+		{
+			button.Action = null;
+			return;
+		}
+
+		button.Action = action.Action;
+		button.Icon = action.Icon;
+		button.SetText(action.Name);
+	}
+
+	#endregion
+
+	#region Panel Bindings
+
+	private readonly List<Keybind> _boundKeybindings = new();
+	private Flow _bindingFlow = null!;
+
+	private void SwitchBindings(IMainMenuPanel? panel) {
+		_boundKeybindings.ForEach(x => Keybinds.RemoveKeybind(x));
+		_bindingFlow.ClearChildren();
+		
+		if (panel is null) return;
+
+		PanelBinding[] binds = panel.GetBindings();
+		
+		foreach (PanelBinding binding in binds)
+		{
+			_boundKeybindings.AddRange(binding.Bindings.Select(x => Keybinds.AddKeybind(x.buttons.ToList(), x.action)));
+			VisualPanelBinding visual = new(_bindingFlow, binding);
+			visual.SetAnchor(Anchor.CenterLeft);
+			visual.SetOrigin(Anchor.CenterLeft);
+		}
+	}
+
+	private void UpdateBindingColors(Color back, Color front) {
+		foreach (Element element in _bindingFlow.GetChildren()) {
+			element.SetBgColor(back);
+			element.SetFgColor(front);
+		}
+	}
+
+	#endregion
+
+	public override void OnUnload() {
+		base.OnUnload();
+		MDMCWebAPI.CancelPendingRequests();
+	}
+
+	protected override UserInterface CreateUI() => new CloneDashUI();
+
 	public override void Initialize(params object[] args) {
 		var charPanel = new Panel(RootPanel);
 		charPanel.SetBorderSize(0);
 		charPanel.DynamicallySized = true;
-		charPanel.SetSize(new(1f, 1f));
+		charPanel.SetSize(new Vector2F(1f, 1f));
 		charPanel.SetClipping(false);
+		charPanel.SetPaintBackgroundEnabled(false);
 
-		Character = new(charPanel);
-		Character.DynamicallySized = true;
+		Character = new MainMenuCharacter(charPanel) { DynamicallySized = true };
 		Character.SetOrigin(Anchor.TopCenter);
-		Character.SetSize(new(1f));
+		Character.SetSize(new Vector2F(1f));
 
-		header = new(RootPanel);
-		header.SetPos(new Vector2F(0));
-		header.SetSize(new Vector2F(256, 64));
-		header.SetDock(Dock.Top);
-		header.SetBorderSize(0);
-		header.SetBgColor(header.GetBgColor().Adjust(0, 0, value: 0.5f));
+		_header = new Panel(RootPanel);
+		_header.SetPos(new Vector2F(0));
+		_header.SetSize(new Vector2F(256, 64));
+		_header.SetDock(Dock.Top);
+		_header.SetBorderSize(0);
 
-		backButton = MenuButton(header, Dock.Left, "ui/back.png", $"Back", () => {
-			PopActiveElement();
-		});
+		_headerText = new Label(_header);
+		_headerText.SetDock(Dock.Fill);
+		_headerText.SetFont(CloneDashUI.GetBoldFont(RootPanel.GetScheme()));
+		_headerText.SetTextSize(32 * 1.4f);
+		_headerText.SetAutoSize(true);
 
-		var test2 = new Label(header);
-		test2.SetSize(new Vector2F(158, 32));
-		test2.SetDock(Dock.Left);
-		test2.SetText("Clone Dash");
-		test2.SetTextSize(30);
-		test2.SetAutoSize(true);
-		test2.SetDockMargin(RectangleF.TLRB(16));
+		Content = new Element(RootPanel);
+		Content.SetDock(Dock.Fill);
+		Content.SetBorderSize(0);
+		Content.SetDockPadding(new RectangleF(0, 0, 0, 48));
+		Content.SetPassthru(true);
+
+		_footer = new Panel(RootPanel);
+		_footer.SetSize(new Vector2F(256, 48));
+		_footer.SetDock(Dock.Bottom);
+		_footer.SetBorderSize(0);
+		_footer.SetClipping(false);
+
+		_backButton = new MenuFooterButton(_footer, "icons/arrow-left.png", "Back");
+		_backButton.SetAnchor(Anchor.BottomLeft);
+		_backButton.SetOrigin(Anchor.BottomLeft);
+		_backButton.SetPos(new Vector2F(40, -12));
+		
+		_screenButton = new MenuFooterButton(_footer);
+		_screenButton.SetAnchor(Anchor.BottomRight);
+		_screenButton.SetOrigin(Anchor.BottomRight);
+		_screenButton.SetPos(new Vector2F(-40, -12));
+
+		_bindingFlow = new Flow(_footer) {
+			AutoSize = Axis.Both,
+			Spacing = 20
+		};
+		_bindingFlow.SetAnchor(Anchor.Center);
+		_bindingFlow.SetOrigin(Anchor.Center);
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -129,30 +224,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
-			Position = new(4 + 6, (int)(header.GetRenderBounds().H + 4))
+			Position = new(4 + 6, (int)(_header.GetRenderBounds().H + 4))
 		};
 	}
-
-	Button MenuButton(Panel header, Dock dock, string icon, string text, Action onClicked) {
-		var menuBtn = new Button(header);
-		menuBtn.SetAutoSize(false);
-		menuBtn.SetSize(new Vector2F(64));
-		menuBtn.SetText("");
-		menuBtn.SetDock(dock);
-		var menuBtnImage = new Image(menuBtn);
-		menuBtnImage.SetTexture(EngineCore.Level.Textures.LoadTextureFromFile(icon));
-		menuBtnImage.SetImageOrientation(ImageOrientation.Zoom);
-		menuBtnImage.SetImagePadding(new(4));
-		menuBtnImage.SetDock(Dock.Fill);
-		menuBtn.SetTextSize(21);
-		menuBtn.SetDockMargin(RectangleF.TLRB(0));
-		menuBtn.SetBorderSize(0);
-		menuBtn.OnButtonClick += (_, _) => onClicked();
-		menuBtn.SetTooltipText(text);
-
-		return menuBtn;
-	}
-
 
 	private static float offsetBasedOnLifetime(Element e, float inf, float heightDiv) =>
 		(float)(NMath.Remap(1 - NMath.Ease.OutCubic(e.Lifetime * inf), 0, 1, 0, 1, false, true) * (EngineCore.GetWindowHeight() / heightDiv));
@@ -537,4 +611,153 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	}
 
 	public Panel? GetSelectedSongPanel() => SelectedSong;
+
+	#region Colors
+	
+	private static Vector4 _primaryColor;
+	private static Vector4 _backgroundColor;
+
+	private static Vector4 _targetPrimaryColor;
+	private static Vector4 _targetBackgroundColor;
+
+	public static Color PrimaryColor => _primaryColor.ToColor();
+	public static Color BackgroundColor => _backgroundColor.ToColor();
+
+	#endregion
+	
+	#region Background Rendering
+	
+	private static List<BackgroundShape> shapes = new();
+	private const int MaxShapes = 32;
+
+	public override void Render(FrameState frameState) {
+		_primaryColor = TransitionColor(_primaryColor, _targetPrimaryColor);
+		_backgroundColor = TransitionColor(_backgroundColor, _targetBackgroundColor);
+
+		Rlgl.EnableDepthTest();
+
+		var bg = _backgroundColor.ToColor();
+		Graphics2D.SetDrawColor(bg);
+		Graphics2D.DrawRectangle(Vector2F.Zero - frameState.WindowSize / 2f, frameState.WindowSize);
+		_backButton.SetBgColor(bg);
+		_screenButton.SetBgColor(bg);
+		_headerText.SetTextColor(bg);
+
+		bool first = shapes.Count == 0;
+
+		if (shapes.Count < MaxShapes) {
+			for (int i = shapes.Count; i < MaxShapes; i++) {
+				shapes.Add(CreateRandomShape(frameState.WindowWidth, frameState.WindowHeight, first));
+			}
+		}
+
+		var primary = _primaryColor.ToColor();
+		_backButton.SetFgColor(primary);
+		_screenButton.SetFgColor(primary);
+		_header.SetBgColor(primary);
+		_footer.SetBgColor(primary);
+		
+		UpdateBindingColors(bg, primary);
+		
+		var shapesColor = primary;
+		shapesColor.A = 80;
+		Graphics2D.SetDrawColor(shapesColor);
+
+		Graphics2D.DrawRectangle(frameState.WindowSize / 2f, new Vector2F(200));
+
+		for (int i = 0; i < shapes.Count; i++) {
+			BackgroundShape shape = shapes[i];
+			float movement = (float)RendertimeDelta * shape.Size;
+			shape.Position += new Vector2F(movement * 80, movement * -80);
+			shape.Rotation += 10 * movement;
+			shape.Rotation %= 360;
+
+			Vector2F pos = shape.Position - frameState.WindowSize / 2f;
+			Vector2F size = new(200 * shape.Size);
+
+			switch (shape.Type) {
+				case ShapeType.Square:
+					Graphics2D.DrawRectangle(RectangleF.XYWH(pos.X, pos.Y, size.X, size.Y), Vector2F.Zero / 2f, shape.Rotation);
+					break;
+				case ShapeType.Circle:
+					Graphics2D.DrawCircle(pos, size);
+					break;
+				case ShapeType.Triangle:
+					float triSize = size.X * 0.5f;
+					Vector2F p1 = GetTriangleCorner(pos, triSize, shape.Rotation);
+					Vector2F p2 = GetTriangleCorner(pos, triSize, shape.Rotation + 120);
+					Vector2F p3 = GetTriangleCorner(pos, triSize, shape.Rotation + 240);
+					Graphics2D.DrawTriangle(p1, p2, p3);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+
+			if (shape.Position.X > frameState.WindowWidth + size.Y + 50 || shape.Position.Y < -size.Y - 50) {
+				shapes.RemoveAt(i);
+				i--;
+			}
+		}
+
+		Rlgl.DisableDepthTest();
+		base.Render(frameState);
+
+		Vector2F GetTriangleCorner(Vector2F origin, float size, float angle) {
+			double rads = angle * (Math.PI / 180);
+			return new Vector2F(
+				(float)Math.Round(origin.X + size * Math.Cos(rads), 5),
+				(float)Math.Round(origin.Y + size * Math.Sin(rads), 5)
+			);
+		}
+	}
+
+	private Vector4 TransitionColor(Vector4 current, Vector4 target) {
+		return new Vector4(
+			TransitionNumber(current.X, target.X),
+			TransitionNumber(current.Y, target.Y),
+			TransitionNumber(current.Z, target.Z),
+			TransitionNumber(current.W, target.W)
+		);
+	}
+	
+	private float TransitionNumber(float current, float target) {
+		if (Math.Abs(target - current) < .01)
+			return target;
+
+		return (float)double.Lerp(target, current, Math.Exp(-5f * RendertimeDelta));
+	}
+
+	private BackgroundShape CreateRandomShape(float width, float height, bool shuffle) {
+		bool bottom = Random.Shared.NextSingle() >= 0.5f;
+		float value = Random.Shared.NextSingle();
+		float size = 1f - Random.Shared.NextSingle() * .8f;
+
+		Vector2F pos = shuffle
+			? new Vector2F(Random.Shared.NextSingle() * width, Random.Shared.NextSingle() * height)
+			: new Vector2F(bottom ? value * width : -300, bottom ? height + size * 200 : value * height);
+		
+		return new BackgroundShape {
+			Position = pos,
+			Size = size,
+			Type = (ShapeType)Random.Shared.Next(3),
+			Rotation = Random.Shared.NextSingle() * 360
+		};
+	}
+
+	private class BackgroundShape
+	{
+		public Vector2F Position { get; set; }
+		public float Size { get; set; } = 1f;
+		public float Rotation { get; set; }
+		public ShapeType Type { get; set; }
+	}
+
+	private enum ShapeType
+	{
+		Square,
+		Circle,
+		Triangle
+	}
+
+	#endregion
 }

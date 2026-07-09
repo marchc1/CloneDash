@@ -1,5 +1,6 @@
 ﻿using Nucleus.Common.Types;
 using Nucleus.Common.UI;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Util;
 using System.Text.Json;
@@ -76,7 +77,11 @@ public class SchemeSettings : IScheme
 				if (raw == null) continue;
 				var colonIdx = raw.IndexOf(':');
 				if (colonIdx == -1) continue;
-				CustomFonts[key] = new(raw[..colonIdx], raw[(colonIdx + 1)..]);
+
+				string ns = raw[..colonIdx];
+				string path = raw[(colonIdx + 1)..];
+				CustomFonts[key] = new SchemeSettingCustomFont(ns, path);
+				if (!Graphics2D.FontManager.HasFont(key)) Graphics2D.FontManager.AddFont(key, new FontEntry(path, ns));
 			}
 		}
 

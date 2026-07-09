@@ -54,9 +54,9 @@ public class ElementSchemeSystem
 		if (!IValidatable.IsValid(element)) return;
 
 		foreach (var child in element.GetChildren())
-			if (child.IsVisible() || force) 
+			if (child.IsVisible() || force)
 				ApplyScheme(child, ref state);
-			
+
 		element.PerformApplySchemeSettings();
 	}
 }
@@ -77,8 +77,8 @@ public class ElementInputSystem
 	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
 		if (!IValidatable.IsValid(element)) return null;
 
-		if (element.IsVisible() && element.HoverTest(globalSpaceBounds, mousePos)) {
-			bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos);
+		bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos);
+		if (element.IsVisible()) {
 			var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
 			// Also, process popups first here too.
@@ -102,19 +102,32 @@ public class ElementInputSystem
 					}
 				}
 			}
+
 			// Process non-modal non-popups now
 			for (int i = children.Length - 1; i >= 0; i--) {
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
 					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.GetChildRenderOffset(), child.GetRenderBounds().Size);
+					if (element.GetClipping()) {
+						// might not be right (this should just be a RectangleF function...)
+						float x1 = Math.Max(childGlobalBounds.X, globalSpaceBounds.X);
+						float y1 = Math.Max(childGlobalBounds.Y, globalSpaceBounds.Y);
+						float x2 = Math.Min(childGlobalBounds.X + childGlobalBounds.Width, globalSpaceBounds.X + globalSpaceBounds.Width);
+						float y2 = Math.Min(childGlobalBounds.Y + childGlobalBounds.Height, globalSpaceBounds.Y + globalSpaceBounds.Height);
+
+						childGlobalBounds = RectangleF.FromPosAndSize(
+							new(x1, y1),
+							new(Math.Max(0, x2 - x1), Math.Max(0, y2 - y1))
+						);
+					}
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
 				}
 			}
 
-			if (!element.IsPassthru())
+			if (!element.IsPassthru() && selfHovered)
 				return element;
 		}
 
@@ -336,8 +349,8 @@ public class ElementPaintSystem
 			return;
 
 		if (element.GetClipping()) // This aggressively expands the render bounds test. Unclear how much this will help or if this will only make floating point things more annoying.
-							  // Arguably positions and sizes should move to a Vector2I equivalent at this point.
-							  // This also might be a regression due to the latest UI changes, although I vaguely remember this happening before in some cases
+								   // Arguably positions and sizes should move to a Vector2I equivalent at this point.
+								   // This also might be a regression due to the latest UI changes, although I vaguely remember this happening before in some cases
 			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Vector2F.Floor(Graphics2D.Offset - element.GetChildRenderOffset()), Vector2F.Ceil(renderBounds.Size + Vector2F.One)));
 		{
 			Graphics2D.PushAlpha(element.GetOpacity() * 255);
@@ -375,7 +388,7 @@ public class ElementPaintSystem
 				int endIndex = element.GetPaintChildEndIndex();
 				for (int i = startIndex; i < endIndex; i++) {
 					Element child = children[i];
-					if(element.ShouldPaintChild(child))
+					if (element.ShouldPaintChild(child))
 						PaintTraverse(child, ref state, skipPopups);
 				}
 
