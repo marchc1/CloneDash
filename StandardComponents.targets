@@ -2,4 +2,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Nucleus.FileSystem\Nucleus.FileSystem.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+		<Compile Include="..\StandardComponents.cs" Link="Usings/Globals/StandardComponents.cs" />
+	</ItemGroup>
 </Project>

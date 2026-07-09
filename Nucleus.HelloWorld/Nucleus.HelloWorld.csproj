@@ -7,15 +7,12 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
 	<ItemGroup>
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 	</ItemGroup>
 
 	<Import Project="..\StandardComponents.targets" />
-	<ItemGroup>
-		<Compile Include="..\StandardComponents.cs" Link="Usings/Globals/StandardComponents.cs" />
-	</ItemGroup>
-
 	<Import Project="..\Nucleus\NucleusAssets.targets" />
-
 </Project>

@@ -7,30 +7,26 @@ using System.Buffers;
 
 namespace Nucleus.Models;
 
-public interface IClipPolygon<SlotType> {
-	public int GetVerticesCount();
-	public int ComputeWorldVerticesInto(SlotType slot, Vector2F[] into);
+public interface IClipPolygon<in SlotType>
+{
+	int GetVerticesCount();
+	int ComputeWorldVerticesInto(SlotType slot, Vector2F[] into);
 }
 
 // Since clipping is done via GPU stencils, all that's really needed here is some generics for slot logic.
 // This lets EditorModel and ModelInstance use pretty much the exact same logic with no changes needed
-public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachmentType> 
-	where ModelType : IModelInterface<BoneType, SlotType> 
-	where BoneType : class 
-	where SlotType : class 
+public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachmentType>(ModelType model, bool flipY)
+	where ModelType : IModelInterface<BoneType, SlotType>
+	where BoneType : class
+	where SlotType : class
 	where ClipAttachmentType : class, IClipPolygon<SlotType>
 {
 	public bool Active { get; protected set; }
-	public ModelType Model;
+	public ModelType Model = model;
 
-	Vector2F[]? clipPolygon;
+	private Vector2F[]? _clipPolygon;
 
-	public bool FlipY { get; set; }
-
-	public ModelClipper(ModelType model, bool flipY) {
-		Model = model;
-		FlipY = flipY;
-	}
+	public bool FlipY { get; set; } = flipY;
 
 	public void End() {
 		bool renderMask = false;
@@ -49,27 +45,37 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			Stencils.End();
 
 		Active = false;
-		endAt = null;
-		workingAttachment = null;
-		if (clipPolygon != null) {
-			ArrayPool<Vector2F>.Shared.Return(clipPolygon, true);
-			clipPolygon = null;
-		}
-		triangles.Clear();
-		shape.Points.Clear();
+		_endAt = null;
+		_workingAttachment = null;
+
+		if (_clipPolygon == null)
+			return;
+
+		ArrayPool<Vector2F>.Shared.Return(_clipPolygon, true);
+		_clipPolygon = null;
+
+		// Do not clear triangles or Points because it now intentionally persists between frames for caching
+		
+		// triangles.Clear();
+		// shape.Points.Clear();
 	}
 
-	private SlotType? endAt;
-	private ClipAttachmentType? workingAttachment;
-	private int verticesLength;
-	private Poly2Tri.Shape shape = new Poly2Tri.Shape();
-	private List<Poly2Tri.Triangle> triangles = [];
+	private SlotType? _endAt;
+	private ClipAttachmentType? _workingAttachment;
+	private int _verticesLength;
+	private readonly Shape _shape = new Shape();
+	private readonly List<Triangle> _triangles = [];
+
+	private Vector2F[]? _cachedVertices;
+	private int _cachedVerticesLength;
+	private ClipAttachmentType? _cachedAttachment;
+	private bool _hasCachedTriangulation;
 
 	public void Start(ClipAttachmentType attachment, SlotType slot, string? endAt = null) {
-		if (workingAttachment != null) return;
+		if (_workingAttachment != null) return;
 
 		bool renderMask = false;
-		switch((M4S_StencilMode)Model4System.m4s_stencilmode.GetInt()){
+		switch ((M4S_StencilMode)Model4System.m4s_stencilmode.GetInt()) {
 			case M4S_StencilMode.On:
 			default:
 				break;
@@ -81,21 +87,42 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		}
 
 		Active = true;
-		workingAttachment = attachment;
-		this.endAt = endAt == null ? null : Model.FindSlot(endAt);
+		_workingAttachment = attachment;
+		_endAt = endAt == null ? null : Model.FindSlot(endAt);
 
-		clipPolygon = ArrayPool<Vector2F>.Shared.Rent(attachment.GetVerticesCount());
-		verticesLength = attachment.ComputeWorldVerticesInto(slot, clipPolygon);
+		_clipPolygon = ArrayPool<Vector2F>.Shared.Rent(attachment.GetVerticesCount());
+		_verticesLength = attachment.ComputeWorldVerticesInto(slot, _clipPolygon);
 
-		shape.Points.Clear();
-		shape.Points.EnsureCapacity(verticesLength);
-		for (int i = 0; i < verticesLength; i++) {
-			var vertex = clipPolygon[i];
-			shape.Points.Add(new(vertex.X, vertex.Y));
+		bool isCached =
+			_hasCachedTriangulation &&
+			ReferenceEquals(_cachedAttachment, attachment) &&
+			_cachedVerticesLength == _verticesLength &&
+			_cachedVertices != null &&
+			_clipPolygon.AsSpan(0, _verticesLength).SequenceEqual(_cachedVertices.AsSpan(0, _verticesLength));
+		
+		if (!isCached) {
+			_shape.Points.Clear();
+			_shape.Points.EnsureCapacity(_verticesLength);
+			for (int i = 0; i < _verticesLength; i++) {
+				Vector2F vertex = _clipPolygon[i];
+				_shape.Points.Add(new(vertex.X, vertex.Y));
+			}
+
+			_triangles.Clear();
+			_shape.Triangulate(_triangles);
+
+			// Update the cache
+			if (_cachedVertices == null || _cachedVertices.Length < _verticesLength) {
+				if (_cachedVertices != null)
+					ArrayPool<Vector2F>.Shared.Return(_cachedVertices);
+				_cachedVertices = ArrayPool<Vector2F>.Shared.Rent(_verticesLength);
+			}
+
+			_clipPolygon.AsSpan(0, _verticesLength).CopyTo(_cachedVertices);
+			_cachedVerticesLength = _verticesLength;
+			_cachedAttachment = attachment;
+			_hasCachedTriangulation = true;
 		}
-
-		triangles.Clear();
-		shape.Triangulate(triangles);
 
 		// Draw stencil mask
 		if (!renderMask) {
@@ -106,7 +133,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.Color4ub(255, 255, 255, 255);
 
-		foreach (var triangle in triangles) {
+		foreach (Triangle triangle in _triangles) {
 			TriPoint a = triangle.Points[0], b = triangle.Points[1], c = triangle.Points[2];
 			if (FlipY) {
 				Rlgl.Vertex2f((float)a.X, -(float)a.Y);
@@ -121,17 +148,16 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		}
 
 		Rlgl.End();
-		if(!renderMask)
-		Stencils.EndMask();
+		if (!renderMask)
+			Stencils.EndMask();
 	}
 
 	public void NextSlot(SlotType slot) {
 		if (!Active) return;
-		if (endAt == null) return;
+		if (_endAt == null) return;
 
-		if (endAt == slot) {
+		if (_endAt == slot) {
 			End();
-			return;
 		}
 	}
 }

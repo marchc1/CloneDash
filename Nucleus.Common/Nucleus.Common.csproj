@@ -10,6 +10,8 @@
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
 	</ItemGroup>
+
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
 	
 	<ItemGroup>
 		<PackageReference Include="Colorful.Console" Version="1.2.15" />

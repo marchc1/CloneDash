@@ -1,5 +1,4 @@
-﻿global using static Nucleus.StandardComponents;
-using Nucleus.Audio;
+﻿using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
@@ -10,6 +9,7 @@ namespace Nucleus;
 
 /// <summary>
 /// This is a class to load standard components from stage 3.
+/// 
 /// </summary>
 public static class StandardComponents {
 	extension(EngineBuilder api){

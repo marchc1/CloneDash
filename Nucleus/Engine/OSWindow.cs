@@ -40,7 +40,7 @@ public class WindowDragNDropState(OSWindow window)
 	public bool TryDequeue(out DragData data) => Events.TryDequeue(out data);
 
 	public void Reset() {
-		Events.Clear();
+		if(!Events.IsEmpty) Events.Clear();
 		Position = default;
 	}
 }

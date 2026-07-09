@@ -11,6 +11,8 @@
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
 	</PropertyGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
 	</ItemGroup>
