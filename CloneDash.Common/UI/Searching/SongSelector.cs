@@ -171,7 +171,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.ImageOrientation = value;
 		internal void SetImagePadding(Vector2F value) => imageRenderer.ImagePadding = value;
 		internal void SetImage(ITexture value) => imageRenderer.Texture = value;
-		internal void SetImageOffset(Vector2F value) => imageRenderer.ImageOffset = value;
+		internal void SetImageOffset(Vector2F value) => imageRenderer.ImageRotationOffset = value;
 		internal void SetImageFlipX(bool value) => imageRenderer.ImageFlipX = value;
 		internal void SetImageFlipY(bool value) => imageRenderer.ImageFlipY = value;
 		internal void SetImageColor(Color value) => imageRenderer.ImageColor = value;

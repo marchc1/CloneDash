@@ -16,7 +16,7 @@ public class Image : Element
 	ITexture? image;
 	ImageOrientation __ImageOrientation = ImageOrientation.None;
 
-	Vector2F __ImageOffset = new(0);
+	Vector2F __ImageRotationOffset = new(0);
 	Vector2F __ImagePadding = new(0);
 	float __ImageRotation = 0;
 	bool __ImageFlipX = false;
@@ -41,10 +41,10 @@ public class Image : Element
 		}
 	}
 
-	public Vector2F ImageOffset {
-		get => __ImageOffset;
+	public Vector2F ImageRotationOffset {
+		get => __ImageRotationOffset;
 		set {
-			__ImageOffset = value;
+			__ImageRotationOffset = value;
 			InvalidateLayout();
 			GetParent()?.InvalidateLayout();
 		}
@@ -186,26 +186,21 @@ public class Image : Element
 		Graphics2D.SetTexture(image);
 		Graphics2D.SetDrawColor(thisC);
 
-		if (__ImageRotation != 0 || __ImageFlipX || __ImageFlipY) {
-			destRect.X += destRect.Width / 2;
-			destRect.Y += destRect.Height / 2;
+		Vector2F rotationPos = __ImageRotationOffset * new Vector2F(destRect.Width, destRect.Height);
 
-			if (__ImageFlipX) {
-				sourceRect.X = sourceRect.Width;
-				sourceRect.Width *= -1;
-			}
-			if (__ImageFlipY) {
-				sourceRect.Y = sourceRect.Height;
-				sourceRect.Height *= -1;
-			}
-			Vector2F imageOffset = __ImageOffset * new Vector2F(destRect.Width, destRect.Height);
-			Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
-			Graphics2D.DrawTexturedRectangle(destRect, __ImageRotation, imageOffset, sU, sV, eU, eV);
+
+		destRect.X += rotationPos.X;
+		destRect.Y += rotationPos.Y;
+
+		if (__ImageFlipX) {
+			sourceRect.X = sourceRect.Width;
+			sourceRect.Width *= -1;
 		}
-		else{
-			Vector2F imageOffset = __ImageOffset * new Vector2F(destRect.Width, destRect.Height);
-			Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
-			Graphics2D.DrawTexturedRectangle(destRect, __ImageRotation, imageOffset, sU, sV, eU, eV);
+		if (__ImageFlipY) {
+			sourceRect.Y = sourceRect.Height;
+			sourceRect.Height *= -1;
 		}
+		Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
+		Graphics2D.DrawTexturedRectangle(destRect, __ImageRotation, rotationPos, sU, sV, eU, eV);
 	}
 }
