@@ -8,6 +8,7 @@ using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
+using Nucleus.UI.Elements.Visual;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -134,19 +135,19 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
 
-			var perfGraph1 = new PerfGraph(this);
+			var perfGraph1 = new PerformanceGraph(this);
 			perfGraph1.SetAnchor(Anchor.BottomRight);
 			perfGraph1.SetOrigin(Anchor.BottomRight);
 			perfGraph1.SetPos(new(-8, -8 + -32 + -8));
 			perfGraph1.SetSize(new(300, 32));
-			perfGraph1.Mode = PerfGraphMode.CPU_UpdateTime;
+			perfGraph1.Mode = GraphMode.CpuUpdateTime;
 
-			var perfGraph2 = new PerfGraph(this);
+			var perfGraph2 = new PerformanceGraph(this);
 			perfGraph2.SetAnchor(Anchor.BottomRight);
 			perfGraph2.SetOrigin(Anchor.BottomRight);
 			perfGraph2.SetPos(new(-8, -8));
 			perfGraph2.SetSize(new(300, 32));
-			perfGraph2.Mode = PerfGraphMode.RAM_Usage;
+			perfGraph2.Mode = GraphMode.RamUsage;
 
 		}
 

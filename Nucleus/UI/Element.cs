@@ -256,7 +256,7 @@ public class Element : IValidatable
 	/// </summary>
 	public UserInterface UI { get; internal set; } = null!;
 
-	public virtual void Initialize(float x, float y, float width, float height) {
+	public void Initialize(float x, float y, float width, float height) {
 		_position = new(x, y);
 		_size = new(width, height);
 		SetAnchor(Anchor.TopLeft);

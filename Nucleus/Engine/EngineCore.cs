@@ -418,7 +418,7 @@ public static class EngineCore
 		GetWindowCtx(Window).NextFrameLevel = null;
 		GetWindowCtx(Window).NextFrameArgs = null;
 
-		Level.SetUpDebugOverlays();
+		Level.DeveloperOverlay.SetUpDebugOverlays();
 
 		s.Stop();
 
