@@ -33,8 +33,8 @@ public class MainMenuButton : Button
 
 		image = new Image(this);
 		image.Clipping = false;
-		image.SetAnchor(Anchor.CenterLeft);
-		image.SetOrigin(Anchor.CenterLeft);
+		image.		Anchor = Anchor.CenterLeft;
+		image.		Origin = Anchor.CenterLeft;
 		image.Texture = Level.Textures.LoadTextureFromFile(icon);
 	}
 

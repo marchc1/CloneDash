@@ -8,7 +8,7 @@ public class SongSearchBar : Button
 {
 	public string? SearchQuery = null;
 	public SongSearchBar(Element? parent) : base(parent){
-		SetOrigin(Anchor.Center);
+		Origin = Anchor.Center;
 	}
 
 	protected override void PerformLayout(float width, float height) {

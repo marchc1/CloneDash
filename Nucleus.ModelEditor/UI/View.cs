@@ -349,7 +349,7 @@ public class ViewDivision : Panel
 				if (distance > 8) {
 					dragging = true;
 					showDraggedTab = new Button(UI);
-					showDraggedTab.SetOrigin (Anchor.Center);
+					showDraggedTab.					Origin = Anchor.Center;
 					showDraggedTab.					Position = state.Mouse.MousePos + new Vector2F(0, -16);
 					showDraggedTab.SetPassthru(true);
 					showDraggedTab.SetAutoSize (true);

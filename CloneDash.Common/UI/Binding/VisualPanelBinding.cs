@@ -21,22 +21,22 @@ namespace CloneDash.Common.UI.Binding
 				Direction = FlowDirection.Horizontal,
 				Spacing = 4
 			};
-			buttons.SetAnchor(Anchor.CenterLeft);
-			buttons.SetOrigin(Anchor.CenterLeft);
+			buttons.			Anchor = Anchor.CenterLeft;
+			buttons.			Origin = Anchor.CenterLeft;
 
 			foreach ((ButtonCode[] button, Action _) in bind.Bindings) {
 				foreach (ButtonCode code in button) {
 					Key key = new(buttons, code);
-					key.SetAnchor(Anchor.CenterLeft);
-					key.SetOrigin(Anchor.CenterLeft);
+					key.					Anchor = Anchor.CenterLeft;
+					key.					Origin = Anchor.CenterLeft;
 					_keys.Add(key);
 				}
 			}
 
 			_label = new Label(this);
 			_label.			TextSize = CloneDashUI.GetFontSize(20);
-			_label.SetAnchor(Anchor.CenterLeft);
-			_label.SetOrigin(Anchor.CenterLeft);
+			_label.			Anchor = Anchor.CenterLeft;
+			_label.			Origin = Anchor.CenterLeft;
 			_label.SetAutoSize(true);
 			_label.			Text = bind.Label;
 		}
@@ -88,8 +88,9 @@ namespace CloneDash.Common.UI.Binding
 					}
 				}
 
-				_inner.SetAnchor(Anchor.Center);
-				_inner.SetOrigin(Anchor.Center);
+				_inner.
+				Anchor = Anchor.Center;
+				_inner.				Origin = Anchor.Center;
 			}
 
 			protected override void OnThink() {

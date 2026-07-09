@@ -108,22 +108,22 @@ public class DeveloperOverlay(Level level)
 
 	internal void SetUpDebugOverlays() {
 		UpdateGraph = new PerformanceGraph(Level.RootPanel);
-		UpdateGraph.SetAnchor(Anchor.BottomRight);
-		UpdateGraph.SetOrigin(Anchor.BottomRight);
+		UpdateGraph.		Anchor = Anchor.BottomRight;
+		UpdateGraph.		Origin = Anchor.BottomRight;
 		UpdateGraph.		Position = new Vector2F(-8, -8 + -52 + -16);
 		UpdateGraph.		Size = new Vector2F(400, 26);
 		UpdateGraph.Mode = (PerformanceGraph.GraphMode.CpuUpdateTime);
 
 		RenderGraph = new PerformanceGraph(Level.RootPanel);
-		RenderGraph.SetAnchor(Anchor.BottomRight);
-		RenderGraph.SetOrigin(Anchor.BottomRight);
+		RenderGraph.		Anchor = Anchor.BottomRight;
+		RenderGraph.		Origin = Anchor.BottomRight;
 		RenderGraph.		Position = new Vector2F(-8, -8 + -26 + -8);
 		RenderGraph.		Size = new Vector2F(400, 26);
 		RenderGraph.Mode = (PerformanceGraph.GraphMode.CpuRenderTime);
 
 		MemGraph = new PerformanceGraph(Level.RootPanel);
-		MemGraph.SetAnchor(Anchor.BottomRight);
-		MemGraph.SetOrigin(Anchor.BottomRight);
+		MemGraph.		Anchor = Anchor.BottomRight;
+		MemGraph.		Origin = Anchor.BottomRight;
 		MemGraph.		Position = new Vector2F(-8, -8);
 		MemGraph.		Size = new Vector2F(400, 26);
 		MemGraph.Mode = (PerformanceGraph.GraphMode.RamUsage);
@@ -181,16 +181,19 @@ public class DeveloperOverlay(Level level)
 	internal void EvaluatePerfGraphPositions(in DeveloperOverlaySettings settings) {
 		Vector2F offset = settings.Offset + settings.PerfGraphOffset;
 
-		UpdateGraph.SetAnchor(settings.PerfGraphAnchor);
-		UpdateGraph.SetOrigin(settings.PerfGraphAnchor);
+		UpdateGraph.
+		Anchor = settings.PerfGraphAnchor;
+		UpdateGraph.		Origin = settings.PerfGraphAnchor;
 		UpdateGraph.		Position = offset + new Vector2F(0, (-8 + -52 + -16));
 
-		RenderGraph.SetAnchor(settings.PerfGraphAnchor);
-		RenderGraph.SetOrigin(settings.PerfGraphAnchor);
+		RenderGraph.
+		Anchor = settings.PerfGraphAnchor;
+		RenderGraph.		Origin = settings.PerfGraphAnchor;
 		RenderGraph.		Position = offset + new Vector2F(0, -8 + -26 + -8);
 
-		MemGraph.SetAnchor(settings.PerfGraphAnchor);
-		MemGraph.SetOrigin(settings.PerfGraphAnchor);
+		MemGraph.
+		Anchor = settings.PerfGraphAnchor;
+		MemGraph.		Origin = settings.PerfGraphAnchor;
 		MemGraph.		Position = offset + new Vector2F(0, -8);
 	}
 }

@@ -334,8 +334,8 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		var lbl = new Label(dialog);
 		lbl.		Text = "Press a key...";
 		lbl.SetAutoSize(true);
-		lbl.SetAnchor(Anchor.TopCenter);
-		lbl.SetOrigin(Anchor.TopCenter);
+		lbl.		Anchor = Anchor.TopCenter;
+		lbl.		Origin = Anchor.TopCenter;
 
 		var capture = new KeyCaptureElement(dialog);
 		capture.		Dock = Dock.Fill;
@@ -505,16 +505,16 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 	public JudgementOffsetWizard(Element? parent) : base(parent) {
 		currentOffsetLabel = new Label(this);
-		currentOffsetLabel.SetAnchor(Anchor.TopCenter);
-		currentOffsetLabel.SetOrigin(Anchor.TopCenter);
+		currentOffsetLabel.		Anchor = Anchor.TopCenter;
+		currentOffsetLabel.		Origin = Anchor.TopCenter;
 		currentOffsetLabel.SetTextAlignment(Anchor.TopCenter);
 		currentOffsetLabel.		Position = new(0, 24);
 		currentOffsetLabel.		TextSize = 36;
 		currentOffsetLabel.SetAutoSize(true);
 
 		lastHitLabel = new Label(this);
-		lastHitLabel.SetAnchor(Anchor.TopCenter);
-		lastHitLabel.SetOrigin(Anchor.TopCenter);
+		lastHitLabel.		Anchor = Anchor.TopCenter;
+		lastHitLabel.		Origin = Anchor.TopCenter;
 		lastHitLabel.SetTextAlignment(Anchor.TopCenter);
 		lastHitLabel.		Position = new(0, 64);
 		lastHitLabel.		TextSize = 28;

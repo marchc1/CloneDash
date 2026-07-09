@@ -150,7 +150,8 @@ public class ColorSelectorDialog : Panel
 		ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
 		ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
 
-		this.SetOrigin(Anchor.BottomCenter);
+		this.
+		Origin = Anchor.BottomCenter;
 		this.UI.Input.OnClick += delegate (Element? el) {
 			if (el != null && !el.IsIndirectChildOf(this)) {
 				this.Remove();

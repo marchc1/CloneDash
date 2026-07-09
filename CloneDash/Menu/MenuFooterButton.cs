@@ -27,8 +27,8 @@ public class MenuFooterButton : Button
 		OnButtonClick += (_, _) => Action?.Invoke();
 
 		_image = new Image(this);
-		_image.SetAnchor(Anchor.CenterLeft);
-		_image.SetOrigin(Anchor.CenterLeft);
+		_image.		Anchor = Anchor.CenterLeft;
+		_image.		Origin = Anchor.CenterLeft;
 		_image.Size = new Vector2F(24);
 		Icon = icon;
 	}
@@ -45,7 +45,7 @@ public class MenuFooterButton : Button
 		Graphics2D.SetDrawColor(fore);
 		_image.ImageColor = fore;
 
-		var right = GetAnchor() == Anchor.BottomRight;
+		var right = Anchor == Anchor.BottomRight;
 
 		const float iconSize = 24;
 

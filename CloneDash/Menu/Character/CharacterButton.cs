@@ -12,8 +12,8 @@ namespace CloneDash.Menu.Character
 			SetPaintBackgroundEnabled(false);
 			SetBgColor(Color.Blank);
 			BorderSize = 0;
-			SetAnchor(Anchor.TopCenter);
-			SetOrigin(Anchor.TopCenter);
+			Anchor = Anchor.TopCenter;
+			Origin = Anchor.TopCenter;
 
 			Image icon = new(this);
 			icon.Texture = texture;

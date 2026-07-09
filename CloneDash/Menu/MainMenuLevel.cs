@@ -128,8 +128,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		foreach (PanelBinding binding in binds) {
 			_boundKeybindings.AddRange(binding.Bindings.Select(x => Keybinds.AddKeybind(x.buttons.ToList(), x.action)));
 			VisualPanelBinding visual = new(_bindingFlow, binding);
-			visual.SetAnchor(Anchor.CenterLeft);
-			visual.SetOrigin(Anchor.CenterLeft);
+			visual.			Anchor = Anchor.CenterLeft;
+			visual.			Origin = Anchor.CenterLeft;
 		}
 	}
 
@@ -159,7 +159,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		charPanel.SetPaintBackgroundEnabled(false);
 
 		Character = new MainMenuCharacter(charPanel) { DynamicallySized = true };
-		Character.SetOrigin(Anchor.TopCenter);
+		Character.		Origin = Anchor.TopCenter;
 		Character.Size = new Vector2F(1f);
 
 		_header = new Panel(RootPanel);
@@ -187,21 +187,21 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_footer.Clipping = false;
 
 		_backButton = new MenuFooterButton(_footer, "icons/arrow-left.png", "Back");
-		_backButton.SetAnchor(Anchor.BottomLeft);
-		_backButton.SetOrigin(Anchor.BottomLeft);
+		_backButton.		Anchor = Anchor.BottomLeft;
+		_backButton.		Origin = Anchor.BottomLeft;
 		_backButton.Position = new Vector2F(40, -12);
 
 		_screenButton = new MenuFooterButton(_footer);
-		_screenButton.SetAnchor(Anchor.BottomRight);
-		_screenButton.SetOrigin(Anchor.BottomRight);
+		_screenButton.		Anchor = Anchor.BottomRight;
+		_screenButton.		Origin = Anchor.BottomRight;
 		_screenButton.Position = new Vector2F(-40, -12);
 
 		_bindingFlow = new Flow(_footer) {
 			AutoSize = Axis.Both,
 			Spacing = 20
 		};
-		_bindingFlow.SetAnchor(Anchor.Center);
-		_bindingFlow.SetOrigin(Anchor.Center);
+		_bindingFlow.		Anchor = Anchor.Center;
+		_bindingFlow.		Origin = Anchor.Center;
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -462,8 +462,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		};
 
 		LevelSelectorBackButton back = new(levelSelector, selector);
-		back.SetAnchor(Anchor.Center);
-		back.SetOrigin(Anchor.Center);
+		back.		Anchor = Anchor.Center;
+		back.		Origin = Anchor.Center;
 		back.Position = new(-256, 0);
 
 		var backImage = new Image(back);
@@ -486,15 +486,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		title.TextSize = 48;
 		title.Text = info.Name;
 		title.SetAutoSize(true);
-		title.SetAnchor(Anchor.Center);
-		title.SetOrigin(Anchor.Center);
+		title.		Anchor = Anchor.Center;
+		title.		Origin = Anchor.Center;
 
 		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
 		author.TextSize = 22;
 		author.Text = $"by {info.Author}";
 		author.SetAutoSize(true);
-		author.SetAnchor(Anchor.Center);
-		author.SetOrigin(Anchor.Center);
+		author.		Anchor = Anchor.Center;
+		author.		Origin = Anchor.Center;
 
 		levelSelector.TrySetupTrack();
 
@@ -590,9 +590,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.TextOverflowMode = TextOverflowMode.None;
 		mapper.Clipping = false;
 		mapper.Position = new(-8, -8);
-		mapper.SetAnchor(Anchor.BottomRight);
+		mapper.		Anchor = Anchor.BottomRight;
 		mapper.SetPassthru(true);
-		mapper.SetOrigin(Anchor.BottomRight);
+		mapper.		Origin = Anchor.BottomRight;
 		mapper.SetTextAlignment(Anchor.TopLeft);
 
 		play.SetBgColor(buttonColor);

@@ -355,26 +355,26 @@ public class Window : Element
 
 		ResizeTL = new WindowResizerButton(this, Anchor.TopLeft);
 		ResizeTL.		Size = new(24, 24);
-		ResizeTL.SetOrigin(Anchor.TopLeft);
-		ResizeTL.SetAnchor(Anchor.TopLeft);
+		ResizeTL.		Origin = Anchor.TopLeft;
+		ResizeTL.		Anchor = Anchor.TopLeft;
 		ResizeTL.SetVisible(Resizable);
 
 		ResizeTR = new WindowResizerButton(this, Anchor.TopRight);
 		ResizeTR.		Size = new(24, 24);
-		ResizeTR.SetOrigin(Anchor.TopRight);
-		ResizeTR.SetAnchor(Anchor.TopRight);
+		ResizeTR.		Origin = Anchor.TopRight;
+		ResizeTR.		Anchor = Anchor.TopRight;
 		ResizeTR.SetVisible(Resizable);
 
 		ResizeBL = new WindowResizerButton(this, Anchor.BottomLeft);
 		ResizeBL.		Size = new(24, 24);
-		ResizeBL.SetOrigin(Anchor.BottomLeft);
-		ResizeBL.SetAnchor(Anchor.BottomLeft);
+		ResizeBL.		Origin = Anchor.BottomLeft;
+		ResizeBL.		Anchor = Anchor.BottomLeft;
 		ResizeBL.SetVisible(Resizable);
 
 		ResizeBR = new WindowResizerButton(this, Anchor.BottomRight);
 		ResizeBR.		Size = new(24, 24);
-		ResizeBR.SetOrigin(Anchor.BottomRight);
-		ResizeBR.SetAnchor(Anchor.BottomRight);
+		ResizeBR.		Origin = Anchor.BottomRight;
+		ResizeBR.		Anchor = Anchor.BottomRight;
 		ResizeBR.SetVisible(Resizable);
 
 		ResizeBL.

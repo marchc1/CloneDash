@@ -45,14 +45,14 @@ namespace CloneDash.Menu.Character
 
 			_star = new Image(_top);
 			_star.Texture = parent.Level.Textures.LoadTextureFromFile("icons/star.png");
-			_star.SetAnchor(Anchor.CenterRight);
-			_star.SetOrigin(Anchor.CenterRight);
+			_star.			Anchor = Anchor.CenterRight;
+			_star.			Origin = Anchor.CenterRight;
 			_star.Clipping = false;
 
 			_title = new Label(_top);
 			_title.SetAutoSize(true);
-			_title.SetAnchor(Anchor.CenterRight);
-			_title.SetOrigin(Anchor.CenterRight);
+			_title.			Anchor = Anchor.CenterRight;
+			_title.			Origin = Anchor.CenterRight;
 			_title.SetTextAlignment(Anchor.CenterRight);
 			_title.Font = CloneDashUI.GetBoldFont(GetScheme());
 			_title.Text = "Skill";

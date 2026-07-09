@@ -470,12 +470,14 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		var heightDiv2 = height / 2;
 
-		CurrentTrackName.SetOrigin(Anchor.Center);
-		CurrentTrackName.SetAnchor(Anchor.Center);
+		CurrentTrackName.
+		Origin = Anchor.Center;
+		CurrentTrackName.		Anchor = Anchor.Center;
 		CurrentTrackName.SetAutoSize(true);
 
-		CurrentTrackAuthor.SetOrigin(Anchor.Center);
-		CurrentTrackAuthor.SetAnchor(Anchor.Center);
+		CurrentTrackAuthor.
+		Origin = Anchor.Center;
+		CurrentTrackAuthor.		Anchor = Anchor.Center;
 		CurrentTrackAuthor.SetAutoSize(true);
 
 		CurrentTrackName.
@@ -511,14 +513,14 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor = new(this);
 		SearchBar = new(this);
 		FilterResults = new(this);
-		FilterResults.SetAnchor(Anchor.TopCenter);
-		FilterResults.SetOrigin(Anchor.Center);
+		FilterResults.		Anchor = Anchor.TopCenter;
+		FilterResults.		Origin = Anchor.Center;
 
 		SearchBar.OnButtonClick += SearchBar_MouseReleaseEvent;
 
 		Loading = new(this);
-		Loading.SetAnchor(Anchor.Center);
-		Loading.SetOrigin(Anchor.Center);
+		Loading.		Anchor = Anchor.Center;
+		Loading.		Origin = Anchor.Center;
 		Loading.Text = "LOADING";
 		Loading.TextSize = 100;
 		Loading.SetAutoSize(true);
@@ -527,7 +529,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.SetVisible(false);
-			disc.SetOrigin(Anchor.Center);
+			disc.			Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 
 			disc.OnButtonClick += (s, _) => {

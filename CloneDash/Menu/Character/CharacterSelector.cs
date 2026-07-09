@@ -73,8 +73,8 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 		_skill = new CharacterSkillDisplay(this) { Color = textColor };
 		_skill.Size = new Vector2F(640);
-		_skill.SetAnchor(Anchor.TopRight);
-		_skill.SetOrigin(Anchor.TopRight);
+		_skill.		Anchor = Anchor.TopRight;
+		_skill.		Origin = Anchor.TopRight;
 
 		_bottom = new Element(this);
 		_bottom.Dock = Dock.Bottom;

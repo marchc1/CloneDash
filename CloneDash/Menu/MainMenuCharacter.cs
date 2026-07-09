@@ -45,7 +45,7 @@ public class MainMenuCharacter : Panel
 
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);
-		ExpressionLabel.SetOrigin(Anchor.Center);
+		ExpressionLabel.		Origin = Anchor.Center;
 		ExpressionLabel.SetPaintBackgroundEnabled(true);
 		ExpressionLabel.BorderSize = 3;
 		ExpressionLabel.SetPaintBorderEnabled(true);

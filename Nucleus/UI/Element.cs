@@ -380,11 +380,14 @@ public class Element : IValidatable
 		}
 	}
 
+	public Anchor Origin { get => origin; set => origin = value; }
+	public Anchor Anchor { get => anchor; set => anchor = value; }
+
 	public void Initialize(float x, float y, float width, float height) {
 		_position = new(x, y);
 		_size = new(width, height);
-		SetAnchor(Anchor.TopLeft);
-		SetOrigin(Anchor.TopLeft);
+		Anchor = Anchor.TopLeft;
+		Origin = Anchor.TopLeft;
 		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate | ElementFlags.NeedsRenderBoundsFlush;
 		flags |= ElementFlags.PaintEnabled;
 		flags |= ElementFlags.AllowChainKeybindingToParent;
@@ -693,7 +696,7 @@ public class Element : IValidatable
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		foreach (var child in Children)
-			if (child.Dock != Dock.None || child.GetAnchor() != Anchor.TopLeft || child.DynamicallySized)
+			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft || child.DynamicallySized)
 				child.InvalidateLayout();
 	}
 
@@ -806,9 +809,9 @@ public class Element : IValidatable
 	}
 	private void DoOriginAnchor() {
 		Element? parent = GetParent();
-		if (IValidatable.IsValid(parent) && (GetOrigin() != Anchor.TopLeft || GetAnchor() != Anchor.TopLeft)) {
-			var np = GetOrigin().CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
-			var npO = GetAnchor().CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
+		if (IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
+			var np = Origin.CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
+			var npO = Anchor.CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
 			__renderbounds.Pos = npO + np;
 		}
 	}
@@ -1253,10 +1256,6 @@ public class Element : IValidatable
 	/// This feature is being phased out, and will likely be fully replaced in the future. <br/> It is still a valid macro in the meantime, as texture management is still tightly coupled to level objects.
 	/// </summary>
 	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
-	public Anchor GetOrigin() => origin;
-	public void SetOrigin(Anchor value) => origin = value;
-	public Anchor GetAnchor() => anchor;
-	public void SetAnchor(Anchor value) => anchor = value;
 	// TODO: what the hell is the difference???
 	public Vector2F CursorPos() => Level.FrameState.Mouse.MousePos - GetGlobalPosition();
 	public Vector2F GetMousePos() => EngineCore.MousePos - this.GetGlobalPosition();

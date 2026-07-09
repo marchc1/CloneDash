@@ -104,7 +104,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		SetPassthru(true);
 
 		back = new Button(this);
-		back.SetOrigin(Anchor.Center);
+		back.		Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
 		back.OnButtonClick += (_, _) => DestroyNavigationMenu(); ;
@@ -202,7 +202,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 			btn.
 			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
-			btn.SetOrigin(Anchor.Center);
+			btn.			Origin = Anchor.Center;
 		}
 	}
 }

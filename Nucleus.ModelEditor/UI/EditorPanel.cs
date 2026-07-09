@@ -138,15 +138,15 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
 
 			var perfGraph1 = new PerformanceGraph(this);
-			perfGraph1.SetAnchor(Anchor.BottomRight);
-			perfGraph1.SetOrigin(Anchor.BottomRight);
+			perfGraph1.			Anchor = Anchor.BottomRight;
+			perfGraph1.			Origin = Anchor.BottomRight;
 			perfGraph1.			Position = new(-8, -8 + -32 + -8);
 			perfGraph1.			Size = new(300, 32);
 			perfGraph1.Mode = PerformanceGraph.GraphMode.CpuUpdateTime;
 
 			var perfGraph2 = new PerformanceGraph(this);
-			perfGraph2.SetAnchor(Anchor.BottomRight);
-			perfGraph2.SetOrigin(Anchor.BottomRight);
+			perfGraph2.			Anchor = Anchor.BottomRight;
+			perfGraph2.			Origin = Anchor.BottomRight;
 			perfGraph2.			Position = new(-8, -8);
 			perfGraph2.			Size = new(300, 32);
 			perfGraph2.Mode = PerformanceGraph.GraphMode.RamUsage;
