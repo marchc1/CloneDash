@@ -2,6 +2,7 @@
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Files;
@@ -25,30 +26,11 @@ namespace CloneDash;
 public abstract class InterludeTextureProvider
 {
 	public abstract int Count { get; }
-	public abstract bool ShouldFlipTexture { get; }
 	public bool Empty => Count == 0;
 	public int RandomIndex() => Random.Shared.Next(0, Count);
-	public abstract bool Pick(int index, out Texture2D tex);
+	public abstract bool Pick(int index, out ITexture? tex);
 }
 
-/// <summary>
-/// Provides interlude textures from Clone Dash.
-/// </summary>
-public class CloneDashInterludeProvider : InterludeTextureProvider
-{
-	string[] files;
-	public override bool ShouldFlipTexture => false;
-	public CloneDashInterludeProvider() {
-		files = filesystem.FindFiles("interludes", "*.png").ToArray();
-	}
-	public override int Count => files.Length;
-
-	public override bool Pick(int index, out Texture2D tex) {
-		tex = Raylib.LoadTexture(files[index]);
-		Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-		return true;
-	}
-}
 /// <summary>
 /// Called during level loads. Adds a little something during loading operations, while
 /// running on the main thread.
@@ -59,11 +41,9 @@ public static class Interlude
 	private static Stopwatch limiter = new();
 	private static double lastFrame = -100;
 	private static bool inInterlude;
-	private static bool hasTex;
-	private static bool flipTex;
 	private static string? loadMsg;
 	private static string? loadSubMsg;
-	private static Texture2D interludeTexture;
+	private static ITexture? interludeTexture;
 
 	private static bool _should = false;
 	public static bool ShouldSelectInterludeTexture {
@@ -71,7 +51,7 @@ public static class Interlude
 		set {
 			if (!_should && value) {
 				_should = value;
-				if (!hasTex) {
+				if (interludeTexture == null) {
 					determineInterludeTexture(); // load interlude texture now. Only really used for the loading screen when starting the game
 				}
 			}
@@ -93,13 +73,8 @@ public static class Interlude
 
 			// The provider isn't empty
 			if (provider.Pick(Random.Shared.Next(0, provider.Count), out interludeTexture)) {
-				hasTex = Raylib.IsTextureValid(interludeTexture); // make sure the texture is valid, just in case
-				if (!hasTex) {
+				if (interludeTexture == null) 
 					Logs.Warn("Failed to load the interlude texture, despite a provider giving us one!");
-				}
-
-				flipTex = provider.ShouldFlipTexture;
-
 				return;
 			}
 
@@ -108,13 +83,12 @@ public static class Interlude
 	}
 
 	private static void reset() {
-		if (hasTex)
-			Raylib.UnloadTexture(interludeTexture);
+		if (interludeTexture != null)
+			interludeTexture.Dispose();
 
 		limiter.Reset();
 		lastFrame = -100;
-		hasTex = false;
-		flipTex = false;
+		interludeTexture = null;
 		loadMsg = null;
 		loadSubMsg = null;
 		inInterlude = false;
@@ -151,10 +125,10 @@ public static class Interlude
 				var windowSize = EngineCore.GetWindowSize();
 
 				Graphics2D.ResetDrawingOffset(); // Interlude directly takes main-thread control, so the level frame state would never clear this like it usually would
-				if (hasTex) {
-					var tex = interludeTexture;
-					// unity moment; need to flip sometimes
-					Raylib.DrawTexturePro(tex, new(0, 0, tex.Width, flipTex ? -tex.Height : tex.Height), new(0, 0, windowSize.W, windowSize.H), new(0, 0), 0, Nucleus.Common.Types.Color.White);
+				if (interludeTexture != null) {
+					Graphics2D.SetTexture(interludeTexture);
+					Graphics2D.SetDrawColor(255, 255, 255, 255);
+					Graphics2D.DrawTexturedRectangle(0, 0, interludeTexture.Width, interludeTexture.Height);
 				}
 
 				var originalBottomSize = 48f;

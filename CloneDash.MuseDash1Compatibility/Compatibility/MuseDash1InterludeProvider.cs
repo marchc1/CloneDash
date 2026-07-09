@@ -1,4 +1,5 @@
 ﻿using CloneDash.Compatibility.Unity;
+using Nucleus.Common.Graphics;
 using Texture2D = Raylib_cs.Texture2D;
 
 namespace CloneDash.Compatibility.MuseDash;
@@ -9,7 +10,6 @@ namespace CloneDash.Compatibility.MuseDash;
 public class MuseDash1InterludeProvider : InterludeTextureProvider
 {
 	static MuseDash1Interlude[]? interludes;
-	public override bool ShouldFlipTexture => true;
 	private static bool ready = false;
 	private static int setup() {
 		if (ready && interludes != null) return interludes.Length;
@@ -34,7 +34,7 @@ public class MuseDash1InterludeProvider : InterludeTextureProvider
 
 	// Texture 2D used here because itll be loaded when Interlude is initialized.
 	// And it will be destroyed immediately after
-	public override bool Pick(int index, out Texture2D tex) {
+	public override bool Pick(int index, out ITexture? tex) {
 		setup();
 		if (!ready) {
 			tex = default;
@@ -42,8 +42,8 @@ public class MuseDash1InterludeProvider : InterludeTextureProvider
 		}
 		var ttex = interludes?[index]?.LoadTexture();
 
-		if (ttex.HasValue) {
-			tex = ttex.Value;
+		if (ttex != null) {
+			tex = ttex;
 			return true;
 		}
 
