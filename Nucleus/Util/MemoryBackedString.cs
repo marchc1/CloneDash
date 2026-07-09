@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Nucleus.ManagedMemory;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.Util;
@@ -33,10 +34,13 @@ public struct MemoryBackedString
 		int textLength = text.Length;
 		if (textLength == 0) return;
 
-		EnsureCharacters((nuint)textLength + (nuint)stringLength);
+		nuint finalSize = (nuint)textLength + (nuint)stringLength;
+		EnsureCharacters(finalSize);
 
-		Array.Copy(stringBacking, 0, stringBacking, textLength, stringLength);
+		Array.Reverse(stringBacking, 0, stringLength);
 		text.CopyTo(stringBacking.AsSpan());
+		Array.Reverse(stringBacking, 0, textLength);
+		Array.Reverse(stringBacking, 0, stringLength + textLength);
 		stringLength += textLength;
 	}
 
@@ -54,18 +58,24 @@ public struct MemoryBackedString
 		stringLength += textLength;
 	}
 
+	const int MAX_BYTES_PER_CONCAT_SPANFORMATTABLE = 2048;
+
 	public bool ConcatLefthand<T>(in T t, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) where T : ISpanFormattable {
-		Span<char> copyBuffer = stackalloc char[8000];
-		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider))
+		Span<char> copyBuffer = stackalloc char[MAX_BYTES_PER_CONCAT_SPANFORMATTABLE];
+		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider)) {
+			Logs.Warn($"{nameof(ConcatLefthand)}<{typeof(T).FullName}> failed (likely formatting would require more than {((ulong)MAX_BYTES_PER_CONCAT_SPANFORMATTABLE).NiceBytes()} of stack space, try upgrading this function)");
 			return false;
+		}
 		ConcatLefthand(copyBuffer[..charsWritten]);
 		return true;
 	}
 
 	public bool ConcatRighthand<T>(in T t, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) where T : ISpanFormattable {
-		Span<char> copyBuffer = stackalloc char[8000];
-		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider))
+		Span<char> copyBuffer = stackalloc char[MAX_BYTES_PER_CONCAT_SPANFORMATTABLE];
+		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider)) {
+			Logs.Warn($"{nameof(ConcatRighthand)}<{typeof(T).FullName}> failed (likely formatting would require more than {((ulong)MAX_BYTES_PER_CONCAT_SPANFORMATTABLE).NiceBytes()} of stack space, try upgrading this function)");
 			return false;
+		}
 		ConcatRighthand(copyBuffer[..charsWritten]);
 		return true;
 	}
