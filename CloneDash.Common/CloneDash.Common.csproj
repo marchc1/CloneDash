@@ -40,8 +40,8 @@
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 	</ItemGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
 	<ItemGroup>
-		<Compile Include="..\StandardComponents.cs" Link="Usings\Globals\StandardComponents.cs" />
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>
 </Project>

@@ -16,6 +16,8 @@
 		<IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
 	</PropertyGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss:fffZ"))</SourceRevisionId>
 	</PropertyGroup>

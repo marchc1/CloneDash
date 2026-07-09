@@ -8,7 +8,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\CloneDash.MuseDash1Compatibility\CloneDash.MuseDash1Compatibility.csproj" />
 	</ItemGroup>
-
+	
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+	
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>
