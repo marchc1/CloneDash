@@ -110,7 +110,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		back.OnButtonClick += (_, _) => DestroyNavigationMenu();;
 		
 		Image backImage = new(back);
-		backImage.SetTexture(Level.Textures.LoadTextureFromFile("ui/back.png"));
+		backImage.SetImage(Level.Textures.LoadTextureFromFile("ui/back.png"));
 		backImage.SetImageOrientation(ImageOrientation.Zoom);
 		backImage.SetDock(Dock.Fill);
 		

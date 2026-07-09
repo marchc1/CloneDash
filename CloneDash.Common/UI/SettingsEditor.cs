@@ -205,7 +205,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.SetTextSize(24);
 		category.SetSize(new(0.06f));
 		if (icon != null)
-			category.Icon.SetTexture(Level.Textures.LoadTextureFromFile(icon));
+			category.Icon.SetImage(Level.Textures.LoadTextureFromFile(icon));
 
 		if (activeCategory == null)
 			SelectCategory(category);

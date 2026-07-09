@@ -46,7 +46,7 @@ namespace CloneDash.Menu.Character
             SetClipping(false);
 
             _image = new Image(this);
-            _image.SetTexture(parent.Level.Textures.LoadTextureFromFile(texture));
+            _image.SetImage(parent.Level.Textures.LoadTextureFromFile(texture));
             _image.SetAnchor(Anchor.CenterLeft);
             _image.SetOrigin(Anchor.CenterLeft);
 

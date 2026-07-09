@@ -198,7 +198,6 @@ public abstract class Level : IValidatable
 	/// </summary>
 	private List<Entity> EntityList { get; } = new();
 
-
 	public List<Entity> Entities => EntityList;
 
 	public UserInterface RootPanel { get; private set; }

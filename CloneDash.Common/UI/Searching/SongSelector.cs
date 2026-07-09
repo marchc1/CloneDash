@@ -170,7 +170,8 @@ public class SongSelector : Panel, IMainMenuPanel
 		internal void SetImageRotation(float value) => imageRenderer.SetImageRotation(value);
 		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.SetImageOrientation(value);
 		internal void SetImagePadding(Vector2F value) => imageRenderer.SetImagePadding(value);
-		internal void SetImage(ITexture value) => imageRenderer.SetTexture(value);
+		internal void SetImage(ITexture value) => imageRenderer.SetImage(value);
+		internal void SetImageOffset(Vector2F value) => imageRenderer.SetImageOffset(value);
 		internal void SetImageFlipX(bool value) => imageRenderer.SetImageFlipX(value);
 		internal void SetImageFlipY(bool value) => imageRenderer.SetImageFlipY(value);
 		internal void SetImageColor(Color value) => imageRenderer.SetImageColor(value);
@@ -392,6 +393,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				disc.SetImageOrientation(ImageOrientation.Stretch);
 				disc.SetImagePadding(new(16));
 				disc.SetImage(cover.Texture);
+				disc.SetImageOffset(new(0.5f));
 				disc.SetImageFlipX(false);
 				disc.SetImageFlipY(cover.Flipped);
 			}

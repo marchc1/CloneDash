@@ -281,7 +281,7 @@ public class DragRenderer : LogicalEntity
 			else
 				pos = divider.GetButton(index).GetGlobalPosition();
 			pos = pos - new Vector2F(16, 16);
-			Graphics2D.DrawTexture(pos, new(32, 32));
+			Graphics2D.DrawTexturedRectangle(pos, new(32, 32));
 		}
 	}
 

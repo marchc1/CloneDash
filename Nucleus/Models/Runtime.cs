@@ -489,10 +489,10 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 
 	public void StartBlendModeFor(Attachment attachment, bool premultipliedAlpha) {
 		Raylib.BeginBlendMode(BlendMode switch {
-			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.BLEND_ALPHA : premultipliedAlpha ? Raylib_cs.BlendMode.BLEND_ALPHA_PREMULTIPLY : Raylib_cs.BlendMode.BLEND_ALPHA,
-			BlendMode.Additive => Raylib_cs.BlendMode.BLEND_ADDITIVE,
-			BlendMode.Multiply => Raylib_cs.BlendMode.BLEND_MULTIPLIED,
-			BlendMode.Screen => Raylib_cs.BlendMode.BLEND_ALPHA, // need to implement this in a shader I believe
+			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.Alpha : premultipliedAlpha ? Raylib_cs.BlendMode.AlphaPremultiply : Raylib_cs.BlendMode.Alpha,
+			BlendMode.Additive => Raylib_cs.BlendMode.Additive,
+			BlendMode.Multiply => Raylib_cs.BlendMode.Multiplied,
+			BlendMode.Screen => Raylib_cs.BlendMode.Alpha, // need to implement this in a shader I believe
 			_ => throw new Exception($"Unsupported blend mode! (got {BlendMode})")
 		});
 	}

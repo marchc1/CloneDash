@@ -22,7 +22,7 @@ namespace Nucleus.ModelEditor
 			Rlgl.Translatef(worldPos.X + offset.X, worldPos.Y + offset.Y, 0);
 			Rlgl.Rotatef(-worldRot, 0, 0, 1);
 			Graphics2D.ResetDrawingOffset();
-			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-size / 2f), new(size));
 			Graphics2D.OffsetDrawing(offset);
 			Rlgl.PopMatrix();
 		}

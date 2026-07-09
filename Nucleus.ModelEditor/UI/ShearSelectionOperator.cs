@@ -35,7 +35,7 @@ namespace Nucleus.ModelEditor
 			Rlgl.Rotatef(0, 0, 0, 1);
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture((ITexture)texB);
-			Graphics2D.DrawImage(new(-(size * 2f) / 2f), new(size * 2f), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-(size * 2f) / 2f), new(size * 2f));
 			DrawCircleSector(0, -target.GetShearX(), false);
 			DrawCircleSector(180, 180 - target.GetShearX(), false);
 			DrawCircleSector(90, 90 - target.GetShearY(), true);
@@ -47,7 +47,7 @@ namespace Nucleus.ModelEditor
 			Rlgl.Rotatef(-target.GetShearX(), 0, 0, 1);
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture((ITexture)texX);
-			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-size / 2f), new(size));
 			Rlgl.PopMatrix();
 			Rlgl.DrawRenderBatchActive();
 
@@ -55,7 +55,7 @@ namespace Nucleus.ModelEditor
 			Rlgl.Rotatef(-target.GetShearY(), 0, 0, 1);
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture((ITexture)texY);
-			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-size / 2f), new(size));
 			Rlgl.PopMatrix();
 			Rlgl.DrawRenderBatchActive();
 

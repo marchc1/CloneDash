@@ -881,7 +881,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public PauseMenuButton(Element parent, string image) : base(parent) {
 			if (image != null) {
 				iconImage = new Image(this);
-				iconImage.SetTexture(Level.Textures.LoadTextureFromFile(image));
+				iconImage.SetImage(Level.Textures.LoadTextureFromFile(image));
 				iconImage.SetImageOrientation(ImageOrientation.Zoom);
 				iconImage.SetImagePadding(new(4));
 				iconImage.SetDock(Dock.Left);

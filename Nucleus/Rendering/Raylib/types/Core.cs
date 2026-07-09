@@ -57,40 +57,40 @@ public enum BlendMode
     /// <summary>
     /// Blend textures considering alpha (default)
     /// </summary>
-    BLEND_ALPHA = 0,
+    Alpha = 0,
 
     /// <summary>
     /// Blend textures adding colors
     /// </summary>
-    BLEND_ADDITIVE,
+    Additive,
 
     /// <summary>
     /// Blend textures multiplying colors
     /// </summary>
-    BLEND_MULTIPLIED,
+    Multiplied,
 
     /// <summary>
     /// Blend textures adding colors (alternative)
     /// </summary>
-    BLEND_ADD_COLORS,
+    AddColors,
 
     /// <summary>
     /// Blend textures subtracting colors (alternative)
     /// </summary>
-    BLEND_SUBTRACT_COLORS,
+    SubtractColors,
 
     /// <summary>
     /// Blend premultiplied textures considering alpha
     /// </summary>
-    BLEND_ALPHA_PREMULTIPLY,
+    AlphaPremultiply,
 
     /// <summary>
     /// Blend textures using custom src/dst factors (use rlSetBlendFactors())
     /// </summary>
-    BLEND_CUSTOM,
+    Custom,
 
     /// <summary>
     /// Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
     /// </summary>
-    BLEND_CUSTOM_SEPARATE
+    CustomSeparate
 }

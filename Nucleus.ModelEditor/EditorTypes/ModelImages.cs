@@ -51,7 +51,7 @@ namespace Nucleus.ModelEditor
 				ManagedMemory.Texture tex = new ManagedMemory.Texture(imageWindow.Level.Textures, Raylib.LoadTexture(Filepath), true);
 
 				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
-				imagePanel.SetTexture(tex);
+				imagePanel.SetImage(tex);
 				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
 				imagePanel.SetDock(Dock.Fill);
 				imageWindow.SetSize(new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32)));
@@ -159,7 +159,7 @@ namespace Nucleus.ModelEditor
 				ManagedMemory.Texture tex = TextureAtlas.PackedTexture;
 
 				var imagePanel = new Image(imageWindow);
-				imagePanel.SetTexture(tex);
+				imagePanel.SetImage(tex);
 				imagePanel.SetImageOrientation(Types.ImageOrientation.Centered);
 				imagePanel.SetDock(Dock.Fill);
 

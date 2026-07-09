@@ -97,7 +97,7 @@ public abstract class BaseTimelineView : View
 
 	protected static Nucleus.UI.Elements.Image SetButtonImage(Button button, ITexture texture) {
 		var img = new Nucleus.UI.Elements.Image(button);
-		img.SetTexture(texture);
+		img.SetImage(texture);
 		img.SetImageOrientation(ImageOrientation.Fit);
 		img.SetPassthru(true);
 		img.SetDock(Dock.Fill);
@@ -196,7 +196,7 @@ public abstract class BaseTimelineView : View
 			playBackward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				playBackwardImg.SetTexture(timeline.PlayingBackwards
+				playBackwardImg.SetImage(timeline.PlayingBackwards
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
 							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png"));
 
@@ -206,7 +206,7 @@ public abstract class BaseTimelineView : View
 			playForward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
-				playForwardImg.SetTexture(timeline.PlayingForwards
+				playForwardImg.SetImage(timeline.PlayingForwards
 							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
 							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png"));
 				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
@@ -573,7 +573,7 @@ public abstract class BaseTimelineView : View
 				header.SetTextPadding(new(48, 0));
 				header.SetTextSize(16);
 				var boneImg = new Nucleus.UI.Elements.Image(header);
-				boneImg.SetTexture(Level.Textures.LoadTextureFromFile("models/bone.png"));
+				boneImg.SetImage(Level.Textures.LoadTextureFromFile("models/bone.png"));
 				boneImg.SetImageOrientation(ImageOrientation.Centered);
 				boneImg.SetPassthru(true);
 				boneImg.SetDock(Dock.Left);
@@ -638,7 +638,7 @@ public abstract class BaseTimelineView : View
 			KeyframeProperty.Slot_Attachment => new(8),
 			_ => new(6)
 		});
-		headerImg.SetTexture(Level.Textures.LoadTextureFromFile($"models/{property switch {
+		headerImg.SetImage(Level.Textures.LoadTextureFromFile($"models/{property switch {
 			KeyframeProperty.Bone_Rotation => "rotate_color",
 			KeyframeProperty.Bone_Translation => "translate_color",
 			KeyframeProperty.Bone_Scale => "scale_color",

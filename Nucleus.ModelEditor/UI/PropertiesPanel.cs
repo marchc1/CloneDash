@@ -73,7 +73,7 @@ namespace Nucleus.ModelEditor
 				if (IValidatable.IsValid(tex)) {
 					Graphics2D.SetTexture(tex);
 					Graphics2D.SetDrawColor(255, 255, 255);
-					Graphics2D.DrawImage(new(2, (h - 24) / 2), new(24, 24));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(2, (h - 24) / 2), new(24, 24));
 				}
 
 				Vector2F textDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
@@ -159,7 +159,7 @@ namespace Nucleus.ModelEditor
 			searchBtn.SetSize(new(24));
 			searchBtn.SetText("");
 			var searchImg = new Nucleus.UI.Elements.Image(searchBtn);
-			searchImg.SetTexture(prop.Level.Textures.LoadTextureFromFile("models/search.png"));
+			searchImg.SetImage(prop.Level.Textures.LoadTextureFromFile("models/search.png"));
 			searchImg.SetPassthru(true);
 			searchImg.SetDock(Dock.Fill);
 
@@ -281,7 +281,7 @@ namespace Nucleus.ModelEditor
 				img.SetImageOrientation(ImageOrientation.Zoom);
 				img.SetDock(Dock.Left);
 				img.SetDockMargin(RectangleF.TLRB(2));
-				img.SetTexture(buttons.Level.Textures.LoadTextureFromFile(icon));
+				img.SetImage(buttons.Level.Textures.LoadTextureFromFile(icon));
 
 				newBtn.SetTextPadding(new(68, 0));
 				newBtn.SetTextAlignment(Anchor.CenterLeft);
@@ -386,7 +386,7 @@ namespace Nucleus.ModelEditor
 			btn.SetText("");
 			btn.SetBorderSize(0);
 			var btnImg = new Nucleus.UI.Elements.Image(btn);
-			btnImg.SetTexture(props.Level.Textures.LoadTextureFromFile(icon));
+			btnImg.SetImage(props.Level.Textures.LoadTextureFromFile(icon));
 			btnImg.SetImageOrientation(ImageOrientation.Centered);
 			btnImg.SetPassthru(true);
 			btnImg.SetDock(Dock.Fill);

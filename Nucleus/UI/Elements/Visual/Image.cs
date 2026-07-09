@@ -60,8 +60,8 @@ public class Image : Element
 		GetParent()?.InvalidateLayout();
 	}
 
-	public ITexture? GetTexture() => image;
-	public void SetTexture(ITexture? tex) {
+	public ITexture? GetImage() => image;
+	public void SetImage(ITexture? tex) {
 		if (image == tex) return;
 		image = tex;
 		InvalidateLayout();
@@ -96,15 +96,15 @@ public class Image : Element
 		if (image == null)
 			return;
 
-		var offset = Graphics2D.Offset + (pos ?? new Vector2F(0));
+		var offset = (pos ?? new Vector2F(0));
 		var bounds = GetRenderBounds();
 		if (size != null) {
 			bounds.W = size.Value.X;
 			bounds.H = size.Value.Y;
 		}
 
-		Rectangle sourceRect = new(0, 0, image.Width, image.Height);
-		Rectangle destRect = new(offset.X, offset.Y, image.Width, image.Height);
+		RectangleF sourceRect = new(0, 0, image.Width, image.Height);
+		RectangleF destRect = new(offset.X, offset.Y, image.Width, image.Height);
 
 		var width = bounds.W;
 		var height = bounds.H;
@@ -160,8 +160,8 @@ public class Image : Element
 				break;
 		}
 
-		destRect.X += ImagePadding.X + ImageOffset.X;
-		destRect.Y += ImagePadding.Y + ImageOffset.Y;
+		destRect.X += ImagePadding.X;
+		destRect.Y += ImagePadding.Y;
 		destRect.Width -= ImagePadding.X * 2;
 		destRect.Height -= ImagePadding.Y * 2;
 
@@ -172,6 +172,10 @@ public class Image : Element
 
 		if (image.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
 			sourceRect.Height *= -1;
+
+		Graphics2D.SetTexture(image);
+		Graphics2D.SetDrawColor(thisC);
+
 
 		if (ImageRotation != 0 || ImageFlipX || ImageFlipY) {
 			destRect.X += destRect.Width / 2;
@@ -185,10 +189,14 @@ public class Image : Element
 				sourceRect.Y = sourceRect.Height;
 				sourceRect.Height *= -1;
 			}
-
-			Raylib.DrawTexturePro((Texture)image, sourceRect, destRect, new(destRect.Width / 2, destRect.Height / 2), ImageRotation, thisC);
+			Vector2F imageOffset = ImageOffset * new Vector2F(destRect.Width, destRect.Height);
+			Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
+			Graphics2D.DrawTexturedRectangle(destRect, ImageRotation, imageOffset, sU, sV, eU, eV);
 		}
-		else
-			Raylib.DrawTexturePro((Texture)image, sourceRect, destRect, new(0, 0), ImageRotation, thisC);
+		else{
+			Vector2F imageOffset = ImageOffset * new Vector2F(destRect.Width, destRect.Height);
+			Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
+			Graphics2D.DrawTexturedRectangle(destRect, ImageRotation, imageOffset, sU, sV, eU, eV);
+		}
 	}
 }

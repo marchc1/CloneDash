@@ -34,7 +34,7 @@ public class MainMenuButton : Button
 		image = new Image(this);
 		image.SetAnchor(Anchor.CenterLeft);
 		image.SetOrigin(Anchor.CenterLeft);
-		image.SetTexture(Level.Textures.LoadTextureFromFile(icon));
+		image.SetImage(Level.Textures.LoadTextureFromFile(icon));
 	}
 
 	protected override void OnThink() {

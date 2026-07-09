@@ -162,7 +162,7 @@ public class Titlebar : Panel
 				if (!IValidatable.IsValid(Image))
 					setupImageRenderer();
 
-				Image.SetTexture(Level.Textures.LoadTextureFromFile(imagePath));
+				Image.SetImage(Level.Textures.LoadTextureFromFile(imagePath));
 			}
 		}
 	}

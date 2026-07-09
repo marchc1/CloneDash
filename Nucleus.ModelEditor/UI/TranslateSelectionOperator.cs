@@ -27,14 +27,14 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture((ITexture)texX);
-			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-size / 2f), new(size));
 			Rlgl.DrawRenderBatchActive();
 
 			Rlgl.PushMatrix();
 			Rlgl.Rotatef(target.GetShearX() + -target.GetShearY(), 0, 0, 1);
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture((ITexture)texY);
-			Graphics2D.DrawImage(new(-size / 2f), new(size), new(0), 0);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-size / 2f), new(size));
 			Rlgl.PopMatrix();
 			Rlgl.DrawRenderBatchActive();
 

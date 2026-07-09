@@ -14,7 +14,7 @@ public class MenuFooterButton : Button
 
     public string? Icon
     {
-        set => _image.SetTexture(string.IsNullOrWhiteSpace(value) ? null : Level.Textures.LoadTextureFromFile(value));
+        set => _image.SetImage(string.IsNullOrWhiteSpace(value) ? null : Level.Textures.LoadTextureFromFile(value));
     }
 
     private readonly Image _image;

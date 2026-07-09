@@ -110,8 +110,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		public ITexture? ImageTexture {
-			get => Image.GetTexture();
-			set => Image.SetTexture(value);
+			get => Image.GetImage();
+			set => Image.SetImage(value);
 		}
 		public Color ImageColor {
 			get => Image.GetImageColor();
@@ -280,7 +280,7 @@ namespace Nucleus.ModelEditor
 			Graphics2D.SetDrawColor(c, c, c);
 			Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
 			var s = 16;
-			Graphics2D.DrawImage(new(width - 19, (height / 2) - (s / 2) - 1), new(s), new(0.5f));
+			Graphics2D.DrawTexturedRectangle(new Vector2F(width - 19, (height / 2) - (s / 2) - 1), new Vector2F(s), 0, new Vector2F(0.5f));
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
@@ -308,7 +308,7 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetDrawColor(color);
 			Graphics2D.SetTexture((ITexture)Level.Textures.LoadTextureFromFile("models/keyframe.png"));
-			Graphics2D.DrawImage(RectangleF.FromPosAndSize(new(2), new(height - 4)));
+			Graphics2D.DrawTexturedRectangle(RectangleF.FromPosAndSize(new(2), new(height - 4)));
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {
@@ -320,7 +320,7 @@ namespace Nucleus.ModelEditor
 				var c = self.IsDepressed() ? (visColor / 2) : self.IsHovered() ? (visColor + 35) : visColor;
 				Graphics2D.SetDrawColor(c, c, c);
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
-				Graphics2D.DrawImage(RectangleF.XYWH(4, 4, width - 8, height - 8), new(0, 0));
+				Graphics2D.DrawTexturedRectangle(RectangleF.XYWH(4, 4, width - 8, height - 8), 0, new(0, 0));
 			}
 			else {
 				var visColor = editorItem.GetVisible() ? 185 : 125;

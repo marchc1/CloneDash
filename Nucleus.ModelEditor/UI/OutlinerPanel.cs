@@ -25,14 +25,14 @@ namespace Nucleus.ModelEditor
 				Graphics2D.SetDrawColor(255, 255, 255);
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/viseye.png"));
-				Graphics2D.DrawImage(new(4, 4), new(16));
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4, 4), new(16));
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/keyframe.png"));
-				Graphics2D.DrawImage(new(4 + 23, 4), new(16));
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 23, 4), new(16));
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/tree.png"));
-				Graphics2D.DrawImage(new(4 + 46, 4), new(16));
-
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 46, 4), new(16));
+				
 				Graphics2D.SetDrawColor(parent.GetFgColor());
 				Graphics2D.DrawLine(23, 0, 23, height);
 				Graphics2D.DrawLine(46, 0, 46, height);

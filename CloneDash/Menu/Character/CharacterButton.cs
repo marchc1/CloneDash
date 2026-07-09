@@ -16,7 +16,7 @@ namespace CloneDash.Menu.Character
 			SetOrigin(Anchor.TopCenter);
 
 			Image icon = new(this);
-			icon.SetTexture(texture);
+			icon.SetImage(texture);
 			icon.SetImageOrientation(ImageOrientation.Zoom);
 			icon.SetDock(Dock.Fill);
 			icon.SetBorderSize(0);

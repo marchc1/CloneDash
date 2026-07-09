@@ -140,14 +140,14 @@ namespace Nucleus.ModelEditor
 			perfGraph1.SetOrigin(Anchor.BottomRight);
 			perfGraph1.SetPos(new(-8, -8 + -32 + -8));
 			perfGraph1.SetSize(new(300, 32));
-			perfGraph1.Mode = GraphMode.CpuUpdateTime;
+			perfGraph1.Mode = PerformanceGraph.GraphMode.CpuUpdateTime;
 
 			var perfGraph2 = new PerformanceGraph(this);
 			perfGraph2.SetAnchor(Anchor.BottomRight);
 			perfGraph2.SetOrigin(Anchor.BottomRight);
 			perfGraph2.SetPos(new(-8, -8));
 			perfGraph2.SetSize(new(300, 32));
-			perfGraph2.Mode = GraphMode.RamUsage;
+			perfGraph2.Mode = PerformanceGraph.GraphMode.RamUsage;
 
 		}
 

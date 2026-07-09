@@ -76,11 +76,11 @@ public class ColorSelectorDialog : Panel
 
 			Graphics2D.SetDrawColor(huewheelColor, huewheelColor, huewheelColor);
 			Graphics2D.SetTexture(dialog.ColorWheelTex);
-			Graphics2D.DrawImage(new(0, 0), new(width, height));
+			Graphics2D.DrawTexturedRectangle(0, 0, width, height);
 
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture(dialog.HueWheelTex);
-			Graphics2D.DrawImage(new(0, 0), new(width, height));
+			Graphics2D.DrawTexturedRectangle(0, 0, width, height);
 
 			Rlgl.PushMatrix();
 			var pos = dialog.GetGlobalPosition();
@@ -95,7 +95,7 @@ public class ColorSelectorDialog : Panel
 			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(dialog.ColorPickerTex);
 			var centerPos = new Vector2F(-width / 2, -height / 2);
-			Graphics2D.DrawImage(centerPos, new(width, height), new(0, 0), 0);
+			Graphics2D.DrawTexturedRectangle(centerPos, new Vector2F(width, height), origin: new(0, 0), rotation: 0);
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			//var targetPos = new Vector2F();
@@ -104,10 +104,10 @@ public class ColorSelectorDialog : Panel
 			var targetPos = dialog.GetSatvalXYFromCurrentColor();
 			Graphics2D.SetTexture(dialog.ColorSatValTex);
 			Graphics2D.SetDrawColor(satvalwheelColor, satvalwheelColor, satvalwheelColor);
-			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
+			Graphics2D.DrawTexturedRectangle(centerPos + targetPos, new(width, height));
 			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(dialog.ColorSatValInnerTex);
-			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
+			Graphics2D.DrawTexturedRectangle(centerPos + targetPos, new(width, height));
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			Graphics2D.OffsetDrawing(offset);

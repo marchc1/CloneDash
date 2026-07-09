@@ -29,7 +29,7 @@ public class Scrollbar : Panel
 			Graphics2D.SetTexture(scrollbar.Alignment == ScrollbarAlignment.Vertical ?
 				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/down32.png") : Level.Textures.LoadTextureFromFile("ui/up32.png")) :
 				(ITexture)(down ? Level.Textures.LoadTextureFromFile("ui/right32.png") : Level.Textures.LoadTextureFromFile("ui/left32.png")));
-			Graphics2D.DrawImage(new(2), new(width - 4, height - 4));
+			Graphics2D.DrawTexturedRectangle(new Vector2F(2), new Vector2F(width - 4, height - 4));
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => scrollbar.MouseScrolled(self, state, delta);
 	}
