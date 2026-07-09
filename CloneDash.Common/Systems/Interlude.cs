@@ -128,7 +128,7 @@ public static class Interlude
 				if (interludeTexture != null) {
 					Graphics2D.SetTexture(interludeTexture);
 					Graphics2D.SetDrawColor(255, 255, 255, 255);
-					Graphics2D.DrawTexturedRectangle(0, 0, interludeTexture.Width, interludeTexture.Height);
+					Graphics2D.DrawTexturedRectangle(0, 0, windowSize.W, windowSize.H);
 				}
 
 				var originalBottomSize = 48f;
