@@ -349,11 +349,11 @@ public class SongSelector : Panel, IMainMenuPanel
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.IsKeyboardFocused()) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
-			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA)) {
+			if ((keyboard.IsKeyDown(ButtonCode.KeyLeft) && !keyboard.WasKeyPressed(ButtonCode.KeyLeft)) || (keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA))) {
 				MoveLeft();
 				InvalidateLayout();
 			}
-			else if (keyboard.IsKeyDown(ButtonCode.KeyRight) || keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD)) {
+			else if ((keyboard.IsKeyDown(ButtonCode.KeyRight) && !keyboard.WasKeyPressed(ButtonCode.KeyRight)) || (keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD))) {
 				MoveRight();
 				InvalidateLayout();
 			}
