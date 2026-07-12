@@ -83,7 +83,7 @@ internal class Program
 		if (song is MD1_CustomChartsSong customChartsSong) {
 			customChartsSong.DownloadOrPullFromCache((c) => {
 				if (EngineCore.Level is not MainMenuLevel mml) {
-					Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
+					Logs.Warn($"Downloading custom charts song '{c.FetchMetadata().Name}' completed downloading in a non-main menu context, ignoring.");
 					return;
 				}
 
