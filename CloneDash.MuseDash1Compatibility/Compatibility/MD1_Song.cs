@@ -195,7 +195,6 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	}
 
 	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
-		GetInfo(); // This is annoying: it fixes an issue with custom albums, didnt feel like it would be a good idea to differentiate them though..
 		// TODO: language
 		return new() {
 			Name = Name,
@@ -372,9 +371,6 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	protected virtual MD1_SongInfo? ProduceInfo() {
 		List<string> SearchTags = [];
-
-		Name = __jsonInfo.Name;
-		Author = __jsonInfo.Author;
 
 		SearchTags.AddRange(__jsonInfo.Name.Split(' '));
 		MD1_SongInfo info = new MD1_SongInfo() {
