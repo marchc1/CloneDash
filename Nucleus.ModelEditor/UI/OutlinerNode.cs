@@ -114,7 +114,7 @@ namespace Nucleus.ModelEditor
 			set => Image.Texture = value;
 		}
 		public Color ImageColor {
-			get => Image.ImageColor1;
+			get => Image.ImageColor;
 			set => Image.ImageColor = value;
 		}
 
