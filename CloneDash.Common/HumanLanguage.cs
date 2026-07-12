@@ -27,7 +27,8 @@ public record struct HumanLanguage
 
 	public static readonly HumanLanguage Any = new("iv");
 
-	public static readonly HumanLanguage Chinese = new("zh");
+	public static readonly HumanLanguage SimplifiedChinese = new("zh-CN");
+	public static readonly HumanLanguage TraditionalChinese = new("zh-TW");
 	public static readonly HumanLanguage English = new("en");
 	public static readonly HumanLanguage Japanese = new("ja");
 	public static readonly HumanLanguage Korean = new("ko");

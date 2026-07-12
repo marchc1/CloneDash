@@ -65,15 +65,18 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			public MDMCChart WebChart;
 			public bool UsesWebChart = false;
 
-			public MD1_CustomChartsSong(in MDMCChart webChart) : base(null!) {
+			public MD1_CustomChartsSong(in MDMCChart webChart) : base() {
 				WebChart = webChart;
 				UsesWebChart = true;
 
-				Name = webChart.TitleRomanized ?? webChart.Title;
-				Author = webChart.Artist;
+				AddBaseJSONInfo(new() {
+					Name = webChart.Title,
+					Author = webChart.Artist,
+				});
+				AddLocalizedJSONInfo(Common.HumanLanguage.English, webChart.TitleRomanized, null);
 			}
 
-			public MD1_CustomChartsSong(string filepath) : base(null!) {
+			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;
 				string? ext = Path.GetExtension(filepath);
 				switch (ext) {
@@ -89,9 +92,12 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 					default: throw new NotImplementedException("Custom Charts: Bad filetype for CustomChartsSong constructor!");
 				}
+
+				if (Archive != null)
+					ProduceInfo(); // Produce info now so AddBaseJSONInfo gets what it needs
 			}
 
-			public MD1_CustomChartsSong(string pathID, string path) : base(null!) {
+			public MD1_CustomChartsSong(string pathID, string path) : base() {
 				string? ext = Path.GetExtension(path);
 				switch (ext) {
 					case ".mdm":
@@ -104,6 +110,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 						break;
 					default: throw new NotImplementedException("Custom Charts: Bad filetype for CustomChartsSong constructor!");
 				}
+
+				if (Archive != null)
+					ProduceInfo(); // Produce info now so AddBaseJSONInfo gets what it needs
 			}
 
 			~MD1_CustomChartsSong() {
@@ -192,8 +201,11 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					if (info == null)
 						return null;
 
-					Name = info.name;
-					Author = info.author;
+					AddBaseJSONInfo(new() {
+						Name = info.name,
+						Author = info.author
+					});
+
 					MD1_SongInfo ret = new() {
 						BPM = info.bpm,
 						LevelDesigners = [info.levelDesigner1, info.levelDesigner2, info.levelDesigner3, info.levelDesigner4],
@@ -288,7 +300,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 				var stageInfo = BmsLoader.TransmuteData(bms);
-				stageInfo.mapName = Name;
+				stageInfo.mapName = FetchMetadata().Name;
 				stageInfo.difficulty = difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
 				stageInfo.bpm = bms.Bpm;
