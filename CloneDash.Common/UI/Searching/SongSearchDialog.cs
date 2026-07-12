@@ -14,7 +14,7 @@ public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 	Label label = null!;
 	T element = null!;
 	public DialogLabelPanel(Element? parent) : base(parent){
-		SetBorderSize(0);
+		BorderSize = 0;
 
 		label = new(this);
 		element = (T)Activator.CreateInstance(typeof(T), [this])!; // This sucks
@@ -22,38 +22,20 @@ public class DialogLabelPanel<T> : Panel, ITextElement where T : Element
 	public T Get() => element;
 
 
-	public ReadOnlySpan<char> GetText() {
-		return ((ITextElement)label).GetText();
-	}
+	public ReadOnlySpan<char> Text { get => ((ITextElement)label).Text; set => ((ITextElement)label).Text = value; }
 
-	public void SetText(ReadOnlySpan<char> text) {
-		((ITextElement)label).SetText(text);
-	}
+	public ReadOnlySpan<char> Font { get => ((ITextElement)label).Font; set => ((ITextElement)label).Font = value; }
 
-	public ReadOnlySpan<char> GetFont() {
-		return ((ITextElement)label).GetFont();
-	}
-
-	public float GetTextSize() {
-		return ((ITextElement)label).GetTextSize();
-	}
-
-	public void SetFont(ReadOnlySpan<char> font) {
-		((ITextElement)label).SetFont(font);
-	}
-
-	public void SetTextSize(float textSize) {
-		((ITextElement)label).SetTextSize(textSize);
-	}
+	public float TextSize { get => ((ITextElement)label).TextSize; set => ((ITextElement)label).TextSize = value; }
 
 	protected override void PerformLayout(float width, float height) {
-		label.SetPos(new(0, 0));
+		label.		Position = new(0, 0);
 		var div = 4f;
-		label.SetSize(new(width / div, height));
+		label.		Size = new(width / div, height);
 
 		var padding = 4;
-		element.SetPos(new((width / div) + padding, padding));
-		element.SetSize(new((width - (width / div)) - (padding * 2), (height) - (padding * 2)));
+		element.		Position = new((width / div) + padding, padding);
+		element.		Size = new((width - (width / div)) - (padding * 2), (height) - (padding * 2));
 	}
 }
 
@@ -81,21 +63,21 @@ public class SongSearchDialog : Window
 		MakePopup();
 
 		DynamicallySized = true;
-		SetMinimumSize(null);
-		SetSize(new(0.4f));
+		MinimumSize = null;
+		Size = new(0.4f);
 		Resizable = false;
 		HideNonCloseButtons();
 		Title = "Song Search Dialog";
 
 		applyButton = new(this);
-		applyButton.SetText("Apply");
-		applyButton.SetBorderSize(0);
-		applyButton.SetDock(Dock.Bottom);
+		applyButton.		Text = "Apply";
+		applyButton.BorderSize = 0;
+		applyButton.		Dock = Dock.Bottom;
 
 		applyButton.OnButtonClick += ApplyButton_MouseReleaseEvent;
 
 		parameters = new(this);
-		parameters.SetDock(Dock.Fill);
+		parameters.		Dock = Dock.Fill;
 		SetAddParent(parameters);
 
 		Center();
@@ -103,10 +85,10 @@ public class SongSearchDialog : Window
 
 	public DialogLabelPanel<T> InputPanel<T>(ReadOnlySpan<char> label) where T : Element {
 		DialogLabelPanel<T> pnl = new(parameters);
-		pnl.SetDock(Dock.Top);
-		pnl.SetSize(new(0, 0.15f));
+		pnl.		Dock = Dock.Top;
+		pnl.		Size = new(0, 0.15f);
 		pnl.DynamicallySized = true;
-		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.		Text = label.SliceNullTerminatedString();
 		return pnl;
 	}
 
@@ -147,16 +129,16 @@ public class SongSearchDialog : Window
 
 	public Textbox TextboxInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, ReadOnlySpan<char> value) {
 		var pnl = InputPanel<Textbox>(label);
-		pnl.SetText(label.SliceNullTerminatedString());
-		pnl.Get().SetText(value.SliceNullTerminatedString());
-		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => new string(pnl.Get().GetText()) });
+		pnl.		Text = label.SliceNullTerminatedString();
+		pnl.Get().		Text = value.SliceNullTerminatedString();
+		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => new string(pnl.Get().Text) });
 
 		return pnl.Get();
 	}
 
 	public void BoolInput(ReadOnlySpan<char> name, ReadOnlySpan<char> label, bool state) {
 		var pnl = InputPanel<Checkbox>(label);
-		pnl.SetText(label.SliceNullTerminatedString());
+		pnl.		Text = label.SliceNullTerminatedString();
 		pnl.Get().Checked = state;
 		applySteps.Add(new() { target = new(name.SliceNullTerminatedString()), valueFn = () => pnl.Get().Checked });
 	}
@@ -205,7 +187,7 @@ public class SongSearchDialog : Window
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		applyButton.SetSize(new(height * 0.1f));
+		applyButton.		Size = new(height * 0.1f);
 	}
 }
 

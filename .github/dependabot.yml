@@ -1,12 +1,13 @@
 version: 2
-updates: 
-- package-ecosystem: github-actions
-  directory: /
-  schedule: 
-    interval: monthly
-      
-- package-ecosystem: nuget
-  directory: /
-  schedule:
-    interval: monthly
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: dev
 
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: dev

@@ -14,12 +14,12 @@ public class TreeNode : Button, IContainsNodes
 		ChildrenPanel = new(GetParent());
 		ChildrenPanel.AutoSize = true;
 		ChildrenPanel.SizeChildrensOppositeSideToEdge = true;
-		ChildrenPanel.SetBorderSize(0);
+		ChildrenPanel.BorderSize = 0;
 		ChildrenPanel.SetPaintBackgroundEnabled(false);
 		ChildrenPanel.SetPaintEnabled(false);
 		ChildrenPanel.SetVisible(false);
-		ChildrenPanel.SetSize(new(0, 0));
-		ChildrenPanel.SetDockPadding(RectangleF.TLRB(0, 8, 0, 0));
+		ChildrenPanel.		Size = new(0, 0);
+		ChildrenPanel.		DockPadding = RectangleF.TLRB(0, 8, 0, 0);
 
 		SetTextAlignment(Anchor.CenterLeft);
 		SetTextPadding(new(8));
@@ -53,7 +53,7 @@ public class TreeNode : Button, IContainsNodes
 	public List<TreeNode> Nodes { get; set; } = [];
 	public TreeNode AddNode(string text) {
 		TreeNode node = new TreeNode(ChildrenPanel);
-		node.SetText(text);
+		node.		Text = text;
 		Nodes.Add(node);
 		return node;
 	}
@@ -81,7 +81,7 @@ public class TreeView : DirectionalLayoutPanel, IContainsNodes
 	public List<TreeNode> Nodes { get; set; } = [];
 	public TreeNode AddNode(string text) {
 		TreeNode node = new TreeNode(this);
-		node.SetText(text);
+		node.		Text = text;
 		Nodes.Add(node);
 		return node;
 	}

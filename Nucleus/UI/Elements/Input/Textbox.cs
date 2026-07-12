@@ -118,9 +118,9 @@ public class Textbox : Label
 	DateTime lastUndoPush = DateTime.MinValue;
 
 	public Textbox(Element? parent) : base(parent) {
-		SetText("");
-		SetKeyboardInputMarshal(new HoldingKeyboardInputMarshal());
-		SetTextSize(20);
+		Text = "";
+		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
+		TextSize = 20;
 		SetPaintBorderEnabled(true);
 	}
 
@@ -134,19 +134,15 @@ public class Textbox : Label
 		InvalidateLines();
 	}
 
-	public override void SetText(ReadOnlySpan<char> text) {
-		SetTextInternal(text, true);
-	}
-
 	bool inPerformUndoOrRedo;
 	public void SetTextInternal(ReadOnlySpan<char> text, bool resetCaret) {
-		if (text.Equals(GetText(), StringComparison.InvariantCulture))
+		if (text.Equals(Text, StringComparison.InvariantCulture))
 			return;
 
 		Caret.ClearSelection();
 		if (resetCaret)
 			Caret.Position = text.Length;
-		base.SetText(text);
+		base.		Text = text;
 
 		InvalidateLines();
 	}
@@ -182,7 +178,7 @@ public class Textbox : Label
 		redoStack.Add(new UndoEntry(text, Caret.Position));
 
 		var old = text;
-		SetText(entry.Text);
+		Text = entry.Text;
 		Caret.Position = entry.CaretPosition;
 		Caret.ClearSelection();
 		FireTextChanged(old);
@@ -198,7 +194,7 @@ public class Textbox : Label
 		undoStack.Add(new UndoEntry(text, Caret.Position));
 
 		var old = text;
-		SetText(entry.Text);
+		Text = entry.Text;
 		Caret.Position = entry.CaretPosition;
 		Caret.ClearSelection();
 		FireTextChanged(old);
@@ -224,13 +220,13 @@ public class Textbox : Label
 
 		string text = DisplayText ?? "";
 		if (text.Length == 0) {
-			float lineH = Graphics2D.GetTextSize("X", GetFont(), GetTextSize()).Y;
+			float lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
 			lines.Add(new TextLine { Start = 0, Length = 0, Width = 0, Height = lineH, Y = 0 });
 			return;
 		}
 
 		if (!MultiLine) {
-			var sz = Graphics2D.GetTextSize(text, GetFont(), GetTextSize());
+			var sz = Graphics2D.GetTextSize(text, Font, TextSize);
 			lines.Add(new TextLine { Start = 0, Length = text.Length, Width = sz.X, Height = sz.Y, Y = 0 });
 			return;
 		}
@@ -248,7 +244,7 @@ public class Textbox : Label
 			int segLen = segEnd - cursor;
 
 			if (segLen == 0) {
-				float lineH = Graphics2D.GetTextSize("X", GetFont(), GetTextSize()).Y;
+				float lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
 				lines.Add(new TextLine { Start = cursor, Length = 0, Width = 0, Height = lineH, Y = yAccum });
 				yAccum += lineH;
 			}
@@ -260,7 +256,7 @@ public class Textbox : Label
 					int lineStart = pos;
 
 					while (pos < segEnd) {
-						var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(pos, 1), GetFont(), GetTextSize());
+						var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(pos, 1), Font, TextSize);
 						if (lineW > 0 && lineW + chSz.X > availableW)
 							break;
 						lineW += chSz.X;
@@ -269,7 +265,7 @@ public class Textbox : Label
 					}
 
 					if (lineH == 0)
-						lineH = Graphics2D.GetTextSize("X", GetFont(), GetTextSize()).Y;
+						lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
 
 					lines.Add(new TextLine {
 						Start = lineStart,
@@ -315,7 +311,7 @@ public class Textbox : Label
 
 		int clampedCol = Math.Min(col, line.Length);
 		string text = DisplayText;
-		return Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, clampedCol), GetFont(), GetTextSize()).X;
+		return Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, clampedCol), Font, TextSize).X;
 	}
 
 	int HitTestPosition(Vector2F localPos) {
@@ -343,7 +339,7 @@ public class Textbox : Label
 
 		float accumX = 0;
 		for (int i = 0; i < line.Length; i++) {
-			var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start + i, 1), GetFont(), GetTextSize());
+			var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start + i, 1), Font, TextSize);
 			if (relX < accumX + chSz.X * 0.5f)
 				return line.Start + i;
 			accumX += chSz.X;
@@ -560,7 +556,7 @@ public class Textbox : Label
 
 		if (Caret.HasSelection) {
 			PushUndo(true);
-			SetText(Caret.DeleteSelection(this.text));
+			Text = Caret.DeleteSelection(this.text);
 		}
 
 		if (MaxLength > 0 && this.text.Length >= MaxLength) {
@@ -571,7 +567,7 @@ public class Textbox : Label
 		// todo: MaxLength handling here...
 		int oldPosition = Caret.Position;
 		PushUndo(false);
-		SetText(this.text.Insert(Caret.Position, inputText));
+		Text = this.text.Insert(Caret.Position, inputText);
 		Caret.MovePosition(this.text, inputText.Length);
 		Caret.ClearSelection();
 		FireTextChanged(oldText);
@@ -606,7 +602,7 @@ public class Textbox : Label
 					if (!ReadOnly && Caret.HasSelection) {
 						Clipboard.Text = Caret.GetSelectedText(text);
 						PushUndo(true);
-						SetText(Caret.DeleteSelection(text));
+						Text = Caret.DeleteSelection(text);
 						FireTextChanged(oldText);
 					}
 					return true;
@@ -746,7 +742,7 @@ public class Textbox : Label
 					int deleteCount = ctrl ? Caret.Position - FindWordBoundaryLeft(text, Caret.Position) : 1;
 					int deleteStart = Caret.Position - deleteCount;
 					PushUndo(false);
-					SetText(text.Remove(deleteStart, deleteCount));
+					Text = text.Remove(deleteStart, deleteCount);
 					Caret.Position = deleteStart;
 					FireTextChanged(oldText);
 				}
@@ -763,7 +759,7 @@ public class Textbox : Label
 					int deleteCount = ctrl ? FindWordBoundaryRight(text, Caret.Position) - Caret.Position : 1;
 					int deleteStart = Caret.Position;
 					PushUndo(false);
-					SetText(text.Remove(Caret.Position, deleteCount));
+					Text = text.Remove(Caret.Position, deleteCount);
 					Caret.Position = deleteStart;
 					FireTextChanged(oldText);
 				}
@@ -816,7 +812,7 @@ public class Textbox : Label
 		int bestPos = line.Start;
 
 		for (int i = 0; i < line.Length; i++) {
-			var chSz = Graphics2D.GetTextSize(text.Slice(line.Start + i, 1), GetFont(), GetTextSize());
+			var chSz = Graphics2D.GetTextSize(text.Slice(line.Start + i, 1), Font, TextSize);
 			if (accumX + chSz.X * 0.5f > preferredX) {
 				bestPos = line.Start + i;
 				break;
@@ -873,7 +869,7 @@ public class Textbox : Label
 	public override void PaintBorder(float width, float height) {
 		Color fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		Graphics2D.SetDrawColor(fore);
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, GetBorderSize());
+		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}
 
 	void DrawTextLines(float width, float height) {
@@ -896,7 +892,7 @@ public class Textbox : Label
 
 			float drawX = GetLineDrawX(line, width);
 			ReadOnlySpan<char> lineText = text.AsSpan().Slice(line.Start, line.Length);
-			Graphics2D.DrawText(drawX, drawY, lineText, GetFont(), GetTextSize(), Anchor.TopLeft);
+			Graphics2D.DrawText(drawX, drawY, lineText, Font, TextSize, Anchor.TopLeft);
 		}
 	}
 
@@ -919,9 +915,9 @@ public class Textbox : Label
 
 			float startX = GetLineDrawX(line, width);
 			if (overlapStart > line.Start)
-				startX += Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, overlapStart - line.Start), GetFont(), GetTextSize()).X;
+				startX += Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, overlapStart - line.Start), Font, TextSize).X;
 
-			float selW = Graphics2D.GetTextSize(text.AsSpan().Slice(overlapStart, overlapEnd - overlapStart), GetFont(), GetTextSize()).X;
+			float selW = Graphics2D.GetTextSize(text.AsSpan().Slice(overlapStart, overlapEnd - overlapStart), Font, TextSize).X;
 			float drawY = padY + line.Y - scrollOffsetY;
 
 			float pad = 2;

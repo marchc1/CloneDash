@@ -1,7 +1,9 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Engine;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
+using Nucleus.NewEngine;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -21,7 +23,7 @@ struct TestBtn(string text, Action<Level> click)
 	public Action<Level> Click = click;
 }
 
-internal class Program
+internal class Program : IGameDLL
 {
 	public class HelloWorldLevel : Level
 	{
@@ -31,14 +33,14 @@ internal class Program
 
 				Panel row(Dock vertical){
 					var row = new Panel(window);
-					row.SetDock(vertical) ;
+					row.					Dock = vertical;
 
 					Label column(Anchor alignment){
 						var column = new Label(row);
 						var h = alignment.ToTextAlignment().Horizontal;
-						column.SetDock(h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill) ;
-						column.SetText("The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString()) ;
-						column.SetSize(new(window.GetSize().W / 3, 0)) ;
+						column.						Dock = h == TextAlignment.Left ? Dock.Left : h == TextAlignment.Right ? Dock.Right : Dock.Fill;
+						column.						Text = "The quick brown fox jumps over the lazy dog, lorem ipsum, etc, etc, oh yeah, the text alignment for this label is " + alignment.ToString();
+						column.						Size = new(window.Size.W / 3, 0);
 						column.SetTextAlignment(alignment) ;
 						column.TextOverflowMode = TextOverflowMode.WordWrap;
 						return column;
@@ -49,7 +51,7 @@ internal class Program
 					var left = column(  new TextAlignment2D(TextAlignment.Left, v).ToAnchor());
 					var right = column( new TextAlignment2D(TextAlignment.Right, v).ToAnchor());
 					var center = column(new TextAlignment2D(TextAlignment.Center, v).ToAnchor());
-					row.SetSize(new(0, window.GetSize().H / 3)) ;
+					row.					Size = new(0, window.Size.H / 3);
 					row.SetPaintBackgroundEnabled(false);
 
 					return row;
@@ -66,16 +68,16 @@ internal class Program
 			base.Initialize(args);
 
 			var tools = new Panel(RootPanel);
-			tools.SetDock(Dock.Right);
-			tools.SetSize(new(640, 0));
+			tools.			Dock = Dock.Right;
+			tools.			Size = new(640, 0);
 			var testLabel = new Label(tools);
 			testLabel.SetAutoSize(true);
-			testLabel.SetDock(Dock.Top);
-			testLabel.SetText("Test Functions");
+			testLabel.			Dock = Dock.Top;
+			testLabel.			Text = "Test Functions";
 			foreach (var test in tests) {
 				var b = new Button(tools);
-				b.SetText(test.Text);
-				b.SetDock(Dock.Top);
+				b.				Text = test.Text;
+				b.				Dock = Dock.Top;
 				b.OnButtonClick += (_, _) => test.Click(this);
 			}
 		}
@@ -107,12 +109,27 @@ internal class Program
 		}
 	}
 	static void Main(string[] args) {
-		// EngineCore.GameInfo = new() {
-		// 	AppName = "Hello World",
-		// 	AppIdentifier = "com.github.marchc1.NucleusHelloWorld"
-		// };
-		// EngineCore.Initialize(1600, 900, "Nucleus Testing Project", args);
-		// EngineCore.LoadLevel(new HelloWorldLevel());
-		// EngineCore.StartMainThread();
+		CommandLineParser commandLine = new();
+		commandLine.CreateCmdLine(Environment.CommandLine);
+
+		IEngineAPI engineAPI = new EngineBuilder(commandLine)
+			.WithComponent<IGameDLL, Program>()
+			.WithStandardComponents()
+			.Build();
+
+		engineAPI.SetStartupInfo(new() {
+			AppName = "Nucleus - Hello World",
+			AppIdentifier = "com.github.marchc1.HelloWorld",
+			AppCreator = "March (github/marchc1)",
+			AppURL = "https://github.com/marchc1/CloneDash",
+			AppType = Nucleus.Types.AppType.Application
+		});
+
+		using ServiceLocatorScope locatorScope = new(engineAPI);
+		engineAPI.Run();
+	}
+
+	public void Init() {
+		EngineCore.LoadLevel(new HelloWorldLevel());
 	}
 }

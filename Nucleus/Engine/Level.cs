@@ -1,19 +1,17 @@
 ﻿using Nucleus.Commands;
 using Nucleus.Core;
+using Nucleus.Debugging;
 using Nucleus.Entities;
 using Nucleus.Input;
 using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
-using Nucleus.UI.Elements;
-using Nucleus.Util;
 using Raylib_cs;
 
 using System.Diagnostics;
 
 namespace Nucleus.Engine;
-
 
 public enum HitTestResult : byte
 {
@@ -27,135 +25,6 @@ public enum HitTestResult : byte
 	ResizeBottom,
 	ResizeBottomLeft,
 	ResizeLeft
-}
-
-public struct DebugRecordState
-{
-	public int MaxKeySize;
-	public int MaxKeyPlusSpacingSize;
-	public int MaxValueSize;
-	public int LargestKeyIdx;
-	public int LargestValueIdx;
-	public static DebugRecordState Max(in DebugRecordState state1, in DebugRecordState state2) {
-		return new() {
-			MaxKeySize = Math.Max(state1.MaxKeySize, state2.MaxKeySize),
-			MaxKeyPlusSpacingSize = Math.Max(state1.MaxKeyPlusSpacingSize, state2.MaxKeyPlusSpacingSize),
-			MaxValueSize = Math.Max(state1.MaxValueSize, state2.MaxValueSize),
-			LargestKeyIdx = Math.Max(state1.LargestKeyIdx, state2.LargestKeyIdx),
-			LargestValueIdx = Math.Max(state1.LargestValueIdx, state2.LargestValueIdx),
-		};
-	}
-}
-public class DebugRecordList
-{
-	public InlineArray128<DebugRecord> Records;
-	public int NumRecords;
-	public int Spacing;
-
-	public void Reset() {
-		NumRecords = Spacing = 0;
-	}
-
-	public ref DebugRecord GetRecord(int i) => ref Records[i];
-	public void Write() => Records[NumRecords++] = default;
-	public void Write(ReadOnlySpan<char> key) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, null, true);
-	public void Write(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, value);
-	static readonly char[] tempformatbuffer = new char[256];
-	public void Write(ReadOnlySpan<char> key, ISpanFormattable value) {
-		value.TryFormat(tempformatbuffer, out int chars, default, null);
-		Records[NumRecords++] = new(Spacing * SpacingCharacters, key, tempformatbuffer.AsSpan()[..chars]);
-	}
-	public void EnterScope() => Spacing += 1;
-	public void ExitScope() => Spacing -= 1;
-
-	public int SpacingCharacters => 4;
-
-	public DebugRecordState CompileState() {
-		DebugRecordState state = new();
-		for (int i = 0; i < NumRecords; i++) {
-			ref DebugRecord record = ref Records[i];
-
-			if (record.HasValue) {
-				if (state.MaxKeySize < record.KeySize) state.LargestKeyIdx = i;
-				state.MaxKeySize = Math.Max(state.MaxKeySize, record.KeySize);
-				state.MaxKeyPlusSpacingSize = Math.Max(state.MaxKeyPlusSpacingSize, record.KeySize + record.Spacing);
-			}
-
-			if (state.MaxValueSize < record.ValueSize) state.LargestValueIdx = i;
-
-			state.MaxValueSize = Math.Max(state.MaxValueSize, record.ValueSize);
-		}
-
-		return state;
-	}
-}
-
-public struct DebugRecord
-{
-	InlineArray512<char> KeyValueData;
-	public int KeySize;
-	public int ValueSize;
-	public int Spacing;
-	public bool HasValue;
-
-	public bool GetText(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
-	public bool GetKey(Span<char> output) => KeyValueData[..KeySize].TryCopyTo(output);
-	public bool GetValue(Span<char> output) => KeyValueData[KeySize..][..ValueSize].TryCopyTo(output);
-
-	public DebugRecord(int spacing, ReadOnlySpan<char> key, ReadOnlySpan<char> value = default, bool valueless = false) {
-		if (!key.TryCopyTo(KeyValueData) || !value.TryCopyTo(KeyValueData[key.Length..])) {
-			Logs.Warn("DebugRecord overflow (store less text)");
-		}
-
-		Spacing = spacing;
-		KeySize = key.Length;
-		ValueSize = value.Length;
-		HasValue = !valueless;
-	}
-
-	static readonly char[] tempprintbuffer = new char[1024];
-	public ReadOnlySpan<char> Print(in DebugRecordState state) {
-		Span<char> buffer = tempprintbuffer.AsSpan();
-		int charIdx = 0;
-		for (int i = 0; i < Spacing; i++) tempprintbuffer[charIdx++] = ' ';
-		GetKey(buffer[charIdx..]); charIdx += KeySize;
-		if (!HasValue)
-			return buffer[..charIdx];
-
-		int fillSpacesUntil = state.MaxKeyPlusSpacingSize - (KeySize - Spacing);
-		for (int i = 0; i < fillSpacesUntil; i++) tempprintbuffer[charIdx++] = ' ';
-		tempprintbuffer[charIdx++] = ' ';
-		tempprintbuffer[charIdx++] = ':';
-		tempprintbuffer[charIdx++] = ' ';
-		GetValue(buffer[charIdx..]); charIdx += ValueSize;
-
-		return buffer[..charIdx];
-	}
-
-	// public static implicit operator DebugRecord(string from) {
-	// 	bool containsValue = false;
-	// 	ReadOnlySpan<char> key = "";
-	// 	ReadOnlySpan<char> value = null;
-	// 
-	// 	var colon = from.IndexOf(':');
-	// 	if (colon == -1)
-	// 		containsValue = false;
-	// 	else {
-	// 		if (colon == from.Length - 1)
-	// 			containsValue = false;
-	// 		else
-	// 			containsValue = true;
-	// 	}
-	// 
-	// 	if (containsValue) {
-	// 		key = from.AsSpan()[..colon];
-	// 		value = from.AsSpan()[(colon + 1)..].Trim();
-	// 	}
-	// 	else
-	// 		key = from;
-	// 
-	// 	return new(0, key, value, !containsValue);
-	// }
 }
 
 /// <summary>
@@ -176,6 +45,8 @@ public abstract class Level : IValidatable
 	internal bool __isValid = false;
 	public bool IsValid() => __isValid;
 
+	public readonly DeveloperOverlay DeveloperOverlay;
+	
 	/// <summary>
 	/// When true, this will block some <see cref="ConVar"/>'s from being modified by the user.
 	/// </summary>
@@ -188,8 +59,23 @@ public abstract class Level : IValidatable
 		Parent = RootPanel
 	};
 
+	public virtual DeveloperOverlaySettings GetDeveloperOverlaySettings() => new() {
+		Offset = new(0, -8),
+
+		DebugStringsOffset = new(12, 0),
+		DebugStringsAnchor = Anchor.BottomLeft,
+
+		PerfGraphOffset = new(-12, 0),
+		PerfGraphAnchor = Anchor.BottomRight,
+
+		DoNotRender = false,
+		DevTextSize = 11,
+		Parent = RootPanel
+	};
+
 	public Level() {
 		Timers = new(this);
+		DeveloperOverlay = new DeveloperOverlay(this);
 	}
 
 	private List<Action<Level>> finalizers = [];
@@ -326,15 +212,16 @@ public abstract class Level : IValidatable
 	/// </summary>
 	private List<Entity> EntityList { get; } = new();
 
-
 	public List<Entity> Entities => EntityList;
 
 	public UserInterface RootPanel { get; private set; }
 	public void InitializeUI() {
 		if (RootPanel != null) return;
-		RootPanel = new UserInterface();
+		RootPanel = CreateUI();
 		RootPanel.Window = EngineCore.Window;
 	}
+
+	protected virtual UserInterface CreateUI() => new();
 
 	private void __addEntity(Entity ent) {
 		EntityHash.Add(ent);
@@ -510,9 +397,7 @@ public abstract class Level : IValidatable
 		}
 	}
 
-
-	readonly DebugRecordList debugrecords = new();
-	readonly DebugRecordList userdefined_debugrecords = new();
+	
 	/// <summary>
 	/// Call this every frame.
 	/// </summary>
@@ -542,9 +427,11 @@ public abstract class Level : IValidatable
 
 		// Construct a FrameState from inputs
 		UnlockEntityBuffer(); LockEntityBuffer();
-		EvaluatePerfGraphVisibility();
-		userdefined_debugrecords.Reset();
-		userdefined_debugrecords.EnterScope();
+		DeveloperOverlay.EvaluatePerfGraphVisibility();
+
+		DeveloperOverlay.UserDefinedDebugRecords.Reset();
+		DeveloperOverlay.UserDefinedDebugRecords.EnterScope();
+		
 		FrameState frameState = FrameState;
 
 		float x, y, width, height;
@@ -569,8 +456,9 @@ public abstract class Level : IValidatable
 		if (frameState.Mouse.Focused) EngineCore.Window.FlushMouseStateInto(ref frameState.Mouse);
 		if (frameState.Keyboard.Focused) EngineCore.Window.FlushKeyboardStateInto(ref frameState.Keyboard);
 
-		RootPanel.SetPos(new(0, 0));
-		RootPanel.SetSize(new(frameState.WindowWidth,frameState.WindowHeight));
+		RootPanel.
+		Position = new(0, 0);
+		RootPanel.		Size = new(frameState.WindowWidth,frameState.WindowHeight);
 
 		ref ElementSolveState solveState = ref RootPanel.ProduceSolveState();
 		RootPanel.Scheme.ApplyScheme(RootPanel, ref solveState);
@@ -697,74 +585,12 @@ public abstract class Level : IValidatable
 			if (ui_showupdates.GetBool()) RenderShowUpdates();
 			if (ui_visrenderbounds.GetBool()) VisRenderBounds(RootPanel);
 
-			var FPS = EngineCore.FPS;
-			if (EngineCore.ShouldShowDeveloperOverlays() && !IValidatable.IsValid(InGameConsole.Instance)) {
-				Graphics2D.ResetDrawingOffset();
-				debugrecords.Reset();
+			DeveloperOverlaySettings devOverlaySetttings = GetDeveloperOverlaySettings();
+			ConsoleOverlaySettings consoleOverlaySetttings = GetConsoleOverlaySettings();
 
-				debugrecords.Write($"Nucleus Level / {engineAPI.GetStartupInfo().AppName} - DebugContext");
-				debugrecords.Write();
-				debugrecords.Write("Engine");
-				debugrecords.EnterScope();
-				{
-					debugrecords.Write("[SND] Count", audiosystem.GetAudioClipCount());
-					debugrecords.Write("[SND] Memory [CPU]", (audiosystem.GetMemoryAllocated()).NiceBytes());
-					debugrecords.Write();
-					debugrecords.Write("[TEX] Count", Textures.Count);
-					debugrecords.Write("[TEX] Memory [CPU]", (Textures.UsedBits_CPU >> 3).NiceBytes());
-					debugrecords.Write("[TEX] Memory [GPU]", (Textures.UsedBits >> 3).NiceBytes());
-					debugrecords.Write("[TEX] Font Memory [GPU]", Graphics2D.FontManager.GetUsedGPUBits().NiceBytes());
-				}
-				debugrecords.ExitScope();
-				debugrecords.Write("Engine - Window");
-				debugrecords.EnterScope();
-				{
-					debugrecords.Write("Resolution", frameState.WindowSize);
-				}
-				debugrecords.ExitScope();
-				debugrecords.Write("Engine - Current Level");
-				debugrecords.EnterScope();
-				{
-					debugrecords.Write("Level Classname", this.GetType().Name);
-					debugrecords.Write("Level Entities", EntityList.Count);
-				}
-				debugrecords.ExitScope();
-				debugrecords.Write("Engine - User Interface");
-				debugrecords.EnterScope();
-				{
-					debugrecords.Write("UI Elements", RootPanel.GetAllElements().Length);
-					debugrecords.Write("UI Rebuilds", 0);
-					debugrecords.Write("UI State:", $"hovered {RootPanel.GetHoveredElement()?.ToString() ?? "<null>"}, depressed {RootPanel.GetDepressedElement()?.ToString() ?? "<null>"}, focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}, kb-focused {RootPanel.GetKeyboardFocusedElement()?.ToString() ?? "<null>"}");
-				}
-				debugrecords.ExitScope();
-				debugrecords.Write("Engine - State");
-				debugrecords.EnterScope();
-				{
-					debugrecords.Write("Mouse State", $"{frameState.Mouse}");
-					debugrecords.Write("Keyboard State", $"{frameState.Keyboard}");
-				}
-				debugrecords.ExitScope();
-			}
-			else
-				debugrecords.Reset();
-
-			if (EngineCore.ShouldShowDeveloperOverlays() && userdefined_debugrecords.NumRecords > 0) {
-				debugrecords.Write();
-				debugrecords.Write("Game-specific Debug Fields:");
-			}
-
-			if (EngineCore.ShouldShowDeveloperOverlays()) {
-				int totalFields = userdefined_debugrecords.NumRecords + debugrecords.NumRecords;
-				float sizePer = 12;
-				var ty = (frameState.WindowHeight - 8) - (totalFields * sizePer);
-
-				DebugRecordState state = DebugRecordState.Max(debugrecords.CompileState(), userdefined_debugrecords.CompileState());
-
-				DrawDebugRecordList(debugrecords, in state, sizePer, ref ty);
-				DrawDebugRecordList(userdefined_debugrecords, in state, sizePer, ref ty);
-
-				ConsoleSystem.Draw(GetConsoleOverlaySettings());
-			}
+			DeveloperOverlay.EvaluatePerfGraphPositions(devOverlaySetttings);
+			DeveloperOverlay.Draw(frameState, devOverlaySetttings);
+			ConsoleSystem.Draw(consoleOverlaySetttings);
 
 			IsRendering = false;
 			renderTrack.Stop();
@@ -776,19 +602,6 @@ public abstract class Level : IValidatable
 
 		updateTrack.Stop();
 		EngineCore.SetTimeToUpdate(updateTrack.Elapsed);
-	}
-
-	private static void DrawDebugRecordList(DebugRecordList debugrecords, in DebugRecordState state, float sizePer, ref float ty) {
-		for (int i = 0; i < debugrecords.NumRecords; i++, ty += sizePer) {
-			ref DebugRecord record = ref debugrecords.GetRecord(i);
-			var tx = 12;
-
-			ReadOnlySpan<char> text = record.Print(in state);
-			Graphics2D.SetDrawColor(new(10, 10, 10, 180));
-			Graphics2D.DrawRectangle(new(tx - 1, ty - 1), Graphics2D.GetTextSize(text, "Consolas", 11) + new Vector2F(2));
-			Graphics2D.SetDrawColor(new(255, 255, 255, 255));
-			Graphics2D.DrawText(tx, ty, text, "Consolas", 11, Anchor.TopLeft);
-		}
 	}
 
 	private void RenderShowUpdates() {
@@ -848,47 +661,10 @@ public abstract class Level : IValidatable
 
 
 	static readonly char[] formatconvs = new char[256];
-	public void AddDebugString(ReadOnlySpan<char> text) => userdefined_debugrecords.Write(text);
-	public void AddDebugString(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => userdefined_debugrecords.Write(key, value);
+	public void AddDebugString(ReadOnlySpan<char> text) => DeveloperOverlay.UserDefinedDebugRecords.Write(text);
+	public void AddDebugString(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => DeveloperOverlay.UserDefinedDebugRecords.Write(key, value);
 	public void AddDebugString<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
 		value.TryFormat(formatconvs, out int chars, default, null);
-		userdefined_debugrecords.Write(key, formatconvs.AsSpan()[..chars]);
-	}
-
-	internal void SetUpDebugOverlays() {
-		UpdateGraph = new PerfGraph(RootPanel);
-		UpdateGraph.SetAnchor(Anchor.BottomRight);
-		UpdateGraph.SetOrigin(Anchor.BottomRight);
-		UpdateGraph.SetPos(new(-8, -8 + -52 + -16));
-		UpdateGraph.SetSize(new(400, 26));
-		UpdateGraph.Mode = (PerfGraphMode.CPU_UpdateTime);
-
-		RenderGraph = new PerfGraph(RootPanel);
-		RenderGraph.SetAnchor(Anchor.BottomRight);
-		RenderGraph.SetOrigin(Anchor.BottomRight);
-		RenderGraph.SetPos(new(-8, -8 + -26 + -8));
-		RenderGraph.SetSize(new(400, 26));
-		RenderGraph.Mode = (PerfGraphMode.CPU_RenderTime);
-
-		MemGraph = new PerfGraph(RootPanel);
-		MemGraph.SetAnchor(Anchor.BottomRight);
-		MemGraph.SetOrigin(Anchor.BottomRight);
-		MemGraph.SetPos(new(-8, -8));
-		MemGraph.SetSize(new(400, 26));
-		MemGraph.Mode =(PerfGraphMode.RAM_Usage);
-
-		EvaluatePerfGraphVisibility();
-	}
-
-	PerfGraph UpdateGraph = null!, RenderGraph = null!, MemGraph = null!;
-	private void EvaluatePerfGraphVisibility() {
-		Debug.Assert(UpdateGraph != null);
-		Debug.Assert(RenderGraph != null);
-		Debug.Assert(MemGraph != null);
-
-		bool vis = EngineCore.ShouldShowDeveloperOverlays();
-		UpdateGraph.SetVisible(vis);
-		RenderGraph.SetVisible(vis);
-		MemGraph.SetVisible(vis);
+		DeveloperOverlay.UserDefinedDebugRecords.Write(key, formatconvs.AsSpan()[..chars]);
 	}
 }

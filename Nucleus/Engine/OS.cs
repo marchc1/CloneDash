@@ -146,6 +146,9 @@ public static unsafe class OS
 				break;
 		}
 
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
+
 		initialized = true;
 		return true;
 	}

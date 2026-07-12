@@ -40,10 +40,10 @@ public class DopesheetView : BaseTimelineView
 	InfoPanel KeyframeInfoPanel;
 	public DopesheetView(Element parent) : base(parent) {
 		KeyframeInfoPanel = new(this);
-		KeyframeInfoPanel.SetDock(Dock.Fill);
-		KeyframeInfoPanel.SetSize(new(36));
-		KeyframeInfoPanel.SetDockMargin(RectangleF.TLRB(0));
-		KeyframeInfoPanel.SetDockPadding(RectangleF.Zero);
+		KeyframeInfoPanel.		Dock = Dock.Fill;
+		KeyframeInfoPanel.		Size = new(36);
+		KeyframeInfoPanel.		DockMargin = RectangleF.TLRB(0);
+		KeyframeInfoPanel.		DockPadding = RectangleF.Zero;
 
 		var btn = TopButtonPanel;
 
@@ -68,9 +68,9 @@ public class DopesheetView : BaseTimelineView
 		AddTopSpace(16);
 
 		LabeledNumSlider curframeNum = new(TopButtonPanel);
-		curframeNum.SetDock(Dock.Left);
-		curframeNum.SetText("Frame");
-		curframeNum.SetSize(new(128));
+		curframeNum.		Dock = Dock.Left;
+		curframeNum.		Text = "Frame";
+		curframeNum.		Size = new(128);
 		curframeNum.TextFormat = "{0:0.00}";
 		// TODO: remove this, fix numslider relying on order so much
 		curframeNum.Value = 1;
@@ -94,7 +94,7 @@ public class DopesheetView : BaseTimelineView
 								? GetBgColor().Adjust(0, 1, 1.3f)
 								: GetBgColor().Adjust(0, 1, -0.5f));
 			var fps = ModelEditor.Active.File.Timeline.GetReferenceFPS();
-			SetPos(new((float)parent.FrameToX(keyframe.GetTime() * fps) - 2, 0));
+			Position = new((float)parent.FrameToX(keyframe.GetTime() * fps) - 2, 0);
 			base.Paint(w, h);
 		}
 		protected override bool MouseClick(FrameState state, ButtonCode button) {
@@ -192,10 +192,10 @@ public class DopesheetView : BaseTimelineView
 
 		Button headerRef = header;
 		keyframes.Thinking += (s) => s.SetBgColor(headerRef.GetBgColor());
-		keyframes.SetDock(Dock.Top);
-		keyframes.SetDockMargin(RectangleF.Zero);
-		keyframes.SetBorderSize(1);
-		keyframes.SetSize(new(24));
+		keyframes.		Dock = Dock.Top;
+		keyframes.		DockMargin = RectangleF.Zero;
+		keyframes.BorderSize = 1;
+		keyframes.		Size = new(24);
 		keyframes.SetPassthru(true);
 		keyframes.SetTag("target", target);
 		keyframes.Thinking += (self) => {
@@ -207,12 +207,12 @@ public class DopesheetView : BaseTimelineView
 				foreach (var keyframe in timeline.GetKeyframes()) {
 					var x = (float)FrameToX(keyframe.GetTime());
 					var keyframeBtn = new KeyframeEditorButton(this, (ChannelPanels)keyframes, keyframe);
-					keyframeBtn.SetSize(new(5, 24));
-					keyframeBtn.SetPos(new(x - 2, 0));
+					keyframeBtn.					Size = new(5, 24);
+					keyframeBtn.					Position = new(x - 2, 0);
 					keyframeBtn.SetBgColor(keyframe.Timeline.Color);
-					keyframeBtn.SetBorderSize(1);
+					keyframeBtn.BorderSize = 1;
 					keyframeBtn.SetFgColor(new Color(15, 15, 15, 255));
-					keyframeBtn.SetText("");
+					keyframeBtn.					Text = "";
 					keyframeBtn.SetPaintBackgroundEnabled(false);
 					keyframeBtn.SetPaintBorderEnabled(false);
 					keyframeBtn.SetPaintEnabled(false);
@@ -262,7 +262,7 @@ public class DopesheetView : BaseTimelineView
 	}
 	protected override void OnThink() {
 		base.OnThink();
-		KeyframeInfoPanel.SetChildRenderOffset(new(0, -ScrollOffset));
+		KeyframeInfoPanel.		ChildRenderOffset = new(0, -ScrollOffset);
 		ClipChildrenVisibility(KeyframeInfoPanel);
 	}
 	public override void CreateChannels() {

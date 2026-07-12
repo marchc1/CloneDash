@@ -19,7 +19,7 @@ public class ScrollPanel : Panel
 		protected override void ChildParented(Element parent, Element child) {
 			base.ChildParented(parent, child);
 			if (ChildDock.HasValue)
-				child.SetDock(ChildDock.Value);
+				child.				Dock = ChildDock.Value;
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
 			if (delta.X != 0)
@@ -41,11 +41,11 @@ public class ScrollPanel : Panel
 		HorizontalScrollbar.SetVisible(true);
 
 		MainPanel = new ScrollMainPanel(this);
-		MainPanel.SetDock(Dock.Fill);
+		MainPanel.		Dock = Dock.Fill;
 		MainPanel.SetPaintBackgroundEnabled(false);
-		MainPanel.SetDockMargin(RectangleF.TLRB(4));
+		MainPanel.		DockMargin = RectangleF.TLRB(4);
 		SetAddParent(MainPanel);
-		MainPanel.SetClipping(true);
+		MainPanel.		Clipping = true;
 	}
 	public Scrollbar VerticalScrollbar { get; private set; }
 	public Scrollbar HorizontalScrollbar { get; private set; }
@@ -92,7 +92,8 @@ public class ScrollPanel : Panel
 			HorizontalScrollbar.PageContents = new(0);
 		}
 
-		MainPanel.SetClipping(true);
+		MainPanel.
+		Clipping = true;
 
 		VerticalScrollbar.Update(GetAddParent().GetSizeOfAllChildren(), GetAddParent().GetRenderBounds().Size);
 		HorizontalScrollbar.Update(GetAddParent().GetSizeOfAllChildren(), GetAddParent().GetRenderBounds().Size);
@@ -100,7 +101,8 @@ public class ScrollPanel : Panel
 		foreach (Element child in MainPanel.Children)
 			child.SetVisible(ShouldItemBeVisible(child));
 
-		MainPanel.SetChildRenderOffset(new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round());
+		MainPanel.
+		ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
 	}
 	protected override void PostLayoutChild(Element element) {
 

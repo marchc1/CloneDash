@@ -55,8 +55,8 @@ public class DirectionalLayoutPanel : ScrollPanel
 			float size = 0;
 			foreach (var child in GetAddParent().Children)
 				size = MathF.Max(size, child.GetRenderBounds().Y + child.GetRenderBounds().H + 8);
-			SetSize(new(GetSize().W, size + 8));
-			MainPanel.SetSize(new(MainPanel.GetSize().W, size + 8));
+			Size = new(Size.W, size + 8);
+			MainPanel.			Size = new(MainPanel.Size.W, size + 8);
 
 			VerticalScrollbar.SetVisible(false);
 			HorizontalScrollbar.SetVisible(false);

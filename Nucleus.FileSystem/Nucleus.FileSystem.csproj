@@ -10,6 +10,8 @@
 		<Compile Include="..\GlobalUsings.cs" Link="Usings/Globals/GlobalUsings.cs" />
 	</ItemGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
 	<ItemGroup>
 		<ProjectReference Include="..\Nucleus.Common\Nucleus.Common.csproj" />
 	</ItemGroup>

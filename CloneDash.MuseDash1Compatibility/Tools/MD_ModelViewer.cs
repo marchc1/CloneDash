@@ -143,8 +143,8 @@ public class MD_ModelViewerWindow : Window
 	const int THUMB_PADDING = 6;
 	public MD_ModelViewerWindow(Element? parent) : base(parent) {
 		Title = "MuseDash Model Viewer";
-		SetSize(new(1200, 750));
-		SetPos(new(50, 50));
+		Size = new(1200, 750);
+		Position = new(50, 50);
 		HideNonCloseButtons();
 	}
 
@@ -220,61 +220,61 @@ public class MD_ModelViewerWindow : Window
 
 	void BuildUI() {
 		var topBar = new Panel(this);
-		topBar.SetDock(Dock.Top);
-		topBar.SetSize(new(0, 32));
+		topBar.Dock = Dock.Top;
+		topBar.Size = new(0, 32);
 		topBar.SetPaintBackgroundEnabled(false);
 
 		var searchLabel = new Label(topBar);
-		searchLabel.SetText("Filter:");
-		searchLabel.SetTextSize(19);
-		searchLabel.SetDock(Dock.Left);
-		searchLabel.SetSize(new(50, 0));
+		searchLabel.Text = "Filter:";
+		searchLabel.TextSize = 19;
+		searchLabel.Dock = Dock.Left;
+		searchLabel.Size = new(50, 0);
 
 		SearchBox = new Textbox(topBar);
-		SearchBox.SetDock(Dock.Fill);
-		SearchBox.SetText("");
+		SearchBox.Dock = Dock.Fill;
+		SearchBox.Text = "";
 		SearchBox.OnTextChanged += (_, _, _) => ApplyFilter();
 
 		StatusLabel = new Label(this);
-		StatusLabel.SetDock(Dock.Bottom);
-		StatusLabel.SetSize(new(0, 24));
-		StatusLabel.SetTextSize(17);
-		StatusLabel.SetText($"Found {AllEntries.Count} skeleton assets");
+		StatusLabel.Dock = Dock.Bottom;
+		StatusLabel.Size = new(0, 24);
+		StatusLabel.TextSize = 17;
+		StatusLabel.Text = $"Found {AllEntries.Count} skeleton assets";
 
 		LeftPanel = new Panel(this);
-		LeftPanel.SetDock(Dock.Left);
-		LeftPanel.SetSize(new(220, 0));
+		LeftPanel.Dock = Dock.Left;
+		LeftPanel.Size = new(220, 0);
 
 		var treeScroll = new DirectionalLayoutPanel(LeftPanel);
-		treeScroll.SetDock(Dock.Fill);
+		treeScroll.Dock = Dock.Fill;
 
 		BuildTreeNodes(treeScroll, RootFolder);
 
 		RightPanel = new ScrollPanel(this);
-		RightPanel.SetDock(Dock.Fill);
+		RightPanel.Dock = Dock.Fill;
 		RightPanel.HorizontalOverflow = false;
 
 		GridContainer = new Panel(RightPanel);
-		GridContainer.SetDock(Dock.Top);
+		GridContainer.Dock = Dock.Top;
 		GridContainer.SetPaintBackgroundEnabled(false);
 	}
 
 	void BuildTreeNodes(DirectionalLayoutPanel parent, SkeletonFolder folder) {
 		var rootBtn = new Button(parent);
-		rootBtn.SetText($"{folder.Name} ({folder.TotalCount()})");
-		rootBtn.SetDock(Dock.Top);
-		rootBtn.SetSize(new(0, 24));
-		rootBtn.SetTextSize(18);
+		rootBtn.Text = $"{folder.Name} ({folder.TotalCount()})";
+		rootBtn.Dock = Dock.Top;
+		rootBtn.Size = new(0, 24);
+		rootBtn.TextSize = 18;
 		rootBtn.SetTextAlignment(Anchor.CenterLeft);
 		rootBtn.SetTextPadding(new(6));
 		rootBtn.OnButtonClick += (_, _) => SelectFolder(folder);
 
 		foreach (var sub in folder.Subfolders.Values.OrderBy(f => f.Name)) {
 			var btn = new Button(parent);
-			btn.SetText($"  {sub.Name} ({sub.TotalCount()})");
-			btn.SetDock(Dock.Top);
-			btn.SetSize(new(0, 22));
-			btn.SetTextSize(17);
+			btn.Text = $"  {sub.Name} ({sub.TotalCount()})";
+			btn.Dock = Dock.Top;
+			btn.Size = new(0, 22);
+			btn.TextSize = 17;
 			btn.SetTextAlignment(Anchor.CenterLeft);
 			btn.SetTextPadding(new(6));
 			btn.SetBgColor(new Color(0, 0, 0, 0));
@@ -292,7 +292,7 @@ public class MD_ModelViewerWindow : Window
 	}
 
 	void ApplyFilter() {
-		ReadOnlySpan<char> filter = SearchBox.GetText();
+		ReadOnlySpan<char> filter = SearchBox.Text;
 		RebuildGrid(filter);
 	}
 
@@ -305,12 +305,12 @@ public class MD_ModelViewerWindow : Window
 			string filterStr = new(filter);
 			entries = entries.Where(e => e.Name.Contains(filterStr, StringComparison.OrdinalIgnoreCase)).ToList();
 		}
-		StatusLabel.SetText($"Showing {entries.Count} of {AllEntries.Count} models");
+		StatusLabel.Text = $"Showing {entries.Count} of {AllEntries.Count} models";
 
 		float availableWidth = RightPanel.GetRenderBounds().Width - 20;
 		int columns = Math.Max(1, (int)(availableWidth / (THUMB_SIZE + THUMB_PADDING)));
 		int rows = (int)Math.Ceiling(entries.Count / (float)columns);
-		GridContainer.SetSize(new(0, rows * (THUMB_SIZE + THUMB_PADDING + 20)));
+		GridContainer.Size = new(0, rows * (THUMB_SIZE + THUMB_PADDING + 20));
 
 		for (int i = 0; i < entries.Count; i++) {
 			var entry = entries[i];
@@ -318,12 +318,12 @@ public class MD_ModelViewerWindow : Window
 			int row = i / columns;
 
 			var card = new MD_ModelThumbnailCard(GridContainer);
-			card.SetDock(Dock.None);
-			card.SetPos(new(
+			card.Dock = Dock.None;
+			card.Position = new(
 				col * (THUMB_SIZE + THUMB_PADDING) + THUMB_PADDING,
 				row * (THUMB_SIZE + THUMB_PADDING + 20) + THUMB_PADDING
-			));
-			card.SetSize(new(THUMB_SIZE, THUMB_SIZE + 20));
+			);
+			card.Size = new(THUMB_SIZE, THUMB_SIZE + 20);
 			card.Setup(entry);
 			card.OnButtonClick += (_, _) => OpenDetailWindow(entry);
 		}
@@ -344,16 +344,16 @@ public class MD_ModelThumbnailCard : Button
 	bool animating;
 
 	public MD_ModelThumbnailCard(Element? parent) : base(parent) {
-		SetBorderSize(1);
+		BorderSize = 1;
 		SetBgColor(new Color(25, 30, 38));
 		SetFgColor(new Color(55, 62, 72));
-		SetTextSize(11);
+		TextSize = 11;
 		SetTextAlignment(Anchor.BottomCenter);
 	}
 
 	public void Setup(SkeletonEntry entry) {
 		Entry = entry;
-		SetText(entry.Name);
+		Text = entry.Name;
 	}
 
 	protected override void OnThink() {
@@ -596,8 +596,8 @@ public class MD_ModelDetailWindow : Window
 
 	public MD_ModelDetailWindow(Element? parent) : base(parent) {
 		Title = "Model Detail";
-		SetSize(new(900, 650));
-		SetPos(new(150, 80));
+		Size = new(900, 650);
+		Position = new(150, 80);
 		HideNonCloseButtons();
 	}
 
@@ -642,14 +642,14 @@ public class MD_ModelDetailWindow : Window
 
 	void BuildUI() {
 		PreviewPanel = new(this);
-		PreviewPanel.SetDock(Dock.Fill);
+		PreviewPanel.Dock = Dock.Fill;
 		PreviewPanel.SetPaintBackgroundEnabled(false);
 		var rightPanel = new Panel(this);
-		rightPanel.SetDock(Dock.Right);
-		rightPanel.SetSize(new(320, 0));
+		rightPanel.Dock = Dock.Right;
+		rightPanel.Size = new(320, 0);
 
 		InfoTabs = new TabView(rightPanel);
-		InfoTabs.SetDock(Dock.Fill);
+		InfoTabs.Dock = Dock.Fill;
 
 		BuildAnimationsTab();
 		BuildInfoTab();
@@ -660,65 +660,65 @@ public class MD_ModelDetailWindow : Window
 		var tab = InfoTabs.AddTab("Animations");
 
 		var controls = new Panel(tab.Panel);
-		controls.SetDock(Dock.Top);
-		controls.SetSize(new(0, 70));
+		controls.Dock = Dock.Top;
+		controls.Size = new(0, 70);
 		controls.SetPaintBackgroundEnabled(false);
 
 		AnimInfoLabel = new Label(controls);
-		AnimInfoLabel.SetDock(Dock.Top);
-		AnimInfoLabel.SetSize(new(0, 18));
-		AnimInfoLabel.SetTextSize(17);
-		AnimInfoLabel.SetText("No animation playing");
+		AnimInfoLabel.Dock = Dock.Top;
+		AnimInfoLabel.Size = new(0, 18);
+		AnimInfoLabel.TextSize = 17;
+		AnimInfoLabel.Text = "No animation playing";
 
 		var channelBar = new Panel(controls);
-		channelBar.SetDock(Dock.Top);
-		channelBar.SetSize(new(0, 26));
+		channelBar.Dock = Dock.Top;
+		channelBar.Size = new(0, 26);
 		channelBar.SetPaintBackgroundEnabled(false);
 
 		var chLabel = new Label(channelBar);
-		chLabel.SetText("Channel:");
-		chLabel.SetTextSize(17);
-		chLabel.SetDock(Dock.Left);
-		chLabel.SetSize(new(60, 0));
+		chLabel.Text = "Channel:";
+		chLabel.TextSize = 17;
+		chLabel.Dock = Dock.Left;
+		chLabel.Size = new(60, 0);
 
 		for (int ch = 0; ch < 5; ch++) {
 			int capturedCh = ch;
 			var chBtn = new Button(channelBar);
-			chBtn.SetDock(Dock.Left);
-			chBtn.SetSize(new(28, 0));
-			chBtn.SetText($"{ch}");
-			chBtn.SetTextSize(16);
+			chBtn.Dock = Dock.Left;
+			chBtn.Size = new(28, 0);
+			chBtn.Text = $"{ch}";
+			chBtn.TextSize = 16;
 			chBtn.OnButtonClick += (_, _) => SelectedChannel = capturedCh;
 		}
 
 		var optBar = new Panel(controls);
-		optBar.SetDock(Dock.Top);
-		optBar.SetSize(new(0, 26));
+		optBar.Dock = Dock.Top;
+		optBar.Size = new(0, 26);
 		optBar.SetPaintBackgroundEnabled(false);
 
 		var loopCb = new CheckboxButton(optBar);
-		loopCb.SetDock(Dock.Left);
-		loopCb.SetSize(new(70, 0));
-		loopCb.SetText("Loop");
-		loopCb.SetTextSize(17);
+		loopCb.Dock = Dock.Left;
+		loopCb.Size = new(70, 0);
+		loopCb.Text = "Loop";
+		loopCb.TextSize = 17;
 		loopCb.Checked = true;
 		loopCb.OnCheckedChanged += (cb) => LoopAnimation = cb.Checked;
 
 		var stopBtn = new Button(optBar);
-		stopBtn.SetDock(Dock.Left);
-		stopBtn.SetSize(new(50, 0));
-		stopBtn.SetText("Stop");
-		stopBtn.SetTextSize(16);
+		stopBtn.Dock = Dock.Left;
+		stopBtn.Size = new(50, 0);
+		stopBtn.Text = "Stop";
+		stopBtn.TextSize = 16;
 		stopBtn.OnButtonClick += (_, _) => {
 			AnimHandler.StopAllAnimation();
 			Instance?.SetToSetupPose();
 		};
 
 		var resetBtn = new Button(optBar);
-		resetBtn.SetDock(Dock.Left);
-		resetBtn.SetSize(new(60, 0));
-		resetBtn.SetText("Reset");
-		resetBtn.SetTextSize(16);
+		resetBtn.Dock = Dock.Left;
+		resetBtn.Size = new(60, 0);
+		resetBtn.Text = "Reset";
+		resetBtn.TextSize = 16;
 		resetBtn.OnButtonClick += (_, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
@@ -726,7 +726,7 @@ public class MD_ModelDetailWindow : Window
 		};
 
 		AnimList = new DirectionalLayoutPanel(tab.Panel);
-		AnimList.SetDock(Dock.Fill);
+		AnimList.Dock = Dock.Fill;
 
 		if (Entry?.CachedModelData != null) {
 			var anims = Entry.CachedModelData.Animations;
@@ -735,10 +735,10 @@ public class MD_ModelDetailWindow : Window
 				int capturedIdx = i;
 
 				var btn = new Button(AnimList);
-				btn.SetDock(Dock.Top);
-				btn.SetSize(new(0, 22));
-				btn.SetTextSize(17);
-				btn.SetText($"{anim.Name} ({anim.Duration:F2}s)");
+				btn.Dock = Dock.Top;
+				btn.Size = new(0, 22);
+				btn.TextSize = 17;
+				btn.Text = $"{anim.Name} ({anim.Duration:F2}s)";
 				btn.SetTextAlignment(Anchor.CenterLeft);
 				btn.SetTextPadding(new(6));
 				btn.SetBgColor(new Color(0, 0, 0, 0));
@@ -756,14 +756,14 @@ public class MD_ModelDetailWindow : Window
 		var tab = InfoTabs.AddTab("Info");
 
 		var scroll = new DirectionalLayoutPanel(tab.Panel);
-		scroll.SetDock(Dock.Fill);
+		scroll.Dock = Dock.Fill;
 
 		if (Entry?.CachedModelData == null) {
 			var lbl = new Label(scroll);
-			lbl.SetText("Model failed to load.");
-			lbl.SetTextSize(18);
-			lbl.SetDock(Dock.Top);
-			lbl.SetSize(new(0, 24));
+			lbl.Text = "Model failed to load.";
+			lbl.TextSize = 18;
+			lbl.Dock = Dock.Top;
+			lbl.Size = new(0, 24);
 			return;
 		}
 
@@ -797,10 +797,10 @@ public class MD_ModelDetailWindow : Window
 
 	void AddInfoRow(DirectionalLayoutPanel parent, string text) {
 		var lbl = new Label(parent);
-		lbl.SetText(text);
-		lbl.SetTextSize(16);
-		lbl.SetDock(Dock.Top);
-		lbl.SetSize(new(0, 16));
+		lbl.Text = text;
+		lbl.TextSize = 16;
+		lbl.Dock = Dock.Top;
+		lbl.Size = new(0, 16);
 		lbl.SetTextAlignment(Anchor.CenterLeft);
 		lbl.SetTextPadding(new(4));
 	}
@@ -809,51 +809,51 @@ public class MD_ModelDetailWindow : Window
 		var tab = InfoTabs.AddTab("Debug");
 
 		var panel = new DirectionalLayoutPanel(tab.Panel);
-		panel.SetDock(Dock.Fill);
+		panel.Dock = Dock.Fill;
 
 		var bonesCb = new CheckboxButton(panel);
-		bonesCb.SetDock(Dock.Top);
-		bonesCb.SetSize(new(0, 26));
-		bonesCb.SetText("Show Bones");
-		bonesCb.SetTextSize(17);
+		bonesCb.Dock = Dock.Top;
+		bonesCb.Size = new(0, 26);
+		bonesCb.Text = "Show Bones";
+		bonesCb.TextSize = 17;
 		bonesCb.OnCheckedChanged += (cb) => ShowBones = cb.Checked;
 
 		var wireCb = new CheckboxButton(panel);
-		wireCb.SetDock(Dock.Top);
-		wireCb.SetSize(new(0, 26));
-		wireCb.SetText("Show Wireframe");
-		wireCb.SetTextSize(17);
+		wireCb.Dock = Dock.Top;
+		wireCb.Size = new(0, 26);
+		wireCb.Text = "Show Wireframe";
+		wireCb.TextSize = 17;
 		wireCb.OnCheckedChanged += (cb) => ShowWireframe = cb.Checked;
 
 		var slotCb = new CheckboxButton(panel);
-		slotCb.SetDock(Dock.Top);
-		slotCb.SetSize(new(0, 26));
-		slotCb.SetText("Show Slot Info");
-		slotCb.SetTextSize(17);
+		slotCb.Dock = Dock.Top;
+		slotCb.Size = new(0, 26);
+		slotCb.Text = "Show Slot Info";
+		slotCb.TextSize = 17;
 		slotCb.OnCheckedChanged += (cb) => ShowSlotInfo = cb.Checked;
 
 		var attachCb = new CheckboxButton(panel);
-		attachCb.SetDock(Dock.Top);
-		attachCb.SetSize(new(0, 26));
-		attachCb.SetText("Show Attachment Names");
-		attachCb.SetTextSize(17);
+		attachCb.Dock = Dock.Top;
+		attachCb.Size = new(0, 26);
+		attachCb.Text = "Show Attachment Names";
+		attachCb.TextSize = 17;
 		attachCb.OnCheckedChanged += (cb) => ShowAttachmentNames = cb.Checked;
 
 		var setupBtn = new Button(panel);
-		setupBtn.SetDock(Dock.Top);
-		setupBtn.SetSize(new(0, 28));
-		setupBtn.SetText("Reset to Setup Pose");
-		setupBtn.SetTextSize(17);
+		setupBtn.Dock = Dock.Top;
+		setupBtn.Size = new(0, 28);
+		setupBtn.Text = "Reset to Setup Pose";
+		setupBtn.TextSize = 17;
 		setupBtn.OnButtonClick += (_, _) => {
 			AnimHandler.ClearAllAnimation();
 			Instance?.SetToSetupPose();
 		};
 
 		var logBtn = new Button(panel);
-		logBtn.SetDock(Dock.Top);
-		logBtn.SetSize(new(0, 28));
-		logBtn.SetText("Log Model Data to Console");
-		logBtn.SetTextSize(17);
+		logBtn.Dock = Dock.Top;
+		logBtn.Size = new(0, 28);
+		logBtn.Text = "Log Model Data to Console";
+		logBtn.TextSize = 17;
 		logBtn.OnButtonClick += (_, _) => LogModelData();
 	}
 
@@ -891,12 +891,12 @@ public class MD_ModelDetailWindow : Window
 			var channel = AnimHandler.Channels[SelectedChannel];
 			var entry = channel.CurrentEntry;
 			if (entry != null)
-				AnimInfoLabel.SetText($"Ch{SelectedChannel}: {entry.Animation.Name} @ {channel.Time:F2}s / {entry.Animation.Duration:F2}s");
+				AnimInfoLabel.Text = $"Ch{SelectedChannel}: {entry.Animation.Name} @ {channel.Time:F2}s / {entry.Animation.Duration:F2}s";
 			else
-				AnimInfoLabel.SetText($"Ch{SelectedChannel}: idle");
+				AnimInfoLabel.Text = $"Ch{SelectedChannel}: idle";
 		}
 		else {
-			AnimInfoLabel.SetText("No animation playing");
+			AnimInfoLabel.Text = "No animation playing";
 		}
 	}
 

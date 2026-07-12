@@ -48,32 +48,32 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
-			panel.SetSize(new(0, 182));
+			panel.			Size = new(0, 182);
 
 			var win = new Window(panel);
-			win.SetSize(new(330, panel.GetSize().H));
+			win.			Size = new(330, panel.Size.H);
 			win.Center();
 			win.Title = "Edit Clipping";
 			win.HideNonCloseButtons();
 
 			var row1 = new FlexPanel(win);
-			row1.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row1.SetDock(Dock.Top);
-			row1.SetSize(new(0, 32));
+			row1.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row1.			Dock = Dock.Top;
+			row1.			Size = new(0, 32);
 			row1.Direction = Axis.Horizontal;
 			row1.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 			var row2 = new FlexPanel(win);
-			row2.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row2.SetDock(Dock.Top);
-			row2.SetSize(new(0, 32));
+			row2.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row2.			Dock = Dock.Top;
+			row2.			Size = new(0, 32);
 			row2.Direction = Axis.Horizontal;
 			row2.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
-			CreateButton = new Button(row1); CreateButton.SetText("Create"); CreateButton.SetAutoSize(true); CreateButton.SetTextPadding(new(64, 0)); CreateButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Create);
-			DeleteButton = new Button(row1); DeleteButton.SetText("Delete"); DeleteButton.SetAutoSize(true); DeleteButton.SetTextPadding(new(64, 0)); DeleteButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Delete);
+			CreateButton = new Button(row1); CreateButton.Text = "Create"; CreateButton.SetAutoSize(true); CreateButton.SetTextPadding(new(64, 0)); CreateButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Create);
+			DeleteButton = new Button(row1); DeleteButton.Text = "Delete"; DeleteButton.SetAutoSize(true); DeleteButton.SetTextPadding(new(64, 0)); DeleteButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.Delete);
 
-			NewButton = new Button(row2); NewButton.SetText("New"); NewButton.SetAutoSize(true); NewButton.SetTextPadding(new(64, 0)); NewButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.New);
+			NewButton = new Button(row2); NewButton.Text = "New"; NewButton.SetAutoSize(true); NewButton.SetTextPadding(new(64, 0)); NewButton.OnButtonClick += (_, _) => SetMode(EditClipping_Mode.New);
 
 			UpdateButtonState();
 

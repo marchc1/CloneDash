@@ -7,7 +7,7 @@ namespace Nucleus.ModelEditor
 	{
 		public CenteredObjectsPanel(Element parent) : base(parent) {
 			SetPaintBackgroundEnabled(false);
-			SetBorderSize(0);
+			BorderSize = 0;
 		}
 		public bool ForceHeight { get; set; } = true;
 		public float XSeparation { get; set; } = 0;
@@ -20,9 +20,9 @@ namespace Nucleus.ModelEditor
 			}
 			var center = (this.GetRenderBounds().W / 2) - (sizeOfAllChildren / 2);
 			foreach (var child in this.GetChildren()) {
-				var h = MathF.Min(child.GetSize().Y, this.GetRenderBounds().H - YSeparation);
-				child.SetPos(new(center, ForceHeight ? (YSeparation / 2f) : (this.GetRenderBounds().H - h)));
-				child.SetSize(new(child.GetRenderBounds().W, ForceHeight ? this.GetRenderBounds().H - YSeparation : h));
+				var h = MathF.Min(child.Size.Y, this.GetRenderBounds().H - YSeparation);
+				child.				Position = new(center, ForceHeight ? (YSeparation / 2f) : (this.GetRenderBounds().H - h));
+				child.				Size = new(child.GetRenderBounds().W, ForceHeight ? this.GetRenderBounds().H - YSeparation : h);
 				center += child.GetRenderBounds().W + XSeparation;
 			}
 		}

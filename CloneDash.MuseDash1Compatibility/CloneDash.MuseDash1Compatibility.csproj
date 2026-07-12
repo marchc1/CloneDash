@@ -27,6 +27,8 @@
 		<ProjectReference Include="..\OdinSerializer\OdinSerializer.csproj" />
 	</ItemGroup>
 
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
 	<ItemGroup>
 		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
 	</ItemGroup>

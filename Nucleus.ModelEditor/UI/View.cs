@@ -29,9 +29,9 @@ public class ViewDivider(ViewDivision parent, ViewSplit split) : Button(parent)
 		var c = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1, 1.5f, 1), new(0, 1, 0.5f, 1));
 		Graphics2D.SetDrawColor(c);
 		var offset = 2;
-		if (GetDock() == Dock.Left || GetDock() == Dock.Right)
+		if (Dock == Dock.Left || Dock == Dock.Right)
 			Graphics2D.DrawLine(w / 2, offset, w / 2, h - (offset * 2));
-		else if (GetDock() == Dock.Top || GetDock() == Dock.Bottom)
+		else if (Dock == Dock.Top || Dock == Dock.Bottom)
 			Graphics2D.DrawLine(offset, h / 2, w - (offset * 2), h / 2);
 	}
 	protected override bool MouseDrag(Element self, FrameState state, Vector2F deltapos) {
@@ -199,8 +199,8 @@ public class ViewSplit
 	public ViewDivision Division { get; set; }
 	public ViewDivider Divider { get; set; }
 	public Dock Direction {
-		get => Division.GetDock();
-		set => Division.SetDock(value);
+		get => Division.Dock;
+		set => Division.Dock = value;
 	}
 	private float sizePercentage = 0.5f;
 	public float SizePercentage {
@@ -281,7 +281,7 @@ public class DragRenderer : LogicalEntity
 			else
 				pos = divider.GetButton(index).GetGlobalPosition();
 			pos = pos - new Vector2F(16, 16);
-			Graphics2D.DrawTexture(pos, new(32, 32));
+			Graphics2D.DrawTexturedRectangle(pos, new(32, 32));
 		}
 	}
 
@@ -318,15 +318,15 @@ public class ViewDivision : Panel
 
 	public void SetupViewButtons() {
 		header.ClearChildren();
-		header.SetDockPadding (RectangleF.Zero);
+		header.		DockPadding = RectangleF.Zero;
 		buttons.Clear();
 		foreach (var view in Views) {
 			var switcher = new ViewButtonSelector(header);
-			switcher.SetDock(Dock.Left);
+			switcher.			Dock = Dock.Left;
 			switcher.SetAutoSize(true);
-			switcher.SetBorderSize(0);
+			switcher.BorderSize = 0;
 			switcher.SetTextPadding(new(64, 0));
-			switcher.SetText(view.Name);
+			switcher.			Text = view.Name;
 			switcher.SetTag("view", view);
 			switcher.MouseReleaseEvent += (_, _, _) => {
 				SetActive(view);
@@ -340,7 +340,7 @@ public class ViewDivision : Panel
 			};
 			switcher.MouseDragEvent += (self, state, delta) => {
 				if (showDraggedTab != null) {
-					showDraggedTab.SetPos(state.Mouse.MousePos + new Vector2F(0, -14));
+					showDraggedTab.					Position = state.Mouse.MousePos + new Vector2F(0, -14);
 				}
 
 				if (dragging) return;
@@ -349,12 +349,12 @@ public class ViewDivision : Panel
 				if (distance > 8) {
 					dragging = true;
 					showDraggedTab = new Button(UI);
-					showDraggedTab.SetOrigin (Anchor.Center);
-					showDraggedTab.SetPos(state.Mouse.MousePos + new Vector2F(0, -16));
+					showDraggedTab.					Origin = Anchor.Center;
+					showDraggedTab.					Position = state.Mouse.MousePos + new Vector2F(0, -16);
 					showDraggedTab.SetPassthru(true);
 					showDraggedTab.SetAutoSize (true);
 					showDraggedTab.SetTextPadding(new(24));
-					showDraggedTab.SetText (view.Name);
+					showDraggedTab.					Text = view.Name;
 
 					var renderer = Level.Add<DragRenderer>();
 					renderer.Dragging = view;
@@ -404,7 +404,7 @@ public class ViewDivision : Panel
 	public T AddView<T>(Func<Element, T> factory) where T : View {
 		T view = factory(this);
 		Views.Add(view);
-		view.SetDock(Dock.Fill);
+		view.		Dock = Dock.Fill;
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -415,7 +415,7 @@ public class ViewDivision : Panel
 
 	public T AddView<T>(T view) where T : View {
 		Views.Add(view);
-		view.SetDock(Dock.Fill);
+		view.		Dock = Dock.Fill;
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -426,7 +426,7 @@ public class ViewDivision : Panel
 
 	public T AddView<T>(T view, int index) where T : View {
 		Views.Insert(Math.Clamp(index, 0, Views.Count), view);
-		view.SetDock(Dock.Fill);
+		view.		Dock = Dock.Fill;
 
 		SetupViewButtons(); // should call this next-frame, but dont want to make dependant on layout validation... need to refactor here
 		InvalidateLayout();
@@ -460,8 +460,8 @@ public class ViewDivision : Panel
 
 	public ViewDivider AddDivider(ViewSplit split) {
 		ViewDivider divider = new ViewDivider(this, split);
-		divider.SetSize(new(8));
-		divider.SetBorderSize(0);
+		divider.		Size = new(8);
+		divider.BorderSize = 0;
 		divider.SetPaintBackgroundEnabled(false);
 		divider.SetPaintBorderEnabled(false);
 		divider.SetPaintEnabled(false);
@@ -517,10 +517,10 @@ public class ViewDivision : Panel
 	public ViewDivision(Element parent) : base(parent) {
 		RootDivision = this;
 		header = new(this);
-		header.SetDock(Dock.Top);
-		header.SetSize(new(0, 28));
+		header.		Dock = Dock.Top;
+		header.		Size = new(0, 28);
 		SetPaintBackgroundEnabled(false);
-		SetBorderSize(0);
+		BorderSize = 0;
 		header.SetPaintBackgroundEnabled(false);
 	}
 
@@ -540,15 +540,16 @@ public class ViewDivision : Panel
 
 		view.SetParent(this);
 		view.MoveToFront();
-		view.SetDock(Dock.Fill);
+		view.		Dock = Dock.Fill;
 		if (splits.Count > 0) {
 			splits.Reverse();
 			foreach (var split in splits) {
 				split.Divider.MoveToBack();
-				split.Divider.SetDock(split.Direction);
+				split.Divider.				Dock = split.Direction;
 
-				split.Division.SetSize(new(width * split.SizePercentage, height * split.SizePercentage));
-				split.Division.SetDock(split.Direction);
+				split.Division.
+				Size = new(width * split.SizePercentage, height * split.SizePercentage);
+				split.Division.				Dock = split.Direction;
 				split.Division.MoveToBack();
 			}
 			splits.Reverse();
@@ -564,7 +565,7 @@ public class View : Panel
 	public virtual string? Icon { get; set; } = null;
 	public View(Element parent) : base(parent) {
 		SetVisible(false);
-		SetBorderSize(0);
+		BorderSize = 0;
 	}
 }
 
@@ -596,14 +597,14 @@ public class ViewPanel : Panel
 
 	public ViewPanel(Element parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
-		SetBorderSize(0);
-		SetDockPadding(RectangleF.Zero);
+		BorderSize = 0;
+		DockPadding = RectangleF.Zero;
 	}
 
 	public ViewDivision AddWorkspace(string name) {
 		bool empty = workspaces.Count <= 0;
 		ViewDivision workspace = new(this);
-		workspace.SetDock(Dock.Fill);
+		workspace.		Dock = Dock.Fill;
 		workspace.ShowHeader = false;
 		workspace.RootViewPanel = this;
 		workspace.SetVisible(empty);

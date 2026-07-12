@@ -1,21 +1,21 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.UI;
+using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
-using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
 using Raylib_cs;
-using System.Linq.Expressions;
 
 namespace CloneDash.Menu;
 
 /// <summary>
 /// Renders a character.
 /// </summary>
-public class CharacterPanel : Panel
+public class MainMenuCharacter : Panel
 {
 	private ICharacterMainMenuInstance? CharacterInstance;
 	private int Click = 0;
@@ -39,13 +39,19 @@ public class CharacterPanel : Panel
 
 	Label ExpressionLabel = null!;
 
-	public CharacterPanel(Element? parent) : base(parent){
-		SetBorderSize(0);
+	public MainMenuCharacter(Element? parent) : base(parent) {
+		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
+
 		ExpressionLabel = new Label(this);
 		ExpressionLabel.SetVisible(false);
-		ExpressionLabel.SetOrigin(Anchor.Center);
-		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
+		ExpressionLabel.		Origin = Anchor.Center;
+		ExpressionLabel.SetPaintBackgroundEnabled(true);
+		ExpressionLabel.BorderSize = 3;
+		ExpressionLabel.SetPaintBorderEnabled(true);
+		ExpressionLabel.Roundness = 4;
+		ExpressionLabel.Clipping = false;
+		ExpressionLabel.SetTextPadding(new Vector2F(64, 24));
 
 		if (SetCharacter(CharacterMod.GetCharacterData()))
 			CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
@@ -88,11 +94,11 @@ public class CharacterPanel : Panel
 	}
 
 	public override void Paint(float width, float height) {
-		EngineCore.Window.BeginMode2D(new() {
-			Zoom = height / 900 / 2.4f,
-			Offset = ((GetGlobalPosition()) + new Vector2F(
+		EngineCore.Window.BeginMode2D(new Camera2D {
+			Zoom = height / 900 / 2.3f,
+			Offset = (GetGlobalPosition() + new Vector2F(
 				width / 2,
-				(height / 1) - 64)
+				height - 32)
 			).ToNumerics()
 		});
 
@@ -103,24 +109,28 @@ public class CharacterPanel : Panel
 		if (CharacterInstance != null) {
 			CharacterInstance.GetPlayingExpression(out ICharacterMainMenuExpression? exp, out double startTime, out double endTime);
 			if (NMath.InRange(Level.Curtime, startTime, endTime) && !string.IsNullOrEmpty(ExpressionText)) {
-				float alphaMult1 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
-				float alphaMult1_2 = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
-				float alphaMult2 = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
-				float alphaMult = NMath.Ease.InCirc(alphaMult1) - NMath.Ease.OutQuad(alphaMult2);
-				float fontSize = Math.Clamp(24 * (height / 900f), 12, 120);
-				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, Graphics2D.UI_FONT_NAME, fontSize);
-				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(alphaMult1_2) * (height * -.05f));
-				textSize += new Vector2F(16);
+				float alphaTweenIn = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.1, 0, 1, true);
+				float alphaTweenOut = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
+				float alphaTween = NMath.Ease.InCirc(alphaTweenIn) - NMath.Ease.OutQuad(alphaTweenOut);
 
-				ExpressionLabel.SetPos(textPos);
-				ExpressionLabel.SetSize(textSize);
+				ExpressionLabel.
+				Opacity = alphaTween;
+				ExpressionLabel.Text = ExpressionText;
 				ExpressionLabel.SetVisible(true);
-				ExpressionLabel.SetPaintBackgroundEnabled(true);
-				ExpressionLabel.SetBgColor(new Color(10, 20, 25, (int)(alphaMult * 200)));
-				ExpressionLabel.SetTextColor(new(255, 255, 255, (int)(alphaMult * 255)));
-				ExpressionLabel.SetAutoSize(true);
-				ExpressionLabel.SetSize(new(Math.Clamp(textSize.X + 32, 0, width), textSize.Y));
-				ExpressionLabel.SetText(ExpressionText);
+
+				Color primary = MainMenuLevel.PrimaryColor;
+				ExpressionLabel.SetBgColor(MainMenuLevel.BackgroundColor);
+				ExpressionLabel.SetFgColor(primary);
+				ExpressionLabel.SetTextColor(primary);
+
+				float positionTween = (float)NMath.Remap(Level.Curtime, startTime, startTime + 0.4, 0, 1, true);
+				Vector2F textPos = new Vector2F(width / 2, height * 0.75f) + new Vector2F(0, (float)NMath.Ease.OutBack(positionTween) * (height * -.05f));
+				ExpressionLabel.Position = textPos;
+
+				float fontSize = Math.Clamp(CloneDashUI.GetFontSize(20) * (height / 900f), 12, 120);
+				Vector2F textSize = Graphics2D.GetTextSize(ExpressionText, ExpressionLabel.Font, fontSize);
+				ExpressionLabel.TextSize = fontSize;
+				ExpressionLabel.Size = textSize + ExpressionLabel.GetTextPadding();
 			}
 			else
 				ExpressionLabel.SetVisible(false);
@@ -134,7 +144,7 @@ public class CharacterPanel : Panel
 
 	private void ResetExpression() {
 		ExpressionText = null;
-		
+
 		if (CharacterInstance == null)
 			return;
 
@@ -144,7 +154,10 @@ public class CharacterPanel : Panel
 	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
 		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().UUIDEquals(charDescriptor)) return;
+
+		StopAudio();
 		CharacterInstance = charDescriptor?.CreateMainMenu();
+
 		if (CharacterInstance == null)
 			return;
 

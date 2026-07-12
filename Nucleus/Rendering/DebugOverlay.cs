@@ -40,12 +40,12 @@ public record DebugOverlayText(string text, Vector2F position, float size, Color
 	}
 }
 
-public record DebugOverlayTexture(Texture texture, Vector2F pos, Vector2F size, Color color, Anchor anchor, Vector2F? tl, Vector2F? tr, Vector2F? bl, Vector2F? br) : IDebugOverlayItem
+public record DebugOverlayTexture(Texture texture, Vector2F pos, Vector2F size, Color color, Anchor anchor) : IDebugOverlayItem
 {
 	public void Render() {
 		Graphics2D.SetDrawColor(color);
 		Graphics2D.SetTexture((ITexture)texture);
-		Graphics2D.DrawTexture(anchor.CalculatePosition(pos, size, true), size, tl, tr, bl, br);
+		Graphics2D.DrawTexturedRectangle(anchor.CalculatePosition(pos, size, true), size);
 	}
 }
 
@@ -88,11 +88,10 @@ public static class DebugOverlay
 
 	public static void Texture(
 								Texture texture, 
-								Vector2F position, 	Vector2F? size = null, 
-								Vector2F? tl = null, Vector2F? tr = null, Vector2F? bl = null, Vector2F? br = null, 
+								Vector2F position, 	Vector2F? size = null,
 								Color? color = null, Anchor? anchor = null)
 		=> items.Enqueue(new DebugOverlayTexture(
-			texture, position + GetOffset(), size ?? new(texture.Width, texture.Height), color ?? Color.White, anchor ?? Anchor.TopLeft, tl, tr, bl, br
+			texture, position + GetOffset(), size ?? new(texture.Width, texture.Height), color ?? Color.White, anchor ?? Anchor.TopLeft
 		));
 
 	/// <summary>

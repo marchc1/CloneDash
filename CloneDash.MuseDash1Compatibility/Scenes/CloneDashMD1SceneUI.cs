@@ -55,14 +55,14 @@ public class StatisticsPanel : Panel
 		bottom.SetPaintBackgroundEnabled(false);
 
 		bottom.DynamicallySized = true;
-		bottom.SetSize(new(0.07f));
-		bottom.SetDock(Dock.Bottom);
+		bottom.		Size = new(0.07f);
+		bottom.		Dock = Dock.Bottom;
 
 		var restart = new Button(bottom);
 		restart.DynamicallySized = true;
-		restart.SetSize(new(.2f));
-		restart.SetText("Restart");
-		restart.SetDock(Dock.Left);
+		restart.		Size = new(.2f);
+		restart.		Text = "Restart";
+		restart.		Dock = Dock.Left;
 		restart.OnButtonClick += (_,  _) => {
 			// TODO: Probably should just hard restart it...
 			// Maybe seeking is stable enough now to justify this though?
@@ -72,12 +72,12 @@ public class StatisticsPanel : Panel
 
 		var back = new Button(bottom);
 		back.DynamicallySized = true;
-		back.SetSize(new(.2f));
-		back.SetText("Main Menu");
-		back.SetDock(Dock.Right);
+		back.		Size = new(.2f);
+		back.		Text = "Main Menu";
+		back.		Dock = Dock.Right;
 		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
 
-		SetBorderSize(0);
+		BorderSize = 0;
 	}
 	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
 		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
@@ -344,15 +344,15 @@ public class TextImageRenderItem
 			Graphics2D.SetTexture(Texture);
 			if (TopLeftAligned) {
 				if (Worldspace)
-					Graphics2D.DrawTexture(new(0, 0), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.Width / FontResolution, Texture.Height / FontResolution));
 				else
-					Graphics2D.DrawTexture(new(0, 0), new(Texture.Width, Texture.Height));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.Width, Texture.Height));
 			}
 			else {
 				if (Worldspace)
-					Graphics2D.DrawTexture(new(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new(Texture.Width / FontResolution, Texture.Height / FontResolution));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new Vector2F(Texture.Width / FontResolution, Texture.Height / FontResolution));
 				else
-					Graphics2D.DrawTexture(new(Texture.Width / -2, Texture.Height / -2), new(Texture.Width, Texture.Height));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.Width / -2, Texture.Height / -2), new Vector2F(Texture.Width, Texture.Height));
 			}
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.PopMatrix();
@@ -450,10 +450,10 @@ public class TextImageRenderItem
 		}
 		Graphics2D.SetTexture(rt);
 
-		Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM);
+		Rlgl.SetBlendMode(BlendMode.Custom);
 		Rlgl.SetBlendFactors(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD);
-		Graphics2D.DrawRendertarget(drawX, drawY, rtW, rtH);
-		Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA);
+		Graphics2D.DrawTexturedRectangle(drawX, drawY, rtW, rtH);
+		Rlgl.SetBlendMode(BlendMode.Alpha);
 
 		if (shader != null)
 			shader.Deactivate();
@@ -674,7 +674,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (CurrentStatisticsPanel == null)
 			return;
 
-		CurrentStatisticsPanel.SetSize(new(1, 1));
+		CurrentStatisticsPanel.
+		Size = new(1, 1);
 		CurrentStatisticsPanel.DynamicallySized = true;
 	}
 
@@ -736,7 +737,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			Stencils.BeginMask();
 
 			Graphics2D.SetTexture(stencilMask);
-			Graphics2D.DrawImageHorizontalProgress(drawRectPos, stencilSize, horizontalProgress: progress);
+			Graphics2D.DrawTexturedProgress(drawRectPos, stencilSize, progress, Axis.Horizontal);
 
 			Stencils.EndMask();
 
@@ -753,7 +754,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		goto drawStencilMask;
 	returnBackHere:
 		Graphics2D.SetTexture(slider_light);
-		Graphics2D.DrawImage((drawRectPos + new Vector2F((stencilSize.W * progress), 0)).Round(), new(32, stencilSize.H));
+		Graphics2D.DrawTexturedRectangle((drawRectPos + new Vector2F((stencilSize.W * progress), 0)).Round(), new(32, stencilSize.H));
 		if (stencilMask != null) Stencils.End();
 	}
 
@@ -771,7 +772,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			Stencils.BeginMask();
 
 			Graphics2D.SetTexture(stencilMask);
-			Graphics2D.DrawImageHorizontalProgress(new(-(stencilSize.W / 2) + offset.X, -stencilSize.H + offset.Y), stencilSize, horizontalProgress: progress);
+			Graphics2D.DrawTexturedProgress(new(-(stencilSize.W / 2) + offset.X, -stencilSize.H + offset.Y), stencilSize, progress, Axis.Horizontal);
 
 			Stencils.EndMask();
 		}
@@ -884,7 +885,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public virtual void RenderHealth() {
-
 		Vector2F belowBaseSize = GetTextureSize(BelowBase);
 		Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
 		Vector2F hp_sliderSize = GetTextureSize(hp_slider);
@@ -893,11 +893,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		Graphics2D.SetTexture(BelowBase);
-		Graphics2D.DrawImage(new(0, -belowBaseSize.H), belowBaseSize);
-		Graphics2D.DrawImage(new(-belowBaseSize.W, -belowBaseSize.H), belowBaseSize, flipX: true);
+		Graphics2D.DrawTexturedRectangle(new(0, -belowBaseSize.H), belowBaseSize);
+		Graphics2D.DrawTexturedRectangle(new(-belowBaseSize.W, -belowBaseSize.H), belowBaseSize, flipX: true);
 
 		Graphics2D.SetTexture(HpFeverBase);
-		Graphics2D.DrawImage(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
+		Graphics2D.DrawTexturedRectangle(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
 
 		float hpRatio = (float)(HP / MaxHP);
 		float feverRatio;
@@ -908,12 +908,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 		Graphics2D.SetTexture(hp_slider);
 		Graphics2D.SetDrawColor(255, 53, 133);
-		Graphics2D.DrawImageHorizontalProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, horizontalProgress: hpRatio);
+		Graphics2D.DrawTexturedProgress(new(-(hp_sliderSize.W / 2) - 56, -hp_sliderSize.H - 4), hp_sliderSize, hpRatio, Axis.Horizontal);
 		Graphics2D.SetDrawColor(255, 255, 255);
 		DrawSomeBubbles(hp_slider, hp_sliderSize, (float)hpRatio, 0, new(-56, -4), new(185, 43, 105));
 
 		Graphics2D.SetTexture(power_slider);
-		Graphics2D.DrawImageHorizontalProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, horizontalProgress: feverRatio);
+		Graphics2D.DrawTexturedProgress(new(-(power_sliderSize.W / 2) + 61, -power_sliderSize.H - 4), power_sliderSize, feverRatio, Axis.Horizontal);
 		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
 		DrawSliderLight(power_slider, power_sliderSize, (float)feverRatio, (float)NMath.Remap(Time - LastFeverUpdateTime, 0, 0.3, 1, 0, clampInput: true), new(61, -4), new(180, 229, 255));
 
@@ -921,7 +921,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (feverActivated < 1) {
 			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InQuart(1 - feverActivated) * 255));
 			Graphics2D.SetTexture(power_slider_white);
-			Graphics2D.DrawImage(new Vector2F(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
+			Graphics2D.DrawTexturedRectangle(new Vector2F(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
 		}
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
@@ -929,7 +929,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{Math.Round(HP)}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
 		if (Fever != null) {
 			Graphics2D.SetTexture(Fever);
-			Graphics2D.DrawImage(new(300, -38f), new(Fever.Width, Fever.Height));
+			Graphics2D.DrawTexturedRectangle(new Vector2F(300, -38f), new Vector2F(Fever.Width, Fever.Height));
 		}
 		if (hp_icon != null) {
 			Graphics2D.SetTexture(hp_icon);
@@ -937,7 +937,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
 
 			Vector2F sizeOfHeart = new(hp_icon.Width * size, hp_icon.Height * size);
-			Graphics2D.DrawImage(new(-328, -38f), sizeOfHeart, sizeOfHeart / 2);
+			Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfHeart, origin: sizeOfHeart / 2);
 		}
 	}
 	public virtual void RenderScore() {

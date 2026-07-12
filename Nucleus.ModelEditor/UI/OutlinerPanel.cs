@@ -25,14 +25,14 @@ namespace Nucleus.ModelEditor
 				Graphics2D.SetDrawColor(255, 255, 255);
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/viseye.png"));
-				Graphics2D.DrawImage(new(4, 4), new(16));
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4, 4), new(16));
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/keyframe.png"));
-				Graphics2D.DrawImage(new(4 + 23, 4), new(16));
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 23, 4), new(16));
 
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/tree.png"));
-				Graphics2D.DrawImage(new(4 + 46, 4), new(16));
-
+				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 46, 4), new(16));
+				
 				Graphics2D.SetDrawColor(parent.GetFgColor());
 				Graphics2D.DrawLine(23, 0, 23, height);
 				Graphics2D.DrawLine(46, 0, 46, height);
@@ -43,24 +43,26 @@ namespace Nucleus.ModelEditor
 		public OutlinerPanel(Element parent) : base(parent) {
 			Top = new(this);
 			Right = new(this);
-			SetDockPadding(RectangleF.TLRB(0));
-			SetBorderSize(0);
+			DockPadding = RectangleF.TLRB(0);
+			BorderSize = 0;
 
-			Top.SetDock(Dock.Top);
-			Top.SetSize(new(24));
-			Top.SetBorderSize(0);
+			Top.
+			Dock = Dock.Top;
+			Top.			Size = new(24);
+			Top.BorderSize = 0;
 			Top.SetPaintBackgroundEnabled(false);
 
-			Right.SetDock(Dock.Fill);
-			Right.SetBorderSize(0);
-			Right.SetDockPadding(RectangleF.TLRB(0));
+			Right.
+			Dock = Dock.Fill;
+			Right.BorderSize = 0;
+			Right.			DockPadding = RectangleF.TLRB(0);
 			Right.SetPaintBackgroundEnabled(false);
 
 			SetAddParent(Right.GetAddParent());
-			Right.SetDockPadding(RectangleF.TLRB(0));
-			Right.GetAddParent().SetDockPadding(RectangleF.TLRB(0));
-			Right.SetDockMargin(RectangleF.TLRB(1));
-			Right.GetAddParent().SetClipping(true);
+			Right.			DockPadding = RectangleF.TLRB(0);
+			Right.GetAddParent().			DockPadding = RectangleF.TLRB(0);
+			Right.			DockMargin = RectangleF.TLRB(1);
+			Right.GetAddParent().			Clipping = true;
 
 			ModelEditor.Active.File.ModelAdded += File_ModelAdded;
 			ModelEditor.Active.File.Cleared += File_Cleared;
@@ -107,7 +109,7 @@ namespace Nucleus.ModelEditor
 
 			ModelEditor.Active.File.AttachmentRenamed += (_, attachmentR, _, newName) => {
 				if (attachmentR == attachment) {
-					attachmentNode.SetText(newName);
+					attachmentNode.					Text = newName;
 				}
 			};
 			ModelEditor.Active.File.AttachmentRemoved += (_, _, attachmentR) => {
@@ -123,7 +125,7 @@ namespace Nucleus.ModelEditor
 
 			ModelEditor.Active.File.SlotRenamed += (_, slotR, _, newName) => {
 				if (slotR == slot) {
-					slotNode.SetText(newName);
+					slotNode.					Text = newName;
 				}
 			};
 			ModelEditor.Active.File.SlotRemoved += (_, _, _, slotR) => {
@@ -140,11 +142,11 @@ namespace Nucleus.ModelEditor
 		private void SetupAnimationNode(OutlinerNode skinsNode, EditorModel model, EditorAnimation animation) {
 			OutlinerNode boneNode = skinsNode.AddNode(animation.Name, "models/animation2.png");
 			boneNode.SetRepresentingObject(animation);
-			boneNode.SetText(animation.Name);
+			boneNode.			Text = animation.Name;
 
 			ModelEditor.Active.File.AnimationRenamed += (file, animationR, oldName, newName) => {
 				if (animationR == animation)
-					boneNode.SetText(newName);
+					boneNode.					Text = newName;
 			};
 
 			ModelEditor.Active.File.AnimationRemoved += (file, model, animationR) => {
@@ -156,11 +158,11 @@ namespace Nucleus.ModelEditor
 		private void SetupSkinNode(OutlinerNode skinsNode, EditorModel model, EditorSkin skin) {
 			OutlinerNode boneNode = skinsNode.AddNode(skin.Name, "models/skin.png");
 			boneNode.SetRepresentingObject(skin);
-			boneNode.SetText(skin.Name);
+			boneNode.			Text = skin.Name;
 
 			ModelEditor.Active.File.SkinRenamed += (file, skinR, oldName, newName) => {
 				if (skinR == skin)
-					boneNode.SetText(newName);
+					boneNode.					Text = newName;
 			};
 
 			ModelEditor.Active.File.SkinRemoved += (file, model, skinR) => {
@@ -184,21 +186,21 @@ namespace Nucleus.ModelEditor
 
 				if (!IValidatable.IsValid(dragPanel)) {
 					dragPanel = new Panel(UI);
-					dragPanel.SetBorderSize(0);
+					dragPanel.BorderSize = 0;
 					dragPanel.SetBgColor(new Common.Types.Color(200, 200, 255));
-					dragPanel.SetSize(new(slotNode.GetRenderBounds().W, 2));
+					dragPanel.					Size = new(slotNode.GetRenderBounds().W, 2);
 					dragPanel.SetPassthru(true);
 				}
 				var hovered = UI.GetHoveredElement();
 				if (hovered is OutlinerNode node && node.ParentNode == drawOrder) {
 					// Determine if placing above or below
 					Vector2F mousePos = fs.Mouse.MousePos;
-					Vector2F nodePos = node.GetGlobalPosition() + GetAddParent().GetChildRenderOffset();
+					Vector2F nodePos = node.GetGlobalPosition() + GetAddParent().ChildRenderOffset;
 					float height = node.GetRenderBounds().Height;
 					bool below = mousePos.Y - nodePos.Y > (height / 2);
 
 					dragPanel.SetVisible(true);
-					dragPanel.SetPos(below ? nodePos + new Vector2F(0, height) : nodePos);
+					dragPanel.					Position = below ? nodePos + new Vector2F(0, height) : nodePos;
 				}
 				else {
 					dragPanel.SetVisible(false);
@@ -217,7 +219,7 @@ namespace Nucleus.ModelEditor
 
 					// Determine if placing above or below
 					Vector2F mousePos = fs.Mouse.MousePos;
-					Vector2F nodePos = node.GetGlobalPosition() + GetAddParent().GetChildRenderOffset();
+					Vector2F nodePos = node.GetGlobalPosition() + GetAddParent().ChildRenderOffset;
 					float height = node.GetRenderBounds().Height;
 					bool below = mousePos.Y - nodePos.Y > (height / 2);
 
@@ -256,7 +258,7 @@ namespace Nucleus.ModelEditor
 			};
 			ModelEditor.Active.File.BoneRenamed += (file, boneR, oldName, newName) => {
 				if (boneR == bone)
-					boneNode.SetText(newName);
+					boneNode.					Text = newName;
 			};
 			ModelEditor.Active.File.BoneRemoved += (file, model, boneR) => {
 				if (boneR == bone && IValidatable.IsValid(boneNode)) {
@@ -313,7 +315,7 @@ namespace Nucleus.ModelEditor
 
 			ModelEditor.Active.File.ModelRenamed += (file, modelR, oldName, newName) => {
 				if (modelR == model) {
-					modelNode.SetText(newName);
+					modelNode.					Text = newName;
 				}
 			};
 			ModelEditor.Active.File.ModelRemoved += (file, modelR) => {
@@ -330,7 +332,7 @@ namespace Nucleus.ModelEditor
 				slotNode.SetRepresentingObject(slot);
 				ModelEditor.Active.File.SlotRenamed += (file, slotR, oldName, newName) => {
 					if (slotR == slot) {
-						slotNode.SetText(newName);
+						slotNode.						Text = newName;
 					}
 				};
 				ModelEditor.Active.File.SlotRemoved += (_, _, _, slotR) => {
@@ -425,7 +427,7 @@ namespace Nucleus.ModelEditor
 			if (parent != null) {
 				node.ParentNode = parent;
 			}
-			node.SetText(text);
+			node.			Text = text;
 			if (icon != null)
 				node.ImageTexture = panel.UI.Level.Textures.LoadTextureFromFile(icon);
 

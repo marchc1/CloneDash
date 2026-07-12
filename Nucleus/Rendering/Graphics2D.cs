@@ -2,6 +2,7 @@
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
 using Nucleus.Files;
+using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -174,17 +175,17 @@ namespace Nucleus.Core
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
+		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
+		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, [new(message, font)], 1, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
+		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
+		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, alignment.Horizontal, alignment.Vertical);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
+		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment());
-		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
+		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
 		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
 			=> DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment());
@@ -288,8 +289,14 @@ namespace Nucleus.Core
 			};
 			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		}
-		public static void SetTexture(Texture2D tex) { __texture = tex; __textureFlippedY = false; }
-		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = false; }
+
+		/// <summary>
+		/// This will go in a future Nucleus update when texture management is more uniform!!
+		/// </summary>
+		/// <param name="tex"></param>
+		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = true; }
+
+		public static void SetBlendMode(BlendMode mode) => Rlgl.SetBlendMode(mode);
 
 		public static Color GetDrawColor() => __drawColor;
 		public static void SetDrawColor(in Color c) => __drawColor = c;
@@ -446,13 +453,6 @@ namespace Nucleus.Core
 			Raylib.DrawEllipseLines((int)local.X, (int)local.Y, size.W, size.H, __drawColor);
 		}
 
-		public static void DrawRendertarget(float x, float y, float width, float height, float rotation = 0) => Raylib.DrawTexturePro(__texture,
-				new Rectangle(0, 0, __texture.Width, -__texture.Height),
-				new Rectangle(__offset.X + x, __offset.Y + y, width, height),
-				new System.Numerics.Vector2(0, 0),
-				rotation,
-				__drawColor); //=> Raylib.DrawTextureRec(__texture, new Rectangle(x + __offset.X, y + __offset.Y, width, height), new Vector2(x, y), __drawColor);
-
 		private static RectangleF __scissorRect;
 		private static Stack<RectangleF> ScissorRects = [];
 
@@ -476,25 +476,10 @@ namespace Nucleus.Core
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
 
-		public static void DrawImage(RectangleF space, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) {
-			if (__textureFlippedY)
-				flipY = !flipY;
-			space.RoundInPlace();
-			Rectangle source = new Rectangle(
-				(flipX ? 1 : 0) * __texture.Width, (flipY ? 1 : 0) * __texture.Height,
-				(flipX ? -1 : 1) * __texture.Width, (flipY ? -1 : 1) * __texture.Height);
-			Rectangle dest = AFRToRLR(space.AddPosition(new(Offset.X, Offset.Y)));
-			Vector2 originV2 = AFV2ToSNV2(origin.HasValue ? origin.Value : Vector2F.Zero);
-			source.Width *= horizontalProgress;
-			dest.Width *= horizontalProgress;
-
-			Raylib.DrawTexturePro(__texture, source, dest, originV2, rotation, __drawColor);
-		}
-		public static void DrawImage(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, 1);
-		public static void DrawImageHorizontalProgress(Vector2F pos, Vector2F size, Vector2F? origin = null, float rotation = 0, bool flipX = false, bool flipY = false, float horizontalProgress = 1) => DrawImage(RectangleF.FromPosAndSize(pos, size), origin, rotation, flipX, flipY, horizontalProgress);
 		public static void DrawRing(Vector2F center, float innerRadius, float outerRadius, float startAngle = 0, float endAngle = 360, int segments = 32) {
 			Raylib.DrawRing(AFV2ToSNV2(center), innerRadius, outerRadius, startAngle, endAngle, segments, __drawColor);
 		}
+
 		public static RenderTexture2D CreateRenderTarget(float wF, float hF, ImageFormat pixelFormat = ImageFormat.R8G8B8A8, int mipmaps = 1) {
 			int w = (int)wF;
 			int h = (int)hF;
@@ -536,117 +521,84 @@ namespace Nucleus.Core
 			EngineCore.Window.BeginTextureMode(texture);
 			Surface.Clear(0, 0, 0, 0);
 			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
-			Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM_SEPARATE);
+			SetBlendMode(BlendMode.CustomSeparate);
 		}
 
 		public static void EndRenderTarget() {
 			EngineCore.Window.EndTextureMode();
 		}
 
-		public static void DrawRenderTexture(RenderTexture2D texture, Vector2F size) {
-			SetTexture(texture);
-			SetDrawColor(__drawColor);
-			Rlgl.SetBlendMode(BlendMode.BLEND_CUSTOM);
-			Rlgl.SetBlendFactors(GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD);
-			DrawRendertarget(0, 0, size.W, size.H);
-			Rlgl.SetBlendMode(BlendMode.BLEND_ALPHA);
+		public static void CalculateUVCoordinatesFromRects(ITexture tex, in RectangleF source, in RectangleF dest, out float sU, out float sV, out float eU, out float eV){
+			float texW = tex.Width;
+			float texH = tex.Height;
+
+			sU = source.X / texW;
+			sV = source.Y / texH;
+			eU = (source.X + source.Width) / texW;
+			eV = (source.Y + source.Height) / texH;
 		}
 
-		// TODO: ensure non-breaking changes
-		public static void DrawTexture(Vector2F pos, Vector2F size, Vector2F? TL = null, Vector2F? TR = null, Vector2F? BL = null, Vector2F? BR = null) {
-			var texture = __texture;
-			var source = RectangleF.XYWH(0, 0, texture.Width, texture.Height);
-			var dest = RectangleF.FromPosAndSize(new(pos.X, pos.Y), size);
-			float rotation = 0;
-			Vector2F origin = new(0, 0);
-			var tint = __drawColor;
+		public static void DrawTexturedRectangle(RectangleF bounds, float rotation = 0, Vector2F origin = default, float sU = 0, float sV = 0, float eU = 1, float eV = 1, bool flipX = false, bool flipY = false)
+			=> DrawTexturedRectangle(bounds.X, bounds.Y, bounds.W, bounds.H, rotation, origin, sU, sV, eU, eV, flipX, flipY);
 
-			Vector2F tl = TL ?? new(0, 0);
-			Vector2F tr = TR ?? new(1, 0);
-			Vector2F bl = BL ?? new(0, 1);
-			Vector2F br = BR ?? new(1, 1);
+		public static void DrawTexturedRectangle(Vector2F pos, Vector2F size, float rotation = 0, Vector2F origin = default, float sU = 0, float sV = 0, float eU = 1, float eV = 1, bool flipX = false, bool flipY = false)
+			=> DrawTexturedRectangle(pos.X, pos.Y, size.W, size.H, rotation, origin, sU, sV, eU, eV, flipX, flipY);
 
-			if (texture.Id > 0) {
-				float width = (float)texture.Width;
-				float height = (float)texture.Height;
-
-				bool flipX = false;
-
-				if (source.Width < 0) { flipX = true; source.Width *= -1; }
-				if (source.Height < 0) source.y -= source.Height;
-
-				Vector2F topLeft = Vector2F.Zero;
-				Vector2F topRight = Vector2F.Zero;
-				Vector2F bottomLeft = Vector2F.Zero;
-				Vector2F bottomRight = Vector2F.Zero;
-
-				if (rotation == 0.0f) {
-					float x = dest.x - origin.x;
-					float y = dest.y - origin.y;
-					topLeft = new Vector2F(x, y);
-					topRight = new Vector2F(x + dest.Width, y);
-					bottomLeft = new Vector2F(x, y + dest.Height);
-					bottomRight = new Vector2F(x + dest.Width, y + dest.Height);
+		public static void DrawTexturedProgress(Vector2F pos, Vector2F size, float progress, Axis axis, bool reversed = false) {
+			if (reversed) {
+				switch (axis) {
+					case Axis.Horizontal:
+						DrawTexturedRectangle(new Vector2F(pos.X + (size.X * (1 - progress)), pos.Y), new Vector2F(size.X * progress, size.Y), sU: 1 - progress);
+						return;
+					case Axis.Vertical:
+						DrawTexturedRectangle(new Vector2F(pos.X, pos.Y + (size.Y * (1 - progress))), new Vector2F(size.X, size.Y * progress), sV: 1 - progress); return;
 				}
-				else {
-					float sinRotation = MathF.Sin(rotation * (MathF.PI / 180f));
-					float cosRotation = MathF.Cos(rotation * (MathF.PI / 180f));
-					float x = dest.x;
-					float y = dest.y;
-					float dx = -origin.x;
-					float dy = -origin.y;
-
-					topLeft.x = x + dx * cosRotation - dy * sinRotation;
-					topLeft.y = y + dx * sinRotation + dy * cosRotation;
-
-					topRight.x = x + (dx + dest.Width) * cosRotation - dy * sinRotation;
-					topRight.y = y + (dx + dest.Width) * sinRotation + dy * cosRotation;
-
-					bottomLeft.x = x + dx * cosRotation - (dy + dest.Height) * sinRotation;
-					bottomLeft.y = y + dx * sinRotation + (dy + dest.Height) * cosRotation;
-
-					bottomRight.x = x + (dx + dest.Width) * cosRotation - (dy + dest.Height) * sinRotation;
-					bottomRight.y = y + (dx + dest.Width) * sinRotation + (dy + dest.Height) * cosRotation;
-				}
-
-				if (__textureFlippedY) {
-					(bottomLeft.y, topLeft.y) = (topLeft.y, bottomLeft.y);
-					(bottomRight.y, topRight.y) = (topRight.y, bottomRight.y);
-				}
-
-				Rlgl.SetTexture(texture.Id);
-				Rlgl.Begin(DrawMode.QUADS);
-
-				Rlgl.Color4ub(tint.R, tint.G, tint.B, tint.A);
-				Rlgl.Normal3f(0.0f, 0.0f, 1.0f);                          // Normal vector pointing towards viewer
-
-				// Top-left corner for texture and quad
-				if (flipX) Rlgl.TexCoord2f((source.x + source.Width) / width, source.y / height);
-				else Rlgl.TexCoord2f(tl.X, tl.Y);
-				Rlgl.Vertex2f(topLeft.x, topLeft.y);
-
-				// Bottom-left corner for texture and quad
-				if (flipX) Rlgl.TexCoord2f((source.x + source.Width) / width, (source.y + source.Height) / height);
-				else Rlgl.TexCoord2f(bl.X, bl.Y);
-				Rlgl.Vertex2f(bottomLeft.x, bottomLeft.y);
-
-				// Bottom-right corner for texture and quad
-				if (flipX) Rlgl.TexCoord2f(source.x / width, (source.y + source.Height) / height);
-				else Rlgl.TexCoord2f(br.X, br.Y);
-				Rlgl.Vertex2f(bottomRight.x, bottomRight.y);
-
-				// Top-right corner for texture and quad
-				if (flipX) Rlgl.TexCoord2f(source.x / width, source.y / height);
-				else Rlgl.TexCoord2f(tr.X, tr.Y);
-				Rlgl.Vertex2f(topRight.x, topRight.y);
-
-				Rlgl.End();
-				Rlgl.SetTexture(0);
-
-				//Raylib.DrawTexturePro(__texture, new(0, 0, width, height), new(pos.X, pos.Y, size.X, size.Y), new(0, 0), 0, __drawColor);
 			}
+			else {
+				switch (axis) {
+					case Axis.Horizontal:
+						DrawTexturedRectangle(pos, new(size.X * progress, size.Y), eU: progress);
+						return;
+					case Axis.Vertical:
+						DrawTexturedRectangle(pos, new(size.X, size.Y * progress), eV: progress);
+						return;
+				}
+			}
+
+			Logs.Warn($"DrawTexturedProgress: {nameof(axis)} argument invalid (got {axis}, expected Horizontal or Vertical)");
 		}
 
+		public static void DrawTexturedRectangle(float x, float y, float w, float h, float rotation = 0, Vector2F rotationOrigin = default, float sU = 0, float sV = 0, float eU = 1, float eV = 1, bool flipX = false, bool flipY = false) {
+			if (flipX) (eU, sU) = (sU, eU);
+			if (flipY) (eV, sV) = (sV, eV);
+
+			if (__textureFlippedY) 
+				(eV, sV) = (sV, eV);
+
+			x += __offset.X;
+			y += __offset.Y;
+
+			Rlgl.PushMatrix();
+
+			Rlgl.Translatef(x, y, 0);
+			if (rotation != 0)
+				Rlgl.Rotatef(rotation, 0, 0, 1);
+			Rlgl.Translatef(-rotationOrigin.X, -rotationOrigin.Y, 0);
+
+			Rlgl.SetTexture(__texture.Id);
+			Rlgl.Begin(DrawMode.QUADS);
+			Rlgl.Color4ub(__drawColor.R, __drawColor.G, __drawColor.B, __drawColor.A); Rlgl.Normal3f(0, 0, 1);
+			{
+				Rlgl.TexCoord2f(sU, sV); Rlgl.Vertex2f(0, 0);
+				Rlgl.TexCoord2f(sU, eV); Rlgl.Vertex2f(0, h);
+				Rlgl.TexCoord2f(eU, eV); Rlgl.Vertex2f(w, h);
+				Rlgl.TexCoord2f(eU, sV); Rlgl.Vertex2f(w, 0);
+			}
+			Rlgl.End();
+			Rlgl.SetTexture(0);
+
+			Rlgl.PopMatrix();
+		}
 		public static void DrawLoader(float x, float y, float inner = 14, float outer = 21, int segments = 16, bool useRealtime = false, double? time = null) {
 			for (float i = 0; i < segments; i++) {
 				var r = i / segments;

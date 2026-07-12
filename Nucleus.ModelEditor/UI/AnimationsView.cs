@@ -17,12 +17,12 @@ namespace Nucleus.ModelEditor.UI
 
 		public AnimationsView(Element parent) : base(parent) {
 			selector = new(this);
-			selector.SetDock(Dock.Top);
+			selector.			Dock = Dock.Top;
 			selector.OnSelectionChanged += Selector_OnSelectionChanged;
 			selector.OnToString += Selector_OnToString;
 
 			listitems = new(this);
-			listitems.SetDock(Dock.Fill);
+			listitems.			Dock = Dock.Fill;
 			listitems.SetPaintBackgroundEnabled(false);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
@@ -79,7 +79,7 @@ namespace Nucleus.ModelEditor.UI
 			listitems.SortChildren((x, y) => {
 				if (x is not ITextElement iteX) return 0;
 				if (y is not ITextElement iteY) return 0;
-				return alphanum.Compare(iteX.GetText(), iteY.GetText());
+				return alphanum.Compare(iteX.Text, iteY.Text);
 			});
 		}
 
@@ -96,18 +96,18 @@ namespace Nucleus.ModelEditor.UI
 
 			var lvitem = new AnimationListViewItem(model, animation, listitems);
 			var lvitemImg = new Nucleus.UI.Elements.Image(lvitem);
-			lvitemImg.SetTexture(Level.Textures.LoadTextureFromFile("models/animation2.png"));
-			lvitemImg.SetImageOrientation(ImageOrientation.Fit);
+			lvitemImg.			Texture = Level.Textures.LoadTextureFromFile("models/animation2.png");
+			lvitemImg.			ImageOrientation = ImageOrientation.Fit;
 			lvitemImg.SetPassthru(true);
-			lvitemImg.SetDock(Dock.Left);
-			lvitemImg.SetSize(new(24));
-			lvitem.SetText(animation.Name);
+			lvitemImg.			Dock = Dock.Left;
+			lvitemImg.			Size = new(24);
+			lvitem.			Text = animation.Name;
 
 			SortAnimations();
 
 			ModelEditor.Active.File.AnimationRenamed += (_, anim, _, name) => {
 				if (anim == animation)
-					lvitem.SetText(name);
+					lvitem.					Text = name;
 
 				SortAnimations();
 			};

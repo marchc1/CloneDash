@@ -29,27 +29,31 @@ public static class UpdateChecker
     /// </summary>
     public static async Task<bool> CheckAndApplyUpdates()
     {
-        var manager = new UpdateManager(new GithubSource($"https://github.com/{RepoOwner}/{RepoName}", null, false));
+		try {
+			var manager = new UpdateManager(new GithubSource($"https://github.com/{RepoOwner}/{RepoName}", null, false));
 
-        if (!manager.IsInstalled)
-        {
-            Logs.Info("Running portable, skipping auto-update.");
-            return false;
-        }
+			if (!manager.IsInstalled) {
+				Logs.Info("Running portable, skipping auto-update.");
+				return false;
+			}
 
-        var newVersion = await manager.CheckForUpdatesAsync();
-        if (newVersion == null)
-        {
-            Logs.Info("No newer release found.");
-            return true;
-        }
+			var newVersion = await manager.CheckForUpdatesAsync();
+			if (newVersion == null) {
+				Logs.Info("No newer release found.");
+				return true;
+			}
 
-        Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
+			Logs.Info($"Downloading update {newVersion.TargetFullRelease.Version}...");
 
-        await manager.DownloadUpdatesAsync(newVersion);
-        manager.ApplyUpdatesAndRestart(newVersion);
+			await manager.DownloadUpdatesAsync(newVersion);
+			manager.ApplyUpdatesAndRestart(newVersion);
 
-        return true;
+			return true;
+		}
+		catch(Exception ex){
+			Logs.Error($"UpdateChecker.CheckAndApplyUpdates errored: {ex.Message}\n\n{ex.StackTrace}");
+			return false;
+		}
     }
 
     /// <summary>
@@ -91,7 +95,7 @@ public static class UpdateChecker
         }
         catch (Exception ex)
         {
-            Logs.Warn($"Update check failed: {ex.Message}");
+            Logs.Warn($"UpdateChecker.CheckForNewReleaseAsync check failed: {ex.Message}\n\n{ex.StackTrace}");
         }
 
         return null;

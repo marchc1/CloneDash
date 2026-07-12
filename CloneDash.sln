@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nucleus.FileSystem", "Nucle
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4 - Standard Components", "4 - Standard Components", "{1BD85509-4B90-4DA1-B268-0832BA8BF0FE}"
 	ProjectSection(SolutionItems) = preProject
+		ApplyNucleusAssemblyAttribute.targets = ApplyNucleusAssemblyAttribute.targets
+		ApplyNucleusAssemblyAttribute.cs = ApplyNucleusAssemblyAttribute.cs
 		StandardComponents.cs = StandardComponents.cs
 		StandardComponents.targets = StandardComponents.targets
 	EndProjectSection

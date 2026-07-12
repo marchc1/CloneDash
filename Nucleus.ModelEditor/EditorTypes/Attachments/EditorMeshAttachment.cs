@@ -66,73 +66,73 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
-			panel.SetSize(new(0, 182));
+			panel.			Size = new(0, 182);
 
 			var win = new Window(panel);
-			win.SetSize(new(330, panel.GetSize().H));
+			win.			Size = new(330, panel.Size.H);
 			win.Center();
 			win.Title = "Edit Mesh";
 			win.HideNonCloseButtons();
 
 			var row1 = new FlexPanel(win);
-			row1.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row1.SetDock(Dock.Top);
-			row1.SetSize(new(0, 32));
+			row1.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row1.			Dock = Dock.Top;
+			row1.			Size = new(0, 32);
 			row1.Direction = (Axis.Horizontal);
 			row1.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
 
 			var row2 = new FlexPanel(win);
-			row2.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row2.SetDock(Dock.Top);
-			row2.SetSize(new(0, 32));
+			row2.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row2.			Dock = Dock.Top;
+			row2.			Size = new(0, 32);
 			row2.Direction = (Axis.Horizontal);
 			row2.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
 
 			ModifyButton = new Button(row1);
-			ModifyButton.SetText("Modify");
+			ModifyButton.			Text = "Modify";
 			ModifyButton.SetAutoSize(true);
 			ModifyButton.SetTextPadding(new(64, 0));
 			ModifyButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Modify);
 
 			CreateButton = new Button(row1);
-			CreateButton.SetText("Create");
+			CreateButton.			Text = "Create";
 			CreateButton.SetAutoSize(true);
 			CreateButton.SetTextPadding(new(64, 0));
 			CreateButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Create);
 
 			DeleteButton = new Button(row1);
-			DeleteButton.SetText("Delete");
+			DeleteButton.			Text = "Delete";
 			DeleteButton.SetAutoSize(true);
 			DeleteButton.SetTextPadding(new(64, 0));
 			DeleteButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Delete);
 
 			NewButton = new Button(row2);
-			NewButton.SetText("New");
+			NewButton.			Text = "New";
 			NewButton.SetAutoSize(true);
 			NewButton.SetTextPadding(new(64, 0));
 			NewButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.New);
 
 			ResetButton = new Button(row2);
-			ResetButton.SetText("Reset");
+			ResetButton.			Text = "Reset";
 			ResetButton.SetAutoSize(true);
 			ResetButton.SetTextPadding(new(64, 0));
 			ResetButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Reset);
 
 			var row3 = new FlexPanel(win);
-			row3.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row3.SetDock (Dock.Top);
-			row3.SetSize (new(0, 32));
+			row3.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row3.			Dock = Dock.Top;
+			row3.			Size = new(0, 32);
 			row3.Direction = (Axis.Horizontal);
 			row3.ChildrenResizingMode  = (FlexChildrenResizingMode.StretchToFit);
 
 			Triangles = new(row3);
-			Triangles.SetText("Triangles");
+			Triangles.			Text = "Triangles";
 			Triangles.SetAutoSize(true);
 			Dim = new(row3);
-			Triangles.SetText("Dim");
+			Triangles.			Text = "Dim";
 			Triangles.SetAutoSize(true);
 			Isolate = new(row3);
-			Triangles.SetText("Isolate");
+			Triangles.			Text = "Isolate";
 			Triangles.SetAutoSize(true);
 
 			Triangles.BindToConVar(meshedit_triangles);
@@ -140,15 +140,15 @@ namespace Nucleus.ModelEditor
 			Isolate.BindToConVar(meshedit_isolate);
 
 			var row4 = new FlexPanel(win);
-			row4.SetDockPadding(RectangleF.TLRB(0, 4, 4, 0));
-			row4.SetDock(Dock.Top);
-			row4.SetSize(new(0, 32));
+			row4.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
+			row4.			Dock = Dock.Top;
+			row4.			Size = new(0, 32);
 			row4.Direction = Axis.Horizontal;
 			row4.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
 
 			Deform = new(row4);
 			var deformedLabel = new Label(row4);
-			deformedLabel.SetText("Deformed");
+			deformedLabel.			Text = "Deformed";
 			deformedLabel.SetAutoSize(true);
 			Deform.BindToConVar(meshedit_deformed);
 

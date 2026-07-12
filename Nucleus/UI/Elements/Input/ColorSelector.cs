@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -38,7 +39,7 @@ public class ColorSelector(Element? parent, ReadOnlySpan<char> name = default) :
 			return true;
 
 		CurrentDialog = new ColorSelectorDialog(UI);
-		CurrentDialog.SetPos(state.Mouse.MousePos);
+		CurrentDialog.		Position = state.Mouse.MousePos;
 		CurrentDialog.Setup(this);
 		CurrentDialog.FitToParent(8);
 		return true;
@@ -76,11 +77,11 @@ public class ColorSelectorDialog : Panel
 
 			Graphics2D.SetDrawColor(huewheelColor, huewheelColor, huewheelColor);
 			Graphics2D.SetTexture(dialog.ColorWheelTex);
-			Graphics2D.DrawImage(new(0, 0), new(width, height));
+			Graphics2D.DrawTexturedRectangle(0, 0, width, height);
 
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.SetTexture(dialog.HueWheelTex);
-			Graphics2D.DrawImage(new(0, 0), new(width, height));
+			Graphics2D.DrawTexturedRectangle(0, 0, width, height);
 
 			Rlgl.PushMatrix();
 			var pos = dialog.GetGlobalPosition();
@@ -95,7 +96,7 @@ public class ColorSelectorDialog : Panel
 			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(dialog.ColorPickerTex);
 			var centerPos = new Vector2F(-width / 2, -height / 2);
-			Graphics2D.DrawImage(centerPos, new(width, height), new(0, 0), 0);
+			Graphics2D.DrawTexturedRectangle(centerPos, new Vector2F(width, height), origin: new(0, 0), rotation: 0);
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			//var targetPos = new Vector2F();
@@ -104,10 +105,10 @@ public class ColorSelectorDialog : Panel
 			var targetPos = dialog.GetSatvalXYFromCurrentColor();
 			Graphics2D.SetTexture(dialog.ColorSatValTex);
 			Graphics2D.SetDrawColor(satvalwheelColor, satvalwheelColor, satvalwheelColor);
-			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
+			Graphics2D.DrawTexturedRectangle(centerPos + targetPos, new(width, height));
 			Graphics2D.SetDrawColor(rgb);
 			Graphics2D.SetTexture(dialog.ColorSatValInnerTex);
-			Graphics2D.DrawImage(centerPos + targetPos, new(width, height));
+			Graphics2D.DrawTexturedRectangle(centerPos + targetPos, new(width, height));
 			Graphics2D.SetDrawColor(255, 255, 255);
 
 			Graphics2D.OffsetDrawing(offset);
@@ -149,25 +150,14 @@ public class ColorSelectorDialog : Panel
 		ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
 		ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
 
-		Raylib.GenTextureMipmaps(ref ColorWheelTex);
-		Raylib.GenTextureMipmaps(ref HueWheelTex);
-		Raylib.GenTextureMipmaps(ref ColorPickerTex);
-		Raylib.GenTextureMipmaps(ref ColorSatValTex);
-		Raylib.GenTextureMipmaps(ref ColorSatValInnerTex);
-
-		Raylib.SetTextureFilter(ColorWheelTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(HueWheelTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorPickerTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorSatValTex, TextureFilter.Anisotropic16x);
-		Raylib.SetTextureFilter(ColorSatValInnerTex, TextureFilter.Anisotropic16x);
-
-		this.SetOrigin(Anchor.BottomCenter);
+		this.
+		Origin = Anchor.BottomCenter;
 		this.UI.Input.OnClick += delegate (Element? el) {
 			if (el != null && !el.IsIndirectChildOf(this)) {
 				this.Remove();
 			}
 		};
-		this.SetSize(new(180, 320));
+		this.		Size = new(180, 320);
 		ColorWheel = new Panel(this);
 	}
 	public ColorSelector Selector = null!;
@@ -175,11 +165,11 @@ public class ColorSelectorDialog : Panel
 
 	Panel ColorWheel;
 
-	Texture2D ColorWheelTex;
-	Texture2D HueWheelTex;
-	Texture2D ColorPickerTex;
-	Texture2D ColorSatValTex;
-	Texture2D ColorSatValInnerTex;
+	ITexture? ColorWheelTex;
+	ITexture? HueWheelTex;
+	ITexture? ColorPickerTex;
+	ITexture? ColorSatValTex;
+	ITexture? ColorSatValInnerTex;
 
 	private float _workingHue = 0;
 	private float _workingSat = 0;
@@ -317,6 +307,6 @@ public class ColorSelectorDialog : Panel
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		ColorWheel.SetSize(new(width, width));
+		ColorWheel.		Size = new(width, width);
 	}
 }

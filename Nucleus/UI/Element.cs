@@ -181,119 +181,134 @@ public class Element : IValidatable
 	DateTime Birth = DateTime.Now;
 	private IKeyboardInputMarshal keyboardInputMarshal = DefaultKeyboardInputMarshal.Instance;
 
-	public float GetBorderSize() {
-		return borderSize;
-	}
-
-	public void SetBorderSize(float value) {
-		borderSize = value;
-	}
-
-	public float GetRoundness() {
-		return roundness;
-	}
-
-	public void SetRoundness(float value) {
-		roundness = value;
-	}
-
 	private Vector2F sizeOfAllChildren = Vector2F.Zero;
 
-	public Vector2F GetSizeOfAllChildren() {
-		return sizeOfAllChildren;
+	private string? tooltipText;
+
+	/// <summary>
+	/// Controls the size of borders on elements. This may not be supported on all elements, depending on their implementation of <see cref="PaintBorder(float, float)"/>.
+	/// </summary>
+	public float BorderSize {
+		get => borderSize;
+		set => borderSize = value;
 	}
 
-	private void SetSizeOfAllChildren(Vector2F value) {
-		sizeOfAllChildren = value;
+	/// <summary>
+	/// Controls the roundness of corners of the element. This may not be supported on all elements, depending on their implementations of <see cref="PaintBorder(float, float)"/> and <see cref="PaintBackground(float, float)"/>.
+	/// </summary>
+	public float Roundness {
+		get => roundness;
+		set => roundness = value;
 	}
 
-	public Vector2F GetChildRenderOffset() {
-		return childRenderOffset;
+	/// <summary>
+	/// All children of this element will be offset by this relative position.
+	/// </summary>
+	public Vector2F ChildRenderOffset {
+		get => childRenderOffset;
+		set => childRenderOffset = value;
 	}
 
-	public void SetChildRenderOffset(Vector2F value) {
-		childRenderOffset = value;
+	/// <summary>
+	/// Determines if the elements children are clipped to the bounds of this element.
+	/// </summary>
+	public bool Clipping {
+		get => clipping;
+		set => clipping = value;
 	}
 
-	public double GetLastLayoutTime() {
-		return lastLayoutTime;
+	/// <summary>
+	/// The opacity of this element (and its children)
+	/// </summary>
+	public float Opacity {
+		get => opacity;
+		set => opacity = value;
 	}
 
-	private void SetLastLayoutTime(double value) {
-		lastLayoutTime = value;
+	/// <summary>
+	/// The keyboard input marshal. This controls how keyboard input is handled in the element; e.g. textboxes use a holding keyboard input marshal
+	/// to allow key repeating
+	/// </summary>
+	public IKeyboardInputMarshal KeyboardInputMarshal {
+		get => keyboardInputMarshal;
+		set => keyboardInputMarshal = value ?? DefaultKeyboardInputMarshal.Instance;
 	}
 
-	public bool GetClipping() {
-		return clipping;
-	}
-
-	public void SetClipping(bool value) {
-		clipping = value;
-	}
-
-
-	public float GetOpacity() {
-		return opacity;
-	}
-
-	public void SetOpacity(float value) {
-		opacity = value;
-	}
-
-	public IKeyboardInputMarshal GetKeyboardInputMarshal() {
-		return keyboardInputMarshal;
-	}
-
-	public void SetKeyboardInputMarshal(IKeyboardInputMarshal value) {
-		keyboardInputMarshal = value ?? DefaultKeyboardInputMarshal.Instance;
-	}
-
-	public KeybindSystem Keybinds { get; } = new();
-
+	/// <summary>
+	/// The keybind system of this element.
+	/// </summary>
+	public readonly KeybindSystem Keybinds = new();
 
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
 	public UserInterface UI { get; internal set; } = null!;
 
-	public virtual void Initialize(float x, float y, float width, float height) {
-		_position = new(x, y);
-		_size = new(width, height);
-		SetAnchor(Anchor.TopLeft);
-		SetOrigin(Anchor.TopLeft);
-		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate | ElementFlags.NeedsRenderBoundsFlush;
-		flags |= ElementFlags.PaintEnabled;
-		flags |= ElementFlags.AllowChainKeybindingToParent;
-		flags |= ElementFlags.AllowChainInputToParent;
-		__tooltipText = null;
-		SetOpacity(1);
-		SetVisible(true);
-		SetMouseInputEnabled(true);
-		SetKeyboardInputEnabled(true);
-	}
-
-
-	public Vector2F GetPos() { return _position; }
-
-	public void SetPos(Vector2F value) {
-		if (value == _position)
-			return;
-
-		_position = value;
-		if (!HasFlag(ElementFlags.InPerformLayout)) {
-			InvalidateLayout();
-		}
-		else
-			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
-	}
-
-	public DynamicSizeReference DynamicSizeReference {
-		get => _dynamicSizeReference;
+	/// <summary>
+	/// The position of this element, relative to its parent.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element.</i>
+	/// </summary>
+	public Vector2F Position {
+		get => _position;
 		set {
-			_dynamicSizeReference = value;
-			InvalidateChildren(recursive: true, self: true);
+			if (value == _position)
+				return;
+
+			_position = value;
+			if (!HasFlag(ElementFlags.InPerformLayout)) {
+				InvalidateLayout();
+			}
+			else
+				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		}
 	}
+
+	/// <summary>
+	/// The size of this element.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element and its parent.</i>
+	/// </summary>
+	public Vector2F Size {
+		get => _size;
+		set {
+			if (value == _size)
+				return;
+
+			ClampedSizeSet(value);
+		}
+	}
+
+	/// <summary>
+	/// The minimum size of this element. When set to null, the element has no minimum size.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element and its parent, if the new minimum bounds shift the size.</i>
+	/// </summary>
+	public Vector2F? MinimumSize {
+		get => _minimumSize;
+		set {
+			if (value == _minimumSize)
+				return;
+			_minimumSize = value;
+			ClampedSizeSet(_size);
+		}
+	}
+
+	/// <summary>
+	/// The maximum size of this element. When set to null, the element has no maximum size.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element and its parent, if the new maximum bounds shift the size.</i>
+	/// </summary>
+	public Vector2F? MaximumSize {
+		get => _maximumSize;
+		set {
+			if (value == _maximumSize)
+				return;
+			_maximumSize = value;
+			ClampedSizeSet(_size);
+		}
+	}
+
 	public bool DynamicallySized {
 		get => _dynamicallySized;
 		set {
@@ -304,31 +319,87 @@ public class Element : IValidatable
 		}
 	}
 
-	public Vector2F GetSize() => _size;
+	/// <summary>
+	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
+	/// </summary>
+	public Dock Dock {
+		get => _dock;
+		set {
+			if (value == _dock)
+				return;
 
-	public void SetSize(Vector2F value) {
-		if (value == _size)
-			return;
-
-		ClampedSizeSet(value);
+			_dock = value;
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
+		}
 	}
 
-	public Vector2F? GetMinimumSize() => _minimumSize;
-	public Vector2F? GetMaximumSize() => _maximumSize;
 
-	public void SetMinimumSize(Vector2F? value) {
-		if (value == _minimumSize)
-			return;
-		_minimumSize = value;
-		ClampedSizeSet(_size);
-	}
-	public void SetMaximumSize(Vector2F? value) {
-		if (value == _maximumSize)
-			return;
-		_maximumSize = value;
-		ClampedSizeSet(_size);
+
+	/// <summary>
+	/// The extra space left around <i>this</i> element when docked to something.<br></br>
+	/// For the extra space left around this elements children when docked; see DockPadding.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element and its parent</i>
+	/// </summary>
+	public RectangleF DockMargin {
+		get => _dockMargin;
+		set {
+			if (_dockMargin == value)
+				return;
+
+			_dockMargin = value;
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
+		}
 	}
 
+	public virtual ReadOnlySpan<char> TooltipText {
+		get => tooltipText;
+		set => tooltipText = (value.Length == 0 || value[0] == '\0') ? null : new(value);
+	}
+
+	/// <summary>
+	/// The extra space left around this elements children (if the child is docked inside of this element).<br></br>
+	/// For the extra space left around this element when docked; see DockMargin.
+	/// <br/>
+	/// <b>NOTE: Setting this property will result in a state change. </b> <i>This will invalidate the layout of the element and its parent</i>
+	/// </summary>
+	public RectangleF DockPadding {
+		get => _dockPadding;
+		set {
+			if (_dockPadding == value)
+				return;
+
+			GetParent()?.InvalidateLayout();
+			InvalidateLayout();
+			if (GetAddParent() != this)
+				GetAddParent().DockPadding = value;
+			else
+				_dockPadding = value;
+		}
+	}
+
+	public Anchor Origin { get => origin; set => origin = value; }
+	public Anchor Anchor { get => anchor; set => anchor = value; }
+
+	public void Initialize(float x, float y, float width, float height) {
+		_position = new(x, y);
+		_size = new(width, height);
+		Anchor = Anchor.TopLeft;
+		Origin = Anchor.TopLeft;
+		flags |= ElementFlags.NeedsLayout | ElementFlags.NeedsSchemeUpdate | ElementFlags.NeedsRenderBoundsFlush;
+		flags |= ElementFlags.PaintEnabled;
+		flags |= ElementFlags.AllowChainKeybindingToParent;
+		flags |= ElementFlags.AllowChainInputToParent;
+		__tooltipText = null;
+		Opacity = 1;
+		SetVisible(true);
+		SetMouseInputEnabled(true);
+		SetKeyboardInputEnabled(true);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	void ClampedSizeSet(Vector2F size) {
 		Vector2F previousSize = _size;
 		Vector2F newSize = size;
@@ -346,51 +417,6 @@ public class Element : IValidatable
 			else
 				AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		}
-	}
-
-	/// <summary>
-	/// Docking; allows the element to dock to a side of its parent, or to dock completely and fill the parent.
-	/// </summary>
-	public Dock GetDock() { return _dock; }
-
-	public void SetDock(Dock value) {
-		if (value == _dock)
-			return;
-
-		_dock = value;
-		GetParent()?.InvalidateLayout();
-		InvalidateLayout();
-	}
-	/// <summary>
-	/// The extra space left around <i>this</i> element when docked to something.<br></br>
-	/// For the extra space left around this elements children when docked; see DockPadding.
-	/// </summary>
-	public RectangleF GetDockMargin() { return _dockMargin; }
-
-	public void SetDockMargin(RectangleF value) {
-		if (_dockMargin == value)
-			return;
-
-		_dockMargin = value;
-		GetParent()?.InvalidateLayout();
-		InvalidateLayout();
-	}
-	/// <summary>
-	/// The extra space left around this elements children (if the child is docked inside of this element).<br></br>
-	/// For the extra space left around this element when docked; see DockMargin.
-	/// </summary>
-	public RectangleF GetDockPadding() { return _dockPadding; }
-
-	public void SetDockPadding(RectangleF value) {
-		if (_dockPadding == value)
-			return;
-
-		GetParent()?.InvalidateLayout();
-		InvalidateLayout();
-		if (GetAddParent() != this)
-			GetAddParent().SetDockPadding(value);
-		else
-			_dockPadding = value;
 	}
 
 	public virtual RectangleF GetRenderBounds() {
@@ -437,13 +463,11 @@ public class Element : IValidatable
 	public void SetAddParent(Element value) {
 		__parentToAddTo = value;
 		if (value != null) {
-			value.SetDockPadding(GetDockPadding());
+			value.DockPadding = DockPadding;
 		}
 	}
 
-	private string? tooltipText;
-	public virtual ReadOnlySpan<char> GetTooltipText() => tooltipText;
-	public virtual void SetTooltipText(ReadOnlySpan<char> value) => tooltipText = (value.Length == 0 || value[0] == '\0') ? null : new(value);
+
 
 	public float GetDynamicallyScaledFloat(float originalFloat, Axis axis) {
 		switch (axis) {
@@ -672,7 +696,7 @@ public class Element : IValidatable
 		if (_dock == Dock.None)
 			AddFlag(ElementFlags.NeedsRenderBoundsFlush);
 		foreach (var child in Children)
-			if (child.GetDock() != Dock.None || child.GetAnchor() != Anchor.TopLeft || child.DynamicallySized)
+			if (child.Dock != Dock.None || child.Anchor != Anchor.TopLeft || child.DynamicallySized)
 				child.InvalidateLayout();
 	}
 
@@ -704,6 +728,15 @@ public class Element : IValidatable
 		SetLastLayoutTime(globals.CurTime);
 	}
 
+	public double GetLastLayoutTime() {
+		return lastLayoutTime;
+	}
+
+	private void SetLastLayoutTime(double value) {
+		lastLayoutTime = value;
+	}
+
+
 	public void ValidateLayout() {
 		if (IsVisible() && IsLayoutInvalid()) {
 			RemoveFlag(ElementFlags.NeedsLayout);
@@ -720,7 +753,7 @@ public class Element : IValidatable
 		AddFlag(ElementFlags.InPerformLayout);
 		PerformLayout(__renderbounds.W, __renderbounds.H);
 		RemoveFlag(ElementFlags.InPerformLayout);
-		if (GetDock() == Dock.None)
+		if (Dock == Dock.None)
 			FlushRenderBounds();
 		DoOriginAnchor();
 		CommitFitToParent();
@@ -738,6 +771,15 @@ public class Element : IValidatable
 			__renderbounds.Pos += overflow;
 			_fitToParent = false;
 		}
+	}
+
+
+	public Vector2F GetSizeOfAllChildren() {
+		return sizeOfAllChildren;
+	}
+
+	private void SetSizeOfAllChildren(Vector2F value) {
+		sizeOfAllChildren = value;
 	}
 
 	private void ComputeSizeOfAllChildren() {
@@ -767,9 +809,9 @@ public class Element : IValidatable
 	}
 	private void DoOriginAnchor() {
 		Element? parent = GetParent();
-		if (IValidatable.IsValid(parent) && (GetOrigin() != Anchor.TopLeft || GetAnchor() != Anchor.TopLeft)) {
-			var np = GetOrigin().CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
-			var npO = GetAnchor().CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
+		if (IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
+			var np = Origin.CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
+			var npO = Anchor.CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
 			__renderbounds.Pos = npO + np;
 		}
 	}
@@ -786,7 +828,7 @@ public class Element : IValidatable
 		}
 
 		foreach (var child in Children) {
-			Dock dock = child.GetDock();
+			Dock dock = child.Dock;
 			if (dock == Dock.None)
 				continue;
 			if (!child.IsVisible())
@@ -1198,7 +1240,7 @@ public class Element : IValidatable
 		Vector2F ret = new Vector2F(0, 0);
 		Element? t = this;
 		while (true) {
-			ret += t.GetRenderBounds().Pos + t.GetChildRenderOffset();
+			ret += t.GetRenderBounds().Pos + t.ChildRenderOffset;
 			t = t.Parent;
 			if (t == null || t == t.UI) {
 				break;
@@ -1214,18 +1256,14 @@ public class Element : IValidatable
 	/// This feature is being phased out, and will likely be fully replaced in the future. <br/> It is still a valid macro in the meantime, as texture management is still tightly coupled to level objects.
 	/// </summary>
 	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
-	public Anchor GetOrigin() => origin;
-	public void SetOrigin(Anchor value) => origin = value;
-	public Anchor GetAnchor() => anchor;
-	public void SetAnchor(Anchor value) => anchor = value;
 	// TODO: what the hell is the difference???
 	public Vector2F CursorPos() => Level.FrameState.Mouse.MousePos - GetGlobalPosition();
 	public Vector2F GetMousePos() => EngineCore.MousePos - this.GetGlobalPosition();
 
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
-		this.SetSize(new(sizeW ? 0 : this.GetSize().W, sizeH ? 0 : this.GetSize().H));
+		this.Size = new(sizeW ? 0 : this.Size.W, sizeH ? 0 : this.Size.H);
 		InvalidateLayout();
-		SetSize(new(sizeW ? GetSizeOfAllChildren().W : GetSize().W, sizeH ? GetSizeOfAllChildren().H : GetSize().H));
+		Size = new(sizeW ? GetSizeOfAllChildren().W : Size.W, sizeH ? GetSizeOfAllChildren().H : Size.H);
 	}
 
 	public virtual void ProvideExample(Panel buildHere) { }
@@ -1234,7 +1272,7 @@ public class Element : IValidatable
 		UserInterface UI = EngineCore.Level.RootPanel;
 
 		var examples = new Elements.Window(UI);
-		examples.SetSize(new(1280, 720));
+		examples.Size = new(1280, 720);
 		examples.Center();
 		examples.Title = "Nucleus - UI Element Examples";
 
@@ -1300,7 +1338,7 @@ public class Element : IValidatable
 	}
 	public virtual void PaintBackground(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
-		float borderSize = GetBorderSize(), roundness = GetRoundness();
+		float borderSize = BorderSize, roundness = Roundness;
 
 		Graphics2D.SetDrawColor(back);
 
@@ -1318,7 +1356,7 @@ public class Element : IValidatable
 	public virtual void Paint(float width, float height) { }
 	public virtual void PaintBorder(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
-		float borderSize = GetBorderSize(), roundness = GetRoundness();
+		float borderSize = BorderSize, roundness = Roundness;
 
 		if (roundness <= 0) {
 			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);
@@ -1343,7 +1381,7 @@ public class Element : IValidatable
 		// TODO: Make this not suck
 		RectangleF parent = GetRenderBounds();
 		RectangleF childRect = child.GetRenderBounds();
-		childRect.Pos += GetChildRenderOffset();
+		childRect.Pos += ChildRenderOffset;
 		return childRect.X < parent.W &&
 		   childRect.X + childRect.W > 0 &&
 		   childRect.Y < parent.H &&

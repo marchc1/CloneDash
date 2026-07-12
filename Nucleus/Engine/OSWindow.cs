@@ -40,7 +40,7 @@ public class WindowDragNDropState(OSWindow window)
 	public bool TryDequeue(out DragData data) => Events.TryDequeue(out data);
 
 	public void Reset() {
-		Events.Clear();
+		if(!Events.IsEmpty) Events.Clear();
 		Position = default;
 	}
 }
@@ -149,8 +149,6 @@ public unsafe class OSWindow : IValidatable
 	/// </summary>
 	/// <param name="window"></param>
 	private static void setupGL(OSWindow window) {
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
@@ -172,7 +170,7 @@ public unsafe class OSWindow : IValidatable
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
 	}
-	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0, bool shareContext = false) {
+	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
 
@@ -185,8 +183,6 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_SetHint("SDL_MOUSE_FOCUS_CLICKTHROUGH", "1");
 		if (window.handle == null) throw NucleusEngineException.Show("SDL could not create a window.");
 
-		if (shareContext)
-			SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 #if COMPILED_OSX
 		window.ActivateGL();
 		setupGL(window);

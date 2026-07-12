@@ -110,12 +110,12 @@ namespace Nucleus.ModelEditor
 		}
 
 		public ITexture? ImageTexture {
-			get => Image.GetTexture();
-			set => Image.SetTexture(value);
+			get => Image.Texture;
+			set => Image.Texture = value;
 		}
 		public Color ImageColor {
-			get => Image.GetImageColor();
-			set => Image.SetImageColor(value);
+			get => Image.ImageColor1;
+			set => Image.ImageColor = value;
 		}
 
 		public OutlinerNode(Element parent) : base(parent) {
@@ -124,38 +124,41 @@ namespace Nucleus.ModelEditor
 			Expander = new(this);
 			Image = new Nucleus.UI.Elements.Image(this);
 
-			this.SetSize(new(24));
+			this.
+			Size = new(24);
 
-			Visibility.SetPos(new(-7, 2));
-			Keyframe.SetPos(new(23 - 7, 2));
-			Expander.SetPos(new(46 - 7, 2));
-			Image.SetPos(new(56, 2));
+			Visibility.
+			Position = new(-7, 2);
+			Keyframe.			Position = new(23 - 7, 2);
+			Expander.			Position = new(46 - 7, 2);
+			Image.			Position = new(56, 2);
 
-			Visibility.SetSize(new(23));
-			Keyframe.SetSize(new(23));
-			Expander.SetSize(new(23));
-			Image.SetSize(new(16));
+			Visibility.
+			Size = new(23);
+			Keyframe.			Size = new(23);
+			Expander.			Size = new(23);
+			Image.			Size = new(16);
 
 			// Sub-buttons should be invisible except for their custom paint
-			Visibility.SetBorderSize(0);
+			Visibility.BorderSize = 0;
 			Visibility.SetPaintBackgroundEnabled(false);
 			Visibility.SetPaintBorderEnabled(false);
-			Keyframe.SetBorderSize(0);
+			Keyframe.BorderSize = 0;
 			Keyframe.SetPaintBackgroundEnabled(false);
 			Keyframe.SetPaintBorderEnabled(false);
-			Expander.SetBorderSize(0);
+			Expander.BorderSize = 0;
 			Expander.SetPaintBackgroundEnabled(false);
 			Expander.SetPaintBorderEnabled(false);
 
-			Image.SetImageColor(Color.White);
+			Image.ImageColor = Color.White;
 
-			SetBorderSize(0);
+			BorderSize = 0;
 			SetPaintBorderEnabled(false);
-			SetDockMargin(RectangleF.TLRB(0, 2, 2, 0));
+			DockMargin = RectangleF.TLRB(0, 2, 2, 0);
 
 			Image.SetPaintBackgroundEnabled(false);
 			Image.SetPaintBorderEnabled(false);
-			Image.SetImageOrientation(ImageOrientation.Fit);
+			Image.			ImageOrientation = ImageOrientation.Fit;
 
 			Visibility.PaintOverride += Visibility_PaintOverride;
 			Keyframe.PaintOverride += Keyframe_PaintOverride;
@@ -174,7 +177,7 @@ namespace Nucleus.ModelEditor
 				Keyframe.SetVisible(animateMode);
 			};
 
-			SetDock(Dock.Top);
+			Dock = Dock.Top;
 		}
 
 		private void Keyframe_MouseClickEvent(Element self, ButtonCode button) {
@@ -233,18 +236,19 @@ namespace Nucleus.ModelEditor
 		}
 
 		protected override void PerformLayout(float width, float height) {
-			Visibility.SetSize(new(Visibility.GetSize().X, height));
-			Keyframe.SetSize(new(Keyframe.GetSize().X, height));
+			Visibility.			Size = new(Visibility.Size.X, height);
+			Keyframe.			Size = new(Keyframe.Size.X, height);
 			base.PerformLayout(width, height);
-			Expander.SetPos(new(40, 2));
-			Expander.SetSize(new(23 + (Layer * 16), height));
-			Image.SetSize(new(Image.GetSize().X, height));
+			Expander.			Position = new(40, 2);
+			Expander.			Size = new(23 + (Layer * 16), height);
+			Image.			Size = new(Image.Size.X, height);
 
-			Image.SetPos(new(Expander.GetPos().X + Expander.GetSize().X, 0));
+			Image.
+			Position = new(Expander.Position.X + Expander.Size.X, 0);
 			Expander.SetVisible(Children.Count > 0);
 
 			SetTextAlignment(Anchor.CenterLeft);
-			SetTextPadding(new((Image.GetPos().X + Image.GetSize().X + 8), 0));
+			SetTextPadding(new((Image.Position.X + Image.Size.X + 8), 0));
 		}
 
 		protected override void TextChanged(ReadOnlySpan<char> text) {
@@ -280,7 +284,7 @@ namespace Nucleus.ModelEditor
 			Graphics2D.SetDrawColor(c, c, c);
 			Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
 			var s = 16;
-			Graphics2D.DrawImage(new(width - 19, (height / 2) - (s / 2) - 1), new(s), new(0.5f));
+			Graphics2D.DrawTexturedRectangle(new Vector2F(width - 19, (height / 2) - (s / 2) - 1), new Vector2F(s), 0, new Vector2F(0.5f));
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
@@ -308,7 +312,7 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetDrawColor(color);
 			Graphics2D.SetTexture((ITexture)Level.Textures.LoadTextureFromFile("models/keyframe.png"));
-			Graphics2D.DrawImage(RectangleF.FromPosAndSize(new(2), new(height - 4)));
+			Graphics2D.DrawTexturedRectangle(RectangleF.FromPosAndSize(new(2), new(height - 4)));
 		}
 
 		private void Visibility_PaintOverride(Element self, float width, float height) {
@@ -320,7 +324,7 @@ namespace Nucleus.ModelEditor
 				var c = self.IsDepressed() ? (visColor / 2) : self.IsHovered() ? (visColor + 35) : visColor;
 				Graphics2D.SetDrawColor(c, c, c);
 				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
-				Graphics2D.DrawImage(RectangleF.XYWH(4, 4, width - 8, height - 8), new(0, 0));
+				Graphics2D.DrawTexturedRectangle(RectangleF.XYWH(4, 4, width - 8, height - 8), 0, new(0, 0));
 			}
 			else {
 				var visColor = editorItem.GetVisible() ? 185 : 125;

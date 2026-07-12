@@ -46,7 +46,7 @@ namespace Nucleus.UI
 			if (AutomateLayout) {
 				Vector2F size = new();
 				foreach (var child in Children) {
-					if (child.GetDock() != Dock.None)
+					if (child.Dock != Dock.None)
 						continue;
 
 					size = new(
@@ -55,13 +55,13 @@ namespace Nucleus.UI
 					);
 				}
 
-				SetSize(new(
+				Size = new(
 					MathF.Max(size.X, MinimumInternalSize.W),
 					MathF.Max(size.Y, MinimumInternalSize.H)
-				));
+				);
 
 				if (GetParent() != null)
-					SetPos((GetParent().GetSize() / 2) - (GetSize() / 2));
+					Position = (GetParent().Size / 2) - (Size / 2);
 			}
 		}
 	}
@@ -70,7 +70,7 @@ namespace Nucleus.UI
     {
         public static PopupWindow DialogBase(this UserInterface UI, string title, bool automateLayout = true) {
 			PopupWindow popup = new PopupWindow(UI);
-			popup.SetDockPadding(RectangleF.TLRB(2, 8, 8, 2));
+			popup.			DockPadding = RectangleF.TLRB(2, 8, 8, 2);
             popup.Title = title;
             popup.Titlebar.MinimizeButton.SetVisible(false);
 			popup.Titlebar.MaximizeButton.SetVisible(false);
@@ -85,21 +85,21 @@ namespace Nucleus.UI
             PopupWindow popup = UI.DialogBase(title, automateLayout: false);
 
             FlexPanel containButtons = new FlexPanel(popup);
-            containButtons.SetDock(Dock.Bottom);
-            containButtons.SetDockMargin(RectangleF.TLRB(0, 0, 0, 5));
-            containButtons.SetSize(new(0, 48));
+			containButtons.            Dock = Dock.Bottom;
+			containButtons.            DockMargin = RectangleF.TLRB(0, 0, 0, 5);
+			containButtons.            Size = new(0, 48);
             containButtons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-            containButtons.SetDockPadding(RectangleF.TLRB(2, 2, 2, 2));
+			containButtons.            DockPadding = RectangleF.TLRB(2, 2, 2, 2);
 
 			Label lb = new Label(popup);
-			lb.SetTextSize ( 17);
-            lb.SetText(text.Replace("\r", ""));
-            lb.SetDock(Dock.Fill);
+			lb.			TextSize = 17;
+			lb.            Text = text.Replace("\r", "");
+			lb.            Dock = Dock.Fill;
 
-            var txtsize = Graphics2D.GetTextSize(lb.GetText(), lb.GetFont(), lb.GetTextSize());
+            var txtsize = Graphics2D.GetTextSize(lb.Text, lb.Font, lb.TextSize);
             var titlesize = Graphics2D.GetTextSize(title, popup.Titlebar.GetFont(), popup.Titlebar.GetTextSize());
             var finalsize = new Vector2F(MathF.Max(txtsize.X, titlesize.X + 64), txtsize.Y);
-            popup.SetSize(new Vector2F(100, 200) + finalsize);
+			popup.            Size = new Vector2F(100, 200) + finalsize;
             popup.Center();
 
             audiosystem.PlaySound("popup.wav", AudioPlaybackSettings.Unaltered);
@@ -111,7 +111,7 @@ namespace Nucleus.UI
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button ok = new Button(containButtons);
-            ok.SetText("OK");
+			ok.            Text = "OK";
             ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();
@@ -123,14 +123,14 @@ namespace Nucleus.UI
             var (popup, containButtons) = SetupDialogCore(UI, title, text);
 
             Button close = new Button(containButtons);
-            close.SetText("Cancel");
+			close.            Text = "Cancel";
             close.OnButtonClick += (_, _) => {
                 onCancel?.Invoke();
                 popup.Close();
             };
 
             Button ok = new Button(containButtons);
-            ok.SetText("OK");
+			ok.            Text = "OK";
             ok.OnButtonClick += (_, _) => {
                 onOK?.Invoke();
                 popup.Close();

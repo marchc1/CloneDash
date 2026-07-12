@@ -62,13 +62,13 @@ public class OutlinerAndProperties : View
 
 	public OutlinerAndProperties(Element parent) : base(parent) {
 		Properties = new(this);
-		Properties.SetSize(new(64));
-		Properties.SetDock(Dock.Bottom);
+		Properties.		Size = new(64);
+		Properties.		Dock = Dock.Bottom;
 		Properties.SetPaintBackgroundEnabled(true);
 		Properties.SetBgColor(new Color(5, 7, 12, 200));
 
 		Outliner = new(this);
-		Outliner.SetDock(Dock.Fill);
+		Outliner.		Dock = Dock.Fill;
 	}
 }
 public record ActionStackData(Action Redo, Action Undo);
@@ -407,13 +407,13 @@ public class ModelEditor : Level
 
 		AnimationMode = !AnimationMode;
 		if (AnimationMode) {
-			SwitchMode.SetText("Animate Mode");
+			SwitchMode.			Text = "Animate Mode";
 			View.SetActiveWorkspaceByName("Animate");
 
 			UpdateModelAnimations();
 		}
 		else {
-			SwitchMode.SetText("Setup Mode");
+			SwitchMode.			Text = "Setup Mode";
 			View.SetActiveWorkspaceByName("Setup");
 
 			foreach (var model in File.Models) {
@@ -451,12 +451,12 @@ public class ModelEditor : Level
 		modelInstance = modelData.Instantiate();
 
 		animationsButtons.ClearChildren();
-		animationsButtons.SetSize(new(256));
+		animationsButtons.		Size = new(256);
 		foreach (var animation in modelData.Animations) {
 			var playThisOne = new Button(animationsButtons);
-			playThisOne.SetSize(new Vector2F(24));
-			playThisOne.SetDock(Dock.Top);
-			playThisOne.SetText($"{animation.Name}");
+			playThisOne.			Size = new Vector2F(24);
+			playThisOne.			Dock = Dock.Top;
+			playThisOne.			Text = $"{animation.Name}";
 			var instance = modelInstance;
 			playThisOne.OnButtonClick += (_, _) => {
 				instance.SetToSetupPose();
@@ -510,18 +510,18 @@ public class ModelEditor : Level
 
 	public void MakeRuntimeTest(EditorModel model) {
 		var window = new Window(RootPanel);
-		window.SetSize(new(1280, 720));
+		window.		Size = new(1280, 720);
 		window.Center();
 		window.Title = "Runtime Test";
 		//window.MakePopup();
 
 		var refresh = new Button(window);
-		refresh.SetDock(Dock.Top);
-		refresh.SetText("Refresh Data");
+		refresh.		Dock = Dock.Top;
+		refresh.		Text = "Refresh Data";
 
 		var animations = new Panel(window);
-		animations.SetDock(Dock.Left);
-		animations.SetSize(new(256));
+		animations.		Dock = Dock.Left;
+		animations.		Size = new(256);
 
 		ModelData data;
 		ModelInstance instance;
@@ -529,7 +529,7 @@ public class ModelEditor : Level
 		refresh.OnButtonClick += (_, _) => UpdateModel(animations, model, out data, out instance);
 
 		var renderingPanel = new RenderingPanel(window, this, instance, data);
-		renderingPanel.SetDock(Dock.Fill);
+		renderingPanel.		Dock = Dock.Fill;
 	}
 
 	public override void Initialize(params object[] args) {
@@ -572,7 +572,7 @@ public class ModelEditor : Level
 		});
 
 		View = new(RootPanel);
-		View.SetDock(Dock.Fill);
+		View.		Dock = Dock.Fill;
 
 		{
 			var setupWorkspace = View.AddWorkspace("Setup");
@@ -605,10 +605,10 @@ public class ModelEditor : Level
 		}
 
 		SwitchMode = new(Editor);
-		SwitchMode.SetPos(new Vector2F(8));
-		SwitchMode.SetSize(new(128, 32));
-		SwitchMode.SetTextSize(20);
-		SwitchMode.SetText("Setup Mode");
+		SwitchMode.		Position = new Vector2F(8);
+		SwitchMode.		Size = new(128, 32);
+		SwitchMode.		TextSize = 20;
+		SwitchMode.		Text = "Setup Mode";
 		SwitchMode.OnButtonClick += (_, _) => ToggleModes();
 
 		Outliner.NodeClicked += Outliner_NodeClicked;
@@ -663,23 +663,23 @@ public class ModelEditor : Level
 			else {
 				var importWindow = new Window(RootPanel);
 				importWindow.Title = $"Import from {Path.GetFileName(result)}";
-				importWindow.SetSize(new(800, 600));
+				importWindow.				Size = new(800, 600);
 				importWindow.MakePopup();
 
 				var lbl = new Label(importWindow);
-				lbl.SetText("Which model do you want to import?");
-				lbl.SetDock(Dock.Top);
+				lbl.				Text = "Which model do you want to import?";
+				lbl.				Dock = Dock.Top;
 
 				var lbl2 = new Label(importWindow);
-				lbl2.SetText("Close the window when done. Clicking an item will append it to the file.");
-				lbl2.SetDock(Dock.Top);
+				lbl2.				Text = "Close the window when done. Clicking an item will append it to the file.";
+				lbl2.				Dock = Dock.Top;
 
 				var models = new ListView(importWindow);
-				models.SetDock(Dock.Fill);
+				models.				Dock = Dock.Fill;
 
 				foreach (var mdl in temp.Models) {
 					var fileItem = new ListViewItem(models);
-					fileItem.SetText( mdl.Name ?? "<unnamed model>");
+					fileItem.					Text = mdl.Name ?? "<unnamed model>";
 					fileItem.OnButtonClick += (_, _) => {
 						File.AppendModel(mdl);
 						fileItem.Remove();
@@ -695,14 +695,14 @@ public class ModelEditor : Level
 
 	private void File_Export() {
 		var window = new Window(RootPanel);
-		window.SetSize(new(1280, 720));
+		window.		Size = new(1280, 720);
 		window.Center();
 		window.Title = $"Export [{Model4System.MODEL_FORMAT_VERSION}]";
 		window.MakePopup();
 
 		var btnJson = new Button(window);
-		btnJson.SetText("Export JSON [.nm4rj]");
-		btnJson.SetDock(Dock.Top);
+		btnJson.		Text = "Export JSON [.nm4rj]";
+		btnJson.		Dock = Dock.Top;
 		btnJson.OnButtonClick += (_, _) => {
 			var save = Platform.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelRefJSON.EXTENSION}"], "Model4 as Ref'd JSON");
 			if (!save.Cancelled) {
@@ -713,8 +713,8 @@ public class ModelEditor : Level
 		};
 
 		var btnBinary = new Button(window);
-		btnBinary.SetText("Export Binary [.nm4b]");
-		btnBinary.SetDock(Dock.Top);
+		btnBinary.		Text = "Export Binary [.nm4b]";
+		btnBinary.		Dock = Dock.Top;
 		btnBinary.OnButtonClick += (_, _) => {
 			var save = Platform.SaveFileDialog("Save Model4 Data", AppContext.BaseDirectory, [$"*.{ModelBinary.EXTENSION}"], "Model4 as Binary Data");
 			if (!save.Cancelled) {

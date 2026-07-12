@@ -38,15 +38,18 @@ public delegate void ChartSongSourceMoveFinishFn(in ChartSongSourceMoveFinish fi
 
 public class SongSelector : Panel, IMainMenuPanel
 {
-	public void SetRichPresence() {
-		RichPresenceSystem.SetPresence(new() {
+	#region IMainMenuPanel
+
+	string IMainMenuPanel.Name => "Song Select";
+
+	void IMainMenuPanel.SetRichPresence() {
+		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "Picking a chart"
 		});
 	}
-	public string GetName() => "Song Selector";
-	public void OnHidden() { }
-	public void OnShown() { }
+
+	#endregion
 
 	SongSearchBar SearchBar = null!;
 	SongLabel FilterResults = null!;
@@ -120,7 +123,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		return text;
 	}
 
-	public void UpdateFilterText() => FilterResults.SetText(GetFilterText());
+	public void UpdateFilterText() => FilterResults.Text = GetFilterText();
 
 	public void ClearFilter() {
 		Source = Source?.GetRootSource();
@@ -150,7 +153,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			this.selector = selector;
 			this.i = i;
 			imageRenderer = new(this);
-			imageRenderer.SetDock(Dock.Fill);
+			imageRenderer.Dock = Dock.Fill;
 		}
 		public override void Paint(float w, float h) {
 			float a;
@@ -161,16 +164,17 @@ public class SongSelector : Panel, IMainMenuPanel
 			var c = MixColorBasedOnMouseState(this, new(35, (int)(255 * a)), new(0, 1, 2, 1), new(0, 1, 0.5f, 1));
 			Graphics2D.SetDrawColor(c);
 			Graphics2D.DrawCircle(new(w / 2, h / 2), w / 2 - 8);
-			SetOpacity(a);
+			Opacity = a;
 		}
 
-		internal void SetImageRotation(float value) => imageRenderer.SetImageRotation(value);
-		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.SetImageOrientation(value);
-		internal void SetImagePadding(Vector2F value) => imageRenderer.SetImagePadding(value);
-		internal void SetImage(ITexture value) => imageRenderer.SetTexture(value);
-		internal void SetImageFlipX(bool value) => imageRenderer.SetImageFlipX(value);
-		internal void SetImageFlipY(bool value) => imageRenderer.SetImageFlipY(value);
-		internal void SetImageColor(Color value) => imageRenderer.SetImageColor(value);
+		internal void SetImageRotation(float value) => imageRenderer.ImageRotation = value;
+		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.ImageOrientation = value;
+		internal void SetImagePadding(Vector2F value) => imageRenderer.ImagePadding = value;
+		internal void SetImage(ITexture value) => imageRenderer.Texture = value;
+		internal void SetImageOffset(Vector2F value) => imageRenderer.ImageRotationOffset = value;
+		internal void SetImageFlipX(bool value) => imageRenderer.ImageFlipX = value;
+		internal void SetImageFlipY(bool value) => imageRenderer.ImageFlipY = value;
+		internal void SetImageColor(Color value) => imageRenderer.ImageColor = value;
 	}
 
 	public SongLabel CurrentTrackName = null!;
@@ -340,22 +344,22 @@ public class SongSelector : Panel, IMainMenuPanel
 		FigureOutDisk();
 
 		float width = GetRenderBounds().W, height = GetRenderBounds().H;
-		SetChildRenderOffset(new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2)));
+		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.IsKeyboardFocused()) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
-			if (keyboard.IsKeyDown(ButtonCode.KeyLeft) || keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA)) {
+			if ((keyboard.IsKeyDown(ButtonCode.KeyLeft) && !keyboard.WasKeyPressed(ButtonCode.KeyLeft)) || (keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA))) {
 				MoveLeft();
 				InvalidateLayout();
 			}
-			else if (keyboard.IsKeyDown(ButtonCode.KeyRight) || keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD)) {
+			else if ((keyboard.IsKeyDown(ButtonCode.KeyRight) && !keyboard.WasKeyPressed(ButtonCode.KeyRight)) || (keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD))) {
 				MoveRight();
 				InvalidateLayout();
 			}
 		}
 
-		if (FlyAwaySOS.Update(FlyAway) > 0.001f || GetChildRenderOffset().Y > 0) {
+		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
 			InvalidateLayout();
 		}
 
@@ -374,8 +378,10 @@ public class SongSelector : Panel, IMainMenuPanel
 				CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 				// DON'T do: disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
 				// DO: set Position/Size and let DoOriginAnchor handle center-origin
-				disc.SetSize(new(size, size));
-				disc.SetPos(new(x, y));
+				disc.               // DON'T do: disc.SetRenderBounds(x - size / 2, y - size / 2, size, size);
+									// DO: set Position/Size and let DoOriginAnchor handle center-origin
+				Size = new(size, size);
+				disc.Position = new(x, y);
 			}
 
 
@@ -384,11 +390,13 @@ public class SongSelector : Panel, IMainMenuPanel
 				continue;
 			var cover = song.GetCoverTexture();
 
-			disc.SetText("");
+			disc.
+			Text = "";
 			if (cover.Texture != null) {
 				disc.SetImageOrientation(ImageOrientation.Stretch);
 				disc.SetImagePadding(new(16));
 				disc.SetImage(cover.Texture);
+				disc.SetImageOffset(new(0.5f));
 				disc.SetImageFlipX(false);
 				disc.SetImageFlipY(cover.Flipped);
 			}
@@ -396,7 +404,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void CalculateDiscPos(float width, float height, int index, out float x, out float y, out float rot) {
-		var offsetYParent = GetChildRenderOffset().Y / (width / 2);
+		var offsetYParent = ChildRenderOffset.Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
 		float flyAwayMw = flyAway * width;
 
@@ -423,14 +431,14 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public void LayoutDiscs(float width, float height) {
 		if (Source == null || (Source.GetSongCount() <= 0 && !Source.IsBusy())) {
-			Loading.SetText("No songs available.");
+			Loading.Text = "No songs available.";
 			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
 		}
 
 		if (Source.IsBusy()) {
-			Loading.SetText("LOADING");
+			Loading.Text = "LOADING";
 			Loading.SetVisible(true);
 			DisableDiscs(true);
 			return;
@@ -451,35 +459,40 @@ public class SongSelector : Panel, IMainMenuPanel
 			if (song == null)
 				continue;
 
-			disc.SetSize(new(discWidth, discWidth));
+			disc.
+			Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 			disc.SetImageRotation(rot);
-			disc.SetPos(new(x, y));
-			disc.SetText("");
+			disc.Position = new(x, y);
+			disc.Text = "";
 		}
 
 		var heightDiv2 = height / 2;
 
-		CurrentTrackName.SetOrigin(Anchor.Center);
-		CurrentTrackName.SetAnchor(Anchor.Center);
+		CurrentTrackName.
+		Origin = Anchor.Center;
+		CurrentTrackName.		Anchor = Anchor.Center;
 		CurrentTrackName.SetAutoSize(true);
 
-		CurrentTrackAuthor.SetOrigin(Anchor.Center);
-		CurrentTrackAuthor.SetAnchor(Anchor.Center);
+		CurrentTrackAuthor.
+		Origin = Anchor.Center;
+		CurrentTrackAuthor.		Anchor = Anchor.Center;
 		CurrentTrackAuthor.SetAutoSize(true);
 
-		CurrentTrackName.SetPos(new(0, heightDiv2 / 1.8f));
-		CurrentTrackAuthor.SetPos(new(0, heightDiv2 / 1.8f + 42));
+		CurrentTrackName.
+		Position = new(0, heightDiv2 / 1.8f);
+		CurrentTrackAuthor.Position = new(0, heightDiv2 / 1.8f + 42);
 
-		CurrentTrackName.SetTextSize(48);
-		CurrentTrackAuthor.SetTextSize(24);
+		CurrentTrackName.
+		TextSize = 48;
+		CurrentTrackAuthor.TextSize = 24;
 
 		var mainSong = GetDiscSong(0);
 		var info = mainSong?.FetchMetadata(HumanLanguage.GetCurrentLanguage());
 		if (info != null) {
-			CurrentTrackName.SetText(info.Value.Name ?? "");
-			CurrentTrackAuthor.SetText(info.Value.Author ?? "");
+			CurrentTrackName.Text = info.Value.Name ?? "";
+			CurrentTrackAuthor.Text = info.Value.Author ?? "";
 		}
 	}
 
@@ -500,23 +513,23 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor = new(this);
 		SearchBar = new(this);
 		FilterResults = new(this);
-		FilterResults.SetAnchor(Anchor.TopCenter);
-		FilterResults.SetOrigin(Anchor.Center);
+		FilterResults.		Anchor = Anchor.TopCenter;
+		FilterResults.		Origin = Anchor.Center;
 
 		SearchBar.OnButtonClick += SearchBar_MouseReleaseEvent;
 
 		Loading = new(this);
-		Loading.SetAnchor(Anchor.Center);
-		Loading.SetOrigin(Anchor.Center);
-		Loading.SetText("LOADING");
-		Loading.SetTextSize(100);
+		Loading.		Anchor = Anchor.Center;
+		Loading.		Origin = Anchor.Center;
+		Loading.Text = "LOADING";
+		Loading.TextSize = 100;
 		Loading.SetAutoSize(true);
 		Loading.SetVisible(false);
 
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.SetVisible(false);
-			disc.SetOrigin(Anchor.Center);
+			disc.			Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 
 			disc.OnButtonClick += (s, _) => {
@@ -524,7 +537,7 @@ public class SongSelector : Panel, IMainMenuPanel
 				var song = GetDiscSong(0);
 				LevelTransitions.LoadSongSelector(this, song);
 			};
-			disc.SetBorderSize(0);
+			disc.BorderSize = 0;
 			disc.SetBgColor(new Color(0, 0, 0, 0));
 			disc.SetImageColor(i == IntegerMidpoint ? new Color(255) : new Color(155));
 		}
@@ -545,10 +558,10 @@ public class SongSelector : Panel, IMainMenuPanel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		LayoutDiscs(width, height);
-		SearchBar.SetPos(new(width / 2, height * .1f));
-		SearchBar.SetSize(new(width / 2f, height * 0.06f));
-		FilterResults.SetPos(new(0, height * .1f + height * 0.06f + height * 0.00f));
-		FilterResults.SetTextSize(height / 30f);
+		SearchBar.Position = new(width / 2, height * .1f);
+		SearchBar.Size = new(width / 2f, height * 0.06f);
+		FilterResults.Position = new(0, height * .1f + height * 0.06f + height * 0.00f);
+		FilterResults.TextSize = height / 30f;
 		FilterResults.SetAutoSize(true);
 	}
 

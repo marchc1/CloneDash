@@ -8,7 +8,7 @@ namespace Nucleus.UI;
 public class ListView : ScrollPanel
 {
 	public ListView(Element? parent) : base(parent) {
-		SetDockPadding(RectangleF.TLRB(2));
+		DockPadding = RectangleF.TLRB(2);
 	}
 	public Element? LastSelectedElement { get; private set; } = null;
 	public HashSet<Element> SelectedElements { get; private set; } = [];
@@ -22,7 +22,7 @@ public class ListView : ScrollPanel
 	}
 	protected override void ChildParented(Element parent, Element child) {
 		base.ChildParented(parent, child);
-		child.SetDock(Dock.Top);
+		child.		Dock = Dock.Top;
 	}
 	public override bool ShouldItemBeVisible(Element e) {
 		return (e as ListViewItem).ShowLVItem;
@@ -39,7 +39,7 @@ public class ListViewItem : Button
 	public ListViewItem(Element? parent) : base(parent) {
 		SetBgColor(new Color(0, 0, 0, 0));
 		SetFgColor(new Color(0, 0, 0, 0));
-		this.SetClipping(false);
+		this.		Clipping = false;
 	}
 
 	protected override void OnThink() {
