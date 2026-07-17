@@ -355,6 +355,15 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 		if (Data.DefaultSkin?.TryGetAttachment(slot, name, out attachment) ?? false)
 			return attachment;
+		
+		foreach (Skin skin in Data.Skins)
+		{
+			if (skin == Data.DefaultSkin || skin == Skin)
+				continue; // we already checked these
+			
+			if (skin.TryGetAttachment(slot, name, out attachment))
+				return attachment;
+		}
 
 		return null;
 	}
