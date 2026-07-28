@@ -185,7 +185,7 @@ public class GameDLL : IGameDLL
 
 		DoCmdLineOps(CommandLine(), true);
 		if (CommandLine().CheckParm("-pretime", out _)) {
-			EngineCore.Interrupt(() => { }, true, "The executable was started with the '-pretime' command line parameter, which has been deprecated in favor of '-mdbmsc'. \nReplace '-pretime 0' with '-mdbmsc 1' in your MDBMSC settings.");
+			PanicSystem.Interrupt(() => { }, true, "The executable was started with the '-pretime' command line parameter, which has been deprecated in favor of '-mdbmsc'. \nReplace '-pretime 0' with '-mdbmsc 1' in your MDBMSC settings.");
 		}
 
 		if (CommandLine().CheckParm("-mdbmsc", out _)) {

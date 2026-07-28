@@ -148,14 +148,14 @@ public unsafe class OSWindow : IValidatable
 	/// Ideally this is done differently at some point, but this is the only way to get the game thread working on all platforms
 	/// </summary>
 	/// <param name="window"></param>
-	private static void setupGL(OSWindow window) {
+	private static void SetupGlInternal(OSWindow window) {
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
 	unsafe RenderBatch* renderBatch;
 	public void SetupGL() {
 #if !COMPILED_OSX
-		setupGL(this);
+		SetupGlInternal(this);
 #endif
 		SDL3.SDL_GL_MakeCurrent(handle, glctx);
 		SDL3.SDL_GL_SetSwapInterval(0);
@@ -164,7 +164,7 @@ public unsafe class OSWindow : IValidatable
 		ActivateGL();
 		Rlgl.GlInit((int)ScreenSize.X, (int)ScreenSize.Y);
 		Texture2D tex = new() { Id = Rlgl.GetTextureIdDefault(), Width = 1, Height = 1, Mipmaps = 1, Format = ImageFormat.R8G8B8A8 };
-		Raylib.SetShapesTexture(tex, new(0, 0, 1, 1));
+		Raylib.SetShapesTexture(tex, new Rectangle(0, 0, 1, 1));
 		renderBatch = Raylib.New<RenderBatch>(1);
 		*renderBatch = Rlgl.LoadRenderBatch(1, 8192);
 
@@ -185,7 +185,7 @@ public unsafe class OSWindow : IValidatable
 
 #if COMPILED_OSX
 		window.ActivateGL();
-		setupGL(window);
+		SetupGlInternal(window);
 #endif
 
 		window.windowID = SDL3.SDL_GetWindowID(window.handle);
