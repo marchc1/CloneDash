@@ -236,7 +236,7 @@ public unsafe class OSWindow : IValidatable
 	static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
 		Vector2F p = new(point->x, point->y);
 		OSWindow osWindow = windowLookup_id2window[SDL3.SDL_GetWindowID(window)];
-		Level? level = EngineCore.GetWindowLevel(osWindow);
+		Level? level = EngineCore.Level;
 		if (level != null)
 			return (SDL_HitTestResult)level.WindowHitTest(p);
 		return SDL_HitTestResult.SDL_HITTEST_NORMAL;
@@ -429,8 +429,10 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	bool isCenterEnqueued;
-	public void Center() {
+	private OSMonitor? enqueuedCenterTargetMonitor;
+	public void Center(OSMonitor? targetMonitor = null) {
 		isCenterEnqueued = true;
+		enqueuedCenterTargetMonitor = targetMonitor;
 	}
 
 	public Vector2F MinSize {

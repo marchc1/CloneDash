@@ -97,42 +97,19 @@ public static class EngineCore
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
-	class OSWindowCtx
-	{
-		public Level? Level;
-		public Level? NextFrameLevel;
-		public object[]? NextFrameArgs;
-
-		public TimeSpan LastTimeToUpdate;
-		public TimeSpan LastTimeToRender;
-	}
+	static Level? NextFrameLevel;
+	static object[]? NextFrameArgs;
+	static TimeSpan LastTimeToUpdate;
+	static TimeSpan LastTimeToRender;
 
 	public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => audiosystem.SetMasterVolume(cv.GetFloat()));
 
-	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
-	static readonly OSWindowCtx StartCache = new();
-	static readonly OSWindowCtx DUMMY = new();
-	static OSWindowCtx GetWindowCtx(OSWindow window) {
-		if (!Started)
-			return StartCache;
-
-		if (window == null)
-			return DUMMY;
-		if (!window.IsValid())
-			return DUMMY;
-		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
-			return value;
-		value = new();
-		WindowContexts.Add(window, value);
-		return value;
-	}
-
-	static readonly Dictionary<OSWindow, OSWindowCtx> WindowContexts = [];
 	public static Level LoadingScreen { get; set; }
+
 	/// <summary>
 	/// The current level; if null, you'll get a big red complaint
 	/// </summary>
-	public static Level Level { get; private set; }
+	public static Level Level { get; private set; } = null!;
 	/// <summary>
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
 	/// </summary>
@@ -220,10 +197,10 @@ public static class EngineCore
 	private const float BAR_BASELINE = 1000f / 60f; // 60 fps/ups
 	private static void DrawBar(string text, Color color, float width, float y, double ms) {
 		float ratio = (float)ms / BAR_BASELINE;
-		float rectPadding = 4;
-		float textWidth = 288;
-		float msWidth = 80;
-		var fnWidth = (width - rectPadding - rectPadding - textWidth - msWidth);
+		const float rectPadding = 4;
+		const float textWidth = 288;
+		const float msWidth = 80;
+		float fnWidth = (width - rectPadding - rectPadding - textWidth - msWidth);
 
 		Graphics2D.SetDrawColor(color);
 
@@ -257,13 +234,20 @@ public static class EngineCore
 	public static Thread GameThread;
 	private static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
+	
+	static void MakeWindowCurrent(OSWindow window) {
+		Rlgl.SetFramebufferWidth((int)window.Size.W);
+		Rlgl.SetFramebufferHeight((int)window.Size.H);
+		window.ActivateGL();
+		window.SetupViewport(window.Size.W, window.Size.H);
+		Window = window;
+	}
+	
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
-			MainWindow.SetupGL();
-			WindowContexts[MainWindow] = StartCache;
-
-			MakeWindowCurrent(MainWindow);
+			Window.SetupGL();
+			MakeWindowCurrent(Window);
 
 			if (prgIcon != null)
 				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
@@ -347,8 +331,7 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
-		GetWindowCtx(MainWindow).Level = null;
+		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
 		// We need to start the gane thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
@@ -358,15 +341,7 @@ public static class EngineCore
 
 		if (CommandLine().HasParm("-monitor")) {
 			OSMonitor monitor = new OSMonitor(CommandLine().ParmValue("-monitor", 0));
-			var monitorPos = monitor.Position;
-			var monitorSize = monitor.Size;
-			var windowSize = new Vector2F(windowWidth, windowHeight);
-
-			// monitor TL + (monitor size / 2) == centerMonitor
-			// centerMonitor - (window size / 2) to center window to monitor
-			var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
-
-			MainWindow.Position = new((int)windowPos.X, (int)windowPos.Y);
+			Window.Center(monitor);
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
@@ -374,15 +349,6 @@ public static class EngineCore
 
 	private static void TemporaryInitializeDependencies() {
 		cvar = new Cvar();
-	}
-
-	public static void MakeWindowCurrent(OSWindow window) {
-		Rlgl.SetFramebufferWidth((int)window.Size.W);
-		Rlgl.SetFramebufferHeight((int)window.Size.H);
-		window.ActivateGL();
-		window.SetupViewport(window.Size.W, window.Size.H);
-		Window = window;
-		Level = GetWindowCtx(Window).Level!;
 	}
 
 	// Specific things that need to get called (because a level usually calls these like hittesting)
@@ -404,8 +370,7 @@ public static class EngineCore
 		Stopwatch s = new Stopwatch();
 		s.Start();
 
-		GetWindowCtx(window).Level = level;
-		MakeWindowCurrent(window);
+		Level = level;
 		ResetWindowLevelSpecificEnv(window);
 		LoadingLevel = true;
 		level.PreInitialize();
@@ -414,11 +379,11 @@ public static class EngineCore
 		Level.__isValid = true;
 		InGameConsole.HookToLevel(Level);
 		LoadingLevel = false;
+		
+		NextFrameLevel = null;
+		NextFrameArgs = null;
 
 		LoadingScreen?.Unload();
-		GetWindowCtx(Window).NextFrameLevel = null;
-		GetWindowCtx(Window).NextFrameArgs = null;
-
 		Level.DeveloperOverlay.SetUpDebugOverlays();
 
 		s.Stop();
@@ -437,8 +402,8 @@ public static class EngineCore
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
-			GetWindowCtx(Window).NextFrameLevel = level;
-			GetWindowCtx(Window).NextFrameArgs = args;
+			NextFrameLevel = level;
+			NextFrameArgs = args;
 			LoadingScreen?.Initialize([]);
 		}
 		else
@@ -453,7 +418,6 @@ public static class EngineCore
 			LoadingScreen?.Unload();
 		}
 		StopSound();
-		GetWindowCtx(Window).Level = null;
 		Level = null!;
 		ResetWindowLevelSpecificEnv(Window);
 
@@ -497,19 +461,8 @@ public static class EngineCore
 	}
 
 	public static void ExitWindow() {
-		if (WindowContexts.Count == 1) {
-			// just exit
-			_running = false;
-			return;
-		}
-
-		WindowContexts.Remove(Window);
 		Window.Close();
-
-		if (Window == MainWindow) {
-			// Uh oh! We just deleted the main window! Try to choose a new window?
-			MainWindow = WindowContexts.Keys.First();
-		}
+		_running = false;
 	}
 
 	public static int BorderlessScreenPadding = 2;
@@ -551,14 +504,14 @@ public static class EngineCore
 	/// How long did the last update-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToUpdate() => GetWindowCtx(Window).LastTimeToUpdate;
+	public static TimeSpan GetTimeToUpdate() => LastTimeToUpdate;
 	/// <summary>
 	/// How long did the last render-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToRender() => GetWindowCtx(Window).LastTimeToRender;
-	internal static void SetTimeToUpdate(TimeSpan value) => GetWindowCtx(Window).LastTimeToUpdate = value;
-	internal static void SetTimeToRender(TimeSpan value) => GetWindowCtx(Window).LastTimeToRender = value;
+	public static TimeSpan GetTimeToRender() => LastTimeToRender;
+	internal static void SetTimeToUpdate(TimeSpan value) => LastTimeToUpdate = value;
+	internal static void SetTimeToRender(TimeSpan value) => LastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
 	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
@@ -568,7 +521,6 @@ public static class EngineCore
 	private static float fps_average = 0, fps_last = 0;
 
 	public static OSWindow Window { get; private set; }
-	public static OSWindow MainWindow;
 
 	public static float FPS {
 		get {
@@ -594,7 +546,6 @@ public static class EngineCore
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
-	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
 		WaitForGameThread();
 		NucleusSingleton.Spin();
@@ -611,14 +562,8 @@ public static class EngineCore
 
 		audiosystem.Update();
 
-		windowsThisFrame.Clear();
-		foreach (var window in WindowContexts)
-			windowsThisFrame.Add(window.Key);
-
-		foreach (var window in windowsThisFrame) {
-			MakeWindowCurrent(window);
-			PerWindowFrame();
-		}
+		MakeWindowCurrent(Window);
+		PerWindowFrame();
 
 		ReleaseGameThread();
 		MainThread.Run(ThreadExecutionTime.AfterFrame);
@@ -744,10 +689,10 @@ public static class EngineCore
 		}
 
 		InLevelFrame = false;
-		Level? nextFrameLevel = GetWindowCtx(Window).NextFrameLevel;
+		Level? nextFrameLevel = NextFrameLevel;
 		if (nextFrameLevel != null) {
-			__loadLevel(Window, nextFrameLevel, GetWindowCtx(Window).NextFrameArgs ?? []);
-			GetWindowCtx(Window).NextFrameLevel = null;
+			__loadLevel(Window, nextFrameLevel, NextFrameArgs ?? []);
+			NextFrameLevel = null;
 		}
 
 		Rlgl.DrawRenderBatchActive();
@@ -861,8 +806,6 @@ public static class EngineCore
 		Host.WriteConfiguration();
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
-
-	internal static Level? GetWindowLevel(OSWindow window) => GetWindowCtx(window).Level;
 
 	static readonly Mutex GameThreadMutex = new();
 	public static void WaitForGameThread() {
