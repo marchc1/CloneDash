@@ -1,9 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
-using Nucleus.Common.Graphics;
+﻿using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.OS;
 using Nucleus.Common.Types;
-using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.Util;
 
@@ -13,7 +11,6 @@ using SDL;
 
 using System.Collections.Concurrent;
 using System.Numerics;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Engine;
@@ -23,7 +20,8 @@ public struct WindowKey
 	public ButtonCode Key;
 	public double Timestamp;
 }
-public class WindowDragNDropState(OSWindow window)
+
+public class WindowDragNDropState()
 {
 	public struct DragData
 	{
@@ -31,6 +29,7 @@ public class WindowDragNDropState(OSWindow window)
 		public string? Text;
 		public Vector2F Pos;
 	}
+
 	readonly ConcurrentQueue<DragData> Events = [];
 
 	public bool Active;
@@ -44,7 +43,8 @@ public class WindowDragNDropState(OSWindow window)
 		Position = default;
 	}
 }
-public class WindowKeyboardState(OSWindow window)
+
+public class WindowKeyboardState()
 {
 	public const int MAX_KEYBOARD_KEYS = 512;
 	public const int MAX_TEXT_INPUTS = 256;
@@ -81,7 +81,7 @@ public class WindowKeyboardState(OSWindow window)
 	}
 }
 
-public class WindowMouseState(OSWindow window)
+public class WindowMouseState()
 {
 	public Vector2F MouseOffset;
 	public Vector2F MouseScale;
@@ -134,9 +134,9 @@ public unsafe class OSWindow : IValidatable
 	private static Dictionary<SDL_WindowID, OSWindow> windowLookup_id2window = [];
 
 	private OSWindow() {
-		DragNDrop = new(this);
-		Keyboard = new(this);
-		Mouse = new(this);
+		DragNDrop = new();
+		Keyboard = new();
+		Mouse = new();
 	}
 
 	/// <summary>
@@ -157,8 +157,10 @@ public unsafe class OSWindow : IValidatable
 #if !COMPILED_OSX
 		SetupGlInternal(this);
 #endif
-		SDL3.SDL_GL_MakeCurrent(handle, glctx);
-		SDL3.SDL_GL_SetSwapInterval(0);
+		if (!SDL3.SDL_GL_MakeCurrent(handle, glctx))
+			Logs.Assert(false, "Could not successfully call SDL_GL_MakeCurrent in SetupGL?");
+		if(!SDL3.SDL_GL_SetSwapInterval(0))
+			Logs.Assert(false, "Could not successfully call SDL_GL_SetSwapInterval in SetupGL?");
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
 		ActivateGL();
@@ -495,7 +497,8 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public void ActivateGL() {
-		SDL3.SDL_GL_MakeCurrent(handle, glctx);
+		if (!SDL3.SDL_GL_MakeCurrent(handle, glctx))
+			Logs.Assert(false, "ActivateGL: failed!!!");
 		if (renderBatch != null)
 			Rlgl.SetRenderBatchActive(renderBatch);
 	}
