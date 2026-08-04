@@ -87,9 +87,9 @@ public static class EngineCore
 
 	public static ConCommand engine_activetextures = new(nameof(engine_activetextures), (_, in _) => {
 		var texs = new List<string>();
-		foreach (var texIDPair in Raylib.GetLoadedTextures()) 
+		foreach (var texIDPair in Raylib.GetLoadedTextures())
 			texs.Add($"{texIDPair.Id} [{texIDPair.Width} x {texIDPair.Height} of format {texIDPair.Format}]");
-		
+
 		PanicSystem.Interrupt(() => { }, false, texs.ToArray());
 	});
 
@@ -234,7 +234,7 @@ public static class EngineCore
 	public static Thread GameThread;
 	private static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
-	
+
 	static void MakeWindowCurrent(OSWindow window) {
 		Rlgl.SetFramebufferWidth((int)window.Size.W);
 		Rlgl.SetFramebufferHeight((int)window.Size.H);
@@ -242,7 +242,7 @@ public static class EngineCore
 		window.SetupViewport(window.Size.W, window.Size.H);
 		Window = window;
 	}
-	
+
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
@@ -379,7 +379,7 @@ public static class EngineCore
 		Level.__isValid = true;
 		InGameConsole.HookToLevel(Level);
 		LoadingLevel = false;
-		
+
 		NextFrameLevel = null;
 		NextFrameArgs = null;
 
@@ -852,7 +852,7 @@ public static class EngineCore
 					   catch {
 						   // ignored
 					   }
-			});
+				   });
 		}
 
 		// Fixes event delays on linux, but all operating systems should benefit
@@ -860,10 +860,11 @@ public static class EngineCore
 
 		while (Running) {
 			OSWindow.PumpOSEvents();
-			if (Running) 
+			if (Running)
 				continue;
-			
-			Window.Close();
+
+			if (Window.IsValid())
+				Window.Close();
 			return;
 		}
 	}
