@@ -292,8 +292,6 @@ public static class EngineCore
 	}
 
 	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags flags = 0, Action? gameThreadInit = null) {
-		// TEMPORARY
-		TemporaryInitializeDependencies();
 		windowName ??= startupInfo.AppName;
 
 		if (!MainThread.ThreadSet)
@@ -345,10 +343,6 @@ public static class EngineCore
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-	}
-
-	private static void TemporaryInitializeDependencies() {
-		cvar = new Cvar();
 	}
 
 	// Specific things that need to get called (because a level usually calls these like hittesting)
