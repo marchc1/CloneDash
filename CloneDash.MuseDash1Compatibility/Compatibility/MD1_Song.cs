@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
+using Nucleus.Types;
 using OdinSerializer;
 using Raylib_cs;
 using System.Collections.Concurrent;
@@ -41,6 +42,24 @@ public class MuseDashSongInfoJSON
 	[JsonPropertyName("difficulty3")] public string Difficulty3 { get; set; } = "";
 	[JsonPropertyName("difficulty4")] public string Difficulty4 { get; set; } = "";
 	[JsonPropertyName("difficulty5")] public string Difficulty5 { get; set; } = "";
+
+	public void CloneInto(MuseDashSongInfoJSON into) {
+		into.UID = UID;
+		into.Name = Name;
+		into.Author = Author;
+		into.BPM = BPM;
+		into.Music = Music;
+		into.Demo = Demo;
+		into.Cover = Cover;
+		into.NoteJSON = NoteJSON;
+		into.Scene = Scene;
+		into.LevelDesigner = LevelDesigner;
+		into.Difficulty1 = Difficulty1;
+		into.Difficulty2 = Difficulty2;
+		into.Difficulty3 = Difficulty3;
+		into.Difficulty4 = Difficulty4;
+		into.Difficulty5 = Difficulty5;
+	}
 }
 
 public delegate void ChartCoverAvailableToMainThreadFn(MD1_SongCover? cover);
@@ -52,8 +71,6 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	public MD1_SongInfo? Info;
 
-	public string Name = "";
-	public string Author = "";
 
 	protected IAudioClip? AudioTrack;
 	protected IAudioClip? DemoTrack;
@@ -194,20 +211,25 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		return null;
 	}
 
+	public SongMetadata FetchMetadata() => FetchMetadata(HumanLanguage.GetCurrentLanguage()); 
 	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
-		GetInfo(); // This is annoying: it fixes an issue with custom albums, didnt feel like it would be a good idea to differentiate them though..
-		// TODO: language
-		return new() {
-			Name = Name,
-			Author = Author
-		};
+		if (__jsonInfoLanguages.TryGetValue(desiredLanguage, out MuseDashSongInfoJSON? languageInfo))
+			return new() {
+				Name = languageInfo.Name ?? __jsonInfo.Name,
+				Author = languageInfo.Author ?? __jsonInfo.Author
+			};
+		else
+			return new() {
+				Name = __jsonInfo.Name,
+				Author = __jsonInfo.Author
+			};
 	}
 
 	public IReadOnlyList<ISongChart> GetCharts() => LoadSheets();
 	public bool IsAsynchronouslyLoading() => DeferringDemoToAsyncHandler;
 	public void WaitForAsynchronousLoad(OnAsynchronousLoadingCompleteFn callback) => throw new NotImplementedException();
 
-	public IAudioClip? GetDemoAudio(){
+	public IAudioClip? GetDemoAudio() {
 		return GetDemoTrack();
 	}
 	public SongCoverInfo GetCoverTexture() {
@@ -230,11 +252,20 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		});
 	}
 
-	private MuseDashSongInfoJSON __jsonInfo;
-	public MD1_Song(MuseDashSongInfoJSON info) {
-		__jsonInfo = info;
-		// Debug.Assert(info.Difficulty5 == "");
+	private readonly MuseDashSongInfoJSON __jsonInfo = new();
+	private readonly Dictionary<HumanLanguage, MuseDashSongInfoJSON> __jsonInfoLanguages = [];
+
+	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo) {
+		baseInfo.CloneInto(__jsonInfo);
 	}
+
+	public void AddLocalizedJSONInfo(HumanLanguage lang, string? name, string? author) {
+		__jsonInfoLanguages[lang] = new() {
+			Name = name!,
+			Author = author!
+		};
+	}
+
 	public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
 		return
 			MuseDash1Compatibility.StreamingFiles.FirstOrDefault(x => x.Contains(fileName.Replace("{name}", givenBase)))
@@ -248,7 +279,10 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	[JsonIgnore]
 	public string BaseName => GetInfo()!.Music.Substring(0, GetInfo()!.Music.Length - 6);
-	public override string ToString() => $"{Name} by {Author}";
+	public override string ToString() {
+		SongMetadata metadata = FetchMetadata();
+		return $"{metadata.Name} by {metadata.Author}";
+	}
 
 
 	public AssetsManager AssetsFile { get; private set; } = null;
@@ -269,7 +303,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 				DemoFile = new();
 				DemoFile.LoadFiles(filepath);
 			}
-			else Logs.Warn($"CloneDash: MuseDashSong.LoadAssetFile could not generate a demo filepath for {Name}.");
+			else Logs.Warn($"CloneDash: MuseDashSong.LoadAssetFile could not generate a demo filepath for {__jsonInfo.Name}.");
 		}
 	}
 
@@ -334,7 +368,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		if (DashSheetOverrides.TryGetValue(mapID, out MD1_SongChart? sheet))
 			return sheet;
 
-		LoadAssetFile(); 
+		LoadAssetFile();
 		Interlude.Spin();
 
 		MD1_SongChart chart = new MD1_SongChart(this, mapID);
@@ -344,7 +378,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	/// <summary>
 	/// Called from charts only!!!
 	/// </summary>
-	public virtual MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID){
+	public virtual MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID) {
 		//MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
 		MonoBehaviour? map = MuseDash1Compatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{__jsonInfo.NoteJSON}{mapID}.asset").GetResult();
 		if (map == null)
@@ -373,9 +407,6 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	protected virtual MD1_SongInfo? ProduceInfo() {
 		List<string> SearchTags = [];
 
-		Name = __jsonInfo.Name;
-		Author = __jsonInfo.Author;
-
 		SearchTags.AddRange(__jsonInfo.Name.Split(' '));
 		MD1_SongInfo info = new MD1_SongInfo() {
 			BPM = __jsonInfo.BPM,
@@ -398,5 +429,12 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	int IHasLowToHighDifficulties.GetDifficultyCount() => Difficulties.Count;
 	bool IHasLowToHighDifficulties.GetDifficulties(Span<int> difficulties) {
 		return Difficulties.AsSpan().TryCopyTo(difficulties);
+	}
+
+	public IEnumerable<MuseDashSongInfoJSON> GetAvailableInfo() {
+		if (__jsonInfo != null)
+			yield return __jsonInfo;
+		foreach (var info in __jsonInfoLanguages)
+			yield return info.Value;
 	}
 }

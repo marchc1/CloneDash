@@ -129,8 +129,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
-			foreach (var s in MuseDash1Compatibility.FindSimilarSongs(md_level))
-				Logs.Print($"    {s.Name} ({s.BaseName})");
+			foreach (var s in MuseDash1Compatibility.FindSimilarSongs(md_level)) 
+				Logs.Print($"    {s.FetchMetadata().Name} ({s.BaseName})");
 			return;
 		}
 
@@ -142,7 +142,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (curArgPos == 1) {
 			var songs = MuseDash1Compatibility.FindSongsStartingWith(args.Arg(1));
 			returns = [.. songs.Select(s => s.BaseName)];
-			returnHelp = [.. songs.Select(s => $" '{s.Name}'")];
+			returnHelp = [.. songs.Select(s => $" '{s.FetchMetadata().Name}'")];
 		}
 		else if (curArgPos == 2) {
 			var values = Enum.GetValues<MuseDashDifficulty>();
@@ -624,7 +624,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Muse Dash 1 - '{gameParameters.Chart?.Song?.Name ?? "<null>"}'"
+				State = $"Muse Dash 1 - '{gameParameters.Chart?.Song?.FetchMetadata().Name ?? "<null>"}'"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.PrepareShaders")) {
@@ -814,7 +814,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		if (StaticSequentialProfiler.Profiling) {
 			StaticSequentialProfiler.End(out var stack, out var accumulators);
-			EngineCore.Interrupt(() => {
+			PanicSystem.Interrupt(() => {
 				Graphics2D.SetDrawColor(255, 255, 255);
 				var lines = stack.ToStringArray();
 				int y = 0;
@@ -1005,8 +1005,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
 							var panel = new Panel(RootPanel);
 							panel.SetPaintBackgroundEnabled(false);
-							panel.							Anchor = Anchor.Center;
-							panel.							Origin = Anchor.Center;
+							panel.Anchor = Anchor.Center;
+							panel.Origin = Anchor.Center;
 							panel.DynamicallySized = true;
 							panel.Size = new(0.9f);
 

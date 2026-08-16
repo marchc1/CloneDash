@@ -1,6 +1,7 @@
 ﻿// TODO: this file is WAY too bloated!!!
 
 using AssetStudio;
+using CloneDash.Common;
 using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
@@ -669,6 +670,10 @@ namespace CloneDash.Compatibility.MuseDash
 					// var songsEN_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
 					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
 					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					var songsCN_S = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json");
+					var songsCN_T = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
+					var songsJP = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
+					var songsKO = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
 					// Debug.Assert(songs.Count == songsEN.Length);
 					// if (songs.Count != songsEN.Length) {
 					// 	Logs.Print($"inconsistency: {album.JsonName} songs length! songs ({songs.Count}) != songsEN ({songsEN.Length})");
@@ -679,17 +684,19 @@ namespace CloneDash.Compatibility.MuseDash
 
 					for (int i = 0; i < songs.Count; i++) {
 						PatchSong(songs, i);
-						var song = new MD1_Song(songs[i]) {
-							Name = songsEN[i].name,
-							Author = songsEN[i].author,
-							Album = album
-						};
+						var song = new MD1_Song();
+						song.AddBaseJSONInfo(songs[i]);
+						song.AddLocalizedJSONInfo(HumanLanguage.English, songsEN[i].name, songsEN[i].author);
+						song.AddLocalizedJSONInfo(HumanLanguage.SimplifiedChinese, songsCN_S[i].name, songsCN_S[i].author);
+						song.AddLocalizedJSONInfo(HumanLanguage.TraditionalChinese, songsCN_T[i].name, songsCN_T[i].author);
+						song.AddLocalizedJSONInfo(HumanLanguage.Japanese, songsJP[i].name, songsJP[i].author);
+						song.AddLocalizedJSONInfo(HumanLanguage.Korean, songsKO[i].name, songsKO[i].author);
 						workSongs.Add(song);
 					}
 				});
 
 			Songs = [.. workSongs];
-			Songs.Sort((x, y) => x.Name.CompareTo(y.Name));
+			Songs.Sort((x, y) => x.FetchMetadata(HumanLanguage.Any).Name.CompareTo(y.FetchMetadata(HumanLanguage.Any).Name));
 #if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
 			Logs.Info($"total songs: {Songs.Count}, charts: {Songs.Sum(x => {
 				if (x.GetInfo() == null)
@@ -705,11 +712,13 @@ namespace CloneDash.Compatibility.MuseDash
 #endif
 			HashSet<char> codepoints = [];
 			foreach (var song in Songs) {
-				string name = song.Name, author = song.Author;
-				for (int i = 0, c = name.Length; i < c; i++)
-					codepoints.Add(name[i]);
-				for (int i = 0, c = author.Length; i < c; i++)
-					codepoints.Add(author[i]);
+				foreach (MuseDashSongInfoJSON info in song.GetAvailableInfo()) {
+					string name = info.Name, author = info.Author;
+					for (int i = 0, c = name.Length; i < c; i++)
+						codepoints.Add(name[i]);
+					for (int i = 0, c = author.Length; i < c; i++)
+						codepoints.Add(author[i]);
+				}
 			}
 			CodepointsInUse = codepoints.ToArray();
 		}

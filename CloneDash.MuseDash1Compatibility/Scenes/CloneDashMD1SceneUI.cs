@@ -104,9 +104,9 @@ public class StatisticsPanel : Panel
 		var fs = 24;
 		var y = 0;
 
-		Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.Name);
+		Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.FetchMetadata().Name);
 		Graphics2D.DrawText(16, 16 + y,
-							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.Name,
+							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.FetchMetadata().Name,
 							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
 							fs);
 		y += fs + 4;

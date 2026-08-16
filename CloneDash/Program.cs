@@ -83,7 +83,7 @@ internal class Program
 		if (song is MD1_CustomChartsSong customChartsSong) {
 			customChartsSong.DownloadOrPullFromCache((c) => {
 				if (EngineCore.Level is not MainMenuLevel mml) {
-					Logs.Warn($"Downloading custom charts song '{c.Name}' completed downloading in a non-main menu context, ignoring.");
+					Logs.Warn($"Downloading custom charts song '{c.FetchMetadata().Name}' completed downloading in a non-main menu context, ignoring.");
 					return;
 				}
 
@@ -124,6 +124,7 @@ public class GameDLL : IGameDLL
 
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
+		InputSettings.Initialize();
 		Interlude.ShouldSelectInterludeTexture = false;
 		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
 
@@ -185,7 +186,7 @@ public class GameDLL : IGameDLL
 
 		DoCmdLineOps(CommandLine(), true);
 		if (CommandLine().CheckParm("-pretime", out _)) {
-			EngineCore.Interrupt(() => { }, true, "The executable was started with the '-pretime' command line parameter, which has been deprecated in favor of '-mdbmsc'. \nReplace '-pretime 0' with '-mdbmsc 1' in your MDBMSC settings.");
+			PanicSystem.Interrupt(() => { }, true, "The executable was started with the '-pretime' command line parameter, which has been deprecated in favor of '-mdbmsc'. \nReplace '-pretime 0' with '-mdbmsc 1' in your MDBMSC settings.");
 		}
 
 		if (CommandLine().CheckParm("-mdbmsc", out _)) {
