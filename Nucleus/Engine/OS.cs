@@ -78,37 +78,15 @@ public struct OSMonitor : IValidatable
 	}
 }
 
-public struct SDL3AppMetaData
-{
-	public readonly string appname;
-	public readonly string appversion;
-	public readonly string appidentifier;
-
-	public SDL3AppMetaData(string appName, string appVersion, string appIdentifier) =>
-		(appname, appversion, appidentifier) = (appName, appVersion, appIdentifier);
-}
-
 public static unsafe class OS
 {
 	private static bool initialized = false;
 
 	public static bool InitSDL(in StartupInfo gameInfo) {
-		if (initialized) return true;
+		if (initialized)
+			return true;
 
-		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_NAME_STRING, gameInfo.AppName)
-				|| !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_VERSION_STRING, gameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0")
-				|| !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_IDENTIFIER_STRING, gameInfo.AppIdentifier)
-				|| (gameInfo.AppCreator != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_CREATOR_STRING, gameInfo.AppCreator))
-				|| (gameInfo.AppCopyright != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, gameInfo.AppCopyright))
-				|| (gameInfo.AppURL != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_URL_STRING, gameInfo.AppURL))
-				|| (gameInfo.AppType != AppType.NotSpecified && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_TYPE_STRING, gameInfo.AppType switch {
-					AppType.Application => "application",
-					AppType.Game => "game",
-					AppType.MediaPlayer => "mediaplayer",
-					_ => throw new NotSupportedException("Invalid AppType enumeration")
-				}))
-				)
-			Logs.Warn("Failed to set app metadata for SDL3");
+		SetupMetadata(in gameInfo);
 
 		if (!SDL3.SDL_Init(
 			SDL_InitFlags.SDL_INIT_AUDIO |
@@ -119,39 +97,103 @@ public static unsafe class OS
 			SDL_InitFlags.SDL_INIT_JOYSTICK |
 			SDL_InitFlags.SDL_INIT_SENSOR |
 			SDL_InitFlags.SDL_INIT_VIDEO
-		))
+		)) {
+			Logs.Warn("Failed to initialize SDL.");
 			return false;
+		}
 
-		if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8)) return false;
+		if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8)) {
+			Logs.Warn("Failed to set the OpenGL stencil size.");
+			return false;
+		}
+
 		var version = Rlgl.GetVersion();
 		switch (version) {
 			case GlVersion.OPENGL_21:
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 1)) return false;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 1)) goto GL_VERSION_ERRORED;
 				break;
 			case GlVersion.OPENGL_33:
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) return false;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) goto GL_VERSION_ERRORED;
 				break;
 			case GlVersion.OPENGL_43:
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 4)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) return false;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 4)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) goto GL_VERSION_ERRORED;
 				break;
 			case GlVersion.OPENGL_ES_20:
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0)) return false;
-				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_ES)) return false;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0)) goto GL_VERSION_ERRORED;
+				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_ES)) goto GL_VERSION_ERRORED;
 				break;
 		}
 
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4);
+		goto GL_VERSION_OK;
+	GL_VERSION_ERRORED:
+		Logs.Warn("Failed to set the OpenGL version parameters.");
+		return false;
+	GL_VERSION_OK:
+
+		if(!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1)){
+			Logs.Warn("Failed to set the OpenGL multi-sampling buffers value");
+			return false;
+		}
+
+		if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, 4)) {
+			Logs.Warn("Failed to set the OpenGL multi-sampling samples value");
+			return false;
+		}
 
 		initialized = true;
 		return true;
 	}
+
+	private static bool SetupMetadata(in StartupInfo gameInfo) {
+		string erroredAt;
+
+		erroredAt = "Application Name";
+		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_NAME_STRING, gameInfo.AppName))
+			goto errored;
+
+		erroredAt = "Application Version";
+		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_VERSION_STRING, gameInfo.AppVersion ?? Assembly.GetCallingAssembly().GetName().Version?.ToString() ?? "0.1.0"))
+			goto errored;
+
+		erroredAt = "Application Identifier";
+		if (!SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_IDENTIFIER_STRING, gameInfo.AppIdentifier))
+			goto errored;
+
+		erroredAt = "Application Creator";
+		if ((gameInfo.AppCreator != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_CREATOR_STRING, gameInfo.AppCreator)))
+			goto errored;
+
+		erroredAt = "Application Copyright";
+		if ((gameInfo.AppCopyright != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, gameInfo.AppCopyright)))
+			goto errored;
+
+		erroredAt = "Application URL";
+		if ((gameInfo.AppURL != null && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_URL_STRING, gameInfo.AppURL)))
+			goto errored;
+
+		erroredAt = "Application Type";
+		if (gameInfo.AppType != AppType.NotSpecified && !SDL3.SDL_SetAppMetadataProperty(SDL3.SDL_PROP_APP_METADATA_TYPE_STRING, gameInfo.AppType switch {
+			AppType.Application => "application",
+			AppType.Game => "game",
+			AppType.MediaPlayer => "mediaplayer",
+			_ => throw new NotSupportedException("Invalid AppType enumeration")
+		}))
+			goto errored;
+
+		goto ok;
+	errored:
+		Logs.Warn($"Failed to set app metadata for SDL3 (errored at {erroredAt})");
+		return false;
+	ok:
+		return true;
+	}
+
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	public static void* OpenGL_GetProcAddress(byte* name) {
 		return (void*)SDL3.SDL_GL_GetProcAddress(name);

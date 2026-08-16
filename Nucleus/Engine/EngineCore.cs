@@ -87,52 +87,29 @@ public static class EngineCore
 
 	public static ConCommand engine_activetextures = new(nameof(engine_activetextures), (_, in _) => {
 		var texs = new List<string>();
-		foreach (var texIDPair in Raylib.GetLoadedTextures()) {
+		foreach (var texIDPair in Raylib.GetLoadedTextures())
 			texs.Add($"{texIDPair.Id} [{texIDPair.Width} x {texIDPair.Height} of format {texIDPair.Format}]");
-		}
-		Interrupt(() => { }, false, texs.ToArray());
+
+		PanicSystem.Interrupt(() => { }, false, texs.ToArray());
 	});
 
 	// ------------------------------------------------------------------------------------------ //
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
-	class OSWindowCtx
-	{
-		public Level? Level;
-		public Level? NextFrameLevel;
-		public object[]? NextFrameArgs;
-
-		public TimeSpan LastTimeToUpdate;
-		public TimeSpan LastTimeToRender;
-	}
+	static Level? NextFrameLevel;
+	static object[]? NextFrameArgs;
+	static TimeSpan LastTimeToUpdate;
+	static TimeSpan LastTimeToRender;
 
 	public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => audiosystem.SetMasterVolume(cv.GetFloat()));
 
-	// This really shouldnt get used but there are REALLY dumb places some of the timing stuff gets called
-	static readonly OSWindowCtx StartCache = new();
-	static readonly OSWindowCtx DUMMY = new();
-	static OSWindowCtx GetWindowCtx(OSWindow window) {
-		if (!Started)
-			return StartCache;
-
-		if (window == null)
-			return DUMMY;
-		if (!window.IsValid())
-			return DUMMY;
-		if (WindowContexts.TryGetValue(window, out OSWindowCtx? value))
-			return value;
-		value = new();
-		WindowContexts.Add(window, value);
-		return value;
-	}
-
-	static readonly Dictionary<OSWindow, OSWindowCtx> WindowContexts = [];
 	public static Level LoadingScreen { get; set; }
+
 	/// <summary>
 	/// The current level; if null, you'll get a big red complaint
 	/// </summary>
-	public static Level Level { get; private set; }
+	public static Level Level { get; private set; } = null!;
 	/// <summary>
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
 	/// </summary>
@@ -220,10 +197,10 @@ public static class EngineCore
 	private const float BAR_BASELINE = 1000f / 60f; // 60 fps/ups
 	private static void DrawBar(string text, Color color, float width, float y, double ms) {
 		float ratio = (float)ms / BAR_BASELINE;
-		float rectPadding = 4;
-		float textWidth = 288;
-		float msWidth = 80;
-		var fnWidth = (width - rectPadding - rectPadding - textWidth - msWidth);
+		const float rectPadding = 4;
+		const float textWidth = 288;
+		const float msWidth = 80;
+		float fnWidth = (width - rectPadding - rectPadding - textWidth - msWidth);
 
 		Graphics2D.SetDrawColor(color);
 
@@ -257,13 +234,20 @@ public static class EngineCore
 	public static Thread GameThread;
 	private static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
+
+	static void MakeWindowCurrent(OSWindow window) {
+		Rlgl.SetFramebufferWidth((int)window.Size.W);
+		Rlgl.SetFramebufferHeight((int)window.Size.H);
+		window.ActivateGL();
+		window.SetupViewport(window.Size.W, window.Size.H);
+		Window = window;
+	}
+
 	public static void GameThreadProcedure() {
 		// Initialize the window GL
 		lock (GameThread_GLLock) {
-			MainWindow.SetupGL();
-			WindowContexts[MainWindow] = StartCache;
-
-			MakeWindowCurrent(MainWindow);
+			Window.SetupGL();
+			MakeWindowCurrent(Window);
 
 			if (prgIcon != null)
 				Window.SetIcon(Filesystem.ReadImage("images", prgIcon));
@@ -282,7 +266,7 @@ public static class EngineCore
 			// Some korean
 			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
 
-			Graphics2D.RegisterCodepoints(string.Join("", ErrorMessages.Keys));
+			Graphics2D.RegisterCodepoints(string.Join("", PanicSystem.ErrorMessages.Keys));
 
 			// Set GameThread_GLReady flag so the main thread can finish its work
 		}
@@ -308,8 +292,6 @@ public static class EngineCore
 	}
 
 	public static void Initialize(int windowWidth, int windowHeight, in StartupInfo startupInfo, string? windowName = null, string? icon = null, ConfigFlags flags = 0, Action? gameThreadInit = null) {
-		// TEMPORARY
-		TemporaryInitializeDependencies();
 		windowName ??= startupInfo.AppName;
 
 		if (!MainThread.ThreadSet)
@@ -347,9 +329,58 @@ public static class EngineCore
 			windowWidth = (int)size.W;
 			windowHeight = (int)size.H;
 		}
-		MainWindow = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
-		GetWindowCtx(MainWindow).Level = null;
-		// We need to start the gane thread and allow it to initialize.
+		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
+
+		// Run engine initialization
+		// this sets up early JIT assemblies and static constructors
+		Assembly? ea = Assembly.GetEntryAssembly();
+		if (ea != null)
+			EarlyJITAssemblies.Add(ea);
+
+		EarlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
+		EarlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+
+		gameDLL.PreStaticInitialize();
+
+		Logs.Info("BOOT: Initializing static constructors...");
+		foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+			if (!assembly.IsDefined(typeof(NucleusAssemblyAttribute)))
+				continue;
+
+			foreach (Type type in assembly.GetTypes()) {
+				object[] attributes = type.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true);
+				if (attributes is { Length: > 0 })
+					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+
+				foreach ((MethodInfo baseMethod, ConCommandAttribute attr) ccmd in ConCommandAttribute.GetAttributes(type))
+					ConCommandAttribute.RegisterAttribute(type, ccmd.baseMethod, ccmd.attr);
+			}
+		}
+
+		ConVar.Register();
+		Host.ReadConfiguration();
+
+		Cbuf.AddText("stuffcmds");
+
+		Host.Initialized = true;
+
+		Logs.Info("BOOT: Running JIT early where possible...");
+		Parallel.ForEach(EarlyJITAssemblies
+			.SelectMany(a => a.GetTypes())
+			.SelectMany(t => t.GetMethods()), (method) => {
+				if (method.ContainsGenericParameters) return;
+				if (method.IsAbstract) return;
+				if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
+				if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
+				try {
+					RuntimeHelpers.PrepareMethod(method.MethodHandle);
+				}
+				catch {
+					// ignored
+				}
+			});
+
+		// We need to start the game thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
 		if (!MainThread.GameThreadSet) MainThread.GameThread = GameThread;
@@ -358,31 +389,10 @@ public static class EngineCore
 
 		if (CommandLine().HasParm("-monitor")) {
 			OSMonitor monitor = new OSMonitor(CommandLine().ParmValue("-monitor", 0));
-			var monitorPos = monitor.Position;
-			var monitorSize = monitor.Size;
-			var windowSize = new Vector2F(windowWidth, windowHeight);
-
-			// monitor TL + (monitor size / 2) == centerMonitor
-			// centerMonitor - (window size / 2) to center window to monitor
-			var windowPos = (monitorPos + (monitorSize / 2)) - (windowSize / 2);
-
-			MainWindow.Position = new((int)windowPos.X, (int)windowPos.Y);
+			Window.Center(monitor);
 		}
 
 		Raylib.SetTraceLogLevel(TraceLogLevel.LOG_WARNING);
-	}
-
-	private static void TemporaryInitializeDependencies() {
-		cvar = new Cvar();
-	}
-
-	public static void MakeWindowCurrent(OSWindow window) {
-		Rlgl.SetFramebufferWidth((int)window.Size.W);
-		Rlgl.SetFramebufferHeight((int)window.Size.H);
-		window.ActivateGL();
-		window.SetupViewport(window.Size.W, window.Size.H);
-		Window = window;
-		Level = GetWindowCtx(Window).Level!;
 	}
 
 	// Specific things that need to get called (because a level usually calls these like hittesting)
@@ -404,8 +414,7 @@ public static class EngineCore
 		Stopwatch s = new Stopwatch();
 		s.Start();
 
-		GetWindowCtx(window).Level = level;
-		MakeWindowCurrent(window);
+		Level = level;
 		ResetWindowLevelSpecificEnv(window);
 		LoadingLevel = true;
 		level.PreInitialize();
@@ -415,10 +424,10 @@ public static class EngineCore
 		InGameConsole.HookToLevel(Level);
 		LoadingLevel = false;
 
-		LoadingScreen?.Unload();
-		GetWindowCtx(Window).NextFrameLevel = null;
-		GetWindowCtx(Window).NextFrameArgs = null;
+		NextFrameLevel = null;
+		NextFrameArgs = null;
 
+		LoadingScreen?.Unload();
 		Level.DeveloperOverlay.SetUpDebugOverlays();
 
 		s.Stop();
@@ -437,8 +446,8 @@ public static class EngineCore
 	public static bool InLevelFrame { get; private set; } = false;
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
-			GetWindowCtx(Window).NextFrameLevel = level;
-			GetWindowCtx(Window).NextFrameArgs = args;
+			NextFrameLevel = level;
+			NextFrameArgs = args;
 			LoadingScreen?.Initialize([]);
 		}
 		else
@@ -453,7 +462,6 @@ public static class EngineCore
 			LoadingScreen?.Unload();
 		}
 		StopSound();
-		GetWindowCtx(Window).Level = null;
 		Level = null!;
 		ResetWindowLevelSpecificEnv(Window);
 
@@ -497,19 +505,8 @@ public static class EngineCore
 	}
 
 	public static void ExitWindow() {
-		if (WindowContexts.Count == 1) {
-			// just exit
-			_running = false;
-			return;
-		}
-
-		WindowContexts.Remove(Window);
 		Window.Close();
-
-		if (Window == MainWindow) {
-			// Uh oh! We just deleted the main window! Try to choose a new window?
-			MainWindow = WindowContexts.Keys.First();
-		}
+		_running = false;
 	}
 
 	public static int BorderlessScreenPadding = 2;
@@ -551,14 +548,14 @@ public static class EngineCore
 	/// How long did the last update-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToUpdate() => GetWindowCtx(Window).LastTimeToUpdate;
+	public static TimeSpan GetTimeToUpdate() => LastTimeToUpdate;
 	/// <summary>
 	/// How long did the last render-frame take?
 	/// </summary>
 	/// <returns></returns>
-	public static TimeSpan GetTimeToRender() => GetWindowCtx(Window).LastTimeToRender;
-	internal static void SetTimeToUpdate(TimeSpan value) => GetWindowCtx(Window).LastTimeToUpdate = value;
-	internal static void SetTimeToRender(TimeSpan value) => GetWindowCtx(Window).LastTimeToRender = value;
+	public static TimeSpan GetTimeToRender() => LastTimeToRender;
+	internal static void SetTimeToUpdate(TimeSpan value) => LastTimeToUpdate = value;
+	internal static void SetTimeToRender(TimeSpan value) => LastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
 	private const float FPS_AVERAGE_TIME_SECONDS = 0.5f;
@@ -568,7 +565,6 @@ public static class EngineCore
 	private static float fps_average = 0, fps_last = 0;
 
 	public static OSWindow Window { get; private set; }
-	public static OSWindow MainWindow;
 
 	public static float FPS {
 		get {
@@ -594,7 +590,6 @@ public static class EngineCore
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
-	static readonly List<OSWindow> windowsThisFrame = [];
 	public static void Frame() {
 		WaitForGameThread();
 		NucleusSingleton.Spin();
@@ -611,14 +606,8 @@ public static class EngineCore
 
 		audiosystem.Update();
 
-		windowsThisFrame.Clear();
-		foreach (var window in WindowContexts)
-			windowsThisFrame.Add(window.Key);
-
-		foreach (var window in windowsThisFrame) {
-			MakeWindowCurrent(window);
-			PerWindowFrame();
-		}
+		MakeWindowCurrent(Window);
+		PerWindowFrame();
 
 		ReleaseGameThread();
 		MainThread.Run(ThreadExecutionTime.AfterFrame);
@@ -744,10 +733,10 @@ public static class EngineCore
 		}
 
 		InLevelFrame = false;
-		Level? nextFrameLevel = GetWindowCtx(Window).NextFrameLevel;
+		Level? nextFrameLevel = NextFrameLevel;
 		if (nextFrameLevel != null) {
-			__loadLevel(Window, nextFrameLevel, GetWindowCtx(Window).NextFrameArgs ?? []);
-			GetWindowCtx(Window).NextFrameLevel = null;
+			__loadLevel(Window, nextFrameLevel, NextFrameArgs ?? []);
+			NextFrameLevel = null;
 		}
 
 		Rlgl.DrawRenderBatchActive();
@@ -817,27 +806,17 @@ public static class EngineCore
 		Logs.Info($"Target FPS: {fps}, milliseconds: {TargetFrameTime * 1000:0.00}");
 	}
 
-
-	private static bool shouldThrow = false;
-
-	private static HashSet<Assembly> earlyJITAssemblies = [];
-
-	public static void AddToEarlyJIT() {
-		earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
-	}
-	public static void AddToEarlyJIT(Assembly assembly) {
-		earlyJITAssemblies.Add(assembly);
-	}
+	internal static bool ShouldThrowExceptions = false;
+	private static readonly HashSet<Assembly> EarlyJITAssemblies = [];
 
 	public static void StartGameThread() {
-		ExceptionDispatchInfo edi;
 		Started = true;
 		if (Debugger.IsAttached) {
 			// Skip panic routine.
 			Logs.Info("PANIC: Disabled immediate thread panicking due to the presence of a debugger.");
 			LoadingScreen?.Initialize([]);
 			while (Running) {
-				shouldThrow = false;
+				ShouldThrowExceptions = false;
 				Frame();
 			}
 		}
@@ -846,13 +825,13 @@ public static class EngineCore
 				Logs.Info("PANIC: Immediate thread panicking active.");
 				LoadingScreen?.Initialize([]);
 				while (Running) {
-					shouldThrow = false;
+					ShouldThrowExceptions = false;
 					Frame();
 				}
 			}
 			catch (Exception ex) {
-				edi = ExceptionDispatchInfo.Capture(ex);
-				if (!Panic(edi)) {
+				ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
+				if (!PanicSystem.Panic(edi)) {
 					edi.Throw();
 				}
 			}
@@ -862,9 +841,7 @@ public static class EngineCore
 		Logs.Info("Nucleus Engine has halted peacefully.");
 	}
 
-	internal static Level? GetWindowLevel(OSWindow window) => GetWindowCtx(window).Level;
-
-	static readonly Mutex GameThreadMutex = new();
+	private static readonly Mutex GameThreadMutex = new();
 	public static void WaitForGameThread() {
 		GameThreadMutex.WaitOne();
 	}
@@ -873,338 +850,17 @@ public static class EngineCore
 	}
 
 	public static void StartMainThread() {
-		lock (GameThread_GLLock) {
-			var ea = Assembly.GetEntryAssembly();
-			if (ea != null)
-				earlyJITAssemblies.Add(ea);
-
-			earlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
-			earlyJITAssemblies.Add(Assembly.GetCallingAssembly());
-
-			gameDLL.PreStaticInitialize();
-
-			Logs.Info("BOOT: Initializing static constructors...");
-			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-				if (!assembly.IsDefined(typeof(NucleusAssemblyAttribute)))
-					continue;
-
-				foreach (Type type in assembly.GetTypes()) {
-					object[] attributes = type.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true);
-					if (attributes is { Length: > 0 })
-						RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-
-					foreach ((MethodInfo baseMethod, ConCommandAttribute attr) ccmd in ConCommandAttribute.GetAttributes(type))
-						ConCommandAttribute.RegisterAttribute(type, ccmd.baseMethod, ccmd.attr);
-				}
-			}
-
-			ConVar.Register();
-			Host.ReadConfiguration();
-
-			Cbuf.AddText("stuffcmds");
-
-			Host.Initialized = true;
-
-			Logs.Info("BOOT: Running JIT early where possible...");
-			Parallel.ForEach(earlyJITAssemblies
-				   .SelectMany(a => a.GetTypes())
-				   .SelectMany(t => t.GetMethods()), (method) => {
-					   if (method.ContainsGenericParameters) return;
-					   if (method.IsAbstract) return;
-					   if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
-					   if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
-					   try {
-						   RuntimeHelpers.PrepareMethod(method.MethodHandle);
-					   }
-					   catch {
-
-					   }
-				   });
-
-		}
-
 		// Fixes event delays on linux, but all operating systems should benefit
 		Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
 		while (Running) {
 			OSWindow.PumpOSEvents();
-			if (!Running) {
+			if (Running)
+				continue;
+
+			if (Window.IsValid())
 				Window.Close();
-				return;
-			}
-		}
-	}
-
-	public static ConCommand panic = new("panic", (_, in _) => {
-		if (Debugger.IsAttached) {
-			try {
-				throw new Exception("force-panic (despite panic system deactivated due to presence of debugger)");
-			}
-			catch (Exception ex) {
-				var edi = ExceptionDispatchInfo.Capture(ex);
-				if (!Panic(edi)) {
-					edi.Throw();
-				}
-			}
-		}
-		throw new Exception("panic concommand called");
-	}, FCvar.DevelopmentOnly, "Tests the EngineCore.Panic method (NOTE: this *will* crash the engine!).");
-
-	public static ConCommand interrupt = new("interrupt", (_, in a) => {
-		EngineCore.Interrupt(() => {
-			Graphics2D.SetDrawColor(255, 0, 0);
-			Graphics2D.DrawRectangle(64, 64, 256, 256);
-		}, a.Arg(1, 0) > 0, "You should see a red square in the top-left!");
-	}, FCvar.DevelopmentOnly, "Tests the EngineCore.Interrupt method");
-
-	private const string PANIC_FONT = "Noto Sans";
-	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
-	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch {
-		"zh-HK" => "Noto Sans HK",
-		"zh-MO" => "Noto Sans HK",
-		_ => "Noto Sans TC",
-	};
-	private const string PANIC_FONT_SC = "Noto Sans SC";
-	private const string PANIC_FONT_KR = "Noto Sans KR";
-	private const string PANIC_FONT_JP = "Noto Sans JP";
-	private const string PANIC_FONT_CONSOLE = "Noto Sans Mono";
-	private const float PANIC_SIZE = 18;
-	private const float PANIC_SIZE_CONSOLE = 16;
-	private static void renderLine(ref int textY) => renderLine(null, ref textY);
-	private static void renderLine(string? line, ref int textY) {
-		if (line == null) {
-			textY++;
 			return;
-		}
-		Graphics2D.SetDrawColor(0, 0, 0, 220);
-		var textSize = Graphics2D.GetTextSize(line, PANIC_FONT_CONSOLE, PANIC_SIZE_CONSOLE);
-		Graphics2D.DrawRectangle(0, textY * PANIC_SIZE_CONSOLE, textSize.W + 8, PANIC_SIZE_CONSOLE);
-
-		Graphics2D.SetDrawColor(255, 255, 255);
-		Graphics2D.DrawText(new(4, textY * PANIC_SIZE_CONSOLE), line, PANIC_FONT_CONSOLE, PANIC_SIZE_CONSOLE);
-
-		textY++;
-	}
-	private static readonly Dictionary<string, string> ErrorMessages = new(){
-		{"A fatal error has occured. Press any key to exit.", PANIC_FONT},
-		{"حدث خطأ فادح. اضغط على أي مفتاح للخروج.", PANIC_FONT},
-		{"Възникнала е фатална грешка. Натиснете който и да е клавиш, за да излезете.", PANIC_FONT_ARABIC},
-		{"出现致命错误。按任意键退出。", PANIC_FONT_SC},
-		{"發生致命錯誤。按任意鍵退出。", PANIC_FONT_TC},
-		{"Došlo k fatální chybě. Stiskněte libovolnou klávesu pro ukončení.", PANIC_FONT},
-		{"Der er opstået en fatal fejl. Tryk på en vilkårlig tast for at afslutte.", PANIC_FONT},
-		{"Er is een fatale fout opgetreden. Druk op een willekeurige toets om af te sluiten.", PANIC_FONT},
-		{"On ilmnenud fataalne viga. Väljumiseks vajutage suvalist klahvi.", PANIC_FONT},
-		{"On tapahtunut kohtalokas virhe. Poistu painamalla mitä tahansa näppäintä.", PANIC_FONT},
-		{"Une erreur fatale s'est produite. Appuyez sur n'importe quelle touche pour quitter.", PANIC_FONT},
-		{"Es ist ein schwerwiegender Fehler aufgetreten. Drücken Sie eine beliebige Taste zum Beenden.", PANIC_FONT},
-		{"Προέκυψε ένα μοιραίο σφάλμα. Πατήστε οποιοδήποτε πλήκτρο για έξοδο.", PANIC_FONT},
-		{"Végzetes hiba történt. Nyomja meg bármelyik billentyűt a kilépéshez.", PANIC_FONT},
-		{"Telah terjadi kesalahan fatal. Tekan sembarang tombol untuk keluar.", PANIC_FONT},
-		{"Si è verificato un errore fatale. Premere un tasto qualsiasi per uscire.", PANIC_FONT},
-		{"致命的なエラーが発生しました。いずれかのキーを押して終了してください。", PANIC_FONT_JP},
-		{"치명적인 오류가 발생했습니다. 종료하려면 아무 키나 누르세요.", PANIC_FONT_KR},
-		{"Ir notikusi fatāla kļūda. Nospiediet jebkuru taustiņu, lai izietu.", PANIC_FONT},
-		{"Įvyko lemtinga klaida. Paspauskite bet kurį klavišą, kad išeitumėte.", PANIC_FONT},
-		{"Det har oppstått en alvorlig feil. Trykk på en hvilken som helst tast for å avslutte.", PANIC_FONT},
-		{"Wystąpił błąd krytyczny. Naciśnij dowolny przycisk, aby wyjść.", PANIC_FONT},
-		{"Ocorreu um erro fatal. Prima qualquer tecla para sair.", PANIC_FONT},
-		{"Ocorreu um erro fatal. Pressione qualquer tecla para sair.", PANIC_FONT},
-		{"A apărut o eroare fatală. Apăsați orice tastă pentru a ieși.", PANIC_FONT},
-		{"Произошла фатальная ошибка. Нажмите любую клавишу, чтобы выйти.", PANIC_FONT},
-		{"Vyskytla sa fatálna chyba. Stlačte ľubovoľné tlačidlo, aby ste ukončili prácu.", PANIC_FONT},
-		{"Zgodila se je usodna napaka. Za izhod pritisnite katero koli tipko.", PANIC_FONT},
-		{"Se ha producido un error fatal. Pulse cualquier tecla para salir.", PANIC_FONT},
-		{"Ett allvarligt fel har inträffat. Tryck på valfri tangent för att avsluta.", PANIC_FONT},
-		{"Ölümcül bir hata oluştu. Çıkmak için herhangi bir tuşa basın.", PANIC_FONT},
-		{"Виникла фатальна помилка. Натисніть будь-яку клавішу для виходу.", PANIC_FONT},
-	};
-
-	public static bool Panic(ExceptionDispatchInfo ex) {
-		if (shouldThrow)
-			ex.Throw();
-
-		var oldMaster = Raylib.GetMasterVolume();
-		Raylib.SetMasterVolume(0);
-		Window.Title = "Nucleus Engine - Panicked!";
-		Window.MinSize = new((int)Window.Size.W, (int)Window.Size.H);
-		Window.MaxSize = new((int)Window.Size.W, (int)Window.Size.H);
-		shouldThrow = true;
-		// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
-		Stopwatch time = new();
-		Graphics2D.ResetDrawingOffset();
-		time.Start();
-		int y = 0;
-		var lastTime = 0d;
-
-		var exLines = ex.SourceException.Message.Split('\n');
-		var exStkLines = ex.SourceException.StackTrace?.Split('\n') ?? ["<No stack trace available>"];
-
-		var innerEx = ex.SourceException.InnerException;
-		var innerExLines = innerEx?.Message?.Split('\n') ?? ["<No inner exception>"];
-		var innerExStkLines = innerEx?.StackTrace?.Split('\n') ?? ["<No stack trace available>"];
-		bool hasRenderedOverlay = false;
-
-		while (true) {
-			var now = time.Elapsed.TotalSeconds;
-			double elapsed = now - lastTime;
-			lastTime = now;
-			Rlgl.LoadIdentity();
-
-			if (y < Window.Size.H) {
-				int elapsedY = (int)((float)elapsed * 1150);
-				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
-					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
-					Rlgl.DrawRenderBatchActive();
-					Window.SwapScreenBuffer();
-				}
-				y += elapsedY;
-			}
-			else if (!hasRenderedOverlay) {
-				// Hopefully it wasnt the font manager that broke!
-				Graphics2D.SetDrawColor(255, 255, 255);
-
-				var box = new System.Numerics.Vector2(0, PANIC_SIZE * ErrorMessages.Count);
-				foreach ((var languageLine, var languageFont) in ErrorMessages) {
-					var size = Graphics2D.GetTextSize(languageLine, languageFont, PANIC_SIZE);
-					if (size.X > box.X)
-						box.X = size.X;
-				}
-				var padding = 32;
-				var paddingDiv2 = padding / 2;
-				var center = new System.Numerics.Vector2((Window.Size.W / 2) - (box.X / 2), (Window.Size.H / 2) - (box.Y / 2));
-				Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
-				var langLineY = 0;
-				foreach ((var line, var font) in ErrorMessages) {
-					Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, font, PANIC_SIZE, Anchor.TopCenter);
-
-					langLineY++;
-				}
-
-				int textY = 0;
-				renderLine("A fatal error has occured. Please restart the application.", ref textY);
-				renderLine("Details:", ref textY);
-				renderLine(null, ref textY);
-				foreach (var line in exLines) renderLine(line, ref textY);
-				renderLine(ref textY);
-				foreach (var line in exStkLines) renderLine($"    {line}", ref textY);
-
-				if (innerEx != null) {
-					renderLine(ref textY);
-					renderLine("Inner exception:", ref textY);
-
-					foreach (var line in innerExLines) renderLine($"    {line}", ref textY);
-					renderLine(ref textY);
-					foreach (var line in innerExStkLines) renderLine($"        {line}", ref textY);
-				}
-
-				hasRenderedOverlay = true;
-				Rlgl.DrawRenderBatchActive();
-				Window.SwapScreenBuffer();
-			}
-			else {
-				int i = 0;
-				while (true) {
-					OSWindow.PropagateEventBuffer();
-					if (Window.KeyAvailable(out _, out _) || Window.UserClosed()) {
-						Raylib.SetMasterVolume(oldMaster);
-						return false;
-					}
-				}
-			}
-
-			Rlgl.DrawRenderBatchActive();
-			OS.Wait(hasRenderedOverlay ? 0.2 : 0.005);
-		}
-	}
-
-	private static bool interrupting = false;
-	public static bool InInterrupt => interrupting;
-	public static void Interrupt(Action draw, bool problematic, params string[] messages) {
-		if (interrupting) return;
-		interrupting = true;
-
-		var oldMaster = Raylib.GetMasterVolume();
-		Raylib.SetMasterVolume(0);
-
-		Window.MinSize = new((int)Window.Size.W, (int)Window.Size.H);
-		Window.MaxSize = new((int)Window.Size.W, (int)Window.Size.H);
-
-		// Rudimentary frame loop for crashed state. Kinda emulates an older Mac kernel panic
-		Stopwatch time = new();
-		Graphics2D.ResetDrawingOffset();
-		time.Start();
-		int y = 0;
-		var lastTime = 0d;
-
-		bool hasRenderedOverlay = false;
-
-		while (true) {
-			var now = time.Elapsed.TotalSeconds;
-			double elapsed = now - lastTime;
-			lastTime = now;
-			Rlgl.LoadIdentity();
-
-			if (y < Window.Size.H) {
-				int elapsedY = (int)((float)elapsed * 5000);
-				for (int i = 0; i < 2; i++) { // Need to draw on both buffers
-					Raylib.DrawRectangle(0, y, (int)Window.Size.W, elapsedY, new(90, 100, 120, 170));
-					Rlgl.DrawRenderBatchActive();
-					Window.SwapScreenBuffer();
-				}
-				y += elapsedY;
-			}
-			else if (!hasRenderedOverlay) {
-				Graphics2D.SetDrawColor(255, 255, 255);
-
-				// don't feel like making it static right now
-				var lines = new string[messages.Length + 5];
-				if (problematic) {
-					lines[0] = "An interrupt has occured due to an issue, and the application has temporarily halted.";
-				}
-				else {
-					lines[0] = "A debugging interrupt has occured and the application has temporarily halted.";
-				}
-				lines[1] = "";
-				for (int i = 0; i < messages.Length; i++) lines[i + 2] = messages[i] ?? "<NULL STRING>";
-
-				lines[^3] = "";
-				lines[^2] = "";
-				lines[^1] = "Press any key to continue.";
-
-				var box = new System.Numerics.Vector2(0, PANIC_SIZE * lines.Length);
-				foreach (var languageLine in lines) {
-					var size = Graphics2D.GetTextSize(languageLine, PANIC_FONT, PANIC_SIZE);
-					if (size.X > box.X)
-						box.X = size.X;
-				}
-				var padding = 32;
-				var paddingDiv2 = padding / 2;
-				var center = new System.Numerics.Vector2((Window.Size.W / 2) - (box.X / 2), padding);
-				Raylib.DrawRectangle((int)center.X - paddingDiv2, (int)center.Y - paddingDiv2, (int)box.X + padding, (int)box.Y + padding, new Color(10, 220));
-				var langLineY = 0;
-				foreach (var line in lines) {
-					Graphics2D.DrawText(center.X + (box.X / 2), center.Y + (langLineY * PANIC_SIZE), line, PANIC_FONT, PANIC_SIZE, Anchor.TopCenter);
-
-					langLineY++;
-				}
-
-				draw();
-				hasRenderedOverlay = true;
-				Rlgl.DrawRenderBatchActive();
-				Window.SwapScreenBuffer();
-			}
-			else {
-				int i = 0;
-				OSWindow.PropagateEventBuffer();
-				if (Window.KeyAvailable(out _, out _)) {
-					Raylib.SetMasterVolume(oldMaster);
-					interrupting = false;
-					return;
-				}
-			}
-
-			OS.Wait(hasRenderedOverlay ? 0.2 : 1 / 60f);
 		}
 	}
 

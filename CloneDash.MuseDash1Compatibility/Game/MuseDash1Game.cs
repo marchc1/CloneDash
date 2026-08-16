@@ -814,7 +814,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		if (StaticSequentialProfiler.Profiling) {
 			StaticSequentialProfiler.End(out var stack, out var accumulators);
-			EngineCore.Interrupt(() => {
+			PanicSystem.Interrupt(() => {
 				Graphics2D.SetDrawColor(255, 255, 255);
 				var lines = stack.ToStringArray();
 				int y = 0;

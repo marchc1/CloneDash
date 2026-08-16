@@ -82,6 +82,7 @@ public class CharacterConfigData
 		if (text.IndexOf(',') == -1)
 			return text;
 		var splits = text.Split(',');
+		splits.MoveNext();
 		return text[splits.Current].Trim();
 	}
 
@@ -90,6 +91,7 @@ public class CharacterConfigData
 		if (text.IndexOf(',') == -1)
 			return text;
 		var splits = text.Split(',');
+		splits.MoveNext();
 		splits.MoveNext();
 		return text[splits.Current].Trim();
 	}
