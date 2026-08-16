@@ -98,8 +98,7 @@ public static class InputSettings
 	public static ConVar offset_visual = new(nameof(offset_visual), 0, FCvar.Saved, -500, 500);
 	public static ConVar offset_judgement = new(nameof(offset_judgement), 0, FCvar.Saved, -500, 500);
 
-
-	static InputSettings() {
+	public static void Initialize() {
 		try {
 			var oldData = Host.GetDataStore<InputDataStore_SerializedBeforeFeb9th2026>("CloneDash.InputSettings");
 			if (oldData != null) {
@@ -121,6 +120,7 @@ public static class InputSettings
 		data ??= Host.GetDataStore<InputDataStore>("CloneDash.InputSettings") ?? InputDataStore.NewStockSettings();
 		Store();
 	}
+
 	public static void Store() {
 		Host.SetDataStore("CloneDash.InputSettings", data);
 		OnSettingsChanged?.Invoke();

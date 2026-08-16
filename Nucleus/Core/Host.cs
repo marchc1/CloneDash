@@ -40,6 +40,7 @@ public static class Host
 		}
 
 		DataStore[key] = JsonConvert.SerializeObject(value);
+		TriggerResave();
 	}
 
 	public static bool ConfigCfgExecuted { get; private set; }

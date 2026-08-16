@@ -124,6 +124,7 @@ public class GameDLL : IGameDLL
 
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
+		InputSettings.Initialize();
 		Interlude.ShouldSelectInterludeTexture = false;
 		Interlude.Begin($"Initializing Clone Dash v{GameVersion.Current}...");
 

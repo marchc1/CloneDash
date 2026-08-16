@@ -330,7 +330,57 @@ public static class EngineCore
 			windowHeight = (int)size.H;
 		}
 		Window = OSWindow.Create(windowWidth, windowHeight, windowName, ConfigFlags.WindowMSAA4XHint | ConfigFlags.WindowResizable | flags);
-		// We need to start the gane thread and allow it to initialize.
+
+		// Run engine initialization
+		// this sets up early JIT assemblies and static constructors
+		Assembly? ea = Assembly.GetEntryAssembly();
+		if (ea != null)
+			EarlyJITAssemblies.Add(ea);
+
+		EarlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
+		EarlyJITAssemblies.Add(Assembly.GetCallingAssembly());
+
+		gameDLL.PreStaticInitialize();
+
+		Logs.Info("BOOT: Initializing static constructors...");
+		foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+			if (!assembly.IsDefined(typeof(NucleusAssemblyAttribute)))
+				continue;
+
+			foreach (Type type in assembly.GetTypes()) {
+				object[] attributes = type.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true);
+				if (attributes is { Length: > 0 })
+					RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+
+				foreach ((MethodInfo baseMethod, ConCommandAttribute attr) ccmd in ConCommandAttribute.GetAttributes(type))
+					ConCommandAttribute.RegisterAttribute(type, ccmd.baseMethod, ccmd.attr);
+			}
+		}
+
+		ConVar.Register();
+		Host.ReadConfiguration();
+
+		Cbuf.AddText("stuffcmds");
+
+		Host.Initialized = true;
+
+		Logs.Info("BOOT: Running JIT early where possible...");
+		Parallel.ForEach(EarlyJITAssemblies
+			.SelectMany(a => a.GetTypes())
+			.SelectMany(t => t.GetMethods()), (method) => {
+				if (method.ContainsGenericParameters) return;
+				if (method.IsAbstract) return;
+				if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
+				if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
+				try {
+					RuntimeHelpers.PrepareMethod(method.MethodHandle);
+				}
+				catch {
+					// ignored
+				}
+			});
+
+		// We need to start the game thread and allow it to initialize.
 		prgIcon = icon;
 		GameThread = new Thread(GameThreadProcedure);
 		if (!MainThread.GameThreadSet) MainThread.GameThread = GameThread;
@@ -800,55 +850,6 @@ public static class EngineCore
 	}
 
 	public static void StartMainThread() {
-		lock (GameThread_GLLock) {
-			Assembly? ea = Assembly.GetEntryAssembly();
-			if (ea != null)
-				EarlyJITAssemblies.Add(ea);
-
-			EarlyJITAssemblies.Add(Assembly.GetExecutingAssembly());
-			EarlyJITAssemblies.Add(Assembly.GetCallingAssembly());
-
-			gameDLL.PreStaticInitialize();
-
-			Logs.Info("BOOT: Initializing static constructors...");
-			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-				if (!assembly.IsDefined(typeof(NucleusAssemblyAttribute)))
-					continue;
-
-				foreach (Type type in assembly.GetTypes()) {
-					object[] attributes = type.GetCustomAttributes(typeof(MarkForStaticConstructionAttribute), true);
-					if (attributes is { Length: > 0 })
-						RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-
-					foreach ((MethodInfo baseMethod, ConCommandAttribute attr) ccmd in ConCommandAttribute.GetAttributes(type))
-						ConCommandAttribute.RegisterAttribute(type, ccmd.baseMethod, ccmd.attr);
-				}
-			}
-
-			ConVar.Register();
-			Host.ReadConfiguration();
-
-			Cbuf.AddText("stuffcmds");
-
-			Host.Initialized = true;
-
-			Logs.Info("BOOT: Running JIT early where possible...");
-			Parallel.ForEach(EarlyJITAssemblies
-				   .SelectMany(a => a.GetTypes())
-				   .SelectMany(t => t.GetMethods()), (method) => {
-					   if (method.ContainsGenericParameters) return;
-					   if (method.IsAbstract) return;
-					   if (method.Attributes.HasFlag(MethodAttributes.NewSlot)) return;
-					   if (method.Attributes.HasFlag(MethodAttributes.PinvokeImpl)) return;
-					   try {
-						   RuntimeHelpers.PrepareMethod(method.MethodHandle);
-					   }
-					   catch {
-						   // ignored
-					   }
-				   });
-		}
-
 		// Fixes event delays on linux, but all operating systems should benefit
 		Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
