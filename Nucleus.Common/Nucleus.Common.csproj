@@ -20,7 +20,7 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="RectpackSharp" Version="1.2.0" />
-		<PackageReference Include="ppy.SDL3-CS" Version="2025.1205.0" />
+		<PackageReference Include="ppy.SDL3-CS" Version="2026.722.0" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
 	</ItemGroup>
 
