@@ -152,6 +152,10 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public override bool OnFileDropped(string filepath, Vector2F pos) {
 		try {
+			var song = CustomAlbumsChartProvider.LoadSong(filepath);
+			if (song == null)
+				return false;
+
 			// If not in song selector, enter.
 			SongSelector? selector = GetOrEnterSongSelector(ChartMod.GetChartSongProviderByName("Custom Albums"));
 			if (selector == null)
@@ -159,10 +163,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 			// Ignore the last state, because if we don't, the convars will reset the later NavigateToSong call..
 			selector.IgnorePreviousState();
-
-			var song = CustomAlbumsChartProvider.LoadSong(filepath);
-			if (song == null)
-				return false;
 
 			// Preload necessary assets.
 			song.GetDemoAudio();
