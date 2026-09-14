@@ -57,7 +57,8 @@ public class SongSelector : Panel, IMainMenuPanel
 	IChartSongFilter? SearchFilter;
 	bool IsFirst = true;
 
-	IChartSongProvider Provider;
+	readonly IChartSongProvider Provider;
+	public IChartSongProvider GetProvider() => Provider;
 	ISongSourceState? Source;
 	public void SetSource(ISongSourceState source) {
 		Source = source;

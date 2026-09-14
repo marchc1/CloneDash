@@ -1,8 +1,10 @@
-﻿using CloneDash.Common;
+﻿using CloneDash.Charts;
+using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
 using CloneDash.Compatibility.MDMC;
+using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
 using CloneDash.Menu.Main;
@@ -21,6 +23,7 @@ using Nucleus.UI;
 
 using Raylib_cs;
 using System.Numerics;
+using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 using Image = Nucleus.UI.Elements.Image;
 
 namespace CloneDash.Game;
@@ -128,8 +131,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		foreach (PanelBinding binding in binds) {
 			_boundKeybindings.AddRange(binding.Bindings.Select(x => Keybinds.AddKeybind(x.buttons.ToList(), x.action)));
 			VisualPanelBinding visual = new(_bindingFlow, binding);
-			visual.			Anchor = Anchor.CenterLeft;
-			visual.			Origin = Anchor.CenterLeft;
+			visual.Anchor = Anchor.CenterLeft;
+			visual.Origin = Anchor.CenterLeft;
 		}
 	}
 
@@ -147,6 +150,45 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		MDMCWebAPI.CancelPendingRequests();
 	}
 
+	public override bool OnFileDropped(string filepath, Vector2F pos) {
+		try {
+			// If not in song selector, enter.
+			SongSelector? selector = GetOrEnterSongSelector(ChartMod.GetChartSongProviderByName("Custom Albums"));
+			if (selector == null)
+				return false;
+
+			var song = CustomAlbumsChartProvider.LoadSong(filepath);
+			if (song == null)
+				return false;
+
+			// Preload necessary assets.
+			song.GetDemoAudio();
+			song.GetCoverTexture();
+			song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			selector.NavigateToSong(song);
+			LevelTransitions.LoadSongSelector(selector, song);
+			return true;
+		}
+		catch { }
+
+		return false;
+	}
+
+	public SongSelector? GetOrEnterSongSelector(IChartSongProvider? provider) {
+		if (provider == null)
+			return null;
+
+
+		SongSelector? songSelector = ActiveElements.TryPeek(out Element? ret) ? (ret is SongSelector ss ? ss : null) : null;
+
+		if (!IValidatable.IsValid(songSelector) || songSelector.GetProvider() != provider) {
+			PopActiveElement();
+			songSelector = new SongSelector(Content, provider);
+			PushActiveElement(songSelector);
+		}
+
+		return songSelector;
+	}
 
 	protected override UserInterface CreateUI() => new CloneDashUI();
 
@@ -159,7 +201,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		charPanel.SetPaintBackgroundEnabled(false);
 
 		Character = new MainMenuCharacter(charPanel) { DynamicallySized = true };
-		Character.		Origin = Anchor.TopCenter;
+		Character.Origin = Anchor.TopCenter;
 		Character.Size = new Vector2F(1f);
 
 		_header = new Panel(RootPanel);
@@ -187,21 +229,21 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_footer.Clipping = false;
 
 		_backButton = new MenuFooterButton(_footer, "icons/arrow-left.png", "Back");
-		_backButton.		Anchor = Anchor.BottomLeft;
-		_backButton.		Origin = Anchor.BottomLeft;
+		_backButton.Anchor = Anchor.BottomLeft;
+		_backButton.Origin = Anchor.BottomLeft;
 		_backButton.Position = new Vector2F(40, -12);
 
 		_screenButton = new MenuFooterButton(_footer);
-		_screenButton.		Anchor = Anchor.BottomRight;
-		_screenButton.		Origin = Anchor.BottomRight;
+		_screenButton.Anchor = Anchor.BottomRight;
+		_screenButton.Origin = Anchor.BottomRight;
 		_screenButton.Position = new Vector2F(-40, -12);
 
 		_bindingFlow = new Flow(_footer) {
 			AutoSize = Axis.Both,
 			Spacing = 20
 		};
-		_bindingFlow.		Anchor = Anchor.Center;
-		_bindingFlow.		Origin = Anchor.Center;
+		_bindingFlow.Anchor = Anchor.Center;
+		_bindingFlow.Origin = Anchor.Center;
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
@@ -462,8 +504,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		};
 
 		LevelSelectorBackButton back = new(levelSelector, selector);
-		back.		Anchor = Anchor.Center;
-		back.		Origin = Anchor.Center;
+		back.Anchor = Anchor.Center;
+		back.Origin = Anchor.Center;
 		back.Position = new(-256, 0);
 
 		var backImage = new Image(back);
@@ -486,15 +528,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		title.TextSize = 48;
 		title.Text = info.Name;
 		title.SetAutoSize(true);
-		title.		Anchor = Anchor.Center;
-		title.		Origin = Anchor.Center;
+		title.Anchor = Anchor.Center;
+		title.Origin = Anchor.Center;
 
 		LevelSelectorAuthorLabel author = new LevelSelectorAuthorLabel(levelSelector, selector);
 		author.TextSize = 22;
 		author.Text = $"by {info.Author}";
 		author.SetAutoSize(true);
-		author.		Anchor = Anchor.Center;
-		author.		Origin = Anchor.Center;
+		author.Anchor = Anchor.Center;
+		author.Origin = Anchor.Center;
 
 		levelSelector.TrySetupTrack();
 
@@ -590,9 +632,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		mapper.TextOverflowMode = TextOverflowMode.None;
 		mapper.Clipping = false;
 		mapper.Position = new(-8, -8);
-		mapper.		Anchor = Anchor.BottomRight;
+		mapper.Anchor = Anchor.BottomRight;
 		mapper.SetPassthru(true);
-		mapper.		Origin = Anchor.BottomRight;
+		mapper.Origin = Anchor.BottomRight;
 		mapper.SetTextAlignment(Anchor.TopLeft);
 
 		play.SetBgColor(buttonColor);

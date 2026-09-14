@@ -6,6 +6,7 @@ using CloneDash.Common;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.Game;
 using CloneDash.Menu.Searching;
 using CloneDash.Settings;
@@ -284,21 +285,25 @@ public class GameDLL : IGameDLL
 			Logs.Info($"cam_level specified: {cam_level}");
 			int difficulty = cmd.ParmValue("-difficulty", 0);
 
-			MD1_CustomChartsSong song = new MD1_CustomChartsSong(cam_level);
-			MD1_SongChart? chart;
-			switch (Path.GetExtension(cam_level)) {
-				case ".bms":
-					chart = song.LoadFromDiskBMS(cam_level);
-					break;
-				default:
-					chart = song.GetSheet(difficulty);
-					break;
+			MD1_CustomChartsSong? song = (MD1_CustomChartsSong?)CustomAlbumsChartProvider.LoadSong(cam_level);
+			if (song != null) {
+				MD1_SongChart? chart;
+				switch (Path.GetExtension(cam_level)) {
+					case ".bms":
+						chart = song.LoadFromDiskBMS(cam_level);
+						break;
+					default:
+						chart = song.GetSheet(difficulty);
+						break;
+				}
+				if (chart != null)
+					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
+						Autoplay = cmd.FindParm("-autoplay") != 0,
+						StartMeasure = cmd.ParmValue("-startmeasure", 0)
+					});
 			}
-			if (chart != null)
-				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-					Autoplay = cmd.FindParm("-autoplay") != 0,
-					StartMeasure = cmd.ParmValue("-startmeasure", 0)
-				});
+			else
+				LevelTransitions.LoadMainMenu();
 		}
 
 		else if (first) {

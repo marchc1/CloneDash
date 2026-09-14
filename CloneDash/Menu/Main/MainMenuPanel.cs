@@ -82,20 +82,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 
 	Button back;
-	public List<ISong> RefreshLocalSongs() {
-		List<ISong> ret = [];
-
-		foreach (var file in filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
-			try {
-				ret.Add(new MD1_CustomChartsSong("charts", file));
-			}
-			catch (Exception ex) {
-				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");
-			}
-		}
-
-		return ret;
-	}
 
 	public MainMenuPanel(Element? parent) : base(parent) {
 		BorderSize = 0;
