@@ -76,6 +76,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddLocalizedJSONInfo(Common.HumanLanguage.English, webChart.TitleRomanized, null);
 			}
 
+			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
+
 			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;
 				string? ext = Path.GetExtension(filepath);
