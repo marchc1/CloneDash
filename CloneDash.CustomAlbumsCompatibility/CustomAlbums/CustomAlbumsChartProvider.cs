@@ -1,20 +1,32 @@
 ﻿using CloneDash.Charts;
+using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
+using FftSharp;
+using Nucleus;
+using Nucleus.Commands;
+using Nucleus.Core;
 using Nucleus.Files;
 using System.Xml.Linq;
+using static System.Net.WebRequestMethods;
 
 namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 
 public class CustomAlbumsChartSource : BaseContiguousSongSource
 {
-	public CustomAlbumsChartSource() : base(GetCustomSongs()) {
+	public CustomAlbumsChartSource(BaseContiguousChartSongFilter? filter = null, ISongSourceState? parent = null) :  base(GetCustomSongs(), filter, parent) {
 
 	}
 
+	public override ISongSourceState ProduceNewSource(IChartSongFilter filter) {
+		if (filter is not BaseContiguousChartSongFilter contigFilter)
+			throw new InvalidCastException("Invalid contigFilter");
+		return new CustomAlbumsChartSource(contigFilter, this.GetRootSource());
+	}
+
 	static List<ISong>? songs;
-	private static IReadOnlyList<ISong> GetCustomSongs() {
+	internal static IReadOnlyList<ISong> GetCustomSongs() {
 		if (songs != null)
 			return songs;
 
@@ -37,20 +49,28 @@ public class CustomAlbumsChartSource : BaseContiguousSongSource
 	}
 }
 
+[MarkForStaticConstruction]
 public class CustomAlbumsChartProvider : IChartSongProvider
 {
+	public static readonly ConVar cam_lastsong = new ConVar(nameof(cam_lastsong), "", FCvar.Saved, "The last selected song ID");
+	public static readonly ConVar cam_lastfilter = new ConVar(nameof(cam_lastfilter), "", FCvar.Saved, "The last selected song filter");
+	public IChartSongFilter? SavedFilter() => cam_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(cam_lastfilter.GetString()));
+	public ISong? SavedSong() => cam_lastsong.GetString().IsEmpty ? null : CustomAlbumsChartSource.GetCustomSongs().FirstOrDefault(x => x.GetUUID().Equals(cam_lastsong.GetString(), StringComparison.InvariantCultureIgnoreCase));
+	public void UpdateSavedFilter(IChartSongFilter? filter) => cam_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
+	public void UpdateSavedSong(ISong? selectedSong) => cam_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
+
 	public ISong? FindByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
-		foreach (var song in MuseDash1Compatibility.Songs) {
-			if (name.Equals(song.BaseName, StringComparison.InvariantCultureIgnoreCase))
+		foreach (var song in CustomAlbumsChartSource.GetCustomSongs()) {
+			if (name.Equals(song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name, StringComparison.InvariantCultureIgnoreCase))
 				return song;
 		}
 		return null;
 	}
 
 	public IEnumerable<string> GetAvailable() {
-		foreach (var song in MuseDash1Compatibility.Songs)
-			yield return song.BaseName;
+		foreach (var song in CustomAlbumsChartSource.GetCustomSongs())
+			yield return song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name;
 	}
 
 	public ReadOnlySpan<char> GetName() => "Custom Albums";

@@ -1,20 +1,33 @@
 ﻿using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MDMC;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
 using Newtonsoft.Json;
 using Nucleus;
+using Nucleus.Commands;
+using Nucleus.Core;
 using System.Reflection;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Charts;
 
+[MarkForStaticConstruction]
+
 public class MDMCChartProvider : IChartSongProvider
 {
+	public static readonly ConVar mdmc_lastfilter = new ConVar(nameof(mdmc_lastfilter), "", FCvar.Saved, "The last selected song filter");
+
 	public ISong? FindByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
 	public IEnumerable<string> GetAvailable() { yield break; } // Cannot poll for this
 
 	public ReadOnlySpan<char> GetName() => "MDMC";
 	public ISongSourceState NewState() => new MDMCChartSongSourceState();
+
+	public IChartSongFilter? SavedFilter() => mdmc_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<MDMCChartFilter>(new(mdmc_lastfilter.GetString()));
+	public ISong? SavedSong() => null;
+
+	public void UpdateSavedFilter(IChartSongFilter? filter) => mdmc_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((MDMCChartFilter)filter));
+	public void UpdateSavedSong(ISong? selectedSong) { }
 }
 
 public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartSongFilter(baseFilter)
@@ -55,6 +68,25 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 			Songs.Add(song);
 		return song;
 	}
+
+	public int Index(ISong? song) {
+		if (song == null)
+			return -1;
+
+		if (Songs.Count <= 0)
+			return -1;
+
+		if (Songs.Count == 1)
+			return 0;
+
+		ISong? ret;
+		for (int i = 0; i < Songs.Count; i++)
+			if ((ret = Songs[i]) == song)
+				return i;
+
+		return -1;
+	}
+
 
 	public ISong? At(int i) {
 		var absPtr = pointer + i;

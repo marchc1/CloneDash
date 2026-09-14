@@ -55,7 +55,9 @@ public class SongSelector : Panel, IMainMenuPanel
 	SongLabel FilterResults = null!;
 	SongSearchDialog? ActiveDialog;
 	IChartSongFilter? SearchFilter;
+	bool IsFirst = true;
 
+	IChartSongProvider Provider;
 	ISongSourceState? Source;
 	public void SetSource(ISongSourceState source) {
 		Source = source;
@@ -87,7 +89,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 		Source = ActiveDialog.Apply(Source, SearchFilter);
-
+		Provider.UpdateSavedFilter(SearchFilter);
 		ClearSongs();
 	}
 
@@ -127,6 +129,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public void ClearFilter() {
 		Source = Source?.GetRootSource();
+		Provider.UpdateSavedFilter(null);
 		UpdateFilterText();
 	}
 
@@ -201,10 +204,16 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 		if (finished.Movement == 0)
 			return;
+
 		DiscAnimationOffset.ResetTo(finished.Movement);
+
 		ResetDiskTrack();
 		InvalidateLayout();
 		UpdateFilterText();
+
+		// Commit updates to the source
+		if (!IsFirst)
+			Provider.UpdateSavedSong(GetDiscSong(GetActiveDisc()));
 	}
 
 	public static int GetButtonLocalIndex(SongDiscButton discButton) => discButton.GetTag<int>("localDiscIndex");
@@ -260,12 +269,16 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		if (!Source.IsBusy() && wasBusy) {
 			wasBusy = false;
+
 			InvalidateLayout();
 			UpdateFilterText();
 		}
 
 		if (doNotTryToGetTrackAgain)
 			return;
+
+		// The source has loaded, so we can prepare our filters...
+		LoadLastStateIfApplicable();
 
 		// Should play track?
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
@@ -307,6 +320,21 @@ public class SongSelector : Panel, IMainMenuPanel
 		FlyAway = 0;
 		DiscVibrate = 0;
 		InvalidateLayout();
+	}
+
+	public void NavigateToSong(ISong? song, bool animated = true) {
+		if (Source == null)
+			return;
+
+		// Get the song index
+		int index = Source.Index(song);
+		if (index == -1)
+			return;
+
+		Source.Select(song, CommitMove);
+		if(!animated)
+			DiscAnimationOffset.ResetTo(0);
+
 	}
 
 	public void NavigateToDisc(Button disc) {
@@ -472,12 +500,12 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		CurrentTrackName.
 		Origin = Anchor.Center;
-		CurrentTrackName.		Anchor = Anchor.Center;
+		CurrentTrackName.Anchor = Anchor.Center;
 		CurrentTrackName.SetAutoSize(true);
 
 		CurrentTrackAuthor.
 		Origin = Anchor.Center;
-		CurrentTrackAuthor.		Anchor = Anchor.Center;
+		CurrentTrackAuthor.Anchor = Anchor.Center;
 		CurrentTrackAuthor.SetAutoSize(true);
 
 		CurrentTrackName.
@@ -496,11 +524,32 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 	}
 
+	private void LoadLastStateIfApplicable() {
+		if (!IsFirst)
+			return;
+		IsFirst = false;
+
+		ISong? lastSong = Provider.SavedSong();
+		IChartSongFilter? lastFilter = Provider.SavedFilter();
+
+		if (lastSong != null)
+			NavigateToSong(lastSong, false);
+
+		if (lastFilter != null) {
+			if (Source == null) return;
+
+			SearchFilter = lastFilter;
+			Source = Source.GetRootSource().ProduceNewSource(SearchFilter);
+			ClearSongs();
+		}
+	}
+
 	public static int VisibleDiscs => 5;
 
 	public readonly int IntegerMidpoint;
 
-	public SongSelector(Element? parent) : base(parent) {
+	public SongSelector(Element? parent, IChartSongProvider provider) : base(parent) {
+		Provider = provider;
 		SetPaintBackgroundEnabled(false);
 		SetPaintBorderEnabled(false);
 
@@ -513,14 +562,14 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor = new(this);
 		SearchBar = new(this);
 		FilterResults = new(this);
-		FilterResults.		Anchor = Anchor.TopCenter;
-		FilterResults.		Origin = Anchor.Center;
+		FilterResults.Anchor = Anchor.TopCenter;
+		FilterResults.Origin = Anchor.Center;
 
 		SearchBar.OnButtonClick += SearchBar_MouseReleaseEvent;
 
 		Loading = new(this);
-		Loading.		Anchor = Anchor.Center;
-		Loading.		Origin = Anchor.Center;
+		Loading.Anchor = Anchor.Center;
+		Loading.Origin = Anchor.Center;
 		Loading.Text = "LOADING";
 		Loading.TextSize = 100;
 		Loading.SetAutoSize(true);
@@ -529,7 +578,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.SetVisible(false);
-			disc.			Origin = Anchor.Center;
+			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 
 			disc.OnButtonClick += (s, _) => {
