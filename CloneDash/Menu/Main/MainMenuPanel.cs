@@ -119,13 +119,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton(
 			"Play", "Play your installed charts.", 200,
 			"icons/play.png", menu => {
-				var source = ChartMod.GetChartSongProviderByName("Muse Dash");
+				var source = ChartMod.GetChartSongProviderByName("Muse Dash 1");
 				if (source == null) {
 					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
 					return;
 				}
 
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content, source));
 				selector.SetSource(source.NewState());
 			});
 
@@ -138,7 +138,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content, source));
 				selector.SetSource(source.NewState());
 			});
 
@@ -150,7 +150,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 					return;
 				}
 
-				menu.PushActiveElement(new SongSelector(Level.Content)).SetSource(source.NewState());
+				menu.PushActiveElement(new SongSelector(Level.Content, source)).SetSource(source.NewState());
 			});
 
 		MakeNavigationButton(

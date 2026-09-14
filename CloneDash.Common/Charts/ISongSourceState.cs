@@ -26,6 +26,7 @@ public interface ISongSourceState
 	/// <summary>
 	/// The <see cref="ISong"/> at the index, relative to the internal counter, which is manipulated by <see cref="MoveLeft"/>/<see cref="MoveRight"/>.
 	/// </summary>
+	int Index(ISong? song);
 	ISong? At(int i);
 
 	/// <summary>

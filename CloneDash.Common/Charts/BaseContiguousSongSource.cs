@@ -7,7 +7,7 @@ namespace CloneDash.Charts;
 /// <summary>
 /// A base implementation where all songs are available at once
 /// </summary>
-public class BaseContiguousSongSource : BaseSongSource, ISongSourceState
+public abstract class BaseContiguousSongSource : BaseSongSource, ISongSourceState
 {
 	readonly IReadOnlyList<ISong> Songs;
 
@@ -17,6 +17,24 @@ public class BaseContiguousSongSource : BaseSongSource, ISongSourceState
 		Songs = filter == null ? [.. songs] : filter.Apply(songs);
 		Parent = parent;
 		Root = parent?.GetRootSource() ?? this;
+	}
+
+	public int Index(ISong? song) {
+		if (song == null)
+			return -1;
+
+		if (Songs.Count <= 0)
+			return -1;
+
+		if (Songs.Count == 1)
+			return 0;
+
+		ISong? ret;
+		for (int i = 0; i < Songs.Count; i++)
+			if ((ret = Songs[i]) == song)
+				return i;
+
+		return -1;
 	}
 
 	public ISong? At(int i) {
@@ -81,11 +99,8 @@ public class BaseContiguousSongSource : BaseSongSource, ISongSourceState
 			ImmediatelyAvailable = true
 		};
 	}
-	public ISongSourceState ProduceNewSource(IChartSongFilter filter) {
-		if (filter is not BaseContiguousChartSongFilter contigFilter)
-			throw new InvalidCastException("Invalid contigFilter");
-		return new BaseContiguousSongSource(Songs, contigFilter, this.GetRootSource());
-	}
+
+	public abstract ISongSourceState ProduceNewSource(IChartSongFilter filter);
 	public ChartSongSourceMoveInit Select(ISong? selectSong, ChartSongSourceMoveFinishFn? callback = null) {
 		if (IsBusy()) {
 			return new ChartSongSourceMoveInit {

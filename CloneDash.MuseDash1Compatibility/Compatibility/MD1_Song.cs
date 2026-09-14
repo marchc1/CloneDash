@@ -240,7 +240,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		};
 	}
 
-	public ReadOnlySpan<char> GetUUID() => $"song/musedash1/{Info?.Music}";
+	public virtual ReadOnlySpan<char> GetUUID() => $"song/musedash1/{GetInfo()?.Music}";
 
 	~MD1_Song() {
 		MainThread.RunASAP(() => {

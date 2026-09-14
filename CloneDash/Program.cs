@@ -23,6 +23,7 @@ using Nucleus.NewEngine;
 using Nucleus.UI;
 using Nucleus.Util;
 using System.Diagnostics;
+using System.Reflection;
 using Velopack;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
@@ -111,7 +112,11 @@ public class GameDLL : IGameDLL
 	}
 	public void PreStaticInitialize() {
 		// stupid hack to fix dependency-loading issues...
-		MuseDash1Game _ = null!; if (_ == null) { }
+		// THIS REALLY SUCKED WOW: MuseDash1Game _ = null!; if (_ == null) { }
+		// Hall of shame for me
+		// This will work better:
+		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
+		Assembly.Load("CloneDash.MuseDash1Compatibility");
 	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()

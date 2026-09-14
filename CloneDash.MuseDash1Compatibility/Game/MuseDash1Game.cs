@@ -155,7 +155,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
-	public static ConCommand mdlevel = new(nameof(mdlevel), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash level.");
+	public static ConCommand md1level = new(nameof(md1level), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash 1 level.");
 
 	public static ConCommand cdrestest = new(nameof(cdrestest), (_, in args) => {
 		Vector2F winSize;
