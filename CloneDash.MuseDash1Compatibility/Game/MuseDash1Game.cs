@@ -1307,10 +1307,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		_ => false
 	};
 
+	public static readonly ConVar md1_debugevents = new ConVar(nameof(md1_debugevents), "0", 0, "Prints event debugging to console.");
+
 	public void ActivateEvent(DashEvent ev) {
 		ActiveEvents.Add(ev);
 		ev.Activate();
-		if (!IsSeeking && ev.ShouldDebug()) {
+		if (md1_debugevents.GetBool() && !IsSeeking && ev.ShouldDebug()) {
 			if (ev.Length == 0)
 				Logs.Debug($"Triggering {ev.ToString()}");
 			else
@@ -1321,7 +1323,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		HandledEvents.Add(ev);
 		ActiveEvents.Remove(ev);
 		ev.Deactivate();
-		if (!IsSeeking) {
+		if (md1_debugevents.GetBool() && !IsSeeking && ev.ShouldDebug()) {
 			if (ev.Length != 0)
 				Logs.Debug($"Deactivating {ev.GetType().Name}");
 		}
