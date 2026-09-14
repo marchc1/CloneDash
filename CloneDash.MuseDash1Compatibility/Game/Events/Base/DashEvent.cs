@@ -41,6 +41,8 @@ public class DashEvent
 
 	}
 
+	public virtual bool ShouldDebug() => true;
+
 	public virtual void Deactivate() {
 
 	}

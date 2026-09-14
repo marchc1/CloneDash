@@ -572,19 +572,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = activeScene) != null;
 
 	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
-	public void SetScene(IMuseDash1SceneInstance? scene) {
+	public bool SetScene(IMuseDash1SceneInstance? scene) {
 		if (activeScene == scene)
-			return;
+			return false;
 
 		activeScene?.Deactivate(scene);
 		var oldScene = activeScene;
 		activeScene = scene;
 		scene?.Activate(oldScene);
 		BroadcastEntitySignal(null, EntitySignalType.SceneChange, (oldScene, scene));
+		return true;
 	}
 
-	public void SetScene(int sceneIdx) {
-		SetScene(scenes[sceneIdx]);
+	public bool SetScene(int sceneIdx) {
+		return SetScene(scenes[sceneIdx]);
 	}
 
 	public void SetScene(ReadOnlySpan<char> scene) {
@@ -1309,7 +1310,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void ActivateEvent(DashEvent ev) {
 		ActiveEvents.Add(ev);
 		ev.Activate();
-		if (!IsSeeking) {
+		if (!IsSeeking && ev.ShouldDebug()) {
 			if (ev.Length == 0)
 				Logs.Debug($"Triggering {ev.ToString()}");
 			else
