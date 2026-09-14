@@ -9,4 +9,7 @@ public class SceneChange(MuseDash1Game game, int sceneArrayIdx) : DashEvent(game
 		base.Activate();
 		Game.SetScene(ArrayIdx);
 	}
+	public override string ToString() {
+		return $"SceneChange -> {ArrayIdx}";
+	}
 }

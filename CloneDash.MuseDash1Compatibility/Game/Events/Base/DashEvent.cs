@@ -17,7 +17,9 @@ public class DashEvent
 	public DashEvent(MuseDash1Game game) {
 		Game = game;
 	}
-
+	public override string ToString() {
+		return GetType().Name;
+	}
 	public virtual EventTriggerType TriggerType => EventTriggerType.AtTime;
 	public double Time { get; set; }
 	public double Length { get; set; }

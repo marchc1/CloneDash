@@ -573,6 +573,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
 	public void SetScene(IMuseDash1SceneInstance? scene) {
+		if (activeScene == scene)
+			return;
+
 		activeScene?.Deactivate(scene);
 		var oldScene = activeScene;
 		activeScene = scene;
@@ -1308,9 +1311,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ev.Activate();
 		if (!IsSeeking) {
 			if (ev.Length == 0)
-				Logs.Debug($"Triggering {ev.GetType().Name}");
+				Logs.Debug($"Triggering {ev.ToString()}");
 			else
-				Logs.Debug($"Activating {ev.GetType().Name}");
+				Logs.Debug($"Activating {ev.ToString()}");
 		}
 	}
 	public void DeactivateEvent(DashEvent ev) {

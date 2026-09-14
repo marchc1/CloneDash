@@ -184,6 +184,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		if (!IValidatable.IsValid(songSelector) || songSelector.GetProvider() != provider) {
 			PopActiveElement();
 			songSelector = new SongSelector(Content, provider);
+			songSelector.SetSource(provider.NewState());
 			PushActiveElement(songSelector);
 		}
 
