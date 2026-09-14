@@ -526,6 +526,7 @@ namespace Nucleus.Core
 
 		public static void EndRenderTarget() {
 			EngineCore.Window.EndTextureMode();
+			SetBlendMode(BlendMode.Alpha);
 		}
 
 		public static void CalculateUVCoordinatesFromRects(ITexture tex, in RectangleF source, in RectangleF dest, out float sU, out float sV, out float eU, out float eV){

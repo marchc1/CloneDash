@@ -242,7 +242,14 @@ public class Element : IValidatable
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
-	public UserInterface UI { get; internal set; } = null!;
+	public UserInterface UI{
+		get => field;
+		set {
+			field = value;
+			foreach (var child in GetChildren())
+				child.UI = value;
+		}
+	}
 
 	/// <summary>
 	/// The position of this element, relative to its parent.
@@ -1064,6 +1071,11 @@ public class Element : IValidatable
 	public virtual void PreRenderRT() { }
 	public virtual void PostRenderRT() { }
 	public virtual bool PostRenderChildRT(Element element) => true;
+
+	public delegate void PaintRenderTargetOverrideDelegate(Element self, in RenderTexture2D texture, in RectangleF renderBounds);
+	public event PaintRenderTargetOverrideDelegate? PaintRenderTargetOverride;
+	public bool HasPaintRenderTargetOverride => PaintRenderTargetOverride != null;
+	public void InvokePaintRenderTargetOverride(in RenderTexture2D texture, in RectangleF renderBounds) => PaintRenderTargetOverride?.Invoke(this, texture, renderBounds);
 
 	public virtual void SetVisible(bool visible) {
 		if (Visible == visible)

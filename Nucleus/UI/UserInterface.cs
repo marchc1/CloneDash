@@ -311,10 +311,19 @@ public class ElementPaintSystem
 						Graphics2D.OffsetDrawing(renderBounds.Pos);
 						{
 							element.PreRenderRT();
-							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
-							Graphics2D.SetDrawColor(t, t, t, t);
-							Graphics2D.SetTexture(rt);
-							Graphics2D.DrawTexturedRectangle(0, 0, renderBounds.W, renderBounds.H);
+							if (element.HasPaintRenderTargetOverride) {
+								var globalBounds = RectangleF.FromPosAndSize(element.GetGlobalPosition(), renderBounds.Size);
+								var savedOffset = Graphics2D.Offset;
+								Graphics2D.ResetDrawingOffset();
+								element.InvokePaintRenderTargetOverride(rt, globalBounds);
+								Graphics2D.OffsetDrawing(savedOffset);
+							}
+							else {
+								var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
+								Graphics2D.SetDrawColor(t, t, t, t);
+								Graphics2D.SetTexture(rt);
+								Graphics2D.DrawTexturedRectangle(0, 0, renderBounds.W, renderBounds.H);
+							}
 							element.PostRenderRT();
 						}
 						Graphics2D.OffsetDrawing(-renderBounds.Pos);

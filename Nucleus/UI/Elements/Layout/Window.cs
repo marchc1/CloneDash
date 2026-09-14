@@ -175,12 +175,14 @@ public class Titlebar : Panel
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		if (IValidatable.IsValid(Image)) {
-			Image.			Size = new(height, height);
-			Image.			Position = TitlePos switch {
+			float pad = MathF.Round(height * 0.2f);
+			Image.			Size = new(height - (pad * 2), height - (pad * 2));
+			Vector2F basePos = TitlePos switch {
 				Anchor.CenterLeft => new(0, 0),
 				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(GetText(), Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
 				_ => new(0, 0),
 			};
+			Image.			Position = basePos + new Vector2F(pad, pad);
 			Image.			ImageOrientation = ImageOrientation.Zoom;
 			Image.SetPaintBackgroundEnabled(false);
 		}
