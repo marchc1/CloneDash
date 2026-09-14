@@ -157,6 +157,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			if (selector == null)
 				return false;
 
+			// Ignore the last state, because if we don't, the convars will reset the later NavigateToSong call..
+			selector.IgnorePreviousState();
+
 			var song = CustomAlbumsChartProvider.LoadSong(filepath);
 			if (song == null)
 				return false;

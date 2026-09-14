@@ -57,6 +57,14 @@ public class SongSelector : Panel, IMainMenuPanel
 	IChartSongFilter? SearchFilter;
 	bool IsFirst = true;
 
+	/// <summary>
+	/// Triggers IsFirst to false, which causes previous convars storing state to be
+	/// completely ignored; used for drag n drop
+	/// </summary>
+	public void IgnorePreviousState(){
+		IsFirst = false;
+	}
+
 	readonly IChartSongProvider Provider;
 	public IChartSongProvider GetProvider() => Provider;
 	ISongSourceState? Source;
