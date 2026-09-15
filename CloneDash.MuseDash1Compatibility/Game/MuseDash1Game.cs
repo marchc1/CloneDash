@@ -182,6 +182,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	ComplexRenderTexture? RenderTexture;
 	ComplexRenderTexture? RenderTexture2;
 	IMuseDash1SceneUI? SceneUI;
+	double ScreenScrollLastTime;
 	double ScreenScrollProgress;
 	double ScreenScrollRate;
 	SecondOrderSystem? YOffsetSOS;
@@ -1317,6 +1318,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void ResetScreenScroll() {
 		ScreenScrollProgress = 0;
+		ScreenScrollLastTime = Conductor.Time;
 	}
 
 	public void ResetScreenspaceEffects() {
@@ -1347,7 +1349,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			ScreenScrollRate = 1;
 
 		if (ScreenScrollRate != 0 && !Paused) {
-			ScreenScrollProgress += ScreenScrollRate * globals.CurTimeDelta * frameState.WindowHeight * 8;
+			double deltaTime = Conductor.Time - ScreenScrollLastTime;
+			ScreenScrollLastTime = Conductor.Time;
+			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8;
 
 			double windowH = frameState.WindowHeight;
 
