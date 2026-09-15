@@ -101,7 +101,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 		Source = ActiveDialog.Apply(Source, SearchFilter);
-		Provider.UpdateSavedFilter(SearchFilter);
+		Provider.UpdateSavedFilter(Source.NewFilter());
 		ClearSongs();
 	}
 
