@@ -815,6 +815,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							var ev = new SceneChange(this, sceneChangeInstance.GetSceneArrayIndex());
 							Events.Add(ev);
 							ReadyToBuildEvents.Add(ev);
+							EventManager.Add(ev);
 							ev.Time = sceneChange.Time;
 							sceneChanges.Add(ev);
 						}
