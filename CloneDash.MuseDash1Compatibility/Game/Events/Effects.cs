@@ -102,9 +102,13 @@ public class FilmGrainEffect(MuseDash1Game game, bool active) : ScreenspaceEffec
 {
 	public override double? GetLengthOfEffect() => 0.2;
 }
-public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FlashbangColor, (double)color);
-
+public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FlashbangColor, (double)color){
+	public override void Activate() {
+		game.SetFlashbangColor(color);
+	}
+}
 public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)
 {
 	public bool Active = active;
+
 }

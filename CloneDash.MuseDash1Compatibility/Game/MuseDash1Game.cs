@@ -37,11 +37,13 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Nucleus.Util;
+using OggVorbisEncoder;
 using Raylib_cs;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
+using Velopack;
 using Color = Nucleus.Common.Types.Color;
 using Image = Nucleus.UI.Elements.Image;
 
@@ -130,7 +132,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (song == null) {
 			Logs.Warn("Can't find that song.");
 			Logs.Print("Here are some similar names:");
-			foreach (var s in MuseDash1Compatibility.FindSimilarSongs(md_level)) 
+			foreach (var s in MuseDash1Compatibility.FindSimilarSongs(md_level))
 				Logs.Print($"    {s.FetchMetadata().Name} ({s.BaseName})");
 			return;
 		}
@@ -1351,6 +1353,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	readonly FCurve<float> flashbangIntensity = new();
+	Color flashbangColor = new(255, 255, 255, 255);
 	/// <summary>
 	/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 	/// </summary>
@@ -2266,6 +2269,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
 	public bool BreaksAvoids() => Quirks.BreaksAvoids;
+
+	internal void SetFlashbangColor(FlashbangColor color) {
+		switch (color) {
+			case FlashbangColor.White: flashbangColor = new(255, 255, 255, 255); break;
+			case FlashbangColor.Black: flashbangColor = new(0, 0, 0, 255); break;
+			case FlashbangColor.Red: flashbangColor = new(255, 0, 0, 255); break;
+			case FlashbangColor.Green: flashbangColor = new(0, 255, 0, 255); break;
+			case FlashbangColor.Blue: flashbangColor = new(0, 0, 255, 255); break;
+			case FlashbangColor.Cyan: flashbangColor = new(0, 255, 255, 255); break;
+			case FlashbangColor.Magenta: flashbangColor = new(255, 0, 255, 255); break;
+			case FlashbangColor.Yellow: flashbangColor = new(255, 255, 0, 255); break;
+		}
+	}
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
