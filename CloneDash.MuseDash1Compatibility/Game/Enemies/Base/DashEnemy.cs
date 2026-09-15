@@ -49,7 +49,7 @@ public class DashEnemyVisuals
 	public void SetShowTimeDirect(double showtime) => ShowTime = showtime;
 }
 
-public class DashEnemy : Entity
+public class DashEnemy : Entity, IDashChunkable
 {
 	public DashEnemyVisuals[] Visuals = null!;
 
@@ -657,4 +657,9 @@ public class DashEnemy : Entity
 
 		RenderHeartMount(visuals);
 	}
+
+	public double GetChunkableTime() => HitTime;
+	public double GetChunkablePostLength() => Length;
+	public bool IsChunkableNow() => (CheckVisTest() || ForceDraw) && ShouldDraw;
+	public int GetChunkableSortIndex() => SortIndex;
 }

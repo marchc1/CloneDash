@@ -113,7 +113,7 @@ namespace CloneDash.Game.Logic
 			}
 
 			// Sort the visible entities by closest to furthest
-			var ents = level.EnemyManager.GetLastVisibleEnemies();
+			var ents = level.EnemyManager.GetLastVisible();
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = GetClosestInteractiveIdx(ents);

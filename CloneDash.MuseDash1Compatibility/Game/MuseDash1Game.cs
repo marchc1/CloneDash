@@ -79,6 +79,7 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
 	public readonly MuseDash1EnemyManager EnemyManager = new();
+	public readonly MuseDash1EventManager EventManager = new();
 	public ISongChart? GetChart() => gameParameters.Chart;
 	public static ConCommand musicseek = new(nameof(musicseek), (_, in args) => {
 		var level = EngineCore.Level.AsNullable<MuseDash1Game>();
@@ -937,7 +938,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Quirks.HealthLossPerSecond(ProduceSnapshot(), ref loss);
 			DrainHealth(loss * Conductor.TimeDelta);
 		}
-		EnemyManager.RebuildVisibleEnemies(Conductor.Time);
+
+		EnemyManager.Rebuild(Conductor.Time);
+		EventManager.Rebuild(Conductor.Time);
+
 		InputState.Reset();
 		if (!IsDead()) {
 			if (AutoPlayer.Enabled) {
@@ -1097,8 +1101,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			sceneUI.UpdateHP(Health, Quirks.MaxHP);
 		}
 
-		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
-		var lastEntity = EnemyManager.GetLastEnemy();
+		var visibleEnemies = EnemyManager.GetLastVisible();
+		var lastEntity = EnemyManager.GetLast();
 
 		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
 			lastNoteHit = true;
@@ -1203,6 +1207,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 
 	public int EnemySortIndexCounter;
+	public int EventSortIndexCounter;
 
 	/// <summary>
 	/// Gets the games <see cref="Pathway"/> from a <see cref="PathwaySide"/><br></br>
@@ -1261,7 +1266,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="pathway"></param>
 	/// <returns>A <see cref="PollResult"/>, if it hit something, Hit is true, and vice versa.</returns>
 	public PollResult Poll(in PollParams parms) {
-		var visibleEnemies = EnemyManager.GetLastVisibleEnemies();
+		var visibleEnemies = EnemyManager.GetLastVisible();
 		foreach (DashEnemy entity in visibleEnemies) {
 			// If the entity has no interactivity, ignore it in the poll
 			if (!entity.Interactive)
@@ -1330,7 +1335,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void IterateEvents() {
-		foreach (var ev in Events) {
+		foreach (var ev in EventManager.GetLastVisible()) {
 			if (ActiveEvents.Contains(ev)) {
 				// Determine if the event needs to be deactivated
 				if (shouldDeactivateEvent(ev))
@@ -1364,6 +1369,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Events.Add(ev);
 		readyToBuildEvents.Add(ev);
+		EventManager.Add(ev);
 		// This is a hack... whatever
 		if (ev is FlashbangEffect flash)
 			flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
@@ -1422,7 +1428,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Stats.RegisterEnemy(ent);
 		readyToBuildEntities.Add(ent);
-		EnemyManager.AddEnemy(ent);
+		EnemyManager.Add(ent);
 
 		return ent;
 	}
@@ -1544,7 +1550,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		TopPathway.Render();
 		BottomPathway.Render();
 
-		Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisibleEnemies();
+		Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisible();
 
 		// Hold notes
 		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == MuseDash1EntityType.SustainBeam, visibleEnemies);
@@ -1556,7 +1562,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
 		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
 
-		AddDebugString("Visible Entities", EnemyManager.GetLastVisibleEnemies().Length);
+		AddDebugString("Visible Entities", EnemyManager.GetLastVisible().Length);
 
 		Rlgl.DrawRenderBatchActive();
 	}
@@ -1580,7 +1586,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private PathwaySide LastAttackPathway;
 
 	public void BroadcastEntitySignal(DashEnemy? entityFrom, EntitySignalType signalType, object? data = null) {
-		foreach (var enemy in EnemyManager.GetAllEnemies())
+		foreach (var enemy in EnemyManager.GetAll())
 			enemy.OnSignalReceived(entityFrom, signalType, data);
 	}
 
