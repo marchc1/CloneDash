@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game;
+using Nucleus;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -65,8 +66,9 @@ public class ScreenspaceEffectEvent(MuseDash1Game game, ScreenspaceEffectType ty
 	public ScreenspaceEffectType Type = type;
 	public double TargetValue = targetValue;
 	public virtual double? GetLengthOfEffect() => null;
+	public virtual Func<double, double>? GetEasing() => null;
 	public override void Activate() {
-		Game.TriggerScreenspaceEffectStart(Type, TargetValue, GetLengthOfEffect() ?? Length);
+		Game.TriggerScreenspaceEffectStart(Type, TargetValue, GetLengthOfEffect() ?? Length, GetEasing());
 	}
 }
 
@@ -84,6 +86,7 @@ public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : Screen
 }
 public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Vignette, active ? 1 : 0){
 	public override double? GetLengthOfEffect() => 0.4;
+	public override Func<double, double>? GetEasing() => active ? null : NMath.Ease.OutCubic;
 }
 public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.TVStatic, active ? 1 : 0);
 public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, (double)parameter);

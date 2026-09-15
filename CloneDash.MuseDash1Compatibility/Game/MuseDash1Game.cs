@@ -2071,6 +2071,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public double CurrentValue;
 		public double Length;
 		public double Time;
+		public Func<double, double>? Easing;
 	}
 
 	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
@@ -2084,18 +2085,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public double GetBgScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.BgFreeze]);
 	public bool ShouldFreezeNoteAnimations() => GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]) >= 1;
 
-	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length) {
+	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length, Func<double, double>? easing = null) {
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
 
 		state.LastValue = GetCurrentInterpolatedValue(ref state);
 		state.CurrentValue = effectParams;
 		state.Length = length;
 		state.Time = Conductor.Time;
+		state.Easing = easing;
 	}
 	private double GetCurrentInterpolatedValue(ref ScreenspaceEffectState state) {
 		if (state.Length <= 0) return state.CurrentValue;
 
 		double t = Math.Clamp((Conductor.Time - state.Time) / state.Length, 0.0, 1.0);
+		if (state.Easing != null) t = state.Easing(t);
 		return double.Lerp(state.LastValue, state.CurrentValue, t);
 	}
 
