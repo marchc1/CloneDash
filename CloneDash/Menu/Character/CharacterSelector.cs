@@ -177,4 +177,10 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		Character.SetCharacter(CharacterMod.GetCharacterData());
 		return true;
 	}
+
+
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }

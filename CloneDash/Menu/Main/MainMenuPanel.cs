@@ -191,4 +191,8 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			btn.			Origin = Anchor.Center;
 		}
 	}
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }

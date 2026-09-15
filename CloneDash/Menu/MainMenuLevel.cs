@@ -18,6 +18,7 @@ using Nucleus.Core;
 using Nucleus.Debugging;
 using Nucleus.Engine;
 using Nucleus.Extensions;
+using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
 
@@ -47,6 +48,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	#region Panel Switching
 
 	public T PushActiveElement<T>(T element) where T : Element, IMainMenuPanel {
+		element.SetMainMenu(this);
+
 		if (ActiveElements.Count > 0) {
 			var last = ActiveElements.Peek();
 			last.SetVisible(false);
@@ -583,8 +586,29 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		});
 	}
 
+
+	static void HashKeyIfApplicable(HashSet<ButtonCode> target, ButtonCode key, in KeyboardState ks){
+		if (ks.IsKeyDown(key) && !ks.WasKeyPressed(key))
+			target.Add(key);
+	}
 	public override void Think(FrameState frameState) {
 		base.Think(frameState);
+
+		holdingLeft.Clear();
+		holdingRight.Clear();
+		leftsThisFrame = 0;
+		rightsThisFrame = 0;
+
+		HashKeyIfApplicable(holdingLeft, ButtonCode.KeyA, in frameState.Keyboard);
+		HashKeyIfApplicable(holdingLeft, ButtonCode.KeyLeft, in frameState.Keyboard);
+		HashKeyIfApplicable(holdingRight, ButtonCode.KeyD, in frameState.Keyboard);
+		HashKeyIfApplicable(holdingRight, ButtonCode.KeyRight, in frameState.Keyboard);
+
+		for (int i = 0; i < FrameState.Keyboard.TotalKeysThisFrame; i++) {
+			ButtonCode key = FrameState.Keyboard.KeysThisFrame[i].ToButtonCode();
+			if (key == ButtonCode.KeyA || key == ButtonCode.KeyLeft) leftsThisFrame++;
+			if (key == ButtonCode.KeyD || key == ButtonCode.KeyRight) rightsThisFrame++;
+		}
 
 		var active = ActiveElements.Peek();
 		var wasHidden = !Character.IsVisible();
@@ -795,6 +819,17 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Rotation = Random.Shared.NextSingle() * 360
 		};
 	}
+
+	readonly HashSet<ButtonCode> holdingLeft = [];
+	readonly HashSet<ButtonCode> holdingRight = [];
+	int leftsThisFrame = 0;
+	int rightsThisFrame = 0;
+
+	public bool IsHoldingSelectorKeys() => holdingLeft.Count != 0 || holdingRight.Count != 0;
+	public bool IsHoldingLeftSelector() => holdingLeft.Count != 0;
+	public bool IsHoldingRightSelector() => holdingRight.Count != 0;
+	public int MoveLeftsThisFrame() => leftsThisFrame;
+	public int MoveRightsThisFrame() => rightsThisFrame;
 
 	private class BackgroundShape
 	{

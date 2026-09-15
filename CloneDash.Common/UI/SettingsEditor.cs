@@ -172,9 +172,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 				onOK: () => {
 					needsClosed = true;
 
-					if (Level is IMainMenuLevel level) {
-						level.PopActiveElement();
-					}
+						GetMainMenu().PopActiveElement();
 				}
 			);
 
@@ -250,7 +248,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic
 		if (Level is IMainMenuLevel level)
-			level.PushActiveElement(new JudgementOffsetWizard(UI));
+			GetMainMenu().PushActiveElement(new JudgementOffsetWizard(UI));
 		else
 			UI.DialogOK("No Access", "You can only access the offset wizard from the main menu.");
 	}
@@ -312,6 +310,11 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
 		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
 	}
+
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }
 
 public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
@@ -634,4 +637,9 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, startY), new(musicPlayhead + triangleSize, startY), new(musicPlayhead, startY + triangleSize));
 		Graphics2D.DrawTriangle(new(musicPlayhead - triangleSize, endY), new(musicPlayhead + triangleSize, endY), new(musicPlayhead, endY - triangleSize));
 	}
+
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }
