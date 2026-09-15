@@ -20,6 +20,8 @@ public interface IShader : IManagedMemoryUnit
 	void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged;
 	void SetUniform(int location, in Matrix4x4 matrix);
 	void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix);
+	void SetTexture(int location, Texture texture);
+	void SetTexture(ReadOnlySpan<char> location, Texture texture);
 	void Activate();
 	void Deactivate();
 }
@@ -79,6 +81,9 @@ public class ShaderInstance : IShader
 	public void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged => SetUniform(GetUniformLocation(location), value);
 	public void SetUniform(int location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, location, matrix);
 	public void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, GetUniformLocation(location), matrix);
+
+	public void SetTexture(int location, Texture texture) => Raylib.SetShaderValueTexture(underlying, location, texture);
+	public void SetTexture(ReadOnlySpan<char> location, Texture texture) => SetTexture(GetUniformLocation(location), texture);
 
 	public int HardwareID => (int)underlying.Id;
 

@@ -197,6 +197,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ExitMashState();
 		ResetScreenspaceEffects();
 		FeverFX?.Reset();
+		renderBackgroundFx = true;
+		flashbangColor = new(255, 255, 255, 255);
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
 			scene.OnPressStateChange(false, true);
@@ -2075,6 +2077,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
 	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
 	readonly ExecuteShaderFn?[] ScreenspaceEffectShaderFns = new ExecuteShaderFn?[(int)ScreenspaceEffectType.Count];
+	readonly Action<IShader>?[] ScreenspaceEffectPostActivateFns = new Action<IShader>?[(int)ScreenspaceEffectType.Count];
 	public void ResetScreenspaceEffects() {
 		Array.Clear(ScreenspaceEffectStates);
 	}
@@ -2140,8 +2143,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (ScreenScrollRate != 0) {
 			float offset = (float)(ScreenScrollProgress % frameState.WindowHeight);
 			float gap = frameState.WindowHeight * 0.02f;
-			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + gap), Color.White);
-			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - frameState.WindowHeight - gap), Color.White);
+			if (ScreenScrollRate > 0) {
+				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + gap), Color.White);
+				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - frameState.WindowHeight - gap), Color.White);
+			}
+			else {
+				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - gap), Color.White);
+				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + frameState.WindowHeight + gap), Color.White);
+			}
 		}
 		else {
 			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
@@ -2171,6 +2180,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Rlgl.ClearScreenBuffers();
 
 		shader.Activate();
+		ScreenspaceEffectPostActivateFns[(int)effect]?.Invoke(shader);
 		Raylib.DrawTextureRec(
 			read.Texture,
 			new Rectangle(0, 0, read.Width, -read.Height),
@@ -2191,6 +2201,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ScreenspaceEffectShaderFns[(int)type] = shaderFn;
 	}
 
+	private Nucleus.ManagedMemory.Texture? oldFilmScratchesTex;
+	private Nucleus.ManagedMemory.Texture? oldFilmDustTex;
+
+	private Nucleus.ManagedMemory.Texture? LoadOldFilmTexture(string name) {
+		var tex2d = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name);
+		if (tex2d == null) return null;
+		var tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, tex2d);
+		tex.SetWrap(TextureWrap.Repeat); // so the scratches/dust tile as they scroll
+		return tex;
+	}
+
 	private void PrepareShaders() {
 		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
 		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
@@ -2199,6 +2220,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		PrepareShader(ScreenspaceEffectType.FilmGrain, "filmgrain", PrepareFilmGrain);
 		PrepareShader(ScreenspaceEffectType.TVStatic, "tvstatic", PrepareTVStatic);
 		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
+
+		oldFilmScratchesTex = LoadOldFilmTexture("ScratchesTex");
+		oldFilmDustTex = LoadOldFilmTexture("DustTex");
+		ScreenspaceEffectPostActivateFns[(int)ScreenspaceEffectType.FilmGrain] = BindOldFilmTextures;
+	}
+
+	private void BindOldFilmTextures(IShader shader) {
+		if (oldFilmScratchesTex != null) shader.SetTexture("uScratchesTex", oldFilmScratchesTex);
+		if (oldFilmDustTex != null) shader.SetTexture("uDustTex", oldFilmDustTex);
 	}
 
 	private bool PrepareFilmGrain(IShader shader, ref ScreenspaceEffectState state) {
@@ -2270,8 +2300,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
 	public bool BreaksAvoids() => Quirks.BreaksAvoids;
 
-	bool renderBackgroundFx;
-	public void SetBackgroundVisibleFx(bool visible){
+	bool renderBackgroundFx = true;
+	public void SetBackgroundVisibleFx(bool visible) {
 		renderBackgroundFx = visible;
 	}
 
