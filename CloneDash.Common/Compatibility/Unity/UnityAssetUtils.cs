@@ -179,6 +179,7 @@ public static class UnityAssetUtils
 		switch (tex2D.m_TextureFormat) {
 			case TextureFormat.RGB24: pixelFormat = ImageFormat.R8G8B8; break;
 			case TextureFormat.RGBA32: pixelFormat = ImageFormat.R8G8B8A8; break;
+			case TextureFormat.DXT1: pixelFormat = ImageFormat.DXT1_RGBA; break;
 			case TextureFormat.DXT3: pixelFormat = ImageFormat.DXT3_RGBA; break;
 			case TextureFormat.DXT5: pixelFormat = ImageFormat.DXT5_RGBA; break;
 			case TextureFormat.BC4:

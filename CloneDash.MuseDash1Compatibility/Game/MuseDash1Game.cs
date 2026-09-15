@@ -2151,7 +2151,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double flashbangBrightness = flashbangIntensity.DetermineValueAtTime(Conductor.GetTime());
 		if (flashbangBrightness > 0) {
 			Rlgl.DrawRenderBatchActive();
-			Graphics2D.SetDrawColor(255, 255, 255, (int)(float)(255 * flashbangBrightness)); // todo: flashbang color interp
+			Graphics2D.SetDrawColor(flashbangColor.R, flashbangColor.G, flashbangColor.B, (int)(float)(255 * flashbangBrightness)); // todo: flashbang color interp
 			Graphics2D.DrawRectangle(0, 0, frameState.WindowWidth, frameState.WindowHeight);
 			Rlgl.DrawRenderBatchActive();
 		}

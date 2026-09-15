@@ -118,6 +118,9 @@ public class TimeBasedChunkedManager<T> where T : IDashChunkable
 	public void Rebuild(double curtime) {
 		Validate();
 
+		if (Chunks.Count == 0)
+			return;
+
 		int chunkIdx = (int)Math.Floor(curtime / CHUNK_INTERVAL);
 		if (chunkIdx < -1 || chunkIdx >= Chunks.Count + 1) {
 			VisibleCount = 0;

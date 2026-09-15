@@ -482,6 +482,14 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.FilmGrainOff => EventType.FilmGrainOff,
 						IBMSCode.AutoPlayOn => EventType.AutoPlayOn,
 						IBMSCode.AutoPlayOff => EventType.AutoPlayOff,
+						IBMSCode.FlashbangColorWhite => EventType.FlashbangColorWhite,
+						IBMSCode.FlashbangColorBlack => EventType.FlashbangColorBlack,
+						IBMSCode.FlashbangColorRed => EventType.FlashbangColorRed,
+						IBMSCode.FlashbangColorGreen => EventType.FlashbangColorGreen,
+						IBMSCode.FlashbangColorBlue => EventType.FlashbangColorBlue,
+						IBMSCode.FlashbangColorCyan => EventType.FlashbangColorCyan,
+						IBMSCode.FlashbangColorMagenta => EventType.FlashbangColorMagenta,
+						IBMSCode.FlashbangColorYellow => EventType.FlashbangColorYellow,
 
 						_ => EventType.NotApplicable
 					};
