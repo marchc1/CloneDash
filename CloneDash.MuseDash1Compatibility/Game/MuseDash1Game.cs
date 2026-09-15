@@ -2259,8 +2259,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		// Horizontal RGB split offset in UV space (see chromatic_aberration.fs).
-		shader.SetUniform("uOffset", (float)value * 0.008f);
+		float widthPx = renderTexture?.Width ?? 1920;
+		shader.SetUniform("uOffset", (float)value * 4.0f / widthPx);
 
 		return true;
 	}

@@ -6,6 +6,7 @@ uniform sampler2D texture0;
 uniform float uTime;
 uniform float uStrength;
 
+
 float hash(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
 }
@@ -13,19 +14,20 @@ float hash(vec2 p) {
 void main()
 {
     vec4 color = texture(texture0, fragTexCoord);
+    vec3 c = color.rgb;
 
-    vec2 gp = fragTexCoord * vec2(640.0, 360.0) + vec2(uTime * 53.0, uTime * 97.0);
-    float grain = hash(floor(gp));
-    float grainDarken = mix(1.0, grain, 0.35 * uStrength);
+    float scratchSeed = floor(uTime * 6.0);
+    for (int i = 0; i < 3; i++) {
+        float sx = hash(vec2(scratchSeed, float(i) * 7.1));
+        sx = fract(sx + uTime * 0.05 * (0.5 + float(i)));          
+        float line = smoothstep(0.0018, 0.0, abs(fragTexCoord.x - sx));
+        c *= 1.0 - line * 0.5 * uStrength;                         
+    }
 
-    float scratchSeed = floor(uTime * 12.0);
-    float sx = hash(vec2(scratchSeed, 3.7));
-    float scratch = smoothstep(0.0015, 0.0, abs(fragTexCoord.x - sx)) * 0.4 * uStrength;
-
-    vec3 c = color.rgb * grainDarken + scratch + 0.02 * uStrength;
-
-    vec3 contrasted = c + (c * c * c - c);
-    c = mix(c, contrasted, uStrength);
+    vec2 dp = fragTexCoord * vec2(220.0, 124.0) + vec2(uTime * 300.0, uTime * 120.0) * 0.01;
+    float dust = hash(floor(dp));
+    float speck = step(0.992, dust) * 0.6 * uStrength;            
+    c *= 1.0 - speck;
 
     finalColor = vec4(c, color.a);
 }
