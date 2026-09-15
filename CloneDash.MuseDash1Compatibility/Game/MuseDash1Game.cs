@@ -131,9 +131,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly List<DashEvent> Events = [];
 	public int EventSortIndexCounter;
 	public readonly HashSet<DashEvent> HandledEvents = [];
+	public readonly List<ICloneDashInputSystem> InputReceivers = [];
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
 	public AudioPlaybackHandle Music;
+
 	public StatisticsData Stats = null!;
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
@@ -149,39 +151,41 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	readonly ExecuteShaderFn?[] ScreenspaceEffectShaderFns = new ExecuteShaderFn?[(int)ScreenspaceEffectType.Count];
 	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
 	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
-	bool __deferringAsync = false;
-	double __lastCombo = -2000;
-	double __whenHjump = -2000000000000d;
-	double __whenjump = -2000000000000d;
-	IMuseDash1SceneInstance? activeScene;
-	int attackP = 0;
-	bool canSceneChange = false;
+	IMuseDash1SceneInstance? ActiveScene;
+	int AttackP = 0;
+	bool CanSceneChange = false;
 	bool Dead;
 	double DeathTime = -2000000;
-	int failP = 0;
-	IMuseDash1FeverRuntime FeverFX;
+	bool DeferringAsync = false;
+	int FailP = 0;
+	IMuseDash1FeverRuntime? FeverFX;
 	IMuseDash1SceneInstance? FirstScene;
 	Color flashbangColor = new(255, 255, 255, 255);
 	// Player input system
 	InputState InputState;
-	double lastIFrameGivenTime = -200000;
+	double LastIFrameGivenTime = -200000;
+	PathwaySide LastAttackPathway;
+	double LastAttackTime;
+	double LastCombo = -2000;
+	double LastHologramJumpTIme = -2000000000000d;
+	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
-	bool lastNoteHit = false;
-	SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
-	ITexture? oldFilmDustTex;
-	ITexture? oldFilmScratchesTex;
+	bool LastNoteHit = false;
+	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
+	ITexture? OldFilmDustTex;
+	ITexture? OldFilmScratchesTex;
 	MuseDash1GameplayQuirks Quirks = new();
-	List<DashEnemy> readyToBuildEntities = [];
-	List<DashEvent> readyToBuildEvents = [];
-	bool renderBackgroundFx = true;
-	ComplexRenderTexture? renderTexture;
-	ComplexRenderTexture? renderTexture2;
+	readonly List<DashEnemy> ReadyToBuildEntities = [];
+	readonly List<DashEvent> ReadyToBuildEvents = [];
+	bool RenderBackgroundFx = true;
+	ComplexRenderTexture? RenderTexture;
+	ComplexRenderTexture? RenderTexture2;
 	IMuseDash1SceneUI? SceneUI;
 	double ScreenScrollProgress;
 	double ScreenScrollRate;
-	SecondOrderSystem? sos_yoff;
-	double speed = 1;
+	SecondOrderSystem? YOffsetSOS;
+	double Speed = 1;
 
 	public delegate void AttackEvent(MuseDash1Game game, PathwaySide side);
 	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
@@ -191,7 +195,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public static float GlobalScale => 1 / 200f;
 
-	public double AirTime => (Conductor.Time - __whenjump);
 	public AutoPlayer AutoPlayer { get; private set; } = null!;
 
 	// public ModelEntity Player { get; set; }
@@ -207,7 +210,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public bool CanJump => !InAir;
 
-	public IMuseDash1CharacterInstance Character { get; set; }
+	public IMuseDash1CharacterInstance Character { get; set; } = null!;
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
@@ -240,14 +243,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public float Health { get; private set; }
 
-	public double Hologram_AirTime => (Conductor.Time - __whenHjump);
+	public double Hologram_AirTime => (Conductor.Time - LastHologramJumpTIme);
 
-	public double Hologram_TimeToAnimationEnds => Character.GetSecondary().GetAnimationDuration() - (Conductor.Time - __whenHjump);
+	public double Hologram_TimeToAnimationEnds => Character.GetSecondary().GetAnimationDuration() - (Conductor.Time - LastHologramJumpTIme);
 
 	/// <summary>
 	/// Is the player in the air right now?
 	/// </summary>
-	public bool InAir => (Conductor.Time - __whenjump) < Character.GetJumpDuration();
+	public bool InAir => (Conductor.Time - LastJumpTime) < Character.GetJumpDuration();
 
 	/// <summary>
 	/// Is the player currently in fever?
@@ -263,13 +266,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
 
-	public List<ICloneDashInputSystem> InputReceivers { get; } = [];
-
 	public override bool IsInGame => true;
 
+	/// <summary>
+	/// Is the player currently dragging the time-seek bar?
+	/// </summary>
 	public bool IsSeeking { get; private set; } = false;
-
-	public double LastCombo => __lastCombo;
 
 	/// <summary>
 	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
@@ -282,7 +284,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
-	public Panel PauseWindow { get; private set; }
+	public Panel? PauseWindow { get; private set; }
 
 	public float PlayerScale => 1 / 200f;
 
@@ -298,7 +300,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <summary>
 	/// Time since the last invincibility frame was given
 	/// </summary>
-	public double TimeSinceLastIFrame => Conductor.Time - lastIFrameGivenTime;
+	public double TimeSinceLastIFrame => Conductor.Time - LastIFrameGivenTime;
 
 	/// <summary>
 	/// Which entity is being held on the top pathway
@@ -308,7 +310,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Which entity is being held on the bottom pathway
 	/// </summary>
 	//public CD_BaseMEntity? HoldingBottomPathwaySustain { get; private set; } = null;
-	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - __whenjump);
+	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - LastJumpTime);
 
 	public Pathway TopPathway { get; set; } = null!;
 
@@ -353,7 +355,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public void AddCombo(DashEnemy? responsible = null) {
 		Combo++;
-		__lastCombo = Conductor.Time;
+		LastCombo = Conductor.Time;
 	}
 
 	/// <summary>
@@ -428,9 +430,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 
 			if (Sustains.IsSustaining())
-				__whenHjump = Conductor.Time;
+				LastHologramJumpTIme = Conductor.Time;
 			else
-				__whenjump = Conductor.Time;
+				LastJumpTime = Conductor.Time;
 
 			return true;
 		}
@@ -440,9 +442,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			OnAirAttack?.Invoke(this, PathwaySide.Top);
 
 			if (Sustains.IsSustaining())
-				__whenHjump = Conductor.Time;
+				LastHologramJumpTIme = Conductor.Time;
 			else
-				__whenjump = Conductor.Time;
+				LastJumpTime = Conductor.Time;
 
 			return true;
 		}
@@ -473,8 +475,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				PlayCharacterAnimation(CharacterAnimationType.AttackMiss);
 		}
 
-		__whenjump = -2000000000000d;
-		__whenHjump = -2000000000000d;
+		LastJumpTime = -2000000000000d;
+		LastHologramJumpTIme = -2000000000000d;
 		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
 	}
 
@@ -531,13 +533,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Model4System.PopRenderBlend();
 		}
 	}
-
-	/// <summary>
-	/// Creates an entity from a C# type and adds it to <see cref="GameplayManager.Entities"/>.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <returns></returns>
-	public T CreateEntity<T>() where T : DashEnemy => (T)Add((T)Activator.CreateInstance(typeof(T)));
 
 	/// <summary>
 	/// Damage the player.
@@ -664,9 +659,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SetPauseGuarded(false);
 	}
 
-	public IMuseDash1SceneInstance? GetActiveScene() => activeScene;
+	public IMuseDash1SceneInstance? GetActiveScene() => ActiveScene;
 
-	public int GetActiveSceneIdx() => activeScene?.GetSceneArrayIndex() ?? -1;
+	public int GetActiveSceneIdx() => ActiveScene?.GetSceneArrayIndex() ?? -1;
 
 	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
 
@@ -743,10 +738,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	ISongChart? IGame.GetSongChart() => gameParameters.Chart;
 
 	public double GetSpeed() {
-		return speed;
+		return Speed;
 	}
 
-	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = activeScene) != null;
+	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = ActiveScene) != null;
 
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
@@ -798,7 +793,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					var scene = AddOrGetScene(sceneData);
 					if (scene != null)
 						sceneToActivate = scene;
-					canSceneChange = false;
+					CanSceneChange = false;
 				}
 				else {
 					sceneData = SceneMod.GetSceneData(gamemodeData.InitialScene);
@@ -810,7 +805,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						sceneToActivate = scene;
 
 					// Process scene changes
-					canSceneChange = true;
+					CanSceneChange = true;
 					foreach (var sceneChange in gamemodeData.SceneChanges) {
 						ISceneDescriptor? sceneDescToChangeTo = SceneMod.GetSceneData(sceneChange.SceneUID);
 
@@ -818,7 +813,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						if (sceneChangeInstance != null) {
 							var ev = new SceneChange(this, sceneChangeInstance.GetSceneArrayIndex());
 							Events.Add(ev);
-							readyToBuildEvents.Add(ev);
+							ReadyToBuildEvents.Add(ev);
 							ev.Time = sceneChange.Time;
 							sceneChanges.Add(ev);
 						}
@@ -890,7 +885,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					Boss.BuildForScene(scene);
 
 				if (chart != null) {
-					if (!__deferringAsync) {
+					if (!DeferringAsync) {
 						foreach (var ent in gamemodeData.Entities)
 							LoadEntity(ent);
 
@@ -1028,7 +1023,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 
 		Stats.RegisterEnemy(ent);
-		readyToBuildEntities.Add(ent);
+		ReadyToBuildEntities.Add(ent);
 		EnemyManager.Add(ent);
 
 		return ent;
@@ -1051,7 +1046,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ev.BossAction = ChartEvent.BossAction;
 
 		Events.Add(ev);
-		readyToBuildEvents.Add(ev);
+		ReadyToBuildEvents.Add(ev);
 		EventManager.Add(ev);
 		// This is a hack... whatever
 		if (ev is FlashbangEffect flash)
@@ -1181,7 +1176,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		SceneUI?.RenderUI();
 
-		renderTexture?.EndDrawing();
+		RenderTexture?.EndDrawing();
 		ScreenspaceDraw(frameState);
 	}
 
@@ -1196,21 +1191,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
 		// Evaluate if complex render texture needs to be remade
 		// This is only the case if null or bounds changed
-		if (renderTexture == null || (renderTexture.Width != width || renderTexture.Height != height)) {
-			renderTexture?.Dispose();
-			renderTexture2?.Dispose();
+		if (RenderTexture == null || (RenderTexture.Width != width || RenderTexture.Height != height)) {
+			RenderTexture?.Dispose();
+			RenderTexture2?.Dispose();
 			// TODO: If complex render textures are too slow for this (and they might be), then
 			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
 			// when i have that working
-			renderTexture = Textures.CreateComplexRenderTexture((int)width, (int)height);
-			renderTexture2 = Textures.CreateComplexRenderTexture((int)width, (int)height);
+			RenderTexture = Textures.CreateComplexRenderTexture((int)width, (int)height);
+			RenderTexture2 = Textures.CreateComplexRenderTexture((int)width, (int)height);
 		}
 
-		renderTexture?.BeginDrawing();
+		RenderTexture?.BeginDrawing();
 		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		if (renderBackgroundFx && HasActiveScene(out var scene))
+		if (RenderBackgroundFx && HasActiveScene(out var scene))
 			scene.RenderBackground();
 		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -1260,7 +1255,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ExitMashState();
 		ResetScreenspaceEffects();
 		FeverFX?.Reset();
-		renderBackgroundFx = true;
+		RenderBackgroundFx = true;
 		flashbangColor = new(255, 255, 255, 255);
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
@@ -1294,17 +1289,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Health = Quirks.MaxHP;
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
-		lastNoteHit = false;
+		LastNoteHit = false;
 		Score = 0;
 		Fever = 0;
 		Sustains.Reset();
 		AutoPlayer.Reset();
-		__whenjump = -2000000000000d;
-		__whenHjump = -2000000000000d;
+		LastJumpTime = -2000000000000d;
+		LastHologramJumpTIme = -2000000000000d;
 		DeathTime = -2000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
-		lastIFrameGivenTime = -10000d;
+		LastIFrameGivenTime = -10000d;
 		Dead = false;
 	}
 
@@ -1332,11 +1327,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	// TODO: Verify effect order...
 	public void ScreenspaceDraw(FrameState frameState) {
-		if (renderTexture == null || renderTexture2 == null)
+		if (RenderTexture == null || RenderTexture2 == null)
 			return;
 
-		ComplexRenderTexture read = renderTexture;
-		ComplexRenderTexture write = renderTexture2;
+		ComplexRenderTexture read = RenderTexture;
+		ComplexRenderTexture write = RenderTexture2;
 		DoOneEffect(ScreenspaceEffectType.Sepia, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Mosaic, ref read, ref write);
@@ -1505,7 +1500,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void SetBackgroundVisibleFx(bool visible) {
-		renderBackgroundFx = visible;
+		RenderBackgroundFx = visible;
 	}
 
 	public void SetPathwaySpeed(PathwaySide pathway, int speed) {
@@ -1528,12 +1523,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public bool SetScene(IMuseDash1SceneInstance? scene) {
-		if (activeScene == scene)
+		if (ActiveScene == scene)
 			return false;
 
-		activeScene?.Deactivate(scene);
-		var oldScene = activeScene;
-		activeScene = scene;
+		ActiveScene?.Deactivate(scene);
+		var oldScene = ActiveScene;
+		ActiveScene = scene;
 		scene?.Activate(oldScene);
 		BroadcastEntitySignal(null, EntitySignalType.SceneChange, (oldScene, scene));
 		return true;
@@ -1549,7 +1544,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void SetSpeed(double speed) {
-		this.speed = speed;
+		this.Speed = speed;
 		audiosystem.SetSoundPitchControl(Music, (float)speed);
 	}
 	public bool ShouldFreezeNoteAnimations() => GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]) >= 1;
@@ -1557,7 +1552,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && lastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
+		if (Music.IsValid() && LastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
 			Stats.UploadScore(Score);
 			SceneUI?.OpenVictory(Stats);
 			audiosystem.PauseSound(Music);
@@ -1698,13 +1693,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			yoff = GetPathwayPosition(PathwaySide.Bottom).Y;
 
 		if (yoff.HasValue) {
-			if (sos_yoff == null)
-				sos_yoff = new(15, 1, 1, yoff.Value);
+			if (YOffsetSOS == null)
+				YOffsetSOS = new(15, 1, 1, yoff.Value);
 
 			yoff = yoff.Value + -1f;
 		}
 		else
-			sos_yoff = null;
+			YOffsetSOS = null;
 
 		var playerY = yoff ?? GetPlayerY(false);
 
@@ -1716,7 +1711,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Character.GetPrimary().SetPos(new Vector2F(
 			(leftPlayer - 1) - (conductorInTime * 1),
-			-(sos_yoff?.Update(playerY) ?? playerY)
+			-(YOffsetSOS?.Update(playerY) ?? playerY)
 		));
 		Character.GetPrimary().SetScale(new(PlayerScale));
 
@@ -1743,8 +1738,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		var visibleEnemies = EnemyManager.GetLastVisible();
 		var lastEntity = EnemyManager.GetLast();
 
-		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !lastNoteHit) {
-			lastNoteHit = true;
+		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !LastNoteHit) {
+			LastNoteHit = true;
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
 				PlaySceneSound(SceneSound.FullCombo, 0);
@@ -1884,7 +1879,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Gives the player an invincibility frame. No checks are performed here
 	/// </summary>
 	internal void SetIFrameTime() {
-		lastIFrameGivenTime = Conductor.Time;
+		LastIFrameGivenTime = Conductor.Time;
 	}
 
 	/// <summary>
@@ -1956,33 +1951,33 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		});
 	}
 	private void BindOldFilmTextures(IShader shader) {
-		if (oldFilmScratchesTex != null) shader.SetTexture("uScratchesTex", oldFilmScratchesTex);
-		if (oldFilmDustTex != null) shader.SetTexture("uDustTex", oldFilmDustTex);
+		if (OldFilmScratchesTex != null) shader.SetTexture("uScratchesTex", OldFilmScratchesTex);
+		if (OldFilmDustTex != null) shader.SetTexture("uDustTex", OldFilmDustTex);
 	}
 
 	void BuildQueues() {
 		// This prepares the arrays...
-		foreach (var ent in readyToBuildEntities) {
+		foreach (var ent in ReadyToBuildEntities) {
 			if (ent is DashEnemy dashEnemy)
 				dashEnemy.PreBuildVisuals(this);
 		}
 
 		// ...and then this builds the visuals in those arrays
 		foreach (var scene in GetAllScenes()) {
-			foreach (var ent in readyToBuildEntities) {
+			foreach (var ent in ReadyToBuildEntities) {
 				if (ent is DashEnemy dashEnemy)
 					dashEnemy.BuildForScene(scene);
 			}
 		}
 
-		readyToBuildEntities.Clear();
-		foreach (var ev in readyToBuildEvents)
+		ReadyToBuildEntities.Clear();
+		foreach (var ev in ReadyToBuildEvents)
 			ev.Build();
 
-		readyToBuildEvents.Clear();
+		ReadyToBuildEvents.Clear();
 
 		// If new entities exist, build those then (events might create entities)
-		if (readyToBuildEntities.Count != 0)
+		if (ReadyToBuildEntities.Count != 0)
 			BuildQueues();
 	}
 
@@ -2053,6 +2048,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		while (pollParams.HitsRemaining > 0) {
 			EnterHitState();
+
+			LastAttackTime = Conductor.Time;
+			LastAttackPathway = pathway;
 
 			// Hit testing
 			PollResult pollResult = default;
@@ -2141,7 +2139,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		float widthPx = renderTexture?.Width ?? 1920;
+		float widthPx = RenderTexture?.Width ?? 1920;
 		shader.SetUniform("uOffset", (float)value * 4.0f / widthPx);
 
 		return true;
@@ -2162,7 +2160,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uStrength", (float)value * 0.05f);
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(renderTexture?.Width ?? 1, renderTexture?.Height ?? 1));
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.Width ?? 1, RenderTexture?.Height ?? 1));
 
 		return true;
 	}
@@ -2200,8 +2198,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		PrepareShader(ScreenspaceEffectType.TVStatic, "tvstatic", PrepareTVStatic);
 		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
 
-		oldFilmScratchesTex = LoadOldFilmTexture("ScratchesTex");
-		oldFilmDustTex = LoadOldFilmTexture("DustTex");
+		OldFilmScratchesTex = LoadOldFilmTexture("ScratchesTex");
+		OldFilmDustTex = LoadOldFilmTexture("DustTex");
 		ScreenspaceEffectPostActivateFns[(int)ScreenspaceEffectType.FilmGrain] = BindOldFilmTextures;
 	}
 
@@ -2210,7 +2208,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(renderTexture?.Width ?? 1, renderTexture?.Height ?? 1));
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.Width ?? 1, RenderTexture?.Height ?? 1));
 
 		return true;
 	}
@@ -2254,7 +2252,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	// WIP pausing
 	// return false to not spawn the pause menu
 	private bool startPause() {
-		if (lastNoteHit)
+		if (LastNoteHit)
 			return false;
 		if (Conductor.Time < 0)
 			return false;
