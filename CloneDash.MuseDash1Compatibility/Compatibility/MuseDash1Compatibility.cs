@@ -332,7 +332,7 @@ namespace CloneDash.Compatibility.MuseDash
 		[ConCommand(Name: "ibmscodes", Help: "Dumps the IBMSCode enum to console.")]
 		public static void DumpIBMSCodes() {
 			Span<char> tempWrite = stackalloc char[13];
-			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode))) 
+			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode)))
 				Logs.Print($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr, tempWrite)})");
 		}
 
@@ -504,19 +504,7 @@ namespace CloneDash.Compatibility.MuseDash
 					if (eventType != EventType.NotApplicable) {
 						if (eventType == EventType.SceneChange) {
 							gamemodeData.SceneChanges.Add(new ChartSceneChange() {
-								SceneUID = "scene/musedash1/scene_" + $"{ib.Code switch {
-									IBMSCode.ToggleScene1 => 1,
-									IBMSCode.ToggleScene2 => 2,
-									IBMSCode.ToggleScene3 => 3,
-									IBMSCode.ToggleScene4 => 4,
-									IBMSCode.ToggleScene5 => 5,
-									IBMSCode.ToggleScene6 => 6,
-									IBMSCode.ToggleScene7 => 7,
-									IBMSCode.ToggleScene8 => 8,
-									IBMSCode.ToggleScene9 => 9,
-									IBMSCode.ToggleScene10 => 10,
-									_ => 1
-								}}".PadLeft(2, '0'),
+								SceneUID = "scene/musedash1/scene_" + MuseDash1Compatibility.GetSceneIndexFromIBMSCode(ib.Code).ToString().PadLeft(2, '0'),
 								Time = tick_hit,
 								Value = null
 							});
@@ -661,6 +649,22 @@ namespace CloneDash.Compatibility.MuseDash
 			Logs.Info($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
 			return gamemodeData;
 		}
+
+		public static int GetSceneIndexFromIBMSString(string ibms_id) => GetSceneIndexFromIBMSCode((IBMSCode)Base36StringToNumber(ibms_id));
+		private static int GetSceneIndexFromIBMSCode(IBMSCode code) => code switch {
+			IBMSCode.ToggleScene1 => 1,
+			IBMSCode.ToggleScene2 => 2,
+			IBMSCode.ToggleScene3 => 3,
+			IBMSCode.ToggleScene4 => 4,
+			IBMSCode.ToggleScene5 => 5,
+			IBMSCode.ToggleScene6 => 6,
+			IBMSCode.ToggleScene7 => 7,
+			IBMSCode.ToggleScene8 => 8,
+			IBMSCode.ToggleScene9 => 9,
+			IBMSCode.ToggleScene10 => 10,
+			_ => 1
+		};
+			
 
 		public static List<MuseDash1Album> Albums { get; private set; } = [];
 		public static List<MD1_Song> Songs { get; private set; }
