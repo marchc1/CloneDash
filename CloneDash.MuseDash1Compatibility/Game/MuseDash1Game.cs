@@ -2085,9 +2085,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public double GetBgScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.BgFreeze]);
 	public bool ShouldFreezeNoteAnimations() => GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]) >= 1;
 
+	public void ResetScreenScroll(){
+		ScreenScrollProgress = 0;
+	}
+
 	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length, Func<double, double>? easing = null) {
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
-
 		state.LastValue = GetCurrentInterpolatedValue(ref state);
 		state.CurrentValue = effectParams;
 		state.Length = length;

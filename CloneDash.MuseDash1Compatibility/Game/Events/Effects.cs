@@ -76,6 +76,7 @@ public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direct
 
 	public override void Activate() {
 		Game.TriggerScreenspaceEffectStart(Type, (int)direction, 0);
+		Game.ResetScreenScroll();
 	}
 	public override double? GetLengthOfEffect() => 0;
 }
