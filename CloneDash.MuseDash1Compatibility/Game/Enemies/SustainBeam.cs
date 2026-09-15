@@ -161,20 +161,25 @@ namespace CloneDash.Game.Entities
 		public override void Render(FrameState frameState) {
 			if (!ShouldDraw) return;
 
+			bool isSingleHit = Length == 0;
 			var game = Level.As<MuseDash1Game>();
 			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
 
+			if(!isSingleHit)
 			drawScrollQuad(game, body, ref frameState, 0, 0);
 
+			if (!isSingleHit) {
 			var time = game.Conductor.Time * 5;
 			var sv = (float)(Math.Sin(time) * 10) * MuseDash1Game.GlobalScale;
 			var cv = (float)(Math.Cos(time) * 10) * MuseDash1Game.GlobalScale;
 
-			drawScrollQuad(game, up, ref frameState, cv / 2, sv);
-			drawScrollQuad(game, down, ref frameState, sv / 2, cv);
+				drawScrollQuad(game, up, ref frameState, cv / 2, sv);
+				drawScrollQuad(game, down, ref frameState, sv / 2, cv);
+			}
 
 			drawStartQuad(game, ref frameState, 0);
-			drawEndQuad(game, ref frameState, (float)Length);
+			if (!isSingleHit)
+				drawEndQuad(game, ref frameState, (float)Length);
 		}
 
 		private ITexture? start;

@@ -343,6 +343,7 @@ public class DashEnemy : Entity, IDashChunkable
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
 		var tickShow = this.GetVisualShowTime();
+		
 		var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
 		return thisPos;
 	}
