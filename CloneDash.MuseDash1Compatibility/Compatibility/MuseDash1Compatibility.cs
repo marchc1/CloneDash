@@ -455,6 +455,10 @@ namespace CloneDash.Compatibility.MuseDash
 
 						IBMSCode.SceneShow => EventType.ShowBackground,
 						IBMSCode.SceneHide => EventType.HideBackground,
+
+						IBMSCode.NoteShow => EventType.ShowNotes,
+						IBMSCode.NoteHide => EventType.HideNotes,
+
 						IBMSCode.CanvasUpScroll => EventType.ScreenScrollUp,
 						IBMSCode.CanvasDownScroll => EventType.ScreenScrollDown,
 						IBMSCode.CanvasScrollOver => EventType.ScreenScrollEnd,

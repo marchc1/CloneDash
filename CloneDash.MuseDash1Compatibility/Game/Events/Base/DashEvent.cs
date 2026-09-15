@@ -113,6 +113,9 @@ public class DashEvent : IDashChunkable
 			case EventType.ShowBackground: ret = new BackgroundVisibilityEvent(game, true); break;
 			case EventType.HideBackground: ret = new BackgroundVisibilityEvent(game, false); break;
 
+			case EventType.ShowNotes: ret = new NoteVisibilityEvent(game, true); break;
+			case EventType.HideNotes : ret = new NoteVisibilityEvent(game, false); break;
+
 			case EventType.FlashbangColorWhite: ret = new FlashBangEffectColorChange(game, FlashbangColor.White); break;
 			case EventType.FlashbangColorBlack: ret = new FlashBangEffectColorChange(game, FlashbangColor.Black); break;
 			case EventType.FlashbangColorRed: ret = new FlashBangEffectColorChange(game, FlashbangColor.Red); break;

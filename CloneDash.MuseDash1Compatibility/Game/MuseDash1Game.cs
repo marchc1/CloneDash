@@ -179,6 +179,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	readonly List<DashEnemy> ReadyToBuildEntities = [];
 	readonly List<DashEvent> ReadyToBuildEvents = [];
 	bool RenderBackgroundFx = true;
+	bool RenderNotes = true;
 	ComplexRenderTexture? RenderTexture;
 	ComplexRenderTexture? RenderTexture2;
 	IMuseDash1SceneUI? SceneUI;
@@ -1233,17 +1234,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		TopPathway.Render();
 		BottomPathway.Render();
 
-		Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisible();
+		if (RenderNotes) {
+			Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisible();
 
-		// Hold notes
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type == MuseDash1EntityType.SustainBeam, visibleEnemies);
+			// Hold notes
+			ConditionallyRenderVisibleEntities(frameState, static x => x.Type == MuseDash1EntityType.SustainBeam, visibleEnemies);
 
-		// Boss
-		Boss.Render();
+			// Boss
+			Boss.Render();
 
-		// The other entities, that aren't sustain beams, in order of top -> bottom pathway
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
-		ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
+			// The other entities, that aren't sustain beams, in order of top -> bottom pathway
+			ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
+			ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
+		}
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisible().Length);
 
@@ -1258,6 +1261,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ResetScreenspaceEffects();
 		FeverFX?.Reset();
 		RenderBackgroundFx = true;
+		RenderNotes = true;
 		flashbangColor = new(255, 255, 255, 255);
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
@@ -1510,6 +1514,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void SetBackgroundVisibleFx(bool visible) {
 		RenderBackgroundFx = visible;
+	}
+
+	public void SetNoteVisibleFx(bool visible) {
+		RenderNotes = visible;
 	}
 
 	public void SetPathwaySpeed(PathwaySide pathway, int speed) {

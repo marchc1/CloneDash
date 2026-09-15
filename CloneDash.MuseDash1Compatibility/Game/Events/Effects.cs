@@ -117,6 +117,13 @@ public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)
 
 }
 
+public class NoteVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+{
+	public bool Visible = visible;
+	public override void Activate() {
+		Game.SetNoteVisibleFx(Visible);
+	}
+}
 public class BackgroundVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
 {
 	public bool Visible = visible;

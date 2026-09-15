@@ -36,6 +36,8 @@ public enum EventType
 
 	ShowBackground,
 	HideBackground,
+	ShowNotes,
+	HideNotes,
 	ScreenScrollUp,
 	ScreenScrollDown,
 	ScreenScrollEnd,
