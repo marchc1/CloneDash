@@ -1275,6 +1275,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		SetScene(FirstScene);
 
+		ScreenScrollLastTime = 0;
+		ScreenScrollRate = 0;
+		ScreenScrollProgress = 0;
+
 		Stats.Reset();
 		foreach (var entity in Entities) {
 			if (entity is not DashEnemy entCD)
@@ -1527,9 +1531,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public bool SetScene(IMuseDash1SceneInstance? scene) {
-		if (ActiveScene == scene)
-			return false;
-
 		ActiveScene?.Deactivate(scene);
 		var oldScene = ActiveScene;
 		ActiveScene = scene;

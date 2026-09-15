@@ -1133,7 +1133,11 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		}
 	}
 
-	public void Activate(IMuseDash1SceneInstance? transitioningTo) { }
+	public void Activate(IMuseDash1SceneInstance? transitioningTo) { 
+		// Reset animations, since Muse Dash does that too I guess
+		foreach(var animator in animators)
+			animator.ResetTime();
+	}
 	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) { }
 	public int GetSceneArrayIndex() => arrayIndex;
 	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;
