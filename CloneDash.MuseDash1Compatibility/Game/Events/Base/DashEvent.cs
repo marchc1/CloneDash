@@ -56,6 +56,8 @@ public class DashEvent : IDashChunkable
 		switch (type) {
 			case EventType.BossIn: ret = new BossInEvent(game); break;
 			case EventType.BossOut: ret = new BossOutEvent(game); break;
+			case EventType.BossShow: ret = new BossVisibilityEvent(game, true); break;
+			case EventType.BossHide: ret = new BossVisibilityEvent(game, false); break;
 			case EventType.BossSingleHit: ret = new BossSingleHit(game); break;
 			case EventType.BossMasher: ret = new BossMasher(game, 1); break;
 			case EventType.BossMasherEnd: ret = new BossMasher(game, 2); break;
@@ -65,7 +67,6 @@ public class DashEvent : IDashChunkable
 			case EventType.BossFar2Start: ret = new BossFar2Start(game); break;
 			case EventType.BossFar2End: ret = new BossFar2End(game); break;
 			case EventType.BossFar2To1: ret = new BossFar2To1(game); break;
-			case EventType.BossHide: ret = new BossHide(game); break;
 
 			case EventType.AirSpeed1: ret = new SpeedChange(game, PathwaySide.Top, 1); break;
 			case EventType.AirSpeed2: ret = new SpeedChange(game, PathwaySide.Top, 2); break;

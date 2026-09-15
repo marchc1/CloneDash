@@ -31,6 +31,7 @@ public enum EventType
 	DoubleSpeed2,
 	DoubleSpeed3,
 
+	BossShow,
 	BossHide,
 	SceneChange,
 

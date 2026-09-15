@@ -84,8 +84,13 @@ public class Boss : DashEnemy
 			scene.PlayBossAnimation(BossAnimationType.From2To1, animations);
 		}
 	}
-	public void Hide() {
 
+	public void Hide() {
+		Visible = false;
+	}
+
+	public void Show() {
+		Visible = true;
 	}
 
 	public override void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {

@@ -430,6 +430,7 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.BossFar2End => EventType.BossFar2End,
 						IBMSCode.BossFar2To1 => EventType.BossFar2To1,
 
+						IBMSCode.BossShow => EventType.BossShow,
 						IBMSCode.BossHide => EventType.BossHide,
 
 						IBMSCode.AirSpeed1 => EventType.AirSpeed1,
