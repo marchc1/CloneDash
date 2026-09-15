@@ -594,20 +594,22 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override void Think(FrameState frameState) {
 		base.Think(frameState);
 
-		holdingLeft.Clear();
-		holdingRight.Clear();
-		leftsThisFrame = 0;
-		rightsThisFrame = 0;
+		if (RootPanel.GetKeyboardFocusedElement() == null) {
+			holdingLeft.Clear();
+			holdingRight.Clear();
+			leftsThisFrame = 0;
+			rightsThisFrame = 0;
 
-		HashKeyIfApplicable(holdingLeft, ButtonCode.KeyA, in frameState.Keyboard);
-		HashKeyIfApplicable(holdingLeft, ButtonCode.KeyLeft, in frameState.Keyboard);
-		HashKeyIfApplicable(holdingRight, ButtonCode.KeyD, in frameState.Keyboard);
-		HashKeyIfApplicable(holdingRight, ButtonCode.KeyRight, in frameState.Keyboard);
+			HashKeyIfApplicable(holdingLeft, ButtonCode.KeyA, in frameState.Keyboard);
+			HashKeyIfApplicable(holdingLeft, ButtonCode.KeyLeft, in frameState.Keyboard);
+			HashKeyIfApplicable(holdingRight, ButtonCode.KeyD, in frameState.Keyboard);
+			HashKeyIfApplicable(holdingRight, ButtonCode.KeyRight, in frameState.Keyboard);
 
-		for (int i = 0; i < FrameState.Keyboard.TotalKeysThisFrame; i++) {
-			ButtonCode key = FrameState.Keyboard.KeysThisFrame[i].ToButtonCode();
-			if (key == ButtonCode.KeyA || key == ButtonCode.KeyLeft) leftsThisFrame++;
-			if (key == ButtonCode.KeyD || key == ButtonCode.KeyRight) rightsThisFrame++;
+			for (int i = 0; i < FrameState.Keyboard.TotalKeysThisFrame; i++) {
+				ButtonCode key = FrameState.Keyboard.KeysThisFrame[i].ToButtonCode();
+				if (key == ButtonCode.KeyA || key == ButtonCode.KeyLeft) leftsThisFrame++;
+				if (key == ButtonCode.KeyD || key == ButtonCode.KeyRight) rightsThisFrame++;
+			}
 		}
 
 		var active = ActiveElements.Peek();
