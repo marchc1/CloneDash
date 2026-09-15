@@ -550,9 +550,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		ISong? lastSong = Provider.SavedSong();
 		IChartSongFilter? lastFilter = Provider.SavedFilter();
 
-		if (lastSong != null)
-			NavigateToSong(lastSong, false);
-
 		if (lastFilter != null) {
 			if (Source == null) return;
 
@@ -560,6 +557,9 @@ public class SongSelector : Panel, IMainMenuPanel
 			Source = Source.GetRootSource().ProduceNewSource(SearchFilter);
 			ClearSongs();
 		}
+
+		if (lastSong != null)
+			NavigateToSong(lastSong, false);
 	}
 
 	public static int VisibleDiscs => 5;
