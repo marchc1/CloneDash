@@ -110,6 +110,9 @@ public class DashEvent : IDashChunkable
 			case EventType.AutoPlayOn: ret = new AutoPlayEvent(game, true); break;
 			case EventType.AutoPlayOff: ret = new AutoPlayEvent(game, false); break;
 
+			case EventType.ShowBackground: ret = new BackgroundVisibilityEvent(game, true); break;
+			case EventType.HideBackground: ret = new BackgroundVisibilityEvent(game, false); break;
+
 			case EventType.FlashbangColorWhite: ret = new FlashBangEffectColorChange(game, FlashbangColor.White); break;
 			case EventType.FlashbangColorBlack: ret = new FlashBangEffectColorChange(game, FlashbangColor.Black); break;
 			case EventType.FlashbangColorRed: ret = new FlashBangEffectColorChange(game, FlashbangColor.Red); break;

@@ -1494,7 +1494,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		if (HasActiveScene(out var scene))
+		if (renderBackgroundFx && HasActiveScene(out var scene))
 			scene.RenderBackground();
 		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
@@ -2269,6 +2269,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
 	public bool BreaksAvoids() => Quirks.BreaksAvoids;
+
+	bool renderBackgroundFx;
+	public void SetBackgroundVisibleFx(bool visible){
+		renderBackgroundFx = visible;
+	}
 
 	internal void SetFlashbangColor(FlashbangColor color) {
 		switch (color) {

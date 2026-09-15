@@ -34,6 +34,8 @@ public enum EventType
 	BossHide,
 	SceneChange,
 
+	ShowBackground,
+	HideBackground,
 	ScreenScrollUp,
 	ScreenScrollDown,
 	ScreenScrollEnd,

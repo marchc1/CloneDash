@@ -112,3 +112,11 @@ public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)
 	public bool Active = active;
 
 }
+
+public class BackgroundVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+{
+	public bool Visible = visible;
+	public override void Activate() {
+		Game.SetBackgroundVisibleFx(Visible);
+	}
+}
