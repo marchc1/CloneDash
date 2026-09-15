@@ -5,10 +5,16 @@ out vec4 finalColor;
 uniform sampler2D texture0;
 uniform float uStrength;
 
+const vec3 SEPIA_TINT = vec3(0.90, 0.80, 0.62);
+
 void main()
 {
     vec4 color = texture(texture0, fragTexCoord);
-    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-    vec3 sepia = vec3(gray) * vec3(1.2, 1.0, 0.8);
-    finalColor = vec4(mix(color.rgb, sepia, uStrength), color.a);
+
+    float gray = dot(color.rgb, vec3(0.30, 0.59, 0.11));
+    vec3 desat = mix(color.rgb, vec3(gray), uStrength);
+    vec3 sepia = desat * SEPIA_TINT / 0.77;
+    vec3 result = mix(desat, sepia, uStrength);
+
+    finalColor = vec4(result, color.a);
 }

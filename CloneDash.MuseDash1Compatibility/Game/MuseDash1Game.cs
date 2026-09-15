@@ -2212,7 +2212,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uStrength", (float)value * 1f);
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(renderTexture?.Width ?? 1, renderTexture?.Height ?? 1));
 
 		return true;
 	}
@@ -2229,6 +2229,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uStrength", (float)value * 0.05f);
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(renderTexture?.Width ?? 1, renderTexture?.Height ?? 1));
 
 		return true;
 	}
@@ -2246,8 +2247,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)NMath.Remap(value, 0, 1, 1, 0.7f));
-		shader.SetUniform("uSoftness", 0.7f);
+		shader.SetUniform("uStrength", (float)value);
 
 		return true;
 	}
@@ -2256,7 +2256,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		shader.SetUniform("uStrength", (float)value * 3);
+		// Horizontal RGB split offset in UV space (see chromatic_aberration.fs).
+		shader.SetUniform("uOffset", (float)value * 0.008f);
 
 		return true;
 	}
