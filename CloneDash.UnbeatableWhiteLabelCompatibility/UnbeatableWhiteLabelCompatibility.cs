@@ -34,10 +34,12 @@ public enum UWLCompatLayerInitResult
 	OperatingSystemNotCompatible
 }
 
-public class BeatmapIndexBeatmap(BeatmapIndexSong song) : ISongChart
+public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 {
 	[JsonPropertyName("textAsset")] public PPtr<TextAsset> TextAsset { get; set; } = null!;
 	[JsonPropertyName("difficulty")] public string Difficulty { get; set; } = null!;
+
+	public Beatmap Beatmap;
 
 	MD1_GamemodeData? GamemodeData;
 
@@ -58,11 +60,7 @@ public class BeatmapIndexBeatmap(BeatmapIndexSong song) : ISongChart
 
 	public object GetGamemodeData() {
 		if (GamemodeData == null) {
-			// Produce the gamemode data
-			if (!TextAsset.TryGet(out var textAsset))
-				return null!;
 
-			Beatmap beatmap = BeatmapDecoder.Decode(new MemoryStream(textAsset.GetRawData()));
 			GamemodeData = new MD1_GamemodeData();
 			// todo
 
@@ -73,9 +71,9 @@ public class BeatmapIndexBeatmap(BeatmapIndexSong song) : ISongChart
 
 	public ISong GetSong() => song;
 
-	public IAudioClip GetAudioTrack() {
-		throw new NotImplementedException();
-	}
+	public IAudioClip GetAudioTrack() => AudioClip;
+
+	public IAudioClip AudioClip = null!;
 
 	public int GetRatingNumber() => 5; // todo
 }
@@ -84,7 +82,9 @@ public class BeatmapIndexSong : ISong
 {
 	[JsonPropertyName("name")] public string Name { get; set; } = null!;
 	[JsonPropertyName("stageScene")] public string StageScene { get; set; } = null!;
-	[JsonPropertyName("beatmaps")] public BeatmapIndexBeatmap[] Beatmaps { get; set; } = null!;
+	[JsonPropertyName("beatmaps")] public BeatmapInfo[] Beatmaps { get; set; } = null!;
+
+	public IAudioClip? PreviewClip;
 
 	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
 		return new() {
@@ -122,6 +122,7 @@ public class BeatmapIndex
 {
 	[JsonPropertyName("m_Name")] public string Name { get; set; } = null!;
 	[JsonPropertyName("songs")] public BeatmapIndexSong[] Songs { get; set; } = null!;
+	public readonly Dictionary<string, BeatmapIndexSong> SongDict = [];
 }
 
 [MarkForStaticConstruction]
@@ -130,11 +131,11 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	public static BeatmapIndex BeatmapIndex;
 	static AssetsManager Assets;
 	static string InstallDir;
-	static FmodSoundBank Master;
+	static FmodSoundBank Bgm;
 	static FmodSoundBank Sfx;
 
-	static readonly Dictionary<ulong, IAudioClip> MasterClips = []; 
-	static readonly Dictionary<ulong, IAudioClip> SfxClips = []; 
+	static readonly Dictionary<string, IAudioClip> BgmClips = [];
+	static readonly Dictionary<string, IAudioClip> SfxClips = [];
 
 	static AssemblyLoader Assemblies;
 	[MemberNotNull(nameof(Assets))]
@@ -170,9 +171,9 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			}
 		}
 
-		Master = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "Master.bank")));
+		Bgm = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "BGM.bank")));
 		Sfx = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "SFX.bank")));
-		BuildNucleusClips(Master, MasterClips);
+		BuildNucleusClips(Bgm, BgmClips);
 		BuildNucleusClips(Sfx, SfxClips);
 
 		MonoBehaviour mb_beatmapIndex = GetObjectByName<MonoBehaviour>("BeatmapIndex")!;
@@ -186,38 +187,60 @@ public static partial class UnbeatableWhiteLabelCompatibility
 		int i = 0;
 		foreach (var songObj in songs) {
 			OrderedDictionary songDict = (OrderedDictionary)songObj;
+			string songName = (string)songDict["name"]!;
+			if (songName == null || !Songs.TryGetValue(songName, out string? musicName))
+				continue;
+
 			BeatmapIndexSong song = BeatmapIndex.Songs[i] = new BeatmapIndexSong();
-			song.Name = (string)songDict["name"]!;
+			song.Name = songName;
+			BeatmapIndex.SongDict[song.Name] = song;
 			song.StageScene = (string)songDict["stageScene"]!;
 
 			object[] beatmaps = (object[])songDict["beatmaps"]!;
-			song.Beatmaps = new BeatmapIndexBeatmap[beatmaps.Length];
+			song.Beatmaps = new BeatmapInfo[beatmaps.Length];
+
+			BgmClips.TryGetValue(musicName, out song.PreviewClip);
+
 			int j = 0;
 			foreach (var beatmapObj in beatmaps) {
 				OrderedDictionary beatmapDict = (OrderedDictionary)beatmapObj;
-				BeatmapIndexBeatmap beatmap = song.Beatmaps[j] = new BeatmapIndexBeatmap(song);
+				BeatmapInfo beatmap = song.Beatmaps[j] = new BeatmapInfo(song);
 				beatmap.Difficulty = (string)beatmapDict["difficulty"]!;
 
 				OrderedDictionary textAssetPtrRaw = (OrderedDictionary)beatmapDict["textAsset"]!;
 				beatmap.TextAsset = new PPtr<TextAsset>((int)textAssetPtrRaw["m_FileID"]!, (long)textAssetPtrRaw["m_PathID"]!, mb_beatmapIndex.assetsFile);
 				j++;
+
+				if (!beatmap.TextAsset.TryGet(out var textAsset))
+					continue;
+				beatmap.Beatmap = BeatmapDecoder.Decode(new MemoryStream(textAsset.GetRawData()));
+				beatmap.AudioClip = song.PreviewClip!;
 			}
 			i++;
 		}
 	}
+
+	static readonly Dictionary<string, string> Songs = new() {
+		{ "EMPTY DIARY",		"empty diary" },
+		{ "PROPERRHYTHM",		"proper rhythm" },
+		{ "Mirror",				"mirror" },
+		{ "FOREVER NOW",		"forever now" },
+		{ "FOREVER WHEN",		"forever now train melody" }, // ??????????????
+		{ "Waiting",			"waiting" }
+	};
 
 	private static FmodSoundBank LoadFsbMagically(byte[] bank) {
 		ReadOnlySpan<byte> fsb5Magic = "FSB5"u8;
 		ReadOnlySpan<byte> bankSpan = bank;
 
 		int offset = bankSpan.IndexOf(fsb5Magic);
-		if (offset != -1) 
+		if (offset != -1)
 			return FsbLoader.LoadFsbFromByteArray(bankSpan[offset..].ToArray());
 
 		return null!;
 	}
 
-	private static void BuildNucleusClips(FmodSoundBank bank, Dictionary<ulong, IAudioClip> clips) {
+	private static void BuildNucleusClips(FmodSoundBank bank, Dictionary<string, IAudioClip> clips) {
 		for (int i = 0; i < bank.Samples.Count; i++) {
 			var sample = bank.Samples[i];
 			string sampleName = string.IsNullOrWhiteSpace(sample.Name) ? $"sample_{i}" : sample.Name;
@@ -225,7 +248,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			// 3. Rebuild the data into standard format (.wav, .ogg, etc.)
 			if (sample.RebuildAsStandardFileFormat(out var dataBytes, out var fileExtension)) {
 				using var into = new MemoryStream(dataBytes!);
-				clips[sampleName.Hash(false)] = audiosystem.CreateStreamAudioClip(into, $"UWLAsset:{sampleName}")!;
+				clips[sampleName] = audiosystem.CreateStreamAudioClip(into, $"UWLAsset:{sampleName}")!;
 			}
 		}
 	}
