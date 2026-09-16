@@ -151,6 +151,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	readonly ExecuteShaderFn?[] ScreenspaceEffectShaderFns = new ExecuteShaderFn?[(int)ScreenspaceEffectType.Count];
 	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
 	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
+
+	char[]? ActiveEffectsBuffer;
 	IMuseDash1SceneInstance? ActiveScene;
 	int AttackP = 0;
 	bool CanSceneChange = false;
@@ -1249,8 +1251,36 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisible().Length);
+		AddDebugString("Active Effects", GetActiveEffects());
 
 		Rlgl.DrawRenderBatchActive();
+	}
+
+	private ReadOnlySpan<char> GetActiveEffects() {
+		if (!EngineCore.developer.GetBool())
+			return "";
+
+		ActiveEffectsBuffer ??= new char[1024];
+		Span<char> writeBuf = ActiveEffectsBuffer.AsSpan();
+		int ptr = 0;
+		for (int i = 0; i < (int)ScreenspaceEffectType.Count; i++) {
+			ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[i];
+			if (state.CurrentValue != 0) {
+				string? name = Enum.GetName((ScreenspaceEffectType)i);
+				if (name == null)
+					continue;
+
+				if (ptr != 0) {
+					", ".CopyTo(writeBuf[ptr..]);
+					ptr += 2;
+				}
+
+				name.CopyTo(writeBuf[ptr..]);
+				ptr += name.Length;
+			}
+		}
+
+		return writeBuf[..ptr];
 	}
 
 	/// <summary>
@@ -2354,5 +2384,5 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
             CD_BaseEvent e = CD_BaseEvent.CreateFromType(this.Game, t);
             return e;
         }*/
-	 // Last time a combo occured in game-time
+	// Last time a combo occured in game-time
 }
