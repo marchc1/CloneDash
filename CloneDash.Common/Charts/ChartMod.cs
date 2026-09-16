@@ -44,7 +44,7 @@ public static class ChartMod
 		return null;
 	}
 
-	public static ReadOnlySpan<IChartSongProvider> GetAll() {
+	public static IReadOnlyList<IChartSongProvider> GetAll() {
 		if (providers == null) {
 			providers = ReflectionTools.InstantiateAllInheritorsOfInterface<IChartSongProvider>();
 			providers.Sort(static (a, b) => a.GetSortIndex().CompareTo(b.GetSortIndex()));

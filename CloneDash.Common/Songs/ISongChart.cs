@@ -46,6 +46,9 @@ public interface ISongChart
 	/// The parent song
 	/// </summary>
 	ISong GetSong();
+
+	IAudioClip GetAudioTrack();
+
 	/// <summary>
 	/// The gamemode this chart targets
 	/// </summary>
@@ -59,4 +62,5 @@ public interface ISongChart
 	/// Gathers a bunch of chart metadata
 	/// </summary>
 	SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage);
+	int GetRatingNumber();
 }

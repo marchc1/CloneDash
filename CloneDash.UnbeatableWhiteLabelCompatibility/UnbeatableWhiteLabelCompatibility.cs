@@ -5,6 +5,9 @@ using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
+using Fmod5Sharp;
+using Fmod5Sharp.FmodTypes;
+using NAudio.Codecs;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
@@ -41,9 +44,9 @@ public class BeatmapIndexBeatmap(BeatmapIndexSong song) : ISongChart
 	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
 		return new() {
 			ChartAuthors = "D-Cell Games",
-			Difficulty = "",
+			Difficulty = "1",
 			DifficultyName = Difficulty,
-			Color = new Nucleus.Common.Types.Color(255, 255, 255),
+			Color = new Nucleus.Common.Types.Color(115, 55, 55),
 			GamemodeName = "Muse Dash 1",
 			ReturnedLanguage = HumanLanguage.English,
 		};
@@ -69,6 +72,12 @@ public class BeatmapIndexBeatmap(BeatmapIndexSong song) : ISongChart
 	}
 
 	public ISong GetSong() => song;
+
+	public IAudioClip GetAudioTrack() {
+		throw new NotImplementedException();
+	}
+
+	public int GetRatingNumber() => 5; // todo
 }
 
 public class BeatmapIndexSong : ISong
@@ -121,6 +130,12 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	public static BeatmapIndex BeatmapIndex;
 	static AssetsManager Assets;
 	static string InstallDir;
+	static FmodSoundBank Master;
+	static FmodSoundBank Sfx;
+
+	static readonly Dictionary<ulong, IAudioClip> MasterClips = []; 
+	static readonly Dictionary<ulong, IAudioClip> SfxClips = []; 
+
 	static AssemblyLoader Assemblies;
 	[MemberNotNull(nameof(Assets))]
 	[MemberNotNull(nameof(Assemblies))]
@@ -155,6 +170,11 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			}
 		}
 
+		Master = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "Master.bank")));
+		Sfx = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "SFX.bank")));
+		BuildNucleusClips(Master, MasterClips);
+		BuildNucleusClips(Sfx, SfxClips);
+
 		MonoBehaviour mb_beatmapIndex = GetObjectByName<MonoBehaviour>("BeatmapIndex")!;
 		var data = mb_beatmapIndex.ToType(mb_beatmapIndex.ConvertToTypeTree(Assemblies));
 
@@ -183,6 +203,30 @@ public static partial class UnbeatableWhiteLabelCompatibility
 				j++;
 			}
 			i++;
+		}
+	}
+
+	private static FmodSoundBank LoadFsbMagically(byte[] bank) {
+		ReadOnlySpan<byte> fsb5Magic = "FSB5"u8;
+		ReadOnlySpan<byte> bankSpan = bank;
+
+		int offset = bankSpan.IndexOf(fsb5Magic);
+		if (offset != -1) 
+			return FsbLoader.LoadFsbFromByteArray(bankSpan[offset..].ToArray());
+
+		return null!;
+	}
+
+	private static void BuildNucleusClips(FmodSoundBank bank, Dictionary<ulong, IAudioClip> clips) {
+		for (int i = 0; i < bank.Samples.Count; i++) {
+			var sample = bank.Samples[i];
+			string sampleName = string.IsNullOrWhiteSpace(sample.Name) ? $"sample_{i}" : sample.Name;
+
+			// 3. Rebuild the data into standard format (.wav, .ogg, etc.)
+			if (sample.RebuildAsStandardFileFormat(out var dataBytes, out var fileExtension)) {
+				using var into = new MemoryStream(dataBytes!);
+				clips[sampleName.Hash(false)] = audiosystem.CreateStreamAudioClip(into, $"UWLAsset:{sampleName}")!;
+			}
 		}
 	}
 

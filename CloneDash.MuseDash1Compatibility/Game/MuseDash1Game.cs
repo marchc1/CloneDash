@@ -45,10 +45,10 @@ namespace CloneDash.Game;
 public struct DashGameParams
 {
 	public bool Autoplay;
-	public MD1_SongChart? Chart;
+	public ISongChart? Chart;
 	public int Measure;
 
-	public DashGameParams(MD1_SongChart sheet) {
+	public DashGameParams(ISongChart sheet) {
 		Chart = sheet;
 	}
 }
@@ -61,7 +61,7 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 	public ReadOnlySpan<char> GetUUID() => UUID;
 
 	public IGame Load(ISongChart chart, in GameLoadGenericParameters parms) {
-		var game = new MuseDash1Game(new((MD1_SongChart)chart) {
+		var game = new MuseDash1Game(new(chart) {
 			Autoplay = parms.Autoplay,
 			Measure = parms.StartMeasure ?? 0
 		});
@@ -763,7 +763,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Muse Dash 1 - '{gameParameters.Chart?.Song?.FetchMetadata().Name ?? "<null>"}'"
+				State = $"Muse Dash 1 - '{(gameParameters.Chart?.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name ?? " <null>")}'"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.PrepareShaders")) {
@@ -925,7 +925,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (gameParameters.Chart != null) {
-					Music = audiosystem.CreatePlayback(gameParameters.Chart.Song.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
+					Music = audiosystem.CreatePlayback(gameParameters.Chart.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
 						Looping = false,
 						ManuallyUpdate = true,
 						DoNotAutoDestroy = true,
@@ -1931,7 +1931,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	protected MuseDash1GameplayQuirks.GameSnapshot ProduceSnapshot(DashEnemy? enemy = null, MuseDash1GameplayQuirks.Judgement judgement = 0) {
 		MuseDash1GameplayQuirks.GameSnapshot snapshot = new() {
-			Difficulty = gameParameters.Chart?.RatingNumber ?? 0,
+			Difficulty = gameParameters.Chart?.GetRatingNumber() ?? 0,
 			CurrentCombo = Combo,
 			CurrentScore = Score,
 			InFever = InFever,
