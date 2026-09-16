@@ -1,12 +1,14 @@
 ﻿using AssetStudio;
 using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
+using CloneDash.Unbeatable.Internal;
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using NAudio.Codecs;
@@ -15,17 +17,13 @@ using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Core;
 using Nucleus.Util;
-using OsuParsers.Beatmaps;
-using OsuParsers.Beatmaps.Objects;
-using OsuParsers.Database.Objects;
-using OsuParsers.Decoders;
-using OsuParsers.Enums.Beatmaps;
+using OdinSerializer;
 using SixLabors.ImageSharp.Drawing;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using System.Text.Json.Serialization;
 using static System.Net.WebRequestMethods;
 
@@ -41,256 +39,6 @@ public enum UWLCompatLayerInitResult
 	OperatingSystemNotCompatible
 }
 
-public enum Height
-{
-	None,
-	Low,
-	Mid,
-	Top,
-	Side
-}
-public enum Side
-{
-	None,
-	Left,
-	Right
-}
-public enum NoteType
-{
-	None,
-	Default,
-	Spam,
-	Freestyle,
-	Dodge,
-	Double,
-	Hold,
-	Setpiece
-}
-public enum NoteSpeed
-{
-	Standard,
-	Stepped,
-	Fast
-}
-public static class HitObjectExt
-{
-	extension(HitObject self)
-	{
-		public HitSoundType hitSound => self.HitSound;
-		public int time => (int)self.StartTime;
-		public int type => (int)self.EndTime;
-		public int laneNumber {
-			get {
-				return (int)(self.Position.X * 6 / 512 + 1);
-			}
-		}
-		public bool IsCommand() {
-			return self.laneNumber == 1 || self.laneNumber == 2;
-		}
-
-		public bool IsNormalNote() {
-			return self.laneNumber == 3 || self.laneNumber == 4;
-		}
-
-		public bool IsFlip() {
-			return self.laneNumber == 5;
-		}
-
-		public bool IsExtraNote() {
-			return self.laneNumber == 6;
-		}
-
-		public bool IsAnyNote() {
-			return self.IsNormalNote() || self.IsExtraNote();
-		}
-
-		public bool IsInstantType() {
-			return (self.type & 129) == 1;
-		}
-
-		public bool IsHoldType() {
-			return (self.type & 129) == 128;
-		}
-
-		public bool IsSpawnMid() {
-			return self.Extras.SampleSet == SampleSet.Normal;
-		}
-
-		public bool IsHiding() {
-			return self.IsNormalNote() && self.hitSound == HitSoundType.Clap && (self.IsInstantType() || self.IsHoldType());
-		}
-
-		public bool IsToggleCenter() {
-			return self.IsFlip() && self.hitSound == HitSoundType.Whistle;
-		}
-
-		public bool IsCameraSwapImmediate() {
-			return self.IsFlip() && self.hitSound == HitSoundType.Clap;
-		}
-
-		public Height GetNoteHeight() {
-			switch (self.laneNumber) {
-				case 1:
-				case 2:
-					throw new Exception(string.Format("Trying to get the height of an effect (lane {0}, time {1})", self.laneNumber, self.time));
-				case 3:
-					return Height.Top;
-				case 4:
-					return Height.Low;
-				case 5:
-					throw new Exception(string.Format("Trying to get the height of a side flip (lane {0}, time {1})", self.laneNumber, self.time));
-				case 6:
-					return Height.Mid;
-				default:
-					throw new Exception(string.Format("Trying to get the height of a hit object on unsupported lane {0} (time {1})", self.laneNumber, self.time));
-			}
-		}
-		public NoteSpeed GetNoteSpeed() {
-			int text = (int)self.Extras.AdditionSet;
-			if (text == 1) {
-				return NoteSpeed.Stepped;
-			}
-			if (!(text == 2)) {
-				return NoteSpeed.Standard;
-			}
-			return NoteSpeed.Fast;
-		}
-
-		public NoteType GetNoteType() {
-			if (self.IsNormalNote()) {
-				if (self.IsInstantType()) {
-					if (self.HitSound == HitSoundType.Normal) {
-						return NoteType.Default;
-					}
-					if (self.HitSound == HitSoundType.Whistle) {
-						return NoteType.Dodge;
-					}
-					if (self.HitSound == HitSoundType.Clap) {
-						return NoteType.Default;
-					}
-					if (self.HitSound == HitSoundType.Finish) {
-						return NoteType.Setpiece;
-					}
-					throw new Exception(string.Format("Normal hit sound {0} does not correspond to any note type (lane {1}, time {2})", self.HitSound, self.laneNumber, self.time));
-				}
-				else {
-					if (!self.IsHoldType()) {
-						throw new Exception(string.Format("Unsupported hit object note of type {0} (lane {1}, time {2})", self.type, self.laneNumber, self.time));
-					}
-					if (self.HitSound == HitSoundType.Normal) {
-						return NoteType.Hold;
-					}
-					if (self.HitSound == HitSoundType.Whistle) {
-						return NoteType.Double;
-					}
-					if (self.HitSound == HitSoundType.Clap) {
-						return NoteType.Hold;
-					}
-					throw new Exception(string.Format("Hold hit sound {0} does not correspond to any note type (lane {1}, time {2})", self.HitSound, self.laneNumber, self.time));
-				}
-			}
-			else {
-				if (!self.IsExtraNote()) {
-					throw new Exception(string.Format("Unsupported hit object on lane {0} (time {1})", self.laneNumber, self.time));
-				}
-				if (self.IsInstantType()) {
-					if (self.HitSound == HitSoundType.Normal) {
-						return NoteType.Freestyle;
-					}
-					throw new Exception(string.Format("Normal hit sound {0} does not correspond to any extra note type (lane {1}, time {2})", self.HitSound, self.laneNumber, self.time));
-				}
-				else {
-					if (!self.IsHoldType()) {
-						throw new Exception(string.Format("Unsupported hit object extra note of type {0} (lane {1}, time {2})", self.type, self.laneNumber, self.time));
-					}
-					if (self.HitSound == HitSoundType.Finish) {
-						return NoteType.Spam;
-					}
-					throw new Exception(string.Format("Hold hit sound {0} does not correspond to any extra note type (lane {1}, time {2})", self.HitSound, self.laneNumber, self.time));
-				}
-			}
-		}
-	}
-}
-
-public record struct Lane
-{
-	public static Lane Top(Side side) {
-		return new Lane {
-			height = Height.Top,
-			side = side
-		};
-	}
-
-	public static Lane Mid(Side side) {
-		return new Lane {
-			height = Height.Mid,
-			side = side
-		};
-	}
-
-	public static Lane Low(Side side) {
-		return new Lane {
-			height = Height.Low,
-			side = side
-		};
-	}
-
-	public Height height;
-	public Side side;
-
-	public static readonly Lane TopLeft = Lane.Top(Side.Left);
-	public static readonly Lane MidLeft = Lane.Mid(Side.Left);
-	public static readonly Lane LowLeft = Lane.Low(Side.Left);
-	public static readonly Lane TopRight = Lane.Top(Side.Right);
-	public static readonly Lane MidRight = Lane.Mid(Side.Right);
-	public static readonly Lane LowRight = Lane.Low(Side.Right);
-}
-
-public class NoteInfo
-{
-	public Lane lane {
-		get {
-			return new Lane {
-				height = this.height,
-				side = this.side
-			};
-		}
-	}
-
-	public bool hasEndTime {
-		get {
-			return this.type == NoteType.Double || this.type == NoteType.Hold || this.type == NoteType.Spam;
-		}
-	}
-
-	public NoteInfo(HitObject hitObject, Side side) {
-		this.time = (float)hitObject.time;
-		this.side = side;
-		this.height = hitObject.GetNoteHeight();
-		this.type = hitObject.GetNoteType();
-		this.hiding = hitObject.IsHiding();
-		this.speed = hitObject.GetNoteSpeed();
-		this.spawnMid = hitObject.IsSpawnMid();
-		this.extra = [$"{(int)hitObject.Extras.SampleSet}"]; // todo..
-	}
-
-	public float GetEndTime() {
-		if (!this.hasEndTime)
-			throw new Exception(string.Format("Cannot get an end time for note type {0}", this.type));
-
-		return float.Parse(this.extra[0], CultureInfo.InvariantCulture);
-	}
-
-	public float time;
-	public Side side;
-	public Height height;
-	public NoteType type;
-	public NoteSpeed speed;
-	public bool hiding;
-	public bool spawnMid;
-	public string[] extra;
-}
 
 public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 {
@@ -316,6 +64,32 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 		return GamemodeMod.GetGamemode("gamemode/musedash1/standard")!;
 	}
 
+	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySide? pathwayOverride = null){
+		GamemodeData!.Entities.Add(new() {
+			Type = entityType,
+			Damage = 30,
+			EnterDirection = EntityEnterDirection.RightSide,
+			Blood = false,
+			Fever = 3,
+			Flipped = false,
+			HitTime = (noteInfo.time / 1000d),
+			ShowTime = (noteInfo.time / 1000d) - noteInfo.speed switch {
+				NoteInfo.NoteSpeed.Standard => 1,
+				NoteInfo.NoteSpeed.Fast => 0.5,
+				_ => 1
+			},
+			Length = entityType == MuseDash1EntityType.SustainBeam && noteInfo.hasEndTime ? (noteInfo.GetEndTime() / 1000d) - (noteInfo.time / 1000d) : 0,
+			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwaySide.Bottom, Height.Mid => PathwaySide.Bottom, Height.Top => PathwaySide.Top, _ => PathwaySide.Bottom },
+			Speed = noteInfo.speed switch {
+				NoteInfo.NoteSpeed.Standard => 2,
+				NoteInfo.NoteSpeed.Fast => 3,
+				_ => 1
+			},
+			Score = 100,
+			Variant = entityType != MuseDash1EntityType.Single ? EntityVariant.NotApplicable : EntityVariant.Medium1
+		});
+	}
+
 	public object GetGamemodeData() {
 		if (GamemodeData == null) {
 			GamemodeData = new MD1_GamemodeData();
@@ -323,11 +97,23 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 			if (!TextAsset.TryGet(out var textAsset))
 				return null!;
 
-			Beatmap = BeatmapDecoder.Decode(new MemoryStream(textAsset.m_Script));
+			BeatmapParserEngine parser = new();
+			Beatmap = new();
+			parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref Beatmap);
 
-			GamemodeData.InitialScene = "scene_01";
+			GamemodeData.InitialScene = "scene/musedash1/scene_01";
+			foreach (var tp in Beatmap.timingPoints) {
+				if (tp.uninherited && tp.beatLength > 0) {
+					double calculatedBpm = 60000.0 / tp.beatLength;
 
-			foreach (var hitObjectInfo in Beatmap.HitObjects) {
+					GamemodeData.TempoChanges.Add(new TempoChange(
+						time: tp.time,
+						beat: tp.meter,
+						bpm: calculatedBpm
+					));
+				}
+			}
+			foreach (var hitObjectInfo in Beatmap.hitObjects) {
 				if (hitObjectInfo.IsFlip()) {
 					continue;
 				}
@@ -343,28 +129,13 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 						NoteType.Setpiece => MuseDash1EntityType.Raider,
 						_ => 0
 					};
-					GamemodeData.Entities.Add(new() {
-						Type = entityType,
-						Damage = 30,
-						EnterDirection = EntityEnterDirection.RightSide,
-						Blood = false,
-						Fever = 10,
-						Flipped = false,
-						HitTime = noteInfo.time,
-						ShowTime = noteInfo.time - noteInfo.speed switch {
-							NoteSpeed.Standard => 1,
-							NoteSpeed.Fast => 0.5,
-							_ => 1
-						},
-						Length = noteInfo.hasEndTime ? noteInfo.GetEndTime() - noteInfo.time : 0,
-						Pathway = noteInfo.height switch { Height.Low => PathwaySide.Bottom, Height.Mid => PathwaySide.Bottom, Height.Top => PathwaySide.Top, _ => PathwaySide.Bottom },
-						Speed = noteInfo.speed switch {
-							NoteSpeed.Standard => 1,
-							NoteSpeed.Fast => 3,
-							_ => 1
-						},
-						Score = 100
-					});
+
+					if (entityType == MuseDash1EntityType.Double) {
+						AddOneEntity(entityType, noteInfo, PathwaySide.Top);
+						AddOneEntity(entityType, noteInfo, PathwaySide.Bottom);
+					}
+					else
+						AddOneEntity(entityType, noteInfo, null);
 				}
 				else if (hitObjectInfo.IsCommand()) {
 					// todo
