@@ -95,7 +95,7 @@ public class StatisticsPanel : Panel
 		victory.Render();
 		EngineCore.Window.EndMode2D();
 
-		var chart = (MD1_SongChart?)this.chart;
+		var chart = this.chart;
 		if (chart == null) return;
 		if (stats == null) return;
 
@@ -104,14 +104,16 @@ public class StatisticsPanel : Panel
 		var fs = 24;
 		var y = 0;
 
-		Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.FetchMetadata().Name);
+		var metadata = chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage());
+
+		Match boldRegexMatch = Util.BoldRegex.Match(metadata.Name);
 		Graphics2D.DrawText(16, 16 + y,
-							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.FetchMetadata().Name,
+							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : metadata.Name,
 							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
 							fs);
 		y += fs + 4;
 
-		RenderOneLine($"      Rating: {chart.Rating}", fs, ref y);
+		RenderOneLine($"      Rating: {chart.GetRatingNumber()}", fs, ref y);
 		RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
 		RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
 		RenderOneLine($"      Score: {stats.Score}", fs, ref y);
