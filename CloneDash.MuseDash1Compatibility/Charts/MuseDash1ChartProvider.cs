@@ -55,4 +55,5 @@ public class MuseDash1ChartProvider : IChartSongProvider
 		Hue = 200,
 		Icon = "icons/play.png"
 	};
+	public bool IsEnabled() => true;
 }

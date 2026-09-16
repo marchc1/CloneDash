@@ -90,7 +90,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		SetPassthru(true);
 
 		back = new Button(this);
-		back.		Origin = Anchor.Center;
+		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
 		back.OnButtonClick += (_, _) => DestroyNavigationMenu(); ;
@@ -103,6 +103,9 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		CreateNavigationMenu();
 
 		foreach (var provider in ChartMod.GetAll()) {
+			if (!provider.IsEnabled())
+				continue;
+
 			IChartSongProvider.NavigationButtonInstructions instructions = provider.GetNavigationButtonInstructions();
 			MakeNavigationButton(instructions.Name, instructions.Description, instructions.Hue, instructions.Icon, menu => {
 				var selector = menu.PushActiveElement(new SongSelector(Level.Content, provider));
@@ -159,7 +162,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 			btn.
 			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
-			btn.			Origin = Anchor.Center;
+			btn.Origin = Anchor.Center;
 		}
 	}
 

@@ -1,14 +1,8 @@
 ﻿using AssetStudio;
 using CloneDash.Charts;
 using CloneDash.Common;
-using CloneDash.Common.Data;
-using CloneDash.Common.Gamemodes;
-using CloneDash.Common.Gamemodes.MuseDash;
-using CloneDash.Common.Gamemodes.MuseDash.V1;
-using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
-using CloneDash.Unbeatable.Internal;
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
 using NAudio.Codecs;
@@ -23,184 +17,9 @@ using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
-using System.Text;
-using System.Text.Json.Serialization;
 using static System.Net.WebRequestMethods;
 
 namespace CloneDash.Compatibility.UnbeatableWhiteLabel;
-
-public enum UWLCompatLayerInitResult
-{
-	OK,
-	SteamNotInstalled,
-	UnbeatableNotInstalled,
-	StreamingAssetsNotFound,
-	NoteDataManagerNotFound,
-	OperatingSystemNotCompatible
-}
-
-
-public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
-{
-	[JsonPropertyName("textAsset")] public PPtr<TextAsset> TextAsset { get; set; } = null!;
-	[JsonPropertyName("difficulty")] public string Difficulty { get; set; } = null!;
-
-	public Beatmap Beatmap;
-
-	MD1_GamemodeData? GamemodeData;
-
-	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
-		return new() {
-			ChartAuthors = "D-Cell Games",
-			Difficulty = "1",
-			DifficultyName = Difficulty,
-			Color = new Nucleus.Common.Types.Color(115, 55, 55),
-			GamemodeName = "Muse Dash 1",
-			ReturnedLanguage = HumanLanguage.English,
-		};
-	}
-
-	public IGamemodeDescriptor GetGamemode() {
-		return GamemodeMod.GetGamemode("gamemode/musedash1/standard")!;
-	}
-
-	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySide? pathwayOverride = null){
-		GamemodeData!.Entities.Add(new() {
-			Type = entityType,
-			Damage = 30,
-			EnterDirection = EntityEnterDirection.RightSide,
-			Blood = false,
-			Fever = 3,
-			Flipped = false,
-			HitTime = (noteInfo.time / 1000d),
-			ShowTime = (noteInfo.time / 1000d) - noteInfo.speed switch {
-				NoteInfo.NoteSpeed.Standard => 1,
-				NoteInfo.NoteSpeed.Fast => 0.5,
-				_ => 1
-			},
-			Length = entityType == MuseDash1EntityType.SustainBeam && noteInfo.hasEndTime ? (noteInfo.GetEndTime() / 1000d) - (noteInfo.time / 1000d) : 0,
-			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwaySide.Bottom, Height.Mid => PathwaySide.Bottom, Height.Top => PathwaySide.Top, _ => PathwaySide.Bottom },
-			Speed = noteInfo.speed switch {
-				NoteInfo.NoteSpeed.Standard => 2,
-				NoteInfo.NoteSpeed.Fast => 3,
-				_ => 1
-			},
-			Score = 100,
-			Variant = entityType != MuseDash1EntityType.Single ? EntityVariant.NotApplicable : EntityVariant.Medium1
-		});
-	}
-
-	public object GetGamemodeData() {
-		if (GamemodeData == null) {
-			GamemodeData = new MD1_GamemodeData();
-
-			if (!TextAsset.TryGet(out var textAsset))
-				return null!;
-
-			BeatmapParserEngine parser = new();
-			Beatmap = new();
-			parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref Beatmap);
-
-			GamemodeData.InitialScene = "scene/musedash1/scene_01";
-			foreach (var tp in Beatmap.timingPoints) {
-				if (tp.uninherited && tp.beatLength > 0) {
-					double calculatedBpm = 60000.0 / tp.beatLength;
-
-					GamemodeData.TempoChanges.Add(new TempoChange(
-						time: tp.time,
-						beat: tp.meter,
-						bpm: calculatedBpm
-					));
-				}
-			}
-			foreach (var hitObjectInfo in Beatmap.hitObjects) {
-				if (hitObjectInfo.IsFlip()) {
-					continue;
-				}
-				else if (hitObjectInfo.IsAnyNote()) {
-					NoteInfo noteInfo = new NoteInfo(hitObjectInfo, Side.Right);
-					MuseDash1EntityType entityType = noteInfo.type switch {
-						NoteType.Default => MuseDash1EntityType.Single,
-						NoteType.Spam => MuseDash1EntityType.Masher,
-						NoteType.Freestyle => MuseDash1EntityType.Masher,
-						NoteType.Dodge => MuseDash1EntityType.Gear,
-						NoteType.Double => MuseDash1EntityType.Double,
-						NoteType.Hold => MuseDash1EntityType.SustainBeam,
-						NoteType.Setpiece => MuseDash1EntityType.Raider,
-						_ => 0
-					};
-
-					if (entityType == MuseDash1EntityType.Double) {
-						AddOneEntity(entityType, noteInfo, PathwaySide.Top);
-						AddOneEntity(entityType, noteInfo, PathwaySide.Bottom);
-					}
-					else
-						AddOneEntity(entityType, noteInfo, null);
-				}
-				else if (hitObjectInfo.IsCommand()) {
-					// todo
-				}
-			}
-		}
-
-		return GamemodeData;
-	}
-
-	public ISong GetSong() => song;
-
-	public IAudioClip GetAudioTrack() => AudioClip;
-
-	public IAudioClip AudioClip = null!;
-
-	public int GetRatingNumber() => 5; // todo
-}
-
-public class BeatmapIndexSong : ISong
-{
-	[JsonPropertyName("name")] public string Name { get; set; } = null!;
-	[JsonPropertyName("stageScene")] public string StageScene { get; set; } = null!;
-	[JsonPropertyName("beatmaps")] public BeatmapInfo[] Beatmaps { get; set; } = null!;
-
-	public IAudioClip? PreviewClip;
-
-	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
-		return new() {
-			Name = Name,
-			Author = "D-Cell Games"
-		};
-	}
-
-	public IReadOnlyList<ISongChart> GetCharts() {
-		return Beatmaps;
-	}
-
-	public SongCoverInfo GetCoverTexture() {
-		return new() {
-			// todo
-		};
-	}
-
-	public IAudioClip? GetDemoAudio() {
-		return PreviewClip;
-	}
-
-	public ReadOnlySpan<char> GetUUID() {
-		return $"song/unbeatable_whitelabel/{Name.ToLower()}";
-	}
-
-	public bool IsAsynchronouslyLoading() {
-		return false;
-	}
-
-	public void WaitForAsynchronousLoad(OnAsynchronousLoadingCompleteFn callback) => throw new NotImplementedException();
-}
-
-public class BeatmapIndex
-{
-	[JsonPropertyName("m_Name")] public string Name { get; set; } = null!;
-	[JsonPropertyName("songs")] public BeatmapIndexSong[] Songs { get; set; } = null!;
-	public readonly Dictionary<string, BeatmapIndexSong> SongDict = [];
-}
 
 [MarkForStaticConstruction]
 public static partial class UnbeatableWhiteLabelCompatibility
@@ -236,9 +55,10 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	static readonly Dictionary<long, lookupEntry> PathIDLUT = [];
 	static readonly Dictionary<ulong, lookupEntry> NameLUT = [];
 
-	static UnbeatableWhiteLabelCompatibility() {
-		if (LightInitialize() != UWLCompatLayerInitResult.OK) {
-			return; // unbeatable is optional
+	public static UWLCompatLayerInitResult InitializeCompatibilityLayer() {
+		UWLCompatLayerInitResult result;
+		if ((result = LightInitialize()) != UWLCompatLayerInitResult.OK) {
+			return result; // unbeatable is optional
 		}
 
 		// Build the LUT
@@ -296,6 +116,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			i++;
 		}
 		BeatmapIndex.Songs = BeatmapIndex.Songs.Where(x => x != null).ToArray();
+		return UWLCompatLayerInitResult.OK;
 	}
 
 	readonly struct SongMusicInfo(string preview, string audio)
@@ -370,6 +191,9 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			return null;
 		return entry.Object is T t ? t : null;
 	}
+
+	public static readonly ConVar unbeatablewhitelabel_enabled = new(nameof(unbeatablewhitelabel_enabled), "0", FCvar.Saved, "Enables/disables UNBEATABLE [white label] compatibility. Requires a restart to take effect.");
+	public static bool IsEnabled() => unbeatablewhitelabel_enabled.GetBool();
 }
 
 public class UnbeatableWhiteLabelChartSource : BaseContiguousSongSource
@@ -419,4 +243,5 @@ public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
 		Hue = 348,
 		Icon = "icons/play.png"
 	};
+	public bool IsEnabled() => UnbeatableWhiteLabelCompatibility.unbeatablewhitelabel_enabled.GetBool();
 }

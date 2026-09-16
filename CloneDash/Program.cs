@@ -6,6 +6,7 @@ using CloneDash.Common;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.UnbeatableWhiteLabel;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.Game;
 using CloneDash.Menu.Searching;
@@ -149,6 +150,10 @@ public class GameDLL : IGameDLL
 				}}");
 			}
 		}
+
+		// Initialize UNBEATABLE compat
+		if (UnbeatableWhiteLabelCompatibility.IsEnabled())
+			UnbeatableWhiteLabelCompatibility.InitializeCompatibilityLayer();
 
 		// Load muse dash fonts
 		{

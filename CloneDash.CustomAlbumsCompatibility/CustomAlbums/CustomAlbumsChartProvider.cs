@@ -104,4 +104,5 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 		Hue = 310,
 		Icon = "icons/orange-slice.png"
 	};
+	public bool IsEnabled() => true;
 }

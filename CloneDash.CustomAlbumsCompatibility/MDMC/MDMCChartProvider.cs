@@ -37,6 +37,8 @@ public class MDMCChartProvider : IChartSongProvider
 		Hue = 340,
 		Icon = "icons/globe-hemisphere-west.png"
 	};
+
+	public bool IsEnabled() => true;
 }
 
 public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartSongFilter(baseFilter)

@@ -22,6 +22,7 @@ public interface IChartSongProvider {
 	ISong? FindByName(ReadOnlySpan<char> name);
 	IEnumerable<string> GetAvailable();
 
+	bool IsEnabled();
 
 	/// <summary>
 	/// Returns the song that the user last was on. This is saved on a per-source basis. This only applies to offline sources,
