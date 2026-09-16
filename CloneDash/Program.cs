@@ -118,6 +118,7 @@ public class GameDLL : IGameDLL
 		// This will work better:
 		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
 		Assembly.Load("CloneDash.MuseDash1Compatibility");
+		Assembly.Load("CloneDash.UnbeatableWhiteLabelCompatibility");
 	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()

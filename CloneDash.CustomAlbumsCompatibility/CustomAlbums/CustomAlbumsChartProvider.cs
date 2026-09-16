@@ -96,4 +96,12 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 			return null;
 		}
 	}
+
+	public int GetSortIndex() => 1000;
+	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
+		Name = "Play Custom Charts", 
+		Description = "Play a custom chart (.mdm format).", 
+		Hue = 310,
+		Icon = "icons/orange-slice.png"
+	};
 }

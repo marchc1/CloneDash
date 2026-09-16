@@ -102,42 +102,13 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		CreateNavigationMenu();
 
-		MakeNavigationButton(
-			"Play", "Play your installed charts.", 200,
-			"icons/play.png", menu => {
-				var source = ChartMod.GetChartSongProviderByName("Muse Dash 1");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
-
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content, source));
-				selector.SetSource(source.NewState());
+		foreach (var provider in ChartMod.GetAll()) {
+			IChartSongProvider.NavigationButtonInstructions instructions = provider.GetNavigationButtonInstructions();
+			MakeNavigationButton(instructions.Name, instructions.Description, instructions.Hue, instructions.Icon, menu => {
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content, provider));
+				selector.SetSource(provider.NewState());
 			});
-
-		MakeNavigationButton(
-			"Play Custom Charts", "Play a custom chart (.mdm format).", 310,
-			"icons/orange-slice.png", menu => {
-				var source = ChartMod.GetChartSongProviderByName("Custom Albums");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
-
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content, source));
-				selector.SetSource(source.NewState());
-			});
-
-		MakeNavigationButton("Browse mdmc.moe Charts", "Download new charts from the Muse Dash Modding Community.", 340,
-			"icons/globe-hemisphere-west.png", (menu) => {
-				var source = ChartMod.GetChartSongProviderByName("MDMC");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
-
-				menu.PushActiveElement(new SongSelector(Level.Content, source)).SetSource(source.NewState());
-			});
+		}
 
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,

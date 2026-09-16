@@ -28,6 +28,15 @@ public class MDMCChartProvider : IChartSongProvider
 
 	public void UpdateSavedFilter(IChartSongFilter? filter) => mdmc_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((MDMCChartFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) { }
+
+	public int GetSortIndex() => 4000;
+
+	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
+		Name = "Browse mdmc.moe Charts",
+		Description = "Download new charts from the Muse Dash Modding Community.",
+		Hue = 340,
+		Icon = "icons/globe-hemisphere-west.png"
+	};
 }
 
 public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartSongFilter(baseFilter)

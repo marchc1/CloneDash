@@ -42,6 +42,7 @@
 		<ProjectReference Include="..\CloneDash.Common\CloneDash.Common.csproj" />
 		<ProjectReference Include="..\CloneDash.CustomAlbumsCompatibility\CloneDash.CustomAlbumsCompatibility.csproj" />
 		<ProjectReference Include="..\CloneDash.MuseDash1Compatibility\CloneDash.MuseDash1Compatibility.csproj" />
+		<ProjectReference Include="..\CloneDash.UnbeatableWhiteLabelCompatibility\CloneDash.UnbeatableWhiteLabelCompatibility.csproj" />
 		<ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
 		<ProjectReference Include="..\Nucleus\Nucleus.csproj" />
 	</ItemGroup>

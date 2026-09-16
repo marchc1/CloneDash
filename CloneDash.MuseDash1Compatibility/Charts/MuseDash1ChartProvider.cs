@@ -47,4 +47,12 @@ public class MuseDash1ChartProvider : IChartSongProvider
 
 	public ReadOnlySpan<char> GetName() => "Muse Dash 1";
 	public ISongSourceState NewState() => new MuseDash1ChartSource();
+
+	public int GetSortIndex() => int.MinValue;
+	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
+		Name = "Play Muse Dash Charts",
+		Description = "Play base-game charts",
+		Hue = 200,
+		Icon = "icons/play.png"
+	};
 }

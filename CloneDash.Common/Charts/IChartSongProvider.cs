@@ -6,11 +6,21 @@ namespace CloneDash.Charts;
 /// A producer of source states and chart songs
 /// </summary>
 public interface IChartSongProvider {
+	public struct NavigationButtonInstructions{
+		public string Name;
+		public string Description;
+		public string Icon;
+		public float Hue;
+	}
+
+
 	ReadOnlySpan<char> GetName();
 	ISongSourceState NewState();
 
-	public ISong? FindByName(ReadOnlySpan<char> name);
-	public IEnumerable<string> GetAvailable();
+	int GetSortIndex();
+
+	ISong? FindByName(ReadOnlySpan<char> name);
+	IEnumerable<string> GetAvailable();
 
 
 	/// <summary>
@@ -28,5 +38,6 @@ public interface IChartSongProvider {
 
 	void UpdateSavedSong(ISong? selectedSong);
 	void UpdateSavedFilter(IChartSongFilter? filter);
+	NavigationButtonInstructions GetNavigationButtonInstructions();
 }
 
