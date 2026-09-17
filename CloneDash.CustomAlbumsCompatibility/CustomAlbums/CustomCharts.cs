@@ -9,6 +9,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
+using Nucleus.Common.Graphics;
 using Nucleus.Files;
 using Raylib_cs;
 using SixLabors.ImageSharp;

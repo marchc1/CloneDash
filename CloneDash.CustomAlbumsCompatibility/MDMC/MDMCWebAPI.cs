@@ -3,6 +3,7 @@
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;

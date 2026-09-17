@@ -22,6 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Nucleus.AudioSystem\Nucleus.AudioSystem.csproj" />
 	  <ProjectReference Include="..\Nucleus.Common\Nucleus.Common.csproj" />
 	</ItemGroup>
 
