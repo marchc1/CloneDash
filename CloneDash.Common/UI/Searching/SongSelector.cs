@@ -66,7 +66,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	/// Triggers IsFirst to false, which causes previous convars storing state to be
 	/// completely ignored; used for drag n drop
 	/// </summary>
-	public void IgnorePreviousState(){
+	public void IgnorePreviousState() {
 		IsFirst = false;
 	}
 
@@ -339,7 +339,7 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 
 		Source.Select(song, CommitMove);
-		if(!animated)
+		if (!animated)
 			DiscAnimationOffset.ResetTo(0);
 
 	}
@@ -505,13 +505,11 @@ public class SongSelector : Panel, IMainMenuPanel
 			if (song == null)
 				continue;
 
-			disc.
-			Size = new(discWidth, discWidth);
+			disc.Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 			disc.SetImageRotation(rot);
 			disc.Position = new(x, y);
-			disc.Text = "";
 		}
 
 		var heightDiv2 = height / 2;
@@ -573,8 +571,10 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		Discs = new SongDiscButton[VisibleDiscs];
 		IntegerMidpoint = Discs.Length / 2;
-		for (int i = 0; i < VisibleDiscs; i++)
+		for (int i = 0; i < VisibleDiscs; i++) {
 			Discs[i] = new(this, i);
+			Discs[i].Text = "";
+		}
 
 		CurrentTrackName = new(this);
 		CurrentTrackAuthor = new(this);
