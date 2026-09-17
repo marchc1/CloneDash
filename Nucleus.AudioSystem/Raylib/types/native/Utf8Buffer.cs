@@ -8,7 +8,7 @@ namespace Nucleus.AudioSystem.Raylib;
 /// <summary>
 /// Converts text to a UTF8 buffer for passing to native code
 /// </summary>
-public readonly ref struct Utf8Buffer
+internal readonly ref struct Utf8Buffer
 {
 	private readonly IntPtr Data;
 	private readonly int Length;
@@ -39,16 +39,16 @@ public readonly ref struct Utf8Buffer
 	}
 }
 
-public static class Utf8StringUtils
+internal static class Utf8StringUtils
 {
-	public static Utf8Buffer ToUtf8Buffer(this string text) {
+	internal static Utf8Buffer ToUtf8Buffer(this string text) {
 		return new Utf8Buffer(text);
 	}
-	public static Utf8Buffer ToUtf8Buffer(this ReadOnlySpan<char> text) {
+	internal static Utf8Buffer ToUtf8Buffer(this ReadOnlySpan<char> text) {
 		return new Utf8Buffer(text);
 	}
 
-	public static byte[] ToUtf8String(this string text)
+	internal static byte[] ToUtf8String(this string text)
     {
         if (text == null)
         {
@@ -64,12 +64,12 @@ public static class Utf8StringUtils
         return byteArray;
     }
 
-    public static unsafe string GetUTF8String(sbyte* bytes)
+	internal static unsafe string GetUTF8String(sbyte* bytes)
     {
         return Marshal.PtrToStringUTF8((IntPtr)bytes);
     }
 
-    public static byte[] GetUTF8Bytes(this string text)
+	internal static byte[] GetUTF8Bytes(this string text)
     {
         return Encoding.UTF8.GetBytes(text);
     }

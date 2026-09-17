@@ -13,7 +13,7 @@ namespace Nucleus.AudioSystem.Raylib;
 // These MiniAudio structs are for the sake of having a valid AudioBuffer in terms of sizing.
 
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_lpf
+internal unsafe struct ma_lpf
 {
 	public ma_format Format;
 	public uint Channels;
@@ -26,7 +26,7 @@ public unsafe struct ma_lpf
 	public int OwnsHeap;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_linear_resampler_config
+internal unsafe struct ma_linear_resampler_config
 {
 	public ma_format Format;
 	public uint Channels;
@@ -36,7 +36,7 @@ public unsafe struct ma_linear_resampler_config
 	public double NyquistFactor;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_linear_resampler
+internal unsafe struct ma_linear_resampler
 {
 	public ma_linear_resampler_config Config;
 	public uint InAdvanceInt;
@@ -51,7 +51,7 @@ public unsafe struct ma_linear_resampler
 	public int OwnsHeap;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_resampler
+internal unsafe struct ma_resampler
 {
 	public nint Backend;
 	public nint BackendVTable;
@@ -66,7 +66,7 @@ public unsafe struct ma_resampler
 	public int OwnsHeap;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_channel_converter
+internal unsafe struct ma_channel_converter
 {
 	public ma_format Format;
 	public uint ChannelsIn;
@@ -81,7 +81,7 @@ public unsafe struct ma_channel_converter
 	public int OwnsHeap;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct ma_data_converter
+internal unsafe struct ma_data_converter
 {
 	public ma_format FormatIn;
 	public ma_format FormatOut;
@@ -103,14 +103,14 @@ public unsafe struct ma_data_converter
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct AudioProcessor
+internal unsafe struct AudioProcessor
 {
 	public AudioCallback Process;
 	public AudioProcessor* Next;
 	public AudioProcessor* Prev;
 }
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct AudioBuffer
+internal unsafe struct AudioBuffer
 {
 	public ma_data_converter Converter;
 	public AudioCallback AudioCallback;
@@ -138,7 +138,7 @@ public unsafe struct AudioBuffer
 /// NOTE: Useful to create custom audio streams not bound to a specific file
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public partial struct AudioStream
+internal partial struct AudioStream
 {
 	//TODO: convert
 	/// <summary>

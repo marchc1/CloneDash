@@ -7,7 +7,7 @@ namespace Nucleus.AudioSystem.Raylib;
 /// NOTE: Anything longer than ~10 seconds should be streamed
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public unsafe partial struct Music
+internal unsafe partial struct Music
 {
     /// <summary>
     /// Audio stream

@@ -6,7 +6,7 @@ namespace Nucleus.AudioSystem.Raylib;
 /// Sound source type
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public partial struct Sound
+internal partial struct Sound
 {
     /// <summary>
     /// Audio stream

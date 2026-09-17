@@ -55,11 +55,11 @@ public static unsafe class RaylibAudioHelpers
 		return fileExtension;
 	}
 
-	public static Music AllocMusicStream(byte* data, nuint len) {
+	internal static Music AllocMusicStream(byte* data, nuint len) {
 		return Raylib.LoadMusicStreamFromMemory(DetermineFileType(new(data, (int)len)), data, (int)len);
 	}
 
-	public static Sound AllocSound(byte* data, nuint len) {
+	internal static Sound AllocSound(byte* data, nuint len) {
 		var filetype = DetermineFileType(new(data, (int)len));
 		if (filetype == null) return default;
 		var wave = Raylib.LoadWaveFromMemory(filetype, data, (int)len);
@@ -84,7 +84,7 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 
 	public byte* Data => data;
 	public nuint Length => length;
-	public Sound Sound {
+	internal Sound Sound {
 		get {
 			if (!Raylib.IsSoundValid(sound))
 				sound = RaylibAudioHelpers.AllocSound(data, length);

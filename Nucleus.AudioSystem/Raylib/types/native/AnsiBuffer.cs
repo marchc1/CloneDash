@@ -6,7 +6,7 @@ namespace Nucleus.AudioSystem.Raylib;
 /// <summary>
 /// Converts text to a Ansi buffer for passing to native code
 /// </summary>
-public readonly ref struct AnsiBuffer
+internal readonly ref struct AnsiBuffer
 {
     private readonly IntPtr _data;
 
@@ -26,9 +26,9 @@ public readonly ref struct AnsiBuffer
     }
 }
 
-public static class AnsiStringUtils
+internal static class AnsiStringUtils
 {
-    public static AnsiBuffer ToAnsiBuffer(this string text)
+	internal static AnsiBuffer ToAnsiBuffer(this string text)
     {
         return new AnsiBuffer(text);
     }

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Nucleus.AudioSystem.Raylib;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly struct CBool
+internal readonly struct CBool
 {
     /* The values of booleans in C++ are stored in a single byte, which means it
      * only supports values from -128 to 127. It is possible to argument that
