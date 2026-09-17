@@ -1,27 +1,20 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using Nucleus.Common.Graphics;
+﻿using Nucleus.Common.Graphics;
 using Nucleus.Files;
 using Nucleus.Types;
 using Nucleus.Util;
-
 using Raylib_cs;
-
+using System.Runtime.CompilerServices;
 
 namespace Nucleus.ManagedMemory
 {
 	public class Texture : ITexture
 	{
-		readonly TextureManagement? parent;
-		Texture2D underlying;
-		readonly bool selfDisposing;
-		Image? underlyingImage;
-		readonly bool shouldSelfDisposeImage;
+		private readonly TextureManagement? parent;
+		private Texture2D underlying;
+		private readonly bool selfDisposing;
+		private Image? underlyingImage;
+		private readonly bool shouldSelfDisposeImage;
+
 		public Texture(TextureManagement? parent, Texture2D underlying, bool selfDisposing = true, Image? underlyingImage = null, bool shouldSelfDisposeImage = true) {
 			this.parent = parent;
 			this.underlying = underlying;
@@ -37,27 +30,38 @@ namespace Nucleus.ManagedMemory
 		public RectangleF Bounds => RectangleF.XYWH(0, 0, Width, Height);
 
 		public uint GetTextureHandle() => underlying.Id;
+
 		public string? DebugName { get; set; }
 		public int Width => underlying.Width;
 		public int Height => underlying.Height;
 		public uint UWidth => (uint)underlying.Width;
 		public uint UHeight => (uint)underlying.Height;
 		public ImageFormat Format => underlying.Format;
+
 		public int GetMipmapCount() => underlying.Mipmaps;
 
-		PublicTextureFlags publicFlags;
+		private PublicTextureFlags publicFlags;
 
 		public void AddPublicFlags(PublicTextureFlags flags) => publicFlags |= flags;
+
 		public void RemovePublicFlags(PublicTextureFlags flags) => publicFlags &= ~flags;
+
 		public bool HasPublicFlags(PublicTextureFlags flags) => (publicFlags & flags) != 0;
+
 		public PublicTextureFlags GetPublicFlags() => publicFlags;
 
 		private Image? UnderlyingImage => underlyingImage;
 		private Texture2D Underlying => underlying;
 
 		private bool disposed;
-		public ulong UsedBits => (ulong)(underlying.Width * underlying.Height * Underlying.Format.GetBitsPerPixel());
-		public ulong UsedBits_CPU => underlyingImage == null ? 0 : (ulong)(underlyingImage.Value.Width * underlyingImage.Value.Height * Underlying.Format.GetBitsPerPixel());
+
+		public ulong GetUsedBits(MemoryRealm realm) {
+			switch (realm) {
+				case MemoryRealm.CPU: return underlyingImage == null ? 0 : (ulong)(underlyingImage.Value.Width * underlyingImage.Value.Height * Underlying.Format.GetBitsPerPixel());
+				case MemoryRealm.GPU: return (ulong)(underlying.Width * underlying.Height * Underlying.Format.GetBitsPerPixel());
+				default: return 0;
+			}
+		}
 
 		public bool IsValid() => !disposed;
 
@@ -71,6 +75,7 @@ namespace Nucleus.ManagedMemory
 		private TextureWrap wrap;
 
 		public TextureFilter GetFilter() => filter;
+
 		public TextureWrap GetWrap() => wrap;
 
 		public void SetFilter(TextureFilter filter) {
@@ -84,6 +89,7 @@ namespace Nucleus.ManagedMemory
 		}
 
 		public bool HasCPUImage => UnderlyingImage.HasValue;
+
 		public Image GetCPUImage() => UnderlyingImage ?? throw new Exception("No CPU image available. The texture creation call must store the image.");
 
 		protected virtual void Dispose(bool usercall) {
@@ -115,6 +121,7 @@ namespace Nucleus.ManagedMemory
 
 		public static implicit operator Texture2D(Texture self) => self.Underlying;
 	}
+
 	public class TextureManagement
 	{
 		private WeakCollection<ITexture> Textures = [];
@@ -122,38 +129,26 @@ namespace Nucleus.ManagedMemory
 		public int Count => Textures.ReferencedCount;
 
 		private bool disposedValue;
-		public ulong UsedBits {
-			get {
-				ulong ret = 0;
 
-				foreach (var tex in Textures)
-					ret += tex!.UsedBits;
+		public ulong GetUsedBits(MemoryRealm realm) {
+			ulong ret = 0;
 
+			foreach (var tex in Textures)
+				ret += tex!.GetUsedBits(realm);
+
+			if (realm == MemoryRealm.GPU)
 				foreach (var tex in RenderTextures) {
 					ret += (ulong)(tex.Texture.Format.GetBitsPerPixel() * tex.Texture.Width * tex.Texture.Height);
 					ret += (ulong)(tex.Depth.Format.GetBitsPerPixel() * tex.Depth.Width * tex.Depth.Height);
 				}
 
-				return ret;
-			}
-		}
-
-		public ulong UsedBits_CPU {
-			get {
-				ulong ret = 0;
-
-				foreach (var tex in Textures)
-					ret += tex!.UsedBits_CPU;
-
-				return ret;
-			}
+			return ret;
 		}
 
 		public void EnsureTextureAdded(ITexture tex) {
 			// This is for the sake of external constructor usage (which was a bad API design in hindsight..)
 			Textures.Add(tex);
 		}
-
 
 		public bool IsValid() => !disposedValue;
 
@@ -227,6 +222,7 @@ namespace Nucleus.ManagedMemory
 				}
 			}
 		}
+
 		public unsafe RenderTexture2D LoadRenderTexture(int width, int height, ImageFormat format = ImageFormat.R8G8B8A8) {
 			RenderTexture2D target = new();
 
@@ -262,6 +258,7 @@ namespace Nucleus.ManagedMemory
 			RenderTextures.Add(target);
 			return target;
 		}
+
 		public void UnloadRenderTexture(RenderTexture2D? tex) {
 			if (!tex.HasValue)
 				return;
@@ -274,6 +271,7 @@ namespace Nucleus.ManagedMemory
 				Raylib.UnloadRenderTexture(tex.Value);
 			}
 		}
+
 		public unsafe ComplexRenderTexture CreateComplexRenderTexture(int width, int height, ImageFormat pixelFormat = ImageFormat.R8G8B8A8) {
 			return new ComplexRenderTexture(width, height);
 		}

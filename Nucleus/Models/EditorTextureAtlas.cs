@@ -11,7 +11,7 @@ namespace Nucleus.Models;
 
 public class EditorAtlasPage : IModelAtlasPage
 {
-	string Name;
+	private string Name;
 	internal ITexture? Texture;
 	internal readonly List<EditorAtlasRegion> Regions = [];
 
@@ -27,11 +27,13 @@ public class EditorAtlasPage : IModelAtlasPage
 	}
 
 	public int GetRegionCount() => Regions.Count;
+
 	public IModelAtlasRegion? GetRegion(int index) {
 		if (index < 0 || index >= Regions.Count)
 			return null;
 		return Regions[index];
 	}
+
 	public IModelAtlasRegion? GetRegionByName(ReadOnlySpan<char> name, int index = -1) {
 		for (int i = 0, c = Regions.Count; i < c; i++) {
 			var region = Regions[i];
@@ -40,35 +42,46 @@ public class EditorAtlasPage : IModelAtlasPage
 		}
 		return null;
 	}
+
 	public ITexture GetTexture() => Texture!;
+
 	public ReadOnlySpan<char> GetName() => Name;
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public void GetSize(out int w, out int h) {
 		w = Texture?.Width ?? 0;
 		h = Texture?.Height ?? 0;
 	}
+
 	public ImageFormat GetFormat() => Texture?.Format ?? ImageFormat.None;
+
 	public void GetFilter(out TextureFilter min, out TextureFilter max) {
 		min = TextureFilter.Bilinear;
 		max = TextureFilter.Bilinear;
 	}
+
 	public bool SetFilter(TextureFilter min, TextureFilter max) => false;
+
 	public TextureWrap GetWrap() => default;
+
 	public bool SetWrap(TextureWrap wrapmode) => false;
+
 	public bool GetPreMultipliedAlpha() => false;
+
 	public bool SetPreMultipliedAlpha(bool pma) => false;
 }
 
 public class EditorAtlasRegion : IModelAtlasRegion
 {
 	internal EditorAtlasPage Page = null!;
-	AtlasNameIndex NameIndex;
-	float Rotate;
-	int X, Y, W, H;
-	int OX, OY, OW, OH;
+	private AtlasNameIndex NameIndex;
+	private float Rotate;
+	private int X, Y, W, H;
+	private int OX, OY, OW, OH;
 
 	public EditorAtlasRegion(string name, int index = -1) {
 		NameIndex = new(name, index);
@@ -77,35 +90,48 @@ public class EditorAtlasRegion : IModelAtlasRegion
 	public void GetBounds(out int x, out int y, out int w, out int h) {
 		x = X; y = Y; w = W; h = H;
 	}
+
 	public int GetIndex() => NameIndex.Index;
+
 	public ReadOnlySpan<char> GetName() => NameIndex.Name;
+
 	public AtlasNameIndex GetNameIndex() => NameIndex;
+
 	public void GetOffsets(out int x, out int y, out int w, out int h) {
 		x = OX; y = OY; w = OW; h = OH;
 	}
+
 	public IModelAtlasPage GetPage() => Page;
+
 	public float GetRotation() => Rotate;
+
 	public ITexture GetTexture() => Page.GetTexture();
+
 	public bool SetBounds(int x, int y, int w, int h) {
 		X = x; Y = y; W = w; H = h;
 		return true;
 	}
+
 	public bool SetIndex(int index) {
 		NameIndex.Index = index;
 		return true;
 	}
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		NameIndex.Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public bool SetNameIndex(AtlasNameIndex nameIndex) {
 		NameIndex = nameIndex;
 		return true;
 	}
+
 	public bool SetOffsets(int x, int y, int w, int h) {
 		OX = x; OY = y; OW = w; OH = h;
 		return true;
 	}
+
 	public bool SetRotation(float rot) {
 		Rotate = rot;
 		return true;
@@ -304,7 +330,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		return true;
 	}
 
-	public ITextureAtlasEdit? Edit() => null; 
+	public ITextureAtlasEdit? Edit() => null;
 
 	public IModelAtlasRegion? GetRegion(ReadOnlySpan<char> name, int index = -1) {
 		Validate();
@@ -323,7 +349,9 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 			return packedTex;
 		}
 	}
+
 	public Image? PackedImage => packedImg;
+
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
 

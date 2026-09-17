@@ -1,13 +1,10 @@
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 using Nucleus.Rendering;
-using System;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Raylib_cs;
 
@@ -29,7 +26,6 @@ public static unsafe partial class Raylib
 	/// NOTE: Added for compatability with previous versions
 	/// </summary>
 	public static Color Fade(Color color, float alpha) => ColorAlpha(color, alpha);
-
 
 	/// <summary>Begin custom shader drawing</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -64,7 +60,6 @@ public static unsafe partial class Raylib
 	/// <summary>Unload VR stereo configs</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void UnloadVrStereoConfig(VrStereoConfig config);
-
 
 	// Shader management functions
 
@@ -119,9 +114,7 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void UnloadShader(Shader shader);
 
-
 	// Screen-space-related functions
-
 
 	/// <summary>Get camera transform matrix (view matrix)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
@@ -147,7 +140,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Vector2 GetScreenToWorld2D(Vector2 position, Camera2D camera);
 
-
 	// Timing-related functions
 
 	/// <summary>Set target FPS (maximum)</summary>
@@ -165,7 +157,6 @@ public static unsafe partial class Raylib
 	/// <summary>Get elapsed time in seconds since InitWindow()</summary>
 	//[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	//public static extern double GetTime();
-
 
 	// Misc. functions
 
@@ -213,7 +204,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void MemFree(void* ptr);
 
-
 	// Set custom callbacks
 	// WARNING: Callbacks setup is intended for advance users
 
@@ -252,7 +242,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Vector3 GetCameraRight(Camera3D* camera);
 
-
 	// Camera movement
 
 	/// <summary>Moves the camera in its forward direction</summary>
@@ -270,7 +259,6 @@ public static unsafe partial class Raylib
 	/// <summary>Moves the camera position closer/farther to/from the camera target</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void CameraMoveToTarget(Camera3D* camera, float delta);
-
 
 	// Camera rotation
 
@@ -304,7 +292,6 @@ public static unsafe partial class Raylib
 	/// <summary>Returns the camera projection matrix</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Matrix4x4 GetCameraProjectionMatrix(Camera3D* camera, float aspect);
-
 
 	//------------------------------------------------------------------------------------
 	// Basic Shapes Drawing Functions (Module: shapes)
@@ -509,7 +496,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void DrawRectangleRounded(Rectangle rec, float roundness, int segments, Color color);
 
-
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void DrawRectangleRoundedLines(Rectangle rec, float roundness, int segments, Color color);
 
@@ -672,7 +658,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Rectangle GetCollisionRec(Rectangle rec1, Rectangle rec2);
 
-
 	//------------------------------------------------------------------------------------
 	// Texture Loading and Drawing Functions (Module: textures)
 	//------------------------------------------------------------------------------------
@@ -740,7 +725,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern CBool ExportImageAsCode(Image image, sbyte* fileName);
 
-
 	// Image generation functions
 
 	/// <summary>Generate image: plain color</summary>
@@ -796,7 +780,6 @@ public static unsafe partial class Raylib
 	/// <summary>Generate image: grayscale image from text data</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Image GenImageText(int width, int height, sbyte* text);
-
 
 	// Image manipulation functions
 
@@ -943,7 +926,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Color GetImageColor(Image image, int x, int y);
 
-
 	// Image drawing functions
 	// NOTE: Image software-rendering functions (CPU)
 
@@ -1033,7 +1015,6 @@ public static unsafe partial class Raylib
 		Color tint
 	);
 
-
 	// Texture loading functions
 	// NOTE: These functions require GPU access
 
@@ -1044,7 +1025,9 @@ public static unsafe partial class Raylib
 	/// <summary>Load texture from image data</summary>
 	[DllImport(NativeLibName, EntryPoint = "LoadTextureFromImage", CallingConvention = CallingConvention.Cdecl)]
 	private static extern Texture2D __LoadTextureFromImage(Image image);
+
 	private static Dictionary<uint, Texture2D> loadedTextures = new();
+
 	public static Texture2D LoadTextureFromImage(Image image) {
 		// This is a really disgusting hack...
 		// TODO FIXME BC7 DECODE
@@ -1095,6 +1078,7 @@ public static unsafe partial class Raylib
 				case Nucleus.Common.Graphics.ImageFormat.BPTC_UNORM_RGBA:
 					glInternalFormat = GLEnum.COMPRESSED_RGBA_BPTC_UNORM;
 					break;
+
 				default:
 					Rlgl.GetGlTextureFormats(format, &glInternalFormat, &glFormat, &glType);
 					break;
@@ -1131,7 +1115,6 @@ public static unsafe partial class Raylib
 		return id;
 	}
 
-
 	/// <summary>Load cubemap from image, multiple image cubemap layouts supported</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Texture2D LoadTextureCubemap(Image image, CubemapLayout layout);
@@ -1153,6 +1136,7 @@ public static unsafe partial class Raylib
 	/// <summary>Unload texture from GPU memory (VRAM)</summary>
 	[DllImport(NativeLibName, EntryPoint = "UnloadTexture", CallingConvention = CallingConvention.Cdecl)]
 	public static extern void __UnloadTexture(Texture2D texture);
+
 	public static void UnloadTexture(Texture2D texture) {
 		__UnloadTexture(texture);
 		loadedTextures.Remove(texture.Id);
@@ -1163,6 +1147,7 @@ public static unsafe partial class Raylib
 			yield return kvp.Key;
 		}
 	}
+
 	public static IEnumerable<Texture2D> GetLoadedTextures() {
 		foreach (var kvp in loadedTextures) {
 			yield return kvp.Value;
@@ -1185,7 +1170,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void UpdateTextureRec(Texture2D texture, Rectangle rec, void* pixels);
 
-
 	// Texture configuration functions
 
 	/// <summary>Generate GPU mipmaps for a texture</summary>
@@ -1199,7 +1183,6 @@ public static unsafe partial class Raylib
 	/// <summary>Set texture wrapping mode</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void SetTextureWrap(Texture2D texture, TextureWrap wrap);
-
 
 	// Texture drawing functions
 
@@ -1246,7 +1229,6 @@ public static unsafe partial class Raylib
 		float rotation,
 		Color tint
 	);
-
 
 	// Color/pixel related functions
 
@@ -1297,6 +1279,7 @@ public static unsafe partial class Raylib
 	/// <summary>Get Color from a source pixel pointer of certain format</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Color GetPixelColor(void* srcPtr, ImageFormat format);
+
 	public static Color GetPixelColor(nint srcPtr, ImageFormat format) => GetPixelColor((void*)srcPtr, format);
 
 	/// <summary>Set color formatted into destination pixel pointer</summary>
@@ -1306,7 +1289,6 @@ public static unsafe partial class Raylib
 	/// <summary>Get pixel data size in bytes for certain format</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern int GetPixelDataSize(int width, int height, ImageFormat format);
-
 
 	//------------------------------------------------------------------------------------
 	// Font Loading and Text Drawing Functions (Module: text)
@@ -1381,7 +1363,6 @@ public static unsafe partial class Raylib
 	/// <summary>Export font as code file, returns true on success</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern CBool ExportFontAsCode(Font font, sbyte* fileName);
-
 
 	// Text drawing functions
 
@@ -1471,7 +1452,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Rectangle GetGlyphAtlasRec(Font font, int codepoint);
 
-
 	// Text codepoints management functions (unicode characters)
 
 	/// <summary>Load UTF-8 text encoded from codepoints array</summary>
@@ -1509,7 +1489,6 @@ public static unsafe partial class Raylib
 	/// <summary>Encode one codepoint into UTF-8 byte array (array length returned as parameter)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern sbyte* CodepointToUTF8(int codepoint, int* utf8Size);
-
 
 	// Text strings management functions (no UTF-8 strings, only byte chars)
 	// NOTE: Some strings allocate memory internally for returned strings, just be careful!
@@ -1573,7 +1552,6 @@ public static unsafe partial class Raylib
 	/// <summary>Get integer value from text (negative values not supported)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern int TextToInteger(sbyte* text);
-
 
 	//------------------------------------------------------------------------------------
 	// Basic 3d Shapes Drawing Functions (Module: models)
@@ -1713,7 +1691,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void DrawGrid(int slices, float spacing);
 
-
 	//------------------------------------------------------------------------------------
 	// Model 3d Loading and Drawing Functions (Module: models)
 	//------------------------------------------------------------------------------------
@@ -1739,7 +1716,6 @@ public static unsafe partial class Raylib
 	/// <summary>Compute model bounding box limits (considers all meshes)</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern BoundingBox GetModelBoundingBox(Model model);
-
 
 	// Model drawing functions
 
@@ -1812,7 +1788,6 @@ public static unsafe partial class Raylib
 		Color tint
 	);
 
-
 	// Mesh management functions
 
 	/// <summary>Upload vertex data into GPU and provided VAO/VBO ids</summary>
@@ -1846,7 +1821,6 @@ public static unsafe partial class Raylib
 	/// <summary>Compute mesh tangents</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void GenMeshTangents(Mesh* mesh);
-
 
 	// Mesh generation functions
 
@@ -1894,7 +1868,6 @@ public static unsafe partial class Raylib
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern Mesh GenMeshCubicmap(Image cubicmap, Vector3 cubeSize);
 
-
 	// Material loading/unloading functions
 
 	//TODO: safe Helper method
@@ -1921,7 +1894,6 @@ public static unsafe partial class Raylib
 	/// <summary>Set material for a mesh</summary>
 	[DllImport(NativeLibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void SetModelMeshMaterial(Model* model, int meshId, int materialId);
-
 
 	// Model animations loading/unloading functions
 

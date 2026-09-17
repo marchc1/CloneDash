@@ -4,6 +4,5 @@ public interface IGraphicsHardwareConfig
 {
 	bool SupportsBPTC { get; }
 
-
 	void ConfirmCapabilities();
 }

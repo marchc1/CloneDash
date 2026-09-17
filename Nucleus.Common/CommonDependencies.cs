@@ -5,8 +5,9 @@ using Nucleus.Common.Graphics;
 
 namespace Nucleus.Common;
 
-[EngineComponent] 
-public static class CommonDependencies{
+[EngineComponent]
+public static class CommonDependencies
+{
 #pragma warning disable CA2211 // Non-constant fields should not be visible
 	[Dependency] public static IAudioSystem audiosystem = null!;
 	[Dependency] public static ICvar cvar = null!;

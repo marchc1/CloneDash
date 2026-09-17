@@ -1,19 +1,17 @@
 ﻿using Nucleus.Common.Graphics;
 using Nucleus.Common.Models;
-using System;
 
 namespace Nucleus.Models;
-
 
 public class RuntimeModelAtlasRegion : IModelAtlasRegion
 {
 	internal RuntimeModelAtlasPage Page = null!;
-	AtlasNameIndex NameIndex = new("");
-	float Rotate;
-	int X, Y, W, H;
-	int OX, OY, OW, OH;
+	private AtlasNameIndex NameIndex = new("");
+	private float Rotate;
+	private int X, Y, W, H;
+	private int OX, OY, OW, OH;
 
-	public RuntimeModelAtlasRegion(ReadOnlySpan<char> name, int index = -1){
+	public RuntimeModelAtlasRegion(ReadOnlySpan<char> name, int index = -1) {
 		SetNameIndex(new(new(name.SliceNullTerminatedString()), index));
 	}
 
@@ -23,18 +21,26 @@ public class RuntimeModelAtlasRegion : IModelAtlasRegion
 		w = W;
 		h = H;
 	}
+
 	public int GetIndex() => NameIndex.Index;
+
 	public ReadOnlySpan<char> GetName() => NameIndex.Name;
+
 	public AtlasNameIndex GetNameIndex() => NameIndex;
+
 	public void GetOffsets(out int x, out int y, out int w, out int h) {
 		x = OX;
 		y = OY;
 		w = OW;
 		h = OH;
 	}
+
 	public IModelAtlasPage GetPage() => Page;
+
 	public float GetRotation() => Rotate;
+
 	public ITexture GetTexture() => Page.GetTexture();
+
 	public bool SetBounds(int x, int y, int w, int h) {
 		X = x;
 		Y = y;
@@ -42,18 +48,22 @@ public class RuntimeModelAtlasRegion : IModelAtlasRegion
 		H = h;
 		return true;
 	}
+
 	public bool SetIndex(int index) {
 		NameIndex.Index = index;
 		return true;
 	}
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		NameIndex.Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public bool SetNameIndex(AtlasNameIndex nameIndex) {
 		NameIndex = nameIndex;
 		return true;
 	}
+
 	public bool SetOffsets(int x, int y, int w, int h) {
 		OX = x;
 		OY = y;
@@ -61,6 +71,7 @@ public class RuntimeModelAtlasRegion : IModelAtlasRegion
 		OH = h;
 		return true;
 	}
+
 	public bool SetRotation(float rot) {
 		Rotate = rot;
 		return true;
@@ -69,8 +80,8 @@ public class RuntimeModelAtlasRegion : IModelAtlasRegion
 
 public class RuntimeModelAtlasPage : IModelAtlasPage
 {
-	string Name = "";
-	bool PreMultipliedAlpha;
+	private string Name = "";
+	private bool PreMultipliedAlpha;
 	internal ITexture? Texture;
 	internal readonly List<RuntimeModelAtlasRegion> Regions = [];
 
@@ -83,6 +94,7 @@ public class RuntimeModelAtlasPage : IModelAtlasPage
 	public int GetRegionCount() {
 		return Regions.Count;
 	}
+
 	public IModelAtlasRegion? GetRegion(int index) {
 		if (index < 0)
 			return null;
@@ -90,6 +102,7 @@ public class RuntimeModelAtlasPage : IModelAtlasPage
 			return null;
 		return Regions[index];
 	}
+
 	public IModelAtlasRegion? GetRegionByName(ReadOnlySpan<char> name, int index = -1) {
 		for (int i = 0, c = Regions.Count; i < c; i++) {
 			var region = Regions[i];
@@ -98,43 +111,54 @@ public class RuntimeModelAtlasPage : IModelAtlasPage
 		}
 		return null;
 	}
+
 	public ITexture GetTexture() {
 		return Texture!;
 	}
+
 	public ReadOnlySpan<char> GetName() {
 		return Name;
 	}
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public void GetSize(out int w, out int h) {
 		w = Texture?.Width ?? 0;
 		h = Texture?.Height ?? 0;
 	}
+
 	public ImageFormat GetFormat() {
 		return Texture?.Format ?? ImageFormat.None;
 	}
+
 	public void GetFilter(out TextureFilter min, out TextureFilter max) {
 		min = TextureFilter.Bilinear;
 		max = TextureFilter.Bilinear;
 		// todo. Need ITexture exposing this
 	}
+
 	public bool SetFilter(TextureFilter min, TextureFilter max) {
 		// todo. Need ITexture exposing this
 		return false;
 	}
+
 	public TextureWrap GetWrap() {
 		// todo. Need ITexture exposing this
 		return default;
 	}
+
 	public bool SetWrap(TextureWrap wrapmode) {
 		// todo. Need ITexture exposing this
 		return false;
 	}
+
 	public bool GetPreMultipliedAlpha() {
 		return PreMultipliedAlpha;
 	}
+
 	public bool SetPreMultipliedAlpha(bool pma) {
 		PreMultipliedAlpha = pma;
 		return true;
@@ -143,7 +167,7 @@ public class RuntimeModelAtlasPage : IModelAtlasPage
 
 public class TextureAtlas : ITextureAtlasEdit, IRuntimeTextureAtlas
 {
-	readonly List<RuntimeModelAtlasPage> Pages = [];
+	private readonly List<RuntimeModelAtlasPage> Pages = [];
 
 	public ITextureAtlasEdit? Edit() => this;
 
@@ -176,7 +200,7 @@ public class TextureAtlas : ITextureAtlasEdit, IRuntimeTextureAtlas
 
 	public IModelAtlasPage GetOrCreatePage(ReadOnlySpan<char> name) {
 		RuntimeModelAtlasPage? page = (RuntimeModelAtlasPage?)GetPage(name);
-		if(page == null){
+		if (page == null) {
 			page = new(name);
 			Pages.Add(page);
 		}
@@ -192,7 +216,7 @@ public class TextureAtlas : ITextureAtlasEdit, IRuntimeTextureAtlas
 			throw new InvalidCastException("Got an unexpected implementation of IModelAtlasPage here!");
 
 		RuntimeModelAtlasRegion? region = (RuntimeModelAtlasRegion?)page.GetRegionByName(name, index);
-		if(region == null){
+		if (region == null) {
 			region = new(name, index);
 			page.AddRegion(region);
 		}

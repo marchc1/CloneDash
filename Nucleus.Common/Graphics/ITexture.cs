@@ -16,15 +16,21 @@ public enum PublicTextureFlags
 
 public interface ITexture : IManagedMemoryUnit
 {
-	uint GetTextureHandle();
-	int Width { get; }
-	int Height { get; }
 	ImageFormat Format { get; }
-	ulong UsedBits_CPU { get; }
+
+	int Height { get; }
+
+	int Width { get; }
+
+	void AddPublicFlags(PublicTextureFlags flags);
+
+	int GetMipmapCount();
 
 	PublicTextureFlags GetPublicFlags();
-	void AddPublicFlags(PublicTextureFlags flags);
+
+	uint GetTextureHandle();
+
 	bool HasPublicFlags(PublicTextureFlags flags);
+
 	void RemovePublicFlags(PublicTextureFlags flags);
-	int GetMipmapCount();
 }

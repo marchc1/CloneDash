@@ -1,45 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.Common.Commands;
 
 public struct TokenizedCommand
 {
-	const int COMMAND_MAX_ARGC = 64;
-	const int COMMAND_MAX_LENGTH = 512;
+	private const int COMMAND_MAX_ARGC = 64;
+	private const int COMMAND_MAX_LENGTH = 512;
+	private int argCount;
+	private char[]? argSBuffer;
+	private Range[] ppArgs;
+	private bool[] ppQuoted;
+	private int strlen;
 	public static int MaxCommandLength => COMMAND_MAX_LENGTH - 1;
 
-	int argCount;
-	int strlen;
-
-	char[]? argSBuffer;
-	Range[] ppArgs;
-	bool[] ppQuoted;
-
-	/// <summary>
-	/// How many arguments are in the tokenized command? Note that this also contains the command itself. So a command
-	/// executed with no arguments will return 1 here, for example.
-	/// </summary>
-	/// <returns></returns>
-	public readonly int ArgC() => argCount;
-	/// <summary>
-	/// The argument buffer past the provided argument.
-	/// </summary>
-	/// <returns>All text, as a <see cref="ReadOnlySpan{char}"/> slice of the internal command buffer, after the provided arguments starting position (0 returning all text, 1 returning all after the initial command, etc..)</returns>
-	public readonly ReadOnlySpan<char> ArgS(int startingArg = 1, ReadOnlySpan<char> def = default) {
-		// Null/overflow checking
-		if (argSBuffer == null)
-			return def;
-		if (argCount <= startingArg)
-			return def;
-
-		// Start at the first argument requested, and end at the last argument in ppArgs
-		Index startIdx = ppArgs[startingArg].Start;
-		Index endIdx = ppArgs[argCount - 1].End;
-
-		return argSBuffer.AsSpan()[startIdx..endIdx];
+	public readonly ReadOnlySpan<char> this[int index] {
+		get => Arg(index);
 	}
 
 	/// <summary>
@@ -95,17 +70,70 @@ public struct TokenizedCommand
 		return argSBuffer.AsSpan()[start..end];
 	}
 
+	/// <summary>
+	/// How many arguments are in the tokenized command? Note that this also contains the command itself. So a command
+	/// executed with no arguments will return 1 here, for example.
+	/// </summary>
+	/// <returns></returns>
+	public readonly int ArgC() => argCount;
+
+	/// <summary>
+	/// The argument buffer past the provided argument.
+	/// </summary>
+	/// <returns>All text, as a <see cref="ReadOnlySpan{char}"/> slice of the internal command buffer, after the provided arguments starting position (0 returning all text, 1 returning all after the initial command, etc..)</returns>
+	public readonly ReadOnlySpan<char> ArgS(int startingArg = 1, ReadOnlySpan<char> def = default) {
+		// Null/overflow checking
+		if (argSBuffer == null)
+			return def;
+		if (argCount <= startingArg)
+			return def;
+
+		// Start at the first argument requested, and end at the last argument in ppArgs
+		Index startIdx = ppArgs[startingArg].Start;
+		Index endIdx = ppArgs[argCount - 1].End;
+
+		return argSBuffer.AsSpan()[startIdx..endIdx];
+	}
+
+	public readonly void CopyTo(Span<char> target) {
+		ArgS(0).CopyTo(target);
+	}
+
+	public readonly ReadOnlySpan<char> FindArg(ReadOnlySpan<char> name) {
+		for (int i = 1; i < argCount; i++) {
+			if (Arg(i).Equals(name, StringComparison.OrdinalIgnoreCase))
+				return (i + 1) < argCount ? Arg(i + 1) : "";
+		}
+		return null;
+	}
+
+	public readonly int GetArgStartPosition(int index) {
+		if (argSBuffer == null || index < 0 || index >= argCount)
+			return strlen;
+		int pos = ppArgs[index].Start.Value;
+		if (ppQuoted[index] && pos > 0)
+			pos--;
+		return pos;
+	}
+
+	public readonly ReadOnlySpan<char> GetCommandString() => argSBuffer;
+
+	public readonly Span<char> GetCommandStringForWrite() => argSBuffer;
+
+	public readonly bool HasUnclosedQuote() {
+		if (argSBuffer == null || strlen == 0)
+			return false;
+		int quoteCount = 0;
+		for (int i = 0; i < strlen; i++)
+			if (argSBuffer[i] == '"')
+				quoteCount++;
+		return (quoteCount % 2) != 0;
+	}
+
 	public readonly bool IsArgQuoted(int index) {
 		if (ppQuoted == null || index < 0 || index >= argCount)
 			return false;
 		return ppQuoted[index];
-	}
-
-	public readonly Span<char> GetCommandStringForWrite() => argSBuffer;
-	public readonly ReadOnlySpan<char> GetCommandString() => argSBuffer;
-
-	public readonly void CopyTo(Span<char> target) {
-		ArgS(0).CopyTo(target);
 	}
 
 	[MemberNotNull(nameof(argSBuffer))]
@@ -123,10 +151,6 @@ public struct TokenizedCommand
 			ppArgs[i] = new Range(0, 0);
 		for (int i = 0; i < ppQuoted.Length; i++)
 			ppQuoted[i] = false;
-	}
-
-	public readonly ReadOnlySpan<char> this[int index] {
-		get => Arg(index);
 	}
 
 	public bool Tokenize(ReadOnlySpan<char> command) {
@@ -168,32 +192,5 @@ public struct TokenizedCommand
 
 		argCount = argIdx;
 		return true;
-	}
-
-	public readonly bool HasUnclosedQuote() {
-		if (argSBuffer == null || strlen == 0)
-			return false;
-		int quoteCount = 0;
-		for (int i = 0; i < strlen; i++)
-			if (argSBuffer[i] == '"')
-				quoteCount++;
-		return (quoteCount % 2) != 0;
-	}
-
-	public readonly int GetArgStartPosition(int index) {
-		if (argSBuffer == null || index < 0 || index >= argCount)
-			return strlen;
-		int pos = ppArgs[index].Start.Value;
-		if (ppQuoted[index] && pos > 0)
-			pos--;
-		return pos;
-	}
-
-	public readonly ReadOnlySpan<char> FindArg(ReadOnlySpan<char> name) {
-		for (int i = 1; i < argCount; i++) {
-			if (Arg(i).Equals(name, StringComparison.OrdinalIgnoreCase))
-				return (i + 1) < argCount ? Arg(i + 1) : "";
-		}
-		return null;
 	}
 }

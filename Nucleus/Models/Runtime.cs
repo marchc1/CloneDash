@@ -10,9 +10,6 @@ using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
-using Nucleus.Files;
-using Nucleus.ManagedMemory;
-using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.Util;
 
@@ -22,12 +19,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Net.Mail;
-using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace Nucleus.Models.Runtime;
 
@@ -38,6 +31,7 @@ public enum M4S_StencilMode : byte
 	RenderMask = 2,
 	Count
 }
+
 /// <summary>
 /// Runtime for the 4th (and hopefully, last) major iteration of Nucleus's 2D model system.
 /// </summary>
@@ -65,6 +59,7 @@ public static class Model4System
 
 		return null;
 	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SearchReturnIndex<T>(List<T> list, ReadOnlySpan<char> name) where T : class, IModel4Nameable {
 		Span<T> items = list.AsSpan();
@@ -76,22 +71,28 @@ public static class Model4System
 	}
 
 	internal static Color RenderBlend = new(255, 255, 255, 255);
+
 	public static ref readonly Color GetRenderBlend() => ref RenderBlend;
-	static readonly Stack<Color> RenderBlendQueue = new();
+
+	private static readonly Stack<Color> RenderBlendQueue = new();
+
 	public static void PushRenderBlend(in Color c) {
 		RenderBlendQueue.Push(RenderBlend);
 		RenderBlend = RenderBlend * c;
 	}
+
 	public static void PopRenderBlend() {
 		RenderBlend = RenderBlendQueue.Count > 0
 			? RenderBlendQueue.Pop()
 			: Color.White;
 	}
 
-	static uint activeTexture;
+	private static uint activeTexture;
+
 	internal static void NotifyNewModelRender() {
 		activeTexture = 0;
 	}
+
 	internal static void CheckTextureUpdate(ITexture tex) {
 		var textureIdx = tex.GetTextureHandle();
 		if (textureIdx != activeTexture) {
@@ -109,13 +110,13 @@ public static class Model4System
 		Rlgl.Begin(DrawMode.LINES);
 		Rlgl.SetTexture(0);
 	}
+
 	internal static void EndWireframeRendering() {
 		Rlgl.End();
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetTexture(activeTexture);
 	}
 }
-
 
 public interface IModel4Nameable
 {
@@ -126,12 +127,11 @@ public interface IContainsSetupPose
 {
 	public void SetToSetupPose();
 }
+
 public interface IModelInstanceObject
 {
 	public ModelInstance GetModel();
 }
-
-
 
 public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IModel4Nameable
 {
@@ -141,11 +141,11 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	/// Model format (matches the model format that the editor compiled)
 	/// </summary>
 	public string FormatVersion { get; set; }
+
 	/// <summary>
 	/// Model name
 	/// </summary>
 	public string? Name { get; set; } = null;
-
 
 	public List<BoneData> BoneDatas { get; set; } = [];
 	public List<SlotData> SlotDatas { get; set; } = [];
@@ -209,17 +209,20 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	// 		if (value != null)
 	// 			lookups[symbol] = value;
 	// 	}
-	// 
+	//
 	// 	return value;
 	// }
 
-
 	public Animation? FindAnimation(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Animations, name);
+
 	public BoneData? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(BoneDatas, name);
+
 	public Skin? FindSkin(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Skins, name);
+
 	public SlotData? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(SlotDatas, name);
 
 	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(BoneDatas, name);
+
 	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(SlotDatas, name);
 
 	protected virtual void Dispose(bool usercall) {
@@ -282,6 +285,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public IRuntimeTextureAtlas TextureAtlas => Data.TextureAtlas;
 
 	private Transformation worldTransform;
+
 	public Transformation WorldTransform {
 		get => worldTransform;
 	}
@@ -343,10 +347,12 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	}
 
 	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Bones, name);
-	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
-	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Bones, name);
-	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Slots, name);
 
+	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
+
+	public int FindBoneIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Bones, name);
+
+	public int FindSlotIndex(ReadOnlySpan<char> name) => Model4System.SearchReturnIndex(Slots, name);
 
 	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
 		Attachment? attachment;
@@ -358,6 +364,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 		return null;
 	}
+
 	public Attachment? GetAttachment(ReadOnlySpan<char> slotName, ReadOnlySpan<char> attachmentName) => GetAttachment(Data.FindSlotIndex(slotName), attachmentName);
 
 	public void SetBonesToSetupPose() {
@@ -385,12 +392,12 @@ public enum MixBlendMode
 	Replace,
 	Add
 }
+
 public enum MixDirection
 {
 	In,
 	Out
 }
-
 
 public class BoneData : IModel4Nameable
 {
@@ -405,9 +412,11 @@ public class BoneData : IModel4Nameable
 	public Vector2F Scale { get; set; }
 	public Vector2F Shear { get; set; }
 }
+
 public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nameable
 {
 	public ModelInstance GetModel() => Model;
+
 	public ModelInstance Model;
 
 	public string Name => Data.Name;
@@ -435,31 +444,41 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nam
 	}
 
 	public Vector2F WorldToLocal(float x, float y) => WorldTransform.WorldToLocal(x, y);
+
 	public Vector2F WorldToLocal(in Vector2F xy) => WorldTransform.WorldToLocal(in xy);
+
 	public float WorldToLocalRotation(float rot) => WorldTransform.WorldToLocalRotation(rot);
 
 	public Vector2F LocalToWorld(float x, float y) => WorldTransform.LocalToWorld(x, y);
+
 	public Vector2F LocalToWorld(in Vector2F xy) => WorldTransform.LocalToWorld(in xy);
+
 	public float LocalToWorldRotation(float rot) => WorldTransform.LocalToWorldRotation(rot);
 
 	public void UpdateWorldTransform() => UpdateWorldTransform(in Position, Rotation, in Scale, in Shear);
+
 	public void UpdateWorldTransform(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear)
 		=> WorldTransform = Transformation.CalculateWorldTransformation(in pos, rot, in scale, in shear, TransformMode, Parent?.WorldTransform ?? null);
 }
+
 public class SlotData : IModel4Nameable
 {
 	public int Index { get; set; }
 	public string Name { get; set; } = "";
 	public BoneData BoneData;
 	public Color Color;
+
 	// not yet implemented
 	public Color? DarkColor;
+
 	public string? Attachment;
 	public BlendMode BlendMode;
 }
+
 public class SlotInstance : IContainsSetupPose, IModel4Nameable
 {
 	public ModelInstance GetModel() => Model;
+
 	public ModelInstance Model { get; set; }
 
 	public string Name => Data.Name;
@@ -571,6 +590,7 @@ public class Skin : IModel4Nameable
 		Attachments[new(name, slot)] = attachment;
 	}
 }
+
 public class Animation : IModel4Nameable
 {
 	public double Duration { get; set; }
@@ -591,10 +611,12 @@ public class Animation : IModel4Nameable
 public abstract class Attachment : IModel4Nameable
 {
 	public string Name { get; set; }
-	public virtual void Render(SlotInstance slot) {
 
+	public virtual void Render(SlotInstance slot) {
 	}
-	public virtual void Setup(ModelData data) { }
+
+	public virtual void Setup(ModelData data) {
+	}
 
 	public virtual byte Alpha => 255;
 }
@@ -712,6 +734,7 @@ public record AttachmentWeight(int Bone, float Weight, Vector2F Position)
 	public bool IsEmpty => Weight == 0;
 	public override string ToString() => $"Weight [{Bone} @ {Position}] * {Weight}";
 }
+
 public class AttachmentVertex
 {
 	public float X;
@@ -722,6 +745,7 @@ public class AttachmentVertex
 
 	public override string ToString() => $"Vertex [coords: {X}, {Y}] [texcoords: {U}, {V}] [weights: {Weights?.Length ?? 0}]";
 }
+
 public class AttachmentTriangle
 {
 	public int V1;
@@ -823,6 +847,7 @@ public class MeshAttachment : VertexAttachment
 	}
 
 	public AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
+
 	public AttachmentTriangle[] GetTriangles() => ParentMesh?.Triangles ?? Triangles;
 
 	public override void Render(SlotInstance slot) {
@@ -836,7 +861,6 @@ public class MeshAttachment : VertexAttachment
 		Debug.Assert(triangles != null);
 		if (triangles == null)
 			return;
-
 
 		var region = Region;
 		if (region == null) {
@@ -912,6 +936,7 @@ public class ClippingAttachment : VertexAttachment, IClipPolygon<SlotInstance>
 	public string? EndSlot = null;
 
 	public int GetVerticesCount() => Vertices.Length;
+
 	public override void Render(SlotInstance slot) {
 		base.Render(slot);
 		slot.Model.Clipping.Start(this, slot, EndSlot);
@@ -936,12 +961,15 @@ public static class AtlasUV
 			case 90:
 				uvTL = d; uvTR = a; uvBR = b; uvBL = c;
 				break;
+
 			case 180:
 				uvTL = c; uvTR = d; uvBR = a; uvBL = b;
 				break;
+
 			case 270:
 				uvTL = b; uvTR = c; uvBR = d; uvBL = a;
 				break;
+
 			default:
 				uvTL = a; uvTR = b; uvBR = c; uvBL = d;
 				break;
@@ -951,7 +979,6 @@ public static class AtlasUV
 	public static void RemapMeshUV(int rx, int ry, int rw, int rh, float rotation,
 		int offsetX, int offsetY, int origW, int origH,
 		int texW, int texH, float u, float v, out float outU, out float outV) {
-
 		v = 1 - v;
 
 		int deg = (int)rotation;
@@ -971,14 +998,17 @@ public static class AtlasUV
 				outU = x0 + cv * fw;
 				outV = y0 + (1 - cu) * fh;
 				break;
+
 			case 180:
 				outU = x0 + (1 - cu) * fw;
 				outV = y0 + (1 - cv) * fh;
 				break;
+
 			case 270:
 				outU = x0 + (1 - cv) * fw;
 				outV = y0 + cu * fh;
 				break;
+
 			default:
 				outU = x0 + cu * fw;
 				outV = y0 + cv * fh;
@@ -987,27 +1017,30 @@ public static class AtlasUV
 	}
 }
 
-
 // Get ready for interface hell here; but most of it is for good reason...
 
 public abstract class Timeline
 {
 	public abstract void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir = MixDirection.Out);
 }
+
 public interface IBoneTimeline
 {
 	public int BoneIndex { get; set; }
 }
+
 public interface ISlotTimeline
 {
 	public int SlotIndex { get; set; }
 }
+
 public static class TimelineInterfaceExtensions
 {
-
 	public static BoneInstance Bone(this IBoneTimeline tl, ModelInstance model) => model.Bones[tl.BoneIndex];
+
 	public static SlotInstance Slot(this ISlotTimeline tl, ModelInstance model) => model.Slots[tl.SlotIndex];
 }
+
 /// <summary>
 /// We assume each curve in <see cref="Curves"/> contains the same amount of keyframes.
 /// <br/>
@@ -1020,6 +1053,7 @@ public abstract class CurveTimeline<T> : Timeline
 {
 	public FCurve<T>[] Curves;
 	private T?[] outputBuffer;
+
 	public CurveTimeline(int curves) {
 		Curves = new FCurve<T>[curves];
 		outputBuffer = new T[curves];
@@ -1053,6 +1087,7 @@ public abstract class CurveTimeline<T> : Timeline
 		value = first.Value;
 		return time < first.Time;
 	}
+
 	public bool AfterLastFrame(double time, out T? value) {
 		var last = Curves[0].Last;
 		value = default;
@@ -1063,6 +1098,7 @@ public abstract class CurveTimeline<T> : Timeline
 	}
 
 	public bool BeforeFirstFrame(double time) => BeforeFirstFrame(time, out var _);
+
 	public bool AfterLastFrame(double time) => AfterLastFrame(time, out var _);
 
 	public FCurve<T> Curve(int index) => Curves[index];
@@ -1073,9 +1109,12 @@ public abstract class MonoBoneFloatPropertyTimeline() : CurveTimeline<float>(1),
 	public int BoneIndex { get; set; }
 
 	public abstract float Get(BoneInstance bone);
+
 	public abstract float GetSetup(BoneInstance bone);
+
 	public abstract void Set(BoneInstance bone, float value);
 }
+
 public abstract class MonoBoneTranslationPropertyTimeline() : MonoBoneFloatPropertyTimeline
 {
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
@@ -1087,9 +1126,11 @@ public abstract class MonoBoneTranslationPropertyTimeline() : MonoBoneFloatPrope
 				case MixBlendMode.Setup:
 					Set(bone, GetSetup(bone));
 					return;
+
 				case MixBlendMode.First:
 					Set(bone, Get(bone) + (GetSetup(bone) - Get(bone)) * (float)mix);
 					return;
+
 				default: return;
 			}
 
@@ -1100,16 +1141,19 @@ public abstract class MonoBoneTranslationPropertyTimeline() : MonoBoneFloatPrope
 			case MixBlendMode.Setup:
 				Set(bone, GetSetup(bone) + r * (float)mix);
 				break;
+
 			case MixBlendMode.First:
 			case MixBlendMode.Replace:
 				Set(bone, Get(bone) + (GetSetup(bone) + r - Get(bone)) * (float)mix);
 				break;
+
 			case MixBlendMode.Add:
 				Set(bone, Get(bone) + (r * (float)mix));
 				break;
 		}
 	}
 }
+
 public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPropertyTimeline
 {
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
@@ -1121,9 +1165,11 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 				case MixBlendMode.Setup:
 					Set(bone, GetSetup(bone));
 					return;
+
 				case MixBlendMode.First:
 					Set(bone, Get(bone) + ((GetSetup(bone) - Get(bone)) * (float)mix));
 					return;
+
 				default: return;
 			}
 
@@ -1136,7 +1182,6 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 			else
 				Set(bone, r);
 		}
-
 		else {
 			float v;
 			switch (blend) {
@@ -1144,11 +1189,13 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 					v = MathF.Abs(GetSetup(bone)) * MathF.Sign(r);
 					Set(bone, v + (r - v) * (float)mix);
 					break;
+
 				case MixBlendMode.First:
 				case MixBlendMode.Replace:
 					v = MathF.Abs(Get(bone)) * MathF.Sign(r);
 					Set(bone, v + (r - v) * (float)mix);
 					break;
+
 				case MixBlendMode.Add:
 					v = MathF.Sign(r);
 					Set(bone, MathF.Abs(Get(bone)) * v + (r - MathF.Abs(GetSetup(bone)) * v) * (float)mix);
@@ -1157,6 +1204,7 @@ public abstract class MonoBoneMultiplicativePropertyTimeline() : MonoBoneFloatPr
 		}
 	}
 }
+
 public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatPropertyTimeline
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1176,10 +1224,12 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				case MixBlendMode.Setup:
 					Set(bone, GetSetup(bone));
 					return;
+
 				case MixBlendMode.First:
 					r = GetSetup(bone) - Get(bone);
 					Set(bone, Get(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 					return;
+
 				default: return;
 			}
 
@@ -1188,6 +1238,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				case MixBlendMode.Setup:
 					Set(bone, GetSetup(bone) + r * (float)mix);
 					return;
+
 				case MixBlendMode.First:
 				case MixBlendMode.Replace:
 					r += GetSetup(bone) - Get(bone);
@@ -1196,6 +1247,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				case MixBlendMode.Add:
 					Set(bone, Get(bone) + (r * (float)mix));
 					return;
+
 				default: return;
 			}
 
@@ -1213,6 +1265,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 			case MixBlendMode.Setup:
 				Set(bone, GetSetup(bone) + (PERFORM_ROT_WRAP(r)) * (float)mix);
 				break;
+
 			case MixBlendMode.First:
 			case MixBlendMode.Replace:
 				r += GetSetup(bone) - Get(bone);
@@ -1232,7 +1285,9 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 	public int BoneIndex { get; set; }
 
 	public abstract Vector2F Get(BoneInstance bone);
+
 	public abstract Vector2F GetSetup(BoneInstance bone);
+
 	public abstract void Set(BoneInstance bone, Vector2F value);
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
@@ -1245,9 +1300,11 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 					case MixBlendMode.Setup:
 						Set(bone, GetSetup(bone));
 						return;
+
 					case MixBlendMode.First:
 						Set(bone, Get(bone) + ((GetSetup(bone) - Get(bone)) * (float)mix));
 						return;
+
 					default: return;
 				}
 
@@ -1260,7 +1317,6 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				x = Curve(0).DetermineValueAtTime(time, index) * GetSetup(bone).X;
 				y = Curve(1).DetermineValueAtTime(time, index) * GetSetup(bone).Y;
 			}
-
 
 			if (mix == 1) {
 				if (blend == MixBlendMode.Add)
@@ -1275,11 +1331,13 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 						v = Vector2F.Abs(GetSetup(bone)) * Vector2F.Sign(new(x, y));
 						Set(bone, v + (new Vector2F(x, y) - v) * (float)mix);
 						break;
+
 					case MixBlendMode.First:
 					case MixBlendMode.Replace:
 						v = Vector2F.Abs(Get(bone)) * Vector2F.Sign(new(x, y));
 						Set(bone, v + (new Vector2F(x, y) - v) * (float)mix);
 						break;
+
 					case MixBlendMode.Add:
 						v = Vector2F.Sign(new Vector2F(x, y));
 						Set(bone, Vector2F.Abs(Get(bone)) * v + (new Vector2F(x, y) - Vector2F.Abs(GetSetup(bone)) * v) * (float)mix);
@@ -1294,9 +1352,11 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 					case MixBlendMode.Setup:
 						Set(bone, GetSetup(bone));
 						return;
+
 					case MixBlendMode.First:
 						Set(bone, Get(bone) + (GetSetup(bone) - Get(bone)) * (float)mix);
 						return;
+
 					default: return;
 				}
 
@@ -1315,10 +1375,12 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				case MixBlendMode.Setup:
 					Set(bone, GetSetup(bone) + new Vector2F(x, y) * (float)mix);
 					break;
+
 				case MixBlendMode.First:
 				case MixBlendMode.Replace:
 					Set(bone, Get(bone) + (GetSetup(bone) + new Vector2F(x, y) - Get(bone)) * (float)mix);
 					break;
+
 				case MixBlendMode.Add:
 					Set(bone, Get(bone) + (new Vector2F(x, y) * (float)mix));
 					break;
@@ -1332,7 +1394,9 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 	public int SlotIndex { get; set; }
 
 	public Color Get(SlotInstance slot) => slot.Color;
+
 	public Color GetSetup(SlotInstance slot) => slot.Data.Color;
+
 	public void Set(SlotInstance slot, Color value) => slot.Color = value;
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
@@ -1385,7 +1449,9 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 	public int SlotIndex { get; set; }
 
 	public string? Get(SlotInstance slot) => slot.Attachment?.Name;
+
 	public string? GetSetup(SlotInstance slot) => slot.Data.Attachment;
+
 	public void Set(SlotInstance slot, string? value) => slot.SetAttachment(value);
 
 	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
@@ -1396,6 +1462,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 				case MixBlendMode.Setup:
 					Set(slot, GetSetup(slot));
 					return;
+
 				default: return;
 			}
 
@@ -1410,6 +1477,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 				case MixBlendMode.First:
 					Set(slot, attachmentID);
 					return;
+
 				default: return;
 			}
 		}
@@ -1423,88 +1491,123 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 public class TranslateTimeline() : DuoBoneFloatPropertyTimeline(false)
 {
 	public override Vector2F Get(BoneInstance bone) => bone.Position;
+
 	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Position;
+
 	public override void Set(BoneInstance bone, Vector2F value) => bone.Position = value;
 }
+
 public class ScaleTimeline() : DuoBoneFloatPropertyTimeline(true)
 {
 	public override Vector2F Get(BoneInstance bone) => bone.Scale;
+
 	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Scale;
+
 	public override void Set(BoneInstance bone, Vector2F value) => bone.Scale = value;
 }
 
 public class ShearTimeline() : DuoBoneFloatPropertyTimeline(false)
 {
 	public override Vector2F Get(BoneInstance bone) => bone.Shear;
+
 	public override Vector2F GetSetup(BoneInstance bone) => bone.Data.Shear;
+
 	public override void Set(BoneInstance bone, Vector2F value) => bone.Shear = value;
 }
-
 
 public class RotationTimeline() : MonoBoneRotationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Rotation;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Rotation;
+
 	public override void Set(BoneInstance bone, float value) => bone.Rotation = value;
 }
+
 public class TranslateXTimeline() : MonoBoneTranslationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Position.X;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.X;
+
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(value, bone.Position.Y);
 }
+
 public class TranslateYTimeline() : MonoBoneTranslationPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Position.Y;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Position.Y;
+
 	public override void Set(BoneInstance bone, float value) => bone.Position = new(bone.Position.X, value);
 }
+
 public class ScaleXTimeline() : MonoBoneMultiplicativePropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Scale.X;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.X;
+
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(value, bone.Scale.Y);
 }
+
 public class ScaleYTimeline() : MonoBoneMultiplicativePropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Scale.Y;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Scale.Y;
+
 	public override void Set(BoneInstance bone, float value) => bone.Scale = new(bone.Scale.X, value);
 }
+
 public class ShearXTimeline() : MonoBoneShearingPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Shear.X;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.X;
+
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(value, bone.Shear.Y);
 }
+
 public class ShearYTimeline() : MonoBoneShearingPropertyTimeline()
 {
 	public override float Get(BoneInstance bone) => bone.Shear.Y;
+
 	public override float GetSetup(BoneInstance bone) => bone.Data.Shear.Y;
+
 	public override void Set(BoneInstance bone, float value) => bone.Shear = new(bone.Shear.X, value);
 }
 
 public delegate void AnimPlaybackBeginFn(AnimationChannelEntry entry);
+
 public delegate void AnimPlaybackStartFn(AnimationChannelEntry entry);
+
 public delegate void AnimPlaybackEndFn(AnimationChannelEntry entry);
+
 public delegate void AnimPlaybackCompleteFn(AnimationChannelEntry entry);
 
 public class AnimationChannelEntry
 {
-	public required Animation Animation;
+	public Animation Animation;
+
 	/// <summary> Called when the animation playback has first begun (loop exclusive) </summary>
 	public AnimPlaybackBeginFn? OnPlaybackBegin;
+
 	/// <summary> Called when the animation playback has started (loop inclusive)</summary>
 	public AnimPlaybackStartFn? OnPlaybackStart;
+
 	/// <summary> Called when the animation playback has completed (loop inclusive). Note that loopback will trigger Start again. </summary>
 	public AnimPlaybackEndFn? OnPlaybackEnd;
+
 	/// <summary> Called when the animation playback has fully completed (loop exclusive) </summary>
 	public AnimPlaybackCompleteFn? OnPlaybackComplete;
+
 	public bool Looping;
 	public double LoopDuration = -1;
 
 	public bool LimitedLoop => LoopDuration > 0;
 }
+
 public class AnimationChannel
 {
 	public AnimationChannelEntry? CurrentEntry;
@@ -1540,10 +1643,12 @@ public class AnimationChannel
 		}
 	}
 }
+
 public class AnimationHandler
 {
 	public AnimationChannel[] Channels = new AnimationChannel[5];
-	ModelData? model;
+	private ModelData? model;
+
 	public AnimationHandler() {
 		for (int i = 0; i < Channels.Length; i++) {
 			Channels[i] = new();
@@ -1551,12 +1656,14 @@ public class AnimationHandler
 	}
 
 	public ModelData? GetModelData() => model;
+
 	public void SetModel(ModelData? data) {
 		if (model == data)
 			return;
 		model = data;
 		ClearAllAnimation();
 	}
+
 	public void SetModel(ModelInstance? instance) => SetModel(instance?.Data);
 
 	public bool IsPlayingAnimation() {
@@ -1566,6 +1673,7 @@ public class AnimationHandler
 
 		return false;
 	}
+
 	public bool IsAnimationQueued() {
 		foreach (var channel in Channels) {
 			if (channel.QueuedEntries.Count > 0) return true;
@@ -1660,6 +1768,7 @@ public class AnimationHandler
 			Channels[channel].Time = 0;
 		}
 	}
+
 	public void ClearAnimation(int channel) {
 		Channels[channel].QueuedEntries.Clear();
 		Channels[channel].CurrentEntry = null;
@@ -1682,6 +1791,7 @@ public class AnimationHandler
 public interface IModelFormat
 {
 	ModelData LoadModelFromFile(string pathID, string path);
+
 	void SaveModelToFile(string absoluteFilePath, ModelData modelData);
 }
 
@@ -1713,6 +1823,7 @@ public static class NucleusModel_SaveType_Ext
 	public static NucleusModel_SaveType ReadSaveType(this BinaryReader reader) {
 		return (NucleusModel_SaveType)reader.ReadUInt16();
 	}
+
 	public static void WriteSaveType(this BinaryWriter writer, NucleusModel_SaveType savetype) {
 		writer.Write((ushort)savetype);
 	}
@@ -1741,6 +1852,7 @@ public class ModelBinary : IModelFormat
 
 		return bone;
 	}
+
 	private static SlotData readSlot(BinaryReader reader, ModelData workingModelData) {
 		SlotData slot = new();
 
@@ -1754,8 +1866,11 @@ public class ModelBinary : IModelFormat
 
 		return slot;
 	}
+
 	private static SkinEntry readSkinEntry(BinaryReader reader) => new(reader.ReadString(), reader.ReadInt32());
+
 	private static AttachmentWeight readMeshAttachmentWeight(BinaryReader reader) => new(reader.ReadInt32(), reader.ReadSingle(), reader.ReadVector2F());
+
 	private static AttachmentVertex readMeshVertex(BinaryReader reader) {
 		AttachmentVertex vertex = new() {
 			X = reader.ReadSingle(),
@@ -1769,11 +1884,13 @@ public class ModelBinary : IModelFormat
 
 		return vertex;
 	}
+
 	private static AttachmentTriangle readMeshTriangle(BinaryReader reader) => new() {
 		V1 = reader.ReadInt32(),
 		V2 = reader.ReadInt32(),
 		V3 = reader.ReadInt32()
 	};
+
 	private static Attachment readAttachment(BinaryReader reader) {
 		var name = reader.ReadString();
 		var type = reader.ReadSaveType();
@@ -1817,6 +1934,7 @@ public class ModelBinary : IModelFormat
 			default: throw new NotImplementedException($"Weird attachment type given '{type}'");
 		}
 	}
+
 	private static Skin readSkin(BinaryReader reader, ModelData modelData) {
 		Skin skin = new();
 
@@ -1830,20 +1948,24 @@ public class ModelBinary : IModelFormat
 
 		return skin;
 	}
+
 	private static Keyframe<string?> readKeyframeStringN(BinaryReader reader) {
 		return new() {
 			Time = reader.ReadDouble(),
 			Value = reader.ReadNullableString()
 		};
 	}
+
 	private static void readIntoFCurveStringN(BinaryReader reader, FCurve<string?> fcs) {
 		fcs.Keyframes = reader.ReadList(readKeyframeStringN);
 	}
+
 	private static void readIntoKeyframeFloatHandle(BinaryReader reader, ref KeyframeHandle<float> handle) {
 		handle.Time = reader.ReadDouble();
 		handle.Value = reader.ReadSingle();
 		handle.HandleType = (KeyframeHandleType)reader.ReadInt32();
 	}
+
 	private static Keyframe<float> readKeyframeFloat(BinaryReader reader) {
 		Keyframe<float> kf = new() {
 			Time = reader.ReadDouble(),
@@ -1871,14 +1993,17 @@ public class ModelBinary : IModelFormat
 		mono.BoneIndex = reader.ReadInt32();
 		readIntoFCurveFloat(reader, mono.Curves[0]);
 	}
+
 	private static void readIntoDuoBoneFloatPropertyTimeline(BinaryReader reader, DuoBoneFloatPropertyTimeline duo) {
 		duo.BoneIndex = reader.ReadInt32();
 		readIntoFCurveFloat(reader, duo.Curves[0]);
 		readIntoFCurveFloat(reader, duo.Curves[1]);
 	}
+
 	private static void readIntoFCurveFloat(BinaryReader reader, FCurve<float> fcf) {
 		fcf.Keyframes = reader.ReadList(readKeyframeFloat);
 	}
+
 	private static Timeline readTimeline(BinaryReader reader) {
 		var type = reader.ReadSaveType();
 		switch (type) {
@@ -1965,6 +2090,7 @@ public class ModelBinary : IModelFormat
 			default: throw new NotSupportedException($"Unknown timeline type '{type}'");
 		}
 	}
+
 	private static Animation readAnimation(BinaryReader reader) {
 		Animation anim = new Animation();
 
@@ -1974,7 +2100,6 @@ public class ModelBinary : IModelFormat
 
 		return anim;
 	}
-
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
 		using (Stream? stream = filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
@@ -2027,6 +2152,7 @@ public class ModelBinary : IModelFormat
 		writer.Write(bone.Scale);
 		writer.Write(bone.Shear);
 	}
+
 	private static void writeSlot(ModelData modelData, BinaryWriter writer, SlotData slot) {
 		writer.Write(slot.Index);
 		writer.Write(slot.Name);
@@ -2079,6 +2205,7 @@ public class ModelBinary : IModelFormat
 				writer.Write(regionAttachment.Color);
 				writer.Write(regionAttachment.Path);
 				break;
+
 			case MeshAttachment meshAttachment:
 				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Mesh);
 				writer.WriteArray(meshAttachment.Vertices, writeMeshVertex);
@@ -2089,6 +2216,7 @@ public class ModelBinary : IModelFormat
 				writer.Write(meshAttachment.Color);
 				writer.Write(meshAttachment.Path);
 				break;
+
 			case ClippingAttachment clippingAttachment:
 				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Clipping);
 				writer.WriteArray(clippingAttachment.Vertices, writeMeshVertex);
@@ -2113,6 +2241,7 @@ public class ModelBinary : IModelFormat
 
 		// We can skip everything else, since strings are not interpolated ever
 	}
+
 	private static void writeFCurveStringN(BinaryWriter writer, FCurve<string?> fcf) {
 		writer.WriteList(fcf.Keyframes, writeKeyframeStringN);
 	}
@@ -2122,6 +2251,7 @@ public class ModelBinary : IModelFormat
 		writer.Write(kfh.Value);
 		writer.Write((int)kfh.HandleType);
 	}
+
 	private static void writeKeyframeFloat(BinaryWriter writer, Keyframe<float> kf) {
 		writer.Write(kf.Time);
 		writer.Write(kf.Value);
@@ -2145,6 +2275,7 @@ public class ModelBinary : IModelFormat
 		writer.Write((int)kf.Easing);
 		writer.Write((int)kf.Interpolation);
 	}
+
 	private static void writeFCurveFloat(BinaryWriter writer, FCurve<float> fcf) {
 		writer.WriteList(fcf.Keyframes, writeKeyframeFloat);
 	}
@@ -2170,11 +2301,13 @@ public class ModelBinary : IModelFormat
 				writer.Write(duo.BoneIndex);
 				writeFCurveFloat(writer, duo.Curves[0]);
 				break;
+
 			case DuoBoneFloatPropertyTimeline duo:
 				writer.Write(duo.BoneIndex);
 				writeFCurveFloat(writer, duo.Curves[0]);
 				writeFCurveFloat(writer, duo.Curves[1]);
 				break;
+
 			case SlotColor4Timeline sc4:
 				writer.Write(sc4.SlotIndex);
 				writeFCurveFloat(writer, sc4.Curves[0]);
@@ -2182,14 +2315,17 @@ public class ModelBinary : IModelFormat
 				writeFCurveFloat(writer, sc4.Curves[2]);
 				writeFCurveFloat(writer, sc4.Curves[3]);
 				break;
+
 			case ActiveAttachmentTimeline duo:
 				writer.Write(duo.SlotIndex);
 				writeFCurveStringN(writer, duo.Curves[0]);
 				break;
+
 			default:
 				throw new NotImplementedException();
 		}
 	}
+
 	private static void writeAnimation(BinaryWriter writer, Animation anim) {
 		writer.Write(anim.Duration);
 		writer.Write(anim.Name);
@@ -2223,9 +2359,11 @@ public class ModelRefJSON : IModelFormat
 {
 	public const string EXTENSION = "nm4rj";
 	public const string FULL_EXTENSION = $".{EXTENSION}";
+
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
 		private static HashSet<Type> ApprovedBindables;
+
 		static ModelRefJsonSerializationBinder() {
 			ApprovedBindables = [];
 
@@ -2240,6 +2378,7 @@ public class ModelRefJSON : IModelFormat
 			foreach (var timelineType in typeof(Timeline).GetInheritorsOfAbstractType())
 				ApprovedBindables.Add(timelineType);
 		}
+
 		public Type BindToType(string? assemblyName, string typeName) {
 			var resolvedTypeName = $"{typeName}, {assemblyName}";
 
@@ -2255,6 +2394,7 @@ public class ModelRefJSON : IModelFormat
 			typeName = serializedType.AssemblyQualifiedName;
 		}
 	}
+
 	public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings() {
 		ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
 		PreserveReferencesHandling = PreserveReferencesHandling.Objects,

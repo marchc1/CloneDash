@@ -10,7 +10,8 @@
 	/// |---------- not used
 	/// </code>
 	/// </summary>
-	public enum TransformMode {
+	public enum TransformMode
+	{
 		Normal = 0b0000,
 		OnlyTranslation = 0b0111,
 		NoRotationOrReflection = 0b0001,

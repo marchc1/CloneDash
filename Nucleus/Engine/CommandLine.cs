@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using Nucleus.Commands;
-using Nucleus.Common.Commands;
-using System.Diagnostics;
+﻿using Nucleus.Common.Commands;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,7 +7,7 @@ namespace Nucleus.Engine;
 
 public class CommandLineParser : ICommandLine
 {
-	void ParseCommandLine() {
+	private void ParseCommandLine() {
 		CleanUpParms();
 		if (cmdLine == null)
 			return;
@@ -59,12 +56,11 @@ public class CommandLineParser : ICommandLine
 			AddArgument(firstLetter, chars);
 	}
 
-	void CleanUpParms() {
+	private void CleanUpParms() {
 		parms.Clear();
 	}
 
-	
-	void AddArgument(ReadOnlySpan<char> first, ReadOnlySpan<char> last) {
+	private void AddArgument(ReadOnlySpan<char> first, ReadOnlySpan<char> last) {
 		if (first.IsEmpty)
 			return;
 
@@ -84,17 +80,19 @@ public class CommandLineParser : ICommandLine
 			parms.Add(new string(first[..len]));
 	}
 
-	bool IsInvalidIndex(int index) => index == 0 || index == parms.Count - 1;
-	bool IsLikelyCmdLineParameter(int index) {
+	private bool IsInvalidIndex(int index) => index == 0 || index == parms.Count - 1;
+
+	private bool IsLikelyCmdLineParameter(int index) {
 		char c = parms[index][0];
 		return c == '-' || c == '+';
 	}
 
-	string? cmdLine;
-	List<string> parms = [];
+	private string? cmdLine;
+	private List<string> parms = [];
 
+	public CommandLineParser() {
+	}
 
-	public CommandLineParser() { }
 	public CommandLineParser(string cmdline) => CreateCmdLine(cmdline);
 
 	public unsafe void CreateCmdLine(ReadOnlySpan<char> commandLine) {
@@ -164,7 +162,6 @@ public class CommandLineParser : ICommandLine
 
 	public int ParmCount() => parms.Count;
 
-
 	[return: NotNullIfNotNull("defaultValue")]
 	public string? ParmValue(string name, string? defaultValue = null) {
 		int index = FindParm(name);
@@ -178,9 +175,10 @@ public class CommandLineParser : ICommandLine
 	}
 
 	public int ParmValue(string name, int defaultValue) => int.TryParse(ParmValue(name), out int result) ? result : defaultValue;
-	public float ParmValue(string name, float defaultValue) => float.TryParse(ParmValue(name), out float result) ? result : defaultValue;
-	public double ParmValue(string name, double defaultValue) => double.TryParse(ParmValue(name), out double result) ? result : defaultValue;
 
+	public float ParmValue(string name, float defaultValue) => float.TryParse(ParmValue(name), out float result) ? result : defaultValue;
+
+	public double ParmValue(string name, double defaultValue) => double.TryParse(ParmValue(name), out double result) ? result : defaultValue;
 
 	[return: NotNullIfNotNull("defaultValue")]
 	public string? ParmValueByIndex(int index, string? defaultValue = null) {

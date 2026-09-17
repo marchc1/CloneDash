@@ -4,6 +4,10 @@ using System.Diagnostics;
 
 namespace Nucleus.Common.Engine;
 
+public delegate void PreInject(IServiceCollection services);
+
+public delegate void PreInjectInstance<T>(IServiceProvider services);
+
 public interface IEngineAPI : IServiceProvider
 {
 	public enum Result
@@ -15,21 +19,22 @@ public interface IEngineAPI : IServiceProvider
 		RunRestart
 	}
 
-	public Result Run();
 	public ref readonly StartupInfo GetStartupInfo();
+
+	public Result Run();
+
 	public void SetStartupInfo(in StartupInfo info);
+
 	public void SetWindowInitialState(in WindowInitialState state);
 }
-
-public delegate void PreInject(IServiceCollection services);
-public delegate void PreInjectInstance<T>(IServiceProvider services);
 
 /// <summary>
 /// Used to sanity check the lifetime of a service locator scope.
 /// </summary>
-public ref struct ServiceLocatorScope : IDisposable
+public struct ServiceLocatorScope : IDisposable
 {
-	IServiceProvider lifetimeServices;
+	private readonly IServiceProvider lifetimeServices;
+
 	public ServiceLocatorScope(IServiceProvider services) {
 		Debug.Assert(ImportUtils.EngineProvider == null);
 		ImportUtils.EngineProvider = lifetimeServices = services;
@@ -53,6 +58,16 @@ public static class ImportUtils
 	internal static IServiceProvider? EngineProvider { get; set; }
 
 	/// <summary>
+	/// Pulls a keyed singleton instance out of the active engine provider.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <returns></returns>
+	public static T KeyedSingleton<T>(object? key) where T : notnull {
+		Debug.Assert(EngineProvider != null);
+		return EngineProvider!.GetRequiredKeyedService<T>(key);
+	}
+
+	/// <summary>
 	/// Pulls a singleton instance out of the active engine provider.
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
@@ -61,14 +76,5 @@ public static class ImportUtils
 		Debug.Assert(EngineProvider != null);
 		//Msg(typeof(T).Name + "\n");
 		return EngineProvider!.GetRequiredService<T>();
-	}
-	/// <summary>
-	/// Pulls a keyed singleton instance out of the active engine provider.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <returns></returns>
-	public static T KeyedSingleton<T>(object? key) where T : notnull {
-		Debug.Assert(EngineProvider != null);
-		return EngineProvider!.GetRequiredKeyedService<T>(key);
 	}
 }

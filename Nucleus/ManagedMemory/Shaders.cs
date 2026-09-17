@@ -1,9 +1,6 @@
-﻿using Nucleus.Audio;
-using Nucleus.Common.Graphics;
-using Nucleus.Extensions;
+﻿using Nucleus.Common.Graphics;
 using Nucleus.Files;
 using Nucleus.Types;
-using Nucleus.UI;
 using Nucleus.Util;
 
 using Raylib_cs;
@@ -14,18 +11,30 @@ namespace Nucleus.ManagedMemory;
 public interface IShader : IManagedMemoryUnit
 {
 	int HardwareID { get; }
+
 	int GetUniformLocation(ReadOnlySpan<char> location);
+
 	void SetUniform<T>(int location, T value, ShaderUniformDataType type) where T : unmanaged;
+
 	void SetUniform<T>(string location, T value, ShaderUniformDataType type) where T : unmanaged;
+
 	void SetUniform<T>(int location, T value, bool iVal = false) where T : unmanaged;
+
 	void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged;
+
 	void SetUniform(int location, in Matrix4x4 matrix);
+
 	void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix);
+
 	void SetTexture(int location, ITexture texture);
+
 	void SetTexture(ReadOnlySpan<char> location, ITexture texture);
+
 	void Activate();
+
 	void Deactivate();
 }
+
 public class ShaderInstance : IShader
 {
 	public ShaderManagement? parent;
@@ -40,6 +49,7 @@ public class ShaderInstance : IShader
 	}
 
 	private Dictionary<UtlSymId_t, int> shaderLocs { get; } = [];
+
 	private int getShaderLocation(ReadOnlySpan<char> loc) {
 		var key = loc.Hash(false);
 		if (shaderLocs.TryGetValue(key, out int realLoc))
@@ -52,6 +62,7 @@ public class ShaderInstance : IShader
 	public int GetUniformLocation(ReadOnlySpan<char> location) => getShaderLocation(location);
 
 	public void SetUniform<T>(int location, T value, ShaderUniformDataType type) where T : unmanaged => Raylib.SetShaderValue(underlying, location, value, type);
+
 	public void SetUniform<T>(string location, T value, ShaderUniformDataType type) where T : unmanaged => Raylib.SetShaderValue(underlying, GetUniformLocation(location), value, type);
 
 	public void SetUniform<T>(int location, T value, bool iVal = false) where T : unmanaged {
@@ -60,35 +71,46 @@ public class ShaderInstance : IShader
 			case float:
 				uniformType = ShaderUniformDataType.SHADER_UNIFORM_FLOAT;
 				break;
+
 			case Vector2:
 			case Vector2F:
 				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC2 : ShaderUniformDataType.SHADER_UNIFORM_VEC2;
 				break;
+
 			case Vector3:
 				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC3 : ShaderUniformDataType.SHADER_UNIFORM_VEC3;
 				break;
+
 			case Vector4:
 				uniformType = iVal ? ShaderUniformDataType.SHADER_UNIFORM_IVEC4 : ShaderUniformDataType.SHADER_UNIFORM_VEC4;
 				break;
+
 			case int:
 				uniformType = ShaderUniformDataType.SHADER_UNIFORM_INT;
 				break;
+
 			default:
 				throw new Exception("Uniform type for T is not explicitly defined by the ShaderExtensions class");
 		}
 
 		Raylib.SetShaderValue(underlying, location, value, uniformType);
 	}
+
 	public void SetUniform<T>(ReadOnlySpan<char> location, T value) where T : unmanaged => SetUniform(GetUniformLocation(location), value);
+
 	public void SetUniform(int location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, location, matrix);
+
 	public void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, GetUniformLocation(location), matrix);
 
 	public void SetTexture(int location, ITexture texture) => Raylib.SetShaderValueTexture(underlying, location, (Texture)texture);
+
 	public void SetTexture(ReadOnlySpan<char> location, ITexture texture) => SetTexture(GetUniformLocation(location), (Texture)texture);
 
 	public int HardwareID => (int)underlying.Id;
 
-	public ulong UsedBits => 0; // not applicable
+	public ulong GetUsedBits(MemoryRealm realm) {
+		return 0; // not applicable
+	}
 
 	public void Activate() {
 		parent?.Activate(this);
@@ -109,15 +131,21 @@ public class ShaderInstance : IShader
 			disposedValue = true;
 		}
 	}
-	~ShaderInstance() { if (selfDisposing) Dispose(false); }
+
+	~ShaderInstance() {
+		if (selfDisposing) Dispose(false);
+	}
+
 	public void Dispose() {
 		Dispose(disposing: true);
 		GC.SuppressFinalize(this);
 	}
 }
+
 public class ShaderManagement
 {
 	private List<IShader> shaders = [];
+
 	public IEnumerable<IShader> Shaders {
 		get {
 			foreach (var shader in shaders)
@@ -156,6 +184,7 @@ public class ShaderManagement
 
 	private Dictionary<UtlSymId_t, ShaderInstance> LoadedShadersFromFile = [];
 	private Dictionary<ShaderInstance, UtlSymId_t> LoadedFilesFromShader = [];
+
 	public void EnsureIShaderRemoved(IShader isnd) {
 		switch (isnd) {
 			case ShaderInstance shader:

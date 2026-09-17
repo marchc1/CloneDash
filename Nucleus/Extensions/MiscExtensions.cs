@@ -2,14 +2,8 @@
 using Nucleus.Common.Types;
 using Nucleus.Types;
 using Raylib_cs;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.Extensions
 {
@@ -17,11 +11,13 @@ namespace Nucleus.Extensions
 	{
 		public static unsafe Span<T> AsSpan<T>(this List<T>? data)
 			=> CollectionsMarshal.AsSpan(data);
+
 		public static unsafe Image ToImage(this byte[] data, int width, int height, ImageFormat format, int mipmaps) => ToImage(data.AsSpan(), width, height, format, mipmaps);
+
 		public static unsafe Image ToImage(this ReadOnlySpan<byte> data, int width, int height, ImageFormat format, int mipmaps) {
 			var ptr = Raylib.New<byte>(data.Length);
 			data.CopyTo(new(ptr, data.Length));
-			
+
 			var img = new Image() {
 				Data = ptr,
 				Format = format,
@@ -48,9 +44,13 @@ namespace Nucleus.Extensions
 		}
 
 		public static bool InRange(this int n, int min, int max) => n >= min && n <= max;
+
 		public static bool InRange(this float n, float min, float max) => n >= min && n <= max;
+
 		public static bool InRange(this double n, double min, double max) => n >= min && n <= max;
+
 		public static bool InRange(this uint n, uint min, uint max) => n >= min && n <= max;
+
 		public static bool InRange(this long n, long min, long max) => n >= min && n <= max;
 
 		public static T Random<T>(this IList<T> list) {
@@ -82,6 +82,7 @@ namespace Nucleus.Extensions
 			}
 			return array;
 		}
+
 		public static List<T> ReadList<T>(this BinaryReader reader, Func<BinaryReader, List<T>, T> deserializer) {
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
@@ -90,6 +91,7 @@ namespace Nucleus.Extensions
 			}
 			return array;
 		}
+
 		public static List<T> ReadList<T, PT>(this BinaryReader reader, PT pt, Func<BinaryReader, PT, T> deserializer) {
 			int size = reader.Read7BitEncodedInt();
 			List<T> array = new(size);
@@ -150,12 +152,14 @@ namespace Nucleus.Extensions
 		}
 
 		public static Vector2F ReadVector2F(this BinaryReader reader) => new(reader.ReadSingle(), reader.ReadSingle());
+
 		public static void Write(this BinaryWriter writer, Vector2F vec) {
 			writer.Write(vec.X);
 			writer.Write(vec.Y);
 		}
 
 		public static Color ReadColor(this BinaryReader reader) => new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
+
 		public static void Write(this BinaryWriter writer, Color col) {
 			writer.Write(col.R);
 			writer.Write(col.G);
@@ -164,6 +168,7 @@ namespace Nucleus.Extensions
 		}
 
 		public static Color? ReadNullableColor(this BinaryReader reader) => reader.ReadBoolean() ? new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()) : null;
+
 		public static void Write(this BinaryWriter writer, Color? col) {
 			if (col == null) {
 				writer.Write(false);

@@ -5,21 +5,86 @@ namespace Nucleus.Input;
 
 public struct KeyboardState()
 {
-	public const int MAXIMUM_KEY_ARRAY_LENGTH = 512;
 	public const int MAX_TEXT_INPUTS = 256;
 	public const int MAXIMUM_FRAME_ORDERED_KEYS_LENGTH = 64;
-
-	public InlineArray64<double> KeyTimesThisFrame;
-	public InlineArray64<int> KeysThisFrame;
-
-	public int TotalKeysThisFrame = 0;
-
+	public const int MAXIMUM_KEY_ARRAY_LENGTH = 512;
+	public bool Focused;
 	public InlineArray512<bool> KeysDown;
 	public InlineArray512<byte> KeysPressed;
 	public InlineArray512<bool> KeysReleased;
-
+	public InlineArray64<int> KeysThisFrame;
+	public InlineArray64<double> KeyTimesThisFrame;
 	public InlineArray256<string?> TextInputs;
-	public bool Focused;
+	public int TotalKeysThisFrame = 0;
+	private static readonly char[] ros_state = new char[1024];
+
+	public readonly bool AltDown => IsKeyDown(ButtonCode.KeyLeftAlt) || IsKeyDown(ButtonCode.KeyRightAlt);
+
+	public readonly bool ControlDown => IsKeyDown(ButtonCode.KeyLeftControl) || IsKeyDown(ButtonCode.KeyRightControl);
+
+	public readonly bool ShiftDown => IsKeyDown(ButtonCode.KeyLeftShift) || IsKeyDown(ButtonCode.KeyRightShift);
+
+	public void Clear() {
+		for (int i = 0; i < MAXIMUM_FRAME_ORDERED_KEYS_LENGTH; i++) {
+			KeysThisFrame[i] = 0;
+			KeyTimesThisFrame[i] = 0;
+		}
+		TotalKeysThisFrame = 0;
+		for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+			KeysDown[i] = false;
+			KeysPressed[i] = 0;
+			KeysReleased[i] = false;
+		}
+	}
+
+	public void ConsumeFirstKeyPress(ButtonCode key) {
+		if (KeysPressed[(int)key] > 0)
+			KeysPressed[(int)key]--;
+
+		for (int i = 0; i < TotalKeysThisFrame; i++) {
+			if (KeysThisFrame[i] == (int)key) {
+				for (int j = i; j < TotalKeysThisFrame - 1; j++) {
+					KeysThisFrame[j] = KeysThisFrame[j + 1];
+					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
+				}
+				TotalKeysThisFrame--;
+				return;
+			}
+		}
+	}
+
+	public void ConsumeKeyPressAtIndex(int index) {
+		int key = KeysThisFrame[index];
+		if (KeysPressed[key] > 0)
+			KeysPressed[key]--;
+		RemoveKeyAtIndex(index);
+	}
+
+	public void ConsumeKeyReleaseAtIndex(int index) {
+		int key = KeysThisFrame[index];
+		KeysReleased[key] = false;
+		RemoveKeyAtIndex(index);
+	}
+
+	public void ConsumeTextAtIndex(int index) {
+		for (int i = index; i < MAX_TEXT_INPUTS - 1; i++) {
+			TextInputs[i] = TextInputs[i + 1];
+		}
+		TextInputs[MAX_TEXT_INPUTS - 1] = null;
+	}
+
+	public IEnumerable<int> GetKeysHeld() {
+		for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
+			if (KeysDown[i])
+				yield return i;
+		}
+	}
+
+	public IEnumerable<int> GetKeysThisFrame() {
+		for (int i = 0; i < TotalKeysThisFrame; i++) {
+			yield return KeysThisFrame[i];
+		}
+	}
 
 	public int GetTextInputsThisFrame() {
 		int len = 0;
@@ -34,18 +99,9 @@ public struct KeyboardState()
 		return TextInputs[i]!;
 	}
 
-	public IEnumerable<int> GetKeysThisFrame() {
-		for (int i = 0; i < TotalKeysThisFrame; i++) {
-			yield return KeysThisFrame[i];
-		}
-	}
+	public readonly bool IsKeyDown(int key) => KeysDown[key];
 
-	public IEnumerable<int> GetKeysHeld() {
-		for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
-			if (KeysDown[i])
-				yield return i;
-		}
-	}
+	public readonly bool IsKeyDown(ButtonCode key) => KeysDown[(int)key];
 
 	public bool KeyAvailable(ref int i, out ButtonCode key, out double time) {
 		if (i > TotalKeysThisFrame) {
@@ -60,6 +116,10 @@ public struct KeyboardState()
 		return true;
 	}
 
+	public readonly int KeyPressCount(int key) => KeysPressed[key];
+
+	public readonly int KeyPressCount(ButtonCode key) => KeysPressed[(int)key];
+
 	public void PushKeyPress(int key, double time) {
 		KeysThisFrame[TotalKeysThisFrame] = key;
 		KeyTimesThisFrame[TotalKeysThisFrame] = time;
@@ -67,19 +127,6 @@ public struct KeyboardState()
 		KeysPressed[key]++;
 	}
 
-	public readonly bool IsKeyDown(int key) => KeysDown[key];
-	public readonly bool IsKeyDown(ButtonCode key) => KeysDown[(int)key];
-	public readonly bool WasKeyPressed(int key) => KeysPressed[key] > 0;
-	public readonly bool WasKeyPressed(ButtonCode key) => KeysPressed[(int)key] > 0;
-	public readonly int KeyPressCount(int key) => KeysPressed[key];
-	public readonly int KeyPressCount(ButtonCode key) => KeysPressed[(int)key];
-	public readonly bool WasKeyReleased(int key) => KeysReleased[key];
-	public readonly bool WasKeyReleased(ButtonCode key) => KeysReleased[(int)key];
-
-	static readonly char[] ros_state = new char[1024];
-	static bool writeToROSState(ref int i, ReadOnlySpan<char> text) {
-		return text.TryCopyTo(ros_state.AsSpan()[(i += text.Length)..]);
-	}
 	public ReadOnlySpan<char> ToReadOnlySpan() {
 		int i = 0;
 
@@ -105,34 +152,16 @@ public struct KeyboardState()
 		// return $"Pressed [{string.Join(", ", pressed)}] Held [{string.Join(", ", keys)}]";
 	}
 
-	public readonly bool ShiftDown => IsKeyDown(ButtonCode.KeyLeftShift) || IsKeyDown(ButtonCode.KeyRightShift);
-	public readonly bool ControlDown => IsKeyDown(ButtonCode.KeyLeftControl) || IsKeyDown(ButtonCode.KeyRightControl);
-	public readonly bool AltDown => IsKeyDown(ButtonCode.KeyLeftAlt) || IsKeyDown(ButtonCode.KeyRightAlt);
+	public readonly bool WasKeyPressed(int key) => KeysPressed[key] > 0;
 
-	public void Clear() {
-		for (int i = 0; i < MAXIMUM_FRAME_ORDERED_KEYS_LENGTH; i++) {
-			KeysThisFrame[i] = 0;
-			KeyTimesThisFrame[i] = 0;
-		}
-		TotalKeysThisFrame = 0;
-		for (int i = 0; i < MAXIMUM_KEY_ARRAY_LENGTH; i++) {
-			KeysDown[i] = false;
-			KeysPressed[i] = 0;
-			KeysReleased[i] = false;
-		}
-	}
+	public readonly bool WasKeyPressed(ButtonCode key) => KeysPressed[(int)key] > 0;
 
-	public void ConsumeKeyPressAtIndex(int index) {
-		int key = KeysThisFrame[index];
-		if (KeysPressed[key] > 0)
-			KeysPressed[key]--;
-		RemoveKeyAtIndex(index);
-	}
+	public readonly bool WasKeyReleased(int key) => KeysReleased[key];
 
-	public void ConsumeKeyReleaseAtIndex(int index) {
-		int key = KeysThisFrame[index];
-		KeysReleased[key] = false;
-		RemoveKeyAtIndex(index);
+	public readonly bool WasKeyReleased(ButtonCode key) => KeysReleased[(int)key];
+
+	private static bool writeToROSState(ref int i, ReadOnlySpan<char> text) {
+		return text.TryCopyTo(ros_state.AsSpan()[(i += text.Length)..]);
 	}
 
 	private void RemoveKeyAtIndex(int index) {
@@ -141,28 +170,5 @@ public struct KeyboardState()
 			KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
 		}
 		TotalKeysThisFrame--;
-	}
-
-	public void ConsumeTextAtIndex(int index) {
-		for (int i = index; i < MAX_TEXT_INPUTS - 1; i++) {
-			TextInputs[i] = TextInputs[i + 1];
-		}
-		TextInputs[MAX_TEXT_INPUTS - 1] = null;
-	}
-
-	public void ConsumeFirstKeyPress(ButtonCode key) {
-		if (KeysPressed[(int)key] > 0)
-			KeysPressed[(int)key]--;
-
-		for (int i = 0; i < TotalKeysThisFrame; i++) {
-			if (KeysThisFrame[i] == (int)key) {
-				for (int j = i; j < TotalKeysThisFrame - 1; j++) {
-					KeysThisFrame[j] = KeysThisFrame[j + 1];
-					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
-				}
-				TotalKeysThisFrame--;
-				return;
-			}
-		}
 	}
 }

@@ -38,19 +38,22 @@ public abstract class Level : IValidatable
 {
 	// Managed memory
 	public TextureManagement Textures { get; } = new();
+
 	public TimerManagement Timers { get; }
 	public ModelManagement Models { get; } = new();
 	public ShaderManagement Shaders { get; } = new();
 
 	internal bool __isValid = false;
+
 	public bool IsValid() => __isValid;
 
 	public readonly DeveloperOverlay DeveloperOverlay;
-	
+
 	/// <summary>
 	/// When true, this will block some <see cref="ConVar"/>'s from being modified by the user.
 	/// </summary>
 	public virtual bool IsInGame => false;
+
 	public virtual ConsoleOverlaySettings GetConsoleOverlaySettings() => new() {
 		Position = new(6, 6),
 		Anchor = Anchor.TopLeft,
@@ -79,7 +82,9 @@ public abstract class Level : IValidatable
 	}
 
 	private List<Action<Level>> finalizers = [];
+
 	public void AddFinalizer(Action<Level> finalizer) => finalizers.Add(finalizer);
+
 	private void runFinalizers() {
 		foreach (var finalizer in finalizers)
 			finalizer(this);
@@ -87,26 +92,56 @@ public abstract class Level : IValidatable
 	}
 
 	public T As<T>() where T : Level => (T)this;
+
 	public T? AsNullable<T>() where T : Level => this is T ret ? ret : null;
 
 	public void ResetUI() {
 		RootPanel = new();
 		RootPanel.Window = EngineCore.Window;
 	}
-	public virtual void PreThink(ref FrameState frameState) { }
-	public virtual void ModifyMouseState(ref MouseState mouseState) { }
-	public virtual void ModifyKeyboardState(ref KeyboardState keyboardState) { }
-	public virtual void Think(FrameState frameState) { }
-	public virtual void PostThink(FrameState frameState) { }
-	public virtual void CalcView2D(FrameState frameState, ref Camera2D cam) { }
-	public virtual void CalcView3D(FrameState frameState, ref Camera3D cam) { }
-	public virtual void PreRenderBackground(FrameState frameState) { }
-	public virtual void PreRender(FrameState frameState) { }
-	public virtual void Render(FrameState frameState) { }
-	public virtual void PostRenderEntities(FrameState frameState) { }
-	public virtual void PostRender(FrameState frameState) { }
-	public virtual void PostRenderUI(FrameState frameState) { }
-	public virtual void PreWindowClose() { }
+
+	public virtual void PreThink(ref FrameState frameState) {
+	}
+
+	public virtual void ModifyMouseState(ref MouseState mouseState) {
+	}
+
+	public virtual void ModifyKeyboardState(ref KeyboardState keyboardState) {
+	}
+
+	public virtual void Think(FrameState frameState) {
+	}
+
+	public virtual void PostThink(FrameState frameState) {
+	}
+
+	public virtual void CalcView2D(FrameState frameState, ref Camera2D cam) {
+	}
+
+	public virtual void CalcView3D(FrameState frameState, ref Camera3D cam) {
+	}
+
+	public virtual void PreRenderBackground(FrameState frameState) {
+	}
+
+	public virtual void PreRender(FrameState frameState) {
+	}
+
+	public virtual void Render(FrameState frameState) {
+	}
+
+	public virtual void PostRenderEntities(FrameState frameState) {
+	}
+
+	public virtual void PostRender(FrameState frameState) {
+	}
+
+	public virtual void PostRenderUI(FrameState frameState) {
+	}
+
+	public virtual void PreWindowClose() {
+	}
+
 	public virtual HitTestResult WindowHitTest(Vector2F point) => HitTestResult.Normal;
 
 	public void RunEventPreThink(ref FrameState frameState) {
@@ -115,27 +150,32 @@ public abstract class Level : IValidatable
 			if (entity.Enabled && entity.ThinksForItself)
 				entity.PreThink(ref frameState);
 	}
+
 	public void RunEventThink(FrameState frameState) {
 		Think(frameState);
 		foreach (Entity entity in EntityList)
 			if (entity.Enabled && entity.ThinksForItself)
 				entity.Think(frameState);
 	}
+
 	public void RunEventPostThink(FrameState frameState) {
 		PostThink(frameState);
 		foreach (Entity entity in EntityList)
 			if (entity.Enabled && entity.ThinksForItself)
 				entity.PostThink(frameState);
 	}
+
 	public void RunEventPreRenderBackground(FrameState frameState) {
 		PreRenderBackground(frameState);
 	}
+
 	public void RunEventPreRender(FrameState frameState) {
 		PreRender(frameState);
 		foreach (Entity entity in EntityList)
 			if (entity.Enabled && entity.RendersItself)
 				entity.PreRender(frameState);
 	}
+
 	public void RunEventRender(FrameState frameState) {
 		Render(frameState);
 		foreach (Entity entity in EntityList)
@@ -143,6 +183,7 @@ public abstract class Level : IValidatable
 				entity.Render(frameState);
 		PostRenderEntities(frameState);
 	}
+
 	public void RunEventPostRender(FrameState frameState) {
 		PostRender(frameState);
 		foreach (Entity entity in EntityList)
@@ -153,13 +194,14 @@ public abstract class Level : IValidatable
 	public void RunEventPostRenderUI(FrameState frameState) {
 		PostRenderUI(frameState);
 	}
+
 	public void Unload() {
 		runFinalizers();
 
 		// restructure-tests @ 2-12-2026: These have been commented out for now. The general ownership of textures is way too confusing.
-		// Future works on restructuring the engine will resolve this. For starters, the level shouldn't even be the owner 
+		// Future works on restructuring the engine will resolve this. For starters, the level shouldn't even be the owner
 		// of these resources. There should be independent subsystems (IAudioSystem, IMaterialSystem, IModelSystem, etc) which
-		// contain weak references to resources. 
+		// contain weak references to resources.
 
 		// Textures.Dispose();
 		// Sounds.Dispose();
@@ -180,10 +222,13 @@ public abstract class Level : IValidatable
 		OnUnload();
 		Unloaded?.Invoke();
 	}
+
 	public delegate void UnloadDelegate();
+
 	public event UnloadDelegate? Unloaded;
 
-	public virtual void OnUnload() { }
+	public virtual void OnUnload() {
+	}
 
 	/// <summary>
 	/// Called when the engine begins loading a level. If the level needs to do work for an extended period of time, return true
@@ -215,6 +260,7 @@ public abstract class Level : IValidatable
 	public List<Entity> Entities => EntityList;
 
 	public UserInterface RootPanel { get; private set; }
+
 	public void InitializeUI() {
 		if (RootPanel != null) return;
 		RootPanel = CreateUI();
@@ -227,6 +273,7 @@ public abstract class Level : IValidatable
 		EntityHash.Add(ent);
 		EntityList.Add(ent);
 	}
+
 	private void __initializeEntity<T>(T ent) where T : Entity {
 		if (__lockedBuffer)
 			__addBuffer.Add(ent);
@@ -246,6 +293,7 @@ public abstract class Level : IValidatable
 		__removeBuffer.Clear();
 		__lockedBuffer = true;
 	}
+
 	public void UnlockEntityBuffer() {
 		foreach (Entity ent in __removeBuffer) {
 			EntityList.Remove(ent);
@@ -327,8 +375,7 @@ public abstract class Level : IValidatable
 
 	public bool DrawDebuggingGrid { get; private set; } = false;
 
-
-	readonly Stopwatch timing = new();
+	private readonly Stopwatch timing = new();
 
 	public bool Render3D { get; set; } = true;
 
@@ -346,18 +393,19 @@ public abstract class Level : IValidatable
 		FrameState.Reset();
 	}
 
-	double lastRenderTime = -10;
+	private double lastRenderTime = -10;
 	public bool RenderedFrame { get; set; } = false;
 	public bool IsRendering { get; set; } = false;
 
-	readonly Stopwatch updateTrack = new();
-	readonly Stopwatch renderTrack = new();
+	private readonly Stopwatch updateTrack = new();
+	private readonly Stopwatch renderTrack = new();
 
 	public virtual bool OnFileDropped(string filepath, Vector2F pos) => false;
+
 	public virtual bool OnTextDropped(string text, Vector2F pos) => false;
 
-	readonly Queue<DragNDropItem> DragNDropFileEvents_ForNextMouseHover = [];
-	readonly Queue<DragNDropItem> DragNDropTextEvents_ForNextMouseHover = [];
+	private readonly Queue<DragNDropItem> DragNDropFileEvents_ForNextMouseHover = [];
+	private readonly Queue<DragNDropItem> DragNDropTextEvents_ForNextMouseHover = [];
 
 	public void FileDropped(DragNDropItem item, bool isWindowFocused) {
 		if (!isWindowFocused) {
@@ -378,6 +426,7 @@ public abstract class Level : IValidatable
 			}
 		}
 	}
+
 	public void TextDropped(DragNDropItem item, bool isWindowFocused) {
 		if (!isWindowFocused) {
 			// Due to position not being available at this; enqueue this event for later. SDL doesn't give us positioning so we need to wait
@@ -388,7 +437,7 @@ public abstract class Level : IValidatable
 			if (OnTextDropped(item, FrameState.Mouse.MousePos)) return;
 
 			// Try sending it to the UI element we last hovered over, iterating through parents
-			Element? e = RootPanel.GetHoveredElement(); 
+			Element? e = RootPanel.GetHoveredElement();
 			while (e != null) {
 				if (e.TextDropped(item, FrameState.Mouse.MousePos))
 					break;
@@ -397,7 +446,6 @@ public abstract class Level : IValidatable
 		}
 	}
 
-	
 	/// <summary>
 	/// Call this every frame.
 	/// </summary>
@@ -431,7 +479,7 @@ public abstract class Level : IValidatable
 
 		DeveloperOverlay.UserDefinedDebugRecords.Reset();
 		DeveloperOverlay.UserDefinedDebugRecords.EnterScope();
-		
+
 		FrameState frameState = FrameState;
 
 		float x, y, width, height;
@@ -458,7 +506,7 @@ public abstract class Level : IValidatable
 
 		RootPanel.
 		Position = new(0, 0);
-		RootPanel.		Size = new(frameState.WindowWidth,frameState.WindowHeight);
+		RootPanel.Size = new(frameState.WindowWidth, frameState.WindowHeight);
 
 		ref ElementSolveState solveState = ref RootPanel.ProduceSolveState();
 		RootPanel.Scheme.ApplyScheme(RootPanel, ref solveState);
@@ -627,14 +675,18 @@ public abstract class Level : IValidatable
 
 	public static ConVar ui_hoverresult
 		= new("ui_hoverresult", "0", FCvar.None, "Highlights the currently hovered element", 0, 1);
+
 	public static ConVar ui_visrenderbounds
 		= new("ui_visrenderbounds", "0", FCvar.None, "Visualizes each elements render bounds as a outlined rectangle.", 0, 1);
+
 	public static ConVar ui_showupdates
 		= new("ui_showupdates", "0", FCvar.None, "Visualize layout updates.", 0, 1);
+
 	public static ConCommand ui_elementcount
 		= new("ui_elementcount", (_, in _) => Logs.Print($"UI Elements: {EngineCore.Level.RootPanel.GetAllElements().Length}"), FCvar.None, "Highlights the currently hovered element");
 
 	public bool HasEntity(Entity entity) => EntityHash.Contains(entity);
+
 	public T GetEntity<T>(Predicate<Entity> predicate) where T : Entity {
 		foreach (var entity in Entities) {
 			if (predicate(entity))
@@ -643,6 +695,7 @@ public abstract class Level : IValidatable
 
 		throw new Exception("Predicate failed in GetEntity.");
 	}
+
 	public bool TryGetEntity<T>(Predicate<Entity> predicate, out T? found) where T : Entity {
 		foreach (var entity in Entities) {
 			if (predicate(entity)) {
@@ -659,10 +712,12 @@ public abstract class Level : IValidatable
 		return false;
 	}
 
+	private static readonly char[] formatconvs = new char[256];
 
-	static readonly char[] formatconvs = new char[256];
 	public void AddDebugString(ReadOnlySpan<char> text) => DeveloperOverlay.UserDefinedDebugRecords.Write(text);
+
 	public void AddDebugString(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => DeveloperOverlay.UserDefinedDebugRecords.Write(key, value);
+
 	public void AddDebugString<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
 		value.TryFormat(formatconvs, out int chars, default, null);
 		DeveloperOverlay.UserDefinedDebugRecords.Write(key, formatconvs.AsSpan()[..chars]);

@@ -3,19 +3,19 @@
 using Raylib_cs;
 
 using SDL;
-
-using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Nucleus.Engine;
 
 public struct OSMonitor : IValidatable
 {
 	public int DisplayID;
+
 	public OSMonitor(int id) => DisplayID = id;
+
 	public static implicit operator OSMonitor(int id) => new(id);
+
 	public static implicit operator OSMonitor(SDL_DisplayID id) => new((int)id);
 
 	public bool IsValid() {
@@ -31,6 +31,7 @@ public struct OSMonitor : IValidatable
 	public unsafe int Y => (int)Position.Y;
 	public unsafe int Width => (int)Size.W;
 	public unsafe int Height => (int)Size.H;
+
 	public unsafe Vector2F Position {
 		get {
 			if (!IsValid())
@@ -42,6 +43,7 @@ public struct OSMonitor : IValidatable
 			return new(rect.x, rect.y);
 		}
 	}
+
 	public unsafe Vector2F Size {
 		get {
 			if (!IsValid())
@@ -113,16 +115,19 @@ public static unsafe class OS
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 1)) goto GL_VERSION_ERRORED;
 				break;
+
 			case GlVersion.OPENGL_33:
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) goto GL_VERSION_ERRORED;
 				break;
+
 			case GlVersion.OPENGL_43:
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 4)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLProfile.SDL_GL_CONTEXT_PROFILE_CORE)) goto GL_VERSION_ERRORED;
 				break;
+
 			case GlVersion.OPENGL_ES_20:
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 2)) goto GL_VERSION_ERRORED;
 				if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0)) goto GL_VERSION_ERRORED;
@@ -136,7 +141,7 @@ public static unsafe class OS
 		return false;
 	GL_VERSION_OK:
 
-		if(!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1)){
+		if (!SDL3.SDL_GL_SetAttribute(SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1)) {
 			Logs.Warn("Failed to set the OpenGL multi-sampling buffers value");
 			return false;
 		}
@@ -200,10 +205,13 @@ public static unsafe class OS
 	}
 
 	public static bool IsMonitorIDValid(int idx) => idx > 0 && idx < GetMonitorCount();
+
 	public static int GetMonitorCount() => SDL3.SDL_GetDisplays()?.Count ?? 0;
+
 	public static OSMonitor GetPrimaryMonitor() => SDL3.SDL_GetPrimaryDisplay();
 
 	public static string GetClipboardText() => SDL3.SDL_GetClipboardText() ?? "";
+
 	public static void SetClipboardText(string text) => SDL3.SDL_SetClipboardText(text);
 
 	public static bool HasClipboardText() => SDL3.SDL_HasClipboardText();
@@ -217,6 +225,7 @@ public static unsafe class OS
 	}
 
 	public static double TicksToTime(ulong ticks) => (double)ticks / 1_000_000_000d;
+
 	public static double GetTime() => TicksToTime(SDL3.SDL_GetTicksNS());
 
 	/// <summary>

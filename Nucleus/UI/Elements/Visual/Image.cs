@@ -2,27 +2,20 @@
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
-using Nucleus.ManagedMemory;
 using Nucleus.Types;
-using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Nucleus.UI.Elements;
 
 public class Image : Element
 {
-	ITexture? image;
-	ImageOrientation __ImageOrientation = ImageOrientation.None;
-
-	Vector2F __ImageRotationOffset = new(0);
-	Vector2F __ImagePadding = new(0);
-	float __ImageRotation = 0;
-	bool __ImageFlipX = false;
-	bool __ImageFlipY = false;
-
-	SchemeableSetting<Color> __ImageColor = SchemeableSetting<Color>.Default(Color.White);
+	private SchemeableSetting<Color> __ImageColor = SchemeableSetting<Color>.Default(Color.White);
+	private bool __ImageFlipX = false;
+	private bool __ImageFlipY = false;
+	private ImageOrientation __ImageOrientation = ImageOrientation.None;
+	private Vector2F __ImagePadding = new(0);
+	private float __ImageRotation = 0;
+	private Vector2F __ImageRotationOffset = new(0);
+	private ITexture? image;
 
 	public Image(Element? parent) : base(parent) {
 		SetPaintBackgroundEnabled(false);
@@ -32,19 +25,35 @@ public class Image : Element
 		SetPassthru(true);
 	}
 
-	public ImageOrientation ImageOrientation {
-		get => __ImageOrientation;
+	public Color ImageColor {
+		get => __ImageColor.Get();
+		set => __ImageColor.SetUserValue(value);
+	}
+
+	public bool ImageFlipX {
+		get => __ImageFlipX;
 		set {
-			__ImageOrientation = value;
+			if (__ImageFlipX == value) return;
+			__ImageFlipX = value;
 			InvalidateLayout();
 			GetParent()?.InvalidateLayout();
 		}
 	}
 
-	public Vector2F ImageRotationOffset {
-		get => __ImageRotationOffset;
+	public bool ImageFlipY {
+		get => __ImageFlipY;
 		set {
-			__ImageRotationOffset = value;
+			if (__ImageFlipY == value) return;
+			__ImageFlipY = value;
+			InvalidateLayout();
+			GetParent()?.InvalidateLayout();
+		}
+	}
+
+	public ImageOrientation ImageOrientation {
+		get => __ImageOrientation;
+		set {
+			__ImageOrientation = value;
 			InvalidateLayout();
 			GetParent()?.InvalidateLayout();
 		}
@@ -68,6 +77,15 @@ public class Image : Element
 		}
 	}
 
+	public Vector2F ImageRotationOffset {
+		get => __ImageRotationOffset;
+		set {
+			__ImageRotationOffset = value;
+			InvalidateLayout();
+			GetParent()?.InvalidateLayout();
+		}
+	}
+
 	public ITexture? Texture {
 		get => image;
 		set {
@@ -78,33 +96,6 @@ public class Image : Element
 		}
 	}
 
-	public bool ImageFlipX {
-		get => __ImageFlipX;
-		set {
-			if (__ImageFlipX == value) return;
-			__ImageFlipX = value;
-			InvalidateLayout();
-			GetParent()?.InvalidateLayout();
-		}
-	}
-
-	public bool ImageFlipY {
-		get => __ImageFlipY;
-		set {
-			if (__ImageFlipY == value) return;
-			__ImageFlipY = value;
-			InvalidateLayout();
-			GetParent()?.InvalidateLayout();
-		}
-	}
-
-	public Color ImageColor {
-		get => __ImageColor.Get();
-		set => __ImageColor.SetUserValue(value);
-	}
-	public override void Paint(float width, float height) {
-		ImageDrawing(size: new(width, height));
-	}
 	public void ImageDrawing(Vector2F? pos = null, Vector2F? size = null) {
 		if (image == null)
 			return;
@@ -129,16 +120,19 @@ public class Image : Element
 				destRect.Width = size?.X ?? destRect.Width;
 				destRect.Height = size?.Y ?? destRect.Height;
 				break;
+
 			case ImageOrientation.Centered:
 				var x = (bounds.Width / 2) - (image.Width / 2);
 				var y = (bounds.Height / 2) - (image.Height / 2);
 				destRect.X += x;
 				destRect.Y += y;
 				break;
+
 			case ImageOrientation.Stretch:
 				destRect.Width = width;
 				destRect.Height = height;
 				break;
+
 			case ImageOrientation.Zoom:
 				if (width <= height) { // Width is the bottleneck
 					var ratio = (float)image.Height / image.Width;
@@ -154,6 +148,7 @@ public class Image : Element
 				}
 
 				break;
+
 			case ImageOrientation.Fit:
 				var clampWidth = Math.Clamp(width, 0, image.Width);
 				var clampHeight = Math.Clamp(height, 0, image.Height);
@@ -188,7 +183,6 @@ public class Image : Element
 
 		Vector2F rotationPos = __ImageRotationOffset * new Vector2F(destRect.Width, destRect.Height);
 
-
 		destRect.X += rotationPos.X;
 		destRect.Y += rotationPos.Y;
 
@@ -202,5 +196,9 @@ public class Image : Element
 		}
 		Graphics2D.CalculateUVCoordinatesFromRects(image, sourceRect, destRect, out float sU, out float sV, out float eU, out float eV);
 		Graphics2D.DrawTexturedRectangle(destRect, __ImageRotation, rotationPos, sU, sV, eU, eV);
+	}
+
+	public override void Paint(float width, float height) {
+		ImageDrawing(size: new(width, height));
 	}
 }

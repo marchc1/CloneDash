@@ -41,6 +41,7 @@ public static class PanicSystem
 
 	// ReSharper disable InconsistentNaming
 	private const string PANIC_FONT = "Noto Sans";
+
 	private const string PANIC_FONT_ARABIC = "Noto Sans Arabic";
 
 	private static readonly string PANIC_FONT_TC = CultureInfo.CurrentCulture.Name switch {

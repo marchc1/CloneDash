@@ -10,6 +10,7 @@ namespace Nucleus.Models;
 public interface IClipPolygon<in SlotType>
 {
 	int GetVerticesCount();
+
 	int ComputeWorldVerticesInto(SlotType slot, Vector2F[] into);
 }
 
@@ -34,8 +35,10 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			case M4S_StencilMode.On:
 			default:
 				break;
+
 			case M4S_StencilMode.Off:
 				return;
+
 			case M4S_StencilMode.RenderMask:
 				renderMask = true;
 				break;
@@ -55,7 +58,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		_clipPolygon = null;
 
 		// Do not clear triangles or Points because it now intentionally persists between frames for caching
-		
+
 		// triangles.Clear();
 		// shape.Points.Clear();
 	}
@@ -79,8 +82,10 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			case M4S_StencilMode.On:
 			default:
 				break;
+
 			case M4S_StencilMode.Off:
 				return;
+
 			case M4S_StencilMode.RenderMask:
 				renderMask = true;
 				break;
@@ -99,7 +104,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			_cachedVerticesLength == _verticesLength &&
 			_cachedVertices != null &&
 			_clipPolygon.AsSpan(0, _verticesLength).SequenceEqual(_cachedVertices.AsSpan(0, _verticesLength));
-		
+
 		if (!isCached) {
 			_shape.Points.Clear();
 			_shape.Points.EnsureCapacity(_verticesLength);

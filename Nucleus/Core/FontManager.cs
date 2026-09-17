@@ -1,10 +1,7 @@
 ﻿using Nucleus.Common.Extensions;
 using Nucleus.Common.Graphics;
-using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
-using Nucleus.ManagedMemory;
-using Nucleus.Types;
 using Nucleus.Util;
 
 using Raylib_cs;
@@ -68,17 +65,21 @@ namespace Nucleus.Core
 	public class FontState
 	{
 		public FontKey Key;
-		bool Killed;
-		Font Font;
-		bool MarkedForDeath;
-		DateTime LastUsed;
+		private bool Killed;
+		private Font Font;
+		private bool MarkedForDeath;
+		private DateTime LastUsed;
 
 		public void OwnFont(in Font font) => Font = font;
+
 		public void MarkForDeath() => MarkedForDeath = true;
+
 		public void Rehydrate() => LastUsed = DateTime.UtcNow;
+
 		public DateTime GetLastHydrate() => LastUsed;
 
 		public bool IsMarkedForDeath() => MarkedForDeath;
+
 		public ref Font GetFont() => ref Font;
 
 		public void Destroy() {
@@ -92,7 +93,7 @@ namespace Nucleus.Core
 
 	public class FontManager
 	{
-		readonly UtlSymbolTableMT symbols = new();
+		private readonly UtlSymbolTableMT symbols = new();
 		private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
 		private readonly List<int> RegisteredCodepoints = new List<int>();
 
@@ -100,6 +101,7 @@ namespace Nucleus.Core
 
 		// A dictionary of live fonts.
 		private readonly Dictionary<FontKey, FontState> FontTable = new();
+
 		private readonly List<FontKey> FontsMarkedForDeath = new();
 
 		public ulong GetUsedGPUBits() {
@@ -149,7 +151,7 @@ namespace Nucleus.Core
 			foreach (var codepointStr in codepoints)
 				RegisterCodepoints(codepointStr);
 		}
-		
+
 		public void AddFont(ReadOnlySpan<char> key, FontEntry entry) {
 			FontNameToFilepath[symbols.AddString(key)] = entry;
 		}
@@ -159,7 +161,8 @@ namespace Nucleus.Core
 			return FontNameToFilepath.ContainsKey(sym);
 		}
 
-		DateTime lastCheckTimes;
+		private DateTime lastCheckTimes;
+
 		public void CleanUpFontsMarkedForDeath() {
 			DateTime now = DateTime.UtcNow;
 			if ((now - lastCheckTimes).TotalSeconds > 3) {
@@ -231,8 +234,9 @@ namespace Nucleus.Core
 			}
 		}
 
-		readonly FontEntry fallbackEntry = new("NotoSans-Regular.ttf", "fonts");
-		readonly Dictionary<int, FontState> fallbackFonts = [];
+		private readonly FontEntry fallbackEntry = new("NotoSans-Regular.ttf", "fonts");
+		private readonly Dictionary<int, FontState> fallbackFonts = [];
+
 		private FontState GetFallbackFont(int fontSize) {
 			if (!fallbackFonts.TryGetValue(fontSize, out FontState? state)) {
 				var registeredCodepoints = RegisteredCodepoints.AsSpan();

@@ -3,19 +3,23 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.Commands;
 
-public delegate void ChangeCallback(ConVar self, scoped ReadOnlySpan<char> oldStr, double oldDouble);
 public delegate void AutocompleteDelegate(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? helpReturns);
 
-public ref struct ConCommandBaseSearch
+public delegate void ChangeCallback(ConVar self, scoped ReadOnlySpan<char> oldStr, double oldDouble);
+
+public struct ConCommandBaseSearch
 {
-	private ConCommandBase? next;
-	public ConCommandBase? Current { get; private set; }
 	public Predicate<ConCommandBase> Predicate;
+	private ConCommandBase? next;
+
 	public ConCommandBaseSearch(ConCommandBase? head, Predicate<ConCommandBase> predicate) {
 		next = head;
 		Current = null;
 		Predicate = predicate;
 	}
+
+	public ConCommandBase? Current { get; private set; }
+
 	public bool Iterate([NotNullWhen(true)] out ConCommandBase? cc) {
 		if (!MoveNext()) {
 			cc = null;
@@ -24,6 +28,7 @@ public ref struct ConCommandBaseSearch
 		cc = Current;
 		return cc != null;
 	}
+
 	public bool MoveNext() {
 		while (next != null) {
 			ConCommandBase candidate = next;
@@ -41,24 +46,21 @@ public ref struct ConCommandBaseSearch
 [MarkForStaticConstruction]
 public abstract class ConCommandBase : IConCommandBase
 {
-	public AutocompleteDelegate? OnAutocomplete;
-
 	public static ConCommandBase? Head;
-	public ConCommandBase? Next;
-
-	public bool Registered;
-	public bool IsRegistered() => Registered;
-
-	public virtual bool IsCommand() => false;
-	public string Name = "";
-	public string HelpString = "";
 	public FCvar Flags;
+	public string HelpString = "";
+	public string Name = "";
+	public ConCommandBase? Next;
+	public AutocompleteDelegate? OnAutocomplete;
+	public bool Registered;
 
-	public ReadOnlySpan<char> GetName() => Name;
-	public ReadOnlySpan<char> GetHelpText() => HelpString;
-	public FCvar GetFlags() => Flags;
+	private static readonly object linkedListLock = new();
 
-	static readonly object linkedListLock = new();
+	public ConCommandBase(string name, string helpString = "", FCvar flags = FCvar.None) : this() {
+		Name = name;
+		HelpString = helpString;
+		Flags = flags;
+	}
 
 	protected ConCommandBase() {
 		lock (linkedListLock) {
@@ -66,15 +68,6 @@ public abstract class ConCommandBase : IConCommandBase
 			Head = this;
 		}
 	}
-	public ConCommandBase(string name, string helpString = "", FCvar flags = FCvar.None) : this() {
-		Name = name;
-		HelpString = helpString;
-		Flags = flags;
-	}
-
-	public virtual bool IsFlagSet(FCvar flag) => (flag & Flags) == flag;
-
-	protected virtual void CheckFlagChange(FCvar prev, FCvar now) { }
 
 	public virtual void AddFlags(FCvar flags) {
 		FCvar prev = Flags;
@@ -82,17 +75,33 @@ public abstract class ConCommandBase : IConCommandBase
 		CheckFlagChange(prev, Flags);
 	}
 
+	public FCvar GetFlags() => Flags;
+
+	public ReadOnlySpan<char> GetHelpText() => HelpString;
+
+	public ReadOnlySpan<char> GetName() => Name;
+
+	public virtual void Init() {
+		cvar.RegisterConCommand(this);
+	}
+
+	public virtual bool IsCommand() => false;
+
+	public virtual bool IsFlagSet(FCvar flag) => (flag & Flags) == flag;
+
+	public bool IsRegistered() => Registered;
+
 	public virtual void RemoveFlags(FCvar flags) {
 		FCvar prev = Flags;
 		Flags = Flags & ~flags;
 		CheckFlagChange(prev, Flags);
 	}
 
-
-
+	protected virtual void CheckFlagChange(FCvar prev, FCvar now) {
+	}
 
 	[ConCommand(Help: "Lists all available convars/concommands")]
-	static void cvarlist() {
+	private static void cvarlist() {
 		int maxWidth = 0;
 		int ccmds = 0, cvars = 0;
 		ConCommandBaseSearch searcher;
@@ -113,8 +122,9 @@ public abstract class ConCommandBase : IConCommandBase
 
 		Logs.Print($"{ccmds + cvars} registered, {ccmds} commands, {cvars} vars.");
 	}
+
 	[ConCommand(Help: "Find a convar/concommand by name")]
-	static void find(ConCommand cmd, in TokenizedCommand args) {
+	private static void find(ConCommand cmd, in TokenizedCommand args) {
 		string search = new(args.ArgS());
 		if (search.Length == 0) {
 			Logs.Print("Usage: find <string>");
@@ -141,9 +151,5 @@ public abstract class ConCommandBase : IConCommandBase
 			count++;
 		}
 		Logs.Print($"{count} result{(count != 1 ? "s" : "")} for \"{search}\".");
-	}
-
-	public virtual void Init() {
-		cvar.RegisterConCommand(this);
 	}
 }

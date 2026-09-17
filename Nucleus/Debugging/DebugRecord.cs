@@ -11,7 +11,9 @@ public struct DebugRecord
 	public readonly bool HasValue;
 
 	public bool GetText(Span<char> output) => _keyValueData[..KeySize].TryCopyTo(output);
+
 	public bool GetKey(Span<char> output) => _keyValueData[..KeySize].TryCopyTo(output);
+
 	public bool GetValue(Span<char> output) => _keyValueData[KeySize..][..ValueSize].TryCopyTo(output);
 
 	public DebugRecord(int spacing, ReadOnlySpan<char> key, ReadOnlySpan<char> value = default, bool valueless = false) {
@@ -25,7 +27,7 @@ public struct DebugRecord
 		HasValue = !valueless;
 	}
 
-	static readonly char[] TempPrintBuffer = new char[1024];
+	private static readonly char[] TempPrintBuffer = new char[1024];
 
 	public ReadOnlySpan<char> Print(in DebugRecordState state) {
 		Span<char> buffer = TempPrintBuffer.AsSpan();

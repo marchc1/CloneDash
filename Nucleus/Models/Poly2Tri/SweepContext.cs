@@ -1,28 +1,27 @@
 ﻿using Nucleus.Common.Util;
-using System.Collections.Generic;
 
 namespace Poly2Tri;
 
-internal ref struct SweepContext : IDisposable
+internal struct SweepContext : IDisposable
 {
 	// Inital triangle factor, seed triangle will extend 30% of
 	// PointSet width to both left and right.
-	const float K_ALPHA = 0.3f;
+	private const float K_ALPHA = 0.3f;
 
-	List<TriPoint> _points;
-	List<Triangle> _triangles;
-	List<Triangle> _map;
-	List<Edge> _edge_list;
+	private List<TriPoint> _points;
+	private List<Triangle> _triangles;
+	private List<Triangle> _map;
+	private List<Edge> _edge_list;
 
-	TriPoint? _head;
-	TriPoint? _tail;
+	private TriPoint? _head;
+	private TriPoint? _tail;
 
-	Node? _af_head;
-	Node? _af_middle;
-	Node? _af_tail;
+	private Node? _af_head;
+	private Node? _af_middle;
+	private Node? _af_tail;
 
 	internal AdvancingFront? Front;
-	static readonly TriPoint.Comparer _cmp = new TriPoint.Comparer();
+	private static readonly TriPoint.Comparer _cmp = new TriPoint.Comparer();
 
 	internal SweepBasin Basin;
 	internal EdgeEvent EdgeEvent;
@@ -65,7 +64,6 @@ internal ref struct SweepContext : IDisposable
 	public void AddConstrainedEdge(TriPoint from, TriPoint to) {
 		_edge_list.Add(new(from, to));
 	}
-
 
 	public void AddPoints(List<TriPoint> points) {
 		int first = _points.Count;

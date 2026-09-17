@@ -30,16 +30,17 @@ public class WindowDragNDropState()
 		public Vector2F Pos;
 	}
 
-	readonly ConcurrentQueue<DragData> Events = [];
+	private readonly ConcurrentQueue<DragData> Events = [];
 
 	public bool Active;
 	public Vector2F Position;
 
 	public void Enqueue(in DragData data) => Events.Enqueue(data);
+
 	public bool TryDequeue(out DragData data) => Events.TryDequeue(out data);
 
 	public void Reset() {
-		if(!Events.IsEmpty) Events.Clear();
+		if (!Events.IsEmpty) Events.Clear();
 		Position = default;
 	}
 }
@@ -61,6 +62,7 @@ public class WindowKeyboardState()
 	public readonly ConcurrentQueue<WindowKey> KeyPressQueue = new();
 
 	public readonly ConcurrentQueue<string> EnqueuedTextInputs = new();
+
 	public void EnqueueTextEvent(string text) {
 		EnqueuedTextInputs.Enqueue(text);
 	}
@@ -73,6 +75,7 @@ public class WindowKeyboardState()
 	}
 
 	public void EnqueueKeyPress(ref SDL_Event ev) => EnqueueKeyPress(OS.TicksToTime(ev.key.timestamp), (int)ev.key.scancode);
+
 	public void EnqueueKeyPress(double timestamp, int scancode) {
 		KeyPressQueue.Enqueue(new() {
 			Key = OSWindow.TranslateKeyboardKey(scancode),
@@ -152,14 +155,15 @@ public unsafe class OSWindow : IValidatable
 		window.glctx = SDL3.SDL_GL_CreateContext(window.handle);
 	}
 
-	unsafe RenderBatch* renderBatch;
+	private unsafe RenderBatch* renderBatch;
+
 	public void SetupGL() {
 #if !COMPILED_OSX
 		SetupGlInternal(this);
 #endif
 		if (!SDL3.SDL_GL_MakeCurrent(handle, glctx))
 			Logs.Assert(false, "Could not successfully call SDL_GL_MakeCurrent in SetupGL?");
-		if(!SDL3.SDL_GL_SetSwapInterval(0))
+		if (!SDL3.SDL_GL_SetSwapInterval(0))
 			Logs.Assert(false, "Could not successfully call SDL_GL_SetSwapInterval in SetupGL?");
 		Rlgl.LoadExtensions(&OS.OpenGL_GetProcAddress);
 
@@ -172,6 +176,7 @@ public unsafe class OSWindow : IValidatable
 
 		SetupViewport(ScreenSize.X, ScreenSize.Y);
 	}
+
 	public static OSWindow Create(int width, int height, string title = "Nucleus Engine - Window", ConfigFlags confFlags = 0) {
 		OSWindow window = new OSWindow();
 		SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS | SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE;
@@ -223,7 +228,7 @@ public unsafe class OSWindow : IValidatable
 		newHitTestValue = false;
 	}
 
-	unsafe void applyHitTest() {
+	private unsafe void applyHitTest() {
 		if (incomingHitTestChange) {
 			if (newHitTestValue)
 				SDL3.SDL_SetWindowHitTest(handle, &WINDOW_HITTEST_RESULT, 0);
@@ -235,7 +240,7 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-	static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
+	private static SDL_HitTestResult WINDOW_HITTEST_RESULT(SDL_Window* window, SDL_Point* point, nint userdata) {
 		Vector2F p = new(point->x, point->y);
 		OSWindow osWindow = windowLookup_id2window[SDL3.SDL_GetWindowID(window)];
 		Level? level = EngineCore.Level;
@@ -243,7 +248,9 @@ public unsafe class OSWindow : IValidatable
 			return (SDL_HitTestResult)level.WindowHitTest(p);
 		return SDL_HitTestResult.SDL_HITTEST_NORMAL;
 	}
+
 	private static double lastUpdate;
+
 	[UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 	private static SDL.SDLBool HandleWin32Resize(nint data, SDL_Event* ev) {
 		var type = ev->Type;
@@ -277,10 +284,12 @@ public unsafe class OSWindow : IValidatable
 		state = false;
 		return false;
 	}
+
 	private void setflags(ref SDL_WindowFlags target, SDL_WindowFlags bit, bool on) {
 		if (on) target |= bit;
 		else target &= ~bit;
 	}
+
 	public void UpdateWindowState() {
 		//curFlags = SDL3.SDL_GetWindowFlags(handle);
 
@@ -325,58 +334,70 @@ public unsafe class OSWindow : IValidatable
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_RESIZABLE) == SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_RESIZABLE, value);
 	}
+
 	public bool Undecorated {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_BORDERLESS) == SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_BORDERLESS, value);
 	}
+
 	// todo
 	public bool Fullscreen {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_FULLSCREEN, value);
 	}
+
 	public bool Maximized {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) == SDL_WindowFlags.SDL_WINDOW_MAXIMIZED;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MAXIMIZED, value);
 	}
+
 	public bool Minimized {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) == SDL_WindowFlags.SDL_WINDOW_MINIMIZED;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_MINIMIZED, value);
 	}
+
 	public bool Visible {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_HIDDEN) == SDL_WindowFlags.SDL_WINDOW_HIDDEN;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_HIDDEN, !value);
 	}
+
 	public bool InputFocused {
 		get => (SDL3.SDL_GetWindowFlags(handle) & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) == SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS;
 	}
+
 	public bool MouseFocused {
 		get => (SDL3.SDL_GetWindowFlags(handle) & SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS) == SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS;
 	}
+
 	public bool NotFocusable {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE) == SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE, value);
 	}
+
 	public bool Topmost {
 		get => (curFlags & SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP) == SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
 		set => setflags(ref curFlags, SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP, value);
 	}
+
 	public bool AlwaysRun {
 		get => false;
 		set => Logs.Warn("AlwaysRun is unsupported on a SDL backend.");
 	}
+
 	public bool Transparent {
 		get => false;
 		set => Logs.Warn("Transparency is unsupported on a SDL backend.");
 	}
+
 	public bool HighDPI {
 		get => false;
 		set => Logs.Warn("Setting HighDPI is unsupported on a SDL backend.");
 	}
+
 	public bool MousePassthru {
 		get => false;
 		set => Logs.Warn("Mouse passthrough is unsupported on a SDL backend.");
 	}
-
 
 	private Vector2F queuedPos, queuedSize, queuedMin, queuedMax;
 	private string? queuedTitle;
@@ -405,7 +426,6 @@ public unsafe class OSWindow : IValidatable
 
 		isPosQueued = isSizeQueued = isMinQueued = isMaxQueued = isTitleQueued = isOpacityQueued = isCenterEnqueued = false;
 
-
 		if (queuedIcon != null) {
 			SDL3.SDL_SetWindowIcon(handle, queuedIcon);
 			SDL3.SDL_DestroySurface(queuedIcon);
@@ -430,8 +450,9 @@ public unsafe class OSWindow : IValidatable
 		set { queuedSize = value; isSizeQueued = true; }
 	}
 
-	bool isCenterEnqueued;
+	private bool isCenterEnqueued;
 	private OSMonitor? enqueuedCenterTargetMonitor;
+
 	public void Center(OSMonitor? targetMonitor = null) {
 		isCenterEnqueued = true;
 		enqueuedCenterTargetMonitor = targetMonitor;
@@ -445,6 +466,7 @@ public unsafe class OSWindow : IValidatable
 		}
 		set { queuedMin = value; isMinQueued = true; }
 	}
+
 	public Vector2F MaxSize {
 		get {
 			int _x, _y;
@@ -453,10 +475,12 @@ public unsafe class OSWindow : IValidatable
 		}
 		set { queuedMax = value; isMaxQueued = true; }
 	}
+
 	public string Title {
 		get => SDL3.SDL_GetWindowTitle(handle) ?? "";
 		set { queuedTitle = value; isTitleQueued = true; }
 	}
+
 	public float Opacity {
 		get => SDL3.SDL_GetWindowOpacity(handle);
 		set { queuedOpacity = value; isOpacityQueued = true; }
@@ -467,7 +491,8 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_GL_SwapWindow(handle);
 	}
 
-	int vpX, vpY, vpW, vpH;
+	private int vpX, vpY, vpW, vpH;
+
 	private void viewport(int x, int y, int w, int h) {
 		vpX = x;
 		vpY = y;
@@ -475,9 +500,11 @@ public unsafe class OSWindow : IValidatable
 		vpH = h;
 		Rlgl.Viewport(x, y, w, h);
 	}
+
 	public void Viewport(int x, int y, int w, int h) => viewport(x, y, w, h);
 
 	public void SetupViewport(float width, float height) => SetupViewport((int)width, (int)height);
+
 	public void SetupViewport(int width, int height) {
 		RenderSize.W = width;
 		RenderSize.H = height;
@@ -504,6 +531,7 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public const int SCANCODE_MAPPED_NUM = 232;
+
 	public static ButtonCode[] ScancodeToKey = new ButtonCode[SCANCODE_MAPPED_NUM] {
 		ButtonCode.None,           // SDL_SCANCODE_UNKNOWN
 		0,
@@ -627,7 +655,9 @@ public unsafe class OSWindow : IValidatable
 		ButtonCode.KeyRightAlt,      //SDL_SCANCODE_RALT
 		ButtonCode.KeyRightSuper     //SDL_SCANCODE_RGUI
 	};
+
 	public static ButtonCode TranslateKeyboardKey(SDL_Scancode scancode) => TranslateKeyboardKey((int)scancode);
+
 	public static ButtonCode TranslateKeyboardKey(int scancode) {
 		if (scancode >= 0 && scancode < SCANCODE_MAPPED_NUM)
 			return ScancodeToKey[scancode];
@@ -656,16 +686,20 @@ public unsafe class OSWindow : IValidatable
 				DragNDrop.Active = true;
 
 				break;
+
 			case SDL_EventType.SDL_EVENT_DROP_FILE:
 				DragNDrop.Enqueue(new() { File = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
+
 			case SDL_EventType.SDL_EVENT_DROP_TEXT:
 
 				DragNDrop.Enqueue(new() { Text = ev.String, Pos = new(ev.Event.drop.x, ev.Event.drop.y) });
 				break;
+
 			case SDL_EventType.SDL_EVENT_DROP_POSITION:
 				DragNDrop.Position = new(ev.Event.drop.x, ev.Event.drop.y);
 				break;
+
 			case SDL_EventType.SDL_EVENT_DROP_COMPLETE:
 				DragNDrop.Active = false;
 
@@ -681,6 +715,7 @@ public unsafe class OSWindow : IValidatable
 					}
 				}
 				break;
+
 			case SDL_EventType.SDL_EVENT_KEY_UP: {
 					if (!ev.Event.key.repeat) {
 						ButtonCode key = TranslateKeyboardKey(ev.Event.key.scancode);
@@ -689,6 +724,7 @@ public unsafe class OSWindow : IValidatable
 					}
 				}
 				break;
+
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
 					int btn = ev.Event.button.button - 1;
 					if (btn == 2) btn = 1;
@@ -697,6 +733,7 @@ public unsafe class OSWindow : IValidatable
 					Mouse.CurrentButtonCodeState[btn] = 1;
 				}
 				break;
+
 			case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP: {
 					int btn = ev.Event.button.button - 1;
 					if (btn == 2) btn = 1;
@@ -705,14 +742,17 @@ public unsafe class OSWindow : IValidatable
 					Mouse.CurrentButtonCodeState[btn] = 0;
 				}
 				break;
+
 			case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
 				Mouse.CurrentMouseScroll.X = ev.Event.wheel.x;
 				Mouse.CurrentMouseScroll.Y = ev.Event.wheel.y;
 				break;
+
 			case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
 				Mouse.CurrentMousePosition.X = ev.Event.motion.x;
 				Mouse.CurrentMousePosition.Y = ev.Event.motion.y;
 				break;
+
 			case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
 			case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
 					EngineCore.WaitForGameThread();
@@ -727,6 +767,7 @@ public unsafe class OSWindow : IValidatable
 					EngineCore.ReleaseGameThread();
 				}
 				break;
+
 			case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: {
 					int width, height;
 					EngineCore.WaitForGameThread();
@@ -745,13 +786,16 @@ public unsafe class OSWindow : IValidatable
 			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
 				Hovered = this;
 				break;
+
 			case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
 				if (Hovered == this)
 					Hovered = null;
 				break;
+
 			case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 				HandleTextInput(in ev);
 				break;
+
 			case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 				UserWantsToClose = true; break;
 		}
@@ -790,15 +834,15 @@ public unsafe class OSWindow : IValidatable
 				SDL3.SDL_StopTextInput(handle);
 	}
 
-
 	public void StartTextInput() {
 		Interlocked.Exchange(ref textinputQueued, 1);
 	}
+
 	public void StopTextInput() {
 		Interlocked.Exchange(ref textinputQueued, -1);
 	}
 
-	#endregion
+	#endregion Text Input
 
 	public struct OSEventTimestamped
 	{
@@ -808,6 +852,7 @@ public unsafe class OSWindow : IValidatable
 		// annoying, but needed for a custom event
 		public string? String;
 	}
+
 	private static ConcurrentQueue<OSEventTimestamped> EventBuffer = new();
 
 	/// <summary>
@@ -860,6 +905,7 @@ public unsafe class OSWindow : IValidatable
 					case SDL_EventType.SDL_EVENT_TEXT_INPUT:
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.text.GetText() });
 						break;
+
 					case SDL_EventType.SDL_EVENT_DROP_FILE:
 					case SDL_EventType.SDL_EVENT_DROP_TEXT:
 						EventBuffer.Enqueue(new() { Event = ev, Timestamp = time, String = ev.drop.GetData() });
@@ -875,6 +921,7 @@ public unsafe class OSWindow : IValidatable
 #endif
 		}
 	}
+
 	public void Close() {
 		isValid = false;
 		SDL3.SDL_DestroyCursor(cursor);
@@ -887,7 +934,8 @@ public unsafe class OSWindow : IValidatable
 		windowLookup_id2window.Remove(windowID);
 	}
 
-	SDL_Surface* queuedIcon;
+	private SDL_Surface* queuedIcon;
+
 	public void SetIcon(Image image) {
 		queuedIcon = null;
 
@@ -903,6 +951,7 @@ public unsafe class OSWindow : IValidatable
 				amask = 0xFF000000;
 				depth = 32; pitch = image.Width * 4;
 				break;
+
 			default:
 				// Compressed formats are not supported
 				return;
@@ -914,6 +963,7 @@ public unsafe class OSWindow : IValidatable
 	public OSMonitor Monitor {
 		get => SDL3.SDL_GetDisplayForWindow(handle);
 	}
+
 	public void FocusWindow() => SDL3.SDL_RaiseWindow(handle);
 
 	public void* Handle => handle;
@@ -938,13 +988,15 @@ public unsafe class OSWindow : IValidatable
 		SDL3.SDL_SetWindowRelativeMouseMode(handle, false);
 		OS.ShowCursor();
 	}
+
 	public void DisableCursor() {
 		SDL3.SDL_SetWindowRelativeMouseMode(handle, true);
 		OS.HideCursor();
 	}
 
-	SDL_Cursor* cursor;
-	MouseCursor lastCursorValue = MouseCursor.MOUSE_CURSOR_DEFAULT;
+	private SDL_Cursor* cursor;
+	private MouseCursor lastCursorValue = MouseCursor.MOUSE_CURSOR_DEFAULT;
+
 	public void SetMouseCursor(MouseCursor cursor) {
 		if (lastCursorValue == cursor)
 			return;
@@ -982,11 +1034,14 @@ public unsafe class OSWindow : IValidatable
 	public const float RL_CULL_DISTANCE_FAR = 1000f;
 
 	public void ClearBackground(int r, int g, int b, int a) => ClearBackground((byte)r, (byte)g, (byte)b, (byte)a);
+
 	public void ClearBackground(byte r, byte g, byte b, byte a) {
 		Rlgl.ClearColor(r, g, b, a);
 		Rlgl.ClearScreenBuffers();
 	}
+
 	public void ClearBackground(int r, int g, int b) => ClearBackground(r, g, b, 255);
+
 	public void ClearBackground(Color c) => ClearBackground(c.R, c.G, c.B, c.A);
 
 	public void BeginScissorMode(int x, int y, int width, int height) {
@@ -1125,6 +1180,7 @@ public unsafe class OSWindow : IValidatable
 
 		DragNDrop.Reset();
 	}
+
 	/// <summary>
 	/// Writes the <see cref="WindowMouseState"/> into a <see cref="Input.MouseState"/> structure, then resets the <see cref="WindowMouseState"/> and prepares it for the next time this method is called.
 	/// <br/>This adds a layer of abstraction over how the engine windows handle input vs. how the game code handles input.
@@ -1201,10 +1257,10 @@ public unsafe class OSWindow : IValidatable
 	}
 
 	public void SetMousePosition(Vector2F dragStart) {
-
 	}
 
 	private bool isValid = true;
+
 	public bool IsValid() => isValid;
 
 	public Ray GetMouseRay(Vector2 mouse, Camera3D camera) {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Poly2Tri;
+﻿namespace Poly2Tri;
 
 public class TriPoint
 {
@@ -17,14 +14,14 @@ public class TriPoint
 
 	public List<Edge> EdgeList;
 
-	public TriPoint() { }
+	public TriPoint() {
+	}
 
 	public TriPoint(double x, double y, object? associatedObject = null) {
 		X = x;
 		Y = y;
 		EdgeList = null;
 		AssociatedObject = associatedObject;
-
 	}
 
 	public TriPoint(Vector2 p) {

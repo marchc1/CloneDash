@@ -8,6 +8,7 @@
 		public int Repetitions { get; set; } = 0;
 		public Action? Method { get; set; }
 	}
+
 	public class TimerManagement(Level level)
 	{
 		private Dictionary<ThreadExecutionTime, List<Timer>> Timers = [];
@@ -41,7 +42,8 @@
 			t.Remove(timer);
 		}
 
-		List<Timer> toRemove = [];
+		private List<Timer> toRemove = [];
+
 		public void Run(ThreadExecutionTime exTime) {
 			var now = level.Realtime;
 			toRemove.Clear();

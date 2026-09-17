@@ -1,10 +1,6 @@
-﻿using Newtonsoft.Json;
-using Nucleus.Common.Graphics;
+﻿using Nucleus.Common.Graphics;
 using Nucleus.Core;
 using Raylib_cs;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Nucleus.Files;
 
@@ -14,12 +10,13 @@ namespace Nucleus.Files;
 public static class Filesystem
 {
 	public static string GetExtension(string path) => System.IO.Path.GetExtension(path) ?? "";
+
 	private static FileNotFoundException NotFound(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path) => new FileNotFoundException($"Cannot find '{path}' in '{pathID}'!");
 
 	// Extra Raylib macros.
 
 	// We use this scratch buffer to write files to before uploading to Raylib.
-	// The strategy is to allocate 8mb buffers in a local thread context. 
+	// The strategy is to allocate 8mb buffers in a local thread context.
 	// The buffer is incremented when overflows would occur and never shrinks.
 	internal static ThreadLocal<byte[]> ScratchBuffer = new(() => new byte[1024 * 1024 * 8]);
 
@@ -33,7 +30,7 @@ public static class Filesystem
 	/// <param name="pathID"></param>
 	/// <param name="path"></param>
 	/// <param name="scratchBuffer"></param>
-	static unsafe Span<byte> ScratchUpload(string pathID, string path) {
+	private static unsafe Span<byte> ScratchUpload(string pathID, string path) {
 		using (var stream = filesystem.Open(pathID, path, FileAccess.Read, FileMode.Open)) {
 			if (stream == null)
 				throw NotFound(pathID, path);
@@ -102,7 +99,7 @@ public static class Filesystem
 
 	public static unsafe Font ReadFont(string pathID, string path, int fontSize, Span<int> codepoints) {
 		var buffer = ScratchUpload(pathID, path);
-		fixed(int* codepointsPtr = codepoints)
+		fixed (int* codepointsPtr = codepoints)
 		fixed (byte* data = buffer) {
 			var font = Raylib.LoadFontFromMemory(new Utf8Buffer(GetFontExtension(buffer)).AsPointer(), data, buffer.Length, fontSize, codepointsPtr, codepoints.Length);
 			return font;

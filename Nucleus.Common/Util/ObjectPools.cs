@@ -6,19 +6,14 @@ namespace Nucleus.Common.Util;
 public interface IPoolableObject
 {
 	void Init();
-	void Reset();
-}
 
-public class PoolableList<T> : List<T>, IPoolableObject
-{
-	public void Init() { }
-	public void Reset() => Clear();
+	void Reset();
 }
 
 public class ListPool<T>
 {
 	public static readonly ListPool<T> Shared = new();
-	readonly ObjectPool<PoolableList<T>> pool = new();
+	private readonly ObjectPool<PoolableList<T>> pool = new();
 
 	public List<T> Alloc(int capacity = 0) {
 		List<T> list = pool.Alloc();
@@ -34,12 +29,20 @@ public class ListPool<T>
 	}
 }
 
+public class PoolableList<T> : List<T>, IPoolableObject
+{
+	public void Init() {
+	}
+
+	public void Reset() => Clear();
+}
+
 public class ObjectPool<T> where T : IPoolableObject, new()
 {
 	public static readonly ObjectPool<T> Shared = new();
 
-	readonly ConcurrentBag<T> _free = new();
-	readonly ConcurrentDictionary<T, byte> _allocated = new(ReferenceEqualityComparer.Instance);
+	private readonly ConcurrentDictionary<T, byte> _allocated = new(ReferenceEqualityComparer.Instance);
+	private readonly ConcurrentBag<T> _free = new();
 
 	public T Alloc() {
 		T instance;
@@ -54,8 +57,6 @@ public class ObjectPool<T> where T : IPoolableObject, new()
 		return instance;
 	}
 
-	public bool IsMemoryPoolAllocated(T value) => value != null && _allocated.ContainsKey(value);
-
 	public void Free(T value) {
 		if (value == null)
 			return;
@@ -66,10 +67,14 @@ public class ObjectPool<T> where T : IPoolableObject, new()
 		_free.Add(value);
 	}
 
-	sealed class ReferenceEqualityComparer : IEqualityComparer<T>
+	public bool IsMemoryPoolAllocated(T value) => value != null && _allocated.ContainsKey(value);
+
+	private sealed class ReferenceEqualityComparer : IEqualityComparer<T>
 	{
 		public static readonly ReferenceEqualityComparer Instance = new();
+
 		public bool Equals(T x, T y) => ReferenceEquals(x, y);
+
 		public int GetHashCode(T obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
 	}
 }

@@ -13,27 +13,6 @@ public static class ReflectionTools
 						.Where(x => x.IsClass && !x.IsAbstract && x.IsSubclassOf(type))
 						.ToArray();
 
-	public static T[] InstantiateAllInheritorsOfInterface<T>() => AppDomain.CurrentDomain
-			.GetAssemblies()
-			.SelectMany(a => a.GetTypes())
-			.Where(t => typeof(T).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract)
-			.Where(t => t.GetConstructor(Type.EmptyTypes) != null)
-			.Select(t => (T)Activator.CreateInstance(t)!)
-			.ToArray();
-
-	public static T[] InstantiateAllInheritorsOfAbstractType<T>() {
-		var inheritors = typeof(T).GetInheritorsOfAbstractType();
-		T[] ret = new T[inheritors.Length];
-		for (int i = 0; i < inheritors.Length; i++) {
-			ret[i] = (T)Activator.CreateInstance(inheritors[i])!;
-		}
-		return ret;
-	}
-
-	public static bool IsAssemblyDebugBuild(this Assembly assembly) {
-		return assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled);
-	}
-
 	public static DateTime? GetLinkerTime(this Assembly assembly) {
 		const string BuildVersionMetadataPrefix = "+build";
 
@@ -48,6 +27,27 @@ public static class ReflectionTools
 		}
 
 		return null;
+	}
+
+	public static T[] InstantiateAllInheritorsOfAbstractType<T>() {
+		var inheritors = typeof(T).GetInheritorsOfAbstractType();
+		T[] ret = new T[inheritors.Length];
+		for (int i = 0; i < inheritors.Length; i++) {
+			ret[i] = (T)Activator.CreateInstance(inheritors[i])!;
+		}
+		return ret;
+	}
+
+	public static T[] InstantiateAllInheritorsOfInterface<T>() => AppDomain.CurrentDomain
+					.GetAssemblies()
+			.SelectMany(a => a.GetTypes())
+			.Where(t => typeof(T).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract)
+			.Where(t => t.GetConstructor(Type.EmptyTypes) != null)
+			.Select(t => (T)Activator.CreateInstance(t)!)
+			.ToArray();
+
+	public static bool IsAssemblyDebugBuild(this Assembly assembly) {
+		return assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled);
 	}
 
 	public static bool TryGetLinkerTime(this Assembly assembly, [NotNullWhen(true)] out DateTime dateTime) {

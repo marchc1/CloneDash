@@ -1,10 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
 ﻿using System.Runtime.InteropServices;
 
 namespace Nucleus;
@@ -33,6 +26,7 @@ public static partial class Platform
 
 		return ret;
 	}
+
 #endif
 
 #if COMPILED_OSX
@@ -81,7 +75,7 @@ public static partial class Platform
                 if (libHandle != IntPtr.Zero)
                 {
                     ret = dlsym(libHandle, funcName);
-                    dlclose(libHandle); 
+                    dlclose(libHandle);
                 }
             }
 

@@ -1,6 +1,7 @@
 ﻿namespace Nucleus.Common.Graphics;
 
-public enum GraphicsAPIVersion : ulong{
+public enum GraphicsAPIVersion : ulong
+{
 	// Last 16 bits reserved for API type
 	OpenGL = 1 << 48,
 
