@@ -116,8 +116,8 @@ public static class PanicSystem
 
 		OSWindow window = EngineCore.Window;
 
-		float oldMaster = Raylib.GetMasterVolume();
-		Raylib.SetMasterVolume(0);
+		float oldMaster = audiosystem.GetMasterVolume();
+		audiosystem.SetMasterVolume(0);
 		window.Title = "Nucleus Engine - Panicked!";
 		window.MinSize = new Vector2F((int)window.Size.W, (int)window.Size.H);
 		window.MaxSize = new Vector2F((int)window.Size.W, (int)window.Size.H);
@@ -216,7 +216,7 @@ public static class PanicSystem
 					if (!window.KeyAvailable(out _, out _) && !window.UserClosed())
 						continue;
 
-					Raylib.SetMasterVolume(oldMaster);
+					audiosystem.SetMasterVolume(oldMaster);
 					return false;
 				}
 			}
@@ -237,8 +237,8 @@ public static class PanicSystem
 
 		Interrupting = true;
 
-		float oldMaster = Raylib.GetMasterVolume();
-		Raylib.SetMasterVolume(0);
+		float oldMaster = audiosystem.GetMasterVolume();
+		audiosystem.SetMasterVolume(0);
 
 		window.MinSize = new Vector2F((int)window.Size.W, (int)window.Size.H);
 		window.MaxSize = new Vector2F((int)window.Size.W, (int)window.Size.H);
@@ -316,7 +316,7 @@ public static class PanicSystem
 			else {
 				OSWindow.PropagateEventBuffer();
 				if (window.KeyAvailable(out _, out _)) {
-					Raylib.SetMasterVolume(oldMaster);
+					audiosystem.SetMasterVolume(oldMaster);
 					Interrupting = false;
 					return;
 				}
