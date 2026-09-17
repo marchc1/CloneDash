@@ -12,26 +12,6 @@ public static class ChartMod
 {
 	static IChartSongProvider[]? providers;
 
-	public static IEnumerable<string> GetAvailableChartSongs() {
-		foreach (var retriever in GetAll())
-			foreach (var songName in retriever.GetAvailable())
-				yield return songName;
-	}
-
-	public static ISong? GetSongByName(ReadOnlySpan<char> name = default) {
-		if (name.IsEmpty || name.IsWhiteSpace())
-			return null;
-
-		foreach (var retriever in GetAll()){ 
-			ISong? song = retriever.FindByName(name);
-			if (song == null) continue;
-
-			return song;
-		}
-
-		return null;
-	}
-
 	public static IChartSongProvider? GetChartSongProviderByName(ReadOnlySpan<char> name = default) {
 		if (name.IsEmpty || name.IsWhiteSpace())
 			return null;

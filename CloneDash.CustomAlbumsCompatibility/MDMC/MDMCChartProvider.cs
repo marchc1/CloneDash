@@ -17,14 +17,14 @@ public class MDMCChartProvider : IChartSongProvider
 {
 	public static readonly ConVar mdmc_lastfilter = new ConVar(nameof(mdmc_lastfilter), "", FCvar.Saved, "The last selected song filter");
 
-	public ISong? FindByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
-	public IEnumerable<string> GetAvailable() { yield break; } // Cannot poll for this
+	public ISong? FindSongByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
+	public IEnumerable<ISong> GetAvailableSongs() { yield break; } // Cannot poll for this
 
 	public ReadOnlySpan<char> GetName() => "MDMC";
 	public ISongSourceState NewState() => new MDMCChartSongSourceState();
 
-	public IChartSongFilter? SavedFilter() => mdmc_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<MDMCChartFilter>(new(mdmc_lastfilter.GetString()));
-	public ISong? SavedSong() => null;
+	public IChartSongFilter? GetSavedFilter() => mdmc_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<MDMCChartFilter>(new(mdmc_lastfilter.GetString()));
+	public ISong? GetSavedSong() => null;
 
 	public void UpdateSavedFilter(IChartSongFilter? filter) => mdmc_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((MDMCChartFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) { }

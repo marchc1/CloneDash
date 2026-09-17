@@ -214,12 +214,12 @@ public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
 {
 	public static readonly ConVar ubwl_lastsong = new ConVar(nameof(ubwl_lastsong), "", FCvar.Saved, "The last selected song ID");
 	public static readonly ConVar ubwl_lastfilter = new ConVar(nameof(ubwl_lastfilter), "", FCvar.Saved, "The last selected song filter");
-	public IChartSongFilter? SavedFilter() => ubwl_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(ubwl_lastfilter.GetString()));
-	public ISong? SavedSong() => ubwl_lastsong.GetString().IsEmpty ? null : UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs.FirstOrDefault(x => x.GetUUID().Equals(ubwl_lastsong.GetString(), StringComparison.InvariantCultureIgnoreCase));
+	public IChartSongFilter? GetSavedFilter() => ubwl_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(ubwl_lastfilter.GetString()));
+	public ISong? GetSavedSong() => ubwl_lastsong.GetString().IsEmpty ? null : UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs.FirstOrDefault(x => x.GetUUID().Equals(ubwl_lastsong.GetString(), StringComparison.InvariantCultureIgnoreCase));
 	public void UpdateSavedFilter(IChartSongFilter? filter) => ubwl_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) => ubwl_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
 
-	public ISong? FindByName(ReadOnlySpan<char> name) {
+	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
 		foreach (var song in UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs) {
 			if (name.Equals(song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name, StringComparison.InvariantCultureIgnoreCase))
@@ -228,9 +228,9 @@ public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
 		return null;
 	}
 
-	public IEnumerable<string> GetAvailable() {
+	public IEnumerable<ISong> GetAvailableSongs() {
 		foreach (var song in UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs)
-			yield return song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name;
+			yield return song;
 	}
 
 	public ReadOnlySpan<char> GetName() => "Custom Albums";
