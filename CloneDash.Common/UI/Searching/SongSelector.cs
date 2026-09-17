@@ -547,8 +547,8 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 		IsFirst = false;
 
-		ISong? lastSong = Provider.SavedSong();
-		IChartSongFilter? lastFilter = Provider.SavedFilter();
+		ISong? lastSong = Provider.GetSavedSong();
+		IChartSongFilter? lastFilter = Provider.GetSavedFilter();
 
 		if (lastFilter != null) {
 			if (Source == null) return;

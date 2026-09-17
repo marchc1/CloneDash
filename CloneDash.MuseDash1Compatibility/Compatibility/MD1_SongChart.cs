@@ -2,6 +2,7 @@
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Types;
 
 namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
@@ -79,4 +80,7 @@ public class MD1_SongChart : ISongChart
 			},
 		};
 	}
+
+	public IAudioClip GetAudioTrack() => Song.GetAudioTrack();
+	public int GetRatingNumber() => RatingNumber;
 }
