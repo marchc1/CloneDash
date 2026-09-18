@@ -3,6 +3,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Models;
 using Nucleus.Core;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
@@ -892,7 +893,34 @@ public class MD_ModelDetailWindow : Window
 		if (Instance != null) {
 			Logs.Info($"  DrawOrder: {Instance.DrawOrder.Count} slots");
 			foreach (var slot in Instance.DrawOrder)
-				Logs.Info($"    Slot: {slot.Data.Name} attachment={slot.Attachment?.Name ?? "NULL"} color={slot.Color} blend={slot.BlendMode}");
+				Logs.Info($"    Slot: {slot.Data.Name} attachment={slot.Attachment?.Name ?? "NULL"} color={slot.Color} dark={(slot.DarkColor.HasValue ? slot.DarkColor.Value.ToString() : "none")} blend={slot.BlendMode}");
+		}
+
+		Logs.Info("  --- Attachment atlas regions ---");
+		foreach (var skin in data.Skins) {
+			foreach (var kvp in skin.Attachments) {
+				var att = kvp.Value;
+				IModelAtlasRegion? region = att switch {
+					RegionAttachment ra => ra.Region,
+					MeshAttachment ma => ma.Region,
+					_ => null
+				};
+				string path = att switch {
+					RegionAttachment ra => ra.Path,
+					MeshAttachment ma => ma.Path,
+					_ => "-"
+				};
+				if (region == null) {
+					Logs.Info($"    [{skin.Name}] {att.Name} (path={path}) type={att.GetType().Name} REGION=NULL");
+					continue;
+				}
+				region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+				region.GetOffsets(out int ox, out int oy, out int origW, out int origH);
+				var page = region.GetPage();
+				page.GetSize(out int pw, out int ph);
+				var tex = region.GetTexture();
+				Logs.Info($"    [{skin.Name}] {att.Name} (path={path}) type={att.GetType().Name} region={region.GetName().ToString()} page={page.GetName().ToString()} pageSize={pw}x{ph} tex={tex?.GetWidth() ?? 0}x{tex?.GetHeight() ?? 0} bounds=({rx},{ry},{rw},{rh}) orig={origW}x{origH} offset=({ox},{oy}) rot={region.GetRotation()} pma={page.GetPreMultipliedAlpha()}");
+			}
 		}
 	}
 
