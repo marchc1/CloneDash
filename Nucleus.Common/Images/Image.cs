@@ -66,7 +66,7 @@ public unsafe partial struct Image : IValidatable
 
 	public static unsafe Image LoadImageFromMemory(ReadOnlySpan<byte> buffer) {
 		fixed (byte* ptr = buffer) {
-			using UnmanagedMemoryStream stream = new UnmanagedMemoryStream(ptr, 0, buffer.Length, FileAccess.Read);
+			using UnmanagedMemoryStream stream = new UnmanagedMemoryStream(ptr, buffer.Length, buffer.Length, FileAccess.Read);
 			return LoadImageFromStream(stream);
 		}
 	}
