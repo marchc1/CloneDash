@@ -191,23 +191,24 @@ public struct RectangleF
 	public static bool ContainsPoint(Vector2F pos, Vector2F size, Vector2F point) => point.X >= pos.X && point.X <= pos.X + size.W && point.Y >= pos.Y && point.Y <= pos.Y + size.H;
 
 	/// <summary>
-	/// Tests if <paramref name="subrect"/> is within <paramref name="rect"/> whatsoever.
+	/// Checks if a rectangle is inside another, optionally allowing for partial overlaps (overflows).
 	/// </summary>
-	/// <param name="rect"></param>
-	/// <param name="subrect"></param>
-	/// <returns></returns>
-	public static bool IsSubrectangleWithinRectangle(RectangleF rect, RectangleF subrect) {
-		// four points of subrect
-		var TL = new Vector2F(subrect.X, subrect.Y);
-		var TR = new Vector2F(subrect.X + subrect.W, subrect.Y);
-		var BL = new Vector2F(subrect.X, subrect.Y + subrect.H);
-		var BR = new Vector2F(subrect.X + subrect.W, subrect.Y + subrect.H);
-
-		return
-				rect.ContainsPoint(TL) ||
-				rect.ContainsPoint(TR) ||
-				rect.ContainsPoint(BL) ||
-				rect.ContainsPoint(BR);
+	/// <param name="rect">The main bounding rectangle.</param>
+	/// <param name="subrect">The rectangle to check against.</param>
+	/// <param name="allowPartial">If true, allows the subrect to overflow (intersect). If false, it must be completely inside.</param>
+	public static bool IsRectangleInsideRectangle(RectangleF rect, RectangleF subrect, bool allowPartial = false) {
+		if (allowPartial) {
+			return subrect.X < (rect.X + rect.W) &&
+				   (subrect.X + subrect.W) > rect.X &&
+				   subrect.Y < (rect.Y + rect.H) &&
+				   (subrect.Y + subrect.H) > rect.Y;
+		}
+		else {
+			return subrect.X >= rect.X &&
+				   subrect.Y >= rect.Y &&
+				   (subrect.X + subrect.W) <= (rect.X + rect.W) &&
+				   (subrect.Y + subrect.H) <= (rect.Y + rect.H);
+		}
 	}
 
 	public static RectangleF operator +(RectangleF from, float by) => new RectangleF(from.top + by, from.left + by, from.right + by, from.bottom + by);

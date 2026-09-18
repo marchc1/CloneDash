@@ -1386,14 +1386,14 @@ public class Element : IValidatable
 	public virtual bool ShouldPaintChild(Element child) {
 		if (!clipping) return true;
 		// otherwise, make sure rect in rect
-		// TODO: Make this not suck
+
 		RectangleF parent = GetRenderBounds();
 		RectangleF childRect = child.GetRenderBounds();
+
 		childRect.Pos += ChildRenderOffset;
-		return childRect.X < parent.W &&
-		   childRect.X + childRect.W > 0 &&
-		   childRect.Y < parent.H &&
-		   childRect.Y + childRect.H > 0;
+
+		RectangleF localParentBounds = RectangleF.XYWH(0, 0, parent.W, parent.H);
+		return RectangleF.IsRectangleInsideRectangle(localParentBounds, childRect, true);
 	}
 
 	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) => bounds.ContainsPoint(mousePos);

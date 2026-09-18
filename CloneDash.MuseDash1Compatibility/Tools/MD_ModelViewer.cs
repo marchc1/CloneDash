@@ -218,6 +218,7 @@ public class MD_ModelViewerWindow : Window
 		return "misc";
 	}
 
+
 	void BuildUI() {
 		var topBar = new Panel(this);
 		topBar.Dock = Dock.Top;
@@ -357,6 +358,7 @@ public class MD_ModelThumbnailCard : Button
 	}
 
 	protected override void OnThink() {
+		if (!GetParent()!.ShouldPaintChild(this)) return;
 		base.OnThink();
 		if (Entry == null) return;
 		var instance = Entry.EnsureInstance();
@@ -375,6 +377,7 @@ public class MD_ModelThumbnailCard : Button
 	}
 
 	public override void Paint(float width, float height) {
+		if (!GetParent()!.ShouldPaintChild(this)) return;
 		base.Paint(width, height);
 
 		if (Entry == null) return;
