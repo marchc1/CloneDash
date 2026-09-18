@@ -755,6 +755,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Health = Math.Clamp(Health + health, 0, Quirks.MaxHP);
 	}
 
+	ITexture? backgroundOverride;
+	float backgroundOverrideOpacity;
+
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
 		ResetScreenspaceEffects();
@@ -780,6 +783,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				throw new Exception("No gamemode data provided");
 			if (data is not MD1_GamemodeData gamemodeData)
 				throw new Exception("Gamemode data was not MD1");
+
+			backgroundOverride = gamemodeData.BackgroundTextureOverride;
+			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
 				var charData = CharacterMod.GetCharacterData();
@@ -1096,6 +1102,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void OnUnload() {
 		SceneUI?.Dispose();
 		SceneUI = null;
+
+		if (backgroundOverride != null) {
+			backgroundOverride.Dispose();
+		}
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
@@ -1210,8 +1220,18 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		if (RenderBackgroundFx && HasActiveScene(out var scene))
-			scene.RenderBackground();
+		if (RenderBackgroundFx) {
+			if (backgroundOverride != null) {
+				backgroundOverride.Download(); // call regenerator?
+				Graphics2D.SetTexture(backgroundOverride);
+				Graphics2D.SetDrawColor(255, 255, 255, (int)(255 * backgroundOverrideOpacity));
+				float texWidth = width * GlobalScale * 1.5f;
+				float texHeight = height * GlobalScale * 1.5f;
+				Graphics2D.DrawTexturedRectangle(texWidth / -2, texHeight / -2, texWidth, texHeight);
+			}
+			else if (HasActiveScene(out var scene))
+				scene.RenderBackground();
+		}
 		FeverFX?.Render();
 		//Logs.Info(test.Elapsed.TotalMilliseconds);
 	}

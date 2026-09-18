@@ -141,7 +141,7 @@ namespace Nucleus.ManagedMemory
 				Raylib.UnloadTexture(Underlying);
 				parent?.EnsureTextureRemoved(this);
 			});
-
+			regenerator?.Dispose();
 			disposed = true;
 		}
 

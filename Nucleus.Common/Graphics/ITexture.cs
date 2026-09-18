@@ -26,7 +26,7 @@ public enum PublicTextureFlags
 /// <summary>
 /// Fills or patches the CPU-side pixels of a procedural texture, invoked by <see cref="ITexture.Download"/>.
 /// </summary>
-public interface ITextureRegenerator
+public interface ITextureRegenerator : IDisposable, IValidatable
 {
 	void Regenerate(ITextureCanvas canvas);
 }
