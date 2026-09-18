@@ -96,7 +96,7 @@ namespace Nucleus.ModelEditor.UI
 
 			var lvitem = new AnimationListViewItem(model, animation, listitems);
 			var lvitemImg = new Nucleus.UI.Elements.Image(lvitem);
-			lvitemImg.			Texture = EngineCore.Textures.LoadTextureFromFile("models/animation2.png");
+			lvitemImg.			Texture = textures.LoadTextureFromFile("models/animation2.png");
 			lvitemImg.			ImageOrientation = ImageOrientation.Fit;
 			lvitemImg.SetPassthru(true);
 			lvitemImg.			Dock = Dock.Left;

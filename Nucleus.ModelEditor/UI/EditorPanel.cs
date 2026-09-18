@@ -711,13 +711,13 @@ namespace Nucleus.ModelEditor
 			}
 
 			if (bone.Length > 0) {
-				boneTex = EngineCore.Textures.LoadTextureFromFile("models/lengthbonetex.png");
-				var innerRing = EngineCore.Textures.LoadTextureFromFile("models/bonering.png");
+				boneTex = textures.LoadTextureFromFile("models/lengthbonetex.png");
+				var innerRing = textures.LoadTextureFromFile("models/bonering.png");
 				var lengthMul = (float)NMath.Remap(bone.Length, 40, 150, 0.38, 1, true) * 6;
 				Raylib.DrawTexturePro(innerRing.ToRaylibTexture(), new(0, 0, innerRing.GetWidth(), innerRing.GetHeight()), new(wt.X - (lengthMul / 2), wt.Y - (lengthMul / 2), lengthMul, lengthMul), new(0), 0, color);
 			}
 			else
-				boneTex = EngineCore.Textures.LoadTextureFromFile("models/lengthlessbonetex.png");
+				boneTex = textures.LoadTextureFromFile("models/lengthlessbonetex.png");
 
 			bone.GetTexCoords(byHowMuch, out var baseBottom, out var baseTop, out var tipBottom, out var tipTop, out var lengthLimit);
 

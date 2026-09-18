@@ -64,9 +64,9 @@ public class DeveloperOverlay(Level level)
 		DebugRecords.EnterScope();
 		{
 			DebugRecords.Write("Window Size", Level.FrameState.WindowSize);
-			DebugRecords.Write("Textures", EngineCore.Textures.Count);
-			DebugRecords.Write("Texture Memory (CPU)", (EngineCore.Textures.GetUsedBits(MemoryRealm.CPU) >> 3).NiceBytes());
-			DebugRecords.Write("Texture Memory (GPU)", (EngineCore.Textures.GetUsedBits(MemoryRealm.GPU) >> 3).NiceBytes());
+			DebugRecords.Write("Textures", textures.GetTextureCount());
+			DebugRecords.Write("Texture Memory (CPU)", (textures.GetTotalBits(MemoryRealm.CPU) >> 3).NiceBytes());
+			DebugRecords.Write("Texture Memory (GPU)", (textures.GetTotalBits(MemoryRealm.GPU) >> 3).NiceBytes());
 			DebugRecords.Write("Font Memory (GPU)", Graphics2D.FontManager.GetUsedGPUBits().NiceBytes());
 		}
 		DebugRecords.ExitScope();

@@ -27,8 +27,8 @@ public class Scrollbar : Panel
 
 			Graphics2D.SetDrawColor(fore, IsHovered() ? 220 : 200);
 			Graphics2D.SetTexture(scrollbar.Alignment == ScrollbarAlignment.Vertical ?
-				(ITexture)(down ? EngineCore.Textures.LoadTextureFromFile("ui/down32.png") : EngineCore.Textures.LoadTextureFromFile("ui/up32.png")) :
-				(ITexture)(down ? EngineCore.Textures.LoadTextureFromFile("ui/right32.png") : EngineCore.Textures.LoadTextureFromFile("ui/left32.png")));
+				(ITexture)(down ? textures.LoadTextureFromFile("ui/down32.png") : textures.LoadTextureFromFile("ui/up32.png")) :
+				(ITexture)(down ? textures.LoadTextureFromFile("ui/right32.png") : textures.LoadTextureFromFile("ui/left32.png")));
 			Graphics2D.DrawTexturedRectangle(new Vector2F(2), new Vector2F(width - 4, height - 4));
 		}
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => scrollbar.MouseScrolled(self, state, delta);

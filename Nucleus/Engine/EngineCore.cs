@@ -27,8 +27,6 @@ namespace Nucleus;
 [MarkForStaticConstruction]
 public static class EngineCore
 {
-	public static readonly TextureManagement Textures = new();
-
 	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
 	private static void gc_collect() {
 		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);

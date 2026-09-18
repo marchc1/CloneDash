@@ -50,7 +50,7 @@ namespace Nucleus.ModelEditor
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Image '{Name}'";
 
-				ITexture tex = imageWindow.EngineCore.Textures.CreateTexture(File.ReadAllBytes(Filepath), Path.GetExtension(Filepath));
+				ITexture tex = imageWindow.textures.CreateTexture(File.ReadAllBytes(Filepath), Path.GetExtension(Filepath));
 
 				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
 				imagePanel.				Texture = tex;

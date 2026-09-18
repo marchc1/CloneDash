@@ -811,7 +811,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
 			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
-			ITexture ntex = EngineCore.Textures.CreateTexture((Image)img);
+			ITexture ntex = textures.CreateTexture((Image)img);
 			ntex.SetFilter(TextureFilter.Bilinear);
 			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			return ntex;
@@ -900,7 +900,7 @@ namespace CloneDash.Compatibility.MuseDash
 				var page = pageKVP.Value;
 				page.CheckSizing();
 
-				page.GpuTexture = EngineCore.Textures.CreateTexture(page.Texture);
+				page.GpuTexture = textures.CreateTexture(page.Texture);
 				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}

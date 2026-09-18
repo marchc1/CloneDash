@@ -196,7 +196,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 			packedImg = workingImage;
 			var tex = Raylib.LoadTextureFromImage(workingImage);
 			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-			packedTex = new Texture(EngineCore.Textures, tex, true, workingImage, false);
+			packedTex = new Texture(textures, tex, true, workingImage, false);
 			page.Texture = packedTex;
 			valid = true;
 			return;
@@ -244,7 +244,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		packedImg = workingImg;
 		var gpuTex = Raylib.LoadTextureFromImage(workingImg);
 		Raylib.SetTextureFilter(gpuTex, TextureFilter.Bilinear);
-		packedTex = new Texture(EngineCore.Textures, gpuTex, true, workingImg, false);
+		packedTex = new Texture(textures, gpuTex, true, workingImg, false);
 		page.Texture = packedTex;
 
 		valid = true;
@@ -346,7 +346,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		return null;
 	}
 
-	public Texture PackedTexture {
+	public ITexture PackedTexture {
 		get {
 			Validate();
 			return packedTex;

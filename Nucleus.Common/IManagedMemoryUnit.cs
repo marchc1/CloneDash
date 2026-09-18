@@ -13,6 +13,11 @@ public enum MemoryRealm
 	GPU
 }
 
+public interface IMemoryManager<T> where T : IManagedMemoryUnit
+{
+	ulong GetTotalBits(MemoryRealm realm);
+}
+
 public interface IManagedMemoryUnit : IValidatable, IDisposable
 {
 	public static Span<char> MergePath(ReadOnlySpan<char> pathID, ReadOnlySpan<char> path, Span<char> output) {

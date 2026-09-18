@@ -12,8 +12,8 @@ namespace Nucleus.ModelEditor
 		public static void DrawDualAxis(string name, EditorPanel editorPanel, IEditorType target) {
 			if (!target.CanTranslate() && name == "translate") return;
 			if (!target.CanScale() && name == "scale") return;
-			Texture texX = EngineCore.Textures.LoadTextureFromFile($"models/gizmo_{name}_dirX.png");
-			Texture texY = EngineCore.Textures.LoadTextureFromFile($"models/gizmo_{name}_dirY.png");
+			Texture texX = textures.LoadTextureFromFile($"models/gizmo_{name}_dirX.png");
+			Texture texY = textures.LoadTextureFromFile($"models/gizmo_{name}_dirY.png");
 			float size = 96f;
 			Vector2F worldPos = editorPanel.GridToScreen(target.GetWorldPosition());
 			float worldRot = target.GetScreenRotation();

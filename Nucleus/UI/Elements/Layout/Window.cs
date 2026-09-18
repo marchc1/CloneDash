@@ -167,7 +167,7 @@ public class Titlebar : Panel
 					setupImageRenderer();
 
 				Image.
-				Texture = EngineCore.Textures.LoadTextureFromFile(imagePath);
+				Texture = textures.LoadTextureFromFile(imagePath);
 			}
 		}
 	}

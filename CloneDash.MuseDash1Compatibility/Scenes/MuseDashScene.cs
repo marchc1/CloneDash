@@ -41,7 +41,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
-using Texture = Nucleus.ManagedMemory.Texture;
 using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
 

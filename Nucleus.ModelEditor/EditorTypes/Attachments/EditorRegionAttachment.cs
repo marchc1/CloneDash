@@ -15,12 +15,13 @@ using System.Threading.Tasks;
 
 using Nucleus.Common.Models;
 using Nucleus.Common.Images;
+using Nucleus.Common.Graphics;
 
 namespace Nucleus.ModelEditor
 {
 	public struct QuadPoints
 	{
-		public Texture Texture;
+		public ITexture Texture;
 		public IModelAtlasRegion? Region;
 		public Vector2F TL;
 		public Vector2F TR;
@@ -94,7 +95,7 @@ namespace Nucleus.ModelEditor
 
 			float width = regionH, height = regionW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : EngineCore.Textures.GetErrorTexture();
+			ITexture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
 
 			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
 			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
@@ -167,7 +168,7 @@ namespace Nucleus.ModelEditor
 			var quadpoints = this.QuadPoints();
 
 			IModelAtlasRegion? region = quadpoints.Region;
-			Texture tex = quadpoints.Texture;
+			ITexture tex = quadpoints.Texture;
 			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
 
 			int regX = 0, regY = 0, regW = 512, regH = 512;

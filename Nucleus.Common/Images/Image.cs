@@ -12,7 +12,7 @@ namespace Nucleus.Common.Images;
 /// Image, pixel data stored in CPU memory (RAM)
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public unsafe partial struct Image
+public unsafe partial struct Image : IValidatable
 {
 	/// <summary>
 	/// Image raw data
@@ -38,6 +38,8 @@ public unsafe partial struct Image
 	/// Data format (PixelFormat type)
 	/// </summary>
 	public ImageFormat Format;
+
+	public readonly bool IsValid() => Data != null && Width != 0 && Height != 0;
 
 	// These are ways to load Image's from various sources.
 	// These are separated from Raylib now so they can live in common (but are based on Raylib)

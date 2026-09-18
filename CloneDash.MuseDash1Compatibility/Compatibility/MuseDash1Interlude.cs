@@ -23,7 +23,7 @@ public class MuseDash1Interlude
 			return null;
 
 		var img = tex2d.ToRaylib();
-		var texObj = EngineCore.Textures.CreateTexture(img);
+		var texObj = textures.CreateTexture(img);
 		texObj.SetFilter(TextureFilter.Bilinear);
 		Image.UnloadImage(img);
 		texObj.AddPublicFlags(PublicTextureFlags.RequiresFlippedV);

@@ -351,7 +351,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 			// var start = new Stopwatch();
 			// start.Start();
 
-			var tex = EngineCore.Textures.CreateTexture(img);
+			var tex = textures.CreateTexture(img);
 			// tex.GenerateMipmaps();
 			// tex.SetFilter(TextureFilter.Trilinear);
 			Image.UnloadImage(img);

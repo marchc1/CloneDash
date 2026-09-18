@@ -13,7 +13,7 @@ public class MenuFooterButton : Button
 	public Action? Action { get; set; }
 
 	public string? Icon {
-		set => _image.Texture = string.IsNullOrWhiteSpace(value) ? null : EngineCore.Textures.LoadTextureFromFile(value);
+		set => _image.Texture = string.IsNullOrWhiteSpace(value) ? null : textures.LoadTextureFromFile(value);
 	}
 
 	private readonly Image _image;

@@ -41,7 +41,7 @@ namespace CloneDash.Menu.Character
 			Clipping = false;
 
 			_image = new Image(this);
-			_image.Texture = EngineCore.Textures.LoadTextureFromFile(texture);
+			_image.Texture = textures.LoadTextureFromFile(texture);
 			_image.Anchor = Anchor.CenterLeft;
 			_image.Origin = Anchor.CenterLeft;
 

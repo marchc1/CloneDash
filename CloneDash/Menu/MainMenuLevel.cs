@@ -516,7 +516,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		back.Position = new(-256, 0);
 
 		var backImage = new Image(back);
-		backImage.Texture = EngineCore.Textures.LoadTextureFromFile("ui/back.png");
+		backImage.Texture = textures.LoadTextureFromFile("ui/back.png");
 		backImage.ImageOrientation = ImageOrientation.Centered;
 		backImage.Dock = Dock.Fill;
 		back.OnButtonClick += (_, _) => levelSelector.Remove();

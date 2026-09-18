@@ -1202,8 +1202,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			// TODO: If complex render textures are too slow for this (and they might be), then
 			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
 			// when i have that working
-			RenderTexture = (Nucleus.ManagedMemory.RenderTexture)EngineCore.Textures.CreateRenderTexture((int)width, (int)height, samples: 4);
-			RenderTexture2 = (Nucleus.ManagedMemory.RenderTexture)EngineCore.Textures.CreateRenderTexture((int)width, (int)height, samples: 4);
+			RenderTexture = (Nucleus.ManagedMemory.RenderTexture)textures.CreateRenderTexture((int)width, (int)height, samples: 4);
+			RenderTexture2 = (Nucleus.ManagedMemory.RenderTexture)textures.CreateRenderTexture((int)width, (int)height, samples: 4);
 		}
 
 		RenderTexture?.Begin();
@@ -2347,7 +2347,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public PauseMenuButton(Element parent, string image) : base(parent) {
 			if (image != null) {
 				iconImage = new Image(this);
-				iconImage.Texture = EngineCore.Textures.LoadTextureFromFile(image);
+				iconImage.Texture = textures.LoadTextureFromFile(image);
 				iconImage.ImageOrientation = ImageOrientation.Zoom;
 				iconImage.ImagePadding = new(4);
 				iconImage.Dock = Dock.Left;

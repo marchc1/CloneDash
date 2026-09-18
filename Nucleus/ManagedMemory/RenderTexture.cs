@@ -1,4 +1,5 @@
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Common.Types;
 using Nucleus.Rendering;
 using Nucleus.Types;
@@ -8,7 +9,7 @@ namespace Nucleus.ManagedMemory;
 
 public sealed class RenderTexture : IRenderTexture
 {
-	private readonly TextureManagement? parent;
+	private readonly TextureManager? parent;
 	private readonly int width;
 
 	public int GetWidth() {
@@ -30,6 +31,8 @@ public sealed class RenderTexture : IRenderTexture
 		return format;
 	}
 
+	public Image GetCPUImage() => default;
+
 	private uint colorTextureId;
 	private uint framebuffer;
 	private uint depthRenderbuffer;
@@ -42,7 +45,7 @@ public sealed class RenderTexture : IRenderTexture
 	private TextureWrap wrap = TextureWrap.Clamp;
 	private bool disposed;
 
-	internal unsafe RenderTexture(TextureManagement? parent, in RenderTextureDesc desc) {
+	internal unsafe RenderTexture(TextureManager? parent, in RenderTextureDesc desc) {
 		this.parent = parent;
 		width = desc.Width;
 		height = desc.Height;

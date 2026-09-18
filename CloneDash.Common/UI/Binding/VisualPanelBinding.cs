@@ -69,7 +69,7 @@ namespace CloneDash.Common.UI.Binding
 					case ButtonCode.KeyRight: {
 							Image image = new(this);
 							image.Size = new Vector2F(20);
-							image.Texture = EngineCore.Textures.LoadTextureFromFile(key switch {
+							image.Texture = textures.LoadTextureFromFile("images", key switch {
 								ButtonCode.KeyUp => "icons/caret-up.png",
 								ButtonCode.KeyLeft => "icons/caret-left.png",
 								ButtonCode.KeyDown => "icons/caret-down.png",

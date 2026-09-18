@@ -1,3 +1,4 @@
+using Nucleus.Common.Images;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 
@@ -115,4 +116,5 @@ public interface ITexture : IManagedMemoryUnit
 	Span<byte> GetPixels();
 
 	void Download();
+	Image GetCPUImage();
 }

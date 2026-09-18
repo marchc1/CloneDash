@@ -273,7 +273,7 @@ public class DragRenderer : LogicalEntity
 			var header = divider.Header;
 			var index = dividerAddingTo.TabIndex;
 
-			Graphics2D.SetTexture((ITexture)EngineCore.Textures.LoadTextureFromFile("models/viewheadermovearrow.png"));
+			Graphics2D.SetTexture((ITexture)textures.LoadTextureFromFile("models/viewheadermovearrow.png"));
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Vector2F pos;
 			if (index == divider.Views.Count)

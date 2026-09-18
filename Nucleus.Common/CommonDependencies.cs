@@ -14,5 +14,6 @@ public static class CommonDependencies
 	[Dependency] public static IGraphicsHardwareConfig gfxHardwareConfig = null!;
 	[Dependency] public static GlobalVariablesBase globals = new();
 	[Dependency] public static IFileSystem filesystem = null!;
+	[Dependency] public static ITextureManager textures = null!;
 #pragma warning restore CA2211 // Non-constant fields should not be visible
 }
