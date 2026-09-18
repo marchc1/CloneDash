@@ -115,7 +115,7 @@ public unsafe partial struct Image : IValidatable
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
-	struct uni
+	struct UNI
 	{
 		[FieldOffset(0)] public float fm;
 		[FieldOffset(0)] public uint ui;
@@ -124,7 +124,7 @@ public unsafe partial struct Image : IValidatable
 	static float HalfToFloat(ushort x) {
 		float result = 0.0f;
 
-		uni uni = default;
+		UNI uni = default;
 
 		uint e = (uint)(x & 0x7c00) >> 10;
 		uint m = (uint)(x & 0x03ff) << 13;
@@ -142,7 +142,7 @@ public unsafe partial struct Image : IValidatable
 	static ushort FloatToHalf(float x) {
 		ushort result = 0;
 
-		uni uni = default;
+		UNI uni = default;
 		uni.fm = x;
 
 		uint b = uni.ui + 0x00001000;
