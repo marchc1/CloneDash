@@ -1040,6 +1040,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return ent;
 	}
 
+	FlashbangEffect? lastFlashbangEffect;
+
 	/// <summary>
 	/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 	/// </summary>
@@ -1060,8 +1062,18 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ReadyToBuildEvents.Add(ev);
 		EventManager.Add(ev);
 		// This is a hack... whatever
-		if (ev is FlashbangEffect flash)
-			flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
+		if (ev is FlashbangEffect flash) {
+			// This is a hack on top of a hack! This fixes spontaneous middle flashbangs
+			// I want to use constant interpolation, but I think I messed up my fcurve implementation...
+			KeyframeInterpolation interpolation = KeyframeInterpolation.Linear;
+			if ((lastFlashbangEffect == null || lastFlashbangEffect.Type == FlashbangParam.End) && flash.Type == FlashbangParam.High){
+				flashbangIntensity.AddKeyframe(new() { Time = flash.Time - 0.001, Value = 0, Interpolation = KeyframeInterpolation.Linear });
+				flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = 1, Interpolation = KeyframeInterpolation.Linear });
+			}
+			else
+				flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
+			lastFlashbangEffect = flash;
+		}
 	}
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
