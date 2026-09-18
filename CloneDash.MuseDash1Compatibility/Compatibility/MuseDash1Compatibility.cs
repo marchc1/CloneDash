@@ -665,7 +665,7 @@ namespace CloneDash.Compatibility.MuseDash
 			IBMSCode.ToggleScene10 => 10,
 			_ => 1
 		};
-			
+
 
 		public static List<MuseDash1Album> Albums { get; private set; } = [];
 		public static List<MD1_Song> Songs { get; private set; }
@@ -863,7 +863,7 @@ namespace CloneDash.Compatibility.MuseDash
 				switch (buildStep) {
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
-						var index = images.IndexOf(x => x.m_Name == imageName);
+						var index = images.IndexOf(x => x != null && x.m_Name == imageName);
 						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib());
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
@@ -1861,11 +1861,12 @@ public static class MuseDash1ModelConverter
 		// This feels kinda... ehh...
 		// I will allow it for now, but in the future, we should figure out
 		// what would merge these skins under normal conditions.
-		foreach (var skin in md_data.Skins) {
-			if (skin == defaultSkin) continue;
-			if (skin.Name is "origin" or "hexie") continue;
-			defaultSkin.AddSkin(skin);
-		}
+		if (defaultSkin != null)
+			foreach (var skin in md_data.Skins) {
+				if (skin == defaultSkin) continue;
+				if (skin.Name is "origin" or "hexie") continue;
+				defaultSkin.AddSkin(skin);
+			}
 
 		return md_data;
 	}
