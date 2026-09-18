@@ -325,7 +325,7 @@ public class MD_ModelViewerWindow : Window
 				row * (THUMB_SIZE + THUMB_PADDING + 20) + THUMB_PADDING
 			);
 			card.Size = new(THUMB_SIZE, THUMB_SIZE + 20);
-			card.Setup(entry);
+			card.Setup(entry, RightPanel.MainPanel);
 			card.OnButtonClick += (_, _) => OpenDetailWindow(entry);
 		}
 	}
@@ -343,6 +343,8 @@ public class MD_ModelThumbnailCard : Button
 	double AnimTime;
 	int CurrentAnimIndex;
 	bool animating;
+	Element? Viewport;
+	const int PREFETCH_MARGIN = 140;
 
 	public MD_ModelThumbnailCard(Element? parent) : base(parent) {
 		BorderSize = 1;
@@ -352,13 +354,23 @@ public class MD_ModelThumbnailCard : Button
 		SetTextAlignment(Anchor.BottomCenter);
 	}
 
-	public void Setup(SkeletonEntry entry) {
+	public void Setup(SkeletonEntry entry, Element? viewport) {
 		Entry = entry;
 		Text = entry.Name;
+		Viewport = viewport;
+	}
+
+	bool IsVisibleInViewport() {
+		if (Viewport == null) return true;
+		var viewportPos = Viewport.GetGlobalPosition() - Viewport.ChildRenderOffset;
+		var viewportRect = RectangleF.FromPosAndSize(viewportPos, Viewport.GetRenderBounds().Size);
+		viewportRect = viewportRect + new RectangleF(-PREFETCH_MARGIN, -PREFETCH_MARGIN, PREFETCH_MARGIN * 2, PREFETCH_MARGIN * 2);
+		var cardRect = RectangleF.FromPosAndSize(GetGlobalPosition(), GetRenderBounds().Size);
+		return RectangleF.IsRectangleInsideRectangle(viewportRect, cardRect, allowPartial: true);
 	}
 
 	protected override void OnThink() {
-		if (!GetParent()!.ShouldPaintChild(this)) return;
+		if (!IsVisibleInViewport()) return;
 		base.OnThink();
 		if (Entry == null) return;
 		var instance = Entry.EnsureInstance();
@@ -377,7 +389,7 @@ public class MD_ModelThumbnailCard : Button
 	}
 
 	public override void Paint(float width, float height) {
-		if (!GetParent()!.ShouldPaintChild(this)) return;
+		if (!IsVisibleInViewport()) return;
 		base.Paint(width, height);
 
 		if (Entry == null) return;

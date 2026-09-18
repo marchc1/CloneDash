@@ -303,34 +303,42 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		Rlgl.DisableBackfaceCulling();
 
 		Rlgl.PushMatrix();
-		Rlgl.Translatef(Position.X, Position.Y, 0);
-		Rlgl.Scalef(Scale.X, Scale.Y, 1);
+		try {
+			Rlgl.Translatef(Position.X, Position.Y, 0);
+			Rlgl.Scalef(Scale.X, Scale.Y, 1);
 
-		foreach (var bone in Bones) {
-			bone.UpdateWorldTransform();
-		}
-
-		foreach (var slot in DrawOrder) {
-			var attachment = slot.Attachment;
-			if (attachment == null) {
-				Clipping.NextSlot(slot);
-				continue;
+			foreach (var bone in Bones) {
+				bone.UpdateWorldTransform();
 			}
-			attachment.Render(slot);
-			Clipping.NextSlot(slot);
-			slot.EndBlendMode();
+
+			foreach (var slot in DrawOrder) {
+				var attachment = slot.Attachment;
+				if (attachment == null) {
+					Clipping.NextSlot(slot);
+					continue;
+				}
+				try {
+					attachment.Render(slot);
+				}
+				finally {
+					Clipping.NextSlot(slot);
+					slot.EndBlendMode();
+				}
+			}
+
+			/*int index = 0;
+			foreach (var bone in Bones) {
+				var test = bone.LocalToWorld(0, 0);
+				Raylib.DrawCircleV(new(test.X, -test.Y), 4, Color.Red);
+				Graphics2D.DrawText(new(test.X, -test.Y), $"[{index}] {bone.Name}", "Consolas", 48);
+				index++;
+			}*/
+
+			Clipping.End();
 		}
-
-		/*int index = 0;
-		foreach (var bone in Bones) {
-			var test = bone.LocalToWorld(0, 0);
-			Raylib.DrawCircleV(new(test.X, -test.Y), 4, Color.Red);
-			Graphics2D.DrawText(new(test.X, -test.Y), $"[{index}] {bone.Name}", "Consolas", 48);
-			index++;
-		}*/
-
-		Clipping.End();
-		Rlgl.PopMatrix();
+		finally {
+			Rlgl.PopMatrix();
+		}
 		Graphics2D.OffsetDrawing(offset);
 
 		if (Model4System.m4s_wireframe.GetInt() >= 2) {
