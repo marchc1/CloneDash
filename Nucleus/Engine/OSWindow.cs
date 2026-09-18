@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Common.Input;
 using Nucleus.Common.OS;
 using Nucleus.Common.Types;

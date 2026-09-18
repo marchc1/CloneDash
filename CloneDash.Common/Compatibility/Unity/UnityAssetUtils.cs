@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Images;
 using Nucleus.Extensions;
 using System.Collections;
 using System.Collections.Generic;
@@ -168,14 +169,14 @@ public static class UnityAssetUtils
 	/// </summary>
 	/// <param name="tex2D"></param>
 	/// <returns></returns>
-	public static Raylib_cs.Image ToRaylib(this AssetStudio.Texture2D tex2D) {
+	public static Image ToRaylib(this AssetStudio.Texture2D tex2D) {
 		if (tex2D == null)
 			return default;
 		var imgData = tex2D.image_data.GetData();
 		int width = tex2D.m_Width;
 		int height = tex2D.m_Height;
 		ImageFormat pixelFormat;
-		Raylib_cs.Image img;
+		Image img;
 		switch (tex2D.m_TextureFormat) {
 			case TextureFormat.RGB24: pixelFormat = ImageFormat.R8G8B8; break;
 			case TextureFormat.RGBA32: pixelFormat = ImageFormat.R8G8B8A8; break;

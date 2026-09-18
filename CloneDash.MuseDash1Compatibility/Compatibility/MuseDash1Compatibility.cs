@@ -19,6 +19,7 @@ using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
