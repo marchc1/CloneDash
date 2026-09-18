@@ -107,8 +107,9 @@ public static class Model4System
 
 	internal static void PrepareWireframeRendering() {
 		Rlgl.DrawRenderBatchActive();
-		Rlgl.Begin(DrawMode.LINES);
+		Rlgl.SetLineWidth(1);
 		Rlgl.SetTexture(0);
+		Rlgl.Begin(DrawMode.LINES);
 	}
 
 	internal static void EndWireframeRendering() {
@@ -382,7 +383,12 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 			slot.SetToSetupPose();
 	}
 
-	public void SetSkin(string skinName) => throw new NotImplementedException();
+	public void SetSkin(string skinName) => SetSkin(Data.FindSkin(skinName));
+
+	public void SetSkin(Skin? skin) {
+		Skin = skin;
+		SetSlotsToSetupPose();
+	}
 }
 
 public enum MixBlendMode
@@ -557,8 +563,8 @@ public class Skin : IModel4Nameable
 	public List<BoneData> Bones { get; set; } = [];
 
 	public void AddSkin(Skin skin) {
-		foreach (var attachment in skin.Attachments) Attachments.Add(attachment.Key, attachment.Value);
-		foreach (var bone in skin.Bones) Bones.Add(bone);
+		foreach (var attachment in skin.Attachments) Attachments.TryAdd(attachment.Key, attachment.Value);
+		foreach (var bone in skin.Bones) if (!Bones.Contains(bone)) Bones.Add(bone);
 	}
 
 	public void Clear() {

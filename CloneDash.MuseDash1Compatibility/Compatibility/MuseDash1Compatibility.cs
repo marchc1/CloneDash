@@ -1858,6 +1858,15 @@ public static class MuseDash1ModelConverter
 				break;
 		}
 
+		// This feels kinda... ehh...
+		// I will allow it for now, but in the future, we should figure out
+		// what would merge these skins under normal conditions.
+		foreach (var skin in md_data.Skins) {
+			if (skin == defaultSkin) continue;
+			if (skin.Name is "origin" or "hexie") continue;
+			defaultSkin.AddSkin(skin);
+		}
+
 		return md_data;
 	}
 
