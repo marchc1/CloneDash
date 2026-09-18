@@ -813,6 +813,7 @@ namespace CloneDash.Compatibility.MuseDash
 			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
 			ITexture ntex = textures.CreateTexture((Image)img);
 			ntex.SetFilter(TextureFilter.Bilinear);
+			ntex.SetWrap(TextureWrap.Clamp);
 			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			return ntex;
 		}
@@ -902,6 +903,7 @@ namespace CloneDash.Compatibility.MuseDash
 
 				page.GpuTexture = textures.CreateTexture(page.Texture);
 				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
+				page.GpuTexture.SetWrap(TextureWrap.Clamp);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
 
