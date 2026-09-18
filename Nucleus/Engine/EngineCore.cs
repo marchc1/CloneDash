@@ -9,6 +9,7 @@ using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.Input;
+using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -26,6 +27,8 @@ namespace Nucleus;
 [MarkForStaticConstruction]
 public static class EngineCore
 {
+	public static readonly TextureManagement Textures = new();
+
 	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
 	private static void gc_collect() {
 		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);

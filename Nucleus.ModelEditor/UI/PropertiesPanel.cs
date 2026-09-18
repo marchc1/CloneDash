@@ -93,7 +93,7 @@ namespace Nucleus.ModelEditor
 
 			ManagedMemory.Texture? tex = null;
 			if (icon != null) {
-				tex = props.UI.Level.Textures.LoadTextureFromFile(icon);
+				tex = props.UI.EngineCore.Textures.LoadTextureFromFile(icon);
 			}
 			InnerRowLabel test = new(p, tex);
 			test.			Dock = Dock.Left;
@@ -161,7 +161,7 @@ namespace Nucleus.ModelEditor
 			searchBtn.			Size = new(24);
 			searchBtn.			Text = "";
 			var searchImg = new Nucleus.UI.Elements.Image(searchBtn);
-			searchImg.			Texture = prop.Level.Textures.LoadTextureFromFile("models/search.png");
+			searchImg.			Texture = prop.EngineCore.Textures.LoadTextureFromFile("models/search.png");
 			searchImg.SetPassthru(true);
 			searchImg.			Dock = Dock.Fill;
 
@@ -283,7 +283,7 @@ namespace Nucleus.ModelEditor
 				img.				ImageOrientation = ImageOrientation.Zoom;
 				img.				Dock = Dock.Left;
 				img.				DockMargin = RectangleF.TLRB(2);
-				img.				Texture = buttons.Level.Textures.LoadTextureFromFile(icon);
+				img.				Texture = buttons.EngineCore.Textures.LoadTextureFromFile(icon);
 
 				newBtn.SetTextPadding(new(68, 0));
 				newBtn.SetTextAlignment(Anchor.CenterLeft);
@@ -388,7 +388,7 @@ namespace Nucleus.ModelEditor
 			btn.			Text = "";
 			btn.BorderSize = 0;
 			var btnImg = new Nucleus.UI.Elements.Image(btn);
-			btnImg.			Texture = props.Level.Textures.LoadTextureFromFile(icon);
+			btnImg.			Texture = props.EngineCore.Textures.LoadTextureFromFile(icon);
 			btnImg.			ImageOrientation = ImageOrientation.Centered;
 			btnImg.SetPassthru(true);
 			btnImg.			Dock = Dock.Fill;

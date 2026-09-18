@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.UI;
 using Nucleus.Core;
@@ -295,13 +296,13 @@ public class ElementPaintSystem
 
 		if (element.IsUsingRenderTarget()) {
 			// quick check if needing to create a new RT
-			if (element.IsRenderTargetAvailable(out RenderTexture2D rt)) {
+			if (element.IsRenderTargetAvailable(out IRenderTexture rt)) {
 				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
 				Graphics2D.ResetDrawingOffset();
 				{
 					Graphics2D.BeginRenderTarget(rt);
 					PaintElement(element, ref state, skipPopups);
-					Graphics2D.EndRenderTarget();
+					Graphics2D.EndRenderTarget(rt);
 				}
 				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
 

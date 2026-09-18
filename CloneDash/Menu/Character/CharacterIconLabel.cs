@@ -1,4 +1,5 @@
 using CloneDash.Common.UI;
+using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -40,7 +41,7 @@ namespace CloneDash.Menu.Character
 			Clipping = false;
 
 			_image = new Image(this);
-			_image.Texture = parent.Level.Textures.LoadTextureFromFile(texture);
+			_image.Texture = EngineCore.Textures.LoadTextureFromFile(texture);
 			_image.			Anchor = Anchor.CenterLeft;
 			_image.			Origin = Anchor.CenterLeft;
 

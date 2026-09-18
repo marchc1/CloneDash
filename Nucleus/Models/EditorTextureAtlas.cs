@@ -53,11 +53,11 @@ public class EditorAtlasPage : IModelAtlasPage
 	}
 
 	public void GetSize(out int w, out int h) {
-		w = Texture?.Width ?? 0;
-		h = Texture?.Height ?? 0;
+		w = Texture?.GetWidth() ?? 0;
+		h = Texture?.GetHeight() ?? 0;
 	}
 
-	public ImageFormat GetFormat() => Texture?.Format ?? ImageFormat.None;
+	public ImageFormat GetFormat() => Texture?.GetFormat() ?? ImageFormat.None;
 
 	public void GetFilter(out TextureFilter min, out TextureFilter max) {
 		min = TextureFilter.Bilinear;
@@ -195,7 +195,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 			packedImg = workingImage;
 			var tex = Raylib.LoadTextureFromImage(workingImage);
 			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-			packedTex = new Texture(EngineCore.Level.Textures, tex, true, workingImage, false);
+			packedTex = new Texture(EngineCore.Textures, tex, true, workingImage, false);
 			page.Texture = packedTex;
 			valid = true;
 			return;
@@ -242,7 +242,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		packedImg = workingImg;
 		var gpuTex = Raylib.LoadTextureFromImage(workingImg);
 		Raylib.SetTextureFilter(gpuTex, TextureFilter.Bilinear);
-		packedTex = new Texture(EngineCore.Level.Textures, gpuTex, true, workingImg, false);
+		packedTex = new Texture(EngineCore.Textures, gpuTex, true, workingImg, false);
 		page.Texture = packedTex;
 
 		valid = true;

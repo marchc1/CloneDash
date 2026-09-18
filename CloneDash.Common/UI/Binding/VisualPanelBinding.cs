@@ -1,4 +1,5 @@
 using CloneDash.Game;
+using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Types;
@@ -21,24 +22,24 @@ namespace CloneDash.Common.UI.Binding
 				Direction = FlowDirection.Horizontal,
 				Spacing = 4
 			};
-			buttons.			Anchor = Anchor.CenterLeft;
-			buttons.			Origin = Anchor.CenterLeft;
+			buttons.Anchor = Anchor.CenterLeft;
+			buttons.Origin = Anchor.CenterLeft;
 
 			foreach ((ButtonCode[] button, Action _) in bind.Bindings) {
 				foreach (ButtonCode code in button) {
 					Key key = new(buttons, code);
-					key.					Anchor = Anchor.CenterLeft;
-					key.					Origin = Anchor.CenterLeft;
+					key.Anchor = Anchor.CenterLeft;
+					key.Origin = Anchor.CenterLeft;
 					_keys.Add(key);
 				}
 			}
 
 			_label = new Label(this);
-			_label.			TextSize = CloneDashUI.GetFontSize(20);
-			_label.			Anchor = Anchor.CenterLeft;
-			_label.			Origin = Anchor.CenterLeft;
+			_label.TextSize = CloneDashUI.GetFontSize(20);
+			_label.Anchor = Anchor.CenterLeft;
+			_label.Origin = Anchor.CenterLeft;
 			_label.SetAutoSize(true);
-			_label.			Text = bind.Label;
+			_label.Text = bind.Label;
 		}
 
 		public override void SetBgColor(Color value) {
@@ -66,31 +67,31 @@ namespace CloneDash.Common.UI.Binding
 					case ButtonCode.KeyLeft:
 					case ButtonCode.KeyDown:
 					case ButtonCode.KeyRight: {
-						Image image = new(this);
-							image.						Size = new Vector2F(20);
-							image.						Texture = Level.Textures.LoadTextureFromFile(key switch {
-							ButtonCode.KeyUp => "icons/caret-up.png",
-							ButtonCode.KeyLeft => "icons/caret-left.png",
-							ButtonCode.KeyDown => "icons/caret-down.png",
-							ButtonCode.KeyRight => "icons/caret-right.png",
-							_ => throw new ArgumentOutOfRangeException()
-						});
-						_inner = image;
-						break;
-					}
+							Image image = new(this);
+							image.Size = new Vector2F(20);
+							image.Texture = EngineCore.Textures.LoadTextureFromFile(key switch {
+								ButtonCode.KeyUp => "icons/caret-up.png",
+								ButtonCode.KeyLeft => "icons/caret-left.png",
+								ButtonCode.KeyDown => "icons/caret-down.png",
+								ButtonCode.KeyRight => "icons/caret-right.png",
+								_ => throw new ArgumentOutOfRangeException()
+							});
+							_inner = image;
+							break;
+						}
 
 					default: {
-						Label label = new(this);
-							label.						Font = CloneDashUI.GetBoldFont(GetScheme());
-							label.						Text = key.ToString().Trim("Key");
-						_inner = label;
-						break;
-					}
+							Label label = new(this);
+							label.Font = CloneDashUI.GetBoldFont(GetScheme());
+							label.Text = key.ToString().Trim("Key");
+							_inner = label;
+							break;
+						}
 				}
 
 				_inner.
 				Anchor = Anchor.Center;
-				_inner.				Origin = Anchor.Center;
+				_inner.Origin = Anchor.Center;
 			}
 
 			protected override void OnThink() {

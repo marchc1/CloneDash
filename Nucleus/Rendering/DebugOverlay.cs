@@ -91,7 +91,7 @@ public static class DebugOverlay
 								Vector2F position, 	Vector2F? size = null,
 								Color? color = null, Anchor? anchor = null)
 		=> items.Enqueue(new DebugOverlayTexture(
-			texture, position + GetOffset(), size ?? new(texture.Width, texture.Height), color ?? Color.White, anchor ?? Anchor.TopLeft
+			texture, position + GetOffset(), size ?? new(texture.GetWidth(), texture.GetHeight()), color ?? Color.White, anchor ?? Anchor.TopLeft
 		));
 
 	/// <summary>

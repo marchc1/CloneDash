@@ -102,9 +102,9 @@ public class ShaderInstance : IShader
 
 	public void SetUniform(ReadOnlySpan<char> location, in Matrix4x4 matrix) => Raylib.SetShaderValueMatrix(underlying, GetUniformLocation(location), matrix);
 
-	public void SetTexture(int location, ITexture texture) => Raylib.SetShaderValueTexture(underlying, location, (Texture)texture);
+	public void SetTexture(int location, ITexture texture) => Raylib.SetShaderValueTexture(underlying, location, ((Texture)texture).Underlying);
 
-	public void SetTexture(ReadOnlySpan<char> location, ITexture texture) => SetTexture(GetUniformLocation(location), (Texture)texture);
+	public void SetTexture(ReadOnlySpan<char> location, ITexture texture) => SetTexture(GetUniformLocation(location), texture);
 
 	public int HardwareID => (int)underlying.Id;
 

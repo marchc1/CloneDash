@@ -120,7 +120,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 			~MD1_CustomChartsSong() {
 				MainThread.RunASAP(() => {
-					if (CoverTexture != null && Raylib.IsTextureValid(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
+					if (CoverTexture?.Texture != null && CoverTexture.Texture.IsValid()) CoverTexture.Texture.Dispose();
 
 				});
 			}
@@ -144,15 +144,11 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
 				if (Archive != null) {
 					var coverBytes = GetByteArray(Archive, "cover.png");
-					Raylib.ImageRef img = new(".png", coverBytes);
 
 					MainThread.RunASAP(() => {
-						var tex = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 						callback(new() {
-							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
+							Texture = EngineCore.Textures.CreateTexture(coverBytes, ".png")
 						});
-						img.Dispose();
 					});
 				}
 				else {

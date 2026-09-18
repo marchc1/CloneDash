@@ -204,7 +204,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.		TextSize = 24;
 		category.		Size = new(0.06f);
 		if (icon != null)
-			category.Icon.			Texture = Level.Textures.LoadTextureFromFile(icon);
+			category.Icon.			Texture = EngineCore.Textures.LoadTextureFromFile(icon);
 
 		if (activeCategory == null)
 			SelectCategory(category);

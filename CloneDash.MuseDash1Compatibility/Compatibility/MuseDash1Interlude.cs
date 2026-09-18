@@ -22,10 +22,9 @@ public class MuseDash1Interlude
 			return null;
 
 		var img = tex2d.ToRaylib();
-		var tex = Raylib.LoadTextureFromImage(img);
-		Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
+		var texObj = EngineCore.Textures.CreateTexture(img);
+		texObj.SetFilter(TextureFilter.Bilinear);
 		Raylib.UnloadImage(img);
-		var texObj = new Nucleus.ManagedMemory.Texture(null, tex);
 		texObj.AddPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		return texObj;
 	}

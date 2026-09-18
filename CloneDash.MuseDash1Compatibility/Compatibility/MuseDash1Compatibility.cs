@@ -80,8 +80,8 @@ namespace CloneDash.Compatibility.MuseDash
 		public ITexture GetTexture() => GpuTexture!;
 		ReadOnlySpan<char> IModelAtlasPage.GetName() => Name;
 		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
-		public void GetSize(out int w, out int h) { w = GpuTexture?.Width ?? 0; h = GpuTexture?.Height ?? 0; }
-		public ImageFormat GetFormat() => GpuTexture?.Format ?? ImageFormat.None;
+		public void GetSize(out int w, out int h) { w = GpuTexture?.GetWidth() ?? 0; h = GpuTexture?.GetHeight() ?? 0; }
+		public ImageFormat GetFormat() => GpuTexture?.GetFormat() ?? ImageFormat.None;
 		public void GetFilter(out TextureFilter min, out TextureFilter max) { min = TextureFilter.Bilinear; max = TextureFilter.Bilinear; }
 		public bool SetFilter(TextureFilter min, TextureFilter max) => false;
 		public TextureWrap GetWrap() => default;
@@ -808,9 +808,9 @@ namespace CloneDash.Compatibility.MuseDash
 			return true;
 		}
 
-		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
+		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
 			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: false);
-			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
+			ITexture ntex = EngineCore.Textures.CreateTexture((Image)img);
 			ntex.SetFilter(TextureFilter.Bilinear);
 			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			return ntex;
@@ -899,9 +899,8 @@ namespace CloneDash.Compatibility.MuseDash
 				var page = pageKVP.Value;
 				page.CheckSizing();
 
-				var tex = Raylib.LoadTextureFromImage(page.Texture);
-				Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-				page.GpuTexture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true);
+				page.GpuTexture = EngineCore.Textures.CreateTexture(page.Texture);
+				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
 

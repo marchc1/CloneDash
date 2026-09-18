@@ -245,8 +245,8 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	~MD1_Song() {
 		MainThread.RunASAP(() => {
-			if (__gotCover && CoverTexture != null)
-				Raylib.UnloadTexture(CoverTexture.Texture);
+			if (__gotCover && CoverTexture?.Texture != null)
+				CoverTexture.Texture.Dispose();
 
 			if (AudioTrack != null) audiosystem.DestroyAudioClip(AudioTrack);
 			if (DemoTrack != null) audiosystem.DestroyAudioClip(DemoTrack);
@@ -350,12 +350,12 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 			// var start = new Stopwatch();
 			// start.Start();
 
-			var tex = Raylib.LoadTextureFromImage(img);
-			Raylib.GenTextureMipmaps(ref tex);
-			Raylib.SetTextureFilter(tex, TextureFilter.Trilinear);
+			var tex = EngineCore.Textures.CreateTexture(img);
+			// tex.GenerateMipmaps();
+			// tex.SetFilter(TextureFilter.Trilinear);
 			Raylib.UnloadImage(img);
 			CoverTexture = new() {
-				Texture = new(EngineCore.Level.Textures, tex, true),
+				Texture = tex,
 				Flipped = true
 			};
 			// start.Stop();

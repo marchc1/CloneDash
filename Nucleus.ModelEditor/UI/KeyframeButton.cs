@@ -44,7 +44,7 @@ namespace Nucleus.ModelEditor
 		public KeyframeButton(Element parent) : base(parent) {
 			Text = "";
 			KeyframeImage = new Nucleus.UI.Elements.Image(this);
-			KeyframeImage.			Texture = Level.Textures.LoadTextureFromFile("models/keyframe.png");
+			KeyframeImage.			Texture = EngineCore.Textures.LoadTextureFromFile("models/keyframe.png");
 			KeyframeImage.			ImageOrientation = ImageOrientation.Centered;
 			KeyframeImage.			ImagePadding = new(7);
 			KeyframeImage.SetPassthru(true);

@@ -126,12 +126,12 @@ public class RuntimeModelAtlasPage : IModelAtlasPage
 	}
 
 	public void GetSize(out int w, out int h) {
-		w = Texture?.Width ?? 0;
-		h = Texture?.Height ?? 0;
+		w = Texture?.GetWidth() ?? 0;
+		h = Texture?.GetHeight() ?? 0;
 	}
 
 	public ImageFormat GetFormat() {
-		return Texture?.Format ?? ImageFormat.None;
+		return Texture?.GetFormat() ?? ImageFormat.None;
 	}
 
 	public void GetFilter(out TextureFilter min, out TextureFilter max) {

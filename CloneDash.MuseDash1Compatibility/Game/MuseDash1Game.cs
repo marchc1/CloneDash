@@ -182,8 +182,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	readonly List<DashEvent> ReadyToBuildEvents = [];
 	bool RenderBackgroundFx = true;
 	bool RenderNotes = true;
-	ComplexRenderTexture? RenderTexture;
-	ComplexRenderTexture? RenderTexture2;
+	Nucleus.ManagedMemory.RenderTexture? RenderTexture;
+	Nucleus.ManagedMemory.RenderTexture? RenderTexture2;
 	IMuseDash1SceneUI? SceneUI;
 	double ScreenScrollLastTime;
 	double ScreenScrollProgress;
@@ -577,7 +577,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
-	public void DoOneEffect(ScreenspaceEffectType effect, ref ComplexRenderTexture read, ref ComplexRenderTexture write) {
+	public void DoOneEffect(ScreenspaceEffectType effect, ref Nucleus.ManagedMemory.RenderTexture read, ref Nucleus.ManagedMemory.RenderTexture write) {
 		var shaderFn = ScreenspaceEffectShaderFns[(int)effect];
 		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)effect];
 		var shader = ScreenspaceEffectShaders[(int)effect];
@@ -594,7 +594,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ScreenspaceEffectPostActivateFns[(int)effect]?.Invoke(shader);
 		Raylib.DrawTextureRec(
 			read.Texture,
-			new Rectangle(0, 0, read.Width, -read.Height),
+			new Rectangle(0, 0, read.GetWidth(), -read.GetHeight()),
 			System.Numerics.Vector2.Zero,
 			Color.White
 		);
@@ -1181,7 +1181,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		SceneUI?.RenderUI();
 
-		RenderTexture?.EndDrawing();
+		RenderTexture?.End();
 		ScreenspaceDraw(frameState);
 	}
 
@@ -1196,17 +1196,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
 		// Evaluate if complex render texture needs to be remade
 		// This is only the case if null or bounds changed
-		if (RenderTexture == null || (RenderTexture.Width != width || RenderTexture.Height != height)) {
+		if (RenderTexture == null || (RenderTexture.GetWidth() != width || RenderTexture.GetHeight() != height)) {
 			RenderTexture?.Dispose();
 			RenderTexture2?.Dispose();
 			// TODO: If complex render textures are too slow for this (and they might be), then
 			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
 			// when i have that working
-			RenderTexture = Textures.CreateComplexRenderTexture((int)width, (int)height);
-			RenderTexture2 = Textures.CreateComplexRenderTexture((int)width, (int)height);
+			RenderTexture = (Nucleus.ManagedMemory.RenderTexture)EngineCore.Textures.CreateRenderTexture((int)width, (int)height, samples: 4);
+			RenderTexture2 = (Nucleus.ManagedMemory.RenderTexture)EngineCore.Textures.CreateRenderTexture((int)width, (int)height, samples: 4);
 		}
 
-		RenderTexture?.BeginDrawing();
+		RenderTexture?.Begin();
 		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
@@ -1371,8 +1371,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (RenderTexture == null || RenderTexture2 == null)
 			return;
 
-		ComplexRenderTexture read = RenderTexture;
-		ComplexRenderTexture write = RenderTexture2;
+		Nucleus.ManagedMemory.RenderTexture read = RenderTexture;
+		Nucleus.ManagedMemory.RenderTexture write = RenderTexture2;
 		DoOneEffect(ScreenspaceEffectType.Sepia, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
 		DoOneEffect(ScreenspaceEffectType.Mosaic, ref read, ref write);
@@ -2171,7 +2171,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
 	}
 
-	private Nucleus.ManagedMemory.Texture? LoadOldFilmTexture(string name) {
+	private ITexture? LoadOldFilmTexture(string name) {
 		var tex2d = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name);
 		if (tex2d == null) return null;
 		var tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, tex2d);
@@ -2183,7 +2183,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		double value = GetCurrentInterpolatedValue(ref state);
 		if (value <= 0.0) return false;
 
-		float widthPx = RenderTexture?.Width ?? 1920;
+		float widthPx = RenderTexture?.GetWidth() ?? 1920;
 		shader.SetUniform("uOffset", (float)value * 4.0f / widthPx);
 
 		return true;
@@ -2204,7 +2204,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uStrength", (float)value * 0.05f);
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.Width ?? 1, RenderTexture?.Height ?? 1));
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.GetWidth() ?? 1, RenderTexture?.GetHeight() ?? 1));
 
 		return true;
 	}
@@ -2252,7 +2252,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (value <= 0.0) return false;
 
 		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.Width ?? 1, RenderTexture?.Height ?? 1));
+		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.GetWidth() ?? 1, RenderTexture?.GetHeight() ?? 1));
 
 		return true;
 	}
@@ -2347,7 +2347,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public PauseMenuButton(Element parent, string image) : base(parent) {
 			if (image != null) {
 				iconImage = new Image(this);
-				iconImage.Texture = Level.Textures.LoadTextureFromFile(image);
+				iconImage.Texture = EngineCore.Textures.LoadTextureFromFile(image);
 				iconImage.ImageOrientation = ImageOrientation.Zoom;
 				iconImage.ImagePadding = new(4);
 				iconImage.Dock = Dock.Left;

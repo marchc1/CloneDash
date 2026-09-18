@@ -36,9 +36,6 @@ public enum HitTestResult : byte
 [MarkForStaticConstruction]
 public abstract class Level : IValidatable
 {
-	// Managed memory
-	public TextureManagement Textures { get; } = new();
-
 	public TimerManagement Timers { get; }
 	public ModelManagement Models { get; } = new();
 	public ShaderManagement Shaders { get; } = new();

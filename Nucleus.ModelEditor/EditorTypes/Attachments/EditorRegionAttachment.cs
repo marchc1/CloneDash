@@ -173,7 +173,7 @@ namespace Nucleus.ModelEditor
 			region?.GetBounds(out regX, out regY, out regW, out regH);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
-			Rlgl.SetTexture(((Texture2D)tex).Id);
+			Rlgl.SetTexture(tex.GetTextureHandle());
 
 			var c = Slot.GetColor();
 			float srM = c.R / 255f, sgM = c.G / 255f, sbM = c.B / 255f, saM = c.A / 255f;
@@ -182,11 +182,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)regX / (float)tex.Width;
-			uEnd = uStart + ((float)regW / (float)tex.Width);
+			uStart = (float)regX / (float)tex.GetWidth();
+			uEnd = uStart + ((float)regW / (float)tex.GetWidth());
 
-			vStart = ((float)regY / (float)tex.Height);
-			vEnd = vStart + ((float)regH / (float)tex.Height);
+			vStart = ((float)regY / (float)tex.GetHeight());
+			vEnd = vStart + ((float)regH / (float)tex.GetHeight());
 
 			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
@@ -234,7 +234,7 @@ namespace Nucleus.ModelEditor
 			// Should only be called when the quad test passes, so if no image available,
 			// just return true and throw an assert for debugging
 			// Debug.Assert(quadpoints.Texture.HasCPUImage, "No CPU image available!");
-			if (!quadpoints.Texture.HasCPUImage) {
+			if (!quadpoints.Texture.HasCPUImage()) {
 				DidPassOpacity = true;
 				return true;
 			}

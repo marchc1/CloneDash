@@ -107,8 +107,8 @@ public class Image : Element
 			bounds.H = size.Value.Y;
 		}
 
-		RectangleF sourceRect = new(0, 0, image.Width, image.Height);
-		RectangleF destRect = new(offset.X, offset.Y, image.Width, image.Height);
+		RectangleF sourceRect = new(0, 0, image.GetWidth(), image.GetHeight());
+		RectangleF destRect = new(offset.X, offset.Y, image.GetWidth(), image.GetHeight());
 
 		var width = bounds.W;
 		var height = bounds.H;
@@ -122,8 +122,8 @@ public class Image : Element
 				break;
 
 			case ImageOrientation.Centered:
-				var x = (bounds.Width / 2) - (image.Width / 2);
-				var y = (bounds.Height / 2) - (image.Height / 2);
+				var x = (bounds.Width / 2) - (image.GetWidth() / 2);
+				var y = (bounds.Height / 2) - (image.GetHeight() / 2);
 				destRect.X += x;
 				destRect.Y += y;
 				break;
@@ -135,13 +135,13 @@ public class Image : Element
 
 			case ImageOrientation.Zoom:
 				if (width <= height) { // Width is the bottleneck
-					var ratio = (float)image.Height / image.Width;
+					var ratio = (float)image.GetHeight() / image.GetWidth();
 					destRect.Width = width;
 					destRect.Height = width * ratio;
 					destRect.Y += (height / 2) - (width / 2);
 				}
 				else {
-					var ratio = (float)image.Width / image.Height;
+					var ratio = (float)image.GetWidth() / image.GetHeight();
 					destRect.Height = height;
 					destRect.Width = height * ratio;
 					destRect.X += (width / 2) - (height / 2);
@@ -150,16 +150,16 @@ public class Image : Element
 				break;
 
 			case ImageOrientation.Fit:
-				var clampWidth = Math.Clamp(width, 0, image.Width);
-				var clampHeight = Math.Clamp(height, 0, image.Height);
+				var clampWidth = Math.Clamp(width, 0, image.GetWidth());
+				var clampHeight = Math.Clamp(height, 0, image.GetHeight());
 				if (clampWidth <= clampHeight) { // Width is the bottleneck
-					var ratio = (float)image.Height / image.Width;
+					var ratio = (float)image.GetHeight() / image.GetWidth();
 					destRect.Width = clampWidth;
 					destRect.Height = clampWidth * ratio;
 					destRect.Y += (height / 2) - (width / 2);
 				}
 				else {
-					var ratio = (float)image.Width / image.Height;
+					var ratio = (float)image.GetWidth() / image.GetHeight();
 					destRect.Height = clampHeight;
 					destRect.Width = clampHeight * ratio;
 					destRect.X += (width / 2) - (height / 2);

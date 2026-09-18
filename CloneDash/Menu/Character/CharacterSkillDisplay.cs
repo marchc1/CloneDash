@@ -1,4 +1,5 @@
 using CloneDash.Common.UI;
+using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -44,7 +45,7 @@ namespace CloneDash.Menu.Character
 			_top.Clipping = false;
 
 			_star = new Image(_top);
-			_star.Texture = parent.Level.Textures.LoadTextureFromFile("icons/star.png");
+			_star.Texture = EngineCore.Textures.LoadTextureFromFile("icons/star.png");
 			_star.			Anchor = Anchor.CenterRight;
 			_star.			Origin = Anchor.CenterRight;
 			_star.Clipping = false;

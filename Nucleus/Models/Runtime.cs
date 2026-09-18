@@ -697,7 +697,7 @@ public class RegionAttachment : Attachment
 
 		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
-		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.Width, tex.Height, out var uvTL, out var uvTR, out var uvBR, out var uvBL);
+		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.GetWidth(), tex.GetHeight(), out var uvTL, out var uvTR, out var uvBR, out var uvBL);
 		if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
 			uvTL.Y = 1f - uvTL.Y;
 			uvTR.Y = 1f - uvTR.Y;
@@ -897,7 +897,7 @@ public class MeshAttachment : VertexAttachment
 		Span<float> uvU = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
 		Span<float> uvV = vertCount <= HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD ? stackalloc float[vertCount] : new float[vertCount];
 		for (int vi = 0; vi < vertCount; vi++) {
-			AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.Width, tex.Height, vertices[vi].U, vertices[vi].V, out uvU[vi], out uvV[vi]);
+			AtlasUV.RemapMeshUV(rx, ry, rw, rh, rotation, offsetX, offsetY, origW, origH, tex.GetWidth(), tex.GetHeight(), vertices[vi].U, vertices[vi].V, out uvU[vi], out uvV[vi]);
 			if (flipV) uvV[vi] = 1f - uvV[vi];
 		}
 
