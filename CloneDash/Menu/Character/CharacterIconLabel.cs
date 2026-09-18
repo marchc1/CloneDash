@@ -42,12 +42,12 @@ namespace CloneDash.Menu.Character
 
 			_image = new Image(this);
 			_image.Texture = EngineCore.Textures.LoadTextureFromFile(texture);
-			_image.			Anchor = Anchor.CenterLeft;
-			_image.			Origin = Anchor.CenterLeft;
+			_image.Anchor = Anchor.CenterLeft;
+			_image.Origin = Anchor.CenterLeft;
 
 			_label = new Label(this);
-			_label.			Anchor = Anchor.CenterLeft;
-			_label.			Origin = Anchor.CenterLeft;
+			_label.Anchor = Anchor.CenterLeft;
+			_label.Origin = Anchor.CenterLeft;
 			_label.SetTextAlignment(Anchor.CenterLeft);
 			_label.SetAutoSize(true);
 		}

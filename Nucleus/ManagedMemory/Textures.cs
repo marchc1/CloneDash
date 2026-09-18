@@ -25,9 +25,6 @@ namespace Nucleus.ManagedMemory
 			this.shouldSelfDisposeImage = shouldSelfDisposeImage;
 		}
 
-		// Unmanaged missing texture; should not be freed...
-		public static readonly Texture MISSING = new Texture(null, Filesystem.ReadTexture("images", "missing_texture.png"), false);
-
 		public RectangleF GetBounds() {
 			return RectangleF.XYWH(0, 0, GetWidth(), GetHeight());
 		}
@@ -140,7 +137,7 @@ namespace Nucleus.ManagedMemory
 			}
 
 			MainThread.RunASAP(() => {
-				if (UnderlyingImage.HasValue && shouldSelfDisposeImage) Raylib.UnloadImage(UnderlyingImage.Value); // todo: something in modeleditor causes this to access violation
+				if (UnderlyingImage.HasValue && shouldSelfDisposeImage) Image.UnloadImage(UnderlyingImage.Value); // todo: something in modeleditor causes this to access violation
 				underlyingImage = null;
 				Raylib.UnloadTexture(Underlying);
 				parent?.EnsureTextureRemoved(this);
@@ -199,20 +196,20 @@ namespace Nucleus.ManagedMemory
 			return tex;
 		}
 
-		public ITexture CreateTexture(ReadOnlySpan<byte> encoded, string fileType = ".png", bool retainCPUImage = false) {
-			Image image = Raylib.LoadImageFromMemory(fileType, encoded.ToArray());
+		public ITexture CreateTexture(ReadOnlySpan<byte> encoded,bool retainCPUImage = false) {
+			Image image = Image.LoadImageFromMemory(encoded);
 			return CreateTextureFromImage(image, retainCPUImage);
 		}
 
-		public ITexture CreateTexture(Stream encoded, string fileType = ".png", bool retainCPUImage = false) {
-			using var img = new Raylib.ImageRef(fileType, encoded);
+		public ITexture CreateTexture(Stream encoded, bool retainCPUImage = false) {
+			using var img = new Raylib.ImageRef(encoded);
 			return CreateTextureFromImage(img, retainCPUImage);
 		}
 
 		private ITexture CreateTextureFromImage(Image image, bool retainCPUImage) {
 			Texture2D underlying = Raylib.LoadTextureFromImage(image);
 			ITexture tex = CreateTexture(underlying, true, retainCPUImage ? image : null, retainCPUImage);
-			if (!retainCPUImage) Raylib.UnloadImage(image);
+			if (!retainCPUImage) Image.UnloadImage(image);
 			tex.SetFilter(TextureFilter.Bilinear);
 			return tex;
 		}
@@ -225,15 +222,15 @@ namespace Nucleus.ManagedMemory
 		}
 
 		public ITexture CreateTexture(int width, int height, ImageFormat format) {
-			Image image = Raylib.GenImageColor(width, height, Color.Blank);
-			if (image.Format != format) Raylib.ImageFormat(ref image, format);
+			Image image = Image.GenImageColor(width, height, Color.Blank);
+			if (image.Format != format) Image.Reformat(ref image, format);
 			Texture2D underlying = Raylib.LoadTextureFromImage(image);
 			return CreateTexture(underlying, true, image, true);
 		}
 
 		public ITexture CreateProcedural(int width, int height, ImageFormat format, ITextureRegenerator generator) {
-			Image image = Raylib.GenImageColor(width, height, Color.Blank);
-			if (image.Format != format) Raylib.ImageFormat(ref image, format);
+			Image image = Image.GenImageColor(width, height, Color.Blank);
+			if (image.Format != format) Image.Reformat(ref image, format);
 			Texture2D underlying = Raylib.LoadTextureFromImage(image);
 			Texture tex = new(this, underlying, true, image, true);
 			tex.SetTextureRegenerator(generator);
@@ -277,7 +274,11 @@ namespace Nucleus.ManagedMemory
 			var managedPath = new UtlSymbol(finalPath);
 			if (LoadedTexturesFromFile.TryGetValue(managedPath, out Texture? texFromFile)) return texFromFile;
 
-			Texture tex = new(this, Filesystem.ReadTexture(new(pathID), new(path) /* << TODO */), true);
+			Image image = Image.LoadImage(path, pathID);
+			Texture2D tex2D = Raylib.LoadTextureFromImage(image);
+			Image.UnloadImage(ref image);
+
+			Texture tex = new(this, tex2D, true);
 			EnsureTextureAdded(tex);
 			tex.GenerateMipmaps();
 			tex.SetFilter(TextureFilter.Bilinear);
@@ -322,5 +323,9 @@ namespace Nucleus.ManagedMemory
 
 		public IRenderTexture CreateRenderTexture(int width, int height, int samples = 1, bool depth = true, ImageFormat format = ImageFormat.R8G8B8A8)
 			=> CreateRenderTexture(new RenderTextureDesc(width, height, samples, depth, format));
+
+		public Texture GetErrorTexture() {
+			throw new NotImplementedException();
+		}
 	}
 }

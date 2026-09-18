@@ -12,6 +12,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Types;
 using OdinSerializer;
 using Raylib_cs;
@@ -353,7 +354,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 			var tex = EngineCore.Textures.CreateTexture(img);
 			// tex.GenerateMipmaps();
 			// tex.SetFilter(TextureFilter.Trilinear);
-			Raylib.UnloadImage(img);
+			Image.UnloadImage(img);
 			CoverTexture = new() {
 				Texture = tex,
 				Flipped = true

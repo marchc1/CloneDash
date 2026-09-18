@@ -170,7 +170,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		if (packedTex != null)
 			packedTex = null;
 		if (packedImg != null) {
-			Raylib.UnloadImage(packedImg.Value);
+			Image.UnloadImage(packedImg.Value);
 			packedImg = null;
 		}
 
@@ -192,7 +192,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		}
 
 		if (UnpackedImages.Count == 0) {
-			Image workingImage = Raylib.GenImageColor(1, 1, Color.Blank);
+			Image workingImage = Image.GenImageColor(1, 1, Color.Blank);
 			packedImg = workingImage;
 			var tex = Raylib.LoadTextureFromImage(workingImage);
 			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
@@ -216,7 +216,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		int rh = (int)bounds.Height.RoundUpToPowerOf2();
 		bool testing = Debugging;
 
-		Image workingImg = Raylib.GenImageColor(rw, rh, testing ? Color.LightGray : Color.Blank);
+		Image workingImg = Image.GenImageColor(rw, rh, testing ? Color.LightGray : Color.Blank);
 
 		for (int j = 0; j < rects.Length; j++) {
 			var rect = rects[j];
@@ -225,12 +225,13 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 
 			int dx = (int)rect.X + additionalPadding;
 			int dy = (int)rect.Y + additionalPadding;
-
-			Raylib.ImageDraw(ref workingImg, src,
-				new Rectangle(0, 0, src.Width, src.Height),
-				new Rectangle(dx, dy, src.Width, src.Height),
-				Color.White);
-
+			unsafe {
+				Raylib.ImageDraw(&workingImg, src,
+					new Rectangle(0, 0, src.Width, src.Height),
+					new Rectangle(dx, dy, src.Width, src.Height),
+					Color.White
+				);
+			}
 			var region = new EditorAtlasRegion(key);
 			region.SetBounds(dx, dy, src.Width, src.Height);
 			page.AddRegion(region);
@@ -249,10 +250,11 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		valid = true;
 	}
 
-	public void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
-		Raylib.ImageDrawRectangleLines(ref workingImage,
-			new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height),
-			1, Color.Red);
+	public unsafe void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
+		fixed (Image* i = &workingImage)
+			Raylib.ImageDrawRectangleLines(i,
+				new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height),
+				1, Color.Red);
 	}
 
 	public void Lock() => locked = true;
@@ -260,7 +262,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 	public void ClearTextures() {
 		if (locked) return;
 		foreach (var img in UnpackedImages.Values) {
-			Raylib.UnloadImage(img);
+			Image.UnloadImage(img);
 		}
 		UnpackedImages.Clear();
 		page.ClearRegions();
@@ -273,11 +275,11 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		string filepathStr = new(filepath);
 
 		if (UnpackedImages.ContainsKey(nameStr)) {
-			Raylib.UnloadImage(UnpackedImages[nameStr]);
+			Image.UnloadImage(UnpackedImages[nameStr]);
 			UnpackedImages.Remove(nameStr);
 		}
 
-		Image cpuImage = Raylib.LoadImage(filepathStr);
+		Image cpuImage = Image.LoadImage(filepathStr);
 		UnpackedImages[nameStr] = cpuImage;
 		Invalidate();
 		return true;
@@ -291,7 +293,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		if (locked) return false;
 		string nameStr = new(name);
 		if (UnpackedImages.TryGetValue(nameStr, out var img)) {
-			Raylib.UnloadImage(img);
+			Image.UnloadImage(img);
 			UnpackedImages.Remove(nameStr);
 			Invalidate();
 			return true;
@@ -308,7 +310,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		}
 		foreach (var key in toRemove) {
 			if (UnpackedImages.TryGetValue(key, out var img))
-				Raylib.UnloadImage(img);
+				Image.UnloadImage(img);
 			UnpackedImages.Remove(key);
 		}
 		if (toRemove.Count > 0)
@@ -358,13 +360,13 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 
 		if (usercall) {
 			if (packedImg.HasValue)
-				Raylib.UnloadImage(packedImg.Value);
+				Image.UnloadImage(packedImg.Value);
 			ClearTextures();
 			packedImg = null;
 		}
 		else MainThread.RunASAP(() => {
 			if (packedImg.HasValue)
-				Raylib.UnloadImage(packedImg.Value);
+				Image.UnloadImage(packedImg.Value);
 			ClearTextures();
 			packedImg = null;
 		});

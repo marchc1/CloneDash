@@ -112,7 +112,7 @@ public struct MDMCChart
 		if (!response.IsSuccessStatusCode)
 			return null;
 		else {
-			using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
+			using (Raylib.ImageRef img = new(response.Content.ReadAsStream())) {
 				ITexture tex = EngineCore.Textures.CreateTexture((Image)img);
 				tex.SetFilter(TextureFilter.Bilinear);
 				return tex;
@@ -131,7 +131,7 @@ public struct MDMCChart
 					callback?.Invoke(null);
 				});
 			else {
-				Raylib.ImageRef img = new(".png", response.Content.ReadAsStream());
+				Raylib.ImageRef img = new(response.Content.ReadAsStream());
 				MainThread.RunASAP(() => {
 					ITexture tex = EngineCore.Textures.CreateTexture((Image)img);
 					tex.SetFilter(TextureFilter.Bilinear);

@@ -810,7 +810,7 @@ namespace CloneDash.Compatibility.MuseDash
 		}
 
 		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: false);
+			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
 			ITexture ntex = EngineCore.Textures.CreateTexture((Image)img);
 			ntex.SetFilter(TextureFilter.Bilinear);
 			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
@@ -863,7 +863,7 @@ namespace CloneDash.Compatibility.MuseDash
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
 						var index = images.IndexOf(x => x.m_Name == imageName);
-						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: false);
+						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib());
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
 						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");

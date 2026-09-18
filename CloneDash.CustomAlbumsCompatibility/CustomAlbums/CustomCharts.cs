@@ -147,7 +147,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 					MainThread.RunASAP(() => {
 						callback(new() {
-							Texture = EngineCore.Textures.CreateTexture(coverBytes, ".png")
+							Texture = EngineCore.Textures.CreateTexture(coverBytes)
 						});
 					});
 				}

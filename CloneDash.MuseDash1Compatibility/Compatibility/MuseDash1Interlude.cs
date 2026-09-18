@@ -2,6 +2,7 @@
 using CloneDash.Compatibility.Unity;
 using Nucleus;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ public class MuseDash1Interlude
 		var img = tex2d.ToRaylib();
 		var texObj = EngineCore.Textures.CreateTexture(img);
 		texObj.SetFilter(TextureFilter.Bilinear);
-		Raylib.UnloadImage(img);
+		Image.UnloadImage(img);
 		texObj.AddPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		return texObj;
 	}

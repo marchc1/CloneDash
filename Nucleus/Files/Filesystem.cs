@@ -54,16 +54,7 @@ public static class Filesystem
 
 	public static unsafe Image ReadImage(string pathID, string path) {
 		var buffer = ScratchUpload(pathID, path);
-		fixed (byte* data = buffer)
-			return Raylib.LoadImageFromMemory(new Utf8Buffer(GetExtension(path)).AsPointer(), data, buffer.Length);
-	}
-
-	public static Texture2D ReadTexture(string pathID, string path, TextureFilter filter = TextureFilter.Bilinear) {
-		using (Raylib.ImageRef img = new(ReadImage(pathID, path))) {
-			var tex = Raylib.LoadTextureFromImage(img);
-			Raylib.SetTextureFilter(tex, filter);
-			return tex;
-		}
+		return Image.LoadImageFromMemory(buffer);
 	}
 
 	public static string GetFontExtension(ReadOnlySpan<byte> data) {

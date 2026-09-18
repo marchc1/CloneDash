@@ -73,6 +73,9 @@ public static class ImageFormatExts
 				case ImageFormat.BPTC_UNORM_RGBA:
 					return 8;
 
+				case ImageFormat.None:
+					return 0;
+
 				default:
 					throw new ArgumentOutOfRangeException(nameof(format), format, null);
 			}

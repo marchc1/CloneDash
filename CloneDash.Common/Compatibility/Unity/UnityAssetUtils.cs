@@ -57,7 +57,7 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		object? o = Dict[key];
 		if (o == null) return null;
 
-		if(o is OrderedDictionary orderedDict){
+		if (o is OrderedDictionary orderedDict) {
 			float x = (float)orderedDict["x"]!;
 			float y = (float)orderedDict["y"]!;
 			float z = (float)orderedDict["z"]!;
@@ -72,7 +72,7 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		if (o == null) return [];
 
 		object[]? baseList;
-		switch (o){
+		switch (o) {
 			case List<object> oList:
 				baseList = oList.ToArray();
 				break;

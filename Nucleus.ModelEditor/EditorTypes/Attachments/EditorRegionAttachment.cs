@@ -94,7 +94,7 @@ namespace Nucleus.ModelEditor
 
 			float width = regionH, height = regionW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
+			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : EngineCore.Textures.GetErrorTexture();
 
 			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
 			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
