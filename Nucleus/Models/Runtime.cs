@@ -382,13 +382,17 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	}
 
 	public void SetSlotsToSetupPose() {
+		ResetDrawOrderToSetup();
+
+		foreach (var slot in Slots)
+			slot.SetToSetupPose();
+	}
+
+	public void ResetDrawOrderToSetup() {
 		DrawOrder.Clear();
 
 		foreach (var slot in Slots)
 			DrawOrder.Add(slot);
-
-		foreach (var slot in Slots)
-			slot.SetToSetupPose();
 	}
 
 	public void SetSkin(string skinName) => SetSkin(Data.FindSkin(skinName));
@@ -1502,6 +1506,24 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 	}
 }
 
+public class DrawOrderTimeline() : CurveTimeline<int[]?>(1)
+{
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		if (BeforeFirstFrame(time))
+			return;
+
+		int[]? order = Curve(0).DetermineValueAtTime(time);
+		if (order == null)
+			return;
+
+		var drawOrder = model.DrawOrder;
+		var slots = model.Slots;
+		drawOrder.Clear();
+		for (int i = 0; i < order.Length; i++)
+			drawOrder.Add(slots[order[i]]);
+	}
+}
+
 public class TranslateTimeline() : DuoBoneFloatPropertyTimeline(false)
 {
 	public override Vector2F Get(BoneInstance bone) => bone.Position;
@@ -1790,6 +1812,8 @@ public class AnimationHandler
 	}
 
 	public void Apply(ModelInstance model) {
+		model.ResetDrawOrderToSetup();
+
 		bool first = true;
 		foreach (var channel in Channels) {
 			if (channel.CurrentEntry == null) continue;

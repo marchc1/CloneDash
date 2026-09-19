@@ -1546,13 +1546,45 @@ public static class MuseDash1ModelConverter
 			}
 		}
 
-		for (int drawI = 0, drawOrder = skeleton.MD_ReadVarInt(true); drawI < drawOrder; drawI++) {
-			skeleton.MD_ReadFloat();
-			int count = skeleton.MD_ReadVarInt(true);
-			for (int i2 = 0; i2 < count; i2++) {
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
+		int drawOrderFrames = skeleton.MD_ReadVarInt(true);
+		if (drawOrderFrames > 0) {
+			int slotCount = nucleusModelData.SlotDatas.Count;
+			DrawOrderTimeline drawTimeline = new();
+			drawTimeline.NewCurves();
+
+			for (int drawI = 0; drawI < drawOrderFrames; drawI++) {
+				float time = skeleton.MD_ReadFloat();
+				int offsetCount = skeleton.MD_ReadVarInt(true);
+
+				int[] drawOrder = new int[slotCount];
+				for (int i2 = 0; i2 < slotCount; i2++)
+					drawOrder[i2] = -1;
+
+				int[] unchanged = new int[slotCount - offsetCount];
+				int originalIndex = 0, unchangedIndex = 0;
+
+				for (int i2 = 0; i2 < offsetCount; i2++) {
+					int slotIndex = skeleton.MD_ReadVarInt(true);
+					int offset = skeleton.MD_ReadVarInt(true);
+
+					while (originalIndex != slotIndex)
+						unchanged[unchangedIndex++] = originalIndex++;
+
+					drawOrder[originalIndex + offset] = originalIndex++;
+				}
+
+				while (originalIndex < slotCount)
+					unchanged[unchangedIndex++] = originalIndex++;
+
+				for (int i2 = slotCount - 1; i2 >= 0; i2--)
+					if (drawOrder[i2] == -1)
+						drawOrder[i2] = unchanged[--unchangedIndex];
+
+				drawTimeline.Curve(0).AddKeyframe(new(time, drawOrder) { Interpolation = Nucleus.Models.KeyframeInterpolation.Constant });
 			}
+
+			animation.Timelines.Add(drawTimeline);
+			animation.Duration = Math.Max(animation.Duration, drawTimeline.Curve(0)?.Last?.Time ?? 0);
 		}
 
 		for (int eventIndex = 0, events = skeleton.MD_ReadVarInt(true); eventIndex < events; eventIndex++) {
