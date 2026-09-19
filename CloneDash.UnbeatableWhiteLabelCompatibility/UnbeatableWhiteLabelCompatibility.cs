@@ -1,6 +1,7 @@
 ﻿using AssetStudio;
 using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
 using Fmod5Sharp;
@@ -38,7 +39,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	static AssemblyLoader Assemblies;
 	[MemberNotNull(nameof(Assets))]
 	[MemberNotNull(nameof(Assemblies))]
-	public static UWLCompatLayerInitResult LightInitialize() {
+	public static AppStatus LightInitialize() {
 #if COMPILED_WINDOWS
 		return INIT_WINDOWS();
 #else
@@ -55,9 +56,9 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	static readonly Dictionary<long, lookupEntry> PathIDLUT = [];
 	static readonly Dictionary<ulong, lookupEntry> NameLUT = [];
 
-	public static UWLCompatLayerInitResult InitializeCompatibilityLayer() {
-		UWLCompatLayerInitResult result;
-		if ((result = LightInitialize()) != UWLCompatLayerInitResult.OK) {
+	public static AppStatus InitializeCompatibilityLayer() {
+		AppStatus result;
+		if ((result = LightInitialize()) != AppStatus.OK) {
 			return result; // unbeatable is optional
 		}
 
@@ -116,7 +117,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			i++;
 		}
 		BeatmapIndex.Songs = BeatmapIndex.Songs.Where(x => x != null).ToArray();
-		return UWLCompatLayerInitResult.OK;
+		return AppStatus.OK;
 	}
 
 	readonly struct SongMusicInfo(string preview, string audio)

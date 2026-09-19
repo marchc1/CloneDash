@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
@@ -391,7 +392,7 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 		var rr = MuseDash1Compatibility.InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
 
-		if (rr != MD1CompatLayerInitResult.OK)
+		if (rr != AppStatus.OK)
 			throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
 
 		StageInfo? stage = JsonConvert.DeserializeObject<StageInfo>(rawData);

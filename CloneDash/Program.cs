@@ -3,6 +3,7 @@
 */
 
 using CloneDash.Common;
+using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
@@ -138,14 +139,13 @@ public class GameDLL : IGameDLL
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
-			MD1CompatLayerInitResult res;
-			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != MD1CompatLayerInitResult.OK) {
+			AppStatus res;
+			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != AppStatus.OK) {
 				throw new Exception($"Muse Dash compatibility layer failed to initialize: {res switch {
-					MD1CompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
-					MD1CompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
-					MD1CompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
-					MD1CompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
-					MD1CompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
+					AppStatus.SteamNotInstalled => "Steam is not installed or could not be found.",
+					AppStatus.AppNotInstalled => "Muse Dash is not installed or could not be found.",
+					AppStatus.CriticalPathNotFound => "Muse Dash's assets could not be found, try validating MD game files",
+					AppStatus.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
 					_ => res.ToString()
 				}}");
 			}

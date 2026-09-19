@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.Unity;
+﻿using CloneDash.Common.Compatibility.Valve;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 
 using Nucleus;
@@ -12,7 +13,7 @@ namespace CloneDash.Compatibility.MuseDash
 	{
 		public static bool Initialized { get; private set; } = false;
 
-		public static MD1CompatLayerInitResult LightInitialize() {
+		public static AppStatus LightInitialize() {
 #if COMPILED_WINDOWS
 			return INIT_WINDOWS();
 #elif COMPILED_OSX
@@ -20,24 +21,24 @@ namespace CloneDash.Compatibility.MuseDash
 #elif COMPILED_LINUX
             return INIT_LINUX();
 #else
-			return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
+			return AppStatus.OperatingSystemNotCompatible;
 #endif
 		}
 
 		public static char[] CodepointsInUse = null!;
 
-		public static MD1CompatLayerInitResult InitializeCompatibilityLayer() {
+		public static AppStatus InitializeCompatibilityLayer() {
 			if (Initialized)
-				return MD1CompatLayerInitResult.OK;
+				return AppStatus.OK;
 
 			StaticSequentialProfiler.Start();
 
-			MD1CompatLayerInitResult result;
+			AppStatus result;
 			using (StaticSequentialProfiler.StartStackFrame("Platform Initialization")) {
 				result = LightInitialize();
 			}
 
-			if (result != MD1CompatLayerInitResult.OK) {
+			if (result != AppStatus.OK) {
 				StaticSequentialProfiler.End(out _, out _);
 				return result;
 			}
