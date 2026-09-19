@@ -50,7 +50,7 @@ namespace Nucleus.ModelEditor
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Image '{Name}'";
 
-				ITexture tex = imageWindow.textures.CreateTexture(File.ReadAllBytes(Filepath), Path.GetExtension(Filepath));
+				ITexture tex = textures.CreateTexture(File.ReadAllBytes(Filepath));
 
 				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
 				imagePanel.				Texture = tex;
@@ -158,7 +158,7 @@ namespace Nucleus.ModelEditor
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Texture Atlas";
 
-				ManagedMemory.Texture tex = TextureAtlas.PackedTexture;
+				ITexture tex = TextureAtlas.PackedTexture;
 
 				var imagePanel = new Image(imageWindow);
 				imagePanel.				Texture = tex;

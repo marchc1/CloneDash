@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Input;
+﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -697,7 +698,7 @@ namespace Nucleus.ModelEditor
 			}
 
 			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : (bone.Color.Adjust(0, 0, -0.15f) with { A = (byte)(bone.Length > 0 ? 45 : 155) });
-			ManagedMemory.Texture boneTex;
+			ITexture boneTex;
 
 			if (ModelEditor.Active.Editor.InWeightsMode
 			 && ModelEditor.Active.LastSelectedObject is EditorMeshAttachment meshAttachment

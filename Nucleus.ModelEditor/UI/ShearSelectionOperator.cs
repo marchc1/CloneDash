@@ -17,9 +17,9 @@ namespace Nucleus.ModelEditor
 			Raylib.DrawCircleSectorLines(new(0, 0), 36, startAngle, endAngle, 24, outer);
 		}
 		public override void GizmoRender(EditorPanel editorPanel, IEditorType target) {
-			Texture texB = textures.LoadTextureFromFile("models/gizmo_shear_base.png");
-			Texture texX = textures.LoadTextureFromFile("models/gizmo_shear_dirX.png");
-			Texture texY = textures.LoadTextureFromFile("models/gizmo_shear_dirY.png");
+			ITexture texB = textures.LoadTextureFromFile("models/gizmo_shear_base.png");
+			ITexture texX = textures.LoadTextureFromFile("models/gizmo_shear_dirX.png");
+			ITexture texY = textures.LoadTextureFromFile("models/gizmo_shear_dirY.png");
 			float size = 96f;
 			Vector2F worldPos = editorPanel.GridToScreen(target.GetWorldPosition());
 			float worldRot = target.GetScreenRotation();

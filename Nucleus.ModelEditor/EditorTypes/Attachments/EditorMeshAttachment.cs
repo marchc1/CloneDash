@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -723,7 +724,7 @@ namespace Nucleus.ModelEditor
 
 		public string GetPath() => Path ?? $"<{Name}>";
 		public string? Path { get; set; } = null;
-		private (Texture Texture, IModelAtlasRegion? Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
+		private (ITexture Texture, IModelAtlasRegion? Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
 			var model = Slot.Bone.Model;
 
 			ModelImage? image = model.ResolveImage(Path);
@@ -737,7 +738,7 @@ namespace Nucleus.ModelEditor
 
 			float width = regH, height = regW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
+			ITexture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
 
 			Vector2F TL = WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
 			Vector2F TR = WorldTransform.LocalToWorld(heightDiv2, -widthDiv2);
@@ -801,7 +802,7 @@ namespace Nucleus.ModelEditor
 			var quadpoints = this.quadpoints();
 
 			IModelAtlasRegion? region = quadpoints.Region;
-			Texture tex = quadpoints.Texture;
+			ITexture tex = quadpoints.Texture;
 			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
 
 			int regX = 0, regY = 0, regW = 512, regH = 512;
@@ -863,7 +864,7 @@ namespace Nucleus.ModelEditor
 
 			float width = regH, height = regW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
+			ITexture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(tex.GetTextureHandle());
