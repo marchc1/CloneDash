@@ -1,4 +1,6 @@
 ﻿using AssetStudio;
+using CommunityToolkit.HighPerformance;
+using K4os.Hash.xxHash;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 using Nucleus.Util;
@@ -35,12 +37,13 @@ public class CatalogResourceType
 {
 	public string m_AssemblyName;
 	public string m_ClassName;
+	public bool IsAssetBundleResource;
 }
 
 /// <summary>
 /// A parsed catalog entry location
 /// </summary>
-public class CatalogEntryLocation
+public struct CatalogEntryLocation
 {
 	public string InternalId { get; set; }
 	public string ProviderId { get; set; }
@@ -75,45 +78,47 @@ public class AddressablesCatalog
 
 	public CatalogResourceType[] m_resourceTypes;
 
-	[JsonIgnore] public List<object> Keys { get; private set; }
-	[JsonIgnore] public Dictionary<object, List<CatalogEntryLocation>> Locations { get; private set; }
+	// [JsonIgnore] public readonly Dictionary<string, int> InternalIDReferences = [];
+	// public int AddInternalIDRef(string name) {
+	// 	if (!InternalIDReferences.TryGetValue(name, out int v))
+	// 		v = 0;
+	// 	InternalIDReferences[name] = v++;
+	// 	return v;
+	// }
+	// public bool DoesInternalIDContainMultipleNames(string name) => InternalIDReferences.TryGetValue(name, out int v) && v > 1;
 
-	[JsonIgnore] public readonly Dictionary<string, int> InternalIDReferences = [];
-	public int AddInternalIDRef(string name) {
-		if (!InternalIDReferences.TryGetValue(name, out int v))
-			v = 0;
-		InternalIDReferences[name] = v++;
-		return v;
-	}
-	public bool DoesInternalIDContainMultipleNames(string name) => InternalIDReferences.TryGetValue(name, out int v) && v > 1;
-
-	[JsonIgnore] public List<CatalogEntryLocation> AllEntries { get; private set; }
 	[JsonIgnore] bool Decoded;
-	[JsonIgnore] public readonly Dictionary<ulong, List<UnitySearchBase>> HashedAssetLookup = [];
+	[JsonIgnore] public readonly Dictionary<string, List<UnitySearchBase>> HashedAssetLookup = new(StringComparer.Ordinal);
 
-	public void PushUnitySearchBase(ulong hashedKey, UnitySearchBase searchBase) {
-		if (!HashedAssetLookup.TryGetValue(hashedKey, out var list))
-			list = HashedAssetLookup[hashedKey] = [];
+	public void PushUnitySearchBase(ReadOnlySpan<char> hashedKey, UnitySearchBase searchBase) {
+		if (!HashedAssetLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return;
+		if (!lookup.TryGetValue(hashedKey, out var list))
+			list = lookup[hashedKey] = new(64);
+
 		list.Add(searchBase);
 	}
 
 
 #nullable enable
 	public UnitySearchBase? Search(ReadOnlySpan<char> forWhat) {
-		ulong hash = forWhat.SliceNullTerminatedString().Hash();
-		if (!HashedAssetLookup.TryGetValue(hash, out var list))
+		if (!HashedAssetLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return null;
+		if (!lookup.TryGetValue(forWhat, out var list))
 			return null;
 		return list.FirstOrDefault();
 	}
 	public IReadOnlyList<UnitySearchBase> SearchAll(ReadOnlySpan<char> forWhat) {
-		ulong hash = forWhat.SliceNullTerminatedString().Hash();
-		if (!HashedAssetLookup.TryGetValue(hash, out var list))
+		if (!HashedAssetLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return [];
+		if (!lookup.TryGetValue(forWhat, out var list))
 			return [];
 		return list;
 	}
 	public UnitySearchBase? Search<T>(ReadOnlySpan<char> forWhat) {
-		ulong hash = forWhat.SliceNullTerminatedString().Hash();
-		if (!HashedAssetLookup.TryGetValue(hash, out var list))
+		if (!HashedAssetLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return null;
+		if (!lookup.TryGetValue(forWhat, out var list))
 			return null;
 		string expectedClassName = $"UnityEngine.{typeof(T).Name}";
 		return list.FirstOrDefault(x => x is UnitySearchAsset asset && asset.Type.m_ClassName == expectedClassName);
@@ -157,7 +162,7 @@ public class AddressablesCatalog
 		}
 	}
 
-	readonly Dictionary<object, List<string>> DependencyKeyToBundleFiles = [];
+	Dictionary<object, List<string>> DependencyKeyToBundleFiles = null!;
 
 	public List<string> ResolveBundleFiles(object dependencyKey) {
 		if (dependencyKey == null)
@@ -185,19 +190,20 @@ public class AddressablesCatalog
 		throw new FileNotFoundException($"Could not resolve dependency key '{dependencyKey}' (type: {dependencyKey.GetType().Name}) to bundle files.");
 	}
 
-	private static string? ExtractBundleFileName(string internalId) {
-		if (internalId == null)
-			return null;
+	private static ReadOnlySpan<char> ExtractBundleFileName(ReadOnlySpan<char> incInternalId, Span<char> internalIdWrite) {
+		if (incInternalId.IsEmpty)
+			return default;
 
-
-		internalId = internalId.Replace('\\', Path.DirectorySeparatorChar);
+		internalIdWrite = internalIdWrite[..incInternalId.Length];
+		incInternalId.Replace(internalIdWrite, '\\', Path.DirectorySeparatorChar);
+		ReadOnlySpan<char> internalId = incInternalId;
 
 		// Handle the {UnityEngine.AddressableAssets.Addressables.RuntimePath}/Platform/bundle.bundle format
 		int prefixEnd = internalId.IndexOf('}');
 		if (prefixEnd >= 0) {
 			// Skip past the closing brace and the following slash
-			ReadOnlySpan<char> afterPrefix = internalId.AsSpan()[(prefixEnd + 1)..];
-			return Path.GetFileName(afterPrefix).ToString();
+			ReadOnlySpan<char> afterPrefix = internalId[(prefixEnd + 1)..];
+			return Path.GetFileName(afterPrefix);
 		}
 
 		// just get the filename
@@ -208,46 +214,54 @@ public class AddressablesCatalog
 		if (Decoded)
 			return;
 
-		Keys = ReadKeys();
-		AllEntries = ReadEntries();
-		Locations = ReadBuckets();
-		foreach (var entry in AllEntries)
-			AddInternalIDRef(entry.InternalId);
+		Span<object> keys = ReadKeys();
+		CatalogEntryLocation[] allEntries = ReadEntries(keys);
+		Dictionary<object, List<EntryAccessor>> locations = ReadBuckets(allEntries);
+		// foreach (var entry in AllEntries)
+		// 	AddInternalIDRef(entry.InternalId);
+		{
+			ConcurrentDictionary<object, ConcurrentQueue<UtlSymbol>> dictBuild = [];
+			Parallel.ForEach(locations, kvp => {
+				Span<char> internalIdWrite = stackalloc char[4096];
+				foreach (var loc in kvp.Value) {
+					ref CatalogEntryLocation entry = ref loc.Get();
+					if (!(entry.ResourceType?.IsAssetBundleResource ?? false))
+						continue;
 
-		foreach (var kvp in Locations) {
-			foreach (var loc in kvp.Value) {
-				if (loc.ResourceType?.m_ClassName != "UnityEngine.ResourceManagement.ResourceProviders.IAssetBundleResource")
+					ReadOnlySpan<char> bundleFileName = ExtractBundleFileName(entry.InternalId, internalIdWrite);
+					if (!bundleFileName.IsEmpty) {
+						var list = dictBuild.GetOrAdd(kvp.Key, _ => new());
+						UtlSymbol bundleFileSymbol = new(bundleFileName);
+						if (!list.Contains(bundleFileSymbol))
+							list.Enqueue(bundleFileSymbol);
+					}
+				}
+			});
+
+			Span<char> internalIdWrite = stackalloc char[4096];
+			for (int i = 0, c = allEntries.Length; i < c; i++) {
+				ref CatalogEntryLocation entry = ref allEntries[i];
+				if (!(entry.ResourceType?.IsAssetBundleResource ?? false))
+					continue;
+				if (entry.PrimaryKey == null)
 					continue;
 
-				string bundleFileName = ExtractBundleFileName(loc.InternalId);
-				if (bundleFileName != null) {
-					if (!DependencyKeyToBundleFiles.TryGetValue(kvp.Key, out var list))
-						DependencyKeyToBundleFiles[kvp.Key] = list = [];
-					if (!list.Contains(bundleFileName))
-						list.Add(bundleFileName);
+				ReadOnlySpan<char> bundleFileName = ExtractBundleFileName(entry.InternalId, internalIdWrite);
+				if (!bundleFileName.IsEmpty) {
+					var list = dictBuild.GetOrAdd(entry.PrimaryKey, _ => new());
+					UtlSymbol bundleFileSymbol = new(bundleFileName);
+					if (!list.Contains(bundleFileSymbol))
+						list.Enqueue(bundleFileSymbol);
 				}
 			}
+
+			DependencyKeyToBundleFiles = dictBuild.Select(static kvp => new KeyValuePair<object, List<string>>(kvp.Key, [.. kvp.Value.Select(static x => x.String())])).ToDictionary();
 		}
 
-		for (int i = 0, c = AllEntries.Count; i < c; i++) {
-			var entry = AllEntries[i];
-			if (entry.ResourceType?.m_ClassName != "UnityEngine.ResourceManagement.ResourceProviders.IAssetBundleResource")
-				continue;
-			if (entry.PrimaryKey == null)
-				continue;
-
-			string bundleFileName = ExtractBundleFileName(entry.InternalId);
-			if (bundleFileName != null) {
-				if (!DependencyKeyToBundleFiles.TryGetValue(entry.PrimaryKey, out var list))
-					DependencyKeyToBundleFiles[entry.PrimaryKey] = list = [];
-				if (!list.Contains(bundleFileName))
-					list.Add(bundleFileName);
-			}
-		}
-
-		for (int i = 0, c = AllEntries.Count; i < c; i++) {
-			var entry = AllEntries[i];
-			if (entry.ResourceType?.m_ClassName == "UnityEngine.ResourceManagement.ResourceProviders.IAssetBundleResource")
+		Span<char> fullName = stackalloc char[8192];
+		for (int i = 0, c = allEntries.Length; i < c; i++) {
+			ref CatalogEntryLocation entry = ref allEntries[i];
+			if (entry.ResourceType?.IsAssetBundleResource ?? false)
 				continue;
 
 			if (entry.InternalId == null || entry.DependencyKey == null)
@@ -258,29 +272,30 @@ public class AddressablesCatalog
 
 			ContainerParser parser = new(entry.InternalId);
 			UnitySearchDirectory dir = Root;
-			while (parser.TryPiece(out ReadOnlySpan<char> piece, out bool last)) {
+			while (parser.TryPiece(out ReadOnlySpan<char> piece, out bool last))
 				dir = dir.GetOrCreateDirectory(piece);
-				ulong hash = dir.FullyQualifiedPath.AsSpan()[..^1].Hash();
-				if (!HashedAssetLookup.TryGetValue(hash, out _))
-					PushUnitySearchBase(hash, dir);
-			}
 
 			UnitySearchAsset asset = dir.CreateFile(entry.PrimaryKey, entry.DependencyKey, entry.ResourceType);
 			if (asset != null) {
-				string fullName = dir.FullyQualifiedPath + asset.Name;
-				PushUnitySearchBase(fullName.Hash(), asset);          // Container/Name
+				ReadOnlySpan<char> fullyQualifiedPath = dir.FullyQualifiedPath;
+				ReadOnlySpan<char> assetName = asset.Name;
+				int fullyQualifiedPathLength = fullyQualifiedPath.Length;
 
-				PushUnitySearchBase(asset.Name.Hash(), asset);        // PrimaryKey
+				fullyQualifiedPath.CopyTo(fullName);
+				assetName.CopyTo(fullName[fullyQualifiedPathLength..]);
+
+				PushUnitySearchBase(fullName[..(fullyQualifiedPathLength + assetName.Length)], asset);          // Container/Name
+				PushUnitySearchBase(assetName, asset);        // PrimaryKey
 
 				// Also index by just the filename portion of the PrimaryKey,
 				// so callers using short names (e.g. "s01_arrow") can still find
 				// assets whose address includes a folder prefix (e.g. "AtlasH/s01_arrow")
 				// TODO: Review if we should keep this behavior? It's what AssetStudioGUI reports...
 				// we'll see.
-				int lastSlash = asset.Name.LastIndexOf('/');
+				int lastSlash = assetName.LastIndexOf('/');
 				if (lastSlash >= 0) {
-					string shortName = asset.Name[(lastSlash + 1)..];
-					PushUnitySearchBase(shortName.Hash(), asset);
+					ReadOnlySpan<char> shortName = assetName[(lastSlash + 1)..];
+					PushUnitySearchBase(shortName, asset);
 				}
 			}
 		}
@@ -290,20 +305,15 @@ public class AddressablesCatalog
 		m_BucketData = null;
 		m_EntryData = null;
 		m_ExtraData = null;
-		Keys = null;
-		AllEntries = null;
-		Locations = null;
 	}
 
-	private List<object> ReadKeys() {
-		var keys = new List<object>();
+	private object[] ReadKeys() {
 		int offset = 0;
-
 		int keyCount = ReadInt32(m_KeyData, ref offset);
+		var keys = new object[keyCount];
 
-		for (int i = 0; i < keyCount; i++) {
-			keys.Add(ReadKey(m_KeyData, ref offset));
-		}
+		for (int i = 0; i < keyCount; i++)
+			keys[i] = ReadKey(m_KeyData, ref offset);
 
 		return keys;
 	}
@@ -365,11 +375,10 @@ public class AddressablesCatalog
 		}
 	}
 
-	private List<CatalogEntryLocation> ReadEntries() {
-		var entries = new List<CatalogEntryLocation>();
+	private CatalogEntryLocation[] ReadEntries(Span<object> keys) {
 		int offset = 0;
-
 		int entryCount = ReadInt32(m_EntryData, ref offset);
+		var entries = new CatalogEntryLocation[entryCount];
 
 		for (int i = 0; i < entryCount; i++) {
 			int internalIdIdx = ReadInt32(m_EntryData, ref offset);
@@ -387,20 +396,20 @@ public class AddressablesCatalog
 				ProviderId = (providerIdx >= 0 && providerIdx < m_ProviderIds.Length)
 					? m_ProviderIds[providerIdx]
 					: null,
-				DependencyKey = (depKeyIdx >= 0 && depKeyIdx < Keys.Count)
-					? Keys[depKeyIdx]
+				DependencyKey = (depKeyIdx >= 0 && depKeyIdx < keys.Length)
+					? keys[depKeyIdx]
 					: null,
 				ResourceType = (resourceTypeIdx >= 0 && m_resourceTypes != null && resourceTypeIdx < m_resourceTypes.Length)
 					? m_resourceTypes[resourceTypeIdx]
 					: null,
-				PrimaryKey = (primaryKeyIdx >= 0 && primaryKeyIdx < Keys.Count)
-					? Keys[primaryKeyIdx]
+				PrimaryKey = (primaryKeyIdx >= 0 && primaryKeyIdx < keys.Length)
+					? keys[primaryKeyIdx]
 					: null,
 				EntryIndex = i,
 				DataIndex = dataIdx
 			};
 
-			entries.Add(entry);
+			entries[i] = entry;
 		}
 
 		// These are no longer needed, so let garbage collection take care of these fields.
@@ -411,11 +420,16 @@ public class AddressablesCatalog
 		return entries;
 	}
 
-	private Dictionary<object, List<CatalogEntryLocation>> ReadBuckets() {
-		var locations = new Dictionary<object, List<CatalogEntryLocation>>();
-		int offset = 0;
+	struct EntryAccessor(CatalogEntryLocation[] entries, int index)
+	{
+		public ref CatalogEntryLocation Get() => ref entries[index];
+	}
 
+	private Dictionary<object, List<EntryAccessor>> ReadBuckets(CatalogEntryLocation[] entries) {
+		int offset = 0;
 		int bucketCount = ReadInt32(m_BucketData, ref offset);
+
+		var locations = new Dictionary<object, List<EntryAccessor>>(bucketCount);
 
 		for (int i = 0; i < bucketCount; i++) {
 			int keyDataOffset = ReadInt32(m_BucketData, ref offset);
@@ -436,16 +450,15 @@ public class AddressablesCatalog
 				continue;
 			}
 
-			var entryList = new List<CatalogEntryLocation>();
-			foreach (int idx in entryIndices) {
-				if (idx >= 0 && idx < AllEntries.Count)
-					entryList.Add(AllEntries[idx]);
-			}
-
-			if (!locations.ContainsKey(key))
-				locations[key] = entryList;
+			List<EntryAccessor> entryList;
+			if (locations.TryGetValue(key, out entryList))
+				entryList.EnsureCapacity(entryList.Count + entries.Length);
 			else
-				locations[key].AddRange(entryList);
+				entryList = locations[key] = new(entryIndices.Length);
+
+			foreach (int idx in entryIndices)
+				if (idx >= 0 && idx < entries.Length)
+					entryList.Add(new(entries, idx));
 		}
 
 		return locations;
@@ -553,28 +566,34 @@ public class UnitySearchDirectory : UnitySearchBase
 {
 	public override bool IsDirectory => true;
 
-	public readonly Dictionary<UtlSymbol, UnitySearchAsset> Files = [];
-	public readonly Dictionary<UtlSymbol, UnitySearchDirectory> Directories = [];
+	public readonly Dictionary<string, UnitySearchAsset> Files = new(StringComparer.Ordinal);
+	public readonly Dictionary<string, UnitySearchDirectory> Directories = new(StringComparer.Ordinal);
 	public readonly UnitySearchDirectory? Parent;
 	public string FullyQualifiedPath {
 		get => field ??= Parent == null ? null! : Parent.FullyQualifiedPath + Name + "/";
 	}
+	public ReadOnlySpan<char> PathHash => FullyQualifiedPath.AsSpan()[..^1];
 	public readonly string? Name;
 
 	public UnitySearchDirectory(string? name, AddressablesCatalog catalog) { Name = name; Catalog = catalog; }
 	public UnitySearchDirectory(string name, AddressablesCatalog catalog, UnitySearchDirectory parent) { Name = name; Catalog = catalog; Parent = parent; }
 
 	public UnitySearchDirectory? GetDirectory(ReadOnlySpan<char> dir) {
-		UtlSymbol symbol = new(dir);
-		if (!Directories.TryGetValue(symbol, out var ret))
+		if (!Directories.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return null;
+		if (!lookup.TryGetValue(dir, out var ret))
 			return null;
 		return ret;
 	}
 
 	public UnitySearchDirectory? GetOrCreateDirectory(ReadOnlySpan<char> dir) {
-		UtlSymbol symbol = new(dir);
-		if (!Directories.TryGetValue(symbol, out var ret))
-			ret = Directories[symbol] = new(new(dir), Catalog, this);
+		if (!Directories.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+			return null;
+
+		if (!lookup.TryGetValue(dir, out UnitySearchDirectory? ret)) {
+			ret = lookup[dir] = new(new(dir), Catalog, this);
+			Catalog.PushUnitySearchBase(ret.PathHash, ret);
+		}
 		return ret;
 	}
 
@@ -582,11 +601,10 @@ public class UnitySearchDirectory : UnitySearchBase
 		if (primaryKey is not string pk) return null;
 		if (dependencyKey == null) return null;
 
-		UtlSymbol symbol = new(pk);
-		if (Files.TryGetValue(symbol, out var ret))
+		if (Files.TryGetValue(pk, out var ret))
 			return null;
 
-		ret = Files[symbol] = new(dependencyKey, pk, type, Catalog);
+		ret = Files[pk] = new(dependencyKey, pk, type, Catalog);
 		return ret;
 	}
 }
@@ -634,7 +652,7 @@ public class UnitySearchPathV2 : SearchPath
 {
 	public readonly AddressablesCatalog Catalog;
 	public readonly AssetsManager Assets = new();
-	public readonly Dictionary<ulong, SerializedFile> SerializedFiles = new();
+	public readonly Dictionary<string, SerializedFile> SerializedFiles = new();
 	private readonly string _basePath;
 	private readonly string _platform;
 
@@ -660,6 +678,7 @@ public class UnitySearchPathV2 : SearchPath
 
 	static CatalogProviderObjectType ReadObjectType(JsonElement e) {
 		if (e.ValueKind != JsonValueKind.Object) return null!;
+
 		return new CatalogProviderObjectType {
 			m_AssemblyName = GetString(e, "m_AssemblyName"),
 			m_ClassName = GetString(e, "m_ClassName"),
@@ -693,11 +712,14 @@ public class UnitySearchPathV2 : SearchPath
 			return Array.Empty<CatalogResourceType>();
 		var result = new CatalogResourceType[arr.GetArrayLength()];
 		int i = 0;
-		foreach (var el in arr.EnumerateArray())
+		foreach (var el in arr.EnumerateArray()) {
+			string m_ClassName = GetString(el, "m_ClassName");
 			result[i++] = new CatalogResourceType {
 				m_AssemblyName = GetString(el, "m_AssemblyName"),
-				m_ClassName = GetString(el, "m_ClassName"),
+				m_ClassName = m_ClassName,
+				IsAssetBundleResource = m_ClassName == "UnityEngine.ResourceManagement.ResourceProviders.IAssetBundleResource"
 			};
+		}
 		return result;
 	}
 
@@ -738,8 +760,8 @@ public class UnitySearchPathV2 : SearchPath
 		public AssetStudio.Object Get() => File.ObjectsDic[PathID];
 	}
 
-	public readonly Dictionary<ulong, CachedObjectLookup_t> CachedObjectFullyQualifiedLookup = [];
-	public readonly Dictionary<ulong, List<CachedObjectLookup_t>> CachedObjectFileNameLookup = [];
+	public readonly Dictionary<string, CachedObjectLookup_t> CachedObjectFullyQualifiedLookup = new(StringComparer.Ordinal);
+	public readonly Dictionary<string, List<CachedObjectLookup_t>> CachedObjectFileNameLookup = new(StringComparer.Ordinal);
 	public readonly Dictionary<long, AssetStudio.Object> CachedObjectPathIDLookup = [];
 
 	public long MaxResidentBytes = 128L * 1024 * 1024;
@@ -785,7 +807,7 @@ public class UnitySearchPathV2 : SearchPath
 				CachedObjectPathIDLookup.Remove(obj.m_PathID);
 		}
 
-		List<ulong>? dropFq = null;
+		List<string>? dropFq = null;
 		foreach (var kvp in CachedObjectFullyQualifiedLookup) {
 			if (kvp.Value.File == bundle)
 				(dropFq ??= []).Add(kvp.Key);
@@ -794,7 +816,7 @@ public class UnitySearchPathV2 : SearchPath
 			foreach (var k in dropFq)
 				CachedObjectFullyQualifiedLookup.Remove(k);
 
-		List<ulong>? emptied = null;
+		List<string>? emptied = null;
 		foreach (var kvp in CachedObjectFileNameLookup) {
 			kvp.Value.RemoveAll(l => l.File == bundle);
 			if (kvp.Value.Count == 0)
@@ -804,7 +826,7 @@ public class UnitySearchPathV2 : SearchPath
 			foreach (var k in emptied)
 				CachedObjectFileNameLookup.Remove(k);
 
-		SerializedFiles.Remove(bundle.fileName.Hash());
+		SerializedFiles.Remove(bundle.fileName);
 		_bundleAccess.Remove(bundle);
 		if (_bundleSize.TryGetValue(bundle, out var sz)) {
 			_residentBytes -= sz;
@@ -828,13 +850,13 @@ public class UnitySearchPathV2 : SearchPath
 
 	private void CacheNewBundles(IEnumerable<SerializedFile> newBundles) {
 		foreach (var bundleLoaded in newBundles) {
-			SerializedFiles[bundleLoaded.fileName.Hash()] = bundleLoaded;
+			SerializedFiles[bundleLoaded.fileName] = bundleLoaded;
 			Touch(bundleLoaded);
 			foreach (var obj in bundleLoaded.Objects) {
 				CachedObjectPathIDLookup[obj.m_PathID] = obj;
 				string? name = obj.GetUnityName();
 				if (name != null) {
-					ulong h = name.Hash();
+					string h = name;
 					if (!CachedObjectFileNameLookup.TryGetValue(h, out var list))
 						CachedObjectFileNameLookup[h] = list = [];
 					list.Add(new() { File = bundleLoaded, PathID = obj.m_PathID });
@@ -852,17 +874,25 @@ public class UnitySearchPathV2 : SearchPath
 		return null;
 	}
 
-	private static AssetStudio.Object? FindInBundle<T>(SerializedFile bundle, ulong nameHash) where T : AssetStudio.Object {
-		return bundle.Objects.FirstOrDefault(x => x is T && (x.GetUnityName()?.Hash() ?? 0) == nameHash);
+	private static AssetStudio.Object? FindInBundle<T>(SerializedFile bundle, ReadOnlySpan<char> name) where T : AssetStudio.Object {
+		for (int i = 0, c = bundle.Objects.Count; i < c; i++) {
+			AssetStudio.Object? o = bundle.Objects[i];
+			if (o != null && o is T && o.GetUnityName() == name)
+				return o;
+		}
+		return null;
 	}
 
-	private T? SearchAssetInBundles<T>(UnitySearchAsset searchAsset, ulong nameHash) where T : AssetStudio.Object {
+	private T? SearchAssetInBundles<T>(UnitySearchAsset searchAsset, ReadOnlySpan<char> name) where T : AssetStudio.Object {
+		if (!CachedObjectFileNameLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var fnLookup))
+			throw new Exception();
+
 		foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
-			var match = FindInBundle<T>(bundle, nameHash);
+			var match = FindInBundle<T>(bundle, name);
 			if (match != null) {
 				// Cache it
-				if (!CachedObjectFileNameLookup.TryGetValue(nameHash, out var cacheList))
-					CachedObjectFileNameLookup[nameHash] = cacheList = [];
+				if (!fnLookup.TryGetValue(name, out var cacheList))
+					fnLookup[name] = cacheList = [];
 				cacheList.Add(new() { File = bundle, PathID = match.m_PathID });
 				Touch(bundle);
 				return (T)match;
@@ -873,17 +903,17 @@ public class UnitySearchPathV2 : SearchPath
 			var newBundles = searchAsset.LoadNextBundle(_basePath, _platform, Assets);
 			CacheNewBundles(newBundles);
 
-			if (CachedObjectFileNameLookup.TryGetValue(nameHash, out var lookups)) {
+			if (fnLookup.TryGetValue(name, out var lookups)) {
 				var cached = FindTypedInCache<T>(lookups);
 				if (cached != null)
 					return cached;
 			}
 
 			foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
-				var match = FindInBundle<T>(bundle, nameHash);
+				var match = FindInBundle<T>(bundle, name);
 				if (match != null) {
-					if (!CachedObjectFileNameLookup.TryGetValue(nameHash, out var cacheList))
-						CachedObjectFileNameLookup[nameHash] = cacheList = [];
+					if (!fnLookup.TryGetValue(name, out var cacheList))
+						fnLookup[name] = cacheList = [];
 					cacheList.Add(new() { File = bundle, PathID = match.m_PathID });
 					return (T)match;
 				}
@@ -900,9 +930,12 @@ public class UnitySearchPathV2 : SearchPath
 				return UnitySearchResult<T>.NotFound();
 
 			if (asset is UnitySearchAsset searchAsset) {
-				ulong hash = path.Hash();
+				if (!CachedObjectFullyQualifiedLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var altFql))
+					throw new Exception();
+				if (!CachedObjectFileNameLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var altFiles))
+					throw new Exception();
 
-				if (CachedObjectFullyQualifiedLookup.TryGetValue(hash, out var lookup)) {
+				if (altFql.TryGetValue(path, out var lookup)) {
 					if (lookup.Get() is T typed) {
 						Touch(lookup.File);
 						return new(typed);
@@ -910,25 +943,24 @@ public class UnitySearchPathV2 : SearchPath
 				}
 
 				ReadOnlySpan<char> pathFileName = Path.GetFileName((ReadOnlySpan<char>)path);
-				ulong pathFileNameHash = pathFileName.Hash();
 
-				if (CachedObjectFileNameLookup.TryGetValue(pathFileNameHash, out var lookups)) {
+				if (altFiles.TryGetValue(pathFileName, out var lookups)) {
 					var cached = FindTypedInCache<T>(lookups);
 					if (cached != null) {
 						var cachedLookup = lookups.First(l => l.Get() is T);
-						CachedObjectFullyQualifiedLookup[hash] = cachedLookup;
+						altFql[path] = cachedLookup;
 						Touch(cachedLookup.File);
 						return new(cached);
 					}
 				}
 
-				var result = SearchAssetInBundles<T>(searchAsset, pathFileNameHash);
+				var result = SearchAssetInBundles<T>(searchAsset, pathFileName);
 				if (result == null)
 					return UnitySearchResult<T>.NotFound();
 
-				if (CachedObjectFileNameLookup.TryGetValue(pathFileNameHash, out var fnLookups)) {
+				if (altFiles.TryGetValue(pathFileName, out var fnLookups)) {
 					var matchingLookup = fnLookups.FirstOrDefault(l => l.Get() is T);
-					CachedObjectFullyQualifiedLookup[hash] = matchingLookup;
+					altFql[path] = matchingLookup;
 				}
 
 				return new(result);
@@ -952,10 +984,11 @@ public class UnitySearchPathV2 : SearchPath
 	}
 
 	public T? FindAssetByName<T>(ReadOnlySpan<char> name) where T : AssetStudio.Object {
-		lock (sync) {
-			ulong nameHash = name.Hash();
+		if (!CachedObjectFileNameLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var fnLookup))
+			throw new Exception();
 
-			if (CachedObjectFileNameLookup.TryGetValue(nameHash, out var lookups)) {
+		lock (sync) {
+			if (fnLookup.TryGetValue(name, out var lookups)) {
 				var cached = FindTypedInCache<T>(lookups);
 				if (cached != null) {
 					Touch(lookups.First(l => l.Get() is T).File);
@@ -971,7 +1004,7 @@ public class UnitySearchPathV2 : SearchPath
 				if (entry is not UnitySearchAsset searchAsset)
 					continue;
 
-				var result = SearchAssetInBundles<T>(searchAsset, nameHash);
+				var result = SearchAssetInBundles<T>(searchAsset, name);
 				if (result != null)
 					return result;
 			}
