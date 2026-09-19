@@ -7,10 +7,10 @@ namespace CloneDash.Charts;
 public class BaseContiguousChartSongFilter(BaseContiguousChartSongFilter? parent) : IChartSongFilter
 {
 	public string? Query = parent?.Query ?? null;
-	public bool UseMin = true;
-	public bool UseMax = true;
-	public int MinDifficulty = 1;
-	public int MaxDifficulty = 13;
+	public bool UseMin = parent?.UseMin ?? true;
+	public bool UseMax = parent?.UseMax ?? true;
+	public int MinDifficulty = parent?.MinDifficulty ?? 1;
+	public int MaxDifficulty = parent?.MaxDifficulty ?? 13;
 
 	public virtual bool NameTest(ISong song) {
 		if (Query != null) {
