@@ -428,9 +428,23 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	int IHasLowToHighDifficulties.GetLowestDifficulty() => throw new NotImplementedException();
 	int IHasLowToHighDifficulties.GetHighestDifficulty() => throw new NotImplementedException();
-	int IHasLowToHighDifficulties.GetDifficultyCount() => Difficulties.Count;
+	int IHasLowToHighDifficulties.GetDifficultyCount() {
+		int count = 0;
+		for (int i = 1; i <= 5; i++)
+			if (TryGetDifficultyInteger(i, out _))
+				count++;
+		return count;
+	}
 	bool IHasLowToHighDifficulties.GetDifficulties(Span<int> difficulties) {
-		return Difficulties.AsSpan().TryCopyTo(difficulties);
+		int count = 0;
+		for (int i = 1; i <= 5; i++) {
+			if (!TryGetDifficultyInteger(i, out int d))
+				continue;
+			if (count >= difficulties.Length)
+				return false;
+			difficulties[count++] = d;
+		}
+		return true;
 	}
 
 	public IEnumerable<MuseDashSongInfoJSON> GetAvailableInfo() {
