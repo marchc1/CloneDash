@@ -1,6 +1,5 @@
 ﻿using Nucleus.Common.Types;
 using Nucleus.Core;
-using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.Util;
 
@@ -13,24 +12,28 @@ public class DebugRecordList
 	public int Spacing;
 
 	private static readonly Color BackgroundDrawColor = new Color(10, 10, 10, 180);
-	
+
 	public void Reset() {
 		NumRecords = Spacing = 0;
 	}
 
 	public ref DebugRecord GetRecord(int i) => ref Records[i];
+
 	public void Write() => Records[NumRecords++] = default;
+
 	public void Write(ReadOnlySpan<char> key) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, null, true);
+
 	public void Write(ReadOnlySpan<char> key, ReadOnlySpan<char> value) => Records[NumRecords++] = new(Spacing * SpacingCharacters, key, value);
-	
+
 	private static readonly char[] TempFormatBuffer = new char[256];
 
 	public void Write<T>(ReadOnlySpan<char> key, T value) where T : ISpanFormattable {
 		value.TryFormat(TempFormatBuffer, out int chars, default, null);
 		Records[NumRecords++] = new DebugRecord(Spacing * SpacingCharacters, key, TempFormatBuffer.AsSpan()[..chars]);
 	}
-	
+
 	public void EnterScope() => Spacing += 1;
+
 	public void ExitScope() => Spacing -= 1;
 
 	public int SpacingCharacters => 4;

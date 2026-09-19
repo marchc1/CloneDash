@@ -10,6 +10,5 @@ public class Panel : Element
 	}
 
 	public override void Paint(float width, float height) {
-
 	}
 }

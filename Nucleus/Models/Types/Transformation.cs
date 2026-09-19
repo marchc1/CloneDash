@@ -1,6 +1,5 @@
 ﻿using Nucleus.Types;
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.Models
@@ -9,6 +8,7 @@ namespace Nucleus.Models
 	{
 		// matrix components
 		public readonly float A;
+
 		public readonly float B;
 		public readonly float C;
 		public readonly float D;
@@ -24,6 +24,7 @@ namespace Nucleus.Models
 		// cached values from CalculateWorldTransformation
 		// needed for World/Local rotation operations
 		private readonly float Rotation;
+
 		private readonly float ShearX;
 		private readonly float WTL_Inverse;
 
@@ -93,6 +94,7 @@ namespace Nucleus.Models
 						d = pC * lB + pD * lD;
 
 						break;
+
 					case TransformMode.OnlyTranslation:
 						(c, a) = MathF.SinCos(r_p_sx_RADS);
 						(d, b) = MathF.SinCos(r_p_90_p_sy_RADS);
@@ -102,6 +104,7 @@ namespace Nucleus.Models
 						d *= scaleY;
 
 						break;
+
 					case TransformMode.NoRotationOrReflection:
 						float sc = pA * pA + pC * pC;
 						float prX;
@@ -133,6 +136,7 @@ namespace Nucleus.Models
 						d = pC * lB + pD * lD;
 
 						break;
+
 					case TransformMode.NoScale:
 					case TransformMode.NoScaleOrReflection:
 						var rr = rot.ToRadians();
@@ -160,7 +164,6 @@ namespace Nucleus.Models
 			return new(a, b, c, d, x, y, rot, shearX);
 		}
 
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector2F WorldToLocal(float worldX, float worldY) {
 			float invDet = WTL_Inverse;
@@ -179,6 +182,7 @@ namespace Nucleus.Models
 			localX * A + localY * B + X,
 			localX * C + localY * D + Y
 		);
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Vector2F LocalToWorld(in Vector2F localPos) => LocalToWorld(localPos.X, localPos.Y);
 

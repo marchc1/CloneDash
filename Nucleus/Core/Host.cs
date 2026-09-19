@@ -1,30 +1,21 @@
 ﻿using Newtonsoft.Json;
 
 using Nucleus.Commands;
-using Nucleus.Common.Commands;
 using Nucleus.Engine;
-using Nucleus.Files;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.Core;
-
 
 [Nucleus.MarkForStaticConstruction]
 public static class Host
 {
-	static Dictionary<string, string> DataStore = [];
-	static void SerializeDataStore(Stream stream) {
+	private static Dictionary<string, string> DataStore = [];
+
+	private static void SerializeDataStore(Stream stream) {
 		using StreamWriter writer = new(stream);
 		writer.Write(JSON.Serialize(DataStore));
 	}
 
-	static void DeserializeDataStore(Stream stream) {
+	private static void DeserializeDataStore(Stream stream) {
 		using StreamReader reader = new(stream);
 		DataStore = JSON.Deserialize<Dictionary<string, string>>(reader.ReadToEnd()) ?? [];
 	}
@@ -33,6 +24,7 @@ public static class Host
 	public static DateTime LastWriteTime { get; private set; } = DateTime.MinValue;
 
 	public static T? GetDataStore<T>(string key) => DataStore.TryGetValue(key, out var str) ? JsonConvert.DeserializeObject<T>(str) : default;
+
 	public static void SetDataStore<T>(string key, T? value) {
 		if (value == null) {
 			DataStore.Remove(key);
@@ -70,19 +62,20 @@ public static class Host
 
 	private static void TriggerResave(ConVar self, ReadOnlySpan<char> oldStr, double oldDouble) => TriggerResave();
 
-	static DateTime lastResave = DateTime.UtcNow;
-	static bool needsResave = false;
+	private static DateTime lastResave = DateTime.UtcNow;
+	private static bool needsResave = false;
 
 	public static void CheckForResave() {
 		if (!needsResave) return;
 		DateTime now = DateTime.UtcNow;
-		if((now - lastResave).TotalSeconds > 1) {
+		if ((now - lastResave).TotalSeconds > 1) {
 			WriteConfiguration();
 			lastResave = now;
 			needsResave = false;
 		}
 	}
-	public static void TriggerResave(){
+
+	public static void TriggerResave() {
 		needsResave = true;
 	}
 
@@ -115,13 +108,13 @@ public static class Host
 		using MemoryStream stream = new();
 		using StreamWriter writer = new(stream);
 
-		foreach (var cvarKVP in hoststore.CVars) 
+		foreach (var cvarKVP in hoststore.CVars)
 			writer.WriteLine($"{cvarKVP.Key} \"{cvarKVP.Value}\"");
 
 		writer.Flush();
 		stream.Seek(0, SeekOrigin.Begin);
 
-		using StreamReader reader = new(stream, leaveOpen:true);
+		using StreamReader reader = new(stream, leaveOpen: true);
 		filesystem.WriteAllText("cfg", "config.cfg", reader.ReadToEnd());
 		filesystem.WriteAllText("cfg", "datastore.cfg", JSON.Serialize(hoststore.DataStore));
 	}

@@ -1,11 +1,11 @@
 ﻿using Nucleus;
-using Nucleus.ManagedMemory;
+using Nucleus.Common.Graphics;
 
 namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 
 public class MD1_SongCover : IValidatable
 {
-	public Texture? Texture { get; set; }
+	public ITexture? Texture { get; set; }
 	/// <summary>
 	/// Thanks, Unity
 	/// </summary>

@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
+using Nucleus.Common.Graphics;
 using Nucleus.Core;
+using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI.Operators;
 using Nucleus.Models;
 using Nucleus.Types;
@@ -48,13 +50,13 @@ namespace Nucleus.ModelEditor
 				imageWindow.HideNonCloseButtons();
 				imageWindow.Title = $"Image '{Name}'";
 
-				ManagedMemory.Texture tex = new ManagedMemory.Texture(imageWindow.Level.Textures, Raylib.LoadTexture(Filepath), true);
+				ITexture tex = imageWindow.textures.CreateTexture(File.ReadAllBytes(Filepath), Path.GetExtension(Filepath));
 
 				var imagePanel = new Nucleus.UI.Elements.Image(imageWindow);
 				imagePanel.				Texture = tex;
 				imagePanel.				ImageOrientation = Types.ImageOrientation.Centered;
 				imagePanel.				Dock = Dock.Fill;
-				imageWindow.				Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
+				imageWindow.				Size = new(MathF.Max(300, tex.GetWidth() + 32), MathF.Max(300, tex.GetHeight() + 32));
 				imageWindow.Center();
 
 				imageWindow.Removed += (_) => tex.Dispose();
@@ -164,7 +166,7 @@ namespace Nucleus.ModelEditor
 				imagePanel.				Dock = Dock.Fill;
 
 				imageWindow.
-				Size = new(MathF.Max(300, tex.Width + 32), MathF.Max(300, tex.Height + 32));
+				Size = new(MathF.Max(300, tex.GetWidth() + 32), MathF.Max(300, tex.GetHeight() + 32));
 
 				imageWindow.Center();
 

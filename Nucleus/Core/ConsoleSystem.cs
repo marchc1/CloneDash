@@ -1,9 +1,5 @@
-﻿using Nucleus.Commands;
-using Nucleus.Engine;
-using Nucleus.Extensions;
-using Nucleus.Types;
+﻿using Nucleus.Types;
 using Nucleus.UI;
-using Raylib_cs;
 
 namespace Nucleus.Core;
 
@@ -24,12 +20,15 @@ public static class ConsoleSystem
 	private static readonly ConsoleMessageList ScreenMessages = new();
 
 	public static int ComputeMessagesCount() => AllMessages.ComputeCount();
+
 	internal static ConsoleMessageList GetAllMessagesList() => AllMessages;
+
 	public static int MaxConsoleMessages { get; set; } = 300;
 	public static int MaxScreenMessages { get; set; } = 24;
 
 	public static float DisappearTime { get; set; } = 0.93f;
 	public static float MaxMessageTime { get; set; } = 10;
+
 	public static void Initialize() {
 		Logs.LogWrittenText += Logs_LogWrittenText;
 	}
@@ -52,14 +51,18 @@ public static class ConsoleSystem
 		if (ScreenMessages.ComputeCount() > MaxScreenMessages)
 			ScreenMessages.RemoveFromStart();
 	}
+
 	public delegate void ConsoleMessageWritten(ref readonly LiveConsoleMessage message);
+
 	public static event ConsoleMessageWritten? ConsoleMessageWrittenEvent;
+
 	public static void Draw(in ConsoleOverlaySettings settings) {
 		if (!EngineCore.ShouldShowDeveloperOverlays() || IsScreenBlockerActive)
 			return;
 
 		RenderToScreen(in settings);
 	}
+
 	public static bool IsScreenBlockerActive => scrblockers.Count > 0;
 
 	public static void RenderToScreen(in ConsoleOverlaySettings settings) {
@@ -155,7 +158,7 @@ public static class ConsoleSystem
 		ScreenMessages.EndRead();
 	}
 
-	static int CountNewlines(ReadOnlySpan<char> x) {
+	private static int CountNewlines(ReadOnlySpan<char> x) {
 		int ret = 0;
 		for (int i = 0; i < x.Length; i++)
 			if (x[i] == '\n')
@@ -163,6 +166,7 @@ public static class ConsoleSystem
 
 		return ret;
 	}
+
 	private static List<object> scrblockers = [];
 
 	public static void AddScreenBlocker(object blocker) {

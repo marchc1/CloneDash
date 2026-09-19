@@ -10,7 +10,7 @@ namespace Nucleus.ModelEditor
 	{
 		public override void GizmoRender(EditorPanel editorPanel, IEditorType target) {
 			if (!target.CanRotate()) return;
-			Texture tex = EngineCore.Level.Textures.LoadTextureFromFile("models/gizmo_rotate.png");
+			Texture tex = textures.LoadTextureFromFile("models/gizmo_rotate.png");
 			float size = 76f;
 			Vector2F worldPos = editorPanel.GridToScreen(target.GetWorldPosition());
 			float worldRot = target.GetScreenRotation();

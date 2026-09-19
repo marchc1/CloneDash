@@ -48,7 +48,7 @@ public enum FlashbangParam : sbyte
 {
 	Start = 0,
 	High = 1,
-	End = 0
+	End = 2
 }
 
 public enum FocusLineMode : sbyte
@@ -90,7 +90,13 @@ public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffect
 	public override Func<double, double>? GetEasing() => active ? null : NMath.Ease.OutCubic;
 }
 public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.TVStatic, active ? 1 : 0);
-public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, (double)parameter);
+public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, parameter switch {
+	FlashbangParam.Start => 0,
+	FlashbangParam.High => 1,
+	FlashbangParam.End => 0,
+}) {
+	public readonly FlashbangParam Type = parameter;
+}
 public class NoteFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.NoteFreeze, freeze ? 1 : 0);
 public class BgFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.BgFreeze, freeze ? 1 : 0);
 public class MosaicEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Mosaic, active ? 1 : 0){

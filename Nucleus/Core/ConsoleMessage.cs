@@ -1,5 +1,4 @@
 ﻿using Nucleus.Extensions;
-using Nucleus.Types;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Core;
@@ -39,18 +38,19 @@ public ref struct LiveConsoleMessage
 	public ReadOnlySpan<char> Text;
 }
 
-
 /// <summary>
 /// A more memory efficient way of storing console messages
 /// </summary>
 public class ConsoleMessageList
 {
-	byte[] mem = new byte[4096];
-	int start;
-	int end;
+	private byte[] mem = new byte[4096];
+	private int start;
+	private int end;
 
-	int _iterating;
+	private int _iterating;
+
 	public void BeginRead() => _iterating++;
+
 	public void EndRead() => _iterating--;
 
 	public LiveConsoleMessage AddToEnd(LogLevel level, DateTime time, ReadOnlySpan<char> text) {

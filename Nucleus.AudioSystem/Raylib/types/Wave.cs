@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 
-namespace Raylib_cs;
+namespace Nucleus.AudioSystem.Raylib;
 
 /// <summary>
 /// Wave type, defines audio wave data
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public unsafe partial struct Wave
+internal unsafe partial struct Wave
 {
     /// <summary>
     /// Number of samples

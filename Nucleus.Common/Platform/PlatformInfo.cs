@@ -1,6 +1,6 @@
 ﻿namespace Nucleus;
 
-file static class PlatformInfo
+internal static class PlatformInfo
 {
 	public static Platform.DisplayServerType DisplayServer;
 
@@ -29,10 +29,10 @@ public static partial class Platform
 
 		// Linux display servers
 		X11,
+
 		Wayland
 	}
 }
-
 
 public static partial class Platform
 {

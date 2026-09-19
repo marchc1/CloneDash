@@ -10,6 +10,7 @@ namespace Nucleus.Models;
 public interface IClipPolygon<in SlotType>
 {
 	int GetVerticesCount();
+
 	int ComputeWorldVerticesInto(SlotType slot, Vector2F[] into);
 }
 
@@ -34,8 +35,10 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			case M4S_StencilMode.On:
 			default:
 				break;
+
 			case M4S_StencilMode.Off:
 				return;
+
 			case M4S_StencilMode.RenderMask:
 				renderMask = true;
 				break;
@@ -55,7 +58,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		_clipPolygon = null;
 
 		// Do not clear triangles or Points because it now intentionally persists between frames for caching
-		
+
 		// triangles.Clear();
 		// shape.Points.Clear();
 	}
@@ -79,8 +82,10 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			case M4S_StencilMode.On:
 			default:
 				break;
+
 			case M4S_StencilMode.Off:
 				return;
+
 			case M4S_StencilMode.RenderMask:
 				renderMask = true;
 				break;
@@ -99,14 +104,9 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			_cachedVerticesLength == _verticesLength &&
 			_cachedVertices != null &&
 			_clipPolygon.AsSpan(0, _verticesLength).SequenceEqual(_cachedVertices.AsSpan(0, _verticesLength));
-		
+
 		if (!isCached) {
-			_shape.Points.Clear();
-			_shape.Points.EnsureCapacity(_verticesLength);
-			for (int i = 0; i < _verticesLength; i++) {
-				Vector2F vertex = _clipPolygon[i];
-				_shape.Points.Add(new(vertex.X, vertex.Y));
-			}
+			BuildNonDegeneratePolygon(_clipPolygon, _verticesLength, _shape.Points);
 
 			_triangles.Clear();
 			_shape.Triangulate(_triangles);
@@ -150,6 +150,50 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		Rlgl.End();
 		if (!renderMask)
 			Stencils.EndMask();
+	}
+
+	private const double DuplicateEpsilon = 1e-4;
+	private const double CollinearEpsilon = 1e-3;
+
+	private static void BuildNonDegeneratePolygon(Vector2F[] source, int length, List<TriPoint> into) {
+		into.Clear();
+
+		Span<Vector2F> pts = length <= 256 ? stackalloc Vector2F[length] : new Vector2F[length];
+		int count = 0;
+		for (int i = 0; i < length; i++) {
+			Vector2F v = source[i];
+			if (count > 0 && NearlyEqual(pts[count - 1], v))
+				continue;
+			pts[count++] = v;
+		}
+		if (count > 1 && NearlyEqual(pts[count - 1], pts[0]))
+			count--;
+
+		if (count < 3)
+			return; 
+		into.EnsureCapacity(count);
+
+		for (int i = 0; i < count; i++) {
+			Vector2F prev = pts[(i - 1 + count) % count];
+			Vector2F cur = pts[i];
+			Vector2F next = pts[(i + 1) % count];
+
+			double ex = next.X - prev.X, ey = next.Y - prev.Y;
+			double area2 = Math.Abs((cur.X - prev.X) * ey - (cur.Y - prev.Y) * ex);
+			double edgeLen = Math.Sqrt(ex * ex + ey * ey);
+			if (edgeLen > 0 && area2 <= CollinearEpsilon * edgeLen)
+				continue;
+
+			into.Add(new TriPoint(cur.X, cur.Y));
+		}
+
+		if (into.Count < 3)
+			into.Clear();
+	}
+
+	private static bool NearlyEqual(Vector2F a, Vector2F b) {
+		double dx = a.X - b.X, dy = a.Y - b.Y;
+		return dx * dx + dy * dy <= DuplicateEpsilon * DuplicateEpsilon;
 	}
 
 	public void NextSlot(SlotType slot) {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Poly2Tri
+﻿namespace Poly2Tri
 {
 	public class Shape
 	{
@@ -12,7 +8,9 @@ namespace Poly2Tri
 		public readonly List<TriPoint> Points = [];
 
 		public void AddPoint(float x, float y) => Points.Add(new(x, y));
+
 		public void AddPoint(Vector2 v2) => Points.Add(new(v2.X, v2.Y));
+
 		public void AddPoint(System.Numerics.Vector2 v2) => Points.Add(new(v2.X, v2.Y));
 
 		/// <summary>
@@ -46,7 +44,8 @@ namespace Poly2Tri
 
 		public Rectangle Bounds { get; private set; }
 
-		public Shape() { }
+		public Shape() {
+		}
 
 		/// <summary>
 		/// Create a polygon from a list of at least 3 points with no duplicates.
@@ -57,12 +56,15 @@ namespace Poly2Tri
 		}
 
 #nullable enable
+
 		public Shape(Span<float> x, Span<float> y, object[]? z = null) {
 			for (int i = 0; i < x.Length; i++) {
 				Points.Add(new(x[i], y[i], z?[i]));
 			}
 		}
+
 #nullable disable
+
 		/// <summary>
 		/// Create a polygon from a list of at least 3 points with no duplicates.
 		/// </summary>

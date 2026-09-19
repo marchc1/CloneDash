@@ -144,11 +144,11 @@ public class ColorSelectorDialog : Panel
 		}
 	}
 	public ColorSelectorDialog(Element? parent, ReadOnlySpan<char> name = default) : base(parent, name) {
-		ColorWheelTex = Level.Textures.LoadTextureFromFile("colorwheel.png");
-		HueWheelTex = Level.Textures.LoadTextureFromFile("huewheel.png");
-		ColorPickerTex = Level.Textures.LoadTextureFromFile("colorpicker.png");
-		ColorSatValTex = Level.Textures.LoadTextureFromFile("colorsatval.png");
-		ColorSatValInnerTex = Level.Textures.LoadTextureFromFile("colorsatvalinner.png");
+		ColorWheelTex = textures.LoadTextureFromFile("colorwheel.png");
+		HueWheelTex = textures.LoadTextureFromFile("huewheel.png");
+		ColorPickerTex = textures.LoadTextureFromFile("colorpicker.png");
+		ColorSatValTex = textures.LoadTextureFromFile("colorsatval.png");
+		ColorSatValInnerTex = textures.LoadTextureFromFile("colorsatvalinner.png");
 
 		this.
 		Origin = Anchor.BottomCenter;

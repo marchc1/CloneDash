@@ -4,12 +4,12 @@ namespace Nucleus.ManagedMemory;
 
 public class WeakCollection<T> : ICollection<T?> where T : class
 {
-	readonly List<WeakReference<T?>> references = [];
+	private readonly List<WeakReference<T?>> references = [];
 
-	public T? this[int index] { get => references[index].TryGetTarget(out T? target) ? target : null; set => references[index].SetTarget(value); }
 	public int Count => references.Count;
-	public int ReferencedCount => references.Count(static x => x.TryGetTarget(out _));
 	public bool IsReadOnly => false;
+	public int ReferencedCount => references.Count(static x => x.TryGetTarget(out _));
+	public T? this[int index] { get => references[index].TryGetTarget(out T? target) ? target : null; set => references[index].SetTarget(value); }
 
 	public void Add(T? item) {
 		if (item == null)
@@ -42,6 +42,10 @@ public class WeakCollection<T> : ICollection<T?> where T : class
 				yield return t;
 	}
 
+	IEnumerator IEnumerable.GetEnumerator() {
+		return GetEnumerator();
+	}
+
 	public bool Remove(T? item) {
 		for (int i = 0; i < references.Count; i++) {
 			WeakReference<T?> reference = references[i];
@@ -52,9 +56,5 @@ public class WeakCollection<T> : ICollection<T?> where T : class
 		}
 
 		return false;
-	}
-
-	IEnumerator IEnumerable.GetEnumerator() {
-		return GetEnumerator();
 	}
 }

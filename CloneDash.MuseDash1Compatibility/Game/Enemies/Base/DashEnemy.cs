@@ -202,6 +202,7 @@ public class DashEnemy : Entity, IDashChunkable
 	/// </summary>
 	public double Length { get; set; }
 	public int Speed { get; set; }
+	public double Dt { get; set; }
 
 	public virtual void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {
 
@@ -342,19 +343,9 @@ public class DashEnemy : Entity, IDashChunkable
 
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
-		var tickShow = this.GetVisualShowTime();
-		
-		var thisPos = NMath.Remap(current, (float)tickHit, (float)tickShow, level.GetPathwayPosition(Pathway).X, GetXPosTimeSpeedBase());
-		return thisPos;
-	}
+		var dt = Dt <= 0 ? 1 : Dt;
 
-	private double GetXPosTimeSpeedBase() {
-		switch (Speed) {
-			case 1: return 1130 / 200d;
-			case 2: return 1430 / 200d;
-			case 3: return 1780 / 200d;
-			default: goto case 1;
-		}
+		return level.GetPathwayPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
 	}
 
 	public bool Shown { get; protected set; } = false;
@@ -382,7 +373,7 @@ public class DashEnemy : Entity, IDashChunkable
 	}
 
 	public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-		return xPosition >= -gamewidth * 1.5f && xPosition <= gamewidth / 1 && GetConductor().Time >= (GetVisualShowTime());
+		return xPosition >= -gamewidth * 1.5f && GetConductor().Time >= (GetVisualShowTime());
 	}
 
 	/// <summary>

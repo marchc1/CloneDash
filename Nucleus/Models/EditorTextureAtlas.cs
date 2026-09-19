@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Common.Models;
 using Nucleus.Common.Types;
 using Nucleus.ManagedMemory;
@@ -11,7 +12,7 @@ namespace Nucleus.Models;
 
 public class EditorAtlasPage : IModelAtlasPage
 {
-	string Name;
+	private string Name;
 	internal ITexture? Texture;
 	internal readonly List<EditorAtlasRegion> Regions = [];
 
@@ -27,11 +28,13 @@ public class EditorAtlasPage : IModelAtlasPage
 	}
 
 	public int GetRegionCount() => Regions.Count;
+
 	public IModelAtlasRegion? GetRegion(int index) {
 		if (index < 0 || index >= Regions.Count)
 			return null;
 		return Regions[index];
 	}
+
 	public IModelAtlasRegion? GetRegionByName(ReadOnlySpan<char> name, int index = -1) {
 		for (int i = 0, c = Regions.Count; i < c; i++) {
 			var region = Regions[i];
@@ -40,35 +43,46 @@ public class EditorAtlasPage : IModelAtlasPage
 		}
 		return null;
 	}
+
 	public ITexture GetTexture() => Texture!;
+
 	public ReadOnlySpan<char> GetName() => Name;
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public void GetSize(out int w, out int h) {
-		w = Texture?.Width ?? 0;
-		h = Texture?.Height ?? 0;
+		w = Texture?.GetWidth() ?? 0;
+		h = Texture?.GetHeight() ?? 0;
 	}
-	public ImageFormat GetFormat() => Texture?.Format ?? ImageFormat.None;
+
+	public ImageFormat GetFormat() => Texture?.GetFormat() ?? ImageFormat.None;
+
 	public void GetFilter(out TextureFilter min, out TextureFilter max) {
 		min = TextureFilter.Bilinear;
 		max = TextureFilter.Bilinear;
 	}
+
 	public bool SetFilter(TextureFilter min, TextureFilter max) => false;
+
 	public TextureWrap GetWrap() => default;
+
 	public bool SetWrap(TextureWrap wrapmode) => false;
+
 	public bool GetPreMultipliedAlpha() => false;
+
 	public bool SetPreMultipliedAlpha(bool pma) => false;
 }
 
 public class EditorAtlasRegion : IModelAtlasRegion
 {
 	internal EditorAtlasPage Page = null!;
-	AtlasNameIndex NameIndex;
-	float Rotate;
-	int X, Y, W, H;
-	int OX, OY, OW, OH;
+	private AtlasNameIndex NameIndex;
+	private float Rotate;
+	private int X, Y, W, H;
+	private int OX, OY, OW, OH;
 
 	public EditorAtlasRegion(string name, int index = -1) {
 		NameIndex = new(name, index);
@@ -77,35 +91,48 @@ public class EditorAtlasRegion : IModelAtlasRegion
 	public void GetBounds(out int x, out int y, out int w, out int h) {
 		x = X; y = Y; w = W; h = H;
 	}
+
 	public int GetIndex() => NameIndex.Index;
+
 	public ReadOnlySpan<char> GetName() => NameIndex.Name;
+
 	public AtlasNameIndex GetNameIndex() => NameIndex;
+
 	public void GetOffsets(out int x, out int y, out int w, out int h) {
 		x = OX; y = OY; w = OW; h = OH;
 	}
+
 	public IModelAtlasPage GetPage() => Page;
+
 	public float GetRotation() => Rotate;
+
 	public ITexture GetTexture() => Page.GetTexture();
+
 	public bool SetBounds(int x, int y, int w, int h) {
 		X = x; Y = y; W = w; H = h;
 		return true;
 	}
+
 	public bool SetIndex(int index) {
 		NameIndex.Index = index;
 		return true;
 	}
+
 	public bool SetName(ReadOnlySpan<char> name) {
 		NameIndex.Name = new(name.SliceNullTerminatedString());
 		return true;
 	}
+
 	public bool SetNameIndex(AtlasNameIndex nameIndex) {
 		NameIndex = nameIndex;
 		return true;
 	}
+
 	public bool SetOffsets(int x, int y, int w, int h) {
 		OX = x; OY = y; OW = w; OH = h;
 		return true;
 	}
+
 	public bool SetRotation(float rot) {
 		Rotate = rot;
 		return true;
@@ -143,7 +170,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		if (packedTex != null)
 			packedTex = null;
 		if (packedImg != null) {
-			Raylib.UnloadImage(packedImg.Value);
+			Image.UnloadImage(packedImg.Value);
 			packedImg = null;
 		}
 
@@ -165,11 +192,11 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		}
 
 		if (UnpackedImages.Count == 0) {
-			Image workingImage = Raylib.GenImageColor(1, 1, Color.Blank);
+			Image workingImage = Image.GenImageColor(1, 1, Color.Blank);
 			packedImg = workingImage;
 			var tex = Raylib.LoadTextureFromImage(workingImage);
 			Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-			packedTex = new Texture(EngineCore.Level.Textures, tex, true, workingImage, false);
+			packedTex = new Texture(textures, tex, true, workingImage, false);
 			page.Texture = packedTex;
 			valid = true;
 			return;
@@ -189,7 +216,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		int rh = (int)bounds.Height.RoundUpToPowerOf2();
 		bool testing = Debugging;
 
-		Image workingImg = Raylib.GenImageColor(rw, rh, testing ? Color.LightGray : Color.Blank);
+		Image workingImg = Image.GenImageColor(rw, rh, testing ? Color.LightGray : Color.Blank);
 
 		for (int j = 0; j < rects.Length; j++) {
 			var rect = rects[j];
@@ -198,12 +225,13 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 
 			int dx = (int)rect.X + additionalPadding;
 			int dy = (int)rect.Y + additionalPadding;
-
-			Raylib.ImageDraw(ref workingImg, src,
-				new Rectangle(0, 0, src.Width, src.Height),
-				new Rectangle(dx, dy, src.Width, src.Height),
-				Color.White);
-
+			unsafe {
+				Raylib.ImageDraw(&workingImg, src,
+					new Rectangle(0, 0, src.Width, src.Height),
+					new Rectangle(dx, dy, src.Width, src.Height),
+					Color.White
+				);
+			}
 			var region = new EditorAtlasRegion(key);
 			region.SetBounds(dx, dy, src.Width, src.Height);
 			page.AddRegion(region);
@@ -216,16 +244,17 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		packedImg = workingImg;
 		var gpuTex = Raylib.LoadTextureFromImage(workingImg);
 		Raylib.SetTextureFilter(gpuTex, TextureFilter.Bilinear);
-		packedTex = new Texture(EngineCore.Level.Textures, gpuTex, true, workingImg, false);
+		packedTex = new Texture(textures, gpuTex, true, workingImg, false);
 		page.Texture = packedTex;
 
 		valid = true;
 	}
 
-	public void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
-		Raylib.ImageDrawRectangleLines(ref workingImage,
-			new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height),
-			1, Color.Red);
+	public unsafe void renderTestData(PackingRectangle rect, string key, Image src, ref Image workingImage) {
+		fixed (Image* i = &workingImage)
+			Raylib.ImageDrawRectangleLines(i,
+				new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height),
+				1, Color.Red);
 	}
 
 	public void Lock() => locked = true;
@@ -233,7 +262,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 	public void ClearTextures() {
 		if (locked) return;
 		foreach (var img in UnpackedImages.Values) {
-			Raylib.UnloadImage(img);
+			Image.UnloadImage(img);
 		}
 		UnpackedImages.Clear();
 		page.ClearRegions();
@@ -246,11 +275,11 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		string filepathStr = new(filepath);
 
 		if (UnpackedImages.ContainsKey(nameStr)) {
-			Raylib.UnloadImage(UnpackedImages[nameStr]);
+			Image.UnloadImage(UnpackedImages[nameStr]);
 			UnpackedImages.Remove(nameStr);
 		}
 
-		Image cpuImage = Raylib.LoadImage(filepathStr);
+		Image cpuImage = Image.LoadImage(filepathStr);
 		UnpackedImages[nameStr] = cpuImage;
 		Invalidate();
 		return true;
@@ -264,7 +293,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		if (locked) return false;
 		string nameStr = new(name);
 		if (UnpackedImages.TryGetValue(nameStr, out var img)) {
-			Raylib.UnloadImage(img);
+			Image.UnloadImage(img);
 			UnpackedImages.Remove(nameStr);
 			Invalidate();
 			return true;
@@ -281,7 +310,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		}
 		foreach (var key in toRemove) {
 			if (UnpackedImages.TryGetValue(key, out var img))
-				Raylib.UnloadImage(img);
+				Image.UnloadImage(img);
 			UnpackedImages.Remove(key);
 		}
 		if (toRemove.Count > 0)
@@ -304,7 +333,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		return true;
 	}
 
-	public ITextureAtlasEdit? Edit() => null; 
+	public ITextureAtlasEdit? Edit() => null;
 
 	public IModelAtlasRegion? GetRegion(ReadOnlySpan<char> name, int index = -1) {
 		Validate();
@@ -317,25 +346,27 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		return null;
 	}
 
-	public Texture PackedTexture {
+	public ITexture PackedTexture {
 		get {
 			Validate();
 			return packedTex;
 		}
 	}
+
 	public Image? PackedImage => packedImg;
+
 	protected virtual void Dispose(bool usercall) {
 		if (disposedValue) return;
 
 		if (usercall) {
 			if (packedImg.HasValue)
-				Raylib.UnloadImage(packedImg.Value);
+				Image.UnloadImage(packedImg.Value);
 			ClearTextures();
 			packedImg = null;
 		}
 		else MainThread.RunASAP(() => {
 			if (packedImg.HasValue)
-				Raylib.UnloadImage(packedImg.Value);
+				Image.UnloadImage(packedImg.Value);
 			ClearTextures();
 			packedImg = null;
 		});

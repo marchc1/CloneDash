@@ -1,15 +1,9 @@
 ﻿using Nucleus.Common.Types;
 using Nucleus.Extensions;
 using Nucleus.Util;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.IsolatedStorage;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nucleus.Core
 {
@@ -19,6 +13,7 @@ namespace Nucleus.Core
 
 		public readonly UtlSymbol Name;
 		public readonly Color Color;
+
 		public NProfilable(ReadOnlySpan<char> name, Color? color = null) {
 			Name = name;
 			Color = color ?? Color.White;
@@ -29,6 +24,7 @@ namespace Nucleus.Core
 		public static NProfilable UI_RENDER { get; } = Make("UserInterfaceRendering", new(50, 110, 235, 255));
 
 		public static NProfilable? FromString(ReadOnlySpan<char> str) => Name2ProfilableRecord.TryGetValue(str, out var ret) ? ret : null;
+
 		public static NProfilable Make(ReadOnlySpan<char> str, Color? color = null) {
 			if (Name2ProfilableRecord.TryGetValue(str, out var ret))
 				return ret;
@@ -37,14 +33,17 @@ namespace Nucleus.Core
 		}
 
 		public void Start() => NProfiler.Start(this);
+
 		public void End() => NProfiler.End(this);
 	}
+
 	public struct NProfileResult
 	{
 		public string Name;
 		public Color Color;
 		public TimeSpan Elapsed;
 	}
+
 	public static class NProfiler
 	{
 		private static Dictionary<NProfilable, Stopwatch> timers = [];
@@ -75,6 +74,7 @@ namespace Nucleus.Core
 			foreach (var kvp in timers)
 				kvp.Value.Reset();
 		}
+
 		public static Stopwatch Get(NProfilable profilable) {
 			if (timers.TryGetValue(profilable, out var stopwatch))
 				return stopwatch;
@@ -83,14 +83,17 @@ namespace Nucleus.Core
 			timers[profilable] = stopwatch;
 			return stopwatch;
 		}
+
 		public static void Start(NProfilable profilable) {
 			if (true) return; // Stubbing for now
 			Stopwatch s = Get(profilable);
 			s.Start();
 		}
+
 		private static float Str2Flt(ReadOnlySpan<char> s) {
 			return MathF.Abs((s.Hash() / 329.248f) % 360);
 		}
+
 		public static void Start(ReadOnlySpan<char> name) {
 			if (true) return; // Stubbing for now
 			NProfilable? profilable = NProfilable.FromString(name);
@@ -100,12 +103,14 @@ namespace Nucleus.Core
 			}
 			Start(profilable);
 		}
+
 		public static void End(NProfilable profilable) {
 			if (true) return; // Stubbing for now
 
 			Stopwatch s = Get(profilable);
 			s.Stop();
 		}
+
 		public static void End(string name) {
 			if (true) return; // Stubbing for now
 
@@ -116,11 +121,14 @@ namespace Nucleus.Core
 			}
 			End(profilable);
 		}
+
 		public static TimeSpan Elapsed(NProfilable profilable) {
 			Stopwatch s = Get(profilable);
 			return s.Elapsed;
 		}
+
 		private static NProfileResult[]? results;
+
 		public static NProfileResult[] Results() {
 			return results ?? [];
 		}

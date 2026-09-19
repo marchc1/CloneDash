@@ -27,7 +27,7 @@ public class SettingsCategory(Element? parent) : Button(parent)
 	public void Setup(SettingsEditor panel) {
 		Panel = new(panel);
 		Panel.Category = this;
-		Panel.		Dock = Dock.Fill;
+		Panel.Dock = Dock.Fill;
 
 		SetTextAlignment(Anchor.CenterLeft); ;
 		DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
@@ -36,14 +36,14 @@ public class SettingsCategory(Element? parent) : Button(parent)
 		Icon = new(this);
 		BorderSize = 0;
 		Icon.SetPaintBackgroundEnabled(false);
-		Icon.		ImagePadding = new(4);
-		Icon.		ImageOrientation = ImageOrientation.Zoom;
+		Icon.ImagePadding = new(4);
+		Icon.ImageOrientation = ImageOrientation.Zoom;
 	}
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
-		Icon.		Position = new(4, 0);
-		Icon.		Size = new(height, height);
+		Icon.Position = new(4, 0);
+		Icon.Size = new(height, height);
 		SetTextPadding(new((height) + 8, 0));
 	}
 }
@@ -60,31 +60,31 @@ public class SettingsPanel : ScrollPanel
 		panel.SetPaintBackgroundEnabled(false);
 		panel.SetPaintBorderEnabled(false);
 		panel.DynamicallySized = true;
-		panel.		Dock = Dock.Top;
-		panel.		Size = new(0.08f);
+		panel.Dock = Dock.Top;
+		panel.Size = new(0.08f);
 
 		var top = new Panel(panel);
 		top.DynamicallySized = true;
-		top.		Size = new(0.5f);
-		top.		Dock = Dock.Top;
+		top.Size = new(0.5f);
+		top.Dock = Dock.Top;
 		top.SetPaintBackgroundEnabled(false);
 		top.SetPaintBorderEnabled(false);
 
 		var name = new Label(top);
-		name.		Dock = Dock.Left;
+		name.Dock = Dock.Left;
 		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
-		name.		TextSize = 24;
-		name.		Text = nameTxt;
+		name.TextSize = 24;
+		name.Text = nameTxt;
 
 		var desc = new Label(top);
-		desc.		Dock = Dock.Fill;
+		desc.Dock = Dock.Fill;
 		desc.SetTextAlignment(Anchor.CenterLeft);
 		desc.DynamicallySized = true;
 		desc.SetTextPadding(new(16));
-		desc.		Text = descTxt;
+		desc.Text = descTxt;
 
 		return (top, panel, name, desc);
 	}
@@ -96,22 +96,22 @@ public class SettingsPanel : ScrollPanel
 
 	public Label Label(string text) {
 		var name = new Label(this);
-		name.		Dock = Dock.Top;
+		name.Dock = Dock.Top;
 		name.SetTextAlignment(Anchor.CenterLeft);
 		name.DynamicallySized = true;
 		name.SetTextPadding(new(16));
 		name.SetAutoSize(true);
-		name.		Text = text;
-		name.		DockMargin = RectangleF.TLRB(16);
+		name.Text = text;
+		name.DockMargin = RectangleF.TLRB(16);
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
-		name.		TextSize = 20;
+		name.TextSize = 20;
 		return name;
 	}
 
 	public NumSlider Number(ConVar cv, string name, [StringSyntax(StringSyntaxAttribute.NumericFormat)] string format) {
 		var back = buildBackPanel(name, cv.HelpString);
 		var slider = new NumSlider(back.Bottom);
-		slider.		Dock = Dock.Fill;
+		slider.Dock = Dock.Fill;
 
 		if (cv.GetMin(out double min)) slider.MinimumValue = min;
 		if (cv.GetMax(out double max)) slider.MaximumValue = max;
@@ -120,7 +120,7 @@ public class SettingsPanel : ScrollPanel
 		if (cv.IsFlagSet(FCvar.AlwaysDefault)) {
 			slider.SetMouseInputEnabled(false);
 			slider.SetKeyboardInputEnabled(false);
-			slider.GetParent()!.			TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
+			slider.GetParent()!.TooltipText = "This element's ConVar is marked as AlwaysDefault and cannot be modified or saved this session.";
 		}
 		else
 			slider.OnValueChanged += (_, _, nv) => cv.SetValue(nv);
@@ -131,8 +131,8 @@ public class SettingsPanel : ScrollPanel
 	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
 		var back = buildBackPanel(name, "");
 		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
-		back.Bottom.		Size = new Vector2F(0, 0.13f);
-		buttons.		Dock = Dock.Fill;
+		back.Bottom.Size = new Vector2F(0, 0.13f);
+		buttons.Dock = Dock.Fill;
 		buttons.SetInputAction(action);
 		return buttons;
 	}
@@ -141,10 +141,10 @@ public class SettingsPanel : ScrollPanel
 public class SettingsEditor : Panel, IMainMenuPanel
 {
 	#region IMainMenuPanel
-	
+
 	string IMainMenuPanel.Name => "Options";
 	string IMainMenuPanel.ColorScheme => "Options";
-	
+
 	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new() {
 			Details = "Main Menu",
@@ -153,7 +153,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 
 	#endregion
-	
+
 	NumSlider judgementSlider;
 	NumSlider visualSlider;
 
@@ -172,7 +172,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 				onOK: () => {
 					needsClosed = true;
 
-						GetMainMenu().PopActiveElement();
+					GetMainMenu().PopActiveElement();
 				}
 			);
 
@@ -199,12 +199,12 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		category.
 		Text = name;
 		category.OnButtonClick += (_, _) => SelectCategory(category);
-		category.		Dock = Dock.Top;
+		category.Dock = Dock.Top;
 		category.DynamicallySized = true;
-		category.		TextSize = 24;
-		category.		Size = new(0.06f);
+		category.TextSize = 24;
+		category.Size = new(0.06f);
 		if (icon != null)
-			category.Icon.			Texture = Level.Textures.LoadTextureFromFile(icon);
+			category.Icon.Texture = textures.LoadTextureFromFile(icon);
 
 		if (activeCategory == null)
 			SelectCategory(category);
@@ -228,9 +228,9 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public SettingsEditor(Element? parent) : base(parent) {
 		settingCategoryPicker = new(this);
 		settingCategoryPicker.SetPaintBackgroundEnabled(false);
-		settingCategoryPicker.		Dock = Dock.Left;
+		settingCategoryPicker.Dock = Dock.Left;
 		settingCategoryPicker.DynamicallySized = true;
-		settingCategoryPicker.		Size = new(0.25f);
+		settingCategoryPicker.Size = new(0.25f);
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
@@ -254,8 +254,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	}
 	public Button OffsetWizardCreator(Button btn) {
 		btn.DynamicallySized = true;
-		btn.		Dock = Dock.Fill;
-		btn.		Text = "Open Offset Wizard";
+		btn.Dock = Dock.Fill;
+		btn.Text = "Open Offset Wizard";
 		btn.DynamicTextSizeReference = DynamicSizeReference.SelfHeight;
 		btn.OnButtonClick += (_, _) => OpenOffsetWizard();
 
@@ -270,8 +270,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		var linkBack = panel.Blank("Bind Offsets", "Keep visual and judgement offsets bound (recommended).");
 		var linkBtn = new Button(linkBack);
-		linkBtn.		Dock = Dock.Fill;
-		linkBtn.		Text = "Bound";
+		linkBtn.Dock = Dock.Fill;
+		linkBtn.Text = "Bound";
 
 		judgementSlider = panel.Number(InputSettings.offset_judgement, "Judgement Offset", "{0:0} ms");
 		visualSlider = panel.Number(InputSettings.offset_visual, "Visual Offset", "{0:0} ms");
@@ -296,7 +296,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		linkBtn.OnButtonClick += (_, _) => {
 			offsetsLinked = !offsetsLinked;
-			linkBtn.			Text = offsetsLinked ? "Bound" : "Unbound";
+			linkBtn.Text = offsetsLinked ? "Bound" : "Unbound";
 
 			if (offsetsLinked) {
 				isUpdating = true;
@@ -335,13 +335,13 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		var dialog = UI.DialogBase($"{action} Key");
 
 		var lbl = new Label(dialog);
-		lbl.		Text = "Press a key...";
+		lbl.Text = "Press a key...";
 		lbl.SetAutoSize(true);
-		lbl.		Anchor = Anchor.TopCenter;
-		lbl.		Origin = Anchor.TopCenter;
+		lbl.Anchor = Anchor.TopCenter;
+		lbl.Origin = Anchor.TopCenter;
 
 		var capture = new KeyCaptureElement(dialog);
-		capture.		Dock = Dock.Fill;
+		capture.Dock = Dock.Fill;
 		capture.KeyboardFocus();
 		capture.OnKeyCaptured += (key) => {
 			keySubmitted(key);
@@ -368,7 +368,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 			b = new Button(this);
 			b.SetBgColor(GetBgColor());
 			b.SetFgColor(GetFgColor());
-			b.			Text = key.GetString();
+			b.Text = key.GetString();
 			b.SetTag("key", key);
 
 			b.OnButtonClick += ButtonEditOrRemoveHandler;
@@ -379,7 +379,7 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		b = new Button(this);
 		b.SetBgColor(GetBgColor());
 		b.SetFgColor(GetFgColor());
-		b.		Text = "Add...";
+		b.Text = "Add...";
 		b.OnButtonClick += ButtonAddHandler;
 		buttons.Add(b);
 		addButton = b;
@@ -447,15 +447,15 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		int innerPadding = 4;
 		float x = padding;
 		foreach (var btn in buttons) {
-			btn.			Position = new(x, innerPadding);
+			btn.Position = new(x, innerPadding);
 			float sizeW = height - padding;
 			if (btn == addButton)
 				sizeW = sizeW * 1.5f;
-			btn.			Size = new(sizeW, height - (innerPadding * 2));
+			btn.Size = new(sizeW, height - (innerPadding * 2));
 			if (btn == addButton)
-				btn.				TextSize = height / 2f;
+				btn.TextSize = height / 2f;
 			else
-				btn.				TextSize = height / 1.4f;
+				btn.TextSize = height / 1.4f;
 			x += height;
 		}
 	}
@@ -488,14 +488,14 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 	#region IMainMenuPanel
 
 	string IMainMenuPanel.Name => "Offset Wizard";
-	
+
 	void IMainMenuPanel.SetRichPresence() {
 		RichPresenceSystem.SetPresence(new RichPresenceState {
 			Details = "Main Menu",
 			State = "In Settings"
 		});
 	}
-	
+
 	#endregion
 
 	bool isDragging = false;
@@ -508,21 +508,21 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 
 	public JudgementOffsetWizard(Element? parent) : base(parent) {
 		currentOffsetLabel = new Label(this);
-		currentOffsetLabel.		Anchor = Anchor.TopCenter;
-		currentOffsetLabel.		Origin = Anchor.TopCenter;
+		currentOffsetLabel.Anchor = Anchor.TopCenter;
+		currentOffsetLabel.Origin = Anchor.TopCenter;
 		currentOffsetLabel.SetTextAlignment(Anchor.TopCenter);
-		currentOffsetLabel.		Position = new(0, 24);
-		currentOffsetLabel.		TextSize = 36;
+		currentOffsetLabel.Position = new(0, 24);
+		currentOffsetLabel.TextSize = 36;
 		currentOffsetLabel.SetAutoSize(true);
 
 		lastHitLabel = new Label(this);
-		lastHitLabel.		Anchor = Anchor.TopCenter;
-		lastHitLabel.		Origin = Anchor.TopCenter;
+		lastHitLabel.Anchor = Anchor.TopCenter;
+		lastHitLabel.Origin = Anchor.TopCenter;
 		lastHitLabel.SetTextAlignment(Anchor.TopCenter);
-		lastHitLabel.		Position = new(0, 64);
-		lastHitLabel.		TextSize = 28;
+		lastHitLabel.Position = new(0, 64);
+		lastHitLabel.TextSize = 28;
 		lastHitLabel.SetAutoSize(true);
-		lastHitLabel.		Text = "Press any key to the beat";
+		lastHitLabel.Text = "Press any key to the beat";
 
 		var clip = audiosystem.CreateFileAudioClip("offset_cowbell.wav");
 		track = audiosystem.CreatePlayback(clip);
@@ -559,10 +559,10 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 	protected override void OnThink() {
 		base.OnThink();
 		audiosystem.UpdatePlayback(track);
-		currentOffsetLabel.		Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
+		currentOffsetLabel.Text = $"Current Offset: {InputSettings.offset_judgement.GetDouble():0} ms";
 
 		if (lastHitOffsetMs != null)
-			lastHitLabel.			Text = $"Last Hit: {lastHitOffsetMs:0} ms";
+			lastHitLabel.Text = $"Last Hit: {lastHitOffsetMs:0} ms";
 
 		if (isDragging && currentWidth > 0) {
 			float mouseX = EngineCore.Level.FrameState.Mouse.MousePos.X;
@@ -587,10 +587,10 @@ public class JudgementOffsetWizard : Panel, IMainMenuPanel
 		var mld2 = len / 2f;
 		return (float)((localToPlayhead > mld2 ? (len - localToPlayhead) * -1 : localToPlayhead) / mld2);
 	}
-	
+
 	public override void Paint(float width, float height) {
 		currentWidth = width;
-		
+
 		base.Paint(width, height);
 
 		Graphics2D.SetDrawColor(GetBgColor().Adjust(0, -0.3f, 2));

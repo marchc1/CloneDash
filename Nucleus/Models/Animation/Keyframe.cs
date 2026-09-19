@@ -1,6 +1,5 @@
 ﻿using Nucleus.Types;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Nucleus.Models;
 
@@ -11,8 +10,11 @@ namespace Nucleus.Models;
 public interface IKeyframe
 {
 	public double GetTime();
+
 	public object? GetValue();
+
 	public T? GetValue<T>();
+
 	public Type GetValueType();
 
 	/// <summary>
@@ -21,7 +23,9 @@ public interface IKeyframe
 	/// </summary>
 	/// <param name="time"></param>
 	public void SetTime(double time);
+
 	public void SetValue(object? value);
+
 	public void SetValue<T>(T? value);
 }
 
@@ -73,14 +77,18 @@ public class Keyframe<T> : IKeyframe
 	public KeyframeInterpolation Interpolation;
 	public KeyframeEasing Easing;
 
-
 	public double GetTime() => Time;
+
 	public object? GetValue() => Value;
+
 	public T2? GetValue<T2>() => Value is T2 tV ? tV : default;
+
 	public Type GetValueType() => typeof(T);
 
 	public void SetTime(double time) => Time = time;
+
 	public void SetValue(object? value) => Value = value is T tV ? tV : (T?)value;
+
 	public void SetValue<T2>(T2? value) => SetValue((object?)value);
 
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -92,7 +100,7 @@ public class Keyframe<T> : IKeyframe
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f) {
+	private static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f) {
 		float tLow = 0f;
 		float tHigh = 1f;
 
@@ -111,8 +119,11 @@ public class Keyframe<T> : IKeyframe
 		float u2 = 1 - t;
 		return u2 * u2 * u2 * 0f + 3f * u2 * u2 * t * ic2.Y + 3f * u2 * t * t * ic3.Y + t * t * t * 1f;
 	}
+
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
+
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(in KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
+
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static T? BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 		if (typeof(T) == typeof(float)) {
@@ -132,6 +143,7 @@ public class Keyframe<T> : IKeyframe
 		else
 			return leftmostOfTime.Value;
 	}
+
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static T? BezierInterpolatorLerped(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 		if (typeof(T) == typeof(float)) {
@@ -154,8 +166,9 @@ public class Keyframe<T> : IKeyframe
 			return leftmostOfTime.Value;
 	}
 
-	static readonly Keyframe<float> DUMMY_LEFT = new();
-	static readonly Keyframe<float> DUMMY_RIGHT = new();
+	private static readonly Keyframe<float> DUMMY_LEFT = new();
+	private static readonly Keyframe<float> DUMMY_RIGHT = new();
+
 	public static float GetPercentage(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
 		if (time < leftmostOfTime.Time)
 			return 0;
@@ -177,6 +190,7 @@ public class Keyframe<T> : IKeyframe
 			default: return 0;
 		}
 	}
+
 	public static T? DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
@@ -188,10 +202,13 @@ public class Keyframe<T> : IKeyframe
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant:
 				return leftmostOfTime.Value;
+
 			case KeyframeInterpolation.Linear:
 				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
+
 			case KeyframeInterpolation.Bezier:
 				return BezierInterpolatorLerped(time, leftmostOfTime, rightmostOfTime);
+
 			default: return leftmostOfTime.Value;
 		}
 	}
