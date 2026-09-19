@@ -1392,6 +1392,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void ResetScreenScroll() {
 		ScreenScrollProgress = 0;
+		ScreenScrollRate = 0;
 		ScreenScrollLastTime = Conductor.Time;
 	}
 
@@ -1425,7 +1426,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (ScreenScrollRate != 0 && !Paused) {
 			double deltaTime = Conductor.Time - ScreenScrollLastTime;
 			ScreenScrollLastTime = Conductor.Time;
-			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8;
+			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8 * musicspeed.GetDouble();
 
 			double windowH = frameState.WindowHeight;
 
