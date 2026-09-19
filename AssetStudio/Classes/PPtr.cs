@@ -18,7 +18,6 @@ namespace AssetStudio
 		public long m_PathID;
 
 		public SerializedFile AssetsFile;
-		private int index = -2; //-2 - Prepare, -1 - Missing
 
 		// Might be a misunderstanding - march
 		public PPtr() { }
@@ -42,21 +41,9 @@ namespace AssetStudio
 			}
 
 			if (m_FileID > 0 && m_FileID - 1 < AssetsFile.m_Externals.Count) {
-				var assetsManager = AssetsFile.assetsManager;
-				var assetsFileList = assetsManager.AssetsFileList;
-				var assetsFileIndexCache = assetsManager.assetsFileIndexCache;
-
-				if (index == -2) {
-					var m_External = AssetsFile.m_Externals[m_FileID - 1];
-					var name = m_External.fileName;
-					if (!assetsFileIndexCache.TryGetValue(name, out index)) {
-						index = assetsFileList.FindIndex(x => x.fileName.Equals(name, StringComparison.OrdinalIgnoreCase));
-						assetsFileIndexCache.Add(name, index);
-					}
-				}
-
-				if (index >= 0) {
-					result = assetsFileList[index];
+				var name = AssetsFile.m_Externals[m_FileID - 1].fileName;
+				if (AssetsFile.assetsManager.assetsFileByName.TryGetValue(name, out var file)) {
+					result = file;
 					return true;
 				}
 			}
@@ -110,15 +97,6 @@ namespace AssetStudio
 				else {
 					m_FileID += 1;
 				}
-			}
-
-			var assetsManager = AssetsFile.assetsManager;
-			var assetsFileList = assetsManager.AssetsFileList;
-			var assetsFileIndexCache = assetsManager.assetsFileIndexCache;
-
-			if (!assetsFileIndexCache.TryGetValue(name, out index)) {
-				index = assetsFileList.FindIndex(x => x.fileName.Equals(name, StringComparison.OrdinalIgnoreCase));
-				assetsFileIndexCache.Add(name, index);
 			}
 
 			m_PathID = m_Object.m_PathID;

@@ -1118,6 +1118,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (backgroundOverride != null) {
 			backgroundOverride.Dispose();
 		}
+
+		MuseDash1Compatibility.StreamingAssets?.UnloadAll();
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {

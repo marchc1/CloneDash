@@ -21,7 +21,7 @@ namespace AssetStudio
         public readonly List<Action<OptionsFile>> OptionLoaders = new List<Action<OptionsFile>>();
         public readonly List<SerializedFile> AssetsFileList = new List<SerializedFile>();
 
-        internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        internal Dictionary<string, SerializedFile> assetsFileByName = new Dictionary<string, SerializedFile>(StringComparer.OrdinalIgnoreCase);
         internal ConcurrentDictionary<string, BinaryReader> resourceFileReaders = new ConcurrentDictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
 
         private readonly List<string> importFiles = new List<string>();
@@ -210,6 +210,7 @@ namespace AssetStudio
                     CheckStrippedVersion(assetsFile);
                     AssetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
+                    assetsFileByName[assetsFile.fileName] = assetsFile;
                     if (fromZip)
                         return true;
 
@@ -279,6 +280,7 @@ namespace AssetStudio
                     CheckStrippedVersion(assetsFile, assetBundleUnityVer);
                     AssetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
+                    assetsFileByName[assetsFile.fileName] = assetsFile;
                 }
                 catch (NotSupportedException e)
                 {
@@ -602,11 +604,23 @@ namespace AssetStudio
             }
         }
 
+        public void UnloadFile(SerializedFile assetsFile)
+        {
+            assetsFile.Objects.Clear();
+            assetsFile.ObjectsDic.Clear();
+            assetsFile.reader.Close();
+            AssetsFileList.Remove(assetsFile);
+            assetsFileListHash.Remove(assetsFile.fileName);
+            if (assetsFileByName.TryGetValue(assetsFile.fileName, out var cur) && cur == assetsFile)
+                assetsFileByName.Remove(assetsFile.fileName);
+        }
+
         public void Clear()
         {
             foreach (var assetsFile in AssetsFileList)
             {
                 assetsFile.Objects.Clear();
+                assetsFile.ObjectsDic.Clear();
                 assetsFile.reader.Close();
             }
             AssetsFileList.Clear();
@@ -617,7 +631,8 @@ namespace AssetStudio
             }
             resourceFileReaders.Clear();
 
-            assetsFileIndexCache.Clear();
+            assetsFileByName.Clear();
+            assetsFileListHash.Clear();
         }
 
         private void ReadAssets()
