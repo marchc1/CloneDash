@@ -393,6 +393,7 @@ namespace CloneDash.Compatibility.MuseDash
 							EnterDirection = EntityEnterDirection.RightSide,
 							HitTime = tick_hit,
 							ShowTime = tick_show,
+							Dt = (double)s.dt,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,
@@ -616,6 +617,7 @@ namespace CloneDash.Compatibility.MuseDash
 								EnterDirection = dir,
 								HitTime = tick_hit,
 								ShowTime = tick_show,
+								Dt = (double)s.dt,
 								Flipped = flipped,
 
 								Fever = s.noteData.fever,

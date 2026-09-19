@@ -975,7 +975,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			}, false);
 		}
-
+		MuseDash1Compatibility.StreamingAssets?.UnloadAll();
 		MainThread.RunASAP(Interlude.End, ThreadExecutionTime.AfterFrame);
 	}
 
@@ -1021,6 +1021,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.ShowTime = ChartEntity.ShowTime;
 		ent.Length = ChartEntity.Length;
 		ent.Speed = ChartEntity.Speed;
+		ent.Dt = ChartEntity.Dt;
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
 

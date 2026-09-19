@@ -575,6 +575,13 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		RoadUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_up"));
 		RoadDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_down"));
 
+		AirBodySustainTexture.SetWrap(TextureWrap.Repeat);
+		AirUpSustainTexture.SetWrap(TextureWrap.Repeat);
+		AirDownSustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadBodySustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadUpSustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadDownSustainTexture.SetWrap(TextureWrap.Repeat);
+
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
 		string gearRoadID = SceneInfo.MapIdx switch {
