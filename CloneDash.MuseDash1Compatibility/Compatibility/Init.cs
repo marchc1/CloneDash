@@ -3,8 +3,11 @@ using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 
 using Nucleus;
+using Nucleus.Common;
 using Nucleus.Core;
 using Nucleus.Files;
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -51,30 +54,40 @@ public static partial class MuseDash1Compatibility
 			StreamingAssets = filesystem.AddSearchPath("musedash", new UnitySearchPathV2(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa"), StandalonePlatform));
 		}
 
-		using (StaticSequentialProfiler.StartStackFrame("Deserialize NoteDataManager"))
-			NoteDataManager = Filesystem.ReadJSON<List<NoteConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/notedata.json");
+		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Critical JSON Files"))
+			Parallel.Invoke(
+				() => NoteDataManager = Filesystem.ReadJSON<List<NoteConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/notedata.json"),
+				() => Characters = Filesystem.ReadJSON<List<CharacterConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/character.json"),
+				() => CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json")
+			);
 
-		using (StaticSequentialProfiler.StartStackFrame("Deserialize Characters")) {
-			Characters = Filesystem.ReadJSON<List<CharacterConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/character.json");
-			CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json");
-			System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
-			for (int i = 0, c = Characters.Count; i < c; i++) {
-				Characters[i].Localization["english"] = CharactersEN[i];
-			}
-		}
+		System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
+
+		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Localization"))
+			Parallel.For(0, Characters.Count, static i => Characters[i].Localization["english"] = CharactersEN[i]);
 
 		Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
-		using (StaticSequentialProfiler.StartStackFrame("Process NoteDataManager"))
-			foreach (var notedata in NoteDataManager) {
-				IDToNote[notedata.id] = notedata;
-				IBMSToNote[notedata.ibms_id] = notedata;
-				UIDToNote[notedata.uid] = notedata;
-				if (!IBMSToDesc.ContainsKey(notedata.ibms_id))
-					IBMSToDesc[notedata.ibms_id] = [];
+		using (StaticSequentialProfiler.StartStackFrame("Parallel Process NoteDataManager")) {
+			// parallel process the dictionaries
+			ConcurrentDictionary<string, List<string>> concurrentIBMSToDesc = [];
+			ConcurrentDictionary<string, NoteConfigData> concurrentIDToNote = [];
+			ConcurrentDictionary<string, NoteConfigData> concurrentIBMSToNote = [];
+			ConcurrentDictionary<string, NoteConfigData> concurrentUIDToNote = [];
 
-				IBMSToDesc[notedata.ibms_id].Add(notedata.des);
-			}
+			Parallel.ForEach(NoteDataManager, notedata => {
+				concurrentIDToNote[notedata.id] = notedata;
+				concurrentIBMSToNote[notedata.ibms_id] = notedata;
+				concurrentUIDToNote[notedata.uid] = notedata;
+				concurrentIBMSToDesc.GetOrAdd(notedata.ibms_id, (x) => []).Add(notedata.des);
+			});
+
+			// Load the finalized dictionaries
+			IBMSToDesc = concurrentIBMSToDesc.ToFrozenDictionary();
+			IDToNote = concurrentIDToNote.ToFrozenDictionary();
+			IBMSToNote = concurrentIBMSToNote.ToFrozenDictionary();
+			UIDToNote = concurrentUIDToNote.ToFrozenDictionary();
+		}
 
 		using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 			BuildDashStructures();

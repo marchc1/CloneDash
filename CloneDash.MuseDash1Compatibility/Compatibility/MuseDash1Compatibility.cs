@@ -31,6 +31,7 @@ using Raylib_cs;
 
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -235,10 +236,10 @@ namespace CloneDash.Compatibility.MuseDash
 		public static bool IsMuseDashInstalled => WhereIsMuseDashInstalled != null;
 
 		public static string NoteManagerAssetBundle { get; private set; } = "";
-		public static Dictionary<string, List<string>> IBMSToDesc { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> IDToNote { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> IBMSToNote { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> UIDToNote { get; private set; } = new();
+		public static FrozenDictionary<string, List<string>> IBMSToDesc { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> IDToNote { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> IBMSToNote { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> UIDToNote { get; private set; } = null!;
 
 		public static List<CharacterConfigData> Characters { get; set; }
 		public static List<CharacterLocalizationData> CharactersEN { get; set; }

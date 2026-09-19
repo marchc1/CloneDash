@@ -1,5 +1,4 @@
 ﻿using AssetStudio;
-using Newtonsoft.Json;
 using Nucleus.Common.FileSystem;
 using Nucleus.Files;
 using Nucleus.Util;
@@ -13,6 +12,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CloneDash.Compatibility.Unity;
 
@@ -66,10 +67,6 @@ public class AddressablesCatalog
 	public CatalogProviderData[] m_ResourceProviderData;
 	public string[] m_ProviderIds;
 	public string[] m_InternalIds;
-	public string m_KeyDataString;
-	public string m_BucketDataString;
-	public string m_EntryDataString;
-	public string m_ExtraDataString;
 
 	[JsonIgnore] public byte[] m_KeyData;
 	[JsonIgnore] public byte[] m_BucketData;
@@ -192,7 +189,7 @@ public class AddressablesCatalog
 		if (internalId == null)
 			return null;
 
-		
+
 		internalId = internalId.Replace('\\', Path.DirectorySeparatorChar);
 
 		// Handle the {UnityEngine.AddressableAssets.Addressables.RuntimePath}/Platform/bundle.bundle format
@@ -210,11 +207,6 @@ public class AddressablesCatalog
 	public void Decode() {
 		if (Decoded)
 			return;
-
-		m_KeyData = Convert.FromBase64String(m_KeyDataString);
-		m_BucketData = Convert.FromBase64String(m_BucketDataString);
-		m_EntryData = Convert.FromBase64String(m_EntryDataString);
-		m_ExtraData = Convert.FromBase64String(m_ExtraDataString);
 
 		Keys = ReadKeys();
 		AllEntries = ReadEntries();
@@ -648,12 +640,96 @@ public class UnitySearchPathV2 : SearchPath
 
 	readonly object sync = new();
 
+	static string GetString(JsonElement o, string name)
+	=> o.TryGetProperty(name, out var e) && e.ValueKind == JsonValueKind.String
+		? e.GetString()! : null!;
+
+	static byte[] ReadBase64(JsonElement o, string name)
+		=> o.TryGetProperty(name, out var e) && e.ValueKind == JsonValueKind.String
+			? e.GetBytesFromBase64() : Array.Empty<byte>();
+
+	static string[] ReadStringArray(JsonElement o, string name) {
+		if (!o.TryGetProperty(name, out var arr) || arr.ValueKind != JsonValueKind.Array)
+			return Array.Empty<string>();
+		var result = new string[arr.GetArrayLength()];
+		int i = 0;
+		foreach (var el in arr.EnumerateArray())
+			result[i++] = el.GetString()!;
+		return result;
+	}
+
+	static CatalogProviderObjectType ReadObjectType(JsonElement e) {
+		if (e.ValueKind != JsonValueKind.Object) return null!;
+		return new CatalogProviderObjectType {
+			m_AssemblyName = GetString(e, "m_AssemblyName"),
+			m_ClassName = GetString(e, "m_ClassName"),
+		};
+	}
+
+	static CatalogProviderData ReadProviderDataElement(JsonElement e) {
+		if (e.ValueKind != JsonValueKind.Object) return null!;
+		return new CatalogProviderData {
+			m_Id = GetString(e, "m_Id"),
+			m_ObjectType = e.TryGetProperty("m_ObjectType", out var ot) ? ReadObjectType(ot) : null,
+			m_Data = GetString(e, "m_Data"),
+		};
+	}
+
+	static CatalogProviderData ReadProviderData(JsonElement o, string name)
+		=> o.TryGetProperty(name, out var e) ? ReadProviderDataElement(e) : null!;
+
+	static CatalogProviderData[] ReadProviderDataArray(JsonElement o, string name) {
+		if (!o.TryGetProperty(name, out var arr) || arr.ValueKind != JsonValueKind.Array)
+			return Array.Empty<CatalogProviderData>();
+		var result = new CatalogProviderData[arr.GetArrayLength()];
+		int i = 0;
+		foreach (var el in arr.EnumerateArray())
+			result[i++] = ReadProviderDataElement(el);
+		return result;
+	}
+
+	static CatalogResourceType[] ReadResourceTypes(JsonElement o, string name) {
+		if (!o.TryGetProperty(name, out var arr) || arr.ValueKind != JsonValueKind.Array)
+			return Array.Empty<CatalogResourceType>();
+		var result = new CatalogResourceType[arr.GetArrayLength()];
+		int i = 0;
+		foreach (var el in arr.EnumerateArray())
+			result[i++] = new CatalogResourceType {
+				m_AssemblyName = GetString(el, "m_AssemblyName"),
+				m_ClassName = GetString(el, "m_ClassName"),
+			};
+		return result;
+	}
+
 	public UnitySearchPathV2(string whereIsStreamingAssetsAA, string standalonePlatform) {
 		_basePath = whereIsStreamingAssetsAA;
 		_platform = standalonePlatform;
 
 		string catalogJsonPath = Path.Combine(whereIsStreamingAssetsAA, "catalog.json");
-		Catalog = JsonConvert.DeserializeObject<AddressablesCatalog>(File.ReadAllText(catalogJsonPath))!;
+
+		Catalog = new();
+		using (Stream jsonStream = File.OpenRead(catalogJsonPath))
+		using (JsonDocument doc = JsonDocument.Parse(jsonStream)) {
+			JsonElement root = doc.RootElement;
+
+			Catalog.m_LocatorId = GetString(root, "m_LocatorId");
+			Catalog.m_BuildResultHash = GetString(root, "m_BuildResultHash");
+
+			Catalog.m_InstanceProviderData = ReadProviderData(root, "m_InstanceProviderData");
+			Catalog.m_SceneProviderData = ReadProviderData(root, "m_SceneProviderData");
+			Catalog.m_ResourceProviderData = ReadProviderDataArray(root, "m_ResourceProviderData");
+
+			Catalog.m_ProviderIds = ReadStringArray(root, "m_ProviderIds");
+			Catalog.m_InternalIds = ReadStringArray(root, "m_InternalIds");
+			Catalog.m_resourceTypes = ReadResourceTypes(root, "m_resourceTypes");
+
+			Parallel.Invoke(
+				() => Catalog.m_KeyData = ReadBase64(root, "m_KeyDataString"),
+				() => Catalog.m_BucketData = ReadBase64(root, "m_BucketDataString"),
+				() => Catalog.m_EntryData = ReadBase64(root, "m_EntryDataString"),
+				() => Catalog.m_ExtraData = ReadBase64(root, "m_ExtraDataString")
+			);
+		}
 		Catalog.Decode();
 	}
 

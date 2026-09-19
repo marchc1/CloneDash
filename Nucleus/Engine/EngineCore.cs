@@ -650,6 +650,7 @@ public static class EngineCore
 		}
 	}
 
+	static char[]? formattedTextBuffer;
 	private static void PerWindowFrame() {
 		NProfiler.Reset();
 
@@ -695,11 +696,10 @@ public static class EngineCore
 			Span<int> offsets = stackalloc int[msgCount];
 			int found = msgList.GetMessages(offsets, out _);
 
-			Span<char> formatted = stackalloc char[512];
-
 			for (int j = found - 1; j >= 0; j--) {
 				if (!msgList.GetMessageAt(offsets, j, out var cmsg, out var msgText))
 					continue;
+
 
 				int lineCount = 1;
 				for (int ci = 0; ci < msgText.Length; ci++) {
@@ -711,9 +711,16 @@ public static class EngineCore
 						lineCount++;
 				}
 
+				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
+
+				int textLength = 1 + levelStr.Length + 2 + msgText.Length;
+				if (formattedTextBuffer == null || formattedTextBuffer.Length < textLength)
+					formattedTextBuffer = new char[textLength];
+
+				Span<char> formatted = formattedTextBuffer;
+
 				int pos = 0;
 				formatted[pos++] = '[';
-				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
 				levelStr.CopyTo(formatted[pos..]);
 				pos += levelStr.Length;
 				formatted[pos++] = ']';
