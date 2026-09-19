@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI;
 
-public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, "", name), IBindableToConVar
+public class Checkbox : Button, IBindableToConVar
 {
 	public bool Checked { get; set; } = false;
 
@@ -50,6 +50,9 @@ public class Checkbox(Element? parent, ReadOnlySpan<char> name = default) : Butt
 	}
 
 	private float? CheckAnim = null;
+
+	public Checkbox(Element? parent) : base(parent, "") { }
+	public Checkbox(Element? parent, ReadOnlySpan<char> name) : base(parent, "", name) { }
 
 	public override void Paint(float width, float height) {
 		float c = CheckAnim ?? (Checked ? 1 : 0);
